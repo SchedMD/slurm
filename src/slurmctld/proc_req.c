@@ -141,6 +141,7 @@ inline static void  _slurm_rpc_dump_licenses(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_node_single(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_sicp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
@@ -544,6 +545,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		 _slurm_rpc_dump_cache(msg);
 		 slurm_free_cache_info_request_msg(msg->data);
 		 break;
+	case REQUEST_SICP_INFO:
+		_slurm_rpc_dump_sicp(msg);
+		/* No body to free */
+		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
@@ -1190,7 +1195,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	job_info_request_msg_t *job_info_request_msg =
 		(job_info_request_msg_t *) msg->data;
-	/* Locks: Read config job, write node (for hiding) */
+	/* Locks: Read config job, write partition (for hiding) */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
@@ -1227,6 +1232,41 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(dump);
 	}
+}
+
+/* _slurm_rpc_dump_sicp - process RPC for SICP job state information */
+static void _slurm_rpc_dump_sicp(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg;
+	/* Locks: Read config job, write partition (for hiding) */
+	slurmctld_lock_t job_read_lock = {
+		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_SICP_INFO from uid=%d", uid);
+	lock_slurmctld(job_read_lock);
+	pack_all_sicp(&dump, &dump_size,
+		      g_slurm_auth_get_uid(msg->auth_cred, NULL),
+		      msg->protocol_version);
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2("_slurm_rpc_dump_sicp");
+
+	/* init response_msg structure */
+	slurm_msg_t_init(&response_msg);
+	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.msg_type = RESPONSE_SICP_INFO;
+	response_msg.data = dump;
+	response_msg.data_size = dump_size;
+
+	/* send message */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	xfree(dump);
 }
 
 /* _slurm_rpc_dump_jobs - process RPC for job state information */

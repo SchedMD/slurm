@@ -1525,6 +1525,8 @@ _show_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "jobs", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "jobid", MAX(tag_len, 1)) == 0 ) {
 		scontrol_print_job (val);
+	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
+		scontrol_print_licenses(val);
 	} else if (strncasecmp (tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 1)) == 0 ||
@@ -1533,14 +1535,14 @@ _show_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);
+	} else if (strncasecmp (tag, "sicp", MAX(tag_len, 2)) == 0) {
+		scontrol_print_sicp ();     /* UNDOCUMENTED TESTING OPTION */
 	} else if (strncasecmp (tag, "slurmd", MAX(tag_len, 2)) == 0) {
 		_print_slurmd (val);
 	} else if (strncasecmp (tag, "steps", MAX(tag_len, 2)) == 0) {
 		scontrol_print_step (val);
 	} else if (strncasecmp (tag, "topology", MAX(tag_len, 1)) == 0) {
 		scontrol_print_topo (val);
-	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
-		scontrol_print_licenses(val);
 	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)

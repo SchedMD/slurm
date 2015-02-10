@@ -7386,6 +7386,61 @@ static bool _hide_job(struct job_record *job_ptr, uid_t uid)
 }
 
 /*
+ * pack_all_sicp - dump inter-cluster job state information
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN uid - uid of user making request (for job/partition filtering)
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_sicp_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
+extern void pack_all_sicp(char **buffer_ptr, int *buffer_size,
+			  uid_t uid, uint16_t protocol_version)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	uint32_t jobs_packed = 0, tmp_offset;
+	Buf buffer;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* write message body header : size */
+	/* put in a place holder job record count of 0 for now */
+	pack32(jobs_packed, buffer);
+
+	/* write individual job records */
+	part_filter_set(uid);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		xassert (job_ptr->magic == JOB_MAGIC);
+		if ((job_ptr->job_id & 0x80000000) == 0)
+			continue;
+		if ((uid != 0) && _all_parts_hidden(job_ptr))
+			continue;
+		if (_hide_job(job_ptr, uid))
+			continue;
+
+		pack32(job_ptr->job_id,    buffer);
+		pack16(job_ptr->job_state, buffer);
+		jobs_packed++;
+	}
+	list_iterator_destroy(job_iterator);
+	part_filter_clear();
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(jobs_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+/*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
@@ -7436,8 +7491,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
 		jobs_packed++;
 	}
-	part_filter_clear();
 	list_iterator_destroy(job_iterator);
+	part_filter_clear();
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);

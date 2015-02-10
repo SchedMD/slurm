@@ -81,6 +81,7 @@
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_stats_response_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
+#define _pack_sicp_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 
 static void _pack_assoc_shares_object(void *in, Buf buffer,
 				      uint16_t protocol_version);
@@ -444,6 +445,9 @@ static int _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr,
 				uint16_t protocol_version);
 static int _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 				uint16_t protocol_version);
+
+static int _unpack_sicp_info_msg(sicp_info_msg_t ** msg, Buf buffer,
+				 uint16_t protocol_version);
 
 static void _pack_last_update_msg(last_update_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
@@ -881,6 +885,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_SICP_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1370,6 +1375,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_CACHE_INFO:
 		_pack_cache_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case RESPONSE_SICP_INFO:
+		_pack_sicp_info_msg((slurm_msg_t *) msg, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1490,6 +1498,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_SICP_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -2030,6 +2039,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						    &(msg->data),
 						    buffer,
 						    msg->protocol_version);
+		break;
+	case RESPONSE_SICP_INFO:
+		rc = _unpack_sicp_info_msg((sicp_info_msg_t **) & (msg->data),
+					   buffer, msg->protocol_version);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -4826,6 +4839,47 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 
 unpack_error:
 	slurm_free_job_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static int
+_unpack_sicp_info_msg(sicp_info_msg_t ** msg, Buf buffer,
+		      uint16_t protocol_version)
+{
+	int i;
+	sicp_info_t *job = NULL;
+
+	xassert(msg != NULL);
+	*msg = xmalloc(sizeof(sicp_info_msg_t));
+
+	/* load buffer's header (data structure version and time) */
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&((*msg)->record_count), buffer);
+
+		if (protocol_version == SLURM_PROTOCOL_VERSION) {
+			job = (*msg)->sicp_array =
+				xmalloc_nz(sizeof(sicp_info_t) *
+					   (*msg)->record_count);
+		} else {
+			job = (*msg)->sicp_array =
+				xmalloc(sizeof(sicp_info_t) *
+					(*msg)->record_count);
+		}
+		/* load individual inter-cluster job info */
+		for (i = 0; i < (*msg)->record_count; i++, job++) {
+			safe_unpack32(&job->job_id, buffer);
+			safe_unpack16(&job->job_state, buffer);		
+		}
+	} else {
+		error("_unpack_sicp_info_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_sicp_msg(*msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

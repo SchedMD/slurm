@@ -1657,6 +1657,18 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid,
 			   uint16_t protocol_version);
 
+/*
+ * pack_all_sicp - dump inter-cluster job state information
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN uid - uid of user making request (for job/partition filtering)
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_sicp_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
+extern void pack_all_sicp(char **buffer_ptr, int *buffer_size,
+			  uid_t uid, uint16_t protocol_version);
+
 /* Pack all scheduling statistics */
 extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			  uint16_t protocol_version);

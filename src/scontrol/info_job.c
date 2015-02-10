@@ -966,3 +966,30 @@ extern int scontrol_job_ready(char *job_id_str)
 
 	return rc;
 }
+
+/*
+ * scontrol_print_sicp - print the inter-cluster job information
+ */
+extern void
+scontrol_print_sicp (void)
+{
+	int error_code = SLURM_SUCCESS, i;
+	sicp_info_msg_t * sicp_buffer_ptr = NULL;
+	sicp_info_t *sicp_ptr = NULL;
+
+	error_code = slurm_load_sicp(&sicp_buffer_ptr);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_sicp error");
+		return;
+	}
+
+	for (i = 0, sicp_ptr = sicp_buffer_ptr->sicp_array;
+	     i < sicp_buffer_ptr->record_count; i++, sicp_ptr++) {
+		info("JobID=%u State=%s", sicp_ptr->job_id,
+		     job_state_string(sicp_ptr->job_state));
+	}
+
+	slurm_free_sicp_msg(sicp_buffer_ptr);
+}

@@ -3324,6 +3324,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
+ 	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_SICP_INFO:
 		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:
@@ -3858,8 +3860,50 @@ slurm_free_cache_info_msg(cache_info_msg_t *msg)
 	xfree(msg->cache_assoc_array);
 	xfree(msg);
 }
+
 extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *msg)
 {
 	xfree(msg);
 }
 
+extern int slurm_load_sicp(sicp_info_msg_t **sicp_buffer_pptr)
+{
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.msg_type = REQUEST_SICP_INFO;
+	req_msg.data     = NULL;
+
+//FIXME: This needs to be modified to communicate with an arbitrary host/port
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SICP_INFO:
+		*sicp_buffer_pptr = (sicp_info_msg_t *)resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+extern void slurm_free_sicp_msg(sicp_info_msg_t *sicp_buffer_ptr)
+{
+	if (sicp_buffer_ptr) {
+		xfree(sicp_buffer_ptr->sicp_array);
+		xfree(sicp_buffer_ptr);
+	}
+}

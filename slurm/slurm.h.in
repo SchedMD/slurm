@@ -1431,6 +1431,16 @@ typedef struct job_info_msg {
 	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
+typedef struct sicp_info {
+	uint32_t job_id;
+	uint16_t job_state;
+} sicp_info_t;
+
+typedef struct sicp_info_msg {
+	uint32_t record_count;		/* number of records */
+	sicp_info_t *sicp_array;	/* inter-cluster job records */
+} sicp_info_msg_t;
+
 typedef struct step_update_request_msg {
 	time_t end_time;	/* step end time */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */

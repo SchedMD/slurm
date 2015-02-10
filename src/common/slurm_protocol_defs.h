@@ -244,6 +244,8 @@ typedef enum {
 	REQUEST_NODE_INFO_SINGLE,  /* 2040 */
 	REQUEST_CACHE_INFO,
 	RESPONSE_CACHE_INFO,
+	REQUEST_SICP_INFO,
+	RESPONSE_SICP_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -1269,6 +1271,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *);
+
+extern int  slurm_load_sicp(sicp_info_msg_t **sicp_buffer_pptr);
+extern void slurm_free_sicp_msg(sicp_info_msg_t * sicp_buffer_ptr);
 
 extern char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
