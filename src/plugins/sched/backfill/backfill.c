@@ -141,6 +141,8 @@ static int  _attempt_backfill(void);
 static void _clear_job_start_times(void);
 static int  _delta_tv(struct timeval *tv);
 static bool _job_is_completing(void);
+static bool _job_part_valid(struct job_record *job_ptr,
+			    struct part_record *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
@@ -679,6 +681,32 @@ static int _yield_locks(int usec)
 		return 1;
 }
 
+/* Test if this job still has access to the specified partition. The job's
+ * available partitions may have changed when locks were released */
+static bool _job_part_valid(struct job_record *job_ptr,
+			    struct part_record *part_ptr)
+{
+	struct part_record *avail_part_ptr;
+	ListIterator part_iterator;
+	bool rc = false;
+
+	if (job_ptr->part_ptr_list) {
+		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
+		while ((avail_part_ptr = (struct part_record *)
+				list_next(part_iterator))) {
+			if (avail_part_ptr == part_ptr) {
+				rc = true;
+				break;
+			}
+		}
+		list_iterator_destroy(part_iterator);
+	} else if (job_ptr->part_ptr == part_ptr) {
+		rc = true;
+	}
+
+	return rc;
+}
+
 static int _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -870,6 +898,8 @@ next_task:
 			continue; 	/* scheduled in another partition */
 		if (!avail_front_end(job_ptr))
 			continue;	/* No available frontend for this job */
+		if (!_job_part_valid(job_ptr, part_ptr))
+			continue;	/* Partition change during lock yield */
 		if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 			if ((reject_array_job_id == job_ptr->array_job_id) &&
 			    (reject_array_part   == part_ptr))
