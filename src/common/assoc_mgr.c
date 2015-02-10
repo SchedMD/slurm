@@ -772,11 +772,12 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		uid_t pw_uid;
 
 		g_user_assoc_count++;
-		if (uid_from_string(assoc->user, &pw_uid) < 0)
-			assoc->uid = NO_VAL;
-		else
-			assoc->uid = pw_uid;
-
+		if (assoc->uid == NO_VAL) {
+			if (uid_from_string(assoc->user, &pw_uid) < 0)
+				assoc->uid = NO_VAL;
+			else
+				assoc->uid = pw_uid;
+		}
 		_set_user_default_acct(assoc);
 
 		/* get the qos bitmap here */
