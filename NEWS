@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld initialization problem which could cause requeue of the last
     task in a job array to fail if executed prior to the slurmctld loading
     the maximum size of a job array into a variable in the job_mgr.c module.
+ -- Fix segfault in controller when deleting a user association of a user which
+    had been previously removed from the system.
 
 * Changes in Slurm 14.11.3
 ==========================
