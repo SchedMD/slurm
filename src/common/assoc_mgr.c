@@ -772,7 +772,8 @@ static int _set_assoc_parent_and_user(slurmdb_association_rec_t *assoc,
 		uid_t pw_uid;
 
 		g_user_assoc_count++;
-		if (assoc->uid == NO_VAL) {
+		if (assoc->uid == NO_VAL || assoc->uid == INFINITE ||
+				assoc->uid == 0) {
 			if (uid_from_string(assoc->user, &pw_uid) < 0)
 				assoc->uid = NO_VAL;
 			else
