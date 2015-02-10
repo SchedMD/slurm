@@ -494,10 +494,10 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		pthread_mutex_unlock(&allocation_state_lock);
 
-		info("Relinquishing job allocation %d", alloc->job_id);
+		info("Relinquishing job allocation %u", alloc->job_id);
 		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
 		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
-			error("Unable to clean up job allocation %d: %m",
+			error("Unable to clean up job allocation %u: %m",
 			      alloc->job_id);
 		pthread_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
