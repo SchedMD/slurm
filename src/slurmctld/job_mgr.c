@@ -948,16 +948,15 @@ extern int load_all_job_state(void)
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str && !strcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
+	xfree(ver_str);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
 		error("***********************************************");
 		error("Can not recover job state, incompatible version");
 		error("***********************************************");
-		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
-	xfree(ver_str);
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32(&saved_job_id, buffer);
@@ -978,7 +977,7 @@ extern int load_all_job_state(void)
 	return error_code;
 
 unpack_error:
-	error("Incomplete job data checkpoint file");
+	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
 	return SLURM_FAILURE;
