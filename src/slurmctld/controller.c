@@ -107,6 +107,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
+#include "src/slurmctld/sicp.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
 #include "src/slurmctld/sched_plugin.h"
@@ -516,6 +517,8 @@ int main(int argc, char *argv[])
 			fatal( "failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS )
 			fatal( "failed to initialize power management plugin");
+		sicp_init();
+
 
 		/*
 		 * create attached thread to process RPCs

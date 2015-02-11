@@ -40,6 +40,7 @@
 
 #include <string.h>
 
+#include "src/common/macros.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -47,3 +48,87 @@
 #include "src/slurmctld/slurmctld.h"
 
 List sicp_job_list;
+
+static bool sicp_stop = false;
+static pthread_t sicp_thread = 0;
+static pthread_mutex_t sicp_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  sicp_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t thread_lock = PTHREAD_MUTEX_INITIALIZER;
+static int sicp_interval = 10;
+
+static void _my_sleep(int add_secs);
+
+static void _my_sleep(int add_secs)
+{
+	struct timespec ts = {0, 0};
+	struct timeval  tv = {0, 0};
+
+	if (gettimeofday(&tv, NULL)) {		/* Some error */
+		sleep(1);
+		return;
+	}
+
+	ts.tv_sec  = tv.tv_sec + add_secs;
+	ts.tv_nsec = tv.tv_usec * 1000;
+	pthread_mutex_lock(&sicp_lock);
+	if (!sicp_stop)
+		pthread_cond_timedwait(&sicp_cond, &sicp_lock, &ts);
+	pthread_mutex_unlock(&sicp_lock);
+}
+
+extern void *_sicp_agent(void *args)
+{
+	static time_t last_sicp_time = 0;
+	time_t now;
+	double wait_time;
+
+	while (!sicp_stop) {
+		_my_sleep(1);
+		if (sicp_stop)
+			break;
+
+		now = time(NULL);
+		wait_time = difftime(now, last_sicp_time);
+		if (wait_time < sicp_interval)
+			continue;
+		last_sicp_time = now;
+
+		/* Load SICP job state from evey cluster here */
+		//info("SICP sync here");
+	}
+	return NULL;
+}
+
+/* Start a thread to poll other clusters for inter-cluster job status */
+extern void sicp_init(void)
+{
+	pthread_attr_t attr;
+
+	pthread_mutex_lock(&thread_lock);
+	if (sicp_thread) {
+		error("%s: sicp thread already running", __func__);
+		pthread_mutex_unlock(&thread_lock);
+	}
+
+	sicp_stop = false;
+	slurm_attr_init(&attr);
+	/* Since we do a join on thread later, don't make it detached */
+	if (pthread_create(&sicp_thread, &attr, _sicp_agent, NULL))
+		error("Unable to start power thread: %m");
+	slurm_attr_destroy(&attr);
+	pthread_mutex_unlock(&thread_lock);
+}
+
+/* Shutdown the inter-cluster job status thread */
+extern void sicp_fini(void)
+{
+	pthread_mutex_lock(&thread_lock);
+	pthread_mutex_lock(&sicp_lock);
+	sicp_stop = true;
+	pthread_cond_signal(&sicp_cond);
+	pthread_mutex_unlock(&sicp_lock);
+
+	pthread_join(sicp_thread, NULL);
+	sicp_thread = 0;
+	pthread_mutex_unlock(&thread_lock);
+}

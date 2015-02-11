@@ -51,4 +51,10 @@ typedef struct sicp_job {
 
 extern List sicp_job_list;
 
+/* Start a thread to poll other clusters for inter-cluster job status */
+extern void sicp_init(void);
+
+/* Shutdown the inter-cluster job status thread */
+extern void sicp_fini(void);
+
 #endif /* !_HAVE_SICP_H */
