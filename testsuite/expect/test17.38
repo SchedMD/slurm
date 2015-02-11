@@ -119,12 +119,33 @@ if {$elps_time < 59 || $elps_time > 121} {
 	set exit_code 1
 }
 
+# Job step gets signaled and exits. The batch script runs until timeout.
+spawn $scontrol show job $job_id
+expect {
+	-re "JobState=TIMEOUT" {
+		exp_continue
+	}
+	-re "JobState=" {
+		send_user "\nFAILURE: bad job exit state\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 # Remove output file so we do not get it mixed up with the new one
 exec $bin_rm -f $file_out
 
 ################Run sbatch with --signal=B:################
 send_user "\nStart --signal test to signal bash script\n"
 
+set job_id 0
 spawn $sbatch -t3 --signal=B:2@60 -o$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -176,6 +197,27 @@ if {$sig != 2} {
 if {$elps_time < 59 || $elps_time >121} {
 	send_user "\nFAILURE: sbatch sent signal at the wrong time\n"
 	set exit_code 1
+}
+
+# Job gets signaled and exits.
+# Without job exit code of zero, it is treated as a job failure.
+spawn $scontrol show job $job_id
+expect {
+	-re "JobState=FAILED" {
+		exp_continue
+	}
+	-re "JobState=" {
+		send_user "\nFAILURE: bad job exit state\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
 }
 
 if {$exit_code == 0} {
