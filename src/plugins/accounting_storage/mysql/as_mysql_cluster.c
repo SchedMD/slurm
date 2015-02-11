@@ -1042,6 +1042,8 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	char *my_reason;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1061,10 +1063,34 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	else
 		cpus = node_ptr->cpus;
 
+	query = xstrdup_printf("select state, reason from \"%s_%s\" where "
+			       "time_end=0 and node_name='%s';",
+			       mysql_conn->cluster_name, event_table,
+			       node_ptr->name);
+	/* info("%d(%s:%d) query\n%s", */
+	/*        mysql_conn->conn, THIS_FILE, __LINE__, query); */
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result)
+		return SLURM_ERROR;
+
 	if (reason)
 		my_reason = slurm_add_slash_to_quotes(reason);
 	else
 		my_reason = slurm_add_slash_to_quotes(node_ptr->reason);
+
+	row = mysql_fetch_row(result);
+	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
+	    !strcasecmp(my_reason, row[1])) {
+		debug("as_mysql_node_down: no change needed %u == %s "
+		      "and %s == %s",
+		     node_ptr->node_state, row[0], my_reason, row[1]);
+		xfree(my_reason);
+		mysql_free_result(result);
+		return SLURM_SUCCESS;
+	}
+	mysql_free_result(result);
 
 	debug2("inserting %s(%s) with %u cpus",
 	       node_ptr->name, mysql_conn->cluster_name, cpus);
