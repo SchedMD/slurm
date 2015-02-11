@@ -139,7 +139,6 @@ extern void power_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	slurm_mutex_lock(&g_context_lock);
 	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i])

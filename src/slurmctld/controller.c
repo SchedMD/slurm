@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2014 SchedMD LLC.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -426,10 +426,6 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize ext_sensors plugin");
 	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize switch plugin");
-	if (bb_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize burst buffer plugin");
-	if (power_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize power management plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -516,6 +512,10 @@ int main(int argc, char *argv[])
 			fatal("failed to initialize scheduling plugin");
 		if (slurmctld_plugstack_init())
 			fatal("failed to initialize slurmctld_plugstack");
+		if (bb_g_init() != SLURM_SUCCESS )
+			fatal( "failed to initialize burst buffer plugin");
+		if (power_g_init() != SLURM_SUCCESS )
+			fatal( "failed to initialize power management plugin");
 
 		/*
 		 * create attached thread to process RPCs
@@ -579,6 +579,9 @@ int main(int argc, char *argv[])
 		slurmctld_config.thread_id_sig  = (pthread_t) 0;
 		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
 		slurmctld_config.thread_id_save = (pthread_t) 0;
+		bb_g_fini();
+		power_g_fini();
+		sicp_fini();
 
 		if (running_cache) {
 			/* break out and end the association cache
@@ -670,8 +673,6 @@ int main(int argc, char *argv[])
 	slurm_auth_fini();
 	switch_fini();
 	route_fini();
-	bb_g_fini();
-	power_g_fini();
 
 	/* purge remaining data structures */
 	license_free();
