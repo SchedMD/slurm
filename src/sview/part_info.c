@@ -114,6 +114,7 @@ enum {
 	SORTID_PART_STATE,
 	SORTID_PREEMPT_MODE,
 	SORTID_PRIORITY,
+	SORTID_QOS_CHAR,
 	SORTID_REASON,
 	SORTID_ROOT,
 	SORTID_SHARE,
@@ -169,6 +170,8 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allowed Groups", FALSE,
@@ -664,6 +667,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "Update Features";
 		got_features_edit_signal = xstrdup(new_text);
 		break;
+	case SORTID_QOS_CHAR:
+		type = "QOS Char";
+		part_msg->qos_char = xstrdup(new_text);
+		break;
 	default:
 		type = "unknown";
 		break;
@@ -1087,6 +1094,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_TIMELIMIT:
 			limit_set = part_ptr->max_time;
 			break;
+		case SORTID_QOS_CHAR:
+			if (part_ptr->qos_char)
+				temp_char = part_ptr->qos_char;
+			else
+				temp_char = "N/A";
+			break;
 		default:
 			break;
 		}
@@ -1139,7 +1152,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
-	char *tmp_deny_accounts;
+	char *tmp_deny_accounts, *tmp_qos_char;
 	char *tmp_qos, *tmp_deny_qos;
 	char *tmp_root, *tmp_share, *tmp_state;
 	uint16_t tmp_preempt;
@@ -1274,6 +1287,11 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      tmp_time, sizeof(tmp_time));
 	}
 
+	if (part_ptr->qos_char)
+		tmp_qos_char = part_ptr->qos_char;
+	else
+		tmp_qos_char = "N/A";
+
 	/* Combining these records provides a slight performance improvement
 	 * NOTE: Some of these fields are cleared here and filled in based upon
 	 * the configuration of nodes within this partition. */
@@ -1286,6 +1304,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_DEFAULT,    tmp_default,
 			   SORTID_FEATURES,   "",
 			   SORTID_GRACE_TIME, tmp_grace,
+			   SORTID_QOS_CHAR,   tmp_qos_char,
 			   SORTID_ALLOW_ACCOUNTS, tmp_accounts,
 			   SORTID_ALLOW_GROUPS, tmp_groups,
 			   SORTID_ALLOW_QOS,  tmp_qos,

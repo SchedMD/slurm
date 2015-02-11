@@ -359,6 +359,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
+		else if (!strncasecmp(tag, "QoS", MAX(taglen, 3))) {
+			part_msg_ptr->qos_char = val;
+			(*update_cnt_ptr)++;
+		}
 		else {
 			exit_code = 1;
 			error("Update of this parameter is not "

@@ -188,6 +188,14 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, " Default=NO");
 	xstrcat(out, tmp_line);
+
+	if (part_ptr->qos_char)
+		snprintf(tmp_line, sizeof(tmp_line), " QoS=%s",
+			 part_ptr->qos_char);
+	else
+		sprintf(tmp_line, " QoS=N/A");
+	xstrcat(out, tmp_line);
+
 	if (one_liner)
 		xstrcat(out, " ");
 	else

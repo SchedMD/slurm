@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     to 2,147,418,112 and it's maximum value is now 2,147,463,647.
     ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
     UPGRADED FROM AN OLDER VERSION!
+ -- Add QOS name to the output of a partition in squeue/scontrol/sview/smap.
 
 * Changes in Slurm 15.08.0pre1
 ==============================

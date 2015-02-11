@@ -1459,6 +1459,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		    != SLURM_SUCCESS) {
 			error("update_part: invalid qos (%s) given",
 			      qos_rec.name);
+			error_code = ESLURM_INVALID_QOS;
 			part_ptr->qos_ptr = backup_qos_ptr;
 		} else {
 			xfree(part_ptr->qos_char);
