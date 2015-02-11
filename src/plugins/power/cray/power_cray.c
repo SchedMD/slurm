@@ -690,13 +690,13 @@ static void _level_power_by_job(void)
 			continue;
 		if (min_watts == max_watts)
 			continue;
+		ave_watts = total_watts / total_nodes;
 		if (debug_flag & DEBUG_FLAG_POWER) {
 			info("%s: leveling power caps for job %u "
 			     "(node_cnt:%u min:%u max:%u ave:%u)",
 			     __func__, job_ptr->job_id, total_nodes,
 			     min_watts, max_watts, ave_watts);
 		}
-		ave_watts = total_watts / total_nodes;
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
