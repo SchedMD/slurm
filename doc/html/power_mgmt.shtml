@@ -21,6 +21,9 @@ Note this functionality is distinct from Slurm's ability to
 <p>The following configuration parameters are available:
 <ul>
 
+<li><b>DebugFlags=power</b>:
+Enable plugin-specific logging messages.</li>
+
 <li><b>PowerParameters</b>:
 Defines power management behavior.
 Changes to this value take effect when the Slurm daemons are reconfigured.
@@ -56,6 +59,17 @@ Currently valid options are:
   maximum power consumption.
   The default value is 20 percent.
   Supported by the power/cray plugin.</li>
+<li><b>job_level</b> -
+  All compute nodes associated with every job will be assigned the same power
+  cap.
+  Nodes shared by multiple jobs with have a power cap different from other
+  nodes allocated to the individual jobs.
+  By default, this is configurable by the user for each job.</li>
+<li><b>job_no_level</b> -
+  Power caps are established independently for each compute node.
+  This disabled the "--power=level" option available in the job submission
+  commands.
+  By default, this is configurable by the user for each job.</li>
 <li><b>lower_threshold=#</b> -
   Specify a lower power consumption threshold.
   If a node's current power consumption is below this percentage of its current
@@ -100,6 +114,17 @@ or loading the capmc module:</p>
 <pre>
 $ module load capmc
 </pre>
+
+<h2>User and System Administrator Commands</h2>
+
+<p>Equal power caps for all nodes allocated to a job can be requested at job
+submission time by using the "--power=level" option with the salloc, sbatch
+or srun command.
+The system administrator can override the user option with the PowerParameters
+configuration parameter and the job_level or job_no_level option.</p>
+
+<p>The power consumption and power cap data are available for all compute nodes
+using either the "scontrol show node" or sview commands.</p>
 
 <h2>Example</h2>
 
@@ -162,12 +187,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
 <ul>
 <li>We need to determine how the current power consumption data is gathered
   and determine accuracy of that data.</li>
-<li>The current algorithm manages power on a per-node basis without considering
-  job allocations. Maintaining uniform power caps across all nodes associated
-  with each job might improve performance, but complicate the logic. One option
-  might be to add a job option of this sort "--power=equal" to indicate that
-  all nodes associated with a job should have the same power cap, even if their
-  power consumptions differ.</li>
 <li>Cray permits independent power capping for accelerators (GPUs or MICs),
   which is not currently used by Slurm.</li>
 <li>Current default values for configuration parameters should probably be
@@ -180,6 +199,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 January 2015</p>
+<p style="text-align:center;">Last modified 12 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
