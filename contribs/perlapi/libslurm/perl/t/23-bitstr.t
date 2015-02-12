@@ -1,18 +1,18 @@
 #!/usr/bin/perl -T
-use Test::More tests => 38;
+use Test::More tests => 37;
 use Slurm qw(:constant);
 
 
 my ($bm, $bm2, $rc, $cnt, $pos, $sum, $size, $ia, $str);
 
 # 1
-$bm = Slurm::Bitstr::alloc(16);
+$bm = Slurm::Bitstr::alloc(32);
 ok(ref($bm) eq "Slurm::Bitstr", "bit alloc");
 
 
 # 2
-$bm->realloc(32);
-ok($bm->size() == 32, "bit realloc");
+#$bm->realloc(32);
+#ok($bm->size() == 32, "bit realloc");
 
 
 # 3

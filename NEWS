@@ -126,6 +126,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.5
+==========================
+
 * Changes in Slurm 14.11.4
 ==========================
  -- Make sure assoc_mgr locks are initialized correctly.
@@ -186,6 +189,11 @@ documents those changes that are of interest to users and administrators.
     the maximum size of a job array into a variable in the job_mgr.c module.
  -- Fix fatal in controller when deleting a user association of a user which
     had been previously removed from the system.
+ -- MySQL - If a node state and reason are the same on a node state change
+    don't insert a new row in the event table.
+ -- Fix issue with "sreport cluster AccountUtilizationByUser" when using
+    PrivateData=users.
+ -- Fix perlapi tests for libslurm perl module.
 
 * Changes in Slurm 14.11.3
 ==========================

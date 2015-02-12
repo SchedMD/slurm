@@ -12,18 +12,23 @@ ok(defined $slurm,  "create slurm object with default configuration");
 
 
 # 2
+my %env = ('PATH' => $ENV{'PATH'});
 $job_desc = {
     min_nodes => 1,
     num_tasks => 1,
     user_id => $>,
+    group_id => $>,
     script => "#!/bin/sh\ntrap '/bin/true' SIGUSR1\nsrun sleep 1000\nsrun sleep 1000\nsrun sleep 1000\nsleep 1000",
     name => "perlapi_test",
-    stdout => "/dev/null",
-    stderr => "/dev/null",
+    std_out => "/dev/null",
+    std_err => "/dev/null",
+    work_dir => "/tmp",
+    environment => \%env,
 };
 $resp = $slurm->submit_batch_job($job_desc);
 ok($resp, "submit batch job") or diag ("submit_batch_job: " . $slurm->strerror());
 $jobid = $resp->{job_id} if $resp;
+sleep 2;
 
 
 # 3 - 6
