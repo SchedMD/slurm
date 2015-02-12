@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
     had been previously removed from the system.
  -- MySQL - If a node state and reason are the same on a node state change
     don't insert a new row in the event table.
+ -- Fix issue with "sreport cluster AccountUtilizationByUser" when using
+    PrivateData=users.
 
 * Changes in Slurm 14.11.3
 ==========================

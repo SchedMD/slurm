@@ -2011,12 +2011,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		while ((row = mysql_fetch_row(result))) {
 			if (set) {
 				xstrfmtcat(extra,
-					   " || (%s between lft and rgt)",
+					   " || (%s between t1.lft and t1.rgt)",
 					   row[0]);
 			} else {
 				set = 1;
 				xstrfmtcat(extra,
-					   " && ((%s between lft and rgt)",
+					   " && ((%s between t1.lft and t1.rgt)",
 					   row[0]);
 			}
 		}
