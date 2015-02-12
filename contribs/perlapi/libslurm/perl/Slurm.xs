@@ -2718,25 +2718,6 @@ slurm_bit_alloc(bitoff_t nbits)
 			XSRETURN_UNDEF;
 		}
 
-#
-# $bitmap->realloc($nbits);
-#
-void
-slurm_bit_realloc(IN_OUT bitstr_t *b, bitoff_t nbits)
-	PREINIT:
-		bitstr_t *nb;
-	CODE:
-		nb = slurm_bit_realloc(b, nbits);
-		if (nb) {
-			b = nb;
-		}
-		/*
-		 * This is tricky: we must increase the reference count of
-		 * the referenced SV(the pointer), or it will be destroyed
-		 * when setting to the new value.
-		 */
-		SvREFCNT_inc( SvRV(ST(0)) );
-
 bitstr_t *
 slurm_bit_copy(bitstr_t *b)
 	POSTCALL:

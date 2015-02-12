@@ -1344,16 +1344,16 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->srun_epilog);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->srun_port_range[0] != 0
-	    && slurm_ctl_conf_ptr->srun_port_range[1] != 0) {
-		key_pair = xmalloc(sizeof(config_key_pair_t));
-		key_pair->name = xstrdup("SrunPortRange");
-		key_pair->value = xmalloc(16 * sizeof(char));
-		sprintf(key_pair->value, "%u-%u",
-			slurm_ctl_conf_ptr->srun_port_range[0],
-			slurm_ctl_conf_ptr->srun_port_range[1]);
-		list_append(ret_list, key_pair);
-	}
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SrunPortRange");
+	key_pair->value = xstrdup_printf("%u-%u",
+			(slurm_ctl_conf_ptr->srun_port_range &&
+			 slurm_ctl_conf_ptr->srun_port_range[0] != 0) ?
+				slurm_ctl_conf_ptr->srun_port_range[0] : 0,
+			(slurm_ctl_conf_ptr->srun_port_range &&
+			 slurm_ctl_conf_ptr->srun_port_range[1] != 0) ?
+				slurm_ctl_conf_ptr->srun_port_range[1] : 0);
+	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SrunProlog");

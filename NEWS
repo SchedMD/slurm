@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
     don't insert a new row in the event table.
  -- Fix issue with "sreport cluster AccountUtilizationByUser" when using
     PrivateData=users.
+ -- Fix perlapi tests for libslurm perl module.
 
 * Changes in Slurm 14.11.3
 ==========================
