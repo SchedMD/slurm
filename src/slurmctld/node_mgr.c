@@ -1124,6 +1124,24 @@ void set_slurmd_addr (void)
 #endif
 }
 
+/* Return "true" if a node's state is already "new_state". This is more
+ * complex than simply comparing the state values due to flags (e.g.
+ * A node might be DOWN + NO_RESPOND or IDLE + DRAIN) */
+static bool
+_equivalent_node_state(struct node_record *node_ptr, uint32_t new_state)
+{
+	if (new_state == NO_VAL)	/* No change */
+		return true;
+	if ((new_state == NODE_STATE_DOWN)  && IS_NODE_DOWN(node_ptr))
+		return true;
+	if ((new_state == NODE_STATE_DRAIN) && IS_NODE_DRAIN(node_ptr))
+		return true;
+	if ((new_state == NODE_STATE_FAIL)  && IS_NODE_FAIL(node_ptr))
+		return true;
+	/* Other states might be added here */
+	return false;
+}
+
 /*
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
@@ -1190,7 +1208,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 
-		state_val = update_node_msg->node_state;
 		node_ptr = find_node_record (this_node_name);
 		node_inx = node_ptr - node_record_table_ptr;
 		if (node_ptr == NULL) {
@@ -1232,6 +1249,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 			if (update_node_msg->gres[0])
 				node_ptr->gres = xstrdup(update_node_msg->gres);
 			/* _update_node_gres() logs and updates config */
+		}
+
+		/* No accounting update if node state and reason are unchange */
+		state_val = update_node_msg->node_state;
+		if (_equivalent_node_state(node_ptr, state_val) &&
+		    !xstrcmp(node_ptr->reason, update_node_msg->reason)) {
+			free(this_node_name);
+			continue;
 		}
 
 		if ((update_node_msg -> reason) &&
