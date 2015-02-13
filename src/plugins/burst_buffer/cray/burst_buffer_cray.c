@@ -2337,7 +2337,7 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 	*num = json_object_array_length(jarray);
 	ents = xmalloc(*num * sizeof(struct bb_entry));
 
-	for (i = 0; i < *num; i++){
+	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_object(jvalue, &ents[i]);
 		/* Convert to GB
