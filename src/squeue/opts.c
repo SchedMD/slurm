@@ -1971,6 +1971,11 @@ _find_a_host(char *host, node_info_msg_t *node)
 	int cc;
 
 	for (cc = 0; cc < node->record_count; cc++) {
+		/* This can happen if the host is removed
+		 * fron DNS but still in slurm.conf
+		 */
+		if (node->node_array[cc].name == NULL)
+			continue;
 		if (strcmp(host, node->node_array[cc].name) == 0)
 			return true;
 	}

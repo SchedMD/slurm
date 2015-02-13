@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.5
 ==========================
+ -- Correct the squeue command taking into account that a node can
+    have NULL name if it is not in DNS but still in slurm.conf.
 
 * Changes in Slurm 14.11.4
 ==========================
