@@ -123,8 +123,22 @@ or srun command.
 The system administrator can override the user option with the PowerParameters
 configuration parameter and the job_level or job_no_level option.</p>
 
+<p>Specific minimum and maximum CPU frequency in addition to CPU governor may
+be requested at job submit time using the "--cpu-freq" option  with the salloc,
+sbatch or srun command. The frequency requested may be "low", "medium",
+"highm1" (second highest available frequency), "high" or a specific frequency
+(expressed as a KHz value). The governor specification may be "conservative",
+"ondemand", "performance" or "powersave". These values are user requests
+subject to system constraints. Some examples follow.</p>
+<pre>
+$ sbatch --cpu-freq=2400000-3000000 ...
+$ salloc --cpu-freq=powersave ...
+$ srun --cpu-freq=highm1 ...
+</pre>
+
 <p>The power consumption and power cap data are available for all compute nodes
-using either the "scontrol show node" or sview commands.</p>
+using either the "scontrol show node" or sview commands.
+Information available includes "CurrentWatts" and "CapWatts".</p>
 
 <h2>Example</h2>
 
@@ -199,6 +213,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 12 February 2015</p>
+<p style="text-align:center;">Last modified 13 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
