@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
+ -- CRAY - addition of acct_gather_energy/cray plugin
 
 * Changes in Slurm 15.08.0pre2
 ==============================
