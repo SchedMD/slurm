@@ -245,7 +245,7 @@ static bool _use_local_device_index(void)
 extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 {
 	int i, len, local_inx = 0;
-	char *dev_list = NULL;
+	char *global_list = NULL, *local_list = NULL;
 	gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
 	bool use_local_dev_index = _use_local_device_index();
 
@@ -257,17 +257,26 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 		for (i = 0; i < len; i++) {
 			if (!bit_test(gres_job_ptr->gres_bit_alloc[0], i))
 				continue;
-			if (!dev_list)
-				dev_list = xmalloc(128);
-			else
-				xstrcat(dev_list, ",");
+			if (!global_list) {
+				global_list = xmalloc(128);
+				local_list  = xmalloc(128);
+			} else {
+				xstrcat(global_list, ",");
+				xstrcat(local_list,  ",");
+			}
 			if (use_local_dev_index) {
-				xstrfmtcat(dev_list, "%d", local_inx++);
+				xstrfmtcat(local_list, "%d", local_inx++);
 			} else if (gpu_devices && (i < nb_available_files) &&
 				  (gpu_devices[i] >= 0)) {
-				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
+				xstrfmtcat(local_list, "%d", gpu_devices[i]);
 			} else {
-				xstrfmtcat(dev_list, "%d", i);
+				xstrfmtcat(local_list, "%d", i);
+			}
+			if (gpu_devices && (i < nb_available_files) &&
+			    (gpu_devices[i] >= 0)) {
+				xstrfmtcat(global_list, "%d", gpu_devices[i]);
+			} else {
+				xstrfmtcat(global_list, "%d", i);
 			}
 		}
 	} else if (gres_job_ptr && (gres_job_ptr->gres_cnt_alloc > 0)) {
@@ -276,15 +285,19 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
 	} else {
-		xstrcat(dev_list, "NoDevFiles");
+		xstrcat(local_list, "NoDevFiles");
 	}
 
-	if (dev_list) {
+	if (global_list) {
+		env_array_overwrite(job_env_ptr,"SLURM_JOB_GPUS", global_list);
+		xfree(global_list);
+	}
+	if (local_list) {
 		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
-				    dev_list);
+				    local_list);
 		env_array_overwrite(job_env_ptr,"GPU_DEVICE_ORDINAL",
-				    dev_list);
-		xfree(dev_list);
+				    local_list);
+		xfree(local_list);
 	}
 }
 

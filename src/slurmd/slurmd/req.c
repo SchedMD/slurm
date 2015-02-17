@@ -187,7 +187,7 @@ static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_epilog(job_env_t *job_env);
-static int  _run_prolog(job_env_t *job_env);
+static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 static void _rpc_forward_data(slurm_msg_t *msg);
 
 
@@ -1176,7 +1176,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-		rc =  _run_prolog(&job_env);
+		rc =  _run_prolog(&job_env, req->cred);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -1523,7 +1523,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-		rc = _run_prolog(&job_env);
+		rc = _run_prolog(&job_env, NULL);
 
 		if (rc) {
 			int term_sig, exit_status;
@@ -1627,7 +1627,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 #endif
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
-		rc = _run_prolog(&job_env);
+		rc = _run_prolog(&job_env, req->cred);
 		xfree(job_env.resv_id);
 		if (rc) {
 			int term_sig, exit_status;
@@ -4792,13 +4792,13 @@ static int _run_job_script(const char *name, const char *path,
 #ifdef HAVE_BG
 /* a slow prolog is expected on bluegene systems */
 static int
-_run_prolog(job_env_t *job_env)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	int rc;
 	char *my_prolog;
 	char **my_env;
 
-	my_env = _build_env(job_env);
+	my_env = _build_env(job_env);//
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -4852,7 +4852,7 @@ static void *_prolog_timer(void *x)
 }
 
 static int
-_run_prolog(job_env_t *job_env)
+_run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
 	int rc, diff_time;
@@ -4866,9 +4866,17 @@ _run_prolog(job_env_t *job_env)
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
 	char **my_env;
+	List job_gres_list = NULL, step_gres_list = NULL;
 
 	my_env = _build_env(job_env);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
+	if (cred) {
+		get_cred_gres(cred, conf->node_name, &job_gres_list,
+			      &step_gres_list);
+		gres_plugin_job_set_env(&my_env, job_gres_list);
+		FREE_NULL_LIST(job_gres_list);
+		FREE_NULL_LIST(step_gres_list);
+	}
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
