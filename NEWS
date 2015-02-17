@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     have NULL name if it is not in DNS but still in slurm.conf.
  -- Fix slurmdbd regression which would cause a segfault when a node is set
     down with no reason.
+ -- BGQ - Fix issue with job arrays not being handled correctly
+    in the runjob_mux plugin.
 
 * Changes in Slurm 14.11.4
 ==========================
