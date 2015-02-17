@@ -553,6 +553,12 @@ static void _json_parse_capabilities(json_object *jobj,
 	}
 }
 
+/* Gather current node power consumption rate. This logic gathers the
+ * information using Cray's capmc command. An alternative would be to use
+ * Slurm's energy plugin, but that would require additional synchronization
+ * logic be developed. Specifically we would operate on the node's energy
+ * data after current data is collected, which happens across all compute
+ * nodes with a frequency of AcctGatherNodeFreq. */
 static void _get_node_energy_counter(void)
 {
 	static time_t last_timer = 0;
@@ -739,7 +745,6 @@ extern void *_power_agent(void *args)
 
 	last_balance_time = time(NULL);
 	while (!stop_power) {
-//FIXME: Synchronize with AcctGatherNodeFreq data collection
 		_my_sleep(1);
 		if (stop_power)
 			break;
