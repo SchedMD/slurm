@@ -84,13 +84,15 @@ int node_record_count = 0;
 #endif
 
 typedef struct power_config_nodes {
-	uint32_t cap_watts_max; /* cap on power consumption by node, in watts */
-	uint32_t cap_watts_min; /* cap on power consumption by node, in watts */
-	uint64_t joule_counter;	/* total energy consumption by node, in joules */
-	uint32_t max_watts;     /* maximum power consumption by node, in watts */
-	uint32_t min_watts;     /* minimum power consumption by node, in watts */
-	int node_cnt;		/* length of node_name array */
-	char **node_name;	/* Node names (nid range list values on Cray) */
+	uint32_t accel_max_watts; /* maximum power consumption by accel, in watts */
+	uint32_t accel_min_watts; /* minimum power consumption by accel, in watts */
+	uint32_t cap_watts_max;   /* cap on power consumption by node, in watts */
+	uint32_t cap_watts_min;   /* cap on power consumption by node, in watts */
+	uint64_t joule_counter;	  /* total energy consumption by node, in joules */
+	uint32_t node_max_watts;  /* maximum power consumption by node, in watts */
+	uint32_t node_min_watts;  /* minimum power consumption by node, in watts */
+	int node_cnt;		  /* length of node_name array */
+	char **node_name;	  /* Node names (nid range list values on Cray) */
 } power_config_nodes_t;
 
 /*
@@ -277,12 +279,13 @@ static void _get_capabilities(void)
 	/* Write nodes */
 	slurmctld_lock_t write_locks = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-	char *cmd_resp, *script_argv[3];
+	char *cmd_resp, *script_argv[3], node_names[128];
 	power_config_nodes_t *ents;
 	int i, j, num_ent = 0, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
 	struct node_record *node_ptr;
+	hostlist_t hl;
 	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;
@@ -311,19 +314,25 @@ static void _get_capabilities(void)
 		return;
 	}
 	json_object_object_foreachC(j_obj, iter) {
-		ents = _json_parse_array_capabilities(j_obj, iter.key, &num_ent);
-break;//FIXME: Why does this work?
+		/* NOTE: The error number "e" and message "err_msg" fields
+		 * are currently ignored. */
+		if (!strcmp(iter.key, "groups")) {
+			ents = _json_parse_array_capabilities(j_obj, iter.key,
+							      &num_ent);
+			break;
+		}
 	}
 	json_object_put(j_obj);	/* Frees json memory */
+//FIXME: Test for memory leaks
 
 	lock_slurmctld(write_locks);
 	for (i = 0; i < num_ent; i++) {
+		if (debug_flag & DEBUG_FLAG_POWER)
+			hl = hostlist_create(NULL);
 		for (j = 0; j < ents[i].node_cnt; j++) {
-info("Node=%s caps:%u-%u avail:%u-%u", ents[i].node_name[j],
-ents[i].cap_watts_min, ents[i].cap_watts_max,
-ents[i].min_watts, ents[i].max_watts);
-//FIXME: Add function that does not print error if not found. Login and service nodes will be returned
-			node_ptr = find_node_record(ents[i].node_name[j]);
+			if (debug_flag & DEBUG_FLAG_POWER)
+				hostlist_push_host(hl, ents[i].node_name[j]);
+			node_ptr = find_node_record2(ents[i].node_name[j]);
 			if (!node_ptr) {
 				debug("%s: Node %s not in Slurm config",
 				      __func__, ents[i].node_name[j]);
@@ -332,13 +341,27 @@ ents[i].min_watts, ents[i].max_watts);
 					node_ptr->power =
 						xmalloc(sizeof(power_mgmt_data_t));
 				}
-				node_ptr->power->cap_watts = ents[i].cap_watts_max;
-				node_ptr->power->max_watts = ents[i].max_watts;
-				node_ptr->power->min_watts = ents[i].min_watts;
+				node_ptr->power->cap_watts =
+					ents[i].cap_watts_max;
+				node_ptr->power->max_watts =
+					ents[i].node_max_watts;
+				node_ptr->power->min_watts =
+					ents[i].node_min_watts;
 			}
 			xfree(ents[i].node_name[j]);
 		}
 		xfree(ents[i].node_name);
+		if (debug_flag & DEBUG_FLAG_POWER) {
+			hostlist_ranged_string(hl, sizeof(node_names),
+					       node_names);
+			info("CapWatts:%3.3u-%3.3u AccelWattsAvail:%3.3u-%3.3u "
+			     "NodeWattsAvail:%3.3u-%3.3u Nodes=%s",
+			     ents[i].cap_watts_min, ents[i].cap_watts_max,
+			     ents[i].accel_min_watts, ents[i].accel_max_watts,
+			     ents[i].node_min_watts, ents[i].node_max_watts,
+			     node_names);
+			hostlist_destroy(hl);
+		}
 	}
 	xfree(ents);
 	unlock_slurmctld(write_locks);
@@ -369,13 +392,96 @@ _json_parse_array_capabilities(json_object *jobj, char *key, int *num)
 	return ents;
 }
 
+/* Parse a "controls" array element from the "capmc get_power_cap_capabilities"
+ * command. Identifies node and accelerator power ranges. */
+static void _parse_control(json_object *j_control, power_config_nodes_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	const char *p = NULL;
+	int min_watts = 0, max_watts = 0, x;
+
+	json_object_object_foreachC(j_control, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+//				info("%s: Key boolean %s", __func__, iter.key);
+				break;
+			case json_type_double:
+//				info("%s: Key double %s", __func__, iter.key);
+				break;
+			case json_type_null:
+//				info("%s: Key null %s", __func__, iter.key);
+				break;
+			case json_type_object:
+//				info("%s: Key object %s", __func__, iter.key);
+				break;
+			case json_type_array:
+//				info("%s: Key array %s", __func__, iter.key);
+				break;
+			case json_type_string:
+//				info("Key string %s", __func__, iter.key);
+				if (!strcmp(iter.key, "name"))
+					p = json_object_get_string(iter.val);
+				break;
+			case json_type_int:
+//				info("%s: Key int %s", __func__, iter.key);
+				x = json_object_get_int64(iter.val);
+				if (!strcmp(iter.key, "max"))
+					max_watts = x;
+				else if (!strcmp(iter.key, "min"))
+					min_watts = x;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (p) {
+		if (!strcmp(p, "accel")) {
+			ent->accel_max_watts = max_watts;
+			ent->accel_min_watts = min_watts;
+		} else if (!strcmp(p, "node")) {
+			ent->node_max_watts = max_watts;
+			ent->node_min_watts = min_watts;
+		}
+	}
+}
+
+/* Parse the "controls" array from the "capmc get_power_cap_capabilities"
+ * command. Use _parse_control() to get node and accelerator power ranges. */
+static void _parse_controls(json_object *j_control, power_config_nodes_t *ent)
+{
+	json_object *j_array = NULL;
+	json_object *j_value;
+	enum json_type j_type;
+	int control_cnt, i;
+
+        json_object_object_get_ex(j_control, "controls", &j_array);
+	if (!j_array) {
+		error("%s: Unable to parse controls specification", __func__);
+		return;
+	}
+	control_cnt = json_object_array_length(j_array);
+	for (i = 0; i < control_cnt; i++) {
+		j_value = json_object_array_get_idx(j_array, i);
+		j_type = json_object_get_type(j_value);
+		if (j_type == json_type_object) {
+			_parse_control(j_value, ent);
+		} else {
+			error("%s: Unexpected data type: %d", __func__, j_type);
+		}
+	}
+}
+
+/* Parse the "nids" array from the "capmc get_power_cap_capabilities"
+ * command. Identifies each node ID with identical power specifications. */
 static void _parse_nids(json_object *jobj, power_config_nodes_t *ent)
 {
 	json_object *j_array = NULL;
 	json_object *j_value;
 	enum json_type j_type;
-	int nid;
-	int i;
+	int i, nid;
 
         json_object_object_get_ex(jobj, "nids", &j_array);
 	if (!j_array) {
@@ -396,6 +502,9 @@ static void _parse_nids(json_object *jobj, power_config_nodes_t *ent)
 	}
 }
 
+/* Parse a "groups" array element from the "capmc get_power_cap_capabilities"
+ * command. Use _parse_controls() and _parse_nids() to get node and accelerator
+ * power ranges for each node. */
 static void _json_parse_capabilities(json_object *jobj,
 				     power_config_nodes_t *ent)
 {
@@ -407,40 +516,38 @@ static void _json_parse_capabilities(json_object *jobj,
 		type = json_object_get_type(iter.val);
 		switch (type) {
 			case json_type_boolean:
-//				info("Key boolean %s", iter.key);
+//				info("%s: Key boolean %s", __func__, iter.key);
 				break;
 			case json_type_double:
-//				info("Key double %s", iter.key);
+//				info("%s: Key double %s", __func__, iter.key);
 				break;
 			case json_type_null:
-//				info("Key null %s", iter.key);
+//				info("%s: Key null %s", __func__, iter.key);
 				break;
 			case json_type_object:
-//				info("Key object %s", iter.key);
+//				info("%s: Key object %s", __func__, iter.key);
+				break;
+			case json_type_string:
+//				info("%s: Key string %s", __func__, iter.key);
 				break;
 			case json_type_array:
-//				info("Key array %s", iter.key);
+//				info("%s: Key array %s", __func__, iter.key);
 				if (!strcmp(iter.key, "controls")) {
-					/* TBD */
+					_parse_controls(jobj, ent);
 				} else if (!strcmp(iter.key, "nids")) {
 					_parse_nids(jobj, ent);
 				}
 				break;
 			case json_type_int:
-//				info("Key int %s", iter.key);
+//				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
 				if (!strcmp(iter.key, "host_limit_min")) {
 					ent->cap_watts_min = x;
 				} else if (!strcmp(iter.key, "host_limit_max")){
 					ent->cap_watts_max = x;
-				} else if (!strcmp(iter.key, "max")) {
-					ent->max_watts = x;
-				} else if (!strcmp(iter.key, "min")) {
-					ent->min_watts = x;
 				}
 				break;
-			case json_type_string:
-//				info("Key string %s", iter.key);
+			default:
 				break;
 		}
 	}
