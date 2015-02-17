@@ -85,6 +85,7 @@ expect {
 if {$authorized == 0} {
 	send_user "\nWARNING: You are not authorized to run this test\n"
 	cancel_job $job_id
+	exec rm -f $file_in $file_out $file_err
 	exit 0
 }
 cancel_job $job_id
