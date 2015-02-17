@@ -134,6 +134,12 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Correct the squeue command taking into account that a node can
     have NULL name if it is not in DNS but still in slurm.conf.
+ -- Fix slurmdbd regression which would cause a segfault when a node is set
+    down with no reason.
+ -- BGQ - Fix issue with job arrays not being handled correctly
+    in the runjob_mux plugin.
+ -- Print FAIR_TREE, if configured, in "scontrol show config" output for
+    PriorityFlags.
 
 * Changes in Slurm 14.11.4
 ==========================

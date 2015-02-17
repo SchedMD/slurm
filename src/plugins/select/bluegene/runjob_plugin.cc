@@ -239,9 +239,36 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 			+ "."
 			+ boost::lexical_cast<std::string>(runjob_job->step_id);
 		goto deny_job;
-	}
+	} else if (step_resp->job_step_count > 1) {
+		uint32_t i;
 
-	step_ptr = &step_resp->job_steps[0];
+		found = 0;
+		for (i = 0, step_ptr = step_resp->job_steps;
+		     i < step_resp->job_step_count; i++, step_ptr++) {
+			if ((uint32_t)runjob_job->job_id == step_ptr->job_id) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			message = "Couldn't get job array task from response!";
+			goto deny_job;
+		}
+	} else
+		step_ptr = &step_resp->job_steps[0];
+
+	if ((uint32_t)runjob_job->job_id != step_ptr->job_id) {
+		message = "Step returned is for a different job "
+			+ boost::lexical_cast<std::string>(step_ptr->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(step_ptr->step_id)
+			+ " != "
+			+ boost::lexical_cast<std::string>(runjob_job->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(runjob_job->step_id);
+		goto deny_job;
+	}
 
 	/* A bit of verification to make sure this is the correct user
 	   supposed to be running.
