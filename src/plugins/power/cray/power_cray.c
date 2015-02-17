@@ -734,7 +734,6 @@ extern void *_power_agent(void *args)
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-//	List job_power_list;	/* For possible future enhancement */
 	List node_power_list = NULL;
 	uint32_t alloc_watts = 0, used_watts = 0;
 
@@ -755,18 +754,15 @@ extern void *_power_agent(void *args)
 			/* Read node min/max power every 10 mins */
 			_get_capabilities();	/* Has node write lock */
 		}
-exit(0);
 		_get_node_energy_counter();	/* Has node write lock */
 		lock_slurmctld(read_locks);
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
-//		job_power_list = get_job_power(job_list, node_record_table_ptr);
 		if (cap_watts == 0)
 			node_power_list = _clear_node_caps();
 		else
 			node_power_list = _rebalance_node_power();
 		unlock_slurmctld(read_locks);
-//		FREE_NULL_LIST(job_power_list);
 		_set_power_caps(node_power_list);
 		FREE_NULL_LIST(node_power_list);
 		last_balance_time = time(NULL);
