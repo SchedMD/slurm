@@ -17,9 +17,9 @@ This support is provided using a plugin mechanism so that a various burst
 buffer infrastructures may be easily configured.
 Two plugins are provided initially:</p>
 <ol>
-<li>cray - Uses Cray APIs to perform underlying management functions</li>
-<li>generic - Uses system administrator defined scripts to perform underlying
-management functions</li>
+<li><b>cray</b> - Uses Cray APIs to perform underlying management functions</li>
+<li><b>generic</b> - Uses system administrator defined scripts to perform
+underlying management functions</li>
 </ol>
 <p>Additional plugins may be provided in future releases of Slurm.</p>
 
@@ -97,11 +97,14 @@ StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 <p>All of the job submission commands (<i>salloc</i>, <i>sbatch</i> and
 <i>srun</i>) accept a "--bb" option to identify burst buffer requirements
 by the job.
-The format of "--bb" options is dependent upon the plugin and may identify
-the burst buffer size requirements, files to be staged, etc. (e.g.
-<i>sbatch --bb=size=10tb my.bash</i>).
-Batch jobs can also identify burst buffer options using a prefix of "#BB" in
-the batch script.</p>
+The normal mode of operation is for batch jobs to specify burst buffer
+requirements within the batch script rather than using the "--bb" option.
+Batch script lines containing a prefix of "#BB" identify the job's burst buffer
+space requirements, files to be staged in, files to be staged out, etc.
+Interactive jobs (those submitted using the <i>salloc</i> and <i>srun</i>
+commands) can specify their burst buffer space requirements using the "--bb"
+option, but staging of jobs before and after the resource allocation is not
+supported (e.g. <i>srun --bb=size=10tb my.bash</i>).</p>
 
 <h3>User Options for Generic Plugin</h3>
 
@@ -109,7 +112,11 @@ the batch script.</p>
 
 <h3>User Options for Cray Plugin</h3>
 
-<p>TBD</p>
+<p>Note that the normal Slurm job submission commands are used (i.e.
+<i>salloc</i>, <i>sbatch</i> and <i>srun</i>).
+The burst buffer options in the batch script, identified with a prefix of "#BB",
+are passed to Cray software for processing.
+See the Cray documentation for details about those options.</p>
 
 <h2>Status Commands</h2>
 
@@ -163,6 +170,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 15 January 2015</p>
+<p style="text-align:center;">Last modified 17 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
