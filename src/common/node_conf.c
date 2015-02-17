@@ -98,8 +98,10 @@ static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
-static struct node_record *_find_alias_node_record (char *name);
-static struct node_record *_find_node_record (char *name, bool test_alias);
+static struct node_record *
+		_find_alias_node_record(char *name, bool log_missing);
+static struct node_record *
+		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static void	_list_delete_feature (void *feature_entry);
 static int	_list_find_config (void *config_entry, void *key);
@@ -354,18 +356,17 @@ static void _dump_hash (void)
 /*
  * _find_alias_node_record - find a record for node with the alias of
  * the specified name supplied
- * input: name - name to be aliased of the desired node
- * output: return pointer to node record or NULL if not found
- * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - xhash struct indexing node records per name
+ * IN: name - name to be aliased of the desired node
+ * IN: log_missing - if set, then print an error message if the node is not found
+ * OUT: return pointer to node record or NULL if not found
  */
-static struct node_record *_find_alias_node_record (char *name)
+static struct node_record *_find_alias_node_record(char *name, bool log_missing)
 {
 	int i;
 	char *alias = NULL;
 
 	if ((name == NULL) || (name[0] == '\0')) {
-		info("_find_alias_node_record: passed NULL name");
+		info("%s: passed NULL name", __func__);
 		return NULL;
 	}
 	/* Get the alias we have just to make sure the user isn't
@@ -388,7 +389,9 @@ static struct node_record *_find_alias_node_record (char *name)
 			xfree(alias);
 			return node_ptr;
 		}
-		error ("_find_alias_node_record: lookup failure for %s", name);
+
+		if (log_missing)
+			error("%s: lookup failure for %s", __func__, name);
 	}
 
 	/* revert to sequential search */
@@ -810,19 +813,33 @@ extern struct node_record *create_node_record (
  * find_node_record - find a record for node with specified name
  * IN: name - name of the desired node
  * RET: pointer to node record or NULL if not found
+ * NOTE: Logs an error if the node name is NOT found
  */
 extern struct node_record *find_node_record (char *name)
 {
-	return _find_node_record(name, true);
+	return _find_node_record(name, true, true);
+}
+
+/*
+ * find_node_record2 - find a record for node with specified name
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
+ * NOTE: Does not log an error if the node name is NOT found
+ */
+extern struct node_record *find_node_record2 (char *name)
+{
+	return _find_node_record(name, true, false);
 }
 
 /*
  * _find_node_record - find a record for node with specified name
  * IN: name - name of the desired node
  * IN: test_alias - if set, also test NodeHostName value
+ * IN: log_missing - if set, then print an error message if the node is not found
  * RET: pointer to node record or NULL if not found
  */
-static struct node_record *_find_node_record (char *name, bool test_alias)
+static struct node_record *_find_node_record (char *name, bool test_alias,
+					      bool log_missing)
 {
 	int i;
 	struct node_record *node_ptr;
@@ -845,7 +862,8 @@ static struct node_record *_find_node_record (char *name, bool test_alias)
 		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
 			return (&node_record_table_ptr[0]);
 
-		error ("find_node_record: lookup failure for %s", name);
+		if (log_missing)
+			error ("find_node_record: lookup failure for %s", name);
 	}
 	/* revert to sequential search */
 	else {
@@ -859,7 +877,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias)
 	if (test_alias) {
 		/* look for the alias node record if the user put this in
 	 	 * instead of what slurm sees the node name as */
-	 	return _find_alias_node_record (name);
+		return _find_alias_node_record(name, log_missing);
 	}
 	return NULL;
 }
@@ -964,7 +982,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		struct node_record *node_ptr;
-		node_ptr = _find_node_record(this_node_name, best_effort);
+		node_ptr = _find_node_record(this_node_name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
 							node_record_table_ptr));
@@ -1002,7 +1020,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi)) != NULL) {
 		struct node_record *node_ptr;
-		node_ptr = _find_node_record(name, best_effort);
+		node_ptr = _find_node_record(name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
 							node_record_table_ptr));

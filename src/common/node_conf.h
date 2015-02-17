@@ -254,11 +254,19 @@ extern struct node_record *create_node_record (
 
 /*
  * find_node_record - find a record for node with specified name
- * input: name - name of the desired node
- * output: return pointer to node record or NULL if not found
- *         node_hash_table - table of hash indexes
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
+ * NOTE: Logs an error if the node name is NOT found
  */
 extern struct node_record *find_node_record (char *name);
+
+/*
+ * find_node_record2 - find a record for node with specified name
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
+ * NOTE: Does not log an error if the node name is NOT found
+ */
+extern struct node_record *find_node_record2 (char *name);
 
 /*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
