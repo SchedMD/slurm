@@ -258,6 +258,18 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 	} else
 		step_ptr = &step_resp->job_steps[0];
 
+	if ((uint32_t)runjob_job->job_id != step_ptr->job_id) {
+		message = "Step returned is for a different job "
+			+ boost::lexical_cast<std::string>(step_ptr->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(step_ptr->step_id)
+			+ " != "
+			+ boost::lexical_cast<std::string>(runjob_job->job_id)
+			+ "."
+			+ boost::lexical_cast<std::string>(runjob_job->step_id);
+		goto deny_job;
+	}
+
 	/* A bit of verification to make sure this is the correct user
 	   supposed to be running.
 	*/
