@@ -1672,6 +1672,11 @@ extern char *priority_flags_string(uint16_t priority_flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "DEPTH_OBLIVIOUS");
 	}
+	if (priority_flags & PRIORITY_FLAGS_FAIR_TREE) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "FAIR_TREE");
+	}
 
 	return flag_str;
 }
