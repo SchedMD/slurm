@@ -491,6 +491,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->boards_per_node);
 	} else if (!strcmp(name, "burst_buffer")) {
 		lua_pushstring (L, job_desc->burst_buffer);
+	} else if (!strcmp(name, "clusters")) {
+		lua_pushstring (L, job_desc->clusters);
 	} else if (!strcmp(name, "comment")) {
 		lua_pushstring (L, job_desc->comment);
 	} else if (!strcmp(name, "contiguous")) {
@@ -545,6 +547,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->num_tasks);
 	} else if (!strcmp(name, "partition")) {
 		lua_pushstring (L, job_desc->partition);
+	} else if (!strcmp(name, "power_flags")) {
+		lua_pushnumber (L, job_desc->power_flags);
 	} else if (!strcmp(name, "pn_min_cpus")) {
 		lua_pushnumber (L, job_desc->pn_min_cpus);
 	} else if (!strcmp(name, "pn_min_memory")) {
@@ -567,6 +571,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->script);
 	} else if (!strcmp(name, "shared")) {
 		lua_pushnumber (L, job_desc->shared);
+	} else if (!strcmp(name, "sicp_mode")) {
+		lua_pushnumber (L, job_desc->sicp_mode);
 	} else if (!strcmp(name, "sockets_per_board")) {
 		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else if (!strcmp(name, "sockets_per_node")) {
@@ -650,6 +656,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->burst_buffer);
 		if (strlen(value_str))
 			job_desc->burst_buffer = xstrdup(value_str);
+	} else if (!strcmp(name, "clusters")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->clusters);
+		if (strlen(value_str))
+			job_desc->clusters = xstrdup(value_str);
 	} else if (!strcmp(name, "comment")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->comment);
@@ -720,6 +731,8 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->partition);
 		if (strlen(value_str))
 			job_desc->partition = xstrdup(value_str);
+	} else if (!strcmp(name, "power_flags")) {
+		job_desc->power_flags = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "pn_min_cpus")) {
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "pn_min_memory")) {
@@ -754,6 +767,8 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->script = xstrdup(value_str);
 	} else if (!strcmp(name, "shared")) {
 		job_desc->shared = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "sicp_mode")) {
+		job_desc->sicp_mode = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		job_desc->sockets_per_node = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "std_err")) {

@@ -139,7 +139,7 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
- -- Added the following fields to struct struct job_descriptor
+ -- Added the following fields to struct job_descriptor
     clusters, cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
  -- Added the following fields to struct job_info
     cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
