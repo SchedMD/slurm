@@ -492,11 +492,11 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
 
-	/* step_hset can be NULL for batch scripts, OR if the user is
-	 * the SlurmUser, and the job credential did not validate in
-	 * _check_job_credential.  If the job credential did not validate,
-	 * then it did not come from the controller and there is no reason
-	 * to send step completion messages to the controller.
+	/* step_hset can be NULL for batch scripts OR if the job was submitted
+	 * by SlurmUser or root using the --no-allocate/-Z option and the job
+	 * job credential validation by _check_job_credential() failed. If the
+	 * job credential did not validate, then it did not come from slurmctld
+	 * and there is no reason to send step completion messages to slurmctld.
 	 */
 	if (step_hset == NULL) {
 		if (type == LAUNCH_TASKS) {
