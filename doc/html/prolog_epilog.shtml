@@ -305,6 +305,100 @@ follows:<br>
 <i>unset name</i> clears an environment variable from the user task<br>
 <i>print ...</i> writes to the task's standard output.</p>
 
+<p>Unless otherwise specified, these environment variables are available
+to all of the programs.</p>
+<ul>
+<li><b>BASIL_RESERVATION_ID</b>
+Basil reservation ID.
+Available on Cray systems with ALPS only.</li>
+
+<li><b>MPIRUN_PARTITION</b>
+BlueGene partition name.
+Available on BlueGene systems only.</li>
+
+<li><b>SLURM_ARRAY_JOB_ID</b>
+If this job is part of a job array, this will be set to the job ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
+(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_ARRAY_TASK_ID</b>
+If this job is part of a job array, this will be set to the task ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
+(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_CLUSTER_NAME</b>
+Name of the cluster executing the job.</li>
+
+<li><b>SLURM_JOB_GPUS</b>
+GPU IDs allocated to the job (if any).
+Available in the Prolog only.</li>
+
+<li><b>SLURM_JOB_ACCOUNT</b>
+Account name used for the job.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_CONSTRAINTS</b>
+Features required to run the job.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_DERIVED_EC</b>
+The highest exit code of all of the job steps.
+Available in EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_EXIT_CODE</b>
+The exit code of the job script (or salloc). The value is the status
+as returned by the wait() system call (See wait(2))
+Available in EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_EXIT_CODE2</b>
+The exit code of the job script (or salloc). The value has the format
+<exit>:<sig>. The first number is the exit code, typically as set by the
+exit() function. The second number of the signal that caused the process to
+terminante if it was terminated by a signal.
+Available in EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_GID</b>
+Group ID of the job's owner.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_GROUP</b>
+Group name of the job's owner.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_ID</b>
+Job ID.
+CAUTION: If this job is the first task of a job array, then Slurm commands using
+this job ID will refer to the entire job array rather than this specific task
+of the job array.</li>
+
+<li><b>SLURM_JOB_NAME</b>
+Name of the job.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_NODELIST</b>
+Nodes assigned to job. A SLURM hostlist expression.
+"scontrol show hostnames" can be used to convert this to a
+list of individual host names.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_PARTITION</b>
+Partition that job runs in.
+Available in Prolog, PrologSlurmctld and EpilogSlurmctld
+only.</li>
+
+<li><b>SLURM_JOB_UID</b>
+User ID of the job's owner.</li>
+
+<li><b>SLURM_JOB_USER</b>
+User name of the job's owner.</li>
+</ul>
+
 <p>Plugins functions are may also be useful to execute logic at various well
 defined points.</p>
 
@@ -327,6 +421,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 10 November 2014</p>
+<p style="text-align:center;">Last modified 17 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
