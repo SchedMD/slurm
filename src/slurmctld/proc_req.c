@@ -929,6 +929,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
 
+	cred_arg.job_constraints = job_ptr->details->features;
 	cred_arg.job_core_bitmap = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec   = job_ptr->details->core_spec;
 	cred_arg.job_hostlist    = job_resrcs_ptr->nodes;

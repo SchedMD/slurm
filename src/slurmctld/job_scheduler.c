@@ -1796,6 +1796,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
 
+	cred_arg.job_constraints     = job_ptr->details->features;
 	cred_arg.job_hostlist        = job_resrcs_ptr->nodes;
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;

@@ -345,7 +345,7 @@ Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_CONSTRAINTS</b>
 Features required to run the job.
-Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+Available in Prolog, PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_DERIVED_EC</b>
 The highest exit code of all of the job steps.
@@ -421,6 +421,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 17 February 2015</p>
+<p style="text-align:center;">Last modified 18 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

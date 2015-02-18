@@ -4782,7 +4782,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	char *my_prolog;
 	char **my_env;
 
-	my_env = _build_env(job_env);//
+	my_env = _build_env(job_env);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -4850,16 +4850,16 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	timer_struct_t  timer_struct;
 	bool prolog_fini = false;
 	char **my_env;
-	List job_gres_list = NULL, step_gres_list = NULL;
 
 	my_env = _build_env(job_env);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 	if (cred) {
-		get_cred_gres(cred, conf->node_name, &job_gres_list,
-			      &step_gres_list);
-		gres_plugin_job_set_env(&my_env, job_gres_list);
-		FREE_NULL_LIST(job_gres_list);
-		FREE_NULL_LIST(step_gres_list);
+		slurm_cred_arg_t cred_arg;
+		slurm_cred_get_args(cred, &cred_arg);
+		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
+			cred_arg.job_constraints);
+		gres_plugin_job_set_env(&my_env, cred_arg.job_gres_list);
+		slurm_cred_free_args(&cred_arg);
 	}
 
 	if (msg_timeout == 0)

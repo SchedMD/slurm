@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job credential to "Run Prolog" RPC used with a configuration of
     PrologFlags=alloc. This allows the Prolog to be passed identification of
     GPUs allocated to the job.
+ -- Add SLURM_JOB_CONSTAINTS to environment variables available to the Prolog.
 
 * Changes in Slurm 15.08.0pre2
 ==============================

@@ -1997,6 +1997,7 @@ static void _launch_prolog(struct job_record *job_ptr)
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 	cred_arg.job_gres_list   = job_ptr->gres_list;
 	cred_arg.job_nhosts      = job_ptr->job_resrcs->nhosts;
+	cred_arg.job_constraints = job_ptr->details->features;
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	cred_arg.job_hostlist   = job_ptr->batch_host;
