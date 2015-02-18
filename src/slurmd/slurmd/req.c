@@ -1530,7 +1530,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.resv_id = select_g_select_jobinfo_xstrdup(
 			req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
-		rc = _run_prolog(&job_env, NULL);
+		rc = _run_prolog(&job_env, req->cred);
 
 		if (rc) {
 			int term_sig, exit_status;

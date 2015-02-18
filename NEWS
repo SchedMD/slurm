@@ -3,7 +3,10 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
- -- CRAY - addition of acct_gather_energy/cray plugin
+ -- CRAY - addition of acct_gather_energy/cray plugin.
+ -- Add job credential to "Run Prolog" RPC used with a configuration of
+    PrologFlags=alloc. This allows the Prolog to be passed identification of
+    GPUs allocated to the job.
 
 * Changes in Slurm 15.08.0pre2
 ==============================

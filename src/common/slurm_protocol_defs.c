@@ -627,6 +627,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		for (i = 0; i < msg->spank_job_env_size; i++)
 			xfree(msg->spank_job_env[i]);
 		xfree(msg->spank_job_env);
+		slurm_cred_destroy(msg->cred);
 
 		xfree(msg);
 	}

@@ -854,6 +854,7 @@ typedef struct prolog_launch_msg {
 	char **spank_job_env;	/* SPANK job environment variables */
 	uint32_t spank_job_env_size;			/* size of spank_job_env */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
+	slurm_cred_t *cred;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

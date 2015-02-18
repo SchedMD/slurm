@@ -1959,6 +1959,7 @@ static void _launch_prolog(struct job_record *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
+	slurm_cred_arg_t cred_arg;
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
@@ -1992,6 +1993,19 @@ static void _launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
+	xassert(job_ptr->job_resrcs);
+	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
+	cred_arg.job_gres_list   = job_ptr->gres_list;
+	cred_arg.job_nhosts      = job_ptr->job_resrcs->nhosts;
+#ifdef HAVE_FRONT_END
+	xassert(job_ptr->batch_host);
+	cred_arg.job_hostlist   = job_ptr->batch_host;
+#else
+	cred_arg.job_hostlist   = job_ptr->job_resrcs->nodes;
+#endif
+	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
+						 &cred_arg,
+						 SLURM_15_08_PROTOCOL_VERSION);
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 #ifdef HAVE_FRONT_END
