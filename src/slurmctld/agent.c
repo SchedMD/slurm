@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -1513,6 +1514,8 @@ static char *_mail_type_str(uint16_t mail_type)
 		return "Failed";
 	if (mail_type == MAIL_JOB_REQUEUE)
 		return "Requeued";
+	if (mail_type == MAIL_JOB_STAGE_OUT)
+		return "Staged Out";
 	if (mail_type == MAIL_JOB_TIME100)
 		return "Reached time limit";
 	if (mail_type == MAIL_JOB_TIME90)
@@ -1562,6 +1565,14 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 			interval = time(NULL) - job_ptr->start_time;
 		snprintf(buf, buf_len, ", Run time ");
 		secs2time_str(interval, buf+11, buf_len-11);
+		return;
+	}
+
+	if ((mail_type == MAIL_JOB_STAGE_OUT) && job_ptr->end_time) {
+		interval = time(NULL) - job_ptr->end_time;
+		snprintf(buf, buf_len, ", StageOut time ");
+		secs2time_str(interval, buf+16, buf_len-16);
+		return;
 	}
 }
 

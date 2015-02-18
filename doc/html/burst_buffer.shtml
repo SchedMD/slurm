@@ -106,6 +106,14 @@ commands) can specify their burst buffer space requirements using the "--bb"
 option, but staging of jobs before and after the resource allocation is not
 supported (e.g. <i>srun --bb=size=10tb my.bash</i>).</p>
 
+<p>Users may also request to be notified by email upon completion of burst
+buffer stage out using the "--mail-type=stage_out" or "--mail-type=all" option.
+The subject line of the email will be of this form:</p>
+<pre>
+SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
+</pre>
+
+
 <h3>User Options for Generic Plugin</h3>
 
 <p>TBD</p>
@@ -170,6 +178,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 17 February 2015</p>
+<p style="text-align:center;">Last modified 18 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -292,14 +292,16 @@ enum job_states {
 #define READY_NODE_STATE 0x01	/* node is ready */
 #define READY_JOB_STATE  0x02	/* job is ready to execute */
 
-#define MAIL_JOB_BEGIN    0x0001	/* notify when job begins */
-#define MAIL_JOB_END      0x0002	/* notify when job ends */
-#define MAIL_JOB_FAIL     0x0004	/* notify if job fails */
-#define MAIL_JOB_REQUEUE  0x0008	/* notify if job requeued */
-#define MAIL_JOB_TIME100  0x0010	/* notify on reaching 100% of time limit */
-#define MAIL_JOB_TIME90   0x0020	/* notify on reaching 90% of time limit */
-#define MAIL_JOB_TIME80   0x0040	/* notify on reaching 80% of time limit */
-#define MAIL_JOB_TIME50   0x0080	/* notify on reaching 50% of time limit */
+#define MAIL_JOB_BEGIN     0x0001	/* Notify when job begins */
+#define MAIL_JOB_END       0x0002	/* Notify when job ends */
+#define MAIL_JOB_FAIL      0x0004	/* Notify if job fails */
+#define MAIL_JOB_REQUEUE   0x0008	/* Notify if job requeued */
+#define MAIL_JOB_TIME100   0x0010	/* Notify on reaching 100% of time limit */
+#define MAIL_JOB_TIME90    0x0020	/* Notify on reaching 90% of time limit */
+#define MAIL_JOB_TIME80    0x0040	/* Notify on reaching 80% of time limit */
+#define MAIL_JOB_TIME50    0x0080	/* Notify on reaching 50% of time limit */
+#define MAIL_JOB_STAGE_OUT 0x0100	/* Notify on completion of burst buffer
+					 * stage out */
 
 #define NICE_OFFSET 10000	/* offset for job's nice value */
 

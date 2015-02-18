@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  proc_args.c - helper functions for command argument processing
- *  $Id: opt.h 11996 2007-08-10 20:36:26Z jette $
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
  *  from existing SLURM source code, particularly src/srun/opt.c
  *
@@ -759,7 +759,9 @@ uint16_t parse_mail_type(const char *arg)
 			rc |= MAIL_JOB_REQUEUE;
 		else if (strcasecmp(tok, "ALL") == 0)
 			rc |= MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
-			      MAIL_JOB_REQUEUE;
+			      MAIL_JOB_REQUEUE | MAIL_JOB_STAGE_OUT;
+		else if (!strcasecmp(tok, "STAGE_OUT"))
+			rc |= MAIL_JOB_STAGE_OUT;
 		else if (strcasecmp(tok, "TIME_LIMIT") == 0)
 			rc |= MAIL_JOB_TIME100;
 		else if (strcasecmp(tok, "TIME_LIMIT_90") == 0)
@@ -802,6 +804,11 @@ char *print_mail_type(const uint16_t type)
 		if (buf[0])
 			strcat(buf, ",");
 		strcat(buf, "REQUEUE");
+	}
+	if (type & MAIL_JOB_STAGE_OUT) {
+		if (buf[0])
+			strcat(buf, ",");
+		strcat(buf, "STAGE_OUT");
 	}
 	if (type & MAIL_JOB_TIME50) {
 		if (buf[0])

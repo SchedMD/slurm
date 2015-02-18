@@ -2,6 +2,7 @@
  *  job_submit_lua.c - Set defaults in job submit request specifications.
  *****************************************************************************
  *  Copyright (C) 2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1037,9 +1038,11 @@ static void _register_lua_slurm_output_functions (void)
 	lua_pushnumber (L, MAIL_JOB_END);
 	lua_setfield (L, -2, "MAIL_JOB_END");
 	lua_pushnumber (L, MAIL_JOB_FAIL);
-	lua_setfield (L, -2, "MAIL_FAIL");
+	lua_setfield (L, -2, "MAIL_JOB_FAIL");
 	lua_pushnumber (L, MAIL_JOB_REQUEUE);
 	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_pushnumber (L, MAIL_JOB_STAGE_OUT);
+	lua_setfield (L, -2, "MAIL_JOB_STAGE_OUT");
 	lua_pushnumber (L, MEM_PER_CPU);
 	lua_setfield (L, -2, "MEM_PER_CPU");
 	lua_pushnumber (L, NICE_OFFSET);

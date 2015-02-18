@@ -71,6 +71,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
@@ -532,6 +533,11 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr)
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
+
+	if ((rc != 0) && (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
+		mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
+		job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
+	}
 
 	return rc;
 }

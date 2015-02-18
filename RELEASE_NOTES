@@ -113,6 +113,8 @@ COMMAND CHANGES (see man pages for details)
     and/or burst buffers) can be used with any compute nodes.
  -- Add "--sicp" (available for inter-cluster dependencies) and "--power"
     (specify power management options) to salloc, sbatch and srun commands.
+ -- Added "--mail=stage_out" option to job submission commands to notify user
+    when burst buffer state out is complete.
 
 OTHER CHANGES
 =============
@@ -163,7 +165,7 @@ Added the following struct definitions
 
 Changed the following enums and #defines
 ========================================
-
+ -- Added MAIL_JOB_STAGE_OUT
 
 Added the following API's
 =========================
