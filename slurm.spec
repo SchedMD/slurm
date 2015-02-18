@@ -676,6 +676,8 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs    &&
 
 LIST=./plugins.files
 touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_cray.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_cray.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
