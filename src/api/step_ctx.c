@@ -100,6 +100,8 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg.step_hostlist  = ctx->step_req->node_list;
 	arg.step_mem_limit = 0;
 
+	arg.job_gres_list     = NULL;
+	arg.job_constraints   = NULL;
 	arg.job_core_bitmap   = bit_alloc(node_cnt);
 	bit_nset(arg.job_core_bitmap,  0, node_cnt-1);
 	arg.step_core_bitmap  = bit_alloc(node_cnt);
