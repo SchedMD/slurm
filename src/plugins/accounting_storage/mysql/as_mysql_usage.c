@@ -737,7 +737,6 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	char *query = NULL;
 	char *username = NULL;
 	uint16_t private_data = 0;
-	slurmdb_user_rec_t user;
 	List *my_list;
 	uint32_t id = NO_VAL;
 	char *cluster_name = NULL;
@@ -807,17 +806,20 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	memset(&user, 0, sizeof(slurmdb_user_rec_t));
-	user.uid = uid;
-
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USAGE) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			ListIterator itr = NULL;
 			slurmdb_coord_rec_t *coord = NULL;
+			slurmdb_user_rec_t user;
+			bool is_coord;
 
-			if (username && !strcmp(slurmdb_assoc->user, user.name))
+			memset(&user, 0, sizeof(slurmdb_user_rec_t));
+			user.uid = uid;
+			is_coord = is_user_any_coord(mysql_conn, &user);
+
+			if (username && !strcmp(username, user.name))
 				goto is_user;
 
 			if (type != DBD_GET_ASSOC_USAGE)
@@ -829,7 +831,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				goto bad_user;
 			}
 
-			if (!is_user_any_coord(mysql_conn, &user)) {
+			if (!is_coord) {
 				debug4("This user is not a coordinator.");
 				goto bad_user;
 			}
