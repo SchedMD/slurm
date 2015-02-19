@@ -1182,6 +1182,9 @@ int init(void)
 	 *   by any lua scripts.
 	 */
 	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
