@@ -162,6 +162,26 @@ static List _rebalance_node_power(void);
 static void _set_power_caps(List node_power_list);
 static void _stop_power_agent(void);
 
+/* Return a pointer to the numeric value of a node name starting with "nid",
+ * also skip over leading zeros in the numeric portion. Returns a pointer
+ * into the node_name argument. No data is copied. */
+static char *_node_name2nid(char *node_name)
+{
+	int j;
+
+	if ((node_name[0] != 'n') || (node_name[1] != 'i') ||
+	    (node_name[2] != 'd')) {
+		error("%s: Invalid node name (%s)", __func__, node_name);
+		return (node_name);
+	}
+
+	for (j = 3; j < 7; j++) {
+		if (node_name[j] != '0')
+			break;
+	}
+	return (node_name + j);
+}
+
 /* Parse PowerParameters configuration */
 static void _load_config(void)
 {
@@ -571,30 +591,40 @@ static void _get_node_energy_counter(void)
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	char *cmd_resp, *nids = NULL, *script_argv[7], time_str[64];
+	char *sep, *tmp_str;
 	power_config_nodes_t *ents;
 	int i, j, num_ent = 0, status = 0;
 	uint64_t delta_joules, delta_time;
 	json_object *j_obj;
 	json_object_iter iter;
 	struct node_record *node_ptr;
+	hostset_t hs = NULL;
 	DEF_TIMERS;
 
 	lock_slurmctld(read_node_lock);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if ((node_ptr->name[0] != 'n') ||
-		    (node_ptr->name[1] != 'i') ||
-		    (node_ptr->name[2] != 'd'))
-			continue;
-		for (j = 3; j < 7; j++) {
-			if (node_ptr->name[j] != '0')
-				break;
-		}
-		if (nids)
-			xstrcat(nids, ",");
-		xstrcat(nids, node_ptr->name + j);
+		if (!hs)
+			hs = hostset_create(_node_name2nid(node_ptr->name));
+		else
+			hostset_insert(hs, _node_name2nid(node_ptr->name));
+		num_ent++;
 	}
 	unlock_slurmctld(read_node_lock);
+	if (!hs) {
+		error("%s: No nodes found", __func__);
+		return;
+	}
+	tmp_str = xmalloc(num_ent * 6 + 2);
+	(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
+	hostset_destroy(hs);
+	if ((sep = strrchr(tmp_str, ']')))
+		sep[0] = '\0';
+	if (tmp_str[0] == '[')
+		nids = xstrdup(tmp_str + 1);
+	else
+		nids = xstrdup(tmp_str);
+	xfree(tmp_str);
 
 	now = time(NULL);
 	time_spec = localtime(&now);
@@ -634,6 +664,7 @@ static void _get_node_energy_counter(void)
 		xfree(nids);
 		return;
 	}
+	num_ent = 0;
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e", message "err_msg", and
 		 * "nid_count" fields are currently ignored. */
@@ -840,7 +871,9 @@ static List _clear_node_caps(void)
 	List node_power_list = NULL;
 	power_by_nodes_t *node_power;
 	struct node_record *node_ptr;
-	int i;
+	hostset_t hs = NULL;
+	int i, num_ent = 0;
+	char *sep, *tmp_str;
 
 	/* Build table required updates to power caps */
 	node_power = xmalloc(sizeof(power_by_nodes_t));
@@ -851,15 +884,25 @@ static List _clear_node_caps(void)
 			continue;
 		if (node_ptr->power->cap_watts == 0)	/* No change */
 			continue;
-		if (node_power->nodes) {
-			xstrcat(node_power->nodes, ",");
-			xstrcat(node_power->nodes, node_ptr->name + 3);
-		} else {
-			node_power->nodes = node_ptr->name + 3;	/* Skip "nid" */
-		}
+
+		if (!hs)
+			hs = hostset_create(_node_name2nid(node_ptr->name));
+		else
+			hostset_insert(hs, _node_name2nid(node_ptr->name));
+		num_ent++;
 	}
-	if (node_power->nodes) {
+	if (hs) {
 		node_power_list = list_create(_node_power_del);
+		tmp_str = xmalloc(num_ent * 6 + 2);
+		(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
+		hostset_destroy(hs);
+		if ((sep = strrchr(tmp_str, ']')))
+			sep[0] = '\0';
+		if (tmp_str[0] == '[')
+			node_power->nodes = xstrdup(tmp_str + 1);
+		else
+			node_power->nodes = xstrdup(tmp_str);
+		xfree(tmp_str);
 		list_append(node_power_list, node_power);
 	} else {
 		xfree(node_power);
@@ -937,8 +980,11 @@ static void _level_power_by_job(void)
  * and any power leveling by job */
 static List _rebalance_node_power(void)
 {
+	ListIterator iter;
+	hostset_t hs = NULL;
+	char *sep, *tmp_str;
 	List node_power_list = NULL;
-	power_by_nodes_t *node_power;
+	power_by_nodes_t *node_power = NULL;
 	struct node_record *node_ptr, *node_ptr2;
 	uint32_t alloc_power = 0, avail_power, ave_power, new_cap, tmp_u32;
 	int node_power_raise_cnt = 0;
@@ -1043,7 +1089,7 @@ static List _rebalance_node_power(void)
 		node_power = xmalloc(sizeof(power_by_nodes_t));
 		node_power->alloc_watts = node_ptr->power->new_cap_watts;
 		node_power->increase_power = increase_power;
-		node_power->nodes = node_ptr->name + 3;	/* Skip "nid" */
+		node_power->nodes = xstrdup(_node_name2nid(node_ptr->name));
 		list_append(node_power_list, node_power);
 		/* Look for other nodes with same change */
 		for (j = 0, node_ptr2 = node_ptr + 1; j < node_record_count;
@@ -1058,11 +1104,36 @@ static List _rebalance_node_power(void)
 				continue;
 			/* Add NID to this update record */
 			xstrcat(node_power->nodes, ",");
-			xstrcat(node_power->nodes, node_ptr2->name + 3);
+			xstrcat(node_power->nodes,
+			        _node_name2nid(node_ptr2->name));
 			/* Avoid adding this node record again */
 			node_ptr2->power->cap_watts =
 				node_ptr2->power->new_cap_watts;
 		}
+	}
+
+	/* Compress node name lists (e.g. "2,3,4,5" to "2-5") */
+	if (node_power_list) {
+		iter = list_iterator_create(part_list);
+		while ((node_power = (power_by_nodes_t *) list_next(iter))) {
+			if (!node_power->nodes)
+				continue;
+			hs = hostset_create(node_power->nodes);
+			i = strlen(node_power->nodes) + 8;
+			tmp_str = xmalloc(i);
+			(void) hostset_ranged_string(hs, i, tmp_str);
+			hostset_destroy(hs);
+			xfree(node_power->nodes);
+			if ((sep = strrchr(tmp_str, ']')))
+				sep[0] = '\0';
+			if (tmp_str[0] == '[') {
+				node_power->nodes = xstrdup(tmp_str + 1);
+				xfree(tmp_str);
+			} else {
+				node_power->nodes = tmp_str;
+			}
+		}
+		list_iterator_destroy(iter);
 	}
 
 	return node_power_list;
@@ -1083,7 +1154,7 @@ static void _set_power_caps(List node_power_list)
 	script_argv[1] = "set_power_cap";
 	script_argv[2] = "--nids";
 	/* script_argv[3] = Node ID values, set below */
-	script_argv[4] = "--watts";
+	script_argv[4] = "--node";
 	script_argv[5] = watts;
 	script_argv[6] = "--accel";
 	script_argv[7] = "0";

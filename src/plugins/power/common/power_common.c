@@ -197,6 +197,44 @@ extern char *power_run_script(char *script_name, char *script_path,
 		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
+	if (slurm_get_debug_flags() & DEBUG_FLAG_POWER) {
+		for (i = 0; i < 10; i++) {
+			if (!script_argv[i])
+				break;
+		}
+		if (i == 0) {
+			info("%s:", __func__);
+		} else if (i == 1) {
+			info("%s: %s", __func__, script_name);
+		} else if (i == 2) {
+			info("%s: %s %s", __func__, script_name,
+			     script_argv[1]);
+		} else if (i == 3) {
+			info("%s: %s %s %s", __func__, script_name,
+			     script_argv[1], script_argv[2]);
+		} else if (i == 4) {
+			info("%s: %s %s %s %s", __func__, script_name,
+			     script_argv[1], script_argv[2], script_argv[3]);
+		} else if (i == 5) {
+			info("%s: %s %s %s %s %s", __func__, script_name,
+			     script_argv[1], script_argv[2], script_argv[3],
+			     script_argv[4]);
+		} else if (i == 6) {
+			info("%s: %s %s %s %s %s %s", __func__, script_name,
+			     script_argv[1], script_argv[2], script_argv[3],
+			     script_argv[4], script_argv[5]);
+		} else if (i == 7) {
+			info("%s: %s %s %s %s %s %s %s", __func__,
+			     script_name, script_argv[1], script_argv[2],
+			     script_argv[3], script_argv[4], script_argv[5],
+			     script_argv[6]);
+		} else {	/* 8 or more args here, truncate as needed */
+			info("%s: %s %s %s %s %s %s %s %s", __func__,
+			     script_name, script_argv[1], script_argv[2],
+			     script_argv[3], script_argv[4], script_argv[5],
+			     script_argv[6], script_argv[7]);
+		}
+	}
 	if (script_path[0] != '/') {
 		error("%s: %s is not fully qualified pathname (%s)",
 		      __func__, script_name, script_path);
