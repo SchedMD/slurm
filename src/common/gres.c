@@ -2103,6 +2103,7 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->gres_cnt_config = gres_ptr->gres_cnt_config;
 	new_gres->gres_cnt_avail  = gres_ptr->gres_cnt_avail;
 	new_gres->gres_cnt_alloc  = gres_ptr->gres_cnt_alloc;
+	new_gres->no_consume      = gres_ptr->no_consume;
 	if (gres_ptr->gres_bit_alloc)
 		new_gres->gres_bit_alloc = bit_copy(gres_ptr->gres_bit_alloc);
 	if (gres_ptr->topo_cnt == 0)
