@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_CONSTAINTS to environment variables available to the Prolog.
  -- Added "--mail=stage_out" option to job submission commands to notify user
     when burst buffer state out is complete.
+ -- Require a "Reason" when using scontrol to set a node state to DOWN.
 
 * Changes in Slurm 15.08.0pre2
 ==============================
