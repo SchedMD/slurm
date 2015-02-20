@@ -86,8 +86,7 @@ int node_record_count = 0;
 typedef struct power_config_nodes {
 	uint32_t accel_max_watts; /* maximum power consumption by accel, in watts */
 	uint32_t accel_min_watts; /* minimum power consumption by accel, in watts */
-	uint32_t cap_watts_max;   /* cap on power consumption by node, in watts */
-	uint32_t cap_watts_min;   /* cap on power consumption by node, in watts */
+	uint32_t cap_watts;       /* cap on power consumption by node, in watts */
 	uint64_t joule_counter;	  /* total energy consumption by node, in joules */
 	uint32_t node_max_watts;  /* maximum power consumption by node, in watts */
 	uint32_t node_min_watts;  /* minimum power consumption by node, in watts */
@@ -147,16 +146,28 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 /*********************** local functions *********************/
 static List _clear_node_caps(void);
 static void _get_capabilities(void);
+static void _get_caps(void);
 static void _get_node_energy_counter(void);
 static power_config_nodes_t *
             _json_parse_array_capabilities(json_object *jobj,
 					   char *key, int *num);
 static power_config_nodes_t *
+		_json_parse_array_caps(json_object *jobj, char *key, int *num);
+static power_config_nodes_t *
             _json_parse_array_energy(json_object *jobj, char *key, int *num);
 static void _json_parse_capabilities(json_object *jobj,
 				     power_config_nodes_t *ent);
 static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent);
+static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent);
 static void _load_config(void);
+static void _parse_capable_control(json_object *j_control,
+				   power_config_nodes_t *ent);
+static void _parse_capable_controls(json_object *j_control,
+				    power_config_nodes_t *ent);
+static void _parse_caps_control(json_object *j_control,
+				power_config_nodes_t *ent);
+static void _parse_caps_controls(json_object *j_control,
+				 power_config_nodes_t *ent);
 extern void *_power_agent(void *args);
 static List _rebalance_node_power(void);
 static void _set_power_caps(List node_power_list);
@@ -361,8 +372,6 @@ static void _get_capabilities(void)
 					node_ptr->power =
 						xmalloc(sizeof(power_mgmt_data_t));
 				}
-				node_ptr->power->cap_watts =
-					ents[i].cap_watts_max;
 				node_ptr->power->max_watts =
 					ents[i].node_max_watts;
 				node_ptr->power->min_watts =
@@ -374,9 +383,8 @@ static void _get_capabilities(void)
 		if (debug_flag & DEBUG_FLAG_POWER) {
 			hostlist_ranged_string(hl, sizeof(node_names),
 					       node_names);
-			info("CapWatts:%3.3u-%3.3u AccelWattsAvail:%3.3u-%3.3u "
+			info("AccelWattsAvail:%3.3u-%3.3u "
 			     "NodeWattsAvail:%3.3u-%3.3u Nodes=%s",
-			     ents[i].cap_watts_min, ents[i].cap_watts_max,
 			     ents[i].accel_min_watts, ents[i].accel_max_watts,
 			     ents[i].node_min_watts, ents[i].node_max_watts,
 			     node_names);
@@ -414,7 +422,8 @@ _json_parse_array_capabilities(json_object *jobj, char *key, int *num)
 
 /* Parse a "controls" array element from the "capmc get_power_cap_capabilities"
  * command. Identifies node and accelerator power ranges. */
-static void _parse_control(json_object *j_control, power_config_nodes_t *ent)
+static void _parse_capable_control(json_object *j_control,
+				   power_config_nodes_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
@@ -440,7 +449,7 @@ static void _parse_control(json_object *j_control, power_config_nodes_t *ent)
 //				info("%s: Key array %s", __func__, iter.key);
 				break;
 			case json_type_string:
-//				info("Key string %s", __func__, iter.key);
+//				info("%s: Key string %s", __func__, iter.key);
 				if (!strcmp(iter.key, "name"))
 					p = json_object_get_string(iter.val);
 				break;
@@ -469,8 +478,10 @@ static void _parse_control(json_object *j_control, power_config_nodes_t *ent)
 }
 
 /* Parse the "controls" array from the "capmc get_power_cap_capabilities"
- * command. Use _parse_control() to get node and accelerator power ranges. */
-static void _parse_controls(json_object *j_control, power_config_nodes_t *ent)
+ * command. Use _parse_capable_control() to get node and accelerator power
+ * ranges. */
+static void _parse_capable_controls(json_object *j_control,
+				    power_config_nodes_t *ent)
 {
 	json_object *j_array = NULL;
 	json_object *j_value;
@@ -487,7 +498,7 @@ static void _parse_controls(json_object *j_control, power_config_nodes_t *ent)
 		j_value = json_object_array_get_idx(j_array, i);
 		j_type = json_object_get_type(j_value);
 		if (j_type == json_type_object) {
-			_parse_control(j_value, ent);
+			_parse_capable_control(j_value, ent);
 		} else {
 			error("%s: Unexpected data type: %d", __func__, j_type);
 		}
@@ -523,14 +534,13 @@ static void _parse_nids(json_object *jobj, power_config_nodes_t *ent)
 }
 
 /* Parse a "groups" array element from the "capmc get_power_cap_capabilities"
- * command. Use _parse_controls() and _parse_nids() to get node and accelerator
- * power ranges for each node. */
+ * command. Use _parse_capable_controls() and _parse_nids() to get node and
+ * accelerator power ranges for each node. */
 static void _json_parse_capabilities(json_object *jobj,
 				     power_config_nodes_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
-	int64_t x;
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -553,18 +563,261 @@ static void _json_parse_capabilities(json_object *jobj,
 			case json_type_array:
 //				info("%s: Key array %s", __func__, iter.key);
 				if (!strcmp(iter.key, "controls")) {
-					_parse_controls(jobj, ent);
+					_parse_capable_controls(jobj, ent);
 				} else if (!strcmp(iter.key, "nids")) {
 					_parse_nids(jobj, ent);
 				}
 				break;
 			case json_type_int:
 //				info("%s: Key int %s", __func__, iter.key);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+static void _get_caps(void)
+{
+	/* Read nodes */
+	slurmctld_lock_t read_node_lock = {
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Write nodes */
+	slurmctld_lock_t write_node_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	hostset_t hs = NULL;
+	char *cmd_resp, *nids, *script_argv[5];
+	char *sep, *tmp_str;
+	power_config_nodes_t *ents;
+	int i, num_ent = 0, status = 0;
+	json_object *j_obj;
+	json_object_iter iter;
+	struct node_record *node_ptr;
+	DEF_TIMERS;
+
+	lock_slurmctld(read_node_lock);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!hs)
+			hs = hostset_create(_node_name2nid(node_ptr->name));
+		else
+			hostset_insert(hs, _node_name2nid(node_ptr->name));
+		num_ent++;
+	}
+	unlock_slurmctld(read_node_lock);
+	if (!hs) {
+		error("%s: No nodes found", __func__);
+		return;
+	}
+	tmp_str = xmalloc(node_record_count * 6 + 2);
+	(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
+	hostset_destroy(hs);
+	if ((sep = strrchr(tmp_str, ']')))
+		sep[0] = '\0';
+	if (tmp_str[0] == '[')
+		nids = xstrdup(tmp_str + 1);
+	else
+		nids = xstrdup(tmp_str);
+	xfree(tmp_str);
+
+	script_argv[0] = capmc_path;
+	script_argv[1] = "get_power_cap";
+	script_argv[2] = "--nids";
+	script_argv[3] = nids;
+	script_argv[4] = NULL;
+
+	START_TIMER;
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
+				    &status);
+	END_TIMER;
+	xfree(nids);
+	if (status != 0) {
+		error("%s: capmc %s: %s",
+		      __func__, script_argv[1], cmd_resp);
+		xfree(cmd_resp);
+		return;
+	} else if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
+	}
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
+		return;
+
+	j_obj = json_tokener_parse(cmd_resp);
+	if (j_obj == NULL) {
+		error("%s: json parser failed on %s", __func__, cmd_resp);
+		xfree(cmd_resp);
+		return;
+	}
+	json_object_object_foreachC(j_obj, iter) {
+		/* NOTE: The error number "e" and message "err_msg" fields
+		 * are currently ignored. */
+		if (!strcmp(iter.key, "nids")) {
+			ents = _json_parse_array_caps(j_obj, iter.key,
+						      &num_ent);
+			break;
+		}
+	}
+	json_object_put(j_obj);	/* Frees json memory */
+
+	lock_slurmctld(write_node_lock);
+	for (i = 0; i < num_ent; i++) {
+		node_ptr = find_node_record2(ents[i].node_name[0]);
+		if (!node_ptr) {
+			debug("%s: Node %s not in Slurm config",
+			      __func__, ents[i].node_name[0]);
+		} else {
+			if (!node_ptr->power) {
+				node_ptr->power =
+					xmalloc(sizeof(power_mgmt_data_t));
+			}
+			node_ptr->power->cap_watts = ents[i].cap_watts;
+		}
+		xfree(ents[i].node_name[0]);
+		xfree(ents[i].node_name);
+	}
+	xfree(ents);
+	unlock_slurmctld(write_node_lock);
+	xfree(cmd_resp);
+}
+
+/* json_parse_array()
+ */
+static power_config_nodes_t *
+_json_parse_array_caps(json_object *jobj, char *key, int *num)
+{
+	json_object *j_array;
+	json_object *j_value;
+	int i;
+	power_config_nodes_t *ents = NULL;
+
+	j_array = jobj;
+	json_object_object_get_ex(jobj, key, &j_array);
+
+	*num = json_object_array_length(j_array);
+	ents = xmalloc(*num * sizeof(power_config_nodes_t));
+
+	for (i = 0; i < *num; i++) {
+		j_value = json_object_array_get_idx(j_array, i);
+		_json_parse_nid(j_value, &ents[i]);
+	}
+
+	return ents;
+}
+
+static void _parse_caps_control(json_object *j_control,
+				power_config_nodes_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	const char *p = NULL;
+	int cap_watts = 0, x;
+
+	json_object_object_foreachC(j_control, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+//				info("%s: Key boolean %s", __func__, iter.key);
+				break;
+			case json_type_double:
+//				info("%s: Key double %s", __func__, iter.key);
+				break;
+			case json_type_null:
+//				info("%s: Key null %s", __func__, iter.key);
+				break;
+			case json_type_object:
+//				info("%s: Key object %s", __func__, iter.key);
+				break;
+			case json_type_array:
+//				info("%s: Key array %s", __func__, iter.key);
+				break;
+			case json_type_string:
+//				info("%s: Key string %s", __func__, iter.key);
+				if (!strcmp(iter.key, "name"))
+					p = json_object_get_string(iter.val);
+				break;
+			case json_type_int:
+//				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
-				if (!strcmp(iter.key, "host_limit_min")) {
-					ent->cap_watts_min = x;
-				} else if (!strcmp(iter.key, "host_limit_max")){
-					ent->cap_watts_max = x;
+				if (!strcmp(iter.key, "val"))
+					cap_watts = x;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (p) {
+		if (!strcmp(p, "node")) {
+			ent->cap_watts = cap_watts;
+		}
+	}
+}
+
+/* Parse the "controls" array from the "capmc get_power_caps" command.
+ * Use _parse_caps_control() to get node and accelerator power ranges. */
+static void _parse_caps_controls(json_object *j_control,
+				 power_config_nodes_t *ent)
+{
+	json_object *j_array = NULL;
+	json_object *j_value;
+	enum json_type j_type;
+	int control_cnt, i;
+
+        json_object_object_get_ex(j_control, "controls", &j_array);
+	if (!j_array) {
+		error("%s: Unable to parse controls specification", __func__);
+		return;
+	}
+	control_cnt = json_object_array_length(j_array);
+	for (i = 0; i < control_cnt; i++) {
+		j_value = json_object_array_get_idx(j_array, i);
+		j_type = json_object_get_type(j_value);
+		if (j_type == json_type_object) {
+			_parse_caps_control(j_value, ent);
+		} else {
+			error("%s: Unexpected data type: %d", __func__, j_type);
+		}
+	}
+}
+
+/* Parse a "nids" array element from the "capmc get_power_cap" command. */
+static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int x;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+//				info("%s: Key boolean %s", __func__, iter.key);
+				break;
+			case json_type_double:
+//				info("%s: Key double %s", __func__, iter.key);
+				break;
+			case json_type_null:
+//				info("%s: Key null %s", __func__, iter.key);
+				break;
+			case json_type_object:
+//				info("%s: Key object %s", __func__, iter.key);
+				break;
+			case json_type_string:
+//				info("%s: Key string %s", __func__, iter.key);
+				break;
+			case json_type_array:
+//				info("%s: Key array %s", __func__, iter.key);
+				if (!strcmp(iter.key, "controls")) {
+					_parse_caps_controls(jobj, ent);
+				}
+				break;
+			case json_type_int:
+//				info("%s: Key int %s", __func__, iter.key);
+				x = json_object_get_int64(iter.val);
+				if (!strcmp(iter.key, "nid")) {
+					ent->node_name = xmalloc(sizeof(char *));
+					xstrfmtcat(ent->node_name[0],
+						   "nid%5.5d", x);
 				}
 				break;
 			default:
@@ -641,11 +894,11 @@ static void _get_node_energy_counter(void)
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
 				    &status);
 	END_TIMER;
+	xfree(nids);
 	if (status != 0) {
 		error("%s: capmc %s %s %s: %s",  __func__,
 		      script_argv[1], script_argv[2], script_argv[3], cmd_resp);
 		xfree(cmd_resp);
-		xfree(nids);
 		return;
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
 		info("%s: capmc %s %s %s %s",  __func__,
@@ -653,7 +906,6 @@ static void _get_node_energy_counter(void)
 	}
 	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
 		xfree(cmd_resp);
-		xfree(nids);
 		return;
 	}
 
@@ -661,7 +913,6 @@ static void _get_node_energy_counter(void)
 	if (j_obj == NULL) {
 		error("%s: json parser failed on %s", __func__, cmd_resp);
 		xfree(cmd_resp);
-		xfree(nids);
 		return;
 	}
 	num_ent = 0;
@@ -711,7 +962,6 @@ static void _get_node_energy_counter(void)
 	xfree(ents);
 	unlock_slurmctld(write_node_lock);
 	xfree(cmd_resp);
-	xfree(nids);
 	last_timer = now;
 }
 
@@ -835,9 +1085,14 @@ extern void *_power_agent(void *args)
 		if (wait_time < balance_interval)
 			continue;
 
+		if (last_cap_read == 0) {	/* On first pass */
+			/* Read initial power caps for every node */
+			_get_caps();		/* Has node write lock */
+		}
+
 		wait_time = difftime(now, last_cap_read);
-		if (wait_time > 600) {
-			/* Read node min/max power every 10 mins */
+		if (wait_time > 600) {	/* Every 10 minutes */
+			/* Read min/max power for every node */
 			_get_capabilities();	/* Has node write lock */
 		}
 		_get_node_energy_counter();	/* Has node write lock */
