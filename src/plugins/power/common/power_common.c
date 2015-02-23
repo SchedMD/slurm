@@ -109,9 +109,6 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
 			*used_watts += node_ptr->power->current_watts;
 		}	
 	}
-
-	info("%s: AllocWatts=%u UsedWatts=%u",
-	     __func__, *alloc_watts, *used_watts);
 }
 
 /* For each running job, return power allocation/use information in a List

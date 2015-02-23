@@ -92,6 +92,7 @@ typedef struct power_config_nodes {
 	uint32_t node_min_watts;  /* minimum power consumption by node, in watts */
 	int node_cnt;		  /* length of node_name array */
 	char **node_name;	  /* Node names (nid range list values on Cray) */
+	uint16_t state;           /* State 1=ready, 0=other */
 } power_config_nodes_t;
 
 /*
@@ -131,6 +132,7 @@ static int balance_interval = DEFAULT_BALANCE_INTERVAL;
 static char *capmc_path = NULL;
 static uint32_t cap_watts = DEFAULT_CAP_WATTS;
 static uint64_t debug_flag = 0;
+static char *full_nid_string = NULL;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
 static uint32_t job_level = NO_VAL;
@@ -144,10 +146,12 @@ static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 
 /*********************** local functions *********************/
+static void _build_full_nid_string(void);
 static List _clear_node_caps(void);
 static void _get_capabilities(void);
 static void _get_caps(void);
 static void _get_node_energy_counter(void);
+static void _get_nodes_ready(void);
 static power_config_nodes_t *
             _json_parse_array_capabilities(json_object *jobj,
 					   char *key, int *num);
@@ -159,6 +163,8 @@ static void _json_parse_capabilities(json_object *jobj,
 				     power_config_nodes_t *ent);
 static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent);
 static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent);
+static power_config_nodes_t *
+            _json_parse_ready(json_object *jobj, char *key, int *num);
 static void _load_config(void);
 static void _parse_capable_control(json_object *j_control,
 				   power_config_nodes_t *ent);
@@ -290,6 +296,7 @@ static void _load_config(void)
 	}
 
 	xfree(sched_params);
+	xfree(full_nid_string);
 	if (debug_flag & DEBUG_FLAG_POWER) {
 		char *level_str = "";
 		if (job_level == 0)
@@ -335,8 +342,10 @@ static void _get_capabilities(void)
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
 		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
 	}
-	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
+		xfree(cmd_resp);
 		return;
+	}
 
 	j_obj = json_tokener_parse(cmd_resp);
 	if (j_obj == NULL) {
@@ -354,7 +363,6 @@ static void _get_capabilities(void)
 		}
 	}
 	json_object_put(j_obj);	/* Frees json memory */
-//FIXME: Test for memory leaks
 
 	lock_slurmctld(write_node_lock);
 	for (i = 0; i < num_ent; i++) {
@@ -396,8 +404,6 @@ static void _get_capabilities(void)
 	xfree(cmd_resp);
 }
 
-/* json_parse_array()
- */
 static power_config_nodes_t *
 _json_parse_array_capabilities(json_object *jobj, char *key, int *num)
 {
@@ -507,14 +513,14 @@ static void _parse_capable_controls(json_object *j_control,
 
 /* Parse the "nids" array from the "capmc get_power_cap_capabilities"
  * command. Identifies each node ID with identical power specifications. */
-static void _parse_nids(json_object *jobj, power_config_nodes_t *ent)
+static void _parse_nids(json_object *jobj, power_config_nodes_t *ent, char *key)
 {
 	json_object *j_array = NULL;
 	json_object *j_value;
 	enum json_type j_type;
 	int i, nid;
 
-        json_object_object_get_ex(jobj, "nids", &j_array);
+        json_object_object_get_ex(jobj, key, &j_array);
 	if (!j_array) {
 		error("%s: Unable to parse nid specification", __func__);
 		return;
@@ -565,7 +571,7 @@ static void _json_parse_capabilities(json_object *jobj,
 				if (!strcmp(iter.key, "controls")) {
 					_parse_capable_controls(jobj, ent);
 				} else if (!strcmp(iter.key, "nids")) {
-					_parse_nids(jobj, ent);
+					_parse_nids(jobj, ent, "nids");
 				}
 				break;
 			case json_type_int:
@@ -577,23 +583,18 @@ static void _json_parse_capabilities(json_object *jobj,
 	}
 }
 
-static void _get_caps(void)
+static void _build_full_nid_string(void)
 {
 	/* Read nodes */
 	slurmctld_lock_t read_node_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-	/* Write nodes */
-	slurmctld_lock_t write_node_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-	hostset_t hs = NULL;
-	char *cmd_resp, *nids, *script_argv[5];
-	char *sep, *tmp_str;
-	power_config_nodes_t *ents;
-	int i, num_ent = 0, status = 0;
-	json_object *j_obj;
-	json_object_iter iter;
 	struct node_record *node_ptr;
-	DEF_TIMERS;
+	hostset_t hs = NULL;
+	char *sep, *tmp_str;
+	int i, num_ent = 0;
+
+	if (full_nid_string)
+		return;
 
 	lock_slurmctld(read_node_lock);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -615,22 +616,39 @@ static void _get_caps(void)
 	if ((sep = strrchr(tmp_str, ']')))
 		sep[0] = '\0';
 	if (tmp_str[0] == '[')
-		nids = xstrdup(tmp_str + 1);
+		full_nid_string = xstrdup(tmp_str + 1);
 	else
-		nids = xstrdup(tmp_str);
+		full_nid_string = xstrdup(tmp_str);
 	xfree(tmp_str);
+}
+
+static void _get_caps(void)
+{
+	/* Write nodes */
+	slurmctld_lock_t write_node_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	char *cmd_resp, *script_argv[5];
+	power_config_nodes_t *ents;
+	int i, num_ent = 0, status = 0;
+	json_object *j_obj;
+	json_object_iter iter;
+	struct node_record *node_ptr;
+	DEF_TIMERS;
+
+	_build_full_nid_string();
+	if (!full_nid_string)
+		return;
 
 	script_argv[0] = capmc_path;
 	script_argv[1] = "get_power_cap";
 	script_argv[2] = "--nids";
-	script_argv[3] = nids;
+	script_argv[3] = full_nid_string;
 	script_argv[4] = NULL;
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
 				    &status);
 	END_TIMER;
-	xfree(nids);
 	if (status != 0) {
 		error("%s: capmc %s: %s",
 		      __func__, script_argv[1], cmd_resp);
@@ -639,8 +657,10 @@ static void _get_caps(void)
 	} else if (debug_flag & DEBUG_FLAG_POWER) {
 		info("%s: capmc %s %s", __func__, script_argv[1], TIME_STR);
 	}
-	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0'))
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
+		xfree(cmd_resp);
 		return;
+	}
 
 	j_obj = json_tokener_parse(cmd_resp);
 	if (j_obj == NULL) {
@@ -826,6 +846,130 @@ static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent)
 	}
 }
 
+/* Identify nodes which are in a state of "ready". Only nodes in a "ready"
+ * state can have their power cap modified. */
+static void _get_nodes_ready(void)
+{
+	/* Write nodes */
+	slurmctld_lock_t write_node_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	char *cmd_resp, *script_argv[5];
+	struct node_record *node_ptr;
+	power_config_nodes_t *ents;
+	int i, j, num_ent, status = 0;
+	json_object *j_obj;
+	json_object_iter iter;
+	DEF_TIMERS;
+
+	script_argv[0] = capmc_path;
+	script_argv[1] = "node_status";
+//	script_argv[2] = "--filter";
+//	script_argv[3] = "show_ready";
+	script_argv[2] = NULL;
+
+	START_TIMER;
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
+				    &status);
+	END_TIMER;
+	if (status != 0) {
+		error("%s: capmc %s: %s",  __func__, script_argv[1], cmd_resp);
+		xfree(cmd_resp);
+		return;
+	} else if (debug_flag & DEBUG_FLAG_POWER) {
+		info("%s: capmc %s %s",  __func__, script_argv[1], TIME_STR);
+	}
+	if ((cmd_resp == NULL) || (cmd_resp[0] == '\0')) {
+		xfree(cmd_resp);
+		return;
+	}
+
+	j_obj = json_tokener_parse(cmd_resp);
+	if (j_obj == NULL) {
+		error("%s: json parser failed on %s", __func__, cmd_resp);
+		xfree(cmd_resp);
+		return;
+	}
+	num_ent = 0;
+	json_object_object_foreachC(j_obj, iter) {
+		/* NOTE: The error number "e", message "err_msg", "off", and
+		 * "on" fields are currently ignored. */
+		if (!strcmp(iter.key, "ready")) {
+			ents = _json_parse_ready(j_obj, iter.key, &num_ent);
+			break;
+		}
+	}
+	json_object_put(j_obj);	/* Frees json memory */
+
+	lock_slurmctld(write_node_lock);
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (!node_ptr->power)
+			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
+		else
+			node_ptr->power->state = 0;
+	}
+	for (i = 0; i < num_ent; i++) {
+		for (j = 0; j < ents[i].node_cnt; j++) {
+			node_ptr = find_node_record2(ents[i].node_name[j]);
+			if (!node_ptr) {
+				debug("%s: Node %s not in Slurm config",
+				      __func__, ents[i].node_name[j]);
+			} else {
+				node_ptr->power->state = ents[i].state;
+			}
+			xfree(ents[i].node_name[j]);
+		}
+		xfree(ents[i].node_name);
+	}
+	xfree(ents);
+	unlock_slurmctld(write_node_lock);
+	xfree(cmd_resp);
+}
+
+static power_config_nodes_t *
+_json_parse_ready(json_object *jobj, char *key, int *num)
+{
+	power_config_nodes_t *ents;
+	enum json_type type;
+	struct json_object_iter iter;
+
+	*num = 1;
+	ents = xmalloc(*num * sizeof(power_config_nodes_t));
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_boolean:
+//				info("%s: Key boolean %s", __func__, iter.key);
+				break;
+			case json_type_double:
+//				info("%s: Key double %s", __func__, iter.key);
+				break;
+			case json_type_null:
+//				info("%s: Key null %s", __func__, iter.key);
+				break;
+			case json_type_object:
+//				info("%s: Key object %s", __func__, iter.key);
+				break;
+			case json_type_array:
+//				info("%s: Key array %s", __func__, iter.key);
+				if (!strcmp(iter.key, "ready")) {
+					ents->state = 1;	/* 1=ready */
+					_parse_nids(jobj, ents, "ready");
+				}
+				break;
+			case json_type_int:
+//				info("%s: Key int %s", __func__, iter.key);
+				break;
+			case json_type_string:
+//				info("%s: Key string %s", __func__, iter.key);
+				break;
+		}
+	}
+
+	return ents;
+}
+
 /* Gather current node power consumption rate. This logic gathers the
  * information using Cray's capmc command. An alternative would be to use
  * Slurm's energy plugin, but that would require additional synchronization
@@ -837,47 +981,21 @@ static void _get_node_energy_counter(void)
 	static time_t last_timer = 0;
 	time_t now;
 	struct tm *time_spec;
-	/* Read nodes */
-	slurmctld_lock_t read_node_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-	char *cmd_resp, *nids = NULL, *script_argv[7], time_str[64];
-	char *sep, *tmp_str;
+	char *cmd_resp, *script_argv[7], time_str[64];
 	power_config_nodes_t *ents;
 	int i, j, num_ent = 0, status = 0;
 	uint64_t delta_joules, delta_time;
 	json_object *j_obj;
 	json_object_iter iter;
 	struct node_record *node_ptr;
-	hostset_t hs = NULL;
 	DEF_TIMERS;
 
-	lock_slurmctld(read_node_lock);
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		if (!hs)
-			hs = hostset_create(_node_name2nid(node_ptr->name));
-		else
-			hostset_insert(hs, _node_name2nid(node_ptr->name));
-		num_ent++;
-	}
-	unlock_slurmctld(read_node_lock);
-	if (!hs) {
-		error("%s: No nodes found", __func__);
+	_build_full_nid_string();
+	if (!full_nid_string)
 		return;
-	}
-	tmp_str = xmalloc(num_ent * 6 + 2);
-	(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
-	hostset_destroy(hs);
-	if ((sep = strrchr(tmp_str, ']')))
-		sep[0] = '\0';
-	if (tmp_str[0] == '[')
-		nids = xstrdup(tmp_str + 1);
-	else
-		nids = xstrdup(tmp_str);
-	xfree(tmp_str);
 
 	now = time(NULL);
 	time_spec = localtime(&now);
@@ -887,14 +1005,13 @@ static void _get_node_energy_counter(void)
 	script_argv[2] = "-t";
 	script_argv[3] = time_str;	/* yyyy-mm-dd hh:mm:ss */
 	script_argv[4] = "--nids";
-	script_argv[5] = nids;
+	script_argv[5] = full_nid_string;
 	script_argv[6] = NULL;
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
 				    &status);
 	END_TIMER;
-	xfree(nids);
 	if (status != 0) {
 		error("%s: capmc %s %s %s: %s",  __func__,
 		      script_argv[1], script_argv[2], script_argv[3], cmd_resp);
@@ -921,7 +1038,7 @@ static void _get_node_energy_counter(void)
 		 * "nid_count" fields are currently ignored. */
 		if (!strcmp(iter.key, "nodes")) {
 			ents = _json_parse_array_energy(j_obj, iter.key,
-							      &num_ent);
+							&num_ent);
 			break;
 		}
 	}
@@ -956,6 +1073,7 @@ static void _get_node_energy_counter(void)
 				node_ptr->power->joule_counter =
 					ents[i].joule_counter;
 			}
+			xfree(ents[i].node_name[j]);
 		}
 		xfree(ents[i].node_name);
 	}
@@ -965,8 +1083,6 @@ static void _get_node_energy_counter(void)
 	last_timer = now;
 }
 
-/* json_parse_array()
- */
 static power_config_nodes_t *
 _json_parse_array_energy(json_object *jobj, char *key, int *num)
 {
@@ -989,8 +1105,6 @@ _json_parse_array_energy(json_object *jobj, char *key, int *num)
 	return ents;
 }
 
-/* json_parse_object()
- */
 static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
 {
 	enum json_type type;
@@ -1065,6 +1179,7 @@ static void _my_sleep(int add_secs)
 extern void *_power_agent(void *args)
 {
 	static time_t last_cap_read = 0;
+	static uint32_t last_cap_watts = NO_VAL;
 	time_t now;
 	double wait_time;
 	static time_t last_balance_time = 0;
@@ -1085,20 +1200,29 @@ extern void *_power_agent(void *args)
 		if (wait_time < balance_interval)
 			continue;
 
-		if (last_cap_read == 0) {	/* On first pass */
+		if ((last_cap_watts == cap_watts) && (cap_watts == 0))
+			continue;
+		last_cap_watts = cap_watts;
+
+		if (last_cap_read == 0) {	/* On first pass only */
 			/* Read initial power caps for every node */
 			_get_caps();		/* Has node write lock */
 		}
 
 		wait_time = difftime(now, last_cap_read);
-		if (wait_time > 600) {	/* Every 10 minutes */
+		if (wait_time > 600) {		/* Every 10 minutes */
 			/* Read min/max power for every node */
 			_get_capabilities();	/* Has node write lock */
 		}
 		_get_node_energy_counter();	/* Has node write lock */
+		_get_nodes_ready();		/* Has node write lock */
 		lock_slurmctld(read_locks);
 		get_cluster_power(node_record_table_ptr, node_record_count,
 				  &alloc_watts, &used_watts);
+		if (debug_flag & DEBUG_FLAG_POWER) {
+			info("%s: AllocWatts=%u UsedWatts=%u",
+			     __func__, alloc_watts, used_watts);
+		}
 		if (cap_watts == 0)
 			node_power_list = _clear_node_caps();
 		else
@@ -1139,7 +1263,8 @@ static List _clear_node_caps(void)
 			continue;
 		if (node_ptr->power->cap_watts == 0)	/* No change */
 			continue;
-
+		if (node_ptr->power->state != 1)    /* Not ready -> no change */
+			continue;
 		if (!hs)
 			hs = hostset_create(_node_name2nid(node_ptr->name));
 		else
@@ -1200,6 +1325,8 @@ static void _level_power_by_job(void)
 			node_ptr = node_record_table_ptr + i;
 			if (!node_ptr->power)
 				continue;
+			if (node_ptr->power->state != 1)/*Not ready, no change*/
+				continue;
 			total_watts += node_ptr->power->new_cap_watts;
 			total_nodes++;
 			if (max_watts < node_ptr->power->new_cap_watts)
@@ -1214,16 +1341,18 @@ static void _level_power_by_job(void)
 			continue;
 		ave_watts = total_watts / total_nodes;
 		if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: leveling power caps for job %u "
-			     "(node_cnt:%u min:%u max:%u ave:%u)",
-			     __func__, job_ptr->job_id, total_nodes,
-			     min_watts, max_watts, ave_watts);
+			debug("%s: leveling power caps for job %u "
+			      "(node_cnt:%u min:%u max:%u ave:%u)",
+			      __func__, job_ptr->job_id, total_nodes,
+			      min_watts, max_watts, ave_watts);
 		}
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_ptr = node_record_table_ptr + i;
 			if (!node_ptr->power)
+				continue;
+			if (node_ptr->power->state != 1)/*Not ready, no change*/
 				continue;
 			node_ptr->power->new_cap_watts = ave_watts;
 		}
@@ -1241,7 +1370,7 @@ static List _rebalance_node_power(void)
 	List node_power_list = NULL;
 	power_by_nodes_t *node_power = NULL;
 	struct node_record *node_ptr, *node_ptr2;
-	uint32_t alloc_power = 0, avail_power, ave_power, new_cap, tmp_u32;
+	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
 	int node_power_raise_cnt = 0;
 	time_t recent = time(NULL) - recent_job;
 	int i, j;
@@ -1251,6 +1380,17 @@ static List _rebalance_node_power(void)
 	     i++, node_ptr++) {
 		if (!node_ptr->power)
 			continue;
+		if (node_ptr->power->state != 1) {  /* Not ready -> no change */
+			if (node_ptr->power->cap_watts == 0) {
+				node_ptr->power->new_cap_watts =
+					node_ptr->power->max_watts;
+			} else {
+				node_ptr->power->new_cap_watts =
+					node_ptr->power->cap_watts;
+			}
+			alloc_power += node_ptr->power->new_cap_watts;
+			continue;
+		}
 		node_ptr->power->new_cap_watts = 0;
 		if ((node_ptr->power->cap_watts == 0) ||   /* Not initialized */
 		     (node_ptr->power->current_watts == 0))
@@ -1280,10 +1420,11 @@ static List _rebalance_node_power(void)
 		}
 	}
 
-	avail_power = cap_watts - alloc_power;
+	if (cap_watts > alloc_power)
+		avail_power = cap_watts - alloc_power;
 	if (debug_flag & DEBUG_FLAG_POWER) {
-		info("%s: distributing %u watts over %d nodes",
-		     __func__, avail_power, node_power_raise_cnt);
+		debug("%s: distributing %u watts over %d nodes",
+		      __func__, avail_power, node_power_raise_cnt);
 	}
 
 	/* Distribute rest of power cap on remaining nodes. */
@@ -1335,6 +1476,20 @@ static List _rebalance_node_power(void)
 		bool increase_power = false;
 		if (!node_ptr->power)
 			continue;
+		if (debug_flag & DEBUG_FLAG_POWER) {
+			char *ready_str;
+			if (node_ptr->power->state == 1)
+				ready_str = "YES";
+			else
+				ready_str = "NO";
+			info("Node:%s CurWatts:%3u MinWatts:%3u "
+			     "MaxWatts:%3u OldCap:%3u NewCap:%3u Ready:%s",
+			     node_ptr->name, node_ptr->power->current_watts,
+			     node_ptr->power->min_watts,
+			     node_ptr->power->max_watts,
+			     node_ptr->power->cap_watts,
+			     node_ptr->power->new_cap_watts, ready_str);
+		}
 		if (node_ptr->power->cap_watts ==
 		    node_ptr->power->new_cap_watts)	/* No change */
 			continue;
@@ -1518,6 +1673,8 @@ extern void fini(void)
 		_stop_power_agent();
 		pthread_join(power_thread, NULL);
 		power_thread = 0;
+		xfree(capmc_path);
+		xfree(full_nid_string);
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }

@@ -904,7 +904,7 @@ extern int init_node_conf (void)
 	struct node_record *node_ptr;
 
 	node_ptr = node_record_table_ptr;
-	for (i=0; i< node_record_count; i++, node_ptr++)
+	for (i = 0; i < node_record_count; i++, node_ptr++)
 		purge_node_rec(node_ptr);
 
 	node_record_count = 0;
@@ -939,7 +939,7 @@ extern void node_fini2 (void)
 
 	xhash_free(node_hash_table);
 	node_ptr = node_record_table_ptr;
-	for (i=0; i< node_record_count; i++, node_ptr++)
+	for (i = 0; i < node_record_count; i++, node_ptr++)
 		purge_node_rec(node_ptr);
 
 	xfree(node_record_table_ptr);
@@ -1053,6 +1053,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	xfree(node_ptr->os);
 	xfree(node_ptr->part_pptr);
+	xfree(node_ptr->power);
 	xfree(node_ptr->reason);
 	xfree(node_ptr->version);
 	acct_gather_energy_destroy(node_ptr->energy);

@@ -199,6 +199,12 @@ to be distributed over 9 nodes or 184 watts per node.</p>
 
 <h2>Notes</h2>
 <ul>
+<li>Slurm's power management plugin can be used in conjunction with the
+  <a href="power_save.html">power save mode</a>, where idle nodes are powered
+  down and then powered back up as needed. On a Cray system, set each node's
+  power cap to the minimum value before powering it down. Also set the default
+  power cap of each node to the minimum value as that will be used at power up
+  time.</li>
 <li>We need to determine how the current power consumption data is gathered
   and determine accuracy of that data.</li>
 <li>Cray permits independent power capping for accelerators (GPUs or MICs),
@@ -213,6 +219,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 February 2015</p>
+<p style="text-align:center;">Last modified 23 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
