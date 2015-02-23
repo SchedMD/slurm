@@ -39,14 +39,14 @@ set file_in    "test$test_id\_sc"
 
 print_header $test_id
 
-proc mod_state { state } {
+proc mod_state { state reason } {
 
 	global scontrol node exit_code
 
-	spawn $scontrol update nodename=$node state=$state
+	spawn $scontrol update nodename=$node state=$state reason=$reason
 	expect {
 		timeout {
-			send_user "\nFAILURE:  scontrol is not responding\n"
+			send_user "\nFAILURE: scontrol is not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -192,13 +192,13 @@ if {$job_id == 0} {
 wait_for_job $job_id RUNNING
 
 # Set the node that the job is running on to down
-mod_state "down"
+mod_state "down" "test$test_id"
 
 # Wait a little bit for node state to change
 sleep 5
 
 # Set the node back to resume
-mod_state "resume"
+mod_state "resume" "test$test_id"
 
 # Check the number of steps
 check_step 0
