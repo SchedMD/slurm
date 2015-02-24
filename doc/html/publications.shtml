@@ -153,6 +153,8 @@ David Wallace, Cray</li>
 <li><b>Presentations from Slurm User Group Meeting, September 2013</b></li>
 <ul>
 
+<li><a href="SUG13/SUG2013_photo.jpg">Group photo</a></li>
+
 <li>Welcome: <a href="SUG13/welcome.pdf">Welcome</a>
 Morris Jette (SchedMD)</li>
 
@@ -253,6 +255,8 @@ Tim Wickberg, Rensselaer Polytechnic Institute</li>
 <li><b>Presentations from Slurm User Group Meeting, October 2012</b></li>
 <ul>
 
+<li><a href="slurm_ug_2012/SUG12_photo.jpg">Group photo</a></li>
+
 <li>Keynote: The OmSs Programming Model and its links to resource managers,
 Jesus Labarta, BSC</li>
 
@@ -350,6 +354,8 @@ Martijn de Vries, Bright Computing</li>
 <li><b>Presentations from Slurm User Group Meeting, September 2011</b></li>
 <ul>
 
+<li><a href="slurm_ug_2011/SUG2011_photo.jpg">Group photo</a></li>
+
 <li><a href="slurm_ug_2011/Basic_Configuration_Usage.pdf">Basic
     Configuration and Usage</a>,
 Rod Schultz, Groupe Bull</li>
@@ -426,6 +432,8 @@ Morris Jette, Danny Auble and Donald Lipari, Lawrence Livermore National Laborat
 
 <li><b>Presentations from Slurm User Group Meeting, October 2010</b></li>
 <ul>
+<li><a href="slurm_ug_2010/SUG2010_photo.jpg">Group photo</a></li>
+
 <!-- Use LLNL-PRES-453794 -->
 <li><a href="slurm_ug_2010/01-keynote.pdf">Slurm: Resource Management from the Simple to the
 Sophisticated</a>,
@@ -563,6 +571,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 24 November 2014</p>
+<p style="text-align:center;">Last modified 23 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
