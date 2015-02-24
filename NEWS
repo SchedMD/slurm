@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix wrong variables used in the wrapper functions needed for systems that
     don't support strong_alias
  -- Fix code for apple computers SOL_TCP is not defined
+ -- Cray/BASIL - Check for mysql credentials in /root/.my.cnf.
 
 * Changes in Slurm 14.11.4
 ==========================

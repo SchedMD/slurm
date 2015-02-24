@@ -14,6 +14,7 @@ static int cray_get_options_from_default_conf(MYSQL *handle)
 	 * Hardcoded list of paths my.cnf is known to exist on a Cray XT/XE
 	 */
 	const char *default_conf_paths[] = {
+		"/root/.my.cnf",
 		"/etc/my.cnf",
 		"/etc/opt/cray/MySQL/my.cnf",
 		"/etc/mysql/my.cnf",
