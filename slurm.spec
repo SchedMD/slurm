@@ -934,6 +934,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/switch_none.so
 %{_libdir}/slurm/task_none.so
 %{_libdir}/slurm/topology_3d_torus.so
+%{_libdir}/slurm/topology_hypercube.so
 %{_libdir}/slurm/topology_node_rank.so
 %{_libdir}/slurm/topology_none.so
 %{_libdir}/slurm/topology_tree.so
