@@ -150,6 +150,9 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_GPUS environment variable to those available in the Prolog.
  -- Load lua-5.2 library if using lua5.2 for lua job submit plugin.
  -- GRES logic: Prevent bad node_offset due to not preserving no_consume flag.
+ -- Fix wrong variables used in the wrapper functions needed for systems that
+    don't support strong_alias
+ -- Fix code for apple computers SOL_TCP is not defined
 
 * Changes in Slurm 14.11.4
 ==========================

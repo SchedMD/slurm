@@ -48,12 +48,12 @@
 // make wrappers
 extern int slurm_hostlist_count(hostlist_t hl)
 {
-	return hostlist_count(hostlist);
+	return hostlist_count(hl);
 }
 
 extern hostlist_t slurm_hostlist_create(const char *hostlist)
 {
-	return hostlist_create(hl);
+	return hostlist_create(hostlist);
 }
 
 extern void slurm_hostlist_destroy(hostlist_t hl)
