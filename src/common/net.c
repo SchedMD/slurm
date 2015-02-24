@@ -216,7 +216,7 @@ extern int net_set_keep_alive(int sock)
  * Removing this call might decrease the robustness of communications,
  * but will probably have no noticable effect.
  */
-#if ! defined(__FreeBSD__) || (__FreeBSD_version > 900000)
+#if !defined (__APPLE__) && (! defined(__FreeBSD__) || (__FreeBSD_version > 900000))
 	opt_int = keep_alive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keep alive socket time: %m");
