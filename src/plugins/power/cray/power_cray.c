@@ -1371,7 +1371,8 @@ static List _rebalance_node_power(void)
 	power_by_nodes_t *node_power = NULL;
 	struct node_record *node_ptr, *node_ptr2;
 	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
-	int node_power_raise_cnt = 0;
+	uint32_t node_power_raise_cnt = 0, node_power_needed = 0;
+	uint32_t node_power_same_cnt = 0, node_power_lower_cnt = 0;
 	time_t recent = time(NULL) - recent_job;
 	int i, j;
 
@@ -1410,18 +1411,46 @@ static List _rebalance_node_power(void)
 			node_ptr->power->new_cap_watts =
 				MAX(new_cap, node_ptr->power->min_watts);
 			alloc_power += node_ptr->power->new_cap_watts;
+			node_power_lower_cnt++;
 		} else if (node_ptr->power->current_watts <
 			   (node_ptr->power->cap_watts * upper_threshold)) {
+			/* In desired range. Retain previous cap */
 			node_ptr->power->new_cap_watts =
-				node_ptr->power->cap_watts;
+				MAX(node_ptr->power->cap_watts,
+				    node_ptr->power->min_watts);
 			alloc_power += node_ptr->power->new_cap_watts;
+			node_power_same_cnt++;
 		} else {
+			/* Node should get more power */
 			node_power_raise_cnt++;
+			node_power_needed += node_ptr->power->min_watts;
 		}
 	}
 
 	if (cap_watts > alloc_power)
 		avail_power = cap_watts - alloc_power;
+	if ((alloc_power > cap_watts) || (node_power_needed > avail_power)) {
+		/* When CapWatts changes, we might need to lower nodes more
+		 * than the configured change rate specifications */
+		uint32_t red1 = 0, red2 = 0;
+		if (alloc_power > cap_watts)
+			red1 = alloc_power - cap_watts;
+		if (node_power_needed > avail_power)
+			red2 = node_power_needed - avail_power;
+		red1 = MAX(red1, red2);
+		red1 /= (node_power_lower_cnt + node_power_same_cnt);
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
+			if (!node_ptr->power || !node_ptr->power->new_cap_watts)
+				continue;
+			tmp_u32 = node_ptr->power->new_cap_watts -
+				  node_ptr->power->min_watts;
+			tmp_u32 = MIN(tmp_u32, red1);
+			node_ptr->power->new_cap_watts -= tmp_u32;
+			alloc_power -= tmp_u32;
+		}
+		avail_power = cap_watts - alloc_power;
+	}
 	if (debug_flag & DEBUG_FLAG_POWER) {
 		debug("%s: distributing %u watts over %d nodes",
 		      __func__, avail_power, node_power_raise_cnt);
@@ -1455,7 +1484,10 @@ static List _rebalance_node_power(void)
 			node_ptr->power->new_cap_watts =
 				MIN(node_ptr->power->new_cap_watts,
 				    node_ptr->power->max_watts);
-			avail_power -= node_ptr->power->new_cap_watts;
+			if (avail_power > node_ptr->power->new_cap_watts)
+				avail_power -= node_ptr->power->new_cap_watts;
+			else
+				avail_power = 0;
 			node_power_raise_cnt--;
 			if (node_power_raise_cnt == 0)
 				break;	/* No more nodes to modify */
