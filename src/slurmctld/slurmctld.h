@@ -2064,6 +2064,9 @@ extern bool test_job_array_complete(uint32_t array_job_id);
 /* Return true if ALL tasks of specific array job ID are completed */
 extern bool test_job_array_completed(uint32_t array_job_id);
 
+/* Return true if ALL tasks of specific array job ID are finished */
+extern bool test_job_array_finished(uint32_t array_job_id);
+
 /* Return true if ANY tasks of specific array job ID are pending */
 extern bool test_job_array_pending(uint32_t array_job_id);
 

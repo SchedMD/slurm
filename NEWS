@@ -11,6 +11,9 @@ documents those changes that are of interest to users and administrators.
  -- Added "--mail=stage_out" option to job submission commands to notify user
     when burst buffer state out is complete.
  -- Require a "Reason" when using scontrol to set a node state to DOWN.
+ -- Mail notifications on job BEGIN, END and FAIL now apply to a job array as a
+    whole rather than generating individual email messages for each task in the
+    job array.
 
 * Changes in Slurm 15.08.0pre2
 ==============================

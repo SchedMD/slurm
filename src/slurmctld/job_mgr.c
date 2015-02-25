@@ -2557,6 +2557,31 @@ extern bool test_job_array_completed(uint32_t array_job_id)
 	return true;
 }
 
+/* Return true if ALL tasks of specific array job ID are finished */
+extern bool test_job_array_finished(uint32_t array_job_id)
+{
+	struct job_record *job_ptr;
+	int inx;
+
+	job_ptr = find_job_record(array_job_id);
+	if (job_ptr) {
+		if (!IS_JOB_FINISHED(job_ptr))
+			return false;
+	}
+
+	/* Need to test individual job array records */
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if (job_ptr->array_job_id == array_job_id) {
+			if (!IS_JOB_FINISHED(job_ptr))
+				return false;
+		}
+		job_ptr = job_ptr->job_array_next_j;
+	}
+	return true;
+}
+
 /* Return true if ANY tasks of specific array job ID are pending */
 extern bool test_job_array_pending(uint32_t array_job_id)
 {
@@ -12025,7 +12050,9 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	acct_policy_remove_job_submit(job_ptr);
 	(void) bb_g_job_start_stage_out(job_ptr);
 
-	if (!IS_JOB_RESIZING(job_ptr)) {
+	if (!IS_JOB_RESIZING(job_ptr) &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     test_job_array_finished(job_ptr->array_job_id))) {
 		/* Remove configuring state just to make sure it isn't there
 		 * since it will throw off displays of the job. */
 		job_ptr->job_state &= (~JOB_CONFIGURING);
