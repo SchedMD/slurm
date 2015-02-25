@@ -3551,9 +3551,13 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->job_next = save_job_next;
 	job_ptr_pend->details  = save_details;
-	job_ptr_pend->prio_factors = save_prio_factors;
 	job_ptr_pend->step_list = save_step_list;
 	job_ptr_pend->db_index = save_db_index;
+
+	job_ptr_pend->prio_factors = save_prio_factors;
+	if (job_ptr_pend->prio_factors && job_ptr->prio_factors)
+		memcpy(job_ptr_pend->prio_factors, job_ptr->prio_factors,
+				sizeof(priority_factors_object_t));
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
 	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);

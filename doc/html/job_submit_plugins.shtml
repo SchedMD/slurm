@@ -5,10 +5,10 @@
 <h2> Overview</h2>
 <p> This document describes Slurm job submit plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own Slurm job submit plugins. This is version 100 of the API.
+their own Slurm job submit plugins. This is version 100 of the API.</p>
 
 <p>Slurm job submit plugins must conform to the
-SLURM Plugin API with the following specifications:
+Slurm Plugin API with the following specifications:</p>
 
 <p><span class="commandline">const char
 plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
@@ -63,8 +63,8 @@ implemented must be stubbed.
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
@@ -164,12 +164,92 @@ errno on failure. Slurm specific error numbers from <i>slurm/slurm_errno.h</i>
 may be used. On failure, the request will be rejected and the user will have an
 appropriate error message printed for that errno. 
 
-
 <h2>Versioning</h2>
 <p> This document describes version 110 of the Slurm Job Submission API. Future
 releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 16 July 2014</p>
+<h2>Building</h2>
+<p>Generally using a LUA interface for a job submit plugin is best:
+It is simple to write and maintain with minimal dependencies upon the Slurm
+data structures.
+However using C does provide a mechanism to get more information than available
+using LUA including full access to all of the data structures and functions
+in the slurmctld daemon.
+The simplest way to build a C program would be to just replace one of the
+job submit plugins included in the Slurm distribution with your own code
+(i.e. use a patch with your own code).
+Then just build and install Slurm with that new code.
+Building a new plugin outside of the Slurm distribution is possible, but
+far more complex.
+It also requires access to a multitude of Slurm header files as shown in the
+proceedure below.</p>
+
+<ol>
+<li>You will need to at least partly build Slurm first. The "configure" command
+must be executed in order to build the "config.h" file in the build directory.</li>
+
+<li>Create a local directory somewhere for your files to build with.
+Also create subdirectories named ".libs" and ".deps".</li>
+
+<li>Copy a ".deps/job_submit_*Plo" file from another job_submit plugin's ".deps"
+directory (made as part of the build process) into your local ".deps" subdirectory.
+Rename the file as appropriate to reflect your plugins name (e.g. rename
+"job_submit_partition.Plo" to be something like "job_submit_mine.Plo").</li>
+
+<li>Compile and link your plugin. Those options might differ depending
+upon your build environment. Check the options used for building the
+other job_submit plugins and modify the example below as required.</li>
+
+<li>Install the plugin.</li>
+</ol>
+
+<pre>
+# Example:
+# The Slurm source is in ~/SLURM/slurm.git
+# The Slurm build directory is ~/SLURM/slurm.build
+# The plugin build is to take place in the directory
+#   "~/SLURM/my_submit"
+# The installation locaiton is "/usr/local"
+
+# Build Slurm from ~/SLURM/slurm.build
+# (or at least run "~/SLURM/slurm.git/configure")
+
+# Set up your plugin files
+cd ~/SLURM
+mkdir my_submit
+cd my_submit
+mkdir .libs
+mkdir .deps
+# Create your plugin code
+vi job_submit_mine.c
+
+# Copy up a dependency file
+cp ~/SLURM/slurm.build/src/plugins/job_submit/partition/.deps/job_submit_partition.Plo \
+   .deps/job_submit_nine.Plo
+
+# Compile
+gcc -DHAVE_CONFIG_H -I~/SLURM/slurm.build -I~/slurm.git \
+   -g -O2 -pthread -fno-gcse -Werror -Wall -g -O0       \
+   -fno-strict-aliasing -MT job_submit_mine.lo          \
+   -MD -MP -MF .deps/job_submit_mine.Tpo                \
+   -c job_submit_mine.c -o job_submit_mine.o
+
+# Some clean up
+mv -f .deps/job_submit_mine.Tpo .deps/job_submit_mine.Plo
+rm -fr .libs/job_submit_mine.a .libs/job_submit_mine.la \
+   .libs/job_submit_mine.lai job_submit_mine.so
+
+# Link
+gcc -shared -fPIC -DPIC .libs/job_submit_mine.o -O2         \
+   -pthread -O0 -pthread -Wl,-soname -Wl,job_submit_mine.so \
+   -o job_submit_mine.so
+
+# Install
+cp job_submit_mine.so file \
+   /usr/local/lib/slurm/job_submit_mine.so
+</pre>
+
+<p style="text-align:center;">Last modified 25 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

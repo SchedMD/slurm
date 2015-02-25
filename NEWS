@@ -154,6 +154,8 @@ documents those changes that are of interest to users and administrators.
     don't support strong_alias
  -- Fix code for apple computers SOL_TCP is not defined
  -- Cray/BASIL - Check for mysql credentials in /root/.my.cnf.
+ -- Fix sprio showing wrong priority for job arrays until priority is
+    recalculated.
 
 * Changes in Slurm 14.11.4
 ==========================
