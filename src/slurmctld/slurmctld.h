@@ -142,7 +142,7 @@
  * with reason JobHeldUser.
  */
 #ifndef MAX_BATCH_REQUEUE
-#define MAX_BATCH_REQUEUE 5
+#define MAX_BATCH_REQUEUE 1
 #endif
 
 /*****************************************************************************\
