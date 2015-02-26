@@ -47,7 +47,7 @@ static void _cpuset_to_cpustr(const cpu_set_t *mask, char *str)
 	char tmp[16];
 
 	str[0] = '\0';
-	for (i=0; i<CPU_SETSIZE; i++) {
+	for (i = 0; i < CPU_SETSIZE; i++) {
 		if (!CPU_ISSET(i, mask))
 			continue;
 		snprintf(tmp, sizeof(tmp), "%d", i);
@@ -63,11 +63,11 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	int fd, rc;
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
-		error("mkdir(%s): %m", path);
+		error("%s: mkdir(%s): %m", __func__, path);
 		return SLURM_ERROR;
 	}
 	if (chown(path, uid, gid))
-		error("chown(%s): %m", path);
+		error("%s: chown(%s): %m", __func__, path);
 
 	/* Copy "cpus" contents from parent directory
 	 * "cpus" must be set before any tasks can be added. */
@@ -84,7 +84,7 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 			fd = open(file_path, O_RDONLY);
 			if (fd < 0) {
 				cpuset_prefix = "";
-				error("open(%s): %m", file_path);
+				error("%s: open(%s): %m", __func__, file_path);
 				return SLURM_ERROR;
 			}
 		} else {
@@ -95,14 +95,14 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	rc = read(fd, mstr, sizeof(mstr));
 	close(fd);
 	if (rc < 1) {
-		error("read(%s): %m", file_path);
+		error("%s: read(%s): %m", __func__, file_path);
 		return SLURM_ERROR;
 	}
 	snprintf(file_path, sizeof(file_path), "%s/%scpus",
 		 path, cpuset_prefix);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
-		error("open(%s): %m", file_path);
+		error("%s: open(%s): %m", __func__, file_path);
 		return SLURM_ERROR;
 	}
 	rc = write(fd, mstr, rc);
@@ -170,7 +170,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	char mstr[1 + CPU_SETSIZE * 4];
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
-		error("mkdir(%s): %m", path);
+		error("%s: mkdir(%s): %m", __func__, path);
 		return SLURM_ERROR;
 	}
 
@@ -211,7 +211,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 			error("open(%s): %m", file_path);
 			return SLURM_ERROR;
 		}
-		rc = write(fd, mstr, rc);
+		rc = write(fd, mstr, strlen(mstr)+1);
 		close(fd);
 		if (rc < 1) {
 			error("write(%s): %m", file_path);

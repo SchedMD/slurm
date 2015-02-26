@@ -335,13 +335,13 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 			     CPUSET_DIR,
 			     (conf->node_name != NULL)?conf->node_name:"",
 			     job->jobid) > PATH_MAX) {
-			error("cpuset path too long");
+			error("%s: cpuset path too long", __func__);
 			rc = SLURM_ERROR;
 		}
 #else
 		if (snprintf(path, PATH_MAX, "%s/slurm%u",
 			     CPUSET_DIR, job->jobid) > PATH_MAX) {
-			error("cpuset path too long");
+			error("%s: cpuset path too long", __func__);
 			rc = SLURM_ERROR;
 		}
 #endif
