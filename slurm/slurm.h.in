@@ -1139,6 +1139,8 @@ typedef struct power_mgmt_data {
 	time_t new_job_time;	/* set when a new job has been scheduled on the
 				 * node, used to trigger higher cap */
 	uint16_t state;		/* Power state information */
+	uint64_t time_usec;	/* Data timestamp in microseconds since start
+				 * of the day */
 } power_mgmt_data_t;
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */

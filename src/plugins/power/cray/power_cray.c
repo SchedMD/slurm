@@ -94,6 +94,7 @@ typedef struct power_config_nodes {
 	int node_cnt;		  /* length of node_name array */
 	char **node_name;	  /* Node names (nid range list values on Cray) */
 	uint16_t state;           /* State 1=ready, 0=other */
+	uint64_t time_usec;       /* number of microseconds since start of the day */
 } power_config_nodes_t;
 
 /*
@@ -179,6 +180,28 @@ extern void *_power_agent(void *args);
 static List _rebalance_node_power(void);
 static void _set_power_caps(List node_power_list);
 static void _stop_power_agent(void);
+static uint64_t _time_str2num(char *time_str);
+
+/* Convert a time in the format "2015-02-19 15:50:00.581552-06" to the
+ * equivalent to the number of micro-seconds since the start of this day */
+static uint64_t _time_str2num(char *time_str)
+{
+	uint64_t total_usecs = 0;
+	int year = 0, month = 0, day = 0;
+	int hour = 0, min = 0, sec = 0;
+	int u_sec = 0, unk = 0;
+	int args;
+
+	args = sscanf(time_str, "%d-%d-%d %d:%d:%d.%d-%d",
+		      &year, &month, &day, &hour, &min, &sec, &u_sec, &unk);
+	if (args >= 6) {
+		total_usecs  = (((hour * 60) + min) * 60) + sec;
+		total_usecs *= 1000000;
+		total_usecs += u_sec;
+	}
+
+	return total_usecs;
+}
 
 /* Return a pointer to the numeric value of a node name starting with "nid",
  * also skip over leading zeros in the numeric portion. Returns a pointer
@@ -319,7 +342,7 @@ static void _get_capabilities(void)
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[3], node_names[128];
-	power_config_nodes_t *ents;
+	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent = 0, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
@@ -411,7 +434,7 @@ _json_parse_array_capabilities(json_object *jobj, char *key, int *num)
 	json_object *j_array;
 	json_object *j_value;
 	int i;
-	power_config_nodes_t *ents = NULL;
+	power_config_nodes_t *ents;
 
 	j_array = jobj;
 	json_object_object_get_ex(jobj, key, &j_array);
@@ -629,7 +652,7 @@ static void _get_caps(void)
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
-	power_config_nodes_t *ents;
+	power_config_nodes_t *ents = NULL;
 	int i, num_ent = 0, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
@@ -709,7 +732,7 @@ _json_parse_array_caps(json_object *jobj, char *key, int *num)
 	json_object *j_array;
 	json_object *j_value;
 	int i;
-	power_config_nodes_t *ents = NULL;
+	power_config_nodes_t *ents;
 
 	j_array = jobj;
 	json_object_object_get_ex(jobj, key, &j_array);
@@ -856,7 +879,7 @@ static void _get_nodes_ready(void)
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
 	struct node_record *node_ptr;
-	power_config_nodes_t *ents;
+	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
@@ -979,16 +1002,13 @@ _json_parse_ready(json_object *jobj, char *key, int *num)
  * nodes with a frequency of AcctGatherNodeFreq. */
 static void _get_node_energy_counter(void)
 {
-	static time_t last_timer = 0;
-	time_t now;
-	struct tm *time_spec;
 	/* Write nodes */
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-	char *cmd_resp, *script_argv[7], time_str[64];
-	power_config_nodes_t *ents;
+	char *cmd_resp, *script_argv[5];
+	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent = 0, status = 0;
-	uint64_t delta_joules, delta_time;
+	uint64_t delta_joules, delta_time, usecs_day;
 	json_object *j_obj;
 	json_object_iter iter;
 	struct node_record *node_ptr;
@@ -998,16 +1018,11 @@ static void _get_node_energy_counter(void)
 	if (!full_nid_string)
 		return;
 
-	now = time(NULL);
-	time_spec = localtime(&now);
-	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_spec);
 	script_argv[0] = capmc_path;
 	script_argv[1] = "get_node_energy_counter";
-	script_argv[2] = "-t";
-	script_argv[3] = time_str;	/* yyyy-mm-dd hh:mm:ss */
-	script_argv[4] = "--nids";
-	script_argv[5] = full_nid_string;
-	script_argv[6] = NULL;
+	script_argv[2] = "--nids";
+	script_argv[3] = full_nid_string;
+	script_argv[4] = NULL;
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
@@ -1044,8 +1059,6 @@ static void _get_node_energy_counter(void)
 		}
 	}
 	json_object_put(j_obj);	/* Frees json memory */
-	now = time(NULL);
-	delta_time = difftime(now, last_timer);
 
 	lock_slurmctld(write_node_lock);
 	for (i = 0, node_ptr = node_record_table_ptr;
@@ -1055,6 +1068,8 @@ static void _get_node_energy_counter(void)
 		else
 			node_ptr->power->current_watts = 0;
 	}
+	usecs_day  = 24 * 60 * 60;
+	usecs_day *= 1000000;
 	for (i = 0; i < num_ent; i++) {
 		for (j = 0; j < ents[i].node_cnt; j++) {
 			node_ptr = find_node_record2(ents[i].node_name[j]);
@@ -1062,17 +1077,39 @@ static void _get_node_energy_counter(void)
 				debug("%s: Node %s not in Slurm config",
 				      __func__, ents[i].node_name[j]);
 			} else {
+				delta_time   = 0;
+				delta_joules = 0;
+				if ((ents[i].time_usec == 0) ||
+				    (node_ptr->power->time_usec == 0)) {
+					;
+				} else if (ents[i].time_usec >
+					   node_ptr->power->time_usec) {
+					delta_time =
+						ents[i].time_usec -
+						node_ptr->power->time_usec;
+				} else if ((ents[i].time_usec <
+					    node_ptr->power->time_usec) &&
+					   ((ents[i].time_usec + usecs_day) >
+					    node_ptr->power->time_usec)) {
+					delta_time =
+						(ents[i].time_usec +
+						 usecs_day) -
+						node_ptr->power->time_usec;
+				}	
 				if (delta_time &&
-				    (node_ptr->power->joule_counter >
+				    (node_ptr->power->joule_counter <
 				     ents[i].joule_counter)) {
 					delta_joules =
 						ents[i].joule_counter -
 						node_ptr->power->joule_counter;
+					delta_joules *= 1000000;
 					node_ptr->power->current_watts =
 						delta_joules / delta_time;
 				}
 				node_ptr->power->joule_counter =
 					ents[i].joule_counter;
+				node_ptr->power->time_usec =
+					ents[i].time_usec;
 			}
 			xfree(ents[i].node_name[j]);
 		}
@@ -1081,7 +1118,6 @@ static void _get_node_energy_counter(void)
 	xfree(ents);
 	unlock_slurmctld(write_node_lock);
 	xfree(cmd_resp);
-	last_timer = now;
 }
 
 static power_config_nodes_t *
@@ -1111,7 +1147,7 @@ static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
 	enum json_type type;
 	struct json_object_iter iter;
 	int64_t x;
-//	const char *p = NULL;
+	const char *p = NULL;
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -1146,13 +1182,11 @@ static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
 				break;
 			case json_type_string:
 //				info("%s: Key string %s", __func__, iter.key);
-//				p = json_object_get_string(iter.val);
-//				if (!strcmp(iter.key, "time")) {
-					/* Ignored for now. Format:
-					 * "2015-02-19 15:50:00.581552-06"
-					 * Consider adding for more precise
-					 * power consumption data. */
-//				}
+				p = json_object_get_string(iter.val);
+				if (!strcmp(iter.key, "time")) {
+					ent->time_usec =
+						_time_str2num((char *) p);
+				}
 				break;
 		}
 	}

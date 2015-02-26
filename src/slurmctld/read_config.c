@@ -1007,7 +1007,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	rehash_node();
 	slurm_topo_build_config();
 	route_g_reconfigure();
-	power_g_reconfig();
+	if (reconfig)
+		power_g_reconfig();
 	cpu_freq_reconfig();
 
 	rehash_jobs();
