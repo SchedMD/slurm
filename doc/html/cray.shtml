@@ -59,19 +59,32 @@
   able to be used by other jobs using NPC, if idle their state will appear as
   PerfCnts.  These nodes are still available for other jobs not using NPC.
 </p>
+
 <li>Core Specialization</li>
 <p>
+  To use set <b><i>CoreSpecPlugin=core_spec/cray</i></b>.
   Ability to reserve a number of cores allocated to the job for system
   operations and not used by the application. The application will not
   use these cores, but will be charged for their allocation.
 </p>
 </ul>
+
 <h2><a name="admin_guide">Admin Guide</a></h2>
 <p>
   Many new plugins were added to utilize the Cray system without
   ALPS.  These should be set up in your slurm.conf outside of your
   normal configuration.
 <ul>
+
+<li>BurstBuffer</li>
+<p>
+  Set <b><i>BurstBufferPlugins=burst_buffer/cray</i></b> to use.
+  The burst buffer capability on Cray systems is also known by the name
+  <i>DataWarp</i>.
+  For more information, see
+  <a href="burst_buffer.html">Slurm Burst Buffer Guide</a>.
+</p>
+
 <li>CoreSpec</li>
 <p>
   To use set <b><i>CoreSpecPlugin=core_spec/cray</i></b>.
@@ -79,8 +92,8 @@
 
 <li>JobSubmit</li>
 <p>
-  To use set <b><i>JobSubmitPlugins=job_submit/cray</i></b>.
-  Primarily this plugin is used to set a gres=craynetwork value which
+  Set <b><i>JobSubmitPlugins=job_submit/cray</i></b> to use.
+  This plugin is primarily used to set a gres=craynetwork value which
   is used to limit the number of applications that can run on a node
   at once.  For a node without MICs on it that number at most is 4.
   Nodes with MICs the number drops to 2.  This craynetwork gres needs
@@ -94,13 +107,23 @@
     ...
   </pre>
 </p>
+
+<li>Power</li>
+<p>
+  Set <b><i>PowerPlugin=power/cray</i></b> to use.
+  <b><i>PowerParameters</i></b> is also typically configured.
+  For more information, see
+  <a href="power_mgmt.html">Slurm Power Management Guide</a>.
+</p>
+
 <li>Proctrack</li>
 <p>
-  To use set <b><i>ProctrackType=proctrack/cray</i></b>.
+  Set <b><i>ProctrackType=proctrack/cray</i></b> to use.
 </p>
+
 <li>Select</li>
 <p>
-  To use set <b><i>SelectType=select/cray</i></b>.  This plugin is
+  Set <b><i>SelectType=select/cray</i></b> to use.  This plugin is
   a layered plugin.  Which means it enhances a lower layer select
   plugin.  By default it is layered on top of the <i>select/linear</i>
   plugin.  It can also be layered on top of the <i>select/cons_res</i> plugin
@@ -111,13 +134,15 @@
   to allocate (e.g. cores, sockets, memory, etc.). See the slurm.conf man
   page for details.
 </p>
+
 <li>Switch</li>
 <p>
-  To use set <b><i>SwitchType=switch/cray</i></b>.
+  Set <b><i>SwitchType=switch/cray</i></b> to use.
 </p>
+
 <li>Task</li>
 <p>
-  To use set <b><i>TaskPlugin=cray</i></b>.
+  Set <b><i>TaskPlugin=cray</i></b> to use.
   It is advised to use this in conjunction with other task plugins
   such as the <i>task/cgroup</i> plugin.  This can be done in this
   manner, <b><i>TaskPlugin=cgroup,cray</i></b>, you can also
@@ -129,7 +154,13 @@
 </p>
 </ul>
 
-<h2><a name="setup">Cray system Setup</a></h2>
+<h2><a name="setup">Cray system setup</a></h2>
+<p>Some Slurm plugins (burst_buffer/cray and power/cray) plugins
+parse JSON format data.
+These plugins are designed to make use of the JSON-C library for this purpose.
+See <a href="download.html#json">JSON-C installation instructions</a> for
+details.</p>
+
 <p>
   Some services on the system need to be set up to run correctly with
   Slurm.  Below is how to restart the service and the nodes they run
@@ -145,7 +176,7 @@
     <lI>WLM_DETECT_ACTIVE=SLURM /etc/init.d/apptermd restart</li>
   </ul>
 <p>
-  As with linux clusters you will need to start a slurmd on each of your
+  As with Linux clusters you will need to start a slurmd on each of your
   compute nodes.  If you choose to use munge authentication, advised,
   you will also need munge installed and a munged running on each of
   your compute nodes as well.  See the <a href="quickstart_admin.html">
@@ -156,6 +187,6 @@
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 April 2014</p>
+<p style="text-align:center;">Last modified 26 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Burst Buffer Guide</h1>
+<h1>Slurm Burst Buffer Guide</h1>
 
 <p><b>DRAFT based upon early design work</b></p>
 
@@ -92,6 +92,11 @@ StopStageIn=/usr/local/slurm/15.08/sbin/PSI
 StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 </pre>
 
+<p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
+to build Slurm's burst_buffer/cray plugin, which must parse JSON format data.
+See Slurm's <a href="download.html#json">JSON installation information</a>
+for details.</p>
+
 <h2>Job Submission Commands</h2>
 
 <p>All of the job submission commands (<i>salloc</i>, <i>sbatch</i> and
@@ -178,6 +183,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 18 February 2015</p>
+<p style="text-align:center;">Last modified 26 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -356,7 +356,46 @@ easy and elegantly manner.
 <li><a href="mslurm/mslurm_overview.pdf">Overview</a></li>
 <li><a href="mslurm/mslurm_install_instructions.pdf">Installation Instructions</a></li>
 <li><a href="mslurm/mslurm.tgz">Code</a></li>
+</ul></li><br>
+
+<li><a name="user_guide"><b>JSON</b></a><br>
+Some Slurm plugins (burst_buffer/cray and power/cray) plugins
+parse JSON format data.
+These plugins are designed to make use of the JSON-C library for this purpose.
+Instructions for the build are as follows:
+<ol>
+<li>Download json-c version 0.12 (or higher) from<br>
+<a href="https://s3.amazonaws.com/json-c_releases/releases/index.html">
+https://s3.amazonaws.com/json-c_releases/releases/index.html</a></li>
+
+<li>Unpackage json-c<br>
+gunzip json-c-0.12.tar.gz<br>
+tar -xf json-c-0.12.tar</li>
+
+<li>Built and install json-c
 <ul>
+<li>If you have current build tools<br>
+cd json-c-0.12<br>
+./configure --prefix=DESIRED_PATH<br>
+make<br>
+make install</li>
+
+<li>If you have old build tools<br>
+cd json-c-0.12<br>
+mv aclocal.m4 aclocal.m4.orig<br>
+aclocal<br>
+autoconf<br>
+mv libtool libtool.orig<br>
+cp /usr/bin/libtool libtool<br>
+./configure --prefix=DESIRED_PATH<br>
+make<br>
+make install</li>
+</ul>
+
+<li>Build and install Slurm<br>
+./configure --with-json=DESIRED_PATH ...<br>
+make -j</li>
+</ol>
 
 </ul>
 

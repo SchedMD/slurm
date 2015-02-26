@@ -105,6 +105,11 @@ Currently valid options are:
 </ul></li>
 </ul>
 
+<p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
+to build Slurm's power/cray plugin, which must parse JSON format data.
+See Slurm's <a href="download.html#json">JSON installation information</a>
+for details.</p>
+
 <p><b>Note for Cray systems:</b> Power management is provided for native
 Slurm configurations (i.e. without the ALPS resource manager).</p>
 
@@ -219,6 +224,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 23 February 2015</p>
+<p style="text-align:center;">Last modified 26 February 2015</p>
 
 <!--#include virtual="footer.txt"-->
