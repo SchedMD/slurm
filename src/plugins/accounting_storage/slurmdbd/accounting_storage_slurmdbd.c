@@ -2406,7 +2406,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		   script was running.
 		*/
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->gres);
-		nodes = cpus = tasks = 1;
+		nodes = tasks = 1;
 	}
 
 	if (!step_ptr->job_ptr->db_index
