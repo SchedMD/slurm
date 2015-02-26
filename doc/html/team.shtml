@@ -2,16 +2,17 @@
 
 <h1>Slurm Team</h1>
 <p>Slurm development has been a joint effort of many companies and
-organizations. Over 130 individuals have contributed to the project.
+organizations around the world.
+Over 170 individuals have contributed to the project.
 Lead Slurm developers are:
 <ul>
-<li>Danny Auble (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
-<li>Morris Jette (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
+<li>Danny Auble (SchedMD)</li>
+<li>Morris Jette (SchedMD)</li>
 </ul>
 
 <p>Slurm contributors include:</p>
 <ul>
-<!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
+<!-- MAJOR CONTRIBUTING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li><a href="http://www.bsc.es">Barcelona Supercomputing Center</a></li>
 <li><a href="http://www.bull.com">Bull</a></li>
 <li><a href="http://www.cea.fr">CEA</a></li>
@@ -25,6 +26,7 @@ Lead Slurm developers are:
 <li><a href="http://www.nvidia.com">NVIDIA</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
 <li><a href="http://www.schedmd.com">SchedMD</a></li>
+<li><a href="http://www.sgi.com">SGI</a></li>
 <li><a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a></li>
 <br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER --><br>
 <li>Daniel Ahlin (KTH, Sweden)</li>
@@ -166,6 +168,7 @@ Lead Slurm developers are:
 <li>Martin Perry (Bull)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
+<li>Josko Plazonic (Princecton University)</li>
 <li>Artem Polyakov (ISP SB RAS, Russia)</li>
 <li>Ludovic Prevost (NEC, France)</li>
 <br>
@@ -221,6 +224,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 6 January 2015</p>
+<p style="text-align:center;">Last modified 25 Febuary 2015</p>
 
 <!--#include virtual="footer.txt"-->

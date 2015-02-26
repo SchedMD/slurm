@@ -119,6 +119,35 @@ int str_to_cpuset(cpu_set_t *mask, const char* str)
 	return 0;
 }
 
+int str_to_cnt(const char* str)
+{
+	int len = strlen(str);
+	const char *ptr = str + len - 1;
+	int cnt = 0;
+
+	/* skip 0x, it's all hex anyway */
+	if (len > 1 && !memcmp(str, "0x", 2L))
+		str += 2;
+
+	while (ptr >= str) {
+		char val = char_to_val(*ptr);
+		if (val == (char) -1)
+			return -1;
+		if (val & 1)
+			cnt++;
+		if (val & 2)
+			cnt++;
+		if (val & 4)
+			cnt++;
+		if (val & 8)
+			cnt++;
+		len--;
+		ptr--;
+	}
+
+	return cnt;
+}
+
 char * cpuset_to_str(const cpu_set_t *mask, char *str)
 {
 	int base;
