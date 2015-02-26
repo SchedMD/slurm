@@ -19366,8 +19366,8 @@ $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
 
 $as_echo "#define HAVE_JSON 1" >>confdefs.h
 
-    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include/json-c"
-    JSON_LDFLAGS="-L$x_ac_cv_json_dir -ljson-c"
+    JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
+    JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
   fi
 
 

@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #if HAVE_JSON
 #include <json-c/json.h>
 #endif
