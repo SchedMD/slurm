@@ -1,4 +1,4 @@
-This file describes changes in recent versions of Slurm. It primarily
+ This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre3
@@ -162,6 +162,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray/BASIL - Check for mysql credentials in /root/.my.cnf.
  -- Fix sprio showing wrong priority for job arrays until priority is
     recalculated.
+ -- Account to batch step all CPUs that are allocated to a job not
+    just one since the batch step has access to all CPUs like other steps.
 
 * Changes in Slurm 14.11.4
 ==========================
