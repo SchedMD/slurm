@@ -357,6 +357,8 @@ struct part_record {
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint32_t max_cpu_cnt;	/* max # of cpus on a node in the partition */
+	uint32_t max_core_cnt;	/* max # of cores on a node in the partition */
 	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
 };
 
@@ -875,6 +877,18 @@ extern void  build_config_feature_list(struct config_record *config_ptr);
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
 extern struct part_record *create_part_record (void);
+
+/*
+ * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap
+ *	for the specified partition, also reset the partition pointers in
+ *	the node back to this partition.
+ * IN part_ptr - pointer to the partition
+ * RET 0 if no error, errno otherwise
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: this does not report nodes defined in more than one partition. this
+ *	is checked only upon reading the configuration file, not on an update
+ */
+extern int build_part_bitmap(struct part_record *part_ptr);
 
 /*
  * job_limits_check - check the limits specified for the job.

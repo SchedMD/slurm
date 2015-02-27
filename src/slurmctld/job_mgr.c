@@ -8052,8 +8052,15 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 {
-	int i, max_cpu_cnt = 1, max_core_cnt = 1;
+	static int max_cpu_cnt = -1, max_core_cnt = -1;
+	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
+
+	*cpu_cnt_ptr  = max_cpu_cnt;
+	*core_cnt_ptr = max_core_cnt;
+
+	if (max_cpu_cnt != -1)
+		return;
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 #ifndef HAVE_BG
@@ -8072,15 +8079,13 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 		}
 #endif
 	}
-	*cpu_cnt_ptr  = max_cpu_cnt;
-	*core_cnt_ptr = max_core_cnt;
 }
 
 /* pack default job details for "get_job_info" RPC */
 static void _pack_default_job_details(struct job_record *job_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	static int max_cpu_cnt = -1, max_core_cnt = -1;
+	int max_cpu_cnt = -1, max_core_cnt = -1;
 	int i;
 	struct job_details *detail_ptr = job_ptr->details;
 	char *cmd_line = NULL;
@@ -8107,7 +8112,10 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	} else
 		shared = (uint16_t) NO_VAL;	/* No user or partition info */
 
-	if (max_cpu_cnt == -1)
+	if (job_ptr->part_ptr && job_ptr->part_ptr->max_cpu_cnt) {
+		max_cpu_cnt  = job_ptr->part_ptr->max_cpu_cnt;
+		max_core_cnt = job_ptr->part_ptr->max_core_cnt;
+	} else
 		_find_node_config(&max_cpu_cnt, &max_core_cnt);
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
