@@ -179,6 +179,7 @@ static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
+static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -219,7 +220,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
 static int  _set_job_id(struct job_record *job_ptr);
-static void  _set_job_requeue_exit_value(struct job_record *job_ptr);
+static void _set_job_requeue_exit_value(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr,
 			      uint16_t signal,
 			      uint16_t flags);
@@ -245,7 +246,6 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
-static void _kill_dependent(struct job_record *);
 
 /*
  * Functions used to manage job array responses with a separate return code
