@@ -113,7 +113,7 @@ to indicate the reason for failure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_p_newalloc (void);</p>
+<p class="commandline">int slurm_sched_p_newalloc (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -121,7 +121,7 @@ get partition, allocated resources, time limit, etc.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_p_freealloc (void);</p>
+<p class="commandline">int slurm_sched_p_freealloc (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful release of resources for a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -187,6 +187,6 @@ releases of Slurm may revise this API. A scheduler plugin conveys its ability
 to implement a particular API version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 February 2015</p>
 
 <!--#include virtual="footer.txt"-->

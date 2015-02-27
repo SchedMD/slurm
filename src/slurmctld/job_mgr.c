@@ -12016,8 +12016,7 @@ extern bool job_array_start_test(struct job_record *job_ptr)
 			return false;
 		}
 	}
-	if (job_ptr->details && !job_ptr->details->begin_time)
-		job_ptr->details->begin_time = now;
+
 	return true;
 }
 
@@ -12152,6 +12151,10 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	 * job records get purged (e.g. afterok, afternotok) */
 	depend_rc = test_job_dependency(job_ptr);
 	if (depend_rc == 1) {
+		/* start_time has passed but still has dependency which
+		 * makes it ineligible */
+		if (detail_ptr->begin_time < now)
+			detail_ptr->begin_time = 0;
 		job_ptr->state_reason = WAIT_DEPENDENCY;
 		xfree(job_ptr->state_desc);
 		return false;
