@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2010-2014 SchedMD LLC.
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
@@ -1465,18 +1465,13 @@ char *slurm_get_accounting_storage_pass(void)
  */
 extern char *slurm_get_auth_info(void)
 {
-	static bool loaded_auth_info = false;
-	static char *auth_info = NULL;
+	char *auth_info;
 	slurm_ctl_conf_t *conf;
-
-	if (loaded_auth_info)
-		return auth_info;
 
 	conf = slurm_conf_lock();
 	auth_info = xstrdup(conf->authinfo);
 	slurm_conf_unlock();
 
-	loaded_auth_info = true;
 	return auth_info;
 }
 
@@ -1505,6 +1500,7 @@ extern int slurm_get_auth_ttl(void)
 	} else {
 		ttl = 0;
 	}
+	xfree(auth_info);
 
 	return ttl;
 }
@@ -2808,8 +2804,9 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
 	} else {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  slurm_get_auth_info() );
+		char *auth_info = slurm_get_auth_info();
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		xfree(auth_info);
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -2986,8 +2983,9 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
 	} else {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  slurm_get_auth_info() );
+		char *auth_info = slurm_get_auth_info();
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		xfree(auth_info);
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -3225,8 +3223,9 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
 					  _global_auth_key() );
 	} else {
-		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
-					  slurm_get_auth_info() );
+		char *auth_info = slurm_get_auth_info();
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, auth_info );
+		xfree(auth_info);
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -3322,10 +3321,13 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 	 * but we may need to generate the credential again later if we
 	 * wait too long for the incoming message.
 	 */
-	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
+	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
-	else
-		auth_cred = g_slurm_auth_create(NULL, 2, slurm_get_auth_info());
+	} else {
+		char *auth_info = slurm_get_auth_info();
+		auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
+		xfree(auth_info);
+	}
 
 	if (msg->forward.init != FORWARD_INIT) {
 		forward_init(&msg->forward, NULL);
@@ -3339,8 +3341,9 @@ int slurm_send_node_msg(slurm_fd_t fd, slurm_msg_t * msg)
 			auth_cred = g_slurm_auth_create(NULL, 2,
 							_global_auth_key());
 		} else {
-			auth_cred = g_slurm_auth_create(NULL, 2,
-							slurm_get_auth_info());
+			char *auth_info = slurm_get_auth_info();
+			auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
+			xfree(auth_info);
 		}
 	}
 	if (auth_cred == NULL) {

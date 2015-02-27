@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -75,6 +76,8 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
  * Default credential information expiration window.
  * Long enough for loading user environment, running prolog,
  * and dealing with the slurmd getting paged out of memory.
+ * The default value may be altered with the configuration option of this sort:
+ * "AuthInfo=cred_expire=600"
  */
 #define DEFAULT_EXPIRATION_WINDOW 1200
 
@@ -234,6 +237,7 @@ static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static time_t crypto_restart_time = (time_t) 0;
 static List sbcast_cache_list = NULL;
+static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 
 /*
  * Static prototypes:
@@ -292,12 +296,25 @@ static char * timestr (const time_t *tp, char *buf, size_t n);
 
 static int _slurm_crypto_init(void)
 {
+	char	*auth_info, *tok;
 	char    *plugin_type = "crypto";
 	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
 
 	if ( init_run && g_context )  /* mostly avoid locks for better speed */
 		return retval;
+
+	if ((auth_info = slurm_get_auth_info())) {
+		if ((tok = strstr(auth_info, "cred_expire="))) {
+			cred_expire = atoi(tok + 12);
+			if (cred_expire < 5) {
+				error("AuthInfo=cred_expire=%d invalid",
+				      cred_expire);
+				cred_expire = DEFAULT_EXPIRATION_WINDOW;
+			}
+		xfree(auth_info);
+		}
+	}
 
 	slurm_mutex_lock( &g_context_lock );
 	if (crypto_restart_time == (time_t) 0)
@@ -1604,7 +1621,7 @@ _slurm_cred_ctx_alloc(void)
 	slurm_mutex_init(&ctx->mutex);
 	slurm_mutex_lock(&ctx->mutex);
 
-	ctx->expiry_window = DEFAULT_EXPIRATION_WINDOW;
+	ctx->expiry_window = cred_expire;
 	ctx->exkey_exp     = (time_t) -1;
 
 	xassert(ctx->magic = CRED_CTX_MAGIC);

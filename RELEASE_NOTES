@@ -89,6 +89,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
     including all nodes defined in the cluster.
  -- Added new configuration parameters PowerParameters and PowerPlugin.
+ -- Add AuthInfo option of "cred_expire=#" to specify the lifetime of a job
+    step credential.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
