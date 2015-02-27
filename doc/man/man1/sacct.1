@@ -417,18 +417,18 @@ Print all fields listed below.
 
 .TP
 \f3AllocCPUs\fP
-Count of allocated CPUs. Equivalant to \f3NCPUs\fP.
+Count of allocated CPUs. Equivalant to \f3NCPUS\fP.
 
 .TP
 \f3AllocGRES\fP
 Names and counts of generic resources allocated.
 
 .TP
-\f3account\fP
+\f3Account\fP
 Account the job ran under.
 
 .TP
-\f3associd\fP
+\f3AssocID\fP
 Reference to the association of user, account and cluster.
 
 .TP
@@ -460,11 +460,11 @@ Average resident set size of all tasks in job.
 Average Virtual Memory size of all tasks in job.
 
 .TP
-\f3blockid\fP
+\f3BlockID\fP
 Block ID, applicable to BlueGene computers only.
 
 .TP
-\f3cluster\fP
+\f3Cluster\fP
 Cluster name.
 
 .TP
@@ -485,7 +485,7 @@ reflects the jobs' real energy consumption.
 Formatted (Elapsed time * CPU) count used by a job or step.
 
 .TP
-\f3CPUTimeRaw\fP
+\f3CPUTimeRAW\fP
 Unlike above non formatted (Elapsed time * CPU) count for a job or step.
 Units are cpu-seconds.
 
@@ -498,7 +498,7 @@ DerivedExitCode can be modified by invoking \f3sacctmgr modify job\fP
 or the specialized \f3sjobexitmod\fP command.
 
 .TP
-\f3elapsed\fP
+\f3Elapsed\fP
 The jobs elapsed time.
 .IP
 The format of this fields output is as follows:
@@ -526,26 +526,26 @@ seconds
 .RE
 
 .TP
-\f3eligible\fP
+\f3Eligible\fP
 When the job became eligible to run.
 
 .TP
-\f3end\fP
+\f3End\fP
 Termination time of the job. Format output is, YYYY\-MM\-DDTHH:MM:SS, unless
 changed through the SLURM_TIME_FORMAT environment variable.
 
 .TP
-\f3exitcode\fP
+\f3ExitCode\fP
 The exit code returned by the job script or salloc, typically as set
 by the exit() function.  Following the colon is the signal that caused
 the process to terminate if it was terminated by a signal.
 
 .TP
-\f3gid\fP
+\f3GID\fP
 The group identifier of the user who ran the job.
 
 .TP
-\f3group\fP
+\f3Group\fP
 The group name of the user who ran the job.
 
 .TP
@@ -556,7 +556,7 @@ It is in the form:
 \&.
 
 .TP
-\f3jobname\fP
+\f3JobName\fP
 The name of the job or job step. The \f3slurm_accounting.log\fP file
 is a space delimited file. Because of this if a space is used in the
 jobname an underscore is substituted for the space before the record
@@ -565,7 +565,7 @@ by \f3sacct\fP the jobname that had a space in it will now have an underscore
 in place of the space.
 
 .TP
-\f3layout\fP
+\f3Layout\fP
 What the layout of a step was when it was running.  This can be used
 to give you an idea of which node ran which rank in your job.
 
@@ -642,17 +642,17 @@ The node on which the mincpu occurred.
 The task ID where the mincpu occurred.
 
 .TP
-\f3ncpus\fP
-Count of allocated CPUs. Equivalant to \f3AllocCPUs\fP
+\f3NCPUS\fP
+Count of allocated CPUs. Equivalant to \f3AllocCPUS\fP
 
 Total number of CPUs allocated to the job.
 
 .TP
-\f3nodelist\fP
+\f3NodeList\fP
 List of nodes in job/step.
 
 .TP
-\f3nnodes\fP
+\f3NNodes\fP
 Number of nodes in a job or step.
 
 .TP
@@ -660,19 +660,19 @@ Number of nodes in a job or step.
 Total number of tasks in a job or step.
 
 .TP
-\f3priority\fP
+\f3Priority\fP
 Slurm priority.
 
 .TP
-\f3partition\fP
+\f3Partition\fP
 Identifies the partition on which the job ran.
 
 .TP
-\f3qos\fP
+\f3QOS\fP
 Name of Quality of Service.
 
 .TP
-\f3qosraw\fP
+\f3QOSRAW\fP
 Id of Quality of Service.
 
 .TP
@@ -681,7 +681,7 @@ Requested CPU frequency for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
 
 .TP
-\f3reqcpus\fP
+\f3ReqCPUS\fP
 Required CPUs.
 
 .TP
@@ -695,33 +695,33 @@ number represents Memory Per CPU, a 'n' represents Memory Per Node.
 Note: This value is only from the job allocation, not the step.
 
 .TP
-\f3reservation\fP
+\f3Reservation\fP
 Reservation Name.
 
 .TP
-\f3reservationid\fP
+\f3ReservationId\fP
 Reservation Id.
 
 .TP
-\f3reserved\fP
+\f3Reserved\fP
 How much wall clock time was used as reserved time for this job.  This is
 derived from how long a job was waiting from eligible time to when it
 actually started.
 
 .TP
-\f3resvcpu\fP
+\f3ResvCPU\fP
 Formatted time for how long (cpu secs) a job was reserved for.
 
 .TP
-\f3resvcpuraw\fP
+\f3ResvCPURAW\fP
 Reserved CPUs in second format, not formatted.
 
 .TP
-\f3start\fP
-Initiation time of the job in the same format as \f3end\fP.
+\f3Start\fP
+Initiation time of the job in the same format as \f3End\fP.
 
 .TP
-\f3state\fP
+\f3State\fP
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
@@ -732,28 +732,29 @@ a job) the state will be followed by a "+".  You can increase the size of
 the displayed state using the "%NUMBER" format modifier described earlier.
 
 .TP
-\f3submit\fP
+\f3Submit\fP
 The  time and date stamp (in Universal Time Coordinated, UTC) the job
-was submitted.  The format of the output is identical to that of the end field.
+was submitted.  The format of the output is identical to that of the \f3End\fP
+field.
 
 NOTE: If a job is requeued, the submit time is reset.  To obtain the
 original submit time it is necessary to use the \-D or \-\-duplicate option
 to display all duplicate entries for a job.
 
 .TP
-\f3suspended\fP
+\f3Suspended\fP
 How long the job was suspended for.
 
 .TP
 \f3SystemCPU\fP
 The amount of system CPU time used by the job or job step.  The format
-of the output is identical to that of the \f3elapsed\fP field.
+of the output is identical to that of the \f3Elapsed\fP field.
 
 NOTE: SystemCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
 
 .TP
-\f3timelimit\fP
+\f3Timelimit\fP
 What the timelimit was/is for the job.
 
 .TP
@@ -761,33 +762,33 @@ What the timelimit was/is for the job.
 The sum of the SystemCPU and UserCPU time used by the job or job step.
 The total CPU time of the job may exceed the job's elapsed time for
 jobs that include multiple job steps.  The format of the output is
-identical to that of the \f3elapsed\fP field.
+identical to that of the \f3Elapsed\fP field.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
 
 .TP
-\f3uid\fP
+\f3UID\fP
 The user identifier of the user who ran the job.
 
 .TP
-\f3user\fP
+\f3User\fP
 The user name of the user who ran the job.
 
 .TP
 \f3UserCPU\fP
 The amount of user CPU time used by the job or job step.  The format
-of the output is identical to that of the \f3elapsed\fP field.
+of the output is identical to that of the \f3Elapsed\fP field.
 
 NOTE: UserCPU provides a measure of the task's parent process and does
 not include CPU time of child processes.
 
 .TP
-\f3wckey\fP
+\f3WCKey\fP
 Workload  Characterization  Key.   Arbitrary  string for grouping orthogonal accounts together.
 
 .TP
-\f3wckeyid\fP
+\f3WCKeyID\fP
 Reference to the wckey.
 
 .SH "ENVIRONMENT VARIABLES"
