@@ -17,6 +17,10 @@ documents those changes that are of interest to users and administrators.
  -- task/affinity - Fix memory binding to NUMA with cpusets.
  -- Display job's estimated NodeCount based off of partition's configured
     resources rather than the whole system's.
+ -- Decrease a job credential lifetime from 20 minutes to 10 minutes.
+ -- Set the delay time for job requeue to the job credential lifetime (600
+    seconds by default). This insures that prolog runs on every node when a
+    job is requeued. (This change will slow down launch of re-queued jobs).
 
 * Changes in Slurm 15.08.0pre2
 ==============================

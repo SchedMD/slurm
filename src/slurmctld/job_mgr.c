@@ -11941,12 +11941,19 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->details) {
 		time_t now = time(NULL);
-		/* the time stamp on the new batch launch credential must be
+		/* The time stamp on the new batch launch credential must be
 		 * larger than the time stamp on the revoke request. Also the
-		 * I/O must be all cleared out and the named socket purged,
-		 * so delay for at least ten seconds. */
-		if (job_ptr->details->begin_time <= now)
-			job_ptr->details->begin_time = now + 10;
+		 * I/O must be all cleared out, the named socket purged and
+		 * the job credential purged by slurmd. */
+		if (job_ptr->details->begin_time <= now) {
+			/* See src/common/slurm_cred.c
+			 * #define DEFAULT_EXPIRATION_WINDOW 1200 */
+			int cred_lifetime = 1200;
+			(void) slurm_cred_ctx_get(slurmctld_config.cred_ctx,
+						  SLURM_CRED_OPT_EXPIRY_WINDOW,
+						  &cred_lifetime);
+			job_ptr->details->begin_time = now + cred_lifetime + 1;
+		}
 
 		/* Since this could happen on a launch we need to make sure the
 		 * submit isn't the same as the last submit so put now + 1 so
