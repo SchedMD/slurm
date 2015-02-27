@@ -79,7 +79,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
  * The default value may be altered with the configuration option of this sort:
  * "AuthInfo=cred_expire=600"
  */
-#define DEFAULT_EXPIRATION_WINDOW 1200
+#define DEFAULT_EXPIRATION_WINDOW 120
 
 #define EXTREME_DEBUG   0
 #define MAX_TIME 0x7fffffff

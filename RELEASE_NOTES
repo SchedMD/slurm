@@ -90,7 +90,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     including all nodes defined in the cluster.
  -- Added new configuration parameters PowerParameters and PowerPlugin.
  -- Add AuthInfo option of "cred_expire=#" to specify the lifetime of a job
-    step credential.
+    step credential. The default value was changed from 1200 to 120 seconds.
+    This value also controls how long a requeued job must wait before it can
+    be started again.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
