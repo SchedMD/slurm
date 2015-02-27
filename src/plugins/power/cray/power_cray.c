@@ -1408,6 +1408,9 @@ static List _rebalance_node_power(void)
 	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
 	uint32_t node_power_raise_cnt = 0, node_power_needed = 0;
 	uint32_t node_power_same_cnt = 0, node_power_lower_cnt = 0;
+	uint32_t total_current_watts = 0, total_min_watts = 0;
+	uint32_t total_max_watts = 0, total_cap_watts = 0;
+	uint32_t total_new_cap_watts = 0, total_ready_cnt = 0;
 	time_t recent = time(NULL) - recent_job;
 	int i, j;
 
@@ -1545,9 +1548,10 @@ static List _rebalance_node_power(void)
 			continue;
 		if (debug_flag & DEBUG_FLAG_POWER) {
 			char *ready_str;
-			if (node_ptr->power->state == 1)
+			if (node_ptr->power->state == 1) {
 				ready_str = "YES";
-			else
+				total_ready_cnt++;
+			} else
 				ready_str = "NO";
 			info("Node:%s CurWatts:%3u MinWatts:%3u "
 			     "MaxWatts:%3u OldCap:%3u NewCap:%3u Ready:%s",
@@ -1556,6 +1560,11 @@ static List _rebalance_node_power(void)
 			     node_ptr->power->max_watts,
 			     node_ptr->power->cap_watts,
 			     node_ptr->power->new_cap_watts, ready_str);
+			total_current_watts += node_ptr->power->current_watts;
+			total_min_watts     += node_ptr->power->min_watts;
+			total_max_watts     += node_ptr->power->max_watts;
+			total_cap_watts     += node_ptr->power->cap_watts;
+			total_new_cap_watts += node_ptr->power->new_cap_watts;
 		}
 		if (node_ptr->power->cap_watts ==
 		    node_ptr->power->new_cap_watts)	/* No change */
@@ -1587,6 +1596,12 @@ static List _rebalance_node_power(void)
 			node_ptr2->power->cap_watts =
 				node_ptr2->power->new_cap_watts;
 		}
+	}
+	if (debug_flag & DEBUG_FLAG_POWER) {
+		info("TOTALS CurWatts:%u MinWatts:%u MaxWatts:%u OldCap:%u "
+		     "NewCap:%u ReadyCnt:%u",
+		     total_current_watts, total_min_watts, total_max_watts,
+		     total_cap_watts, total_new_cap_watts, total_ready_cnt);
 	}
 
 	/* Compress node name lists (e.g. "2,3,4,5" to "2-5") */
