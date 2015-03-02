@@ -563,7 +563,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
-		{ "min_cpus_per_job", "int unsigned default 1" },
+		{ "min_cpus_per_job", "int unsigned default 1 not null" },
 		{ NULL, NULL}
 	};
 

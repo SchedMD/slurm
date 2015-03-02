@@ -496,24 +496,24 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 			 * them the same */
 			if (failcnt_non_zero(&step_memory_cg,
 					     "memory.memsw.failcnt"))
-				error("Exceeded step memory limit at some "
-				      "point. oom-killer likely killed a "
-				      "process.");
+				debug2("Exceeded step memory limit at some "
+				       "point. oom-killer likely killed a "
+				       "process.");
 			else if(failcnt_non_zero(&step_memory_cg,
 						 "memory.failcnt"))
-				error("Exceeded step memory limit at some "
-				      "point. Step may have been partially "
-				      "swapped out to disk.");
+				debug2("Exceeded step memory limit at some "
+				       "point. Step may have been partially "
+				       "swapped out to disk.");
 			if (failcnt_non_zero(&job_memory_cg,
 					     "memory.memsw.failcnt"))
-				error("Exceeded job memory limit at some "
-				      "point. oom-killer likely killed a "
-				      "process.");
+				debug2("Exceeded job memory limit at some "
+				       "point. oom-killer likely killed a "
+				       "process.");
 			else if (failcnt_non_zero(&job_memory_cg,
 						  "memory.failcnt"))
-				error("Exceeded job memory limit at some "
-				      "point. Job may have been partially "
-				      "swapped out to disk.");
+				debug2("Exceeded job memory limit at some "
+				       "point. Job may have been partially "
+				       "swapped out to disk.");
 			xcgroup_unlock(&memory_cg);
 		} else
 			error("task/cgroup task_cgroup_memory_check_oom: "

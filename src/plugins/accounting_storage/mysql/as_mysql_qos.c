@@ -1277,7 +1277,8 @@ empty:
 
 		if (row[QOS_REQ_MICPJ])
 			qos->min_cpus_pj = slurm_atoul(row[QOS_REQ_MICPJ]);
-
+		else
+			qos->min_cpus_pj = INFINITE;
 	}
 	mysql_free_result(result);
 
