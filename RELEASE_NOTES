@@ -123,6 +123,8 @@ COMMAND CHANGES (see man pages for details)
  -- Mail notifications on job BEGIN, END and FAIL now apply to a job array as a
     whole rather than generating individual email messages for each task in the
     job array.
+ -- Remove srun --max-launch-time option. The option has not been functional
+    or documented since Slurm version 2.0.
 
 OTHER CHANGES
 =============

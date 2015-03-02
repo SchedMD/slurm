@@ -134,7 +134,6 @@
 #define LONG_OPT_HELP        0x100
 #define LONG_OPT_USAGE       0x101
 #define LONG_OPT_XTO         0x102
-#define LONG_OPT_LAUNCH      0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
@@ -487,7 +486,6 @@ static void _opt_default(void)
 	opt.hostfile	    = NULL;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
-	opt.max_launch_time = 120;/* 120 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	/* Default launch msg timeout           */
 	opt.msg_timeout     = slurm_get_msg_timeout();
@@ -520,7 +518,6 @@ static void _opt_default(void)
 	 * Reset some default values if running under a parallel debugger
 	 */
 	if ((opt.parallel_debug = _under_parallel_debugger())) {
-		opt.max_launch_time = 120;
 		opt.max_threads     = 1;
 		pmi_server_max_threads(opt.max_threads);
 		opt.msg_timeout     = 15;
@@ -924,11 +921,10 @@ static void _set_options(const int argc, char **argv)
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
-		{"launcher-opts",      required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
+		{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
-		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
@@ -1338,10 +1334,6 @@ static void _set_options(const int argc, char **argv)
 			opt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
 			break;
-		case LONG_OPT_LAUNCH:
-			opt.max_launch_time =
-				_get_int(optarg, "max-launch-time", true);
-			break;
 		case LONG_OPT_XTO:
 			opt.max_exit_timeout =
 				_get_int(optarg, "max-exit-timeout", true);
@@ -1378,7 +1370,6 @@ static void _set_options(const int argc, char **argv)
 			/* make other parameters look like debugger
 			 * is really attached */
 			opt.parallel_debug   = true;
-			opt.max_launch_time = 120;
 			opt.max_threads     = 1;
 			pmi_server_max_threads(opt.max_threads);
 			opt.msg_timeout     = 15;

@@ -22,6 +22,10 @@ documents those changes that are of interest to users and administrators.
  -- Set the delay time for job requeue to the job credential lifetime (120
     seconds by default). This insures that prolog runs on every node when a
     job is requeued. (This change will slow down launch of re-queued jobs).
+ -- Add AuthInfo option of "cred_expire=#" to specify the lifetime of a job
+    step credential.
+ -- Remove srun --max-launch-time option. The option has not been functional
+    since Slurm version 2.0.
 
 * Changes in Slurm 15.08.0pre2
 ==============================
