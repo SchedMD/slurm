@@ -1665,8 +1665,10 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		 * (if specified and able)
 		 */
 		if (pdebug_trace_process(job, job->task[i]->pid)
-		    == SLURM_ERROR)
+		    == SLURM_ERROR) {
 			rc = SLURM_ERROR;
+			goto fail2;
+		}
 	}
 
 	return rc;

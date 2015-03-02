@@ -25,6 +25,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix job getting EligibleTime set before meeting dependency requirements.
  -- Correct the initialization of QOS MinCPUs per job limit.
  -- Set the debug level of information messages in cgroup plugin to debug2.
+ -- For job running under a debugger, if the exec of the task fails, then
+    cancel its I/O and abort immediately rather than waiting 60 seconds for
+    I/O timeout.
 
 * Changes in Slurm 14.11.4
 ==========================
