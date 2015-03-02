@@ -102,19 +102,19 @@ set matches 0
 if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
-		-re "force" {
+		-re "force *=" {
 			incr matches
 			exp_continue
 		}
-		-re "preserve" {
+		-re "preserve *=" {
 			incr matches
 			exp_continue
 		}
-		-re "modes" {
+		-re "modes *=" {
 			incr matches
 			exp_continue
 		}
-		-re "jobid" {
+		-re "jobid *=" {
 			incr matches
 			exp_continue
 		}
@@ -128,7 +128,7 @@ if {[wait_for_file $file_err] == 0} {
 	}
 }
 if {$matches != 4} {
-	send_user "\nFAILURE: sbcast --verbose option did not produced expected logging\n"
+	send_user "\nFAILURE: sbcast --verbose option did not produced expected logging ($matches != 4)\n"
 	set exit_code 1
 }
 
