@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Account to batch step all CPUs that are allocated to a job not
     just one since the batch step has access to all CPUs like other steps.
  -- Fix job getting EligibleTime set before meeting dependency requirements.
+ -- Correct the initialization of QOS MinCPUs per job limit.
 
 * Changes in Slurm 14.11.4
 ==========================
