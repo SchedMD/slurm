@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
     just one since the batch step has access to all CPUs like other steps.
  -- Fix job getting EligibleTime set before meeting dependency requirements.
  -- Correct the initialization of QOS MinCPUs per job limit.
+ -- Set the debug level of information messages in cgroup plugin to debug2.
 
 * Changes in Slurm 14.11.4
 ==========================
