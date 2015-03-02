@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- For job running under a debugger, if the exec of the task fails, then
     cancel its I/O and abort immediately rather than waiting 60 seconds for
     I/O timeout.
+ -- Fix associations not getting default qos set until after a restart.
 
 * Changes in Slurm 14.11.4
 ==========================

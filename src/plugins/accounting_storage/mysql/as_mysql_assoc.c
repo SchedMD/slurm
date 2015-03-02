@@ -1558,7 +1558,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			xfree(query);
 
 			if ((row2 = mysql_fetch_row(result2))) {
-				if (!assoc->def_qos_id
+				if (assoc->def_qos_id == INFINITE
 				    && row2[ASSOC2_REQ_DEF_QOS])
 					assoc->def_qos_id = slurm_atoul(
 						row2[ASSOC2_REQ_DEF_QOS]);

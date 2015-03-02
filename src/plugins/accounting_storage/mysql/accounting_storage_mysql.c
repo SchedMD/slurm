@@ -1615,8 +1615,6 @@ extern int setup_association_limits(slurmdb_association_rec_t *assoc,
 		xstrcat(*cols, ", def_qos_id");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", def_qos_id=NULL");
-		/* 0 is the no def_qos_id, so it that way */
-		assoc->def_qos_id = 0;
 	} else if ((assoc->def_qos_id != NO_VAL)
 		   && ((int32_t)assoc->def_qos_id > 0)) {
 		xstrcat(*cols, ", def_qos_id");
