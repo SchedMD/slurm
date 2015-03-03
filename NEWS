@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix associations not getting default qos set until after a restart.
  -- Set the value of total_cpus not to be zero before invoking
     acct_policy_job_runnable_post_select.
+ -- MySQL - When requesting cluster resources, only return resources for the
+    cluster(s) requested.
 
 * Changes in Slurm 14.11.4
 ==========================

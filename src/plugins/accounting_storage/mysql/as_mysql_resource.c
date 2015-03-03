@@ -647,16 +647,17 @@ static List _get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 	}
 	xfree(query);
 
-	ret_list = list_create(slurmdb_destroy_clus_res_rec);
-
 	if (!mysql_num_rows(result)) {
 		mysql_free_result(result);
-		return ret_list;
+		return NULL;
 	}
+
+	ret_list = list_create(slurmdb_destroy_clus_res_rec);
 
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_clus_res_rec_t *clus_res_rec =
 			xmalloc(sizeof(slurmdb_clus_res_rec_t));
+
 		list_append(ret_list, clus_res_rec);
 
 		if (row[0] && row[0][0])
@@ -797,10 +798,35 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 
 	res_list = list_create(slurmdb_destroy_res_rec);
 	while ((row = mysql_fetch_row(result))) {
-		slurmdb_res_rec_t *res = xmalloc(sizeof(slurmdb_res_rec_t));
+		uint32_t id = 0;
+		List clus_res_list = NULL;
+		slurmdb_res_rec_t *res;
+
+		if (row[RES_REQ_ID] && row[RES_REQ_ID][0])
+			id = slurm_atoul(row[RES_REQ_ID]);
+		else {
+			error("as_mysql_get_res: no id? this "
+			      "should never happen");
+			continue;
+		}
+
+		if (res_cond && res_cond->with_clusters) {
+			clus_res_list =	_get_clus_res(
+				mysql_conn, id, clus_extra);
+			/* This means the clusters requested don't have
+			   claim to this resource, so continue. */
+			if (!clus_res_list)
+				continue;
+		}
+
+		res = xmalloc(sizeof(slurmdb_res_rec_t));
 		list_append(res_list, res);
 
 		slurmdb_init_res_rec(res, 0);
+
+		res->id = id;
+		res->clus_res_list = clus_res_list;
+		clus_res_list = NULL;
 
 		if (row[RES_REQ_COUNT] && row[RES_REQ_COUNT][0])
 			res->count = slurm_atoul(row[RES_REQ_COUNT]);
@@ -808,8 +834,6 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			res->description = xstrdup(row[RES_REQ_DESC]);
 		if (row[RES_REQ_FLAGS] && row[RES_REQ_FLAGS][0])
 			res->flags = slurm_atoul(row[RES_REQ_FLAGS]);
-		if (row[RES_REQ_ID] && row[RES_REQ_ID][0])
-			res->id = slurm_atoul(row[RES_REQ_ID]);
 		if (row[RES_REQ_MANAGER] && row[RES_REQ_MANAGER][0])
 			res->manager = xstrdup(row[RES_REQ_MANAGER]);
 		if (row[RES_REQ_NAME] && row[RES_REQ_NAME][0])
@@ -823,10 +847,6 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			res->percent_used = slurm_atoul(row[RES_REQ_PU]);
 		else
 			res->percent_used = 0;
-
-		if (res_cond && res_cond->with_clusters)
-			res->clus_res_list =
-				_get_clus_res(mysql_conn, res->id, clus_extra);
 	}
 	mysql_free_result(result);
 	xfree(clus_extra);
