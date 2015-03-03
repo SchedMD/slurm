@@ -1326,7 +1326,7 @@ Number of software resources of a specific name configured on the system being
 controlled by a resource manager.
 
 .TP
-\fIDescription=\fP
+\fIDescriptions=\fP
 A brief description of the resource.
 
 .TP
@@ -1359,6 +1359,12 @@ the licenses are being served by the database.
 \fIType\fP=<OPT>
 The type of the resource represented by this record.  Currently the only valid
 type is License.
+
+.TP
+\fIWithClusters\fP
+Display the clusters percentage of resources.  If a resource hasn't
+been given to a cluster the resource will not be displayed with this flag.
+
 .P
 NOTE:  Resource is used to define each resource configured on a system
 available for usage by Slurm clusters.

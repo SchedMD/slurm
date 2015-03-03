@@ -924,8 +924,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             and PreemptMode=                               \n\
        delete qos         - Descriptions=, ID=, Names=, and PreemptMode=   \n\
                                                                            \n\
-       list resource      - Clusters=, Format=, ServerType=, Names=,       \n\
-                            and Servers=                                   \n\
+       list resource      - Clusters=, Descriptions=, Flags=, Format=, Ids=,\n\
+                            Names=, PercentAllowed=, ServerType=, Servers=,\n\
+                            and WithClusters                               \n\
        add resource       - Clusters=, Count=, Descriptions=, Flags=,      \n\
                             ServerType=, Names=, PercentAllowed=, Server=, \n\
                             and Type=                                      \n\
