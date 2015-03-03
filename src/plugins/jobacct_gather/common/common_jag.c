@@ -121,12 +121,12 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
                         continue;
                 }
 
-                for(i = 4; i < sizeof(line); i++) {
+                for (i = 4; i < sizeof(line); i++) {
 
                         if (!isdigit(line[i])) {
                                 continue;
                         }
-                        if (sscanf(&line[i],"%lu", &p) == 1) {
+                        if (sscanf(&line[i],"%"PRIu64"", &p) == 1) {
                                 pss += p;
                         }
                         break;
@@ -148,7 +148,7 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
                 prec->rss = pss;
         }
 
-	debug3("%s: read pss %lu for process %s",
+	debug3("%s: read pss %"PRIu64" for process %s",
 	       __func__, pss, proc_smaps_file);
 
         return 0;
