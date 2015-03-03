@@ -1728,7 +1728,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (!test_only && (error_code == SLURM_SUCCESS)
 	    && (selected_node_cnt != NO_VAL)
 	    && !acct_policy_job_runnable_post_select(
-		    job_ptr, selected_node_cnt, job_ptr->total_cpus,
+		    job_ptr, selected_node_cnt,
+		    job_ptr->total_cpus ? job_ptr->total_cpus
+		    : job_ptr->details->min_cpus,
 		    job_ptr->details->pn_min_memory)) {
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;

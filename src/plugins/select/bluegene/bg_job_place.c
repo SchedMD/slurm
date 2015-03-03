@@ -2196,11 +2196,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				bg_record->job_running = NO_JOB_RUNNING;
 			}
 		}
-		if (!bg_conf->sub_blocks || (bg_record->mp_count > 1))
+		if (!bg_conf->sub_blocks || (bg_record->mp_count > 1)) {
+			if (job_ptr->total_cpus == 0)
+				job_ptr->total_cpus
+					= bg_conf->cpu_ratio * bg_record->cnode_cnt;
 			set_select_jobinfo(job_ptr->select_jobinfo->data,
 					   SELECT_JOBDATA_NODE_CNT,
 					   &bg_record->cnode_cnt);
-
+		}
 		/* set up the preempted job list */
 		if (SELECT_IS_PREEMPT_SET(local_mode)) {
 			if (*preemptee_job_list)

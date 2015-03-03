@@ -1571,7 +1571,7 @@ extern bool acct_policy_job_runnable_post_select(
 
 		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
 		    && qos_ptr->min_cpus_pj != INFINITE) {
-			if (cpu_cnt < qos_ptr->min_cpus_pj) {
+			if (cpu_cnt && cpu_cnt < qos_ptr->min_cpus_pj) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =	WAIT_QOS_MIN_CPUS;
 				debug2("%s job %u being held, "
