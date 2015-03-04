@@ -547,7 +547,10 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 	if (!g_res_list) {
 		slurmdb_res_cond_t res_cond;
 		slurmdb_init_res_cond(&res_cond, 0);
-		res_cond.with_clusters = 1;
+		/* 2 means return all resources even if they don't
+		   have clusters attached to them.
+		*/
+		res_cond.with_clusters = 2;
 		g_res_list = acct_storage_g_get_res(db_conn, my_uid, &res_cond);
 		if (!g_res_list) {
 			exit_code=1;
@@ -611,8 +614,9 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			uint16_t start_used = 0;
 
 			if (found_res) {
-				found_itr = list_iterator_create(
-					found_res->clus_res_list);
+				if (found_res->clus_res_list)
+					found_itr = list_iterator_create(
+						found_res->clus_res_list);
 				res = xmalloc(sizeof(slurmdb_res_rec_t));
 				slurmdb_init_res_rec(res, 0);
 				res->id = found_res->id;
@@ -627,7 +631,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 
 			while ((cluster = list_next(clus_itr))) {
 				clus_res = NULL;
-				if (found_res) {
+				if (found_itr) {
 					while ((clus_res =
 						list_next(found_itr))) {
 						if (!strcmp(clus_res->cluster,
@@ -684,7 +688,7 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 			if (res->percent_used > 100)
 				break;
 
-			if (found_res)
+			if (found_itr)
 				list_iterator_destroy(found_itr);
 
 			if (!added)
