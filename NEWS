@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     acct_policy_job_runnable_post_select.
  -- MySQL - When requesting cluster resources, only return resources for the
     cluster(s) requested.
+ -- Add TaskPluginParam=autobind=threads option to set a default binding in the
+    case that "auto binding" doesn't find a match.
 
 * Changes in Slurm 14.11.4
 ==========================

@@ -274,12 +274,6 @@ By default, a job step has access to every CPU allocated to the job.
 To ensure that distinct CPUs are allocated to each job step, use the
 \fB\-\-exclusive\fR option.
 
-If the job step allocation includes an allocation with a number of
-sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
-then the tasks will by default be bound to the appropriate resources (auto
-binding). Disable this mode of operation by explicitly setting
-"-\-cpu_bind=none".
-
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the
 options which automatically generate the task binding is recommended.
@@ -290,6 +284,20 @@ Binding a task to a NUMA locality domain means to bind the task to the set of
 CPUs that belong to the NUMA locality domain or "NUMA node".
 If NUMA locality domain options are used on systems with no NUMA support, then
 each socket is considered a locality domain.
+
+.PD
+.RS
+.TP
+\fBAuto Binding\fR
+Applies only when task/affinity is enabled. If the job step allocation includes an
+allocation with a number of
+sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
+then the tasks will by default be bound to the appropriate resources (auto
+binding). Disable this mode of operation by explicitly setting
+"-\-cpu_bind=none". Use TaskPluginParam=autobind=threads to set
+a default cpu binding in case "auto binding" doesn't find a match.
+.RE
+.RS
 
 Supported options include:
 .PD 1
@@ -376,6 +384,7 @@ task/cgroup plugin only.
 .TP
 .B help
 Show help message for cpu_bind
+.RE
 .RE
 
 .TP
