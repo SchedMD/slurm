@@ -4088,7 +4088,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
 		char *last = NULL, *tok;
-		bool set_mode = false, set_unit = false;
+		bool set_mode = false, set_unit = false, set_auto = false;
 		tok = strtok_r(temp_str, ",", &last);
 		while (tok) {
 			if (strcasecmp(tok, "none") == 0) {
@@ -4143,6 +4143,27 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				 * this is the default */
 			} else if (strcasecmp(tok, "verbose") == 0) {
 				conf->task_plugin_param |= CPU_BIND_VERBOSE;
+			} else if (strncasecmp(tok, "autobind=",
+						strlen("autobind=")) == 0) {
+				char *val_ptr = tok + strlen("autobind=");
+
+				if (set_auto) {
+					error("Bad TaskPluginParam: "
+							"autobind already set");
+					return SLURM_ERROR;
+				}
+
+				if (strcasecmp(val_ptr, "none") == 0) {
+					set_auto = true;
+				} else if (strcasecmp(val_ptr, "threads") == 0) {
+					set_auto = true;
+					conf->task_plugin_param |=
+						CPU_AUTO_BIND_TO_THREADS;
+				} else {
+					error("Bad TaskPluginParam autobind "
+							"value: %s",val_ptr);
+					return SLURM_ERROR;
+				}
 			} else {
 				error("Bad TaskPluginParam: %s", tok);
 				return SLURM_ERROR;

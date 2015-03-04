@@ -425,6 +425,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	if (!(req->cpu_bind_type & bind_entity)) {
 		/* No bind unit (sockets, cores) specified by user,
 		 * pick something reasonable */
+		uint16_t task_plugin_param = slurm_get_task_plugin_param();
+		bool auto_def_set = false;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
 			req->cpus_per_task;
 		char *avail_mask = _alloc_mask(req,
@@ -448,11 +450,19 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
 		}
+
+		if (task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
+			auto_def_set = true;
+			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
+			goto make_auto;
+		}
+
 		if (avail_mask) {
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		}
+
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] auto binding off: %s",
 		     req->job_id, buf_type);
@@ -460,8 +470,10 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 
   make_auto:	xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] implicit auto binding: "
-		     "%s, dist %d", req->job_id, buf_type, req->task_dist);
+		info("lllp_distribution jobid [%u] %s auto binding: "
+		     "%s, dist %d", req->job_id,
+		     (auto_def_set) ? "default" : "implicit",
+		     buf_type, req->task_dist);
 	} else {
 		/* Explicit bind unit (sockets, cores) specified by user */
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);

@@ -144,6 +144,9 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 	if (cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 		strcat(str, "one_thread,");
 
+	if (cpu_bind_type & CPU_AUTO_BIND_TO_THREADS)
+		strcat(str, "autobind=threads,");
+
 	if (*str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
 	} else {
