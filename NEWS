@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     step credential.
  -- Remove srun --max-launch-time option. The option has not been functional
     since Slurm version 2.0.
+ -- Add sockets and cores to TaskPluginParams' autobind option.
 
 * Changes in Slurm 15.08.0pre2
 ==============================

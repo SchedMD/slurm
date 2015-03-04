@@ -146,6 +146,10 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 
 	if (cpu_bind_type & CPU_AUTO_BIND_TO_THREADS)
 		strcat(str, "autobind=threads,");
+	if (cpu_bind_type & CPU_AUTO_BIND_TO_CORES)
+		strcat(str, "autobind=cores,");
+	if (cpu_bind_type & CPU_AUTO_BIND_TO_SOCKETS)
+		strcat(str, "autobind=sockets,");
 
 	if (*str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
@@ -244,7 +248,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		CPU_BIND_NONE|CPU_BIND_RANK|CPU_BIND_MAP|CPU_BIND_MASK;
 	int bind_to_bits =
 		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
-	uint16_t task_plugin_param = slurm_get_task_plugin_param();
+	uint32_t task_plugin_param = slurm_get_task_plugin_param();
 	bool have_binding = _have_task_affinity();
 	bool log_binding = true;
 

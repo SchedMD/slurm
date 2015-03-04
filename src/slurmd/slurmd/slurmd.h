@@ -150,7 +150,7 @@ typedef struct slurmd_config {
 	char           *acct_gather_infiniband_type; /*  */
 	char           *acct_gather_profile_type; /*  */
 	uint16_t	use_pam;
-	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
+	uint32_t	task_plugin_param; /* TaskPluginParams, expressed
 					 * using cpu_bind_type_t flags */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 

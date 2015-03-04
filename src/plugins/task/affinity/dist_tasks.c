@@ -425,7 +425,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	if (!(req->cpu_bind_type & bind_entity)) {
 		/* No bind unit (sockets, cores) specified by user,
 		 * pick something reasonable */
-		uint16_t task_plugin_param = slurm_get_task_plugin_param();
+		uint32_t task_plugin_param = slurm_get_task_plugin_param();
 		bool auto_def_set = false;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
 			req->cpus_per_task;
@@ -454,6 +454,14 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		if (task_plugin_param & CPU_AUTO_BIND_TO_THREADS) {
 			auto_def_set = true;
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
+			goto make_auto;
+		} else if (task_plugin_param & CPU_AUTO_BIND_TO_CORES) {
+			auto_def_set = true;
+			req->cpu_bind_type |= CPU_BIND_TO_CORES;
+			goto make_auto;
+		} else if (task_plugin_param & CPU_AUTO_BIND_TO_SOCKETS) {
+			auto_def_set = true;
+			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;
 		}
 

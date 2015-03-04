@@ -299,7 +299,7 @@ allocation with a number of
 sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
 then the tasks will by default be bound to the appropriate resources (auto
 binding). Disable this mode of operation by explicitly setting
-"-\-cpu_bind=none". Use TaskPluginParam=autobind=threads to set
+"-\-cpu_bind=none". Use TaskPluginParam=autobind=[threads|cores|sockets] to set
 a default cpu binding in case "auto binding" doesn't find a match.
 .RE
 .RS

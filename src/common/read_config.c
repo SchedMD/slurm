@@ -4159,6 +4159,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 					set_auto = true;
 					conf->task_plugin_param |=
 						CPU_AUTO_BIND_TO_THREADS;
+				} else if (strcasecmp(val_ptr, "cores") == 0) {
+					set_auto = true;
+					conf->task_plugin_param |=
+						CPU_AUTO_BIND_TO_CORES;
+				} else if (strcasecmp(val_ptr, "sockets") == 0) {
+					set_auto = true;
+					conf->task_plugin_param |=
+						CPU_AUTO_BIND_TO_SOCKETS;
 				} else {
 					error("Bad TaskPluginParam autobind "
 							"value: %s",val_ptr);

@@ -785,7 +785,7 @@ char *slurm_get_task_prolog(void);
 char *slurm_get_task_plugin(void);
 
 /* slurm_get_task_plugin_param */
-uint16_t slurm_get_task_plugin_param(void);
+uint32_t slurm_get_task_plugin_param(void);
 
 /* Get SchedulerTimeSlice (secs) */
 uint16_t slurm_get_time_slice(void);

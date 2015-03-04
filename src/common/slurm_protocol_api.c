@@ -2327,9 +2327,9 @@ char *slurm_get_task_plugin(void)
 }
 
 /* slurm_get_task_plugin_param */
-uint16_t slurm_get_task_plugin_param(void)
+uint32_t slurm_get_task_plugin_param(void)
 {
-	uint16_t task_plugin_param = 0;
+	uint32_t task_plugin_param = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
