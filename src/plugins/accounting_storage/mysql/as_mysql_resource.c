@@ -815,7 +815,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 				mysql_conn, id, clus_extra);
 			/* This means the clusters requested don't have
 			   claim to this resource, so continue. */
-			if (!clus_res_list)
+			if (!clus_res_list && (res_cond->with_clusters == 1))
 				continue;
 		}
 
