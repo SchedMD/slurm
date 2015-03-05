@@ -2336,6 +2336,11 @@ on such hardware, Slurm will consider each NUMA node within the socket as a
 separate socket by default. Use the Ignore_NUMA option to report the correct
 socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
 .TP
+\fBkill_invalid_depend\fR
+If a job has an invalid dependency and it can never run terminate it
+and set its state to be JOB_CANCELLED. By default the job stays pending
+with reason DependencyNeverSatisfied.
+.TP
 \fBmax_depend_depth=#\fR
 Maximum number of jobs to test for a circular job dependency. Stop testing
 after this number of job dependencies have been tested. The default value is
@@ -2393,15 +2398,15 @@ It may be desirable to set this configuration parameter when there are multiple
 priorities of preemptable jobs.
 The logic to support this option is only available in the select/cons_res plugin.
 .TP
+\fBnohold_on_prolog_fail\fR
+By default if the Prolog exits with a non-zero value the job is requeued in
+held state. By specifying this parameter the job will be requeued but not
+held so that the scheduler can dispatch it to another host.
+.TP
 \fBsched_interval=#\fR
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs.
 The default value is 60 seconds.
-.TP
-\fBkill_invalid_depend\fR
-If a job has an invalid dependency and it can never run terminate it
-and set its state to be JOB_CANCELLED. By default the job stays pending
-with reason DependencyNeverSatisfied.
 .RE
 
 .TP

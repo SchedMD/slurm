@@ -1811,6 +1811,17 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	struct requeue_msg req_msg;
 	slurm_msg_t resp_msg;
 	int rc;
+	static time_t config_update = 0;
+	static bool requeue_no_hold = false;
+
+	if (config_update != conf->last_update) {
+		char *sched_params = slurm_get_sched_params();
+		requeue_no_hold = (sched_params && strstr(
+					   sched_params,
+					   "nohold_on_prolog_fail"));
+		xfree(sched_params);
+		config_update = conf->last_update;
+	}
 
 	slurm_msg_t_init(&resp_msg);
 
@@ -1825,7 +1836,10 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	} else {
 		req_msg.job_id = job_id;
 		req_msg.job_id_str = NULL;
-		req_msg.state = JOB_REQUEUE_HOLD;
+		if (requeue_no_hold)
+			req_msg.state = JOB_PENDING;
+		else
+			req_msg.state = JOB_REQUEUE_HOLD;
 		resp_msg.msg_type = REQUEST_JOB_REQUEUE;
 		resp_msg.data = &req_msg;
 	}
