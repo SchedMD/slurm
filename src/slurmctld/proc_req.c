@@ -1616,6 +1616,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		char *sched_params = slurm_get_sched_params();
 		defer_sched = (sched_params && strstr(sched_params,"defer"));
 		xfree(sched_params);
+		config_update = slurmctld_conf.last_update;
 	}
 
 	lock_slurmctld(job_write_lock);

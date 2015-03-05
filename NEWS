@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
     case that "auto binding" doesn't find a match.
  -- Introduce a new SchedulerParameters variable nohold_on_prolog_fail.
     If configured don't requeue jobs on hold is a Prolog fails.
+ -- Make it so sched_params isn't read over and over when an epilog complete
+    message comes in
+
 
 * Changes in Slurm 14.11.4
 ==========================
