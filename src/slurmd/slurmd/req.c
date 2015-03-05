@@ -1804,15 +1804,16 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	struct requeue_msg req_msg;
 	slurm_msg_t resp_msg;
 	int rc;
-	char *sched_params;
-	char requeue_no_hold;
+	static time_t config_update = 0;
+	static bool requeue_no_hold = false;
 
-	requeue_no_hold = false;
-	sched_params = slurm_get_sched_params();
-	if (sched_params) {
-		if (strstr(sched_params, "nohold_on_prolog_fail"))
-			requeue_no_hold = true;
+	if (config_update != conf->last_update) {
+		char *sched_params = slurm_get_sched_params();
+		requeue_no_hold = (sched_params && strstr(
+					   sched_params,
+					   "nohold_on_prolog_fail"));
 		xfree(sched_params);
+		config_update = conf->last_update;
 	}
 
 	slurm_msg_t_init(&resp_msg);

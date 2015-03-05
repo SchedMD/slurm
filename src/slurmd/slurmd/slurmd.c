@@ -776,6 +776,8 @@ _read_config(void)
 
 	conf->chos_loc = xstrdup(cf->chos_loc);
 
+	conf->last_update = time(NULL);
+
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
 
