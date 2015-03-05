@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     cluster(s) requested.
  -- Add TaskPluginParam=autobind=threads option to set a default binding in the
     case that "auto binding" doesn't find a match.
+ -- Introduce a new SchedulerParameters variable nohold_on_prolog_fail.
+    If configured don't requeue jobs on hold is a Prolog fails.
 
 * Changes in Slurm 14.11.4
 ==========================
