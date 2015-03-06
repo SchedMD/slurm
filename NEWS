@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     If configured don't requeue jobs on hold is a Prolog fails.
  -- Make it so sched_params isn't read over and over when an epilog complete
     message comes in
+ -- Fix squeue -L <licenses> not filtering out jobs with licenses.
 
 
 * Changes in Slurm 14.11.4

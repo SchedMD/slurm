@@ -2266,7 +2266,7 @@ static int _filter_job(job_info_t * job)
 		while (token && filter) {
 			iterator = list_iterator_create(params.licenses_list);
 			while ((license = list_next(iterator))) {
-				if (strcmp(license, token) == 0) {
+				if (strstr(token, license)) {
 					filter = 0;
 					break;
 				}
