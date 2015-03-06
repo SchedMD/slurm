@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
     _abs_to_mac() to fix CPUs allocation using cpuset cgroup.
  -- Improve the explanation of the unbuffered feature in the
     srun man page.
+ -- Make taskplugin=cgroup work for core spec.  needed to have task/cgroup
+    before.
 
 * Changes in Slurm 14.11.4
 ==========================

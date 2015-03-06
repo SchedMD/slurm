@@ -460,8 +460,8 @@ extern bool check_cgroup_job_confinement(void)
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
 		return FALSE;
 	task_plugin_type = slurm_get_task_plugin();
-	if (!strncmp(task_plugin_type,"task/cgroup", 11) &&
-	    slurm_cgroup_conf.constrain_cores)
+	if (slurm_cgroup_conf.constrain_cores &&
+	    strstr(task_plugin_type, "cgroup"))
 		status = TRUE;
 	xfree(task_plugin_type);
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
