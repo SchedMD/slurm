@@ -65,6 +65,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #ifdef HAVE_HWLOC
 #include <hwloc.h>
@@ -90,6 +91,7 @@ bool     initialized = false;
 uint16_t procs, boards, sockets, cores, threads=1;
 uint16_t block_map_size;
 uint16_t *block_map, *block_map_inv;
+extern slurmd_conf_t *conf;
 
 /*
  * get_procs - Return the count of procs on this system
@@ -286,7 +288,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 			(*p_block_map)[i]     = i;
 			(*p_block_map_inv)[i] = i;
 		}
-		
 		/* create map with hwloc */
 		for (idx[SOCKET]=0; idx[SOCKET]<nobj[SOCKET]; ++idx[SOCKET]) {
 			for (idx[CORE]=0; idx[CORE]<nobj[CORE]; ++idx[CORE]) {
@@ -910,7 +911,61 @@ xcpuinfo_fini(void)
 int
 xcpuinfo_abs_to_mac(char* lrange,char** prange)
 {
-	return _ranges_conv(lrange,prange,0);
+	static int total_cores = -1, total_cpus = -1;
+	bitstr_t* absmap = NULL;
+	bitstr_t* macmap = NULL;
+	int icore, ithread;
+	int absid, macid;
+	int rc = SLURM_SUCCESS;
+
+	if (total_cores == -1) {
+		total_cores = conf->sockets * conf->cores;
+		total_cpus  = conf->block_map_size;
+	}
+
+	/* allocate bitmap */
+	absmap = bit_alloc(total_cores);
+	macmap = bit_alloc(total_cpus);
+
+	if (!absmap || !macmap) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* string to bitmap conversion */
+	if (bit_unfmt(absmap, lrange)) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* mapping abstract id to machine id using conf->block_map */
+	for (icore = 0; icore < total_cores; icore++) {
+		if (bit_test(absmap, icore)) {
+			for (ithread = 0; ithread<conf->threads; ithread++) {
+				absid  = icore*conf->threads + ithread;
+				absid %= total_cpus;
+
+				macid  = conf->block_map[absid];
+				macid %= total_cpus;
+
+				bit_set(macmap, macid);
+			}
+		}
+	}
+
+	/* convert machine cpu bitmap to range string */
+	*prange = (char*)xmalloc(total_cpus*6);
+	bit_fmt(*prange, total_cpus*6, macmap);
+
+	/* free unused bitmaps */
+end_it:
+	FREE_NULL_BITMAP(absmap);
+	FREE_NULL_BITMAP(macmap);
+
+	if (rc != SLURM_SUCCESS)
+		info("_abs_to_mac failed");
+
+	return rc;
 }
 
 int
