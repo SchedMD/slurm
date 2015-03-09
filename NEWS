@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix squeue -L <licenses> not filtering out jobs with licenses.
  -- Changed the implementation of xcpuinfo_abs_to_mac() be identical
     _abs_to_mac() to fix CPUs allocation using cpuset cgroup.
+ -- Improve the explanation of the unbuffered feature in the
+    srun man page.
 
 * Changes in Slurm 14.11.4
 ==========================

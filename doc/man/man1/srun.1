@@ -1612,9 +1612,11 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
-By default the task launched by srun uses the buffering of its runtime
-environment, e.g. in glibc the stdout is line buffered and stderr is unbuffered.
-This option causes the stdout of the task to be line buffered.
+By default the connection between slurmdstepd and the user launched application
+is over a pipe. The stdio output written by the application is buffered
+by the glibc until it is flushed or the output is set as unbuffered.
+See setbuf(3).If this option is specified the tasks are executed with
+a pseudo terminal so that the application output is unbuffered.
 .TP
 \fB\-\-usage\fR
 Display brief help message and exit.
