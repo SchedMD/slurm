@@ -220,10 +220,8 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   It is not clear that configuration is practical to support as gang scheduling
   time slices will typically be smaller than the power management
   balance_interval and synchronizing changes may be difficult</li>
-<li>No integration with logic powering down idle nodes is currently implemented.
-  That should be practical to add in the future, but has not yet been studied.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 26 February 2015</p>
+<p style="text-align:center;">Last modified 10 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
