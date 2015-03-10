@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     srun man page.
  -- Make taskplugin=cgroup work for core spec.  needed to have task/cgroup
     before.
+ -- Fix reports not using the month usage table.
 
 * Changes in Slurm 14.11.4
 ==========================

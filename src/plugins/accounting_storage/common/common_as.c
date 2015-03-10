@@ -492,7 +492,7 @@ extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 			     slurmdbd_msg_type_2_str(type, 1));
 			break;
 		}
-	} else if (start_tm.tm_mday == 0 && end_tm.tm_mday == 0
+	} else if (start_tm.tm_mday == 1 && end_tm.tm_mday == 1
 		  && (end-start > 86400)) {
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
