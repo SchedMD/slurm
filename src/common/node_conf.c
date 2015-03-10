@@ -832,6 +832,18 @@ extern struct node_record *find_node_record2 (char *name)
 }
 
 /*
+ * find_node_record_no_alias - find a record for node with specified name
+ * without looking at the node's alias (NodeHostName).
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
+ * NOTE: Does not log an error if the node name is NOT found
+ */
+extern struct node_record *find_node_record_no_alias (char *name)
+{
+	return _find_node_record(name, false, true);
+}
+
+/*
  * _find_node_record - find a record for node with specified name
  * IN: name - name of the desired node
  * IN: test_alias - if set, also test NodeHostName value

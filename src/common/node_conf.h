@@ -269,6 +269,15 @@ extern struct node_record *find_node_record (char *name);
 extern struct node_record *find_node_record2 (char *name);
 
 /*
+ * find_node_record_no_alias - find a record for node with specified name
+ * without looking at the node's alias (NodeHostName).
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
+ * NOTE: Does not log an error if the node name is NOT found
+ */
+extern struct node_record *find_node_record_no_alias (char *name);
+
+/*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
  * IN hl          - hostlist
  * IN best_effort - if set don't return an error on invalid node name entries

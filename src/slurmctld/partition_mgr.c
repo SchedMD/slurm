@@ -147,7 +147,7 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 	}
 
 	while ((this_node_name = hostlist_shift(host_list))) {
-		node_ptr = find_node_record(this_node_name);
+		node_ptr = find_node_record_no_alias(this_node_name);
 		if (node_ptr == NULL) {
 			error("build_part_bitmap: invalid node name %s",
 				this_node_name);
