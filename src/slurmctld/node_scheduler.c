@@ -63,6 +63,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_select.h"
+#include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/xassert.h"
@@ -1942,6 +1943,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	slurm_sched_g_newalloc(job_ptr);
+	power_g_job_start(job_ptr);
 
 	/* Request asynchronous launch of a prolog for a
 	 * non batch job. */
