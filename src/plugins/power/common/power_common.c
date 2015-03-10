@@ -178,15 +178,19 @@ extern List get_job_power(List job_list,
  * script_args IN - Arguments to the script
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
+ * data_in IN - data to use as program STDIN (NULL if not STDIN)
  * status OUT - Job exit code
  * Return stdout+stderr of spawned program, value must be xfreed. */
 extern char *power_run_script(char *script_name, char *script_path,
-			      char **script_argv, int max_wait, int *status)
+			      char **script_argv, int max_wait, char *data_in,
+			      int *status)
 {
 	int i, new_wait, resp_size = 0, resp_offset = 0;
+	int send_size = 0, send_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
-	int pfd[2] = { -1, -1 };
+	int fd_stdout[2] = { -1, -1 };
+	int fd_stdin[2] = { -1, -1 };
 
 	if ((script_path == NULL) || (script_path[0] == '\0')) {
 		error("%s: no script specified", __func__);
@@ -246,8 +250,16 @@ extern char *power_run_script(char *script_name, char *script_path,
 		resp = xstrdup("Slurm burst buffer configuration error");
 		return resp;
 	}
+	if (data_in) {
+		if (pipe(fd_stdin) != 0) {
+			error("%s: pipe(): %m", __func__);
+			*status = 127;
+			resp = xstrdup("System error");
+			return resp;
+		}
+	}
 	if (max_wait != -1) {
-		if (pipe(pfd) != 0) {
+		if (pipe(fd_stdout) != 0) {
 			error("%s: pipe(): %m", __func__);
 			*status = 127;
 			resp = xstrdup("System error");
@@ -258,17 +270,22 @@ extern char *power_run_script(char *script_name, char *script_path,
 		int cc;
 
 		cc = sysconf(_SC_OPEN_MAX);
+		if (data_in)
+			dup2(fd_stdin[0], STDIN_FILENO);
 		if (max_wait != -1) {
-			dup2(pfd[1], STDERR_FILENO);
-			dup2(pfd[1], STDOUT_FILENO);
+			dup2(fd_stdout[1], STDERR_FILENO);
+			dup2(fd_stdout[1], STDOUT_FILENO);
 			for (i = 0; i < cc; i++) {
 				if ((i != STDERR_FILENO) &&
+				    (i != STDIN_FILENO)  &&
 				    (i != STDOUT_FILENO))
 					close(i);
 			}
 		} else {
-			for (i = 0; i < cc; i++)
-				close(i);
+			for (i = 0; i < cc; i++) {
+				if (!data_in || (i != STDERR_FILENO))
+					close(i);
+			}
 			if ((cpid = fork()) < 0)
 				exit(127);
 			else if (cpid > 0)
@@ -283,19 +300,43 @@ extern char *power_run_script(char *script_name, char *script_path,
 		error("%s: execv(%s): %m", __func__, script_path);
 		exit(127);
 	} else if (cpid < 0) {
+		if (data_in) {
+			close(fd_stdin[0]);
+			close(fd_stdin[1]);
+		}
 		if (max_wait != -1) {
-			close(pfd[0]);
-			close(pfd[1]);
+			close(fd_stdout[0]);
+			close(fd_stdout[1]);
 		}
 		error("%s: fork(): %m", __func__);
 	} else if (max_wait != -1) {
 		struct pollfd fds;
 		time_t start_time = time(NULL);
+		if (data_in) {
+			close(fd_stdin[0]);
+			send_size = strlen(data_in);
+			while (send_size > send_offset) {
+				i = write(fd_stdin[1], data_in + send_offset,
+					 send_size - send_offset);
+				if (i == 0) {
+					break;
+				} else if (i < 0) {
+					if (errno == EAGAIN)
+						continue;
+					error("%s: write(%s): %m", __func__,
+					      script_path);
+					break;
+				} else {
+					send_offset += i;
+				}
+			}
+			close(fd_stdin[1]);
+		}
 		resp_size = 1024;
 		resp = xmalloc(resp_size);
-		close(pfd[1]);
+		close(fd_stdout[1]);
 		while (1) {
-			fds.fd = pfd[0];
+			fds.fd = fd_stdout[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
 			if (max_wait <= 0) {
@@ -317,7 +358,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 			}
 			if ((fds.revents & POLLIN) == 0)
 				break;
-			i = read(pfd[0], resp + resp_offset,
+			i = read(fd_stdout[0], resp + resp_offset,
 				 resp_size - resp_offset);
 			if (i == 0) {
 				break;
@@ -337,7 +378,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 		}
 		killpg(cpid, SIGKILL);
 		waitpid(cpid, status, 0);
-		close(pfd[0]);
+		close(fd_stdout[0]);
 	} else {
 		waitpid(cpid, status, 0);
 	}

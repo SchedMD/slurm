@@ -149,7 +149,7 @@ static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 
 /*********************** local functions *********************/
 static void _build_full_nid_string(void);
-static List _clear_node_caps(void);
+static void _clear_node_caps(void);
 static void _get_capabilities(void);
 static void _get_caps(void);
 static void _get_node_energy_counter(void);
@@ -168,6 +168,7 @@ static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent);
 static power_config_nodes_t *
             _json_parse_ready(json_object *jobj, char *key, int *num);
 static void _load_config(void);
+static void _log_node_power(void);
 static void _parse_capable_control(json_object *j_control,
 				   power_config_nodes_t *ent);
 static void _parse_capable_controls(json_object *j_control,
@@ -177,8 +178,8 @@ static void _parse_caps_control(json_object *j_control,
 static void _parse_caps_controls(json_object *j_control,
 				 power_config_nodes_t *ent);
 extern void *_power_agent(void *args);
-static List _rebalance_node_power(void);
-static void _set_power_caps(List node_power_list);
+static void _rebalance_node_power(void);
+static void _set_power_caps(void);
 static void _stop_power_agent(void);
 static uint64_t _time_str2num(char *time_str);
 
@@ -256,11 +257,7 @@ static void _load_config(void)
 	/*                                   12345678901234567890 */
 	if ((tmp_ptr = strstr(sched_params, "cap_watts="))) {
 		cap_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
-		if (cap_watts < 1) {
-			error("PowerParameters: cap_watts=%d invalid",
-			      cap_watts);
-			cap_watts = DEFAULT_CAP_WATTS;
-		} else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			cap_watts *= 1000;
 		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
 			cap_watts *= 1000000;
@@ -356,7 +353,7 @@ static void _get_capabilities(void)
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    &status);
+				    NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",
@@ -671,7 +668,7 @@ static void _get_caps(void)
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    &status);
+				    NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",
@@ -893,7 +890,7 @@ static void _get_nodes_ready(void)
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    &status);
+				    NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",  __func__, script_argv[1], cmd_resp);
@@ -1026,7 +1023,7 @@ static void _get_node_energy_counter(void)
 
 	START_TIMER;
 	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    &status);
+				    NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s %s %s: %s",  __func__,
@@ -1221,7 +1218,6 @@ extern void *_power_agent(void *args)
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	List node_power_list = NULL;
 	uint32_t alloc_watts = 0, used_watts = 0;
 
 	last_balance_time = time(NULL);
@@ -1248,6 +1244,7 @@ extern void *_power_agent(void *args)
 		if (wait_time > 600) {		/* Every 10 minutes */
 			/* Read min/max power for every node */
 			_get_capabilities();	/* Has node write lock */
+			last_cap_read = time(NULL);
 		}
 		_get_node_energy_counter();	/* Has node write lock */
 		_get_nodes_ready();		/* Has node write lock */
@@ -1259,71 +1256,27 @@ extern void *_power_agent(void *args)
 			     __func__, alloc_watts, used_watts);
 		}
 		if (cap_watts == 0)
-			node_power_list = _clear_node_caps();
+			_clear_node_caps();
 		else
-			node_power_list = _rebalance_node_power();
+			_rebalance_node_power();
 		unlock_slurmctld(read_locks);
-		_set_power_caps(node_power_list);
-		FREE_NULL_LIST(node_power_list);
+		_set_power_caps();
 		last_balance_time = time(NULL);
 	}
 	return NULL;
 }
 
-static void _node_power_del(void *x)
+static void _clear_node_caps(void)
 {
-	power_by_nodes_t *node_power = (power_by_nodes_t *) x;
-
-	if (node_power) {
-		xfree(node_power->nodes);
-		xfree(node_power);
-	}
-}
-
-static List _clear_node_caps(void)
-{
-	List node_power_list = NULL;
-	power_by_nodes_t *node_power;
 	struct node_record *node_ptr;
-	hostset_t hs = NULL;
-	int i, num_ent = 0;
-	char *sep, *tmp_str;
+	int i;
 
-	/* Build table required updates to power caps */
-	node_power = xmalloc(sizeof(power_by_nodes_t));
-	node_power->alloc_watts = 0;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!node_ptr->power)
 			continue;
-		if (node_ptr->power->cap_watts == 0)	/* No change */
-			continue;
-		if (node_ptr->power->state != 1)    /* Not ready -> no change */
-			continue;
-		if (!hs)
-			hs = hostset_create(_node_name2nid(node_ptr->name));
-		else
-			hostset_insert(hs, _node_name2nid(node_ptr->name));
-		num_ent++;
+		node_ptr->power->new_cap_watts;
 	}
-	if (hs) {
-		node_power_list = list_create(_node_power_del);
-		tmp_str = xmalloc(num_ent * 6 + 2);
-		(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
-		hostset_destroy(hs);
-		if ((sep = strrchr(tmp_str, ']')))
-			sep[0] = '\0';
-		if (tmp_str[0] == '[')
-			node_power->nodes = xstrdup(tmp_str + 1);
-		else
-			node_power->nodes = xstrdup(tmp_str);
-		xfree(tmp_str);
-		list_append(node_power_list, node_power);
-	} else {
-		xfree(node_power);
-	}
-
-	return node_power_list;
 }
 
 /* For every job needing level power caps across it's nodes, set each of its
@@ -1397,7 +1350,7 @@ static void _level_power_by_job(void)
 
 /* Determine the new power cap required on each node based upon recent usage
  * and any power leveling by job */
-static List _rebalance_node_power(void)
+static void _rebalance_node_power(void)
 {
 	ListIterator iter;
 	hostset_t hs = NULL;
@@ -1408,11 +1361,8 @@ static List _rebalance_node_power(void)
 	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
 	uint32_t node_power_raise_cnt = 0, node_power_needed = 0;
 	uint32_t node_power_same_cnt = 0, node_power_lower_cnt = 0;
-	uint32_t total_current_watts = 0, total_min_watts = 0;
-	uint32_t total_max_watts = 0, total_cap_watts = 0;
-	uint32_t total_new_cap_watts = 0, total_ready_cnt = 0;
 	time_t recent = time(NULL) - recent_job;
-	int i, j;
+	int i;
 
 	/* Lower caps on under used nodes */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -1431,6 +1381,10 @@ static List _rebalance_node_power(void)
 			continue;
 		}
 		node_ptr->power->new_cap_watts = 0;
+		if (node_ptr->power->new_job_time >= recent) {
+			node_power_raise_cnt++;	/* Reset for new job below */
+			continue;
+		}
 		if ((node_ptr->power->cap_watts == 0) ||   /* Not initialized */
 		     (node_ptr->power->current_watts == 0))
 			continue;
@@ -1490,8 +1444,8 @@ static List _rebalance_node_power(void)
 		avail_power = cap_watts - alloc_power;
 	}
 	if (debug_flag & DEBUG_FLAG_POWER) {
-		debug("%s: distributing %u watts over %d nodes",
-		      __func__, avail_power, node_power_raise_cnt);
+		info("%s: distributing %u watts over %d nodes",
+		     __func__, avail_power, node_power_raise_cnt);
 	}
 
 	/* Distribute rest of power cap on remaining nodes. */
@@ -1503,9 +1457,7 @@ static List _rebalance_node_power(void)
 				continue;
 			if (node_ptr->power->new_cap_watts)    /* Already set */
 				continue;
-			if ((node_ptr->power->new_job_time == 0) ||
-			    (node_ptr->power->new_job_time > recent) ||
-			    (node_ptr->power->cap_watts == 0)) {
+			if (node_ptr->power->new_job_time > recent) {
 				/* Recent change in workload, do full reset */
 				new_cap = ave_power;
 			} else {
@@ -1538,173 +1490,139 @@ static List _rebalance_node_power(void)
 
 	if (job_level != 0)
 		_level_power_by_job();
-
-	/* Build table required updates to power caps */
-	node_power_list = list_create(_node_power_del);
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		bool increase_power = false;
-		if (!node_ptr->power)
-			continue;
-		if (debug_flag & DEBUG_FLAG_POWER) {
-			char *ready_str;
-			if (node_ptr->power->state == 1) {
-				ready_str = "YES";
-				total_ready_cnt++;
-			} else
-				ready_str = "NO";
-			info("Node:%s CurWatts:%3u MinWatts:%3u "
-			     "MaxWatts:%3u OldCap:%3u NewCap:%3u Ready:%s",
-			     node_ptr->name, node_ptr->power->current_watts,
-			     node_ptr->power->min_watts,
-			     node_ptr->power->max_watts,
-			     node_ptr->power->cap_watts,
-			     node_ptr->power->new_cap_watts, ready_str);
-			total_current_watts += node_ptr->power->current_watts;
-			total_min_watts     += node_ptr->power->min_watts;
-			total_max_watts     += node_ptr->power->max_watts;
-			total_cap_watts     += node_ptr->power->cap_watts;
-			total_new_cap_watts += node_ptr->power->new_cap_watts;
-		}
-		if (node_ptr->power->cap_watts ==
-		    node_ptr->power->new_cap_watts)	/* No change */
-			continue;
-		if (node_ptr->power->cap_watts <
-		    node_ptr->power->new_cap_watts)
-			increase_power = true;
-		node_power = xmalloc(sizeof(power_by_nodes_t));
-		node_power->alloc_watts = node_ptr->power->new_cap_watts;
-		node_power->increase_power = increase_power;
-		node_power->nodes = xstrdup(_node_name2nid(node_ptr->name));
-		list_append(node_power_list, node_power);
-		/* Look for other nodes with same change */
-		for (j = 0, node_ptr2 = node_ptr + 1; j < node_record_count;
-		     j++, node_ptr2++) {
-			if (!node_ptr2->power)
-				continue;
-			if (node_ptr2->power->cap_watts ==
-			    node_ptr2->power->new_cap_watts)	/* No change */
-				continue;
-			if ((node_ptr2->power->cap_watts >
-			     node_ptr2->power->new_cap_watts) && increase_power)
-				continue;
-			/* Add NID to this update record */
-			xstrcat(node_power->nodes, ",");
-			xstrcat(node_power->nodes,
-			        _node_name2nid(node_ptr2->name));
-			/* Avoid adding this node record again */
-			node_ptr2->power->cap_watts =
-				node_ptr2->power->new_cap_watts;
-		}
-	}
-	if (debug_flag & DEBUG_FLAG_POWER) {
-		info("TOTALS CurWatts:%u MinWatts:%u MaxWatts:%u OldCap:%u "
-		     "NewCap:%u ReadyCnt:%u",
-		     total_current_watts, total_min_watts, total_max_watts,
-		     total_cap_watts, total_new_cap_watts, total_ready_cnt);
-	}
-
-	/* Compress node name lists (e.g. "2,3,4,5" to "2-5") */
-	if (node_power_list) {
-		iter = list_iterator_create(part_list);
-		while ((node_power = (power_by_nodes_t *) list_next(iter))) {
-			if (!node_power->nodes)
-				continue;
-			hs = hostset_create(node_power->nodes);
-			i = strlen(node_power->nodes) + 8;
-			tmp_str = xmalloc(i);
-			(void) hostset_ranged_string(hs, i, tmp_str);
-			hostset_destroy(hs);
-			xfree(node_power->nodes);
-			if ((sep = strrchr(tmp_str, ']')))
-				sep[0] = '\0';
-			if (tmp_str[0] == '[') {
-				node_power->nodes = xstrdup(tmp_str + 1);
-				xfree(tmp_str);
-			} else {
-				node_power->nodes = tmp_str;
-			}
-		}
-		list_iterator_destroy(iter);
-	}
-
-	return node_power_list;
+	if (debug_flag & DEBUG_FLAG_POWER)
+		_log_node_power();
 }
 
-static void _set_power_caps(List node_power_list)
+static void _log_node_power(void)
 {
-	ListIterator node_iterator;
-	power_by_nodes_t *node_power;
-	char *cmd_resp, *script_argv[9], watts[32];
-	int status = 0;
+	struct node_record *node_ptr;
+	uint32_t total_current_watts = 0, total_min_watts = 0;
+	uint32_t total_max_watts = 0, total_cap_watts = 0;
+	uint32_t total_new_cap_watts = 0, total_ready_cnt = 0;
+	int i, j;
+
+	/* Build and log summary table of required updates to power caps */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		char *ready_str;
+		if (!node_ptr->power)
+			continue;
+		if (node_ptr->power->state == 1) {
+			ready_str = "YES";
+			total_ready_cnt++;
+		} else
+			ready_str = "NO";
+		info("Node:%s CurWatts:%3u MinWatts:%3u "
+		     "MaxWatts:%3u OldCap:%3u NewCap:%3u Ready:%s",
+		     node_ptr->name, node_ptr->power->current_watts,
+		     node_ptr->power->min_watts,
+		     node_ptr->power->max_watts,
+		     node_ptr->power->cap_watts,
+		     node_ptr->power->new_cap_watts, ready_str);
+		total_current_watts += node_ptr->power->current_watts;
+		total_min_watts     += node_ptr->power->min_watts;
+		total_max_watts     += node_ptr->power->max_watts;
+		total_cap_watts     += node_ptr->power->cap_watts;
+		total_new_cap_watts += node_ptr->power->new_cap_watts;
+	}
+	info("TOTALS CurWatts:%u MinWatts:%u MaxWatts:%u OldCap:%u "
+	     "NewCap:%u ReadyCnt:%u",
+	     total_current_watts, total_min_watts, total_max_watts,
+	     total_cap_watts, total_new_cap_watts, total_ready_cnt);
+}
+
+static void _set_power_caps(void)
+{
+	struct node_record *node_ptr;
+	char *cmd_resp, *json = NULL, *script_argv[4];
+	int i, status = 0;
 	DEF_TIMERS;
 
-	if (!node_power_list)
-		return;
-
 	script_argv[0] = capmc_path;
-	script_argv[1] = "set_power_cap";
-	script_argv[2] = "--nids";
-	/* script_argv[3] = Node ID values, set below */
-	script_argv[4] = "--node";
-	script_argv[5] = watts;
-	script_argv[6] = "--accel";
-	script_argv[7] = "0";
-	script_argv[8] = NULL;
+	script_argv[1] = "json";
+	script_argv[2] = "--resource=/capmc/set_power_cap";
+	script_argv[3] = NULL;
 
 	/* Pass 1, decrease power for select nodes */
-	node_iterator = list_iterator_create(node_power_list);
-	while ((node_power = (power_by_nodes_t *) list_next(node_iterator))) {
-		if (node_power->increase_power)
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->power ||
+		    (node_ptr->power->state != 1) ||
+		    (node_ptr->power->cap_watts <=
+		     node_ptr->power->new_cap_watts))
 			continue;
-		script_argv[3] = node_power->nodes;
-		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		node_ptr->power->cap_watts = node_ptr->power->new_cap_watts;
+		if (json)
+			xstrcat(json, ",\n ");
+		else
+			xstrcat(json, "{ \"nids\": [\n ");
+		xstrfmtcat(json,
+			   "{ \"nid\": %s, \"controls\": [ "
+			   "{ \"name\": \"node\", \"val\": %u } ] }",
+			   _node_name2nid(node_ptr->name),
+			   node_ptr->power->new_cap_watts);
+	}
+	if (json) {
+		xstrcat(json, "\n ]\n}\n");
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    5000, &status);
+					    5000, json, &status);
 		END_TIMER;
 		if (status != 0) {
-			error("%s: capmc %s %s %s %s %s: %s",
+			error("%s: capmc %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
-			      script_argv[3], script_argv[4], script_argv[5],
 			      cmd_resp);
 			xfree(cmd_resp);
-			list_iterator_destroy(node_iterator);
 			return;
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s %s %s %s",
+			info("%s: capmc %s %s %s",
 			     __func__, script_argv[1], script_argv[2],
-			     script_argv[3], script_argv[4], script_argv[5],
 			     TIME_STR);
 		}
 		xfree(cmd_resp);
+		xfree(json);
 	}
 
 	/* Pass 2, increase power for select nodes */
-	list_iterator_reset(node_iterator);
-	while ((node_power = (power_by_nodes_t *) list_next(node_iterator))) {
-		if (!node_power->increase_power)
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->power ||
+		    (node_ptr->power->state != 1) ||
+		    (node_ptr->power->cap_watts >=
+		     node_ptr->power->new_cap_watts))
 			continue;
-		script_argv[3] = node_power->nodes;
-		snprintf(watts, sizeof(watts), "%u", node_power->alloc_watts);
+		node_ptr->power->cap_watts = node_ptr->power->new_cap_watts;
+		if (json)
+			xstrcat(json, ",\n ");
+		else
+			xstrcat(json, "{ \"nids\": [\n ");
+		xstrfmtcat(json,
+			   "{ \"nid\": %s, \"controls\": [ "
+			   "{ \"name\": \"node\", \"val\": %u } ] }",
+			   _node_name2nid(node_ptr->name),
+			   node_ptr->power->new_cap_watts);
+	}
+	if (json) {
+		xstrcat(json, "\n ]\n}\n");
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    5000, &status);
+					    5000, json, &status);
 		END_TIMER;
 		if (status != 0) {
-			error("%s: capmc %s %s %s %s %s: %s",
+			error("%s: capmc %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
-			      script_argv[3], script_argv[4], script_argv[5],
 			      cmd_resp);
+			xfree(cmd_resp);
+			return;
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: capmc %s %s %s %s %s %s",
+			info("%s: capmc %s %s %s",
 			     __func__, script_argv[1], script_argv[2],
-			     script_argv[3], script_argv[4], script_argv[5],
 			     TIME_STR);
 		}
 		xfree(cmd_resp);
+		xfree(json);
 	}
-	list_iterator_destroy(node_iterator);
 }
 
 /* Terminate power thread */

@@ -79,10 +79,12 @@ extern List get_job_power(List job_list,
  * script_args IN - Arguments to the script
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
+ * data_in IN - data to use as program STDIN (NULL if not STDIN)
  * status OUT - Job exit code
  * Return stdout+stderr of spawned program, value must be xfreed. */
 extern char *power_run_script(char *script_name, char *script_path,
-			      char **script_argv, int max_wait, int *status);
+			      char **script_argv, int max_wait, char *data_in,
+			      int *status);
 
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
