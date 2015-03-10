@@ -39,8 +39,8 @@ Currently valid options are:
   The default value is "/opt/cray/capmc/default/bin/capmc".
   Supported by the power/cray plugin.</li>
 <li><b>cap_watts=#[KW|MW]</b> -
-  Specifies the power limit to be established across all compute nodes managed
-  by Slurm.
+  Specifies the total power limit to be established across all compute nodes
+  managed by Slurm.
   A value of 0 sets every compute node to have an unlimited cap.
   The default value is 0.
   Supported by the power/cray plugin.</li>
@@ -75,20 +75,25 @@ Currently valid options are:
   If a node's current power consumption is below this percentage of its current
   cap, then its power cap will be reduced.
   The default value is 90 percent.
-  Supported by the power/cray plugin.
+  Supported by the power/cray plugin.</li>
 <li><b>recent_job=#</b> -
   If a job has started or resumed execution (from suspend) on a compute node
   within this number of seconds from the current time, the node's power cap will
   be increased to the maximum.
   The default value is 300 seconds.
-  Supported by the power/cray plugin.
+  Supported by the power/cray plugin.</li>
+<li><b>set_watts=#</b> -
+  Specifies the power limit to be set on every compute nodes managed by Slurm.
+  Every node gets this same power cap and there is no variation through time
+  based upon actual power usage on the node.
+  Supported by the power/cray plugin.</li>
 <li><b>upper_threshold=#</b> -
   Specify an upper power consumption threshold.
   If a node's current power consumption is above this percentage of its current
   cap, then its power cap will be increased to the extent possible.
   A node's power cap will also be increased if a job is newly started on it.
   The default value is 95 percent.
-  Supported by the power/cray plugin.
+  Supported by the power/cray plugin.</li>
 </ul></li>
 
 <li><b>PowerPlugin</b>:

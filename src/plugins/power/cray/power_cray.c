@@ -133,11 +133,13 @@ const uint32_t plugin_version   = 100;
 static int balance_interval = DEFAULT_BALANCE_INTERVAL;
 static char *capmc_path = NULL;
 static uint32_t cap_watts = DEFAULT_CAP_WATTS;
+static uint32_t set_watts = 0;
 static uint64_t debug_flag = 0;
 static char *full_nid_string = NULL;
 static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
 static uint32_t job_level = NO_VAL;
+static time_t last_cap_read = 0;
 static uint32_t lower_threshold = DEFAULT_LOWER_THRESHOLD;
 static uint32_t recent_job = DEFAULT_RECENT_JOB;
 static uint32_t upper_threshold = DEFAULT_UPPER_THRESHOLD;
@@ -179,6 +181,7 @@ static void _parse_caps_controls(json_object *j_control,
 				 power_config_nodes_t *ent);
 extern void *_power_agent(void *args);
 static void _rebalance_node_power(void);
+static void _set_node_caps(void);
 static void _set_power_caps(void);
 static void _stop_power_agent(void);
 static uint64_t _time_str2num(char *time_str);
@@ -242,6 +245,8 @@ static void _load_config(void)
 			      balance_interval);
 			balance_interval = DEFAULT_BALANCE_INTERVAL;
 		}
+	} else {
+		balance_interval = DEFAULT_BALANCE_INTERVAL;
 	}
 
 	xfree(capmc_path);
@@ -262,6 +267,8 @@ static void _load_config(void)
 		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
 			cap_watts *= 1000000;
 		}
+	} else {
+		cap_watts = DEFAULT_CAP_WATTS;
 	}
 
 	if ((tmp_ptr = strstr(sched_params, "decrease_rate="))) {
@@ -271,6 +278,8 @@ static void _load_config(void)
 			      balance_interval);
 			lower_threshold = DEFAULT_DECREASE_RATE;
 		}
+	} else {
+		decrease_rate = DEFAULT_DECREASE_RATE;
 	}
 
 	if ((tmp_ptr = strstr(sched_params, "increase_rate="))) {
@@ -280,6 +289,8 @@ static void _load_config(void)
 			      balance_interval);
 			lower_threshold = DEFAULT_INCREASE_RATE;
 		}
+	} else {
+		increase_rate = DEFAULT_INCREASE_RATE;
 	}
 
 	if (strstr(sched_params, "job_level"))
@@ -296,6 +307,8 @@ static void _load_config(void)
 			      lower_threshold);
 			lower_threshold = DEFAULT_LOWER_THRESHOLD;
 		}
+	} else {
+		lower_threshold = DEFAULT_LOWER_THRESHOLD;
 	}
 
 	if ((tmp_ptr = strstr(sched_params, "recent_job="))) {
@@ -305,6 +318,19 @@ static void _load_config(void)
 			      recent_job);
 			recent_job = DEFAULT_RECENT_JOB;
 		}
+	} else {
+		recent_job = DEFAULT_RECENT_JOB;
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "set_watts="))) {
+		set_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
+		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+			set_watts *= 1000;
+		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			set_watts *= 1000000;
+		}
+	} else {
+		set_watts = 0;
 	}
 
 	if ((tmp_ptr = strstr(sched_params, "upper_threshold="))) {
@@ -314,6 +340,8 @@ static void _load_config(void)
 			      upper_threshold);
 			upper_threshold = DEFAULT_UPPER_THRESHOLD;
 		}
+	} else {
+		upper_threshold = DEFAULT_UPPER_THRESHOLD;
 	}
 
 	xfree(sched_params);
@@ -326,11 +354,14 @@ static void _load_config(void)
 			level_str = "job_level,";
 		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
 		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,%s"
-		     "lower_threashold=%u,recent_job=%u,upper_threshold=%u",
+		     "lower_threashold=%u,recent_job=%u,set_watts=%u,"
+		     "upper_threshold=%u",
 		     balance_interval, capmc_path, cap_watts, decrease_rate,
 		     increase_rate, level_str, lower_threshold, recent_job,
-		     upper_threshold);
+		     set_watts, upper_threshold);
 	}
+
+	last_cap_read = 0;	/* Read node power limits again */
 }
 
 static void _get_capabilities(void)
@@ -1210,15 +1241,12 @@ static void _my_sleep(int add_secs)
 /* Periodically attempt to re-balance power caps across nodes */
 extern void *_power_agent(void *args)
 {
-	static time_t last_cap_read = 0;
-	static uint32_t last_cap_watts = NO_VAL;
 	time_t now;
 	double wait_time;
 	static time_t last_balance_time = 0;
 	/* Read jobs and nodes */
 	slurmctld_lock_t read_locks = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
-	uint32_t alloc_watts = 0, used_watts = 0;
 
 	last_balance_time = time(NULL);
 	while (!stop_power) {
@@ -1230,10 +1258,6 @@ extern void *_power_agent(void *args)
 		wait_time = difftime(now, last_balance_time);
 		if (wait_time < balance_interval)
 			continue;
-
-		if ((last_cap_watts == cap_watts) && (cap_watts == 0))
-			continue;
-		last_cap_watts = cap_watts;
 
 		if (last_cap_read == 0) {	/* On first pass only */
 			/* Read initial power caps for every node */
@@ -1249,23 +1273,22 @@ extern void *_power_agent(void *args)
 		_get_node_energy_counter();	/* Has node write lock */
 		_get_nodes_ready();		/* Has node write lock */
 		lock_slurmctld(read_locks);
-		get_cluster_power(node_record_table_ptr, node_record_count,
-				  &alloc_watts, &used_watts);
-		if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: AllocWatts=%u UsedWatts=%u",
-			     __func__, alloc_watts, used_watts);
-		}
-		if (cap_watts == 0)
+		if (set_watts)
+			_set_node_caps();
+		else if (cap_watts == 0)
 			_clear_node_caps();
 		else
 			_rebalance_node_power();
 		unlock_slurmctld(read_locks);
+		if (debug_flag & DEBUG_FLAG_POWER)
+			_log_node_power();
 		_set_power_caps();
 		last_balance_time = time(NULL);
 	}
 	return NULL;
 }
 
+/* Set power cap on all nodes to zero */
 static void _clear_node_caps(void)
 {
 	struct node_record *node_ptr;
@@ -1275,7 +1298,27 @@ static void _clear_node_caps(void)
 	     i++, node_ptr++) {
 		if (!node_ptr->power)
 			continue;
-		node_ptr->power->new_cap_watts;
+		node_ptr->power->new_cap_watts = 0;
+	}
+}
+
+/* Set power cap on all nodes to the same value "set_watts" */
+static void _set_node_caps(void)
+{
+	struct node_record *node_ptr;
+	int i;
+
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!node_ptr->power)
+			continue;
+		if (node_ptr->power->state != 1)  /* Not ready, no change */
+			continue;
+		node_ptr->power->new_cap_watts =
+			MAX(node_ptr->power->min_watts, set_watts);
+		node_ptr->power->new_cap_watts =
+			MIN(node_ptr->power->max_watts,
+			    node_ptr->power->new_cap_watts);
 	}
 }
 
@@ -1453,11 +1496,11 @@ static void _rebalance_node_power(void)
 		ave_power = avail_power / node_power_raise_cnt;
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			if (!node_ptr->power)
+			if (!node_ptr->power || (node_ptr->power->state != 1))
 				continue;
 			if (node_ptr->power->new_cap_watts)    /* Already set */
 				continue;
-			if (node_ptr->power->new_job_time > recent) {
+			if (node_ptr->power->new_job_time >= recent) {
 				/* Recent change in workload, do full reset */
 				new_cap = ave_power;
 			} else {
@@ -1490,8 +1533,6 @@ static void _rebalance_node_power(void)
 
 	if (job_level != 0)
 		_level_power_by_job();
-	if (debug_flag & DEBUG_FLAG_POWER)
-		_log_node_power();
 }
 
 static void _log_node_power(void)
@@ -1523,8 +1564,16 @@ static void _log_node_power(void)
 		total_current_watts += node_ptr->power->current_watts;
 		total_min_watts     += node_ptr->power->min_watts;
 		total_max_watts     += node_ptr->power->max_watts;
-		total_cap_watts     += node_ptr->power->cap_watts;
-		total_new_cap_watts += node_ptr->power->new_cap_watts;
+		if (node_ptr->power->cap_watts)
+			total_cap_watts     += node_ptr->power->cap_watts;
+		else
+			total_cap_watts     += node_ptr->power->max_watts;
+		if (node_ptr->power->new_cap_watts)
+			total_new_cap_watts += node_ptr->power->new_cap_watts;
+		else if (node_ptr->power->cap_watts)
+			total_new_cap_watts += node_ptr->power->cap_watts;
+		else
+			total_new_cap_watts += node_ptr->power->max_watts;
 	}
 	info("TOTALS CurWatts:%u MinWatts:%u MaxWatts:%u OldCap:%u "
 	     "NewCap:%u ReadyCnt:%u",
@@ -1556,10 +1605,10 @@ static void _set_power_caps(void)
 		if (json)
 			xstrcat(json, ",\n ");
 		else
-			xstrcat(json, "{ \"nids\": [\n ");
+			xstrcat(json, "{ \"nids\":[\n ");
 		xstrfmtcat(json,
-			   "{ \"nid\": %s, \"controls\": [ "
-			   "{ \"name\": \"node\", \"val\": %u } ] }",
+			   "{ \"nid\":%s, \"controls\":[ "
+			   "{ \"name\":\"node\", \"val\":%u } ] }",
 			   _node_name2nid(node_ptr->name),
 			   node_ptr->power->new_cap_watts);
 	}
@@ -1596,10 +1645,10 @@ static void _set_power_caps(void)
 		if (json)
 			xstrcat(json, ",\n ");
 		else
-			xstrcat(json, "{ \"nids\": [\n ");
+			xstrcat(json, "{ \"nids\":[\n ");
 		xstrfmtcat(json,
-			   "{ \"nid\": %s, \"controls\": [ "
-			   "{ \"name\": \"node\", \"val\": %u } ] }",
+			   "{ \"nid\":%s, \"controls\":[ "
+			   "{ \"name\":\"node\", \"val\":%u } ] }",
 			   _node_name2nid(node_ptr->name),
 			   node_ptr->power->new_cap_watts);
 	}
