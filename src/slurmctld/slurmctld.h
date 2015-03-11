@@ -2283,7 +2283,7 @@ extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size);
 /*
  * jobid2str() - print all the parts that uniquely identify a job.
  */
-extern char *jobid2str(struct job_record *job_ptr, char *buf);
+extern char *jobid2str(struct job_record *job_ptr, char *buf, int buf_size);
 
 
 /* trace_job() - print the job details if

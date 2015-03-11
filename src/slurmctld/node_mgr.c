@@ -3269,7 +3269,7 @@ void make_node_idle(struct node_record *node_ptr,
 				cleanup_completing(job_ptr);
 		} else {
 			error("%s: %s node_cnt underflow",
-			      __func__, jobid2str(job_ptr, jbuf));
+			      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 		}
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3278,7 +3278,8 @@ void make_node_idle(struct node_record *node_ptr,
 				(node_ptr->sus_job_cnt)--;
 			else
 				error("%s: %s node %s sus_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf),
+				      __func__, jobid2str(job_ptr, jbuf,
+							  sizeof(jbuf)),
 				      node_ptr->name);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/* Remove node from running job */
@@ -3286,14 +3287,16 @@ void make_node_idle(struct node_record *node_ptr,
 				(node_ptr->run_job_cnt)--;
 			else
 				error("%s: %s node %s run_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf),
+				      __func__, jobid2str(job_ptr, jbuf,
+							  sizeof(jbuf)),
 				      node_ptr->name);
 		} else {
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else
 				error("%s: %s node %s run_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf),
+				      __func__, jobid2str(job_ptr, jbuf,
+							  sizeof(jbuf)),
 				      node_ptr->name);
 			if (node_ptr->comp_job_cnt > 0)
 				return;		/* More jobs completing */
@@ -3307,7 +3310,8 @@ void make_node_idle(struct node_record *node_ptr,
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
 		debug3("%s: %s node %s being left DOWN",
-		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
+		       __func__, jobid2str(job_ptr, jbuf,
+					   sizeof(jbuf)), node_ptr->name);
 		return;
 	}
 	bit_set(up_node_bitmap, inx);
@@ -3323,7 +3327,8 @@ void make_node_idle(struct node_record *node_ptr,
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		bit_set(idle_node_bitmap, inx);
 		debug3("%s: %s node %s is DRAINED",
-		       __func__, jobid2str(job_ptr, jbuf), node_ptr->name);
+		       __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		       node_ptr->name);
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,

@@ -1474,7 +1474,7 @@ next_task:
 			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)&&
 			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
 			info("sched: schedule: %s non-runnable:%s",
-			     jobid2str(job_ptr, job_id_str),
+			     jobid2str(job_ptr, job_id_str, sizeof(job_id_str)),
 			     slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
