@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
     before.
  -- Fix reports not using the month usage table.
  -- BGQ - Sanity check given for translating small blocks into slurm bg_records.
+ -- Fix bug preventing the requeue/hold or requeue/special_exit of job from the
+    completing state.
 
 * Changes in Slurm 14.11.4
 ==========================
