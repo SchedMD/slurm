@@ -1429,8 +1429,10 @@ static void _rebalance_node_power(void)
 			continue;
 		}
 		if ((node_ptr->power->cap_watts == 0) ||   /* Not initialized */
-		     (node_ptr->power->current_watts == 0))
+		     (node_ptr->power->current_watts == 0)) {
+			node_power_raise_cnt++;	/* Reset below */
 			continue;
+		}
 		if (node_ptr->power->current_watts <
 		    (node_ptr->power->cap_watts * lower_threshold)) {
 			/* Lower cap by lower of
