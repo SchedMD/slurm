@@ -902,7 +902,7 @@ again:
 
 	/* build job step cgroup relative path (should not be) */
 	if (*jobstep_cgroup_path == '\0') {
-		if (stepid == NO_VAL) {
+		if (stepid == SLURM_BATCH_SCRIPT) {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX,
 				     "%s/step_batch", job_cgroup_path)
 			    >= PATH_MAX) {

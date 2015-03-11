@@ -196,7 +196,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 
 	/* build job step cgroup relative path (should not be) */
 	if (*jobstep_cgroup_path == '\0') {
-		if (job->stepid == NO_VAL) {
+		if (job->stepid == SLURM_BATCH_SCRIPT) {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX,
 				     "%s/step_batch", job_cgroup_path)
 			    >= PATH_MAX) {
