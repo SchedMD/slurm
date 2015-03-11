@@ -160,7 +160,29 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 		len = nb_name.length()-2;
 		io_start = atoi((char*)nb_name.c_str()+len) * bg_conf->io_ratio;
 
+		/* sanity check: we have seen (bug 1514) the wrong
+		   nodeboard given for a block at times.  The only
+		   time we have seen this is when the disk was full on
+		   the sn.  It is unclear if this is the root of the
+		   problem or not, but at least the seg fault will not
+		   happen in this instance.
+		*/
+		if ((io_start + io_cnt) >= bg_conf->ionodes_per_mp) {
+			fatal("_translate_object_to_block: For some reason "
+			      "block %s claims to use nodeboard "
+			      "%s(starting IOnode %d) using %d extra IOnodes, "
+			      "but that would put us over the number "
+			      "of IOnodes we have on the midplane %d.  "
+			      "Something is most likely wrong with this "
+			      "block definition from the API/database.  "
+			      "Fixing/removing this block in "
+			      "the database is needed to resolve this issue.",
+			      bg_record->bg_block_id, nb_name.c_str(),
+			      io_start, io_cnt, bg_conf->ionodes_per_mp);
+		}
+
 		bg_record->ionode_bitmap = bit_alloc(bg_conf->ionodes_per_mp);
+
 		/* Set the correct ionodes being used in this block */
 		bit_nset(bg_record->ionode_bitmap,
 			 io_start, io_start+io_cnt);

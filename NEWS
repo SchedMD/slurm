@@ -191,7 +191,17 @@ documents those changes that are of interest to users and administrators.
     If configured don't requeue jobs on hold is a Prolog fails.
  -- Make it so sched_params isn't read over and over when an epilog complete
     message comes in
-
+ -- Fix squeue -L <licenses> not filtering out jobs with licenses.
+ -- Changed the implementation of xcpuinfo_abs_to_mac() be identical
+    _abs_to_mac() to fix CPUs allocation using cpuset cgroup.
+ -- Improve the explanation of the unbuffered feature in the
+    srun man page.
+ -- Make taskplugin=cgroup work for core spec.  needed to have task/cgroup
+    before.
+ -- Fix reports not using the month usage table.
+ -- BGQ - Sanity check given for translating small blocks into slurm bg_records.
+ -- Fix bug preventing the requeue/hold or requeue/special_exit of job from the
+    completing state.
 
 * Changes in Slurm 14.11.4
 ==========================

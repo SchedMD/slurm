@@ -670,7 +670,8 @@ Limits</a> document.</p>
   jobs will be allowed to run.  This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree again.
+  association tree again.  This limit only applies when using the Priority
+  Multifactor plugin.
 </li>
 
 <li><b>GrpCPURunMins=</b> Used to limit the combined total number of CPU
