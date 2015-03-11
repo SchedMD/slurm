@@ -246,7 +246,7 @@ extern char *get_licenses_used(void)
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses)
 {
-	bool valid;
+	bool valid = true;
 
 	last_license_update = time(NULL);
 
@@ -270,7 +270,7 @@ extern int license_update(char *licenses)
         ListIterator iter;
         licenses_t *license_entry, *match;
         List new_list;
-        bool valid;
+        bool valid = true;
 
         new_list = _build_license_list(licenses, &valid);
         if (!valid)
@@ -303,11 +303,11 @@ extern int license_update(char *licenses)
 
                 if (!match) {
                         info("license %s removed with %u in use",
-                         license_entry->name, license_entry->used);
+                             license_entry->name, license_entry->used);
                 } else {
                         if (license_entry->used > match->total) {
                                 info("license %s count decreased",
-                                 match->name);
+                                     match->name);
                         }
                 }
         }
@@ -567,7 +567,7 @@ extern List license_validate(char *licenses, bool *valid)
  */
 extern void license_job_merge(struct job_record *job_ptr)
 {
-	bool valid;
+	bool valid = true;
 
 	FREE_NULL_LIST(job_ptr->license_list);
 	job_ptr->license_list = _build_license_list(job_ptr->licenses, &valid);
