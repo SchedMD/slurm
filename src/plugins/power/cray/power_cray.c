@@ -1395,12 +1395,7 @@ static void _level_power_by_job(void)
  * and any power leveling by job */
 static void _rebalance_node_power(void)
 {
-	ListIterator iter;
-	hostset_t hs = NULL;
-	char *sep, *tmp_str;
-	List node_power_list = NULL;
-	power_by_nodes_t *node_power = NULL;
-	struct node_record *node_ptr, *node_ptr2;
+	struct node_record *node_ptr;
 	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
 	uint32_t node_power_raise_cnt = 0, node_power_needed = 0;
 	uint32_t node_power_same_cnt = 0, node_power_lower_cnt = 0;
@@ -1543,7 +1538,7 @@ static void _log_node_power(void)
 	uint32_t total_current_watts = 0, total_min_watts = 0;
 	uint32_t total_max_watts = 0, total_cap_watts = 0;
 	uint32_t total_new_cap_watts = 0, total_ready_cnt = 0;
-	int i, j;
+	int i;
 
 	/* Build and log summary table of required updates to power caps */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
