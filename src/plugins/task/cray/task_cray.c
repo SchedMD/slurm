@@ -416,7 +416,7 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	 * NUMA node: mems
 	 * CPU Masks: cpus
 	 */
-	if (job->batch) {
+	if (job->stepid == SLURM_BATCH_SCRIPT) {
 		// Batch Job Step
 		rc = snprintf(path, sizeof(path),
 			      "/dev/cpuset/slurm/uid_%d/job_%"
