@@ -874,8 +874,17 @@ _create_path_list(void)
 	return l;
 }
 
-char *
-search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
+/*
+ * search PATH to confirm the location and access mode of the given command
+ * IN cwd - current working directory
+ * IN cmd - command to execute
+ * IN check_current_dir - if true, search cwd for the command
+ * IN access_mode - required access rights of cmd
+ * IN test_exec - if false, do not confirm access mode of cmd if full path
+ * RET full path of cmd or NULL if not found
+ */
+char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
+		  bool test_exec)
 {
 	List         l        = NULL;
 	ListIterator i        = NULL;
@@ -883,16 +892,22 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 	/* BGQ's runjob command required a fully qualified path */
-	if ( (cmd[0] == '.' || cmd[0] == '/') &&
-	     (access(cmd, access_mode) == 0 ) ) {
+	if ((cmd[0] == '.') || (cmd[0] == '/')) &&
+	    (access(cmd, access_mode) == 0)) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", cwd);
 		xstrcat(fullpath, cmd);
 		goto done;
 	}
 #else
-	if ((cmd[0] == '.') || (cmd[0] == '/'))
-		return NULL;
+	if ((cmd[0] == '.') || (cmd[0] == '/')) {
+		if (test_exec && (access(cmd, access_mode) == 0)) {
+			if (cmd[0] == '.')
+				xstrfmtcat(fullpath, "%s/", cwd);
+			xstrcat(fullpath, cmd);
+		}
+		goto done;
+	}
 #endif
 
 	l = _create_path_list();
@@ -910,7 +925,6 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 			goto done;
 
 		xfree(fullpath);
-		fullpath = NULL;
 	}
   done:
 	if (l)

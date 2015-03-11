@@ -879,7 +879,7 @@ char *process_options_first_pass(int argc, char **argv)
 		char *cmd       = opt.script_argv[0];
 		int  mode       = R_OK;
 
-		if ((fullpath = search_path(opt.cwd, cmd, true, mode))) {
+		if ((fullpath = search_path(opt.cwd, cmd, true, mode, false))) {
 			xfree(opt.script_argv[0]);
 			opt.script_argv[0] = fullpath;
 		}

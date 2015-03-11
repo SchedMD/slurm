@@ -5521,6 +5521,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->kill_on_bad_exit, buffer);
 		pack16(build_ptr->kill_wait, buffer);
 
+		packstr(build_ptr->launch_params, buffer);
 		packstr(build_ptr->launch_type, buffer);
 		packstr(build_ptr->layouts, buffer);
 		packstr(build_ptr->licenses, buffer);
@@ -6379,6 +6380,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
 		safe_unpack16(&build_ptr->kill_wait, buffer);
 
+		safe_unpackstr_xmalloc(&build_ptr->launch_params,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->launch_type,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->layouts,

@@ -1687,6 +1687,8 @@ static void _opt_args(int argc, char **argv)
 {
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
+	char *fullpath, *launch_params;
+	bool test_exec = false;
 
 	_set_options(argc, argv);
 
@@ -1813,21 +1815,36 @@ static void _opt_args(int argc, char **argv)
 	}
 	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
+	if (getenv("SLURM_TEST_EXEC")) {
+		test_exec = true;
+	} else {
+		launch_params = slurm_get_launch_params();
+		if (launch_params && strstr(launch_params, "test_exec"))
+			test_exec = true;
+		xfree(launch_params);
+	}
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 	/* BGQ's runjob command required a fully qualified path */
 	if (!launch_g_handle_multi_prog_verify(command_pos) &&
 	    (opt.argc > command_pos)) {
-		char *fullpath;
-
 		if ((fullpath = search_path(opt.cwd,
 					    opt.argv[command_pos],
-					    false, X_OK))) {
+					    false, X_OK, test_exec))) {
 			xfree(opt.argv[command_pos]);
 			opt.argv[command_pos] = fullpath;
 		}
 	}
 #else
 	(void) launch_g_handle_multi_prog_verify(command_pos);
+	if (test_exec) {
+		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],
+					    false, X_OK, test_exec))) {
+			xfree(opt.argv[command_pos]);
+			opt.argv[command_pos] = fullpath;
+		} else {
+			fatal("Can not execute %s", opt.argv[command_pos]);
+		}
+	}
 #endif
 
 #if 0

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "February 2015" "slurm.conf 15.08" "Slurm configuration file"
+.TH "slurm.conf" "5" "March 2015" "slurm.conf 15.08" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1226,18 +1226,35 @@ The default value is 30 seconds.
 The value may not exceed 65533.
 
 .TP
+\fBLaunchParameters\fR
+Identifies options to the job launch plugin.
+Acceptable values include:
+.RS
+.TP 12
+\fBtest_exec\fR
+Validate the executable command's existence prior to attemping launch on
+the compute nodes
+.RE
+
+.TP
 \fBLaunchType\fR
 Identifies the mechanism to be used to launch application tasks.
-Acceptable values include
-"launch/aprun" for use with Cray systems with ALPS,
-"launch/poe" for use with IBM Parallel Environment (PE),
-"launch/runjob" for use with IBM BlueGene/Q systems, and
-"launch/slurm" for all other systems.
-The default value is
-"launch/aprun" for Cray systems,
-"launch/poe" for systems with the IBM NRT library installed,
-"launch/runjob" for IBM BlueGene/Q systems, and
-"launch/slurm" for all other systems.
+Acceptable values include:
+.RS
+.TP 15
+\fBlaunch/aprun\fR
+For use with Cray systems with ALPS and the default value for those systems
+.TP
+\fBlaunch/poe\fR
+For use with IBM Parallel Environment (PE) and the default value for systems
+with the IBM NRT library installed.
+.TP
+\fBlaunch/runjob\fR
+For use with IBM BlueGene/Q systems and the default value for those systems
+.TP
+\fBlaunch/slurm\fR
+For all other systems and the default value for those systems
+.RE
 
 .TP
 \fBLicenses\fR

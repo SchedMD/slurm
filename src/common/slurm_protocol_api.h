@@ -532,6 +532,12 @@ uint32_t slurm_get_accounting_storage_port(void);
  */
 int slurm_set_accounting_storage_port(uint32_t storage_port);
 
+/* slurm_get_launch_params
+ * get launch_params from slurmctld_conf object
+ * RET char *   - launch_params, MUST be xfreed by caller
+ */
+char *slurm_get_launch_params(void);
+
 /* slurm_get_launch_type
  * get launch_type from slurmctld_conf object
  * RET char *   - launch_type, MUST be xfreed by caller

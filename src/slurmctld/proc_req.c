@@ -705,6 +705,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->kill_wait           = conf->kill_wait;
 	conf_ptr->kill_on_bad_exit    = conf->kill_on_bad_exit;
 
+	conf_ptr->launch_params       = xstrdup(conf->launch_params);
 	conf_ptr->launch_type         = xstrdup(conf->launch_type);
 	conf_ptr->layouts             = xstrdup(conf->layouts);
 	conf_ptr->licenses            = xstrdup(conf->licenses);

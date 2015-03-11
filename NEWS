@@ -27,6 +27,10 @@ documents those changes that are of interest to users and administrators.
  -- Remove srun --max-launch-time option. The option has not been functional
     since Slurm version 2.0.
  -- Add sockets and cores to TaskPluginParams' autobind option.
+ -- Added LaunchParameters configuration parameter. Have srun command test
+    locally for the executable file if LaunchParameters=test_exec or the
+    environment variable SLURM_TEST_EXEC is set. Without this an invalid
+    command will generate one error message per task launched.
 
 * Changes in Slurm 15.08.0pre2
 ==============================

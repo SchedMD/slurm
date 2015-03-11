@@ -93,6 +93,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     step credential. The default value was changed from 1200 to 120 seconds.
     This value also controls how long a requeued job must wait before it can
     be started again.
+ -- Added LaunchParameters configuration parameter.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -151,17 +152,19 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
- -- Added the following fields to struct job_descriptor
+ -- Added the following fields to struct slurm_ctl_conf:
+    launch_params.
+ -- Added the following fields to struct job_descriptor:
     clusters, cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
- -- Added the following fields to struct job_info
+ -- Added the following fields to struct job_info:
     cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
- -- Added the following fields to struct slurm_step_ctx_params_t
+ -- Added the following fields to struct slurm_step_ctx_params_t:
     cpu_freq_min, cpu_freq_gov.
- -- Added the following fields to struct slurm_step_launch_params_t
+ -- Added the following fields to struct slurm_step_launch_params_t:
     cpu_freq_min, cpu_freq_gov.
- -- Added the following fields to struct job_step_info_t
+ -- Added the following fields to struct job_step_info_t:
     cpu_freq_min, cpu_freq_gov.
- -- Added the following fields to struct resource_allocation_response_msg_t
+ -- Added the following fields to struct resource_allocation_response_msg_t:
     cpu_freq_min, cpu_freq_gov.
  -- Added the following fields to struct reserve_info_t:
     burst_buffer.

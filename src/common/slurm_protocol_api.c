@@ -1952,6 +1952,24 @@ uint16_t slurm_get_kill_wait(void)
 	return kill_wait;
 }
 
+/* slurm_get_launch_params
+ * get launch_params from slurmctld_conf object
+ * RET char *   - launch_params, MUST be xfreed by caller
+ */
+char *slurm_get_launch_params(void)
+{
+	char *launch_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		launch_params = xstrdup(conf->launch_params);
+		slurm_conf_unlock();
+	}
+	return launch_params;
+}
+
 /* slurm_get_launch_type
  * get launch_type from slurmctld_conf object
  * RET char *   - launch_type, MUST be xfreed by caller

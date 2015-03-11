@@ -133,9 +133,17 @@ uint16_t parse_mail_type(const char *arg);
 /* print the mail type */
 char *print_mail_type(const uint16_t type);
 
-/* search PATH to confirm the access of the given command */
-char *search_path(char *cwd, char *cmd, bool check_current_dir,
-		  int access_mode);
+/*
+ * search PATH to confirm the location and access mode of the given command
+ * IN cwd - current working directory
+ * IN cmd - command to execute
+ * IN check_current_dir - if true, search cwd for the command
+ * IN access_mode - required access rights of cmd
+ * IN test_exec - if false, do not confirm access mode of cmd if full path
+ * RET full path of cmd or NULL if not found
+ */
+char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
+		  bool test_exec);
 
 /* helper function for printing options */
 char *print_commandline(const int script_argc, char **script_argv);

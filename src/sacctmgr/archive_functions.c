@@ -545,7 +545,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			fatal("getcwd failed: %m");
 
 		if ((fullpath = search_path(cwd, arch_rec->archive_file,
-					    true, mode))) {
+					    true, mode, false))) {
 			xfree(arch_rec->archive_file);
 			arch_rec->archive_file = fullpath;
 		}
