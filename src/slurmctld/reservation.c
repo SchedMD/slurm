@@ -1782,7 +1782,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 	}
 	if (resv_desc_ptr->licenses) {
-		bool valid;
+		bool valid = true;
 		license_list = _license_validate2(resv_desc_ptr, &valid);
 		if (!valid) {
 			info("Reservation request has invalid licenses %s",
@@ -2830,7 +2830,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		resv_ptr->account_not  = account_not;
 	}
 	if (resv_ptr->licenses) {
-		bool valid;
+		bool valid = true;
 		if (resv_ptr->license_list)
 			list_destroy(resv_ptr->license_list);
 		resv_ptr->license_list = license_validate(resv_ptr->licenses,

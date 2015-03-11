@@ -1962,7 +1962,7 @@ static int _restore_job_dependencies(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	char *new_depend;
-	bool valid;
+	bool valid = true;
 	List license_list;
 
 	assoc_mgr_clear_used_info();
