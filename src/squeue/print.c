@@ -178,11 +178,14 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 		/* We re-purpose the job's node_inx array to store the
 		 * array_task_id values */
 		if (!list_job_ptr->node_inx) {
-			list_job_ptr->node_inx = xmalloc(sizeof(int32_t) * 0xffff);
-			list_job_ptr->node_inx[0] = 1;		/* offset */
-			list_job_ptr->node_inx[1] =
+			list_job_ptr->node_inx =
+				xmalloc(sizeof(int32_t) * 0xffff);
+			list_job_ptr->node_inx[0] = 1;	/* offset */
+			list_job_ptr->node_inx[1] =	/* array task ID */
 				list_job_ptr->array_task_id;
 		}
+		if (list_job_ptr->node_inx[0] >= 0xfffe)
+			break;	/* No more room in node_inx array */
 		list_job_ptr->node_inx[0]++;
 		list_job_ptr->node_inx[list_job_ptr->node_inx[0]] =
 				job_ptr->array_task_id;
