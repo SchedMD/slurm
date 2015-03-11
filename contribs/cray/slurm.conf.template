@@ -169,4 +169,4 @@ CpuFreqDef=performance
 # COMPUTE NODES
 {computenodes}
 
-PartitionName=workq Nodes={nodelist} Shared=NO Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP
+PartitionName=workq Nodes={nodelist} Shared=EXCLUSIVE Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP
