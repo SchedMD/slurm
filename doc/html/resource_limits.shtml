@@ -131,7 +131,11 @@ specified then no limit will apply.</p>
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
   running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
-  jobs will be allowed to run.
+  jobs will be allowed to run.  The usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  association tree again.  This limit only applies when using the Priority
+  Multifactor plugin.
 </li>
 
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
