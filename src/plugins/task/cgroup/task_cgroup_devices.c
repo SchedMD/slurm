@@ -187,7 +187,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	if ( *jobstep_cgroup_path == '\0' ) {
 		int cc;
 
-		if (stepid == NO_VAL) {
+		if (stepid == SLURM_BATCH_SCRIPT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_batch", job_cgroup_path);
 			if (cc >= PATH_MAX) {
