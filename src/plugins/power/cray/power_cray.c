@@ -1429,7 +1429,7 @@ static void _rebalance_node_power(void)
 			continue;
 		}
 		if (node_ptr->power->current_watts <
-		    (node_ptr->power->cap_watts * lower_threshold)) {
+		    (node_ptr->power->cap_watts * lower_threshold/100)) {
 			/* Lower cap by lower of
 			 * 1) decrease_rate OR
 			 * 2) half the excess power in the cap */
@@ -1444,8 +1444,8 @@ static void _rebalance_node_power(void)
 				MAX(new_cap, node_ptr->power->min_watts);
 			alloc_power += node_ptr->power->new_cap_watts;
 			node_power_lower_cnt++;
-		} else if (node_ptr->power->current_watts <
-			   (node_ptr->power->cap_watts * upper_threshold)) {
+		} else if (node_ptr->power->current_watts <=
+			   (node_ptr->power->cap_watts * upper_threshold/100)) {
 			/* In desired range. Retain previous cap */
 			node_ptr->power->new_cap_watts =
 				MAX(node_ptr->power->cap_watts,
