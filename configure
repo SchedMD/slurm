@@ -19308,7 +19308,7 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 # Check whether --with-json was given.
 if test "${with_json+set}" = set; then :
-  withval=$with_json; _x_ac_json_dirs="$withval $_x_ac_json_dirs"
+  withval=$with_json; x_ac_json_dirs="$withval $x_ac_json_dirs"
 fi
 
 
