@@ -7484,8 +7484,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			pack_time(dump_job_ptr->details->submit_time, buffer);
 			/* Earliest possible begin time */
 			begin_time = dump_job_ptr->details->begin_time;
-		} else {
-			pack16(0, buffer);
+		} else {   /* Some job details may be purged after completion */
+			pack16(NICE_OFFSET, buffer);	/* Best guess */
 			pack_time((time_t) 0, buffer);
 		}
 
