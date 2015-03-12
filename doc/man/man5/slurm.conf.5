@@ -1457,6 +1457,10 @@ Options current supported by any plugins are listed below.
 \fBbalance_interval=#\fR
 Specifies the time interval, in seconds, between attempts to rebalance power
 caps across the nodes.
+This also controls the frequency at which Slurm attempts to collect current
+power consumption data (old data may be used until new data is available from
+the underlying infrastructure and values below 10 seconds are not recommended
+for Cray systems).
 The default value is 30 seconds.
 Supported by the power/cray plugin.
 .TP

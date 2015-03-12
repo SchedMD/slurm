@@ -32,6 +32,10 @@ Currently valid options are:
 <li><b>balance_interval=#</b> -
   Specifies the time interval, in seconds, between attempts to balance power
   caps across the nodes.
+  This also controls the frequency at which Slurm attempts to collect current
+  power consumption data (old data may be used until new data is available from
+  the underlying infrastructure and values below 10 seconds are not recommended
+  for Cray systems).
   The default value is 30 seconds.
   Supported by the power/cray plugin.</li>
 <li><b>capmc_path=/...</b> -
@@ -215,8 +219,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   power cap to the minimum value before powering it down. Also set the default
   power cap of each node to the minimum value as that will be used at power up
   time.</li>
-<li>We need to determine how the current power consumption data is gathered
-  and determine accuracy of that data.</li>
 <li>Cray permits independent power capping for accelerators (GPUs or MICs),
   which is not currently used by Slurm.</li>
 <li>Current default values for configuration parameters should probably be
@@ -227,6 +229,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   balance_interval and synchronizing changes may be difficult</li>
 </ul>
 
-<p style="text-align:center;">Last modified 10 March 2015</p>
+<p style="text-align:center;">Last modified 12 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
