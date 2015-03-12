@@ -383,22 +383,20 @@ make install</li>
 <li>If you have old build tools<br>
 cd json-c-0.12<br>
 mv aclocal.m4 aclocal.m4.orig<br>
-aclocal<br>
-autoconf<br>
-mv libtool libtool.orig<br>
-cp /usr/bin/libtool libtool<br>
-./configure --prefix=DESIRED_PATH<br>
+mv ltmain.sh ltmain.sh.orig<br>
+./autogen.sh<br>
+./configure --prefix=DESIRED_JSON_PATH<br>
 make<br>
 make install</li>
 </ul>
 
 <li>Build and install Slurm<br>
-./configure --with-json=DESIRED_PATH ...<br>
+./configure --with-json=DESIRED_JSON_PATH ...<br>
 make -j</li>
 </ol>
 
 </ul>
 
-<p style="text-align:center;">Last modified 26 February 2015</p>
+<p style="text-align:center;">Last modified 12 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
