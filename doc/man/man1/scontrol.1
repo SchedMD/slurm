@@ -474,9 +474,8 @@ Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
 .TP
 \fIConn\-Type\fP=<type>
-Reset the node connection type.
-Possible values on Blue Gene are "MESH", "TORUS" and "NAV"
-(mesh else torus).
+Reset the node connection type. Supported only on IBM BlueGene systems.
+Possible values on are "MESH", "TORUS" and "NAV" (mesh else torus).
 .TP
 \fIContiguous\fP=<yes|no>
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
@@ -649,19 +648,10 @@ Only the Slurm administrator or root can increase job's priority.
 Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
-\fIReqCores\fP=<count>
-Set the job's count of cores per socket to the specified value.
-.TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]").
 Value may be cleared with blank data value, "ReqNodeList=".
-.TP
-\fIReqSockets\fP=<count>
-Set the job's count of sockets per node to the specified value.
-.TP
-\fIReqThreads\fP=<count>
-Set the job's count of threads per core to the specified value.
 .TP
 \fIRequeue\fP=<0|1>
 Stipulates whether a job should be requeued after a node failure: 0
@@ -763,6 +753,11 @@ Local node and system id making the resource allocation.
 Jobs submitted using the sbatch command have BatchFlag set to 1.
 Jobs submitted using other commands have BatchFlag set to 0.
 .TP
+\fICoreSpec\fP=<count>
+Number of cores to reserve per node for system use.
+The job will be charged for these cores, but be unable to use them.
+Will be reported as "*" if not constrained.
+.TP
 \fIEndTime\fP
 The time the job is expected to terminate based on the job's time
 limit.  When the job ends sooner, this field will be updated with the
@@ -774,6 +769,9 @@ The first number is the exit code, typically as set by the exit() function.
 The second number of the signal that caused the process to terminate if
 it was terminated by a signal.
 .TP
+\fIGroupId\fP
+The group under which the job was submitted.
+.TP
 \fIJobState\fP
 The current state of the job.
 .TP
@@ -783,6 +781,12 @@ The list of nodes allocated to the job.
 \fINodeListIndices\fP
 The NodeIndices expose the internal indices into the node table
 associated with the node(s) allocated to the job.
+.TP
+\fINtasksPerN:B:S:C\fP=
+<tasks_per_node>:<tasks_per_baseboard>:<tasks_per_socket>:<tasks_per_core>
+Specifies the number of tasks to be started per hardware component (node,
+baseboard, socket and core).
+Unconstrained values may be shown as "0" or "*".
 .TP
 \fIPreemptTime\fP
 Time at which job was signaled that it was selected for preemption.
@@ -794,6 +798,18 @@ Time the job ran prior to last suspend.
 .TP
 \fIReason\fP
 The reason job is not running: e.g., waiting "Resources".
+.TP
+\fIReqB:S:C:T\fP=
+<baseboard_count>:<socket_per_baseboard_count>:<core_per_socket_count>:<thread_per_core_count>
+Specifies the count of various hardware components requested by the job.
+Unconstrained values may be shown as "0" or "*".
+.TP
+\fISecsPreSuspend\fP=<seconds>
+If the job is suspended, this is the run time accumulated by the job
+(in seconds) prior to being suspended.
+.TP
+\fISocks/Node\fP=<count>
+Count of desired sockets per node
 .TP
 \fISubmitTime\fP
 The time  and  date stamp (in Universal Time Coordinated, UTC)
@@ -809,8 +825,8 @@ duplicate entries for a job.
 \fISuspendTime\fP
 Time the job was last suspended or resumed.
 .TP
-\fIUserId\fP  \fIGroupId\fP
-The user and group under which the job was submitted.
+\fIUserId\fP
+The user under which the job was submitted.
 .TP
 NOTE on information displayed for various job states:
 When you submit a request for the "show job" function the scontrol
