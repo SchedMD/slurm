@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug preventing the requeue/hold or requeue/special_exit of job from the
     completing state.
  -- Cray - Fix for launching batch step within an existing job allocation.
+ -- Cray - Add ALPS_APP_ID_ENV environment variable.
 
 * Changes in Slurm 14.11.4
 ==========================
