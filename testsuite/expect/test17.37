@@ -40,15 +40,10 @@ set exit_code     0
 
 print_header $test_id
 
-if {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with serial systems\n"
-	exit $exit_code
-}
-
 make_bash_script $script "sleep 10"
 
 # Submit a job to depend on
-spawn $sbatch -t1 -N2 -o/dev/null $script
+spawn $sbatch -t1 -o/dev/null $script
 expect {
 	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't this test with less than two nodes\n"
@@ -66,7 +61,6 @@ expect {
 		wait
 	}
 }
-
 if { $job_id1 == 0 } {
 	send_user "\nFAILURE: sbatch did not submit job\n"
 	exit 1
@@ -75,7 +69,7 @@ if { $job_id1 == 0 } {
 wait_for_job $job_id1 RUNNING
 
 # Submit a job that depends on job above
-spawn $sbatch -t1 -N2 -dafternotok:$job_id1 -o/dev/null $script
+spawn $sbatch -t1 -dafternotok:$job_id1 -o/dev/null $script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -89,7 +83,6 @@ expect {
 		wait
 	}
 }
-
 if { $job_id2 == 0 } {
 	send_user "\nFAILURE: sbatch did not submit job\n"
 	exit 1
@@ -113,7 +106,6 @@ expect {
 		wait
 	}
 }
-
 if { $match != 1 } {
 	send_user "\nFAILURE: job $job_id1 did not exit with exit code 0\n"
 	set exit_code 1
@@ -139,7 +131,6 @@ expect {
 		wait
 	}
 }
-
 if { $match != 2 } {
 	send_user "\nFAILURE: job $job_id2 should be in pending state and "
 	send_user "should have DependencyNeverSatisfied for a reason\n"

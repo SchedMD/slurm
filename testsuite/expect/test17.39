@@ -1,0 +1,182 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validates that the OR dependency option is enforced
+#          when a job runs to completion
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       17.39
+set slow_id       0
+set fast_id       0
+set dep_id        0
+set slow_job      "test$test_id\_slow_sc"
+set fast_job      "test$test_id\_fast_sc"
+set exit_code     0
+
+print_header $test_id
+
+make_bash_script $slow_job "sleep 120"
+make_bash_script $fast_job "sleep 30"
+
+proc check_state {id state} {
+	global squeue exit_code
+
+	set match 0
+	spawn $squeue --job=$id -o"%T" --noheader
+	expect {
+		-re "$state" {
+			incr match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue is not reponding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match == 0} {
+		send_user "\nFAILURE: job $id is in the wrong state should be "
+		send_user "$state\n"
+		set exit_code 1
+	}
+}
+
+# Submit job 1 of 2
+spawn $sbatch -t3 -o/dev/null $slow_job
+expect {
+	-re "Submitted batch job ($number)" {
+		set slow_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$slow_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+# Submit job 2 of 2
+spawn $sbatch -t3 -o/dev/null $fast_job
+expect {
+	-re "Node count specification invalid" {
+		send_user "\nWARNING: can't test with less than two nodes\n"
+		exit 0
+	}
+	-re "Submitted batch job ($number)" {
+		set fast_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$fast_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+# Submit dependency job
+spawn $sbatch --dependency=afterok:$slow_id?afterok:$fast_id -o/dev/null $slow_job
+expect {
+	-re "Submitted batch job ($number)" {
+		set dep_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$dep_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	exit 1
+}
+
+# Check that dependent job is pending
+set match 0
+spawn $squeue --job=$dep_id -o"%t|%r" --noheader
+expect {
+	-re "PD|Dependency" {
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	send_user "\nFAILURE: job $dep_id is in the wrong state should be "
+	send_user "state PENDING and have REASON Dependency\n"
+	set exit_code 1
+}
+
+# Wait for the fast job to finish after submitting dependent job
+wait_for_job $fast_id DONE
+
+# Wait for dependency job to start once the fast job is complete
+if {[wait_for_job $dep_id RUNNING]} {
+	send_user "\nFAILURE: job $dep_job should be running\n"
+	set exit_code 1
+}
+
+check_state $dep_id RUNNING
+
+# Slow job should still be running
+check_state $slow_id RUNNING
+
+# Cancel leftover jobs
+cancel_job $fast_id
+cancel_job $slow_id
+cancel_job $dep_id
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $slow_job $fast_job
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
