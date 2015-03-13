@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
     completing state.
  -- Cray - Fix for launching batch step within an existing job allocation.
  -- Cray - Add ALPS_APP_ID_ENV environment variable.
+ -- Increase maximum MaxArraySize configuration parameter value from 1,000,001
+    to 4,000,001.
 
 * Changes in Slurm 14.11.4
 ==========================
