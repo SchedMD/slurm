@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
     locally for the executable file if LaunchParameters=test_exec or the
     environment variable SLURM_TEST_EXEC is set. Without this an invalid
     command will generate one error message per task launched.
+ -- Fix the slurm /etc/init.d script to return 0 upon stopping the
+    daemons and return 1 in case of failure.
 
 * Changes in Slurm 15.08.0pre2
 ==============================
