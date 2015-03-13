@@ -327,9 +327,12 @@ but can only see themselves when listing users.
 Events happening on the cluster over this age are purged from the database.
 This includes node down times and such.
 The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
 If not set (default), then job step records are never purged.
 
 .TP
@@ -337,9 +340,12 @@ If not set (default), then job step records are never purged.
 Individual job records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
 The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
 If not set (default), then job records are never purged.
 
 .TP
@@ -347,9 +353,12 @@ If not set (default), then job records are never purged.
 Individual reservation records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
 The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
 If not set (default), then reservation records are never purged.
 
 .TP
@@ -357,9 +366,12 @@ If not set (default), then reservation records are never purged.
 Individual job step records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
 The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
 If not set (default), then job step records are never purged.
 
 .TP
@@ -368,9 +380,12 @@ Records of individual suspend times for jobs over this age are purged from the
 database.
 Aggregated information will be preserved indefinitely.
 The time is a numeric value and is a number of months.  If you want to purge
-more often you can include hours, or days behind the numeric value to get
-those more frequent purges. (i.e. a value of '12hours' would purge
-everything older than 12 hours.)
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
 If not set (default), then job step records are never purged.
 
 .TP
