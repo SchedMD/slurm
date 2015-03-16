@@ -123,6 +123,7 @@ static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
+static int bf_min_age_reserve = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
@@ -517,6 +518,17 @@ static void _load_config(void)
 		max_backfill_job_per_user = 0;
 	}
 
+	if (sched_params &&
+	    (tmp_ptr=strstr(sched_params, "bf_min_age_reserve=")))
+		bf_min_age_reserve = atoi(tmp_ptr + 19);
+	else
+		bf_min_age_reserve = 0;
+	if (bf_min_age_reserve < 0) {
+		error("Invalid SchedulerParameters bf_min_age_reserve: %d",
+		      bf_min_age_reserve);
+		bf_min_age_reserve = 0;
+	}
+
 	/* bf_continue makes backfill continue where it was if interrupted
 	 */
 	if (sched_params && (strstr(sched_params, "bf_continue"))) {
@@ -727,7 +739,7 @@ static int _attempt_backfill(void)
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0;
-	int job_test_count = 0;
+	int job_test_count = 0, pend_time;
 	uint32_t *uid = NULL, nuser = 0, bf_parts = 0, *bf_part_jobs = NULL;
 	uint16_t *njobs = NULL;
 	bool already_counted;
@@ -1361,6 +1373,12 @@ next_task:
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
+		if (bf_min_age_reserve && job_ptr->details->begin_time) {
+			pend_time = difftime(time(NULL),
+					     job_ptr->details->begin_time);
+			if (pend_time < bf_min_age_reserve)
+				continue;
+		}
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
 		xfree(job_ptr->sched_nodes);
