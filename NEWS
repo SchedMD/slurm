@@ -212,6 +212,10 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Add ALPS_APP_ID_ENV environment variable.
  -- Increase maximum MaxArraySize configuration parameter value from 1,000,001
     to 4,000,001.
+ -- Added new SchedulerParameters value of bf_min_age_reserve. The backfill
+    scheduler will not reserve resources for pending jobs until they have
+    been pending for at least the specified number of seconds. This can be
+    valuable if jobs lack time limits or all time limits have the same value.
 
 * Changes in Slurm 14.11.4
 ==========================

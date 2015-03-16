@@ -2288,6 +2288,13 @@ to start.  This is similar to the MAXIJOB limit in Maui.
 The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBbf_min_age_reserve=#\fR
+The backfill scheduler will not reserve resources for pending jobs until they
+have been pending for at least the specified number of seconds.
+This can be valuable if jobs lack time limits or all time limits have the same
+value.
+The default value is zero, which will reserve resources for any pending job
+.TP
 \fBbf_resolution=#\fR
 The number of seconds in the resolution of data maintained about when jobs
 begin and end.
