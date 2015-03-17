@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     differ.
  -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
     interrupts.
+ -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
 
 * Changes in Slurm 14.03.11
 ===========================
