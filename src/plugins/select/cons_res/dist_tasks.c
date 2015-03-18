@@ -554,15 +554,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		/* select cores from the sockets of the best-fit board
 		 * combination using a best-fit approach */
-		while( cpus > 0 ) {
+		while ( cpus > 0 ) {
 
 			best_fit_cpus = 0;
 			best_fit_sufficient = false;
 
-			/* search for the best socket, */
-			/* starting from the last one to let more room */
-			/* in the first one for system usage */
-			for ( z = sock_per_comb-1; (int) z >= (int) 0; z-- ) {
+			/* search for the socket with best fit */
+			for ( z = 0; z < sock_per_comb; z++ ) {
 				s = socket_list[(comb_min*sock_per_comb)+z];
 				sufficient = sockets_cpu_cnt[s] >= req_cpus ;
 				if ( (best_fit_cpus == 0) ||
@@ -589,16 +587,10 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			       n, j, best_fit_location,
 			       sockets_cpu_cnt[best_fit_location]);
 
-			/* select socket cores from last to first */
-			/* socket[0]:Core[0] would be the last one */
 			sockets_used[best_fit_location] = true;
-
-			for ( j = c + ((best_fit_location+1) * ncores_nb)
-				      - 1 ;
-			      (int) j >= (int) (c + (best_fit_location *
-						     ncores_nb)) ;
-			      j-- ) {
-
+			for ( j = (c + (best_fit_location * ncores_nb));
+			      j < (c + ((best_fit_location + 1) * ncores_nb));
+			      j++ ) {
 				/*
 				 * if no more cpus to select
 				 * release remaining cores unless
@@ -618,7 +610,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				 * remove cores from socket count and
 				 * cpus count using hyperthreading requirement
 				 */
-				if ( bit_test(job_res->core_bitmap,j) ) {
+				if ( bit_test(job_res->core_bitmap, j) ) {
 					sockets_cpu_cnt[best_fit_location]--;
 					core_cnt++;
 					if (cpus < vpus)

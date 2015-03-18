@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
     only reservation.
  -- BGQ - When using static small blocks make sure when clearing the job the
     block is set up to it's original state.
+ -- Start job allocation using lowest numbered sockets for block task
+    distribution for consistency with cyclic distribution.
 
 * Changes in Slurm 14.11.4
 ==========================
