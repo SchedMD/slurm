@@ -3951,6 +3951,14 @@ outside of a partition specification (which is "NO", allowing user
 root to execute jobs).
 
 .TP
+\fBExclusiveUser\fR
+If set to "YES" then nodes will be exclusively allocated to users.
+Multiple jobs may be run for the same user, but only one user can be active
+at a time.
+This capability is also available on a per-job basis by using the
+\fB\-\-exclusive=user\fR option.
+
+.TP
 \fBGraceTime\fR
 Specifies, in units of seconds, the preemption grace time
 to be extended to a job which has been selected for preemption.

@@ -446,8 +446,9 @@ replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
-\fB\-\-exclusive\fR
-The job allocation can not share nodes with other running jobs.
+\fB\-\-exclusive[=user]\fR
+The job allocation can not share nodes with other running jobs (or just other
+users with the "=user" option).
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBShared\fR option takes precedence over the job's option.
 

@@ -328,17 +328,20 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 		/*
 		 * Fix options and inform user, but do not abort submission.
 		 */
-		if (req->shared && req->shared != (uint16_t)NO_VAL) {
-			info("--share is not (yet) supported on Cray.");
-			req->shared = false;
+		if (req->shared && (req->shared != (uint16_t)NO_VAL)) {
+			info("--share is not supported on Cray/ALPS systems.");
+			req->shared = (uint16_t)NO_VAL;
 		}
-		if (req->overcommit && req->overcommit != (uint8_t)NO_VAL) {
-			info("--overcommit is not supported on Cray.");
+		if (req->overcommit && (req->overcommit != (uint8_t)NO_VAL)) {
+			info("--overcommit is not supported on Cray/ALPS "
+			     "systems.");
 			req->overcommit = false;
 		}
-		if (req->wait_all_nodes && req->wait_all_nodes != (uint16_t)NO_VAL) {
-			info("--wait-all-nodes is handled automatically on Cray.");
-			req->wait_all_nodes = false;
+		if (req->wait_all_nodes &&
+		    (req->wait_all_nodes != (uint16_t)NO_VAL)) {
+			info("--wait-all-nodes is handled automatically on "
+			     "Cray/ALPS systems.");
+			req->wait_all_nodes = (uint16_t)NO_VAL;
 		}
 	}
 	return rc;

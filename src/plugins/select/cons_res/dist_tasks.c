@@ -927,7 +927,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	}
 
 	if ((job_ptr->job_resrcs->node_req == NODE_CR_RESERVED) ||
-	    (job_ptr->details->whole_node != 0)) {
+	    (job_ptr->details->whole_node == 1)) {
 		/* The job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_bitmap and
 		 * all of the available CPUs in the cpus array. */

@@ -2,7 +2,7 @@
  *  reservation.c - resource reservation management
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
- *  Copyright (C) 2012-2014 SchedMD LLC
+ *  Copyright (C) 2012-2015 SchedMD LLC <http://www.schedmd.com>
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -4453,7 +4453,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    bit_overlap(job_ptr->details->req_node_bitmap,
 					resv_ptr->node_bitmap) &&
 			    ((resv_ptr->cpu_cnt == 0) ||
-			     (job_ptr->details->whole_node))) {
+			     (job_ptr->details->whole_node == 1))) {
 				*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;
@@ -4469,7 +4469,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			}
 
 			if ((resv_ptr->full_nodes) ||
-			    (job_ptr->details->whole_node)) {
+			    (job_ptr->details->whole_node == 1)) {
 #if _DEBUG
 				info("reservation %s uses full nodes or job %u "
 				     "will not share nodes",

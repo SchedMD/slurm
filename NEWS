@@ -33,6 +33,11 @@ documents those changes that are of interest to users and administrators.
     command will generate one error message per task launched.
  -- Fix the slurm /etc/init.d script to return 0 upon stopping the
     daemons and return 1 in case of failure.
+ -- Add the ability for a compute node to be allocated to multiple jobs, but
+    restricted to a single user. Added "--exclusive=user" option to salloc,
+    sbatch and srun commands. Added "owner" field to node record, visible using
+    the scontrol and sview commands. Added new partition configuration parameter
+    "ExclusiveUser=yes|no".
 
 * Changes in Slurm 15.08.0pre2
 ==============================

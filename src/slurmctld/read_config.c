@@ -651,7 +651,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	} else {
 		part_ptr->flags &= (~PART_FLAG_NO_ROOT);
 	}
-
 	if (part_ptr->flags & PART_FLAG_NO_ROOT)
 		debug2("partition %s does not allow root jobs", part_ptr->name);
 
@@ -662,6 +661,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part->default_time = NO_VAL;
 	}
 
+	if (part->exclusive_user)
+		part_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
 	if (part->hidden_flag)
 		part_ptr->flags |= PART_FLAG_HIDDEN;
 	if (part->root_only_flag)
@@ -1459,6 +1460,19 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				else
 					part_ptr->flags &= (~PART_FLAG_NO_ROOT);
 			}
+			if ((part_ptr->flags & PART_FLAG_EXCLUSIVE_USER) !=
+			    (old_part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
+				error("Partition %s ExclusiveUser differs "
+				      "from slurm.conf", part_ptr->name);
+				if (old_part_ptr->flags &
+				    PART_FLAG_EXCLUSIVE_USER) {
+					part_ptr->flags |=
+						PART_FLAG_EXCLUSIVE_USER;
+				} else {
+					part_ptr->flags &=
+						(~PART_FLAG_EXCLUSIVE_USER);
+				}
+			}
 			if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
 			    (old_part_ptr->flags & PART_FLAG_ROOT_ONLY)) {
 				error("Partition %s RootOnly differs from "
@@ -1845,6 +1859,12 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 				continue;
 		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+
+		if (job_ptr->details &&
+		    (job_ptr->details->whole_node == 2)) {
+			node_ptr->owner_job_cnt++;
+			node_ptr->owner = job_ptr->user_id;
+		}
 
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 

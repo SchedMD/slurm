@@ -624,11 +624,12 @@ int load_all_part_state(void)
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-			if ((flags & PART_FLAG_DEFAULT_CLR) ||
-			    (flags & PART_FLAG_HIDDEN_CLR)  ||
-			    (flags & PART_FLAG_NO_ROOT_CLR) ||
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
 			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
-			    (flags & PART_FLAG_REQ_RESV_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
 			    (flags & PART_FLAG_LLN_CLR)) {
 				error("Invalid data for partition %s: flags=%u",
 				      part_name, flags);
@@ -668,11 +669,12 @@ int load_all_part_state(void)
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
 			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-			if ((flags & PART_FLAG_DEFAULT_CLR) ||
-			    (flags & PART_FLAG_HIDDEN_CLR)  ||
-			    (flags & PART_FLAG_NO_ROOT_CLR) ||
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
 			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
-			    (flags & PART_FLAG_REQ_RESV_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
 			    (flags & PART_FLAG_LLN_CLR)) {
 				error("Invalid data for partition %s: flags=%u",
 				      part_name, flags);
@@ -1313,6 +1315,16 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: clearing no_root for partition %s",
 		     part_desc->name);
 		part_ptr->flags &= (~PART_FLAG_NO_ROOT);
+	}
+
+	if (part_desc->flags & PART_FLAG_EXCLUSIVE_USER) {
+		info("update_part: setting exclusive_user for partition %s",
+		     part_desc->name);
+		part_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
+	} else if (part_desc->flags & PART_FLAG_EXC_USER_CLR) {
+		info("update_part: clearing exclusive_user for partition %s",
+		     part_desc->name);
+		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_USER);
 	}
 
 	if (part_desc->flags & PART_FLAG_DEFAULT) {

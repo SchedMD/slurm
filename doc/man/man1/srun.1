@@ -595,11 +595,11 @@ the Epilog parameter in slurm.conf.
 
 
 .TP
-\fB\-\-exclusive\fR
+\fB\-\-exclusive[=user]\fR
 This option has two slightly different meanings for job and job step
 allocations.
 When used to initiate a job, the job allocation cannot share nodes with
-other running jobs.
+other running jobs  (or just other users with the "=user" option).
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBShared\fR option takes precedence over the job's option.
 

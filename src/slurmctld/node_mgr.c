@@ -351,7 +351,35 @@ extern int load_all_node_state ( bool state_only )
 		uint32_t base_state;
 		uint16_t base_state2;
 		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
-		if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_hostname,
+							    &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
+			safe_unpackstr_xmalloc (&cpu_spec_list,
+							    &name_len, buffer);
+			safe_unpack32 (&node_state,  buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&boards,     buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&core_spec_cnt, buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack32 (&real_memory, buffer);
+			safe_unpack32 (&mem_spec_limit, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack16 (&obj_protocol_version, buffer);
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
+				goto unpack_error;
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_hostname,
@@ -504,7 +532,7 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->cpu_spec_list =
 						cpu_spec_list;
 					cpu_spec_list = NULL;/* Nothing */
-							     /*to free */
+							     /* to free */
 					node_ptr->threads       = threads;
 					node_ptr->real_memory   = real_memory;
 					node_ptr->mem_spec_limit =
@@ -896,6 +924,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 #ifndef HAVE_BG
 		}
 #endif
+		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
 		pack32(dump_node_ptr->mem_spec_limit, buffer);
 		packstr(dump_node_ptr->cpu_spec_list, buffer);
@@ -2332,6 +2361,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			}
 			last_node_update = now;
 		}
+		if (IS_NODE_IDLE(node_ptr))
+			node_ptr->owner = NO_VAL;
 
 		select_g_update_node_config(node_inx);
 		select_g_update_node_state(node_ptr);
@@ -2673,6 +2704,8 @@ extern int validate_nodes_via_front_end(
 				      "with %u running jobs",
 				      node_ptr->name, reg_msg->job_count);
 			}
+			if (IS_NODE_IDLE(node_ptr))
+				node_ptr->owner = NO_VAL;
 
 			select_g_update_node_config(i);
 			select_g_update_node_state(node_ptr);
@@ -3124,6 +3157,11 @@ extern void make_node_alloc(struct node_record *node_ptr,
 		(node_ptr->no_share_job_cnt)++;
 	}
 
+	if (job_ptr->details && (job_ptr->details->whole_node == 2)) {
+		node_ptr->owner_job_cnt++;
+		node_ptr->owner = job_ptr->user_id;
+	}
+
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	xfree(node_ptr->reason);
@@ -3212,6 +3250,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
+	node_ptr->owner = NO_VAL;
 	bit_clear (avail_node_bitmap, inx);
 	bit_clear (cg_node_bitmap,    inx);
 	bit_set   (idle_node_bitmap,  inx);
@@ -3306,7 +3345,15 @@ void make_node_idle(struct node_record *node_ptr,
 	if (node_ptr->comp_job_cnt == 0) {
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		bit_clear(cg_node_bitmap, inx);
+		if (IS_NODE_IDLE(node_ptr))
+			node_ptr->owner = NO_VAL;
 	}
+
+	if (job_ptr->details && (job_ptr->details->whole_node == 2)) {
+		if (--node_ptr->owner_job_cnt == 0)
+			node_ptr->owner = NO_VAL;
+	}
+
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
 		debug3("%s: %s node %s being left DOWN",

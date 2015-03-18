@@ -58,6 +58,7 @@
  *
  *****************************************************************************
  *  Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
  *  from select/linear
  *
@@ -730,7 +731,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		}
 
 		/* Exclude nodes with reserved cores */
-		if (job_ptr->details->whole_node && exc_core_bitmap) {
+		if ((job_ptr->details->whole_node == 1) && exc_core_bitmap) {
 			for (j = core_start_bit; j <= core_end_bit; j++) {
 				if (bit_test(exc_core_bitmap, j))
 					continue;
@@ -955,7 +956,7 @@ static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 	int vpus;
 
-	if (details_ptr->whole_node)	/* Use all CPUs on this node */
+	if (details_ptr->whole_node == 1)	/* Use all CPUs on this node */
 		return;
 
 	resv_cpus = MAX((rem_nodes - 1), 0);
@@ -2137,7 +2138,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			continue;
 		/* Make sure we don't say we can use a node exclusively
 		 * that is bigger than our max cpu count. */
-		if (((job_ptr->details->whole_node) &&
+		if (((job_ptr->details->whole_node == 1) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus < cpu_cnt[i])) ||
 		/* OR node has no CPUs */
@@ -2558,7 +2559,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			}
 		}
 	}
-	if (job_ptr->details->whole_node)
+	if (job_ptr->details->whole_node == 1)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
@@ -2638,7 +2639,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			bit_and(free_cores, tmpcore);
 		}
 	}
-	if (job_ptr->details->whole_node)
+	if (job_ptr->details->whole_node == 1)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
@@ -2947,7 +2948,7 @@ alloc_job:
 
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
-	if (job_ptr->details->whole_node) {
+	if (job_ptr->details->whole_node == 1) {
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);

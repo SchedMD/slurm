@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  node_info.c - Functions related to node display
- *  mode of sview.
+ *  node_info.c - Functions related to node display mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2015 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -59,6 +59,7 @@ enum {
 	SORTID_NAME,
 	SORTID_NODE_ADDR,
 	SORTID_NODE_HOSTNAME,
+	SORTID_OWNER,
 	SORTID_MEMORY,	/* RealMemory */
 	SORTID_REASON,
 	SORTID_RACK_MP,
@@ -106,6 +107,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_NODE_ADDR, "NodeAddr", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_OWNER, "Owner", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -207,7 +210,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_current_watts[50];
 	char tmp_base_watts[50];
 	char tmp_consumed_energy[50];
-	char tmp_cap_watts[50];
+	char tmp_cap_watts[50], tmp_owner[32];
 	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
@@ -240,6 +243,19 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_NODE_HOSTNAME),
 				   node_ptr->node_hostname);
+
+	if (node_ptr->owner == NO_VAL) {
+		snprintf(tmp_owner, sizeof(tmp_owner), "N/A");
+	} else {
+		char *user_name;
+		user_name = uid_to_string((uid_t) node_ptr->owner);
+		snprintf(tmp_owner, sizeof(tmp_owner), "%s(%u)",
+			 user_name, node_ptr->owner);
+		xfree(user_name);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_OWNER), tmp_owner);
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
@@ -452,7 +468,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
-	char tmp_used_cpus[20], tmp_cpu_load[20];
+	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_owner[32];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
 	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
@@ -553,6 +569,16 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 node_ptr->version);
 	}
 
+	if (node_ptr->owner == NO_VAL) {
+		snprintf(tmp_owner, sizeof(tmp_owner), "N/A");
+	} else {
+		char *user_name;
+		user_name = uid_to_string((uid_t) node_ptr->owner);
+		snprintf(tmp_owner, sizeof(tmp_owner), "%s(%u)",
+			 user_name, node_ptr->owner);
+		xfree(user_name);
+	}
+
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ARCH,      node_ptr->arch,
@@ -577,6 +603,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_NAME,      node_ptr->name,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,
 			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
+			   SORTID_OWNER,     tmp_owner,
 			   SORTID_RACK_MP,   sview_node_info_ptr->rack_mp,
 			   SORTID_REASON,    sview_node_info_ptr->reason,
 			   SORTID_SLURMD_START_TIME,

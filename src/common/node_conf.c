@@ -460,7 +460,8 @@ static int _list_find_config (void *config_entry, void *key)
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-hostlist_t bitmap2hostlist (bitstr_t *bitmap) {
+hostlist_t bitmap2hostlist (bitstr_t *bitmap)
+{
 	int i, first, last;
 	hostlist_t hl;
 
@@ -805,6 +806,7 @@ extern struct node_record *create_node_record (
 	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	node_ptr->energy = acct_gather_energy_alloc();
 	node_ptr->ext_sensors = ext_sensors_alloc();
+	node_ptr->owner = NO_VAL;
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	return node_ptr;
 }

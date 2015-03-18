@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -103,8 +103,11 @@ struct node_set {		/* set of nodes with same configuration */
 
 static int  _build_node_list(struct job_record *job_ptr,
 			     struct node_set **node_set_pptr,
-			     int *node_set_size, char **err_msg);
+			     int *node_set_size, char **err_msg,
+			     bool test_only);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
+static void _filter_by_node_owner(struct job_record *job_ptr,
+				  bitstr_t *usable_node_mask);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
 				 char **err_msg);
@@ -728,6 +731,51 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
 	}
 }
 
+/* Remove nodes from consideration for allocation based upon "ownership" by
+ * other users
+ * job_ptr IN - Job to be scheduled
+ * usable_node_mask IN/OUT - Nodes available for use by this job's user
+ */
+static void _filter_by_node_owner(struct job_record *job_ptr,
+				  bitstr_t *usable_node_mask)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr2;
+	struct node_record *node_ptr;
+	int i;
+
+	if ((job_ptr->details->whole_node == 0) &&
+	    (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER))
+		job_ptr->details->whole_node = 2;
+
+	if (job_ptr->details->whole_node == 2) {
+		/* Need to remove all nodes allocated to any active job from
+		 * any other user */
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr2 = (struct job_record *)
+				   list_next(job_iterator))) {
+			if (IS_JOB_PENDING(job_ptr2) ||
+			    IS_JOB_COMPLETED(job_ptr2) ||
+			    (job_ptr->user_id == job_ptr2->user_id) ||
+			    !job_ptr2->node_bitmap)
+				continue;
+			bit_not(job_ptr2->node_bitmap);
+			bit_and(usable_node_mask, job_ptr2->node_bitmap);
+			bit_not(job_ptr2->node_bitmap);
+		}
+		list_iterator_destroy(job_iterator);
+		return;
+	}
+
+	/* Need to filter out any nodes exclusively allocated to other users */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if ((node_ptr->owner != NO_VAL) &&
+		    (node_ptr->owner != job_ptr->user_id))
+			bit_clear(usable_node_mask, i);
+	}
+}
+
 /*
  * If the job has required feature counts, then accumulate those
  * required resources using multiple calls to _pick_best_nodes()
@@ -798,6 +846,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				     &exc_core_bitmap, &resv_overlap);
 		FREE_NULL_BITMAP(resv_bitmap);
 	}
+
+	if (!save_avail_node_bitmap)
+		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	_filter_by_node_owner(job_ptr, avail_node_bitmap);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
@@ -1648,7 +1700,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* build sets of usable nodes based upon their configuration */
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size,
-				      err_msg);
+				      err_msg, test_only);
 	if (error_code)
 		return error_code;
 
@@ -1670,7 +1722,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/*    job_ptr->details->max_nodes, part_ptr->max_nodes); */
 
 	/* On BlueGene systems don't adjust the min/max node limits
-	   here.  We are working on midplane values. */
+	 * here.  We are working on midplane values. */
 	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
 		min_nodes = job_ptr->details->min_nodes;
 	else
@@ -1685,8 +1737,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				part_ptr->max_nodes);
 
 	/* Don't call functions in MIN/MAX it will result in the
-	   function being called multiple times.
-	*/
+	 * function being called multiple times. */
 	acct_max_nodes = acct_policy_get_max_nodes(job_ptr, &wait_reason);
 	max_nodes = MIN(max_nodes, acct_max_nodes);
 
@@ -2373,11 +2424,12 @@ static int _no_reg_nodes(void)
  * OUT node_set_pptr - list of node sets which could be used for the job
  * OUT node_set_size - number of node_set entries
  * OUT err_msg - error message for job, caller must xfree
+ * IN  test_only - true if only testing if job can be started at some point
  * RET error code
  */
 static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
-			    int *node_set_size, char **err_msg)
+			    int *node_set_size, char **err_msg, bool test_only)
 {
 	int adj_cpus, i, node_set_inx, power_cnt, rc;
 	struct node_set *node_set_ptr;
@@ -2429,6 +2481,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 	if ((job_ptr->details->min_nodes == 0) &&
 	    (job_ptr->details->max_nodes == 0)) {
+		FREE_NULL_BITMAP(usable_node_mask);
 		*node_set_pptr = NULL;
 		*node_set_size = 0;
 		return SLURM_SUCCESS;
@@ -2570,8 +2623,8 @@ static int _build_node_list(struct job_record *job_ptr,
 
 	if (node_set_inx == 0) {
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		info("No nodes satisfy job %u requirements in partition %s",
-		     job_ptr->job_id, job_ptr->part_ptr->name);
+		info("%s: No nodes satisfy job %u requirements in partition %s",
+		     __func__, job_ptr->job_id, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
 		if (job_ptr->resv_name) {
 			job_ptr->state_reason = WAIT_RESERVATION;

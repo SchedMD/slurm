@@ -6638,6 +6638,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	} else if (job_desc->shared == 1) {
 		detail_ptr->share_res  = 1;
 		detail_ptr->whole_node = 0;
+	} else if (job_desc->shared == 2) {
+		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->whole_node = 2;
 	} else {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
 		detail_ptr->whole_node = 0;
@@ -7007,7 +7010,7 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 	 * cpu count isn't set up on that system. */
 	return SLURM_SUCCESS;
 #endif
-	if (job_ptr->details->whole_node) {
+	if (job_ptr->details->whole_node == 1) {
 		/* Since we are allocating whole nodes don't rely on
 		 * the job_resrcs since it could be less because the
 		 * node could of only used 1 thread per core.
@@ -8115,10 +8118,14 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	else if ((detail_ptr->share_res == 0) ||
 		 (detail_ptr->whole_node == 1))	/* User --exclusive */
 		shared = 0;
+	else if (detail_ptr->whole_node == 2)	/* User --exclusive=user */
+		shared = 2;
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */
-		if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
-		    ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
+		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+			shared = 2;
+		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
+			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
 			shared = 1;		/* Partition Shared=force */
 		else if (job_ptr->part_ptr->max_share == 0)
 			shared = 0;		/* Partition Shared=exclusive */
@@ -13893,8 +13900,10 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->script            = get_job_script(job_ptr);
 	if (details->share_res == 1)
 		job_desc->shared     = 1;
-	else if (details->whole_node)
+	else if (details->whole_node == 1)
 		job_desc->shared     = 0;
+	else if (details->whole_node == 2)
+		job_desc->shared     = 2;
 	else
 		job_desc->shared     = (uint16_t) NO_VAL;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;

@@ -927,11 +927,18 @@ line15:
 		xstrcat(out, "\n   ");
 
 	/****** Line 19 ******/
+	if (job_ptr->shared == 0)
+		tmp6_ptr = "0";
+	else if (job_ptr->shared == 1)
+		tmp6_ptr = "1";
+	else if (job_ptr->shared == 2)
+		tmp6_ptr = "USER";
+	else
+		tmp6_ptr = "OK";
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Shared=%s Contiguous=%d Licenses=%s Network=%s",
-		 (job_ptr->shared == 0 ? "0" :
-		  job_ptr->shared == 1 ? "1" : "OK"),
-		 job_ptr->contiguous, job_ptr->licenses, job_ptr->network);
+		 tmp6_ptr, job_ptr->contiguous, job_ptr->licenses,
+		 job_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

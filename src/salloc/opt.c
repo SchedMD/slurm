@@ -556,7 +556,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		info("WARNING: You are attempting to initiate a second job");
 		break;
 	case OPT_EXCLUSIVE:
-		opt.shared = 0;
+		if (val == NULL) {
+			opt.shared = 0;
+		} else if (!strcasecmp(val, "user")) {
+			opt.shared = 2;
+		} else {
+			error("\"%s=%s\" -- invalid value, ignoring...",
+			      e->var, val);
+		}
 		break;
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
@@ -697,7 +704,7 @@ void set_options(const int argc, char **argv)
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
-		{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"gres",          required_argument, 0, LONG_OPT_GRES},
@@ -940,7 +947,14 @@ void set_options(const int argc, char **argv)
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
-                        opt.shared = 0;
+			if (optarg == NULL) {
+				opt.shared = 0;
+			} else if (!strcasecmp(optarg, "user")) {
+				opt.shared = 2;
+			} else {
+				error("invalid exclusive option %s", optarg);
+				exit(error_exit);
+			}
                         break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
@@ -2006,7 +2020,7 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
 "Consumable resources related options:\n"
-"      --exclusive             allocate nodes in exclusive mode when\n"
+"      --exclusive[=user]      allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"

@@ -1813,10 +1813,14 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_ROTATE));
 
-	if (job_ptr->shared)
-		sprintf(tmp_char, "yes");
-	else
+	if (job_ptr->shared == 0)
 		sprintf(tmp_char, "no");
+	else if (job_ptr->shared == 1)
+		sprintf(tmp_char, "no");
+	else if (job_ptr->shared == 2)
+		sprintf(tmp_char, "user");
+	else
+		sprintf(tmp_char, "ok");
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_SHARED),

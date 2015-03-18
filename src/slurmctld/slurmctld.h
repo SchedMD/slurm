@@ -520,7 +520,8 @@ struct job_details {
 					 * useful when Consumable Resources
 					 * is enabled */
 	uint32_t usable_nodes;		/* node count needed by preemption */
-	uint8_t whole_node;		/* job requested exclusive node use */
+	uint8_t whole_node;		/* 1: --exclusive
+					 * 2: --exclusive=user */
 	char *work_dir;			/* pathname of working directory */
 };
 

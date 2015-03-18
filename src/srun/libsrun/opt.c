@@ -739,8 +739,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXCLUSIVE:
-		opt.exclusive = true;
-		opt.shared = 0;
+		if (val == NULL) {
+			opt.exclusive = true;
+			opt.shared = 0;
+		} else if (!strcasecmp(val, "user")) {
+			opt.shared = 2;
+		} else {
+			error("\"%s=%s\" -- invalid value, ignoring...",
+			      e->var, val);
+		}
 		break;
 
 	case OPT_EXPORT:
@@ -910,7 +917,7 @@ static void _set_options(const int argc, char **argv)
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
-		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
+		{"exclusive",        optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"export",           required_argument, 0, LONG_OPT_EXPORT},
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
@@ -1229,8 +1236,15 @@ static void _set_options(const int argc, char **argv)
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
-			opt.exclusive = true;
-                        opt.shared = 0;
+			if (optarg == NULL) {
+				opt.exclusive = true;
+				opt.shared = 0;
+			} else if (!strcasecmp(optarg, "user")) {
+				opt.shared = 2;
+			} else {
+				error("invalid exclusive option %s", optarg);
+				exit(error_exit);
+			}
                         break;
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
@@ -2693,7 +2707,7 @@ static void _help(void)
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Consumable resources related options:\n"
-"      --exclusive             allocate nodes in exclusive mode when\n"
+"      --exclusive[=user]      allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
 "                              or don't share CPUs for job steps\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"

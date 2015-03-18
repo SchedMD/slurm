@@ -128,7 +128,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 {
 	uint32_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
-	char load_str[32], tmp_line[512], time_str[32];
+	char load_str[32], tmp_line[512], time_str[32], owner_str[32];
 	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
@@ -317,12 +317,22 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line 8 ******/
-
+	if (node_ptr->owner == NO_VAL) {
+		snprintf(owner_str, sizeof(owner_str), "N/A");
+	} else {
+		char *user_name;
+		user_name = uid_to_string((uid_t) node_ptr->owner);
+		snprintf(owner_str, sizeof(owner_str), "%s(%u)",
+			 user_name, node_ptr->owner);
+		xfree(user_name);
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u",
+		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u "
+		 "Owner=%s",
 		 node_state_string(my_state),
 		 cloud_str, comp_str, drain_str, power_str,
-		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight);
+		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight,
+		 owner_str);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

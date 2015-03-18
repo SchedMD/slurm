@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -89,6 +89,7 @@ enum {
 	SORTID_DEFAULT,
 	SORTID_DENY_ACCOUNTS,
 	SORTID_DENY_QOS,
+	SORTID_EXCLUSIVE_USER,
 	SORTID_FEATURES,
 	SORTID_GRACE_TIME,
 	SORTID_HIDDEN,
@@ -138,6 +139,8 @@ static display_data_t display_data_part[] = {
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -219,6 +222,8 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_ALTERNATE, "Alternate", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_DEFAULT, "Default", FALSE,
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_EXCLUSIVE_USER, "ExclusiveUser", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_GRACE_TIME, "GraceTime", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
@@ -359,6 +364,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 		goto end_it;
 	switch(type) {
 	case SORTID_DEFAULT:
+	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 	case SORTID_ROOT:
 		if (!strcmp(temp_char, "yes"))
@@ -508,6 +514,16 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			part_msg->flags |= PART_FLAG_DEFAULT_CLR;
 		}
 		type = "default";
+		break;
+	case SORTID_EXCLUSIVE_USER:
+		if (!strcasecmp(new_text, "yes")) {
+			part_msg->flags |= PART_FLAG_EXCLUSIVE_USER;
+			part_msg->flags &= (~PART_FLAG_EXC_USER_CLR);
+		} else if (!strcasecmp(new_text, "no")) {
+			part_msg->flags &= (~PART_FLAG_EXCLUSIVE_USER);
+			part_msg->flags |= PART_FLAG_EXC_USER_CLR;
+		}
+		type = "hidden";
 		break;
 	case SORTID_GRACE_TIME:
 		temp_int = time_str2mins((char *)new_text);
@@ -998,6 +1014,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				temp_char = "none";
 			break;
+		case SORTID_EXCLUSIVE_USER:
+			if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+				yes_no = 1;
+			else
+				yes_no = 0;
+			break;
 		case SORTID_HIDDEN:
 			if (part_ptr->flags & PART_FLAG_HIDDEN)
 				yes_no = 1;
@@ -1152,7 +1174,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
-	char *tmp_deny_accounts, *tmp_qos_char;
+	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
 	char *tmp_qos, *tmp_deny_qos;
 	char *tmp_root, *tmp_share, *tmp_state;
 	uint16_t tmp_preempt;
@@ -1199,6 +1221,11 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		tmp_deny_qos = part_ptr->deny_qos;
 	else
 		tmp_deny_qos = "none";
+
+	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+		tmp_exc_user = "yes";
+	else
+		tmp_exc_user = "no";
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		tmp_hidden = "yes";
@@ -1310,6 +1337,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_ALLOW_QOS,  tmp_qos,
 			   SORTID_DENY_ACCOUNTS, tmp_deny_accounts,
 			   SORTID_DENY_QOS,   tmp_deny_qos,
+			   SORTID_EXCLUSIVE_USER, tmp_exc_user,
 			   SORTID_HIDDEN,     tmp_hidden,
 			   SORTID_JOB_SIZE,   tmp_size,
 			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
@@ -2158,6 +2186,7 @@ static GtkListStore *_create_model_part2(int type)
 	last_model = NULL;	/* Reformat display */
 	switch (type) {
 	case SORTID_DEFAULT:
+	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
@@ -2243,6 +2272,7 @@ extern GtkListStore *create_model_part(int type)
 	last_model = NULL;	/* Reformat display */
 	switch (type) {
 	case SORTID_DEFAULT:
+	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 	case SORTID_ROOT:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);

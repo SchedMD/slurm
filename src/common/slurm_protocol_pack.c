@@ -3400,6 +3400,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack32(&node->real_memory, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
 
+		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
 		safe_unpack32(&node->mem_spec_limit, buffer);
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,

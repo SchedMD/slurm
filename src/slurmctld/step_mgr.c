@@ -2549,7 +2549,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			 * of cpus available if we only want to run 1
 			 * thread per core.
 			 */
-			if (!job_resrcs_ptr->whole_node
+			if ((job_resrcs_ptr->whole_node != 1)
 			    && (slurmctld_conf.select_type_param
 				& (CR_CORE | CR_SOCKET))
 			    && (job_ptr->details->cpu_bind_type

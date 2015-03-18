@@ -609,7 +609,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXCLUSIVE:
-		opt.shared = 0;
+		if (val == NULL) {
+			opt.shared = 0;
+		} else if (!strcasecmp(val, "user")) {
+			opt.shared = 2;
+		} else {
+			error("\"%s=%s\" -- invalid value, ignoring...",
+			      e->var, val);
+		}
 		break;
 
 	case OPT_OVERCOMMIT:
@@ -729,7 +736,7 @@ static struct option long_options[] = {
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
-	{"exclusive",     no_argument,       0, LONG_OPT_EXCLUSIVE},
+	{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -1361,7 +1368,14 @@ static void _set_options(int argc, char **argv)
 			opt.contiguous = true;
 			break;
 		case LONG_OPT_EXCLUSIVE:
-			opt.shared = 0;
+			if (optarg == NULL) {
+				opt.shared = 0;
+			} else if (!strcasecmp(optarg, "user")) {
+				opt.shared = 2;
+			} else {
+				error("invalid exclusive option %s", optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
@@ -1371,8 +1385,7 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
 			if (opt.mincpus < 0) {
-				error("invalid mincpus constraint %s",
-				      optarg);
+				error("invalid mincpus constraint %s", optarg);
 				exit(error_exit);
 			}
 			break;
@@ -3056,7 +3069,7 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
 "Consumable resources related options:\n"
-"      --exclusive             allocate nodes in exclusive mode when\n"
+"      --exclusive[=user]      allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"

@@ -1064,7 +1064,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 				}
 			}
 		}
-		if (to_job_ptr->details->whole_node) {
+		if (to_job_ptr->details->whole_node == 1) {
 			to_job_ptr->total_cpus += select_node_record[i].cpus;
 		} else {
 			to_job_ptr->total_cpus += new_job_resrcs_ptr->
@@ -2093,7 +2093,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	if (slurm_get_use_spec_resources() == 0)
 		job_ptr->details->core_spec = (uint16_t) NO_VAL;
 	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
-	    (job_ptr->details->whole_node == 0)) {
+	    (job_ptr->details->whole_node != 1)) {
 		info("Setting Exclusive mode for job %u with CoreSpec=%u",
 		      job_ptr->job_id, job_ptr->details->core_spec);
 		job_ptr->details->whole_node = 1;

@@ -171,6 +171,8 @@ struct node_record {
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */
 	bitstr_t *node_spec_bitmap;	/* node cpu specialization bitmap */
+	uint32_t owner;			/* User allowed to use node or NO_VAL */
+	uint16_t owner_job_cnt;		/* Count of exclusive jobs by "owner" */
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

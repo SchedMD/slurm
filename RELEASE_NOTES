@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
-10 December 2014
+2 February 2015
 
 
 IMPORTANT NOTES:
@@ -61,6 +61,10 @@ HIGHLIGHTS
     NOTE: Only supported with select/linear plugin.
     NOTE: The program contribs/sgi/netloc_to_topology can be used to build
     Slurm's topology.conf file.
+ -- Add the ability for a compute node to be allocated to multiple jobs, but
+    restricted to a single user. Added "--exclusive=user" option to salloc,
+    the scontrol and sview commands. Added new partition configuration parameter
+    "ExclusiveUser=yes|no".
 
 RPMBUILD CHANGES
 ================
@@ -94,6 +98,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     This value also controls how long a requeued job must wait before it can
     be started again.
  -- Added LaunchParameters configuration parameter.
+ -- Added new partition configuration parameter "ExclusiveUser=yes|no".
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -170,6 +175,8 @@ Added the following struct definitions
     burst_buffer.
  -- Added the following fields to struct resv_desc_msg_t:
     burst_buffer.
+ -- Added the following fields to struct node_info_t:
+    owner.
 
 Added the following struct definitions
 ======================================

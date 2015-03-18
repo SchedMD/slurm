@@ -1016,12 +1016,14 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 			_print_str("no", width, right_justify, true);
 			break;
 		case 1:
-		case 2:
 			_print_str("yes", width, right_justify, true);
+			break;
+		case 2:
+			_print_str("user", width, right_justify, true);
 			break;
 		case (uint16_t)NO_VAL:
 		default:
-			_print_str("unknwn", width, right_justify, true);
+			_print_str("ok", width, right_justify, true);
 			break;
 		}
 	}
