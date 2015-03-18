@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix support for --mem=0 (all memory of a node) with select/cons_res plugin.
  -- Fix bug that can permit someone to kill job array belonging to another user.
  -- Don't set the default partition on a license only reservation.
+ -- Show a NodeCnt=0, instead of NO_VAL, in "scontrol show res" for a license
+    only reservation.
 
 * Changes in Slurm 14.11.4
 ==========================
