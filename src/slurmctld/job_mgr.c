@@ -4317,6 +4317,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		while (job_ptr) {
 			if (job_ptr->array_job_id == job_id)
 				break;
+			job_ptr = job_ptr->job_array_next_j;
 		}
 		if (job_ptr && (job_ptr->user_id != uid) &&
 		    !validate_operator(uid) &&
