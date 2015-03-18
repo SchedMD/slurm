@@ -2829,6 +2829,7 @@ alloc_job:
 			job_res->memory_allocated[i] = save_mem;
 		}
 	} else {	/* --mem=0, allocate job all memory on node */
+		uint32_t lowest_mem = 0;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);
@@ -2837,9 +2838,13 @@ alloc_job:
 		for (i = first, j = 0; i <= last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
+			if ((j == 0) ||
+			    (lowest_mem > select_node_record[i].real_memory))
+				lowest_mem = select_node_record[i].real_memory;
 			job_res->memory_allocated[j++] =
 				select_node_record[i].real_memory;
 		}
+		details_ptr->pn_min_memory = lowest_mem;
 	}
 	return error_code;
 }
