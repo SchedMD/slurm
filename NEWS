@@ -216,6 +216,8 @@ documents those changes that are of interest to users and administrators.
     scheduler will not reserve resources for pending jobs until they have
     been pending for at least the specified number of seconds. This can be
     valuable if jobs lack time limits or all time limits have the same value.
+ -- Fix support for --mem=0 (all memory of a node) with select/cons_res plugin.
+ -- Fix bug that can permit someone to kill job array belonging to another user.
 
 * Changes in Slurm 14.11.4
 ==========================
@@ -702,6 +704,7 @@ documents those changes that are of interest to users and administrators.
     differ.
  -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
     interrupts.
+ -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
 
 * Changes in Slurm 14.03.11
 ===========================

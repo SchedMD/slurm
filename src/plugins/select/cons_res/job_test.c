@@ -550,7 +550,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	if (cr_type & CR_MEMORY) {
 		/* Memory Check: check pn_min_memory to see if:
 		 *          - this node has enough memory (MEM_PER_CPU == 0)
-		 *          - there are enough free_cores (MEM_PER_CPU = 1)
+		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 		avail_mem = select_node_record[node_i].real_memory;
@@ -718,6 +718,13 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 				debug3("cons_res: _vns: node %s no mem %u < %u",
 					select_node_record[i].node_ptr->name,
 					free_mem, min_mem);
+				goto clear_bit;
+			}
+		} else if (cr_type & CR_MEMORY) {   /* --mem=0 for all memory */
+			if (node_usage[i].alloc_memory) {
+				debug3("cons_res: _vns: node %s mem in use %u",
+					select_node_record[i].node_ptr->name,
+					node_usage[i].alloc_memory);
 				goto clear_bit;
 			}
 		}
@@ -2362,12 +2369,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *orig_map, *avail_cores, *free_cores, *part_core_map = NULL;
 	bitstr_t *tmpcore = NULL, *reqmap = NULL;
 	bool test_only;
-	uint32_t c, i, k, n, csize, total_cpus, save_mem = 0;
+	uint32_t c, i, j, k, n, csize, total_cpus, save_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
+	int first, last;
 
 	details_ptr = job_ptr->details;
 	layout_ptr  = details_ptr->req_node_layout;
@@ -2876,7 +2884,6 @@ alloc_job:
 	csize = bit_size(job_res->core_bitmap);
 
 	for (i = 0, n = 0; n < cr_node_cnt; n++) {
-		uint32_t j;
 		if (layout_ptr && reqmap && bit_test(reqmap,n))
 			ll++;
 		if (bit_test(node_bitmap, n) == 0)
@@ -2941,10 +2948,11 @@ alloc_job:
 	/* translate job_res->cpus array into format with rep count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node) {
-		int first, last = -1;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);
+		else
+			last = first - 1;
 		job_ptr->total_cpus = 0;
 		for (i = first; i <= last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
@@ -2974,11 +2982,28 @@ alloc_job:
 			job_res->memory_allocated[i] = job_res->cpus[i] *
 						       save_mem;
 		}
-	} else {
+	} else if (save_mem) {
 		/* memory is per-node */
 		for (i = 0; i < job_res->nhosts; i++) {
 			job_res->memory_allocated[i] = save_mem;
 		}
+	} else {	/* --mem=0, allocate job all memory on node */
+		uint32_t lowest_mem = 0;
+		first = bit_ffs(job_res->node_bitmap);
+		if (first != -1)
+			last  = bit_fls(job_res->node_bitmap);
+		else
+			last = first - 1;
+		for (i = first, j = 0; i <= last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			if ((j == 0) ||
+			    (lowest_mem > select_node_record[i].real_memory))
+				lowest_mem = select_node_record[i].real_memory;
+			job_res->memory_allocated[j++] =
+				select_node_record[i].real_memory;
+		}
+		details_ptr->pn_min_memory = lowest_mem;
 	}
 	return error_code;
 }

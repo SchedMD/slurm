@@ -4315,6 +4315,18 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_INVALID_JOB_ID;
 		}
 		while (job_ptr) {
+			if (job_ptr->array_job_id == job_id)
+				break;
+		}
+		if (job_ptr && (job_ptr->user_id != uid) &&
+		    !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account)) {
+			error("Security violation, REQUEST_KILL_JOB RPC for "
+			      "jobID %u from uid %d", job_ptr->job_id, uid);
+			return ESLURM_ACCESS_DENIED;
+		}
+		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_signal(job_ptr, signal, flags, uid,
