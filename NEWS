@@ -223,6 +223,13 @@ documents those changes that are of interest to users and administrators.
     valuable if jobs lack time limits or all time limits have the same value.
  -- Fix support for --mem=0 (all memory of a node) with select/cons_res plugin.
  -- Fix bug that can permit someone to kill job array belonging to another user.
+ -- Don't set the default partition on a license only reservation.
+ -- Show a NodeCnt=0, instead of NO_VAL, in "scontrol show res" for a license
+    only reservation.
+ -- BGQ - When using static small blocks make sure when clearing the job the
+    block is set up to it's original state.
+ -- Start job allocation using lowest numbered sockets for block task
+    distribution for consistency with cyclic distribution.
 
 * Changes in Slurm 14.11.4
 ==========================

@@ -138,7 +138,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		 "%s=%s %sCnt=%u %sCnt=%u Features=%s "
 		 "PartitionName=%s Flags=%s",
 		 is_bluegene ? "Midplanes" : "Nodes", resv_ptr->node_list,
-		 is_bluegene ? "Midplane" : "Node", resv_ptr->node_cnt,
+		 is_bluegene ? "Midplane" : "Node",
+		 (resv_ptr->node_cnt == NO_VAL) ? 0 : resv_ptr->node_cnt,
 		 is_bluegene ? "Cnode" : "Core", resv_ptr->core_cnt,
 		 resv_ptr->features,  resv_ptr->partition, flag_str);
 	xfree(flag_str);

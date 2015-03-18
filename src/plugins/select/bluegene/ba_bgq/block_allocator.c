@@ -1154,8 +1154,14 @@ try_again:
 		 * only used for sub-block jobs we only create it
 		 * when needed. */
 		if (!ba_mp->cnode_bitmap)
+		if (!ba_mp->cnode_bitmap) {
 			ba_mp->cnode_bitmap =
 				ba_create_ba_mp_cnode_bitmap(bg_record);
+			FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
+			ba_mp->cnode_usable_bitmap =
+				bit_copy(ba_mp->cnode_bitmap);
+		}
+
 		if (!ba_mp->cnode_err_bitmap)
 			ba_mp->cnode_err_bitmap =
 				bit_alloc(bg_conf->mp_cnode_cnt);
@@ -1445,10 +1451,15 @@ extern void ba_sync_job_to_block(bg_record_t *bg_record,
 			while ((ba_mp = list_next(ba_itr))) {
 				if (node_inx != ba_mp->index)
 					continue;
-				if (!ba_mp->cnode_bitmap)
+				if (!ba_mp->cnode_bitmap) {
 					ba_mp->cnode_bitmap =
 						ba_create_ba_mp_cnode_bitmap(
 							bg_record);
+					FREE_NULL_BITMAP(
+						ba_mp->cnode_usable_bitmap);
+					ba_mp->cnode_usable_bitmap =
+						bit_copy(ba_mp->cnode_bitmap);
+				}
 				if (!ba_mp->cnode_err_bitmap)
 					ba_mp->cnode_err_bitmap = bit_alloc(
 						bg_conf->mp_cnode_cnt);
