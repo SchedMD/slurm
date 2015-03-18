@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't set the default partition on a license only reservation.
  -- Show a NodeCnt=0, instead of NO_VAL, in "scontrol show res" for a license
     only reservation.
+ -- BGQ - When using static small blocks make sure when clearing the job the
+    block is set up to it's original state.
 
 * Changes in Slurm 14.11.4
 ==========================
