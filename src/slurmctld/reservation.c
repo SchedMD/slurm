@@ -1701,7 +1701,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	char start_time[32], end_time[32];
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
-	uint32_t total_node_cnt = NO_VAL;
+	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false;
 
 	if (!resv_list)
