@@ -224,7 +224,7 @@ proc check_job { exp_num_jobs } {
 	if { $job_cnt != $exp_num_jobs } {
 		send_user "\nFAILURE: the number of possible jobs that could "
 		send_user "run were not reached ($job_cnt != $exp_num_jobs).\n"
-		send_user "This could be due to memory or other limits.\n"
+		send_user "FAILURE: This could be due to memory or other limits.\n"
 		set exit_code 1
 	}
 }
