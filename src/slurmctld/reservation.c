@@ -1974,17 +1974,19 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			if (rc != SLURM_SUCCESS)
 				goto bad_parse;
 		}
-	} else if (((resv_desc_ptr->node_cnt == NULL) ||
-		    (resv_desc_ptr->node_cnt[0] == 0)) &&
-		    (!resv_desc_ptr->core_cnt) &&
-		   ((resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY) == 0)) {
-		info("Reservation request lacks node specification");
-		rc = ESLURM_INVALID_NODE_NAME;
-		goto bad_parse;
-	} else if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap,
-				       &core_bitmap)) != SLURM_SUCCESS) {
-		goto bad_parse;
-	} else {
+	} else if (!(resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY)) {
+		if ((!resv_desc_ptr->node_cnt || !resv_desc_ptr->node_cnt[0]) &&
+		    !resv_desc_ptr->core_cnt) {
+			info("Reservation request lacks node specification");
+			rc = ESLURM_INVALID_NODE_NAME;
+		} else {
+		   rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap,
+				       &core_bitmap);
+		}
+		if (rc != SLURM_SUCCESS) {
+			goto bad_parse;
+		}
+
 		/* Get count of allocated nodes, on BlueGene systems, this
 		 * might be more than requested */
 		total_node_cnt = bit_set_count(node_bitmap);
