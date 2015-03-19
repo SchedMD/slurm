@@ -127,6 +127,7 @@ List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
 
 /* Local variables */
+static int      bf_min_age_reserve = 0;
 static uint32_t highest_prio = 0;
 static uint32_t lowest_prio  = TOP_PRIORITY;
 static int      hash_table_size = 0;
@@ -3840,7 +3841,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			struct job_record **job_pptr, char **err_msg,
 			uint16_t protocol_version)
 {
-	static int defer_sched = -1;
+	static time_t sched_update = 0;
+	static int defer_sched = 0;
+	char *sched_params, *tmp_ptr;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
@@ -3906,12 +3909,21 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	else
 		too_fragmented = false;
 
-	if (defer_sched == -1) {
-		char *sched_params = slurm_get_sched_params();
+	if (sched_update != slurmctld_conf.last_update) {
+		sched_update = slurmctld_conf.last_update;
+		sched_params = slurm_get_sched_params();
 		if (sched_params && strstr(sched_params, "defer"))
 			defer_sched = 1;
 		else
 			defer_sched = 0;
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
+			bf_min_age_reserve = atoi(tmp_ptr + 19);
+			if (bf_min_age_reserve < 0)
+				bf_min_age_reserve = 0;
+		} else {
+			bf_min_age_reserve = 0;
+		}
 		xfree(sched_params);
 	}
 	if (defer_sched == 1)
@@ -3922,6 +3934,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	else
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
+
 	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
@@ -8983,6 +8996,8 @@ extern void sync_job_priorities(void)
 static bool _top_priority(struct job_record *job_ptr)
 {
 	struct job_details *detail_ptr = job_ptr->details;
+	time_t now = time(NULL);
+	int pend_time;
 	bool top;
 
 #ifdef HAVE_BG
@@ -9022,6 +9037,15 @@ static bool _top_priority(struct job_record *job_ptr)
 				/* Job is hung in pending & completing state,
 				 * indicative of job requeue */
 				continue;
+			}
+
+			if (bf_min_age_reserve) {
+				if (job_ptr2->details->begin_time == 0)
+					continue;
+				pend_time = difftime(now, job_ptr2->
+						     details->begin_time);
+				if (pend_time < bf_min_age_reserve)
+					continue;
 			}
 			if (!acct_policy_job_runnable_state(job_ptr2) ||
 			    !misc_policy_job_runnable_state(job_ptr2) ||
