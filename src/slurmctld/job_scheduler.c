@@ -761,7 +761,7 @@ extern int schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, i, j, part_cnt, time_limit;
+	int error_code, i, j, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -785,6 +785,7 @@ extern int schedule(uint32_t job_limit)
 	static bool wiki_sched = false;
 	static bool fifo_sched = false;
 	static int sched_timeout = 0;
+	static int bf_min_age_reserve = 0;
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
@@ -849,6 +850,15 @@ extern int schedule(uint32_t job_limit)
 			error("Invalid batch_sched_delay: %d",
 			      batch_sched_delay);
 			batch_sched_delay = 3;
+		}
+
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
+			bf_min_age_reserve = atoi(tmp_ptr + 19);
+			if (bf_min_age_reserve < 0)
+				bf_min_age_reserve = 0;
+		} else {
+			bf_min_age_reserve = 0;
 		}
 
 		if (sched_params &&
@@ -1321,6 +1331,20 @@ next_task:
 				if (failed_resv_cnt < MAX_FAILED_RESV) {
 					failed_resv[failed_resv_cnt++] =
 						job_ptr->resv_ptr;
+				}
+			}
+
+			if (fail_by_part && bf_min_age_reserve) {
+				/* Consider other jobs in this partition if
+				 * job has been waiting for less than
+				 * bf_min_age_reserve time */
+				if (job_ptr->details->begin_time == 0) {
+					fail_by_part = false;
+				} else {
+					pend_time = difftime(now,
+						job_ptr->details->begin_time);
+					if (pend_time < bf_min_age_reserve)
+						fail_by_part = false;
 				}
 			}
 

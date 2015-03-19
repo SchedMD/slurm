@@ -3,6 +3,10 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.6
 ==========================
+ -- If SchedulerParameters value of bf_min_age_reserve is configured, then
+    a newly submitted job can start immediately even if there is a higher
+    priority non-runnable job which has been waiting for less time than
+    bf_min_age_reserve.
 
 * Changes in Slurm 14.11.5
 ==========================
