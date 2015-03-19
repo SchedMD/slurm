@@ -1,6 +1,9 @@
  This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.6
+==========================
+
 * Changes in Slurm 14.11.5
 ==========================
  -- Correct the squeue command taking into account that a node can
