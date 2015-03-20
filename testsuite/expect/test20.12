@@ -30,7 +30,6 @@ proc make_random_var_name {} {
 }
 
 proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_expect_val qsub_extra_options extra_batch_header } {
-
 	global file_in
 	global file_out
 	global exit_code
@@ -44,6 +43,10 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	global variable1_value
 	global variable2_value
 	global subtest_name
+
+	send_user "\n==============================================\n"
+	send_user "$subtest_name\n"
+	send_user "==============================================\n"
 
 	set job_id 0
 	exec rm -f $file_out
@@ -86,7 +89,6 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	}
 	set matches 0
 	spawn $bin_cat $file_out
-
 	expect {
 		"$variable1_name=$variable1_expect_val\r\n" {
 			incr matches
@@ -111,8 +113,6 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 	} else {
 		exit $exit_code
 	}
-
-	sleep 5
 }
 
 # Test -V
@@ -149,7 +149,6 @@ set subtest_name "Test -V, -v var=val w/sbatch --export=NONE"
 set var1_name [make_random_var_name]
 set var2_name [make_random_var_name]
 run_qsub $var1_name "LETITGOOO" $var2_name $variable2_value "-V -v $var1_name=LETITGOOO" "#SBATCH --export=NONE"
-
 
 send_user "\nSUCCESS\n"
 exit 0
