@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
     priority non-runnable job which has been waiting for less time than
     bf_min_age_reserve.
  -- qsub wrapper modified to export "all" with -V option
+ -- RequeueExit and RequeueExitHold configuration parameters modified to accept
+    numeric ranges. For example "RequeueExit=1,2,3,4" and "RequeueExit=1-4" are
+    equivalent.
 
 * Changes in Slurm 14.11.5
 ==========================
