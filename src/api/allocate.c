@@ -149,11 +149,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-static void
-cazzo(int sig)
-{
-	info("%s: got signal %d", __func__, sig);
-}
 
 /*
  * slurm_allocate_resources_blocking
@@ -213,7 +208,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		      " forcing immediate allocation mode.");
 		req->immediate = 1;
 	}
-	signal(SIGINT, cazzo);
 
 	if (!req->immediate) {
 		listen = _create_allocation_response_socket(hostname);

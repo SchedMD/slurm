@@ -581,10 +581,10 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service	&&
-  echo /usr/lib/systemd/system/slurmctld.service		>> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service	&&
-  echo /usr/lib/systemd/system/slurmd.service		>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmctld.service	&&
+  echo /lib/systemd/system/slurmctld.service		>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmd.service	&&
+  echo /lib/systemd/system/slurmd.service		>> $LIST
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
   echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
@@ -656,8 +656,8 @@ test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd			&&
   echo /etc/init.d/slurmdbd				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
   echo /usr/sbin/rcslurmdbd				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service	&&
-  echo /usr/lib/systemd/system/slurmdbd.service		>> $LIST
+test -f $RPM_BUILD_ROOT/lib/systemd/system/slurmdbd.service	&&
+  echo /lib/systemd/system/slurmdbd.service		>> $LIST
 
 LIST=./sql.files
 touch $LIST
