@@ -116,6 +116,9 @@ static void *_safe_signal_while_allocating(void *in_data)
 {
 	int signo = *(int *)in_data;
 
+	fprintf(stderr, "%s: porcoddio signal %d %d\n",
+		__func__, signo, destroy_job);
+
 	debug("Got signal %d", signo);
 	if (signo == SIGCONT)
 		return NULL;
@@ -133,6 +136,9 @@ static void _signal_while_allocating(int signo)
 {
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
+
+	fprintf(stderr, "%s: porcoddio signal %d %d\n",
+		__func__, signo, destroy_job);
 
 	/* There are places where _signal_while_allocating can't be
 	 * put into a thread, but if this isn't on a separate thread

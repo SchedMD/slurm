@@ -2048,18 +2048,21 @@ the definitions in the slurm.conf file.
 .TP
 \fBRequeueExit\fR
 Enables automatic job requeue for jobs which exit with the specified values.
-Separate multiple exit code by a comma. Jobs will be put back in to pending
-state and later scheduled again. Restarted jobs will have the environment
-variable \fBSLURM_RESTART_COUNT\fP set to the number of times the job has been
-restarted.
+Separate multiple exit code by a comma and/or specify numeric ranges using a
+"\-" separator (e.g. "RequeueExit=1\-9,18")
+Jobs will be put back in to pending state and later scheduled again.
+Restarted jobs will have the environment variable \fBSLURM_RESTART_COUNT\fP
+set to the number of times the job has been restarted.
 
 .TP
 \fBRequeueExitHold\fR
 Enables automatic requeue of jobs into pending state in hold, meaning their
-priority is zero. Separate multiple exit code by a comma. These jobs are put
-in the \fBJOB_SPECIAL_EXIT\fP exit state. Restarted jobs will have the
-environment variable \fBSLURM_RESTART_COUNT\fP set to the number of times the
-job has been restarted.
+priority is zero.
+Separate multiple exit code by a comma and/or specify numeric ranges using a
+"\-" separator (e.g. "RequeueExitHold=10\-12,16")
+These jobs are put in the \fBJOB_SPECIAL_EXIT\fP exit state.
+Restarted jobs will have the environment variable \fBSLURM_RESTART_COUNT\fP
+set to the number of times the job has been restarted.
 
 .TP
 \fBResumeProgram\fR

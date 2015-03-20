@@ -14321,48 +14321,38 @@ init_requeue_policy(void)
 static int32_t *
 _make_requeue_array(char *conf_buf, uint32_t *num)
 {
-	char *p;
-	char *p0;
-	char cnum[12];
-	int cc;
-	int n;
-	int32_t *ar;
+	hostset_t hs;
+	char *tok = NULL, *end_ptr = NULL;
+	int32_t *ar = NULL, cc = 0;
+	long val;
 
-	if (conf_buf == NULL) {
-		*num = 0;
-		return NULL;
+	*num = 0;
+	if (conf_buf == NULL)
+		return ar;
+
+	xstrfmtcat(tok, "[%s]", conf_buf);
+	hs = hostset_create(tok);
+	xfree(tok);
+	if (!hs) {
+		error("%s: exit values: %s", __func__, conf_buf);
+		return ar;
 	}
 
-	info("%s: exit values: %s", __func__, conf_buf);
+	debug("%s: exit values: %s", __func__, conf_buf);
 
-	p0 = p = xstrdup(conf_buf);
-	/* First tokenize the string removing ,
-	 */
-	for (cc = 0; p[cc] != 0; cc++) {
-		if (p[cc] == ',')
-			p[cc] = ' ';
+	ar = xmalloc(sizeof(int32_t) * hostset_count(hs));
+	while ((tok = hostset_shift(hs))) {
+		val = strtol(tok, &end_ptr, 10);
+		if ((end_ptr[0] == '\0') && (val >= 0)) {
+			ar[cc++] = val;
+		} else {
+			error("%s: exit values: %s (%s)",
+			      __func__, conf_buf, tok);
+		}
+		free(tok);
 	}
-
-	/* Count the number of exit values
-	 */
-	cc = 0;
-	while (sscanf(p, "%s%n", cnum, &n) != EOF) {
-		++cc;
-		p += n;
-	}
-
-	ar = xmalloc(cc * sizeof(int));
-
-	cc = 0;
-	p = p0;
-	while (sscanf(p, "%s%n", cnum, &n) != EOF) {
-		ar[cc] = atoi(cnum);
-		++cc;
-		p += n;
-	}
-
 	*num = cc;
-	xfree(p0);
+	hostset_destroy(hs);
 
 	return ar;
 }
