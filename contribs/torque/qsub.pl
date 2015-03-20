@@ -244,12 +244,10 @@ if ($variable_list) {
 			}
 		}
 	} else {
-		my $separator = "";
 		if ($export_env) {
-			$command .= " --export=";
+			$command .= " --export=all";
 		} else {
 			$command .= " --export=none";
-			$separator = ",";
 		}
 
 #		The logic below ignores quoted commas, but the quotes must be escaped
@@ -260,16 +258,14 @@ if ($variable_list) {
 		foreach my $part (@parts) {
 			my ($key, $value) = $part =~ /(.*)=(.*)/;
 			if (defined($key) && defined($value)) {
-				$command .= "$separator";
-				$command .= "$key=$value";
-				$separator = ",";
+				$command .= ",$key=$value";
 			} elsif (defined($ENV{$part})) {
-				$command .= "$separator";
-				$command .= "$part=$ENV{$part}";
-				$separator = ",";
+				$command .= ",$part=$ENV{$part}";
 			}
 		}
 	}
+} elsif ($export_env && ! $interactive) {
+	$command .= " --export=all";
 }
 
 $command .= " --account='$group_list'" if $group_list;

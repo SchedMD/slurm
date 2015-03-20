@@ -585,6 +585,7 @@ test20.8   Test the qalter -N option for changing the name of a job.
 test20.9   Test for the qalter --man option
 test20.10  Test for the qrerun --help option
 test20.11  Test for the qrerun --man option
+test20.12  Test for qsub -V/-v arguments and their interaction with sbatch scripts
 
 
 test21.#   Testing of sacctmgr commands and options.
