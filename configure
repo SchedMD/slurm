@@ -22181,7 +22181,7 @@ _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   have_cray_files="yes"
 else
-  as_fn_error $? "There is a problem linking to the Cray api." "$LINENO" 5
+  as_fn_error $? "There is a problem linking to the Cray API" "$LINENO" 5
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -22267,7 +22267,7 @@ _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   have_cray_files="yes"
 else
-  as_fn_error $? "There is a problem linking to the Cray API." "$LINENO" 5
+  as_fn_error $? "There is a problem linking to the Cray API" "$LINENO" 5
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -22280,7 +22280,7 @@ rm -f core conftest.err conftest.$ac_objext \
     done
 
     if test -z "$have_cray_files"; then
-      as_fn_error $? "Unable to locate Cray API dir install. (usually in /opt/cray)" "$LINENO" 5
+      as_fn_error $? "Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)" "$LINENO" 5
     else
       if test "$ac_have_native_cray" = "yes"; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray system in native mode without ALPS" >&5

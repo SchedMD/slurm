@@ -139,7 +139,7 @@ AC_DEFUN([X_AC_CRAY],
 	    ]]
 	  )],
 	  [have_cray_files="yes"],
-	  [AC_MSG_ERROR(There is a problem linking to the Cray api.)])
+	  [AC_MSG_ERROR(There is a problem linking to the Cray API)])
 
         # See if we have 5.2UP01 alpscomm functions
         AC_SEARCH_LIBS([alpsc_pre_suspend],
@@ -159,7 +159,7 @@ AC_DEFUN([X_AC_CRAY],
             ]]
           )],
           [have_cray_files="yes"],
-          [AC_MSG_ERROR(There is a problem linking to the Cray API.)])
+          [AC_MSG_ERROR(There is a problem linking to the Cray API)])
       fi
 
       LIBS="$saved_LIBS"
@@ -169,7 +169,7 @@ AC_DEFUN([X_AC_CRAY],
     done
 
     if test -z "$have_cray_files"; then
-      AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray)])
+      AC_MSG_ERROR([Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cray/job)])
     else
       if test "$ac_have_native_cray" = "yes"; then
         AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
