@@ -12030,6 +12030,8 @@ void job_fini (void)
 	xfree(job_hash);
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);
+	xfree(requeue_exit);
+	xfree(requeue_exit_hold);
 }
 
 /* Record the start of one job array task */
