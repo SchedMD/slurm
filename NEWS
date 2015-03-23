@@ -11,8 +11,6 @@ documents those changes that are of interest to users and administrators.
  -- RequeueExit and RequeueExitHold configuration parameters modified to accept
     numeric ranges. For example "RequeueExit=1,2,3,4" and "RequeueExit=1-4" are
     equivalent.
- -- Correct the job array specification parser to accept [x-y] format when
-    operating on job arrays.
 
 * Changes in Slurm 14.11.5
 ==========================
