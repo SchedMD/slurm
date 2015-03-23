@@ -5651,6 +5651,26 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 {
 	char *end_ptr = NULL;
 	int i, first, last, step = 1;
+	char *p;
+
+	/* Strip []
+	 */
+	i = 0;
+	p = tok;
+	while (*tok) {
+		if (*tok == '['
+		    || *tok == ']') {
+			*tok = ' ';
+			++i;
+			++tok;
+		}
+		++tok;
+	}
+	tok = p;
+	if (i) {
+		++tok;
+		tok[strlen(tok) - 1] = 0;
+	}
 
 	first = strtol(tok, &end_ptr, 10);
 	if (first < 0)
