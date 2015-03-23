@@ -85,11 +85,6 @@
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
-/* Maximum index for a job array. The minimum index will always be 0. */
-#ifndef MAX_JOB_ARRAY_VALUE
-#define MAX_JOB_ARRAY_VALUE 1000
-#endif
-
 /* Maximum parallel threads to service incoming RPCs.
  * Since some systems schedule pthread on a First-In-Last-Out basis,
  * increasing this value is strongly discouraged. */
@@ -1100,9 +1095,7 @@ extern int init_node_conf (void);
 extern int init_part_conf (void);
 
 /* init_requeue_policy()
- *
- * Build the arrays holding the job exit code upon
- * which jobs should get requeued.
+ * Initialize the requeue exit/hold bitmaps.
  */
 extern void init_requeue_policy(void);
 

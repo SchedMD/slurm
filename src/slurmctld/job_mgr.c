@@ -102,6 +102,7 @@
 
 #define ARRAY_ID_BUF_SIZE 32
 #define DETAILS_FLAG 0xdddd
+#define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
@@ -136,17 +137,15 @@ static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
 static struct   job_record **job_array_hash_j = NULL;
 static struct   job_record **job_array_hash_t = NULL;
+static bool     kill_invalid_dep;
 static time_t   last_file_write_time = (time_t) 0;
 static uint32_t max_array_size = NO_VAL;
+static bitstr_t *requeue_exit = NULL;
+static bitstr_t *requeue_exit_hold = NULL;
 static int	select_serial = -1;
 static bool     wiki_sched = false;
 static bool     wiki2_sched = false;
 static bool     wiki_sched_test = false;
-static uint32_t num_exit;
-static int32_t  *requeue_exit;
-static uint32_t num_hold;
-static int32_t  *requeue_exit_hold;
-static bool     kill_invalid_dep;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -187,7 +186,7 @@ static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer,
 			      uint16_t protocol_version);
 static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
-static int32_t *_make_requeue_array(char *conf_buf, uint32_t *num);
+static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
@@ -12030,8 +12029,8 @@ void job_fini (void)
 	xfree(job_hash);
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);
-	xfree(requeue_exit);
-	xfree(requeue_exit_hold);
+	FREE_NULL_BITMAP(requeue_exit);
+	FREE_NULL_BITMAP(requeue_exit_hold);
 }
 
 /* Record the start of one job array task */
@@ -14281,24 +14280,19 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 }
 
 /* init_requeue_policy()
- * Initialize the requeue exit/hold arrays.
+ * Initialize the requeue exit/hold bitmaps.
  */
-void
-init_requeue_policy(void)
+extern void init_requeue_policy(void)
 {
 	char *sched_params;
 
-	/* clean first as we can be reconfiguring
-	 */
-	num_exit = 0;
-	xfree(requeue_exit);
-	num_hold = 0;
-	xfree(requeue_exit_hold);
+	/* clean first as we can be reconfiguring */
+	FREE_NULL_BITMAP(requeue_exit);
+	FREE_NULL_BITMAP(requeue_exit_hold);
 
-	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit,
-					   &num_exit);
+	requeue_exit = _make_requeue_array(slurmctld_conf.requeue_exit);
 	requeue_exit_hold = _make_requeue_array(
-		slurmctld_conf.requeue_exit_hold, &num_hold);
+		slurmctld_conf.requeue_exit_hold);
 	/* Check if users want to kill a job whose dependency
 	 * can never be satisfied.
 	 */
@@ -14317,88 +14311,75 @@ init_requeue_policy(void)
 /* _make_requeue_array()
  *
  * Process the RequeueExit|RequeueExitHold configuration
- * parameters creating two arrays holding the exit values
+ * parameters creating two bitmaps holding the exit values
  * of jobs for which they have to be requeued.
  */
-static int32_t *
-_make_requeue_array(char *conf_buf, uint32_t *num)
+static bitstr_t *_make_requeue_array(char *conf_buf)
 {
 	hostset_t hs;
+	bitstr_t *bs = NULL;
 	char *tok = NULL, *end_ptr = NULL;
-	int32_t *ar = NULL, cc = 0;
 	long val;
 
-	*num = 0;
 	if (conf_buf == NULL)
-		return ar;
+		return bs;
 
 	xstrfmtcat(tok, "[%s]", conf_buf);
 	hs = hostset_create(tok);
 	xfree(tok);
 	if (!hs) {
 		error("%s: exit values: %s", __func__, conf_buf);
-		return ar;
+		return bs;
 	}
 
 	debug("%s: exit values: %s", __func__, conf_buf);
 
-	ar = xmalloc(sizeof(int32_t) * hostset_count(hs));
+	bs = bit_alloc(MAX_EXIT_VAL + 1);
 	while ((tok = hostset_shift(hs))) {
 		val = strtol(tok, &end_ptr, 10);
-		if ((end_ptr[0] == '\0') && (val >= 0)) {
-			ar[cc++] = val;
+		if ((end_ptr[0] == '\0') &&
+		    (val >= 0) && (val <= MAX_EXIT_VAL)) {
+			bit_set(bs, val);
 		} else {
 			error("%s: exit values: %s (%s)",
 			      __func__, conf_buf, tok);
 		}
 		free(tok);
 	}
-	*num = cc;
 	hostset_destroy(hs);
 
-	return ar;
+	return bs;
 }
 
 /* _set_job_requeue_exit_value()
  *
  * Compared the job exit values with the configured
- * RequeueExit and RequeueHoldExit and it mach is
- * found set the appropriate state for job_hold_requeue()
- * If RequeueExit or RequeueExitHold are not defined
- * the mum_exit and num_hold are zero.
- *
+ * RequeueExit and RequeueHoldExit and a match is
+ * found, set the appropriate state for job_hold_requeue()
  */
 static void
 _set_job_requeue_exit_value(struct job_record *job_ptr)
 {
-	int cc;
 	int exit_code;
 
-	/* Search the arrays for a matching value
-	 * based on the job exit code
-	 */
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
-	for (cc = 0; cc < num_exit; cc++) {
-		if (exit_code == requeue_exit[cc]) {
-			debug2("%s: job %d exit code %d state JOB_REQUEUE",
-			       __func__, job_ptr->job_id, exit_code);
-			job_ptr->job_state |= JOB_REQUEUE;
-			return;
-		}
+	if ((exit_code < 0) || (exit_code > MAX_EXIT_VAL))
+		return;
+
+	if (requeue_exit && bit_test(requeue_exit, exit_code)) {
+		debug2("%s: job %d exit code %d state JOB_REQUEUE",
+		       __func__, job_ptr->job_id, exit_code);
+		job_ptr->job_state |= JOB_REQUEUE;
+		return;
 	}
 
-	for (cc = 0; cc < num_hold; cc++) {
-		if (exit_code == requeue_exit_hold[cc]) {
-			/* Bah... not sure if want to set special
-			 * exit state in this case, but for sure
-			 * don't want another array...
-			 */
-			debug2("%s: job %d exit code %d state JOB_SPECIAL_EXIT",
-			       __func__, job_ptr->job_id, exit_code);
-			job_ptr->job_state |= JOB_REQUEUE;
-			job_ptr->job_state |= JOB_SPECIAL_EXIT;
-			return;
-		}
+	if (requeue_exit_hold && bit_test(requeue_exit_hold, exit_code)) {
+		/* Not sure if want to set special exit state in this case */
+		debug2("%s: job %d exit code %d state JOB_SPECIAL_EXIT",
+		       __func__, job_ptr->job_id, exit_code);
+		job_ptr->job_state |= JOB_REQUEUE;
+		job_ptr->job_state |= JOB_SPECIAL_EXIT;
+		return;
 	}
 }
 
