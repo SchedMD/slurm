@@ -365,8 +365,8 @@ These plugins are designed to make use of the JSON-C library for this purpose.
 Instructions for the build are as follows:
 <ol>
 <li>Download json-c version 0.12 (or higher) from<br>
-<a href="https://s3.amazonaws.com/json-c_releases/releases/index.html">
-https://s3.amazonaws.com/json-c_releases/releases/index.html</a></li>
+<a href="https://github.com/json-c/json-c/wiki">
+https://github.com/json-c/json-c/wiki</a></li>
 
 <li>Unpackage json-c<br>
 gunzip json-c-0.12.tar.gz<br>
@@ -397,6 +397,6 @@ make -j</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 12 March 2015</p>
+<p style="text-align:center;">Last modified 23 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
