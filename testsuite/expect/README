@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
-# Copyright (C) 2010-2014 SchedMD LLC
+# Copyright (C) 2010-2015 SchedMD LLC
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # Additions by Joseph Donaghy <donaghy1@llnl.gov>
@@ -237,6 +237,7 @@ test2.21   Validate scontrol requeue of failed or completed job.
 test2.22   Validate scontrol requeuehold requeues job to held pending state.
 test2.23   Validate scontrol requeuehold State=SpecialExit.
 test2.24   Validate the scontrol write config creates accurate config
+test2.25   Validate scontrol show cache command.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).

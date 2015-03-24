@@ -1,0 +1,332 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that scontrol show cache shows the data cached in
+#          the slurmctld
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      2.25
+set test_acct    "test$test_id\_acct"
+set test_user    ""
+set exit_code    0
+
+print_header $test_id
+
+if {![test_super_user]} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser or root\n"
+	exit 0
+}
+
+proc mod_assoc_vals { } {
+	global sacctmgr test_acct test_user exit_code
+
+	set modified 0
+	spawn $sacctmgr mod -i account $test_acct where user=$test_user set \
+	    GrpCpus=3 MaxJobs=2 MaxCPUs=6
+	expect {
+		-re "Modified account associations" {
+			set modified 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$modified} {
+		send_user "\nFAILURE: account limits were not modified\n"
+		exit 1
+	}
+}
+
+proc clear_assoc_vals { } {
+	global sacctmgr test_acct test_user exit_code
+
+	set modified 0
+	spawn $sacctmgr mod -i account $test_acct where user=$test_user set \
+	    GrpCpus=-1 MaxJobs=-1 MaxCPUs=-1
+	expect {
+		-re "Modified account associations" {
+			set modified 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$modified} {
+		send_user "\nFAILURE: account limits were not modified\n"
+		exit 1
+	}
+}
+
+proc delete_test_acct { } {
+	global test_acct sacctmgr exit_code
+
+	set deleted 0
+	spawn $sacctmgr delete -i account $test_acct
+	expect {
+		-re "Deleting accounts..." {
+			set deleted 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+# Remove any vestigial accounts
+delete_test_acct
+
+# Get username
+spawn $bin_id -u -n
+expect {
+	-re "($alpha_numeric_under)" {
+		set test_user $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if {[test_using_slurmdbd]} {
+	# Add test Account
+	set acct_added 0
+	spawn $sacctmgr add -i account $test_acct
+	expect {
+		-re "Adding Account" {
+			set acct_added 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$acct_added} {
+		send_user "\nFAILURE: could not add test account $test_acct\n"
+		exit 1
+	}
+
+	# Add user to test account
+	set user_added 0
+	spawn $sacctmgr add -i user $test_user account=$test_acct
+	expect {
+		-re "Associations" {
+			set user_added 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$user_added} {
+		send_user "\nFAILURE: could not add user to test account\n"
+		exit 1
+	}
+
+	set match 0
+	spawn $bin_bash -c "exec $scontrol show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	expect {
+		-re "Account=$test_acct" {
+			incr match
+			exp_continue
+		}
+		-re "UserName=$test_user" {
+			incr match
+			exp_continue
+		}
+		-re "GrpCPUs=" {
+			incr match
+			exp_continue
+		}
+		-re "MaxJobs=" {
+			incr match
+			exp_continue
+		}
+		-re "MaxCPUs=" {
+			incr match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 5} {
+		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 5).\n"
+		set exit_code 1
+	}
+
+	# Set association limits and check that controller is updated
+	mod_assoc_vals
+
+	set match 0
+	spawn $bin_bash -c "exec $scontrol show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	expect {
+		-re "Account=$test_acct" {
+			incr match
+			exp_continue
+		}
+		-re "UserName=$test_user" {
+			incr match
+			exp_continue
+		}
+		-re "GrpCPUs=3" {
+			incr match
+			exp_continue
+		}
+		-re "MaxJobs=2" {
+			incr match
+			exp_continue
+		}
+		-re "MaxCPUs=6" {
+			incr match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 5} {
+		send_user "\nFAILURE: scontrol show cache did not show correct information($match != 5).\n"
+		set exit_code 1
+	}
+
+	# Clear associtation limits and check controller is updated
+	clear_assoc_vals
+
+	set match 0
+	set limit_match 0
+	spawn $bin_bash -c "exec $scontrol show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	expect {
+		-re "Account=$test_acct" {
+			incr match
+			exp_continue
+		}
+		-re "UserName=$test_user" {
+			incr match
+			exp_continue
+		}
+		-re "GrpCPUs=3" {
+			incr limit_match
+			exp_continue
+		}
+		-re "MaxJobs=2" {
+			incr limit_match
+			exp_continue
+		}
+		-re "MaxCPUs=6" {
+			incr limit_match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 2 && $limit_match} {
+		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 2).\n"
+		set exit_code 1
+	}
+
+	delete_test_acct
+
+} else {
+
+	set match 0
+	spawn $scontrol show cache
+	expect {
+		-re "Controller cache data" {
+			incr match
+			exp_continue
+		}
+		-re "No users currently cached in Slurm" {
+			incr match
+			exp_continue
+		}
+		-re "No associations currently cached in Slurm" {
+			incr match
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 3} {
+		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 3)\n"
+		set exit_code 1
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
