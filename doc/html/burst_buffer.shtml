@@ -106,6 +106,9 @@ The normal mode of operation is for batch jobs to specify burst buffer
 requirements within the batch script rather than using the "--bb" option.
 Batch script lines containing a prefix of "#BB" identify the job's burst buffer
 space requirements, files to be staged in, files to be staged out, etc.
+when using the burst_buffer/generic plugin.
+The prefix of "#DW" (for "DataWarp") is used for burst buffer directives when
+using the burst_buffer/cray plugin.
 Interactive jobs (those submitted using the <i>salloc</i> and <i>srun</i>
 commands) can specify their burst buffer space requirements using the "--bb"
 option, but staging of jobs before and after the resource allocation is not
@@ -127,7 +130,7 @@ SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
 
 <p>Note that the normal Slurm job submission commands are used (i.e.
 <i>salloc</i>, <i>sbatch</i> and <i>srun</i>).
-The burst buffer options in the batch script, identified with a prefix of "#BB",
+The burst buffer options in the batch script, identified with a prefix of "#DW",
 are passed to Cray software for processing.
 See the Cray documentation for details about those options.</p>
 
@@ -183,6 +186,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 26 February 2015</p>
+<p style="text-align:center;">Last modified 25 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -47,7 +47,12 @@
 #include <sys/types.h>
 
 #if HAVE_JSON
-#include <json-c/json.h>
+#  include <json-c/json.h>
+#endif
+
+//FIXME: Test in "configure" to find the header is required
+#if HAVE_DW_WLM_LIB_H
+#  include <dw_wlm_lib.h>
 #endif
 
 #include "slurm/slurm.h"
@@ -618,7 +623,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 			xfree(client_nodes_file_nid);
 	}
 	setup_argv = xmalloc(sizeof(char *) * 10);
-	setup_argv[0] = xstrdup("bbs_setup");
+	setup_argv[0] = xstrdup("dws_setup");
 	xstrfmtcat(setup_argv[1], "--token=%u", job_ptr->job_id);
 	xstrfmtcat(setup_argv[2], "--caller=%s", "SLURM");
 	xstrfmtcat(setup_argv[3], "--owner=%d", job_ptr->user_id);
@@ -631,7 +636,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 	}
 
 	data_in_argv = xmalloc(sizeof(char *) * 10);
-	data_in_argv[0] = xstrdup("bbs_data_in");
+	data_in_argv[0] = xstrdup("dws_data_in");
 	xstrfmtcat(data_in_argv[1], "--job-environment-file=%s/data_in_env",
 		   job_dir);
 
@@ -665,7 +670,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 static void *_start_stage_in(void *x)
 {
 	stage_args_t *stage_args;
-	char *bbs_setup_path, *bbs_data_in_path;
+	char *dws_setup_path, *dws_data_in_path;
 	char **setup_argv, **data_in_argv, *resp_msg = NULL;
 	int i, rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
@@ -673,57 +678,97 @@ static void *_start_stage_in(void *x)
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr;
 	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *error_buf = NULL, output_buf = NULL;
+	int status = 0;
+#endif
 
 	stage_args = (stage_args_t *) x;
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
 
+#if HAVE_DW_WLM_LIB_H
 	START_TIMER;
-	bbs_setup_path = _set_cmd_path("bbs_setup");
+	status = dw_wlm_lib_setup(&output_buf, &error_buf,
+		const char *token,
+		const char *caller,
+		int  owner,
+		const char *capacity,
+		const char *client_nodes_filename,
+		const char *client_nodes_filename_nids,
+		const char *job_env_filename);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_setup for job %u: %s",
+		      __func__, teardown_args->job_id, error_buf);
+		free(error_buf);
+	} else if (bb_state.bb_config.debug_flag) {
+		info("%s: dw_wlm_lib_setup for job %u ran for %s: %s",
+		     __func__, teardown_args->job_id, TIME_STR, output_buf);
+	}
+#else
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
-	resp_msg = bb_run_script("bbs_setup", bbs_setup_path,
+	dws_setup_path = _set_cmd_path("dws_setup");
+	START_TIMER;
+	resp_msg = bb_run_script("dws_setup", dws_setup_path,
 				 setup_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: bbs_setup for job %u ran for %s",
+		info("%s: dws_setup for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: bbs_setup for job %u ran for %s",
+		debug("%s: dws_setup for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_setup for job %u status:%u response:%s",
+		error("%s: dws_setup for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
 	xfree(resp_msg);
+#endif
 
 	
+#if HAVE_DW_WLM_LIB_H
 	START_TIMER;
-	bbs_data_in_path = _set_cmd_path("bbs_data_in");
+	status = dw_wlm_lib_data_in(&output_buf, &error_buf,
+		const char *job_env_filename);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_data_in for job %u: %s",
+		      __func__, teardown_args->job_id, error_buf);
+		free(error_buf);
+	} else if (bb_state.bb_config.debug_flag) {
+		info("%s: dw_wlm_lib_data_in for job %u ran for %s: %s",
+		     __func__, teardown_args->job_id, TIME_STR, output_buf);
+	}
+#else
+	dws_data_in_path = _set_cmd_path("dws_data_in");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 24 * 60 * 60 * 1000;	/* One day */
-	resp_msg = bb_run_script("bbs_data_in", bbs_data_in_path,
+	START_TIMER;
+	resp_msg = bb_run_script("dws_data_in", dws_data_in_path,
 				 data_in_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 5000000) {	/* 5 secs */
-		info("%s: bbs_data_in for job %u ran for %s",
+		info("%s: dws_data_in for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: bbs_data_in for job %u ran for %s",
+		debug("%s: dws_data_in for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_data_in for job %u status:%u response:%s",
+		error("%s: dws_data_in for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
 	xfree(resp_msg);
+#endif
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_args->job_id);
@@ -766,8 +811,8 @@ static void *_start_stage_in(void *x)
 		xfree(data_in_argv[i]);
 	xfree(data_in_argv);
 	xfree(stage_args);
-	xfree(bbs_setup_path);
-	xfree(bbs_data_in_path);
+	xfree(dws_setup_path);
+	xfree(dws_data_in_path);
 	return NULL;
 }
 
@@ -784,11 +829,11 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 	post_run_argv = xmalloc(sizeof(char *) * 10);
-	post_run_argv[0] = xstrdup("bbs_post_run");
+	post_run_argv[0] = xstrdup("dws_post_run");
 	xstrfmtcat(post_run_argv[1], "--job-environment-file=%s/post_run_env",
 		   job_dir);
 	data_out_argv = xmalloc(sizeof(char *) * 10);
-	data_out_argv[0] = xstrdup("bbs_data_out");
+	data_out_argv[0] = xstrdup("dws_data_out");
 	xstrfmtcat(data_out_argv[1], "--job-environment-file=%s/data_out_env",
 		   job_dir);
 
@@ -820,7 +865,7 @@ static int _queue_stage_out(struct job_record *job_ptr)
 static void *_start_stage_out(void *x)
 {
 	stage_args_t *stage_args;
-	char *bbs_post_run_path, *bbs_data_out_path;
+	char *dws_post_run_path, *dws_data_out_path;
 	char **post_run_argv, **data_out_argv, *resp_msg = NULL;
 	int i, rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
@@ -828,56 +873,93 @@ static void *_start_stage_out(void *x)
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr = NULL;
 	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *error_buf = NULL, *output_buf = NULL, *job_env_filename;
+	int status;
+#endif
 
 	stage_args = (stage_args_t *) x;
 	post_run_argv = stage_args->args1;
 	data_out_argv = stage_args->args2;
 
+#if HAVE_DW_WLM_LIB_H
+	job_env_filename = post_run_argv[1];
 	START_TIMER;
-	bbs_post_run_path = _set_cmd_path("bbs_post_run");
+	status = dw_wlm_lib_post_run(&output_buf, &error_buf, job_env_filename);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_post_run:%s", __func__, err_buf);
+		free(err_buf);
+		return SLURM_ERROR;
+	}
+	if (bb_state.bb_config.debug_flag) {
+		debug("%s: dw_wlm_lib_post_run for %s ran for %s",  __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+		      TIME_STR);
+	}
+#else
+	dws_post_run_path = _set_cmd_path("dws_post_run");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
-	resp_msg = bb_run_script("bbs_post_run", bbs_post_run_path,
+	START_TIMER;
+	resp_msg = bb_run_script("dws_post_run", dws_post_run_path,
 				 post_run_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: bbs_post_run for job %u ran for %s",
+		info("%s: dws_post_run for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: bbs_post_run for job %u ran for %s",
+		debug("%s: dws_post_run for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_post_run for job %u status:%u response:%s",
+		error("%s: dws_post_run for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
 	xfree(resp_msg);
+#endif
 
+#if HAVE_DW_WLM_LIB_H
 	START_TIMER;
-	bbs_data_out_path = _set_cmd_path("bbs_data_out");
+	status = dw_wlm_lib_data_out(&output_buf, &error_buf, job_env_filename);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_data_out:%s", __func__, err_buf);
+		free(err_buf);
+		return SLURM_ERROR;
+	}
+	if (bb_state.bb_config.debug_flag) {
+		debug("%s: dw_wlm_lib_data_out for %s ran for %s",  __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+		      TIME_STR);
+	}
+#else
+	dws_data_out_path = _set_cmd_path("dws_data_out");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 24 * 60 * 60 * 1000;	/* One day */
-	resp_msg = bb_run_script("bbs_data_out", bbs_data_out_path,
+	START_TIMER;
+	resp_msg = bb_run_script("dws_data_out", dws_data_out_path,
 				 data_out_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 5000000) {	/* 5 secs */
-		info("%s: bbs_data_out for job %u ran for %s",
+		info("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: bbs_data_out for job %u ran for %s",
+		debug("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_data_out for job %u status:%u response:%s",
+		error("%s: dws_data_out for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
 	xfree(resp_msg);
+#endif
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_args->job_id);
@@ -916,8 +998,8 @@ static void *_start_stage_out(void *x)
 		xfree(data_out_argv[i]);
 	xfree(data_out_argv);
 	xfree(stage_args);
-	xfree(bbs_post_run_path);
-	xfree(bbs_data_out_path);
+	xfree(dws_post_run_path);
+	xfree(dws_data_out_path);
 	return NULL;
 }
 
@@ -930,10 +1012,12 @@ static void _queue_teardown(uint32_t job_id, bool hurry)
 	pthread_t teardown_tid = 0;
 
 	teardown_argv = xmalloc(sizeof(char *) * 10);
-	teardown_argv[0] = xstrdup("bbs_teardown");
+	teardown_argv[0] = xstrdup("dws_teardown");
 	xstrfmtcat(teardown_argv[1],
 		   "--job-environment-file=%s/hash.%d/job.%u/teardown_env",
 		   state_save_loc, hash_inx, job_id);
+	if (hurry)
+		teardown_argv[2] = xstrdup("1");
 
 	teardown_args = xmalloc(sizeof(stage_args_t));
 	teardown_args->job_id  = job_id;
@@ -958,34 +1042,54 @@ static void _queue_teardown(uint32_t job_id, bool hurry)
 static void *_start_teardown(void *x)
 {
 	stage_args_t *teardown_args;
-	char *bbs_teardown_path, **teardown_argv, *resp_msg = NULL;
+	char *dws_teardown_path, **teardown_argv, *resp_msg = NULL;
 	int i, status = 0, timeout;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr = NULL;
 	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *error_buf = NULL, output_buf = NULL;
+	int hurry = 0, status = 0;
+#endif
 
 	teardown_args = (stage_args_t *) x;
 	teardown_argv = teardown_args->args1;
 
 	START_TIMER;
-	bbs_teardown_path = _set_cmd_path("bbs_teardown");
+	dws_teardown_path = _set_cmd_path("dws_teardown");
 	if (teardown_args->timeout)
 		timeout = teardown_args->timeout * 1000;
 	else
 		timeout = 5000;
-	resp_msg = bb_run_script("bbs_teardown", bbs_teardown_path,
+#if HAVE_DW_WLM_LIB_H
+	if (teardown_args->argv[2] && (teardown_args->argv[2][0] == '1'))
+		hurry = 1;
+	status = dw_wlm_lib_teardown(&output_buf, &error_buf, teardown_args->argv[1],
+				     hurry);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_teardown for job %u: %s",
+		      __func__, teardown_args->job_id, error_buf);
+		free(error_buf);
+	} else if (bb_state.bb_config.debug_flag) {
+		info("%s: dw_wlm_lib_teardown for job %u ran for %s: %s",
+		     __func__, teardown_args->job_id, TIME_STR, output_buf);
+	}
+#else
+	resp_msg = bb_run_script("dws_teardown", dws_teardown_path,
 				teardown_argv, timeout, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    (bb_state.bb_config.debug_flag)) {
-		info("%s: bbs_teardown for job %u ran for %s",
+		info("%s: dws_teardown for job %u ran for %s",
 		     __func__, teardown_args->job_id, TIME_STR);
 	}
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: bbs_teardown for job %u status:%u response:%s",
+		error("%s: dws_teardown for job %u status:%u response:%s",
 		      __func__, teardown_args->job_id, status, resp_msg);
 	}
 	xfree(resp_msg);
+#endif
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if ((job_ptr = find_job_record(teardown_args->job_id))) {
@@ -1009,7 +1113,7 @@ static void *_start_teardown(void *x)
 	xfree(teardown_argv);
 	xfree(teardown_argv);
 	xfree(teardown_args);
-	xfree(bbs_teardown_path);
+	xfree(dws_teardown_path);
 	return NULL;
 }
 
@@ -1592,7 +1696,7 @@ extern int init(void)
 		state_save_loc = slurm_get_state_save_location();
 
 //FIXME: Set up BBS for running jobs
-//FIXME: Call bbs_teardown for stray BBS
+//FIXME: Call dws_teardown for stray BBS
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1807,10 +1911,19 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 			      bool is_job_array)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
-	char *resp_msg = NULL, **script_argv, *bbs_job_process_path;
+	char *resp_msg = NULL, **script_argv, *dws_job_process_path;
 	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
 	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *output_buf = NULL, *error_buf = NULL;
+	char *job = NULL, *setup_env_filename = NULL;
+	char *data_in_env_filename = NULL, *pre_run_env_filename = NULL;
+	char *post_run_env_filename = NULL, *data_out_env_filename = NULL;
+	char *teardown_env_filename = NULL;
+	int status = 0;
+#else
+#endif
 
 	if (!_test_bb_spec(job_ptr))
 		return rc;
@@ -1829,9 +1942,9 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xstrfmtcat(script_file, "%s/script", job_dir);
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
-	bbs_job_process_path = _set_cmd_path("bbs_job_process");
+	dws_job_process_path = _set_cmd_path("dws_job_process");
 	script_argv = xmalloc(sizeof(char *) * 10);
-	script_argv[0] = xstrdup("bbs_job_process");
+	script_argv[0] = xstrdup("dws_job_process");
 	xstrfmtcat(script_argv[1], "--job=%s", script_file);
 	xstrfmtcat(script_argv[2], "--setup-env-file=%s/setup_env", job_dir);
 	xstrfmtcat(script_argv[3], "--data-in-env-file=%s/data_in_env",job_dir);
@@ -1845,13 +1958,47 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	START_TIMER;
-	resp_msg = bb_run_script("bbs_job_process", bbs_job_process_path,
+#if HAVE_DW_WLM_LIB_H
+job = script_argv[1];
+setup_env_filename = script_argv[2];
+data_in_env_filename = script_argv[3];
+pre_run_env_filename = script_argv[4];
+post_run_env_filename = script_argv[5];
+data_out_env_filename = script_argv[6];
+teardown_env_filename = script_argv[7];
+	status = dw_wlm_lib_job_process(&output_buf, &error_buf, job,
+					setup_env_filename,
+					data_in_env_filename,
+					pre_run_env_filename,
+					post_run_env_filename,
+					data_out_env_filename,
+					teardown_env_filename);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_job_process:%s", __func__, error_buf);
+		free(error_buf);
+		return SLURM_ERROR;
+	}
+	if (bb_state.bb_config.debug_flag) {
+		debug("%s: dw_wlm_lib_job_process for %s ran for %s",
+		      __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+		      TIME_STR);
+	}
+	if (status) {
+		xfree(*err_msg);
+		*err_msg = xstrdup(error_buf);
+		free(error_buf);
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
+#else
+	resp_msg = bb_run_script("dws_job_process", dws_job_process_path,
 				 script_argv, 2000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
-		info("%s: bbs_job_process ran for %s", __func__, TIME_STR);
+		info("%s: dws_job_process ran for %s", __func__, TIME_STR);
 	else if (bb_state.bb_config.debug_flag)
-		debug("%s: bbs_job_process ran for %s", __func__, TIME_STR);
+		debug("%s: dws_job_process ran for %s", __func__, TIME_STR);
 
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		if (err_msg) {
@@ -1863,7 +2010,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	} else {
 		xfree(resp_msg);
 	}
-
+#endif
 	if (is_job_array)
 		_purge_job_files(job_dir);
 
@@ -1873,7 +2020,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xfree(hash_dir);
 	xfree(job_dir);
 	xfree(script_file);
-	xfree(bbs_job_process_path);
+	xfree(dws_job_process_path);
 
 	return rc;
 }
@@ -2051,12 +2198,20 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	char *pre_run_env_file = NULL, *client_nodes_file_nid = NULL;
-	char *resp_msg = NULL, *bbs_pre_run_path = NULL, **pre_run_argv = NULL;
+	char *dws_pre_run_path = NULL, **pre_run_argv = NULL;
 	char *job_dir = NULL;
 	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	bb_alloc_t *bb_ptr;
 	char jobid_buf[32];
 	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *error_buf = NULL;
+	char *output_buf = NULL;
+	char *job_env_filename = NULL;
+	int status = 0;
+#else
+	char *resp_msg = NULL;
+#endif
 
 	if (!_test_bb_spec(job_ptr))
 		return rc;
@@ -2091,29 +2246,51 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	rc = _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
 			     job_ptr->job_id);
 	if (rc == 0) {
-		pre_run_argv = xmalloc(sizeof(char *) * 10);
-		pre_run_argv[0] = xstrdup("bbs_pre_run");
-		xstrfmtcat(pre_run_argv[1],
+#if HAVE_DW_WLM_LIB_H
+		xstrfmtcat(job_env_filename,
 			   "--job-environment-file=%s/pre_run_env", job_dir);
 		START_TIMER;
-		bbs_pre_run_path = _set_cmd_path("bbs_pre_run");
-		resp_msg = bb_run_script("bbs_pre_run", bbs_pre_run_path,
+		status = dw_wlm_lib_pre_run(&output_buf, &error_buf, NULL,
+					    client_nodes_file_nid,
+					    job_env_filename);
+		END_TIMER;
+		xfree(job_env_filename);
+		if (status != DW_WLM_SUCCESS) {
+			error("%s: dw_wlm_lib_pre_run:%s", __func__, error_buf);
+			free(error_buf);
+			return SLURM_ERROR;
+		}
+		if (bb_state.bb_config.debug_flag) {
+			debug("%s: dw_wlm_lib_pre_run for %s ran for %s",
+			      __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			      TIME_STR);
+		}
+#else
+//FIXME: Remove bb_run_script logic once the API is functional
+		pre_run_argv = xmalloc(sizeof(char *) * 10);
+		pre_run_argv[0] = xstrdup("dws_pre_run");
+		xstrfmtcat(pre_run_argv[1],
+			   "--job-environment-file=%s/pre_run_env", job_dir);
+		dws_pre_run_path = _set_cmd_path("dws_pre_run");
+		START_TIMER;
+		resp_msg = bb_run_script("dws_pre_run", dws_pre_run_path,
 					 pre_run_argv, 2000, &status);
 		END_TIMER;
 		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-			info("%s: bbs_pre_run for %s ran for %s",
+			info("%s: dws_pre_run for %s ran for %s",
 			     __func__,
 			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			     TIME_STR);
 		} else if (bb_state.bb_config.debug_flag) {
-			debug("%s: bbs_pre_run for %s ran for %s",
+			debug("%s: dws_pre_run for %s ran for %s",
 			      __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			      TIME_STR);
 		}
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			time_t now = time(NULL);
-			error("%s: bbs_pre_run for %s status:%u response:%s",
+			error("%s: dws_pre_run for %s status:%u response:%s",
 			      __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			      status, resp_msg);
@@ -2131,12 +2308,13 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		for (i = 0; pre_run_argv[i]; i++)
 			xfree(pre_run_argv[i]);
 		xfree(pre_run_argv);
+#endif
 	}
 
 	xfree(job_dir);
 	xfree(pre_run_env_file);
 	xfree(client_nodes_file_nid);
-	xfree(bbs_pre_run_path);
+	xfree(dws_pre_run_path);
 	return rc;
 }
 
@@ -2265,22 +2443,50 @@ static
 bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 {
 	bb_entry_t *ents = NULL;
-	char *string;
-	char **script_argv;
-	int i, status = 0;
 	json_object *j;
 	json_object_iter iter;
+	int status = 0;
+	DEF_TIMERS;
+#if HAVE_DW_WLM_LIB_H
+	char *error_buf = NULL;
+	char *output_buf = NULL;
+
+	START_TIMER;
+	status = dw_wlm_lib_pools(&output_buf, &error_buf);
+	END_TIMER;
+	if (status != DW_WLM_SUCCESS) {
+		error("%s: dw_wlm_lib_pools:%s", __func__, error_buf);
+		free(error_buf);
+		return ents;
+	}
+
+	j = json_tokener_parse(output_buf);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, output_buf);
+		free(output_buf);
+		return ents;
+	}
+	free(output_buf);
+#else
+//FIXME: Remove bb_run_script logic once the API is functional
+	char *string;
+	char **script_argv;
+	int i;
 
 	script_argv = xmalloc(sizeof(char *) * 3);
-	xstrfmtcat(script_argv[0], "%s", "jsonpools");
+	xstrfmtcat(script_argv[0], "%s", "dws_pools");
 	xstrfmtcat(script_argv[1], "%s", "pools");
 
-	string = bb_run_script("jsonpools",
+	START_TIMER;
+	string = bb_run_script("dws_pools",
 			       state_ptr->bb_config.get_sys_state,
 			       script_argv, 3000, &status);
+	END_TIMER;
+	if (bb_state.bb_config.debug_flag)
+		debug("%s: dws_pools ran for %s", __func__, TIME_STR);
 	if (string == NULL) {
 		error("%s: %s did not return any pool",
-		      __func__,state_ptr->bb_config.get_sys_state);
+		      __func__, state_ptr->bb_config.get_sys_state);
 		for (i = 0; script_argv[i]; i++)
 			xfree(script_argv[i]);
 		xfree(script_argv);
@@ -2297,6 +2503,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 		return ents;
 	}
 	xfree(string);
+#endif
 
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_array(j, iter.key, num_ent);

@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "December 2014" "burst_buffer.conf 15.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "March 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -43,9 +43,9 @@ By default all users are permitted to use burst buffers.
 \fBGetSysState\fR
 Fully qualified path name of a program which will return the current burst
 buffer state.
-This should be the path of the \fIbbs_pools\fR command for the Cray plugin.
+This should be the path of the \fIdws_pools\fR command for the Cray plugin.
 Other Cray burst buffer commands are assumed to be in the same directory
-as the bbs_pools command.
+as the dws_pools command.
 See the src/plugins/burst_buffer/generic/bb_get_state.example in the
 Slurm distribution for an example.
 
@@ -53,6 +53,7 @@ Slurm distribution for an example.
 \fBGranularity\fR
 Granularity of job space allocations in units of gigabytes.
 The default value is 1 gigabyte.
+This option is not used by the burst_buffer/cray plugin.
 
 .\ Possible future enhancement
 .\ .TP
@@ -112,30 +113,30 @@ By default there is no timeout of the stage out process.
 .TP
 \fBStartStageIn\fR
 Fully qualified path name of a program which will stage files in for a job.
-This option is used by the generic plugin and ignored by the cray plugin.
 See the src/plugins/burst_buffer/generic/bb_start_stage_in.example in the
 Slurm distribution for an example.
+This option is not used by the burst_buffer/cray plugin.
 
 .TP
 \fBStartStageOut\fR
 Fully qualified path name of a program which will stage files out for a job.
-This option is used by the generic plugin and ignored by the cray plugin.
 See the src/plugins/burst_buffer/generic/bb_start_stage_out.example in the
 Slurm distribution for an example.
+This option is not used by the burst_buffer/cray plugin.
 
 .TP
 \fBStopStageIn\fR
 Fully qualified path name of a program which will stop staging files in for a job.
-This option is used by the generic plugin and ignored by the cray plugin.
 See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
 Slurm distribution for an example.
+This option is not used by the burst_buffer/cray plugin.
 
 .TP
 \fBStopStageOut\fR
 Fully qualified path name of a program which will stop staging files in for a job.
-This option is used by the generic plugin and ignored by the cray plugin.
 See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
 Slurm distribution for an example.
+This option is not used by the burst_buffer/cray plugin.
 
 .TP
 \fBUserSizeLimit\fR
@@ -195,7 +196,7 @@ StopStageIn=/usr/local/slurm/15.08/sbin/PSI
 StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 
 .SH "COPYING"
-Copyright (C) 2014 SchedMD LLC.
+Copyright (C) 2014-2015 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

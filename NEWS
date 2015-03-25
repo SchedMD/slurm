@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre4
 ==============================
+ -- Burst_buffer/cray - Convert logic to use new commands/API names (e.g.
+    "dws_setup" rather than "bbs_setup").
 
 * Changes in Slurm 15.08.0pre3
 ==============================

@@ -358,7 +358,7 @@ easy and elegantly manner.
 <li><a href="mslurm/mslurm.tgz">Code</a></li>
 </ul></li><br>
 
-<li><a name="user_guide"><b>JSON</b></a><br>
+<li><a name="json"><b>JSON</b></a><br>
 Some Slurm plugins (burst_buffer/cray and power/cray) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
@@ -397,6 +397,6 @@ make -j</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 23 March 2015</p>
+<p style="text-align:center;">Last modified 25 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
