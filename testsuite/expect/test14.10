@@ -1,0 +1,113 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate sbcast for a job step allocation (subset of job allocation).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    14.10
+set file_in1   "test$test_id.in1"
+set file_in2   "test$test_id.in2"
+set exit_code  0
+set job_id     0
+
+print_header $test_id
+
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
+} elseif {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test requires that the SlurmdUser be root\n"
+	exit 0
+}
+
+make_bash_script $file_in1 "
+$srun $bin_rm -f /tmp/test$test_id\_file
+$srun -N1 -n1 -r1 ./$file_in2
+
+echo -n \"Checking node 1: \"
+$srun -N1 -n1 -r1 ls /tmp/test$test_id\_file
+
+echo -n \"Checking node 0: \"
+$srun -N1 -n1 -r0 ls /tmp/test$test_id\_file
+
+
+$srun $bin_rm -f /tmp/test$test_id\_file
+"
+
+make_bash_script $file_in2 "
+$sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/test$test_id\_file
+"
+
+# Make allocations
+set matches 0
+spawn $salloc -N2 -t1 ./$file_in1
+expect {
+	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
+		send_user "\nWARNING: can't run this test\n"
+		exec $bin_rm -rf $file_in1 $file_in2
+		exit 0
+	}
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Checking node 1: */tmp/test$test_id\_file" {
+		incr matches
+		exp_continue
+	}
+	-re "Checking node 0: */tmp/test$test_id\_file" {
+		set matches -999
+		exp_continue
+	}
+	-re "Checking node 0: .*No such" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: Test job submission failed\n"
+	exit 1
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: sbcast did not copy the file to the correct nodes ($matches != 2)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -rf $file_in1 $file_in2
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

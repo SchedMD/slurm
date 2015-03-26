@@ -454,6 +454,7 @@ test14.7   Test sbcast security issues.
 test14.8   Test sbcast transmission buffer options (--size and
 	   --fanout options).
 test14.9   Verify that an sbcast credential is properly validated.
+test14.10  Validate sbcast for a job step allocation (subset of job allocation).
 
 test15.#   Testing of salloc options.
 =====================================
