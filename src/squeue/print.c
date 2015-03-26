@@ -351,11 +351,15 @@ int print_job_from_format(squeue_job_rec_t *job_rec_ptr, List list)
 		xfree(job_rec_ptr->job_ptr->partition);
 		job_rec_ptr->job_ptr->partition = xstrdup(job_rec_ptr->
 							  part_name);
-		
+
 	}
 	if (job_rec_ptr->job_ptr->array_task_str && params.array_flag) {
+		char *p;
+
 		if (max_array_size == -1)
 			max_array_size = slurm_get_max_array_size();
+		if ((p = strchr(job_rec_ptr->job_ptr->array_task_str, '%')))
+			*p = 0;
 		bitmap = bit_alloc(max_array_size);
 		bit_unfmt(bitmap, job_rec_ptr->job_ptr->array_task_str);
 		xfree(job_rec_ptr->job_ptr->array_task_str);

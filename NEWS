@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for misleading job submit failure errors sent to users. Previous error
     could indicate why specific nodes could not be used (e.g. too small memory)
     when other nodes could be used, but were not for another reason.
+ -- Fix squeue --array to display correctly the array elements when the
+    % separator is specified at the array submission time.
 
 * Changes in Slurm 14.11.5
 ==========================
