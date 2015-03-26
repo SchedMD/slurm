@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
     equivalent.
  -- Correct the job array specification parser to accept brackets in job array
     expression (e.g. "123_[4,7-9]").
+ -- Fix for misleading job submit failure errors sent to users. Previous error
+    could indicate why specific nodes could not be used (e.g. too small memory)
+    when other nodes could be used, but were not for another reason.
 
 * Changes in Slurm 14.11.5
 ==========================
