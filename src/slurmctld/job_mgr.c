@@ -4817,13 +4817,13 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 				part_ptr = list_peek(part_ptr_list);
 		}
 		if (part_ptr == NULL) {
-			info("_valid_job_part: invalid partition specified: %s",
-			     job_desc->partition);
+			info("%s: invalid partition specified: %s",
+			     __func__, job_desc->partition);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
 	} else {
 		if (default_part_loc == NULL) {
-			error("_valid_job_part: default partition not set");
+			error("%s: default partition not set", __func__);
 			return ESLURM_DEFAULT_PARTITION_NOT_SET;
 		}
 		part_ptr = default_part_loc;
