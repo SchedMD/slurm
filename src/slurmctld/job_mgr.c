@@ -5761,13 +5761,21 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 	char *end_ptr = NULL;
 	int i, first, last, step = 1;
 
+	if (tok[0] == '[')	/* Strip leading "[" */
+		tok++;
 	first = strtol(tok, &end_ptr, 10);
+	if (end_ptr[0] == ']')	/* Strip trailing "]" */
+		end_ptr++;
 	if (first < 0)
 		return false;
 	if (end_ptr[0] == '-') {
 		last = strtol(end_ptr + 1, &end_ptr, 10);
+		if (end_ptr[0] == ']')	/* Strip trailing "]" */
+			end_ptr++;
 		if (end_ptr[0] == ':') {
 			step = strtol(end_ptr + 1, &end_ptr, 10);
+			if (end_ptr[0] == ']')	/* Strip trailing "]" */
+				end_ptr++;
 			if ((end_ptr[0] != '\0') && (end_ptr[0] != '%'))
 				return false;
 			if (step <= 0)

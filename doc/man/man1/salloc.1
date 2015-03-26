@@ -1233,8 +1233,8 @@ This option has been replaced by \fB\-\-immediate\fR=<\fIseconds\fR>.
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
 Request a specific list of hosts.
-Unless constrained by the maximum node count, the job will contain
-\fIall\fR of these hosts.
+The job will contain \fIall\fR of these hosts and possibly additional hosts
+as needed to satisfy resource requirements.
 The list may be specified as a comma\-separated list of hosts, a range of hosts
 (host[1\-5,7,...] for example), or a filename.
 The host list will be assumed to be a filename if it contains a "/" character.

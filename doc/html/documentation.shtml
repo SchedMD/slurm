@@ -11,6 +11,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <h2>Slurm Users</h2>
 <ul>
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
+<li><a href="pdfs/summary.pdf">Command/option Summary (two pages)</a></li>
 <li><a href="man_index.html">Man Pages</a></li>
 <li><a href="rosetta.html">Rosetta Stone of Workload Managers</a></li>
 <li><a href="job_array.html">Job Array Support</a></li>
@@ -133,6 +134,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 January 2015</p>
+<p style="text-align:center;">Last modified 25 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
