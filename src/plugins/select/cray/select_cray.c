@@ -213,16 +213,13 @@ static uint64_t debug_flags = 0;
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as the node selection API matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/cray";
 uint32_t plugin_id		= 107;
-const uint32_t plugin_version	= 120;
+const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 

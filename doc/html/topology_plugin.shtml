@@ -1,13 +1,12 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Slurm Topology Plugin Programmer Guide</a></h1>
+<h1><a name="top">Topology Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
 <p> This document describes Slurm topology plugin and the API that
 defines them.
 It is intended as a resource to programmers wishing to write their own
-SLURM topology plugin.
-This is version 101 of the API.</p>
+SLURM topology plugin.</p>
 
 <p>Slurm topology plugins are Slurm plugins that implement
 convey system topology information so that Slurm is able to
@@ -26,11 +25,19 @@ We recommend, for example:</p>
 switches.</li>
 </ul></p>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for
-topology support.
-The actions performed by these plugins vary widely.
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<p>The actions performed by these plugins vary widely.
 In the case of <b>3d_torus</b>, the nodes in configuration file
 are re-ordered so that nodes which are nearby in the one-dimensional
 table are also nearby in logical three-dimensional space.
@@ -106,11 +113,8 @@ in the hierarchy is separated by a period. The final element will always be
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS or
 SLURM_ERROR on failure.</p>
 
-<h2>Versioning</h2>
-<p> This document describes version 101 of the Slurm topology API.
-Future releases of Slurm may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

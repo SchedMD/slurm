@@ -29,6 +29,16 @@ for the type of accounting package. We currently use
   Daemon (SlurmDBD).  Extra configuration is needed and described <a href="accounting.html">here</a>.
 <li><b>none</b>&#151; Information is not stored anywhere.
 </ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/accounting_storage/mysql</span>
 for a sample implementation of a Slurm Accounting Storage plugin.
@@ -43,10 +53,10 @@ information.
 
 <h2>API Functions</h2>
 
-The Job Accounting Storage API uses hooks in the slurmctld.
+<p>The Job Accounting Storage API uses hooks in the slurmctld.</p>
 
 <p>All of the following functions are required. Functions which are not
-implemented must be stubbed.
+implemented must be stubbed.</p>
 
 <p class="commandline"> int init (void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -1012,13 +1022,8 @@ database with.
   of those listed.
 </dl>
 
-<h2>Versioning</h2>
-<p> This document describes version 1 of the Slurm Accounting Storage API. Future
-releases of Slurm may revise this API. An Accounting Storage plugin conveys its
-ability to implement a particular API version using the mechanism outlined
-for Slurm plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

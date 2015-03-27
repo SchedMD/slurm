@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p>This document describes Slurm job completion logging plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-job completion logging plugins. This is version 100 of the API.</p>
+job completion logging plugins.</p>
 <p>Slurm job completion logging plugins are Slurm plugins that implement the SLURM
 API for logging job information upon their completion. This may be used to log job information
 to a text file, database, etc. The plugins must conform to the Slurm Plugin API with the following
@@ -19,13 +19,19 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 <li><b>mysql</b>&#151;Job completion is written to a mysql database.</li>
 <li><b>script</b>&#151;Execute a script passing in job information in environment variables.</li>
 </ul>
-The <b>sacct</b> program with option <b>-c</b> can be used to display
-gathered data from database and filetxt plugins.
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for
-job completion logging support.
-Note carefully, however, the versioning discussion below.</p>
+
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/jobcomp/filetxt/jobcomp_filetxt.c</span> and
 <span class="commandline">src/plugins/jobcomp/none/jobcomp_none.c</span>
@@ -145,13 +151,8 @@ void slurm_jobcomp_archive(List selected_parts, void *params)
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 <p class="footer"><a href="#top">top</a></p>
 
-
-<h2>Versioning</h2>
-<p> This document describes version 100 of the Slurm job completion API. Future
-releases of Slurm may revise this API. A job completion plugin conveys its ability
-to implement a particular API version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

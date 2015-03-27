@@ -5,7 +5,7 @@
 <h2>Overview</h2>
 <p>This document describe. Slurm resource selection plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-node selection plugins. This is version 120 of the API.</p>
+node selection plugins.</p>
 
 <p>Slurm node selection plugins are Slurm plugins that implement the Slurm node selection
 API described herein. They are intended to provide a mechanism for both selecting
@@ -35,10 +35,18 @@ sets of nodes utilizing a best-fit algorithm. While supporting shared nodes,
 this plugin does not allocate individual processors, but can allocate memory to jobs.
 This plugin is recommended for systems without shared nodes.</li>
 </ul>
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for node selection support.
-Note carefully, however, the versioning discussion below.</p>
+
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <p>A simplified flow of logic follows:
 <pre>
@@ -759,7 +767,8 @@ elements in each dimension of the system size.</p>
 <p class="commandline">bitstr_t *select_g_ba_cnodelist2bitmap(char *cnodelist);</p>
 <p style="margin-left:.2in"><b>Description</b>: Returns a bitmap
 representing the cnodelist input with the bits of the cnodelist in a
-midplane not set.</p>
+midplane not set.
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> cnodelist</span>&nbsp; &nbsp;&nbsp;(input)
 cnodelist (e.g. on a BGQ it would look something like '[00000x11331]').</br>
 <p style="margin-left:.2in"><b>Returns</b>: A bitmap the size of the
@@ -767,17 +776,6 @@ cnodelist (e.g. on a BGQ it would look something like '[00000x11331]').</br>
 
 <p class="footer"><a href="#top">top</a></p>
 
-
-<h2>Versioning</h2>
-<p> This document describes version 120 of the Slurm node selection API. Future
-releases of Slurm may revise this API. A node selection plugin conveys its ability
-to implement a particular API version using the mechanism outlined for Slurm plugins.
-In addition, the credential is transmitted along with the version number of the
-plugin that transmitted it. It is at the discretion of the plugin author whether
-to maintain data format compatibility across different versions of the plugin.</p>
-
-<p class="footer"><a href="#top">top</a></p>
-
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

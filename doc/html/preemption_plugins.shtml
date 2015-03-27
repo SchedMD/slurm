@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes Slurm preemption plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own
-SLURM preemption plugins. This is version 100 of the API.</p>
+SLURM preemption plugins.</p>
 
 <p>Slurm preemption plugins are Slurm plugins that identify which jobs
 can be preempted by a pending job. They must conform to the Slurm Plugin
@@ -25,10 +25,17 @@ partition to preempt jobs from a lower priority partition.</li>
 upon their Quality Of Service values as defined in the Slurm database.</li>
 </ul>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span> symbols required by the SLURM
-Plugin API require no specialization for job preemption support.
-Note carefully, however, the versioning discussion below.</p>
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/preempt/partition_prio/preempt_partition_prio.c</span>
@@ -93,14 +100,8 @@ preemption is enabled.</p>
 <p style="margin-left:.2in"><b>Returns</b>: true if running jobs may be
 preempted, otherwise false</p>
 
-<h2>Versioning</h2>
-<p> This document describes version 100 of the Slurm Preemption API. Future
-releases of Slurm may revise this API. A preemption plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM
-plugins.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

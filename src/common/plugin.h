@@ -96,6 +96,7 @@ typedef enum {
 	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
 	EPLUGIN_MISSING_NAME,    /* plugin_name/type/version missing    */
 	EPLUGIN_MISSING_SYMBOL,  /* some symbol needed isn't found      */
+	EPLUGIN_BAD_VERSION,     /* incompatable plugin version         */
 } plugin_err_t;
 
 const char *plugin_strerror(plugin_err_t err);

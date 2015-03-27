@@ -6,8 +6,7 @@
 <p> This document describe. Slurm cryptographic plugins and the API that
 defines them.
 It is intended as a resource to programmers wishing to write their own
-SLURM cryptographic plugins.
-This is version 0 of the API.</p>
+SLURM cryptographic plugins.</p>
 
 <p>Slurm cryptographic plugins are Slurm plugins that implement
 a digital signature mechanism.
@@ -32,11 +31,18 @@ We recommend, for example:</p>
 <li><b>openssl</b>&#151;Open SSL.</li>
 </ul></p>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for
-cryptographic support.
-Note carefully, however, the versioning discussion below.</p>
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -158,14 +164,8 @@ Size of the signature as returned in sig_size_p by crypto_sign().</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-
-<h2>Versioning</h2>
-<p> This document describes version 0 of the Slurm cryptographic API.
-Future releases of Slurm may revise this API.
-A cryptographic plugin conveys its ability to implement a particular
-API version using the mechanism outlined for Slurm plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

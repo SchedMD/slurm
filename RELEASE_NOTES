@@ -65,6 +65,14 @@ HIGHLIGHTS
     restricted to a single user. Added "--exclusive=user" option to salloc,
     the scontrol and sview commands. Added new partition configuration parameter
     "ExclusiveUser=yes|no".
+ -- Verify that all plugin version numbers are identical to the component
+    attempting to load them. Without this verification, the plugin can reference
+    Slurm functions in the caller which differ (e.g. the underlying function's
+    arguments could have changed between Slurm versions).
+    NOTE: All plugins (except SPANK) must be built against the identical
+    version of Slurm in order to be used by any Slurm command or daemon. This
+    should eliminate some very difficult to diagnose problems due to use of old
+    plugins.
 
 RPMBUILD CHANGES
 ================

@@ -46,7 +46,7 @@
 
 const char		plugin_name[]	= "Wiki (Maui and Moab) Scheduler plugin";
 const char		plugin_type[]	= "sched/wiki2";
-const uint32_t		plugin_version	= 110;
+const uint32_t		plugin_version	= SLURM_VERSION_NUMBER;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;

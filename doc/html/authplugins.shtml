@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes Slurm authentication plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-authentication plugins. This is version 100 of the API.</p>
+authentication plugins.</p>
 <p>Slurm authentication plugins are Slurm plugins that implement the Slurm authentication
 API described herein. They must conform to the Slurm Plugin API with the following
 specifications:</p>
@@ -19,9 +19,19 @@ production use due to lack of effective security.</li>
 <li><b>authd</b>&#151;Brett Chun's Linux authd.</li>
 <li><b>munge</b>&#151;LLNL's Munge protocol (recommended plugin for production use).</li>
 </ul>
-<p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for authentication.
-Note carefully, however, the versioning discussion below.</p>
+
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study <span class="commandline">src/plugins/auth/none/auth_none.c</span>
 for an example implementation of a Slurm authentication plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
@@ -223,16 +233,8 @@ by the API.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a static error message.
 This function must always return a pointer to a string, even if the string is
 empty or ambiguous such as &quot;unknown error.&quot;</p>
-
-<h2>Versioning</h2>
-<p> This document describes version 0 of the Slurm Authentication API. Future
-releases of Slurm may revise this API. An authentication plugin conveys its ability
-to implement a particular API version using the mechanism outlined for Slurm plugins.
-In addition, the credential is transmitted along with the version number of the
-plugin that transmitted it. It is at the discretion of the plugin author whether
-to maintain data format compatibility across different versions of the plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

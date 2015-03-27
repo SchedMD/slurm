@@ -90,16 +90,12 @@ enum ext_sensors_value_type {
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as the job accounting API
- * matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[] = "ExtSensors rrd plugin";
 const char plugin_type[] = "ext_sensors/rrd";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static uint64_t debug_flags = 0;
 static ext_sensors_conf_t ext_sensors_conf;

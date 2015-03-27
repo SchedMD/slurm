@@ -31,6 +31,16 @@ IPMI (Intelligent Platform Management Interface) tool.
 core/socket, using RAPL (Running Average Power Limit) sensors. Note that
 enabling RAPL may require the execution of the command "sudo modprobe msr".
 </ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/acct_gather_energy/rapl</span> and 
 <span class="commandline">src/common/slurm_acct_gather_energy.c</span>
@@ -112,15 +122,9 @@ plugin and the frequency at which to gather node energy data.</p>
 <dd>Time interval between pollings in seconds.
 </dl>
 
-<h2>Versioning</h2>
-<p>This document describes version 1 of the Slurm Energy Accounting API. Future
-releases of Slurm may revise this API. A, energy accounting plugin conveys its
-ability to implement a particular API version using the mechanism outlined
-for Slurm plugins.</p>
-
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
 

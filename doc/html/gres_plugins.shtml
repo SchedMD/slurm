@@ -12,13 +12,8 @@ SLURM Plugin API with the following specifications:
 <p><span class="commandline">const char
 gres_name[]="<i>gres_name</i>"</span><br>
 <p style="margin-left:.2in">
-The <i>gres_name</i> should matc <i>minor</i> in <i>plugin_version</i>
+The <i>gres_name</i> should match <i>minor</i> in <i>plugin_type</i>
 described below.</p>
-
-<p><span class="commandline">const char
-plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
-<p style="margin-left:.2in">
-A free-formatted ASCII text string that identifies the plugin.
 
 <p><span class="commandline">const char
 plugin_type[]="<i>major/minor</i>"</span><br>
@@ -27,10 +22,17 @@ The major type must be &quot;gres.&quot;
 The minor type can be any suitable name
 for the type of accounting package.</p>
 
-<p><span class="commandline">const uint32_t
-plugin_version="<i>version_number</i>"</span><br>
-<p style="margin-left:.2in">
-The version number should be 120.</p>
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <p>We include samples in the Slurm distribution for
 <ul>
@@ -171,11 +173,8 @@ Data type depends upon the value of gres_step_data_type data_type.<br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<h2>Versioning</h2>
-<p> This document describes version 120 of the Slurm Generic Resource API.
-Future releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

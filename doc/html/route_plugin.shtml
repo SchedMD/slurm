@@ -6,8 +6,7 @@
 <p> This document describes Slurm Route plugin and the API that
 defines them.
 It is intended as a resource to programmers wishing to write their own
-Slurm Route plugin.
-This is version 101 of the API.</p>
+Slurm Route plugin.</p>
 
 <p>Slurm Route plugins are Slurm plugins that redirect RPCs through
 intermediate forwarding nodes. The routing mechanism is similar
@@ -28,10 +27,17 @@ The minor type specifies the type of route mechanism.
 <li><b>topology</b>&#151;Route messages using topology.conf information.</li>
 </ul></p>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span>
-symbols required by the Slurm Plugin API require no specialization for
-route support.
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -122,11 +128,8 @@ address of node to send messages to be aggregated when primary collector
 is down. <br>
 <span class="commandline">NULL</span> if not set.
 
-<h2>Versioning</h2>
-<p> This document describes version 101 of the Slurm Route API.
-Future releases of Slurm may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 July 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

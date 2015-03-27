@@ -23,6 +23,15 @@ The major type must be &quot;slurmctld_plugstack.&quot;
 The minor type can be any suitable name for the type of slurmctld package.
 Slurm can be configured to use multiple slurmctld_plugstack plugins if desired.</p>
 
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <h2>API Functions</h2>
 
 <p class="commandline"> int init (void)
@@ -53,11 +62,7 @@ In the case of the backup slurmctld daemon, the init and fini functions may
 be called multiple times (when it assumes control functions and then when it
 reliquishes them to the primary slurmctld daemon).</p>
 
-<h2>Versioning</h2>
-<p> This document describes version 100 of the Slurm Job Submission API. Future
-releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
-
+<p style="text-align:center;">Last modified 27 March 2015</p>
 <!--#include virtual="footer.txt"-->

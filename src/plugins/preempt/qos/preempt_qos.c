@@ -52,7 +52,7 @@
 
 const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
 const char	plugin_type[]	= "preempt/qos";
-const uint32_t	plugin_version	= 100;
+const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
 static uint32_t _gen_job_prio(struct job_record *job_ptr);
 static bool _qos_preemptable(struct job_record *preemptee,

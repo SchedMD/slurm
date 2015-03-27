@@ -29,6 +29,15 @@ otherwise does nothing.</li>
 </ul>
 <p>Slurm can be configured to use multiple core specialization plugins if desired.</p>
 
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p><b>NOTE:</b> These functions all accept as an argument the job step's
 container ID (as set by the proctrack plugin).
 Each job step will have a different container ID.
@@ -133,11 +142,8 @@ node.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<h2>Versioning</h2>
-<p> This document describes version 100 of the Slurm core specialization API.
-Future releases of Slurm may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 28 January 2015</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

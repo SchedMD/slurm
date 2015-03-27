@@ -146,16 +146,13 @@ static int select_cray_dim_size[3] = {-1};
  * only load select plugins if the plugin_type string has a
  * prefix of "select/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as the node selection API matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]	= "Cray node selection plugin";
 const char plugin_type[]	= "select/alps";
 uint32_t plugin_id		= 104;
-const uint32_t plugin_version	= 120;
+const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 static bool _zero_size_job ( struct job_record *job_ptr )
 {

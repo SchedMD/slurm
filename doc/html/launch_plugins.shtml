@@ -25,6 +25,16 @@ systems with ALPS installed.</li>
   BlueGene/Q systems.</li>
 <li><b>slurm</b>&#151;Use Slurm's default launching infrastructure</li>
 </ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/launch/slurm/launch_slurm.c</span>
 for a sample implementation of a Slurm launch plugin.
@@ -133,6 +143,6 @@ The system <span class="commandline">_init()</span> is called before the SLURM
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

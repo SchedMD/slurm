@@ -100,14 +100,12 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
- * plugin_version   - specifies the version number of the plugin.
- * min_plug_version - specifies the minumum version number of incoming
- *                    messages that this plugin can accept
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]       	= "Job submit cnode plugin";
 const char plugin_type[]       	= "job_submit/cnode";
-const uint32_t plugin_version   = 110;
-const uint32_t min_plug_version = 100;
+const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static void _rebuild_licenses(char **license_ptr, uint32_t cnode_cnt)
 {

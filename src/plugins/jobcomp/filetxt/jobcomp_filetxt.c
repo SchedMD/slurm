@@ -81,16 +81,12 @@
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobcomp/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as the job completion logging API
- * matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]       	= "Job completion text file logging plugin";
 const char plugin_type[]       	= "jobcomp/filetxt";
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\

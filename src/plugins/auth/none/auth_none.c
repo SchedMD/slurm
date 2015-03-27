@@ -89,14 +89,12 @@
  * only load authentication plugins if the plugin_type string has a prefix
  * of "auth/".
  *
- * plugin_version   - specifies the version number of the plugin.
- * min_plug_version - specifies the minumum version number of incoming
- *                    messages that this plugin can accept
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]       	= "Null authentication plugin";
 const char plugin_type[]       	= "auth/none";
-const uint32_t plugin_version   = 100;
-const uint32_t min_plug_version = 90;
+const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*
  * An opaque type representing authentication credentials.  This type can be
@@ -297,10 +295,6 @@ slurm_auth_unpack( Buf buf )
 		return NULL;
 	}
 	safe_unpack32( &version, buf );
-	if ( version < min_plug_version ) {
-		plugin_errno = SLURM_AUTH_VERSION;
-		return NULL;
-	}
 
 	/* Allocate a new credential. */
 	cred = ((slurm_auth_credential_t *)

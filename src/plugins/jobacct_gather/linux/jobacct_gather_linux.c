@@ -75,16 +75,12 @@
  * only load job completion logging plugins if the plugin_type string has a
  * prefix of "jobacct/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as the job accounting API
- * matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[] = "Job accounting gather LINUX plugin";
 const char plugin_type[] = "jobacct_gather/linux";
-const uint32_t plugin_version = 200;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring

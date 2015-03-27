@@ -32,8 +32,18 @@ information also gathered for each job. (Experimental, not to be used
 information to the standard rusage information also gathered for each job.
 <li><b>none</b>&#151;No information gathered.
 </ul>
-The <b>sacct</b> program can be used to display gathered data from regular
-accounting and from these plugins.
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<p>The <b>sacct</b> program can be used to display gathered data from regular
+accounting and from these plugins.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/jobacct_gather/linux</span> and
 <span class="commandline">src/common/slurm_jobacct_gather.[c|h]</span>
@@ -304,14 +314,8 @@ plugin and the frequency at which to gather information about running jobs.</p>
 <dd>Time interval between pollings in seconds.
 </dl>
 
-<h2>Versioning</h2>
-<p> This document describes version 2 of the Slurm Job Accounting Gather API. Future
-releases of Slurm may revise this API. A job accounting gather plugin conveys its
-ability to implement a particular API version using the mechanism outlined
-for Slurm plugins.</p>
-
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

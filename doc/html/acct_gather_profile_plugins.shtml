@@ -66,6 +66,16 @@ for the type of profile accounting. We currently use
 <li><b>hdf5</b>&#151;Gets profile data about energy use, i/o sources
 (Lustre, network) and task data such as local disk i/o,  CPU and memory usage.
 </ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">
 src/plugins/acct_gather_profile/acct_gather_profile_hdf5.c</span> and
@@ -229,8 +239,8 @@ It this parameter is not specified, no profiling will occur.
 <dt><span class="commandline">ProfileDefaultProfile</span>
 <dd>Default setting for --profile command line option for srun, salloc, sbatch.
 </dl>
-The default profile value is <b>none</b> which means no profiling will be done
-for jobs. The hdf5 plugin also includes;
+<p>The default profile value is <b>none</b> which means no profiling will be done
+for jobs. The hdf5 plugin also includes;</p>
 <ul>
 <li>
 <b>energy</b> sample energy use for the node.
@@ -249,31 +259,33 @@ for the node.
 <b>all</b> all of the above.
 </li>
 </ul>
-Use caution when setting the default to values other than none as a file for
-each job will be created. This option is provided for test systems.
+<p>Use caution when setting the default to values other than none as a file for
+each job will be created. This option is provided for test systems.</p>
+
 <p>Most of the sources of profile data are associated with various
 acct_gather plugins. The acct_gather.conf file has setting for various
 sampling mechanisms that can be used to change the frequency at which
-samples occur.
+samples occur.</p>
 
 <h2>Data Types</h2>
-A plugin-like structure is implemented to generalize HDF5 data operations from
+<p>A plugin-like structure is implemented to generalize HDF5 data operations from
 various sources. A <i>C</i> <b>typedef</b> is defined for each datatype. These
 declarations are in /common/slurm_acct_gather_profile.h so the datatype are
-common to all profile plugins.
-<p>
-The operations are defined via structures of function pointers, and they are
+common to all profile plugins.</p>
+
+<p>The operations are defined via structures of function pointers, and they are
 defined in /plugins/acct_gather_profile/common/profile_hdf5.h and should work
-on any HDF5 implementation, not only hdf5.
-<p>
-Functions must be implemented to perform various operations for the datatype.
+on any HDF5 implementation, not only hdf5.</p>
+
+<p>Functions must be implemented to perform various operations for the datatype.
 The api for the plugin includes an argument for the datatype so that the
-implementation of that api can call the specific operation for that datatype.
+implementation of that api can call the specific operation for that datatype.</p>
+
 <p>Groups in the HDF5 file containing a dataset will include an attribute for
 the datatype so that the program that merges step files into the job can
-discover the type of the group and do the right thing.
-<p>
-For example, the typedef for the energy sample datatype;
+discover the type of the group and do the right thing.</p>
+
+<p>For example, the typedef for the energy sample datatype;</p>
 <pre>
 typedef struct profile_energy {
     char     tod[TOD_LEN];	// Not used in node-step
@@ -333,18 +345,18 @@ typedef struct profile_hdf5_ops {
 } profile_hdf5_ops_t;
 </pre>
 
-Note there are two different data types for supporting time series.<br>
+<p>Note there are two different data types for supporting time series.<br>
 1) A primary type is defined for gathering data in the node step file.
 It is typically named profile_{series_name}_t.<br>
 2) Another type is defined for summarizing series totals.
 It is typically named profile_{series_name}_s_t. It does not have a 'factory'.
 It is only used in the functions of the primary data type and the
-primaries structure has operations to create appropriate hdf5 objects.
+primaries structure has operations to create appropriate hdf5 objects.</p>
 
 <p>When adding a new type, the <b>profile_factory</b> function has to be
-modified to return an <i>ops</i> for the type.
+modified to return an <i>ops</i> for the type.</p>
 
-<p>Interaction between type and hdf5.
+<p>Interaction between type and hdf5.</p>
 <ul>
 <li>
 The profile_{type}_t structure is used by callers of the <b>add_sample_data</b>
@@ -362,14 +374,9 @@ dataset.) The <i>create_file_datatype</i> function creates
 the appropriate object.
 </li>
 </ul>
-<h2>Versioning</h2>
-<p>This document describes version 1 of the Slurm Profile Accounting API.
-Future releases of Slurm may revise this API. A profile accounting plugin
-conveys its ability to implement a particular API version using the mechanism
-outlined for Slurm plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 9 June 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

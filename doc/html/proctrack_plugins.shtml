@@ -9,8 +9,7 @@ It is intended as a resource to programmers wishing to write their
 own Slurm process tracking plugins.
 Note that process tracking plugin is designed for use with Slurm job steps.
 There is a <a href="job_container_plugins.html">job_container plugin</a>
-designed for use with Slurm jobs.
-This is version 91 of the API.</p>
+designed for use with Slurm jobs.</p>
 
 <p>Slurm process tracking plugins are Slurm plugins that implement
 the Slurm process tracking API described herein.
@@ -48,10 +47,18 @@ NOTE: This kernel module records every process creation
 and termination.</li>
 </ul>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span> symbols required
-by the Slurm Plugin API require no specialization for process tracking.
-Note carefully, however, the versioning discussion below.</p>
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/proctrack/pgid/proctrack_pgid.c</span>
@@ -68,7 +75,7 @@ enumerated <b>errno</b> to allow Slurm to discover as practically as possible
 the reason for any failed API call.
 These values must not be used as return values in integer-valued functions
 in the API.
-The proper error return value from integer-valued functions is Slurm_ERROR.
+The proper error return value from integer-valued functions is SLURM_ERROR.
 The implementation should endeavor to provide useful and pertinent information
 by whatever means is practical.
 Successful API calls are not required to reset errno to a known value.</p>
@@ -109,8 +116,8 @@ variable <i>cont_id</i>.</p>
 <p style="margin-left:.2in"><b>Argument</b>:
 <span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input/output)
 Pointer to a slurmd job structure.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
-the plugin should return Slurm_ERROR and set the errno to an appropriate value
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">int proctrack_p_add (stepd_step_rec_t *job, pid_t pid);</p>
@@ -121,8 +128,8 @@ to a given job step's container.</p>
 Pointer to a slurmd job structure.<br>
 <span class="commandline"> pid</span>&nbsp; &nbsp;&nbsp;(input)
 The ID of the process to add to this job's container.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
-the plugin should return Slurm_ERROR and set the errno to an appropriate value
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">int proctrack_p_signal (uint64_t id, int signal);</p>
@@ -134,9 +141,9 @@ Job step container's ID.<br>
 <span class="commandline"> signal</span> &nbsp;&nbsp;(input)
 Signal to be sent to processes. Note that a signal of zero
 just tests for the existence of processes in a given job step container.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if the signal
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the signal
 was sent.
-If the signal can not be sent, the function should return Slurm_ERROR and set
+If the signal can not be sent, the function should return SLURM_ERROR and set
 its errno to an appropriate value to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -149,8 +156,8 @@ needed.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> id</span> &nbsp;&nbsp; (input)
 Job step container's ID.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
-the plugin should return Slurm_ERROR and set the errno to an appropriate value
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">uint64_t proctrack_p_find (pid_t pid);</p>
@@ -172,17 +179,11 @@ A job step container ID.<br>
 Array of process IDs in the container.<br>
 <span class="commandline"> npids</span>&nbsp; &nbsp;&nbsp;(output)
 Count of process IDs in the container.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if
-  successful, Slurm_ERROR else.</p>
-
-<h2>Versioning</h2>
-<p> This document describes version 91 of the Slurm Process Tracking API.
-Future releases of Slurm may revise this API. A process tracking plugin
-conveys its ability to implement a particular API version using the
-mechanism outlined for Slurm plugins.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if
+  successful, SLURM_ERROR else.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

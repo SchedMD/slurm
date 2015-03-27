@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Slurm Job Container Plugin API</a></h1>
+<h1><a name="top">Job Container Plugin API</a></h1>
 
 <h2> Overview</h2>
 <p> This document describes Slurm job container plugins and the API
@@ -10,8 +10,7 @@ own Slurm job container plugins.
 Note that job container plugin is designed for use with Slurm jobs.
 It also applies to the sbcast server process on compute nodes.
 There is a <a href="proctrack_plugins.html">proctrack plugin</a>
-designed for use with Slurm job steps.
-This is version 101 of the API.</p>
+designed for use with Slurm job steps.</p>
 
 <p>Slurm job container plugins are Slurm plugins that implement
 the Slurm job container API described herein.
@@ -28,10 +27,17 @@ Compute Node Clean Up (CNCU) the Cray infrastructure.</li>
 <li><b>none</b>&#151;Designed for all other systems.</li>
 </ul>
 
-<p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span> symbols required
-by the Slurm Plugin API require no specialization for process tracking.
-Note carefully, however, the versioning discussion below.</p>
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
 
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/proctrack/job_container/job_container_cncu.c</span>
@@ -134,14 +140,8 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Note change in configuration,
 especially the value of the DebugFlags with respect to JobContainer.</p>
 
-<h2>Versioning</h2>
-<p> This document describes version 101 of the Slurm job container API.
-Future releases of Slurm may revise this API. A job container plugin
-conveys its ability to implement a particular API version using the
-mechanism outlined for Slurm plugins.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

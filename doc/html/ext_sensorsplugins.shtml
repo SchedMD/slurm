@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">Slurm External Sensors Plugin API (ExtSensorsType)
+<h1><a name="top">External Sensors Plugin API (ExtSensorsType)
 </a></h1>
 
 <h2> Overview</h2>
@@ -27,6 +27,16 @@ for the type of external sensors. We currently use
 <li><b>rrd</b>&#151;Gets external sensors data from the
 RRD database.
 </ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/ext_sensors/rrd</span> and
 <span class="commandline">src/common/slurm_ext_sensors.c</span>
@@ -118,16 +128,10 @@ plugin and the frequency at which to gather external sensors data.</p>
 <dd>Specifies which external sensors plugin should be used.
 <dt><span class="commandline">ExtSensorsFreq</span>
 <dd>Time interval between pollings in seconds.
-</dl>
-
-<h2>Versioning</h2>
-<p>This document describes version 1 of the Slurm External Sensors Plugin API.
-Future releases of Slurm may revise this API. A, energy accounting plugin
-conveys its ability to implement a particular API version using the mechanism
-outlined for Slurm plugins.</p>
+</dl>>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 8 May 2014</p>
+<p style="text-align:center;">Last modified 27 March 2015</p>
 
 <!--#include virtual="footer.txt"-->

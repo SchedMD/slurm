@@ -70,15 +70,12 @@
  * of how this plugin satisfies that application.  SLURM will only load
  * a task plugin if the plugin_type string has a prefix of "task/".
  *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum version for their plugins as this API matures.
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
  */
 const char plugin_name[]        = "task NONE plugin";
 const char plugin_type[]        = "task/none";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

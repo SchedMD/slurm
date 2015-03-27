@@ -68,7 +68,7 @@
 
 const char plugin_name[]      = "Process tracking via Cray job module";
 const char plugin_type[]      = "proctrack/cray";
-const uint32_t plugin_version = 91;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /*
  *  Handle to libjob.so

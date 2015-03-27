@@ -50,7 +50,7 @@
 
 const char	plugin_name[]	= "Preemption disabled";
 const char	plugin_type[]	= "preempt/none";
-const uint32_t	plugin_version	= 100;
+const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
 /**************************************************************************/
 /*  TAG(                              init                              ) */
