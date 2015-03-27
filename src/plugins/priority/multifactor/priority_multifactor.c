@@ -1136,14 +1136,19 @@ static void _ticket_based_decay(List job_list, time_t start_time)
 }
 
 
-static void _decay_apply_new_usage_and_weighted_factors(
+static int _decay_apply_new_usage_and_weighted_factors(
 	struct job_record *job_ptr,
 	time_t *start_time_ptr)
 {
+	/* Always return SUCCESS so that list_for_each will
+	 * continue processing list of jobs. */
+
 	if (!decay_apply_new_usage(job_ptr, start_time_ptr))
-		return;
+		return SLURM_SUCCESS;
 
 	decay_apply_weighted_factors(job_ptr, start_time_ptr);
+
+	return SLURM_SUCCESS;
 }
 
 
@@ -1867,9 +1872,12 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 }
 
 
-extern void decay_apply_weighted_factors(struct job_record *job_ptr,
+extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 					 time_t *start_time_ptr)
 {
+	/* Always return SUCCESS so that list_for_each will
+	 * continue processing list of jobs. */
+
 	/*
 	 * Priority 0 is reserved for held
 	 * jobs. Also skip priority
@@ -1878,13 +1886,14 @@ extern void decay_apply_weighted_factors(struct job_record *job_ptr,
 	if ((job_ptr->priority == 0) ||
 	    (!IS_JOB_PENDING(job_ptr) &&
 	     !(flags & PRIORITY_FLAGS_CALCULATE_RUNNING)))
-		return;
+		return SLURM_SUCCESS;
 
 	job_ptr->priority = _get_priority_internal(*start_time_ptr, job_ptr);
 	last_job_update = time(NULL);
 	debug2("priority for job %u is now %u",
 	       job_ptr->job_id, job_ptr->priority);
 
+	return SLURM_SUCCESS;
 }
 
 
