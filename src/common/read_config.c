@@ -257,7 +257,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxTasksPerNode", S_P_UINT16},
 	{"MemLimitEnforce", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
-	{"MinJobAge", S_P_UINT16},
+	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
@@ -2454,7 +2454,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
 	ctl_conf_ptr->max_step_cnt		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->mem_limit_enforce         = true;
-	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->min_job_age = (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
@@ -3330,7 +3330,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 
-	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
+	if (!s_p_get_uint32(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
 	else if (conf->min_job_age < 2) {
 		if (getuid() == 0)

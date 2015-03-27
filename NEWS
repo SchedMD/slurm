@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Burst_buffer/cray - Convert logic to use new commands/API names (e.g.
     "dws_setup" rather than "bbs_setup").
+ -- Remove the MinJobAge size limitation. It can now exceed 65533 as it
+    is represented using an unsigned integer.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

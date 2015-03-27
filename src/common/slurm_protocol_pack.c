@@ -4870,7 +4870,7 @@ _unpack_sicp_info_msg(sicp_info_msg_t ** msg, Buf buffer,
 		/* load individual inter-cluster job info */
 		for (i = 0; i < (*msg)->record_count; i++, job++) {
 			safe_unpack32(&job->job_id, buffer);
-			safe_unpack16(&job->job_state, buffer);		
+			safe_unpack16(&job->job_state, buffer);
 		}
 	} else {
 		error("_unpack_sicp_info_msg: protocol_version "
@@ -5091,7 +5091,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 		safe_unpack32(&job->pn_min_memory, buffer);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
-		
+
 		safe_unpackstr_xmalloc(&job->req_nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
 		if (node_inx_str == NULL)
@@ -5536,7 +5536,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->max_step_cnt, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
 		pack16(build_ptr->mem_limit_enforce, buffer);
-		pack16(build_ptr->min_job_age, buffer);
+		pack32(build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
 		pack16(build_ptr->msg_timeout, buffer);
@@ -5805,7 +5805,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->max_step_cnt, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
 		pack16(build_ptr->mem_limit_enforce, buffer);
-		pack16(build_ptr->min_job_age, buffer);
+		pack16((uint16_t)build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
 		pack16(build_ptr->msg_timeout, buffer);
@@ -6068,7 +6068,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->max_mem_per_cpu, buffer);
 		pack32(build_ptr->max_step_cnt, buffer);
 		pack16(build_ptr->max_tasks_per_node, buffer);
-		pack16(build_ptr->min_job_age, buffer);
+		pack16((uint16_t)build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
 		pack16(build_ptr->msg_timeout, buffer);
@@ -6401,7 +6401,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_step_cnt, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->mem_limit_enforce, buffer);
-		safe_unpack16(&build_ptr->min_job_age, buffer);
+		safe_unpack32(&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_params,
@@ -6776,7 +6776,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_step_cnt, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpack16(&build_ptr->mem_limit_enforce, buffer);
-		safe_unpack16(&build_ptr->min_job_age, buffer);
+		safe_unpack16((uint16_t *)&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_params,
@@ -7141,7 +7141,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->max_mem_per_cpu, buffer);
 		safe_unpack32(&build_ptr->max_step_cnt, buffer);
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpack16(&build_ptr->min_job_age, buffer);
+		safe_unpack16((uint16_t *)&build_ptr->min_job_age, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_params,

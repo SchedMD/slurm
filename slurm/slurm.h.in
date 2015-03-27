@@ -2370,7 +2370,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t max_step_cnt;	/* maximum number of steps per job */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	uint16_t mem_limit_enforce; /* Enforce mem limit at runtime y|n */
-	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs)
+	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
 	char *mpi_params;	/* MPI parameters */
