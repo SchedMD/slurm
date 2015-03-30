@@ -67,7 +67,7 @@
 /* If we unpack a buffer that contains bad data, we want to avoid a memory
  * allocation error due to array or buffer sizes that are unreasonably large */
 #define MAX_PACK_ARRAY_LEN	(128 * 1024)
-#define MAX_PACK_MEM_LEN	(128 * 1024 * 1024)
+#define MAX_PACK_MEM_LEN	(1024 * 1024 * 1024)
 
 struct slurm_buf {
 	uint32_t magic;
