@@ -1212,10 +1212,11 @@ next_task:
 		if (job_ptr->qos_id) {
 			slurmdb_association_rec_t *assoc_ptr;
 			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
-			if (assoc_ptr &&
-			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id) &&
-			    !job_ptr->limit_set_qos) {
+			if (assoc_ptr
+			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
+			    && !bit_test(assoc_ptr->usage->valid_qos,
+					 job_ptr->qos_id)
+			    && !job_ptr->limit_set_qos) {
 				debug("sched: JobId=%u has invalid QOS",
 				      job_ptr->job_id);
 				xfree(job_ptr->state_desc);

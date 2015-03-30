@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix squeue --array to display correctly the array elements when the
     % separator is specified at the array submission time.
  -- Fix priority from not being calculated correctly due to memory issues.
+ -- Fix a transient pending reason 'JobId=job_id has invalid QOS'.
 
 * Changes in Slurm 14.11.5
 ==========================
