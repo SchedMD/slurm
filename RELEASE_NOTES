@@ -142,7 +142,12 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
-
+ -- SPANK naming changes: For environment variables set using the
+    spank_job_control_setenv() function, the values were available in the
+    slurm_spank_job_prolog() and slurm_spank_job_epilog() functions using
+    getenv where the name was given a prefix of "SPANK_". That prefix has
+    been removed for consistency with the environment variables available in
+    the Prolog and Epilog scripts.
 
 API CHANGES
 ===========
