@@ -40,15 +40,23 @@ Major enhancements include:
 Major enhancements to include:
 <ul>
 <!-- SchedMD led -->
-<li>Add support for burst buffers, data storage available for before, during
-    and/or after job computation in support of data staging, checkpoint,
-    etc.</li>
 <li>Convert charging from being based upon CPU time allocated to a more
     general <i>system billing unit</i>, which can be computed as a function of
-    many different resources (e.g. CPU, memory, power, GPUs, etc.).</li>
-<li>Improve recovery time for communication failures when large numbers of
-    nodes fail simultaneously.</li>
-<li>Permit disabling of swap space use.</li>
+    many different resources (e.g. CPU, memory, power, GPUs, etc.). A job's
+    consumption of all these resources will be logged in Slurm's database.</li>
+<li>Add the ability for a compute node to be allocated to multiple jobs, but
+    restricted to a single user.</li>
+<li>Support added for cluster-wide power capping.</li>
+<li>A partition can now have an associated Quality Of Service (QOS). This will
+    allow a partition to have all of the limits available to a QOS.</li>
+<li>Add support for QOS-based job preemption to be used with job suspend/resume
+    mechanism.</li>
+<li>Add support for burst buffers, data storage available for before, during
+    and/or after job computation in support of data staging, checkpoint,
+    etc. Plugins provied for Cray Data Warp and a generic script-based
+    interface.</li>
+<li>Add support for optimized job allocations with respect to SGI Hypercube
+    topology.</li>
 <!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
 <li>Add support for
 <a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
@@ -70,8 +78,6 @@ have not been finalized. Anyone desiring to perform Slurm development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Energy consumption added as a factor in fair-share scheduling.</li>
-<li>Energy aware scheduling added with respect to power caps.</li>
 <li>Improved support for GPU affinity with respect to CPUs and network
     resources.</li>
 <li>Integration with
@@ -81,7 +87,7 @@ to coordinate activities. Future development plans includes:
     MIC processors.</li>
 <li>IP communications over InfiniBand network for improved performance.</li>
 <li>Fault-tolerance and jobs dynamic adaptation through communication protocol
-    between Slurm , MPI libraries and the application.</li>
+    between Slurm, MPI libraries and the application.</li>
 <li>Improved support for high-throughput computing (e.g. multiple slurmctld
     daemons on a single cluster).</li>
 <li>Add Kerberos credential support including credential forwarding
@@ -89,6 +95,6 @@ to coordinate activities. Future development plans includes:
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based Slurm administration tool.</li>
 </ul>
-<p style="text-align:center;">Last modified 17 November 2014</p>
+<p style="text-align:center;">Last modified 31 March 2015</p>
 
 <!--#include virtual="footer.txt"-->
