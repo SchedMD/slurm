@@ -3278,12 +3278,10 @@ void make_node_idle(struct node_record *node_ptr,
 	bitstr_t *node_bitmap = NULL;
 	char jbuf[JBUFSIZ];
 
-	if (job_ptr) { /* Specific job completed */
-		if (job_ptr->node_bitmap_cg)
-			node_bitmap = job_ptr->node_bitmap_cg;
-		else
-			node_bitmap = job_ptr->node_bitmap;
-	}
+	if (job_ptr->node_bitmap_cg)
+		node_bitmap = job_ptr->node_bitmap_cg;
+	else
+		node_bitmap = job_ptr->node_bitmap;
 
 	trace_job(job_ptr, __func__, "enter");
 

@@ -372,7 +372,7 @@ static void _get_capabilities(void)
 	json_object *j_obj;
 	json_object_iter iter;
 	struct node_record *node_ptr;
-	hostlist_t hl;
+	hostlist_t hl = NULL;
 	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;
@@ -1103,7 +1103,6 @@ static void _get_node_energy_counter(void)
 				      __func__, ents[i].node_name[j]);
 			} else {
 				delta_time   = 0;
-				delta_joules = 0;
 				if ((ents[i].time_usec == 0) ||
 				    (node_ptr->power->time_usec == 0)) {
 					;
