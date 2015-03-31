@@ -9587,7 +9587,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->direct_set_prio = 0;
 				set_job_prio(job_ptr);
 			} else {
-				job_ptr->direct_set_prio = 1;
+				if (admin || (job_specs->priority == 0)) {
+					/* Only administrator can make
+					 * persistent change to a job's
+					 * priority, except holding a job */
+					job_ptr->direct_set_prio = 1;
+				}
 				job_ptr->priority = job_specs->priority;
 			}
 			info("sched: update_job: setting priority to %u for "

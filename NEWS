@@ -20,6 +20,9 @@ documents those changes that are of interest to users and administrators.
     % separator is specified at the array submission time.
  -- Fix priority from not being calculated correctly due to memory issues.
  -- Fix a transient pending reason 'JobId=job_id has invalid QOS'.
+ -- A non-administrator change to job priority will not be persistent except
+    for holding the job. User's wanting to change a job priority on a persistent
+    basis should reset it's "nice" value.
 
 * Changes in Slurm 14.11.5
 ==========================
