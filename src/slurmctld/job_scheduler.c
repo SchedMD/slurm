@@ -1273,7 +1273,7 @@ next_task:
 		if (job_ptr->qos_id) {
 			slurmdb_assoc_rec_t *assoc_ptr;
 			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
-			if (assoc_ptr &&
+			if (assoc_ptr
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 			    && !bit_test(assoc_ptr->usage->valid_qos,
 					 job_ptr->qos_id)
