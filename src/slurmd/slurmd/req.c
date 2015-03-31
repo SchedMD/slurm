@@ -4688,6 +4688,7 @@ _destroy_env(char **env)
 	return;
 }
 
+/* Trigger srun of spank prolog or epilog in slurmstepd */
 static int
 _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 {
@@ -4768,7 +4769,6 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 static int _run_job_script(const char *name, const char *path,
 			   uint32_t jobid, int timeout, char **env, uid_t uid)
 {
-	bool have_spank = false;
 	struct stat stat_buf;
 	int status = 0, rc;
 
@@ -4779,8 +4779,6 @@ static int _run_job_script(const char *name, const char *path,
 	 *   prolog/epilog status.
 	 */
 	if (conf->plugstack && (stat(conf->plugstack, &stat_buf) == 0))
-		have_spank = true;
-	if (have_spank)
 		status = _run_spank_job_script(name, env, jobid, uid);
 	if ((rc = run_script(name, path, jobid, timeout, env, uid)))
 		status = rc;
