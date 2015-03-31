@@ -50,7 +50,7 @@ HIGHLIGHTS
     without preemption. NOTE: That with PreemptType=qos, the partition's
     Shared=FORCE:# configuration option will permit one job more per resource
     to be run than than specified, but only if started by preemption.
- -- A partition can now have a QOS attached.  This will allow a partition
+ -- A partition can now have an associated QOS.  This will allow a partition
     to have all the limits a QOS has.  If a limit is set in both QOS
     the partition QOS will override the job's QOS unless the job's QOS has the
     'PartitionQOS' flag set.
