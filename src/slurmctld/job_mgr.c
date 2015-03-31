@@ -10073,7 +10073,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					 * persistent change to a job's
 					 * priority, except holding a job */
 					job_ptr->direct_set_prio = 1;
-				}
+				} else
+					error_code = ESLURM_PRIO_RESET_FAIL;
 				job_ptr->priority = job_specs->priority;
 			}
 			info("sched: update_job: setting priority to %u for "

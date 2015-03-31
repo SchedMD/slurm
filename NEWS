@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     plugins.
  -- Increase the MAX_PACK_MEM_LEN define to avoid PMI2 failure when fencing
     with large amount of ranks (to 1GB).
+ -- Requests by normal user to reset a job priority (even to lower it) will
+    result in an error saying to change the job's nice value instead.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

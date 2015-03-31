@@ -206,6 +206,7 @@ enum {
 	ESLURM_BURST_BUFFER_PERMISSION,
 	ESLURM_BURST_BUFFER_LIMIT,
 	ESLURM_INVALID_BURST_BUFFER_REQUEST,
+	ESLURM_PRIO_RESET_FAIL,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
