@@ -130,10 +130,17 @@ int slurm_layouts_fini(void);
  *        configuration files, creating the entities and the relational
  *        structures associated the eaf of them.
  *
+ * IN recover - update entities information with the latest available
+ *              information depending upon value
+ *              0 = use no saved state information, rebuild everything from
+ *		    layouts conf files contents
+ *              1 = recover saved entities information
+ *              2 = recover saved entities information
+ *
  * Return SLURM_SUCCESS or SLURM_ERROR if all the required layouts were not
  * loaded correctly.
  */
-int slurm_layouts_load_config(void);
+int slurm_layouts_load_config(int recover);
 
 /*
  * slurm_layouts_get_layout - return the layout from a given type

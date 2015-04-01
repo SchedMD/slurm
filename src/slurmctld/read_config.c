@@ -986,7 +986,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * Only load it at init time, not during reconfiguration stages.
 	 * It requires a full restart to switch to a new configuration for now.
 	 */
-	if (!reconfig && (slurm_layouts_load_config() != SLURM_SUCCESS))
+	if (!reconfig && (slurm_layouts_load_config(recover) != SLURM_SUCCESS))
 		fatal("Failed to load the layouts framework configuration");
 
 	if (reconfig) {		/* Preserve state from memory */
