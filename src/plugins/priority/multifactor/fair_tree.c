@@ -91,18 +91,9 @@ static void _ft_set_assoc_usage_efctv(slurmdb_association_rec_t *assoc)
 static int _ft_decay_apply_new_usage(struct job_record *job, time_t *start)
 {
 	/* Always return SUCCESS so that list_for_each will
-	 * continue processing list of jobs. */
-
-	if (!decay_apply_new_usage(job, start))
-		return SLURM_SUCCESS;
-
-	/* Priority 0 is reserved for held jobs. Also skip priority
-	 * calculation for non-pending jobs. */
-	if ((job->priority == 0) || !IS_JOB_PENDING(job))
-		return SLURM_SUCCESS;
-
-	set_priority_factors(*start, job);
-	last_job_update = time(NULL);
+	 * continue processing list of jobs. For this reason,
+	 * don't call decay_apply_new_usage() directly. */
+	decay_apply_new_usage(job, start);
 
 	return SLURM_SUCCESS;
 }

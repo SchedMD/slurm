@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
     for holding the job. User's wanting to change a job priority on a persistent
     basis should reset it's "nice" value.
  -- Print buffer sizes as unsigned values when failed to pack messages.
+ -- Fix race condition where sprio would print factors without weights applied.
 
 * Changes in Slurm 14.11.5
 ==========================
