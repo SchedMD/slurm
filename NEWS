@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     basis should reset it's "nice" value.
  -- Print buffer sizes as unsigned values when failed to pack messages.
  -- Fix race condition where sprio would print factors without weights applied.
+ -- Document the sacct option JobIDRaw which for arrays prints the jobid instead
+    of the arrayTaskId.
 
 * Changes in Slurm 14.11.5
 ==========================
