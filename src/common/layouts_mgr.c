@@ -96,12 +96,12 @@ static void layouts_conf_spec_free(void* x)
 /*
  * layout ops - operations associated to layout plugins
  *
- * This struct is populated while opening the plugin and linking the 
+ * This struct is populated while opening the plugin and linking the
  * associated symbols. See layout_syms description for the name of the "public"
  * symbols associated to this structure fields.
  *
  * Notes : the layouts plugins are able to access the entities hashtable in order
- * to read/create/modify entities as necessary during the load_entities and 
+ * to read/create/modify entities as necessary during the load_entities and
  * build_layout API calls.
  *
  */
@@ -154,10 +154,10 @@ static void _layout_plugins_destroy(layout_plugin_t *lp) {
  *       like the key str itself and custom destroy/dump functions.
  *
  * The layouts manager keeps an hash table of the various keydefs and use
- * the factorized details while parsing the configuration and creating the 
+ * the factorized details while parsing the configuration and creating the
  * entity_data_t structs associated to the entities.
  *
- * Note custom_* functions are used if they are not NULL* and type equals 
+ * Note custom_* functions are used if they are not NULL* and type equals
  * L_T_CUSTOM
  */
 typedef struct layouts_keydef_st {
@@ -183,7 +183,7 @@ static const char* layouts_keydef_idfunc(void* item)
 }
 
 /*
- * layouts_mgr_t - the main structure holding all the layouts, entities and 
+ * layouts_mgr_t - the main structure holding all the layouts, entities and
  *        shared keydefs as well as conf elements and plugins details.
  */
 typedef struct layouts_mgr_st {
@@ -1314,7 +1314,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 
 /* helper function used by layouts_save_state when walking through
  * the various layouts to save their state in Slurm state save location */
-static void _pack_layout(void* item, void* arg)
+static void _state_save_layout(void* item, void* arg)
 {
 	layout_t* layout = (layout_t*)item;
 	layouts_state_save_layout(layout->type);
@@ -1492,8 +1492,8 @@ int layouts_fini(void)
 
 	slurm_mutex_lock(&mgr->lock);
 
-	/* free the layouts before destroying the plugins, 
-	 * otherwise we will get trouble xfreeing the layouts whose 
+	/* free the layouts before destroying the plugins,
+	 * otherwise we will get trouble xfreeing the layouts whose
 	 * memory is owned by the plugins structs */
 	layouts_mgr_free(mgr);
 
@@ -1553,7 +1553,7 @@ int layouts_load_config(int recover)
 
 		/* init entity structure on the heap */
 		entity = (entity_t*) xmalloc(sizeof(struct entity_st));
-		entity_init(entity, node_ptr->name, 0); 
+		entity_init(entity, node_ptr->name, 0);
 		entity->ptr = node_ptr;
 
 		/* add to mgr entity hashtable */
@@ -1832,7 +1832,7 @@ int layouts_state_save(void)
 {
 	DEF_TIMERS;
 	START_TIMER;
-	xhash_walk(mgr->layouts,  _pack_layout, NULL);
+	xhash_walk(mgr->layouts,  _state_save_layout, NULL);
 	END_TIMER2("layouts_state_save");
 	return SLURM_SUCCESS;
 }
