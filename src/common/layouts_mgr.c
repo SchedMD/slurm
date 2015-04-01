@@ -148,7 +148,10 @@ static void _layout_plugins_destroy(layout_plugin_t *lp) {
  * L_T_CUSTOM
  */
 typedef struct layouts_keydef_st {
-	char*			key; /* normalize to lower or upper case */
+	char*			key; /* lower case key prefixed by the
+					"%layout_type%." string */
+	char*			shortkey; /* original key as defined in
+					     the layout keys definition */
 	layouts_keydef_types_t	type;
 	void			(*custom_destroy)(void* value);
 	char*			(*custom_dump)(void* value);
@@ -215,6 +218,7 @@ static void _layouts_keydef_free(void* x)
 {
 	layouts_keydef_t* keydef = (layouts_keydef_t*)x;
 	xfree(keydef->key);
+	xfree(keydef->shortkey);
 	xfree(keydef);
 }
 
@@ -356,6 +360,7 @@ static void _slurm_layouts_init_keydef(xhash_t* keydefs,
 		nkeydef = (layouts_keydef_t*)
 			xmalloc(sizeof(layouts_keydef_t));
 		nkeydef->key = xstrdup(keytmp);
+		nkeydef->shortkey = xstrdup(current->key);
 		nkeydef->type = current->type;
 		nkeydef->custom_destroy = current->custom_destroy;
 		nkeydef->custom_dump = current->custom_dump;
@@ -372,6 +377,7 @@ static void _slurm_layouts_init_keydef(xhash_t* keydefs,
 		nkeydef = (layouts_keydef_t*)
 			xmalloc(sizeof(layouts_keydef_t));
 		nkeydef->key = xstrdup(keytmp);
+		nkeydef->shortkey = xstrdup("Enclosed");
 		nkeydef->type = L_T_STRING;
 		nkeydef->plugin = plugin;
 		xhash_add(keydefs, nkeydef);
