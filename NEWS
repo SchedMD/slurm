@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
     their own jobs.
  -- Increase the jobid print field in SQUEUE_FORMAT in
     opt_modulefiles_slurm.in.
+ -- Enable compiling without optimizations and with debugging symbols by
+    default. Disable this by configuring with --disable-debug.
 
 * Changes in Slurm 14.11.5
 ==========================

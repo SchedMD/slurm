@@ -16,7 +16,7 @@
 # --with cray        %_with_cray        1    build for a Cray system without ALPS
 # --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1  build for a non-Cray system with a Cray network
-# --with debug       %_with_debug       1    enable extra debugging within Slurm
+# --without debug    %_without_debug    1    don't compile with debugging symbols
 # --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
 # --with mysql       %_with_mysql       1    require mysql support
@@ -45,7 +45,6 @@
 %slurm_without_opt cray
 %slurm_without_opt cray_alps
 %slurm_without_opt cray_network
-%slurm_without_opt debug
 %slurm_without_opt sun_const
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
@@ -64,6 +63,9 @@
 
 # Use readline by default on all systems
 %slurm_with_opt readline
+
+# Use debug by default on all systems
+%slurm_with_opt debug
 
 # Build with PAM by default on linux
 %ifos linux
@@ -414,7 +416,7 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 
 %build
 %configure \
-	%{?slurm_with_debug:--enable-debug} \
+	%{!?slurm_with_debug:--disable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
 	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
