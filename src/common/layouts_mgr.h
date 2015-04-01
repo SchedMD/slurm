@@ -4,6 +4,7 @@
  *  Initially written by Francois Chevallier <chevallierfrancois@free.fr>
  *  at Bull for slurm-2.6.
  *  Adapted by Matthieu Hautreux <matthieu.hautreux@cea.fr> for slurm-14.11.
+ *  Enhanced by Matthieu Hautreux <matthieu.hautreux@cea.fr> for slurm-15.x.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.

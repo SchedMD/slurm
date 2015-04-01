@@ -4,6 +4,7 @@
  *  Initially written by Francois Chevallier <chevallierfrancois@free.fr>
  *  at Bull for slurm-2.6.
  *  Adapted by Matthieu Hautreux <matthieu.hautreux@cea.fr> for slurm-14.11.
+ *  Enhanced by Matthieu Hautreux <matthieu.hautreux@cea.fr> for slurm-15.x.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -2320,7 +2321,7 @@ int layouts_load_config(int recover)
 
 		/* init entity structure on the heap */
 		entity = (entity_t*) xmalloc(sizeof(struct entity_st));
-		entity_init(entity, node_ptr->name, 0);
+		entity_init(entity, node_ptr->name, "Node");
 		entity->ptr = node_ptr;
 
 		/* add to mgr entity hashtable */
