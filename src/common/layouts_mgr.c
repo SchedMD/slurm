@@ -350,9 +350,9 @@ static void _entity_add_data(entity_t* e, const char* key, void* data)
  *                                MANAGER INIT                               *
 \*****************************************************************************/
 
-static void _slurm_layouts_init_keydef(xhash_t* keydefs,
-				       const layouts_keyspec_t* plugin_keyspec,
-				       layout_plugin_t* plugin)
+static void _layouts_init_keydef(xhash_t* keydefs,
+				 const layouts_keyspec_t* plugin_keyspec,
+				 layout_plugin_t* plugin)
 {
 	char keytmp[PATHLEN];
 
@@ -398,7 +398,7 @@ static void _slurm_layouts_init_keydef(xhash_t* keydefs,
 	}
 }
 
-static int _slurm_layouts_init_layouts_walk_helper(void* x, void* arg)
+static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 {
 	layouts_conf_spec_t* spec = (layouts_conf_spec_t*)x;
 	int* i = (int*)arg;
@@ -433,9 +433,9 @@ static int _slurm_layouts_init_layouts_walk_helper(void* x, void* arg)
 		    plugin->ops->spec->struct_type);
 	inserted_item = xhash_add(mgr->layouts, plugin->layout);
 	xassert(inserted_item == plugin->layout);
-	_slurm_layouts_init_keydef(mgr->keydefs,
-				   plugin->ops->spec->keyspec,
-				   plugin);
+	_layouts_init_keydef(mgr->keydefs,
+			     plugin->ops->spec->keyspec,
+			     plugin);
 	++*i;
 	return SLURM_SUCCESS;
 }
@@ -572,51 +572,51 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 	return tbl;
 }
 
-#define _layouts_load_merge(type_t, s_p_get_type) { \
-	type_t newvalue; \
-	type_t** oldvalue;						\
-	slurm_parser_operator_t operator = S_P_OPERATOR_SET;		\
-	if (!s_p_get_type(&newvalue, option_key, etbl)) {		\
-		/* no value to merge/create */				\
-		continue;						\
-	}								\
-	s_p_get_operator(&operator, option_key, etbl);			\
-	oldvalue = (type_t**)entity_get_data(e, key_keydef);		\
-	if (oldvalue) {							\
-	        switch (operator) {					\
-                case S_P_OPERATOR_SET:					\
-			**oldvalue = newvalue;				\
-			break;						\
-                case S_P_OPERATOR_ADD:					\
-			**oldvalue += newvalue;				\
-			break;						\
-                case S_P_OPERATOR_SUB:					\
-			**oldvalue -= newvalue;				\
-			break;						\
-                case S_P_OPERATOR_MUL:					\
-			**oldvalue *= newvalue;				\
-			break;						\
-                case S_P_OPERATOR_DIV:					\
-			if (newvalue != 0)				\
-				**oldvalue /= newvalue;			\
-			else						\
-				error("layouts: load_merge key=%s val=0 " \
-				      "operator=DIV !! skipping !!",	\
-				      option_key);			\
-			break;						\
+#define _layouts_load_merge(type_t, s_p_get_type) {			\
+		type_t newvalue;					\
+		type_t** oldvalue;					\
+		slurm_parser_operator_t operator = S_P_OPERATOR_SET;	\
+		if (!s_p_get_type(&newvalue, option_key, etbl)) {	\
+			/* no value to merge/create */			\
+			continue;					\
 		}							\
-	} else { \
-		type_t* newalloc = (type_t*)xmalloc(sizeof(type_t)); \
-		*newalloc = newvalue; \
-		_entity_add_data(e, key_keydef, newalloc); \
-	} \
-}
+		s_p_get_operator(&operator, option_key, etbl);		\
+		oldvalue = (type_t**)entity_get_data(e, key_keydef);	\
+		if (oldvalue) {						\
+			switch (operator) {				\
+			case S_P_OPERATOR_SET:				\
+				**oldvalue = newvalue;			\
+				break;					\
+			case S_P_OPERATOR_ADD:				\
+				**oldvalue += newvalue;			\
+				break;					\
+			case S_P_OPERATOR_SUB:				\
+				**oldvalue -= newvalue;			\
+				break;					\
+			case S_P_OPERATOR_MUL:				\
+				**oldvalue *= newvalue;			\
+				break;					\
+			case S_P_OPERATOR_DIV:				\
+				if (newvalue != 0)			\
+					**oldvalue /= newvalue;		\
+				else					\
+					error("layouts: load_merge key=%s val=0 " \
+					      "operator=DIV !! skipping !!", \
+					      option_key);		\
+				break;					\
+			}						\
+		} else {						\
+			type_t* newalloc = (type_t*)xmalloc(sizeof(type_t)); \
+			*newalloc = newvalue;				\
+			_entity_add_data(e, key_keydef, newalloc);	\
+		}							\
+	}
 
-#define _layouts_merge_check(type1, type2) \
+#define _layouts_merge_check(type1, type2)			\
 	(entity_option->type == type1 && keydef->type == type2)
 
 static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
-		s_p_hashtbl_t* etbl)
+				    s_p_hashtbl_t* etbl)
 {
 	const s_p_options_t* layout_option;
 	const s_p_options_t* entity_option;
@@ -625,16 +625,16 @@ static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
 	char* option_key;
 
 	for (layout_option = plugin->ops->spec->options;
-		layout_option && strcasecmp("Entity", layout_option->key);
-		++layout_option);
+	     layout_option && strcasecmp("Entity", layout_option->key);
+	     ++layout_option);
 	xassert(layout_option);
 
 	for (entity_option = layout_option->line_options;
-			entity_option->key;
-			++entity_option) {
+	     entity_option->key;
+	     ++entity_option) {
 		option_key = entity_option->key;
 		_normalize_keydef_key(key_keydef, PATHLEN, option_key,
-				plugin->layout->type);
+				      plugin->layout->type);
 		keydef = xhash_get(mgr->keydefs, key_keydef);
 		if (!keydef) {
 			/* key is not meant to be automatically handled,
@@ -678,15 +678,15 @@ static void _layouts_parse_relations(layout_plugin_t* plugin, entity_t* e,
 	case LAYOUT_STRUCT_TREE:
 		if (s_p_get_string(&e_enclosed, "Enclosed", entity_tbl)) {
 			_normalize_keydef_mgrkey(key, PATHLEN, "enclosed",
-					plugin->layout->type);
+						 plugin->layout->type);
 			e_already_enclosed = (char**)entity_get_data(e, key);
 			if (e_already_enclosed) {
 				/* FC expressed warnings about that section,
 				 * should be checked more */
 				*e_already_enclosed = xrealloc(
-						*e_already_enclosed,
-						strlen(*e_already_enclosed) +
-						strlen(e_enclosed) + 2);
+					*e_already_enclosed,
+					strlen(*e_already_enclosed) +
+					strlen(e_enclosed) + 2);
 				strcat(*e_already_enclosed, ",");
 				strcat(*e_already_enclosed, e_enclosed);
 				xfree(e_enclosed);
@@ -699,7 +699,7 @@ static void _layouts_parse_relations(layout_plugin_t* plugin, entity_t* e,
 }
 
 static int _layouts_read_config_post(layout_plugin_t* plugin,
-		s_p_hashtbl_t* tbl)
+				     s_p_hashtbl_t* tbl)
 {
 	char* root_nodename;
 	entity_t* e;
@@ -786,7 +786,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 
 	/* get the config hash tables of the defined entities */
 	if (!s_p_get_expline(&entities_tbl, &entities_tbl_count,
-				"Entity", tbl)) {
+			     "Entity", tbl)) {
 		error("layouts: no valid Entity found, can not append any "
 		      "information nor construct relations for %s/%s",
 		      plugin->layout->type, plugin->layout->name);
@@ -1005,9 +1005,9 @@ typedef struct _layouts_build_xtree_walk_st {
 } _layouts_build_xtree_walk_t;
 
 uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
-					 uint8_t which,
-					 uint32_t level,
-					 void* arg)
+				  uint8_t which,
+				  uint32_t level,
+				  void* arg)
 {
 	_layouts_build_xtree_walk_t* p = (_layouts_build_xtree_walk_t*)arg;
 	entity_t* e;
@@ -1427,12 +1427,12 @@ static void _dump_layouts(void* item, void* arg)
  *                             SLURM LAYOUTS API                             *
 \*****************************************************************************/
 
-int slurm_layouts_init(void)
+int layouts_init(void)
 {
 	int i = 0;
 	uint32_t layouts_count;
 
-	debug3("layouts: slurm_layouts_init()...");
+	debug3("layouts: layouts_init()...");
 
 	if (mgr->plugins) {
 		return SLURM_SUCCESS;
@@ -1449,8 +1449,8 @@ int slurm_layouts_init(void)
 
 	mgr->plugins = xmalloc(sizeof(layout_plugin_t) * layouts_count);
 	list_for_each(layouts_mgr.layouts_desc,
-			_slurm_layouts_init_layouts_walk_helper,
-			&i);
+		      _layouts_init_layouts_walk_helper,
+		      &i);
 	mgr->plugins_count = i;
 
 	if (mgr->plugins_count != layouts_count) {
@@ -1462,7 +1462,7 @@ int slurm_layouts_init(void)
 		xfree(mgr->plugins);
 		mgr->plugins = NULL;
 	} else if (layouts_count > 0) {
-		info("layouts: slurm_layouts_init done : %d layout(s) "
+		info("layouts: layouts_init done : %d layout(s) "
 		     "initialized", layouts_count);
 	}
 
@@ -1472,11 +1472,11 @@ int slurm_layouts_init(void)
 		SLURM_SUCCESS : SLURM_ERROR;
 }
 
-int slurm_layouts_fini(void)
+int layouts_fini(void)
 {
 	int i;
 
-	debug3("layouts: slurm_layouts_fini()...");
+	debug3("layouts: layouts_fini()...");
 
 	/* push layouts states to the state save location */
 	layouts_state_save();
@@ -1502,7 +1502,7 @@ int slurm_layouts_fini(void)
 	return SLURM_SUCCESS;
 }
 
-int slurm_layouts_load_config(int recover)
+int layouts_load_config(int recover)
 {
 	int i, rc, inx;
 	struct node_record *node_ptr;
@@ -1670,16 +1670,16 @@ layout_t* layouts_get_layout(const char* type)
 	return layout;
 }
 
-entity_t* slurm_layouts_get_entity_nolock(const char* name)
+entity_t* layouts_get_entity_nolock(const char* name)
 {
 	return (entity_t*)xhash_get(mgr->entities, name);
 }
 
-entity_t* slurm_layouts_get_entity(const char* name)
+entity_t* layouts_get_entity(const char* name)
 {
 	entity_t* e;
 	slurm_mutex_lock(&mgr->lock);
-	e = slurm_layouts_get_entity_nolock(name);
+	e = layouts_get_entity_nolock(name);
 	slurm_mutex_unlock(&mgr->lock);
 	return e;
 }

@@ -912,7 +912,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		return error_code;
 	}
 
-	if (slurm_layouts_init() != SLURM_SUCCESS)
+	if (layouts_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize the layouts framework");
 
 	if (slurm_topo_init() != SLURM_SUCCESS)
@@ -986,7 +986,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * Only load it at init time, not during reconfiguration stages.
 	 * It requires a full restart to switch to a new configuration for now.
 	 */
-	if (!reconfig && (slurm_layouts_load_config(recover) != SLURM_SUCCESS))
+	if (!reconfig && (layouts_load_config(recover) != SLURM_SUCCESS))
 		fatal("Failed to load the layouts framework configuration");
 
 	if (reconfig) {		/* Preserve state from memory */

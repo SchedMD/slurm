@@ -617,7 +617,7 @@ int main(int argc, char *argv[])
 		recover = 2;
 	}
 
-	slurm_layouts_fini();
+	layouts_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to

@@ -53,12 +53,12 @@
  * The layouts_mgr_t manages the layouts and entities loaded through the list
  * of layouts specified in the Slurm configuration file (slurm.conf)
  *
- * At startup, Slurm initialize one layouts_mgr_t using slurm_layouts_init()
+ * At startup, Slurm initialize one layouts_mgr_t using layouts_init()
  * and then load the required layouts defined in the configuration using
- * slurm_layouts_load_config().
+ * layouts_load_config().
  *
  * The different layouts and entities can then be queried using either
- * slurm_layouts_get_layout() and slurm_layouts_get_entity().
+ * layouts_get_layout() and layouts_get_entity().
  *
  * Note that each entity contains a list of nodes appearing inside the
  * associated layouts.
@@ -103,7 +103,7 @@ typedef struct layouts_plugin_spec_st {
 \*****************************************************************************/
 
 /*
- * slurm_layouts_init - intialize the layouts mgr, load the required plugins
+ * layouts_init - intialize the layouts mgr, load the required plugins
  *        and initialize the internal hash tables for entities, keydefs and
  *        layouts.
  *
@@ -113,20 +113,20 @@ typedef struct layouts_plugin_spec_st {
  * Notes: this call do not try to read and parse the layouts configuration
  * files. It only loads the layouts plugins, dlsym the layout API and conf
  * elements to prepare the reading and parsing performed in the adhoc call
- * slurm_layouts_load_config()
+ * layouts_load_config()
  *
  */
-int slurm_layouts_init(void);
+int layouts_init(void);
 
 /*
- * slurm_layouts_fini - uninitialize the layouts mgr and free the internal
+ * layouts_fini - uninitialize the layouts mgr and free the internal
  *        hash tables.
  */
-int slurm_layouts_fini(void);
+int layouts_fini(void);
 
 /*
- * slurm_layouts_load_config - use the layouts plugins details loaded during
- *        slurm_layouts_init() and read+parse the different layouts
+ * layouts_load_config - use the layouts plugins details loaded during
+ *        layouts_init() and read+parse the different layouts
  *        configuration files, creating the entities and the relational
  *        structures associated the eaf of them.
  *
@@ -140,21 +140,21 @@ int slurm_layouts_fini(void);
  * Return SLURM_SUCCESS or SLURM_ERROR if all the required layouts were not
  * loaded correctly.
  */
-int slurm_layouts_load_config(int recover);
+int layouts_load_config(int recover);
 
 /*
- * slurm_layouts_get_layout - return the layout from a given type
+ * layouts_get_layout - return the layout from a given type
  *
  * Return a pointer to the layout_t struct of the layout or NULL if not found
  */
-layout_t* slurm_layouts_get_layout(const char* type);
+layout_t* layouts_get_layout(const char* type);
 
 /*
- * slurm_layouts_get_entity - return the entity from a given name
+ * layouts_get_entity - return the entity from a given name
  *
  * Return a pointer to the entity_t struct of the entity or NULL if not found
  */
-entity_t* slurm_layouts_get_entity(const char* name);
+entity_t* layouts_get_entity(const char* name);
 
 /*
  * layouts_pack_layout - pack the layout of the target type into the provided
