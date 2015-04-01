@@ -170,6 +170,13 @@ typedef struct layouts_keydef_st {
 	void			(*custom_destroy)(void* value);
 	char*			(*custom_dump)(void* value);
 	layout_plugin_t*	plugin;
+	char*			ref_key; /* lower case reference key prefixed by
+					    the "%layout_type%." might be NULL 
+					    if not defined. */
+	char*			ref_shortkey; /* original ref key as defined in
+						 the layout keys definition,
+						 might be null too. */
+
 } layouts_keydef_t;
 
 /*
@@ -233,6 +240,8 @@ static void _layouts_keydef_free(void* x)
 	layouts_keydef_t* keydef = (layouts_keydef_t*)x;
 	xfree(keydef->key);
 	xfree(keydef->shortkey);
+	xfree(keydef->ref_key);
+	xfree(keydef->ref_shortkey);
 	xfree(keydef);
 }
 
@@ -345,9 +354,64 @@ static void _entity_add_data(entity_t* e, const char* key, void* data)
 	entity_set_data_ref(e, hkey->key, data, freefunc);
 }
 
+/*
+ * used in both automerge and autoupdate calls when dealing with
+ * advanced operations (SUM,MIN,MAX,AVG,...) while setting new key values
+ */
+#define _entity_update_kv_helper(type_t, operator)			\
+	type_t* lvalue = (type_t*) oldvalue;				\
+	type_t* rvalue = (type_t*) value;				\
+	uint32_t* divider;						\
+	switch (operator) {						\
+	case S_P_OPERATOR_SET:						\
+		*lvalue = *rvalue;					\
+		break;							\
+	case S_P_OPERATOR_ADD:						\
+		*lvalue += *rvalue;					\
+		break;							\
+	case S_P_OPERATOR_SUB:						\
+		*lvalue -= *rvalue;					\
+		break;							\
+	case S_P_OPERATOR_MUL:						\
+		*lvalue *= *rvalue;					\
+		break;							\
+	case S_P_OPERATOR_DIV:						\
+		if (*rvalue != (type_t) 0)				\
+			*lvalue /= *rvalue;				\
+		else {							\
+			error("layouts: entity_update: "		\
+			      "key=%s val=0 operator="			\
+			      "DIV !! skipping !!",			\
+			      keydef->key);				\
+		}							\
+		break;							\
+	case S_P_OPERATOR_AVG:						\
+		divider = (uint32_t*) value;				\
+		if (*divider != (uint32_t) 0)				\
+			*lvalue /= (type_t) *divider;			\
+		else {							\
+			error("layouts: entity_update: "		\
+			      "key=%s val=0 operator="			\
+			      "AVG !! skipping !!",			\
+			      keydef->key);				\
+		}							\
+		break;							\
+	case S_P_OPERATOR_SET_IF_MIN:					\
+		if (*rvalue < *lvalue)					\
+			*lvalue = *rvalue;				\
+		break;							\
+	case S_P_OPERATOR_SET_IF_MAX:					\
+		if (*rvalue > *lvalue)					\
+			*lvalue = *rvalue;				\
+		break;							\
+	default:							\
+		break;							\
+	}
+
 /*****************************************************************************\
  *                       LAYOUTS INTERNAL LOCKLESS API                       *
 \*****************************************************************************/
+
 layouts_keydef_t* _layouts_entity_get_kv_keydef(layout_t* l, entity_t* e,
 						char* key)
 {
@@ -435,12 +499,16 @@ bool _layouts_entity_check_kv_keytype(layout_t* l, entity_t* e, char* key,
 
 int _layouts_entity_push_kv(layout_t* l, entity_t* e, char* key)
 {
-	return SLURM_ERROR;
+	/* a more advanced implementation should only pull what is necessary
+	 * instead of forcing a full autoupdate */
+	return _layouts_autoupdate_layout_if_allowed(l);
 }
 
 int _layouts_entity_pull_kv(layout_t* l, entity_t* e, char* key)
 {
-	return SLURM_ERROR;
+	/* a more advanced implementation should only pull what is necessary
+	 * instead of forcing a full autoupdate */
+	return _layouts_autoupdate_layout_if_allowed(l);
 }
 
 int _layouts_entity_set_kv(layout_t* l, entity_t* e, char* key, void* value,
@@ -749,6 +817,15 @@ static void _layouts_init_keydef(xhash_t* keydefs,
 		nkeydef->custom_destroy = current->custom_destroy;
 		nkeydef->custom_dump = current->custom_dump;
 		nkeydef->plugin = plugin;
+		if (current->ref_key != NULL) {
+			_normalize_keydef_key(keytmp, PATHLEN, current->ref_key,
+					      plugin->layout->type);
+			nkeydef->ref_key = xstrdup(keytmp);
+			nkeydef->ref_shortkey = xstrdup(current->ref_key);
+		} else {
+			nkeydef->ref_key = NULL;
+			nkeydef->ref_shortkey = NULL;
+		}
 		xhash_add(keydefs, nkeydef);
 	}
 
@@ -944,44 +1021,22 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 }
 
 #define _layouts_load_merge(type_t, s_p_get_type) {			\
-		type_t newvalue;					\
+		type_t  rvalue;						\
+		type_t* value = &rvalue;				\
 		type_t* oldvalue;					\
 		slurm_parser_operator_t operator = S_P_OPERATOR_SET;	\
-		if (!s_p_get_type(&newvalue, option_key, etbl)) {	\
+		if (!s_p_get_type(&rvalue, option_key, etbl)) {		\
 			/* no value to merge/create */			\
 			continue;					\
 		}							\
 		s_p_get_operator(&operator, option_key, etbl);		\
 		oldvalue = (type_t*)entity_get_data_ref(e, key_keydef); \
 		if (oldvalue) {						\
-			switch (operator) {				\
-			case S_P_OPERATOR_SET:				\
-				*oldvalue = newvalue;			\
-				break;					\
-			case S_P_OPERATOR_ADD:				\
-				*oldvalue += newvalue;			\
-				break;					\
-			case S_P_OPERATOR_SUB:				\
-				*oldvalue -= newvalue;			\
-				break;					\
-			case S_P_OPERATOR_MUL:				\
-				*oldvalue *= newvalue;			\
-				break;					\
-			case S_P_OPERATOR_DIV:				\
-				if (newvalue != 0)			\
-					*oldvalue /= newvalue;		\
-				else {					\
-					error("layouts: load_merge "	\
-					      "key=%s val=0 operator="	\
-					      "DIV !! skipping !!",	\
-					      option_key);		\
-				}					\
-				break;					\
-			}						\
+			_entity_update_kv_helper(type_t, operator);	\
 		} else {						\
 			type_t* newalloc = (type_t*)			\
 				xmalloc(sizeof(type_t));		\
-			*newalloc = newvalue;				\
+			*newalloc = *value;				\
 			_entity_add_data(e, key_keydef, newalloc);	\
 		}							\
 	}								\
@@ -1287,6 +1342,18 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 	}
 
 	/*
+	 * In case we are processing an update (not a startup configuration)
+	 * if the layout plugin requests autoupdate, call the autoupdate
+	 * function on the current layout in order to set the inherited values
+	 * according to the newly modified ones.
+	 * (in startup configuration, the autoupdate is performed in stage 3
+	 *  when the relational structures are available)
+	 */
+	if ((flags & UPDATE_DONE) && plugin->ops->spec->autoupdate) {
+		_layouts_autoupdate_layout(plugin->layout);
+	}
+
+	/*
 	 * Call the layout plugin update_done callback for further
 	 * layout specific actions.
 	 * Note : some entries of the updated_entities array might be NULL
@@ -1494,6 +1561,10 @@ static int _layouts_build_relations(layout_plugin_t* plugin)
 	return SLURM_SUCCESS;
 }
 
+/*****************************************************************************\
+ *                                  STATE DUMP                               *
+\*****************************************************************************/
+
 /*
  * _pack_args_t : helper struct/type used when passing args among the various
  * functions used when packing layouts into a buffer as a set of strings.
@@ -1507,7 +1578,6 @@ typedef struct _pack_args {
 /*
  * _pack_data_key : internal function used to get the key=val
  * string representation of a particular entity data value
- *
  */
 static char* _pack_data_key(layouts_keydef_t* keydef, void* value)
 {
@@ -1704,6 +1774,314 @@ static void _state_save_layout(void* item, void* arg)
 	layout_t* layout = (layout_t*)item;
 	layouts_state_save_layout(layout->type);
 }
+
+/*****************************************************************************\
+ *                            ENTITIES KVs AUTOUPDATE                        *
+\*****************************************************************************/
+
+/*
+ * helper structure used when walking the tree of relational nodes in order
+ * to automatically update the entities KVs based on their inheritance
+ * relationships
+ */
+typedef struct _autoupdate_tree_args {
+	entity_node_t* enode;
+	uint8_t which;
+	uint32_t level;
+} _autoupdate_tree_args_t;
+
+/*
+ * helper function used to update a particular KV value of an entity according
+ * to a particular operator looking for the right type to apply during the 
+ * operation
+ */
+static int _autoupdate_entity_kv(layouts_keydef_t* keydef,
+				 layouts_keydef_t* ref_keydef,
+				 slurm_parser_operator_t operator,
+				 void* oldvalue, void* value)
+{
+	int rc = SLURM_ERROR;
+
+	if (keydef->type != ref_keydef->type)
+		return rc;
+
+	if (keydef->type == L_T_LONG) {
+		_entity_update_kv_helper(long, operator);
+	} else if (keydef->type == L_T_UINT16) {
+		_entity_update_kv_helper(uint16_t, operator);
+	} else if (keydef->type == L_T_UINT32) {
+		_entity_update_kv_helper(uint32_t, operator);
+	} else if (keydef->type == L_T_FLOAT) {
+		_entity_update_kv_helper(float, operator);
+	} else if (keydef->type == L_T_DOUBLE) {
+		_entity_update_kv_helper(double, operator);
+	} else if (keydef->type == L_T_LONG_DOUBLE) {
+		_entity_update_kv_helper(long double, operator);
+	} else {
+		// L_T_BOOLEAN, L_T_STRING, L_T_CUSTOM not yet supported
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * helper function used to update KVs of an entity using its xtree_node
+ * looking for known inheritance in the neighborhood (parents/children) */
+static void _tree_update_node_entity_data(void* item, void* arg) {
+
+	uint32_t action;
+	entity_data_t* data;
+	_autoupdate_tree_args_t *pargs;
+	layouts_keydef_t* keydef;
+	layouts_keydef_t* ref_keydef;
+	slurm_parser_operator_t operator;
+	xtree_node_t *node, *child;
+	entity_node_t *enode, *cnode;
+	char keytmp[PATHLEN];
+	void* oldvalue;
+	void* value;
+	uint32_t count;
+	int setter;
+
+	xassert(item);
+	xassert(arg);
+
+	data = (entity_data_t*) item;
+	pargs = (_autoupdate_tree_args_t *) arg;
+	cnode = pargs->enode;
+
+	/* we must be able to get the keydef associated to the data key */
+	xassert(data);
+	keydef = xhash_get(mgr->keydefs, data->key);
+	xassert(keydef);
+
+	/* only work on keys that depend of their neighborhood */
+	if (!keydef->flags & KEYSPEC_UPDATE_CHILDREN_MASK &&
+	    !keydef->flags & KEYSPEC_UPDATE_PARENTS_MASK) {
+		return;
+	}
+
+	/* if children dependant and we are at leaf level, nothing to do */
+	if (keydef->flags & KEYSPEC_UPDATE_CHILDREN_MASK &&
+	    pargs->which == XTREE_LEAF)
+		return;
+
+	/* only work on keys related to the targeted layout */
+	if (strncmp(keydef->plugin->name, pargs->enode->layout->type,
+		    PATHLEN)) {
+		return;
+	}
+
+	/* get ref_key (identical if not defined) */
+	if (keydef->ref_key != NULL) {
+		ref_keydef = xhash_get(mgr->keydefs, keydef->ref_key);
+		if (!ref_keydef) {
+			debug2("layouts: autoupdate: key='%s': invalid "
+			       "ref_key='%s'", keydef->key, keydef->ref_key);
+			return;
+		}
+	} else {
+		ref_keydef = keydef;
+	}
+
+	/* process parents aggregation
+	 * for now, xtree only provides one parent so any update op
+	 * (MAX, MIN, FSHARE, ...) is a setter */
+	if ((action = keydef->flags & KEYSPEC_UPDATE_PARENTS_MASK) &&
+	    (pargs->which == XTREE_PREORDER || pargs->which == XTREE_LEAF) &&
+	    (node = ((xtree_node_t*)pargs->enode->node)->parent) != NULL ) {
+
+		/* get current node value reference */
+		oldvalue = entity_get_data_ref(cnode->entity, keydef->key);
+
+		/* get siblings count */
+		child = node->start;
+		count = 0;
+		while (child) {
+			count++;
+			child = child->next;
+		}
+
+		/* get parent node KV data ref */
+		enode = (entity_node_t*) xtree_node_get_data(node);
+		value = entity_get_data_ref(enode->entity, ref_keydef->key);
+		if (!value)
+			return;
+
+		/* only set operation currently provided for parents except
+		 * for fshare action */
+		_autoupdate_entity_kv(keydef, ref_keydef, S_P_OPERATOR_SET,
+				      oldvalue, value);
+		if (action == KEYSPEC_UPDATE_PARENTS_FSHARE) {
+			_autoupdate_entity_kv(keydef, ref_keydef,
+					      S_P_OPERATOR_AVG,
+					      oldvalue, (void*) &count);
+		}
+
+		return;
+	}
+
+	/* process children aggregation */
+	if ((action = keydef->flags & KEYSPEC_UPDATE_CHILDREN_MASK) &&
+	    pargs->which == XTREE_ENDORDER) {
+
+		/* get current node value reference */
+		oldvalue = entity_get_data_ref(cnode->entity, keydef->key);
+
+		/* get children count */
+		node = (xtree_node_t*)cnode->node;
+		child = node->start;
+		count = 0;
+		while (child) {
+			count++;
+			child = child->next;
+		}
+
+		/* no action if no children */
+		if (count == 0)
+			return;
+
+		/* if count action, do what is necessary and return */
+		if (action == KEYSPEC_UPDATE_CHILDREN_COUNT) {
+			_autoupdate_entity_kv(keydef, ref_keydef,
+					      S_P_OPERATOR_SET,
+					      oldvalue, (void*) &count);
+			return;
+		}
+
+		/* iterate on the children */
+		setter = 1;
+		child = node->start;
+		while (child) {
+			/* get child node KV data ref */
+			enode = (entity_node_t*) xtree_node_get_data(child);
+			value = entity_get_data_ref(enode->entity,
+						    ref_keydef->key);
+
+			if (!value) {
+				/* try next child */
+				child = child-> next;
+				continue;
+			}
+
+			switch (action) {
+			case KEYSPEC_UPDATE_CHILDREN_SUM:
+			case KEYSPEC_UPDATE_CHILDREN_AVG:
+				/* first child is a setter */
+				if (setter) {
+					operator = S_P_OPERATOR_SET;
+					setter = 0;
+				}
+				else
+					operator = S_P_OPERATOR_ADD;
+				break;
+			case KEYSPEC_UPDATE_CHILDREN_MIN:
+				operator = S_P_OPERATOR_SET_IF_MIN;
+				break;
+			case KEYSPEC_UPDATE_CHILDREN_MAX:
+				operator = S_P_OPERATOR_SET_IF_MAX;
+				break;
+			default:
+				/* should not be called! */
+				return;
+			}
+
+			/* update the value according to the operator */
+			_autoupdate_entity_kv(keydef, ref_keydef, operator,
+					      oldvalue, value);
+
+			/* then next child */
+			child = child-> next;
+		}
+
+		/* if average action, do what is necessary before return */
+		if (action == KEYSPEC_UPDATE_CHILDREN_AVG) {
+			_autoupdate_entity_kv(keydef, ref_keydef,
+					      S_P_OPERATOR_AVG,
+					      oldvalue, (void*) &count);
+			return;
+		}
+
+		return;
+	}
+
+}
+
+/*
+ * _autoupdate_layout_tree : internal function used when automatically
+ * updating elements of a layout tree using _layouts_autoupdate_layout */
+static uint8_t _autoupdate_layout_tree(xtree_node_t* node, uint8_t which,
+				       uint32_t level, void* arg)
+{
+	xtree_node_t* child;
+	entity_node_t* cnode;
+	entity_node_t* enode;
+	_autoupdate_tree_args_t sync_args;
+
+	/* only need to work for preorder, leaf and endorder cases */
+	if (which != XTREE_PREORDER &&
+	    which != XTREE_LEAF &&
+	    which != XTREE_ENDORDER) {
+		return 1;
+	}
+
+	/* extract current node entity_node to next browsing */
+	cnode = (entity_node_t*) xtree_node_get_data(node);
+
+	/* prepare downcall args */
+	sync_args.enode = cnode;
+	sync_args.which = which;
+	sync_args.level = level;
+
+	/* iterate over the K/V of the entity, syncing them according
+	 * to their autoupdate flags */
+	xhash_walk(cnode->entity->data, _tree_update_node_entity_data,
+		   &sync_args);
+
+	return 1;
+}
+
+/* helper function used to automatically update a layout internal
+ * entities KVs based on inheritance relations (parents/children) */
+int _layouts_autoupdate_layout(layout_t* layout)
+{
+	/* autoupdate according to the layout struct type */
+	switch(layout->struct_type) {
+	case LAYOUT_STRUCT_TREE:
+		xtree_walk(layout->tree, NULL, 0,
+			   XTREE_LEVEL_MAX,
+			   _autoupdate_layout_tree, NULL);
+		break;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* helper function used to automatically update a layout internal
+ * entities KVs based on inheritance relations (parents/children)
+ * only when allowed by the associated plugin */
+int _layouts_autoupdate_layout_if_allowed(layout_t* layout)
+{
+	int i, rc = SLURM_ERROR;
+	/* look if the corresponding layout plugin enables autoupdate */
+	for (i = 0; i < mgr->plugins_count; i++) {
+		if (mgr->plugins[i].layout = layout) {
+			rc = SLURM_SUCCESS;
+			/* no autoupdate allowed, return success */
+			if (!mgr->plugins[i].ops->spec->autoupdate)
+				rc = SLURM_SUCCESS;
+			else
+				rc = _layouts_autoupdate_layout(layout);
+			break;
+		}
+	}
+	return rc;
+}
+
+/*****************************************************************************\
+ *                                   DEBUG DUMP                              *
+\*****************************************************************************/
 
 /*
  * For debug purposes, dump functions helping to print the layout mgr
@@ -2032,6 +2410,19 @@ exit:
 				break;
 			}
 		}
+		debug("layouts: loading stage 3");
+		for (i = 0; i < mgr->plugins_count; ++i) {
+			debug3("layouts: autoupdating %s",
+			       mgr->plugins[i].name);
+			if (mgr->plugins[i].ops->spec->autoupdate) {
+				if (_layouts_autoupdate_layout(mgr->plugins[i].
+							       layout) !=
+				    SLURM_SUCCESS) {
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+		}
 	}
 
 /*
@@ -2139,6 +2530,23 @@ int layouts_update_layout(char *l_type, Buf buffer)
 	      l_type);
 	slurm_mutex_unlock(&mgr->lock);
 	return SLURM_ERROR;
+}
+
+int layouts_autoupdate_layout(char *l_type)
+{
+	int rc = SLURM_ERROR;
+	layout_t* layout;
+
+	slurm_mutex_lock(&mgr->lock);
+	layout = layouts_get_layout_nolock(l_type);
+	if (layout == NULL) {
+		error("unable to get layout of type '%s'", l_type);
+	} else {
+		rc = _layouts_autoupdate_layout(layout);
+	}
+	slurm_mutex_unlock(&mgr->lock);
+
+	return rc;
 }
 
 int layouts_state_save_layout(char* l_type)
