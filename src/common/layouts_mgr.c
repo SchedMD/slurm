@@ -1426,7 +1426,7 @@ static int _layouts_read_config(layout_plugin_t* plugin)
  */
 static int _layouts_read_state(layout_plugin_t* plugin)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	struct stat stat_buf;
 	char *filename = _state_get_filename(plugin->layout->type);
 	if (!filename) {
@@ -2029,6 +2029,8 @@ static uint8_t _autoupdate_layout_tree(xtree_node_t* node, uint8_t which,
 
 	/* extract current node entity_node to next browsing */
 	cnode = (entity_node_t*) xtree_node_get_data(node);
+	if (!cnode)
+		return 1;
 
 	/* prepare downcall args */
 	sync_args.enode = cnode;
@@ -2068,7 +2070,6 @@ int _layouts_autoupdate_layout_if_allowed(layout_t* layout)
 	/* look if the corresponding layout plugin enables autoupdate */
 	for (i = 0; i < mgr->plugins_count; i++) {
 		if (mgr->plugins[i].layout == layout) {
-			rc = SLURM_SUCCESS;
 			/* no autoupdate allowed, return success */
 			if (!mgr->plugins[i].ops->spec->autoupdate)
 				rc = SLURM_SUCCESS;

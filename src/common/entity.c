@@ -75,8 +75,9 @@ static void _entity_node_destroy(void* x)
 	}
 }
 
-int _entity_add_data(const entity_t* entity, const char* key, void* value,
-		     size_t size, void (*_free)(void*), bool byreference)
+static int _entity_add_data(const entity_t* entity, const char* key,
+			    void* value, size_t size,
+			    void (*_free)(void*), bool byreference)
 {
 	entity_data_t* result;
 	entity_data_t* new_data_item;
@@ -210,8 +211,8 @@ typedef struct _entity_get_node_walk_st {
 	entity_node_t* node;
 } _entity_get_node_walk_t;
 
-void _entity_get_node_walkfunc(layout_t* layout,
-			       entity_node_t* node, void* arg)
+static void _entity_get_node_walkfunc(layout_t* layout,
+				      entity_node_t* node, void* arg)
 {
 	_entity_get_node_walk_t* real_arg =
 		(_entity_get_node_walk_t*) arg;

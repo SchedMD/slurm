@@ -1606,7 +1606,8 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 	for (i = 0; i < tables_count; ++i) {
 		if (item_count > 0) {
 			--item_count;
-			free(item_str);
+			if (item_str)
+				free(item_str);
 			item_str = hostlist_shift(item_hl);
 		}
 		/*
@@ -1623,7 +1624,8 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 		}
 	}
 
-	free(item_str);
+	if (item_str)
+		free(item_str);
 	return 1;
 }
 
@@ -1734,7 +1736,12 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 	char *leftover, *v;
 
 	if ((p = _conf_hashtbl_lookup(hashtbl, key)) == NULL) {
-		error("Parsing error at unrecognized key: %s", key);
+		error("%s: Parsing error at unrecognized key: %s",
+		      __func__, key);
+		return 0;
+	}
+	if (!value) {
+		error("%s: Value pointer is NULL for key %s", __func__, key);
 		return 0;
 	}
 	p-> operator = operator;
