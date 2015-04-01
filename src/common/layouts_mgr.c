@@ -336,15 +336,384 @@ static void _normalize_keydef_mgrkey(char* buffer, uint32_t size,
 
 static void _entity_add_data(entity_t* e, const char* key, void* data)
 {
-	int rc;
 	layouts_keydef_t* hkey = xhash_get(mgr->keydefs, key);
 	xassert(hkey);
 	void (*freefunc)(void* p) = xfree_as_callback;
-	if (hkey->type == L_T_CUSTOM) {
+	if (hkey && hkey->type == L_T_CUSTOM) {
 		freefunc = hkey->custom_destroy;
 	}
-	rc = entity_add_data(e, hkey->key, data, freefunc);
-	xassert(rc);
+	entity_set_data_ref(e, hkey->key, data, freefunc);
+}
+
+/*****************************************************************************\
+ *                       LAYOUTS INTERNAL LOCKLESS API                       *
+\*****************************************************************************/
+layouts_keydef_t* _layouts_entity_get_kv_keydef(layout_t* l, entity_t* e,
+						char* key)
+{
+	char keytmp[PATHLEN];
+	if (l== NULL || e == NULL || key == NULL)
+		return NULL;
+	_normalize_keydef_key(keytmp, PATHLEN, key, l->type);
+	return xhash_get(mgr->keydefs, keytmp);
+}
+
+int _layouts_entity_get_kv_type(layout_t* l, entity_t* e, char* key)
+{
+	layouts_keydef_t* keydef;
+	keydef = _layouts_entity_get_kv_keydef(l, e, key);
+	if (keydef != NULL) {
+		return keydef->type;
+	}
+	return SLURM_ERROR;
+}
+
+int _layouts_entity_get_kv_flags(layout_t* l, entity_t* e, char* key)
+{
+	layouts_keydef_t* keydef;
+	keydef = _layouts_entity_get_kv_keydef(l, e, key);
+	if (keydef != NULL) {
+		return keydef->flags;
+	}
+	return SLURM_ERROR;
+}
+
+int _layouts_entity_get_kv_size(layout_t* l, entity_t* e, char* key, size_t *size)
+{
+	layouts_keydef_t* keydef;
+	keydef = _layouts_entity_get_kv_keydef(l, e, key);
+	if (keydef != NULL) {
+		switch(keydef->type) {
+		case L_T_ERROR:
+			return SLURM_ERROR;
+		case L_T_STRING:
+			*size = sizeof(void*);
+			break;
+		case L_T_CUSTOM:
+			*size = sizeof(void*);
+			break;
+		case L_T_LONG:
+			*size = sizeof(long);
+			break;
+		case L_T_UINT16:
+			*size = sizeof(uint16_t);
+			break;
+		case L_T_UINT32:
+			*size = sizeof(uint32_t);
+			break;
+		case L_T_BOOLEAN:
+			*size = sizeof(bool);
+			break;
+		case L_T_FLOAT:
+			*size = sizeof(float);
+			break;
+		case L_T_DOUBLE:
+			*size = sizeof(double);
+			break;
+		case L_T_LONG_DOUBLE:
+			*size = sizeof(long double);
+			break;
+		}
+	} else
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
+}
+
+bool _layouts_entity_check_kv_keytype(layout_t* l, entity_t* e, char* key,
+				      layouts_keydef_types_t key_type)
+{
+	layouts_keydef_types_t real_type;
+	if (l== NULL || e == NULL || key == NULL)
+		return SLURM_ERROR;
+	if (key_type) {
+		real_type = _layouts_entity_get_kv_type(l, e, key);
+		return (real_type == key_type);
+	}
+	/* no key type provided, consider that as a no-check request */
+	return true;
+}
+
+int _layouts_entity_push_kv(layout_t* l, entity_t* e, char* key)
+{
+	return SLURM_ERROR;
+}
+
+int _layouts_entity_pull_kv(layout_t* l, entity_t* e, char* key)
+{
+	return SLURM_ERROR;
+}
+
+int _layouts_entity_set_kv(layout_t* l, entity_t* e, char* key, void* value,
+			   layouts_keydef_types_t key_type)
+{
+	void* data;
+	size_t size;
+	layouts_keydef_types_t real_type;
+	char key_keydef[PATHLEN];
+
+	if (l== NULL || e == NULL || key == NULL || value == NULL)
+		return SLURM_ERROR;
+
+	real_type = _layouts_entity_get_kv_type(l, e, key);
+	if (key_type > 0 && real_type != key_type)
+		return SLURM_ERROR;
+
+	_normalize_keydef_key(key_keydef, PATHLEN, key, l->type);
+
+	switch(real_type) {
+	case L_T_ERROR:
+		return SLURM_ERROR;
+	case L_T_STRING:
+		data = xstrdup(value);
+		return entity_set_data_ref(e, key_keydef, data,
+					   xfree_as_callback);
+	case L_T_CUSTOM:
+		/* TBD : add a custom_set call */
+		value = NULL;
+		return SLURM_ERROR;
+	case L_T_LONG:
+		size = sizeof(long);
+		break;
+	case L_T_UINT16:
+		size = sizeof(uint16_t);
+		break;
+	case L_T_UINT32:
+		size = sizeof(uint32_t);
+		break;
+	case L_T_BOOLEAN:
+		size = sizeof(bool);
+		break;
+	case L_T_FLOAT:
+		size = sizeof(float);
+		break;
+	case L_T_DOUBLE:
+		size = sizeof(double);
+		break;
+	case L_T_LONG_DOUBLE:
+		size = sizeof(long double);
+		break;
+	}
+	return entity_set_data(e, key_keydef, value, size);
+}
+
+int _layouts_entity_set_kv_ref(layout_t* l, entity_t* e, char* key, void* value,
+			       layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	char key_keydef[PATHLEN];
+
+	if (l== NULL || e == NULL || key == NULL || value == NULL)
+		return rc;
+
+	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
+		return rc;
+
+	_normalize_keydef_key(key_keydef, PATHLEN, key, l->type);
+	return entity_set_data_ref(e, key_keydef, value, xfree_as_callback);
+}
+
+int _layouts_entity_setpush_kv(layout_t* l, entity_t* e, char* key, void* value,
+			       layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	if (_layouts_entity_set_kv(l, e, key, value, key_type) == SLURM_SUCCESS)
+		rc = _layouts_entity_push_kv(l, e, key);
+	return rc;
+}
+
+int _layouts_entity_setpush_kv_ref(layout_t* l, entity_t* e, char* key,
+				   void* value, layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	if (_layouts_entity_set_kv_ref(l, e, key, value, key_type) ==
+	    SLURM_SUCCESS)
+		rc = _layouts_entity_push_kv(l, e, key);
+	return rc;
+}
+
+int _layouts_entity_get_kv(layout_t* l, entity_t* e, char* key, void* value,
+			   layouts_keydef_types_t key_type)
+{
+	void* data;
+	size_t size;
+	layouts_keydef_types_t real_type;
+	char key_keydef[PATHLEN];
+	char ** pstr;
+
+	if (l== NULL || e == NULL || key == NULL || value == NULL)
+		return SLURM_ERROR;
+
+	real_type = _layouts_entity_get_kv_type(l, e, key);
+	if (key_type > 0 && real_type != key_type)
+		return SLURM_ERROR;
+
+	_normalize_keydef_key(key_keydef, PATHLEN, key, l->type);
+
+	data = entity_get_data_ref(e, key_keydef);
+	if (data == NULL) {
+		return SLURM_ERROR;
+	}
+
+	switch(real_type) {
+	case L_T_ERROR:
+		return SLURM_ERROR;
+	case L_T_STRING:
+		pstr = (char**) value;
+		if (data)
+			*pstr = xstrdup(data);
+		else
+			*pstr = NULL;
+		return SLURM_SUCCESS;
+	case L_T_CUSTOM:
+		/* TBD : add a custom_get call */
+		pstr = (char**) value;
+		*pstr = NULL;
+		return SLURM_ERROR;
+	case L_T_LONG:
+		size = sizeof(long);
+		break;
+	case L_T_UINT16:
+		size = sizeof(uint16_t);
+		break;
+	case L_T_UINT32:
+		size = sizeof(uint32_t);
+		break;
+	case L_T_BOOLEAN:
+		size = sizeof(bool);
+		break;
+	case L_T_FLOAT:
+		size = sizeof(float);
+		break;
+	case L_T_DOUBLE:
+		size = sizeof(double);
+		break;
+	case L_T_LONG_DOUBLE:
+		size = sizeof(long double);
+		break;
+	}
+	memcpy(value, data, size);
+	return SLURM_SUCCESS;
+}
+
+int _layouts_entity_get_mkv(layout_t* l, entity_t* e, char* keys, void* value,
+			    size_t length, layouts_keydef_types_t key_type)
+{
+	char *key = NULL;
+	hostlist_t kl;
+	size_t processed = 0;
+	size_t elt_size = sizeof(void*);;
+	int rc = 0;
+
+	/* expand in order the requested keys (in hostlist format)
+	 * and iterate over each one of them, collecting the different
+	 * values into the provided buffer.
+	 * if no more space is available in the buffer, then just count
+	 * the missing elements for the exit code.
+	 * the first error encountered fakes a full buffer to just add
+	 * the remaining keys to the missing elements count before
+	 * exiting. */
+	kl = hostlist_create(keys);
+	while ((key = hostlist_shift(kl))) {
+		if (processed >= length) {
+			rc++;
+			continue;
+		}
+		if (_layouts_entity_get_kv_size(l, e, key, &elt_size) ||
+		    (processed + elt_size) > length ||
+		    _layouts_entity_get_kv(l, e, key, value, key_type)) {
+			rc++;
+			processed = length;
+			continue;
+		}
+		value += elt_size;
+		processed += elt_size;
+	}
+	hostlist_destroy(kl);
+
+	return rc;
+}
+
+int _layouts_entity_get_kv_ref(layout_t* l, entity_t* e,
+			       char* key, void** value,
+			       layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	char key_keydef[PATHLEN];
+	void* data;
+
+	if (l== NULL || e == NULL || key == NULL || value == NULL)
+		return rc;
+
+	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
+		return rc;
+
+	_normalize_keydef_key(key_keydef, PATHLEN, key, l->type);
+	data = entity_get_data_ref(e, key_keydef);
+	if (data != NULL) {
+		*value = data;
+		rc = SLURM_SUCCESS;
+	}
+	return rc;
+}
+
+int _layouts_entity_get_mkv_ref(layout_t* l, entity_t* e, char* keys,
+				void* value, size_t length,
+				layouts_keydef_types_t key_type)
+{
+	char *key = NULL;
+	hostlist_t kl;
+	size_t processed = 0;
+	size_t elt_size = sizeof(void*);
+	int rc = 0;
+
+	/* expand in order the requested keys (in hostlist format)
+	 * and iterate over each one of them, collecting the different
+	 * references into the provided buffer.
+	 * if no more space is available in the buffer, then just count
+	 * the missing elements for the exit code.
+	 * the first error encountered fakes a full buffer to just add
+	 * the remaining keys to the missing elements count before
+	 * exiting. */
+	kl = hostlist_create(keys);
+	while ((key = hostlist_shift(kl))) {
+		if (processed >= length) {
+			rc++;
+			continue;
+		}
+		if (_layouts_entity_get_kv_ref(l, e, key, value, key_type)) {
+			rc++;
+			processed = length;
+			continue;
+		}
+		value += elt_size;
+		processed += elt_size;
+	}
+	hostlist_destroy(kl);
+
+	return rc;
+}
+
+int _layouts_entity_pullget_kv(layout_t* l, entity_t* e, char* key, void* value,
+			       layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
+		return rc;
+	if (_layouts_entity_pull_kv(l, e, key) == SLURM_SUCCESS)
+		rc = _layouts_entity_get_kv(l, e, key, value, key_type);
+	return rc;
+}
+
+int _layouts_entity_pullget_kv_ref(layout_t* l, entity_t* e,
+				   char* key, void** value,
+				   layouts_keydef_types_t key_type)
+{
+	int rc = SLURM_ERROR;
+	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
+		return rc;
+	if (_layouts_entity_pull_kv(l, e, key) == SLURM_SUCCESS)
+		rc = _layouts_entity_get_kv_ref(l, e, key, value, key_type);
+	return rc;
 }
 
 /*****************************************************************************\
@@ -576,43 +945,46 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 
 #define _layouts_load_merge(type_t, s_p_get_type) {			\
 		type_t newvalue;					\
-		type_t** oldvalue;					\
+		type_t* oldvalue;					\
 		slurm_parser_operator_t operator = S_P_OPERATOR_SET;	\
 		if (!s_p_get_type(&newvalue, option_key, etbl)) {	\
 			/* no value to merge/create */			\
 			continue;					\
 		}							\
 		s_p_get_operator(&operator, option_key, etbl);		\
-		oldvalue = (type_t**)entity_get_data(e, key_keydef);	\
+		oldvalue = (type_t*)entity_get_data_ref(e, key_keydef); \
 		if (oldvalue) {						\
 			switch (operator) {				\
 			case S_P_OPERATOR_SET:				\
-				**oldvalue = newvalue;			\
+				*oldvalue = newvalue;			\
 				break;					\
 			case S_P_OPERATOR_ADD:				\
-				**oldvalue += newvalue;			\
+				*oldvalue += newvalue;			\
 				break;					\
 			case S_P_OPERATOR_SUB:				\
-				**oldvalue -= newvalue;			\
+				*oldvalue -= newvalue;			\
 				break;					\
 			case S_P_OPERATOR_MUL:				\
-				**oldvalue *= newvalue;			\
+				*oldvalue *= newvalue;			\
 				break;					\
 			case S_P_OPERATOR_DIV:				\
 				if (newvalue != 0)			\
-					**oldvalue /= newvalue;		\
-				else					\
-					error("layouts: load_merge key=%s val=0 " \
-					      "operator=DIV !! skipping !!", \
+					*oldvalue /= newvalue;		\
+				else {					\
+					error("layouts: load_merge "	\
+					      "key=%s val=0 operator="	\
+					      "DIV !! skipping !!",	\
 					      option_key);		\
+				}					\
 				break;					\
 			}						\
 		} else {						\
-			type_t* newalloc = (type_t*)xmalloc(sizeof(type_t)); \
+			type_t* newalloc = (type_t*)			\
+				xmalloc(sizeof(type_t));		\
 			*newalloc = newvalue;				\
 			_entity_add_data(e, key_keydef, newalloc);	\
 		}							\
-	}
+	}								\
 
 #define _layouts_merge_check(type1, type2)			\
 	(entity_option->type == type1 && keydef->type == type2)
@@ -681,27 +1053,27 @@ static void _layouts_parse_relations(layout_plugin_t* plugin, entity_t* e,
 				     s_p_hashtbl_t* entity_tbl)
 {
 	char* e_enclosed;
-	char** e_already_enclosed;
+	char* e_already_enclosed;
+	char* e_new_enclosed;
 	char key[PATHLEN];
 	switch(plugin->layout->struct_type) {
 	case LAYOUT_STRUCT_TREE:
 		if (s_p_get_string(&e_enclosed, "Enclosed", entity_tbl)) {
 			_normalize_keydef_mgrkey(key, PATHLEN, "enclosed",
 						 plugin->layout->type);
-			e_already_enclosed = (char**)entity_get_data(e, key);
+			e_already_enclosed = (char*)
+				entity_get_data_ref(e, key);
 			if (e_already_enclosed) {
-				/* FC expressed warnings about that section,
-				 * should be checked more */
-				*e_already_enclosed = xrealloc(
-					*e_already_enclosed,
-					strlen(*e_already_enclosed) +
+				e_new_enclosed = (char*) xmalloc(
+					strlen(e_already_enclosed) +
 					strlen(e_enclosed) + 2);
-				strcat(*e_already_enclosed, ",");
-				strcat(*e_already_enclosed, e_enclosed);
+				strcat(e_new_enclosed, e_already_enclosed);
+				strcat(e_new_enclosed, ",");
+				strcat(e_new_enclosed, e_enclosed);
 				xfree(e_enclosed);
-			} else {
-				_entity_add_data(e, key, e_enclosed);
+				e_enclosed = e_new_enclosed;
 			}
+			_entity_add_data(e, key, e_enclosed);
 		}
 		break;
 	}
@@ -1024,11 +1396,11 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 	_layouts_build_xtree_walk_t* p = (_layouts_build_xtree_walk_t*)arg;
 	entity_t* e;
 	entity_node_t* enode;
-	char** enclosed_str;
+	char* enclosed_str;
 	char* enclosed_name;
 	hostlist_t enclosed_hostlist;
 	entity_t* enclosed_e;
-	xtree_node_t* enclosed_node,* inserted_node;
+	xtree_node_t* enclosed_node;
 
 	xassert(arg);
 
@@ -1048,11 +1420,10 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 	if (which != XTREE_GROWING && which != XTREE_PREORDER)
 		return 1;
 
-	enclosed_str = (char**)entity_get_data(e, p->enclosed_key);
+	enclosed_str = (char*) entity_get_data_ref(e, p->enclosed_key);
 
 	if (enclosed_str) {
-		enclosed_hostlist = hostlist_create(*enclosed_str);
-		xfree(*enclosed_str);
+		enclosed_hostlist = hostlist_create(enclosed_str);
 		entity_delete_data(e, p->enclosed_key);
 		while ((enclosed_name = hostlist_shift(enclosed_hostlist))) {
 			enclosed_e = xhash_get(mgr->entities, enclosed_name);
@@ -1446,6 +1817,7 @@ static void _dump_layouts(void* item, void* arg)
 	}
 }
 #endif
+
 
 /*****************************************************************************\
  *                             SLURM LAYOUTS API                             *
@@ -1852,4 +2224,105 @@ int layouts_state_save(void)
 	xhash_walk(mgr->layouts,  _state_save_layout, NULL);
 	END_TIMER2("layouts_state_save");
 	return SLURM_SUCCESS;
+}
+
+#define _layouts_entity_wrapper(func, l, e, r...)			\
+	layout_t* layout;						\
+	entity_t* entity;						\
+	int rc;								\
+	slurm_mutex_lock(&mgr->lock);					\
+	layout = layouts_get_layout_nolock(l);				\
+	entity = layouts_get_entity_nolock(e);				\
+	rc = func(layout, entity, ##r);					\
+	slurm_mutex_unlock(&mgr->lock);					\
+	return rc;							\
+
+int layouts_entity_get_kv_type(char* l, char* e, char* key)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_kv_type,l,e,key);
+}
+
+int layouts_entity_get_kv_flags(char* l, char* e, char* key)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_kv_flags, l, e, key);
+}
+
+int layouts_entity_push_kv(char* l, char* e, char* key)
+{
+	_layouts_entity_wrapper(_layouts_entity_push_kv, l, e, key);
+}
+
+int layouts_entity_pull_kv(char* l, char* e, char* key)
+{
+	_layouts_entity_wrapper(_layouts_entity_pull_kv, l, e, key);
+}
+
+int layouts_entity_set_kv(char* l, char* e, char* key, void* value,
+			  layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_set_kv, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_set_kv_ref(char* l, char* e, char* key, void* value,
+			      layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_set_kv_ref, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_setpush_kv(char* l, char* e, char* key, void* value,
+			      layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_setpush_kv, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_setpush_kv_ref(char* l, char* e, char* key, void* value,
+				  layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_setpush_kv_ref, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_get_kv(char* l, char* e, char* key, void* value,
+			  layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_kv, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_get_mkv(char* l, char* e, char* keys, void* value,
+			   size_t size, layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_mkv, l, e,
+				keys, value, size, key_type);
+}
+
+int layouts_entity_get_kv_ref(char* l, char* e, char* key, void** value,
+			      layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_kv_ref, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_get_mkv_ref(char* l, char* e, char* keys, void* value,
+			       size_t size, layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_get_mkv_ref, l, e,
+				keys, value, size, key_type);
+}
+
+int layouts_entity_pullget_kv(char* l, char* e, char* key, void* value,
+			      layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_pullget_kv, l, e,
+				key, value, key_type);
+}
+
+int layouts_entity_pullget_kv_ref(char* l, char* e, char* key, void** value,
+				  layouts_keydef_types_t key_type)
+{
+	_layouts_entity_wrapper(_layouts_entity_pullget_kv_ref, l, e,
+				key, value, key_type);
 }

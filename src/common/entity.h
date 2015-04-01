@@ -112,7 +112,21 @@ const char* entity_get_name(const entity_t* entity);
 const char* entity_get_type(const entity_t* entity);
 
 /*
- * entity_get_data - get the address of the pointer to the data associated
+ * entity_get_data - copy the content of the data associated to a particular key
+ *       of an entity into a buffer up to the requested size
+ *
+ * IN entity - the entity struct to use
+ * IN key - the targeted key
+ * IN value - ponter to the mem area to fill
+ * IN size - size of the mem area to copy
+ *
+ * Return SLURM_SUCCESS or SLURM_ERROR if no element found
+ */
+int entity_get_data(const entity_t* entity, const char* key,
+		    void* value, size_t size);
+
+/*
+ * entity_get_data_ref - get the address of the pointer to the data associated
  *       with a particular key of an entity
  *
  * IN entity - the entity struct to use
@@ -121,10 +135,28 @@ const char* entity_get_type(const entity_t* entity);
  * Return value is the address of the (void*) pointer to the data associated to
  *       the key or NULL in case of error
  */
-void** entity_get_data(const entity_t* entity, const char* key);
+void* entity_get_data_ref(const entity_t* entity, const char* key);
 
 /*
- * entity_add_data - associate data to a particular key of an entity
+ * entity_set_data - copy the content of the input buffer up to the requested
+ *       size into the the buffer associated to a particular key of an entity
+ *       (note that the entity key value's buffer is allocated internally if
+ *       necessary)
+ *
+ * IN entity - the entity struct to use
+ * IN key - the targeted key
+ * IN value - ponter to the mem area to fill with
+ * IN size - size of the mem area to copy
+ *
+ * Return SLURM_SUCCESS or SLURM_ERROR if no element found
+ */
+int entity_set_data(const entity_t* entity, const char* key,
+		    void* value, size_t size);
+
+/*
+ * entity_set_data_ref - associate a particular key of an entity with the
+ *       input buffer, 
+ *       with a particular key of an entity
  *
  * IN entity - the entity struct to use
  * IN key - the key the data must be associated to
@@ -133,10 +165,10 @@ void** entity_get_data(const entity_t* entity, const char* key);
  * IN _free - a function to apply on the former value in case it exists
  *       before overriding
  *
- * Return 1 if the value was successfully associated or 0 otherwise
+ * Return SLURM_SUCCESS or SLURM_ERROR in case of error
  */
-int entity_add_data(entity_t* entity, const char* key, void* value,
-		    void (*_free)(void*));
+int entity_set_data_ref(const entity_t* entity, const char* key, void* value,
+			void (*_free)(void*));
 
 /*
  * entity_delete_data - delete the data associated with a particular key

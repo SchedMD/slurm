@@ -35,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "string.h"
+
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
@@ -46,13 +48,22 @@
 
 
 /*****************************************************************************\
- *                                 FUNCTIONS                                 *
+ *                                 HELPERS                                   *
 \*****************************************************************************/
 
 static const char* _entity_data_identify(void* item)
 {
 	entity_data_t* data_item = (entity_data_t*)item;
 	return data_item->key;
+}
+
+static void _entity_data_destroy(void* x)
+{
+	entity_data_t* entity_data = (entity_data_t*)x;
+	if (entity_data) {
+		xfree(entity_data->value);
+		xfree(entity_data);
+	}
 }
 
 static void _entity_node_destroy(void* x)
@@ -64,11 +75,57 @@ static void _entity_node_destroy(void* x)
 	}
 }
 
+int _entity_add_data(const entity_t* entity, const char* key, void* value,
+		     size_t size, void (*_free)(void*), bool byreference)
+{
+	entity_data_t* result;
+	entity_data_t* new_data_item;
+
+	if (!key || !*key || !value)
+		return SLURM_ERROR;
+
+	result = (entity_data_t*)xhash_get(entity->data, key);
+	if (result != NULL) {
+		/* update existing value by ref or by override */
+		if (byreference) {
+			if (_free)
+				_free(result->value);
+			result->value = value;
+		} else {
+			memcpy(result->value, value, size);
+		}
+		return SLURM_SUCCESS;
+	}
+
+	/* add a new KV if not already existing, by ref or allocating
+	 * a new buffer and dumping the provided input */
+	new_data_item = (entity_data_t*)xmalloc(sizeof(entity_data_t));
+	new_data_item->key = key;
+	if (byreference) {
+		new_data_item->value = value;
+	} else {
+		new_data_item->value = (void*) xmalloc(size);
+		memcpy(new_data_item->value, value, size);
+	}
+	result = xhash_add(entity->data, new_data_item);
+	if (result == NULL) {
+		xfree(new_data_item);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*****************************************************************************\
+ *                                 FUNCTIONS                                 *
+\*****************************************************************************/
+
 void entity_init(entity_t* entity, const char* name, const char* type)
 {
 	entity->name = xstrdup(name);
 	entity->type = xstrdup(type);
-	entity->data = xhash_init(_entity_data_identify, NULL, NULL, 0);
+	entity->data = xhash_init(_entity_data_identify,
+				  (xhash_freefunc_t)_entity_data_destroy,
+				  NULL, 0);
 	entity->nodes = list_create(_entity_node_destroy);
 	entity->ptr = NULL;
 }
@@ -93,38 +150,37 @@ const char* entity_get_type(const entity_t* entity)
 	return entity->type;
 }
 
-void** entity_get_data(const entity_t* entity, const char* key)
+int entity_get_data(const entity_t* entity, const char* key,
+		    void* value, size_t size)
+{
+	void* data = NULL;
+	data = entity_get_data_ref(entity, key);
+	if (data != NULL) {
+		memcpy(value, data, size);
+		return SLURM_SUCCESS;
+	}
+	return SLURM_ERROR;
+}
+
+void* entity_get_data_ref(const entity_t* entity, const char* key)
 {
 	entity_data_t* data = (entity_data_t*)xhash_get(entity->data, key);
 	if (data) {
-		return &data->value;
+		return data->value;
 	}
 	return NULL;
 }
 
-int entity_add_data(entity_t* entity, const char* key, void* value,
-		    void (*_free)(void*))
+int entity_set_data(const entity_t* entity, const char* key,
+		    void* value, size_t size)
 {
-	entity_data_t* result;
-	entity_data_t* new_data_item;
-	if (!key || !*key || !value)
-		return 0;
-	result = (entity_data_t*)xhash_get(entity->data, key);
-	if (result != NULL) {
-		if (_free)
-			_free(result->value);
-		result->value = value;
-		return 1;
-	}
-	new_data_item = (entity_data_t*)xmalloc(sizeof(entity_data_t));
-	new_data_item->key = key;
-	new_data_item->value = value;
-	result = xhash_add(entity->data, new_data_item);
-	if (result == NULL) {
-		xfree(new_data_item);
-		return 0;
-	}
-	return 1;
+	return _entity_add_data(entity, key, value, size, NULL, false);
+}
+
+int entity_set_data_ref(const entity_t* entity, const char* key, void* value,
+			void (*_free)(void*))
+{
+	return _entity_add_data(entity, key, value, 0, _free, true);
 }
 
 void entity_delete_data(entity_t* entity, const char* key)
