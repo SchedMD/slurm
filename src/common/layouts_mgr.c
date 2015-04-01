@@ -50,9 +50,11 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_conf.h"
+#include "src/common/pack.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/timers.h"
 #include "src/common/xstring.h"
 #include "src/common/xtree.h"
 #include "src/common/xmalloc.h"
@@ -751,7 +753,7 @@ static int _layouts_read_config(layout_plugin_t* plugin)
 			      "skipping...", i);
 			continue;
 		}
-		
+
 		/* look for the entity in the entities hash table*/
 		e = xhash_get(mgr->entities, e_name);
 		if (!e) {
@@ -836,7 +838,7 @@ static int _layouts_read_config(layout_plugin_t* plugin)
 			goto cleanup;
 		}
 	}
-	
+
 	rc = SLURM_SUCCESS;
 
 cleanup:
@@ -897,7 +899,7 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 			}
 			free(enclosed_name);
 			enclosed_node = xtree_add_child(p->tree, node,
-							enclosed_e, 
+							enclosed_e,
 							XTREE_APPEND);
 			xassert(enclosed_node);
 			inserted_node = list_append(enclosed_e->nodes,
@@ -946,6 +948,216 @@ static int _layouts_build_relations(layout_plugin_t* plugin)
 		break;
 	}
 	return SLURM_SUCCESS;
+}
+
+/*
+ * _pack_args_t : helper struct/type used when passing args among the various
+ * functions used when packing layouts into a buffer as a set of strings.
+ */
+typedef struct _pack_args {
+	Buf       buffer;
+	char      *current_line;
+	layout_t* layout;
+} _pack_args_t;
+
+/*
+ * _pack_data_key : internal function used to get the key=val
+ * string representation of a particular entity data value
+ *
+ */
+static char* _pack_data_key(layouts_keydef_t* keydef, void* value)
+{
+	char val;
+	if (!keydef) {
+		return NULL;
+	}
+	switch(keydef->type) {
+	case L_T_ERROR:
+		return NULL;
+	case L_T_STRING:
+		return xstrdup_printf("%s=%s", keydef->shortkey,
+				      (char*)value);
+	case L_T_LONG:
+		return xstrdup_printf("%s=%ld", keydef->shortkey,
+				      *(long*)value);
+	case L_T_UINT16:
+		return xstrdup_printf("%s=%u", keydef->shortkey,
+				      *(uint16_t*)value);
+	case L_T_UINT32:
+		return xstrdup_printf("%s=%"PRIu32, keydef->shortkey,
+				      *(uint32_t*)value);
+	case L_T_BOOLEAN:
+		val = *(bool*)value;
+		return xstrdup_printf("%s=%s", keydef->shortkey,
+				      val ? "true" : "false");
+	case L_T_FLOAT:
+		return xstrdup_printf("%s=%f", keydef->shortkey,
+				      *(float*)value);
+	case L_T_DOUBLE:
+		return xstrdup_printf("%s=%f", keydef->shortkey,
+				      *(double*)value);
+	case L_T_LONG_DOUBLE:
+		return xstrdup_printf("%s=%Lf", keydef->shortkey,
+				      *(long double*)value);
+	case L_T_CUSTOM:
+		if (keydef->custom_dump) {
+			return keydef->custom_dump(value);
+		} else
+			return NULL;
+	}
+	return NULL;
+}
+
+/*
+ * _pack_entity_layout_data : internal function used to append the
+ * key/value of a entity data element corresponding to the targeted
+ * layout when walking an entity list of entity data elements
+ *
+ * - append the " %key%=%val%" to the char* received as an input arg member
+ *
+ */
+static void _pack_entity_layout_data(void* item, void* arg)
+{
+	entity_data_t* data;
+	_pack_args_t *pargs;
+
+	layouts_keydef_t* keydef;
+	char *data_dump;
+
+	xassert(item);
+	xassert(arg);
+
+	data = (entity_data_t*) item;
+	pargs = (_pack_args_t *) arg;
+
+	/* the pack args must contain a valid char* to append to */
+	xassert(pargs->current_line);
+
+	/* we must be able to get the keydef associated to the data key */
+	xassert(data);
+	keydef = xhash_get(mgr->keydefs, data->key);
+	xassert(keydef);
+
+	/* only dump keys related to the targeted layout */
+	if (!strncmp(keydef->plugin->name, pargs->layout->type, PATHLEN)) {
+		data_dump = _pack_data_key(keydef, data->value);
+		/* avoid printing any error in case of NULL pointer returned */
+		if (data_dump) {
+			xstrcat(pargs->current_line, " ");
+			xstrcat(pargs->current_line, data_dump);
+			xfree(data_dump);
+		}
+	}
+
+	return;
+}
+
+/*
+ * _pack_layout_tree : internal function used when walking a layout tree
+ *
+ * - print one line per entity with the following pattern :
+ *  Entity=%name% [Type=%type%] [Enclosed=%childrens%] [key1=val1 ...]
+ *
+ * - potentially print an header line if the entity is the root like :
+ *  Root=%name%
+ *
+ */
+static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
+				 uint32_t level, void* arg)
+{
+	_pack_args_t *pargs;
+	xtree_node_t* child;
+	entity_t* e;
+	hostlist_t enclosed;
+	char *enclosed_str = NULL, *e_name = NULL, *e_type = NULL;
+	Buf buffer;
+	char *strdump, *str;
+
+	/* only need to work for preorder and leaf cases */
+	if (which != XTREE_PREORDER && which != XTREE_LEAF) {
+		return 1;
+	}
+
+	/* get the buffer we need to pack the data too */
+	pargs = (_pack_args_t *) arg;
+	buffer = pargs->buffer;
+
+	/* aggregate children names to build the Enclosed=.. value */
+	if (which == XTREE_PREORDER) {
+		enclosed = hostlist_create(NULL);
+		child = node->start;
+		while (child) {
+			e = xtree_node_get_data(child);
+			if (!e) {
+				hostlist_push(enclosed, "NULL");
+			} else {
+				hostlist_push(enclosed, e->name);
+			}
+			child = child->next;
+		}
+		hostlist_uniq(enclosed);
+		if (hostlist_count(enclosed) > 0) {
+			enclosed_str = hostlist_ranged_string_xmalloc(enclosed);
+		}
+		hostlist_destroy(enclosed);
+	}
+
+	/* get the entity associated to this xtree node */
+	e = xtree_node_get_data(node);
+	if (!e) {
+		e_name = (char*) "NULL";
+		e_type = NULL;
+	}
+	else {
+		e_name = e->name;
+		e_type = e->type;
+	}
+
+	/* print this entity as root if necessary */
+	if (level == 0) {
+		str = xstrdup_printf("Root=%s\n", e_name);
+		packstr(str, buffer);
+		xfree(str);
+	}
+
+	/* print entity name and type when possible */
+	str = xstrdup_printf("Entity=%s", e_name);
+	if (e_type) {
+		strdump = xstrdup_printf("%s Type=%s", str, e_type);
+		xfree(str);
+		str = strdump;
+	}
+
+	/* add entity keys matching the layout to the current str */
+	pargs->current_line = str;
+	if (e)
+		xhash_walk(e->data, _pack_entity_layout_data, pargs);
+	/* the current line might have been extended/remalloced, so
+	 * we need to sync it again in str for further actions */
+	str = pargs->current_line;
+	pargs->current_line = NULL;
+
+	/* print enclosed entities if any */
+	if (!enclosed_str) {
+		xstrcat(str, "\n");
+	} else {
+		strdump = xstrdup_printf("%s Enclosed=%s\n", str, enclosed_str);
+		xfree(enclosed_str);
+		xfree(str);
+		str = strdump;
+	}
+	packstr(str, buffer);
+	xfree(str);
+
+	return 1;
+}
+
+/* helper function used by layouts_save_state when walking through
+ * the various layouts to save their state in Slurm state save location */
+static void _pack_layout(void* item, void* arg)
+{
+	layout_t* layout = (layout_t*)item;
+	layouts_state_save_layout(layout->type);
 }
 
 /*
@@ -1117,14 +1329,20 @@ int slurm_layouts_fini(void)
 
 	slurm_mutex_lock(&mgr->lock);
 
+	/* push layouts states to the state save location */
+	layouts_state_save();
+
+	/* free the layouts before destroying the plugins, 
+	 * otherwise we will get trouble xfreeing the layouts whose 
+	 * memory is owned by the plugins structs */
+	layouts_mgr_free(mgr);
+
 	for (i = 0; i < mgr->plugins_count; i++) {
 		_layout_plugins_destroy(&mgr->plugins[i]);
 	}
 	xfree(mgr->plugins);
 	mgr->plugins = NULL;
 	mgr->plugins_count = 0;
-
-	layouts_mgr_free(mgr);
 
 	slurm_mutex_unlock(&mgr->lock);
 
@@ -1279,7 +1497,7 @@ exit:
 	return rc;
 }
 
-layout_t* slurm_layouts_get_layout(const char* type)
+layout_t* layouts_get_layout(const char* type)
 {
 	layout_t* layout = (layout_t*)xhash_get(mgr->layouts, type);
 	return layout;
@@ -1289,4 +1507,130 @@ entity_t* slurm_layouts_get_entity(const char* name)
 {
 	entity_t* e = (entity_t*)xhash_get(mgr->entities, name);
 	return e;
+}
+
+int layouts_pack_layout(char *l_type, Buf buffer)
+{
+	_pack_args_t pargs;
+	layout_t* layout;
+	char *str;
+
+	layout = layouts_get_layout(l_type);
+	if (layout == NULL) {
+		error("unable to get layout of type '%s'", l_type);
+		return SLURM_ERROR;
+	}
+
+	/* initialize args for recursive packing */
+	pargs.buffer = buffer;
+	pargs.layout = layout;
+	pargs.current_line = NULL;
+
+	/* start by packing the layout priority */
+	str = xstrdup_printf("Priority=%u\n", layout->priority);
+	packstr(str, buffer);
+	xfree(str);
+
+	/* pack according to the layout struct type */
+	switch(layout->struct_type) {
+	case LAYOUT_STRUCT_TREE:
+		xtree_walk(layout->tree, NULL, 0, XTREE_LEVEL_MAX,
+			   _pack_layout_tree, &pargs);
+		break;
+	}
+
+	/* EOF */
+	packstr("", buffer);
+
+	return SLURM_SUCCESS;
+}
+
+int layouts_state_save_layout(char* l_type)
+{
+	int error_code = 0, log_fd;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	static int high_buffer_size = (1024 * 1024);
+	Buf buffer = init_buf(high_buffer_size);
+	FILE* fdump;
+	uint32_t utmp32;
+	char *tmp_str = NULL;
+
+	DEF_TIMERS;
+	START_TIMER;
+
+	/* pack the targeted layout into a tmp buffer */
+	error_code = layouts_pack_layout(l_type, buffer);
+	if (error_code != SLURM_SUCCESS) {
+		error("unable to save layout[%s] state", l_type);
+		return error_code;
+	}
+
+	/* rewind the freshly created buffer to unpack it into a file */
+	set_buf_offset(buffer, 0);
+
+	/* create working files */
+	reg_file = xstrdup_printf("%s/layouts_state_%s",
+				  slurmctld_conf.state_save_location,
+				  l_type);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
+	log_fd = creat(new_file, 0600);
+	if (log_fd < 0 || !(fdump = fdopen(log_fd, "w"))) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		/* start dumping packed strings into the temporary file */
+		while (remaining_buf(buffer) > 0) {
+			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
+			if (tmp_str != NULL) {
+				if (*tmp_str == '\0') {
+					xfree(tmp_str);
+					break;
+				}
+				fprintf(fdump, "%s", tmp_str);
+				xfree(tmp_str);
+				continue;
+			}
+		unpack_error:
+			error("layouts: saving '%s' state : unable to unpack "
+			      "string, buffer is %u/%u processed",
+			      buffer->processed, buffer->size);
+			break;
+		}
+		fflush(fdump);
+		fsync(log_fd);
+		fclose(fdump);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		if (link(reg_file, old_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file))
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	free_buf(buffer);
+
+	END_TIMER2("layouts_state_save_layout");
+
+	return SLURM_SUCCESS;
+}
+
+int layouts_state_save(void)
+{
+	DEF_TIMERS;
+	START_TIMER;
+	xhash_walk(mgr->layouts,  _pack_layout, NULL);
+	END_TIMER2("layouts_state_save");
+	return SLURM_SUCCESS;
 }

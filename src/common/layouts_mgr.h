@@ -41,6 +41,7 @@
 #include "src/common/list.h"
 #include "src/common/xhash.h"
 #include "src/common/xtree.h"
+#include "src/common/pack.h"
 #include "src/common/parse_config.h"
 
 #include "src/common/layout.h"
@@ -147,5 +148,37 @@ layout_t* slurm_layouts_get_layout(const char* type);
  * Return a pointer to the entity_t struct of the entity or NULL if not found
  */
 entity_t* slurm_layouts_get_entity(const char* name);
+
+/*
+ * layouts_pack_layout - pack the layout of the target type into the provided
+ *        buffer.
+ *
+ * The buffer will be appended with multiple strings representing an expanded
+ * form of its configuration element, terminated by a "\0" string.
+ *
+ * Return SLURM_SUCCES or SLURM_ERROR in case of failure
+ */
+int layouts_pack_layout(char *l_type, Buf buffer);
+
+/*
+ * layouts_state_save_layout - save the state of a particular layout
+ *        in the adhoc file in slurm state save location.
+ *
+ * The file produced will be an ASCII file created from the configuration
+ * strings packed using layouts_pack_layout(). Thus it will be the expanded
+ * form of the current configuration of the layout that could be used as
+ * a perfect updated replacement of the layout configuration file.
+ *
+ * Return SLURM_SUCCES or SLURM_ERROR in case of failure
+ */
+int layouts_state_save_layout(char* l_type);
+
+/*
+ * layouts_state_save - save the state of all the loaded layouts iterating
+ *        over each one of them and applying layouts_state_save_layout().
+ *
+ * Return SLURM_SUCCES or SLURM_ERROR in case of failure
+ */
+int layouts_state_save(void);
 
 #endif /* end of include guard: __LAYOUTS_MGR_1NRINRSD__INC__ */
