@@ -712,7 +712,8 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 {
 	char* root_nodename;
 	entity_t* e;
-	xtree_node_t* root_node,* inserted_node;
+	entity_node_t* enode;
+	xtree_node_t* root_node;
 	xtree_t* tree;
 	switch(plugin->layout->struct_type) {
 	case LAYOUT_STRUCT_TREE:
@@ -732,10 +733,11 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 			return SLURM_ERROR;
 		}
 		xfree(root_nodename);
-		root_node = xtree_add_child(tree, NULL, e, XTREE_APPEND);
+		enode = entity_add_node(e, plugin->layout);
+		xassert(enode);
+		root_node = xtree_add_child(tree, NULL, enode, XTREE_APPEND);
 		xassert(root_node);
-		inserted_node = list_append(e->nodes, root_node);
-		xassert(inserted_node == root_node);
+		enode->node = (void*) root_node;
 		break;
 	}
 	return SLURM_SUCCESS;
@@ -1009,6 +1011,7 @@ static int _layouts_update_state(layout_plugin_t* plugin, Buf buffer)
 }
 
 typedef struct _layouts_build_xtree_walk_st {
+	layout_t* layout;
 	char* enclosed_key;
 	xtree_t* tree;
 } _layouts_build_xtree_walk_t;
@@ -1020,6 +1023,7 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 {
 	_layouts_build_xtree_walk_t* p = (_layouts_build_xtree_walk_t*)arg;
 	entity_t* e;
+	entity_node_t* enode;
 	char** enclosed_str;
 	char* enclosed_name;
 	hostlist_t enclosed_hostlist;
@@ -1028,7 +1032,10 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 
 	xassert(arg);
 
-	e = xtree_node_get_data(node);
+	/* get the entity from the entity node associated with the tree node */
+	enode = (entity_node_t*) xtree_node_get_data(node);
+	xassert(enode);
+	e = enode->entity;
 	xassert(e);
 
 	/*
@@ -1058,13 +1065,18 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 				continue;
 			}
 			free(enclosed_name);
+			/* create an entity node associated to the entity 
+			 * for this layout */
+			enode = entity_add_node(enclosed_e, p->layout);
+			xassert(enode);
+			/* add it to the tree, getting an xtree_node_t ref */
 			enclosed_node = xtree_add_child(p->tree, node,
-							enclosed_e,
-							XTREE_APPEND);
+							enode, XTREE_APPEND);
 			xassert(enclosed_node);
-			inserted_node = list_append(enclosed_e->nodes,
-						    enclosed_node);
-			xassert(inserted_node == enclosed_node);
+			/* store the xtree_node_t ref in the entity node. It
+			 * will be used to access this layout tree from the
+			 * entity when necessary through the entity node */
+			enode->node = enclosed_node;
 		}
 		hostlist_destroy(enclosed_hostlist);
 	}
@@ -1096,6 +1108,7 @@ static int _layouts_build_relations(layout_plugin_t* plugin)
 		_normalize_keydef_mgrkey(key, PATHLEN, "enclosed",
 					 plugin->layout->type);
 		_layouts_build_xtree_walk_t p = {
+			plugin->layout,
 			key,
 			tree
 		};
@@ -1227,7 +1240,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 {
 	_pack_args_t *pargs;
 	xtree_node_t* child;
-	entity_t* e;
+	entity_node_t* enode;
 	hostlist_t enclosed;
 	char *enclosed_str = NULL, *e_name = NULL, *e_type = NULL;
 	Buf buffer;
@@ -1247,11 +1260,11 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 		enclosed = hostlist_create(NULL);
 		child = node->start;
 		while (child) {
-			e = xtree_node_get_data(child);
-			if (!e) {
+			enode = (entity_node_t*) xtree_node_get_data(child);
+			if (!enode || !enode->entity) {
 				hostlist_push(enclosed, "NULL");
 			} else {
-				hostlist_push(enclosed, e->name);
+				hostlist_push(enclosed, enode->entity->name);
 			}
 			child = child->next;
 		}
@@ -1263,14 +1276,14 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	}
 
 	/* get the entity associated to this xtree node */
-	e = xtree_node_get_data(node);
-	if (!e) {
+	enode = (entity_node_t*) xtree_node_get_data(node);
+	if (!enode || !enode->entity) {
 		e_name = (char*) "NULL";
 		e_type = NULL;
 	}
 	else {
-		e_name = e->name;
-		e_type = e->type;
+		e_name = enode->entity->name;
+		e_type = enode->entity->type;
 	}
 
 	/* print this entity as root if necessary */
@@ -1290,8 +1303,9 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 
 	/* add entity keys matching the layout to the current str */
 	pargs->current_line = str;
-	if (e)
-		xhash_walk(e->data, _pack_entity_layout_data, pargs);
+	if (enode && enode->entity)
+		xhash_walk(enode->entity->data, _pack_entity_layout_data,
+			   pargs);
 	/* the current line might have been extended/remalloced, so
 	 * we need to sync it again in str for further actions */
 	str = pargs->current_line;
@@ -1393,15 +1407,16 @@ static uint8_t _dump_layout_tree(xtree_node_t* node, uint8_t which,
 {
 	FILE* fdump = (FILE*)arg;
 	entity_t* e;
+	entity_node_t* enode;
 	if (which != XTREE_PREORDER && which != XTREE_LEAF) {
 		return 1;
 	}
-	e = xtree_node_get_data(node);
-	if (!e) {
+	enode = (entity_node_t*) xtree_node_get_data(node);
+	if (!enode || !enode->entity) {
 		fprintf(fdump, "NULL_entity\n");
 	}
 	else {
-		fprintf(fdump, "%*s%s\n", level, " ", e->name);
+		fprintf(fdump, "%*s%s\n", level, " ", enode->entity->name);
 	}
 	return 1;
 }
@@ -1518,6 +1533,7 @@ int layouts_load_config(int recover)
 	layout_t *layout;
 	uint32_t layouts_count;
 	entity_t *entity;
+	entity_node_t *enode;
 	void *ptr;
 
 	info("layouts: loading entities/relations information");
@@ -1548,6 +1564,7 @@ int layouts_load_config(int recover)
 	 */
 	for (inx = 0, node_ptr = node_record_table_ptr; inx < node_record_count;
 	     inx++, node_ptr++) {
+		debug3("layouts: loading node %s", node_ptr->name);
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
 
@@ -1568,8 +1585,9 @@ int layouts_load_config(int recover)
 
 		/* add to the base layout (storing a callback ref to the
 		 * layout node pointing to it) */
+		enode = entity_add_node(entity, layout);
 		ptr = xtree_add_child(layout->tree, layout->tree->root,
-				      (void*)entity, XTREE_APPEND);
+				      (void*)enode, XTREE_APPEND);
 		if (!ptr) {
 			error("layouts: unable to add entity of node %s"
 			      "in the hashtable, aborting", node_ptr->name);
@@ -1578,8 +1596,7 @@ int layouts_load_config(int recover)
 			rc = SLURM_ERROR;
 			break;
 		} else {
-			debug3("layouts: loading node %s", node_ptr->name);
-			entity_add_node(entity, layout, ptr);
+			enode->node = ptr;
 		}
 	}
 	debug("layouts: %d/%d nodes in hash table, rc=%d",

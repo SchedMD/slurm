@@ -35,6 +35,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/entity.h"
 #include "src/common/layout.h"
 #include "src/common/xmalloc.h"
@@ -134,14 +137,43 @@ void entity_clear_data(entity_t* entity)
 	xhash_clear(entity->data);
 }
 
-void entity_add_node(entity_t* entity, layout_t* layout, void* node)
+entity_node_t* entity_add_node(entity_t* entity, layout_t* layout)
 {
 
 	entity_node_t* entity_node = (entity_node_t*)xmalloc(
 		sizeof(entity_node_t));
 	entity_node->layout = layout;
-	entity_node->node = node;
-	list_append(entity->nodes, entity_node);
+	entity_node->entity = entity;
+	entity_node->node = NULL;
+	entity_node = list_append(entity->nodes, entity_node);
+	return entity_node;
+}
+
+typedef struct _entity_get_node_walk_st {
+	layout_t* layout;
+	entity_node_t* node;
+} _entity_get_node_walk_t;
+
+void _entity_get_node_walkfunc(layout_t* layout,
+			       entity_node_t* node, void* arg)
+{
+	_entity_get_node_walk_t* real_arg =
+		(_entity_get_node_walk_t*) arg;
+	/* Note that if multiple nodes of the same layout are added
+	 * to a single entity, the last one will be returned.
+	 * An entity MUST NOT be added more than once /!\ */
+	if (layout == real_arg->layout) {
+		real_arg->node = node;
+	}
+}
+
+entity_node_t* entity_get_node(entity_t* entity, layout_t* layout)
+{
+	_entity_get_node_walk_t arg;
+	arg.layout = layout;
+	arg.node = NULL;
+	entity_nodes_walk(entity, _entity_get_node_walkfunc, (void*) &arg);
+	return arg.node;
 }
 
 static int _entity_node_find(void* x, void* key)
@@ -150,31 +182,31 @@ static int _entity_node_find(void* x, void* key)
 	return entity_node->node == key;
 }
 
-void entity_delete_node(entity_t* entity, void* node)
+int entity_delete_node(entity_t* entity, layout_t* layout)
 {
-	ListIterator i = list_iterator_create(entity->nodes);
-	if (list_find(i, _entity_node_find, node))
+	int rc = SLURM_ERROR;
+	entity_node_t* node;
+	ListIterator i;
+	node = entity_get_node(entity, layout);
+	if (node == NULL)
+		return rc;
+	i = list_iterator_create(entity->nodes);
+	if (list_find(i, _entity_node_find, node)) {
 		list_delete_item(i);
+		rc = SLURM_SUCCESS;
+	}
 	list_iterator_destroy(i);
+	return rc;
 }
 
-void entity_clear_nodes(entity_t* entity)
+int entity_clear_nodes(entity_t* entity)
 {
 	list_flush(entity->nodes);
-}
-
-int entity_has_node(entity_t* entity, void* node)
-{
-	ListIterator i;
-	void* result;
-	i = list_iterator_create(entity->nodes);
-	result = list_find(i, _entity_node_find, node);
-	list_iterator_destroy(i);
-	return result != NULL;
+	return SLURM_SUCCESS;
 }
 
 typedef struct _entity_nodes_walkstruct_st {
-	void (*callback)(layout_t* layout, void* node, void* arg);
+	void (*callback)(layout_t* layout, entity_node_t* node, void* arg);
 	void* arg;
 } _entity_nodes_walkstruct_t;
 
@@ -184,14 +216,14 @@ static int _entity_nodes_walkfunc(void* x, void* arg)
 	_entity_nodes_walkstruct_t* real_arg =
 		(_entity_nodes_walkstruct_t*)arg;
 	real_arg->callback(entity_node->layout,
-			   entity_node->node,
+			   entity_node,
 			   real_arg->arg);
 	return 0;
 }
 
 void entity_nodes_walk(entity_t* entity,
 		       void (*callback)(layout_t* layout,
-					void* node,
+					entity_node_t* node,
 					void* arg),
 		       void* arg)
 {
