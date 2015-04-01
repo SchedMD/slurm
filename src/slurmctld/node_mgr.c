@@ -3267,7 +3267,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 /*
  * make_node_idle - flag specified node as having finished with a job
  * IN node_ptr - pointer to node reporting job completion
- * IN job_ptr - pointer to job that just completed
+ * IN job_ptr - pointer to job that just completed or NULL if not applicable
  */
 void make_node_idle(struct node_record *node_ptr,
 		    struct job_record *job_ptr)
@@ -3278,10 +3278,12 @@ void make_node_idle(struct node_record *node_ptr,
 	bitstr_t *node_bitmap = NULL;
 	char jbuf[JBUFSIZ];
 
-	if (job_ptr->node_bitmap_cg)
-		node_bitmap = job_ptr->node_bitmap_cg;
-	else
-		node_bitmap = job_ptr->node_bitmap;
+	if (job_ptr) {
+		if (job_ptr->node_bitmap_cg)
+			node_bitmap = job_ptr->node_bitmap_cg;
+		else
+			node_bitmap = job_ptr->node_bitmap;
+	}
 
 	trace_job(job_ptr, __func__, "enter");
 
@@ -3347,7 +3349,7 @@ void make_node_idle(struct node_record *node_ptr,
 			node_ptr->owner = NO_VAL;
 	}
 
-	if (job_ptr->details && (job_ptr->details->whole_node == 2)) {
+	if (job_ptr && job_ptr->details && (job_ptr->details->whole_node == 2)){
 		if (--node_ptr->owner_job_cnt == 0)
 			node_ptr->owner = NO_VAL;
 	}
