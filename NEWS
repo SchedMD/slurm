@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     of the arrayTaskId.
  -- Allow users to modify MinCPUsNode, MinMemoryNode and MinTmpDiskNode of
     their own jobs.
+ -- Increase the jobid print field in SQUEUE_FORMAT in
+    opt_modulefiles_slurm.in.
 
 * Changes in Slurm 14.11.5
 ==========================
