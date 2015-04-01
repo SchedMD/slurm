@@ -409,6 +409,9 @@ static void _entity_add_data(entity_t* e, const char* key, void* data)
 		break;							\
 	}
 
+int _layouts_autoupdate_layout(layout_t* layout);
+int _layouts_autoupdate_layout_if_allowed(layout_t* layout);
+
 /*****************************************************************************\
  *                       LAYOUTS INTERNAL LOCKLESS API                       *
 \*****************************************************************************/
@@ -1839,7 +1842,6 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 	slurm_parser_operator_t operator;
 	xtree_node_t *node, *child;
 	entity_node_t *enode, *cnode;
-	char keytmp[PATHLEN];
 	void* oldvalue;
 	void* value;
 	uint32_t count;
@@ -1858,8 +1860,8 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 	xassert(keydef);
 
 	/* only work on keys that depend of their neighborhood */
-	if (!keydef->flags & KEYSPEC_UPDATE_CHILDREN_MASK &&
-	    !keydef->flags & KEYSPEC_UPDATE_PARENTS_MASK) {
+	if (!(keydef->flags & KEYSPEC_UPDATE_CHILDREN_MASK) &&
+	    !(keydef->flags & KEYSPEC_UPDATE_PARENTS_MASK)) {
 		return;
 	}
 
@@ -2015,9 +2017,7 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 static uint8_t _autoupdate_layout_tree(xtree_node_t* node, uint8_t which,
 				       uint32_t level, void* arg)
 {
-	xtree_node_t* child;
 	entity_node_t* cnode;
-	entity_node_t* enode;
 	_autoupdate_tree_args_t sync_args;
 
 	/* only need to work for preorder, leaf and endorder cases */
@@ -2067,7 +2067,7 @@ int _layouts_autoupdate_layout_if_allowed(layout_t* layout)
 	int i, rc = SLURM_ERROR;
 	/* look if the corresponding layout plugin enables autoupdate */
 	for (i = 0; i < mgr->plugins_count; i++) {
-		if (mgr->plugins[i].layout = layout) {
+		if (mgr->plugins[i].layout == layout) {
 			rc = SLURM_SUCCESS;
 			/* no autoupdate allowed, return success */
 			if (!mgr->plugins[i].ops->spec->autoupdate)
