@@ -166,6 +166,7 @@ typedef struct layouts_keydef_st {
 	char*			shortkey; /* original key as defined in
 					     the layout keys definition */
 	layouts_keydef_types_t	type;
+	uint32_t                flags;
 	void			(*custom_destroy)(void* value);
 	char*			(*custom_dump)(void* value);
 	layout_plugin_t*	plugin;
@@ -375,6 +376,7 @@ static void _layouts_init_keydef(xhash_t* keydefs,
 		nkeydef->key = xstrdup(keytmp);
 		nkeydef->shortkey = xstrdup(current->key);
 		nkeydef->type = current->type;
+		nkeydef->flags = current->flags;
 		nkeydef->custom_destroy = current->custom_destroy;
 		nkeydef->custom_dump = current->custom_dump;
 		nkeydef->plugin = plugin;
@@ -616,7 +618,7 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 	(entity_option->type == type1 && keydef->type == type2)
 
 static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
-				    s_p_hashtbl_t* etbl)
+				    s_p_hashtbl_t* etbl, uint32_t flags)
 {
 	const s_p_options_t* layout_option;
 	const s_p_options_t* entity_option;
@@ -639,6 +641,13 @@ static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
 		if (!keydef) {
 			/* key is not meant to be automatically handled,
 			 * ignore it for this function */
+			continue;
+		}
+		/* do not perform automerge on updates for read-only keys */
+		if (flags & UPDATE_DONE &&
+		    keydef->flags & KEYSPEC_RDONLY) {
+			debug4("layouts: do not try to merge RDONLY key '%s'",
+			       keydef->key);
 			continue;
 		}
 		if (_layouts_merge_check(S_P_LONG, L_T_LONG)) {
@@ -861,7 +870,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		 * type and adding them to the entity key hash table.
 		 */
 		if (plugin->ops->spec->automerge) {
-			_layouts_load_automerge(plugin, e, entity_tbl);
+			_layouts_load_automerge(plugin, e, entity_tbl, flags);
 		}
 
 		/*

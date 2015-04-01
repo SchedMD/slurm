@@ -83,9 +83,13 @@ typedef enum layouts_keydef_types_en {
 	L_T_CUSTOM,
 } layouts_keydef_types_t;
 
+/* keyspec flags */
+#define KEYSPEC_RDONLY  0x00000001
+
 typedef struct layouts_keyspec_st {
 	char*			key;
 	layouts_keydef_types_t	type;
+	uint32_t                flags;
 	void			(*custom_destroy)(void*);
 	char*			(*custom_dump)(void*);
 } layouts_keyspec_t;
