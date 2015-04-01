@@ -168,6 +168,20 @@ entity_t* slurm_layouts_get_entity(const char* name);
 int layouts_pack_layout(char *l_type, Buf buffer);
 
 /*
+ * layouts_update_layout - update a particular layout loading the information
+ *        provided in the input buffer.
+ *
+ * The buffer must contain multiple strings corresponding to the different
+ * configuration lines similar to those that can be put in a configuration
+ * file that will be parsed and integrated.
+ *
+ * Note that the entities key/value entries will be updated only.
+ *
+ * Return SLURM_SUCCES or SLURM_ERROR in case of failure
+ */
+int layouts_update_layout(char *l_type, Buf buffer);
+
+/*
  * layouts_state_save_layout - save the state of a particular layout
  *        in the adhoc file in slurm state save location.
  *
