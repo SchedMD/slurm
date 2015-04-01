@@ -563,14 +563,37 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 
 #define _layouts_load_merge(type_t, s_p_get_type) { \
 	type_t newvalue; \
-	type_t** oldvalue; \
-	if (!s_p_get_type(&newvalue, option_key, etbl)) { \
-		/* no value to merge/create */ \
-		continue; \
-	} \
-	oldvalue = (type_t**)entity_get_data(e, key_keydef); \
-	if (oldvalue) { \
-		**oldvalue = newvalue; \
+	type_t** oldvalue;						\
+	slurm_parser_operator_t operator = S_P_OPERATOR_SET;		\
+	if (!s_p_get_type(&newvalue, option_key, etbl)) {		\
+		/* no value to merge/create */				\
+		continue;						\
+	}								\
+	s_p_get_operator(&operator, option_key, etbl);			\
+	oldvalue = (type_t**)entity_get_data(e, key_keydef);		\
+	if (oldvalue) {							\
+	        switch (operator) {					\
+                case S_P_OPERATOR_SET:					\
+			**oldvalue = newvalue;				\
+			break;						\
+                case S_P_OPERATOR_ADD:					\
+			**oldvalue += newvalue;				\
+			break;						\
+                case S_P_OPERATOR_SUB:					\
+			**oldvalue -= newvalue;				\
+			break;						\
+                case S_P_OPERATOR_MUL:					\
+			**oldvalue *= newvalue;				\
+			break;						\
+                case S_P_OPERATOR_DIV:					\
+			if (newvalue != 0)				\
+				**oldvalue /= newvalue;			\
+			else						\
+				error("layouts: load_merge key=%s val=0 " \
+				      "operator=DIV !! skipping !!",	\
+				      option_key);			\
+			break;						\
+		}							\
 	} else { \
 		type_t* newalloc = (type_t*)xmalloc(sizeof(type_t)); \
 		*newalloc = newvalue; \
