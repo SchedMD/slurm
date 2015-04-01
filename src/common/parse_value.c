@@ -157,11 +157,13 @@ int s_p_handle_boolean(bool* data, const char* key, const char* value)
 
 	if (!strcasecmp(value, "yes")
 		|| !strcasecmp(value, "up")
+		|| !strcasecmp(value, "true")
 		|| !strcasecmp(value, "1")) {
 		flag = true;
 	} else if (!strcasecmp(value, "no")
-			|| !strcasecmp(value, "down")
-			|| !strcasecmp(value, "0")) {
+		   || !strcasecmp(value, "down")
+		   || !strcasecmp(value, "false")
+		   || !strcasecmp(value, "0")) {
 		flag = false;
 	} else {
 		error("\"%s\" is not a valid option for \"%s\"",
@@ -223,7 +225,8 @@ int s_p_handle_double(double* data, const char* key, const char* value)
 	return SLURM_SUCCESS;
 }
 
-int s_p_handle_ldouble(long double* data, const char* key, const char* value)
+int s_p_handle_long_double(long double* data, const char* key,
+			   const char* value)
 {
 	char *endptr;
 	long double num;
