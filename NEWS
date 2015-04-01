@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition where sprio would print factors without weights applied.
  -- Document the sacct option JobIDRaw which for arrays prints the jobid instead
     of the arrayTaskId.
+ -- Allow users to modify MinCPUsNode, MinMemoryNode and MinTmpDiskNode of
+    their own jobs.
 
 * Changes in Slurm 14.11.5
 ==========================

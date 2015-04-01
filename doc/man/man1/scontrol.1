@@ -577,17 +577,14 @@ of the cluster) as described in salloc/sbatch/srun man pages.
 .TP
 \fIMinCPUsNode\fP=<count>
 Set the job's minimum number of CPUs per node to the specified value.
-Only the Slurm administrator or root can change this parameter.
 .TP
 \fIMinMemoryCPU\fP=<megabytes>
 Set the job's minimum real memory required per allocated CPU to the specified
-value. Only the Slurm administrator or root can change this parameter.
-Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
+value. Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
 \fIMinMemoryNode\fP=<megabytes>
 Set the job's minimum real memory required per node to the specified value.
 Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
-Only the Slurm administrator or root can change this parameter.
 .TP
 \fIMinTmpDiskNode\fP=<megabytes>
 Set the job's minimum temporary disk space required per node to the specified value.
