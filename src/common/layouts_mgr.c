@@ -1471,10 +1471,10 @@ int slurm_layouts_fini(void)
 
 	debug3("layouts: slurm_layouts_fini()...");
 
-	slurm_mutex_lock(&mgr->lock);
-
 	/* push layouts states to the state save location */
 	layouts_state_save();
+
+	slurm_mutex_lock(&mgr->lock);
 
 	/* free the layouts before destroying the plugins, 
 	 * otherwise we will get trouble xfreeing the layouts whose 
@@ -1649,15 +1649,31 @@ exit:
 	return rc;
 }
 
+layout_t* layouts_get_layout_nolock(const char* type)
+{
+	return (layout_t*)xhash_get(mgr->layouts, type);
+}
+
 layout_t* layouts_get_layout(const char* type)
 {
-	layout_t* layout = (layout_t*)xhash_get(mgr->layouts, type);
+	layout_t *layout = NULL;
+	slurm_mutex_lock(&mgr->lock);
+	layout = layouts_get_layout_nolock(type);
+	slurm_mutex_unlock(&mgr->lock);
 	return layout;
+}
+
+entity_t* slurm_layouts_get_entity_nolock(const char* name)
+{
+	return (entity_t*)xhash_get(mgr->entities, name);
 }
 
 entity_t* slurm_layouts_get_entity(const char* name)
 {
-	entity_t* e = (entity_t*)xhash_get(mgr->entities, name);
+	entity_t* e;
+	slurm_mutex_lock(&mgr->lock);
+	e = slurm_layouts_get_entity_nolock(name);
+	slurm_mutex_unlock(&mgr->lock);
 	return e;
 }
 
@@ -1667,7 +1683,9 @@ int layouts_pack_layout(char *l_type, Buf buffer)
 	layout_t* layout;
 	char *str;
 
-	layout = layouts_get_layout(l_type);
+	slurm_mutex_lock(&mgr->lock);
+
+	layout = layouts_get_layout_nolock(l_type);
 	if (layout == NULL) {
 		error("unable to get layout of type '%s'", l_type);
 		return SLURM_ERROR;
@@ -1693,6 +1711,8 @@ int layouts_pack_layout(char *l_type, Buf buffer)
 
 	/* EOF */
 	packstr("", buffer);
+
+	slurm_mutex_unlock(&mgr->lock);
 
 	return SLURM_SUCCESS;
 }
