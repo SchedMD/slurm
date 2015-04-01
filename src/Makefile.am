@@ -3,6 +3,7 @@ SUBDIRS =		\
 	common		\
 	database	\
 	db_api		\
+	layouts		\
 	plugins		\
 	sacct		\
 	sacctmgr	\
