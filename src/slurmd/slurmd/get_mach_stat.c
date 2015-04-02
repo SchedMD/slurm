@@ -81,6 +81,10 @@
 
 #include <sys/utsname.h>
 
+#ifdef HAVE_SYS_STATVFS_H
+#  include <sys/statvfs.h>
+#endif
+
 #ifdef HAVE_SYS_STATFS_H
 #  include <sys/statfs.h>
 #else
@@ -212,7 +216,29 @@ extern int
 get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 {
 	int error_code = 0;
-#ifdef HAVE_SYS_VFS_H
+
+#if defined(HAVE_STATVFS)
+	struct statvfs stat_buf;
+	uint64_t total_size = 0;
+	char *tmp_fs_name = tmp_fs;
+
+	*tmp_disk = 0;
+	total_size = 0;
+
+	if (tmp_fs_name == NULL)
+		tmp_fs_name = "/tmp";
+	if (statvfs(tmp_fs_name, &stat_buf) == 0) {
+		total_size = stat_buf.f_blocks * stat_buf.f_frsize;
+		total_size /= 1024 * 1024;
+	}
+	else if (errno != ENOENT) {
+		error_code = errno;
+		error ("get_tmp_disk: error %d executing statvfs on %s",
+			errno, tmp_fs_name);
+	}
+	*tmp_disk += (uint32_t)total_size;
+
+#elif defined(HAVE_STATFS)
 	struct statfs stat_buf;
 	long   total_size;
 	float page_size;

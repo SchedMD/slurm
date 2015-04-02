@@ -129,7 +129,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 		 pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h \
-		 sys/termios.h float.h
+		 sys/termios.h float.h sys/statvfs.h
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -203,6 +203,8 @@ AC_CHECK_FUNCS( \
    get_current_dir_name \
    faccessat \
    eaccess \
+   statvfs \
+   statfs \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
