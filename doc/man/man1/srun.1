@@ -586,7 +586,7 @@ See \fBEXAMPLE\fR below.
 
 .TP
 \fB\-\-export\fR=<\fIenvironment variables | NONE\fR>
-Identify which environment variables are propagated to the laucnhed application.
+Identify which environment variables are propagated to the launched application.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
@@ -1622,10 +1622,10 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
-By default the connection between slurmdstepd and the user launched application
+By default the connection between slurmstepd and the user launched application
 is over a pipe. The stdio output written by the application is buffered
 by the glibc until it is flushed or the output is set as unbuffered.
-See setbuf(3).If this option is specified the tasks are executed with
+See setbuf(3). If this option is specified the tasks are executed with
 a pseudo terminal so that the application output is unbuffered.
 .TP
 \fB\-\-usage\fR
@@ -1675,7 +1675,7 @@ If you specify a minimum node or processor count larger than can be satisfied
 by the supplied host list, additional resources will be allocated on other
 nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
-a repitition count may be appended to a host name. For example
+a repetition count may be appended to a host name. For example
 "host1,host1" and "host1*2" are equivalent.
 
 .TP
