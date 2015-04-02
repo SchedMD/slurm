@@ -509,6 +509,10 @@ static int _job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->group_id);
 	} else if (!strcmp(name, "licenses")) {
 		lua_pushstring (L, job_desc->licenses);
+	} else if (!strcmp(name, "mail_type")) {
+		lua_pushnumber (L, job_desc->mail_type);
+	} else if (!strcmp(name, "mail_user")) {
+		lua_pushstring (L, job_desc->mail_user);
 	} else if (!strcmp(name, "max_cpus")) {
 		lua_pushnumber (L, job_desc->max_cpus);
 	} else if (!strcmp(name, "max_nodes")) {
