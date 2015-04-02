@@ -207,11 +207,13 @@ main (int argc, char *argv[])
 	}
 
 	if (req_msg.acct_list && list_count(req_msg.acct_list)) {
-		fprintf(stderr, "Accounts requested:\n");
-		ListIterator itr = list_iterator_create(req_msg.acct_list);
-		while((temp = list_next(itr)))
-			fprintf(stderr, "\t: %s\n", temp);
-		list_iterator_destroy(itr);
+		if (verbosity) {
+			fprintf(stderr, "Accounts requested:\n");
+			ListIterator itr = list_iterator_create(req_msg.acct_list);
+			while((temp = list_next(itr)))
+				fprintf(stderr, "\t: %s\n", temp);
+			list_iterator_destroy(itr);
+		}
 	} else {
 		if (req_msg.acct_list
 		   && list_count(req_msg.acct_list)) {

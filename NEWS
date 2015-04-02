@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Enable compiling without optimizations and with debugging symbols by
     default. Disable this by configuring with --disable-debug.
  -- job_submit/lua plugin: Add mail_type and mail_user fields.
+ -- Correct output message from sshare.
 
 * Changes in Slurm 14.11.5
 ==========================
