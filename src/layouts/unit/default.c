@@ -202,7 +202,7 @@ int layouts_p_update_done(layout_t* layout, entity_t** e_array, int e_cnt)
 	int i;
 	debug3("layouts/unit: receiving update callback for %d entities",
 	       e_cnt);
-	for (i=0; i < e_cnt; i++) {
+	for (i = 0; i < e_cnt; i++) {
 		if (e_array[i] == NULL) {
 			debug3("layouts/unit: skipping update of nullified"
 			       "entity[%d]", i);

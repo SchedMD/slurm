@@ -141,7 +141,8 @@ typedef struct layout_plugin_st {
 	layout_ops_t* ops;
 } layout_plugin_t;
 
-static void _layout_plugins_destroy(layout_plugin_t *lp) {
+static void _layout_plugins_destroy(layout_plugin_t *lp)
+{
 	plugin_context_destroy(lp->context);
 	/* it might be interesting to also dlclose the ops here */
 	layout_free(lp->layout);
@@ -409,8 +410,8 @@ static void _entity_add_data(entity_t* e, const char* key, void* data)
 		break;							\
 	}
 
-int _layouts_autoupdate_layout(layout_t* layout);
-int _layouts_autoupdate_layout_if_allowed(layout_t* layout);
+static int _layouts_autoupdate_layout(layout_t* layout);
+static int _layouts_autoupdate_layout_if_allowed(layout_t* layout);
 
 /*****************************************************************************\
  *                       LAYOUTS INTERNAL LOCKLESS API                       *
@@ -420,7 +421,7 @@ layouts_keydef_t* _layouts_entity_get_kv_keydef(layout_t* l, entity_t* e,
 						char* key)
 {
 	char keytmp[PATHLEN];
-	if (l== NULL || e == NULL || key == NULL)
+	if (l == NULL || e == NULL || key == NULL)
 		return NULL;
 	_normalize_keydef_key(keytmp, PATHLEN, key, l->type);
 	return xhash_get(mgr->keydefs, keytmp);
@@ -491,7 +492,7 @@ bool _layouts_entity_check_kv_keytype(layout_t* l, entity_t* e, char* key,
 				      layouts_keydef_types_t key_type)
 {
 	layouts_keydef_types_t real_type;
-	if (l== NULL || e == NULL || key == NULL)
+	if (l == NULL || e == NULL || key == NULL)
 		return SLURM_ERROR;
 	if (key_type) {
 		real_type = _layouts_entity_get_kv_type(l, e, key);
@@ -523,7 +524,7 @@ int _layouts_entity_set_kv(layout_t* l, entity_t* e, char* key, void* value,
 	layouts_keydef_types_t real_type;
 	char key_keydef[PATHLEN];
 
-	if (l== NULL || e == NULL || key == NULL || value == NULL)
+	if (l == NULL || e == NULL || key == NULL || value == NULL)
 		return SLURM_ERROR;
 
 	real_type = _layouts_entity_get_kv_type(l, e, key);
@@ -574,7 +575,7 @@ int _layouts_entity_set_kv_ref(layout_t* l, entity_t* e, char* key, void* value,
 	int rc = SLURM_ERROR;
 	char key_keydef[PATHLEN];
 
-	if (l== NULL || e == NULL || key == NULL || value == NULL)
+	if (l == NULL || e == NULL || key == NULL || value == NULL)
 		return rc;
 
 	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
@@ -612,7 +613,7 @@ int _layouts_entity_get_kv(layout_t* l, entity_t* e, char* key, void* value,
 	char key_keydef[PATHLEN];
 	char ** pstr;
 
-	if (l== NULL || e == NULL || key == NULL || value == NULL)
+	if (l == NULL || e == NULL || key == NULL || value == NULL)
 		return SLURM_ERROR;
 
 	real_type = _layouts_entity_get_kv_type(l, e, key);
@@ -713,7 +714,7 @@ int _layouts_entity_get_kv_ref(layout_t* l, entity_t* e,
 	char key_keydef[PATHLEN];
 	void* data;
 
-	if (l== NULL || e == NULL || key == NULL || value == NULL)
+	if (l == NULL || e == NULL || key == NULL || value == NULL)
 		return rc;
 
 	if (!_layouts_entity_check_kv_keytype(l, e, key, key_type))
@@ -859,6 +860,7 @@ static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 	char plugin_name[PATHLEN];
 	void* inserted_item;
 	plugin_context_t* plugin_context;
+
 	snprintf(plugin_name, PATHLEN,
 		 "layouts/%s_%s", spec->type, spec->name);
 	plugin->ops = (layout_ops_t*)xmalloc(sizeof(layout_ops_t));
@@ -1293,7 +1295,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		 * look for "Enclosed" pragmas identifying the relations
 		 * among entities and kep that along with the entity for
 		 * stage 2 */
-		if(flags & PARSE_RELATIONS)
+		if (flags & PARSE_RELATIONS)
 			_layouts_parse_relations(plugin, e, entity_tbl);
 
 		/*
@@ -2047,7 +2049,7 @@ static uint8_t _autoupdate_layout_tree(xtree_node_t* node, uint8_t which,
 
 /* helper function used to automatically update a layout internal
  * entities KVs based on inheritance relations (parents/children) */
-int _layouts_autoupdate_layout(layout_t* layout)
+static int _layouts_autoupdate_layout(layout_t* layout)
 {
 	/* autoupdate according to the layout struct type */
 	switch(layout->struct_type) {
@@ -2064,7 +2066,7 @@ int _layouts_autoupdate_layout(layout_t* layout)
 /* helper function used to automatically update a layout internal
  * entities KVs based on inheritance relations (parents/children)
  * only when allowed by the associated plugin */
-int _layouts_autoupdate_layout_if_allowed(layout_t* layout)
+static int _layouts_autoupdate_layout_if_allowed(layout_t* layout)
 {
 	int i, rc = SLURM_ERROR;
 	/* look if the corresponding layout plugin enables autoupdate */
