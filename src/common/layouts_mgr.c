@@ -1216,12 +1216,14 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		if (s_p_parse_buffer(tbl, NULL, buffer, false) == SLURM_ERROR) {
 			error("layouts: something went wrong when parsing "
 			      "buffer : %m");
-			return SLURM_ERROR;
+			rc =  SLURM_ERROR;
+			goto cleanup;
 		}
 		debug3("layouts: buffer loaded");
 	} else {
 		error("layouts: invalid usage of _layouts_load_config_common");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	if (s_p_get_uint32(&l_priority, "Priority", tbl)) {
