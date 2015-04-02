@@ -8,7 +8,7 @@
 
 const char plugin_name[] = "Unit Tests layouts plugin";
 const char plugin_type[] = "layouts/unit";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* specific options for unit tests layout */
 s_p_options_t entity_options[] = {
