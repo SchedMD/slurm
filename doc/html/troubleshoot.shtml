@@ -130,7 +130,11 @@ and "<i>scontrol update NodeName=&lt;node&gt; State=resume</i>").
 This permits other jobs to use the node, but leaves the non-killable
 process in place.
 If the process should ever complete the I/O, the pending SIGKILL
-should terminate it immediately.</li>
+should terminate it immediately. <b>-OR-</b></li>
+<li>Use the <b>UnkillableStepProgram</b> and <b>UnkillableStepTimeout</b>
+configuration parameters to automatically respond to processes which can not
+be killed, by sending email or rebooting the node. For more information,
+see the <i>slurm.conf</i> documentation.</li>
 </ol>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -301,6 +305,6 @@ partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 January 20124</p>
+<p style="text-align:center;">Last modified 2 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
