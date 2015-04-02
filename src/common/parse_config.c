@@ -1425,6 +1425,11 @@ void s_p_hashtbl_merge_keys(s_p_hashtbl_t *to_hashtbl,
 					s_p_hashtbl_merge_keys(
 							t_expline->template,
 							f_expline->template);
+					/* Keys merged, free container memory */
+					s_p_hashtbl_destroy(f_expline->template);
+					s_p_hashtbl_destroy(f_expline->index);
+					//FIXME: Destroy "values" ?
+					xfree(f_expline);
 				}
 				pp = &p->next;
 				p = p->next;
