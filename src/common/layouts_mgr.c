@@ -145,10 +145,8 @@ static void _layout_plugins_destroy(layout_plugin_t *lp)
 {
 	plugin_context_destroy(lp->context);
 	/* it might be interesting to also dlclose the ops here */
-	layout_free(lp->layout);
 	xfree(lp->name);
 	xfree(lp->ops);
-	xfree(lp->layout);
 }
 /*
  * layouts_keydef_t - entities similar keys share a same key definition
