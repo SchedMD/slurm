@@ -1124,6 +1124,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
+		xfree(alloc_msg.account);
 		xfree(alloc_msg.cpu_count_reps);
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_list);
@@ -2705,6 +2706,7 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 
 		xfree(job_info_resp_msg.cpu_count_reps);
 		xfree(job_info_resp_msg.cpus_per_node);
+		xfree(job_info_resp_msg.account);
 		xfree(job_info_resp_msg.alias_list);
 		xfree(job_info_resp_msg.node_list);
 		xfree(job_info_resp_msg.partition);
