@@ -1321,6 +1321,8 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		 * calling the update_done layout callback */
 		updated_entities[i] = e;
 	}
+	xfree(e_name);
+	xfree(e_type);
 
 	/* ** Full load config only (flags==0) **
 	 * post-read-and-build (post stage 1)
