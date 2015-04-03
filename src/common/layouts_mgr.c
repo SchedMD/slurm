@@ -1007,7 +1007,7 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 		relational_options = tree_options;
 		break;
 	default:
-		fatal("layouts: does not know what relation structure to"
+		fatal("layouts: does not know what relation structure to "
 		      "use for type %d", struct_type);
 	}
 

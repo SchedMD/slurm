@@ -247,6 +247,7 @@ static void _conf_file_values_free(s_p_values_t *p)
 			for (i = 0; i < p->data_count; ++i) {
 				s_p_hashtbl_destroy(v->values[i]);
 			}
+			xfree(v->values);
 			xfree(p->data);
 			break;
 		default:
