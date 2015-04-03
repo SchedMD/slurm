@@ -49,6 +49,7 @@ int s_p_handle_uint32(uint32_t* data, const char* key, const char* value);
 int s_p_handle_boolean(bool* data, const char* key, const char* value);
 int s_p_handle_float(float* data, const char* key, const char* value);
 int s_p_handle_double(double* data, const char* key, const char* value);
-int s_p_handle_ldouble(long double* data, const char* key, const char* value);
+int s_p_handle_long_double(long double* data, const char* key,
+			   const char* value);
 
 #endif /* !_PARSE_VALUE_H */

@@ -35,6 +35,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "string.h"
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/entity.h"
 #include "src/common/layout.h"
 #include "src/common/xmalloc.h"
@@ -43,13 +48,22 @@
 
 
 /*****************************************************************************\
- *                                 FUNCTIONS                                 *
+ *                                 HELPERS                                   *
 \*****************************************************************************/
 
 static const char* _entity_data_identify(void* item)
 {
 	entity_data_t* data_item = (entity_data_t*)item;
 	return data_item->key;
+}
+
+static void _entity_data_destroy(void* x)
+{
+	entity_data_t* entity_data = (entity_data_t*)x;
+	if (entity_data) {
+		xfree(entity_data->value);
+		xfree(entity_data);
+	}
 }
 
 static void _entity_node_destroy(void* x)
@@ -61,11 +75,58 @@ static void _entity_node_destroy(void* x)
 	}
 }
 
+static int _entity_add_data(const entity_t* entity, const char* key,
+			    void* value, size_t size,
+			    void (*_free)(void*), bool byreference)
+{
+	entity_data_t* result;
+	entity_data_t* new_data_item;
+
+	if (!key || !*key || !value)
+		return SLURM_ERROR;
+
+	result = (entity_data_t*)xhash_get(entity->data, key);
+	if (result != NULL) {
+		/* update existing value by ref or by override */
+		if (byreference) {
+			if (_free)
+				_free(result->value);
+			result->value = value;
+		} else {
+			memcpy(result->value, value, size);
+		}
+		return SLURM_SUCCESS;
+	}
+
+	/* add a new KV if not already existing, by ref or allocating
+	 * a new buffer and dumping the provided input */
+	new_data_item = (entity_data_t*)xmalloc(sizeof(entity_data_t));
+	new_data_item->key = key;
+	if (byreference) {
+		new_data_item->value = value;
+	} else {
+		new_data_item->value = (void*) xmalloc(size);
+		memcpy(new_data_item->value, value, size);
+	}
+	result = xhash_add(entity->data, new_data_item);
+	if (result == NULL) {
+		xfree(new_data_item);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*****************************************************************************\
+ *                                 FUNCTIONS                                 *
+\*****************************************************************************/
+
 void entity_init(entity_t* entity, const char* name, const char* type)
 {
 	entity->name = xstrdup(name);
 	entity->type = xstrdup(type);
-	entity->data = xhash_init(_entity_data_identify, NULL, NULL, 0);
+	entity->data = xhash_init(_entity_data_identify,
+				  (xhash_freefunc_t)_entity_data_destroy,
+				  NULL, 0);
 	entity->nodes = list_create(_entity_node_destroy);
 	entity->ptr = NULL;
 }
@@ -90,38 +151,37 @@ const char* entity_get_type(const entity_t* entity)
 	return entity->type;
 }
 
-void** entity_get_data(const entity_t* entity, const char* key)
+int entity_get_data(const entity_t* entity, const char* key,
+		    void* value, size_t size)
+{
+	void* data = NULL;
+	data = entity_get_data_ref(entity, key);
+	if (data != NULL) {
+		memcpy(value, data, size);
+		return SLURM_SUCCESS;
+	}
+	return SLURM_ERROR;
+}
+
+void* entity_get_data_ref(const entity_t* entity, const char* key)
 {
 	entity_data_t* data = (entity_data_t*)xhash_get(entity->data, key);
 	if (data) {
-		return &data->value;
+		return data->value;
 	}
 	return NULL;
 }
 
-int entity_add_data(entity_t* entity, const char* key, void* value,
-		    void (*_free)(void*))
+int entity_set_data(const entity_t* entity, const char* key,
+		    void* value, size_t size)
 {
-	entity_data_t* result;
-	entity_data_t* new_data_item;
-	if (!key || !*key || !value)
-		return 0;
-	result = (entity_data_t*)xhash_get(entity->data, key);
-	if (result != NULL) {
-		if (_free)
-			_free(result->value);
-		result->value = value;
-		return 1;
-	}
-	new_data_item = (entity_data_t*)xmalloc(sizeof(entity_data_t));
-	new_data_item->key = key;
-	new_data_item->value = value;
-	result = xhash_add(entity->data, new_data_item);
-	if (result == NULL) {
-		xfree(new_data_item);
-		return 0;
-	}
-	return 1;
+	return _entity_add_data(entity, key, value, size, NULL, false);
+}
+
+int entity_set_data_ref(const entity_t* entity, const char* key, void* value,
+			void (*_free)(void*))
+{
+	return _entity_add_data(entity, key, value, 0, _free, true);
 }
 
 void entity_delete_data(entity_t* entity, const char* key)
@@ -134,14 +194,43 @@ void entity_clear_data(entity_t* entity)
 	xhash_clear(entity->data);
 }
 
-void entity_add_node(entity_t* entity, layout_t* layout, void* node)
+entity_node_t* entity_add_node(entity_t* entity, layout_t* layout)
 {
 
 	entity_node_t* entity_node = (entity_node_t*)xmalloc(
 		sizeof(entity_node_t));
 	entity_node->layout = layout;
-	entity_node->node = node;
-	list_append(entity->nodes, entity_node);
+	entity_node->entity = entity;
+	entity_node->node = NULL;
+	entity_node = list_append(entity->nodes, entity_node);
+	return entity_node;
+}
+
+typedef struct _entity_get_node_walk_st {
+	layout_t* layout;
+	entity_node_t* node;
+} _entity_get_node_walk_t;
+
+static void _entity_get_node_walkfunc(layout_t* layout,
+				      entity_node_t* node, void* arg)
+{
+	_entity_get_node_walk_t* real_arg =
+		(_entity_get_node_walk_t*) arg;
+	/* Note that if multiple nodes of the same layout are added
+	 * to a single entity, the last one will be returned.
+	 * An entity MUST NOT be added more than once /!\ */
+	if (layout == real_arg->layout) {
+		real_arg->node = node;
+	}
+}
+
+entity_node_t* entity_get_node(entity_t* entity, layout_t* layout)
+{
+	_entity_get_node_walk_t arg;
+	arg.layout = layout;
+	arg.node = NULL;
+	entity_nodes_walk(entity, _entity_get_node_walkfunc, (void*) &arg);
+	return arg.node;
 }
 
 static int _entity_node_find(void* x, void* key)
@@ -150,31 +239,31 @@ static int _entity_node_find(void* x, void* key)
 	return entity_node->node == key;
 }
 
-void entity_delete_node(entity_t* entity, void* node)
+int entity_delete_node(entity_t* entity, layout_t* layout)
 {
-	ListIterator i = list_iterator_create(entity->nodes);
-	if (list_find(i, _entity_node_find, node))
+	int rc = SLURM_ERROR;
+	entity_node_t* node;
+	ListIterator i;
+	node = entity_get_node(entity, layout);
+	if (node == NULL)
+		return rc;
+	i = list_iterator_create(entity->nodes);
+	if (list_find(i, _entity_node_find, node)) {
 		list_delete_item(i);
+		rc = SLURM_SUCCESS;
+	}
 	list_iterator_destroy(i);
+	return rc;
 }
 
-void entity_clear_nodes(entity_t* entity)
+int entity_clear_nodes(entity_t* entity)
 {
 	list_flush(entity->nodes);
-}
-
-int entity_has_node(entity_t* entity, void* node)
-{
-	ListIterator i;
-	void* result;
-	i = list_iterator_create(entity->nodes);
-	result = list_find(i, _entity_node_find, node);
-	list_iterator_destroy(i);
-	return result != NULL;
+	return SLURM_SUCCESS;
 }
 
 typedef struct _entity_nodes_walkstruct_st {
-	void (*callback)(layout_t* layout, void* node, void* arg);
+	void (*callback)(layout_t* layout, entity_node_t* node, void* arg);
 	void* arg;
 } _entity_nodes_walkstruct_t;
 
@@ -184,14 +273,14 @@ static int _entity_nodes_walkfunc(void* x, void* arg)
 	_entity_nodes_walkstruct_t* real_arg =
 		(_entity_nodes_walkstruct_t*)arg;
 	real_arg->callback(entity_node->layout,
-			   entity_node->node,
+			   entity_node,
 			   real_arg->arg);
 	return 0;
 }
 
 void entity_nodes_walk(entity_t* entity,
 		       void (*callback)(layout_t* layout,
-					void* node,
+					entity_node_t* node,
 					void* arg),
 		       void* arg)
 {

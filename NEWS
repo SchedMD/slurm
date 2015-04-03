@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     getenv where the name was given a prefix of "SPANK_". That prefix has
     been removed for consistency with the environment variables available in
     the Prolog and Epilog scripts.
+ -- Major additions to the layouts framework code.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

@@ -67,9 +67,10 @@ typedef struct entity_data_st {
  * to represent the layout nodes that are linked to them */
 typedef struct entity_node_st {
 	layout_t* layout; /* layout containing a relationnal structure holding
-			   * a reference to this entity */
+			   * a reference to the entity */
+	entity_t* entity; /* pointer to the associated entity */
 	void* node;       /* pointer to the relational node referencing
-			     this entity */
+			     this entity node */
 } entity_node_t;
 
 /*****************************************************************************\
@@ -111,7 +112,21 @@ const char* entity_get_name(const entity_t* entity);
 const char* entity_get_type(const entity_t* entity);
 
 /*
- * entity_get_data - get the address of the pointer to the data associated
+ * entity_get_data - copy the content of the data associated to a particular key
+ *       of an entity into a buffer up to the requested size
+ *
+ * IN entity - the entity struct to use
+ * IN key - the targeted key
+ * IN value - ponter to the mem area to fill
+ * IN size - size of the mem area to copy
+ *
+ * Return SLURM_SUCCESS or SLURM_ERROR if no element found
+ */
+int entity_get_data(const entity_t* entity, const char* key,
+		    void* value, size_t size);
+
+/*
+ * entity_get_data_ref - get the address of the pointer to the data associated
  *       with a particular key of an entity
  *
  * IN entity - the entity struct to use
@@ -120,10 +135,28 @@ const char* entity_get_type(const entity_t* entity);
  * Return value is the address of the (void*) pointer to the data associated to
  *       the key or NULL in case of error
  */
-void** entity_get_data(const entity_t* entity, const char* key);
+void* entity_get_data_ref(const entity_t* entity, const char* key);
 
 /*
- * entity_add_data - associate data to a particular key of an entity
+ * entity_set_data - copy the content of the input buffer up to the requested
+ *       size into the the buffer associated to a particular key of an entity
+ *       (note that the entity key value's buffer is allocated internally if
+ *       necessary)
+ *
+ * IN entity - the entity struct to use
+ * IN key - the targeted key
+ * IN value - ponter to the mem area to fill with
+ * IN size - size of the mem area to copy
+ *
+ * Return SLURM_SUCCESS or SLURM_ERROR if no element found
+ */
+int entity_set_data(const entity_t* entity, const char* key,
+		    void* value, size_t size);
+
+/*
+ * entity_set_data_ref - associate a particular key of an entity with the
+ *       input buffer, 
+ *       with a particular key of an entity
  *
  * IN entity - the entity struct to use
  * IN key - the key the data must be associated to
@@ -132,10 +165,10 @@ void** entity_get_data(const entity_t* entity, const char* key);
  * IN _free - a function to apply on the former value in case it exists
  *       before overriding
  *
- * Return 1 if the value was successfully associated or 0 otherwise
+ * Return SLURM_SUCCESS or SLURM_ERROR in case of error
  */
-int entity_add_data(entity_t* entity, const char* key, void* value,
-		    void (*_free)(void*));
+int entity_set_data_ref(const entity_t* entity, const char* key, void* value,
+			void (*_free)(void*));
 
 /*
  * entity_delete_data - delete the data associated with a particular key
@@ -157,48 +190,49 @@ void entity_delete_data(entity_t* entity, const char* key);
 void entity_clear_data(entity_t* entity);
 
 /*
- * entity_add_node - add a relational node to the list of nodes referring to
- *       this entity
+ * entity_add_node - add a per layout entity node to the list of nodes referring
+ *       to this entity
  *
  * IN entity - the entity struct to use
- * IN layout - the layout having a node referring to this entity
- * IN node - the node referring to it
+ * IN layout - the layout to create an entity node referring to this entity
  *
- * Notes: the entity does not own the memory of the relationnal nodes.
+ * Notes: - the returned entity_node does not point to anything at that point.
+ *          it will be added to a relational structure and will then have to 
+ *          be associated to the underlying relational node afterwards.
+ *        - the entity node will not own the memory of the relationnal node.
  */
-void entity_add_node(entity_t* entity, layout_t* layout, void* node);
+entity_node_t* entity_add_node(entity_t* entity, layout_t* layout);
 
 /*
- * entity_delete_node - remove a relational node from the list of nodes
- *       referring to this entity
+ * entity_get_node - get the entity node referring to a particular layout in
+ *       the list of entity nodes associated to an entity.
  *
  * IN entity - the entity struct to use
- * IN node - the node referring to it
+ * IN layout - the layout having an entity node referring to this entity
  *
- * Notes: the memory of the node data is not freed.
+ * Return value is the entity node of the layout or NULL if not found
  */
-void entity_delete_node(entity_t* entity, void* node);
+entity_node_t* entity_get_node(entity_t* entity, layout_t* layout);
 
 /*
- * entity_clear_nodes - remove all the relational node from the list of nodes
- *       referring to this entity
+ * entity_delete_node - remove the entity node referring to a particular layout
+ *       from the list of entity nodes associated to an entity
  *
  * IN entity - the entity struct to use
+ * IN layout - the layout having an entity node referring to this entity
  *
- * Notes: the memory of the nodes data is not freed.
+ * Return SLURM_SUCCESS or SLURM_ERROR
  */
-void entity_clear_nodes(entity_t* entity);
+int entity_delete_node(entity_t* entity, layout_t* layout);
 
 /*
- * entity_has_node - check wether or not a relational node is in the
- *       list of nodes referring to this entity
+ * entity_clear_nodes - remove all the entity node associated to an entity
  *
  * IN entity - the entity struct to use
- * IN node - the node to check for
  *
- * Return 1 if found, 0 otherwise
+ * Return SLURM_SUCCESS or SLURM_ERROR
  */
-int entity_has_node(entity_t* entity, void* node);
+int entity_clear_nodes(entity_t* entity);
 
 /*
  * entity_nodes_walk - iterate over the nodes referring to this entity
@@ -213,7 +247,7 @@ int entity_has_node(entity_t* entity, void* node);
  * IN arg - the arg to pass to the callback function for every node.
  */
 void entity_nodes_walk(entity_t* entity,
-		       void (*callback)(layout_t*, void*, void*),
+		       void (*callback)(layout_t*, entity_node_t*, void*),
 		       void* arg);
 
 /*
