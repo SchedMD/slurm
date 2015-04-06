@@ -232,6 +232,15 @@ documents those changes that are of interest to users and administrators.
  -- Add a new option -U/--Users to sshare to display only users
     information, parent and ancestors are not printed.
  -- Purge 50000 records at a time so that locks can released periodically.
+ -- Fix potentially uninitialized variables
+ -- ALPS - Fix issue where a frontend node could become unresponsive and never
+    added back into the system.
+ -- Gate epilog complete messages as done with other messages
+ -- If we have more than a certain number of agents (50) wait longer when gating
+    rpcs.
+ -- FrontEnd - ping non-responding or down nodes.
+ -- switch/cray: If CR_PACK_NODES is configured, then set the environment
+    variable "PMI_CRAY_NO_SMP_ENV=1"
 
 * Changes in Slurm 14.11.5
 ==========================

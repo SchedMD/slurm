@@ -46,6 +46,7 @@
 
 #include "switch_cray.h"
 #include "slurm/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/xstring.h"
 
@@ -173,6 +174,11 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 			  slurm_step_layout_type_name(job->task_dist));
 		non_smp = 1;
 		break;
+	}
+	if ((non_smp == 0) &&
+	    (slurm_get_select_type_param() & CR_PACK_NODES)) {
+		CRAY_INFO("Non-SMP ordering identified; CR_PACK_NODES");
+		non_smp = 1;
 	}
 	rc = env_array_overwrite_fmt(&job->env, PMI_CRAY_NO_SMP_ENV,
 				     "%d", non_smp);

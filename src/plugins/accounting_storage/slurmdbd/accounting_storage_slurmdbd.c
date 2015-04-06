@@ -524,7 +524,7 @@ extern int acct_storage_p_commit(void *db_conn, bool commit)
 {
 	slurmdbd_msg_t req;
 	dbd_fini_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_fini_msg_t));
 
@@ -547,7 +547,7 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = user_list;
@@ -569,7 +569,7 @@ extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_acct_coord_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_acct_coord_msg_t));
 	get_msg.acct_list = acct_list;
@@ -591,7 +591,7 @@ extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = acct_list;
@@ -612,7 +612,7 @@ extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = cluster_list;
@@ -634,7 +634,7 @@ extern int acct_storage_p_add_assocs(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = assoc_list;
@@ -655,7 +655,7 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = qos_list;
@@ -676,7 +676,7 @@ extern int acct_storage_p_add_res(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = res_list;
@@ -697,7 +697,7 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
 	get_msg.my_list = wckey_list;
@@ -718,7 +718,7 @@ extern int acct_storage_p_add_reservation(void *db_conn,
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_rec_msg_t));
 	get_msg.rec = resv;
@@ -1089,7 +1089,7 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_rec_msg_t));
 	get_msg.rec = resv;
@@ -1461,7 +1461,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 {
 	slurmdbd_msg_t req;
 	dbd_rec_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_rec_msg_t));
 	get_msg.rec = resv;
@@ -2088,7 +2088,7 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
-	int rc, resp_code;
+	int rc, resp_code = SLURM_SUCCESS;
 
 	memset(&get_msg, 0, sizeof(dbd_roll_usage_msg_t));
 	get_msg.end = sent_end;
