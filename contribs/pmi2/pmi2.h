@@ -369,7 +369,7 @@ int PMI2_Job_GetRank(int* rank);
   PMI2_Info_GetSize - get the number of processes on the node
 
   Output parameters:
-  . rank - the rank of this job
+  . size - the number of processes on the node
 
   Return values:
   Returns 'PMI2_SUCCESS' on success and an PMI error code on failure.
@@ -383,7 +383,7 @@ int PMI2_Info_GetSize(int* size);
   . jobid - job id of the job to connect to
 
   Output parameters:
-  . conn - connection structure used to exteblish communication with
+  . conn - connection structure used to establish communication with
     the remote job
   
   Return values:
