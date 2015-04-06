@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     non-standard statfs.
  -- Add a new option -U/--Users to sshare to display only users
     information, parent and ancestors are not printed.
+ -- Purge 50000 records at a time so that locks can released periodically.
 
 * Changes in Slurm 14.11.5
 ==========================

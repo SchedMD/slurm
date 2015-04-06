@@ -762,6 +762,25 @@ extern int mysql_db_query(mysql_conn_t *mysql_conn, char *query)
 	return rc;
 }
 
+/*
+ * Executes a single delete sql query.
+ * Returns the number of deleted rows, <0 for failure.
+ */
+extern int mysql_db_delete_affected_rows(mysql_conn_t *mysql_conn, char *query)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (!mysql_conn || !mysql_conn->db_conn) {
+		fatal("You haven't inited this storage yet.");
+		return 0;	/* For CLANG false positive */
+	}
+	slurm_mutex_lock(&mysql_conn->lock);
+	if (!(rc = _mysql_query_internal(mysql_conn->db_conn, query)))
+			rc = mysql_affected_rows(mysql_conn->db_conn);
+	slurm_mutex_unlock(&mysql_conn->lock);
+	return rc;
+}
+
 extern int mysql_db_ping(mysql_conn_t *mysql_conn)
 {
 	int rc;
