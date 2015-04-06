@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Gate epilog complete messages as done with other messages
  -- If we have more than a certain number of agents (50) wait longer when gating
     rpcs.
+ -- FrontEnd - ping non-responding or down nodes.
 
 * Changes in Slurm 14.11.5
 ==========================

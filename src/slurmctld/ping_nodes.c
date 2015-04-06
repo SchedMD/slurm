@@ -233,11 +233,13 @@ void ping_nodes (void)
 		    (front_end_ptr->last_response >= still_live_time))
 			continue;
 
-		/* Do not keep pinging down nodes since this can induce
-		 * huge delays in hierarchical communication fail-over */
-		if (IS_NODE_NO_RESPOND(front_end_ptr) &&
-		    IS_NODE_DOWN(front_end_ptr))
-			continue;
+		/* The problems that exist on a normal system with
+		 * hierarchical communication don't exist on a
+		 * front-end system, so it is ok to ping none
+		 * responding or down front-end nodes. */
+		/* if (IS_NODE_NO_RESPOND(front_end_ptr) && */
+		/*     IS_NODE_DOWN(front_end_ptr)) */
+		/* 	continue; */
 
 		if (ping_agent_args->protocol_version >
 		    front_end_ptr->protocol_version)
