@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- FrontEnd - ping non-responding or down nodes.
  -- switch/cray: If CR_PACK_NODES is configured, then set the environment
     variable "PMI_CRAY_NO_SMP_ENV=1"
+ -- Fix invalid memory reference in SlurmDBD when putting a node up.
 
 * Changes in Slurm 14.11.5
 ==========================
