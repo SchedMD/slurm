@@ -1590,6 +1590,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
  * the epilog denoting the completion of a job it its entirety */
 static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 {
+	static int active_rpc_cnt = 0;
 	static time_t config_update = 0;
 	static bool defer_sched = false;
 	DEF_TIMERS;
@@ -1619,11 +1620,13 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		config_update = slurmctld_conf.last_update;
 	}
 
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
 		run_scheduler = true;
 	unlock_slurmctld(job_write_lock);
+	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	if (epilog_msg->return_code)

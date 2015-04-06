@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potentially uninitialized variables
  -- ALPS - Fix issue where a frontend node could become unresponsive and never
     added back into the system.
+ -- Gate epilog complete messages as done with other messages
 
 * Changes in Slurm 14.11.5
 ==========================
