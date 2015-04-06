@@ -1691,7 +1691,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* phase 1: make availability bitmaps for switches */
 #if SELECT_DEBUG
-	debug5("_job_test_topo: phase 1");
+	debug("%s: phase 1", __func__);
 #endif
 	sufficient = false;
 	for (i=0; i<switch_record_cnt; i++) {
@@ -1732,7 +1732,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* phase 2: accumulate all cpu resources for each switch */
 #if SELECT_DEBUG
-	debug5("_job_test_topo: phase 2");
+	debug("%s: phase 2", __func__);
 #endif
 	for (i = 0; i < node_record_count; i++) {
 		avail_cpus = _get_avail_cpus(job_ptr, i);
@@ -1745,7 +1745,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* phase 3 */
 #if SELECT_DEBUG
-	debug5("_job_test_topo: phase 3");
+	debug("%s: phase 3", __func__);
 #endif
 	/* Determine lowest level switch satifying request with best fit */
 	best_fit_inx = -1;
@@ -1766,15 +1766,15 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		debug("_job_test_topo: could not find resources for job %u",
-		      job_ptr->job_id);
+		debug("%s: could not find resources for job %u",
+		      __func__, job_ptr->job_id);
 		rc = EINVAL;
 		goto fini;
 	}
 
 	/* phase 4: select resources from already allocated leaves */
 #if SELECT_DEBUG
-	debug5("_job_test_topo: phase 4");
+	debug("%s: phase 4", __func__);
 #endif
 	/* Identify usable leafs (within higher switch having best fit) */
 	for (j=0; j<switch_record_cnt; j++) {
@@ -1881,7 +1881,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* phase 5 */
 #if SELECT_DEBUG
-	debug5("_job_test_topo: phase 5");
+	debug("%s: phase 5", __func__);
 #endif
 	/* Select resources from these leafs on a best-fit basis */
 	/* Compute best-switch nodes available array */
@@ -1911,9 +1911,9 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 		}
 #if SELECT_DEBUG
-		debug5("found switch %d for allocation: nodes %d cpus %d "
-		       "allocated %u", best_fit_location, best_fit_nodes,
-		       best_fit_cpus, alloc_nodes);
+		debug("%s: found switch %d for allocation: nodes %d cpus %d "
+		       "allocated %u", __func__, best_fit_location,
+		       best_fit_nodes, best_fit_cpus, alloc_nodes);
 #endif
 		if (best_fit_nodes == 0)
 			break;
