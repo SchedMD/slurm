@@ -2348,6 +2348,11 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			best_fit_inx = -1;
 		}
 
+		if ((req_switch_cnt == 1) && (req_switch_id == j)) {
+			best_fit_inx = j;
+			break;
+		}
+
 		/*
 		 * If first possibility OR
 		 * lower level switch OR
@@ -2363,8 +2368,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		      switch_record_table[best_fit_inx].level) &&
 		     (switches_node_cnt[j] < switches_node_cnt[best_fit_inx]))){
 			best_fit_inx = j;
-			if ((req_switch_cnt == 1) && (req_switch_id == j))
-				break;
 		}
 	}
 	if (best_fit_inx == -1) {
