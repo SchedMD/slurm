@@ -87,6 +87,10 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+/* Print only the users and not the hierarchy.
+ */
+#define PRINT_USERS_ONLY 0x01
+
 typedef enum {
 	SSHARE_TIME_SECS,
 	SSHARE_TIME_MINS,
@@ -100,6 +104,6 @@ extern sshare_time_format_t time_format;
 extern char *time_format_string;
 extern List clusters;
 
-extern int process(shares_response_msg_t *msg);
+extern int process(shares_response_msg_t *msg, uint16_t);
 
 #endif

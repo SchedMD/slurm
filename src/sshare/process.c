@@ -42,7 +42,7 @@
 
 extern int long_flag;
 
-extern int process(shares_response_msg_t *resp)
+extern int process(shares_response_msg_t *resp, uint16_t options)
 {
 	uint32_t flags = slurmctld_conf.priority_flags;
 	int rc = SLURM_SUCCESS;
@@ -212,6 +212,9 @@ extern int process(shares_response_msg_t *resp)
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
+
+		if ((options & PRINT_USERS_ONLY) && share->user == 0)
+			continue;
 
 		while ((field = list_next(itr2))) {
 			switch(field->type) {

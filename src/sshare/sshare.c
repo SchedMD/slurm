@@ -70,6 +70,7 @@ main (int argc, char *argv[])
 	char *temp = NULL;
 	int option_index;
 	bool all_users = 0;
+	uint16_t options;
 
 	static struct option long_options[] = {
 		{"accounts", 1, 0, 'A'},
@@ -81,6 +82,7 @@ main (int argc, char *argv[])
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
 		{"users",    1, 0, 'u'},
+		{"Users",    0, 0, 'U'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
 		{"help",     0, 0, OPT_LONG_HELP},
@@ -96,7 +98,7 @@ main (int argc, char *argv[])
 	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqu:t:vV",
+	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqUu:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -152,6 +154,9 @@ main (int argc, char *argv[])
 				req_msg.user_list =
 					list_create(slurm_destroy_char);
 			_addto_name_char_list(req_msg.user_list, optarg, 0);
+			break;
+		case 'U':
+			options |= PRINT_USERS_ONLY;
 			break;
 		case 'v':
 			quiet_flag = -1;
@@ -238,7 +243,7 @@ main (int argc, char *argv[])
 	}
 
 	/* do stuff with it */
-	process(resp_msg);
+	process(resp_msg, options);
 
 	slurm_free_shares_response_msg(resp_msg);
 
