@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- If we have more than a certain number of agents (50) wait longer when gating
     rpcs.
  -- FrontEnd - ping non-responding or down nodes.
+ -- switch/cray: If CR_PACK_NODES is configured, then set the environment
+    variable "PMI_CRAY_NO_SMP_ENV=1"
 
 * Changes in Slurm 14.11.5
 ==========================
