@@ -73,6 +73,7 @@ HIGHLIGHTS
     version of Slurm in order to be used by any Slurm command or daemon. This
     should eliminate some very difficult to diagnose problems due to use of old
     plugins.
+ -- Optimize resource allocation for systems with dragonfly networks.
 
 RPMBUILD CHANGES
 ================
@@ -107,6 +108,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     be started again.
  -- Added LaunchParameters configuration parameter.
  -- Added new partition configuration parameter "ExclusiveUser=yes|no".
+ -- Add TopologyParam configuration parameter. Optional value of "dragonfly"
+    is supported.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

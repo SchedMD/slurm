@@ -342,6 +342,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskPlugin", S_P_STRING},
 	{"TaskPluginParam", S_P_STRING},
 	{"TmpFS", S_P_STRING},
+	{"TopologyParam", S_P_STRING},
 	{"TopologyPlugin", S_P_STRING},
 	{"TrackWCKey", S_P_BOOLEAN},
 	{"TreeWidth", S_P_UINT16},
@@ -2362,6 +2363,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->task_plugin);
 	xfree (ctl_conf_ptr->task_prolog);
 	xfree (ctl_conf_ptr->tmp_fs);
+	xfree (ctl_conf_ptr->topology_param);
 	xfree (ctl_conf_ptr->topology_plugin);
 	xfree (ctl_conf_ptr->unkillable_program);
 	xfree (ctl_conf_ptr->version);
@@ -2531,6 +2533,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->task_plugin_param		= 0;
 	xfree (ctl_conf_ptr->task_prolog);
 	xfree (ctl_conf_ptr->tmp_fs);
+	xfree (ctl_conf_ptr->topology_param);
 	xfree (ctl_conf_ptr->topology_plugin);
 	ctl_conf_ptr->tree_width       		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->unkillable_program);
@@ -4199,6 +4202,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->wait_time, "WaitTime", hashtbl))
 		conf->wait_time = DEFAULT_WAIT_TIME;
+
+	s_p_get_string(&conf->topology_param, "TopologyParam", hashtbl);
 
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);

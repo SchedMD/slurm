@@ -176,6 +176,7 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 bool     backfill_busy_nodes  = false;
+bool     have_dragonfly       = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_qos       = false;
 uint64_t select_debug_flags   = 0;
@@ -1859,10 +1860,17 @@ _compare_support(const void *v, const void *v1)
  */
 extern int init(void)
 {
+	char *topo_param;
+
 	cr_type = slurmctld_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
 	select_debug_flags = slurm_get_debug_flags();
+
+	topo_param = slurm_get_topology_param();
+	if (topo_param && strstr(topo_param, "dragonfly"))
+		have_dragonfly = true;
+	xfree(topo_param);
 
 	return SLURM_SUCCESS;
 }

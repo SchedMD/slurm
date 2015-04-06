@@ -26,6 +26,9 @@ documents those changes that are of interest to users and administrators.
     been removed for consistency with the environment variables available in
     the Prolog and Epilog scripts.
  -- Major additions to the layouts framework code.
+ -- Add "TopologyParam" configuration parameter. Optional value of "dragonfly"
+    is supported.
+ -- Optimize resource allocation for systems with dragonfly networks.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

@@ -4,9 +4,11 @@
 
 <p>Slurm can be configured to support topology-aware resource
 allocation to optimize job performance.
-There are two primary modes of operation, one to optimize performance on
+Slurm supports several modes of operation, one to optimize performance on
 systems with a three-dimensional torus interconnect and another for
-a hierarchical interconnect.</p>
+a hierarchical interconnect.
+The hierarchical mode of operation supports both fat-tree or dragonfly networks,
+using slightly different algorithms.</p>
 
 <p>Slurm's native mode of resource selection is to consider the nodes
 as a one-dimensional array.
@@ -142,6 +144,12 @@ This configuration can be useful if one wants to schedule multiple phyisical
 clusters as a single logical cluster under the control of a single slurmctld
 daemon.</p>
 
+<p>For systems with a dragonfly network, configure Slurm with
+<i>TopologyPlugin=topology/tree</i> plus <i>TopologyParam=dragonfly</i>.
+If a single job can not be entirely placed within a single network leaf
+switch, the job will be spread across as many leaf switches as possible
+in order to optimize the job's network bandwidth.</p>
+
 <h2>User Options</h2>
 
 <p>For use with the topology/tree plugin, user can also specify the maximum
@@ -171,6 +179,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 5 February 2014</p>
+<p style="text-align:center;">Last modified 7 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
