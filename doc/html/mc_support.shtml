@@ -5,7 +5,7 @@
 <h2>Contents</h2>
 <UL>
 <LI> <a href=#defs>Definitions</a>
-<LI> <a href=#flags>Overview of new srun flags</a>
+<LI> <a href=#flags>Overview of srun flags</a>
 <LI> <a href=#motivation>Motivation behind high-level srun flags</a>
 <LI> <a href=#utilities>Extensions to sinfo/squeue/scontrol</a>
 <LI> <a href=#config>Configuration settings in slurm.conf</a>
@@ -14,9 +14,17 @@
 <a name=defs>
 <h2>Definitions</h2></a>
 
-<P> <b>Socket/Core/Thread</b> - Figure 1 illustrates the notion of
-Socket, Core and Thread as it is defined in Slurm's multi-core/multi-thread
-support documentation.</p>
+<dl>
+<dt><b>BaseBoard</b>
+<dd>Also called motherboard.
+<dt><b>LDom</b>
+<dd>Locality domain or NUMA domain. May be equivalent to BaseBoard or Socket.
+<dt><b>Socket/Core/Thread</b>
+<dd>Figure 1 illustrates the notion of Socket, Core and Thread as it is defined
+in Slurm's multi-core/multi-thread support documentation.
+<dt><b>CPU</b>
+<dd>Depending upon system configuration, this can be either a core or a thread.
+</dl>
 
 <center>
 <img src="mc_support.gif">
@@ -41,12 +49,12 @@ allowing a process to run on more than one logical processor.
 </dl>
 
 <a name=flags>
-<h2>Overview of new srun flags</h2></a>
+<h2>Overview of srun flags</h2></a>
 
-<p> Several flags have been defined to allow users to
+<p>Many flags have been defined to allow users to
 better take advantage of this architecture by
 explicitly specifying the number of sockets, cores, and threads required
-by their application.  Table 1 summarizes the new multi-core flags.
+by their application.  Table 1 summarizes these options.
 
 <P>
 <table border=1 cellspacing=0 cellpadding=4>
@@ -77,13 +85,13 @@ by their application.  Table 1 summarizes the new multi-core flags.
     <td> Combined shortcut option for --sockets-per-node, --cores-per_cpu, --threads-per_core
 </td></tr>
 <tr><td colspan=2>
-<b><a href="#srun_dist">New Distributions</b>
+<b><a href="#srun_dist">Task Distribution Options</b>
 </td></tr>
 <tr>
     <td> -m / --distribution </td>
-    <td> Distributions of: block | cyclic | hostfile
+    <td> Distributions of: arbitrary | block | cyclic
     		| <a href="dist_plane.html"><u>plane=<i>x</i></u></a>
-		| <u>[block|cyclic]:[block|cyclic]</u>
+		| <u>[block|cyclic]:[block|cyclic|fcyclic]</u>
 </td></tr>
 <tr><td colspan=2>
 <b><a href="#srun_consres">Memory as a consumable resource</a></b>
@@ -100,6 +108,9 @@ by their application.  Table 1 summarizes the new multi-core flags.
 <b><a href="#srun_ntasks">Task invocation control</a></b>
 </td></tr>
 <tr>
+    <td> --cpus-per-task=<i>CPUs</i></td>
+    <td> number of CPUs required per task
+</td></tr>
     <td> --ntasks-per-node=<i>ntasks</i></td>
     <td> number of tasks to invoke on each node
 </td></tr>
@@ -108,6 +119,9 @@ by their application.  Table 1 summarizes the new multi-core flags.
 </td></tr>
     <td> --ntasks-per-core=<i>ntasks</i></td>
     <td> number of tasks to invoke on each core
+</td></tr>
+    <td> --overcommit</td>
+    <td> Permit more than one task per CPU
 </td></tr>
 <tr><td colspan=2>
 <b><a href="#srun_hints">Application hints</a></b>
@@ -122,15 +136,26 @@ by their application.  Table 1 summarizes the new multi-core flags.
     <td> --hint=[no]multithread</td>
     <td> [don't] use extra threads with in-core multi-threading
 </td></tr>
+<tr><td colspan=2>
+<b><a href="#srun_hints">Resources reserved for system use</a></b>
+</td></tr>
+<tr>
+    <td> --core-spec=<i>cores</i></td>
+    <td> Count of cores to reserve for system use
+</td></tr>
+    <td> --thread-spec=<i>threads</i></td>
+    <td> Count of threads to reserve for system use (future)
+</td></tr>
 </table>
 
 <p>
 <center>
-Table 1: New srun flags to support the multi-core/multi-threaded environment
+Table 1: srun flags to support the multi-core/multi-threaded environment
 </center>
 
 <p>It is important to note that many of these flags are only meaningful if the
 processes' have some affinity to specific CPUs and (optionally) memory.
+Inconsistent options generally result in errors.
 Task affinity is configured using the TaskPlugin parameter in the slurm.conf file.
 Several options exist for the TaskPlugin depending upon system architecture
 and available software, any of them except "task/none" will find tasks to CPUs.
@@ -155,6 +180,20 @@ See the "Task Launch" section if generating slurm.conf via
     mask_cpu:<i>&lt;list&gt;</i> specify a CPU ID binding mask for each
                     task where <i>&lt;list&gt;</i> is
                     <i>&lt;mask1&gt;,&lt;mask2&gt;,...&lt;maskN&gt;</i>
+    rank_ldom       bind task by rank to CPUs in a NUMA
+                    locality domain
+    map_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID
+                    for each task where <i>&lt;list&gt;</i> is
+                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
+    rank_ldom       bind task by rank to CPUs in a NUMA
+                    locality domain where <i>&lt;list&gt;</i> is
+                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
+    mask_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID mask
+                    for each task where <i>&lt;list&gt;</i> is
+                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
+    boards          auto-generated masks bind to boards
+    ldoms           auto-generated masks bind to NUMA locality
+                    domains
     sockets         auto-generated masks bind to sockets
     cores           auto-generated masks bind to cores
     threads         auto-generated masks bind to threads
@@ -164,8 +203,8 @@ See the "Task Launch" section if generating slurm.conf via
 <p> The affinity can be either set to either a specific logical processor
 (socket, core, threads) or at a coarser granularity than the lowest level
 of logical processor (core or thread).
-In the later case the processes are allowed to roam within a specific
-socket or core.
+In the later case the processes are allowed to utilize multiple processors
+within a specific socket or core.
 
 <p>Examples:</p>
 
@@ -188,9 +227,9 @@ of nodes, sockets,&nbsp; cores, and threads:</p>
 
 <PRE>
 -B --extra-node-info=<i>S[:C[:T]]</i>            Expands to:
-    --sockets-per-node=<i>S</i>      number of sockets per node to allocate
-    --cores-per-socket=<i>C</i>      number of cores per socket to allocate
-    --threads-per-core=<i>T</i>      number of threads per core to allocate
+  --sockets-per-node=<i>S</i>   number of sockets per node to allocate
+  --cores-per-socket=<i>C</i>   number of cores per socket to allocate
+  --threads-per-core=<i>T</i>   number of threads per core to allocate
                 each field can be 'min' or wildcard '*'
 
      <font face="serif">Total cpus requested = (<i>Nodes</i>) x (<i>S</i> x <i>C</i> x <i>T</i>)</font>
@@ -231,32 +270,37 @@ note: compare the above with the previous corresponding --cpu_bind=... examples
 <p>See also 'srun --help' and 'man srun'</p>
 
 <a name="srun_dist">
-<h3>New distributions: Extensions to -m / --distribution</h3></a>
+<h3>Task distribution options: Extensions to -m / --distribution</h3></a>
 
 <p>The -m / --distribution option for distributing processes across nodes
 has been extended to also describe the distribution within the lowest level
 of logical processors.
 Available distributions include:
 <br>
-block | cyclic | hostfile | <u>plane=<i>x</i></u> | <u>[block|cyclic]:[block|cyclic]</u>)
+arbitrary | block | cyclic | <u>plane=<i>x</i></u> | <u>[block|cyclic]:[block|cyclic|fcyclic]</u>
 </p>
 
-<p>The new <A HREF="dist_plane.html">plane distribution</A> (plane=<i>x</i>)
-results in a block cyclic distribution of blocksize equal to <i>x</i>.
+<p>The  <A HREF="dist_plane.html">plane distribution</A> (plane=<i>x</i>)
+results in a block:cyclic distribution of blocksize equal to <i>x</i>.
 In the following we use "lowest level of logical processors"
 to describe sockets, cores or threads depending of the architecture.
-The new distribution divides
+The distribution divides
 the cluster into planes (including a number of the lowest level of logical
 processors on each node) and then schedule first within each plane and then
 across planes.</p>
 
-<p>For the two dimensional distributions ([block|cyclic]:[block|cyclic]),
+<p>For the two dimensional distributions ([block|cyclic]:[block|cyclic|fcyclic]),
 the second distribution (after ":") allows users to specify a distribution
 method for processes within a node and applies to the lowest level of logical
-processors (sockets, core or thread depending on the architecture).</p>
+processors (sockets, core or thread depending on the architecture).
+When a task requires more than one CPU, the <i>cyclic</i> will allocate all
+of those CPUs as a group (i.e. within the same socket if possible) while 
+<i>fcyclic</i> would distribute each of those CPU of the in a cyclic fashion
+across sockets.</p>
 
-<p>The binding is enabled automatically when high level flags are used as long as the task/affinity plug-in
-is enabled. To disable binding at the job level use --cpu_bind=no.</p>
+<p>The binding is enabled automatically when high level flags are used as long
+as the task/affinity plug-in is enabled. To disable binding at the job level
+use --cpu_bind=no.</p>
 
 <p>The distribution flags can be combined with the other switches:
 
@@ -429,7 +473,7 @@ flags much easier to use.</li>
 
 <p>Also as illustrated in the example below it is much simpler to specify
 a different layout using the high-level flags since users do not have to
-recalculate mask or CPU IDs. The new approach is very effortless compared to
+recalculate mask or CPU IDs. This approach is much simpler than
 rearranging the mask or map.</p>
 
 <p>Given a 32-process MPI job and a four dual-socket dual-core node
@@ -437,11 +481,11 @@ cluster, we want to use a block distribution across the four nodes and then a
 cyclic distribution within the node across the physical processors. We have had
 several requests from users that they would like this distribution to be the
 default distribution on multi-core clusters. Below we show how to obtain the
-wanted layout using 1) the new high-level flags and 2) --cpubind</p>
+wanted layout using 1) the high-level flags and 2) --cpubind</p>
 
 <h3>High-Level flags</h3>
 
-<p>Using Slurm's new high-level flag, users can obtain the above layout with:</p>
+<p>Using Slurm's high-level flag, users can obtain the above layout with:</p>
 
 <DL>
 <DL>
@@ -605,7 +649,7 @@ numbering.)</p>
 <h3>Block map_cpu on a system with cyclic core numbering</h3>
 
 <p>If users do not check their system's core numbering before specifying
-the map_cpu list and thereby do not realize that the new system has cyclic core
+the map_cpu list and thereby do not realize that the system has cyclic core
 numbering instead of block numbering then they will not get the expected
 layout.. For example, if they decide to re-use their mpirun command from above:</p>
 
@@ -854,8 +898,9 @@ TaskPlugin=task/affinity          # enable task affinity
 #    "TaskPlugin" : Define a task launch plugin. This may be used to
 #                   provide resource management within a node (e.g. pinning
 #                   tasks to specific processors). Permissible values are:
-#      "task/none"     : no task launch actions, the default.
 #      "task/affinity" : CPU affinity support
+#      "task/cgroup"   : bind tasks to resources using Linux cgroup
+#      "task/none"     : no task launch actions, the default
 #
 # Example:
 #
@@ -874,82 +919,10 @@ FastSchedule=1
 NodeName=dualcore[01-16] CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
 </PRE>
 
-<p>Below is a more complete description of the configuration possible
-using NodeName:
-
-<PRE>
-#
-#  o Node configuration
-#
-#    The configuration information of nodes (or machines) to be managed
-#    by Slurm is described here. The only required value in this section
-#    of the config file is the "NodeName" field, which specifies the
-#    hostnames of the node or nodes to manage. It is recommended, however,
-#    that baseline values for the node configuration be established
-#    using the following parameters (see slurm.config(5) for more info):
-#
-#     "NodeName"   : The only required node configuration parameter, NodeName
-#                    specifies a node or set of nodes to be managed by SLURM.
-#                    The special NodeName of "DEFAULT" may be used to establish
-#                    default node configuration parameters for subsequent node
-#                    records. Typically this would be the string that
-#                    `/bin/hostname -s` would return on the node. However
-#                    NodeName may be an arbitrary string if NodeHostname is
-#                    used (see below).
-#
-#     "Feature"    : comma separated list of "features" for the given node(s)
-#
-#     "NodeAddr"   : preferred address for contacting the node. This may be
-#                    either a name or IP address.
-#
-#     "NodeHostname"
-#                  : the string that `/bin/hostname -s` would return on the
-#                    node.  In other words, NodeName may be the name other than
-#                    the real hostname.
-#
-#     "RealMemory" : Amount of real memory (in Megabytes)
-#
-#     "CPUs"       : Number of logical processors on the node.
-#                    If CPUs is omitted, it will be inferred from:
-#                           Sockets, CoresPerSocket, and ThreadsPerCore.
-#
-#     "Sockets"    : Number of physical processor sockets/chips on the node.
-#                    If Sockets is omitted, it will be inferred from:
-#                           CPUs, CoresPerSocket, and ThreadsPerCore.
-#
-#     "CoresPerSocket"
-#                  : Number of cores in a single physical processor socket
-#                    The CoresPerSocket value describes physical cores, not
-#                    the logical number of processors per socket.
-#                    The default value is 1.
-#
-#     "ThreadsPerCore"
-#                  : Number of logical threads in a single physical core.
-#                    The default value is 1.
-#
-#     "State"      : Initial state (IDLE, DOWN, etc.)
-#
-#     "TmpDisk"    : Temporary disk space available on node
-#
-#     "Weight"     : Priority of node for scheduling purposes
-#
-#   If any of the above values are set for a node or group of nodes, and
-#   that node checks in to the slurm controller with less than the
-#   configured resources, the node's state will be set to DOWN, in order
-#   to avoid scheduling any jobs on a possibly misconfigured machine.
-#
-# Example Node configuration:
-#
-# NodeName=DEFAULT CPUs=2 TmpDisk=64000 State=UNKNOWN
-# NodeName=host[0-25] NodeAddr=ehost[0-25] Weight=16
-# NodeName=host26     NodeAddr=ehost26     Weight=32 Feature=graphics_card
-# NodeName=dualcore01  CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
-# NodeName=dualcore02  CPUs=4o Sockets=2 CoresPerSocket=2 ThreadsPerCore=1
-# NodeName=multicore03 CPUs=64 Sockets=8 CoresPerSocket=4 ThreadsPerCore=2
-</PRE>
-
+<p>For a more complete description of the various node configuration options
+see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 21 April 2014</p>
+<p style="text-align:center;">Last modified 1 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
 

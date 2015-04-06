@@ -49,6 +49,9 @@
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 
+#define MAX_PURGE_LIMIT 50000 /* Number of records that are purged at a time
+				 so that locks can be periodically released. */
+
 typedef struct {
 	char *cluster_nodes;
 	char *cpu_count;
@@ -2198,11 +2201,16 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0",
-				       cluster_name, event_table, curr_end);
+				       "time_start <= %ld && time_end != 0 "
+				       "LIMIT %d",
+				       cluster_name, event_table, curr_end,
+				       MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn, query)) > 0);
+
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old event data");
@@ -2235,11 +2243,15 @@ exit_events:
 				return rc;
 		}
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0",
-				       cluster_name, suspend_table, curr_end);
+				       "time_start <= %ld && time_end != 0 "
+				       "LIMIT %d",
+				       cluster_name, suspend_table, curr_end,
+				       MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn, query)) > 0);
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old suspend data");
@@ -2273,11 +2285,16 @@ exit_suspend:
 		}
 
 		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0",
-				       cluster_name, step_table, curr_end);
+				       "time_start <= %ld && time_end != 0 "
+				       "LIMIT %d",
+				       cluster_name, step_table, curr_end,
+				       MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn, query)) > 0);
+
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old step data");
@@ -2311,11 +2328,15 @@ exit_steps:
 
 		query = xstrdup_printf("delete from \"%s_%s\" "
 				       "where time_submit <= %ld "
-				       "&& time_end != 0",
-				       cluster_name, job_table, curr_end);
+				       "&& time_end != 0 LIMIT %d",
+				       cluster_name, job_table, curr_end,
+				       MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn, query)) > 0);
+
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old job data");
@@ -2349,11 +2370,15 @@ exit_jobs:
 
 		query = xstrdup_printf("delete from \"%s_%s\" "
 				       "where time_start <= %ld "
-				       "&& time_end != 0",
-				       cluster_name, resv_table, curr_end);
+				       "&& time_end != 0 LIMIT %d",
+				       cluster_name, resv_table, curr_end,
+				       MAX_PURGE_LIMIT);
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn, query)) > 0);
+
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old resv data");

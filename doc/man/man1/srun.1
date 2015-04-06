@@ -630,7 +630,7 @@ See \fBEXAMPLE\fR below.
 
 .TP
 \fB\-\-export\fR=<\fIenvironment variables | NONE\fR>
-Identify which environment variables are propagated to the laucnhed application.
+Identify which environment variables are propagated to the launched application.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
@@ -787,7 +787,7 @@ Multiple license names should be comma separated (e.g.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR]>[,\fIPack\fR|\fINoPack\fR]
+\fIarbitrary\fR|<\fIblock\fR|\fIcyclic\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR]>[,\fIPack\fR|\fINoPack\fR]
 
 Specify alternate distribution methods for remote processes.
 This option controls the assignment of tasks to the nodes on which
@@ -796,6 +796,7 @@ to tasks for binding (task affinity). The first distribution
 method (before the ":") controls the distribution of resources across
 nodes. The optional second distribution method (after the ":")
 controls the distribution of resources across sockets within a node.
+
 Note that with select/cons_res, the number of cpus allocated on each
 socket and node may be different. Refer to
 http://slurm.schedmd.com/mc_support.html
@@ -878,6 +879,15 @@ that consecutive tasks share a socket.
 The cyclic distribution method will distribute tasks to sockets such
 that consecutive tasks are distributed over consecutive sockets (in a
 round\-robin fashion).
+Tasks requiring more than one CPU will have all of those CPUs allocated on a
+single socket if possible.
+.TP
+.B fcyclic
+The fcyclic distribution method will distribute tasks to sockets such
+that consecutive tasks are distributed over consecutive sockets (in a
+round\-robin fashion).
+Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
+fashion across sockets.
 .RE
 
 .TP
@@ -1683,10 +1693,10 @@ Specify a minimum amount of temporary disk space.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
-By default the connection between slurmdstepd and the user launched application
+By default the connection between slurmstepd and the user launched application
 is over a pipe. The stdio output written by the application is buffered
 by the glibc until it is flushed or the output is set as unbuffered.
-See setbuf(3).If this option is specified the tasks are executed with
+See setbuf(3). If this option is specified the tasks are executed with
 a pseudo terminal so that the application output is unbuffered.
 .TP
 \fB\-\-usage\fR
@@ -1736,7 +1746,7 @@ If you specify a minimum node or processor count larger than can be satisfied
 by the supplied host list, additional resources will be allocated on other
 nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
-a repitition count may be appended to a host name. For example
+a repetition count may be appended to a host name. For example
 "host1,host1" and "host1*2" are equivalent.
 
 .TP

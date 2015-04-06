@@ -9734,19 +9734,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if ((job_specs->pn_min_cpus != (uint16_t) NO_VAL) &&
 	    (job_specs->pn_min_cpus != 0)) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized
-			 || (detail_ptr->pn_min_cpus
-			     > job_specs->pn_min_cpus)) {
+		}else {
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
 			info("update_job: setting pn_min_cpus to %u for "
 			     "job_id %u", job_specs->pn_min_cpus,
 			     job_ptr->job_id);
-		} else {
-			error("Attempt to increase pn_min_cpus for job %u",
-			      job_ptr->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10133,13 +10128,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (job_specs->pn_min_memory != NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_specs->pn_min_memory
-			 == detail_ptr->pn_min_memory)
+		} else if (job_specs->pn_min_memory
+			   == detail_ptr->pn_min_memory) {
 			debug("sched: update_job: new memory limit identical "
 			      "to old limit for job %u", job_ptr->job_id);
-		else if (authorized) {
+		} else {
 			char *entity;
 			if (job_specs->pn_min_memory & MEM_PER_CPU)
 				entity = "cpu";
@@ -10155,32 +10151,21 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_pn_min_memory =
 				acct_policy_limit_set.pn_min_memory;
-		} else {
-			error("sched: Attempt to modify pn_min_memory for "
-			      "job %u", job_ptr->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
 	if (job_specs->pn_min_tmp_disk != NO_VAL) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized
-			 || (detail_ptr->pn_min_tmp_disk
-			     > job_specs->pn_min_tmp_disk)) {
+		} else {
 			detail_ptr->pn_min_tmp_disk =
 				job_specs->pn_min_tmp_disk;
 			info("sched: update_job: setting job_min_tmp_disk to "
 			     "%u for job_id %u", job_specs->pn_min_tmp_disk,
 			     job_ptr->job_id);
-		} else {
-
-			error("sched: Attempt to modify pn_min_tmp_disk "
-			      "for job %u",
-			      job_ptr->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)

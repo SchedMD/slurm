@@ -36,7 +36,7 @@ prepend-path	PERL5LIB	"$slurmdir/$perldir"
 
 # other useful environment variables
 setenv	SINFO_FORMAT	{%9P %5a %8s %.10l %.6c %.6z %.7D %10T %N}
-setenv	SQUEUE_FORMAT	{%.6i %.8u %.7a %.14j %.3t %9r %19S %.10M %.10L %.5D %.4C}
+setenv	SQUEUE_FORMAT	{%.8i %.8u %.7a %.14j %.3t %9r %19S %.10M %.10L %.5D %.4C}
 setenv	SQUEUE_ALL	{yes}	;# show hidden partitions, too
 setenv	SQUEUE_SORT	{-t,e,S}
 

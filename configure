@@ -1698,10 +1698,10 @@ Optional Features:
                           Run SLURM in an emulated Cray mode
   --enable-native-cray    Run SLURM natively on a Cray without ALPS
   --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
-  --enable-developer      enable developer options (-Werror - also sets
-                          --enable-debug as well)
-  --enable-debug          enable debugging code for development (automatically
-                          set if --enable-developer is used)
+  --enable-developer      enable developer options (asserts, -Werror - also
+                          sets --enable-debug as well)
+  --disable-debug         disable debugging symbols and compile with
+                          optimizations
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
   --enable-front-end      enable slurmd operation on a front-end
@@ -18258,7 +18258,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
 		 pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h \
-		 sys/termios.h float.h
+		 sys/termios.h float.h sys/statvfs.h
 
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -19603,6 +19603,8 @@ for ac_func in \
    get_current_dir_name \
    faccessat \
    eaccess \
+   statvfs \
+   statfs \
 
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
@@ -22602,10 +22604,14 @@ $as_echo "doh!" >&6; }
 fi
 
   if test "$x_ac_developer" = yes; then
-     test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
-     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
-     # automatically turn on --enable-debug if being a developer
-     x_ac_debug=yes
+    test "$GCC" = yes && CFLAGS="$CFLAGS -Werror"
+    test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
+    # automatically turn on --enable-debug if being a developer
+    x_ac_debug=yes
+  else
+
+$as_echo "#define NDEBUG 1" >>confdefs.h
+
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_developer=no}" >&5
 $as_echo "${x_ac_developer=no}" >&6; }
@@ -22622,6 +22628,8 @@ $as_echo "doh!" >&6; }
              as_fn_error $? "bad value \"$enableval\" for --enable-debug" "$LINENO" 5 ;;
       esac
 
+else
+  x_ac_debug=yes
 
 fi
 
@@ -22630,10 +22638,6 @@ fi
     # is the only one that is looked at.
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O0 -fno-strict-aliasing"
     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O0 -fno-strict-aliasing"
-  else
-
-$as_echo "#define NDEBUG 1" >>confdefs.h
-
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_debug=no}" >&5
 $as_echo "${x_ac_debug=no}" >&6; }

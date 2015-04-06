@@ -652,7 +652,7 @@ between clusters.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR]>
+\fIarbitrary\fR|<\fIblock\fR|\fIcyclic\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR]>
 
 Specify alternate distribution methods for remote processes.
 In sbatch, this only sets environment variables that will be used by
@@ -736,6 +736,15 @@ that consecutive tasks share a socket.
 The cyclic distribution method will distribute tasks to sockets such
 that consecutive tasks are distributed over consecutive sockets (in a
 round\-robin fashion).
+Tasks requiring more than one CPU will have all of those CPUs allocated on a
+single socket if possible.
+.TP
+.B fcyclic
+The fcyclic distribution method will distribute tasks to sockets such
+that consecutive tasks are distributed over consecutive sockets (in a
+round\-robin fashion).
+Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
+fashion across sockets.
 .RE
 
 .TP

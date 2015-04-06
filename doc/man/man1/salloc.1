@@ -556,7 +556,7 @@ Multiple license names should be comma separated (e.g.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-<\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR]>
+\fIarbitrary\fR|<\fIblock\fR|\fIcyclic\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR]>
 
 Specify alternate distribution methods for remote processes.
 In salloc, this only sets environment variables that will be used by
@@ -640,6 +640,15 @@ that consecutive tasks share a socket.
 The cyclic distribution method will distribute tasks to sockets such
 that consecutive tasks are distributed over consecutive sockets (in a
 round\-robin fashion).
+Tasks requiring more than one CPU will have all of those CPUs allocated on a
+single socket if possible.
+.TP
+.B fcyclic
+The fcyclic distribution method will distribute tasks to sockets such
+that consecutive tasks are distributed over consecutive sockets (in a
+round\-robin fashion).
+Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
+fashion across sockets.
 .RE
 
 .TP
@@ -933,7 +942,7 @@ Create a IP version 4 connection for LAPI communications on one switch network
 for each task.
 .TP
 \fBInstances=2,US,LAPI,MPI\fR
-Create two user space connections each for LAPI and MPI communcations on every
+Create two user space connections each for LAPI and MPI communications on every
 switch network for each task. Note that SN_ALL is the default option so every
 switch network is used. Also note that Instances=2 specifies that two
 connections are established for each protocol (LAPI and MPI) and each task.
