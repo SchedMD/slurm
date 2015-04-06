@@ -568,7 +568,10 @@ static void _throttle_start(int *active_rpc_cnt)
 		pthread_cond_wait(&throttle_cond, &throttle_mutex);
 	}
 	slurm_mutex_unlock(&throttle_mutex);
-	usleep(1);
+	if (LOTS_OF_AGENTS)
+		usleep(1000);
+	else
+		usleep(1);
 }
 static void _throttle_fini(int *active_rpc_cnt)
 {
@@ -1649,7 +1652,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		 * calls can be very high for large machine or large number
 		 * of managed jobs.
 		 */
-		if (!defer_sched)
+		if (!LOTS_OF_AGENTS && !defer_sched)
 			(void) schedule(0);	/* Has own locking */
 		schedule_node_save();		/* Has own locking */
 		schedule_job_save();		/* Has own locking */

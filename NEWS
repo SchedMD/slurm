@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Fix issue where a frontend node could become unresponsive and never
     added back into the system.
  -- Gate epilog complete messages as done with other messages
+ -- If we have more than a certain number of agents (50) wait longer when gating
+    rpcs.
 
 * Changes in Slurm 14.11.5
 ==========================
