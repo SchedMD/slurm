@@ -2750,14 +2750,13 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 	time_t now = time(NULL);
 
 	fe_ptr->last_response = now;
-#ifndef HAVE_ALPS_CRAY
-	/* This is handled by the select/cray plugin */
+
 	if (IS_NODE_NO_RESPOND(fe_ptr)) {
 		info("Node %s now responding", fe_ptr->name);
 		last_front_end_update = now;
 		fe_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 	}
-#endif
+
 	node_flags = fe_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_UNKNOWN(fe_ptr)) {
 		last_front_end_update = now;

@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     information, parent and ancestors are not printed.
  -- Purge 50000 records at a time so that locks can released periodically.
  -- Fix potentially uninitialized variables
+ -- ALPS - Fix issue where a frontend node could become unresponsive and never
+    added back into the system.
 
 * Changes in Slurm 14.11.5
 ==========================
