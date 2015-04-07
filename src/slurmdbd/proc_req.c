@@ -2588,10 +2588,15 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason,
 		       (long)node_state_msg->event_time);
+		/* clusteracct_storage_g_node_up can change the reason
+		 * field so copy it to avoid memory issues.
+		 */
+		node_ptr.reason = xstrdup(node_state_msg->reason);
 		rc = clusteracct_storage_g_node_up(
 			slurmdbd_conn->db_conn,
 			&node_ptr,
 			node_state_msg->event_time);
+		xfree(node_ptr.reason);
 	} else {
 		debug2("DBD_NODE_STATE: NODE:%s STATE:%s "
 		       "REASON:%s UID:%u TIME:%ld",

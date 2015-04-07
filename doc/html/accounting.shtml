@@ -114,6 +114,8 @@ If you plan to restrict access to accounting records (e.g.
 only permit a user to view records of his jobs), then all
 users should have consistent names and IDs.</p>
 
+<p><b>NOTE:</b> Only lowercase usernames are supported.
+
 <p>The best way to insure security of the data is by authenticating
 communications to the SlurmDBD and we recommend
 <a href="https://code.google.com/p/munge/">MUNGE</a> for that purpose.
@@ -202,12 +204,33 @@ checking for mysql_config... /usr/bin/mysql_config
 MySQL test program built properly.
 </pre>
 
-<p>Note that at least the first time running the slurmdbd with MySQL you need
-to make sure your my.cnf file has innodb_buffer_pool_size equal to at least 64
-megabytes. You can accomplish this by adding the line:<br>
-<i>innodb_buffer_pool_size=64M</i><br>
-under the [mysqld] reference in the my.cnf file and restarting the mysqld.
-This is needed when converting large tables over to the new database schema.</p>
+<p><b>NOTE:</b> Before running the slurmdbd for the first time, review the
+current setting for MySQL's
+<a href="http://dev.mysql.com/doc/refman/5.0/en/innodb-parameters.html
+#sysvar_innodb_buffer_pool_size">innodb_buffer_pool_size</a>.
+Consider setting this
+value large enough to handle the size of the database. This helps when
+converting large tables over to the new database schema and when purging
+old records.</p>
+
+<p>
+ex.
+<pre>
+mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
++-------------------------+-----------+
+| Variable_name           | Value     |
++-------------------------+-----------+
+| innodb_buffer_pool_size | 134217728 |
++-------------------------+-----------+
+1 row in set (0.00 sec)
+
+$cat my.cnf
+...
+[mysqld]
+<i>innodb_buffer_pool_size=128M</i>
+...
+</pre>
+</p>
 
 <h2>Slurm Accounting Configuration After Build</h2>
 
@@ -788,7 +811,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align:center;">Last modified 30 April 2014</p>
+<p style="text-align:center;">Last modified 6 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
 
