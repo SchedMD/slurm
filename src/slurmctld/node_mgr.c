@@ -2321,8 +2321,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
 			}
-			info("Node %s unexpectedly rebooted",
-			     reg_msg->node_name);
+			info("%s: Node %s unexpectedly rebooted boot_time %d"
+			     "last response %d",
+			     __func__, reg_msg->node_name,
+			     (int)node_ptr->boot_time,
+			     (int)node_ptr->last_response);
 			_make_node_down(node_ptr, now);
 			kill_running_job_by_node_name(reg_msg->node_name);
 			last_node_update = now;
