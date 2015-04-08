@@ -242,6 +242,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/cray: If CR_PACK_NODES is configured, then set the environment
     variable "PMI_CRAY_NO_SMP_ENV=1"
  -- Fix invalid memory reference in SlurmDBD when putting a node up.
+ -- Allow opening of plugstack.conf even when a symlink.
 
 * Changes in Slurm 14.11.5
 ==========================

@@ -553,7 +553,7 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 	 *  Try to open plugstack.conf. A missing config file is not an
 	 *   error, but is equivalent to an empty file.
 	 */
-	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {
+	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE|SAFEOPEN_LINK_OK))) {
 		if (errno == ENOENT)
 			return (0);
 		error("spank: Failed to open %s: %m", path);
