@@ -3289,8 +3289,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
-	int core_spec;
-	char *mem_type, buf[100], *signal_flags, *job_id;
+	int spec_count;
+	char *mem_type, buf[100], *signal_flags, *spec_type, *job_id;
 
 	if (job_specs == NULL)
 		return;
@@ -3311,10 +3311,19 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->min_cpus : -1L;
 	pn_min_cpus    = (job_specs->pn_min_cpus != (uint16_t) NO_VAL) ?
 		(long) job_specs->pn_min_cpus : -1L;
-	core_spec = (job_specs->core_spec != (uint16_t) NO_VAL) ?
-		    job_specs->core_spec : -1;
-	debug3("   cpus=%ld-%u pn_min_cpus=%ld core_spec=%d",
-	       min_cpus, job_specs->max_cpus, pn_min_cpus, core_spec);
+	if (job_specs->core_spec == (uint16_t) NO_VAL) {
+		spec_type  = "core";
+		spec_count = -1;
+	} else if (job_specs->core_spec & CORE_SPEC_THREAD) {
+		spec_type  = "thread";
+		spec_count = job_specs->core_spec & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "core";
+		spec_count = job_specs->core_spec;
+	}
+	debug3("   cpus=%ld-%u pn_min_cpus=%ld %s_spec=%d",
+	       min_cpus, job_specs->max_cpus, pn_min_cpus,
+	       spec_type, spec_count);
 
 	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
 	       job_specs->min_nodes,   job_specs->max_nodes,
@@ -10250,7 +10259,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->core_spec != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (authorized) {
+		else if (authorized && slurm_get_use_spec_resources()) {
 			if (job_specs->core_spec == (uint16_t) INFINITE)
 				detail_ptr->core_spec = (uint16_t) NO_VAL;
 			else
@@ -10258,6 +10267,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			info("sched: update_job: setting core_spec to %u "
 			     "for job_id %u", detail_ptr->core_spec,
 			     job_ptr->job_id);
+			if (detail_ptr->core_spec != (uint16_t) NO_VAL)
+				detail_ptr->whole_node = 1;
 		} else {
 			error("sched: Attempt to modify core_spec for job %u",
 			      job_ptr->job_id);

@@ -89,6 +89,7 @@ struct node_res_record {
 	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* count of sockets configured */
 	uint16_t cores;			/* count of cores configured */
+	uint16_t threads;		/* count of hyperthreads per core */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
 					 * configured per core */
 	uint32_t real_memory;		/* MB of real memory configured */

@@ -2011,6 +2011,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			select_node_record[i].boards  = config_ptr->boards;
 			select_node_record[i].sockets = config_ptr->sockets;
 			select_node_record[i].cores   = config_ptr->cores;
+			select_node_record[i].threads = config_ptr->threads;
 			select_node_record[i].vpus    = config_ptr->threads;
 			select_node_record[i].real_memory = config_ptr->
 				real_memory;
@@ -2019,11 +2020,13 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			select_node_record[i].boards  = node_ptr[i].boards;
 			select_node_record[i].sockets = node_ptr[i].sockets;
 			select_node_record[i].cores   = node_ptr[i].cores;
+			select_node_record[i].threads = node_ptr[i].threads;
 			select_node_record[i].vpus    = node_ptr[i].threads;
 			select_node_record[i].real_memory = node_ptr[i].
 				real_memory;
 		}
-		tot_core = select_node_record[i].sockets *
+		tot_core = select_node_record[i].boards  *
+			   select_node_record[i].sockets *
 			   select_node_record[i].cores;
 		if (tot_core >= select_node_record[i].cpus)
 			select_node_record[i].vpus = 1;

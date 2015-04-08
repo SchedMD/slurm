@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  core_spec_cray.c - Cray core specialization plugin.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC
+ *  Copyright (C) 2014-2015 SchedMD LLC
  *  Written by Morris Jette <jette@schemd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -61,6 +61,7 @@
 
 #include <stdio.h>
 
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
@@ -125,7 +126,20 @@ extern int fini(void)
 extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_set(%"PRIu64") to %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 
 #ifdef HAVE_NATIVE_CRAY
@@ -135,9 +149,11 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	int i;
 
 	// Skip core spec setup for no specialized cores
-	if ((core_count == (uint16_t) NO_VAL) || (core_count < 1)) {
+	if ((core_count == (uint16_t) NO_VAL) ||
+	    (core_count == CORE_SPEC_THREAD)) {
 		return SLURM_SUCCESS;
 	}
+	core_count &= (~CORE_SPEC_THREAD);
 
 	// Set the core spec information
 	// Retry because there's a small timing window during preemption
@@ -222,7 +238,20 @@ extern int core_spec_p_clear(uint64_t cont_id)
 extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_suspend(%"PRIu64") count %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 	// The code that was here is now performed by
 	// switch_p_job_step_{pre,post}_suspend()
@@ -237,7 +266,20 @@ extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_resume(%"PRIu64") count %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 	// The code that was here is now performed by
 	// switch_p_job_step_{pre,post}_resume()

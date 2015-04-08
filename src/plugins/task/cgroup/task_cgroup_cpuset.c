@@ -637,8 +637,10 @@ static int _task_cgroup_cpuset_dist_cyclic(
 {
 	hwloc_obj_t obj;
 	uint32_t *obj_idx;
-	uint32_t i, j, sock_idx, sock_loop, ntskip, npdist, nsockets;
+	uint32_t i, j, sock_idx, sock_loop, ntskip, npdist;
+	uint32_t npus, ncores, nsockets;
 	uint32_t taskid = job->envtp->localid;
+	int spec_thread_cnt = 0;
 
 	if (bind_verbose)
 		info("task/cgroup: task[%u] using %s distribution "
@@ -646,6 +648,10 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		     format_task_dist_states(job->task_dist), job->task_dist);
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						       HWLOC_OBJ_SOCKET);
+	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						     HWLOC_OBJ_CORE);
+	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						   HWLOC_OBJ_PU);
 	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
@@ -657,12 +663,43 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		ntskip = taskid;
 		npdist = 1;
 	}
+	if ((hwtype = HWLOC_OBJ_PU) &&
+	    (job->job_core_spec != (uint16_t) NO_VAL) &&
+	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
+	    (job->job_core_spec != CORE_SPEC_THREAD)  &&
+	    ((spec_thread_cnt = job->job_core_spec & (~CORE_SPEC_THREAD)) > 1)){
+		/* Skip specialized threads as needed */
+		int i, t, c, s;
+		int cores = ncores / nsockets;
+		int threads = npus / cores;
+		bitstr_t *spec_threads = bit_alloc(npus);
+		for (t = threads - 1;
+		     ((t > 0) && (spec_thread_cnt > 0)); t--) {
+			for (c = cores - 1;
+			     ((c > 0) && (spec_thread_cnt > 0)); c--) {
+				for (s = nsockets - 1;
+				     ((s >= 0) && (spec_thread_cnt > 0)); s--) {
+					i = s * cores + c;
+					i = (i * threads) + t;
+					bit_set(spec_threads, i);
+					spec_thread_cnt--;
+				}
+			}
+		}
+		s = 0;
+		for (i = 0; i <= ntskip && i < npus; i++) {
+			if (bit_test(spec_threads, i))
+				ntskip++;
+		};
+		bit_free(spec_threads);
+	}
 
 	/* skip objs for lower taskids, then add them to the
 	   current task cpuset. To prevent infinite loop, check
 	   that we do not loop more than npdist times around the available
 	   sockets, which is the worst scenario we should afford here. */
-	i = 0; j = 0;
+	i = 0;
+	j = 0;
 	sock_idx = 0;
 	sock_loop = 0;
 	while (i < ntskip + 1 && sock_loop < npdist + 1) {
@@ -720,16 +757,16 @@ static int _task_cgroup_cpuset_dist_block(
 	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
 {
 	hwloc_obj_t obj;
-	uint32_t i, pfirst,plast;
+	uint32_t i, pfirst, plast;
 	uint32_t taskid = job->envtp->localid;
 	int hwdepth;
 
 	if (bind_verbose)
 		info("task/cgroup: task[%u] using block distribution, "
 		     "task_dist %u", taskid, job->task_dist);
-	if (hwloc_compare_types(hwtype,HWLOC_OBJ_CORE) >= 0) {
+	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
 		/* cores or threads granularity */
-		pfirst = taskid *  job->cpus_per_task ;
+		pfirst = taskid * job->cpus_per_task ;
 		plast = pfirst + job->cpus_per_task - 1;
 	} else {
 		/* sockets or ldoms granularity */
@@ -1131,6 +1168,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	uint32_t taskid = job->envtp->localid;
 	uint32_t jntasks = job->node_tasks;
 	uint32_t jnpus;
+	int spec_threads = 0;
 
 	if (job->batch) {
 		jnpus = job->cpus;
@@ -1224,7 +1262,12 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	hwtype = HWLOC_OBJ_MACHINE;
 	nobj = 1;
-	if (npus >= jnpus || bind_type & CPU_BIND_TO_THREADS) {
+	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
+	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
+	    (job->job_core_spec != CORE_SPEC_THREAD)) {
+		spec_threads = job->job_core_spec & (~CORE_SPEC_THREAD);
+	}
+	if (npus >= (jnpus + spec_threads) || bind_type & CPU_BIND_TO_THREADS) {
 		hwtype = HWLOC_OBJ_PU;
 		nobj = npus;
 	}

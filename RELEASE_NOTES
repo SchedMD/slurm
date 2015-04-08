@@ -142,6 +142,8 @@ COMMAND CHANGES (see man pages for details)
     job array.
  -- Remove srun --max-launch-time option. The option has not been functional
     or documented since Slurm version 2.0.
+ -- Add "--thread-spec" option to salloc, sbatch and srun commands. This is
+    the count of threads reserved for system use per node.
 
 OTHER CHANGES
 =============

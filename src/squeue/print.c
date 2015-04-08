@@ -469,10 +469,20 @@ int _print_job_burst_buffer(job_info_t * job, int width, bool right, char* suffi
 
 int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 {
-	if (job == NULL) 	/* Print the Header instead */
+	char spec[FORMAT_STRING_SIZE];
+
+	if (job == NULL) {	/* Print the Header instead */
 		_print_str("CORE_SPEC", width, right, true);
-	else
+	} else if (job->core_spec == (uint16_t) NO_VAL) {
+		_print_str("N/A", width, right, true);
+	} else if (job->core_spec & CORE_SPEC_THREAD) {
+		snprintf(spec, FORMAT_STRING_SIZE, "%d Threads",
+			 (job->core_spec & (~CORE_SPEC_THREAD)));
+		_print_str(spec, width, right, true);
+	} else {
 		_print_int(job->core_spec, width, right, true);
+	}
+
 	return SLURM_SUCCESS;
 }
 

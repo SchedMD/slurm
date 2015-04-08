@@ -192,6 +192,7 @@ enum {
 	SORTID_STD_OUT,
 	SORTID_SWITCHES,
 	SORTID_TASKS,
+	SORTID_THREAD_SPEC,
 /* 	SORTID_THREADS_MAX, */
 /* 	SORTID_THREADS_MIN, */
 	SORTID_TIME_ELIGIBLE,
@@ -345,6 +346,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", FALSE, EDIT_TEXTBOX,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_THREAD_SPEC, "ThreadSpec", FALSE, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REBOOT, "Reboot", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -958,6 +961,14 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		job_msg->core_spec = (uint16_t)temp_int;
 		break;
+	case SORTID_THREAD_SPEC:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+
+		type = "specialized threads";
+		if (temp_int <= 0)
+			goto return_error;
+		job_msg->core_spec = (uint16_t)temp_int | CORE_SPEC_THREAD;
+		break;
 	case SORTID_REBOOT:
 		if (!strcasecmp(new_text, "yes"))
 			job_msg->reboot = 1;
@@ -1473,7 +1484,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_CONTIGUOUS),
 				   tmp_char);
 
-	sprintf(tmp_char, "%u", job_ptr->core_spec);
+	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	    (job_ptr->core_spec & CORE_SPEC_THREAD)) {
+		sprintf(tmp_char, "N/A");
+	} else {
+		sprintf(tmp_char, "%u", job_ptr->core_spec);
+	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CORE_SPEC),
@@ -1858,6 +1874,18 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_SWITCHES),
 				   tmp_char);
 
+	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	    ((job_ptr->core_spec & CORE_SPEC_THREAD) == 0)) {
+		sprintf(tmp_char, "N/A");
+	} else {
+		sprintf(tmp_char, "%u",
+			job_ptr->core_spec & (~CORE_SPEC_THREAD));
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_THREAD_SPEC),
+				   tmp_char);
+
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_char,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter,
@@ -1963,6 +1991,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[400];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
+	char tmp_thread_spec[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -2053,7 +2082,20 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	else
 		tmp_cont = "no";
 
-	sprintf(tmp_core_spec, "%u", job_ptr->core_spec);
+	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	    (job_ptr->core_spec & CORE_SPEC_THREAD)) {
+		sprintf(tmp_core_spec, "N/A");
+	} else {
+		sprintf(tmp_core_spec, "%u", job_ptr->core_spec);
+	}
+	if ((job_ptr->core_spec == (uint16_t) NO_VAL) ||
+	    ((job_ptr->core_spec & CORE_SPEC_THREAD) == 0)) {
+		sprintf(tmp_thread_spec, "N/A");
+	} else {
+		sprintf(tmp_thread_spec, "%u",
+			job_ptr->core_spec & (~CORE_SPEC_THREAD));
+	}
+
 
 	if (job_ptr->cpus_per_task > 0)
 		sprintf(tmp_cpus_per_task, "%u", job_ptr->cpus_per_task);
@@ -2334,6 +2376,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_STD_IN,       tmp_std_in,
 				   SORTID_STD_OUT,      tmp_std_out,
 				   SORTID_SWITCHES,     tmp_rqswitch,
+				   SORTID_THREAD_SPEC,  tmp_thread_spec,
 				   SORTID_TIME_ELIGIBLE,tmp_time_elig,
 				   SORTID_TIME_END,     tmp_time_end,
 				   SORTID_TIME_RESIZE,  tmp_time_resize,

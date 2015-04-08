@@ -445,7 +445,8 @@ struct job_details {
 	char *ckpt_dir;			/* directory to store checkpoint
 					 * images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
-	uint16_t core_spec;		/* specialized core count */
+	uint16_t core_spec;		/* specialized core/thread count,
+					 * threads if CORE_SPEC_THREAD flag set */
 	char *cpu_bind;			/* binding map for map/mask_cpu - This
 					 * currently does not matter to the
 					 * job allocation, setting this does

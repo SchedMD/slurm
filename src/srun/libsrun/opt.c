@@ -126,6 +126,7 @@
 #define OPT_CORE_SPEC   0x1a
 #define OPT_SICP        0x1b
 #define OPT_POWER       0x1c
+#define OPT_THREAD_SPEC 0x1d
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -148,6 +149,7 @@
 #define LONG_OPT_POWER       0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
+#define LONG_OPT_THREAD_SPEC 0x112
 #define LONG_OPT_TEST_ONLY   0x113
 #define LONG_OPT_NETWORK     0x114
 #define LONG_OPT_EXCLUSIVE   0x115
@@ -628,6 +630,7 @@ env_vars_t env_vars[] = {
 {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL             },
+{"SLURM_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL             },
 {"SLURM_THREADS",       OPT_INT,        &opt.max_threads,   NULL             },
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
@@ -644,7 +647,7 @@ env_vars_t env_vars[] = {
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void _opt_env()
+static void _opt_env(void)
 {
 	char       *val = NULL;
 	env_vars_t *e   = env_vars;
@@ -825,6 +828,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_SICP:
 		opt.sicp_mode = 1;
 		break;
+	case OPT_THREAD_SPEC:
+		opt.core_spec = _get_int(val, "thread_spec", true) |
+					 CORE_SPEC_THREAD;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -849,8 +856,10 @@ _get_int(const char *arg, const char *what, bool positive)
 		exit(error_exit);
 	} else if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
+		exit(error_exit);
 	} else if (result < INT_MIN) {
 		error ("Numeric argument %ld to small for %s.", result, what);
+		exit(error_exit);
 	}
 
 	return (int) result;
@@ -971,6 +980,7 @@ static void _set_options(const int argc, char **argv)
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
+		{"thread-spec",      required_argument, 0, LONG_OPT_THREAD_SPEC},
 		{"time-min",         required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
@@ -1675,6 +1685,10 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_SICP:
 			opt.sicp_mode = 1;
+			break;
+		case LONG_OPT_THREAD_SPEC:
+			opt.core_spec = _get_int(optarg, "thread_spec", true) |
+					CORE_SPEC_THREAD;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2528,7 +2542,13 @@ static void _opt_list(void)
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
-	info("core-spec         : %d", opt.core_spec);
+	if (opt.core_spec == (uint16_t) NO_VAL)
+		info("core-spec         : NA");
+	else if (opt.core_spec & CORE_SPEC_THREAD) {
+		info("thread-spec       : %d",
+		     opt.core_spec & (~CORE_SPEC_THREAD));
+	} else
+		info("core-spec         : %d", opt.core_spec);
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
@@ -2591,8 +2611,8 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
-"            [--switches=max-switches{@max-time-to-wait}]\n"
-"            [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
+"            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
+"            [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
 "            [--acctg-freq=<datatype>=<interval>\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 
@@ -2684,6 +2704,7 @@ static void _help(void)
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --task-prolog=program   run \"program\" before launching task\n"
+"      --thread-spec=threads   count of reserved threads\n"
 "  -T, --threads=threads       set srun launch fanout\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"

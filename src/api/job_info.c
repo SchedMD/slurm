@@ -333,7 +333,7 @@ extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j, k;
-	char time_str[32], *group_name, *user_name;
+	char time_str[32], *group_name, *spec_name, *user_name;
 	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], tmp6[128];
 	char *tmp6_ptr;
 	char tmp_line[1024];
@@ -711,13 +711,20 @@ line6:
 		strcpy(tmp5, "*");
 	else
 		snprintf(tmp5, sizeof(tmp5), "%u", job_ptr->ntasks_per_core);
-	if (job_ptr->core_spec == (uint16_t) NO_VAL)
+	if (job_ptr->core_spec == (uint16_t) NO_VAL) {
+		spec_name = "Core";
 		strcpy(tmp6, "*");
-	else
+	} else if (job_ptr->core_spec & CORE_SPEC_THREAD) {
+		spec_name = "Thread";
+		i = job_ptr->core_spec & (~CORE_SPEC_THREAD);
+		snprintf(tmp6, sizeof(tmp6), "%d", i);
+	} else {
+		spec_name = "Core";
 		snprintf(tmp6, sizeof(tmp6), "%u", job_ptr->core_spec);
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Socks/Node=%s NtasksPerN:B:S:C=%s:%s:%s:%s CoreSpec=%s",
-		 tmp1, tmp2, tmp3, tmp4, tmp5, tmp6);
+		 "Socks/Node=%s NtasksPerN:B:S:C=%s:%s:%s:%s %sSpec=%s",
+		 tmp1, tmp2, tmp3, tmp4, tmp5, spec_name, tmp6);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

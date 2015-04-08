@@ -481,6 +481,24 @@ fini:
 		cpu_count = 0;
 	}
 	xfree(free_cores);
+
+	if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+	    (job_ptr->details->core_spec & CORE_SPEC_THREAD)   &&
+	    ((select_node_record[node_i].threads == 1) ||
+	     (select_node_record[node_i].threads ==
+	      select_node_record[node_i].vpus))) {
+		/* NOTE: Currently does not support the situation when Slurm
+		 * allocates by core the thread specialization count occupies
+		 * a full core */
+		c = job_ptr->details->core_spec & (~CORE_SPEC_THREAD);
+		if (((cpu_count + c) <= select_node_record[node_i].cpus))
+			;
+		else if (cpu_count > c)
+			cpu_count -= c;
+		else
+			cpu_count = 0;
+	}
+
 	return cpu_count;
 }
 
@@ -835,8 +853,11 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map, uint16_t core_spec)
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
 
-	nodes = bit_size(node_map);
+	if ((core_spec != (uint16_t) NO_VAL) &&
+	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
+		core_spec = (uint16_t) NO_VAL;	/* Don't remove cores */
 
+	nodes = bit_size(node_map);
 	for (n = 0; n < nodes; n++) {
 		if (!bit_test(node_map, n))
 			continue;

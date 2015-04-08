@@ -1148,6 +1148,7 @@ typedef struct power_mgmt_data {
 				 * of the day */
 } power_mgmt_data_t;
 
+#define CORE_SPEC_THREAD 0x8000	/* If set, this is a thread count not core count */
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
@@ -1172,7 +1173,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
-	uint16_t core_spec;	/* specialized core count */
+	uint16_t core_spec;	/* specialized core/thread count,
+				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This
 				 * currently does not matter to the
 				 * job allocation, setting this does

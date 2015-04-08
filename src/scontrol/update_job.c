@@ -1032,6 +1032,17 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
+			if (!strcmp(val, "-1") || !strcmp(val, "*"))
+				job_msg.core_spec = (uint16_t) INFINITE;
+			else if (parse_uint16(val, &job_msg.core_spec)) {
+				error ("Invalid ThreadSpec value: %s", val);
+				exit_code = 1;
+				return 0;
+			} else
+				job_msg.core_spec |= CORE_SPEC_THREAD;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
 			job_msg.exc_nodes = val;
 			update_cnt++;

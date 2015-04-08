@@ -111,6 +111,7 @@
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
+#define OPT_THREAD_SPEC 0x12
 #define OPT_MEM_BIND    0x13
 #define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
@@ -187,6 +188,7 @@
 #define LONG_OPT_TEST_ONLY       0x156
 #define LONG_OPT_PARSABLE        0x157
 #define LONG_OPT_CPU_FREQ        0x158
+#define LONG_OPT_THREAD_SPEC     0x159
 #define LONG_OPT_PRIORITY        0x160
 
 /*---- global variables, defined in opt.h ----*/
@@ -474,6 +476,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SBATCH_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
   {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
@@ -670,9 +673,12 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
 		break;
-
 	case OPT_SICP:
 		opt.sicp_mode = 1;
+		break;
+	case OPT_THREAD_SPEC:
+		opt.core_spec = _get_int(val, "thread_spec") |
+					 CORE_SPEC_THREAD;
 		break;
 	default:
 		/* do nothing */
@@ -780,6 +786,7 @@ static struct option long_options[] = {
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
+	{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
@@ -1738,6 +1745,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_SICP:
 			opt.sicp_mode = 1;
+			break;
+		case LONG_OPT_THREAD_SPEC:
+			opt.core_spec = _get_int(optarg, "thread_spec") |
+					CORE_SPEC_THREAD;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2793,6 +2804,7 @@ _get_int(const char *arg, const char *what)
 
 	if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
+		exit(error_exit);
 	}
 
 	return (int) result;
@@ -2932,7 +2944,13 @@ static void _opt_list(void)
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);
-	info("core-spec         : %d", opt.core_spec);
+	if (opt.core_spec == (uint16_t) NO_VAL)
+		info("core-spec         : NA");
+	else if (opt.core_spec & CORE_SPEC_THREAD) {
+		info("thread-spec       : %d",
+		     opt.core_spec & (~CORE_SPEC_THREAD));
+	} else
+		info("core-spec         : %d", opt.core_spec);
 	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
@@ -2974,8 +2992,8 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
-"              [--switches=max-switches{@max-time-to-wait}]\n"
-"              [--core-spec=cores] [--reboot] [--bb=burst_buffer_spec]\n"
+"              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
+"              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
@@ -3041,15 +3059,16 @@ static void _help(void)
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
+"      --requeue               if set, permit the job to be requeued\n"
+"  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "      --sicp                  If specified, signifies job is to receive\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
-"      --requeue               if set, permit the job to be requeued\n"
+"      --thread-spec=threads   count of reserved threads\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
-"  -s, --share                 share nodes with other jobs\n"
-"  -S, --core-spec=cores       count of reserved cores\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "      --wckey=wckey           wckey to run job under\n"

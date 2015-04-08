@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  core_spec_none.c - NO-OP slurm core specialization plugin.
  *****************************************************************************
- *  Copyright (C) 2014 SchedMD LLC
+ *  Copyright (C) 2014-2015 SchedMD LLC
  *  Written by Morris Jette <jette@schemd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -61,6 +61,7 @@
 
 #include <stdio.h>
 
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
@@ -114,7 +115,20 @@ extern int fini(void)
 extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_set(%"PRIu64") to %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_set(%"PRIu64") to %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -140,7 +154,20 @@ extern int core_spec_p_clear(uint64_t cont_id)
 extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_suspend(%"PRIu64") count %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_suspend(%"PRIu64") count %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -153,7 +180,20 @@ extern int core_spec_p_suspend(uint64_t cont_id, uint16_t core_count)
 extern int core_spec_p_resume(uint64_t cont_id, uint16_t core_count)
 {
 #if _DEBUG
-	info("core_spec_p_resume(%"PRIu64") count %u", cont_id, core_count);
+	char *spec_type;
+	int spec_count;
+	if (core_count == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (core_count & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = core_count & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = core_count;
+	}
+	info("core_spec_p_resume(%"PRIu64") count %d %s",
+	     cont_id, spec_count, spec_type);
 #endif
 	return SLURM_SUCCESS;
 }

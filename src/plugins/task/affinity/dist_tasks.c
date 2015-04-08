@@ -427,6 +427,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 * pick something reasonable */
 		uint32_t task_plugin_param = slurm_get_task_plugin_param();
 		bool auto_def_set = false;
+		int spec_threads = 0;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
 			req->cpus_per_task;
 		char *avail_mask = _alloc_mask(req,
@@ -446,7 +447,13 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			req->cpu_bind_type |= CPU_BIND_TO_CORES;
 			goto make_auto;
 		}
-		if (max_tasks == whole_threads) {
+
+		if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+		    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
+		    (req->job_core_spec != CORE_SPEC_THREAD)) {
+			spec_threads = req->job_core_spec & (~CORE_SPEC_THREAD);
+		}
+		if ((max_tasks + spec_threads) == whole_threads) {
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
 		}
@@ -654,6 +661,26 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	if (!s_miss)
 		(*whole_node_cnt)++;
 	FREE_NULL_BITMAP(alloc_bitmap);
+
+	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
+	    (req->job_core_spec != CORE_SPEC_THREAD)) {
+		int spec_thread_cnt;
+		spec_thread_cnt = req->job_core_spec & (~CORE_SPEC_THREAD);
+		for (t = threads - 1;
+		     ((t > 0) && (spec_thread_cnt > 0)); t--) {
+			for (c = cores - 1;
+			     ((c > 0) && (spec_thread_cnt > 0)); c--) {
+				for (s = sockets - 1;
+				     ((s >= 0) && (spec_thread_cnt > 0)); s--) {
+					i = s * cores + c;
+					i = (i * threads) + t;
+					bit_clear(alloc_mask, i);
+					spec_thread_cnt--;
+				}
+			}
+		}
+	}
 
 	/* translate abstract masks to actual hardware layout */
 	_lllp_map_abstract_masks(1, &alloc_mask);

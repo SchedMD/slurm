@@ -1484,6 +1484,9 @@ slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 void
 slurm_cred_print(slurm_cred_t *cred)
 {
+	char *spec_type;
+	int spec_count;
+
 	if (cred == NULL)
 		return;
 
@@ -1491,11 +1494,21 @@ slurm_cred_print(slurm_cred_t *cred)
 
 	xassert(cred->magic == CRED_MAGIC);
 
+	if (cred->job_core_spec == (uint16_t) NO_VAL) {
+		spec_type  = "Cores";
+		spec_count = 0;
+	} else if (cred->job_core_spec & CORE_SPEC_THREAD) {
+		spec_type  = "Threads";
+		spec_count = cred->job_core_spec & (~CORE_SPEC_THREAD);
+	} else {
+		spec_type  = "Cores";
+		spec_count = cred->job_core_spec;
+	}
 	info("Cred: Jobid             %u",  cred->jobid         );
 	info("Cred: Stepid            %u",  cred->stepid        );
 	info("Cred: UID               %u",  (uint32_t) cred->uid);
 	info("Cred: Job_constraints   %s",  cred->job_constraints );
-	info("Cred: Job_core_spec     %u",  cred->job_core_spec );
+	info("Cred: Job_core_spec     %d %s", spec_count, spec_type );
 	info("Cred: Job_mem_limit     %u",  cred->job_mem_limit );
 	info("Cred: Step_mem_limit    %u",  cred->step_mem_limit );
 	info("Cred: Step hostlist     %s",  cred->step_hostlist );

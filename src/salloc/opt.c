@@ -123,6 +123,7 @@
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
+#define OPT_THREAD_SPEC 0x1c
 
 /* generic getopt_long flags, integers and *not* valid characters */
 
@@ -178,6 +179,7 @@
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_SICP            0x161
 #define LONG_OPT_POWER           0x162
+#define LONG_OPT_THREAD_SPEC     0x163
 
 
 /*---- global variables, defined in opt.h ----*/
@@ -434,6 +436,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
@@ -626,6 +629,10 @@ _process_env_var(env_vars_t *e, const char *val)
 				&opt.cpu_freq_max, &opt.cpu_freq_gov))
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
+	case OPT_THREAD_SPEC:
+		opt.core_spec = _get_int(val, "thread_spec") |
+					 CORE_SPEC_THREAD;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -651,6 +658,7 @@ _get_int(const char *arg, const char *what)
 
 	if (result > INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, what);
+		exit(error_exit);
 	}
 
 	return (int) result;
@@ -741,6 +749,7 @@ void set_options(const int argc, char **argv)
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
+		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
 		{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",           required_argument, 0, LONG_OPT_TMP},
@@ -1266,6 +1275,10 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_BURST_BUFFER:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
+			break;
+		case LONG_OPT_THREAD_SPEC:
+			opt.core_spec = _get_int(optarg, "thread_spec") |
+					CORE_SPEC_THREAD;
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {
@@ -1904,7 +1917,13 @@ static void _opt_list(void)
 	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
-	info("core-spec         : %d", opt.core_spec);
+	if (opt.core_spec == (uint16_t) NO_VAL)
+		info("core-spec         : NA");
+	else if (opt.core_spec & CORE_SPEC_THREAD) {
+		info("thread-spec       : %d",
+		     opt.core_spec & (~CORE_SPEC_THREAD));
+	} else
+		info("core-spec         : %d", opt.core_spec);
 	info("burst_buffer      : `%s'", opt.burst_buffer);
 	xfree(str);
 
@@ -1943,8 +1962,8 @@ static void _usage(void)
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
-"              [--core-spec=cores]  [--reboot] [--bb=burst_buffer_spec]\n"
-"              [executable [args...]]\n");
+"              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
+"              [--bb=burst_buffer_spec] [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -2001,6 +2020,7 @@ static void _help(void)
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
+"      --thread-spec=threads   count of reserved threads\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
