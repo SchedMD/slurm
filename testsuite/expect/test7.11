@@ -91,7 +91,7 @@ if {[file exists $spank_conf_file]} {
 	expect {
 		-re "test${test_id}" {
 			send_user "\nFAILURE: spank plugin includes vestigial test${test_id}\n"
-			send_user "   You probably should manually remove it from $spank_conf_file.\n"
+			send_user "   You probably should manually remove it from $spank_conf_file\n"
 			send_user "   It was probably left over from some previous test failure.\n"
 			exit 1
 		}

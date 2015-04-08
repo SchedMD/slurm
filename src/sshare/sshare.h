@@ -104,6 +104,6 @@ extern sshare_time_format_t time_format;
 extern char *time_format_string;
 extern List clusters;
 
-extern int process(shares_response_msg_t *msg, uint16_t);
+extern int process(shares_response_msg_t *msg, uint16_t options);
 
 #endif
