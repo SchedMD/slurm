@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow opening of plugstack.conf even when a symlink.
  -- Fix scontrol reboot so that rebooted nodes will not be set down with reason
     'Node xyz unexpectedly rebooted' but will be correctly put back to service.
+ -- CRAY - Throttle the post NHC operations as to not hog the job write lock
+    if many steps/jobs finish at once.
 
 * Changes in Slurm 14.11.5
 ==========================
