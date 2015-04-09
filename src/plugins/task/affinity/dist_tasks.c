@@ -427,7 +427,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		 * pick something reasonable */
 		uint32_t task_plugin_param = slurm_get_task_plugin_param();
 		bool auto_def_set = false;
-		int spec_threads = 0;
+		int spec_thread_cnt = 0;
 		int max_tasks = req->tasks_to_launch[(int)node_id] *
 			req->cpus_per_task;
 		char *avail_mask = _alloc_mask(req,
@@ -438,22 +438,25 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
 		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
 		      whole_cores, part_cores, whole_threads);
-
-		if ((max_tasks == whole_sockets) && (part_sockets == 0)) {
-			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-			goto make_auto;
-		}
-		if ((max_tasks == whole_cores) && (part_cores == 0)) {
-			req->cpu_bind_type |= CPU_BIND_TO_CORES;
-			goto make_auto;
-		}
-
 		if ((req->job_core_spec != (uint16_t) NO_VAL) &&
 		    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
 		    (req->job_core_spec != CORE_SPEC_THREAD)) {
-			spec_threads = req->job_core_spec & (~CORE_SPEC_THREAD);
+			spec_thread_cnt = req->job_core_spec &
+					  (~CORE_SPEC_THREAD);
 		}
-		if ((max_tasks + spec_threads) == whole_threads) {
+		if (((max_tasks == whole_sockets) && (part_sockets == 0)) ||
+		    (spec_thread_cnt &&
+		     (max_tasks == (whole_sockets + part_sockets)))) {
+			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
+			goto make_auto;
+		}
+		if (((max_tasks == whole_cores) && (part_cores == 0)) ||
+		    (spec_thread_cnt &&
+		     (max_tasks == (whole_cores + part_cores)))) {
+			req->cpu_bind_type |= CPU_BIND_TO_CORES;
+			goto make_auto;
+		}
+		if (max_tasks == whole_threads) {
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
 		}
@@ -715,6 +718,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	int job_node_id;
 	int start;
 	char *str;
+	int spec_thread_cnt = 0;
 
 	*hw_sockets = conf->sockets;
 	*hw_cores   = conf->cores;
@@ -774,6 +778,29 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		}
 	}
 
+	if ((req->job_core_spec != (uint16_t) NO_VAL) &&
+	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
+	    (req->job_core_spec != CORE_SPEC_THREAD)) {
+		spec_thread_cnt = req->job_core_spec & (~CORE_SPEC_THREAD);
+	}
+	if (spec_thread_cnt) {
+		/* Skip specialized threads as needed */
+		int i, t, c, s;
+		for (t = conf->threads - 1;
+		     ((t >= 0) && (spec_thread_cnt > 0)); t--) {
+			for (c = conf->cores - 1;
+			     ((c >= 0) && (spec_thread_cnt > 0)); c--) {
+				for (s = conf->sockets - 1;
+				     ((s >= 0) && (spec_thread_cnt > 0)); s--) {
+					i = s * conf->cores + c;
+					i = (i * conf->threads) + t;
+					bit_clear(hw_map, i);
+					spec_thread_cnt--;
+				}
+			}
+		}
+	}
+
 	str = (char *)bit_fmt_hexmask(hw_map);
 	debug3("task/affinity: job %u.%u CPU final mask for local node: %s",
 		req->job_id, req->job_step_id, str);
@@ -785,9 +812,9 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 }
 
 /* helper function for _expand_masks() */
-static void _blot_mask(bitstr_t *mask, uint16_t blot)
+static void _blot_mask(bitstr_t *mask, bitstr_t *avail_map, uint16_t blot)
 {
-	uint16_t i, size = 0;
+	uint16_t i, j, size = 0;
 	int prev = -1;
 
 	if (!mask)
@@ -798,7 +825,10 @@ static void _blot_mask(bitstr_t *mask, uint16_t blot)
 			/* fill in this blot */
 			uint16_t start = (i / blot) * blot;
 			if (start != prev) {
-				bit_nset(mask, start, start+blot-1);
+				for (j = start; j < start + blot; j++) {
+					if (bit_test(avail_map, j))
+						bit_set(mask, j);
+				}
 				prev = start;
 			}
 		}
@@ -851,7 +881,7 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 		if (hw_threads < 2)
 			return;
 		for (i = 0; i < maxtasks; i++) {
-			_blot_mask(masks[i], hw_threads);
+			_blot_mask(masks[i], avail_map, hw_threads);
 		}
 		return;
 	}
