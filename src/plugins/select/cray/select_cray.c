@@ -151,15 +151,16 @@ static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_npc_update;
 
-static alpsc_topology_t *topology = NULL;
-static size_t topology_num_nodes = 0;
-
 static int active_post_nhc_cnt = 0;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
-#ifdef HAVE_NATIVE_CRAY
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+static size_t topology_num_nodes = 0;
+static alpsc_topology_t *topology = NULL;
+#endif
 
+#ifdef HAVE_NATIVE_CRAY
 
 /* Used for aeld communication */
 alpsc_ev_app_t *app_list = NULL;	// List of running/suspended apps
@@ -1151,8 +1152,10 @@ extern int fini ( void )
 		_free_blade(&blade_array[i]);
 	xfree(blade_array);
 
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	if (topology)
 		free(topology);
+#endif
 
 	slurm_mutex_unlock(&blade_mutex);
 
