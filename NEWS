@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
     if many steps/jobs finish at once.
  -- Disable changes to GRES count while jobs are running on the node.
  -- CRAY - Fix issue with scontrol reconfig.
+ -- slurmd: Remove wrong reporting of "Error reading step  ... memory limit".
+    The logic was treating success as an error.
 
 * Changes in Slurm 14.11.5
 ==========================
