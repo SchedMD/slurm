@@ -1628,11 +1628,23 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			     context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
-		gres_data->gres_cnt_found = gres_cnt;
-		updated_config = true;
+		if ((gres_data->gres_cnt_found != NO_VAL) &&
+		    (gres_data->gres_cnt_alloc != 0)) {
+			if (reason_down && (*reason_down == NULL)) {
+				xstrfmtcat(*reason_down,
+					   "%s count changed and jobs are "
+					   "using them (%u != %u)",
+					   context_ptr->gres_type,
+					   gres_data->gres_cnt_found, gres_cnt);
+			}
+			rc = EINVAL;
+		} else {
+			gres_data->gres_cnt_found = gres_cnt;
+			updated_config = true;
+		}
 	}
 	if (updated_config == false)
-		return SLURM_SUCCESS;
+		return rc;
 
 	if ((set_cnt == 0) && (set_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */

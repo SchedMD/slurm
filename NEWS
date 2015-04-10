@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     'Node xyz unexpectedly rebooted' but will be correctly put back to service.
  -- CRAY - Throttle the post NHC operations as to not hog the job write lock
     if many steps/jobs finish at once.
+ -- Disable changes to GRES count while jobs are running on the node.
 
 * Changes in Slurm 14.11.5
 ==========================
