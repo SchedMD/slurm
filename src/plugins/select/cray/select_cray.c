@@ -151,6 +151,9 @@ static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_npc_update;
 
+static alpsc_topology_t *topology = NULL;
+static size_t topology_num_nodes = 0;
+
 static int active_post_nhc_cnt = 0;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
@@ -1151,6 +1154,9 @@ extern int fini ( void )
 		_free_blade(&blade_array[i]);
 	xfree(blade_array);
 
+	if (topology)
+		free(topology);
+
 	slurm_mutex_unlock(&blade_mutex);
 
 	return other_select_fini();
@@ -1477,23 +1483,27 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	int nn, end_nn, last_nn = 0;
 	bool found = 0;
-	alpsc_topology_t *topology = NULL;
-	size_t num_nodes;
 	char *err_msg = NULL;
 
-	if (alpsc_get_topology(&err_msg, &topology, &num_nodes)) {
-		if (err_msg) {
-			error("(%s: %d: %s) Could not get system "
-			      "topology info: %s",
-			      THIS_FILE, __LINE__, __FUNCTION__, err_msg);
-			free(err_msg);
-		} else {
-			error("(%s: %d: %s) Could not get system "
-			      "topology info: No error message present.",
-			      THIS_FILE, __LINE__, __FUNCTION__);
+	if (!topology) {
+		if (alpsc_get_topology(&err_msg, &topology,
+				       &topology_num_nodes)) {
+			if (err_msg) {
+				error("(%s: %d: %s) Could not get system "
+				      "topology info: %s",
+				      THIS_FILE, __LINE__,
+				      __FUNCTION__, err_msg);
+				free(err_msg);
+			} else {
+				error("(%s: %d: %s) Could not get system "
+				      "topology info: No error "
+				      "message present.",
+				      THIS_FILE, __LINE__, __FUNCTION__);
+			}
+			return SLURM_ERROR;
 		}
-		return SLURM_ERROR;
 	}
+
 #endif
 
 	slurm_mutex_lock(&blade_mutex);
@@ -1527,7 +1537,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		}
 
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
-		end_nn = num_nodes;
+		end_nn = topology_num_nodes;
 
 	start_again:
 
@@ -1543,7 +1553,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				break;
 			}
 		}
-		if (end_nn != num_nodes) {
+		if (end_nn != topology_num_nodes) {
 			/* already looped */
 			fatal("Node %s(%d) isn't found on the system",
 			      node_ptr->name, nodeinfo->nid);
@@ -1581,10 +1591,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 	/* give back the memory */
 	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
-
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
-	free(topology);
-#endif
 
 	slurm_mutex_unlock(&blade_mutex);
 
