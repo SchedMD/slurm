@@ -1636,7 +1636,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			if (reason_down && (*reason_down == NULL)) {
 				xstrfmtcat(*reason_down,
 					   "%s count changed and jobs are "
-					   "using them (%u != %u)",
+					   "using them (%"PRIu64" != %"PRIu64")",
 					   context_ptr->gres_type,
 					   gres_data->gres_cnt_found, gres_cnt);
 			}
