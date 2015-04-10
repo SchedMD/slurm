@@ -245,6 +245,14 @@ documents those changes that are of interest to users and administrators.
     variable "PMI_CRAY_NO_SMP_ENV=1"
  -- Fix invalid memory reference in SlurmDBD when putting a node up.
  -- Allow opening of plugstack.conf even when a symlink.
+ -- Fix scontrol reboot so that rebooted nodes will not be set down with reason
+    'Node xyz unexpectedly rebooted' but will be correctly put back to service.
+ -- CRAY - Throttle the post NHC operations as to not hog the job write lock
+    if many steps/jobs finish at once.
+ -- Disable changes to GRES count while jobs are running on the node.
+ -- CRAY - Fix issue with scontrol reconfig.
+ -- slurmd: Remove wrong reporting of "Error reading step  ... memory limit".
+    The logic was treating success as an error.
 
 * Changes in Slurm 14.11.5
 ==========================

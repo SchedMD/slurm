@@ -1990,9 +1990,10 @@ _load_job_limits(void)
 		if (fd == -1)
 			continue;	/* step completed */
 
-		if (!stepd_get_mem_limits(fd, stepd->protocol_version,
-					  &stepd_mem_info)) {
-			error("Error reading step %u.%u memory limits",
+		if (stepd_get_mem_limits(fd, stepd->protocol_version,
+					  &stepd_mem_info) != SLURM_SUCCESS) {
+			error("Error reading step %u.%u memory limits from "
+			      "slurmstepd",
 			      stepd->jobid, stepd->stepid);
 			close(fd);
 			continue;

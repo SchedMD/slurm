@@ -1351,9 +1351,11 @@ extern char *rpc_num2string(uint16_t opcode);
 		int rc;							\
 		while (remaining > 0) {					\
 			rc = read(fd, ptr, remaining);			\
-			if ((rc == 0) && (remaining == size))		\
+			if ((rc == 0) && (remaining == size)) {		\
+				debug("%s:%d: %s: safe_read EOF",	\
+				      __FILE__, __LINE__, __CURRENT_FUNC__); \
 				goto rwfail;				\
-			else if (rc == 0) {				\
+			} else if (rc == 0) {				\
 				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
 				      remaining, (int)size);		\
