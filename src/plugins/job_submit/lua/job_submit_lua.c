@@ -816,11 +816,6 @@ static int _set_job_req_field(lua_State *L)
 
 static void _push_job_desc(struct job_descriptor *job_desc)
 {
-#if 0
-	lua_newtable(L);
-	lua_pushlightuserdata(L, job_desc);
-	lua_setfield(L, -2, "job_desc_ptr");
-#else
 	lua_newtable(L);
 
 	lua_newtable(L);
@@ -834,16 +829,10 @@ static void _push_job_desc(struct job_descriptor *job_desc)
 	lua_pushlightuserdata(L, job_desc);
 	lua_setfield(L, -2, "_job_desc");
 	lua_setmetatable(L, -2);
-#endif
 }
 
 static void _push_job_rec(struct job_record *job_ptr)
 {
-#if 0
-	lua_newtable(L);
-	lua_pushlightuserdata(L, job_ptr);
-	lua_setfield(L, -2, "job_rec_ptr");
-#else
 	lua_newtable(L);
 
 	lua_newtable(L);
@@ -855,7 +844,6 @@ static void _push_job_rec(struct job_record *job_ptr)
 	lua_pushlightuserdata(L, job_ptr);
 	lua_setfield(L, -2, "_job_rec_ptr");
 	lua_setmetatable(L, -2);
-#endif
 }
 
 /* Get fields in an existing slurmctld partition record
@@ -922,11 +910,6 @@ static int _part_rec_field_index(lua_State *L)
 
 	return _part_rec_field(part_ptr, name);
 }
-#if 0
-/* Filter before packing list of partitions */
-	char *allow_groups;	/* comma delimited list of groups */
-	uid_t *allow_uids;	/* zero terminated list of allowed users */
-#endif
 
 static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
 			       struct part_record *part_ptr)
@@ -962,10 +945,7 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
 			continue;
-#if 0
-		lua_pushlightuserdata(L, part_ptr);
-		lua_rawseti(L, -2, i++);
-#else
+
 		/* Create an empty table, with a metatable that looks up the
 		 * data for the partition.
 		 */
@@ -983,7 +963,6 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 
 		lua_setfield(L, -2, part_ptr->name);
 	}
-#endif
 	list_iterator_destroy(part_iterator);
 }
 
