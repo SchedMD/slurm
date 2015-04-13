@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- CRAY - Fix issue with scontrol reconfig.
  -- slurmd: Remove wrong reporting of "Error reading step  ... memory limit".
     The logic was treating success as an error.
+ -- Eliminate "Node ping apparently hung" error messages.
 
 * Changes in Slurm 14.11.5
 ==========================

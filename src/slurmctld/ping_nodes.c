@@ -62,9 +62,12 @@
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
 
+/* Log an error for ping that takes more than 100 seconds to complete */
+#define PING_TIMEOUT 100
+
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
-
+static time_t ping_start = 0;
 
 /*
  * is_ping_done - test if the last node ping cycle has completed.
@@ -74,11 +77,21 @@ static int ping_count = 0;
  */
 bool is_ping_done (void)
 {
+	static bool ping_msg_sent = false;
 	bool is_done = true;
 
 	slurm_mutex_lock(&lock_mutex);
-	if (ping_count)
+	if (ping_count) {
 		is_done = false;
+		if (!ping_msg_sent &&
+		    (difftime(time(NULL), ping_start) >= PING_TIMEOUT)) {
+			error("Node ping apparently hung, "
+			      "many nodes may be DOWN or configured "
+			      "SlurmdTimeout should be increased");
+			ping_msg_sent = true;
+		}
+	} else
+		ping_msg_sent = false;
 	slurm_mutex_unlock(&lock_mutex);
 
 	return is_done;
@@ -94,6 +107,7 @@ void ping_begin (void)
 {
 	slurm_mutex_lock(&lock_mutex);
 	ping_count++;
+	ping_start = time(NULL);
 	slurm_mutex_unlock(&lock_mutex);
 }
 
@@ -110,6 +124,7 @@ void ping_end (void)
 		ping_count--;
 	else
 		fatal ("ping_count < 0");
+	ping_start = 0;
 	slurm_mutex_unlock(&lock_mutex);
 }
 

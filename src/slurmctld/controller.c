@@ -1378,7 +1378,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_ctld_bu_ping;
 	static time_t last_uid_update;
 	static time_t last_reboot_msg_time;
-	static bool ping_msg_sent = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
@@ -1549,21 +1548,10 @@ static void *_slurmctld_background(void *no_data)
 		     ping_nodes_now) && is_ping_done()) {
 			now = time(NULL);
 			last_ping_node_time = now;
-			ping_msg_sent = false;
 			ping_nodes_now = false;
 			lock_slurmctld(node_write_lock);
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);
-		} else if ((difftime(now, last_ping_node_time) >=
-			    ping_interval) && !is_ping_done() &&
-			    !ping_msg_sent) {
-			/* log failure once per ping_nodes() call,
-			 * no error if node state update request
-			 * processed while the ping is in progress */
-			error("Node ping apparently hung, "
-			      "many nodes may be DOWN or configured "
-			      "SlurmdTimeout should be increased");
-			ping_msg_sent = true;
 		}
 
 		if (slurmctld_conf.inactive_limit &&
