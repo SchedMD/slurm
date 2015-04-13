@@ -803,8 +803,28 @@ line6:
 		for (rel_node_inx=0; rel_node_inx < job_resrcs->nhosts;
 		     rel_node_inx++) {
 
-			slurm_job_cpus_allocated_str_on_node_id(tmp1, sizeof(tmp1), job_resrcs, rel_node_inx);
+			if (sock_reps >=
+			    job_resrcs->sock_core_rep_count[sock_inx]) {
+				sock_inx++;
+				sock_reps = 0;
+			}
+			sock_reps++;
+
+			bit_reps = job_resrcs->sockets_per_node[sock_inx] *
+				   job_resrcs->cores_per_socket[sock_inx];
 			host = hostlist_shift(hl);
+			threads = _threads_per_core(host);
+			cpu_bitmap = bit_alloc(bit_reps * threads);
+			for (j = 0; j < bit_reps; j++) {
+				if (bit_test(job_resrcs->core_bitmap, bit_inx)){
+					for (k = 0; k < threads; k++)
+						bit_set(cpu_bitmap,
+							(j * threads) + k);
+				}
+				bit_inx++;
+			}
+			bit_fmt(tmp1, sizeof(tmp1), cpu_bitmap);
+			FREE_NULL_BITMAP(cpu_bitmap);
 /*
  *		If the allocation values for this host are not the same as the
  *		last host, print the report of the last group of hosts that had
