@@ -309,14 +309,6 @@ static int _job_rec_field(const struct job_record *job_ptr,
 	return 1;
 }
 
-static int _get_job_rec_field(lua_State *L)
-{
-	const struct job_record *job_ptr = lua_touserdata(L, 1);
-	const char *name = luaL_checkstring(L, 2);
-
-	return _job_rec_field(job_ptr, name);
-}
-
 /* Get fields in an existing slurmctld job_record */
 static int _job_rec_field_index(lua_State *L)
 {
@@ -472,6 +464,118 @@ static void _update_resvs_global(void)
 	lua_pop(L, 1);
 }
 
+/* Set fields in the job request structure on job submit or modify */
+static int _set_job_env_field(lua_State *L)
+{
+	const char *name, *value_str;
+	struct job_descriptor *job_desc;
+	char *name_eq = NULL;
+	int i, j, name_len;
+
+	name = luaL_checkstring(L, 2);
+	name_eq = xstrdup(name);
+	xstrcat(name_eq, "=");
+	name_len = strlen(name_eq);
+	lua_getmetatable(L, -3);
+	lua_getfield(L, -1, "_job_desc");
+	job_desc = lua_touserdata(L, -1);
+	if (job_desc == NULL) {
+		error("%s: job_desc is NULL", __func__);
+	} else {
+		value_str = luaL_checkstring(L, 3);
+		for (i = 0; job_desc->environment[i]; i++) {
+			if (!strncmp(job_desc->environment[i], name_eq,
+				     name_len)) {
+				job_desc->environment[i][name_len] = '\0';
+				xstrcat(job_desc->environment[i], value_str);
+				break;
+			}
+		}
+		if (!job_desc->environment[i]) {
+			job_desc->environment = xrealloc(job_desc->environment,
+							 sizeof(char*) * (i+2));
+			for (j = i; j >= 1; j--) {
+				job_desc->environment[j] =
+					job_desc->environment[j-1];
+			}
+			job_desc->environment[0] = xstrdup(name_eq);
+			xstrcat(job_desc->environment[0], value_str);
+	}
+	xfree(name_eq);
+
+	return 0;
+}
+
+static int _job_env_field(const struct job_descriptor *job_desc,
+			  const char *name)
+{
+	char *name_eq = "";
+	int i, name_len;
+
+	name_eq = xstrdup(name);
+	xstrcat(name_eq, "=");
+	name_len = strlen(name_eq);
+	if (job_desc == NULL) {
+		error("%s: job_desc is NULL", __func__);
+		lua_pushnil (L);
+	} else if (job_desc->environment == NULL) {
+		error("%s: job_desc->environment is NULL", __func__);
+		lua_pushnil (L);
+	} else {
+		for (i = 0; job_desc->environment[i]; i++) {
+			if (!strncmp(job_desc->environment[i], name_eq,
+				     name_len)) {
+				lua_pushstring (L, job_desc->environment[i] +
+						   name_len);
+				break;
+			}
+		}
+		if (!job_desc->environment[i])
+			lua_pushnil (L);
+	}
+	xfree(name_eq);
+
+	return 1;
+}
+
+/* Get fields in the job request record on job submit or modify */
+static int _get_job_env_field_name(lua_State *L)
+{
+	const struct job_descriptor *job_desc = lua_touserdata(L, 1);
+	const char *name = luaL_checkstring(L, 2);
+	return _job_env_field(job_desc, name);
+}
+
+/* Get fields in an existing slurmctld job_descriptor record */
+static int _job_env_field_index(lua_State *L)
+{
+	const char *name;
+	struct job_descriptor *job_desc;
+
+	name = luaL_checkstring(L, 2);
+	lua_getmetatable(L, -2);
+	lua_getfield(L, -1, "_job_desc");
+	job_desc = lua_touserdata(L, -1);
+	return _job_env_field(job_desc, name);
+}
+
+static void _push_job_env(struct job_descriptor *job_desc)
+{
+	lua_newtable(L);
+
+	lua_newtable(L);
+	lua_pushcfunction(L, _job_env_field_index);
+	lua_setfield(L, -2, "__index");
+	lua_pushcfunction(L, _set_job_env_field);
+	lua_setfield(L, -2, "__newindex");
+	/* Store the job descriptor in the metatable, so the index
+	 * function knows which struct it's getting data for.
+	 */
+	lua_pushlightuserdata(L, job_desc);
+	lua_setfield(L, -2, "_job_desc");
+	lua_setmetatable(L, -2);
+}
+
 static int _get_job_req_field(const struct job_descriptor *job_desc,
 			      const char *name)
 {
@@ -512,6 +616,8 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->dependency);
 	} else if (!strcmp(name, "end_time")) {
 		lua_pushnumber (L, job_desc->end_time);
+	} else if (!strcmp(name, "environment")) {
+		_push_job_env ((struct job_descriptor *)job_desc); // No const
 	} else if (!strcmp(name, "exc_nodes")) {
 		lua_pushstring (L, job_desc->exc_nodes);
 	} else if (!strcmp(name, "features")) {
@@ -1041,10 +1147,12 @@ static void _register_lua_slurm_output_functions (void)
 
 static void _register_lua_slurm_struct_functions (void)
 {
-	lua_pushcfunction(L, _get_job_rec_field);
-	lua_setglobal(L, "_get_job_rec_field");
+	lua_pushcfunction(L, _get_job_env_field_name);
+	lua_setglobal(L, "_get_job_env_field_name");
 	lua_pushcfunction(L, _get_job_req_field_name);
 	lua_setglobal(L, "_get_job_req_field_name");
+	lua_pushcfunction(L, _set_job_env_field);
+	lua_setglobal(L, "_set_job_env_field");
 	lua_pushcfunction(L, _set_job_req_field);
 	lua_setglobal(L, "_set_job_req_field");
 	lua_pushcfunction(L, _get_part_rec_field);

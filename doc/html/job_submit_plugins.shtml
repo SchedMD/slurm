@@ -127,7 +127,13 @@ be modified.<br>
 better ease of use. Sample Lua scripts can be found with the Slurm distribution
 in the directory <i>contribs/lua</i>. The default installation location of
 the Lua scripts is the same location as the Slurm configuration file,
-<i>slurm.conf</i>.</p>
+<i>slurm.conf</i>.
+Reading and writing of job environment variables using Lua is possible
+by referencing the environment variables as a data structure containing
+named elements. For example:<br>
+if (job_desc.environment.LANGUAGE == "en_US") then<br>
+....</p>
+
 
 <p class="commandline">
 int job_submit(struct job_descriptor *job_desc, List part_list, uint32_t submit_uid)
@@ -257,6 +263,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 13 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

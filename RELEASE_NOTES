@@ -153,6 +153,8 @@ OTHER CHANGES
     getenv where the name was given a prefix of "SPANK_". That prefix has
     been removed for consistency with the environment variables available in
     the Prolog and Epilog scripts.
+ -- job_submit/lua: Enable reading and writing job environment variables.
+    For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
 
 API CHANGES
 ===========

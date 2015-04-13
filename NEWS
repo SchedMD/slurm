@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Optimize resource allocation for systems with dragonfly networks.
  -- Add "--thread-spec" option to salloc, sbatch and srun commands. This is
     the count of threads reserved for system use per node.
+ -- job_submit/lua: Enable reading and writing job environment variables.
+    For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
 
 * Changes in Slurm 15.08.0pre3
 ==============================
