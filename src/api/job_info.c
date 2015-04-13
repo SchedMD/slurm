@@ -1631,7 +1631,7 @@ int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
 	 */
 	if (job_node_ptr)
 		threads = job_node_ptr->node_array[node_id].threads;
-
+	bit_inx = 0;
 	cpu_bitmap = bit_alloc(bit_reps * threads);
 	for (j = 0; j < bit_reps; j++) {
 		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx)){
