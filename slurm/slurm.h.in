@@ -3342,7 +3342,8 @@ extern int slurm_job_cpus_allocated_on_node PARAMS(
  * RET 0 on success or -1 on error
  */
 extern int slurm_job_cpus_allocated_str_on_node_id PARAMS(
-	(char *cpus, size_t cpus_len, job_resources_t *job_resrcs_ptr, int node_id));
+	(char *cpus, size_t cpus_len,
+	 job_resources_t *job_resrcs_ptr, int node_id));
 
 /*
  * slurm_job_cpus_allocated_str_on_node -
@@ -3355,7 +3356,8 @@ extern int slurm_job_cpus_allocated_str_on_node_id PARAMS(
  * RET 0 on success or -1 on error
  */
 extern int slurm_job_cpus_allocated_str_on_node PARAMS(
-	(char *cpus, size_t cpus_len, job_resources_t *job_resrcs_ptr, const char *node_name));
+	(char *cpus, size_t cpus_len,
+	 job_resources_t *job_resrcs_ptr, const char *node_name));
 
 /*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
