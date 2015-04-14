@@ -500,6 +500,7 @@ static int _set_job_env_field(lua_State *L)
 			}
 			job_desc->environment[0] = xstrdup(name_eq);
 			xstrcat(job_desc->environment[0], value_str);
+		}
 	}
 	xfree(name_eq);
 
