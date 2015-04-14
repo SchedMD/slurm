@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Modify scontrol update job to allow jobid specification without
     the = sign. 'scontrol update job=123 ...' and 'scontrol update job 123 ...'
     are both valid syntax.
+ -- Archive a month at a time when there are lots of records to archive.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

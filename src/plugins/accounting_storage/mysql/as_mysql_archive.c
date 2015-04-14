@@ -51,6 +51,9 @@
 
 #define MAX_PURGE_LIMIT 50000 /* Number of records that are purged at a time
 				 so that locks can be periodically released. */
+#define MAX_ARCHIVE_AGE (60 * 60 * 24 * 60) /* If archive data is older than
+					       this then archive by month to
+					       handle large datasets. */
 
 typedef struct {
 	char *cluster_nodes;
@@ -2162,6 +2165,67 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
+uint32_t _get_begin_next_month(time_t start)
+{
+	struct tm parts;
+
+	localtime_r(&start, &parts);
+
+	parts.tm_mon++;
+	parts.tm_mday  = 1;
+	parts.tm_hour  = 0;
+	parts.tm_min   = 0;
+	parts.tm_sec   = 0;
+	parts.tm_isdst = -1;
+
+	if (parts.tm_mon > 11) {
+		parts.tm_year++;
+		parts.tm_mon = 0;
+	}
+
+	return mktime(&parts);
+}
+
+/* Get the oldest purge'able record.
+ * Returns SLURM_ERROR for mysql error, 0 no purge'able records found,
+ * 1 found purgeable record.
+ */
+static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
+				 char *table, char *col_name,
+				 time_t period_end, time_t *record_start)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+
+	if (record_start == NULL)
+		return SLURM_ERROR;
+
+	/* get oldest record */
+	query = xstrdup_printf("select %s from \"%s_%s\" where %s <= %ld "
+			       "&& time_end != 0 order by %s asc LIMIT 1",
+			       col_name, cluster, table, col_name, period_end,
+			       col_name);
+
+	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if (!(mysql_num_rows(result))) {
+		mysql_free_result(result);
+		return 0;
+	}
+	row = mysql_fetch_row(result);
+	*record_start = slurm_atoul(row[0]);
+	mysql_free_result(result);
+
+	return 1; /* found one record */
+}
+
 static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
 			    slurmdb_archive_cond_t *arch_cond)
@@ -2170,6 +2234,8 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	time_t curr_end;
 	time_t last_submit = time(NULL);
+	time_t record_start = 0, tmp_end = 0;
+	uint32_t tmp_archive_period;
 
 	if (arch_cond->archive_script)
 		return archive_run_script(arch_cond, cluster_name, last_submit);
@@ -2188,34 +2254,56 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging event entries before %ld for %s",
-		       curr_end, cluster_name);
+		rc = _get_oldest_record(mysql_conn, cluster_name, event_table,
+				        event_req_inx[EVENT_REQ_START],
+					curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			goto exit_events;
+		else if (rc == SLURM_ERROR)
+			return rc;
 
-		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
-			rc = _archive_events(mysql_conn, cluster_name,
-					     curr_end, arch_cond->archive_dir,
-					     arch_cond->purge_event);
-			if (!rc)
-				goto exit_events;
-			else if (rc == SLURM_ERROR)
-				return rc;
-		}
-		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0 "
-				       "LIMIT %d",
-				       cluster_name, event_table, curr_end,
-				       MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		tmp_end = record_start;
+		tmp_archive_period = arch_cond->purge_event;
+		do {
+			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+				/* old stuff, catch up by archiving by month */
+				tmp_archive_period = SLURMDB_PURGE_MONTHS;
+				tmp_end = MIN(curr_end,
+					      _get_begin_next_month(tmp_end));
+			} else
+				tmp_end = curr_end;
 
-		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn, query)) > 0);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				debug("Purging event entries before %ld for %s",
+				      tmp_end, cluster_name);
 
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old event data");
-			return SLURM_ERROR;
-		}
+			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
+				rc = _archive_events(mysql_conn, cluster_name,
+						     tmp_end,
+						     arch_cond->archive_dir,
+						     tmp_archive_period);
+				if (!rc) /* no records archived */
+					continue;
+				else if (rc == SLURM_ERROR)
+					return rc;
+			}
+			query = xstrdup_printf("delete from \"%s_%s\" where "
+					       "time_start <= %ld "
+					       "&& time_end != 0 LIMIT %d",
+					       cluster_name, event_table,
+					       tmp_end, MAX_PURGE_LIMIT);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+			while ((rc = mysql_db_delete_affected_rows(
+							mysql_conn,query)) > 0);
+
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't remove old event data");
+				return SLURM_ERROR;
+			}
+		} while (tmp_end < curr_end);
 	}
 
 exit_events:
@@ -2230,33 +2318,56 @@ exit_events:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging suspend entries before %ld for %s",
-		       curr_end, cluster_name);
+		rc = _get_oldest_record(mysql_conn, cluster_name, suspend_table,
+				        suspend_req_inx[SUSPEND_REQ_START],
+					curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			goto exit_suspend;
+		else if (rc == SLURM_ERROR)
+			return rc;
 
-		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
-			rc = _archive_suspend(mysql_conn, cluster_name,
-					      curr_end, arch_cond->archive_dir,
-					      arch_cond->purge_suspend);
-			if (!rc)
-				goto exit_suspend;
-			else if (rc == SLURM_ERROR)
-				return rc;
-		}
-		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0 "
-				       "LIMIT %d",
-				       cluster_name, suspend_table, curr_end,
-				       MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		tmp_end = record_start;
+		tmp_archive_period = arch_cond->purge_suspend;
+		do {
+			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+				/* old stuff, catch up by archiving by month */
+				tmp_archive_period = SLURMDB_PURGE_MONTHS;
+				tmp_end = MIN(curr_end,
+					      _get_begin_next_month(tmp_end));
+			} else
+				tmp_end = curr_end;
 
-		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn, query)) > 0);
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old suspend data");
-			return SLURM_ERROR;
-		}
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				debug("Purging suspend entries before %ld "
+				      "for %s", tmp_end, cluster_name);
+
+			if (SLURMDB_PURGE_ARCHIVE_SET(
+						arch_cond->purge_suspend)) {
+				rc = _archive_suspend(mysql_conn, cluster_name,
+						      tmp_end,
+						      arch_cond->archive_dir,
+						      tmp_archive_period);
+				if (!rc) /* no records archived */
+					continue;
+				else if (rc == SLURM_ERROR)
+					return rc;
+			}
+			query = xstrdup_printf("delete from \"%s_%s\" where "
+					       "time_start <= %ld "
+					       "&& time_end != 0 LIMIT %d",
+					       cluster_name, suspend_table,
+					       tmp_end, MAX_PURGE_LIMIT);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+			while ((rc = mysql_db_delete_affected_rows(
+							mysql_conn,query)) > 0);
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't remove old suspend data");
+				return SLURM_ERROR;
+			}
+		} while (tmp_end < curr_end);
 	}
 
 exit_suspend:
@@ -2271,35 +2382,57 @@ exit_suspend:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging step entries before %ld for %s",
-		       curr_end, cluster_name);
+		rc = _get_oldest_record(mysql_conn, cluster_name, step_table,
+				        step_req_inx[STEP_REQ_START],
+					curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			goto exit_steps;
+		else if (rc == SLURM_ERROR)
+			return rc;
 
-		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
-			rc = _archive_steps(mysql_conn, cluster_name,
-					    curr_end, arch_cond->archive_dir,
-					    arch_cond->purge_step);
-			if (!rc)
-				goto exit_steps;
-			else if (rc == SLURM_ERROR)
-				return rc;
-		}
+		tmp_end = record_start;
+		tmp_archive_period = arch_cond->purge_step;
+		do {
+			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+				/* old stuff, catch up by archiving by month */
+				tmp_archive_period = SLURMDB_PURGE_MONTHS;
+				tmp_end = MIN(curr_end,
+					      _get_begin_next_month(tmp_end));
+			} else
+				tmp_end = curr_end;
 
-		query = xstrdup_printf("delete from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0 "
-				       "LIMIT %d",
-				       cluster_name, step_table, curr_end,
-				       MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				debug("Purging step entries before %ld for %s",
+				      tmp_end, cluster_name);
 
-		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn, query)) > 0);
+			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
+				rc = _archive_steps(mysql_conn, cluster_name,
+						    tmp_end,
+						    arch_cond->archive_dir,
+						    tmp_archive_period);
+				if (!rc) /* no records archived */
+					continue;
+				else if (rc == SLURM_ERROR)
+					return rc;
+			}
 
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old step data");
-			return SLURM_ERROR;
-		}
+			query = xstrdup_printf("delete from \"%s_%s\" where "
+					       "time_start <= %ld "
+					       "&& time_end != 0 LIMIT %d",
+					       cluster_name, step_table,
+					       tmp_end, MAX_PURGE_LIMIT);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+			while ((rc = mysql_db_delete_affected_rows(
+							mysql_conn,query)) > 0);
+
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't remove old step data");
+				return SLURM_ERROR;
+			}
+		} while (tmp_end < curr_end);
 	}
 exit_steps:
 
@@ -2313,35 +2446,57 @@ exit_steps:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging job entries before %ld for %s",
-		       curr_end, cluster_name);
+		rc = _get_oldest_record(mysql_conn, cluster_name, job_table,
+				        job_req_inx[JOB_REQ_SUBMIT],
+					curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			goto exit_jobs;
+		else if (rc == SLURM_ERROR)
+			return rc;
 
-		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
-			rc = _archive_jobs(mysql_conn, cluster_name,
-					   curr_end, arch_cond->archive_dir,
-					   arch_cond->purge_job);
-			if (!rc)
-				goto exit_jobs;
-			else if (rc == SLURM_ERROR)
-				return rc;
-		}
+		tmp_end = record_start;
+		tmp_archive_period = arch_cond->purge_job;
+		do {
+			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+				/* old stuff, catch up by archiving by month */
+				tmp_archive_period = SLURMDB_PURGE_MONTHS;
+				tmp_end = MIN(curr_end,
+					      _get_begin_next_month(tmp_end));
+			} else
+				tmp_end = curr_end;
 
-		query = xstrdup_printf("delete from \"%s_%s\" "
-				       "where time_submit <= %ld "
-				       "&& time_end != 0 LIMIT %d",
-				       cluster_name, job_table, curr_end,
-				       MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				debug("Purging job entries before %ld for %s",
+				      tmp_end, cluster_name);
 
-		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn, query)) > 0);
+			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
+				rc = _archive_jobs(mysql_conn, cluster_name,
+						   tmp_end,
+						   arch_cond->archive_dir,
+						   tmp_archive_period);
+				if (!rc) /* no records archived */
+					continue;
+				else if (rc == SLURM_ERROR)
+					return rc;
+			}
 
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old job data");
-			return SLURM_ERROR;
-		}
+			query = xstrdup_printf("delete from \"%s_%s\" "
+					       "where time_submit <= %ld "
+					       "&& time_end != 0 LIMIT %d",
+					       cluster_name, job_table,
+					       tmp_end, MAX_PURGE_LIMIT);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+			while ((rc = mysql_db_delete_affected_rows(
+							mysql_conn,query)) > 0);
+
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't remove old job data");
+				return SLURM_ERROR;
+			}
+		} while (tmp_end < curr_end);
 	}
 exit_jobs:
 
@@ -2355,35 +2510,57 @@ exit_jobs:
 			return SLURM_ERROR;
 		}
 
-		debug4("Purging resv entries before %ld for %s",
-		       curr_end, cluster_name);
+		rc = _get_oldest_record(mysql_conn, cluster_name, resv_table,
+				        resv_req_inx[RESV_REQ_START],
+					curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			goto exit_resvs;
+		else if (rc == SLURM_ERROR)
+			return rc;
 
-		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
-			rc = _archive_resvs(mysql_conn, cluster_name,
-					    curr_end, arch_cond->archive_dir,
-					    arch_cond->purge_resv);
-			if (!rc)
-				goto exit_resvs;
-			else if (rc == SLURM_ERROR)
-				return rc;
-		}
+		tmp_end = record_start;
+		tmp_archive_period = arch_cond->purge_resv;
+		do {
+			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+				/* old stuff, catch up by archiving by month */
+				tmp_archive_period = SLURMDB_PURGE_MONTHS;
+				tmp_end = MIN(curr_end,
+					      _get_begin_next_month(tmp_end));
+			} else
+				tmp_end = curr_end;
 
-		query = xstrdup_printf("delete from \"%s_%s\" "
-				       "where time_start <= %ld "
-				       "&& time_end != 0 LIMIT %d",
-				       cluster_name, resv_table, curr_end,
-				       MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
-			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				debug("Purging resv entries before %ld for %s",
+				      tmp_end, cluster_name);
 
-		while ((rc = mysql_db_delete_affected_rows(
-						mysql_conn, query)) > 0);
+			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
+				rc = _archive_resvs(mysql_conn, cluster_name,
+						    tmp_end,
+						    arch_cond->archive_dir,
+						    tmp_archive_period);
+				if (!rc) /* no records archived */
+					continue;
+				else if (rc == SLURM_ERROR)
+					return rc;
+			}
 
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't remove old resv data");
-			return SLURM_ERROR;
-		}
+			query = xstrdup_printf("delete from \"%s_%s\" where "
+					       "time_start <= %ld "
+					       "&& time_end != 0 LIMIT %d",
+					       cluster_name, resv_table,
+					       tmp_end, MAX_PURGE_LIMIT);
+			if (debug_flags & DEBUG_FLAG_DB_USAGE)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+			while ((rc = mysql_db_delete_affected_rows(
+							mysql_conn,query)) > 0);
+
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't remove old resv data");
+				return SLURM_ERROR;
+			}
+		} while (tmp_end < curr_end);
 	}
 exit_resvs:
 	return SLURM_SUCCESS;
