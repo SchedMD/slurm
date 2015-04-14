@@ -130,7 +130,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 
 	if ((cr_type & CR_MEMORY) && cpus) {
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
-		avail_mem = select_node_record[node_i].real_memory;
+		avail_mem = select_node_record[node_i].real_memory -
+			    select_node_record[node_i].mem_spec_limit;
 		if (!test_only)
 			avail_mem -= node_usage[node_i].alloc_memory;
 		if (req_mem > avail_mem)

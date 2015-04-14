@@ -1460,6 +1460,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_core_cnt = 0;
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_record[i].node_ptr = &node_ptr[i];
+		select_node_record[i].mem_spec_limit = node_ptr[i].
+						       mem_spec_limit;
 		if (select_fast_schedule) {
 			struct config_record *config_ptr;
 			config_ptr = node_ptr[i].config_ptr;
@@ -2078,6 +2080,8 @@ extern int select_p_update_node_config(int index)
 
 	select_node_record[index].real_memory = select_node_record[index].
 						node_ptr->real_memory;
+	select_node_record[index].mem_spec_limit = select_node_record[index].
+		node_ptr->mem_spec_limit;
 	return SLURM_SUCCESS;
 }
 

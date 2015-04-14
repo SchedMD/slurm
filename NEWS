@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Added two new APIs slurm_job_cpus_allocated_str_on_node_id()
     and slurm_job_cpus_allocated_str_on_node() to print the CPUs id
     allocated to a job.
+ -- Specialized memory (a node's MemSpecLimit configuration parameter) is not
+    available for allocation to jobs.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

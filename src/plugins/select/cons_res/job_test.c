@@ -576,7 +576,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		 *          - there are enough free_cores (MEM_PER_CPU == 1)
 		 */
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
-		avail_mem = select_node_record[node_i].real_memory;
+		avail_mem = select_node_record[node_i].real_memory -
+			    select_node_record[node_i].mem_spec_limit;
 		if (!test_only)
 			avail_mem -= node_usage[node_i].alloc_memory;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -3465,7 +3466,7 @@ alloc_job:
 			job_res->memory_allocated[i] = save_mem;
 		}
 	} else {	/* --mem=0, allocate job all memory on node */
-		uint32_t lowest_mem = 0;
+		uint32_t avail_mem, lowest_mem = 0;
 		first = bit_ffs(job_res->node_bitmap);
 		if (first != -1)
 			last  = bit_fls(job_res->node_bitmap);
@@ -3474,11 +3475,11 @@ alloc_job:
 		for (i = first, j = 0; i <= last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
-			if ((j == 0) ||
-			    (lowest_mem > select_node_record[i].real_memory))
-				lowest_mem = select_node_record[i].real_memory;
-			job_res->memory_allocated[j++] =
-				select_node_record[i].real_memory;
+			avail_mem = select_node_record[i].real_memory -
+				    select_node_record[i].mem_spec_limit;
+			if ((j == 0) || (lowest_mem > avail_mem))
+				lowest_mem = avail_mem;
+			job_res->memory_allocated[j++] = avail_mem;
 		}
 		details_ptr->pn_min_memory = lowest_mem;
 	}

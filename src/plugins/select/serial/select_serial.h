@@ -89,6 +89,7 @@ struct node_res_record {
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
 					 * configured per core */
 	uint32_t real_memory;		/* MB of real memory configured */
+	uint32_t mem_spec_limit;	/* MB of specialized/system memory */
 };
 
 /* per-node resource usage record */

@@ -669,6 +669,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 				else
 					job_mem = job_memory_node;
 			}
+			avail_mem -= node_ptr->mem_spec_limit;
 			if ((alloc_mem + job_mem) > avail_mem) {
 				bit_clear(jobmap, i);
 				continue;
