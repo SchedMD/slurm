@@ -2,6 +2,8 @@
 .SH "NAME"
 slurm_free_job_alloc_info_response_msg, slurm_free_job_info_msg,
 slurm_get_end_time, slurm_get_rem_time, slurm_get_select_jobinfo,
+slurm_job_cpus_allocated_on_node, slurm_job_cpus_allocated_on_node_id,
+slurm_job_cpus_allocated_str_on_node, slurm_job_cpus_allocated_str_on_node_id,
 slurm_load_jobs, slurm_load_job_user, slurm_pid2jobid,
 slurm_print_job_info, slurm_print_job_info_msg
 \- Slurm job information reporting functions
@@ -135,6 +137,34 @@ int \fBslurm_job_cpus_allocated_on_node\fR (
 	const char *\fInode_name\fP
 .br
 );
+.LP
+int \fBslurm_job_cpus_allocated_str_on_node_id\fR (
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	char *\fIcpus\fP,
+.br
+	size_t \fIcpus_len\fP,
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	int \fInode_id\fP
+.br
+);
+.LP
+int \fBslurm_job_cpus_allocated_str_on_node\fR (
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	char *\fIcpus\fP,
+.br
+	size_t \fIcpus_len\fP,
+.br
+	job_resources_t *\fIjob_resrcs_ptr\fP,
+.br
+	const char *\fInode_name\fP
+.br
+);
 
 .SH "FORTRAN EXTENSION"
 .LP
@@ -151,6 +181,13 @@ Both functions return the number of seconds remaining before the job
 reaches the end of it's allocated time.
 
 .SH "ARGUMENTS"
+.TP
+\fIcpus\fP
+Specifies a pointer to allocated memory into which the string representing the
+list of allocated CPUs on the node is placed.
+.TP
+\fIcpus_len\fP
+The size in bytes of the allocated memory space pointed by \fIcpus\fP.
 .TP
 \fIdata_type\fP
 Identifies the type of data to retrieve \fIjobinfo\fP. Note that different types of
@@ -254,9 +291,13 @@ expected termination time of a specified SLURM job id. The time corresponds
 to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is
 cached locally and only retrieved from the SLURM controller once per minute.
 .LP
-\fBslurm_job_cpus_allocated_on_node\fR and 
-\fBslurm_job_cpus_allocated_on_node_id\fR return the number of CPUs allocated
-to a job on a specific node allocated to a job.
+\fBslurm_job_cpus_allocated_on_node\fR and
+\fBslurm_job_cpus_allocated_on_node_id\fR
+return the number of CPUs allocated to a job on a specific node allocated to a job.
+.LP
+\fBslurm_job_cpus_allocated_str_on_node\fR and
+\fBslurm_job_cpus_allocated_str_on_node_id\fR return a string representing the
+list of CPUs allocated to a job on a specific node allocated to a job.
 .LP
 \fBslurm_load_job\fR Returns a job_info_msg_t that contains an update time,
 record count, and array of job_table records for some specific job ID.
@@ -271,7 +312,7 @@ with a specific user ID.
 \fBslurm_load_job_user\fR issues RPC to get slurm information about all jobs to
 be run as the specified user.
 .LP
-\fBslurm_notify_job\fR Sends the specified message to standard output of 
+\fBslurm_notify_job\fR Sends the specified message to standard output of
 the specified job ID.
 .LP
 \fBslurm_pid2jobid\fR Returns a Slurm job id corresponding to the supplied
