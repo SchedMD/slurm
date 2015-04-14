@@ -75,9 +75,9 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	jobacct->current_weighted_freq =
 		jobacct->current_weighted_freq +
 		jobacct->this_sampled_cputime * thisfreq;
-	if (jobacct->last_total_cputime) {
+	if (jobacct->tot_cpu) {
 		return (jobacct->current_weighted_freq /
-			jobacct->last_total_cputime);
+			jobacct->tot_cpu);
 	} else
 		return thisfreq;
 }

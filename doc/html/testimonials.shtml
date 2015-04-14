@@ -1,6 +1,22 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Customer Testimonials</h1>
+<HR SIZE=4>
+
+<i>
+"With Oxford providing HPC not just to researchers within the
+University, but to local businesses and in collaborative projects,
+such as the T2K and NQIT projects, the SLURM scheduler really was the
+best option to ensure different service level agreements can be
+supported. If you look at the Top500 list of the World's fastest
+supercomputers, they're now starting to move to SLURM. The scheduler
+was specifically requested by the University to support GPUs and the
+heterogeneous estate of different CPUs, which the previous TORQUE
+scheduler couldn't, so this forms quite an important part of the
+overall HPC facility."<br><br>
+<a href=http://www.hpcwire.com/off-the-wire/new-hpc-cluster-to-benefit-the-university-of-oxford/>Julian Fielden, Managing Director at OCF</a>
+</i>
+<HR SIZE=4>
 
 <i>
 "In 2010, when we embarked upon our mission to port Slurm to our Cray XT and XE
@@ -152,6 +168,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 23 January 2013</p>
+<p style="text-align:center;">Last modified 14 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
