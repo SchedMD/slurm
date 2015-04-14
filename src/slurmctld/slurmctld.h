@@ -556,7 +556,7 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing (N/A for bluegene
 					 * systems) */
-	uint16_t cr_enabled;            /* specify if if Consumable Resources
+	uint16_t cr_enabled;            /* specify if Consumable Resources
 					 * is enabled. Needed since CR deals
 					 * with a finer granularity in its
 					 * node/cpu scheduling (available cpus
