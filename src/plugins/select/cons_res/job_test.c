@@ -2806,6 +2806,35 @@ alloc_job:
 			 */
 			job_ptr->total_cpus += select_node_record[i].cpus;
 		}
+	} else if (cr_type & CR_SOCKET) {
+		int ci = 0;
+		int s, last_s, sock_cnt = 0;
+		first = bit_ffs(job_res->node_bitmap);
+		if (first != -1)
+			last  = bit_fls(job_res->node_bitmap);
+		else
+			last = first - 1;
+		job_ptr->total_cpus = 0;
+		for (i = first; i <= last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			sock_cnt = 0;
+			for (s = 0; s < select_node_record[i].sockets; s++) {
+				last_s = -1;
+				for (c = 0; c<select_node_record[i].cores; c++){
+					if (bit_test(job_res->core_bitmap, ci)){
+						if (s != last_s) {
+							sock_cnt++;
+							last_s = s;
+						}
+					}
+					ci++;
+				}
+			}
+			job_ptr->total_cpus += (sock_cnt *
+						select_node_record[i].cores *
+						select_node_record[i].vpus);
+		}
 	} else if (build_cnt >= 0)
 		job_ptr->total_cpus = build_cnt;
 	else

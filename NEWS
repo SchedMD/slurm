@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
     The logic was treating success as an error.
  -- Eliminate "Node ping apparently hung" error messages.
  -- Fix average CPU frequency calculation.
+ -- When allocating resources with resolution of sockets, charge the job for all
+    CPUs on allocated sockets rather than just the CPUs on used cores.
 
 * Changes in Slurm 14.11.5
 ==========================
