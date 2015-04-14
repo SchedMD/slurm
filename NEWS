@@ -1,4 +1,4 @@
- This file describes changes in recent versions of Slurm. It primarily
+This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre4
@@ -33,6 +33,9 @@ documents those changes that are of interest to users and administrators.
     the count of threads reserved for system use per node.
  -- job_submit/lua: Enable reading and writing job environment variables.
     For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
+ -- Added two new APIs slurm_job_cpus_allocated_str_on_node_id()
+    and slurm_job_cpus_allocated_str_on_node() to print the CPUs id
+    allocated to a job.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
