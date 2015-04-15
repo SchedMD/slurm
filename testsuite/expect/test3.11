@@ -410,6 +410,12 @@ set cores_per_node [expr $cores_per_socket * $sockets_per_node]
 set node_count [available_nodes $def_partition ""]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
+set cr_socket 0
+set select_type_params [test_select_type_params]
+if {[string match "*CR_SOCKET*" $select_type_params]} {
+	set cr_socket 1
+}
+
 #
 # Get the user name
 #
@@ -439,11 +445,11 @@ inc3_11_3
 inc3_11_4
 inc3_11_5
 inc3_11_6
-if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0} {
+if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
 }
-if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $irregular_node_name == 0} {
+if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0} {
 	inc3_11_9
 }
 

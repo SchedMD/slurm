@@ -179,6 +179,11 @@ if {![string compare $select_type "linear"]} {
 	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
 	exit 0
 }
+set select_type_params [test_select_type_params]
+if {[string match "*CR_SOCKET*" $select_type_params]} {
+	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
+	exit 0
+}
 
 # Remove any vestigial files
 exec $bin_rm -f $file_in $file_out $spec_in

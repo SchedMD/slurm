@@ -319,11 +319,16 @@ if {[test_super_user] == 0} {
 }
 
 #
-# Some tests will not work properly when allocating whole nodes to jobs
+# Some tests will not work properly when allocating sockets or whole nodes to jobs
 #
 set select_type [test_select_type]
 if {![string compare $select_type "linear"] || [default_part_exclusive]} {
 	send_user "\nWARNING: This test is incompatible with exclusive node allocations\n"
+	exit 0
+}
+set select_type_params [test_select_type_params]
+if {[string match "*CR_SOCKET*" $select_type_params]} {
+	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
 	exit 0
 }
 

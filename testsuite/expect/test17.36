@@ -38,6 +38,7 @@ set test_part_3   "test$test_id\_part_3"
 set num_jobs      0
 set cr_core       0
 set cr_cpu        0
+set cr_socket     0
 set cpu_cnt       0
 set socket_cnt    0
 set thread_cnt    0
@@ -56,33 +57,24 @@ if {[is_super_user] == 0} {
 	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
 	exit 0
 }
+set select_type_params [test_select_type_params]
+if {[string match "*CR_SOCKET*" $select_type_params]} {
+	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
+	exit 0
+}
+if {[string match "*CR_CORE*" $select_type_params]} {
+	set cr_core 1
+}
+if {[string match "*CR_CPU*" $select_type_params]} {
+	set cr_cpu 1
+}
 
 proc cr_core_cpu { node } {
 
 	global cr_cpu cr_core core_cnt socket_cnt scontrol number exit_code
 	global cpu_cnt thread_cnt
 
-	# Determine if CR_CPU or CR_CORE is used
 	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "SelectTypeParameters *= .*CR_CPU" {
-			set cr_cpu 1
-			exp_continue
-		}
-		-re "SelectTypeParameters *= .*CR_CORE" {
-			set cr_core 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
 	spawn $scontrol show node $node
 	expect {
 		-re "CoresPerSocket=($number)" {
