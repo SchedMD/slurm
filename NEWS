@@ -273,6 +273,8 @@ documents those changes that are of interest to users and administrators.
     the slurmdbd rollup to hang.
  -- sview - When right clicking on a tab make sure we don't display the page
     list, but only the column list.
+ -- FRONTEND - If doing a clean start make sure the nodes are brought up in the
+    database.
 
 * Changes in Slurm 14.11.5
 ==========================

@@ -1,10 +1,10 @@
-.TH SLURM "1" "March 2009" "slurm 2.0" "Slurm system"
+.TH Slurm "1" "Slurm System" "April 2015" "Slurm System"
 
 .SH "NAME"
-slurm \- SLURM system overview.
+Slurm \- Slurm Workload Manager overview.
 
 .SH "DESCRIPTION"
-The Simple Linux Utility for Resource Management (SLURM) is an open source,
+The Slurm Workload Manager is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system
 for large and small Linux clusters. SLURM requires no kernel modifications for
 its operation and is relatively self-contained. As a cluster resource manager,
@@ -19,11 +19,11 @@ gang scheduling (time sharing for parallel jobs), backfill scheduling,
 resource limits by user or bank account,
 and sophisticated multifactor job prioritization algorithms.
 
-SLURM has a centralized manager, \fBslurmctld\fR, to monitor resources and
+Slurm has a centralized manager, \fBslurmctld\fR, to monitor resources and
 work. There may also be a backup manager to assume those responsibilities in the
 event of failure. Each compute server (node) has a \fBslurmd\fR daemon, which
 can be compared to a remote shell: it waits for work, executes that work, returns
-status, and waits for more work. An optional \fBslurmDBD\fR (SLURM DataBase Daemon)
+status, and waits for more work. An optional \fBslurmdbd\fR (SLURM DataBase Daemon)
 can be used for accounting purposes and to maintain resource limit information.
 
 Basic user tools include \fBsrun\fR to initiate jobs,
@@ -32,7 +32,7 @@ status, and \fBsqueue\fR to report the status of jobs. There is also an administ
 tool \fBscontrol\fR available to monitor and/or modify configuration and state
 information. APIs are available for all functions.
 
-SLURM configuration is maintained in the \fBslurm.conf\fR file.
+Slurm configuration is maintained in the \fBslurm.conf\fR file.
 
 Man pages are available for all SLURM commands, daemons, APIs, plus the
 \fBslurm.conf\fR file.
@@ -50,12 +50,12 @@ Copyright (C) 2010\-2013 SchedMD LLC.
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
