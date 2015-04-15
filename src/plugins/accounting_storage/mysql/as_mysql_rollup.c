@@ -228,13 +228,13 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 
 		total_used = c_usage->a_cpu +
 			c_usage->d_cpu + c_usage->pd_cpu;
-		/* info("We now have (%"PRIu64"+%"PRIu64"+" */
-		/*      "%"PRIu64")(%"PRIu64") " */
-		/*       "?= %"PRIu64"", */
-		/*       c_usage->a_cpu, c_usage->d_cpu, */
-		/*       c_usage->pd_cpu, total_used, */
-		/*       c_usage->total_time); */
 	}
+	/* info("Cluster %s now has (%"PRIu64"+%"PRIu64"+" */
+	/*      "%"PRIu64")(%"PRIu64") ?= %"PRIu64"", */
+	/*      cluster_name, */
+	/*      c_usage->a_cpu, c_usage->d_cpu, */
+	/*      c_usage->pd_cpu, total_used, */
+	/*      c_usage->total_time); */
 
 	c_usage->i_cpu = c_usage->total_time - total_used - c_usage->r_cpu;
 	/* sanity check just to make sure we have a
@@ -440,15 +440,18 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 				local_end = c_usage->end;
 			seconds = (local_end - local_start);
 			if (seconds > 0) {
-				/* info("node %s adds " */
-				/*      "(%d)(%d-%d) * %d = %d " */
-				/*      "to %d", */
+				/* info("%p node %s adds " */
+				/*      "(%d)(%ld-%ld) * %d = %"PRIu64" " */
+				/*      "to %"PRIu64" (%s - %s)", */
+				/*      c_usage, */
 				/*      row[EVENT_REQ_NAME], */
 				/*      seconds, */
 				/*      local_end, local_start, */
 				/*      row_cpu, */
-				/*      seconds * row_cpu, */
-				/*      row_cpu); */
+				/*      seconds * (uint64_t)row_cpu, */
+				/*      c_usage->d_cpu, */
+				/*      slurm_ctime(&local_start), */
+				/*      slurm_ctime(&local_end)); */
 				c_usage->d_cpu += seconds * (uint64_t)row_cpu;
 				/* Now remove this time if there was a
 				   disconnected slurmctld during the
