@@ -255,9 +255,7 @@ $ squeue
 
 <h2>Job Dependencies</h2>
 
-<p>Job dependencies for individual job array elements are supported in Slurm
-version 2.6.4 and later.
-A job which is to be dependent upon an entire job array should specify
+<p>A job which is to be dependent upon an entire job array should specify
 itself dependent upon the ArrayJobID.
 Since each array element can have a different exit code, the interpretation of
 the <i>afterok</i> and <i>afternotok</i> clauses will be based upon the highest

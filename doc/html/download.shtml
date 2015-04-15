@@ -167,8 +167,7 @@ from a real system, or a synthetic trace, are used.<br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
 where Slurm performs workload management. Access to the node is restricted to
 user root and users who have been allocated resources on that node.
-NOTE: pam_slurm is included within the Slurm distribution for version 2.1
-or higher.
+NOTE: pam_slurm is included within the Slurm distribution.
 For earlier Slurm versions, pam_slurm is available for download from<br>
 <a href="http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2">
 http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2</a><br>
@@ -397,6 +396,6 @@ make -j</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 25 March 2015</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

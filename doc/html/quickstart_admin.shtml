@@ -722,18 +722,22 @@ See <i>testsuite/expect/README</i> for more information.</p>
 <a name="upgrade"><h2>Upgrades</h2></a>
 
 <p>Background: The Slurm version numbers contain three digits, which represent
-the major, minor and micro release numbers in that order (e.g. 2.5.3 is
-major=2, minor=5, micro=3).
+the major, minor and micro release numbers in that order (e.g. 14.11.3 is
+major=14, minor=11, micro=3).
+The major release number indicates the last two digits in the year of release
+and the minor release number indicates the month of release.
+Thus version 14.11.x was initially released in November 2014.
 Changes in the RPCs (remote procedure calls) and state files will only be made
-if the major and/or minor release number changes.
+if the major and/or minor release number changes, which typically happens
+about once every nine months or so.
 Slurm's MPI libraries may also change if the major and/or minor release number
 change, requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous minor
-releases (e.g. a version 2.6.x SlurmDBD will support slurmctld daemons and
-commands with a version of 2.4.x or 2.5.x).
-This means that upgrading at least once each year is strongly recommended.
+releases (e.g. a version 15.08.x SlurmDBD will support slurmctld daemons and
+commands with a version of 14.03.x or 14.11.x).
+This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
 but may also include very minor enhancements.</p>
@@ -741,7 +745,7 @@ but may also include very minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher minor
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 2.4 to 2.5) <b>always upgrade the SlurmDBD daemon first</b>.
+from 14.11.x to 15.08.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -755,13 +759,13 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Pretty much each new major and/or minor release of Slurm (e.g. 2.4.x to 2.5.x)
+<p>Pretty much each new major and/or minor release of Slurm (e.g. 14.11.x to 15.08.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades of up to two major or minor updates (e.g. 2.4.x or 2.5.x
-to 2.6.x) without loss of jobs or other state information, but the state
+Slurm permits upgrades of up to two major or minor updates (e.g. 14.03.x or 14.11.x
+to 15.08.x) without loss of jobs or other state information, but the state
 information from older state files versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are not recognized when downgrading (e.g. from 2.5.x to 2.4.x)
+State files are not recognized when downgrading (e.g. from 15.08.x to 14.11.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 Therefore when upgrading Slurm (more precisely, the slurmctld daemon),
 saving the <i>StateSaveLocation</i> (as defined in <i>slurm.conf</i>)
@@ -771,7 +775,7 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
+versions (e.g. 15.08.0-pre1 to 15.08.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
@@ -827,6 +831,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 February 2015</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

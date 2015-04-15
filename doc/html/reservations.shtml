@@ -177,7 +177,7 @@ identify the partition from which to select the nodes or _one_
 feature that every selected node must contain.</p>
 
 <p>On a smaller system, one might want to reserve cores rather than
-whole nodes. Slurm provides a core reservation capability in version 2.6.
+whole nodes.
 This capability permits the administrator to identify the core count to be
 reserved on each node as shown in the examples below.<br>
 <b>NOTE:</b> Core reservations are not available on IBM BlueGene or
@@ -421,7 +421,11 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
+<<<<<<< HEAD
 <p style="text-align: center;">Last modified 12 January 2015</p>
+=======
+<p style="text-align: center;">Last modified 15 April 2015</p>
+>>>>>>> slurm-14.11
 
 <!--#include virtual="footer.txt"-->
 

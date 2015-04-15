@@ -708,8 +708,7 @@ http://groups.google.com/group/slurm-devel</a></p>
 
 <p><a name="job_size"><b>24. Can I change my job's size after it has started
 running?</b></a><br>
-Support to decrease the size of a running job was added to Slurm version 2.2.
-The ability to increase the size of a running job was added to Slurm version 2.3.
+Slurm supports the ability to both increase and decrease the size of running jobs.
 While the size of a pending job may be changed with few restrictions, several
 significant restrictions apply to changing the size of a running job as noted
 below:
@@ -2018,6 +2017,6 @@ add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 January 2015</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

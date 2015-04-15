@@ -57,8 +57,8 @@ script returns an exit code of zero, indicating success.  In many
 cases, a user may not be able to ascertain the success or failure of a
 job until after they have examined the job's output files.</p>
 
-<p>A new job field, the "derived exit code", has been added to the job
-record in Slurm 2.2.  It is initially set to the value of the highest
+<p>The job includes a "derived exit code" field.
+It is initially set to the value of the highest
 exit code returned by all of the job's steps (srun invocations).  The
 job's derived exit code is determined by the Slurm control daemon
 and sent to the database when the accounting_storage plugin is
@@ -118,6 +118,6 @@ JobID   NNodes      State ExitCode DerivedExitCode        Comment
 123          1  COMPLETED      0:0            49:0  out of memory
 </PRE>
 
-<p style="text-align:center;">Last modified 26 July 2012</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

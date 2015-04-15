@@ -5,11 +5,9 @@
 <p>Slurm provides an integrated power saving mechanism for powering down
 idle nodes.
 Nodes that remain idle for a configurable period of time can be placed
-in a power saving mode.
+in a power saving mode, which can reduce power consumption or fully power down
+the node.
 The nodes will be restored to normal operation once work is assigned to them.
-Beginning with version 2.0.0, nodes can be fully powered down.
-Earlier releases of Slurm do not support the powering down of nodes,
-only support of reducing their performance and thus their power consumption.
 For example, power saving can be accomplished using a <i>cpufreq</i> governor
 that can change CPU frequency and voltage (note that the <i>cpufreq</i> driver
 must be enabled in the Linux kernel configuration).
@@ -204,17 +202,10 @@ as configured in <i>slurm.conf</i>, which would create the delay for all jobs
 on the system.
 Insure that the <i>Prolog</i> code is zero to avoid draining the node
 (do not use the scontrol exit code to avoid draining the node on error,
-for example if the job is explicitly cancelled during startup).
-Note that the <i>scontrol wait_job</i> command was added to Slurm version 2.2.
-When using earlier versions of Slurm, one may execute "<i>srun /bin/true</i>"
-or some other command first to insure that all nodes are booted and ready
-for use.</p>
+for example if the job is explicitly cancelled during startup).</p>
 
-<p>The <i>salloc</i> and <i>srun</i> commands which create a resource
-allocation automatically wait for the nodes to power up in Slurm version 2.2.
-When using earlier versions of Slurm, <i>salloc</i> will return immediately
-after a resource allocation is made, and one can execute "<i>srun /bin/true</i>"
-to ensure that all nodes are booted and ready for use.</p>
+<p>The <i>salloc</i> and <i>srun</i> commands, which create a resource
+allocation, automatically wait for the nodes to power up.</p>
 
 <p>Execution of the <i>salloc</i> command also triggers execution of the <i>Prolog</i>
 script if the <i>Alloc</i> flag is set in <i>PrologFlags</i>. In this case <i>salloc</i>
@@ -264,6 +255,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 20 January 2015</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -37,8 +37,8 @@ SchedulerPort=7321
 <p>Running multiple jobs per mode can be accomplished in two different
 ways.
 The <i>SelectType=select/cons_res</i> parameter can be used to let
-SLURM allocate the individual processors, memory, and other
-consumable resources (in Slurm version 1.2.1 or higher).
+Slurm allocate the individual processors, memory, and other
+consumable resources.
 Alternately, <i>SelectType=select/linear</i> or
 <i>SelectType=select/bluegene</i> can be used with the
 <i>Shared=yes</i> or <i>Shared=force</i> parameter in
@@ -46,8 +46,8 @@ partition configuration specifications.</p>
 
 <p>The default value of <i>SchedulerPort</i> is 7321.</p>
 
-<p>Slurm version 2.0 and higher have internal scheduling capabilities
-that are not compatible with Moab.
+<p>Slurm has some internal scheduling capabilities which are not compatible
+with Moab.
 <ol>
 <li>Do not configure Slurm to use the "priority/multifactor" plugin
 as it would set job priorities which conflict with those set by Moab.</li>
@@ -281,6 +281,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 December 2009</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

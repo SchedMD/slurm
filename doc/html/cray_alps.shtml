@@ -21,7 +21,7 @@ You should be familiar with the Slurm's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
 
-<p>Since version 2.3, Slurm is designed to operate as a job scheduler over
+<p>Slurm is designed to operate as a job scheduler over
 Cray's Application Level Placement Scheduler (ALPS).
 Use Slurm's <i>sbatch</i> or <i>salloc</i> commands to create a resource
 allocation in ALPS.
@@ -29,7 +29,7 @@ Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
 The resource allocation is terminated once the the batch script or the
 <i>salloc</i> command terminates.
-With 2.5 there is a <i>launch/aprun</i> plugin that allow users to use
+Slurm includes a <i>launch/aprun</i> plugin that allow users to use
 <i>srun</i> to wrap <i>aprun</i> and translate <i>srun</i> options
 into the equivalent <i>aprun</i> options. Not all <i>srun</i> options
 can be translated so there are options that are not available.
@@ -176,9 +176,6 @@ batch job with a node count specification of zero.</p>
 <pre>
 sbatch -N0 pre_process.bash
 </pre>
-<p><b>Note</b>: Support for Cray job allocations with zero compute nodes was
-added to Slurm version 2.4. Earlier versions of Slurm will return an error for
-zero compute node job requests.</p>
 <p><b>Note</b>: Job allocations with zero compute nodes can only be made in
 SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
 minimum node count for a partition is one compute node).</p>
@@ -698,6 +695,6 @@ Stop the <i>slurmctld</i> daemon, delete the files, and restart the daemon.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 October 2014</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

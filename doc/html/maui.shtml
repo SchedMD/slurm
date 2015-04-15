@@ -116,8 +116,8 @@ includes a description of keywords presently only
 supported by the sched/wiki2 plugin for use with the
 Moab Scheduler.</p>
 
-<p>Slurm version 2.0 and higher have internal scheduling capabilities
-that are not compatible with Maui.
+<p>Slurm has some internal scheduling capabilities which are not compatible
+with Maui.
 <ol>
 <li>Do not configure Slurm to use the "priority/multifactor" plugin
 as it would set job priorities which conflict with those set by Maui.</li>
@@ -180,6 +180,6 @@ HidePartitionJobs=debug
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 May 2009</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1430,7 +1430,7 @@ extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
 	return;
 }
 
-extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
+extern gboolean tab_pressed(GtkWidget *widget, GdkEventButton *event,
 			display_data_t *display_data)
 {
 	signal_params_t signal_params;
@@ -1440,10 +1440,10 @@ extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
 	/* single click with the right mouse button? */
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(main_notebook),
 				      display_data->extra);
-	if ((display_data->extra != TAB_PAGE) && (event->button == 3)) {
+	if ((display_data->extra != TAB_PAGE) && (event->button == 3))
 		right_button_pressed(NULL, NULL, event,
 				     &signal_params, TAB_CLICKED);
-	}
+	return true;
 }
 
 extern void close_tab(GtkWidget *widget, GdkEventButton *event,

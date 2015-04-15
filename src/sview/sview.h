@@ -370,8 +370,8 @@ extern void print_grid(int dir);
 extern void refresh_main(GtkAction *action, gpointer user_data);
 extern void toggle_tab_visiblity(GtkToggleButton *toggle_button,
 				 display_data_t *display_data);
-extern void tab_pressed(GtkWidget *widget, GdkEventButton *event,
-			display_data_t *display_data);
+extern gboolean tab_pressed(GtkWidget *widget, GdkEventButton *event,
+			    display_data_t *display_data);
 extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 		      display_data_t *display_data);
 

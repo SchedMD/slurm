@@ -4,7 +4,7 @@
 
 <h2>Overview</h2>
 
-<p>Slurm version 2.4 has the ability to support a cluster that grows and
+<p>Slurm has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
 for resources.
@@ -165,6 +165,6 @@ expands (adds resources).</li>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 May 2012</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
