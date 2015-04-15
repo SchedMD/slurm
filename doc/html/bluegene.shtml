@@ -341,16 +341,15 @@ started runjob_mux
 </li>
 <li><b>WARNING! You need at least IBM driver V1R1M1 efix 008 or this
 method will not work.  Previous versions would load the old
-plugin (presumably still in memory) other than the new one.  As of SLURM
-2.4.2 when the plugin is loaded it will print the version of SLURM
-which should let you know if the new one is loaded or not.</b>
-<p>This method allows no job loss using the
+plugin (presumably still in memory) other than the new one.
+Slurm will print its version when the plugin is loaded for validation.</b><br>
+This method allows for no job loss using the
 IBM <i>runjob_mux_refresh_config</i> command.  This should
 reload the plugin and all should be good afterwards.  After doing this
 you may see some warning/error messages about the current running jobs
 when finishing not being known.  This is expected and can usually be
 ignored.</li>
-</ul></p>
+</ul>
 
 <b>Notes about sub-block allocations:</b>
 <p>
@@ -856,6 +855,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 December 2012</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

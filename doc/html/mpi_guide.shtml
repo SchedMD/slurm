@@ -56,9 +56,8 @@ with Slurm are provided below.
 
 <p>The current versions of Slurm and Open MPI support task launch using the
 <span class="commandline">srun</span> command.
-It relies upon Slurm version 2.0 (or higher) managing reservations of
-communication ports for use by the Open MPI version 1.5 (or higher).
-
+It relies upon Slurm managing reservations of communication ports for use by
+the Open MPI version 1.5.</p>
 
 <p>If OpenMPI is configured with <i>--with-pmi</i> either pmi or pmi2
 the OMPI jobs can be launched directly using the srun command. This is
@@ -458,8 +457,8 @@ Non-MPI jobs started in this configuration will lack the mechanism to launch
 more than one task per node unless srun's <i>--mpi=none</i> option is used.</p>
 
 <p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_p4</i> in
-the mpirun script) and Slurm version 1.2.11 or newer,
-then it is recommended that you apply the patch in the SLURM
+the mpirun script),
+then it is recommended that you apply the patch in the Slurm
 distribution's file <i>contribs/mpich1.slurm.patch</i>.
 Follow directions within the file to rebuild MPICH.
 Applications must be relinked with the new library.
@@ -524,6 +523,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 28 November 2013</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

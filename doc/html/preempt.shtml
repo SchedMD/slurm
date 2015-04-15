@@ -366,8 +366,6 @@ $ squeue
 <P>
 <B>More intelligence in the select plugins</B>: This implementation of
 preemption relies on intelligent job placement by the <I>select</I> plugins.
-In Slurm version 2.0 preemptive placement support was added to the
-SelectType plugins, but there is still room for improvement.
 </P><P>
 Take the following example:
 </P>
@@ -410,6 +408,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 3 March 2014</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

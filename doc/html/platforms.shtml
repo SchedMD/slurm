@@ -6,47 +6,18 @@
 <li><b>AIX</b>&#151;Slurm support for AIX has been thoroughly tested, but we
 know of no AIX installations using Slurm after 2008. See
 <a href="ibm.html">IBM AIX User and Administrator Guide</a> for more information.</li>
-<li><b>FreeBSD</b>&#151;Slurm support added in version 2.5.5.</li>
+<li><b>FreeBSD</b>&#151;Fully supported.</li>
 <li><b>Linux</b>&#151;Slurm has been thoroughly tested on most popular Linux
 distributions using i386, ia64, and x86_64 architectures.</li>
-<li><b>NetBSD</b>&#151;Slurm support added in version 2.4.</li>
+<li><b>NetBSD</b>&#151;Fully supported.</li>
 <li><b>OS X</b>&#151;Slurm has run OS X in the past, but the current OS X linker
 does not support Slurm plugins. (OS X dynamically linked objects can be called by
 the main program. They may not call functions in the main program or other
 dynamically linked objects, which are features required by Slurm.)</li>
-<li><b>Solaris</b>&#151;Slurm support for Solaris (OpenSolaris build 119) was
-added in version 2.1.</li>
-<li><b>Other</b>&#151;Slurm ports to other systems will be gratefully accepted.</li>
-</ul>
-<h2>Interconnects</h2>
-<ul>
-<li><b>BlueGene</b>&#151;Slurm support for IBM's BlueGene/L, BlueGene/P and
-BlueGene/Q systems has been thoroughly tested. See
-<a href="bluegene.html">Blue Gene User and Administrator Guide</a>
-for more information.</li>
-<li><b>Cray XC</b>&#151;Operates as a workload manager natively on a
-  Cray system.  See
-<li><a href="cray.html">Cray User and Administrator Guide with Native
-Slurm</a> for more information.</li>
-<li><b>Cray XT and XE</b>&#151;Operates as a scheduler on top of Cray's
-ALPS/BASIL software. Supported added in Slurm version 2.3. Note that Cray's
-ALPS/BASIL software necessitates some changes in Slurm behavior. See
-<li><a href="cray_alps.html">Cray User and Administrator Guide with
-ALPS</a> for more information.</li>
-<li><b>Ethernet</b>&#151;Ethernet requires no special support from Slurm and has
-been thoroughly tested.</li>
-<li><b>IBM Infiniband/Torrent</b>&#151;Slurm supports IBM's NRT (Network
-Resource Table) interface and
-<a href="ibm-pe.html">IBM's PE (Parallel Environment)</a>.</li>
-<li><b>Infiniband</b>&#151;Infiniband support has been thoroughly tested.</li>
-<li><b>Myrinet</b>&#151;Myrinet, MPICH-GM and MPICH-MX are supported.</li>
-<li><b>Quadrics Elan</b>&#151;Slurm support for Quadrics Elan 3 and Elan 4 switches
-are available in all versions of Slurm and have been thoroughly tested.</li>
-<li><b>Sun Constellation</b>&#151;Resource allocation has been optimized
-for the three-dimensional torus interconnect.</li>
+<li><b>Solaris</b>&#151;OpenSolaris is fully supported.</li>
 <li><b>Other</b>&#151;Slurm ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 27 March 2013</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

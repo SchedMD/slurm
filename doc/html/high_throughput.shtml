@@ -74,9 +74,6 @@ be set quite high for memory size, open file count and stack size.</p>
 
 <h2>Slurm Configuration</h2>
 
-<p>NOTE: Substantial changes were made in Slurm version 2.4 to support higher
-throughput rates. Version 2.5 includes more enhancements.</p>
-
 <p>Several Slurm configuration parameters should be adjusted to
 reflect the needs of high throughput computing. The changes described below
 will not be possible in all environments, but these are the configuration
@@ -209,6 +206,6 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeSuspendAfter</b>=1month</li>
 </ul>
 
-<p style="text-align:center;">Last modified 23 December 2014</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

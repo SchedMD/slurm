@@ -3,7 +3,7 @@
 <h1>Multi-Cluster Operation</h1>
 
 <p>A cluster is comprised of all the nodes managed by a single slurmctld
-daemon.  Slurm version 2.2 offers the ability to target commands to other
+daemon.  Slurm offers the ability to target commands to other
 clusters instead of, or in addition to, the local cluster on which the
 command is invoked.  When this behavior is enabled, users can submit
 jobs to one or many clusters and receive status from those remote
@@ -56,6 +56,6 @@ See <a href="accounting.html">accounting</a> for details.</p>
 option will become active for all of the clusters listed by the
 <b>"sacctmgr show clusters"</b> command.</p>
 
-<p style="text-align:center;">Last modified 14 February 2011</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->

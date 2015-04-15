@@ -14,8 +14,8 @@ The reason for format changes is typically new fields being added for new
 Slurm capabilities.
 Slurm communicatins support the most current release plus the two previous
 release major and/or minor releases.
-For example, Slurm version 2.6.x daemons can communicate with Slurm commands
-from version 2.4.x, 2.5.x and 2.6.x.
+For example, Slurm version 15.08.x daemons can communicate with Slurm commands
+from version 14.03.x, 14.11.x and 15.08.x.
 The same is true for state save files.
 Slurm can be upgraded through two major or minor releases without loss of data
 since the older state files are still recognized.
@@ -55,20 +55,20 @@ slurmctld daemon, job specifications that are unknown to the old sbatch
 should be set by the slurmctld daemon to reasonable values.
 An example of the changes required are shown below.
 In this trivial example, we want to add a new "max_nodes" filed to the
-message for Slurm vestion 2.6.x.</p>
+message for Slurm vestion 15.08.x.</p>
 
 <pre>
 /*
  * Original code in Slurm v2.5.x
  */
-if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
 	pack32(msg->min_nodes, buffer);
-} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
-} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+} else if (protocol_version >= SLURM_13_08_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 } else {
 	error("pack_whatever_msg: protocol_version "
@@ -77,18 +77,18 @@ if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 </pre>
 <pre>
 /*
- * New code in Slurm v2.6.x
+ * New code in Slurm v15.08.x
  */
-if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
 	pack32(msg->min_nodes, buffer);
 	pack32(msg->max_nodes, buffer);
-} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
 	pack32(msg->min_nodes, buffer);
-} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
 } else {
@@ -97,6 +97,6 @@ if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 }
 </pre>
 
-<p style="text-align:center;">Last modified 22 August 2013</p>
+<p style="text-align:center;">Last modified 15 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
