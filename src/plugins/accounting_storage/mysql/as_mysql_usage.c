@@ -927,6 +927,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;
+	int roll_started = 0;
 	char *cluster_name = NULL;
 	ListIterator itr;
 	pthread_mutex_t rolledup_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -985,14 +986,15 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 				   (void *)local_rollup))
 			fatal("pthread_create: %m");
 		slurm_attr_destroy(&rollup_attr);
+		roll_started++;
 	}
 	slurm_mutex_lock(&rolledup_lock);
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
-	while (rolledup < list_count(as_mysql_cluster_list)) {
+	while (rolledup < roll_started) {
 		pthread_cond_wait(&rolledup_cond, &rolledup_lock);
-		debug2("Got %d rolled up", rolledup);
+		debug2("Got %d of %d rolled up", rolledup, roll_started);
 	}
 	slurm_mutex_unlock(&rolledup_lock);
 	debug2("Everything rolled up");
