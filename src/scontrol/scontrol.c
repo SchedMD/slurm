@@ -1575,11 +1575,14 @@ _update_it (int argc, char *argv[])
 		char *tag = argv[i];
 		int tag_len = 0;
 		val = strchr(argv[i], '=');
-		if (!val)
-			continue;
-		tag_len = val - argv[i];
-		val++;
-
+		if (!val){
+			tag = argv[i];
+			tag_len = strlen(tag);
+			++i;
+		} else {
+			tag_len = val - argv[i];
+			val++;
+		}
 		if (!strncasecmp(tag, "NodeName", MAX(tag_len, 3))) {
 			node_tag = 1;
 		} else if (!strncasecmp(tag, "PartitionName",

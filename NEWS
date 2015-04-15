@@ -38,6 +38,9 @@ documents those changes that are of interest to users and administrators.
     allocated to a job.
  -- Specialized memory (a node's MemSpecLimit configuration parameter) is not
     available for allocation to jobs.
+ -- Modify scontrol update job to allow jobid specification without
+    the = sign. 'scontrol update job=123 ...' and 'scontrol update job 123 ...'
+    are both valid syntax.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

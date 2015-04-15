@@ -731,7 +731,12 @@ scontrol_update_job (int argc, char *argv[])
 	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
-		if (val) {
+		if (! val) {
+			tag = argv[i];
+			val = argv[i + 1];
+			++i;
+			vallen = strlen(val);
+		} else if (val) {
 			taglen = val - argv[i];
 			val++;
 			vallen = strlen(val);
