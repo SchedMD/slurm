@@ -427,6 +427,26 @@ enum {
 	SUSPEND_REQ_COUNT
 };
 
+typedef enum {
+	PURGE_EVENT,
+	PURGE_SUSPEND,
+	PURGE_RESV,
+	PURGE_JOB,
+	PURGE_STEP
+} purge_type_t;
+
+char *purge_type_str[] = {
+	"event",
+	"suspend",
+	"resv",
+	"job",
+	"step"
+};
+
+static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
+			       char *cluster_name, time_t period_end,
+			       char *arch_dir, uint32_t archive_period);
+
 static int high_buffer_size = (1024 * 1024);
 
 static void _pack_local_event(local_event_t *object,
@@ -1397,46 +1417,12 @@ static int _process_old_sql(char **data)
 	return rc;
 }
 
-/* returns count of events archived or SLURM_ERROR on error */
-static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
-				time_t period_end, char *arch_dir,
-				uint32_t archive_period)
+static Buf _pack_archive_events(MYSQL_RES *result, char *cluster_name,
+				uint32_t cnt, time_t *period_start)
 {
-	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_event_t event;
 	Buf buffer;
-	int error_code = 0, i = 0;
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", event_req_inx[0]);
-	for(i=1; i<EVENT_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
-	}
-
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %ld "
-			       "&& time_end != 0 order by time_start asc",
-			       tmp, cluster_name, event_table, period_end);
-	xfree(tmp);
-
-//	START_TIMER;
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
+	local_event_t event;
 
 	buffer = init_buf(high_buffer_size);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
@@ -1446,8 +1432,8 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (!period_start)
-			period_start = slurm_atoul(row[EVENT_REQ_START]);
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[EVENT_REQ_START]);
 
 		memset(&event, 0, sizeof(local_event_t));
 
@@ -1462,20 +1448,50 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 
 		_pack_local_event(&event, SLURM_PROTOCOL_VERSION, buffer);
 	}
-	mysql_free_result(result);
 
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
+	return buffer;
+}
 
-	error_code = archive_write_file(buffer, cluster_name,
-					period_start, period_end,
-					arch_dir, "event", archive_period);
-	free_buf(buffer);
+static char *_get_archive_columns(purge_type_t type)
+{
+	char **cols = NULL;
+	char *tmp = NULL;
+	int col_count = 0, i = 0;
 
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
+	xfree(cols);
 
-	return cnt;
+	switch (type) {
+	case PURGE_EVENT:
+		cols      = event_req_inx;
+		col_count = EVENT_REQ_COUNT;
+		break;
+	case PURGE_SUSPEND:
+		cols      = suspend_req_inx;
+		col_count = SUSPEND_REQ_COUNT;
+		break;
+	case PURGE_RESV:
+		cols      = resv_req_inx;
+		col_count = RESV_REQ_COUNT;
+		break;
+	case PURGE_JOB:
+		cols      = job_req_inx;
+		col_count = JOB_REQ_COUNT;
+		break;
+	case PURGE_STEP:
+		cols      = step_req_inx;
+		col_count = STEP_REQ_COUNT;
+		break;
+	default:
+		xassert(0);
+		return NULL;
+	}
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", cols[0]);
+	for(i=1; i<col_count; i++) {
+		xstrfmtcat(tmp, ", %s", cols[i]);
+	}
+	return tmp;
 }
 
 /* returns sql statement from archived data or NULL on error */
@@ -1526,46 +1542,12 @@ _load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
 	return insert;
 }
 
-/* returns count of jobs archived or SLURM_ERROR on error */
-static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
-			      time_t period_end, char *arch_dir,
-			      uint32_t archive_period)
+static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
+			      uint32_t cnt, time_t *period_start)
 {
-	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_job_t job;
 	Buf buffer;
-	int error_code = 0, i = 0;
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", job_req_inx[0]);
-	for(i=1; i<JOB_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
-	}
-
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_submit < %ld && time_end != 0 && !deleted "
-			       "order by time_submit asc",
-			       tmp, cluster_name, job_table, period_end);
-	xfree(tmp);
-
-//	START_TIMER;
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
+	local_job_t job;
 
 	buffer = init_buf(high_buffer_size);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
@@ -1575,8 +1557,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (!period_start)
-			period_start = slurm_atoul(row[JOB_REQ_SUBMIT]);
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[JOB_REQ_SUBMIT]);
 
 		memset(&job, 0, sizeof(local_job_t));
 
@@ -1618,20 +1600,8 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 		_pack_local_job(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
-	mysql_free_result(result);
 
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
-
-	error_code = archive_write_file(buffer, cluster_name,
-					period_start, period_end,
-					arch_dir, "job", archive_period);
-	free_buf(buffer);
-
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
-	return cnt;
+	return buffer;
 }
 
 /* returns sql statement from archived data or NULL on error */
@@ -1708,46 +1678,12 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-/* returns count of resvations archived or SLURM_ERROR on error */
-static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
-			       time_t period_end, char *arch_dir,
-			       uint32_t archive_period)
+static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
+			       uint32_t cnt, time_t *period_start)
 {
-	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_resv_t resv;
 	Buf buffer;
-	int error_code = 0, i = 0;
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", resv_req_inx[0]);
-	for(i=1; i<RESV_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", resv_req_inx[i]);
-	}
-
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %ld "
-			       "&& time_end != 0 order by time_start asc",
-			       tmp, cluster_name, resv_table, period_end);
-	xfree(tmp);
-
-//	START_TIMER;
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
+	local_resv_t resv;
 
 	buffer = init_buf(high_buffer_size);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
@@ -1757,8 +1693,8 @@ static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (!period_start)
-			period_start = slurm_atoul(row[RESV_REQ_START]);
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[RESV_REQ_START]);
 
 		memset(&resv, 0, sizeof(local_resv_t));
 
@@ -1774,20 +1710,8 @@ static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
 
 		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
 	}
-	mysql_free_result(result);
 
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
-
-	error_code = archive_write_file(buffer, cluster_name,
-					period_start, period_end,
-					arch_dir, "resv", archive_period);
-	free_buf(buffer);
-
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
-	return cnt;
+	return buffer;
 }
 
 /* returns sql statement from archived data or NULL on error */
@@ -1837,46 +1761,12 @@ static char *_load_resvs(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-/* returns count of steps archived or SLURM_ERROR on error */
-static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
-			       time_t period_end, char *arch_dir,
-			       uint32_t archive_period)
+static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
+			       uint32_t cnt, time_t *period_start)
 {
-	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_step_t step;
 	Buf buffer;
-	int error_code = 0, i = 0;
-
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", step_req_inx[0]);
-	for(i=1; i<STEP_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", step_req_inx[i]);
-	}
-
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %ld && time_end != 0 "
-			       "&& !deleted order by time_start asc",
-			       tmp, cluster_name, step_table, period_end);
-	xfree(tmp);
-
-//	START_TIMER;
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(cnt = mysql_num_rows(result))) {
-		mysql_free_result(result);
-		return 0;
-	}
+	local_step_t step;
 
 	buffer = init_buf(high_buffer_size);
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
@@ -1886,8 +1776,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (!period_start)
-			period_start = slurm_atoul(row[STEP_REQ_START]);
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[STEP_REQ_START]);
 
 		memset(&step, 0, sizeof(local_step_t));
 
@@ -1942,20 +1832,8 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 
 		_pack_local_step(&step, SLURM_PROTOCOL_VERSION, buffer);
 	}
-	mysql_free_result(result);
 
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
-
-	error_code = archive_write_file(buffer, cluster_name,
-					period_start, period_end,
-					arch_dir, "step", archive_period);
-	free_buf(buffer);
-
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
-	return cnt;
+	return buffer;
 }
 
 /* returns sql statement from archived data or NULL on error */
@@ -2045,34 +1923,101 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-/* returns count of events archived or SLURM_ERROR on error */
-static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
-				 time_t period_end, char *arch_dir,
-				 uint32_t archive_period)
+static Buf _pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
+				  uint32_t cnt, time_t *period_start)
 {
-	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *tmp = NULL, *query = NULL;
-	time_t period_start = 0;
-	uint32_t cnt = 0;
-	local_suspend_t suspend;
 	Buf buffer;
-	int error_code = 0, i = 0;
+	local_suspend_t suspend;
 
-	xfree(tmp);
-	xstrfmtcat(tmp, "%s", suspend_req_inx[0]);
-	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", suspend_req_inx[i]);
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_JOB_SUSPEND, buffer);
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (period_start && !*period_start)
+			*period_start = slurm_atoul(row[SUSPEND_REQ_START]);
+
+		memset(&suspend, 0, sizeof(local_suspend_t));
+
+		suspend.id = row[SUSPEND_REQ_ID];
+		suspend.associd = row[SUSPEND_REQ_ASSOCID];
+		suspend.period_start = row[SUSPEND_REQ_START];
+		suspend.period_end = row[SUSPEND_REQ_END];
+
+		_pack_local_suspend(&suspend, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
-	/* get all the events started before this time listed */
-	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "time_start <= %ld && time_end != 0 "
-			       "order by time_start asc",
-			       tmp, cluster_name, suspend_table, period_end);
-	xfree(tmp);
+	return buffer;
+}
 
-//	START_TIMER;
+/* returns count of events archived or SLURM_ERROR on error */
+static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
+			       char *cluster_name, time_t period_end,
+			       char *arch_dir, uint32_t archive_period)
+{
+	MYSQL_RES *result = NULL;
+	char *cols = NULL, *query = NULL;
+	time_t period_start = 0;
+	uint32_t cnt = 0;
+	Buf buffer;
+	int error_code = 0;
+	static Buf (*pack_func)(MYSQL_RES *result, char *cluster_name,
+				uint32_t cnt, time_t *period_start);
+
+	cols = _get_archive_columns(type);
+
+	switch (type) {
+	case PURGE_EVENT:
+		pack_func = &_pack_archive_events;
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "time_start <= %ld && time_end != 0 "
+				       "order by time_start asc",
+				       cols, cluster_name, event_table,
+				       period_end);
+		break;
+	case PURGE_SUSPEND:
+		pack_func = &_pack_archive_suspends;
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "time_start <= %ld && time_end != 0 "
+				       "order by time_start asc",
+				       cols, cluster_name, suspend_table,
+				       period_end);
+		break;
+	case PURGE_RESV:
+		pack_func = &_pack_archive_resvs;
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "time_start <= %ld && time_end != 0 "
+				       "order by time_start asc",
+				       cols, cluster_name, resv_table,
+				       period_end);
+		break;
+	case PURGE_JOB:
+		pack_func = &_pack_archive_jobs;
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "time_submit < %ld && time_end != 0 "
+				       "&& !deleted order by time_submit asc",
+				       cols, cluster_name, job_table,
+				       period_end);
+		break;
+	case PURGE_STEP:
+		pack_func = &_pack_archive_steps;
+		query = xstrdup_printf("select %s from \"%s_%s\" where "
+				       "time_start <= %ld && time_end != 0 "
+				       "&& !deleted order by time_start asc",
+				       cols, cluster_name, step_table,
+				       period_end);
+		break;
+	default:
+		fatal("Unknown purge type: %d", type);
+		return SLURM_ERROR;
+	}
+
+	xfree(cols);
+
 	if (debug_flags & DEBUG_FLAG_DB_USAGE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -2086,34 +2031,13 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 		return 0;
 	}
 
-	buffer = init_buf(high_buffer_size);
-	pack16(SLURM_PROTOCOL_VERSION, buffer);
-	pack_time(time(NULL), buffer);
-	pack16(DBD_JOB_SUSPEND, buffer);
-	packstr(cluster_name, buffer);
-	pack32(cnt, buffer);
-
-	while ((row = mysql_fetch_row(result))) {
-		if (!period_start)
-			period_start = slurm_atoul(row[SUSPEND_REQ_START]);
-
-		memset(&suspend, 0, sizeof(local_suspend_t));
-
-		suspend.id = row[SUSPEND_REQ_ID];
-		suspend.associd = row[SUSPEND_REQ_ASSOCID];
-		suspend.period_start = row[SUSPEND_REQ_START];
-		suspend.period_end = row[SUSPEND_REQ_END];
-
-		_pack_local_suspend(&suspend, SLURM_PROTOCOL_VERSION, buffer);
-	}
+	buffer = (*pack_func)(result, cluster_name, cnt, &period_start);
 	mysql_free_result(result);
-
-//	END_TIMER2("step query");
-//	info("event query took %s", TIME_STR);
 
 	error_code = archive_write_file(buffer, cluster_name,
 					period_start, period_end,
-					arch_dir, "suspend", archive_period);
+					arch_dir, purge_type_str[type],
+					archive_period);
 	free_buf(buffer);
 
 	if (error_code != SLURM_SUCCESS)
@@ -2121,6 +2045,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 
 	return cnt;
 }
+
 
 /* returns sql statement from archived data or NULL on error */
 static char *_load_suspend(uint16_t rpc_version, Buf buffer,
@@ -2226,16 +2151,115 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	return 1; /* found one record */
 }
 
+/* Archive and purge a table.
+ *
+ * Returns SLURM_ERROR on error and SLURM_SUCCESS on success.
+ */
+static int _archive_purge_table(purge_type_t purge_type,
+				mysql_conn_t *mysql_conn, char *cluster_name,
+				slurmdb_archive_cond_t *arch_cond)
+{
+	int      rc          = SLURM_SUCCESS;
+	uint32_t purge_attr  = 0;
+	time_t   last_submit = time(NULL);
+	time_t   curr_end    = 0, tmp_end = 0, record_start = 0;
+	char    *query       = NULL, *sql_table = NULL, *col_name = NULL;
+	uint32_t tmp_archive_period;
+
+	switch (purge_type) {
+	case PURGE_EVENT:
+		purge_attr = arch_cond->purge_event;
+		sql_table  = event_table;
+		col_name   = event_req_inx[EVENT_REQ_START];
+		break;
+	case PURGE_SUSPEND:
+		purge_attr = arch_cond->purge_suspend;
+		sql_table  = suspend_table;
+		col_name   = suspend_req_inx[SUSPEND_REQ_START];
+		break;
+	case PURGE_RESV:
+		purge_attr = arch_cond->purge_resv;
+		sql_table  = resv_table;
+		col_name   = step_req_inx[STEP_REQ_START];
+		break;
+	case PURGE_JOB:
+		purge_attr = arch_cond->purge_job;
+		sql_table  = job_table;
+		col_name   = job_req_inx[JOB_REQ_SUBMIT];
+		break;
+	case PURGE_STEP:
+		purge_attr = arch_cond->purge_step;
+		sql_table  = step_table;
+		col_name   = resv_req_inx[RESV_REQ_START];
+		break;
+	default:
+		fatal("Unknown purge type: %d", purge_type);
+		return SLURM_ERROR;
+	}
+
+	if (!(curr_end = archive_setup_end_time(last_submit, purge_attr))) {
+		error("Parsing purge %s", purge_type_str[purge_type]);
+		return SLURM_ERROR;
+	}
+
+	rc = _get_oldest_record(mysql_conn, cluster_name, sql_table, col_name,
+				curr_end, &record_start);
+	if (!rc) /* no purgeable records found */
+		return SLURM_SUCCESS;
+	else if (rc == SLURM_ERROR)
+		return rc;
+
+	tmp_end = record_start;
+	tmp_archive_period = purge_attr;
+	do {
+		if (curr_end - record_start > MAX_ARCHIVE_AGE) {
+			/* old stuff, catch up by archiving by month */
+			tmp_archive_period = SLURMDB_PURGE_MONTHS;
+			tmp_end = MIN(curr_end, _get_begin_next_month(tmp_end));
+		} else
+			tmp_end = curr_end;
+
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			debug("Purging %s entries before %ld for %s",
+			      purge_type_str[purge_type],
+			      tmp_end, cluster_name);
+
+		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
+			rc = _archive_table(purge_type, mysql_conn,
+					    cluster_name, tmp_end,
+					    arch_cond->archive_dir,
+					    tmp_archive_period);
+			if (!rc) /* no records archived */
+				continue;
+			else if (rc == SLURM_ERROR)
+				return rc;
+		}
+		query = xstrdup_printf("delete from \"%s_%s\" where "
+				       "%s <= %ld && time_end != 0 LIMIT %d",
+				       cluster_name, sql_table, col_name,
+				       tmp_end, MAX_PURGE_LIMIT);
+		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+
+		while ((rc = mysql_db_delete_affected_rows(
+						mysql_conn,query)) > 0);
+
+		xfree(query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't remove old event data");
+			return SLURM_ERROR;
+		}
+	} while (tmp_end < curr_end);
+
+	return SLURM_SUCCESS;
+}
+
 static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
 			    slurmdb_archive_cond_t *arch_cond)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = NULL;
-	time_t curr_end;
 	time_t last_submit = time(NULL);
-	time_t record_start = 0, tmp_end = 0;
-	uint32_t tmp_archive_period;
 
 	if (arch_cond->archive_script)
 		return archive_run_script(arch_cond, cluster_name, last_submit);
@@ -2245,324 +2269,35 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	}
 
 	if (arch_cond->purge_event != NO_VAL) {
-		/* remove all data from event table that was older than
-		 * period_start * arch_cond->purge_event.
-		 */
-		if (!(curr_end = archive_setup_end_time(
-			      last_submit, arch_cond->purge_event))) {
-			error("Parsing purge event");
-			return SLURM_ERROR;
-		}
-
-		rc = _get_oldest_record(mysql_conn, cluster_name, event_table,
-				        event_req_inx[EVENT_REQ_START],
-					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
-			goto exit_events;
-		else if (rc == SLURM_ERROR)
+		if ((rc = _archive_purge_table(PURGE_EVENT, mysql_conn,
+					       cluster_name, arch_cond)))
 			return rc;
-
-		tmp_end = record_start;
-		tmp_archive_period = arch_cond->purge_event;
-		do {
-			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-				/* old stuff, catch up by archiving by month */
-				tmp_archive_period = SLURMDB_PURGE_MONTHS;
-				tmp_end = MIN(curr_end,
-					      _get_begin_next_month(tmp_end));
-			} else
-				tmp_end = curr_end;
-
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				debug("Purging event entries before %ld for %s",
-				      tmp_end, cluster_name);
-
-			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
-				rc = _archive_events(mysql_conn, cluster_name,
-						     tmp_end,
-						     arch_cond->archive_dir,
-						     tmp_archive_period);
-				if (!rc) /* no records archived */
-					continue;
-				else if (rc == SLURM_ERROR)
-					return rc;
-			}
-			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "time_start <= %ld "
-					       "&& time_end != 0 LIMIT %d",
-					       cluster_name, event_table,
-					       tmp_end, MAX_PURGE_LIMIT);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-			while ((rc = mysql_db_delete_affected_rows(
-							mysql_conn,query)) > 0);
-
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't remove old event data");
-				return SLURM_ERROR;
-			}
-		} while (tmp_end < curr_end);
 	}
-
-exit_events:
 
 	if (arch_cond->purge_suspend != NO_VAL) {
-		/* remove all data from suspend table that was older than
-		 * period_start * arch_cond->purge_suspend.
-		 */
-		if (!(curr_end = archive_setup_end_time(
-			      last_submit, arch_cond->purge_suspend))) {
-			error("Parsing purge suspend");
-			return SLURM_ERROR;
-		}
-
-		rc = _get_oldest_record(mysql_conn, cluster_name, suspend_table,
-				        suspend_req_inx[SUSPEND_REQ_START],
-					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
-			goto exit_suspend;
-		else if (rc == SLURM_ERROR)
+		if ((rc = _archive_purge_table(PURGE_SUSPEND, mysql_conn,
+					       cluster_name, arch_cond)))
 			return rc;
-
-		tmp_end = record_start;
-		tmp_archive_period = arch_cond->purge_suspend;
-		do {
-			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-				/* old stuff, catch up by archiving by month */
-				tmp_archive_period = SLURMDB_PURGE_MONTHS;
-				tmp_end = MIN(curr_end,
-					      _get_begin_next_month(tmp_end));
-			} else
-				tmp_end = curr_end;
-
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				debug("Purging suspend entries before %ld "
-				      "for %s", tmp_end, cluster_name);
-
-			if (SLURMDB_PURGE_ARCHIVE_SET(
-						arch_cond->purge_suspend)) {
-				rc = _archive_suspend(mysql_conn, cluster_name,
-						      tmp_end,
-						      arch_cond->archive_dir,
-						      tmp_archive_period);
-				if (!rc) /* no records archived */
-					continue;
-				else if (rc == SLURM_ERROR)
-					return rc;
-			}
-			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "time_start <= %ld "
-					       "&& time_end != 0 LIMIT %d",
-					       cluster_name, suspend_table,
-					       tmp_end, MAX_PURGE_LIMIT);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-			while ((rc = mysql_db_delete_affected_rows(
-							mysql_conn,query)) > 0);
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't remove old suspend data");
-				return SLURM_ERROR;
-			}
-		} while (tmp_end < curr_end);
 	}
-
-exit_suspend:
 
 	if (arch_cond->purge_step != NO_VAL) {
-		/* remove all data from step table that was older than
-		 * start * arch_cond->purge_step.
-		 */
-		if (!(curr_end = archive_setup_end_time(
-			      last_submit, arch_cond->purge_step))) {
-			error("Parsing purge step");
-			return SLURM_ERROR;
-		}
-
-		rc = _get_oldest_record(mysql_conn, cluster_name, step_table,
-				        step_req_inx[STEP_REQ_START],
-					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
-			goto exit_steps;
-		else if (rc == SLURM_ERROR)
+		if ((rc = _archive_purge_table(PURGE_STEP, mysql_conn,
+					       cluster_name, arch_cond)))
 			return rc;
-
-		tmp_end = record_start;
-		tmp_archive_period = arch_cond->purge_step;
-		do {
-			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-				/* old stuff, catch up by archiving by month */
-				tmp_archive_period = SLURMDB_PURGE_MONTHS;
-				tmp_end = MIN(curr_end,
-					      _get_begin_next_month(tmp_end));
-			} else
-				tmp_end = curr_end;
-
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				debug("Purging step entries before %ld for %s",
-				      tmp_end, cluster_name);
-
-			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
-				rc = _archive_steps(mysql_conn, cluster_name,
-						    tmp_end,
-						    arch_cond->archive_dir,
-						    tmp_archive_period);
-				if (!rc) /* no records archived */
-					continue;
-				else if (rc == SLURM_ERROR)
-					return rc;
-			}
-
-			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "time_start <= %ld "
-					       "&& time_end != 0 LIMIT %d",
-					       cluster_name, step_table,
-					       tmp_end, MAX_PURGE_LIMIT);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-			while ((rc = mysql_db_delete_affected_rows(
-							mysql_conn,query)) > 0);
-
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't remove old step data");
-				return SLURM_ERROR;
-			}
-		} while (tmp_end < curr_end);
 	}
-exit_steps:
 
 	if (arch_cond->purge_job != NO_VAL) {
-		/* remove all data from job table that was older than
-		 * last_submit * arch_cond->purge_job.
-		 */
-		if (!(curr_end = archive_setup_end_time(
-			      last_submit, arch_cond->purge_job))) {
-			error("Parsing purge job");
-			return SLURM_ERROR;
-		}
-
-		rc = _get_oldest_record(mysql_conn, cluster_name, job_table,
-				        job_req_inx[JOB_REQ_SUBMIT],
-					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
-			goto exit_jobs;
-		else if (rc == SLURM_ERROR)
+		if ((rc = _archive_purge_table(PURGE_JOB, mysql_conn,
+					       cluster_name, arch_cond)))
 			return rc;
-
-		tmp_end = record_start;
-		tmp_archive_period = arch_cond->purge_job;
-		do {
-			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-				/* old stuff, catch up by archiving by month */
-				tmp_archive_period = SLURMDB_PURGE_MONTHS;
-				tmp_end = MIN(curr_end,
-					      _get_begin_next_month(tmp_end));
-			} else
-				tmp_end = curr_end;
-
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				debug("Purging job entries before %ld for %s",
-				      tmp_end, cluster_name);
-
-			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
-				rc = _archive_jobs(mysql_conn, cluster_name,
-						   tmp_end,
-						   arch_cond->archive_dir,
-						   tmp_archive_period);
-				if (!rc) /* no records archived */
-					continue;
-				else if (rc == SLURM_ERROR)
-					return rc;
-			}
-
-			query = xstrdup_printf("delete from \"%s_%s\" "
-					       "where time_submit <= %ld "
-					       "&& time_end != 0 LIMIT %d",
-					       cluster_name, job_table,
-					       tmp_end, MAX_PURGE_LIMIT);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-			while ((rc = mysql_db_delete_affected_rows(
-							mysql_conn,query)) > 0);
-
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't remove old job data");
-				return SLURM_ERROR;
-			}
-		} while (tmp_end < curr_end);
 	}
-exit_jobs:
 
 	if (arch_cond->purge_resv != NO_VAL) {
-		/* remove all data from resv table that was older than
-		 * last_submit * arch_cond->purge_resv.
-		 */
-		if (!(curr_end = archive_setup_end_time(
-			      last_submit, arch_cond->purge_resv))) {
-			error("Parsing purge resv");
-			return SLURM_ERROR;
-		}
-
-		rc = _get_oldest_record(mysql_conn, cluster_name, resv_table,
-				        resv_req_inx[RESV_REQ_START],
-					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
-			goto exit_resvs;
-		else if (rc == SLURM_ERROR)
+		if ((rc = _archive_purge_table(PURGE_RESV, mysql_conn,
+					       cluster_name, arch_cond)))
 			return rc;
-
-		tmp_end = record_start;
-		tmp_archive_period = arch_cond->purge_resv;
-		do {
-			if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-				/* old stuff, catch up by archiving by month */
-				tmp_archive_period = SLURMDB_PURGE_MONTHS;
-				tmp_end = MIN(curr_end,
-					      _get_begin_next_month(tmp_end));
-			} else
-				tmp_end = curr_end;
-
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				debug("Purging resv entries before %ld for %s",
-				      tmp_end, cluster_name);
-
-			if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
-				rc = _archive_resvs(mysql_conn, cluster_name,
-						    tmp_end,
-						    arch_cond->archive_dir,
-						    tmp_archive_period);
-				if (!rc) /* no records archived */
-					continue;
-				else if (rc == SLURM_ERROR)
-					return rc;
-			}
-
-			query = xstrdup_printf("delete from \"%s_%s\" where "
-					       "time_start <= %ld "
-					       "&& time_end != 0 LIMIT %d",
-					       cluster_name, resv_table,
-					       tmp_end, MAX_PURGE_LIMIT);
-			if (debug_flags & DEBUG_FLAG_DB_USAGE)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-
-			while ((rc = mysql_db_delete_affected_rows(
-							mysql_conn,query)) > 0);
-
-			xfree(query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't remove old resv data");
-				return SLURM_ERROR;
-			}
-		} while (tmp_end < curr_end);
 	}
-exit_resvs:
+
 	return SLURM_SUCCESS;
 }
 
