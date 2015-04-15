@@ -323,6 +323,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i = 0;
+	ListIterator c_itr = NULL;
+	local_cluster_usage_t *loc_c_usage;
 
 	char *event_req_inx[] = {
 		"node_name",
@@ -367,7 +369,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 	xfree(query);
-
+	c_itr = list_iterator_create(cluster_down_list);
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
 		time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
@@ -395,8 +397,6 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 			 * for the entire period.
 			 */
 			if (state || !c_usage) {
-				local_cluster_usage_t *loc_c_usage;
-
 				loc_c_usage = xmalloc(
 					sizeof(local_cluster_usage_t));
 				loc_c_usage->cpu_count = row_cpu;
@@ -431,8 +431,8 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		   time period we would already have it.
 		*/
 		if (c_usage) {
-			int local_start = row_start;
-			int local_end = row_end;
+			time_t local_start = row_start;
+			time_t local_end = row_end;
 			int seconds;
 			if (c_usage->start > local_start)
 				local_start = c_usage->start;
@@ -449,11 +449,44 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 				/*      row_cpu, */
 				/*      seconds * row_cpu, */
 				/*      row_cpu); */
-				c_usage->d_cpu += seconds * row_cpu;
+				c_usage->d_cpu += seconds * (uint64_t)row_cpu;
+				/* Now remove this time if there was a
+				   disconnected slurmctld during the
+				   down time.
+				*/
+				list_iterator_reset(c_itr);
+				while ((loc_c_usage = list_next(c_itr))) {
+					int temp_end = row_end;
+					int temp_start = row_start;
+					if (loc_c_usage->start > local_start)
+						temp_start = loc_c_usage->start;
+					if (loc_c_usage->end < temp_end)
+						temp_end = loc_c_usage->end;
+					seconds = (temp_end - temp_start);
+					if (seconds < 1)
+						continue;
+
+					seconds *= row_cpu;
+					if (seconds >= loc_c_usage->total_time)
+						loc_c_usage->total_time = 0;
+					else
+						loc_c_usage->total_time -=
+							seconds;
+
+					/* info("Node %s was down for " */
+					/*      "%d seconds while " */
+					/*      "cluster %s's slurmctld " */
+					/*      "wasn't responding %"PRIu64, */
+					/*      row[EVENT_REQ_NAME], */
+					/*      seconds, cluster_name, */
+					/*      loc_c_usage->total_time); */
+				}
 			}
 		}
 	}
 	mysql_free_result(result);
+	list_iterator_destroy(c_itr);
+
 	return c_usage;
 }
 
@@ -852,15 +885,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				if (loc_c_usage->end < temp_end)
 					temp_end = loc_c_usage->end;
 				loc_seconds = (temp_end - temp_start);
-				if (loc_seconds > 0) {
-					/* info(" Job %u was running for " */
-					/*      "%"PRIu64" seconds while " */
-					/*      "cluster %s's slurmctld " */
-					/*      "wasn't responding", */
-					/*      job_id, */
-					/*      (uint64_t) */
-					/*      (seconds * row_acpu), */
-					/*      cluster_name); */
+				if (loc_seconds < 1)
+					continue;
+
+				loc_seconds *= row_acpu;
+				/* info(" Job %u was running for " */
+				/*      "%d seconds while " */
+				/*      "cluster %s's slurmctld " */
+				/*      "wasn't responding", */
+				/*      job_id, loc_seconds, cluster_name); */
+				if (loc_seconds >= loc_c_usage->total_time)
+					loc_c_usage->total_time = 0;
+				else {
 					loc_c_usage->total_time -=
 						loc_seconds * row_acpu;
 				}
