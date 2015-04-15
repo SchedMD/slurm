@@ -2711,6 +2711,17 @@ extern int validate_nodes_via_front_end(
 		if (reg_msg->energy)
 			memcpy(node_ptr->energy, reg_msg->energy,
 			       sizeof(acct_gather_energy_t));
+
+		if (slurmctld_init_db &&
+		    !IS_NODE_DOWN(node_ptr) &&
+		    !IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
+			/* reason information is handled in
+			   clusteracct_storage_g_node_up()
+			*/
+			clusteracct_storage_g_node_up(
+				acct_db_conn, node_ptr, now);
+		}
+
 	}
 
 	if (reg_hostlist) {
