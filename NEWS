@@ -63,6 +63,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix average CPU frequency calculation.
  -- When allocating resources with resolution of sockets, charge the job for all
     CPUs on allocated sockets rather than just the CPUs on used cores.
+ -- Prevent slurmdbd error if cluster added or removed while rollup in progress.
+    Removing a cluster can cause slurmdbd to abort. Adding a cluster can cause
+    the slurmdbd rollup to hang.
 
 * Changes in Slurm 14.11.5
 ==========================
