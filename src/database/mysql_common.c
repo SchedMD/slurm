@@ -251,6 +251,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(old_index);
+		FREE_NULL_LIST(keys_list);
 		return SLURM_ERROR;
 	}
 	xfree(query);

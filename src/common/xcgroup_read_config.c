@@ -123,6 +123,7 @@ static void conf_get_float (s_p_hashtbl_t *t, char *name, float *fp)
 		return;
 	if (str_to_float (str, fp) < 0)
 		fatal ("cgroup.conf: Invalid value '%s' for %s", str, name);
+	xfree(str);
 }
 
 /*
