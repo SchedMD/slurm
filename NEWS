@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Fix issue when using the TrackSlurmctldDown and nodes are down at
     the same time, don't double bill the down time.
  -- MySQL - Various memory leak fixes.
+ -- sreport - Fix Energy displays
 
 * Changes in Slurm 14.11.5
 ==========================
