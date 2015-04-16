@@ -2290,7 +2290,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			   ((slurmctld_conf.ret2service == 2) ||
 			    !xstrcmp(node_ptr->reason, "Scheduled reboot") ||
 			    ((slurmctld_conf.ret2service == 1) &&
-			     !xstrcmp(node_ptr->reason, "Not responding")))) {
+			     !xstrcmp(node_ptr->reason, "Not responding") &&
+			     (node_ptr->boot_time <
+			      node_ptr->last_response)))) {
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 					node_flags;
@@ -2314,7 +2316,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		} else if (node_ptr->last_response
 			   && (node_ptr->boot_time > node_ptr->last_response)
 			   && (slurmctld_conf.ret2service != 2)) {
-			if (!node_ptr->reason) {
+			if (!node_ptr->reason ||
+			    (node_ptr->reason &&
+			     !xstrcmp(node_ptr->reason, "Not responding"))) {
+				if (node_ptr->reason)
+					xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid =
 					slurm_get_slurm_user_id();
