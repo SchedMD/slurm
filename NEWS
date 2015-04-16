@@ -282,6 +282,8 @@ documents those changes that are of interest to users and administrators.
     the same time, don't double bill the down time.
  -- MySQL - Various memory leak fixes.
  -- sreport - Fix Energy displays
+ -- Fix node manager logic to keep unexpectedly rebooted node in state
+    NODE_STATE_DOWN even if already down when rebooted.
 
 * Changes in Slurm 14.11.5
 ==========================
