@@ -1063,7 +1063,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
 	restore_node_features(recover);
-	_restore_job_dependencies();
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
@@ -1079,6 +1078,9 @@ int read_slurm_conf(int recover, bool reconfig)
 			(void) slurm_sched_g_reconfig();
 		}
 	}
+
+	/* NOTE: Run loadd_all_resv_state() before _restore_job_dependencies */
+	_restore_job_dependencies();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
