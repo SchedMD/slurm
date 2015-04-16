@@ -3090,6 +3090,7 @@ end_it:
 
 	if (rc != SLURM_ERROR) {
 		_make_sure_users_have_default(mysql_conn, added_user_list);
+		FREE_NULL_LIST(added_user_list);
 
 		if (txn_query) {
 			xstrcat(txn_query, ";");
@@ -3146,8 +3147,7 @@ end_it:
 			list_destroy(assoc_list);
 		}
 	} else {
-		if (added_user_list)
-			list_destroy(added_user_list);
+		FREE_NULL_LIST(added_user_list);
 		xfree(txn_query);
 		reset_mysql_conn(mysql_conn);
 	}

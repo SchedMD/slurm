@@ -3218,6 +3218,8 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
+	FREE_NULL_LIST(list_msg.my_list);
+
 	return rc;
 }
 
