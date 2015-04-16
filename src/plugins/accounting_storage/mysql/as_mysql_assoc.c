@@ -950,6 +950,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			list_iterator_destroy(qos_itr);
 			if (delta_itr)
 				list_iterator_destroy(delta_itr);
+			FREE_NULL_LIST(delta_qos_list);
 			if (list_count(mod_assoc->qos_list)
 			    || !list_count(assoc->qos_list))
 				modified = 1;

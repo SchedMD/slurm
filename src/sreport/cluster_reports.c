@@ -508,11 +508,18 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Energy", object, MAX(command_len, 1))) {
+		} else if (!strncasecmp("Energy", object,
+					MAX(command_len, 1))) {
 			field->type = PRINT_CLUSTER_ENERGY;
 			field->name = xstrdup("Energy");
-			field->len = 10;
-			field->print_routine = print_fields_int;
+			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
+			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
+			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
+				field->len = 18;
+			else
+				field->len = 10;
+			field->print_routine = slurmdb_report_print_time;
+			info("processed");
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
@@ -742,14 +749,17 @@ extern int cluster_account_by_user(int argc, char *argv[])
 					field->print_routine(
 						field,
 						slurmdb_report_assoc->cpu_secs,
-						slurmdb_report_cluster->cpu_secs,
+						slurmdb_report_cluster->
+						cpu_secs,
 						(curr_inx == field_count));
 					break;
                                 case PRINT_CLUSTER_ENERGY:
                                         field->print_routine(
                                                 field,
-                                                slurmdb_report_assoc->consumed_energy,
-                                                slurmdb_report_cluster->consumed_energy,
+                                                slurmdb_report_assoc->
+						consumed_energy,
+                                                slurmdb_report_cluster->
+						consumed_energy,
                                                 (curr_inx == field_count));
                                         break;
 				default:
@@ -903,14 +913,17 @@ extern int cluster_user_by_account(int argc, char *argv[])
 					field->print_routine(
 						field,
 						slurmdb_report_user->cpu_secs,
-						slurmdb_report_cluster->cpu_secs,
+						slurmdb_report_cluster->
+						cpu_secs,
 						(curr_inx == field_count));
 					break;
                                 case PRINT_CLUSTER_ENERGY:
                                         field->print_routine(
                                                 field,
-                                                slurmdb_report_user->consumed_energy,
-                                                slurmdb_report_cluster->consumed_energy,
+                                                slurmdb_report_user->
+						consumed_energy,
+                                                slurmdb_report_cluster->
+						consumed_energy,
                                                 (curr_inx == field_count));
                                         break;
 				default:
@@ -1064,14 +1077,17 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 					field->print_routine(
 						field,
 						slurmdb_report_user->cpu_secs,
-						slurmdb_report_cluster->cpu_secs,
+						slurmdb_report_cluster->
+						cpu_secs,
 						(curr_inx == field_count));
 					break;
                                 case PRINT_CLUSTER_ENERGY:
                                         field->print_routine(
                                                 field,
-                                                slurmdb_report_user->consumed_energy,
-                                                slurmdb_report_cluster->consumed_energy,
+                                                slurmdb_report_user->
+						consumed_energy,
+                                                slurmdb_report_cluster->
+						consumed_energy,
                                                 (curr_inx == field_count));
                                         break;
 
@@ -1235,6 +1251,7 @@ extern int cluster_utilization(int argc, char *argv[])
 				break;
 			case PRINT_CLUSTER_ENERGY:
 				field->print_routine(field,
+				                     total_acct.consumed_energy,
 				                     total_acct.consumed_energy,
 				                     (curr_inx ==
 				                      field_count));
