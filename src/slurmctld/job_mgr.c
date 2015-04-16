@@ -1223,6 +1223,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	}
 	list_iterator_destroy(step_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */
+	pack32(dump_job_ptr->bit_flags, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1455,6 +1456,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
+		safe_unpack32(&job_ptr->bit_flags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -6613,7 +6615,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->licenses  = xstrdup(job_desc->licenses);
 	job_ptr->mail_type = job_desc->mail_type;
 	job_ptr->mail_user = xstrdup(job_desc->mail_user);
-
+	job_ptr->bit_flags = job_desc->bitflags;
 	job_ptr->ckpt_interval = job_desc->ckpt_interval;
 	job_ptr->spank_job_env = job_desc->spank_job_env;
 	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;
@@ -6746,8 +6748,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	/* The priority needs to be set after this since we don't have
 	 * an association rec yet
 	 */
-
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);
+
 	return SLURM_SUCCESS;
 }
 
@@ -7824,6 +7826,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		else
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
+		pack32(dump_job_ptr->bit_flags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
@@ -8607,22 +8610,39 @@ void purge_old_job(void)
 		if (test_job_dependency(job_ptr) == 2) {
 			char jbuf[JBUFSIZ];
 
-			if (kill_invalid_dep) {
+			/* Check what are the job disposition
+			 * to deal with invalid dependecies
+			 */
+			if (job_ptr->bit_flags & KILL_INV_DEP) {
+				_kill_dependent(job_ptr);
+			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
+				debug("\
+%s: %s job dependency condition never satisfied", __func__,
+				      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+				job_ptr->state_reason = WAIT_DEP_INVALID;
+				xfree(job_ptr->state_desc);
+			} else if (kill_invalid_dep) {
 				_kill_dependent(job_ptr);
 			} else {
-				debug("%s: %s dependency condition never satisfied",
-				      __func__, jobid2str(job_ptr, jbuf,
-							  sizeof(jbuf)));
+				debug("\
+%s: %s dependency condition never satisfied", __func__,
+				      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 				job_ptr->state_reason = WAIT_DEP_INVALID;
 				xfree(job_ptr->state_desc);
 			}
 		}
-		if (job_ptr->state_reason == WAIT_DEP_INVALID
-		    && kill_invalid_dep) {
-			/* The job got the WAIT_DEP_INVALID
-			 * before slurmctld was reconfigured.
-			 */
-			_kill_dependent(job_ptr);
+
+		if (job_ptr->state_reason == WAIT_DEP_INVALID) {
+			if (job_ptr->bit_flags & KILL_INV_DEP) {
+				/* The job got the WAIT_DEP_INVALID
+				 * before slurmctld was reconfigured.
+				 */
+				_kill_dependent(job_ptr);
+			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
+				continue;
+			} else if (kill_invalid_dep) {
+				_kill_dependent(job_ptr);
+			}
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -12221,7 +12241,14 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	} else if (depend_rc == 2) {
 		char jbuf[JBUFSIZ];
 
-		if (kill_invalid_dep) {
+		if (job_ptr->bit_flags & KILL_INV_DEP) {
+			_kill_dependent(job_ptr);
+		} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
+			debug("%s: %s job dependency condition never satisfied",
+			      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+			job_ptr->state_reason = WAIT_DEP_INVALID;
+			xfree(job_ptr->state_desc);
+		} else if (kill_invalid_dep) {
 			_kill_dependent(job_ptr);
 		} else {
 			debug("%s: %s dependency condition never satisfied",

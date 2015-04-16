@@ -66,14 +66,12 @@ typedef struct sbatch_options {
 	/* batch script argv and argc, if provided on the command line */
 	int script_argc;
 	char **script_argv;
-
 	char *user;		/* local username		*/
 	uid_t uid;		/* local uid			*/
 	gid_t gid;		/* local gid			*/
 	uid_t euid;		/* effective user --uid=user	*/
 	gid_t egid;		/* effective group --gid=group	*/
-	char *cwd;		/* current working directory	*/
-
+ 	char *cwd;		/* current working directory	*/
 	int  ntasks;		/* --ntasks=n,      -n n	*/
 	bool ntasks_set;	/* true if ntasks explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
@@ -83,6 +81,7 @@ typedef struct sbatch_options {
 	bool nodes_set;		/* true if nodes explicitly set */
 	int sockets_per_node;	/* --sockets-per-node=n		*/
 	int cores_per_socket;	/* --cores-per-socket=n		*/
+	uint32_t kill_invalid_dep;  /* --kill_invalid_dep           */
 	int threads_per_core;	/* --threads-per-core=n		*/
 	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/

@@ -5126,6 +5126,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 			job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
+		safe_unpack32(&job->bitflags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
@@ -7503,6 +7504,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 			job_desc_ptr->select_jobinfo = NULL;
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
+		pack32(job_desc_ptr->bitflags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
@@ -7979,6 +7981,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		job_desc_ptr->mloaderimage = NULL;
 		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
+		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;

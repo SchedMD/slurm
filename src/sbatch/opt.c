@@ -190,6 +190,7 @@
 #define LONG_OPT_CPU_FREQ        0x158
 #define LONG_OPT_THREAD_SPEC     0x159
 #define LONG_OPT_PRIORITY        0x160
+#define LONG_OPT_KILL_INV_DEP    0x161
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -414,6 +415,7 @@ static void _opt_default()
 	opt.priority = 0;
 
 	opt.test_only   = false;
+	opt.kill_invalid_dep = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -709,6 +711,7 @@ static struct option long_options[] = {
 	{"input",         required_argument, 0, 'i'},
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
+	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"no-kill",       no_argument,       0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
@@ -1749,6 +1752,12 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = _get_int(optarg, "thread_spec") |
 					CORE_SPEC_THREAD;
+			break;
+		case LONG_OPT_KILL_INV_DEP:
+			if (strcasecmp(optarg, "yes") == 0)
+				opt.kill_invalid_dep |= KILL_INV_DEP;
+			if (strcasecmp(optarg, "no") == 0)
+				opt.kill_invalid_dep |= NO_KILL_INV_DEP;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

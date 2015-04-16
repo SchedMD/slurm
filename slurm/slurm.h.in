@@ -807,7 +807,14 @@ enum ctx_keys {
 						 * running jobs, not only the
 						 * pending jobs. */
 #define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
-+						 * account hierarchy. */
+						 * account hierarchy. */
+/* These bits are set in job_desc_msg_t and are used by the
+ * slurmctld. The first two bits indicate if job should be canceled
+ * if it has invalid dependency or should stay pending indefinitely.
+ */
+#define KILL_INV_DEP       0x01
+#define NO_KILL_INV_DEP    0x02
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
@@ -1166,6 +1173,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *array_inx;	/* job array index values */
 	void *array_bitmap;	/* NOTE: Set by slurmctld */
 	time_t begin_time;	/* delay initiation until this time */
+	uint32_t bitflags;      /* bitflags */
 	char *burst_buffer;	/* burst buffer specifications */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
@@ -1332,6 +1340,7 @@ typedef struct job_info {
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
 	char *batch_script;	/* contents of batch script */
+	uint32_t bitflags;      /* Various job flags */
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
 	char *command;		/* command to be executed, built from submitted

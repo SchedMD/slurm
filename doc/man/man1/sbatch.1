@@ -630,6 +630,14 @@ By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
 
 .TP
+\fB\-\-kill-on-invalid-dep\fR=<\fIyes|no\fR>
+If a job has an invalid dependency and it can never run this parameter tells
+Slurm to terminate it or not. A terminated job state will be JOB_CANCELLED.
+If this option is not specified the system wide behavior applies.
+By default the job stays pending with reason DependencyNeverSatisfied or if the
+kill_invalid_depend is specified in slurm.conf the job is terminated.
+
+.TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.

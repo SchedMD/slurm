@@ -42,6 +42,9 @@ documents those changes that are of interest to users and administrators.
     the = sign. 'scontrol update job=123 ...' and 'scontrol update job 123 ...'
     are both valid syntax.
  -- Archive a month at a time when there are lots of records to archive.
+ -- Introduce new sbatch option '--kill-on-invalid-dep=yes|no' which allows
+    users to specify which behavior they want if a job dependency is not
+    satisfied.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

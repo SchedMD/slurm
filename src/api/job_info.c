@@ -1146,7 +1146,7 @@ line15:
 		xstrcat(out, tmp1);
 	}
 
-	/****** Line ******/
+	/****** Line 36 ******/
 	if (one_liner)
 		xstrcat(out, " ");
 	else
@@ -1155,6 +1155,25 @@ line15:
 		 "Power=%s SICP=%u",
 		 power_flags_str(job_ptr->power_flags), job_ptr->sicp_mode);
 	xstrcat(out, tmp_line);
+
+	/****** Line 37 (optional) ******/
+	if (job_ptr->bitflags) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		if (job_ptr->bitflags & KILL_INV_DEP) {
+			snprintf(tmp_line,
+				 sizeof(tmp_line),
+				 "KillOInInvalidDependent=Yes");
+		}
+		if (job_ptr->bitflags & NO_KILL_INV_DEP) {
+			snprintf(tmp_line,
+				 sizeof(tmp_line),
+				 "KillOInInvalidDependent=No");
+		}
+		xstrcat(out, tmp_line);
+	}
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
