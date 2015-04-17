@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
  -- sreport - Fix Energy displays
  -- Fix node manager logic to keep unexpectedly rebooted node in state
     NODE_STATE_DOWN even if already down when rebooted.
+ -- Fix for array jobs submitted to multiple partitions not starting.
 
 * Changes in Slurm 14.11.5
 ==========================

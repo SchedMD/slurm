@@ -1438,6 +1438,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 {
 	int rc;
 	bitstr_t *orig_exc_nodes = NULL;
+	bool is_job_array_head = false;
 	static uint32_t fail_jobid = 0;
 
 	if (job_ptr->details->exc_node_bitmap) {
@@ -1445,8 +1446,21 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
 	} else
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
-
+	if (job_ptr->array_recs)
+		is_job_array_head = true;
 	rc = select_nodes(job_ptr, false, NULL, NULL);
+	if (is_job_array_head && job_ptr->details) {
+		struct job_record *base_job_ptr;
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr != job_ptr
+				 && base_job_ptr->array_recs) {
+			FREE_NULL_BITMAP(
+					base_job_ptr->details->exc_node_bitmap);
+			if (orig_exc_nodes)
+				base_job_ptr->details->exc_node_bitmap =
+					bit_copy(orig_exc_nodes);
+		}
+	}
 	if (job_ptr->details) { /* select_nodes() might cancel the job! */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_nodes;
