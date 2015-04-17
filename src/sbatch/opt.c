@@ -2077,7 +2077,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.ntasks_per_node = _get_int(temp, "mpiprocs");
 				xfree(temp);
 			}
-#ifdef HAVE_ALPS_CRAY
+#if defined(HAVE_ALPS_CRAY) || defined(HAVE_NATIVE_CRAY)
 		/*
 		 * NB: no "mppmem" here since it specifies per-PE memory units,
 		 *     whereas SLURM uses per-node and per-CPU memory units.
@@ -2117,7 +2117,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.ntasks_set = true;
 			}
 			xfree(temp);
-#endif	/* HAVE_ALPS_CRAY */
+#endif	/* HAVE_ALPS_CRAY || HAVE_NATIVE_CRAY */
 		} else if (!strncasecmp(rl+i, "naccelerators=", 14)) {
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
