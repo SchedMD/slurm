@@ -86,12 +86,12 @@ static void layouts_conf_spec_free(void* x)
 /*
  * layout ops - operations associated to layout plugins
  *
- * This struct is populated while opening the plugin and linking the 
+ * This struct is populated while opening the plugin and linking the
  * associated symbols. See layout_syms description for the name of the "public"
  * symbols associated to this structure fields.
  *
  * Notes : the layouts plugins are able to access the entities hashtable in order
- * to read/create/modify entities as necessary during the load_entities and 
+ * to read/create/modify entities as necessary during the load_entities and
  * build_layout API calls.
  *
  */
@@ -141,10 +141,10 @@ static void _layout_plugins_destroy(layout_plugin_t *lp) {
  *       like the key str itself and custom destroy/dump functions.
  *
  * The layouts manager keeps an hash table of the various keydefs and use
- * the factorized details while parsing the configuration and creating the 
+ * the factorized details while parsing the configuration and creating the
  * entity_data_t structs associated to the entities.
  *
- * Note custom_* functions are used if they are not NULL* and type equals 
+ * Note custom_* functions are used if they are not NULL* and type equals
  * L_T_CUSTOM
  */
 typedef struct layouts_keydef_st {
@@ -166,7 +166,7 @@ static const char* layouts_keydef_idfunc(void* item)
 }
 
 /*
- * layouts_mgr_t - the main structure holding all the layouts, entities and 
+ * layouts_mgr_t - the main structure holding all the layouts, entities and
  *        shared keydefs as well as conf elements and plugins details.
  */
 typedef struct layouts_mgr_st {
@@ -326,7 +326,8 @@ static void _entity_add_data(entity_t* e, const char* key, void* data)
 		freefunc = hkey->custom_destroy;
 	}
 	rc = entity_add_data(e, hkey->key, data, freefunc);
-	xassert(rc);
+	if (rc)
+		xassert(rc);
 }
 
 /*****************************************************************************\
@@ -413,7 +414,8 @@ static int _slurm_layouts_init_layouts_walk_helper(void* x, void* arg)
 	layout_init(plugin->layout, spec->name, spec->type, 0,
 		    plugin->ops->spec->struct_type);
 	inserted_item = xhash_add(mgr->layouts, plugin->layout);
-	xassert(inserted_item == plugin->layout);
+	if (inserted_item)
+		xassert(inserted_item == plugin->layout);
 	_slurm_layouts_init_keydef(mgr->keydefs,
 				   plugin->ops->spec->keyspec,
 				   plugin);
@@ -668,9 +670,11 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 		}
 		xfree(root_nodename);
 		root_node = xtree_add_child(tree, NULL, e, XTREE_APPEND);
-		xassert(root_node);
+		if (root_node)
+			xassert(root_node);
 		inserted_node = list_append(e->nodes, root_node);
-		xassert(inserted_node == root_node);
+		if (inserted_node)
+			xassert(inserted_node == root_node);
 		break;
 	}
 	return SLURM_SUCCESS;
@@ -745,7 +749,7 @@ static int _layouts_read_config(layout_plugin_t* plugin)
 			      "skipping...", i);
 			continue;
 		}
-		
+
 		/* look for the entity in the entities hash table*/
 		e = xhash_get(mgr->entities, e_name);
 		if (!e) {
@@ -830,7 +834,7 @@ static int _layouts_read_config(layout_plugin_t* plugin)
 			goto cleanup;
 		}
 	}
-	
+
 	rc = SLURM_SUCCESS;
 
 cleanup:
@@ -891,12 +895,14 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 			}
 			free(enclosed_name);
 			enclosed_node = xtree_add_child(p->tree, node,
-							enclosed_e, 
+							enclosed_e,
 							XTREE_APPEND);
-			xassert(enclosed_node);
+			if (enclosed_node)
+				xassert(enclosed_node);
 			inserted_node = list_append(enclosed_e->nodes,
 						    enclosed_node);
-			xassert(inserted_node == enclosed_node);
+			if (inserted_node)
+				xassert(inserted_node == enclosed_node);
 		}
 		hostlist_destroy(enclosed_hostlist);
 	}
@@ -1169,7 +1175,7 @@ int slurm_layouts_load_config(void)
 
 		/* init entity structure on the heap */
 		entity = (entity_t*) xmalloc(sizeof(struct entity_st));
-		entity_init(entity, node_ptr->name, 0); 
+		entity_init(entity, node_ptr->name, 0);
 		entity->ptr = node_ptr;
 
 		/* add to mgr entity hashtable */
