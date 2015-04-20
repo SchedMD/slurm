@@ -2180,7 +2180,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 	case PURGE_RESV:
 		purge_attr = arch_cond->purge_resv;
 		sql_table  = resv_table;
-		col_name   = step_req_inx[STEP_REQ_START];
+		col_name   = resv_req_inx[RESV_REQ_START];
 		break;
 	case PURGE_JOB:
 		purge_attr = arch_cond->purge_job;
@@ -2190,7 +2190,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 	case PURGE_STEP:
 		purge_attr = arch_cond->purge_step;
 		sql_table  = step_table;
-		col_name   = resv_req_inx[RESV_REQ_START];
+		col_name   = step_req_inx[STEP_REQ_START];
 		break;
 	default:
 		fatal("Unknown purge type: %d", purge_type);
