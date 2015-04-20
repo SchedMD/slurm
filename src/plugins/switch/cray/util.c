@@ -81,6 +81,18 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
 	return SLURM_SUCCESS;
 }
 
+/* Return TRUE if the job is packing tasks onto nodes */
+static bool _pack_node_test(uint16_t task_dist)
+{
+	if (task_dist & SLURM_DIST_PACK_NODES)
+		return true;
+	if (task_dist & SLURM_DIST_NO_PACK_NODES)
+		return false;
+	if (slurm_get_select_type_param() & CR_PACK_NODES)
+		return true;
+	return false;
+}
+
 /*
  * Set job environment variables used by LLI and PMI
  */
@@ -175,8 +187,8 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 		non_smp = 1;
 		break;
 	}
-	if ((non_smp == 0) &&
-	    (slurm_get_select_type_param() & CR_PACK_NODES)) {
+
+	if ((non_smp == 0) && _pack_node_test(job->task_dist)) {
 		CRAY_INFO("Non-SMP ordering identified; CR_PACK_NODES");
 		non_smp = 1;
 	}
