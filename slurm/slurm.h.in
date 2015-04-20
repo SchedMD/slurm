@@ -286,6 +286,7 @@ enum job_states {
 #define JOB_REQUEUE      0x0400 /* Requeue job in completing state */
 #define JOB_STOPPED      0x0200	/* Job is stopped state (holding resources,
 				 * but sent SIGSTOP */
+#define JOB_LAUNCH_FAILED 0x0100
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */

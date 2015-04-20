@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
     users to specify which behavior they want if a job dependency is not
     satisfied.
  -- Add Slurmdb::qos_get() interface to perl api.
+ -- If a job fails to start set the requeue reason to be:
+    job requeued in held state.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

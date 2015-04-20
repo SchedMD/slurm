@@ -13099,7 +13099,12 @@ reply:
 	if (state & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = xstrdup("job requeued in held state");
+		if (state & JOB_LAUNCH_FAILED)
+			job_ptr->state_desc
+				= xstrdup("launch failed requeued held");
+		else
+			job_ptr->state_desc
+				= xstrdup("job requeued in held state");
 		job_ptr->priority = 0;
 	}
 
