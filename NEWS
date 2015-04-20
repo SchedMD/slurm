@@ -78,6 +78,7 @@ documents those changes that are of interest to users and administrators.
     NODE_STATE_DOWN even if already down when rebooted.
  -- Fix for array jobs submitted to multiple partitions not starting.
  -- CRAY - Enable ALPs mpp compatibility code in sbatch for native Slurm.
+ -- ALPS - Move basil_inventory to less confusing function.
 
 * Changes in Slurm 14.11.5
 ==========================
