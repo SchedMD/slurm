@@ -58,6 +58,8 @@ static char *local_cluster_name; /* name of local_cluster      */
 static void _free_res_cond_members(slurmdb_res_cond_t *res_cond);
 static void _free_res_rec_members(slurmdb_res_rec_t *res);
 
+strong_alias(get_qos_complete_str_bitstr, slurmdb_get_qos_complete_str_bitstr);
+
 static void _free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 {
 	if (assoc) {

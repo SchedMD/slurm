@@ -37,12 +37,14 @@ extern int hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond);
 extern int hv_to_cluster_cond(HV* hv, slurmdb_cluster_cond_t* cluster_cond);
 extern int hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond);
 extern int hv_to_user_cond(HV* hv, slurmdb_user_cond_t* user_cond);
+extern int hv_to_qos_cond(HV* hv, slurmdb_qos_cond_t* qos_cond);
 
 extern int cluster_grouping_list_to_av(List list, AV* av);
 extern int cluster_rec_to_hv(slurmdb_cluster_rec_t *rec, HV* hv);
 extern int report_cluster_rec_list_to_av(List list, AV* av);
 extern int report_user_rec_to_hv(slurmdb_report_user_rec_t *rec, HV* hv);
 extern int job_rec_to_hv(slurmdb_job_rec_t *rec, HV* hv);
+extern int qos_rec_to_hv(slurmdb_qos_rec_t *rec, HV* hv, List all_qos);
 
 
 #endif /* _SLURMDB_PERL_H */

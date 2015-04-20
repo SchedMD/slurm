@@ -226,3 +226,42 @@ slurmdb_jobs_get(db_conn, conditions)
 	slurmdb_destroy_job_cond(job_cond);
     OUTPUT:
         RETVAL
+
+
+SV*
+slurmdb_qos_get(db_conn, conditions)
+	void* db_conn
+	HV*   conditions
+    INIT:
+	AV*   results;
+	HV*   rh;
+	List  list = NULL, all = NULL;
+	ListIterator itr;
+	slurmdb_qos_cond_t *qos_cond = (slurmdb_qos_cond_t*)
+		slurm_xmalloc(sizeof(slurmdb_qos_cond_t), __FILE__,
+		__LINE__, "slurmdb_qos_get");
+	slurmdb_qos_rec_t *rec = NULL;
+
+	if (hv_to_qos_cond(conditions, qos_cond) < 0) {
+		XSRETURN_UNDEF;
+	}
+	results = (AV*)sv_2mortal((SV*)newAV());
+    CODE:
+	list = slurmdb_qos_get(db_conn, qos_cond);
+	all = slurmdb_qos_get(db_conn, NULL);
+	if (list) {
+	    itr = slurm_list_iterator_create(list);
+
+	    while ((rec = slurm_list_next(itr))) {
+		rh = (HV *)sv_2mortal((SV*)newHV());
+		if (qos_rec_to_hv(rec, rh, all) < 0) {
+		    XSRETURN_UNDEF;
+		}
+		av_push(results, newRV((SV*)rh));
+	    }
+	    slurm_list_destroy(list);
+	}
+	RETVAL = newRV((SV*)results);
+	slurmdb_destroy_qos_cond(qos_cond);
+    OUTPUT:
+        RETVAL
