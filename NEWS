@@ -79,6 +79,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix for array jobs submitted to multiple partitions not starting.
  -- CRAY - Enable ALPs mpp compatibility code in sbatch for native Slurm.
  -- ALPS - Move basil_inventory to less confusing function.
+ -- Add SchedulerParameters option of "sched_max_job_start="  to limit the
+    number of jobs that can be started in any single execution of the main
+    scheduling logic.
 
 * Changes in Slurm 14.11.5
 ==========================

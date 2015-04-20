@@ -2256,6 +2256,11 @@ held so that the scheduler can dispatch it to another host.
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs.
 The default value is 60 seconds.
+.TP
+\fBsched_max_job_start=#\fR
+The maximum number of jobs that the main scheduling logic will start in any
+single execution.
+The default value is zero, which imposes no limit.
 .RE
 
 .TP
