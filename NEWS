@@ -77,7 +77,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix node manager logic to keep unexpectedly rebooted node in state
     NODE_STATE_DOWN even if already down when rebooted.
  -- Fix for array jobs submitted to multiple partitions not starting.
- -- Enable PBS compatibility code in sbatch for Slurm native on Cray.
+ -- CRAY - Enable ALPs mpp compatibility code in sbatch for native Slurm.
 
 * Changes in Slurm 14.11.5
 ==========================
