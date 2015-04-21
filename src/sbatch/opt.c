@@ -2290,7 +2290,7 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (opt.script_argc > 0))
 		opt.job_name = base_name(opt.script_argv[0]);
 	if (opt.job_name)
-		setenv("SLURM_JOB_NAME", opt.job_name, 0);
+		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 
 	/* check for realistic arguments */
 	if (opt.ntasks < 0) {
