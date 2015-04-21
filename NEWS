@@ -87,6 +87,9 @@ documents those changes that are of interest to users and administrators.
     which matches the documentation.
  -- Overwrite the SLURM_JOB_NAME in sbatch if already exist in the environment
     and use the one specified on the command line --job-name.
+ -- Remove xmalloc_nz from unpack functions.  If the unpack ever failed the
+    free afterwards would not have zeroed out memory on the variables that
+    didn't get unpacked.
 
 * Changes in Slurm 14.11.5
 ==========================
