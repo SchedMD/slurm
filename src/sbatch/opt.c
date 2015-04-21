@@ -61,6 +61,7 @@
 #  include <limits.h>
 #endif
 
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
@@ -1030,7 +1031,7 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
 
-	while((line = _next_line(body, size, &state)) != NULL) {
+	while ((line = _next_line(body, size, &state)) != NULL) {
 		lineno++;
 		if (!strncmp(line, magic_word1, magic_word_len1))
 			ptr = line + magic_word_len1;
@@ -1043,7 +1044,19 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 				warned = 1;
 			}
 		} else {
+			/* Stop parsing script if not a comment */
+			bool is_cmd = false;
+			for (i = 0; line[i]; i++) {
+				if (isspace(line[i]))
+					continue;
+				if (line[i] == '#')
+					break;
+				is_cmd = true;
+				break;
+			}
 			xfree(line);
+			if (is_cmd)
+				break;
 			continue;
 		}
 
