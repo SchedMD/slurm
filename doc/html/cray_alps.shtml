@@ -422,6 +422,19 @@ cores or threads).
 the plugin name was changed to <i>select/alps</i> to allow
 for <a href='cray.shtml'>Native Slurm</a> on a Cray.</b></p>
 
+<p>If you are experiencing performance issues with many jobs you may
+  consider using the <i>slurm.conf</i>
+  option <i>SchedulerParameters=inventory_interval=#</i> option.
+  On a Cray system using Slurm on top of ALPS this limits the amount of times
+  a Basil Inventory call is made.  Normally this call happens every scheduling
+  consideration to attempt to close a node state change window with respects to
+  what ALPS has.  This call is rather slow, so making it less
+  frequently improves performance dramatically, but in the situation
+  where a node changes state the window is as large as this setting.
+  In an HTC environment this setting is a must and we advise around 10
+  seconds.
+</p>
+
 <p>Note that the system topology is based upon information gathered from
 the ALPS database and is based upon the ALPS_NIDORDER configuration in
 <i>/etc/sysconfig/alps</i>. Excerpts of a <i>slurm.conf</i> file for

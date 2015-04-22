@@ -25,6 +25,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 extern int dim_size[3];
+extern int inv_interval;
 
 /**
  * struct select_jobinfo - data specific to Cray node selection plugin

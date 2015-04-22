@@ -52,8 +52,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+#include "src/common/slurm_strcasestr.h"
 #include "other_select.h"
 #include "basil_interface.h"
 #include "cray_config.h"
@@ -164,6 +166,27 @@ static bool _zero_size_job ( struct job_record *job_ptr )
 	return false;
 }
 
+static void _set_inv_interval(void)
+{
+	char *tmp_ptr, *sched_params = slurm_get_sched_params();
+	int i;
+
+	if (sched_params) {
+		if (sched_params &&
+		    (tmp_ptr = slurm_strcasestr(sched_params,
+						"inventory_interval="))) {
+		/*                                   0123456789012345 */
+			i = atoi(tmp_ptr + 19);
+			if (i < 0)
+				error("ignoring SchedulerParameters: "
+				      "inventory_interval of %d", i);
+			else
+				inv_interval = i;
+		}
+		xfree(sched_params);
+	}
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -188,7 +211,7 @@ extern int init ( void )
 			      "for select/alps");
 		}
 	}
-
+	_set_inv_interval();
 	create_config();
 	return SLURM_SUCCESS;
 }
@@ -407,7 +430,12 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if ((slurmctld_primary || (job_ptr->job_state == (uint16_t)NO_VAL))
+
+	/* Don't run the release in the controller for batch jobs.  It is
+	 * handled on the stepd end.
+	 */
+	if (((slurmctld_primary && !job_ptr->batch_flag) ||
+	     (job_ptr->job_state == (uint16_t)NO_VAL))
 	    && !_zero_size_job(job_ptr) &&
 	    (do_basil_release(job_ptr) != SLURM_SUCCESS))
 		return SLURM_ERROR;
@@ -880,6 +908,8 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
+	_set_inv_interval();
+
 	return other_reconfigure();
 }
 
