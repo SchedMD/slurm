@@ -261,12 +261,12 @@ enum {
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
-	JOB_REQ_RESVID,
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_REQ_MEM,
+	JOB_REQ_RESVID,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_SUBMIT,
@@ -505,12 +505,12 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->node_inx, buffer);
-	packstr(object->partition, buffer); /* priority */
-	packstr(object->priority, buffer);  /* qos */
-	packstr(object->qos, buffer);       /* req_cpus */
-	packstr(object->req_cpus, buffer);  /* req_mem */
-	packstr(object->req_mem, buffer);   /* resvid */
-	packstr(object->resvid, buffer);    /* partition */
+	packstr(object->partition, buffer);
+	packstr(object->priority, buffer);
+	packstr(object->qos, buffer);
+	packstr(object->req_cpus, buffer);
+	packstr(object->req_mem, buffer);
+	packstr(object->resvid, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
 	packstr(object->submit, buffer);
@@ -541,9 +541,49 @@ static int _unpack_local_job(local_job_t *object,
 	 * The values were packed in the above order. To unpack the values
 	 * into the correct variables, the unpacking order is changed to
 	 * accomodate the shift in values. job->partition is unpacked before
-	 * job->start instead of after job->node_inx. */
+	 * job->start instead of after job->node_inx.
+	 *
+	 * 15.08: job_req_inx and the it's corresponding enum were synced up
+	 * and it unpacks in the expected order.
+	 */
 
-	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		unpackstr_ptr(&object->account, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->associd, &tmp32, buffer);
+		unpackstr_ptr(&object->array_jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->array_max_tasks, &tmp32, buffer);
+		unpackstr_ptr(&object->array_taskid, &tmp32, buffer);
+		unpackstr_ptr(&object->blockid, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
+		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->timelimit, &tmp32, buffer);
+		unpackstr_ptr(&object->eligible, &tmp32, buffer);
+		unpackstr_ptr(&object->end, &tmp32, buffer);
+		unpackstr_ptr(&object->gid, &tmp32, buffer);
+		unpackstr_ptr(&object->id, &tmp32, buffer);
+		unpackstr_ptr(&object->jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
+		unpackstr_ptr(&object->priority, &tmp32, buffer);
+		unpackstr_ptr(&object->qos, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->start, &tmp32, buffer);
+		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->submit, &tmp32, buffer);
+		unpackstr_ptr(&object->suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
+		unpackstr_ptr(&object->uid, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->account, &tmp32, buffer);
 		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
@@ -1598,12 +1638,12 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
-		job.partition = row[JOB_REQ_PARTITION]; /* priority */
-		job.priority = row[JOB_REQ_PRIORITY];   /* qos */
-		job.qos = row[JOB_REQ_QOS];             /* cpus_req */
-		job.req_cpus = row[JOB_REQ_REQ_CPUS];   /* mem_req */
-		job.req_mem = row[JOB_REQ_REQ_MEM];     /* id_resv */
-		job.resvid = row[JOB_REQ_RESVID];       /* partition */
+		job.partition = row[JOB_REQ_PARTITION];
+		job.priority = row[JOB_REQ_PRIORITY];
+		job.qos = row[JOB_REQ_QOS];
+		job.req_cpus = row[JOB_REQ_REQ_CPUS];
+		job.req_mem = row[JOB_REQ_REQ_MEM];
+		job.resvid = row[JOB_REQ_RESVID];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
 		job.submit = row[JOB_REQ_SUBMIT];
