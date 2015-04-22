@@ -27,6 +27,7 @@ libpmi2_la_LDFLAGS = $(LIB_LDFLAGS) -version-info $(libpmi2_current):$(libpmi2_r
 $(PMI2_VERSION_SCRIPT) :
 	(echo "{ global:"; \
 	echo "   PMI2_*;"; \
+	echo "   PMIX_*;"; \
 	echo "  local: *;"; \
 	echo "};") > $(PMI2_VERSION_SCRIPT)
 

@@ -52,6 +52,8 @@ static const char NAMEUNPUBLISH_CMD[]     = "name-unpublish";
 static const char NAMEUNPUBLISHRESP_CMD[] = "name-unpublish-response";
 static const char NAMELOOKUP_CMD[]        = "name-lookup";
 static const char NAMELOOKUPRESP_CMD[]    = "name-lookup-response";
+static const char RING_CMD[]              = "ring";
+static const char RINGRESP_CMD[]          = "ring-response";
 
 static const char PMIJOBID_KEY[]          = "pmijobid";
 static const char PMIRANK_KEY[]           = "pmirank";
@@ -81,6 +83,9 @@ static const char THRID_KEY[]             = "thrid";
 static const char INFOKEYCOUNT_KEY[]      = "infokeycount";
 static const char INFOKEY_KEY[]           = "infokey%d";
 static const char INFOVAL_KEY[]           = "infoval%d";
+static const char RING_COUNT_KEY[]        = "ring-count";
+static const char RING_LEFT_KEY[]         = "ring-left";
+static const char RING_RIGHT_KEY[]        = "ring-right";
 
 static const char TRUE_VAL[]              = "TRUE";
 static const char FALSE_VAL[]             = "FALSE";
@@ -411,6 +416,33 @@ int PMI2_Job_Connect(const char jobid[], PMI2_Connect_comm_t *conn);
 
 @*/
 int PMI2_Job_Disconnect(const char jobid[]);
+
+/*@
+  PMIX_Ring - execute ring exchange over processes in group
+
+  Input Parameters:
+  + value    - input string
+  - maxvalue - max size of input and output strings
+ 
+  Output Parameters:
+  + rank  - returns caller's rank within ring
+  - ranks - returns number of procs within ring
+  - left  - buffer to receive value provided by (rank - 1) % ranks
+  - right - buffer to receive value provided by (rank + 1) % ranks
+ 
+  Return values:
+  Returns 'MPI_SUCCESS' on success and an MPI error code on failure.
+ 
+  Notes:
+  This function is collective, but not necessarily synchronous,
+  across all processes in the process group to which the calling
+  process belongs.  All processes in the group must call this
+  function, but a process may return before all processes have called
+  the function.
+
+@*/
+#define HAVE_PMIX_RING 1 /* so one can conditionally compile with this funciton */
+int PMIX_Ring(const char value[], int *rank, int *ranks, char left[], char right[], int maxvalue);
 
 /*@
   PMI2_KVS_Put - put a key/value pair in the keyval space for this job

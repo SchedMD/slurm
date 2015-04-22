@@ -152,6 +152,8 @@
 #define NAMELOOKUPRESP_CMD     "name-lookup-response"
 #define SPAWN_CMD              "spawn"
 #define SPAWNRESP_CMD          "spawn-response"
+#define RING_CMD               "ring"
+#define RINGRESP_CMD           "ring-response"
 
 #define GETMYKVSNAME_CMD       "get_my_kvsname"
 #define GETMYKVSNAMERESP_CMD   "my_kvsname"
@@ -208,6 +210,9 @@
 #define ERRCODES_KEY      "errcodes"
 #define SERVICE_KEY       "service"
 #define INFO_KEY          "info"
+#define RING_COUNT_KEY    "ring-count"
+#define RING_LEFT_KEY     "ring-left"
+#define RING_RIGHT_KEY    "ring-right"
 
 #define TRUE_VAL          "TRUE"
 #define FALSE_VAL         "FALSE"
@@ -232,6 +237,7 @@
 #define PMI2_PPKEY_ENV          "SLURM_PMI2_PPKEY"
 #define PMI2_PPVAL_ENV          "SLURM_PMI2_PPVAL"
 #define SLURM_STEP_RESV_PORTS   "SLURM_STEP_RESV_PORTS"
+#define PMIX_RING_TREE_WIDTH_ENV "SLURM_PMIX_RING_WIDTH"
 /* old PMIv1 envs */
 #define PMI2_PMI_DEBUGGED_ENV   "PMI_DEBUG"
 #define PMI2_KVS_NO_DUP_KEYS_ENV "SLURM_PMI_KVS_NO_DUP_KEYS"

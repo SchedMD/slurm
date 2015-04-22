@@ -57,6 +57,7 @@
 #include "setup.h"
 #include "pmi.h"
 #include "nameserv.h"
+#include "ring.h"
 
 static int _handle_kvs_fence(int fd, Buf buf);
 static int _handle_kvs_fence_resp(int fd, Buf buf);
@@ -65,6 +66,8 @@ static int _handle_spawn_resp(int fd, Buf buf);
 static int _handle_name_publish(int fd, Buf buf);
 static int _handle_name_unpublish(int fd, Buf buf);
 static int _handle_name_lookup(int fd, Buf buf);
+static int _handle_ring(int fd, Buf buf);
+static int _handle_ring_resp(int fd, Buf buf);
 
 static uint32_t  spawned_srun_ports_size = 0;
 static uint16_t *spawned_srun_ports = NULL;
@@ -78,6 +81,8 @@ static int (*tree_cmd_handlers[]) (int fd, Buf buf) = {
 	_handle_name_publish,
 	_handle_name_unpublish,
 	_handle_name_lookup,
+	_handle_ring,
+	_handle_ring_resp,
 	NULL
 };
 
@@ -89,6 +94,8 @@ static char *tree_cmd_names[] = {
 	"TREE_CMD_NAME_PUBLISH",
 	"TREE_CMD_NAME_UNPUBLISH",
 	"TREE_CMD_NAME_LOOKUP",
+	"TREE_CMD_RING",
+	"TREE_CMD_RING_RESP",
 	NULL,
 };
 
@@ -497,6 +504,92 @@ out:
 	return rc;
 
 unpack_error:
+	rc = SLURM_ERROR;
+	goto out;
+}
+
+/* handles ring_in message from one of our stepd children */
+static int
+_handle_ring(int fd, Buf buf)
+{
+	uint32_t rank, count, temp32;
+	char *left  = NULL;
+	char *right = NULL;
+	int ring_id;
+	int rc = SLURM_SUCCESS;
+
+        debug3("mpi/pmi2: in _handle_ring");
+
+	/* TODO: do we need ntoh translation? */
+
+	/* data consists of:
+         *   uint32_t rank  - tree rank of stepd process that sent message
+         *   uint32_t count - ring in count value
+         *   string   left  - ring in left value
+         *   string   right - ring in right value */
+	safe_unpack32(&rank,  buf);
+	safe_unpack32(&count, buf);
+	safe_unpackstr_xmalloc(&left,  &temp32, buf);
+	safe_unpackstr_xmalloc(&right, &temp32, buf);
+
+	/* lookup ring_id for this child */
+	ring_id = pmix_ring_id_by_rank(rank);
+
+	/* check that we got a valid child id */
+	if (ring_id == -1) {
+		error("mpi/pmi2: received ring_in message from unknown child %d", rank);
+		rc = SLURM_ERROR;
+		goto out;
+	}
+
+	/* execute ring in operation */
+	rc = pmix_ring_in(ring_id, count, left, right);
+
+out:
+	/* free strings unpacked from message */
+	xfree(left);
+	xfree(right);
+        debug3("mpi/pmi2: out _handle_ring");
+	return rc;
+
+unpack_error:
+	error("mpi/pmi2: failed to unpack ring in message");
+	rc = SLURM_ERROR;
+	goto out;
+}
+
+/* handles ring_out messages coming in from parent in stepd tree */
+static int
+_handle_ring_resp(int fd, Buf buf)
+{
+	uint32_t count, temp32;
+	char *left  = NULL;
+	char *right = NULL;
+	int rc = SLURM_SUCCESS;
+
+        debug3("mpi/pmi2: in _handle_ring_resp");
+
+	/* TODO: need ntoh translation? */
+	/* data consists of:
+         *   uint32_t count - ring out count value
+         *   string   left  - ring out left value
+         *   string   right - ring out right value */
+	safe_unpack32(&count, buf);
+	safe_unpackstr_xmalloc(&left,  &temp32, buf);
+	safe_unpackstr_xmalloc(&right, &temp32, buf);
+
+	/* execute ring out operation */
+	rc = pmix_ring_out(count, left, right);
+
+out:
+	/* free strings unpacked from message */
+	xfree(left);
+	xfree(right);
+        debug3("mpi/pmi2: out _handle_ring_resp");
+	return rc;
+
+unpack_error:
+	error("mpi/pmi2: failed to unpack ring out message");
 	rc = SLURM_ERROR;
 	goto out;
 }

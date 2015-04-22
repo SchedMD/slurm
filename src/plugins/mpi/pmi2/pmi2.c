@@ -60,6 +60,7 @@
 #include "setup.h"
 #include "agent.h"
 #include "nameserv.h"
+#include "ring.h"
 
 /* PMI2 command handlers */
 static int _handle_fullinit(int fd, int lrank, client_req_t *req);
@@ -68,6 +69,7 @@ static int _handle_abort(int fd, int lrank, client_req_t *req);
 static int _handle_job_getid(int fd, int lrank, client_req_t *req);
 static int _handle_job_connect(int fd, int lrank, client_req_t *req);
 static int _handle_job_disconnect(int fd, int lrank, client_req_t *req);
+static int _handle_ring(int fd, int lrank, client_req_t *req);
 static int _handle_kvs_put(int fd, int lrank, client_req_t *req);
 static int _handle_kvs_fence(int fd, int lrank, client_req_t *req);
 static int _handle_kvs_get(int fd, int lrank, client_req_t *req);
@@ -90,6 +92,7 @@ static struct {
 	{ JOBGETID_CMD,          _handle_job_getid },
 	{ JOBCONNECT_CMD,        _handle_job_connect },
 	{ JOBDISCONNECT_CMD,     _handle_job_disconnect },
+	{ RING_CMD,              _handle_ring },
 	{ KVSPUT_CMD,            _handle_kvs_put },
 	{ KVSFENCE_CMD,          _handle_kvs_fence },
 	{ KVSGET_CMD,            _handle_kvs_get },
@@ -102,7 +105,6 @@ static struct {
 	{ SPAWN_CMD,             _handle_spawn },
 	{ NULL, NULL},
 };
-
 
 static int
 _handle_fullinit(int fd, int lrank, client_req_t *req)
@@ -224,6 +226,35 @@ _handle_job_disconnect(int fd, int lrank, client_req_t *req)
 {
 	int rc = SLURM_SUCCESS;
 	error("mpi/pmi2: job disconnect not implemented for now");
+	return rc;
+}
+
+static int
+_handle_ring(int fd, int lrank, client_req_t *req)
+{
+	int rc = SLURM_SUCCESS;
+        int count   = 0;
+	char *left  = NULL;
+        char *right = NULL;
+
+	debug3("mpi/pmi2: in _handle_ring");
+
+	/* extract left, right, and count values from ring payload */
+	client_req_parse_body(req);
+	client_req_get_int(req, RING_COUNT_KEY, &count);
+	client_req_get_str(req, RING_LEFT_KEY,  &left);
+	client_req_get_str(req, RING_RIGHT_KEY, &right);
+
+	/* compute ring_id, we list all application tasks first,
+         * followed by stepds, so here we just use the application
+         * process rank */
+	int ring_id = lrank;
+
+        rc = pmix_ring_in(ring_id, count, left, right);
+
+        /* the repsonse is sent back to client from the pmix_ring_out call */
+
+	debug3("mpi/pmi2: out _handle_ring");
 	return rc;
 }
 

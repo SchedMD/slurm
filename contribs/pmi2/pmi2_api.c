@@ -644,6 +644,57 @@ fn_fail:
     goto fn_exit;
 }
 
+int PMIX_Ring(const char value[], int *rank, int *ranks, char left[], char right[], int maxvalue)
+{
+    int pmi2_errno = PMI2_SUCCESS;
+    PMI2_Command cmd = {0};
+    int rc;
+    const char *errmsg;
+    int found;
+    const char *kvsvalue;
+    int kvsvallen;
+
+    PMI2U_printf("[BEGIN PMI2_Ring]");
+
+    /* send message: cmd=ring_in, count=1, left=value, right=value */
+    pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, RING_CMD,
+	RING_COUNT_KEY,   "1",
+	RING_LEFT_KEY,  value,
+	RING_RIGHT_KEY, value,
+	NULL);
+    if (pmi2_errno) PMI2U_ERR_POP(pmi2_errno);
+
+    /* wait for reply: cmd=ring_out, rc=0|1, count=rank, left=leftval, right=rightval */
+    pmi2_errno = PMIi_ReadCommandExp(PMI2_fd, &cmd, RINGRESP_CMD, &rc, &errmsg);
+    if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_ReadCommandExp");
+    PMI2U_ERR_CHKANDJUMP(rc, pmi2_errno, PMI2_ERR_OTHER, "**pmi2_ring %s", errmsg ? errmsg : "unknown");
+
+    /* get our rank from the count key */
+    found = getvalint(cmd.pairs, cmd.nPairs, RING_COUNT_KEY, rank);
+    PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+
+    /* set size of ring (just number of procs in job) */
+    *ranks = PMI2_size;
+
+    /* lookup left value and copy to caller's buffer */
+    found = getval(cmd.pairs, cmd.nPairs, RING_LEFT_KEY, &kvsvalue, &kvsvallen);
+    PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+    MPIU_Strncpy(left, kvsvalue, maxvalue);
+
+    /* lookup right value and copy to caller's buffer */
+    found = getval(cmd.pairs, cmd.nPairs, RING_RIGHT_KEY, &kvsvalue, &kvsvallen);
+    PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
+    MPIU_Strncpy(right, kvsvalue, maxvalue);
+
+fn_exit:
+    free(cmd.command);
+    freepairs(cmd.pairs, cmd.nPairs);
+    PMI2U_printf("[END PMI2_Ring]");
+    return pmi2_errno;
+fn_fail:
+    goto fn_exit;
+}
+
 int PMI2_KVS_Put(const char key[], const char value[])
 {
     int pmi2_errno = PMI2_SUCCESS;
