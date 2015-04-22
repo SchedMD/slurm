@@ -94,6 +94,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for data shift when loading job archives.
  -- ALPS - Added new SchedulerParameters=inventory_interval to specify how
     often an inventory request is handled.
+ -- ALPS - Don't run a release on a reservation on the slurmctld for a batch
+    job.  This is already handled on the stepd when the script finishes.
 
 * Changes in Slurm 14.11.5
 ==========================

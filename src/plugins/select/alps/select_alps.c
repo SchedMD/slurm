@@ -433,7 +433,12 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	if (job_ptr == NULL)
 		return SLURM_SUCCESS;
-	if ((slurmctld_primary || (job_ptr->job_state == (uint16_t)NO_VAL))
+
+	/* Don't run the release in the controller for batch jobs.  It is
+	 * handled on the stepd end.
+	 */
+	if (((slurmctld_primary && !job_ptr->batch_flag) ||
+	     (job_ptr->job_state == (uint16_t)NO_VAL))
 	    && !_zero_size_job(job_ptr) &&
 	    (do_basil_release(job_ptr) != SLURM_SUCCESS))
 		return SLURM_ERROR;
