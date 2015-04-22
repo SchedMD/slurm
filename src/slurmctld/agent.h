@@ -52,7 +52,7 @@
 					 *   MAX_AGENT_CNT and
 					 *   (AGENT_THREAD_COUNT + 2) */
 #define LOTS_OF_AGENTS_CNT 50
-#define LOTS_OF_AGENTS (get_agent_count() <= LOTS_OF_AGENTS_CNT) ? 0 : 1
+#define LOTS_OF_AGENTS ((get_agent_count() <= LOTS_OF_AGENTS_CNT) ? 0 : 1)
 
 typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate
