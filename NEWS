@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- Add Slurmdb::qos_get() interface to perl api.
  -- If a job fails to start set the requeue reason to be:
     job requeued in held state.
+ -- Implemented a new MPI key,value PMIX_RING() exchange algorithm as
+    an alternative to PMI2.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
