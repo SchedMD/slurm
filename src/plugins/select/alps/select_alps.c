@@ -119,6 +119,8 @@ char *uid_to_string (uid_t uid) { return NULL; }
 #  define SIGRTMIN SIGUSR2+1
 #endif
 
+int inv_interval = 0;
+
 /* All current (2011) XT/XE installations have a maximum dimension of 3,
  * smaller systems deploy a 2D Torus which has no connectivity in
  * X-dimension.  We know the highest system dimensions possible here
@@ -210,8 +212,9 @@ extern int init ( void )
 			fatal("SelectTypeParams=other_cons_res is not valid "
 			      "for select/alps");
 		}
+		_set_inv_interval();
 	}
-	_set_inv_interval();
+
 	create_config();
 	return SLURM_SUCCESS;
 }
