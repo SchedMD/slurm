@@ -11,9 +11,6 @@ sbatch submits a batch script to SLURM.  The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
 sbatch will read in a script from standard input. The batch script may contain
 options preceded with "#SBATCH" before any executable commands in the script.
-After the first line of the batch script, which typically identifies the
-shell to be used, sbatch will stop processing options at the first line which
-does NOT begin with "#SBATCH".
 
 sbatch exits immediately after the script is successfully transferred to the
 SLURM controller and assigned a SLURM job ID.  The batch script is not

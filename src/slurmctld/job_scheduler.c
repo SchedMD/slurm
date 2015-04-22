@@ -845,6 +845,7 @@ extern int schedule(uint32_t job_limit)
 	static bool wiki_sched = false;
 	static bool fifo_sched = false;
 	static int sched_timeout = 0;
+	static int sched_max_job_start = 0;
 	static int bf_min_age_reserve = 0;
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
@@ -987,12 +988,22 @@ extern int schedule(uint32_t job_limit)
 			sched_interval = 60;
 		}
 
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "sched_max_job_start=")))
+			sched_max_job_start = atoi(tmp_ptr + 20);
+		if (sched_interval < 0) {
+			error("Invalid sched_max_job_start: %d",
+			      sched_max_job_start);
+			sched_max_job_start = 0;
+		}
+
 		xfree(sched_params);
 		sched_update = slurmctld_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
-		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d",
+		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
+		     "sched_max_job_start=%d",
 		     def_job_limit, defer_rpc_cnt, sched_timeout,
-		     max_jobs_per_part);
+		     max_jobs_per_part, sched_max_job_start);
 	}
 
 	if ((defer_rpc_cnt > 0) &&
@@ -1042,7 +1053,7 @@ extern int schedule(uint32_t job_limit)
 	 * by the node health checker).
 	 * This relies on the above write lock for the node state.
 	 */
-	if (select_g_reconfigure()) {
+	if (select_g_update_block(NULL)) {
 		unlock_slurmctld(job_write_lock);
 		debug4("sched: not scheduling due to ALPS");
 		goto out;
@@ -1149,6 +1160,10 @@ next_part:			part_ptr = (struct part_record *)
 next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
+			break;
+		}
+		if (sched_max_job_start && (job_cnt >= sched_max_job_start)) {
+			debug("sched: sched_max_job_start reached, breaking out");
 			break;
 		}
 

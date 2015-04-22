@@ -119,7 +119,8 @@ static void makespace(char **str, int needed)
 
 			xrealloc(*str, new_size);
 			actual_size = xsize(*str);
-			xassert(actual_size == new_size);
+			if (actual_size)
+				xassert(actual_size == new_size);
 		}
 	}
 }
@@ -348,8 +349,8 @@ char * xbasename(char *path)
  */
 char * xstrdup(const char *str)
 {
-	size_t siz,
-	       rsiz;
+	size_t siz;
+	size_t rsiz;
 	char   *result;
 
 	if (str == NULL) {
@@ -359,8 +360,8 @@ char * xstrdup(const char *str)
 	result = (char *)xmalloc(siz);
 
 	rsiz = strlcpy(result, str, siz);
-
-	xassert(rsiz == siz-1);
+	if (rsiz)
+		xassert(rsiz == siz-1);
 
 	return result;
 }

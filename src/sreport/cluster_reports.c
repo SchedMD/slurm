@@ -519,7 +519,6 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 10;
 			field->print_routine = slurmdb_report_print_time;
-			info("processed");
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);

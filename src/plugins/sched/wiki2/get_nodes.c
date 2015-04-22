@@ -99,7 +99,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	 * This relies on the above write lock for the node state.
 	 */
 	lock_slurmctld(node_write_lock);
-	if (select_g_reconfigure()) {
+	if (select_g_update_block(NULL)) {
 		unlock_slurmctld(node_write_lock);
 		*err_code = -720;
 		*err_msg = "Unable to run ALPS inventory";

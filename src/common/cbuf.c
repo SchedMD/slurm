@@ -14,15 +14,15 @@
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
  *  LSD-Tools is distributed in the hope that it will be useful, but WITHOUT
@@ -712,7 +712,8 @@ cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines)
             if (m > 0) {
                 pdst = dstbuf;
                 l = cbuf_reader(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
-                assert(l == m);
+		if (l)
+			assert(l == m);
             }
             assert(m < len);
             dstbuf[m] = '\0';
@@ -748,7 +749,8 @@ cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines)
             if (m > 0) {
                 pdst = dstbuf;
                 l = cbuf_reader(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
-                assert(l == m);
+		if (l)
+			assert(l == m);
             }
             assert(m < len);
             dstbuf[m] = '\0';
@@ -788,7 +790,8 @@ cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines)
             if (m > 0) {
                 pdst = dstbuf;
                 l = cbuf_replayer(src, m, (cbuf_iof) cbuf_put_mem, &pdst);
-                assert(l == m);
+		if (l)
+			assert(l == m);
             }
             /*  Append newline if needed and space allows.
              */
@@ -895,7 +898,8 @@ cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped)
          */
         if (ncopy > 0) {
             n = cbuf_writer(dst, ncopy, (cbuf_iof) cbuf_get_mem, &psrc, &d);
-            assert(n == ncopy);
+	    if (n)
+		    assert(n == ncopy);
             ndrop += d;
         }
         /*  Append newline if needed.

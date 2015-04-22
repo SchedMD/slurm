@@ -883,8 +883,8 @@ static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 	plugin->layout = (layout_t*)xmalloc(sizeof(layout_t));
 	layout_init(plugin->layout, spec->name, spec->type, 0,
 		    plugin->ops->spec->struct_type);
-	inserted_item = xhash_add(mgr->layouts, plugin->layout);
-	xassert(inserted_item == plugin->layout);
+	if ((inserted_item = xhash_add(mgr->layouts, plugin->layout)))
+		xassert(inserted_item == plugin->layout);
 	_layouts_init_keydef(mgr->keydefs,
 			     plugin->ops->spec->keyspec,
 			     plugin);
@@ -1164,10 +1164,12 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 			return SLURM_ERROR;
 		}
 		xfree(root_nodename);
-		enode = entity_add_node(e, plugin->layout);
-		xassert(enode);
-		root_node = xtree_add_child(tree, NULL, enode, XTREE_APPEND);
-		xassert(root_node);
+
+		if (!(enode = entity_add_node(e, plugin->layout)))
+			xassert(enode);
+		if (!(root_node = xtree_add_child(
+			      tree, NULL, enode, XTREE_APPEND)))
+			xassert(root_node);
 		enode->node = (void*) root_node;
 		break;
 	}
@@ -1511,14 +1513,14 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 				continue;
 			}
 			free(enclosed_name);
-			/* create an entity node associated to the entity 
+			/* create an entity node associated to the entity
 			 * for this layout */
 			enode = entity_add_node(enclosed_e, p->layout);
 			xassert(enode);
 			/* add it to the tree, getting an xtree_node_t ref */
-			enclosed_node = xtree_add_child(p->tree, node,
-							enode, XTREE_APPEND);
-			xassert(enclosed_node);
+			if (!(enclosed_node = xtree_add_child(
+				      p->tree, node, enode, XTREE_APPEND)))
+				xassert(enclosed_node);
 			/* store the xtree_node_t ref in the entity node. It
 			 * will be used to access this layout tree from the
 			 * entity when necessary through the entity node */

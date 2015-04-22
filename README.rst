@@ -4,9 +4,9 @@ Slurm Workload Manager
 This is the Slurm Workload Manager. Slurm
 is an open-source cluster resource management and job scheduling system
 that strives to be simple, scalable, portable, fault-tolerant, and
-interconnect agnostic. SLURM currently has been tested only under Linux.
+interconnect agnostic. Slurm currently has been tested only under Linux.
 
-As a cluster resource manager, SLURM provides three key functions. First,
+As a cluster resource manager, Slurm provides three key functions. First,
 it allocates exclusive and/or non-exclusive access to resources
 (compute nodes) to users for some duration of time so they can perform
 work. Second, it provides a framework for starting, executing, and

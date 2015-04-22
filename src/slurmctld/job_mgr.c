@@ -7370,7 +7370,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 	uint16_t cleaning = 0;
 
-	if (IS_JOB_COMPLETING(job_ptr)) {
+	if (IS_JOB_COMPLETING(job_ptr) && !LOTS_OF_AGENTS) {
 		kill_age = now - (slurmctld_conf.kill_wait +
 				  2 * slurm_get_msg_timeout());
 		if (job_ptr->time_last_active < kill_age) {

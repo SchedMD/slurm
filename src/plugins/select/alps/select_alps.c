@@ -840,6 +840,9 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 
 extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 {
+	if (slurmctld_primary && basil_inventory())
+		return SLURM_ERROR;
+
 	return other_update_block(block_desc_ptr);
 }
 
@@ -877,8 +880,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
-	if (slurmctld_primary && basil_inventory())
-		return SLURM_ERROR;
 	return other_reconfigure();
 }
 

@@ -766,7 +766,7 @@ static int _attempt_backfill(void)
 	 * Needs to be done with the node-state lock taken.
 	 */
 	START_TIMER;
-	if (select_g_reconfigure()) {
+	if (select_g_update_block(NULL)) {
 		debug4("backfill: not scheduling due to ALPS");
 		return SLURM_SUCCESS;
 	}
@@ -1320,7 +1320,8 @@ next_task:
 
 				/* Update the database if job time limit
 				 * changed and move to next job */
-				if (save_time_limit != job_ptr->time_limit)
+				if (save_time_limit != job_ptr->time_limit &&
+				    (!with_slurmdbd || job_ptr->db_index))
 					jobacct_storage_g_job_start(acct_db_conn,
 								    job_ptr);
 				job_start_cnt++;
@@ -1466,6 +1467,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 {
 	int rc;
 	bitstr_t *orig_exc_nodes = NULL;
+	bool is_job_array_head = false;
 	static uint32_t fail_jobid = 0;
 
 	if (job_ptr->details->exc_node_bitmap) {
@@ -1473,8 +1475,21 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		bit_or(job_ptr->details->exc_node_bitmap, resv_bitmap);
 	} else
 		job_ptr->details->exc_node_bitmap = bit_copy(resv_bitmap);
-
+	if (job_ptr->array_recs)
+		is_job_array_head = true;
 	rc = select_nodes(job_ptr, false, NULL, NULL);
+	if (is_job_array_head && job_ptr->details) {
+		struct job_record *base_job_ptr;
+		base_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (base_job_ptr && base_job_ptr != job_ptr
+				 && base_job_ptr->array_recs) {
+			FREE_NULL_BITMAP(
+					base_job_ptr->details->exc_node_bitmap);
+			if (orig_exc_nodes)
+				base_job_ptr->details->exc_node_bitmap =
+					bit_copy(orig_exc_nodes);
+		}
+	}
 	if (job_ptr->details) { /* select_nodes() might cancel the job! */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_nodes;

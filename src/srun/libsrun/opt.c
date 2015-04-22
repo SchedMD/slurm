@@ -1834,7 +1834,8 @@ static void _opt_args(int argc, char **argv)
 
 #endif
 	/* make sure we have allocated things correctly */
-	xassert((command_pos + command_args) <= opt.argc);
+	if (command_args)
+		xassert((command_pos + command_args) <= opt.argc);
 
 	for (i = command_pos; i < opt.argc; i++) {
 		if (!rest || !rest[i-command_pos])
