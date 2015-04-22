@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
     didn't get unpacked.
  -- Improve database interaction from controller.
  -- Fix for data shift when loading job archives.
+ -- ALPS - Added new SchedulerParameters=inventory_interval to specify how
+    often an inventory request is handled.
 
 * Changes in Slurm 14.11.5
 ==========================

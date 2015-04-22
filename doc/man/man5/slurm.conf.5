@@ -2185,6 +2185,15 @@ on such hardware, Slurm will consider each NUMA node within the socket as a
 separate socket by default. Use the Ignore_NUMA option to report the correct
 socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
 .TP
+\fBinventory_interval=#\fR
+On a Cray system using Slurm on top of ALPS this limits the amount of times
+a Basil Inventory call is made.  Normally this call happens every scheduling
+consideration to attempt to close a node state change window with respects to
+what ALPS has.  This call is rather slow, so making it less frequently improves
+performance dramatically, but in the situation where a node changes state the
+window is as large as this setting.  In an HTC environment this setting is a
+must and we advise around 10 seconds.
+.TP
 \fBkill_invalid_depend\fR
 If a job has an invalid dependency and it can never run terminate it
 and set its state to be JOB_CANCELLED. By default the job stays pending
