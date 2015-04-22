@@ -91,6 +91,7 @@ documents those changes that are of interest to users and administrators.
     free afterwards would not have zeroed out memory on the variables that
     didn't get unpacked.
  -- Improve database interaction from controller.
+ -- Fix for data shift when loading job archives.
 
 * Changes in Slurm 14.11.5
 ==========================

@@ -475,12 +475,12 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->node_inx, buffer);
-	packstr(object->partition, buffer);
-	packstr(object->priority, buffer);
-	packstr(object->qos, buffer);
-	packstr(object->req_cpus, buffer);
-	packstr(object->req_mem, buffer);
-	packstr(object->resvid, buffer);
+	packstr(object->partition, buffer); /* priority */
+	packstr(object->priority, buffer);  /* qos */
+	packstr(object->qos, buffer);       /* req_cpus */
+	packstr(object->req_cpus, buffer);  /* req_mem */
+	packstr(object->req_mem, buffer);   /* resvid */
+	packstr(object->resvid, buffer);    /* partition */
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
 	packstr(object->submit, buffer);
@@ -497,6 +497,21 @@ static int _unpack_local_job(local_job_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	uint32_t tmp32;
+
+	/* For protocols <= 14_11, job_req_inx and it's corresponding enum,
+	 * were out of sync. This caused the following variables to have the
+	 * corresponding values:
+	 * job->partition = priority
+	 * job->priority  = qos
+	 * job->qos       = req_cpus
+	 * job->req_cpus  = req_mem
+	 * job->req_mem   = resvid
+	 * job->resvid    = partition
+	 *
+	 * The values were packed in the above order. To unpack the values
+	 * into the correct variables, the unpacking order is changed to
+	 * accomodate the shift in values. job->partition is unpacked before
+	 * job->start instead of after job->node_inx. */
 
 	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		unpackstr_ptr(&object->account, &tmp32, buffer);
@@ -520,12 +535,12 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
-		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->submit, &tmp32, buffer);
@@ -553,12 +568,12 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
-		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->submit, &tmp32, buffer);
@@ -586,11 +601,11 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->name, &tmp32, buffer);
 		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
 		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
-		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->submit, &tmp32, buffer);
@@ -1636,12 +1651,12 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
-		job.partition = row[JOB_REQ_PARTITION];
-		job.priority = row[JOB_REQ_PRIORITY];
-		job.qos = row[JOB_REQ_QOS];
-		job.req_cpus = row[JOB_REQ_REQ_CPUS];
-		job.req_mem = row[JOB_REQ_REQ_MEM];
-		job.resvid = row[JOB_REQ_RESVID];
+		job.partition = row[JOB_REQ_PARTITION]; /* priority */
+		job.priority = row[JOB_REQ_PRIORITY];   /* qos */
+		job.qos = row[JOB_REQ_QOS];             /* cpus_req */
+		job.req_cpus = row[JOB_REQ_REQ_CPUS];   /* mem_req */
+		job.req_mem = row[JOB_REQ_REQ_MEM];     /* id_resv */
+		job.resvid = row[JOB_REQ_RESVID];       /* partition */
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
 		job.submit = row[JOB_REQ_SUBMIT];
