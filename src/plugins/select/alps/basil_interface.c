@@ -12,7 +12,6 @@
 #define _DEBUG 0
 
 int dim_size[3] = {0, 0, 0};
-int inv_interval = 0;
 
 typedef struct args_sig_basil {
 	uint32_t resv_id;
