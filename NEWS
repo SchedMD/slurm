@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     job requeued in held state.
  -- Implemented a new MPI key,value PMIX_RING() exchange algorithm as
     an alternative to PMI2.
+ -- Add jobcomp/elasticsearch plugin.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
