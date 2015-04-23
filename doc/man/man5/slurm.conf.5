@@ -2479,11 +2479,16 @@ Also see the partition configuration parameter \fBLLN\fR
 use the least loaded nodes in selected partitions.
 .TP
 \fBCR_Pack_Nodes\fR
-Rather than evenly distributing a job's tasks evenly across it's allocated
-nodes, pack them as tightly as possible on the nodes. For example, a job
-starting ten tasks acrosss two nodes each without this option will start
-five tasks on each of the two nodes. With this option, eight tasks will be
-started on the first node and two on the second node.
+If a job allocation contains more resources than will be used for launching
+tasks (e.g. if whole nodes are allocated to a job), then rather than evenly
+distributing a job's tasks evenly across it's allocated nodes, pack them as
+tightly as possible on thsee nodes.
+For example, consider a job allocation containing two \fBentire\fR nodes with
+eight CPUs each.
+If the job starts ten tasks across those two nodes without this option, it will
+start five tasks on each of the two nodes.
+With this option, eight tasks will be started on the first node and two tasks
+on the second node.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
