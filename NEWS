@@ -214,6 +214,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.7
+==========================
+
 * Changes in Slurm 14.11.6
 ==========================
  -- If SchedulerParameters value of bf_min_age_reserve is configured, then
