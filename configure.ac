@@ -415,6 +415,11 @@ dnl
 X_AC_BLCR
 
 dnl
+dnl Check for compilation of SLURM with CURL support:
+dnl
+LIBCURL_CHECK_CONFIG
+
+dnl
 dnl Set some configuration based upon multiple configuration parameters
 dnl
 ac_build_smap="no"
