@@ -56,13 +56,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "src/common/assoc_mgr.h"
+#include "src/common/fd.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
-
+#include "src/slurmctld/state_save.h"
 
 #define USE_ISO8601 1
 
@@ -104,7 +107,7 @@ const uint32_t plugin_version = 100;
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"\
 	"\"partition\":\"%s\",\"alloc_node\":\"%s\","\
 	"\"nodes\":\"%s\",\"total_cpus\":%lu,\"total_nodes\":%lu,"\
-	"\"derived_exitcode\":%hu,\"exitcode\":%lu,\"state\":\"%s\""
+	"\"derived_exitcode\":%lu,\"exitcode\":%lu,\"state\":\"%s\""
 
 /* Type for error string table entries */
 typedef struct {
@@ -191,7 +194,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 }
 
 /* Read file to data variable */
-uint32_t _read_file(const char *file, char **data)
+static uint32_t _read_file(const char *file, char **data)
 {
 	uint32_t data_size = 0;
 	int data_allocated, data_read, fd, fsize = 0;
@@ -220,18 +223,22 @@ uint32_t _read_file(const char *file, char **data)
 				debug("Read error on %s: %m", file);
 				break;
 			}
-		} else if (data_read == 0)	/* eof */
+		} else if (data_read == 0)	/* EOF */
 			break;
 		data_size += data_read;
 		data_allocated += data_read;
-		xrealloc(*data, data_allocated);
+		*data = xrealloc(*data, data_allocated);
 	}
 	close(fd);
+	if (data_size != fsize) {
+		debug("Could not read entire jobcomp state file %s (%d of %d)",
+		      file, data_size, fsize);
+	}
 	return data_size;
 }
 
 /* Load jobcomp data from save state file */
-int _load_pending_jobs()
+static int _load_pending_jobs(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *saved_data = NULL;
@@ -242,7 +249,6 @@ int _load_pending_jobs()
 	pend_jobs.jobs = NULL;
 
 	state_file = slurm_get_state_save_location();
-
 	if (state_file == NULL) {
 		debug("Could not retrieve StateSaveLocation from conf");
 		return SLURM_ERROR;
@@ -286,7 +292,7 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 	size_t realsize = size * nmemb;
 	struct http_response *mem = (struct http_response *) userp;
 
-	xrealloc(mem->message, mem->size + realsize + 1);
+	mem->message = xrealloc(mem->message, mem->size + realsize + 1);
 
 	memcpy(&(mem->message[mem->size]), contents, realsize);
 	mem->size += realsize;
@@ -296,18 +302,17 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 }
 
 /* Try to index job into elasticsearch */
-int _index_job(const char *jobcomp)
+static int _index_job(const char *jobcomp)
 {
+	CURL *curl_handle;
+	CURLcode res;
+	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
 
 	if (log_url == NULL) {
 		debug("JobCompLoc parameter not configured");
 		return SLURM_ERROR;
 	}
-
-	CURL *curl_handle;
-	CURLcode res;
-	struct http_response chunk;
 
 	chunk.message = xmalloc(1);
 	chunk.size = 0;
@@ -351,9 +356,8 @@ int _index_job(const char *jobcomp)
 				}
 				if ((xstrcmp(token, "200") != 0)
 				    && (xstrcmp(token, "201") != 0)) {
-					debug
-					    ("HTTP status code %s received from"
-					     " %s", token, url);
+					debug("HTTP status code %s received "
+					      "from %s", token, url);
 					debug("Check wether index writes and "
 					      "metadata changes are enabled on"
 					      " %s", url);
@@ -363,10 +367,9 @@ int _index_job(const char *jobcomp)
 					token = strtok((char *)jobcomp, ",");
 					token = strtok(token, ":");
 					token = strtok(NULL, ":");
-					debug
-					    ("Jobcomp data related to jobid %s "
-					     "indexed into elasticsearch",
-					     token);
+					debug("Jobcomp data related to jobid %s"
+					      " indexed into elasticsearch",
+					      token);
 				}
 				xfree(chunk.message);
 				xfree(response);
@@ -381,7 +384,7 @@ int _index_job(const char *jobcomp)
 }
 
 /* Escape characters according to RFC7159 */
-char *_json_escape(const char *str)
+static char *_json_escape(const char *str)
 {
 	char *ret = NULL;
 	int i;
@@ -419,7 +422,7 @@ char *_json_escape(const char *str)
 }
 
 /* Saves the state of all jobcomp data for further indexing retries */
-int _save_state()
+static int _save_state(void)
 {
 	int fd, rc = SLURM_SUCCESS;
 	char *state_file, *new_file, *old_file;
@@ -500,16 +503,17 @@ int _save_state()
 }
 
 /* Add jobcomp data to the pending jobs structure */
-void _push_pending_job(char *j)
+static void _push_pending_job(char *j)
 {
-	xrealloc(pend_jobs.jobs, sizeof(char *) * (pend_jobs.nelems + 1));
+	pend_jobs.jobs = xrealloc(pend_jobs.jobs,
+				  sizeof(char *) * (pend_jobs.nelems + 1));
 	pend_jobs.jobs[pend_jobs.nelems] = xstrdup(j);
 	pend_jobs.nelems++;
 }
 
 /* Updates pending jobs structure with the jobs that
  * failed to be indexed */
-void _update_pending_jobs(int *m)
+static void _update_pending_jobs(int *m)
 {
 	int i;
 	pending_jobs_t aux;
@@ -518,7 +522,8 @@ void _update_pending_jobs(int *m)
 
 	for (i = 0; i < pend_jobs.nelems; i++) {
 		if (!m[i]) {
-			xrealloc(aux.jobs, sizeof(char *) * (aux.nelems + 1));
+			aux.jobs = xrealloc(aux.jobs,
+					    sizeof(char *) * (aux.nelems + 1));
 			aux.jobs[aux.nelems] = xstrdup(pend_jobs.jobs[i]);
 			aux.nelems++;
 			xfree(pend_jobs.jobs[i]);
@@ -527,17 +532,18 @@ void _update_pending_jobs(int *m)
 
 	xfree(pend_jobs.jobs);
 	//pend_jobs.jobs = xmalloc(1);
-	//xrealloc(pend_jobs.jobs, sizeof(char *) * (aux.nelems));
+	//pend_jobs.jobs = xrealloc(pend_jobs.jobs, sizeof(char *) * (aux.nelems));
 	pend_jobs = aux;
 }
 
 /* Try to index all the jobcomp data for pending jobs */
-int _index_retry()
+static int _index_retry(void)
 {
 	int i, rc = SLURM_SUCCESS, marks = 0;
+	int *pop_marks;
 
 	slurm_mutex_lock(&pend_jobs_lock);
-	int pop_marks[pend_jobs.nelems];
+	pop_marks = xmalloc(sizeof(int) * pend_jobs.nelems);
 
 	for (i = 0; i < pend_jobs.nelems; i++) {
 		pop_marks[i] = 0;
@@ -553,6 +559,7 @@ int _index_retry()
 
 	if (marks)
 		_update_pending_jobs(pop_marks);
+	xfree(pop_marks);
 
 	slurm_mutex_unlock(&pend_jobs_lock);
 	if (_save_state() == SLURM_ERROR)
@@ -595,7 +602,7 @@ static void _make_time_str(time_t * time, char *string, int size)
  * init() is called when the plugin is loaded, before any other functions
  * are called. Put global initialization here.
  */
-int init(void)
+extern int init(void)
 {
 	int rc;
 
@@ -606,7 +613,7 @@ int init(void)
 	return rc;
 }
 
-int fini(void)
+extern int fini(void)
 {
 	xfree(log_url);
 	xfree(save_state_file);
@@ -657,16 +664,17 @@ extern int slurm_jobcomp_set_location(char *location)
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	int nwritten, nparents, B_SIZE = 1024, rc = SLURM_SUCCESS;
-	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32],
-	    submit_str[32], select_buf[128], *script, *cluster, *qos,
-	    *state_string, *work_dir, *orig_dependency, *exc_nodes, *script_str,
-	    *resv_name, *std_err, *std_in, *std_out, *parent_accounts;
+	char usr_str[32], grp_str[32], start_str[32], end_str[32];
+	char submit_str[32], *script, *cluster, *qos, *state_string;
+	char *script_str;
+	char *parent_accounts;
 	char **acc_aux;
 	time_t elapsed_time, submit_time, eligible_time;
-	size_t offset = 0, tot_size, wrote;
 	enum job_states job_state;
-	uint32_t time_limit, num_tasks;
-	uint16_t ntasks_per_node, cpus_per_task;
+	uint32_t time_limit;
+	uint16_t ntasks_per_node;
+	int i, tmp_size;
+	char *buffer, *tmp;
 
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
@@ -709,7 +717,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	elapsed_time = job_ptr->end_time - job_ptr->start_time;
 
-	char *buffer = xmalloc(B_SIZE);
+	buffer = xmalloc(B_SIZE);
 
 	nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
 			    (unsigned long) job_ptr->job_id, usr_str,
@@ -724,7 +732,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (nwritten >= B_SIZE) {
 		B_SIZE += nwritten + 1;
-		xrealloc(buffer, B_SIZE);
+		buffer = xrealloc(buffer, B_SIZE);
 
 		nwritten = snprintf(buffer, B_SIZE, JOBCOMP_DATA_FORMAT,
 				    (unsigned long) job_ptr->job_id, usr_str,
@@ -745,8 +753,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		}
 	}
 
-	int tmp_size = 256;
-	char *tmp = xmalloc(tmp_size * sizeof(char));
+	tmp_size = 256;
+	tmp = xmalloc(tmp_size * sizeof(char));
 
 	sprintf(tmp, ",\"cpu_hours\":%.6f",
 		((float) elapsed_time * (float) job_ptr->total_cpus) /
@@ -756,216 +764,147 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	if (job_ptr->details && (job_ptr->details->submit_time != NO_VAL)) {
 		submit_time = job_ptr->details->submit_time;
 		_make_time_str(&submit_time, submit_str, sizeof(submit_str));
-		sprintf(tmp, ",\"@submit\":\"%s\"", submit_str);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"@submit\":\"%s\"", submit_str);
 	}
 
 	if (job_ptr->details && (job_ptr->details->begin_time != NO_VAL)) {
 		eligible_time =
 		    job_ptr->start_time - job_ptr->details->begin_time;
-		sprintf(tmp, ",\"eligible_time\":%lu", eligible_time);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"eligible_time\":%lu", eligible_time);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->work_dir != NULL
-		&& strlen(job_ptr->details->work_dir) > 0)) {
-		work_dir = job_ptr->details->work_dir;
-		if ((strlen(work_dir)+14+1) > tmp_size) {
-			tmp_size = strlen(work_dir) + 14 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"work_dir\":\"%s\"", work_dir);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->work_dir && job_ptr->details->work_dir[0])) {
+		xstrfmtcat(buffer, ",\"work_dir\":\"%s\"",
+			   job_ptr->details->work_dir);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->std_err != NULL
-		&& strlen(job_ptr->details->std_err) > 0)) {
-		std_err = job_ptr->details->std_err;
-		if ((strlen(std_err)+13+1) > tmp_size) {
-			tmp_size = strlen(std_err) + 13 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"std_err\":\"%s\"", std_err);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->std_err && job_ptr->details->std_err[0])) {
+		xstrfmtcat(buffer, ",\"std_err\":\"%s\"",
+			   job_ptr->details->std_err);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->std_in != NULL
-		&& strlen(job_ptr->details->std_in) > 0)) {
-		std_in = job_ptr->details->std_in;
-		if ((strlen(std_in)+12+1) > tmp_size) {
-			tmp_size = strlen(std_in) + 12 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"std_in\":\"%s\"", std_in);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->std_in && job_ptr->details->std_in[0])) {
+		xstrfmtcat(buffer, ",\"std_in\":\"%s\"",
+			   job_ptr->details->std_in);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->std_out != NULL
-		&& strlen(job_ptr->details->std_out) > 0)) {
-		std_out = job_ptr->details->std_out;
-		if ((strlen(std_out)+13+1) > tmp_size) {
-			tmp_size = strlen(std_out) + 13 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"std_out\":\"%s\"", std_out);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->std_out && job_ptr->details->std_out[0])) {
+		xstrfmtcat(buffer, ",\"std_out\":\"%s\"",
+			   job_ptr->details->std_out);
 	}
 
 	if (job_ptr->assoc_ptr != NULL) {
-		cluster =
-		    ((slurmdb_association_rec_t *) job_ptr->assoc_ptr)->cluster;
-		sprintf(tmp, ",\"cluster\":\"%s\"", cluster);
-		xstrcat(buffer, tmp);
+		cluster = ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->cluster;
+		xstrfmtcat(buffer, ",\"cluster\":\"%s\"", cluster);
 	}
 
 	if (job_ptr->qos_ptr != NULL) {
 		slurmdb_qos_rec_t *assoc =
 		    (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
 		qos = assoc->name;
-		sprintf(tmp, ",\"qos\":\"%s\"", qos);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"qos\":\"%s\"", qos);
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
-		num_tasks = job_ptr->details->num_tasks;
-		sprintf(tmp, ",\"ntasks\":%hu", num_tasks);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"ntasks\":%hu",
+			   job_ptr->details->num_tasks);
 	}
 
 	if (job_ptr->details && (job_ptr->details->ntasks_per_node != NO_VAL)) {
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
-		sprintf(tmp, ",\"ntasks_per_node\":%hu", ntasks_per_node);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"ntasks_per_node\":%hu", ntasks_per_node);
 	}
 
 	if (job_ptr->details && (job_ptr->details->cpus_per_task != NO_VAL)) {
-		cpus_per_task = job_ptr->details->cpus_per_task;
-		sprintf(tmp, ",\"cpus_per_task\":%hu", cpus_per_task);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"cpus_per_task\":%hu",
+			   job_ptr->details->cpus_per_task);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->orig_dependency != NULL
-		&& strlen(job_ptr->details->orig_dependency) > 0)) {
-		orig_dependency = job_ptr->details->orig_dependency;
-		if ((strlen(orig_dependency)+21+1) > tmp_size) {
-			tmp_size = strlen(orig_dependency) + 21 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"orig_dependency\":\"%s\"", orig_dependency);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->orig_dependency
+		&& job_ptr->details->orig_dependency[0])) {
+		xstrfmtcat(buffer, ",\"orig_dependency\":\"%s\"",
+			   job_ptr->details->orig_dependency);
 	}
 
 	if (job_ptr->details
-	    && (job_ptr->details->exc_nodes != NULL
-		&& strlen(job_ptr->details->exc_nodes) > 0)) {
-		exc_nodes = job_ptr->details->exc_nodes;
-		if ((strlen(exc_nodes)+20+1) > tmp_size) {
-			tmp_size = strlen(exc_nodes) + 20 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"excluded_nodes\":\"%s\"", exc_nodes);
-		xstrcat(buffer, tmp);
+	    && (job_ptr->details->exc_nodes
+		&& job_ptr->details->exc_nodes[0])) {
+		xstrfmtcat(buffer, ",\"excluded_nodes\":\"%s\"",
+			   job_ptr->details->exc_nodes);
 	}
 
 	if (time_limit != INFINITE) {
-		sprintf(tmp, ",\"time_limit\":%lu", time_limit * 60);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"time_limit\":%lu",
+			(unsigned long) time_limit * 60);
 	}
 
-	if (job_ptr->resv_name != NULL && strlen(job_ptr->resv_name) > 0) {
-		if ((strlen(job_ptr->resv_name)+22+1) > tmp_size) {
-			tmp_size = strlen(job_ptr->resv_name) + 22 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"reservation_name\":\"%s\"",
-			job_ptr->resv_name);
-		xstrcat(buffer, tmp);
+	if (job_ptr->resv_name && job_ptr->resv_name[0]) {		
+		xstrfmtcat(buffer, ",\"reservation_name\":\"%s\"",
+			   job_ptr->resv_name);
 	}
 
-	if (job_ptr->gres_req != NULL && strlen(job_ptr->gres_req) > 0) {
-		if ((strlen(job_ptr->gres_req)+14+1) > tmp_size) {
-			tmp_size = strlen(job_ptr->gres_req) + 14 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
-		xstrcat(buffer, tmp);
+	if (job_ptr->gres_req && job_ptr->gres_req[0]) {		
+		xstrfmtcat(buffer, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
 	}
 
-	if (job_ptr->gres_alloc != NULL && strlen(job_ptr->gres_alloc) > 0) {
-		if ((strlen(job_ptr->gres_alloc)+16+1) > tmp_size) {
-			tmp_size = strlen(job_ptr->gres_alloc) + 16 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"gres_alloc\":\"%s\"", job_ptr->gres_alloc);
-		xstrcat(buffer, tmp);
+	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {		
+		xstrfmtcat(buffer, ",\"gres_alloc\":\"%s\"",
+			   job_ptr->gres_alloc);
 	}
 
-	if (job_ptr->account != NULL && strlen(job_ptr->account) > 0) {
-		sprintf(tmp, ",\"account\":\"%s\"", job_ptr->account);
-		xstrcat(buffer, tmp);
+	if (job_ptr->account && job_ptr->account[0]) {
+		xstrfmtcat(buffer, ",\"account\":\"%s\"", job_ptr->account);
 	}
 
 	script = get_job_script(job_ptr);
-	if (script != NULL && strlen(script) > 0) {
+	if (script && script[0]) {
 		script_str = _json_escape(script);
-		if ((strlen(script_str)+12+1) > tmp_size) {
-			tmp_size = strlen(script_str) + 12 + 1;
-			xrealloc(tmp, sizeof(char) * strlen(script_str) + 1 + 12);
-		}
-		sprintf(tmp, ",\"script\":\"%s\"", script_str);
-		xstrcat(buffer, tmp);
+		xstrfmtcat(buffer, ",\"script\":\"%s\"", script_str);
 		xfree(script_str);
 		xfree(script);
 	}
 
 	if (job_ptr->assoc_ptr) {
-		slurmdb_association_rec_t assoc_rec, *assoc_ptr;
+		slurmdb_assoc_rec_t assoc_rec, *assoc_ptr;
 
 		parent_accounts = NULL;
 		acc_aux = NULL;
 		nparents = 0;
 
-		memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc_rec.cluster = xstrdup(cluster);
 		assoc_rec.id =
-		    ((slurmdb_association_rec_t *) job_ptr->assoc_ptr)->
-		    parent_id;
+		    ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->parent_id;
 
 		do {
 			assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						accounting_enforce, &assoc_ptr,
 						false);
-			xrealloc(acc_aux, sizeof(char *) * (nparents + 1));
+			acc_aux = xrealloc(acc_aux,
+					   sizeof(char *) * (nparents + 1));
 			acc_aux[nparents] = xstrdup(assoc_ptr->acct);
 			nparents++;
 			assoc_rec.id = assoc_ptr->parent_id;
 			xfree(assoc_rec.cluster);
-			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_association_rec_t));
+			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.cluster = xstrdup(cluster);
 			assoc_rec.id = assoc_ptr->parent_id;
 
 		} while (xstrcmp(assoc_ptr->acct, "root") != 0);
 
-		int i;
 		for (i = nparents - 1; i >= 0; i--) {
 			xstrcat(parent_accounts, "/");
 			xstrcat(parent_accounts, acc_aux[i]);
 			xfree(acc_aux[i]);
 		}
-
-		
-		if ((strlen(parent_accounts)+21+1) > tmp_size) {
-			tmp_size = strlen(parent_accounts) + 21 + 1;
-			xrealloc(tmp, sizeof(char) * tmp_size);
-		}		
-		sprintf(tmp, ",\"parent_accounts\":\"%s\"", parent_accounts);
-		xstrcat(buffer, tmp);
+	
+		xstrfmtcat(buffer, ",\"parent_accounts\":\"%s\"",
+			   parent_accounts);
 		xfree(acc_aux);
 		xfree(assoc_rec.cluster);
 		xfree(parent_accounts);
