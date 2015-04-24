@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
     an alternative to PMI2.
  -- Remove possible deadlocks in the slurmctld when the slurmdbd is busy
     archiving/purging.
+ -- Add DB_ARCHIVE debug flag for filtering out debug messages in the slurmdbd
+    when the slurmdbd is archiving/purging.
 
 * Changes in Slurm 15.08.0pre3
 ==============================

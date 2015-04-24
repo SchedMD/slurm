@@ -2073,7 +2073,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 	xfree(cols);
 
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -2187,7 +2187,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 			       col_name, cluster, table, col_name, period_end,
 			       col_name);
 
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -2275,7 +2275,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 		} else
 			tmp_end = curr_end;
 
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 			debug("Purging %s entries before %ld for %s",
 			      purge_type_str[purge_type],
 			      tmp_end, cluster_name);
@@ -2294,7 +2294,7 @@ static int _archive_purge_table(purge_type_t purge_type,
 				       "%s <= %ld && time_end != 0 LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       tmp_end, MAX_PURGE_LIMIT);
-		if (debug_flags & DEBUG_FLAG_DB_USAGE)
+		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 		while ((rc = mysql_db_delete_affected_rows(
@@ -2466,7 +2466,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn,
 			 "Version in assoc_mgr_state header is %u", ver);
 	/* Don't verify the lower limit as we should be keeping all
@@ -2522,7 +2522,7 @@ got_sql:
 		error("No data to load");
 		return SLURM_ERROR;
 	}
-	if (debug_flags & DEBUG_FLAG_DB_USAGE)
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", data);
 	error_code = mysql_db_query_check_after(mysql_conn, data);
 	xfree(data);
