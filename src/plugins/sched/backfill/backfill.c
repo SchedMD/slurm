@@ -1320,10 +1320,9 @@ next_task:
 
 				/* Update the database if job time limit
 				 * changed and move to next job */
-				if (save_time_limit != job_ptr->time_limit &&
-				    (!with_slurmdbd || job_ptr->db_index))
-					jobacct_storage_g_job_start(acct_db_conn,
-								    job_ptr);
+				if (save_time_limit != job_ptr->time_limit)
+					jobacct_storage_job_start_direct(
+							acct_db_conn, job_ptr);
 				job_start_cnt++;
 				if (max_backfill_jobs_start &&
 				    (job_start_cnt >= max_backfill_jobs_start)){

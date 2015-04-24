@@ -4030,7 +4030,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
 		_purge_job_record(job_ptr->job_id);
-	} else if (!with_slurmdbd && !job_ptr->db_index)
+	} else if (!with_slurmdbd)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!will_run) {
@@ -7418,9 +7418,10 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	/* If we don't have a db_index by now and we are running with
 	 * the slurmdbd, lets put it on the list to be handled later
-	 * when slurmdbd comes back up since we won't get another chance. */
-	if (with_slurmdbd && !job_ptr->db_index)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	 * when slurmdbd comes back up since we won't get another chance.
+	 * job_start won't pend for job_db_inx when the job is finished.
+	 */
+	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 
 	return 1;		/* Purge the job */
 }
@@ -10885,11 +10886,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 fini:
 	if (update_accounting) {
 		info("updating accounting");
-		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect changes */
-			jobacct_storage_g_job_start(acct_db_conn,
-						    job_ptr);
-		}
+		/* Update job record in accounting to reflect changes */
+		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 
 	/* If job update is successful and priority is calculated (not only
@@ -11257,6 +11255,7 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 
 	job_ptr->resize_time = time(NULL);
 
+	/* FIXME: see if this can be changed to job_start_direct() */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_ptr->details->submit_time = org_submit;

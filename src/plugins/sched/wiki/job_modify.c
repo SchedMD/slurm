@@ -203,10 +203,8 @@ host_fini:	if (rc) {
 	}
 
 	if (update_accounting) {
-		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update job record in accounting to reflect changes */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-		}
+		/* Update job record in accounting to reflect changes */
+		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 
 	return SLURM_SUCCESS;

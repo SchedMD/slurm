@@ -1988,8 +1988,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * job if happening right away.  If the job has already
 	 * become eligible and registered in the db then the start
 	 * message. */
-	if (!with_slurmdbd || (with_slurmdbd && job_ptr->db_index))
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);

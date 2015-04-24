@@ -50,6 +50,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+extern int with_slurmdbd;
+
 extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
@@ -494,6 +496,12 @@ extern int clusteracct_storage_g_register_disconn_ctld(
 	void *db_conn, char *control_host);
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 					   slurmdb_cluster_rec_t *cluster_rec);
+
+/*
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_job_start_direct(void *db_conn,
+					    struct job_record *job_ptr);
 
 /*
  * load into the storage the start of a job

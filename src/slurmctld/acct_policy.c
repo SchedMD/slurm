@@ -2571,10 +2571,8 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 		last_job_update = time(NULL);
 		debug("limits changed for job %u: updating accounting",
 		      job_ptr->job_id);
-		if (details_ptr->begin_time) {
-			/* Update job record in accounting to reflect changes */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-		}
+		/* Update job record in accounting to reflect changes */
+		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
 
 	return rc;

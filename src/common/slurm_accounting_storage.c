@@ -63,6 +63,8 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/slurmctld/slurmctld.h"
 
+int with_slurmdbd = 0;
+
 /*
  * Local data
  */
@@ -273,6 +275,19 @@ static plugin_context_t *plugin_context = NULL;
 static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static uint16_t enforce = 0;
+
+/*
+ * load into the storage information about a job,
+ * typically when it begins execution, but possibly earlier
+ */
+extern int jobacct_storage_job_start_direct(void *db_conn,
+					    struct job_record *job_ptr)
+{
+	if (with_slurmdbd && !job_ptr->db_index)
+		return SLURM_SUCCESS;
+
+	return jobacct_storage_g_job_start(db_conn, job_ptr);
+}
 
 /*
  * Initialize context for acct_storage plugin

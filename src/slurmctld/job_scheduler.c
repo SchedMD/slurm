@@ -604,11 +604,12 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 				/* If we don't have a db_index by now and we
 				 * are running with the slurmdbd lets put it on
 				 * the list to be handled later when it comes
-				 * back up since we won't get another chance */
-				if (with_slurmdbd && !job_ptr->db_index) {
-					jobacct_storage_g_job_start(acct_db_conn,
-								    job_ptr);
-				}
+				 * back up since we won't get another chance.
+				 * This is fine because start() doesn't wait
+				 * for db_index for a finished job.
+				 */
+				jobacct_storage_job_start_direct(acct_db_conn,
+								 job_ptr);
 				list_delete_item(job_iterator);
 			}
 			continue;
