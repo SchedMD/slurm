@@ -1070,7 +1070,6 @@ extern int do_basil_signal(struct job_record *job_ptr, int signal)
 			error("could not signal APIDs of resId %u: %s", resv_id,
 				basil_strerror(rc));
 	}
-	info("tryed to signal %u", resv_id);
 	return SLURM_SUCCESS;
 }
 
