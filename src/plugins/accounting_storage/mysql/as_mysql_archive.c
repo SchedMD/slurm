@@ -2257,20 +2257,21 @@ static int _archive_purge_table(purge_type_t purge_type,
 		return SLURM_ERROR;
 	}
 
-	rc = _get_oldest_record(mysql_conn, cluster_name, sql_table, col_name,
-				curr_end, &record_start);
-	if (!rc) /* no purgeable records found */
-		return SLURM_SUCCESS;
-	else if (rc == SLURM_ERROR)
-		return rc;
-
-	tmp_end = record_start;
-	tmp_archive_period = purge_attr;
 	do {
+		rc = _get_oldest_record(mysql_conn, cluster_name, sql_table,
+					col_name, curr_end, &record_start);
+		if (!rc) /* no purgeable records found */
+			break;
+		else if (rc == SLURM_ERROR)
+			return rc;
+
+		tmp_archive_period = purge_attr;
+
 		if (curr_end - record_start > MAX_ARCHIVE_AGE) {
 			/* old stuff, catch up by archiving by month */
 			tmp_archive_period = SLURMDB_PURGE_MONTHS;
-			tmp_end = MIN(curr_end, _get_begin_next_month(tmp_end));
+			tmp_end = MIN(curr_end,
+				      _get_begin_next_month(record_start));
 		} else
 			tmp_end = curr_end;
 
