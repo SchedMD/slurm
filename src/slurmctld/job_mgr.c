@@ -4020,7 +4020,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 		return ESLURM_ALREADY_DONE;
 
 	/* let node select plugin do any state-dependent signalling actions */
-	select_g_job_signal(job_ptr, signal);
+	//if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		select_g_job_signal(job_ptr, signal);
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
