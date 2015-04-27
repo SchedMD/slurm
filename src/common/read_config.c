@@ -4067,7 +4067,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
-		if (strcasecmp(temp_str, "NONE"))
+		if (!strcasecmp(temp_str, "NONE"))
 			long_suspend_time = -1;
 		else
 			long_suspend_time = atoi(temp_str);

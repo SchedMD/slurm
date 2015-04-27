@@ -1425,20 +1425,22 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("power down request repeating "
 					     "for node %s", this_node_name);
 				} else {
-					if (IS_NODE_DOWN(node_ptr) &&
-					    IS_NODE_POWER_UP(node_ptr)) {
-						/* Abort power up request */
+					if (IS_NODE_DOWN(node_ptr)) {
+						/* Abort any power up request */
 						node_ptr->node_state &=
 							(~NODE_STATE_POWER_UP);
-#ifndef HAVE_FRONT_END
-						node_ptr->node_state |=
-							NODE_STATE_NO_RESPOND;
-#endif
 						node_ptr->node_state =
 							NODE_STATE_IDLE |
 							(node_ptr->node_state &
 							 NODE_STATE_FLAGS);
+					} else {
+						node_ptr->node_state &=
+							(~NODE_STATE_POWER_SAVE);
 					}
+#ifndef HAVE_FRONT_END
+					node_ptr->node_state |=
+						NODE_STATE_NO_RESPOND;
+#endif
 					node_ptr->last_idle = 0;
 					info("powering down node %s",
 					     this_node_name);
@@ -2946,13 +2948,17 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 		      node_ptr->name);
 		return;
 	}
-	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+
+	if (!IS_NODE_POWER_SAVE(node_ptr)) {
+		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 #ifdef HAVE_FRONT_END
-	last_front_end_update = time(NULL);
+		last_front_end_update = time(NULL);
 #else
-	last_node_update = time(NULL);
-	bit_clear (avail_node_bitmap, (node_ptr - node_record_table_ptr));
+		last_node_update = time(NULL);
+		bit_clear (avail_node_bitmap, (node_ptr - node_record_table_ptr));
 #endif
+	}
+
 	return;
 }
 

@@ -54,6 +54,9 @@ documents those changes that are of interest to users and administrators.
     archiving/purging.
  -- Add DB_ARCHIVE debug flag for filtering out debug messages in the slurmdbd
     when the slurmdbd is archiving/purging.
+ -- Fix some power_save mode issues: Parsing of SuspendTime in slurm.conf was
+    bad, powered down nodes would get set non-responding if there was an
+    in-flight message, and permit nodes to be powered down from any state.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
