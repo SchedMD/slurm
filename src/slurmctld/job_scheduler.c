@@ -770,7 +770,7 @@ static bool _all_partition_priorities_same(void)
  */
 extern int schedule(uint32_t job_limit)
 {
-	static int sched_job_limit = 1;
+	static int sched_job_limit = -1;
 	int job_count = 0;
 	struct timeval now;
 	long delta_t;
@@ -781,20 +781,23 @@ extern int schedule(uint32_t job_limit)
 	} else {
 		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
-
 	}
 
 	slurm_mutex_lock(&sched_mutex);
-	if (job_limit == 0)
-		sched_job_limit = 0;	/* unlimited */
-	else if (job_limit > sched_job_limit)
-		sched_job_limit = job_limit;
+	if (sched_job_limit == 0)
+		;				/* leave unlimited */
+	else if (job_limit == 0)
+		sched_job_limit = 0;		/* set unlimited */
+	else if (sched_job_limit == -1)
+		sched_job_limit = job_limit;	/* set initial value */
+	else
+		sched_job_limit += job_limit;	/* test more jobs */
 
 	if (delta_t >= sched_min_interval) {
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;
 		job_limit = sched_job_limit;
-		sched_job_limit = 1;
+		sched_job_limit = -1;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_count = _schedule(job_limit);
@@ -813,7 +816,7 @@ extern int schedule(uint32_t job_limit)
 			error("pthread_create error %m");
 		} else
 			sched_pend_thread = 1;
-                slurm_attr_destroy(&attr_agent);
+		slurm_attr_destroy(&attr_agent);
 		slurm_mutex_unlock(&sched_mutex);
 	} else {
 		/* Nothing to do, agent already pending */
@@ -851,8 +854,8 @@ static void *_sched_agent(void *args)
 	slurm_mutex_unlock(&sched_mutex);
 	if (job_cnt) {
 		/* jobs were started, save state */
-		schedule_node_save();           /* Has own locking */
-		schedule_job_save();            /* Has own locking */
+		schedule_node_save();		/* Has own locking */
+		schedule_job_save();		/* Has own locking */
 	}
 
 	return NULL;
@@ -1051,9 +1054,10 @@ static int _schedule(uint32_t job_limit)
 		sched_update = slurmctld_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
 		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
-		     "sched_max_job_start=%d",
+		     "sched_max_job_start=%d,sched_min_interval=%d",
 		     def_job_limit, defer_rpc_cnt, sched_timeout,
-		     max_jobs_per_part, sched_max_job_start);
+		     max_jobs_per_part, sched_max_job_start,
+		     sched_min_interval);
 	}
 
 	if ((defer_rpc_cnt > 0) &&

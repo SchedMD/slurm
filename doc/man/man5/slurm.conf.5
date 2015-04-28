@@ -2278,8 +2278,10 @@ The scheduler runs in a limited fashion every time that any event happens which
 could enable a job to start (e.g. job submit, job terminate, etc.).
 If these events happen at a high frequency, the scheduler can run very
 frequently and consume significant resources if not throttled by this option.
+This option specifies the minimum time between the start of a scheduling
+cycle, without considering how long the scheduling logic runs.
 A value of zero will disable throttling of the scheduling logic interval.
-The default value is 10,000 microseconds.
+The default value is zero microseconds (throttling is disabled).
 .RE
 
 .TP
