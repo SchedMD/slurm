@@ -2270,6 +2270,16 @@ The default value is 60 seconds.
 The maximum number of jobs that the main scheduling logic will start in any
 single execution.
 The default value is zero, which imposes no limit.
+.TP
+\fBsched_min_interval=#\fR
+How frequently, in microseconds, the main scheduling loop will execute and test
+any pending jobs.
+The scheduler runs in a limited fashion every time that any event happens which
+could enable a job to start (e.g. job submit, job terminate, etc.).
+If these events happen at a high frequency, the scheduler can run very
+frequently and consume significant resources if not throttled by this option.
+A value of zero will disable throttling of the scheduling logic interval.
+The default value is 10,000 microseconds.
 .RE
 
 .TP
