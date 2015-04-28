@@ -1070,6 +1070,7 @@ extern int do_basil_signal(struct job_record *job_ptr, int signal)
 			error("could not signal APIDs of resId %u: %s", resv_id,
 				basil_strerror(rc));
 	}
+	info("tryed to signal %u", resv_id);
 	return SLURM_SUCCESS;
 }
 
@@ -1160,6 +1161,7 @@ extern int do_basil_release(struct job_record *job_ptr)
 		debug("released ALPS resId %u for JobId %u",
 		      resv_id, job_ptr->job_id);
 	}
+
 	/*
 	 * Error handling: we only print out the errors (basil_release does this
 	 * internally), but do not signal error to select_g_job_fini(). Calling

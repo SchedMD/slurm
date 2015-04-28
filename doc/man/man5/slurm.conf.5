@@ -2410,9 +2410,9 @@ deferred during this time period.
 Make certain the value is lower than \fBMessageTimeout\fR.
 If a value is not explicitly configured, the default value is half of
 \fBMessageTimeout\fR with a minimum default value of 1 second and a maximum
-default value of 4 seconds.
-For example if MessageTimeout=10, the time limit will be 4 seconds
-(i.e. MIN(10/2, 4) = 4).
+default value of 2 seconds.
+For example if MessageTimeout=10, the time limit will be 2 seconds
+(i.e. MIN(10/2, 2) = 2).
 .TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
@@ -2460,6 +2460,19 @@ The default value is 60 seconds.
 The maximum number of jobs that the main scheduling logic will start in any
 single execution.
 The default value is zero, which imposes no limit.
+.TP
+\fBsched_min_interval=#\fR
+How frequently, in microseconds, the main scheduling loop will execute and test
+any pending jobs.
+The scheduler runs in a limited fashion every time that any event happens which
+could enable a job to start (e.g. job submit, job terminate, etc.).
+If these events happen at a high frequency, the scheduler can run very
+frequently and consume significant resources if not throttled by this option.
+This option specifies the minimum time between the end of one scheduling
+cycle and the beginning of the next scheduling cycle.
+A value of zero will disable throttling of the scheduling logic interval.
+The default value is 1,000,000 microseconds on Cray/ALPS systems and
+zero microseconds (throttling is disabled) on other systems.
 .RE
 
 .TP

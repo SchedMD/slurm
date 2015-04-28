@@ -41,14 +41,13 @@ print_header $test_id
 #
 # Report the sbatch help message
 #
-
 spawn $sbatch --help
 expect {
 	-re "Usage:" {
 		incr matches
 		exp_continue
 	}
-	-re "Help options" {
+	-re "Constraint options:" {
 		incr matches
 		exp_continue
 	}
@@ -62,7 +61,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: sbatch failed to report help message\n"
+	send_user "\nFAILURE: sbatch failed to report help message ($matches != 2)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {

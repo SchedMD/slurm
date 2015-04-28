@@ -79,9 +79,10 @@
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
-#include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/state_save.h"
 
 #define _DEBUG 0
 #ifndef BB_STAGE_ARRAY_TASK_CNT
@@ -110,13 +111,25 @@ static bool	_job_runnable_test2(struct job_record *job_ptr,
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
+static void *	_sched_agent(void *args);
+static int	_schedule(uint32_t job_limit);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
 #ifndef HAVE_FRONT_END
 static void *	_wait_boot(void *arg);
 #endif
+
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	save_last_part_update = 0;
+
+static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int sched_pend_thread = 0;
+static struct timeval sched_last = {0, 0};
+#ifdef HAVE_ALPS_CRAY
+static int sched_min_interval = 1000000;
+#else
+static int sched_min_interval = 0;
+#endif
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -812,12 +825,115 @@ static bool _all_partition_priorities_same(void)
  *		  queue on every job submit (0 means to use the system default,
  *		  SchedulerParameters for default_queue_depth)
  * RET count of jobs scheduled
+ * Note: If the scheduler has executed recently, rather than executing again
+ *	right away, a thread will be spawned to execute later in an effort
+ *	to reduce system overhead.
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
  *	changed with the update_job RPC. In general nodes will be in priority
  *	order (by submit time), so the sorting should be pretty fast.
  */
 extern int schedule(uint32_t job_limit)
+{
+	static int sched_job_limit = -1;
+	int job_count = 0;
+	struct timeval now;
+	long delta_t;
+
+	gettimeofday(&now, NULL);
+	if (sched_last.tv_sec == 0) {
+		delta_t = sched_min_interval;
+	} else {
+		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
+		delta_t +=  now.tv_usec - sched_last.tv_usec;
+	}
+
+	slurm_mutex_lock(&sched_mutex);
+	if (sched_job_limit == 0)
+		;				/* leave unlimited */
+	else if (job_limit == 0)
+		sched_job_limit = 0;		/* set unlimited */
+	else if (sched_job_limit == -1)
+		sched_job_limit = job_limit;	/* set initial value */
+	else
+		sched_job_limit += job_limit;	/* test more jobs */
+
+	if (delta_t >= sched_min_interval) {
+		/* Temporariy set time in the future until we get the real
+		 * scheduler completion time */
+		sched_last.tv_sec  = now.tv_sec + 10;
+		job_limit = sched_job_limit;
+		sched_job_limit = -1;
+		slurm_mutex_unlock(&sched_mutex);
+
+		job_count = _schedule(job_limit);
+
+		slurm_mutex_lock(&sched_mutex);
+		gettimeofday(&now, NULL);
+		sched_last.tv_sec  = now.tv_sec;
+		sched_last.tv_usec = now.tv_usec;
+		slurm_mutex_unlock(&sched_mutex);
+	} else if (sched_pend_thread == 0) {
+		/* We don't want to run now, but also don't want to defer
+		 * this forever, so spawn a thread to run later */
+		pthread_attr_t attr_agent;
+		pthread_t thread_agent;
+		slurm_attr_init(&attr_agent);
+		if (pthread_attr_setdetachstate
+				(&attr_agent, PTHREAD_CREATE_DETACHED)) {
+			error("pthread_attr_setdetachstate error %m");
+		}
+		if (pthread_create(&thread_agent, &attr_agent, _sched_agent,
+				   NULL)) {
+			error("pthread_create error %m");
+		} else
+			sched_pend_thread = 1;
+		slurm_attr_destroy(&attr_agent);
+		slurm_mutex_unlock(&sched_mutex);
+	} else {
+		/* Nothing to do, agent already pending */
+		slurm_mutex_unlock(&sched_mutex);
+	}
+
+	return job_count;
+}
+
+/* Thread used to possibly start job scheduler later, if nothing else does */
+static void *_sched_agent(void *args)
+{
+	long delta_t;
+	struct timeval now;
+	useconds_t usec;
+	int job_cnt;
+
+	usec = sched_min_interval / 2;
+	usec = MIN(usec, 1000000);
+	usec = MAX(usec, 1000);
+
+	/* Keep waiting until scheduler() can really run */
+	while (!slurmctld_config.shutdown_time) {
+		usleep(usec);
+		gettimeofday(&now, NULL);
+		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
+		delta_t +=  now.tv_usec - sched_last.tv_usec;
+		if (delta_t >= sched_min_interval)
+			break;
+	}
+
+	job_cnt = schedule(1);
+	slurm_mutex_lock(&sched_mutex);
+	sched_pend_thread = 0;
+	slurm_mutex_unlock(&sched_mutex);
+	if (job_cnt) {
+		/* jobs were started, save state */
+		schedule_node_save();		/* Has own locking */
+		schedule_job_save();		/* Has own locking */
+	}
+
+	return NULL;
+}
+
+static int _schedule(uint32_t job_limit)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
@@ -978,7 +1094,7 @@ extern int schedule(uint32_t job_limit)
 		}
 		if (sched_timeout == 0) {
 			sched_timeout = MAX(time_limit, 1);
-			sched_timeout = MIN(sched_timeout, 4);
+			sched_timeout = MIN(sched_timeout, 2);
 		}
 
 		if (sched_params &&
@@ -987,6 +1103,15 @@ extern int schedule(uint32_t job_limit)
 		if (sched_interval < 0) {
 			error("Invalid sched_interval: %d", sched_interval);
 			sched_interval = 60;
+		}
+
+		if (sched_params &&
+		    (tmp_ptr=strstr(sched_params, "sched_min_interval="))) {
+			i = atoi(tmp_ptr + 19);
+			if (i < 0)
+				error("Invalid sched_min_interval: %d", i);
+			else
+				sched_min_interval = i;
 		}
 
 		if (sched_params &&
@@ -1002,9 +1127,10 @@ extern int schedule(uint32_t job_limit)
 		sched_update = slurmctld_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
 		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
-		     "sched_max_job_start=%d",
+		     "sched_max_job_start=%d,sched_min_interval=%d",
 		     def_job_limit, defer_rpc_cnt, sched_timeout,
-		     max_jobs_per_part, sched_max_job_start);
+		     max_jobs_per_part, sched_max_job_start,
+		     sched_min_interval);
 	}
 
 	if ((defer_rpc_cnt > 0) &&

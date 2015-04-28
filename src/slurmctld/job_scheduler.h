@@ -154,6 +154,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job);
  *		  queue on every job submit (0 means to use the system default,
  *		  SchedulerParameters for default_queue_depth)
  * RET count of jobs scheduled
+ * Note: If the scheduler has executed recently, rather than executing again
+ *	right away, a thread will be spawned to execute later in an effort
+ *	to reduce system overhead.
  * Note: We re-build the queue every time. Jobs can not only be added
  *	or removed from the queue, but have their priority or partition
  *	changed with the update_job RPC. In general nodes will be in priority
