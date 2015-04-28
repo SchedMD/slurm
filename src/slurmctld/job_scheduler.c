@@ -119,8 +119,12 @@ static int	save_last_part_update = 0;
 
 static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int sched_pend_thread = 0;
-static int sched_min_interval = 0;
 static struct timeval sched_last = {0, 0};
+#ifdef HAVE_ALPS_CRAY
+static int sched_min_interval = 1000000;
+#else
+static int sched_min_interval = 0;
+#endif
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -794,13 +798,20 @@ extern int schedule(uint32_t job_limit)
 		sched_job_limit += job_limit;	/* test more jobs */
 
 	if (delta_t >= sched_min_interval) {
-		sched_last.tv_sec  = now.tv_sec;
-		sched_last.tv_usec = now.tv_usec;
+		/* Temporariy set time in the future until we get the real
+		 * scheduler completion time */
+		sched_last.tv_sec  = now.tv_sec + 10;
 		job_limit = sched_job_limit;
 		sched_job_limit = -1;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_count = _schedule(job_limit);
+
+		slurm_mutex_lock(&sched_mutex);
+		gettimeofday(&now, NULL);
+		sched_last.tv_sec  = now.tv_sec;
+		sched_last.tv_usec = now.tv_usec;
+		slurm_mutex_unlock(&sched_mutex);
 	} else if (sched_pend_thread == 0) {
 		/* We don't want to run now, but also don't want to defer
 		 * this forever, so spawn a thread to run later */
