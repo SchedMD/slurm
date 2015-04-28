@@ -1161,7 +1161,7 @@ extern int do_basil_release(struct job_record *job_ptr)
 		debug("released ALPS resId %u for JobId %u",
 		      resv_id, job_ptr->job_id);
 	}
-	info("tryed to release %u", resv_id);
+
 	/*
 	 * Error handling: we only print out the errors (basil_release does this
 	 * internally), but do not signal error to select_g_job_fini(). Calling
