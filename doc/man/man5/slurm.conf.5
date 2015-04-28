@@ -2220,9 +2220,9 @@ deferred during this time period.
 Make certain the value is lower than \fBMessageTimeout\fR.
 If a value is not explicitly configured, the default value is half of
 \fBMessageTimeout\fR with a minimum default value of 1 second and a maximum
-default value of 4 seconds.
-For example if MessageTimeout=10, the time limit will be 4 seconds
-(i.e. MIN(10/2, 4) = 4).
+default value of 2 seconds.
+For example if MessageTimeout=10, the time limit will be 2 seconds
+(i.e. MIN(10/2, 2) = 2).
 .TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the

@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters option of sched_min_interval that controls the
     minimum time interval between any job scheduling action. The default value
     is zero (disabled).
+ -- Change default SchedulerParameters=max_sched_time from 4 seconds to 2.
 
 * Changes in Slurm 14.11.6
 ==========================

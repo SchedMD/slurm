@@ -1021,7 +1021,7 @@ static int _schedule(uint32_t job_limit)
 		}
 		if (sched_timeout == 0) {
 			sched_timeout = MAX(time_limit, 1);
-			sched_timeout = MIN(sched_timeout, 4);
+			sched_timeout = MIN(sched_timeout, 2);
 		}
 
 		if (sched_params &&
