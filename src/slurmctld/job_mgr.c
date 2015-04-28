@@ -13809,8 +13809,8 @@ init_requeue_policy(void)
 		xfree(sched_params);
 	}
 
-	info("%s: kill_invalid_depend is set to %d",
-	     __func__, kill_invalid_dep);
+	debug2("%s: kill_invalid_depend is set to %d",
+	       __func__, kill_invalid_dep);
 }
 
 /* _make_requeue_array()
