@@ -410,6 +410,12 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 			case SIGURG:
 			case SIGWINCH:
 				break;
+		        case SIGTERM:
+		        case SIGKILL:
+				if (cray_conf->no_apid_signal_on_kill &&
+				    job_ptr->batch_flag)
+					return other_job_signal(
+						job_ptr, signal);
 			default:
 				if (signal < SIGRTMIN)
 					do_basil_release(job_ptr);

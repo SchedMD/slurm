@@ -54,6 +54,12 @@ Fully qualified pathname to the apkill command.
 The default value is \fI/usr/bin/apkill\fR.
 
 .TP
+\fBNoAPIDSignalOnKill\fR=Yes
+When set to yes this will make it so the slurmctld will not signal the apid's
+in a batch job.  Instead it relies on the rpc coming from the slurmctld to
+kill the job to end things correctly.
+
+.TP
 \fBSDBdb\fR=<dbname>
 Name of the ALPS database.
 The default value is \fIXTAdmin\fR.
