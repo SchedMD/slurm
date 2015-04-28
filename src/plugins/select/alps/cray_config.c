@@ -57,6 +57,7 @@ s_p_options_t cray_conf_file_options[] = {
 	{"ApbasilTimeout", S_P_UINT16},
 	{"apkill",         S_P_STRING},
 	{"AlpsEngine",     S_P_STRING},
+	{"NoAPIDSignalOnKill", S_P_BOOLEAN},
 	{"SDBdb",          S_P_STRING},
 	{"SDBhost",        S_P_STRING},
 	{"SDBpass",        S_P_STRING},
@@ -97,7 +98,7 @@ extern int create_config(void)
 	}
 	if (cray_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Reading the cray.conf file %s", cray_conf_file);
-	
+
 	if (last_config_update) {
 		if (last_config_update == config_stat.st_mtime) {
 			if (cray_conf->slurm_debug_flags
@@ -128,6 +129,9 @@ extern int create_config(void)
 		cray_conf->apkill = xstrdup(DEFAULT_APKILL);
 
 	s_p_get_string(&cray_conf->alps_engine, "AlpsEngine", tbl);
+
+	s_p_get_boolean(&cray_conf->no_apid_signal_on_kill,
+			"NoAPIDSignalOnKill", tbl);
 
 	if (!s_p_get_string(&cray_conf->sdb_db, "SDBdb", tbl))
 		cray_conf->sdb_db = xstrdup(DEFAULT_CRAY_SDB_DB);

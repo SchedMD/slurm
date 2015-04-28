@@ -1151,12 +1151,65 @@ extern void queue_basil_signal(struct job_record *job_ptr, int signal,
  */
 extern int do_basil_release(struct job_record *job_ptr)
 {
-	uint32_t resv_id;
+	uint32_t resv_id = 0;
+	int rc = SLURM_SUCCESS;
 
-	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
-			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+	if ((_get_select_jobinfo(job_ptr->select_jobinfo->data,
+				 SELECT_JOBDATA_RESV_ID, &resv_id)
+	     != SLURM_SUCCESS) || !resv_id) {
 		error("can not read resId for JobId=%u", job_ptr->job_id);
-	} else if (resv_id && basil_release(resv_id) == 0) {
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Convention: like select_p_job_ready, may be called also from
+	 *             stepdmgr, where job_state == NO_VAL is used to
+	 *             distinguish the context from that of slurmctld.
+	 */
+	if (job_ptr->job_state == (uint16_t)NO_VAL &&
+	    (get_basil_version() >= BV_4_0)) {
+		int sleeptime = 1;
+
+		/* This should be made configurable */
+		time_t endwait = time(NULL) + 500;
+
+		/*
+		 * BASIL 1.2 Improved Release Method
+		 *
+		 * Send the RELEASE message until you receive
+		 * an error ensuring the applicaiton is gone
+		 * and the nodes are available in ALPS.
+		 *
+		 * Max end time should be configurable. No
+		 * need to try longer than max(NHC) + max(ALPS
+		 * reservation lvl cleanup).
+		 */
+		while ((rc = basil_release(resv_id))) {
+			debug("do_basil_release: "
+			      "waiting %d seconds for %u resId %u "
+			      "to release %d",
+			      sleeptime, job_ptr->job_id, resv_id, rc);
+			sleep(sleeptime);
+			sleeptime *= 2;
+			rc = SLURM_SUCCESS;
+			if (time(NULL) >= endwait) {
+				error("do_basil_release: "
+				      "waited for %ld seconds for job "
+				      "%u resId %u to release, but it never "
+				      "happened", endwait,
+				      job_ptr->job_id, resv_id);
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+
+		if (rc == SLURM_SUCCESS)
+			/* The resv_id is non-zero only if the job is
+			 * or was running. */
+			debug("released ALPS resId %u for JobId %u",
+			      resv_id, job_ptr->job_id);
+
+	} else if (!basil_release(resv_id)) {
 		/* The resv_id is non-zero only if the job is or was running. */
 		debug("released ALPS resId %u for JobId %u",
 		      resv_id, job_ptr->job_id);
@@ -1168,7 +1221,7 @@ extern int do_basil_release(struct job_record *job_ptr)
 	 * contexts of this function (deallocate_nodes, batch_finish) only print
 	 * additional error text: no further action is taken at this stage.
 	 */
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /**

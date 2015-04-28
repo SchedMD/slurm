@@ -236,6 +236,12 @@ documents those changes that are of interest to users and administrators.
     cancellation of running jobs. Otherwise they happen in parallel and the
     pending jobs can be scheduled on resources as the running jobs are being
     cancelled.
+ -- ALPS - Add new cray.conf variable NoAPIDSignalOnKill.  When set to yes this
+    will make it so the slurmctld will not signal the apid's in a batch job.
+    Instead it relies on the rpc coming from the slurmctld to kill the job to
+    end things correctly.
+ -- ALPS - Have the slurmstepd running a batch job wait for an ALPS release
+    before ending the job.
 
 * Changes in Slurm 14.11.6
 ==========================

@@ -88,6 +88,7 @@ typedef struct {
 	char		*apbasil;
 	uint16_t	apbasil_timeout;
 	char		*apkill;
+	bool             no_apid_signal_on_kill;
 
 	char		*sdb_host;
 	char		*sdb_db;
