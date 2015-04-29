@@ -519,7 +519,10 @@ _xlate_job_step_ids(char **rest)
 			hostlist_destroy(hl);
 			end_char[1] = save_char;
 			/* No step ID support for job array range */
-			break;
+			continue;
+		} else if ((next_str[0] == '_') && (next_str[1] == '*')) {
+			opt.array_id[buf_offset] = INFINITE;
+			next_str += 2;
 		} else if (next_str[0] == '_') {
 			tmp_l = strtol(&next_str[1], &next_str, 10);
 			if (tmp_l < 0) {
@@ -607,8 +610,31 @@ static void _opt_list(void)
 	info("verbose        : %d", opt.verbose);
 	info("wckey          : %s", opt.wckey);
 
-	for (i=0; i<opt.job_cnt; i++) {
-		info("job_steps      : %u.%u ", opt.job_id[i], opt.step_id[i]);
+	for (i = 0; i < opt.job_cnt; i++) {
+		if (opt.step_id[i] == SLURM_BATCH_SCRIPT) {
+			if (opt.array_id[i] == NO_VAL) {
+				info("job_id[%d]      : %u",
+				     i, opt.job_id[i]);
+			} else if (opt.array_id[i] == INFINITE) {
+				info("job_id[%d]      : %u_*",
+				     i, opt.job_id[i]);
+			} else {
+				info("job_id[%d]      : %u_%u",
+				     i, opt.job_id[i], opt.array_id[i]);
+			}
+		} else {
+			if (opt.array_id[i] == NO_VAL) {
+				info("job_step_id[%d] : %u.%u",
+				     i, opt.job_id[i], opt.step_id[i]);
+			} else if (opt.array_id[i] == INFINITE) {
+				info("job_step_id[%d] : %u_*.%u",
+				     i, opt.job_id[i], opt.step_id[i]);
+			} else {
+				info("job_step_id[%d] : %u_%u.%u",
+				     i, opt.job_id[i], opt.array_id[i],
+				     opt.step_id[i]);
+			}
+		}
 	}
 }
 

@@ -62,9 +62,9 @@ typedef struct scancel_options {
 	int verbose;		/* --verbose, -v		*/
 
 	uint16_t job_cnt;	/* count of job_id's specified	*/
-	uint32_t *job_id;	/* list of job_id's		*/
-	uint32_t *array_id;	/* list of job array IDs	*/
-	uint32_t *step_id;	/* list of job step id's	*/
+	uint32_t *job_id;	/* list of job ID's		*/
+	uint32_t *array_id;	/* list of job array task IDs	*/
+	uint32_t *step_id;	/* list of job step ID's	*/
 	char *wckey;		/* --wckey			*/
 	char *nodelist;		/* --nodelist, -w		*/
 	char **job_list;        /* list of job ids as char *    */
