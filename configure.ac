@@ -415,6 +415,11 @@ dnl
 X_AC_BLCR
 
 dnl
+dnl Check for compilation of SLURM with CURL support:
+dnl
+LIBCURL_CHECK_CONFIG
+
+dnl
 dnl Set some configuration based upon multiple configuration parameters
 dnl
 ac_build_smap="no"
@@ -554,6 +559,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/cgroup/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
 		 src/plugins/jobcomp/Makefile
+		 src/plugins/jobcomp/elasticsearch/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile

@@ -75,6 +75,10 @@ HIGHLIGHTS
     should eliminate some very difficult to diagnose problems due to use of old
     plugins.
  -- Optimize resource allocation for systems with dragonfly networks.
+ -- Added plugin to record job completion information using Elasticsearch.
+    Libcurl is required for build. Configure slurm.conf as follows
+    JobCompType=jobcomp/elasticsearch
+    JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200
 
 RPMBUILD CHANGES
 ================

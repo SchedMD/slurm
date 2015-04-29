@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre5
 ==============================
+ -- Add jobcomp/elasticsearch plugin. Libcurl is required for build. Configure
+    the server as follows: "JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200".
 
 * Changes in Slurm 15.08.0pre4
 ==============================

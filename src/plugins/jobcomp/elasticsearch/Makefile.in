@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for preempt/qos plugin
+# Makefile for jobcomp/elasticsearch plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
@@ -81,7 +81,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/preempt/qos
+subdir = src/plugins/jobcomp/elasticsearch
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/auxdir/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -163,17 +163,21 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-preempt_qos_la_LIBADD =
-am_preempt_qos_la_OBJECTS = preempt_qos.lo
-preempt_qos_la_OBJECTS = $(am_preempt_qos_la_OBJECTS)
+am__DEPENDENCIES_1 =
+jobcomp_elasticsearch_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_jobcomp_elasticsearch_la_OBJECTS = jobcomp_elasticsearch.lo
+jobcomp_elasticsearch_la_OBJECTS =  \
+	$(am_jobcomp_elasticsearch_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-preempt_qos_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+jobcomp_elasticsearch_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(preempt_qos_la_LDFLAGS) $(LDFLAGS) -o \
-	$@
+	$(AM_CFLAGS) $(CFLAGS) $(jobcomp_elasticsearch_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@WITH_CURL_TRUE@am_jobcomp_elasticsearch_la_rpath = -rpath \
+@WITH_CURL_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -208,8 +212,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(preempt_qos_la_SOURCES)
-DIST_SOURCES = $(preempt_qos_la_SOURCES)
+SOURCES = $(jobcomp_elasticsearch_la_SOURCES)
+DIST_SOURCES = $(jobcomp_elasticsearch_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -482,9 +486,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = preempt_qos.la
-preempt_qos_la_SOURCES = preempt_qos.c
-preempt_qos_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@WITH_CURL_TRUE@ELASTICSEARCH = jobcomp_elasticsearch.la
+pkglib_LTLIBRARIES = $(ELASTICSEARCH)
+
+# Elasticsearch job completion logging plugin.
+jobcomp_elasticsearch_la_SOURCES = jobcomp_elasticsearch.c 
+jobcomp_elasticsearch_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_elasticsearch_la_LIBADD = $(LIBCURL)
 all: all-am
 
 .SUFFIXES:
@@ -498,9 +506,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/preempt/qos/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/jobcomp/elasticsearch/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/preempt/qos/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/jobcomp/elasticsearch/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -555,8 +563,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-preempt_qos.la: $(preempt_qos_la_OBJECTS) $(preempt_qos_la_DEPENDENCIES) $(EXTRA_preempt_qos_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(preempt_qos_la_LINK) -rpath $(pkglibdir) $(preempt_qos_la_OBJECTS) $(preempt_qos_la_LIBADD) $(LIBS)
+jobcomp_elasticsearch.la: $(jobcomp_elasticsearch_la_OBJECTS) $(jobcomp_elasticsearch_la_DEPENDENCIES) $(EXTRA_jobcomp_elasticsearch_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(jobcomp_elasticsearch_la_LINK) $(am_jobcomp_elasticsearch_la_rpath) $(jobcomp_elasticsearch_la_OBJECTS) $(jobcomp_elasticsearch_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -564,7 +572,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt_qos.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_elasticsearch.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

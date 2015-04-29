@@ -16,6 +16,7 @@ EXTRA_DIST = \
     x_ac_bluegene.m4 \
     x_ac_cflags.m4 \
     x_ac_cray.m4 \
+    x_ac_curl.m4 \
     x_ac_databases.m4 \
     x_ac_debug.m4 \
     x_ac_dlfcn.m4 \

@@ -637,6 +637,11 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 BUILD_SMAP_FALSE
 BUILD_SMAP_TRUE
+WITH_CURL_FALSE
+WITH_CURL_TRUE
+LIBCURL
+LIBCURL_CPPFLAGS
+_libcurl_config
 WITH_BLCR_FALSE
 WITH_BLCR_TRUE
 BLCR_LDFLAGS
@@ -1025,6 +1030,7 @@ with_ssl
 with_munge
 enable_multiple_slurmd
 with_blcr
+with_libcurl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1756,6 +1762,8 @@ Optional Packages:
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
   --with-blcr=PATH        Specify path to BLCR installation
+  --with-libcurl=PREFIX   look for the curl library in PREFIX/lib and headers
+                          in PREFIX/include
 
 Some influential environment variables:
   CC          C compiler command
@@ -23984,6 +23992,400 @@ fi
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Check whether --with-libcurl was given.
+if test "${with_libcurl+set}" = set; then :
+  withval=$with_libcurl; _libcurl_with=$withval
+else
+  _libcurl_with=yes
+fi
+
+
+  if test "$_libcurl_with" != "no" ; then
+
+     for ac_prog in gawk mawk nawk awk
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_AWK+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$AWK"; then
+  ac_cv_prog_AWK="$AWK" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_AWK="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+AWK=$ac_cv_prog_AWK
+if test -n "$AWK"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AWK" >&5
+$as_echo "$AWK" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$AWK" && break
+done
+
+
+     _libcurl_version_parse="eval $AWK '{split(\$NF,A,\".\"); X=256*256*A[1]+256*A[2]+A[3]; print X;}'"
+
+     _libcurl_try_link=yes
+
+     if test -d "$_libcurl_with" ; then
+        LIBCURL_CPPFLAGS="-I$withval/include"
+        _libcurl_ldflags="-L$withval/lib"
+        # Extract the first word of "curl-config", so it can be a program name with args.
+set dummy curl-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path__libcurl_config+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $_libcurl_config in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path__libcurl_config="$_libcurl_config" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in "$withval/bin"
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path__libcurl_config="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+_libcurl_config=$ac_cv_path__libcurl_config
+if test -n "$_libcurl_config"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $_libcurl_config" >&5
+$as_echo "$_libcurl_config" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+     else
+        # Extract the first word of "curl-config", so it can be a program name with args.
+set dummy curl-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path__libcurl_config+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $_libcurl_config in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path__libcurl_config="$_libcurl_config" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path__libcurl_config="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+_libcurl_config=$ac_cv_path__libcurl_config
+if test -n "$_libcurl_config"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $_libcurl_config" >&5
+$as_echo "$_libcurl_config" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+     fi
+
+     if test x$_libcurl_config != "x" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the version of libcurl" >&5
+$as_echo_n "checking for the version of libcurl... " >&6; }
+if ${libcurl_cv_lib_curl_version+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  libcurl_cv_lib_curl_version=`$_libcurl_config --version | $AWK '{print $2}'`
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libcurl_cv_lib_curl_version" >&5
+$as_echo "$libcurl_cv_lib_curl_version" >&6; }
+
+        _libcurl_version=`echo $libcurl_cv_lib_curl_version | $_libcurl_version_parse`
+        _libcurl_wanted=`echo 0 | $_libcurl_version_parse`
+
+        if test $_libcurl_wanted -gt 0 ; then
+           { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl >= version " >&5
+$as_echo_n "checking for libcurl >= version ... " >&6; }
+if ${libcurl_cv_lib_version_ok+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+              if test $_libcurl_version -ge $_libcurl_wanted ; then
+                 libcurl_cv_lib_version_ok=yes
+              else
+                 libcurl_cv_lib_version_ok=no
+              fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libcurl_cv_lib_version_ok" >&5
+$as_echo "$libcurl_cv_lib_version_ok" >&6; }
+        fi
+
+        if test $_libcurl_wanted -eq 0 || test x$libcurl_cv_lib_version_ok = xyes ; then
+           if test x"$LIBCURL_CPPFLAGS" = "x" ; then
+              LIBCURL_CPPFLAGS=`$_libcurl_config --cflags`
+           fi
+           if test x"$LIBCURL" = "x" ; then
+              LIBCURL=`$_libcurl_config --libs`
+
+              # This is so silly, but Apple actually has a bug in their
+              # curl-config script.  Fixed in Tiger, but there are still
+              # lots of Panther installs around.
+              case "${host}" in
+                 powerpc-apple-darwin7*)
+                    LIBCURL=`echo $LIBCURL | sed -e 's|-arch i386||g'`
+                 ;;
+              esac
+           fi
+
+           # All curl-config scripts support --feature
+           _libcurl_features=`$_libcurl_config --feature`
+
+           # Is it modern enough to have --protocols? (7.12.4)
+           if test $_libcurl_version -ge 461828 ; then
+              _libcurl_protocols=`$_libcurl_config --protocols`
+           fi
+        else
+           _libcurl_try_link=no
+        fi
+
+        unset _libcurl_wanted
+     fi
+
+     if test $_libcurl_try_link = yes ; then
+
+        # we didn't find curl-config, so let's see if the user-supplied
+        # link line (or failing that, "-lcurl") is enough.
+        LIBCURL=${LIBCURL-"$_libcurl_ldflags -lcurl"}
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether libcurl is usable" >&5
+$as_echo_n "checking whether libcurl is usable... " >&6; }
+if ${libcurl_cv_lib_curl_usable+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+           _libcurl_save_cppflags=$CPPFLAGS
+           CPPFLAGS="$LIBCURL_CPPFLAGS $CPPFLAGS"
+           _libcurl_save_libs=$LIBS
+           LIBS="$LIBCURL $LIBS"
+
+           cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curl/curl.h>
+int
+main ()
+{
+
+/* Try and use a few common options to force a failure if we are
+   missing symbols or can't link. */
+int x;
+curl_easy_setopt(NULL,CURLOPT_URL,NULL);
+x=CURL_ERROR_SIZE;
+x=CURLOPT_WRITEFUNCTION;
+x=CURLOPT_WRITEDATA;
+x=CURLOPT_ERRORBUFFER;
+x=CURLOPT_STDERR;
+x=CURLOPT_VERBOSE;
+if (x) ;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  libcurl_cv_lib_curl_usable=yes
+else
+  libcurl_cv_lib_curl_usable=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+           CPPFLAGS=$_libcurl_save_cppflags
+           LIBS=$_libcurl_save_libs
+           unset _libcurl_save_cppflags
+           unset _libcurl_save_libs
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $libcurl_cv_lib_curl_usable" >&5
+$as_echo "$libcurl_cv_lib_curl_usable" >&6; }
+
+        if test $libcurl_cv_lib_curl_usable = yes ; then
+
+           # Does curl_free() exist in this version of libcurl?
+           # If not, fake it with free()
+
+           _libcurl_save_cppflags=$CPPFLAGS
+           CPPFLAGS="$CPPFLAGS $LIBCURL_CPPFLAGS"
+           _libcurl_save_libs=$LIBS
+           LIBS="$LIBS $LIBCURL"
+
+           ac_fn_c_check_func "$LINENO" "curl_free" "ac_cv_func_curl_free"
+if test "x$ac_cv_func_curl_free" = xyes; then :
+
+else
+
+$as_echo "#define curl_free free" >>confdefs.h
+
+fi
+
+
+           CPPFLAGS=$_libcurl_save_cppflags
+           LIBS=$_libcurl_save_libs
+           unset _libcurl_save_cppflags
+           unset _libcurl_save_libs
+
+
+$as_echo "#define HAVE_LIBCURL 1" >>confdefs.h
+
+
+
+
+           for _libcurl_feature in $_libcurl_features ; do
+              cat >>confdefs.h <<_ACEOF
+#define `$as_echo "libcurl_feature_$_libcurl_feature" | $as_tr_cpp` 1
+_ACEOF
+
+              eval `$as_echo "libcurl_feature_$_libcurl_feature" | $as_tr_sh`=yes
+           done
+
+           if test "x$_libcurl_protocols" = "x" ; then
+
+              # We don't have --protocols, so just assume that all
+              # protocols are available
+              _libcurl_protocols="HTTP FTP FILE TELNET LDAP DICT TFTP"
+
+              if test x$libcurl_feature_SSL = xyes ; then
+                 _libcurl_protocols="$_libcurl_protocols HTTPS"
+
+                 # FTPS wasn't standards-compliant until version
+                 # 7.11.0 (0x070b00 == 461568)
+                 if test $_libcurl_version -ge 461568; then
+                    _libcurl_protocols="$_libcurl_protocols FTPS"
+                 fi
+              fi
+
+              # RTSP, IMAP, POP3 and SMTP were added in
+              # 7.20.0 (0x071400 == 463872)
+              if test $_libcurl_version -ge 463872; then
+                 _libcurl_protocols="$_libcurl_protocols RTSP IMAP POP3 SMTP"
+              fi
+           fi
+
+           for _libcurl_protocol in $_libcurl_protocols ; do
+              cat >>confdefs.h <<_ACEOF
+#define `$as_echo "libcurl_protocol_$_libcurl_protocol" | $as_tr_cpp` 1
+_ACEOF
+
+              eval `$as_echo "libcurl_protocol_$_libcurl_protocol" | $as_tr_sh`=yes
+           done
+        else
+           unset LIBCURL
+           unset LIBCURL_CPPFLAGS
+        fi
+     fi
+
+     unset _libcurl_try_link
+     unset _libcurl_version_parse
+     unset _libcurl_config
+     unset _libcurl_feature
+     unset _libcurl_features
+     unset _libcurl_protocol
+     unset _libcurl_protocols
+     unset _libcurl_version
+     unset _libcurl_ldflags
+  fi
+
+  if test x$_libcurl_with = xno || test x$libcurl_cv_lib_curl_usable != xyes ; then
+     # This is the IF-NO path
+     :
+  else
+     # This is the IF-YES path
+     :
+  fi
+
+   if test x$_libcurl_with = xyes && test x$libcurl_cv_lib_curl_usable = xyes; then
+  WITH_CURL_TRUE=
+  WITH_CURL_FALSE='#'
+else
+  WITH_CURL_TRUE='#'
+  WITH_CURL_FALSE=
+fi
+
+
+  unset _libcurl_with
+
+
 ac_build_smap="no"
 if test "x$ac_have_some_curses" = "xyes" ; then
    ac_build_smap="yes"
@@ -23998,7 +24400,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/mic/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sgather/Makefile contribs/sgi/Makefile contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile contribs/pmi2/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html doc/html/configurator.easy.html etc/cgroup.release_common.example etc/init.d.slurm etc/init.d.slurmdbd etc/slurmctld.service etc/slurmd.service etc/slurmdbd.service src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/layouts/Makefile src/layouts/unit/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/salloc/Makefile src/sbatch/Makefile src/sbcast/Makefile src/sattach/Makefile src/scancel/Makefile src/scontrol/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/smap/Makefile src/smd/Makefile src/sprio/Makefile src/squeue/Makefile src/srun/Makefile src/srun/libsrun/Makefile src/srun_cr/Makefile src/sshare/Makefile src/sstat/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/cray/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/none/Makefile src/plugins/acct_gather_infiniband/Makefile src/plugins/acct_gather_infiniband/ofed/Makefile src/plugins/acct_gather_infiniband/none/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_filesystem/none/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/none/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/cray/Makefile src/plugins/burst_buffer/generic/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/poe/Makefile src/plugins/core_spec/Makefile src/plugins/core_spec/cray/Makefile src/plugins/core_spec/none/Makefile src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/ext_sensors/Makefile src/plugins/ext_sensors/rrd/Makefile src/plugins/ext_sensors/none/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/mic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/job_container/Makefile src/plugins/job_container/cncu/Makefile src/plugins/job_container/none/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/cray/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/launch/Makefile src/plugins/launch/aprun/Makefile src/plugins/launch/poe/Makefile src/plugins/launch/runjob/Makefile src/plugins/launch/slurm/Makefile src/plugins/power/Makefile src/plugins/power/common/Makefile src/plugins/power/cray/Makefile src/plugins/power/none/Makefile src/plugins/preempt/Makefile src/plugins/preempt/job_prio/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cray/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/route/Makefile src/plugins/route/default/Makefile src/plugins/route/topology/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/alps/Makefile src/plugins/select/alps/libalps/Makefile src/plugins/select/alps/libemulate/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/linear/Makefile src/plugins/select/other/Makefile src/plugins/select/serial/Makefile src/plugins/slurmctld/Makefile src/plugins/slurmctld/nonstop/Makefile src/plugins/slurmd/Makefile src/plugins/switch/Makefile src/plugins/switch/cray/Makefile src/plugins/switch/generic/Makefile src/plugins/switch/none/Makefile src/plugins/switch/nrt/Makefile src/plugins/switch/nrt/libpermapi/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/cray/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/hypercube/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/mic/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sgather/Makefile contribs/sgi/Makefile contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile contribs/pmi2/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html doc/html/configurator.easy.html etc/cgroup.release_common.example etc/init.d.slurm etc/init.d.slurmdbd etc/slurmctld.service etc/slurmd.service etc/slurmdbd.service src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/layouts/Makefile src/layouts/unit/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/salloc/Makefile src/sbatch/Makefile src/sbcast/Makefile src/sattach/Makefile src/scancel/Makefile src/scontrol/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/smap/Makefile src/smd/Makefile src/sprio/Makefile src/squeue/Makefile src/srun/Makefile src/srun/libsrun/Makefile src/srun_cr/Makefile src/sshare/Makefile src/sstat/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/cray/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/none/Makefile src/plugins/acct_gather_infiniband/Makefile src/plugins/acct_gather_infiniband/ofed/Makefile src/plugins/acct_gather_infiniband/none/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_filesystem/none/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/none/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/cray/Makefile src/plugins/burst_buffer/generic/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/poe/Makefile src/plugins/core_spec/Makefile src/plugins/core_spec/cray/Makefile src/plugins/core_spec/none/Makefile src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/ext_sensors/Makefile src/plugins/ext_sensors/rrd/Makefile src/plugins/ext_sensors/none/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/mic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/elasticsearch/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/job_container/Makefile src/plugins/job_container/cncu/Makefile src/plugins/job_container/none/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/cray/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/launch/Makefile src/plugins/launch/aprun/Makefile src/plugins/launch/poe/Makefile src/plugins/launch/runjob/Makefile src/plugins/launch/slurm/Makefile src/plugins/power/Makefile src/plugins/power/common/Makefile src/plugins/power/cray/Makefile src/plugins/power/none/Makefile src/plugins/preempt/Makefile src/plugins/preempt/job_prio/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cray/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/route/Makefile src/plugins/route/default/Makefile src/plugins/route/topology/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/alps/Makefile src/plugins/select/alps/libalps/Makefile src/plugins/select/alps/libemulate/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/linear/Makefile src/plugins/select/other/Makefile src/plugins/select/serial/Makefile src/plugins/slurmctld/Makefile src/plugins/slurmctld/nonstop/Makefile src/plugins/slurmd/Makefile src/plugins/switch/Makefile src/plugins/switch/cray/Makefile src/plugins/switch/generic/Makefile src/plugins/switch/none/Makefile src/plugins/switch/nrt/Makefile src/plugins/switch/nrt/libpermapi/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/cray/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/hypercube/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -24317,6 +24719,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BLCR_TRUE}" && test -z "${WITH_BLCR_FALSE}"; then
   as_fn_error $? "conditional \"WITH_BLCR\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_CURL_TRUE}" && test -z "${WITH_CURL_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_CURL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SMAP_TRUE}" && test -z "${BUILD_SMAP_FALSE}"; then
@@ -25424,6 +25830,7 @@ do
     "src/plugins/jobacct_gather/cgroup/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_gather/cgroup/Makefile" ;;
     "src/plugins/jobacct_gather/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_gather/none/Makefile" ;;
     "src/plugins/jobcomp/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/Makefile" ;;
+    "src/plugins/jobcomp/elasticsearch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/elasticsearch/Makefile" ;;
     "src/plugins/jobcomp/filetxt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/filetxt/Makefile" ;;
     "src/plugins/jobcomp/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/none/Makefile" ;;
     "src/plugins/jobcomp/script/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/script/Makefile" ;;
