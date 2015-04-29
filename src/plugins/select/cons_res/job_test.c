@@ -1950,9 +1950,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
  fini:	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
-	for (i = 0; i < switch_record_cnt; i++) {
-		if (switches_bitmap)
+	if (switches_bitmap) {
+		for (i = 0; i < switch_record_cnt; i++) {
 			FREE_NULL_BITMAP(switches_bitmap[i]);
+		}
 	}
 	xfree(switches_bitmap);
 	xfree(switches_cpu_cnt);
