@@ -119,6 +119,7 @@ static int	save_last_part_update = 0;
 
 static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int sched_pend_thread = 0;
+static bool sched_running = false;
 static struct timeval sched_last = {0, 0};
 #ifdef HAVE_ALPS_CRAY
 static int sched_min_interval = 1000000;
@@ -782,6 +783,8 @@ extern int schedule(uint32_t job_limit)
 	gettimeofday(&now, NULL);
 	if (sched_last.tv_sec == 0) {
 		delta_t = sched_min_interval;
+	} else if (sched_running) {
+		delta_t = 0;
 	} else {
 		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
@@ -800,7 +803,9 @@ extern int schedule(uint32_t job_limit)
 	if (delta_t >= sched_min_interval) {
 		/* Temporariy set time in the future until we get the real
 		 * scheduler completion time */
-		sched_last.tv_sec  = now.tv_sec + 10;
+		sched_last.tv_sec  = now.tv_sec;
+		sched_last.tv_usec = now.tv_usec;
+		sched_running = true;
 		job_limit = sched_job_limit;
 		sched_job_limit = -1;
 		slurm_mutex_unlock(&sched_mutex);
@@ -811,6 +816,7 @@ extern int schedule(uint32_t job_limit)
 		gettimeofday(&now, NULL);
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;
+		sched_running = false;
 		slurm_mutex_unlock(&sched_mutex);
 	} else if (sched_pend_thread == 0) {
 		/* We don't want to run now, but also don't want to defer
@@ -847,11 +853,13 @@ static void *_sched_agent(void *args)
 
 	usec = sched_min_interval / 2;
 	usec = MIN(usec, 1000000);
-	usec = MAX(usec, 1000);
+	usec = MAX(usec, 10000);
 
 	/* Keep waiting until scheduler() can really run */
 	while (!slurmctld_config.shutdown_time) {
 		usleep(usec);
+		if (sched_running)
+			continue;
 		gettimeofday(&now, NULL);
 		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
