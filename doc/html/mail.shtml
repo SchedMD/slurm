@@ -11,8 +11,14 @@ developers and is typically used by Slurm users or system administrators.
 Any person subscribed to this mailing list may post to it.
 [high traffic at times].</li>
 </ul>
-<p>To subscribe to either list, vist the link below, sign up and get involved!<p>
-<a href="http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list">http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list</a><p>
+
+<p>The slurm-dev@schedmd.com mailing list is a good mechanism for the
+user community to share information.
+Visit the link below, sign up and get involved!<p>
+
+<a href="http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list">http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list</a>
+
+<p>
 You can likewise unsubscribe from either list at the same link.
 </p>
 
@@ -21,6 +27,6 @@ You can likewise unsubscribe from either list at the same link.
 and<br>
 <a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a></p>
 
-<p style="text-align:center;">Last modified 5 August 2014</p>
+<p style="text-align:center;">Last modified 29 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
