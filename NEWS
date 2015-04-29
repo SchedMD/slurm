@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix some power_save mode issues: Parsing of SuspendTime in slurm.conf was
     bad, powered down nodes would get set non-responding if there was an
     in-flight message, and permit nodes to be powered down from any state.
+ -- Initialize variables in consumable resource plugin to prevent core dump.
 
 * Changes in Slurm 15.08.0pre3
 ==============================
