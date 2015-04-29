@@ -1515,10 +1515,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt)
 {
-	bitstr_t **switches_bitmap;		/* nodes on this switch */
-	int       *switches_cpu_cnt;		/* total CPUs on switch */
-	int       *switches_node_cnt;		/* total nodes on switch */
-	int       *switches_required;		/* set if has required node */
+	bitstr_t **switches_bitmap = NULL;	/* nodes on this switch */
+	int       *switches_cpu_cnt = NULL;	/* total CPUs on switch */
+	int       *switches_node_cnt = NULL;	/* total nodes on switch */
+	int       *switches_required = NULL;	/* set if has required node */
 	int        leaf_switch_count = 0;   /* Count of leaf node switches used */
 
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
@@ -1950,8 +1950,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
  fini:	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
-	for (i=0; i<switch_record_cnt; i++)
-		FREE_NULL_BITMAP(switches_bitmap[i]);
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (switches_bitmap)
+			FREE_NULL_BITMAP(switches_bitmap[i]);
+	}
 	xfree(switches_bitmap);
 	xfree(switches_cpu_cnt);
 	xfree(switches_node_cnt);
