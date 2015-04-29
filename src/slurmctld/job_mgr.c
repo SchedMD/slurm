@@ -4021,6 +4021,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
+	last_job_update = now;
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
@@ -4038,7 +4039,6 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	}
 
 	if (IS_JOB_PENDING(job_ptr) && (signal == SIGKILL)) {
-		last_job_update		= now;
 		job_ptr->job_state	= JOB_CANCELLED;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
@@ -4205,6 +4205,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		info("%s: 1 invalid job id %s", __func__, job_id_str);
 		return ESLURM_INVALID_JOB_ID;
 	}
+	if ((end_ptr[0] == '_') && (end_ptr[1] == '*'))
+		end_ptr += 2;	/* Defaults to full job array */
+
+	last_job_update = now;
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		int jobs_done = 0, jobs_signalled = 0;
@@ -4286,7 +4290,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		goto endit;
 	}
 
-	/* Find some job record and validate the user cancelling the job */
+	/* Find some job record and validate the user signalling the job */
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
@@ -12655,6 +12659,9 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
+	if ((end_ptr[0] == '_') && (end_ptr[1] == '*'))
+		end_ptr += 2;	/* Defaults to full job array */
+
 	job_id = (uint32_t) long_id;
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		struct job_record *job_ptr_done = NULL;
