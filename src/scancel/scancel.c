@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
- *  Copyright (C) 2010-2013 SchedMD LLC.
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -151,6 +151,7 @@ _proc_cluster(void)
 	int rc;
 
 	if (has_default_opt()) {
+		/* No job filters, job send job ID string to slurmctld */
 		rc = _signal_job_by_str();
 		return rc;
 	}
@@ -158,7 +159,6 @@ _proc_cluster(void)
 	_load_job_records();
 	rc = _verify_job_ids();
 	if ((opt.account) ||
-	    (opt.interactive) ||
 	    (opt.job_name) ||
 	    (opt.nodelist) ||
 	    (opt.partition) ||
@@ -262,11 +262,10 @@ _verify_job_ids (void)
 
 /* _filter_job_records - filtering job information per user specification
  * RET Count of job's filtered out OTHER than for job ID value */
-static int
-_filter_job_records (void)
+static int _filter_job_records (void)
 {
 	int filter_cnt = 0;
-	int i, j;
+	int i;
 	job_info_t *job_ptr = NULL;
 	uint16_t job_base_state;
 
@@ -299,7 +298,7 @@ _filter_job_records (void)
 		}
 
 		if ((opt.partition != NULL) &&
-		    xstrcmp(job_ptr[i].partition,opt.partition)) {
+		    xstrcmp(job_ptr[i].partition, opt.partition)) {
 			job_ptr[i].job_id = 0;
 			filter_cnt++;
 			continue;
@@ -373,18 +372,6 @@ _filter_job_records (void)
 				filter_cnt++;
 				continue;
 			}
-		}
-
-		if (opt.job_cnt == 0)
-			continue;
-
-		for (j = 0; j < opt.job_cnt; j++) {
-			if (_match_job(j, i))
-				break;
-		}
-		if (j >= opt.job_cnt) { /* not found */
-			job_ptr[i].job_id = 0;
-			continue;
 		}
 	}
 
@@ -742,10 +729,7 @@ _confirmation (int i, uint32_t step_id)
 
 }
 
-/* _signal_job_by_str()
- */
-static int
-_signal_job_by_str(void)
+static int _signal_job_by_str(void)
 {
 	int cc, i;
 	int rc = 0;
@@ -758,7 +742,8 @@ _signal_job_by_str(void)
 
 		cc = slurm_kill_job2(opt.job_list[i], opt.signal, 0);
 		if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
-			error("slurm_kill_job2() failed %s", slurm_strerror(errno));
+			error("slurm_kill_job2() failed %s",
+			      slurm_strerror(errno));
 			rc = -1;
 		}
 	}

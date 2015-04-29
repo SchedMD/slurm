@@ -1,7 +1,9 @@
 /*****************************************************************************\
  *  scancel.h - definitions for scancel data structures and functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette<jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -79,5 +81,10 @@ opt_t opt;
  * 4. perform some verification that options are reasonable
  */
 extern int initialize_and_process_args(int argc, char *argv[]);
+
+/*
+ * No job filtering options were specified (e.g. by user or state), only the
+ * job ids is on the command line.
+ */
 extern bool has_default_opt(void);
 #endif	/* _HAVE_SCANCEL_H */

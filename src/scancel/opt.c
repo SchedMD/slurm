@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -151,14 +152,11 @@ int initialize_and_process_args(int argc, char *argv[])
 
 }
 
-/* has_default_opt()
- *
- * No getopt() options were specified, only the
+/*
+ * No job filtering options were specified (e.g. by user or state), only the
  * job ids is on the command line.
- *
  */
-bool
-has_default_opt(void)
+extern bool has_default_opt(void)
 {
 	if (opt.account == NULL
 	    && opt.batch == false
