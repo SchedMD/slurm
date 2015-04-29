@@ -3,11 +3,12 @@
 <h1>Download</h1>
 <p>Slurm source can be downloaded from
 <a href="http://www.schedmd.com/#repos">
-http://www.schedmd.com/#repos</a><br>
+http://www.schedmd.com/#repos</a>.<br>
 Slurm has also been packaged for
 <a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
 <a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
-(both named <i>slurm-llnl</i>).</p>
+(named <i>slurm-llnl</i> or <i>slurm-wlm</i> depending upon the version) plus
+<a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc).</p>
 
 <!--
 Slurm interface to PHP
@@ -357,6 +358,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 29 April 2015</p>
 
 <!--#include virtual="footer.txt"-->
