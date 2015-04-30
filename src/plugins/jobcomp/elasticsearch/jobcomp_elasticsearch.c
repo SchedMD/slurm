@@ -100,7 +100,7 @@
  */
 const char plugin_name[] = "Job completion elasticsearch logging plugin";
 const char plugin_type[] = "jobcomp/elasticsearch";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","\
 	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"\
