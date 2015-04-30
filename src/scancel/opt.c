@@ -176,6 +176,18 @@ extern bool has_default_opt(void)
 	return false;
 }
 
+/* Return true if any job step specification given */
+extern bool has_job_steps(void)
+{
+	int i;
+
+	for (i = 0; i < opt.job_cnt; i++) {
+		if (opt.step_id[i] != SLURM_BATCH_SCRIPT)
+			return true;
+	}
+	return false;
+}
+
 static uint16_t
 _xlate_state_name(const char *state_name, bool env_var)
 {

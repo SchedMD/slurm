@@ -150,8 +150,7 @@ _proc_cluster(void)
 	int filter_cnt = 0;
 	int rc;
 
-	if (has_default_opt()) {
-		/* No job filters, job send job ID string to slurmctld */
+	if (has_default_opt() && !has_job_steps()) {
 		rc = _signal_job_by_str();
 		return rc;
 	}
@@ -743,8 +742,7 @@ static int _signal_job_by_str(void)
 		opt.signal = SIGKILL;
 
 	for (i = 0; opt.job_list[i]; i++) {
-		verbose("Terminating job %s", opt.job_list[i]);
-
+		verbose("Signalling job %s", opt.job_list[i]);
 		cc = slurm_kill_job2(opt.job_list[i], opt.signal, 0);
 		if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
 			error("slurm_kill_job2() failed %s",
