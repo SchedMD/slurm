@@ -663,6 +663,7 @@ extern int slurm_jobcomp_set_location(char *location)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
+	static int error_cnt = 0;
 	int nwritten, nparents, B_SIZE = 1024, rc = SLURM_SUCCESS;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char submit_str[32], *script, *cluster, *qos, *state_string;
@@ -914,6 +915,12 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (rc == SLURM_SUCCESS) {
 		if (_index_job(buffer) == SLURM_ERROR) {
+			if (((error_cnt++) % 100) == 0) {
+				/* Periodically log errors */
+				error("%s: Unable to save job state for %d "
+				      "jobs, caching data",
+				      plugin_type, error_cnt);
+			}
 			slurm_mutex_lock(&pend_jobs_lock);
 			_push_pending_job(buffer);
 			slurm_mutex_unlock(&pend_jobs_lock);
