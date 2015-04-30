@@ -70,7 +70,7 @@ main (int argc, char *argv[])
 	char *temp = NULL;
 	int option_index;
 	bool all_users = 0;
-	uint16_t options;
+	uint16_t options = 0;
 
 	static struct option long_options[] = {
 		{"accounts", 1, 0, 'A'},
@@ -424,6 +424,7 @@ Usage:  sshare [OPTION]                                                    \n\
     -p or --parsable       '|' delimited output with a trailing '|'        \n\
     -P or --parsable2      '|' delimited output without a trailing '|'     \n\
     -u or --users=         display specific users (comma separated list)   \n\
+    -U or --Users          display only users information                  \n\
     -v or --verbose        display more information                        \n\
     -V or --version        display tool version number                     \n\
           --help           display this usage description                  \n\
