@@ -79,5 +79,7 @@ opt_t opt;
  * 4. perform some verification that options are reasonable
  */
 extern int initialize_and_process_args(int argc, char *argv[]);
+
 extern bool has_default_opt(void);
+extern bool has_job_steps(void);
 #endif	/* _HAVE_SCANCEL_H */
