@@ -253,6 +253,11 @@ _verify_job_ids (void)
 				      opt.step_id[j],
 				      slurm_strerror(ESLURM_INVALID_JOB_ID));
 			}
+
+			/* Avoid this job in the cancel_job logic */
+			opt.job_id[j]   = 0;
+			opt.array_id[j] = 0;
+			opt.step_id[j]  = 0;
 			rc = 1;
 		}
 	}
