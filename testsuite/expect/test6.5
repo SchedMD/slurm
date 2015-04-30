@@ -98,7 +98,7 @@ exec $bin_rm -f $file_in
 
 spawn $scancel --verbose $job_id1
 expect {
-	-re "Terminating job" {
+	-re "Signalling job" {
 		incr matches
 		exp_continue
 	}
