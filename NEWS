@@ -247,6 +247,8 @@ documents those changes that are of interest to users and administrators.
     before ending the job.
  -- Initialize variables in consumable resource plugin to prevent core dump.
  -- Fix scancel bug which could return an error on attempt to signal a job step.
+ -- In slurmctld communication agent, make the thread timeout be the configured
+    value of MessageTimeout rather than 30 seconds.
 
 * Changes in Slurm 14.11.6
 ==========================

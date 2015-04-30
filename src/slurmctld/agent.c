@@ -54,7 +54,7 @@
  *  The main agent thread creates a separate thread for each node to be
  *  communicated with up to AGENT_THREAD_COUNT. A special watchdog thread
  *  sends SIGLARM to any threads that have been active (in DSH_ACTIVE state)
- *  for more than COMMAND_TIMEOUT seconds.
+ *  for more than MessageTimeout seconds.
  *  The agent responds to slurmctld via a function call or an RPC as required.
  *  For example, informing slurmctld that some node is not responding.
  *
@@ -203,6 +203,7 @@ static List mail_list = NULL;		/* pending e-mail requests */
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
+static uint16_t message_timeout = (uint16_t) NO_VAL;
 
 static bool run_scheduler    = false;
 static bool wiki2_sched      = false;
@@ -444,7 +445,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 				agent_arg_ptr->node_count);
 	}
 	i = 0;
-	while(i < agent_info_ptr->thread_count) {
+	while (i < agent_info_ptr->thread_count) {
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].addr = agent_arg_ptr->addr;
 		name = hostlist_shift(agent_arg_ptr->hostlist);
@@ -513,7 +514,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 			else
-				thread_ptr->end_time += COMMAND_TIMEOUT;
+				thread_ptr->end_time += message_timeout;
 		}
 		break;
 	case DSH_NEW:
@@ -850,7 +851,7 @@ static void *_thread_per_group_rpc(void *args)
 
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
-	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
+	thread_ptr->end_time = thread_ptr->start_time + message_timeout;
 	slurm_mutex_unlock(thread_mutex_ptr);
 
 	/* send request message */
@@ -1177,7 +1178,7 @@ static void _list_delete_retry(void *retry_entry)
  * agent_retry - Agent for retrying pending RPCs. One pending request is
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * IN mai_too - Send pending email too, note this performed using a
+ * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating  a pthread
  *	to send RPCs
  * RET count of queued requests remaining
@@ -1309,6 +1310,10 @@ extern int agent_retry (int min_wait, bool mail_too)
 void agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
 	queued_request_t *queued_req_ptr = NULL;
+
+	if (message_timeout == (uint16_t) NO_VAL) {
+		message_timeout = MAX(slurm_get_msg_timeout(), 30);
+	}
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		/* execute now */
