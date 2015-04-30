@@ -304,7 +304,7 @@ static size_t _write_callback(void *contents, size_t size, size_t nmemb,
 /* Try to index job into elasticsearch */
 static int _index_job(const char *jobcomp)
 {
-	CURL *curl_handle;
+	CURL *curl_handle = NULL;
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
@@ -314,15 +314,20 @@ static int _index_job(const char *jobcomp)
 		return SLURM_ERROR;
 	}
 
-	chunk.message = xmalloc(1);
-	chunk.size = 0;
-
-	curl_global_init(CURL_GLOBAL_ALL);
-	curl_handle = curl_easy_init();
+	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
+		debug("curl_global_init: %m");
+		rc = SLURM_ERROR;
+	} else if ((curl_handle = curl_easy_init()) == NULL) {
+		debug("curl_easy_init: %m");
+		rc = SLURM_ERROR;
+	}
 
 	if (curl_handle) {
 		char *url = xstrdup(log_url);
 		xstrcat(url, index_type);
+
+		chunk.message = xmalloc(1);
+		chunk.size = 0;
 
 		curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 		curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
@@ -371,10 +376,10 @@ static int _index_job(const char *jobcomp)
 					      " indexed into elasticsearch",
 					      token);
 				}
-				xfree(chunk.message);
 				xfree(response);
 			}
 		}
+		xfree(chunk.message);
 		curl_easy_cleanup(curl_handle);
 		xfree(url);
 	}
