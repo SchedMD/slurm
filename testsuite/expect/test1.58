@@ -98,7 +98,10 @@ if {$got_pattern == 0} {
 #
 # Release the allocation by killing salloc (really it kills the "sleep")
 #
-cancel_job $jobid
+if {[cancel_job $jobid] != 0} {
+	set exit_code 1
+}
+
 set spawn_id $srun_alloc_sid
 exec kill -9 $srun_alloc_pid
 expect {
@@ -110,7 +113,7 @@ expect {
 	}
 }
 
-if {$got_pattern == 1} {
+if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

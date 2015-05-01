@@ -184,7 +184,9 @@ if {$job_id != 0} {
 	release_job ${job_id}_$array_in
 	check_release_job ${job_id}_$array_in
 
-	cancel_job $job_id
+	if {[cancel_job $job_id] != 0} {
+		set exit_code 1
+	}
 }
 
 if {$exit_code == 0} {

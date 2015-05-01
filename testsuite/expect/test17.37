@@ -136,8 +136,9 @@ if { $match != 2 } {
 	send_user "should have DependencyNeverSatisfied for a reason\n"
 	set exit_code 1
 }
-
-cancel_job $job_id2
+if {[cancel_job $job_id2] != 0} {
+	set exit_code 1
+}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $script

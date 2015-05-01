@@ -94,7 +94,9 @@ expect {
 }
 if {$job_id != 0} {
 	check_ids $job_id
-	cancel_job $job_id
+	if {[cancel_job $job_id] != 0} {
+		set exit_code 1
+	}
 }
 
 if {$exit_code == 0} {

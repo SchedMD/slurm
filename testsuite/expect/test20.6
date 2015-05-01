@@ -119,7 +119,9 @@ expect {
 # 1 for "y" and 0 for "n"
 check_rerun 0 $job_id
 
-cancel_job $job_id
+if {[cancel_job $job_id] != 0} {
+	set exit_code 1
+}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in

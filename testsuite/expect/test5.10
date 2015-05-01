@@ -195,7 +195,7 @@ expect {
 
 if {[string length $nodes] == 0} {
 	send_user "\nFAILURE: did not get a valid node list\n"
-	exit 0
+	exit 1
 }
 
 # Create 2 test partitions

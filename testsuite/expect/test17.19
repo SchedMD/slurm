@@ -103,10 +103,12 @@ expect {
 		wait
 	}
 }
-cancel_job $job_id
 if {$matches != 1} {
 	send_user "\nFAILURE: sbatch failed to set partition properly\n"
 	exit 1
+}
+if {[cancel_job $job_id] != 0} {
+	set exit_code 1
 }
 if {$exit_code != 0} {
 	exit $exit_code
@@ -140,7 +142,9 @@ expect {
 }
 if {$job_id != 0} {
 	send_user "\nFAILURE: sbatch submitted job to invalid partition name\n"
-	cancel_job $job_id
+	if {[cancel_job $job_id] != 0} {
+		set exit_code 1
+	}
 	set exit_code 1
 }
 if {$matches != 1} {
@@ -203,10 +207,12 @@ expect {
 		wait
 	}
 }
-cancel_job $job_id
 if {$matches != 1} {
 	send_user "\nFAILURE: sbatch failed to set partition properly\n"
 	exit 1
+}
+if {[cancel_job $job_id] != 0} {
+	set exit_code 1
 }
 
 if {$exit_code == 0} {

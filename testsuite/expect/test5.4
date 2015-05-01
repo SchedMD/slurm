@@ -240,8 +240,12 @@ if {[test_alps] == 0 && $step_found == 0} {
 	set exit_code 1
 }
 
-cancel_job $job_id1
-cancel_job $job_id2
+if {[cancel_job $job_id1] != 0} {
+	set exit_code 1
+}
+if {[cancel_job $job_id2] != 0} {
+	set exit_code 1
+}
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }

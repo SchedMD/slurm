@@ -127,7 +127,9 @@ if {$job_id1 != 0} {
 			wait
 		}
 	}
-	cancel_job $job_id1
+        if {[cancel_job $job_id1] != 0} {
+		set exit_code   1
+	}
 } else {
 	set exit_code   1
 }
@@ -147,7 +149,9 @@ if {$job_id2 != 0} {
 			wait
                 }
         }
-        cancel_job $job_id2
+        if {[cancel_job $job_id2] != 0} {
+		set exit_code   1
+	}
 } else {
         set exit_code   1
 }
@@ -167,7 +171,9 @@ if {$job_id3 != 0} {
 			wait
                 }
         }
-        cancel_job $job_id3
+        if {[cancel_job $job_id3] != 0} {
+		set exit_code   1
+	}
 } else {
         set exit_code   1
 }

@@ -129,10 +129,11 @@ expect {
 		wait
 	}
 }
-cancel_job $job_id
-
 if {$matches != 5} {
 	send_user "\nFAILURE: Did not get proper constraints\n"
+	set exit_code 1
+}
+if {[cancel_job $job_id] != 0} {
 	set exit_code 1
 }
 if {$exit_code == 0} {

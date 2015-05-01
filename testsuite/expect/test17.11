@@ -103,13 +103,15 @@ if {$job_id != 0} {
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code   1
+			set exit_code 1
 		}
 		eof {
 			wait
 		}
 	}
-	cancel_job $job_id
+	if {[cancel_job $job_id] != 0} {
+		set exit_code 1
+	}
 	set job_id 0
 } else {
 	set exit_code   1
@@ -169,7 +171,9 @@ if {$job_id != 0} {
 			wait
 		}
 	}
-	cancel_job $job_id
+	if {[cancel_job $job_id] != 0} {
+		set exit_code 1
+	}
 } else {
 	set exit_code 1
 }
