@@ -34,6 +34,7 @@ source ./globals
 
 set test_id              "7.1"
 set exit_code            0
+set file_in              "test$test_id.input"
 set job_id1              0
 set job_id2              0
 set job_id3              0
@@ -56,12 +57,12 @@ if { ![string compare [priority_type] multifactor] } {
 }
 
 
-make_bash_script "pwd_script" { $bin_pwd }
+make_bash_script $file_in { $bin_pwd }
 
 #
 # Spawn three sbatch job, one held
 #
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null  pwd_script]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null  $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -76,7 +77,7 @@ expect {
 		wait
 	}
 }
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null pwd_script]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
                 set job_id2 $expect_out(1,string)
@@ -91,7 +92,7 @@ expect {
 		wait
         }
 }
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null --hold pwd_script]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null --hold $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
                 set job_id3 $expect_out(1,string)
@@ -198,7 +199,7 @@ if {$prio3 != 0} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f pwd_script
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

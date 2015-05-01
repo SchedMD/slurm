@@ -39,12 +39,12 @@ set job_id       0
 
 print_header $test_id
 
-make_bash_script "id_script" { $bin_id }
+make_bash_script $file_in { $bin_id }
 
 #
 # Submit a job so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --hold -t1 id_script]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --hold -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -124,8 +124,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f id_script
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
-
