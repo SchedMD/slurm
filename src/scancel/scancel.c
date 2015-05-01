@@ -559,13 +559,16 @@ _cancel_job_id (void *ci)
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
 	bool sig_set = true;
 	uint16_t flags = 0;
+	char *job_type = "";
 
 	if (cancel_info->sig == (uint16_t) NO_VAL) {
 		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
-	if (opt.batch)
+	if (opt.batch) {
 		flags |= KILL_JOB_BATCH;
+		job_type = "batch ";
+	}
 	if (cancel_info->array_flag)
 		flags |= KILL_JOB_ARRAY;
 
@@ -585,9 +588,10 @@ _cancel_job_id (void *ci)
 	}
 
 	if (!sig_set) {
-		verbose("Terminating job %s", cancel_info->job_id_str);
+		verbose("Terminating %sjob %s", job_type,
+			cancel_info->job_id_str);
 	} else {
-		verbose("Signal %u to job %s", cancel_info->sig,
+		verbose("Signal %u to %sjob %s", cancel_info->sig, job_type,
 			cancel_info->job_id_str);
 	}
 
@@ -612,8 +616,7 @@ _cancel_job_id (void *ci)
 		if ((error_code == ESLURM_ALREADY_DONE) &&
 		    (cancel_info->sig == SIGKILL)) {
 			error_code = 0;	/* Ignore error if job done */
-		}
-			
+		}	
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have
@@ -637,66 +640,76 @@ _cancel_step_id (void *ci)
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
 	uint32_t job_id  = cancel_info->job_id;
 	uint32_t step_id = cancel_info->step_id;
-	uint32_t array_job_id  = cancel_info->array_job_id;
-	uint32_t array_task_id = cancel_info->array_task_id;
-	uint16_t sig     = cancel_info->sig;
 	bool sig_set = true;
 
-	if (sig == (uint16_t) NO_VAL) {
-		sig = SIGKILL;
+	if (cancel_info->sig == (uint16_t) NO_VAL) {
+		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
 
-	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
-		if (sig == SIGKILL) {
-			if (array_job_id) {
-				verbose("Terminating step %u_%u.%u",
-					array_job_id, array_task_id, step_id);
-			} else {
-				verbose("Terminating step %u.%u",
-					job_id, step_id);
-			}
+	if (!cancel_info->job_id_str) {
+		if (cancel_info->array_job_id &&
+		    (cancel_info->array_task_id == INFINITE)) {
+			xstrfmtcat(cancel_info->job_id_str, "%u_*",
+				   cancel_info->array_job_id);
+		} else if (cancel_info->array_job_id) {
+			xstrfmtcat(cancel_info->job_id_str, "%u_%u",
+				   cancel_info->array_job_id,
+				   cancel_info->array_task_id);
 		} else {
-			if (array_job_id) {
-				verbose("Signal %u to step %u_%u.%u",
-					sig, array_job_id, array_task_id,
-					step_id);
-			} else {
-				verbose("Signal %u to step %u.%u",
-					sig, job_id, step_id);
-			}
+			xstrfmtcat(cancel_info->job_id_str, "%u",
+				   cancel_info->job_id);
+		}
+	}
+
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		if (cancel_info->sig == SIGKILL) {
+			verbose("Terminating step %s.%u",
+				cancel_info->job_id_str, step_id);
+		} else {
+			verbose("Signal %u to step %s.%u",
+				cancel_info->sig,
+				cancel_info->job_id_str, step_id);
 		}
 
 		if ((!sig_set) || opt.ctld)
-			error_code = slurm_kill_job_step(job_id, step_id, sig);
-		else if (sig == SIGKILL)
+			error_code = slurm_kill_job_step(job_id, step_id,
+							 cancel_info->sig);
+		else if (cancel_info->sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
 		else
 			error_code = slurm_signal_job_step(job_id, step_id,
-							   sig);
-		if (error_code == 0
-		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
-			&& errno != ESLURM_JOB_PENDING))
+							   cancel_info->sig);
+		if ((error_code == 0) ||
+		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
+		     (errno != ESLURM_JOB_PENDING)))
 			break;
 		verbose("Job is in transistional state, retrying");
-		sleep ( 5 + i );
+		sleep(5 + i);
 	}
 	if (error_code) {
 		error_code = slurm_get_errno();
-		if ((opt.verbose > 0) || (error_code != ESLURM_ALREADY_DONE ))
-			error("Kill job error on job step id %u.%u: %s",
-		 		job_id, step_id,
-				slurm_strerror(slurm_get_errno()));
+		if ((opt.verbose > 0) || (error_code != ESLURM_ALREADY_DONE))
+			error("Kill job error on job step id %s: %s",
+		 	      cancel_info->job_id_str,
+			      slurm_strerror(slurm_get_errno()));
+
+		if ((error_code == ESLURM_ALREADY_DONE) &&
+		    (cancel_info->sig == SIGKILL)) {
+			error_code = 0;	/* Ignore error if job done */
+		}
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have
 	 * to keep track of it, but don't destroy the mutex and condition
 	 * variables contained. */
-	pthread_mutex_lock(   cancel_info->num_active_threads_lock );
+	pthread_mutex_lock(cancel_info->num_active_threads_lock);
+	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(  cancel_info->num_active_threads_cond );
-	pthread_mutex_unlock( cancel_info->num_active_threads_lock );
+	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	pthread_mutex_unlock(cancel_info->num_active_threads_lock);
 
+	xfree(cancel_info->job_id_str);
 	xfree(cancel_info);
 	return NULL;
 }
@@ -774,7 +787,7 @@ static int _signal_job_by_str(void)
 			_cancel_job_id(cancel_info);
 	}
 
-	/* Wait all spawned threads tot finish */
+	/* Wait all spawned threads to finish */
 	pthread_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
 		pthread_cond_wait(&num_active_threads_cond,

@@ -98,7 +98,7 @@ exec $bin_rm -f $file_in
 
 spawn $scancel --verbose $job_id1
 expect {
-	-re "Signalling job" {
+	-re "Terminating job" {
 		incr matches
 		exp_continue
 	}
@@ -139,4 +139,3 @@ if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
-

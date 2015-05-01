@@ -198,7 +198,7 @@ sleep 5
 set matches 0
 spawn $scancel --batch --signal=STOP --verbose $job_id
 expect {
-	-re "Signal ($number) to job $job_id" {
+	-re "Signal ($number) to batch job $job_id" {
 		set sig_num $expect_out(1,string)
 		if {$sig_num != 9} {
 			incr matches

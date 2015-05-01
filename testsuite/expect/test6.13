@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test routing all signals through slurmctld rather than directly
-#          to slurmd (undocumented --ctld option).
+#          Test routing all signals through slurmctld rather than slurmd
+#          (undocumented --ctld option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -221,7 +221,7 @@ sleep 5
 set matches 0
 spawn $scancel --batch --signal=STOP --ctld --verbose $job_id
 expect {
-	-re "Signal ($number) to job $job_id" {
+	-re "Signal ($number) to batch job $job_id" {
 		set sig_num $expect_out(1,string)
 		if {$sig_num != 9} {
 			incr matches
