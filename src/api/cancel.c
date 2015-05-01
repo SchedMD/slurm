@@ -112,7 +112,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	req.signal      = signal;
 	req.flags	= 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
-        msg.data        = &req;
+	msg.data        = &req;
 
 	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
@@ -126,7 +126,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 /* slurm_kill_job2()
  */
 int
-slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t batch_flag)
+slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 {
 	int cc;
 	slurm_msg_t msg;
@@ -144,7 +144,7 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t batch_flag)
 	req.sjob_id     = xstrdup(job_id);
 	req.job_step_id = NO_VAL;
 	req.signal      = signal;
-	req.flags	= 0;
+	req.flags	= flags;
 	msg.msg_type    = REQUEST_KILL_JOB;
         msg.data        = &req;
 
