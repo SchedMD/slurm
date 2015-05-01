@@ -58,7 +58,7 @@ static int      _get_info(shares_request_msg_t *shares_req,
 static int      _addto_name_char_list(List char_list, char *names, bool gid);
 static char *   _convert_to_name(int id, bool gid);
 static void     _print_version( void );
-static void	_usage ();
+static void	_usage(void);
 
 int
 main (int argc, char *argv[])
@@ -70,7 +70,7 @@ main (int argc, char *argv[])
 	char *temp = NULL;
 	int option_index;
 	bool all_users = 0;
-	uint16_t options;
+	uint16_t options = 0;
 
 	static struct option long_options[] = {
 		{"accounts", 1, 0, 'A'},
@@ -410,7 +410,7 @@ static void _print_version(void)
 }
 
 /* _usage - show the valid sshare options */
-void _usage () {
+void _usage(void){
 	printf ("\
 Usage:  sshare [OPTION]                                                    \n\
   Valid OPTIONs are:                                                       \n\
@@ -424,6 +424,7 @@ Usage:  sshare [OPTION]                                                    \n\
     -p or --parsable       '|' delimited output with a trailing '|'        \n\
     -P or --parsable2      '|' delimited output without a trailing '|'     \n\
     -u or --users=         display specific users (comma separated list)   \n\
+    -U or --Users          display only user information                   \n\
     -v or --verbose        display more information                        \n\
     -V or --version        display tool version number                     \n\
           --help           display this usage description                  \n\

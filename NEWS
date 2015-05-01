@@ -249,6 +249,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix scancel bug which could return an error on attempt to signal a job step.
  -- In slurmctld communication agent, make the thread timeout be the configured
     value of MessageTimeout rather than 30 seconds.
+ -- sshare -U/--Users only flag was used uninitialized.
 
 * Changes in Slurm 14.11.6
 ==========================
