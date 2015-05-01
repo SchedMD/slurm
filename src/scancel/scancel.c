@@ -73,7 +73,7 @@
 #define MAX_THREADS 20
 
 
-static void  _cancel_jobs (int filter_cnt);
+static int   _cancel_jobs (int filter_cnt);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
 
@@ -88,12 +88,15 @@ static int  _signal_job_by_str(void);
 static job_info_msg_t * job_buffer_ptr = NULL;
 
 typedef struct job_cancel_info {
-	uint32_t job_id;
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool     array_flag;
+/* Note: Either set job_id_str OR job_id */
+	char *   job_id_str;
+	uint32_t job_id;
 	uint32_t step_id;
 	uint16_t sig;
+	int    * rc;
 	int             *num_active_threads;
 	pthread_mutex_t *num_active_threads_lock;
 	pthread_cond_t  *num_active_threads_cond;
@@ -168,7 +171,7 @@ _proc_cluster(void)
 	    (opt.wckey)) {
 		filter_cnt = _filter_job_records();
 	}
-	_cancel_jobs(filter_cnt);
+	rc = MAX(_cancel_jobs(filter_cnt), rc);
 	slurm_free_job_info_msg(job_buffer_ptr);
 
 	return rc;
@@ -383,7 +386,7 @@ static int _filter_job_records (void)
 }
 
 static void
-_cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
+_cancel_jobs_by_state(uint16_t job_state, int filter_cnt, int *rc)
 {
 	int i, j, err;
 	job_cancel_info_t *cancel_info;
@@ -414,6 +417,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 				cancel_info =
 					(job_cancel_info_t *)
 					xmalloc(sizeof(job_cancel_info_t));
+				cancel_info->rc      = rc;
 				cancel_info->sig     = opt.signal;
 				cancel_info->num_active_threads =
 					&num_active_threads;
@@ -453,7 +457,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 					err = pthread_create(&dummy, &attr,
 							     _cancel_job_id,
 							     cancel_info);
-					if (err)
+					if (err)  /* Run in-line as needed */
 						_cancel_job_id(cancel_info);
 					break;
 				} else {
@@ -461,7 +465,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 					err = pthread_create(&dummy, &attr,
 							     _cancel_step_id,
 							     cancel_info);
-					if (err)
+					if (err)  /* Run in-line as needed */
 						_cancel_step_id(cancel_info);
 					/* Don't break here.  Keep looping in
 					 * case other steps from the same job
@@ -476,6 +480,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 			cancel_info = (job_cancel_info_t *)
 				xmalloc(sizeof(job_cancel_info_t));
 			cancel_info->job_id  = job_ptr[i].job_id;
+			cancel_info->rc      = rc;
 			cancel_info->sig     = opt.signal;
 			cancel_info->num_active_threads = &num_active_threads;
 			cancel_info->num_active_threads_lock =
@@ -497,7 +502,7 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 
 			err = pthread_create(&dummy, &attr, _cancel_job_id,
 					     cancel_info);
-			if (err)
+			if (err)   /* Run in-line if thread create fails */
 				_cancel_job_id(cancel_info);
 		}
 		job_ptr[i].job_id = 0;
@@ -505,9 +510,10 @@ _cancel_jobs_by_state(uint16_t job_state, int filter_cnt)
 }
 
 /* _cancel_jobs - filter then cancel jobs or job steps per request */
-static void
-_cancel_jobs (int filter_cnt)
+static int _cancel_jobs(int filter_cnt)
 {
+	int rc = 0;
+
 	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
@@ -517,7 +523,7 @@ _cancel_jobs (int filter_cnt)
 	if (pthread_cond_init(&num_active_threads_cond, NULL))
 		error("pthread_cond_init error %m");
 
-	_cancel_jobs_by_state(JOB_PENDING, filter_cnt);
+	_cancel_jobs_by_state(JOB_PENDING, filter_cnt, &rc);
 	/* Wait for any cancel of pending jobs to complete before starting
 	 * cancellation of running jobs so that we don't have a race condition
 	 * with pending jobs getting scheduled while running jobs are also
@@ -529,7 +535,7 @@ _cancel_jobs (int filter_cnt)
 	}
 	pthread_mutex_unlock(&num_active_threads_lock);
 
-	_cancel_jobs_by_state(JOB_END, filter_cnt);
+	_cancel_jobs_by_state(JOB_END, filter_cnt, &rc);
 	/* Wait for any spawned threads that have not finished */
 	pthread_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
@@ -542,85 +548,84 @@ _cancel_jobs (int filter_cnt)
 	slurm_mutex_destroy(&num_active_threads_lock);
 	if (pthread_cond_destroy(&num_active_threads_cond))
 		error("pthread_cond_destroy error %m");
+
+	return rc;
 }
 
 static void *
 _cancel_job_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
-	bool sig_set = true;
-	bool msg_to_ctld = opt.ctld;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
-	uint32_t job_id = cancel_info->job_id;
-	uint32_t array_job_id  = cancel_info->array_job_id;
-	uint32_t array_task_id = cancel_info->array_task_id;
-	uint32_t sig    = cancel_info->sig;
+	bool sig_set = true;
+	uint16_t flags = 0;
 
-	if (sig == (uint16_t)-1) {
-		sig = SIGKILL;
+	if (cancel_info->sig == (uint16_t) NO_VAL) {
+		cancel_info->sig = SIGKILL;
 		sig_set = false;
 	}
+	if (opt.batch)
+		flags |= KILL_JOB_BATCH;
+	if (cancel_info->array_flag)
+		flags |= KILL_JOB_ARRAY;
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (!sig_set) {
-			if (array_job_id) {
-				verbose("Terminating job %u_%u",
-					array_job_id, array_task_id);
-			} else
-				verbose("Terminating job %u", job_id);
+	if (!cancel_info->job_id_str) {
+		if (cancel_info->array_job_id &&
+		    (cancel_info->array_task_id == INFINITE)) {
+			xstrfmtcat(cancel_info->job_id_str, "%u_*",
+				   cancel_info->array_job_id);
+		} else if (cancel_info->array_job_id) {
+			xstrfmtcat(cancel_info->job_id_str, "%u_%u",
+				   cancel_info->array_job_id,
+				   cancel_info->array_task_id);
 		} else {
-			if (array_job_id) {
-				verbose("Signal %u to job %u_%u",
-					sig, array_job_id, array_task_id);
-			} else
-				verbose("Signal %u to job %u", sig, job_id);
+			xstrfmtcat(cancel_info->job_id_str, "%u",
+				   cancel_info->job_id);
 		}
+	}
 
-		if ((sig == SIGKILL) || (sig == SIGSTOP) || (sig == SIGCONT) ||
-		    (!sig_set) || msg_to_ctld || opt.clusters) {
-			uint16_t flags = 0;
-			if (opt.batch)
-				flags |= KILL_JOB_BATCH;
-			if (cancel_info->array_flag)
-				flags |= KILL_JOB_ARRAY;
-			error_code = slurm_kill_job (job_id, sig, flags);
-		} else {
-			if (opt.batch) {
-				sig = sig | (KILL_JOB_BATCH << 24);
-				error_code = slurm_signal_job_step(job_id,
-						SLURM_BATCH_SCRIPT, sig);
-			} else {
-				error_code = slurm_signal_job (job_id, sig);
-			}
-			if (error_code && (errno == ESLURM_JOB_PENDING)) {
-				/* Send request to directly to slurmctld */
-				msg_to_ctld  = true;
-				continue;
-			}
-		}
+	if (!sig_set) {
+		verbose("Terminating job %s", cancel_info->job_id_str);
+	} else {
+		verbose("Signal %u to job %s", cancel_info->sig,
+			cancel_info->job_id_str);
+	}
+
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		error_code = slurm_kill_job2(cancel_info->job_id_str,
+					     cancel_info->sig, flags);
 		if ((error_code == 0) ||
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
 		verbose("Job is in transistional state, retrying");
-		sleep ( 5 + i );
+		sleep(5 + i);
 	}
 	if (error_code) {
 		error_code = slurm_get_errno();
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
-		     (error_code != ESLURM_INVALID_JOB_ID)))
-			error("Kill job error on job id %u: %s",
-				job_id, slurm_strerror(slurm_get_errno()));
+		     (error_code != ESLURM_INVALID_JOB_ID))) {
+			error("Kill job error on job id %s: %s",
+			      cancel_info->job_id_str,
+			      slurm_strerror(slurm_get_errno()));
+		}
+		if ((error_code == ESLURM_ALREADY_DONE) &&
+		    (cancel_info->sig == SIGKILL)) {
+			error_code = 0;	/* Ignore error if job done */
+		}
+			
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have
 	 * to keep track of it, but don't destroy the mutex and condition
 	 * variables contained. */
-	pthread_mutex_lock(   cancel_info->num_active_threads_lock );
+	pthread_mutex_lock(cancel_info->num_active_threads_lock);
+	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
-	pthread_cond_signal(  cancel_info->num_active_threads_cond );
-	pthread_mutex_unlock( cancel_info->num_active_threads_lock );
+	pthread_cond_signal(cancel_info->num_active_threads_cond);
+	pthread_mutex_unlock(cancel_info->num_active_threads_lock);
 
+	xfree(cancel_info->job_id_str);
 	xfree(cancel_info);
 	return NULL;
 }
@@ -637,12 +642,12 @@ _cancel_step_id (void *ci)
 	uint16_t sig     = cancel_info->sig;
 	bool sig_set = true;
 
-	if (sig == (uint16_t)-1) {
+	if (sig == (uint16_t) NO_VAL) {
 		sig = SIGKILL;
 		sig_set = false;
 	}
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		if (sig == SIGKILL) {
 			if (array_job_id) {
 				verbose("Terminating step %u_%u.%u",
@@ -735,20 +740,49 @@ _confirmation (int i, uint32_t step_id)
 
 static int _signal_job_by_str(void)
 {
-	int cc, i;
-	int rc = 0;
+	job_cancel_info_t *cancel_info;
+	int err, i, rc = 0;
+	pthread_t dummy;
 
-	if (opt.signal == (uint16_t) - 1)
-		opt.signal = SIGKILL;
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	slurm_mutex_init(&num_active_threads_lock);
 
 	for (i = 0; opt.job_list[i]; i++) {
-		verbose("Signalling job %s", opt.job_list[i]);
-		cc = slurm_kill_job2(opt.job_list[i], opt.signal, 0);
-		if ((cc != SLURM_SUCCESS) && (opt.verbose != -1)) {
-			error("slurm_kill_job2() failed %s",
-			      slurm_strerror(errno));
-			rc = -1;
+		cancel_info = (job_cancel_info_t *)
+			xmalloc(sizeof(job_cancel_info_t));
+		cancel_info->job_id_str = xstrdup(opt.job_list[i]);
+		cancel_info->rc      = &rc;
+		cancel_info->sig     = opt.signal;
+		cancel_info->num_active_threads = &num_active_threads;
+		cancel_info->num_active_threads_lock =
+			&num_active_threads_lock;
+		cancel_info->num_active_threads_cond =
+			&num_active_threads_cond;
+
+		pthread_mutex_lock(&num_active_threads_lock);
+		num_active_threads++;
+		while (num_active_threads > MAX_THREADS) {
+			pthread_cond_wait(&num_active_threads_cond,
+					  &num_active_threads_lock);
 		}
+		pthread_mutex_unlock(&num_active_threads_lock);
+
+		err = pthread_create(&dummy, &attr, _cancel_job_id,cancel_info);
+		if (err)	/* Run in-line if thread create fails */
+			_cancel_job_id(cancel_info);
 	}
+
+	/* Wait all spawned threads tot finish */
+	pthread_mutex_lock( &num_active_threads_lock );
+	while (num_active_threads > 0) {
+		pthread_cond_wait(&num_active_threads_cond,
+				  &num_active_threads_lock);
+	}
+	pthread_mutex_unlock(&num_active_threads_lock);
+
+	slurm_attr_destroy(&attr);
+
 	return rc;
 }

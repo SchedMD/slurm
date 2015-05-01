@@ -165,7 +165,7 @@ extern bool has_default_opt(void)
 	    && opt.partition == NULL
 	    && opt.qos == NULL
 	    && opt.reservation == NULL
-	    && opt.signal == (uint16_t) - 1
+	    && opt.signal == (uint16_t) NO_VAL
 	    && opt.state == JOB_END
 	    && opt.user_id == 0
 	    && opt.user_name == NULL
@@ -266,7 +266,7 @@ static void _opt_default(void)
 	opt.partition	= NULL;
 	opt.qos		= NULL;
 	opt.reservation	= NULL;
-	opt.signal	= (uint16_t)-1; /* no signal specified */
+	opt.signal	= (uint16_t) NO_VAL;
 	opt.state	= JOB_END;
 	opt.user_id	= 0;
 	opt.user_name	= NULL;
@@ -388,8 +388,8 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "A:biM:n:p:Qq:R:s:t:u:vVw:",
-				      long_options, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv, "A:biM:n:p:Qq:R:s:t:u:vVw:",
+				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
 			fprintf(stderr,
@@ -613,7 +613,8 @@ static void _opt_list(void)
 	info("partition      : %s", opt.partition);
 	info("qos            : %s", opt.qos);
 	info("reservation    : %s", opt.reservation);
-	info("signal         : %u", opt.signal);
+	if (opt.signal != (uint16_t) NO_VAL)
+		info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
 	info("user_id        : %u", opt.user_id);
 	info("user_name      : %s", opt.user_name);
