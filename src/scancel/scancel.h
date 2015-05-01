@@ -62,14 +62,18 @@ typedef struct scancel_options {
 	uid_t user_id;		/* derived from user_name	*/
 	char *user_name;	/* --user=n, -un		*/
 	int verbose;		/* --verbose, -v		*/
+	char *wckey;		/* --wckey			*/
+	char *nodelist;		/* --nodelist, -w		*/
+
+	char **job_list;        /* job ID input, NULL termated
+				 * Expanded in to arrays below	*/
 
 	uint16_t job_cnt;	/* count of job_id's specified	*/
 	uint32_t *job_id;	/* list of job ID's		*/
 	uint32_t *array_id;	/* list of job array task IDs	*/
 	uint32_t *step_id;	/* list of job step ID's	*/
-	char *wckey;		/* --wckey			*/
-	char *nodelist;		/* --nodelist, -w		*/
-	char **job_list;        /* list of job ids as char *    */
+	bool *job_found;	/* Set if the job record is found */
+	bool *job_pend;		/* Set fi job is pending	*/
 } opt_t;
 
 opt_t opt;

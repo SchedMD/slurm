@@ -82,8 +82,8 @@ static int  _filter_job_records (void);
 static void _load_job_records (void);
 static int  _multi_cluster(List clusters);
 static int  _proc_cluster(void);
-static int  _verify_job_ids (void);
 static int  _signal_job_by_str(void);
+static int  _verify_job_ids(void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -215,53 +215,101 @@ _match_job(int opt_inx, int job_inx)
 	return false;
 }
 
-static int
-_verify_job_ids (void)
+static bool _is_task_in_job(job_info_t *job_ptr, int array_id)
 {
-	/* If a list of jobs was given, make sure each job is actually in
-         * our list of job records. */
-	int i, j;
-	job_info_t *job_ptr = job_buffer_ptr->job_array;
-	int rc = 0;
+	int len;
 
-	for (j = 0; j < opt.job_cnt; j++ ) {
-		job_info_t *jp;
+	if (job_ptr->array_task_id == array_id)
+		return true;
 
-		for (i = 0; i < job_buffer_ptr->record_count; i++) {
-			if (_match_job(j, i))
-				break;
-		}
-		jp = &job_ptr[i];
-		if ((i >= job_buffer_ptr->record_count) ||
-		    IS_JOB_FINISHED(jp)) {
-			if (opt.verbose < 0) {
-				;
-			} else if ((opt.array_id[j] == NO_VAL) &&
-				   (opt.step_id[j] == SLURM_BATCH_SCRIPT)) {
-				error("Kill job error on job id %u: %s",
-				      opt.job_id[j],
-				      slurm_strerror(ESLURM_INVALID_JOB_ID));
-			} else if (opt.array_id[j] == NO_VAL) {
-				error("Kill job error on job step id %u.%u: %s",
-				      opt.job_id[j], opt.step_id[j],
-				      slurm_strerror(ESLURM_INVALID_JOB_ID));
-			} else if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
-				error("Kill job error on job id %u_%u: %s",
-				      opt.job_id[j], opt.array_id[j],
-				      slurm_strerror(ESLURM_INVALID_JOB_ID));
-			} else {
-				error("Kill job error on job step id %u_%u.%u: %s",
-				      opt.job_id[j], opt.array_id[j],
-				      opt.step_id[j],
-				      slurm_strerror(ESLURM_INVALID_JOB_ID));
+	if (!job_ptr->array_bitmap)
+		return false;
+	len = bit_size((bitstr_t *)job_ptr->array_bitmap);
+	if (len <= array_id)
+		return false;
+	return (bit_test((bitstr_t *)job_ptr->array_bitmap, array_id));
+}
+
+static int _verify_job_ids(void)
+{
+	job_info_t *job_ptr;
+	int i, j, rc = 0;
+
+	if (opt.job_cnt == 0)
+		return rc;
+
+	opt.job_found = xmalloc(sizeof(bool) * opt.job_cnt);
+	opt.job_pend  = xmalloc(sizeof(bool) * opt.job_cnt);
+	job_ptr = job_buffer_ptr->job_array;
+	for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
+		/* NOTE: We re-use the job's "assoc_id" value as a flag to
+		 * record if the job is referenced in the job list supplied
+		 * by the user. */
+		job_ptr->assoc_id = 0;
+		if (IS_JOB_FINISHED(job_ptr))
+			job_ptr->job_id = 0;
+		if (job_ptr->job_id == 0)
+			continue;
+
+		for (j = 0; j < opt.job_cnt; j++) {
+			if (opt.array_id[j] == NO_VAL) {
+				if ((opt.job_id[j] == job_ptr->job_id) ||
+				    ((opt.job_id[j] == job_ptr->array_job_id) &&
+				     (opt.step_id[j] == SLURM_BATCH_SCRIPT))) {
+					opt.job_found[j] = true;
+				}
+			} else if (opt.array_id[j] == INFINITE) {
+				if (opt.job_id[j] == job_ptr->array_job_id) {
+					opt.job_found[j] = true;
+				}
+			} else if (opt.job_id[j] != job_ptr->array_job_id) {
+				continue;
+			} else if (_is_task_in_job(job_ptr, opt.array_id[j])) {
+				opt.job_found[j] = true;
 			}
-
-			/* Avoid this job in the cancel_job logic */
-			opt.job_id[j]   = 0;
-			opt.array_id[j] = 0;
-			opt.step_id[j]  = 0;
-			rc = 1;
+			if (opt.job_found[j]) {
+				if (IS_JOB_PENDING(job_ptr))
+					opt.job_pend[j] = true;
+				job_ptr->assoc_id = 1;
+			}
 		}
+		if (job_ptr->assoc_id == 0)
+			job_ptr->job_id = 0;
+	}
+
+	for (j = 0; j < opt.job_cnt; j++) {
+		char *job_id_str = NULL;
+		if (!opt.job_found[j])
+			rc = 1;
+		else
+			continue;
+
+		if (opt.verbose < 0) {
+			;
+		} else if (opt.array_id[j] == NO_VAL) {
+			xstrfmtcat(job_id_str, "%u", opt.job_id[j]);
+		} else if (opt.array_id[j] == INFINITE) {
+			xstrfmtcat(job_id_str, "%u_*", opt.job_id[j]);
+		} else {
+			xstrfmtcat(job_id_str, "%u_%u", opt.job_id[j],
+				   opt.array_id[j]);
+		}
+
+		if (opt.verbose < 0) {
+			;
+		} else if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
+			error("Kill job error on job id %s: %s",
+			      job_id_str,
+			      slurm_strerror(ESLURM_INVALID_JOB_ID));
+		} else {
+			error("Kill job error on job step id %s.%u: %s",
+			      job_id_str, opt.step_id[j],
+			      slurm_strerror(ESLURM_INVALID_JOB_ID));
+		}
+		xfree(job_id_str);
+
+		/* Avoid this job in the cancel_job logic */
+		opt.job_id[j] = 0;
 	}
 
 	return rc;
