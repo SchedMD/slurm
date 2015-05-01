@@ -165,7 +165,7 @@ extern void uid_cache_clear(void)
 		xfree(uid_cache[i].username);
 	xfree(uid_cache);
 	uid_cache_used = 0;
-	slurm_mutex_unlock(&uid_lock); 
+	slurm_mutex_unlock(&uid_lock);
 }
 
 extern char *uid_to_string_cached(uid_t uid)
@@ -184,10 +184,10 @@ extern char *uid_to_string_cached(uid_t uid)
 		uid_cache[uid_cache_used-1] = new_entry;
 		qsort(uid_cache, uid_cache_used, sizeof(uid_cache_entry_t),
 		      _uid_compare);
-		slurm_mutex_unlock(&uid_lock); 
+		slurm_mutex_unlock(&uid_lock);
 		return new_entry.username;
 	}
-	slurm_mutex_unlock(&uid_lock); 
+	slurm_mutex_unlock(&uid_lock);
 	return entry->username;
 }
 
