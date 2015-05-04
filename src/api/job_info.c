@@ -1688,3 +1688,78 @@ int slurm_job_cpus_allocated_str_on_node(char *cpus,
 						       job_resrcs_ptr,
 						       node_id);
 }
+
+/*
+ * slurm_network_callerid - issue RPC to get the job id of a job from a remote
+ * slurmd based upon network socket information.
+ *
+ * IN req - Information about network connection in question
+ * OUT job_id -  ID of the job or NO_VAL
+ * OUT node_name - name of the remote slurmd
+ * IN node_name_size - size of the node_name buffer
+ * RET SLURM_PROTOCOL_SUCCESS or SLURM_FAILURE on error
+ */
+extern int
+slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
+	char *node_name, int node_name_size)
+{
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+	network_callerid_resp_t *resp;
+	struct sockaddr_in addr;
+	uint32_t target_slurmd; /* change for IPv6 support */
+
+	debug("slurm_network_callerid RPC: start");
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	/* ip_src is the IP we want to talk to. Hopefully there's a slurmd
+	 * listening there */
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = req.af;
+
+	/* TODO: until IPv6 support is added to Slurm, we must hope that the
+	 * other end is IPv4 */
+	if (req.af == AF_INET6) {
+		error("IPv6 is not yet supported in Slurm");
+		/* For testing IPv6 callerid prior to Slurm IPv6 RPC support,
+		 * set a sane target, uncomment the following and comment out
+		 * the return code:
+		addr.sin_family = AF_INET;
+		target_slurmd = inet_addr("127.0.0.1"); //choose a test target
+		*/
+		return SLURM_FAILURE;
+	} else
+		memcpy(&target_slurmd, req.ip_src, 4);
+
+	addr.sin_addr.s_addr = target_slurmd;
+	addr.sin_port = htons(slurm_get_slurmd_port());
+	req_msg.address = addr;
+
+	req_msg.msg_type = REQUEST_NETWORK_CALLERID;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+		case RESPONSE_NETWORK_CALLERID:
+			resp = (network_callerid_resp_t*)resp_msg.data;
+			*job_id = resp->job_id;
+			strncpy(node_name, resp->node_name, node_name_size);
+			break;
+		case RESPONSE_SLURM_RC:
+			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+			if (rc)
+				slurm_seterrno_ret(rc);
+			break;
+		default:
+			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+			break;
+	}
+
+	slurm_free_network_callerid_msg(resp_msg.data);
+	return SLURM_PROTOCOL_SUCCESS;
+}

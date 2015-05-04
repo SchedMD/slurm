@@ -318,6 +318,8 @@ typedef enum {
 	REQUEST_KILL_JOB,       /* 5032 */
 	REQUEST_KILL_JOBSTEP,
 	RESPONSE_JOB_ARRAY_ERRORS,
+	REQUEST_NETWORK_CALLERID,
+	RESPONSE_NETWORK_CALLERID,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -780,6 +782,21 @@ typedef struct return_code2_msg {
 	uint32_t return_code;
 	char *err_msg;
 } return_code2_msg_t;
+
+/* defined in slurm.h
+typedef struct network_callerid_msg {
+	unsigned char ip_src[16];
+	unsigned char ip_dst[16];
+	uint32_t port_src;
+	uint32_t port_dst;
+	int32_t af;
+} network_callerid_msg_t; */
+
+typedef struct network_callerid_resp {
+	uint32_t job_id;
+	uint32_t return_code;
+	char *node_name;
+} network_callerid_resp_t;
 
 /* Note: We include the node list here for reliable cleanup on XCPU systems.
  *
@@ -1272,6 +1289,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *);
+extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
+extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
 
 extern int  slurm_load_sicp(sicp_info_msg_t **sicp_buffer_pptr);
 extern void slurm_free_sicp_msg(sicp_info_msg_t * sicp_buffer_ptr);

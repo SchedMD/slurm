@@ -711,7 +711,22 @@ static int
 _unpack_cache_info_msg(cache_info_msg_t **,
 		       Buf,
 		       uint16_t protocol_version);
+static void
+_pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
+				uint16_t protocol_version);
+static int
+_unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
+				uint16_t protocol_version);
 
+static void
+_pack_network_callerid_resp_msg(network_callerid_resp_t *msg,
+					    Buf buffer,
+					    uint16_t protocol_version);
+
+static int
+_unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
+					    Buf buffer,
+					    uint16_t protocol_version);
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1374,6 +1389,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_CACHE_INFO:
 		_pack_cache_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		_pack_network_callerid_msg((network_callerid_msg_t *)
+						  msg->data, buffer,
+						  msg->protocol_version);
+		break;
+	case RESPONSE_NETWORK_CALLERID:
+		_pack_network_callerid_resp_msg((network_callerid_resp_t *)
+						  msg->data, buffer,
+						  msg->protocol_version);
 		break;
 	case RESPONSE_SICP_INFO:
 		_pack_sicp_info_msg((slurm_msg_t *) msg, buffer);
@@ -2040,6 +2065,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						    buffer,
 						    msg->protocol_version);
 		break;
+	case REQUEST_NETWORK_CALLERID:
+		rc = _unpack_network_callerid_msg((network_callerid_msg_t **)
+						  &(msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case RESPONSE_NETWORK_CALLERID:
+		rc = _unpack_network_callerid_resp_msg((network_callerid_resp_t **)
+						  &(msg->data), buffer,
+						  msg->protocol_version);
+		break;
 	case RESPONSE_SICP_INFO:
 		rc = _unpack_sicp_info_msg((sicp_info_msg_t **) & (msg->data),
 					   buffer, msg->protocol_version);
@@ -2213,6 +2248,109 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 unpack_error:
 	slurm_destroy_assoc_shares_object(object_ptr);
 	*object = NULL;
+	return SLURM_ERROR;
+}
+
+/* _pack_network_callerid_msg()
+ */
+static void
+_pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
+				uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packmem((char *)msg->ip_src, 16, buffer);
+		packmem((char *)msg->ip_dst, 16, buffer);
+		pack32((uint32_t)msg->port_src, buffer);
+		pack32((uint32_t)msg->port_dst,	buffer);
+		pack32((uint32_t)msg->af, buffer);
+	} else {
+		error("_pack_network_callerid_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+}
+
+/* _unpack_network_callerid_msg()
+ */
+static int
+_unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
+				uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	char *charptr_tmp;
+	network_callerid_msg_t *msg;
+	xassert(msg_ptr != NULL);
+
+	msg = xmalloc(sizeof(network_callerid_msg_t));
+	*msg_ptr = msg;
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		memcpy(msg->ip_src, charptr_tmp, uint32_tmp);
+		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
+		memcpy(msg->ip_dst, charptr_tmp, uint32_tmp);
+		safe_unpack32(&msg->port_src,		buffer);
+		safe_unpack32(&msg->port_dst,		buffer);
+		safe_unpack32((uint32_t *)&msg->af,	buffer);
+	} else {
+
+		error("_unpack_network_callerid_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	info("SIM: _unpack_network_callerid_msg error");
+	*msg_ptr = NULL;
+	slurm_free_network_callerid_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_network_callerid_resp_msg(network_callerid_resp_t *msg,
+					    Buf buffer,
+					    uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack32(msg->job_id,		buffer);
+		pack32(msg->return_code,	buffer);
+		packstr(msg->node_name,		buffer);
+	} else {
+		error("_pack_network_callerid_resp_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+}
+
+static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
+					    Buf buffer,
+					    uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	network_callerid_resp_t *msg;
+	xassert(msg_ptr != NULL);
+
+	msg = xmalloc(sizeof(network_callerid_resp_t));
+	*msg_ptr = msg;
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id,		buffer);
+		safe_unpack32(&msg->return_code,	buffer);
+		safe_unpackmem_xmalloc(&msg->node_name, &uint32_tmp, buffer);
+	} else {
+
+		error("_unpack_network_callerid_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	info("SIM: _unpack_network_callerid_msg error");
+	*msg_ptr = NULL;
+	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;
 }
 

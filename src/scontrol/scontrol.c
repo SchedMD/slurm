@@ -1320,6 +1320,22 @@ _process_command (int argc, char *argv[])
 			exit_code = 1;
 			slurm_perror("job notify failure");
 		}
+	}
+	else if (strncasecmp (tag, "callerid", MAX(tag_len, 2)) == 0) {
+		if (argc < 5) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too few arguments for keyword:%s\n",
+				 tag);
+		} else if(argc > 6) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 tag);
+		} else if (scontrol_callerid(argc-1, &argv[1])) {
+			exit_code = 1;
+			slurm_perror("callerid failure");
+		}
 	}	else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", tag);

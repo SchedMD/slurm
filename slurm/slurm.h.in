@@ -2763,6 +2763,14 @@ typedef struct cache_info_msg {
 	slurm_cache_assoc_info_t *cache_assoc_array;
 } cache_info_msg_t;
 
+typedef struct network_callerid_msg {
+	unsigned char ip_src[16];
+	unsigned char ip_dst[16];
+	uint32_t port_src;
+	uint32_t port_dst;
+	int32_t af;
+} network_callerid_msg_t;
+
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
@@ -4502,6 +4510,21 @@ extern void slurm_print_burst_buffer_info_msg PARAMS(
 extern void slurm_print_burst_buffer_record PARAMS(
 			(FILE *out, burst_buffer_info_t *burst_buffer_ptr,
 			 int one_liner));
+
+/*
+ * slurm_network_callerid - issue RPC to get the job id of a job from a remote
+ * slurmd based upon network socket information.
+ *
+ * IN req - Information about network connection in question
+ * OUT job_id -  ID of the job or NO_VAL
+ * OUT node_name - name of the remote slurmd
+ * IN node_name_size - size of the node_name buffer
+ * RET SLURM_PROTOCOL_SUCCESS or SLURM_FAILURE on error
+ */
+extern int slurm_network_callerid PARAMS(
+		(network_callerid_msg_t req, uint32_t *job_id,
+		char *node_name, int node_name_size));
+
 
 END_C_DECLS
 

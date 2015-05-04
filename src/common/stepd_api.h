@@ -132,7 +132,7 @@ int stepd_terminate(int fd, uint16_t protocol_version);
  * and -1 on error.  Also fills in protocol_version with the version
  * of the running stepd.
  */
-int stepd_connect(const char *directory, const char *nodename,
+extern int stepd_connect(const char *directory, const char *nodename,
 		  uint32_t jobid, uint32_t stepid, uint16_t *protocol_version);
 
 /*
@@ -200,7 +200,7 @@ int stepd_attach(int fd, uint16_t protocol_version,
  *
  * Returns a List of pointers to step_loc_t structures.
  */
-List stepd_available(const char *directory, const char *nodename);
+extern List stepd_available(const char *directory, const char *nodename);
 
 /*
  * Return true if the process with process ID "pid" is found in
@@ -277,6 +277,8 @@ extern int stepd_get_mem_limits(int fd, uint16_t protocol_version,
 /*
  * Get the uid of the step
  * Returns uid of the running step if successful.  On error returns -1.
+ *
+ * FIXME: BUG: On Linux, uid_t is uint32_t but this can return -1.
  */
 extern uid_t stepd_get_uid(int fd, uint16_t protocol_version);
 

@@ -406,6 +406,16 @@
 #define eio_signal_shutdown		slurm_eio_signal_shutdown
 #define eio_signal_wakeup		slurm_eio_signal_wakeup
 
+/* callerid.[ch] functions */
+#define callerid_get_own_netinfo	slurm_callerid_get_own_netinfo
+
+/* some stepd_api.[ch] functions */
+#define stepd_available			slurm_stepd_available
+#define stepd_connect			slurm_stepd_connect
+#define stepd_get_uid			slurm_stepd_get_uid
+
+
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
@@ -432,5 +442,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/callerid.h"
+#include "src/common/stepd_api.h"
 
 #endif /*__SLURM_XLATOR_H__*/

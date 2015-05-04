@@ -166,4 +166,5 @@ extern int	scontrol_update_step (int argc, char *argv[]);
 extern void	scontrol_print_licenses(const char *feature);
 extern void	scontrol_cache_info(const char *config_param);
 extern void	scontrol_print_cache(const char *name);
+extern int	scontrol_callerid(int argc, char **argv);
 #endif

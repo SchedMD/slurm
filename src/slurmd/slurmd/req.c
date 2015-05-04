@@ -57,6 +57,7 @@
 #include <unistd.h>
 #include <utime.h>
 
+#include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
@@ -188,6 +189,7 @@ static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_epilog(job_env_t *job_env);
 static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 static void _rpc_forward_data(slurm_msg_t *msg);
+static int  _rpc_network_callerid(slurm_msg_t *msg);
 
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
@@ -442,6 +444,11 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_FORWARD_DATA:
 		_rpc_forward_data(msg);
 		slurm_free_forward_data_msg(msg->data);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		debug2("Processing RPC: REQUEST_NETWORK_CALLERID");
+		_rpc_network_callerid(msg);
+		slurm_free_network_callerid_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:	/* Defunct, see REQUEST_SUSPEND_INT */
 	default:
@@ -2770,6 +2777,100 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 }
 
 static int
+_callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
+{
+	ino_t inode;
+	pid_t pid;
+	int rc;
+
+	rc = callerid_find_inode_by_conn(conn, &inode);
+	if (rc != SLURM_SUCCESS) {
+		debug3("network_callerid inode not found", (ino_t)inode);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	debug3("network_callerid found inode %lu", (ino_t)inode);
+
+	rc = find_pid_by_inode(&pid, inode);
+	if (rc != SLURM_SUCCESS) {
+		debug3("network_callerid process not found");
+		return ESLURM_INVALID_JOB_ID;
+	}
+	debug3("network_callerid found process %d", (pid_t)pid);
+
+	rc = slurm_pid2jobid(pid, job_id);
+	if (rc != SLURM_SUCCESS) {
+		debug3("network_callerid job not found");
+		return ESLURM_INVALID_JOB_ID;
+	}
+	debug3("network_callerid found job %u", *job_id);
+	return SLURM_SUCCESS;
+}
+
+static int
+_rpc_network_callerid(slurm_msg_t *msg)
+{
+	network_callerid_msg_t *req = (network_callerid_msg_t *)msg->data;
+	slurm_msg_t        resp_msg;
+	network_callerid_resp_t *resp = NULL;
+
+	uid_t req_uid = -1;
+	uid_t job_uid = -1;
+	uint16_t protocol_version = 0;
+	uint32_t job_id = (uint32_t)NO_VAL;
+	callerid_conn_t conn;
+	ino_t inode;
+	pid_t pid;
+	int rc = ESLURM_INVALID_JOB_ID;
+	char ip_src_str[INET6_ADDRSTRLEN];
+	char ip_dst_str[INET6_ADDRSTRLEN];
+
+	debug3("Entering _rpc_network_callerid");
+
+        resp = xmalloc(sizeof(network_callerid_resp_t));
+        slurm_msg_t_copy(&resp_msg, msg);
+
+	/* Ideally this would be in an if block only when debug3 is enabled */
+	inet_ntop(req->af, req->ip_src, ip_src_str, INET6_ADDRSTRLEN);
+	inet_ntop(req->af, req->ip_dst, ip_dst_str, INET6_ADDRSTRLEN);
+	debug3("network_callerid checking %s:%u => %s:%u",
+		ip_src_str, req->port_src, ip_dst_str, req->port_dst);
+
+	/* My remote is the other's source */
+	memcpy((void*)&conn.ip_dst, (void*)&req->ip_src, 16);
+	memcpy((void*)&conn.ip_src, (void*)&req->ip_dst, 16);
+	conn.port_src = req->port_dst;
+	conn.port_dst = req->port_src;
+	conn.af = req->af;
+
+	/* Find the job id */
+	rc = _callerid_find_job(conn, &job_id);
+	if (rc == SLURM_SUCCESS) {
+		/* We found the job */
+		req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+		if (!_slurm_authorized_user(req_uid)) {
+			/* Requestor is not root or SlurmUser */
+			job_uid = _get_job_uid(job_id);
+			if (job_uid != req_uid) {
+				/* RPC call sent by non-root user who does not
+				 * own this job. Do not send them the job ID. */
+				job_id = (uint32_t)NO_VAL;
+				rc = ESLURM_INVALID_JOB_ID;
+			}
+		}
+	}
+
+	resp->job_id = job_id;
+	resp->node_name = xstrdup(conf->node_name);
+
+	resp_msg.msg_type = RESPONSE_NETWORK_CALLERID;
+	resp_msg.data     = resp;
+
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_free_network_callerid_resp(resp);
+	return rc;
+}
+
+static int
 _rpc_list_pids(slurm_msg_t *msg)
 {
 	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
@@ -2812,7 +2913,7 @@ _rpc_list_pids(slurm_msg_t *msg)
 
         resp = xmalloc(sizeof(job_step_pids_t));
         slurm_msg_t_copy(&resp_msg, msg);
- 	resp->node_name = xstrdup(conf->node_name);
+	resp->node_name = xstrdup(conf->node_name);
 	resp->pid_cnt = 0;
 	resp->pid = NULL;
         fd = stepd_connect(conf->spooldir, conf->node_name,

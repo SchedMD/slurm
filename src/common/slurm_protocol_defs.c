@@ -2965,6 +2965,18 @@ extern void slurm_free_job_step_pids(void *object)
 	}
 }
 
+extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg)
+{
+	xfree(mesg);
+}
+
+extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp)
+{
+	if (resp) {
+		xfree(resp->node_name);
+		xfree(resp);
+	}
+}
 
 extern void slurm_free_block_job_info(void *object)
 {

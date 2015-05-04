@@ -1,0 +1,117 @@
+NAME
+  pam_slurm_adopt.so
+
+SYNOPSIS
+  Adopt incoming connections into jobs
+
+AUTHOR
+  Ryan Cox <ryan_cox@byu.edu>
+
+MODULE TYPES PROVIDED
+  account
+
+DESCRIPTION
+  This module attempts to determine the job which originated this connection.
+  The module is configurable; these are the default steps:
+
+  1) Check the local stepds for a count of jobs owned by the non-root user
+    a) If none, deny (option action_no_jobs)
+    b) If only one, adopt the process into that job
+    c) If multiple, continue
+  2) Determine src/dst IP/port of socket
+  3) Issue callerid RPC to slurmd at IP address of source
+    a) If the remote slurmd can identify the source job, adopt into that job
+    b) If not, continue
+  4) Pick a random local job from the user to adopt into (option action_unknown)
+
+  Jobs are adopted into a job's allocation step.
+
+MODULE OPTIONS
+This module has the following options (* = default):
+
+    ignore_root - By default, all root connections are ignored. If the RPC call
+                  is sent to a node which drops packets to the slurmd port, the
+                  RPC call will block for some time before failing. This is
+                  unlikely to be desirable. Likewise, root may be trying to
+                  administer the system and not do work that should be in a job.
+                  The job may trigger oom-killer or just exit. If root restarts
+                  a service or similar, it will be tracked and killed by Slurm
+                  when the job exits. This sounds bad because it is bad.
+
+        1* = let the connection through without adoption
+        0  = I am crazy. I want random services to die when root jobs exit. I
+             also like it when RPC calls block for a while then time out.
+
+
+    action_no_jobs - The action to perform if the user has no jobs on the node
+
+        ignore = let the connection through without adoption
+        deny* = deny the connection
+
+
+    action_unknown - The action to perform when the RPC call does not locate the
+                     source job and the user has multiple jobs on the node to
+                     choose from
+
+        any* = pick a job in a (somewhat) random fashion
+        ignore = let the connection through without adoption
+        deny = deny the connection
+
+
+    action_adopt_failure - The action to perform if the job is unable to be
+                           adopted into a job for whatever reason
+
+        ignore = let the connection through without adoption
+        deny* = deny the connection
+
+
+    log_level - See SlurmdDebug in slurm.conf(5) for available options. The
+                default log_level is info.
+
+NOTES
+  This module and the related RPC call currently support Linux systems which
+  have network connection information available through /proc/net/tcp{,6}.  A
+  proccess's sockets must exist as symlinks in its /proc/self/fd directory.
+
+  The RPC data structure itself is OS-agnostic.  If support is desired for a
+  different OS, relevant code must be added to find one's socket information
+  then match that information on the remote end to a particular process which
+  Slurm is tracking.
+
+  IPv6 is supported by the RPC data structure itself and the code which sends it
+  or receives it.  Sending the RPC call to an IPv6 address is not currently
+  supported by Slurm.  Once support is added, remove the relevant check in
+  slurm_network_callerid ().
+
+  proctrack/cgroup is recommended on Linux.
+
+FIREWALLS, IP ADDRESSES, ETC.
+  slurmd should be accessible on any IP address that a user might launch ssh.
+  The RPC call to determine the source job must be able to reach the slurmd port
+  on that particular IP address.
+
+  If there is no slurmd on the source node, it is better to have the RPC call be
+  rejected rather than silently dropped.  This will allow better responsiveness
+  to the RPC initiator.
+
+EXAMPLES / SUGGESTED USAGE
+  Use of this module is recommended on any compute node.
+
+  Add the following line to the appropriate file in /etc/pam.d, such as
+  system-auth or sshd:
+
+    account    required     pam_slurm_adopt.so
+
+  If you always want to allow access for an administrative group (eg, wheel),
+  stack the pam_access module ahead of pam_slurm:
+
+    account    sufficient   pam_slurm_adopt.so
+    account    required     pam_access.so
+
+
+  Then edit the pam_access configuration file (/etc/security/access.conf):
+
+    +:wheel:ALL
+    -:ALL:ALL
+
+  When access is denied, the user will receive a relevant error message.
