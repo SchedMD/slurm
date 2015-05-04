@@ -50,5 +50,6 @@ typedef struct callerid_conn {
 extern int callerid_get_own_netinfo(callerid_conn_t *conn);
 extern int callerid_find_inode_by_conn(callerid_conn_t conn, ino_t *inode);
 extern int callerid_find_conn_by_inode(callerid_conn_t *conn, ino_t inode);
+extern int find_pid_by_inode (pid_t *pid_result, ino_t inode);
 
-#endif /*_SLURM_CALLERID_H*/
+#endif /* _SLURM_CALLERID_H */

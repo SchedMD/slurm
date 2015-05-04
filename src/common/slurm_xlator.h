@@ -421,6 +421,7 @@
 /* Include the function definitions after redefining their names. */
 #include "src/common/arg_desc.h"
 #include "src/common/bitstring.h"
+#include "src/common/callerid.h"
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/hostlist.h"
@@ -436,13 +437,12 @@
 #include "src/common/slurm_route.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/strlcpy.h"
+#include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/callerid.h"
-#include "src/common/stepd_api.h"
 
 #endif /*__SLURM_XLATOR_H__*/

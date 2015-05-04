@@ -2785,7 +2785,7 @@ _callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
 
 	rc = callerid_find_inode_by_conn(conn, &inode);
 	if (rc != SLURM_SUCCESS) {
-		debug3("network_callerid inode not found", (ino_t)inode);
+		debug3("network_callerid inode not found");
 		return ESLURM_INVALID_JOB_ID;
 	}
 	debug3("network_callerid found inode %lu", (ino_t)inode);
@@ -2815,19 +2815,16 @@ _rpc_network_callerid(slurm_msg_t *msg)
 
 	uid_t req_uid = -1;
 	uid_t job_uid = -1;
-	uint16_t protocol_version = 0;
 	uint32_t job_id = (uint32_t)NO_VAL;
 	callerid_conn_t conn;
-	ino_t inode;
-	pid_t pid;
 	int rc = ESLURM_INVALID_JOB_ID;
 	char ip_src_str[INET6_ADDRSTRLEN];
 	char ip_dst_str[INET6_ADDRSTRLEN];
 
 	debug3("Entering _rpc_network_callerid");
 
-        resp = xmalloc(sizeof(network_callerid_resp_t));
-        slurm_msg_t_copy(&resp_msg, msg);
+	resp = xmalloc(sizeof(network_callerid_resp_t));
+	slurm_msg_t_copy(&resp_msg, msg);
 
 	/* Ideally this would be in an if block only when debug3 is enabled */
 	inet_ntop(req->af, req->ip_src, ip_src_str, INET6_ADDRSTRLEN);
@@ -2853,7 +2850,9 @@ _rpc_network_callerid(slurm_msg_t *msg)
 			if (job_uid != req_uid) {
 				/* RPC call sent by non-root user who does not
 				 * own this job. Do not send them the job ID. */
-				job_id = (uint32_t)NO_VAL;
+				error("Security violation, REQUEST_NETWORK_CALLERID from uid=%d",
+				      req_uid);
+				job_id = NO_VAL;
 				rc = ESLURM_INVALID_JOB_ID;
 			}
 		}

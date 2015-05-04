@@ -149,7 +149,7 @@ send_user_msg(pam_handle_t *pamh, const char *mesg)
 
 /*
  * Dynamically open system's libslurm.so with RTLD_GLOBAL flag.
- *  This allows subsequently loaded modules access to libslurm symbols.
+ * This allows subsequently loaded modules access to libslurm symbols.
  */
 extern void libpam_slurm_init (void)
 {

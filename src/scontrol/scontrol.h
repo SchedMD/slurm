@@ -113,6 +113,8 @@ extern partition_info_msg_t *old_part_info_ptr;
 extern reserve_info_msg_t *old_res_info_ptr;
 extern slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr;
 
+extern void	scontrol_cache_info(const char *config_param);
+extern int	scontrol_callerid(int argc, char **argv);
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);
 extern int	scontrol_create_part(int argc, char *argv[]);
@@ -136,6 +138,7 @@ extern int 	scontrol_load_partitions (partition_info_msg_t **
 extern int 	scontrol_load_block (block_info_msg_t **block_info_pptr);
 extern void	scontrol_pid_info(pid_t job_pid);
 extern void	scontrol_print_burst_buffer(void);
+extern void	scontrol_print_cache(const char *name);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
@@ -145,6 +148,7 @@ extern void	scontrol_print_front_end(char *node_name,
 					 front_end_buffer_ptr);
 extern void	scontrol_print_job (char * job_id_str);
 extern void	scontrol_print_hosts (char * node_list);
+extern void	scontrol_print_licenses(const char *feature);
 extern void	scontrol_print_node (char *node_name,
 				     node_info_msg_t *node_info_ptr);
 extern void	scontrol_print_node_list (char *node_list);
@@ -163,8 +167,5 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
 extern int	scontrol_update_step (int argc, char *argv[]);
-extern void	scontrol_print_licenses(const char *feature);
-extern void	scontrol_cache_info(const char *config_param);
-extern void	scontrol_print_cache(const char *name);
-extern int	scontrol_callerid(int argc, char **argv);
+
 #endif

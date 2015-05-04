@@ -1327,7 +1327,7 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr,
 				 "too few arguments for keyword:%s\n",
 				 tag);
-		} else if(argc > 6) {
+		} else if (argc > 6) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
@@ -1336,7 +1336,7 @@ _process_command (int argc, char *argv[])
 			exit_code = 1;
 			slurm_perror("callerid failure");
 		}
-	}	else {
+	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", tag);
 	}

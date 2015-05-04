@@ -2262,8 +2262,8 @@ _pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		packmem((char *)msg->ip_src, 16, buffer);
 		packmem((char *)msg->ip_dst, 16, buffer);
-		pack32((uint32_t)msg->port_src, buffer);
-		pack32((uint32_t)msg->port_dst,	buffer);
+		pack32(msg->port_src, buffer);
+		pack32(msg->port_dst,	buffer);
 		pack32((uint32_t)msg->af, buffer);
 	} else {
 		error("_pack_network_callerid_msg: protocol_version "
@@ -2302,7 +2302,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("SIM: _unpack_network_callerid_msg error");
+	info("_unpack_network_callerid_msg error");
 	*msg_ptr = NULL;
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
@@ -2348,7 +2348,7 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("SIM: _unpack_network_callerid_msg error");
+	info("_unpack_network_callerid_msg error");
 	*msg_ptr = NULL;
 	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;

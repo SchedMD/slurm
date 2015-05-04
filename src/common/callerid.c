@@ -51,27 +51,29 @@
 //#ifndef _GNU_SOURCE
 //#define _GNU_SOURCE
 //#endif
-#include <string.h>
+#include <arpa/inet.h>
+#include <ctype.h>
+#if HAVE_DIRENT_H
+#  include <dirent.h>
+#endif
+#include <libgen.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-#include <libgen.h>
 
 #include "slurm/slurm.h"
+#include "src/common/callerid.h"
+#include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/log.h"
-#include "src/common/callerid.h"
-
 
 #ifndef _BSD_SOURCE
 #define _BSD_SOURCE
 #endif
-#include <dirent.h>
 
 #ifndef PATH_PROCNET_TCP
 #define PATH_PROCNET_TCP "/proc/net/tcp"
@@ -105,9 +107,9 @@ static int _match_conn(callerid_conn_t *conn_search, ino_t *inode_result,
 	if (conn_search->port_dst != conn_row->port_dst ||
 	    conn_search->port_src != conn_row->port_src ||
 	    memcmp((void*)&conn_search->ip_dst, (void*)&conn_row->ip_dst,
-		addrbytes) !=0 ||
-	     memcmp((void*)&conn_search->ip_src, (void*)&conn_row->ip_src,
-		addrbytes) !=0
+		   addrbytes) !=0 ||
+	    memcmp((void*)&conn_search->ip_src, (void*)&conn_row->ip_src,
+		   addrbytes) !=0
 	   )
 		return SLURM_FAILURE;
 
@@ -151,7 +153,8 @@ static int _find_match_in_tcp_file(
 		return rc;
 
 	while( fgets(line, 1024, fp) != NULL ) {
-		matches = sscanf(line, "%*s %[0-9A-Z]:%x %[0-9A-Z]:%x %*s %*s %*s %*s %*s %*s %lu",
+		matches = sscanf(line,
+			"%*s %[0-9A-Z]:%x %[0-9A-Z]:%x %*s %*s %*s %*s %*s %*s %lu",
 			ip_dst_str, &conn_row.port_dst, ip_src_str,
 			&conn_row.port_src, &inode_row);
 
@@ -193,9 +196,8 @@ static int _find_match_in_tcp_file(
 		}
 	}
 
-	cleanup:
-		fclose(fp);
-		return rc;
+	fclose(fp);
+	return rc;
 }
 
 
@@ -310,8 +312,7 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 	struct dirent *entryp;
 	struct dirent *result;
 	char *dirpath = "/proc";
-	int i, name_max, len, rc = SLURM_FAILURE;
-	struct stat statbuf;
+	int name_max, len, rc = SLURM_FAILURE;
 	pid_t pid;
 
 	/* Thus saith the man page readdir_r(3) */
@@ -397,13 +398,13 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 		snprintf(fdpath, 1024, "%s/%s", dirpath, entryp->d_name);
 		debug3("callerid_get_own_netinfo: checking %s", fdpath);
 		/* This is a symlink. Follow it to get destination's inode. */
-		if(stat(fdpath, &statbuf) != 0) {
-			debug3("stat failed for %s: %m");
+		if (stat(fdpath, &statbuf) != 0) {
+			debug3("stat failed for %s: %m", fdpath);
 			continue;
 		}
 
 		/* We are only interested in sockets */
-		if(S_ISSOCK(statbuf.st_mode)) {
+		if (S_ISSOCK(statbuf.st_mode)) {
 			debug3("callerid_get_own_netinfo: checking socket %s",
 					fdpath);
 			rc = callerid_find_conn_by_inode(conn, statbuf.st_ino);

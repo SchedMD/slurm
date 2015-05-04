@@ -36,9 +36,10 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "scontrol.h"
 #include "src/common/bitstring.h"
@@ -1020,10 +1021,12 @@ extern int scontrol_callerid(int argc, char **argv)
 
 	if (slurm_network_callerid(req, &job_id, node_name, MAXHOSTNAMELEN)
 			!= SLURM_SUCCESS) {
-		fprintf(stderr, "slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
+		fprintf(stderr,
+			"slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
 		return SLURM_FAILURE;
 	} else if (job_id == (uint32_t)NO_VAL) {
-		fprintf(stderr, "slurm_network_callerid: remote job id indeterminate\n");
+		fprintf(stderr,
+			"slurm_network_callerid: remote job id indeterminate\n");
 		return SLURM_FAILURE;
 	} else {
 		printf("%u %s\n", job_id, node_name);

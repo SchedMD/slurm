@@ -88,7 +88,7 @@ static struct {
 	log_level_t log_level;
 } opts;
 
-static void _init_opts()
+static void _init_opts(void)
 {
 	opts.single_job_skip_rpc = 1;
 	opts.ignore_root = 1;
@@ -332,7 +332,7 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_unknown=%s, setting to 'any'",
 					   v);
 			}
-		} else if (!strncasecmp(*argv,"log_level=",10)) {
+		} else if (!strncasecmp(*argv, "log_level=", 10)) {
 			v = (char *)(10 + *argv);
 			opts.log_level = _parse_log_level(pamh, v);
 		}
@@ -365,9 +365,9 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	struct callerid_conn conn;
 	uint32_t job_id;
 	char ip_src_str[INET6_ADDRSTRLEN];
-	List steps;
+	List steps = NULL;
 	struct passwd pwd, *pwd_result;
-	char *buf;
+	char *buf = NULL;
 	int bufsize;
 
 	_init_opts();
@@ -524,12 +524,10 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 		debug("_indeterminate_multiple failed to find a job to adopt this into");
 	}
 
-	cleanup:
-		if (steps)
-			list_destroy(steps);
-		if (buf)
-			xfree(buf);
-		return rc;
+cleanup:
+	FREE_NULL_LIST(steps);
+	xfree(buf);
+	return rc;
 }
 
 #ifdef PAM_STATIC
