@@ -308,8 +308,15 @@ static int _index_job(const char *jobcomp)
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
+	static int error_cnt = 0;
 
 	if (log_url == NULL) {
+		if (((error_cnt++) % 100) == 0) {
+	                /* Periodically log errors */
+                        error("%s: Unable to save job state for %d "
+                               "jobs, caching data",
+                               plugin_type, error_cnt);
+                }
 		debug("JobCompLoc parameter not configured");
 		return SLURM_ERROR;
 	}
@@ -363,7 +370,7 @@ static int _index_job(const char *jobcomp)
 				    && (xstrcmp(token, "201") != 0)) {
 					debug("HTTP status code %s received "
 					      "from %s", token, url);
-					debug("Check wether index writes and "
+					debug("Check whether index writes and "
 					      "metadata changes are enabled on"
 					      " %s", url);
 					debug3("HTTP Response:\n%s", response);
@@ -384,6 +391,15 @@ static int _index_job(const char *jobcomp)
 		xfree(url);
 	}
 	curl_global_cleanup();
+
+	if (rc == SLURM_ERROR) {
+		if (((error_cnt++) % 100) == 0) {
+                        /* Periodically log errors */
+                        error("%s: Unable to save job state for %d "
+                               "jobs, caching data",
+                               plugin_type, error_cnt);
+                }
+	}
 
 	return rc;
 }
@@ -552,7 +568,6 @@ static int _index_retry(void)
 
 	for (i = 0; i < pend_jobs.nelems; i++) {
 		pop_marks[i] = 0;
-		debug("TESTTT: %s", pend_jobs.jobs[i]);
 		if (_index_job(pend_jobs.jobs[i]) == SLURM_ERROR)
 			rc = SLURM_ERROR;
 		else {
@@ -668,7 +683,6 @@ extern int slurm_jobcomp_set_location(char *location)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	static int error_cnt = 0;
 	int nwritten, nparents, B_SIZE = 1024, rc = SLURM_SUCCESS;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char submit_str[32], *script, *cluster, *qos, *state_string;
@@ -920,12 +934,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (rc == SLURM_SUCCESS) {
 		if (_index_job(buffer) == SLURM_ERROR) {
-			if (((error_cnt++) % 100) == 0) {
-				/* Periodically log errors */
-				error("%s: Unable to save job state for %d "
-				      "jobs, caching data",
-				      plugin_type, error_cnt);
-			}
 			slurm_mutex_lock(&pend_jobs_lock);
 			_push_pending_job(buffer);
 			slurm_mutex_unlock(&pend_jobs_lock);
