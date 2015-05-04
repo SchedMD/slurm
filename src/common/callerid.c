@@ -220,6 +220,9 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	struct stat statbuf;
 
 	snprintf(dirpath, 1024, "/proc/%d/fd", (pid_t)pid);
+	if ((dirp = opendir(dirpath)) == NULL) {
+		return SLURM_FAILURE;
+	}
 
 	/* Thus saith the man page readdir_r(3) */
 	name_max = pathconf(dirpath, _PC_NAME_MAX);
@@ -227,11 +230,6 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 		name_max = 255;	/* Take a guess */
 	len = offsetof(struct dirent, d_name) + name_max + 1;
 	entryp = xmalloc(len);
-
-	if ((dirp = opendir(dirpath)) == NULL) {
-		xfree(entryp);
-		return SLURM_FAILURE;
-	}
 
 	while (1) {
 		readdir_r(dirp, entryp, &result);
@@ -315,20 +313,19 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 	int name_max, len, rc = SLURM_FAILURE;
 	pid_t pid;
 
+	if ((dirp = opendir(dirpath)) == NULL) {
+		/* Houston, we have a problem: /proc is inaccessible */
+		error("find_pid_by_inode: unable to open %s: %m",
+				dirpath);
+		return SLURM_FAILURE;
+	}
+
 	/* Thus saith the man page readdir_r(3) */
 	name_max = pathconf(dirpath, _PC_NAME_MAX);
 	if (name_max == -1)	/* Limit not defined, or error */
 		name_max = 255;	/* Take a guess */
 	len = offsetof(struct dirent, d_name) + name_max + 1;
 	entryp = xmalloc(len);
-
-	if ((dirp = opendir(dirpath)) == NULL) {
-		/* Houston, we have a problem: /proc is inaccessible */
-		error("find_pid_by_inode: unable to open %s: %m",
-				dirpath);
-		xfree(entryp);
-		return SLURM_FAILURE;
-	}
 
 	while (1) {
 		readdir_r(dirp, entryp, &result);
@@ -372,19 +369,18 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 	int name_max, len, rc = SLURM_FAILURE;
 	struct stat statbuf;
 
+	if ((dirp = opendir(dirpath)) == NULL) {
+		error("callerid_get_own_netinfo: opendir failed for %s: %m",
+				dirpath);
+		return rc;
+	}
+
 	/* thus saith the man page readdir_r(3) */
 	name_max = pathconf(dirpath, _PC_NAME_MAX);
 	if (name_max == -1)	/* Limit not defined, or error */
 		name_max = 255;	/* Take a guess */
 	len = offsetof(struct dirent, d_name) + name_max + 1;
 	entryp = xmalloc(len);
-
-	if ((dirp = opendir(dirpath)) == NULL) {
-		error("callerid_get_own_netinfo: opendir failed for %s: %m",
-				dirpath);
-		xfree(entryp);
-		return rc;
-	}
 
 	while (1) {
 		readdir_r(dirp, entryp, &result);

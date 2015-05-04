@@ -887,16 +887,16 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		      uint16_t protocol_version)
 {
 	slurm_cred_arg_t arg;
-	hostset_t        s_hset = NULL;
-	bool             user_ok = _slurm_authorized_user(uid);
-	bool             verified = true;
-	int              host_index = -1;
-	int              rc;
+	hostset_t	s_hset = NULL;
+	bool		user_ok = _slurm_authorized_user(uid);
+	bool		verified = true;
+	int		host_index = -1;
+	int		rc;
 	slurm_cred_t    *cred = req->cred;
-	uint32_t         jobid = req->job_id;
-	uint32_t         stepid = req->job_step_id;
-	int              tasks_to_launch = req->tasks_to_launch[node_id];
-	uint32_t         job_cpus = 0, step_cpus = 0;
+	uint32_t	jobid = req->job_id;
+	uint32_t	stepid = req->job_step_id;
+	int		tasks_to_launch = req->tasks_to_launch[node_id];
+	uint32_t	job_cpus = 0, step_cpus = 0;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
@@ -2762,9 +2762,9 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	*/
 	if (stepd_list_pids(fd, protocol_version, &resp->step_pids->pid,
 			    &resp->step_pids->pid_cnt) == SLURM_ERROR) {
-                debug("No pids for nonexistent job %u.%u requested",
-                      req->job_id, req->step_id);
-        }
+		debug("No pids for nonexistent job %u.%u requested",
+		      req->job_id, req->step_id);
+	}
 
 	close(fd);
 
@@ -2810,7 +2810,7 @@ static int
 _rpc_network_callerid(slurm_msg_t *msg)
 {
 	network_callerid_msg_t *req = (network_callerid_msg_t *)msg->data;
-	slurm_msg_t        resp_msg;
+	slurm_msg_t resp_msg;
 	network_callerid_resp_t *resp = NULL;
 
 	uid_t req_uid = -1;
@@ -2880,66 +2880,66 @@ _rpc_list_pids(slurm_msg_t *msg)
 	uid_t job_uid;
 	uint16_t protocol_version = 0;
 
-        debug3("Entering _rpc_list_pids");
-        /* step completion messages are only allowed from other slurmstepd,
-           so only root or SlurmUser is allowed here */
-        req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	debug3("Entering _rpc_list_pids");
+	/* step completion messages are only allowed from other slurmstepd,
+	   so only root or SlurmUser is allowed here */
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	job_uid = _get_job_uid(req->job_id);
 
-        if ((int)job_uid < 0) {
-                error("stat_pid for invalid job_id: %u",
+	if ((int)job_uid < 0) {
+		error("stat_pid for invalid job_id: %u",
 		      req->job_id);
-                if (msg->conn_fd >= 0)
-                        slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-                return  ESLURM_INVALID_JOB_ID;
-        }
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return  ESLURM_INVALID_JOB_ID;
+	}
 
-        /*
-         * check that requesting user ID is the SLURM UID or root
-         */
-        if ((req_uid != job_uid)
+	/*
+	 * check that requesting user ID is the SLURM UID or root
+	 */
+	if ((req_uid != job_uid)
 	    && (!_slurm_authorized_user(req_uid))) {
-                error("stat_pid from uid %ld for job %u "
-                      "owned by uid %ld",
-                      (long) req_uid, req->job_id, (long) job_uid);
+		error("stat_pid from uid %ld for job %u "
+		      "owned by uid %ld",
+		      (long) req_uid, req->job_id, (long) job_uid);
 
-                if (msg->conn_fd >= 0) {
-                        slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-                        return ESLURM_USER_ID_MISSING;/* or bad in this case */
-                }
-        }
+		if (msg->conn_fd >= 0) {
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return ESLURM_USER_ID_MISSING;/* or bad in this case */
+		}
+	}
 
-        resp = xmalloc(sizeof(job_step_pids_t));
-        slurm_msg_t_copy(&resp_msg, msg);
+	resp = xmalloc(sizeof(job_step_pids_t));
+	slurm_msg_t_copy(&resp_msg, msg);
 	resp->node_name = xstrdup(conf->node_name);
 	resp->pid_cnt = 0;
 	resp->pid = NULL;
-        fd = stepd_connect(conf->spooldir, conf->node_name,
-                           req->job_id, req->step_id, &protocol_version);
-        if (fd == -1) {
-                error("stepd_connect to %u.%u failed: %m",
-                      req->job_id, req->step_id);
-                slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-                slurm_free_job_step_pids(resp);
-                return  ESLURM_INVALID_JOB_ID;
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->step_id, &protocol_version);
+	if (fd == -1) {
+		error("stepd_connect to %u.%u failed: %m",
+		      req->job_id, req->step_id);
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		slurm_free_job_step_pids(resp);
+		return  ESLURM_INVALID_JOB_ID;
 
-        }
+	}
 
 	if (stepd_list_pids(fd, protocol_version,
 			    &resp->pid, &resp->pid_cnt) == SLURM_ERROR) {
-                debug("No pids for nonexistent job %u.%u requested",
-                      req->job_id, req->step_id);
-        }
+		debug("No pids for nonexistent job %u.%u requested",
+		      req->job_id, req->step_id);
+	}
 
-        close(fd);
+	close(fd);
 
-        resp_msg.msg_type = RESPONSE_JOB_STEP_PIDS;
-        resp_msg.data     = resp;
+	resp_msg.msg_type = RESPONSE_JOB_STEP_PIDS;
+	resp_msg.data     = resp;
 
-        slurm_send_node_msg(msg->conn_fd, &resp_msg);
-        slurm_free_job_step_pids(resp);
-        return SLURM_SUCCESS;
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_free_job_step_pids(resp);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -3083,8 +3083,8 @@ _get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
 	*groups = (gid_t *) xmalloc(*ngroups * sizeof(gid_t));
 
 	if (getgrouplist(*user_name, my_gid, *groups, ngroups) < 0) {
-	        *groups = xrealloc(*groups, *ngroups * sizeof(gid_t));
-	        getgrouplist(*user_name, my_gid, *groups, ngroups);
+		*groups = xrealloc(*groups, *ngroups * sizeof(gid_t));
+		getgrouplist(*user_name, my_gid, *groups, ngroups);
 	}
 
 	return 0;
@@ -3210,10 +3210,10 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	 * Change the code below with caution.
 	\*********************************************************************/
 
-        if (setgroups(ngroups, groups) < 0) {
-	        error("sbcast: uid: %u setgroups: %s", req_uid,
+	if (setgroups(ngroups, groups) < 0) {
+		error("sbcast: uid: %u setgroups: %s", req_uid,
 		      strerror(errno));
-	        exit(errno);
+		exit(errno);
 	}
 
 	if (setgid(req_gid) < 0) {
@@ -4833,9 +4833,9 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");
 #ifdef SETPGRP_TWO_ARGS
-                setpgrp(0, 0);
+		setpgrp(0, 0);
 #else
-                setpgrp();
+		setpgrp();
 #endif
 		if (conf->chos_loc && !access(conf->chos_loc, X_OK))
 			execve(conf->chos_loc, argv, env);
