@@ -64,7 +64,7 @@ static int		hash_table_size = 1000;
 static sicp_job_t **	sicp_hash = NULL;
 static List		sicp_job_list = NULL;
 
-static int		sicp_interval = 10;
+static int		sicp_interval = 600;
 static bool		sicp_stop = false;
 static pthread_t	sicp_thread = 0;
 static pthread_mutex_t	sicp_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -171,7 +171,7 @@ static void _log_sicp_recs(void)
 
 static void _load_sicp_other_cluster(void)
 {
-int cluster_cnt = 1;
+int cluster_cnt = 0;
 	sicp_info_msg_t * sicp_buffer_ptr = NULL;
 	sicp_info_t *remote_sicp_ptr = NULL;
 	sicp_job_t *sicp_ptr;
