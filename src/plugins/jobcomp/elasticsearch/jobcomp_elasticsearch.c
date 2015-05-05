@@ -363,7 +363,7 @@ static int _index_job(const char *jobcomp)
 			} else {
 				token = strtok(NULL, " ");
 				if ((xstrcmp(token, "100") == 0)) {
-					token = strtok(NULL, " ");
+					(void)  strtok(NULL, " ");
 					token = strtok(NULL, " ");
 				}
 				if ((xstrcmp(token, "200") != 0)
@@ -377,7 +377,7 @@ static int _index_job(const char *jobcomp)
 					rc = SLURM_ERROR;
 				} else {
 					token = strtok((char *)jobcomp, ",");
-					token = strtok(token, ":");
+					(void)  strtok(token, ":");
 					token = strtok(NULL, ":");
 					debug("Jobcomp data related to jobid %s"
 					      " indexed into elasticsearch",
@@ -476,7 +476,7 @@ static int _save_state(void)
 		      new_file);
 		rc = SLURM_ERROR;
 	} else {
-		int pos = 0, nwrite, amount;
+		int pos = 0, nwrite, amount, rc2;
 		char *data;
 		fd_set_close_on_exec(fd);
 		nwrite = get_buf_offset(buffer);
@@ -492,7 +492,8 @@ static int _save_state(void)
 			nwrite -= amount;
 			pos += amount;
 		}
-		rc = fsync_and_close(fd, save_state_file);
+		if ((rc2 = fsync_and_close(fd, save_state_file)))
+			rc = rc2;
 	}
 
 	if (rc == SLURM_ERROR)
@@ -685,7 +686,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 	int nwritten, nparents, B_SIZE = 1024, rc = SLURM_SUCCESS;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
-	char submit_str[32], *script, *cluster, *qos, *state_string;
+	char submit_str[32], *script, *cluster = NULL, *qos, *state_string;
 	char *script_str;
 	char *parent_accounts;
 	char **acc_aux;

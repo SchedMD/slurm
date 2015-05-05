@@ -113,7 +113,7 @@ static int _match_conn(callerid_conn_t *conn_search, ino_t *inode_result,
 	   )
 		return SLURM_FAILURE;
 
-	debug3("_match_conn matched inode %lu", (ino_t)inode_row);
+	debug3("_match_conn matched inode %lu", (long unsigned int)inode_row);
 	*inode_result = inode_row;
 	return SLURM_SUCCESS;
 }
@@ -154,7 +154,7 @@ static int _find_match_in_tcp_file(
 
 	while( fgets(line, 1024, fp) != NULL ) {
 		matches = sscanf(line,
-			"%*s %[0-9A-Z]:%x %[0-9A-Z]:%x %*s %*s %*s %*s %*s %*s %lu",
+			"%*s %[0-9A-Z]:%x %[0-9A-Z]:%x %*s %*s %*s %*s %*s %*s %"PRIu64"",
 			ip_dst_str, &conn_row.port_dst, ip_src_str,
 			&conn_row.port_src, &inode_row);
 
@@ -189,9 +189,9 @@ static int _find_match_in_tcp_file(
 					INET6_ADDRSTRLEN);
 			inet_ntop(af, &conn->ip_dst, ip_dst_str,
 					INET6_ADDRSTRLEN);
-			debug("network_callerid matched %s:%d => %s:%d with inode %lu",
-					ip_src_str, conn->port_src, ip_dst_str,
-					conn->port_dst, (ino_t)inode);
+			debug("network_callerid matched %s:%lu => %s:%lu with inode %lu",
+			      ip_src_str, conn->port_src, ip_dst_str,
+			      conn->port_dst, (long unsigned int)inode);
 			break;
 		}
 	}
@@ -245,7 +245,7 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 			continue;
 		if (statbuf.st_ino == inode) {
 			debug3("_find_inode_in_fddir: found %lu at %s",
-					(ino_t)inode, fdpath);
+			       (long unsigned int)inode, fdpath);
 			rc = SLURM_SUCCESS;
 			break;
 		}

@@ -1662,7 +1662,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
-	int best_fit_location = 0, best_fit_sufficient;
+	int best_fit_location = 0;
 	bool sufficient;
 	long time_waiting = 0;
 	int leaf_switch_count = 0;	/* Count of leaf node switches used */
@@ -1844,8 +1844,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Select resources from leafs on a best-fit or round-robin basis */
 	while ((alloc_nodes <= max_nodes) &&
 	       ((alloc_nodes < want_nodes) || (rem_cpus > 0))) {
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
-		i = min_nodes - alloc_nodes; /* use it as a temp. int */
+		best_fit_cpus = best_fit_nodes = 0;
 		for (j = 0; j < switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
@@ -1863,7 +1862,6 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 				best_fit_cpus =  switches_cpu_cnt[j];
 				best_fit_nodes = switches_node_cnt[j];
 				best_fit_location = j;
-				best_fit_sufficient = sufficient;
 			}
 		}
 #if SELECT_DEBUG
@@ -2192,8 +2190,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Compute best-switch nodes available array */
 	while ((alloc_nodes <= max_nodes) &&
 	       ((alloc_nodes < want_nodes) || (rem_cpus > 0))) {
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
-		i = min_nodes - alloc_nodes; /* use it as a temp. int */
+		best_fit_cpus = best_fit_nodes = 0;
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
@@ -2209,7 +2206,6 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				best_fit_cpus =  switches_cpu_cnt[j];
 				best_fit_nodes = switches_node_cnt[j];
 				best_fit_location = j;
-				best_fit_sufficient = sufficient;
 			}
 		}
 #if SELECT_DEBUG

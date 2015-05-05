@@ -689,7 +689,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 				}
 			}
 		}
-		s = 0;
 		if (hwtype == HWLOC_OBJ_PU) {
 			for (i = 0; i <= ntskip && i < npus; i++) {
 				if (bit_test(spec_threads, i))
@@ -802,7 +801,8 @@ static int _task_cgroup_cpuset_dist_block(
 	hwdepth = hwloc_get_type_depth(topology, hwtype);
 	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
-	    (job->job_core_spec != CORE_SPEC_THREAD)){
+	    (job->job_core_spec != CORE_SPEC_THREAD)  &&
+	    (cores != 0) && (nsockets != 0)) {
 		/* Skip specialized threads as needed */
 		int i, t, c, s;
 		int cores = ncores / nsockets;
@@ -822,7 +822,6 @@ static int _task_cgroup_cpuset_dist_block(
 				}
 			}
 		}
-		s = 0;
 		if (hwtype == HWLOC_OBJ_PU) {
 			for (i = 0; i <= pfirst && i < npus; i++) {
 				if (bit_test(spec_threads, i))

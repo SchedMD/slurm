@@ -2788,7 +2788,7 @@ _callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
 		debug3("network_callerid inode not found");
 		return ESLURM_INVALID_JOB_ID;
 	}
-	debug3("network_callerid found inode %lu", (ino_t)inode);
+	debug3("network_callerid found inode %lu", (long unsigned int)inode);
 
 	rc = find_pid_by_inode(&pid, inode);
 	if (rc != SLURM_SUCCESS) {

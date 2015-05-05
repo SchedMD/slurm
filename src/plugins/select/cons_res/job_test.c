@@ -2177,7 +2177,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
-	int best_fit_location = 0, best_fit_sufficient;
+	int best_fit_location = 0;
 	bool sufficient;
 	long time_waiting = 0;
 	int req_switch_cnt = 0;
@@ -2416,7 +2416,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Select resources from leafs on a best-fit or round-robin basis */
 	while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
 		int *cpus_array = NULL, array_len;
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
+		best_fit_cpus = best_fit_nodes = 0;
 		for (j = 0; j < switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
@@ -2435,7 +2435,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 				best_fit_cpus =  switches_cpu_cnt[j];
 				best_fit_nodes = switches_node_cnt[j];
 				best_fit_location = j;
-				best_fit_sufficient = sufficient;
 			}
 		}
 
