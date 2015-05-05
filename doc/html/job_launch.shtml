@@ -37,12 +37,12 @@ following:</p>
 some of which involve plugins. The process is as follows:</p>
 <ol>
 <li>Call <b>job_submit</b> plugins to modify the request as appropriate</li>
-<li>Validate the the options are valid for this user (e.g. valid partition
+<li>Validate that the options are valid for this user (e.g. valid partition
 name, valid limits, etc.)</li>
 <li>Determine if this job is the highest priority runnable job, if so then
 really try to allocate resources for it now, otherwise only validate that it
 could run if no other jobs existed</li>
-<li>Determine which nodes could be used for the job. This if the feature
+<li>Determine which nodes could be used for the job. If the feature
 specification uses an exclusive OR option, then multiple iterations of the
 selection process below will be required with disjoint sets of nodes</li>
 <li>Call the <b>select</b> plugin to select the best resources for the request</li>
