@@ -9,6 +9,7 @@ EXTRA_DIST = \
 	libalps_test_programs.tar.gz	\
 	opt_modulefiles_slurm.in	\
 	pam_job.c 			\
+	plugstack.conf.template		\
 	slurm.conf.template		\
 	slurmconfgen.py.in
 

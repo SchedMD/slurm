@@ -466,12 +466,14 @@ DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
    %if %{slurm_with cray_alps}
       rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
    %else
+      install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
    %endif
    install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release}
    echo -e '#%Module\nset ModulesVersion "%{version}-%{release}"' > $RPM_BUILD_ROOT/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
+   rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/plugstack.conf.template
    rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/slurm.conf.template
    rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurmconfgen.py
 %endif
@@ -775,6 +777,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir /opt/modulefiles/slurm
 %endif
 %if %{slurm_with cray}
+%config %{_sysconfdir}/plugstack.conf.template
 %config %{_sysconfdir}/slurm.conf.template
 %{_sbindir}/slurmconfgen.py
 %endif
