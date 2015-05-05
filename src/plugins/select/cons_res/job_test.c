@@ -2178,7 +2178,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
 	int best_fit_location = 0;
-	bool sufficient;
 	long time_waiting = 0;
 	int req_switch_cnt = 0;
 	int req_switch_id = -1;
@@ -2421,7 +2420,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (switches_node_cnt[j] == 0)
 				continue;
 
-			sufficient = false;
 			/* If multiple leaf switches must be used, prefer use
 			 * of leaf switches with fewest number of idle CPUs.
 			 * This results in more leaf switches being used and

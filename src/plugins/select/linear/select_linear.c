@@ -1970,7 +1970,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	int i, j, rc = SLURM_SUCCESS;
 	int best_fit_inx, first, last;
 	int best_fit_nodes, best_fit_cpus;
-	int best_fit_location = 0, best_fit_sufficient;
+	int best_fit_location = 0;
 	bool sufficient;
 	long time_waiting = 0;
 	int leaf_switch_count = 0;	/* Count of leaf node switches used */
@@ -4225,7 +4225,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	int best_fit_inx, first, last;
 	int best_fit_nodes;
 	int best_fit_location = 0;
-	bool sufficient;
+	bool sufficient, best_fit_sufficient;
 
 	xassert(avail_bitmap);
 	xassert(resv_desc_ptr);
