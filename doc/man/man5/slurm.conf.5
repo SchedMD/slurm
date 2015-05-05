@@ -1871,6 +1871,13 @@ node being set to a DRAIN state and the job being requeued in a held state.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
+\fBPrologEpilogTimeout\fR
+The interval in seconds Slurms waits for Prolog and Epilog before terminating
+them. The dafault behavior is to wait indefinitely. This interval applies to
+the Prolog and Epilog ran by slurmd before and after the job starts and also to
+PrologSlurmctld and EpilogSlurmctld.
+
+.TP
 \fBPrologFlags\fR
 Flags to control the Prolog behavior. By default no flags are set.
 Currently the options are:

@@ -2292,4 +2292,9 @@ extern void trace_job(struct job_record *, const char *, const char *);
  */
 extern void  get_all_cache_info(char **, int *, uid_t, uint16_t);
 
+/*
+ */
+int
+waitpid_timeout(const char *, pid_t, int *, int);
+
 #endif /* !_HAVE_SLURMCTLD_H */

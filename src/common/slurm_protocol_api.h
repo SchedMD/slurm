@@ -825,6 +825,12 @@ char *slurm_get_layouts(void);
  */
 int16_t slurm_get_srun_eio_timeout(void);
 
+/* slurm_get_prolog_timeout()
+ *
+ * Return the timeout used for prolog/epilog
+ */
+extern uint16_t slurm_get_prolog_timeout(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

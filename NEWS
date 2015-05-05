@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Add jobcomp/elasticsearch plugin. Libcurl is required for build. Configure
     the server as follows: "JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200".
  -- Scancel logic large re-written to better support job arrays.
+ -- Added a slurm.conf parameter PrologEpilogTimeout to controll how long
+    prolog/epilog can run.
 
 * Changes in Slurm 15.08.0pre4
 ==============================

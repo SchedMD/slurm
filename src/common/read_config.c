@@ -284,6 +284,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
 	{"PrologSlurmctld", S_P_STRING},
+	{"PrologEpilogTimeout", S_P_UINT16},
 	{"PrologFlags", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
@@ -2542,6 +2543,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->prolog_epilog_timeout = (uint16_t)NO_VAL;
 
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -4266,6 +4268,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 */
 	if (!s_p_get_uint16(&conf->eio_timeout, "EioTimeout", hashtbl))
 		conf->eio_timeout = DEFAULT_EIO_SHUTDOWN_WAIT;
+
+	if (!s_p_get_uint16(&conf->prolog_epilog_timeout,
+			    "PrologEpilogTimeout",
+			    hashtbl)) {
+		/* The default value is wait forever
+		 */
+		conf->prolog_epilog_timeout = (uint16_t)NO_VAL;
+	}
 
 	xfree(default_storage_type);
 	xfree(default_storage_loc);

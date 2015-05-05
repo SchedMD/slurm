@@ -4959,6 +4959,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	char *my_prolog;
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
+	static uint16_t timeout;
 	pthread_t       timer_id;
 	pthread_attr_t  timer_attr;
 	pthread_cond_t  timer_cond  = PTHREAD_COND_INITIALIZER;
@@ -4981,6 +4982,9 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
 
+	if (timeout == 0)
+		timeout = slurm_get_prolog_timeout();
+
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
@@ -4993,8 +4997,14 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
 	START_TIMER;
-	rc = _run_job_script("prolog", my_prolog, job_env->jobid,
-			     -1, my_env, job_env->uid);
+
+	if (timeout == (uint16_t)NO_VAL)
+		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
+				     -1, my_env, job_env->uid);
+	else
+		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
+				     timeout, my_env, job_env->uid);
+
 	END_TIMER;
 	info("%s: run job script took %s", __func__, TIME_STR);
 	slurm_mutex_lock(&timer_mutex);
@@ -5024,6 +5034,7 @@ _run_epilog(job_env_t *job_env)
 {
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
+	static uint16_t timeout;
 	int error_code, diff_time;
 	char *my_epilog;
 	char **my_env = _build_env(job_env);
@@ -5031,13 +5042,22 @@ _run_epilog(job_env_t *job_env)
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
 
+	if (timeout == 0)
+		timeout = slurm_get_prolog_timeout();
+
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(job_env->jobid);
-	error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
-				     -1, my_env, job_env->uid);
+
+	if (timeout == (uint16_t)NO_VAL)
+		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
+					     -1, my_env, job_env->uid);
+	else
+		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
+					     timeout, my_env, job_env->uid);
+
 	xfree(my_epilog);
 	_destroy_env(my_env);
 

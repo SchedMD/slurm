@@ -4380,3 +4380,18 @@ _is_port_ok(int s, uint16_t port)
 
 	return true;
 }
+
+/* slurm_get_prolog_timeout
+ * Get prolog/epilog timeout
+ */
+uint16_t slurm_get_prolog_timeout(void)
+{
+	uint16_t timeout;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	timeout = conf->prolog_epilog_timeout;
+	slurm_conf_unlock();
+
+	return timeout;
+}

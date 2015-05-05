@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <poll.h>
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
@@ -118,7 +119,6 @@ static int	_valid_node_feature(char *feature);
 #ifndef HAVE_FRONT_END
 static void *	_wait_boot(void *arg);
 #endif
-
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	save_last_part_update = 0;
 
@@ -3002,6 +3002,7 @@ static void *_run_epilog(void *arg)
 	pid_t cpid;
 	int i, status, wait_rc;
 	char *argv[2];
+	uint16_t tm;
 
 	argv[0] = epilog_arg->epilog_slurmctld;
 	argv[1] = NULL;
@@ -3022,15 +3023,17 @@ static void *_run_epilog(void *arg)
 		exit(127);
 	}
 
+	/* Prolog and epilog use the same timeout
+	 */
+	tm = slurm_get_prolog_timeout();
 	while (1) {
-		wait_rc = waitpid(cpid, &status, 0);
+		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
 		if (wait_rc < 0) {
 			if (errno == EINTR)
 				continue;
-			error("epilog_slurmctld waitpid error: %m");
+			error("%s: waitpid error: %m", __func__);
 			break;
 		} else if (wait_rc > 0) {
-			killpg(cpid, SIGKILL);	/* kill children too */
 			break;
 		}
 	}
@@ -3244,6 +3247,7 @@ static void *_run_prolog(void *arg)
 	bitstr_t *node_bitmap = NULL;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
+	uint16_t tm;
 
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
@@ -3278,15 +3282,15 @@ static void *_run_prolog(void *arg)
 		exit(127);
 	}
 
+	tm = slurm_get_prolog_timeout();
 	while (1) {
-		wait_rc = waitpid(cpid, &status, 0);
+		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
 		if (wait_rc < 0) {
 			if (errno == EINTR)
 				continue;
-			error("prolog_slurmctld waitpid error: %m");
+			error("%s: waitpid error: %m", __func__);
 			break;
 		} else if (wait_rc > 0) {
-			killpg(cpid, SIGKILL);	/* kill children too */
 			break;
 		}
 	}
@@ -3627,4 +3631,47 @@ cleanup_completing(struct job_record *job_ptr)
 	job_hold_requeue(job_ptr);
 
 	slurm_sched_g_schedule();
+}
+
+/*
+ * _waitpid_timeout()
+ *
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ */
+int
+waitpid_timeout(const char *name, pid_t pid, int *pstatus, int timeout)
+{
+	int timeout_ms = 1000 * timeout; /* timeout in ms                   */
+	int max_delay =  1000;           /* max delay between waitpid calls */
+	int delay = 10;                  /* initial delay                   */
+	int rc;
+	int options = WNOHANG;
+
+	if (timeout <= 0 || timeout == (uint16_t)NO_VAL)
+		options = 0;
+
+	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("waidpid: %m");
+			return -1;
+		}
+		else if (timeout_ms <= 0) {
+			info("%s%stimeout after %ds: killing pgid %d",
+			     name != NULL ? name : "",
+			     name != NULL ? ": " : "",
+			     timeout, pid);
+			killpg(pid, SIGKILL);
+			options = 0;
+		}
+		else {
+			poll(NULL, 0, delay);
+			timeout_ms -= delay;
+			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
+		}
+	}
+
+	killpg(pid, SIGKILL);  /* kill children too */
+	return pid;
 }

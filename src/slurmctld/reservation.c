@@ -4651,11 +4651,13 @@ static void *_fork_script(void *x)
 	char *argv[3], *envp[1];
 	int status, wait_rc;
 	pid_t cpid;
+	uint16_t tm;
 
 	argv[0] = args->script;
 	argv[1] = args->resv_name;
 	argv[2] = NULL;
 	envp[0] = NULL;
+
 	if ((cpid = fork()) < 0) {
 		error("_fork_script fork error: %m");
 		goto fini;
@@ -4670,8 +4672,9 @@ static void *_fork_script(void *x)
 		exit(127);
 	}
 
+	tm = slurm_get_prolog_timeout();
 	while (1) {
-		wait_rc = waitpid(cpid, &status, 0);
+		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
 		if (wait_rc < 0) {
 			if (errno == EINTR)
 				continue;

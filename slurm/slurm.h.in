@@ -2421,6 +2421,7 @@ typedef struct slurm_ctl_conf {
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog run by slurmd */
+	uint16_t prolog_epilog_timeout; /* prolog/epilog timeout */
 	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
 	uint16_t propagate_prio_process; /* process priority propagation,
 					  * see PROP_PRIO_* */

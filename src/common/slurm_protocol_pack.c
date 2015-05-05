@@ -5688,6 +5688,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->private_data, buffer);
 		packstr(build_ptr->proctrack_type, buffer);
 		packstr(build_ptr->prolog, buffer);
+		pack16(build_ptr->prolog_epilog_timeout, buffer);
 		packstr(build_ptr->prolog_slurmctld, buffer);
 		pack16(build_ptr->prolog_flags, buffer);
 		pack16(build_ptr->propagate_prio_process, buffer);
@@ -6567,6 +6568,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->prolog, &uint32_tmp,
 				       buffer);
+		safe_unpack16(&build_ptr->prolog_epilog_timeout, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->prolog_slurmctld,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->prolog_flags, buffer);
