@@ -519,6 +519,8 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
 rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.a
 rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm_adopt.a
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm_adopt.la
 %endif
 rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.a
 rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.la
@@ -526,6 +528,12 @@ rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.a
 rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.la
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.a
 rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm_adopt.a
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm_adopt.la
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.a
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.la
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.a
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.la
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
@@ -726,13 +734,21 @@ touch $LIST
 %if %{?with_pam_dir}0
     test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.so	&&
 	echo %{with_pam_dir}/pam_slurm.so	>>$LIST
+    test -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm_adopt.so	&&
+	echo %{with_pam_dir}/pam_slurm_adopt.so	>>$LIST
 %else
-    test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so		&&
+    test -f $RPM_BUILD_ROOT/lib/security/pam_slurm.so	&&
 	echo /lib/security/pam_slurm.so		>>$LIST
-    test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so		&&
+    test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.so	&&
 	echo /lib32/security/pam_slurm.so	>>$LIST
-    test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.so		&&
+    test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.so	&&
 	echo /lib64/security/pam_slurm.so	>>$LIST
+    test -f $RPM_BUILD_ROOT/lib/security/pam_slurm_adopt.so		&&
+	echo /lib/security/pam_slurm_adopt.so		>>$LIST
+    test -f $RPM_BUILD_ROOT/lib32/security/pam_slurm_adopt.so		&&
+	echo /lib32/security/pam_slurm_adopt.so		>>$LIST
+    test -f $RPM_BUILD_ROOT/lib64/security/pam_slurm_adopt.so		&&
+	echo /lib64/security/pam_slurm_adopt.so		>>$LIST
 %endif
 #############################################################################
 
