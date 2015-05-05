@@ -802,10 +802,10 @@ static int _task_cgroup_cpuset_dist_block(
 	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
 	    (job->job_core_spec != CORE_SPEC_THREAD)  &&
-	    (cores != 0) && (nsockets != 0)) {
+	    (nsockets != 0)) {
 		/* Skip specialized threads as needed */
 		int i, t, c, s;
-		int cores = ncores / nsockets;
+		int cores = MAX(1, (ncores / nsockets));
 		int threads = npus / cores;
 		spec_thread_cnt = job->job_core_spec & (~CORE_SPEC_THREAD);
 		spec_threads = bit_alloc(npus);

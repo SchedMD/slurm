@@ -190,8 +190,9 @@ static int _find_match_in_tcp_file(
 			inet_ntop(af, &conn->ip_dst, ip_dst_str,
 					INET6_ADDRSTRLEN);
 			debug("network_callerid matched %s:%lu => %s:%lu with inode %lu",
-			      ip_src_str, conn->port_src, ip_dst_str,
-			      conn->port_dst, (long unsigned int)inode);
+			      ip_src_str, (long unsigned int)conn->port_src,
+			      ip_dst_str, (long unsigned int)conn->port_dst,
+			      (long unsigned int)inode);
 			break;
 		}
 	}

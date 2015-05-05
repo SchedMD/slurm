@@ -4224,7 +4224,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	int i, j;
 	int best_fit_inx, first, last;
 	int best_fit_nodes;
-	int best_fit_location = 0, best_fit_sufficient;
+	int best_fit_location = 0;
 	bool sufficient;
 
 	xassert(avail_bitmap);
