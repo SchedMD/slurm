@@ -1976,7 +1976,7 @@ static int _core_spec_init(void)
 	pid_t pid;
 
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
-		info("No specialized cores configured by default on this node");
+		debug("No specialized cores configured by default on this node");
 		return SLURM_SUCCESS;
 	}
 	if (!check_cgroup_job_confinement()) {
