@@ -1,0 +1,7 @@
+#
+# SPANK config file
+#
+# required|optional  path_to_plugin                      args
+#
+
+include	plugstack.conf.d/*
