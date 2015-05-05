@@ -256,7 +256,7 @@ proc cancel_job { job_id } {
 	}
 
 	send_user "cancelling $job_id\n"
-	exec $scancel -Q $job_id
+	set status [catch [exec $scancel -Q $job_id] result]
 	exec $bin_sleep 1
 	return [wait_for_job $job_id "DONE"]
 }
@@ -2248,7 +2248,7 @@ proc is_super_user { } {
 #
 ################################################################
 proc check_acct_associations { } {
-	global sacctmgr number alpha_numeric_under
+	global sacctmgr number alpha_numeric_under exit_code
 
 	set rc 1
 	log_user 0
@@ -2366,7 +2366,7 @@ proc get_job_acct_freq { } {
 #
 ################################################################
 proc check_accounting_admin_level { } {
-	global sacctmgr alpha alpha_numeric_under bin_id
+	global sacctmgr alpha alpha_numeric_under bin_id exit_code
 
 	set admin_level ""
 	set user_name ""
@@ -2422,7 +2422,7 @@ proc check_accounting_admin_level { } {
 #
 ################################################################
 proc get_cluster_name { } {
-	global scontrol alpha_numeric_under
+	global scontrol alpha_numeric_under exit_code
 	#
 	# Use scontrol to find the cluster name
 	#
@@ -2459,7 +2459,7 @@ proc get_cluster_name { } {
 ################################################################
 
 proc get_bluegene_layout { } {
-	global scontrol alpha_numeric_under
+	global scontrol alpha_numeric_under exit_code
 
 	log_user 0
 	set layout 0
@@ -2494,7 +2494,7 @@ proc get_bluegene_layout { } {
 ################################################################
 
 proc get_bluegene_psets { } {
-	global scontrol number
+	global scontrol number exit_code
 
 	log_user 0
 	set psets 0
@@ -2532,7 +2532,7 @@ proc get_bluegene_psets { } {
 ################################################################
 
 proc get_bluegene_type { } {
-	global scontrol alpha
+	global scontrol alpha exit_code
 
 	log_user 0
 	set type 0
@@ -2567,7 +2567,7 @@ proc get_bluegene_type { } {
 ################################################################
 
 proc get_bluegene_procs_per_cnode { } {
-	global scontrol number
+	global scontrol number exit_code
 
 	log_user 0
 	set cpu_cnt 0
@@ -2602,7 +2602,7 @@ proc get_bluegene_procs_per_cnode { } {
 ################################################################
 
 proc get_bluegene_cnodes_per_mp { } {
-	global scontrol number
+	global scontrol number exit_code
 
 	log_user 0
 	set node_cnt 1
@@ -2637,7 +2637,7 @@ proc get_bluegene_cnodes_per_mp { } {
 ################################################################
 
 proc get_bluegene_allow_sub_blocks { } {
-	global scontrol alpha
+	global scontrol alpha exit_code
 
 	log_user 0
 	set type 0
@@ -2672,7 +2672,7 @@ proc get_bluegene_allow_sub_blocks { } {
 ################################################################
 
 proc get_node_cnt { } {
-	global scontrol
+	global scontrol exit_code
 
 	log_user 0
 	set node_cnt 0
@@ -2826,12 +2826,12 @@ proc print_success { test_id } {
 proc change_subbp_state { node ionodes state } {
 	global scontrol smap
 
-	set exit_code 0
+	set return_code 0
 
 	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
 	expect {
 		-re "slurm_update error:" {
-			set exit_code 1
+			set return_code 1
 			exp_continue
 		}
 		-re "Unable to contact" {
@@ -2841,15 +2841,15 @@ proc change_subbp_state { node ionodes state } {
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 			slow_kill $my_pid
-			set exit_code 1
+			set return_code 1
 		}
 		eof {
 			wait
 		}
 	}
 
-	if { $exit_code } {
-		return $exit_code
+	if { $return_code } {
+		return $return_code
 	}
 
 	set match 0
@@ -2870,7 +2870,7 @@ proc change_subbp_state { node ionodes state } {
 		timeout {
 			send_user "\nFAILURE: smap not responding\n"
 			slow_kill $my_pid
-			set exit_code 1
+			set return_code 1
 		}
 		eof {
 			wait
@@ -2879,10 +2879,10 @@ proc change_subbp_state { node ionodes state } {
 
 	if {$match != 2} {
 		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
-		set exit_code 1
+		set return_code 1
 	}
 
-	return $exit_code
+	return $return_code
 }
 
 ################################################################
@@ -3039,7 +3039,7 @@ proc check_node_mem { } {
 #
 ################################################################
 proc get_fs_damping_factor { } {
-	global scontrol number
+	global scontrol number exit_code
 
 	log_user 0
 	set damp 1
@@ -3075,7 +3075,7 @@ proc get_fs_damping_factor { } {
 ################################################################
 
 proc slurmctld_plug_stack_nonstop { } {
-	global scontrol alpha_numeric_comma
+	global scontrol alpha_numeric_comma exit_code
 
 	log_user 0
 	set nonstop_enforce 0
@@ -3112,7 +3112,7 @@ proc slurmctld_plug_stack_nonstop { } {
 ################################################################
 
 proc job_submit_all_partitions { } {
-	global scontrol alpha_numeric_comma
+	global scontrol alpha_numeric_comma exit_code
 
 	log_user 0
 	set all_partitions 0

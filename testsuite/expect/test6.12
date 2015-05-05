@@ -159,7 +159,7 @@ if {$found_step == 0} {
 	send_user "\nFAILURE: job step not found, apparently killed\n"
 	set exit_code 1
 }
-exec $scancel --quiet $job_id
+cancel_job $job_id
 
 #
 # Build and run second test script
@@ -241,7 +241,7 @@ if {$found_job == 0} {
 				wait
 			}
 		}
-		exec $scancel --quiet $job_id
+		cancel_job $job_id
 		set exit_code 1
 	}
 }

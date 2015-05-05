@@ -57,7 +57,7 @@ proc inc3_11_4 {} {
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
-			exec $scancel $job_id
+			cancel_job $job_id
 			send_user "\n\033\[31mFAILURE: job submit should have been denied (Within: inc3.11.4)\033\[m\n"
 			set exit_code 1
 			exp_continue

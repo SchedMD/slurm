@@ -95,7 +95,17 @@ if {$match != $job_cnt} {
 	send_user "FAILURE: job count mismatch ($match != $job_cnt)\n"
 	set exit_code 1
 }
-exec $scancel --name=$file_in
+
+spawn $scancel --name=$file_in
+expect {
+	timeout {
+		send_user "\nFAILURE: scancel is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
 
 # Prevent zero divide
 if {$time_used == 0} {

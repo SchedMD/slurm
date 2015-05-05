@@ -205,7 +205,7 @@ for {set i 0} {$i<4} {incr i} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			exec $scancel --quiet $job_id
+			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {
@@ -366,7 +366,7 @@ for {set i 0} {$i<5} {incr i} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			exec $scancel --quiet $job_id
+			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {
