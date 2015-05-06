@@ -37,9 +37,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/common/parse_time.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "sacct.h"
 #include <time.h>
@@ -795,7 +796,8 @@ void parse_command_line(int argc, char **argv)
 		*/
 		if (!job_cond->state_list
 		    || !list_count(job_cond->state_list)) {
-			if (!localtime_r(&job_cond->usage_start, &start_tm)) {
+			if (!slurm_localtime_r(&job_cond->usage_start,
+					       &start_tm)) {
 				error("Couldn't get localtime from %ld",
 				      (long)job_cond->usage_start);
 				return;
@@ -804,16 +806,16 @@ void parse_command_line(int argc, char **argv)
 			start_tm.tm_min = 0;
 			start_tm.tm_hour = 0;
 			start_tm.tm_isdst = -1;
-			job_cond->usage_start = mktime(&start_tm);
+			job_cond->usage_start = slurm_mktime(&start_tm);
 		}
 	}
 
 	if (verbosity > 0) {
 		char start_char[25], end_char[25];
 
-		slurm_ctime_r(&job_cond->usage_start, start_char);
+		slurm_ctime2_r(&job_cond->usage_start, start_char);
 		if (job_cond->usage_end)
-			slurm_ctime_r(&job_cond->usage_end, end_char);
+			slurm_ctime2_r(&job_cond->usage_end, end_char);
 		else
 			sprintf(end_char, "Now");
 		info("Jobs eligible from %s - %s", start_char, end_char);

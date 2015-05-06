@@ -96,7 +96,8 @@ libcommon_la_SOURCES = 			\
 	slurm_acct_gather_infiniband.c slurm_acct_gather_infiniband.h \
 	slurm_acct_gather_filesystem.c slurm_acct_gather_filesystem.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_route.c slurm_route.h \
+	slurm_route.c slurm_route.h	\
+	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\

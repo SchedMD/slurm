@@ -63,6 +63,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_time.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -324,8 +325,8 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 	verbose( "BEGIN AUTHD CREDENTIAL" );
 	verbose( "   UID: %u", cred->cred.uid );
 	verbose( "   GID: %u", cred->cred.gid );
-	verbose( "   Valid from: %s", slurm_ctime( &cred->cred.valid_from ) );
-	verbose( "   Valid to: %s", slurm_ctime( &cred->cred.valid_to ) );
+	verbose( "   Valid from: %s", slurm_ctime2( &cred->cred.valid_from ) );
+	verbose( "   Valid to: %s", slurm_ctime2( &cred->cred.valid_to ) );
 	verbose( "   Signature: 0x%02x%02x%02x%02x ...",
 			 cred->sig.data[ 0 ], cred->sig.data[ 1 ],
 			 cred->sig.data[ 2 ], cred->sig.data[ 3 ] );

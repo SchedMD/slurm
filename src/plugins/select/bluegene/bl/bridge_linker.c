@@ -39,6 +39,7 @@
 
 #include "../ba/block_allocator.h"
 #include "../bridge_linker.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "bridge_status.h"
 #include "bridge_switch_connections.h"
@@ -561,7 +562,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 		      bg_err_str(rc));
 
 	gettimeofday(&my_tv, NULL);
-	localtime_r(&my_tv.tv_sec, &my_tm);
+	slurm_localtime_r(&my_tv.tv_sec, &my_tm);
 	bg_record->bg_block_id = xstrdup_printf(
 		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
 		my_tm.tm_mday, mon_abbr(my_tm.tm_mon),
@@ -661,7 +662,7 @@ static int _post_allocate(bg_record_t *bg_record)
 		struct tm my_tm;
 		struct timeval my_tv;
 		gettimeofday(&my_tv, NULL);
-		localtime_r(&my_tv.tv_sec, &my_tm);
+		slurm_localtime_r(&my_tv.tv_sec, &my_tm);
 		bg_record->bg_block_id = xstrdup_printf(
 			"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3ld",
 			my_tm.tm_mday, mon_abbr(my_tm.tm_mon),

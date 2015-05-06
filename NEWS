@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
     prolog/epilog can run.
  -- Added TRES (Trackable resources) to track Mem, GRES, license, etc
     utilization.
+ -- Add re-entrant versions of glibc time functions (e.g. localtime) to Slurm
+    in order to eliminate rare deadlock of slurmstepd fork and exec calls.
 
 * Changes in Slurm 15.08.0pre4
 ==============================

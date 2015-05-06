@@ -67,6 +67,7 @@
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -172,10 +173,10 @@ static void _advance_time(time_t *res_time, int day_cnt)
 	time_t save_time = *res_time;
 	struct tm time_tm;
 
-	localtime_r(res_time, &time_tm);
+	slurm_localtime_r(res_time, &time_tm);
 	time_tm.tm_isdst = -1;
 	time_tm.tm_mday += day_cnt;
-	*res_time = mktime(&time_tm);
+	*res_time = slurm_mktime(&time_tm);
 	if (*res_time == (time_t)(-1)) {
 		error("Could not compute reservation time %lu",
 		      (long unsigned int) save_time);

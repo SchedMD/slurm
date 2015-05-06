@@ -45,6 +45,7 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_time.h"
 
 #define BUFFER_SIZE 4096
 
@@ -359,19 +360,19 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
-			      slurm_ctime(&check_time),
+			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else if (begin_time)
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
-			      slurm_ctime(&check_time),
+			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s was submitted then and we are just "
 			      "now hearing about it.",
-			      slurm_ctime(&check_time),
+			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 
 		global_last_rollup = check_time;

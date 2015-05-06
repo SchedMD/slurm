@@ -40,6 +40,7 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_rollup.h"
+#include "src/common/slurm_time.h"
 
 time_t global_last_rollup = 0;
 pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -212,13 +213,13 @@ static void *_cluster_rollup_usage(void *arg)
 //	last_day = 1197033199;
 //	last_month = 1204358399;
 
-	if (!localtime_r(&last_hour, &start_tm)) {
+	if (!slurm_localtime_r(&last_hour, &start_tm)) {
 		error("Couldn't get localtime from hour start %ld", last_hour);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	if (!localtime_r(&my_time, &end_tm)) {
+	if (!slurm_localtime_r(&my_time, &end_tm)) {
 		error("Couldn't get localtime from hour end %ld", my_time);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -233,15 +234,15 @@ static void *_cluster_rollup_usage(void *arg)
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_isdst = -1;
-	hour_start = mktime(&start_tm);
+	hour_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
-	hour_end = mktime(&end_tm);
+	hour_end = slurm_mktime(&end_tm);
 
-/* 	info("hour start %s", slurm_ctime(&hour_start)); */
-/* 	info("hour end %s", slurm_ctime(&hour_end)); */
+/* 	info("hour start %s", slurm_ctime2(&hour_start)); */
+/* 	info("hour end %s", slurm_ctime2(&hour_end)); */
 /* 	info("diff is %d", hour_end-hour_start); */
 
 	slurm_mutex_lock(&rollup_lock);
@@ -249,7 +250,7 @@ static void *_cluster_rollup_usage(void *arg)
 	slurm_mutex_unlock(&rollup_lock);
 
 	/* set up the day period */
-	if (!localtime_r(&last_day, &start_tm)) {
+	if (!slurm_localtime_r(&last_day, &start_tm)) {
 		error("Couldn't get localtime from day %ld", last_day);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -259,18 +260,18 @@ static void *_cluster_rollup_usage(void *arg)
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_isdst = -1;
-	day_start = mktime(&start_tm);
+	day_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_hour = 0;
 	end_tm.tm_isdst = -1;
-	day_end = mktime(&end_tm);
+	day_end = slurm_mktime(&end_tm);
 
-/* 	info("day start %s", slurm_ctime(&day_start)); */
-/* 	info("day end %s", slurm_ctime(&day_end)); */
+/* 	info("day start %s", slurm_ctime2(&day_start)); */
+/* 	info("day end %s", slurm_ctime2(&day_end)); */
 /* 	info("diff is %d", day_end-day_start); */
 
 	/* set up the month period */
-	if (!localtime_r(&last_month, &start_tm)) {
+	if (!slurm_localtime_r(&last_month, &start_tm)) {
 		error("Couldn't get localtime from month %ld", last_month);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -281,17 +282,17 @@ static void *_cluster_rollup_usage(void *arg)
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
 	start_tm.tm_isdst = -1;
-	month_start = mktime(&start_tm);
+	month_start = slurm_mktime(&start_tm);
 
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_hour = 0;
 	end_tm.tm_mday = 1;
 	end_tm.tm_isdst = -1;
-	month_end = mktime(&end_tm);
+	month_end = slurm_mktime(&end_tm);
 
-/* 	info("month start %s", slurm_ctime(&month_start)); */
-/* 	info("month end %s", slurm_ctime(&month_end)); */
+/* 	info("month start %s", slurm_ctime2(&month_start)); */
+/* 	info("month end %s", slurm_ctime2(&month_end)); */
 /* 	info("diff is %d", month_end-month_start); */
 
 	if ((hour_end - hour_start) > 0) {

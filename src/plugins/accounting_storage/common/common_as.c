@@ -43,10 +43,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "src/common/env.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
-#include "src/common/env.h"
 #include "src/slurmdbd/read_config.h"
 #include "common_as.h"
 
@@ -433,14 +434,14 @@ extern int set_usage_information(char **usage_table,
 
 	/* Default is going to be the last day */
 	if (!end) {
-		if (!localtime_r(&my_time, &end_tm)) {
+		if (!slurm_localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
 	} else {
-		if (!localtime_r(&end, &end_tm)) {
+		if (!slurm_localtime_r(&end, &end_tm)) {
 			error("Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -449,10 +450,10 @@ extern int set_usage_information(char **usage_table,
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
-	end = mktime(&end_tm);
+	end = slurm_mktime(&end_tm);
 
 	if (!start) {
-		if (!localtime_r(&my_time, &start_tm)) {
+		if (!slurm_localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      my_time);
 			return SLURM_ERROR;
@@ -460,7 +461,7 @@ extern int set_usage_information(char **usage_table,
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
 	} else {
-		if (!localtime_r(&start, &start_tm)) {
+		if (!slurm_localtime_r(&start, &start_tm)) {
 			error("Couldn't get localtime from user start %ld",
 			      start);
 			return SLURM_ERROR;
@@ -469,11 +470,11 @@ extern int set_usage_information(char **usage_table,
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_isdst = -1;
-	start = mktime(&start_tm);
+	start = slurm_mktime(&start_tm);
 
 	if (end-start < 3600) {
 		end = start + 3600;
-		if (!localtime_r(&end, &end_tm)) {
+		if (!slurm_localtime_r(&end, &end_tm)) {
 			error("2 Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -664,8 +665,8 @@ extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 		return 0;
 	}
 
-	/* use localtime to avoid any daylight savings issues */
-	if (!localtime_r(&last_submit, &time_tm)) {
+	/* use slurm_localtime to avoid any daylight savings issues */
+	if (!slurm_localtime_r(&last_submit, &time_tm)) {
 		error("Couldn't get localtime from first "
 		      "suspend start %ld", (long)last_submit);
 		return 0;
@@ -691,7 +692,7 @@ extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 	}
 
 	time_tm.tm_isdst = -1;
-	return (mktime(&time_tm) - 1);
+	return (slurm_mktime(&time_tm) - 1);
 }
 
 
@@ -819,7 +820,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	char start_char[32];
 	char end_char[32];
 
-	localtime_r((time_t *)&period_start, &time_tm);
+	slurm_localtime_r((time_t *)&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
 
@@ -842,7 +843,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		 time_tm.tm_min,
 		 time_tm.tm_sec);
 
-	localtime_r((time_t *)&period_end, &time_tm);
+	slurm_localtime_r((time_t *)&period_end, &time_tm);
 	snprintf(end_char, sizeof(end_char),
 		 "%4.4u-%2.2u-%2.2u"
 		 "T%2.2u:%2.2u:%2.2u",

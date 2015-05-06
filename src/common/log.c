@@ -78,14 +78,15 @@
 #include <sys/unistd.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/log.h"
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/safeopen.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_protocol_api.h"
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -188,7 +189,7 @@ static size_t _make_timestamp(char *timestamp_buf, size_t max,
 {
 	time_t timestamp_t = time(NULL);
 	struct tm timestamp_tm;
-	if (!localtime_r(&timestamp_t, &timestamp_tm)) {
+	if (!slurm_localtime_r(&timestamp_t, &timestamp_tm)) {
 		fprintf(stderr, "localtime_r() failed\n");
 		return 0;
 	}
@@ -678,7 +679,7 @@ set_idbuf(char *idbuf)
 
 	gettimeofday(&now, NULL);
 
-	sprintf(idbuf, "%.15s.%-6d %5d %p", ctime(&now.tv_sec) + 4,
+	sprintf(idbuf, "%.15s.%-6d %5d %p", slurm_ctime(&now.tv_sec) + 4,
 	        (int)now.tv_usec, (int)getpid(), (void *)pthread_self());
 
 }

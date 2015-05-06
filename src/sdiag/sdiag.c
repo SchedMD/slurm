@@ -46,6 +46,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -112,8 +113,8 @@ static int _print_stats(void)
 	}
 
 	printf("*******************************************************\n");
-	printf("sdiag output at %s", ctime(&buf->req_time));
-	printf("Data since      %s", ctime(&buf->req_time_start));
+	printf("sdiag output at %s", slurm_ctime(&buf->req_time));
+	printf("Data since      %s", slurm_ctime(&buf->req_time_start));
 	printf("*******************************************************\n");
 
 	printf("Server thread count: %d\n", buf->server_thread_count);
@@ -151,7 +152,7 @@ static int _print_stats(void)
 	printf("\tTotal backfilled jobs (since last stats cycle start): %u\n",
 	       buf->bf_last_backfilled_jobs);
 	printf("\tTotal cycles: %u\n", buf->bf_cycle_counter);
-	printf("\tLast cycle when: %s", ctime(&buf->bf_when_last_cycle));
+	printf("\tLast cycle when: %s", slurm_ctime(&buf->bf_when_last_cycle));
 	printf("\tLast cycle: %u\n", buf->bf_cycle_last);
 	printf("\tMax cycle:  %u\n", buf->bf_cycle_max);
 	if (buf->bf_cycle_counter > 0) {

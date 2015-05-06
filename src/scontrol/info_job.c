@@ -43,6 +43,7 @@
 
 #include "scontrol.h"
 #include "src/common/bitstring.h"
+#include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
@@ -156,7 +157,7 @@ scontrol_pid_info(pid_t job_pid)
 			slurm_perror ("slurm_get_end_time error");
 		return;
 	}
-	printf("Slurm job id %u ends at %s\n", job_id, slurm_ctime(&end_time));
+	printf("Slurm job id %u ends at %s\n", job_id, slurm_ctime2(&end_time));
 
 	rem_time = slurm_get_rem_time(job_id);
 	printf("slurm_get_rem_time is %ld\n", rem_time);

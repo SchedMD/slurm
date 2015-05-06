@@ -47,16 +47,17 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+#include "src/common/env.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/forward.h"
-#include "src/common/env.h"
-#include "src/common/fd.h"
 
 #include "allocate.h"
 #include "opt.h"
@@ -181,7 +182,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("job time limit to be reached at %s",
-			slurm_ctime(&msg->timeout));
+			slurm_ctime2(&msg->timeout));
 	}
 }
 

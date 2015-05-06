@@ -63,6 +63,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1512,7 +1513,7 @@ slurm_cred_print(slurm_cred_t *cred)
 	info("Cred: Job_mem_limit     %u",  cred->job_mem_limit );
 	info("Cred: Step_mem_limit    %u",  cred->step_mem_limit );
 	info("Cred: Step hostlist     %s",  cred->step_hostlist );
-	info("Cred: ctime             %s",  slurm_ctime(&cred->ctime) );
+	info("Cred: ctime             %s",  slurm_ctime2(&cred->ctime) );
 	info("Cred: siglen            %u",  cred->siglen        );
 #ifndef HAVE_BG
 	{
@@ -1867,7 +1868,7 @@ extern char * timestr (const time_t *tp, char *buf, size_t n)
 	if (disabled)
 		return NULL;
 #endif
-	if (!localtime_r (tp, &tmval))
+	if (!slurm_localtime_r (tp, &tmval))
 		error ("localtime_r: %m");
 	slurm_strftime (buf, n, fmt, &tmval);
 	return (buf);
@@ -2481,6 +2482,6 @@ void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
 	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
-	info("Sbcast_cred: ctime   %s", slurm_ctime(&sbcast_cred->ctime) );
-	info("Sbcast_cred: Expire  %s", slurm_ctime(&sbcast_cred->expiration) );
+	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime) );
+	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->expiration));
 }

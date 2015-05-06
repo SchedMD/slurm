@@ -60,13 +60,14 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/plugstack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/plugstack.h"
 
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
@@ -936,7 +937,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("Job allocation time limit to be reached at %s",
-			slurm_ctime(&msg->timeout));
+			slurm_ctime2(&msg->timeout));
 	}
 }
 

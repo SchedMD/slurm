@@ -50,6 +50,7 @@
 #include <termios.h>
 
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
@@ -313,5 +314,5 @@ _print_date( void )
 	time_t now;
 
 	now = time( NULL );
-	printf("%s", ctime( &now ));
+	printf("%s", slurm_ctime( &now ));
 }

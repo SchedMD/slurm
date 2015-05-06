@@ -73,8 +73,9 @@
 #include <math.h>
 #include "slurm/slurm_errno.h"
 
-#include "src/common/xstring.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_time.h"
+#include "src/common/xstring.h"
 
 #include "fair_tree.h"
 
@@ -739,7 +740,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	struct tm last_tm;
 	time_t tmp_time, now = time(NULL);
 
-	if (localtime_r(&last_reset, &last_tm) == NULL)
+	if (slurm_localtime_r(&last_reset, &last_tm) == NULL)
 		return (time_t) 0;
 
 	last_tm.tm_sec   = 0;
@@ -750,13 +751,13 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	last_tm.tm_isdst = -1;
 	switch (reset_period) {
 	case PRIORITY_RESET_DAILY:
-		tmp_time = mktime(&last_tm);
+		tmp_time = slurm_mktime(&last_tm);
 		tmp_time += SECS_PER_DAY;
 		while ((tmp_time + SECS_PER_DAY) < now)
 			tmp_time += SECS_PER_DAY;
 		return tmp_time;
 	case PRIORITY_RESET_WEEKLY:
-		tmp_time = mktime(&last_tm);
+		tmp_time = slurm_mktime(&last_tm);
 		tmp_time += (SECS_PER_DAY * (7 - last_tm.tm_wday));
 		while ((tmp_time + SECS_PER_WEEK) < now)
 			tmp_time += SECS_PER_WEEK;
@@ -791,7 +792,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	default:
 		return (time_t) 0;
 	}
-	return mktime(&last_tm);
+	return slurm_mktime(&last_tm);
 }
 
 /*

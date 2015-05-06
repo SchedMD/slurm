@@ -39,6 +39,7 @@
 
 #include "src/smap/smap.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 
 /* FUNCTIONS */
@@ -187,11 +188,11 @@ extern void print_date(void)
 	time_t now_time = time(NULL);
 
 	if (params.commandline) {
-		printf("%s", ctime(&now_time));
+		printf("%s", slurm_ctime(&now_time));
 	} else {
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%s",
-			  slurm_ctime(&now_time));
+			  slurm_ctime2(&now_time));
 		main_ycord++;
 	}
 }

@@ -71,6 +71,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/slurm_time.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
 #define RETRY_COUNT		20
@@ -664,10 +665,10 @@ _print_cred_info(munge_info_t *mi)
 	xassert(mi != NULL);
 
 	if (mi->encoded > 0)
-		info ("ENCODED: %s", slurm_ctime_r(&mi->encoded, buf));
+		info ("ENCODED: %s", slurm_ctime2_r(&mi->encoded, buf));
 
 	if (mi->decoded > 0)
-		info ("DECODED: %s", slurm_ctime_r(&mi->decoded, buf));
+		info ("DECODED: %s", slurm_ctime2_r(&mi->decoded, buf));
 }
 
 

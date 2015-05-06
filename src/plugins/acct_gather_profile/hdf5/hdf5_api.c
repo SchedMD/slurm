@@ -39,6 +39,7 @@
 \****************************************************************************/
 
 #include "src/common/macros.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -369,7 +370,7 @@ static void _energy_merge_step_series(
 //	This is a difference series
 	profile_energy_t* prf_cur = (profile_energy_t*) cur;
 	profile_energy_t* prf_buf = (profile_energy_t*) buf;
-	struct tm *ts = localtime(&prf_cur->time);
+	struct tm *ts = slurm_localtime(&prf_cur->time);
 	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
@@ -663,7 +664,7 @@ static void _io_merge_step_series(
 	static double start_write_size = 0;
 	profile_io_t* prfCur = (profile_io_t*) cur;
 	profile_io_t* prfBuf = (profile_io_t*) buf;
-	struct tm *ts = localtime(&prfCur->time);
+	struct tm *ts = slurm_localtime(&prfCur->time);
 	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
@@ -982,7 +983,7 @@ static void _network_merge_step_series(
 // This is a difference series
 	profile_network_t* prf_cur = (profile_network_t*) cur;
 	profile_network_t* prf_buf = (profile_network_t*) buf;
-	struct tm *ts = localtime(&prf_cur->time);
+	struct tm *ts = slurm_localtime(&prf_cur->time);
 	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
@@ -1360,9 +1361,9 @@ static void _task_merge_step_series(
 	profile_task_t* prf_cur = (profile_task_t*) cur;
 	profile_task_t* buf_prv = NULL;
 	profile_task_t* buf_cur = (profile_task_t*) buf;
-
 	struct tm *ts;
-	ts = localtime(&prf_cur->time);
+
+	ts = slurm_localtime(&prf_cur->time);
 	strftime(buf_cur->tod, TOD_LEN, TOD_FMT, ts);
 	if (prf_prior == NULL) {
 		// First sample.

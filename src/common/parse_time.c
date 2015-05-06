@@ -54,6 +54,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_time.h"
 
 #define _RUN_STAND_ALONE 0
 
@@ -378,7 +379,7 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 		*pos = offset - 1;
 		*month = mon - 1;	/* zero origin */
 		*mday  = day;
-		*year  = yr - 1900;     /* need to make it mktime
+		*year  = yr - 1900;     /* need to make it slurm_mktime
 					   happy 1900 == "00" */
 		return 0;
 	}
@@ -462,7 +463,7 @@ extern time_t parse_time(char *time_str, int past)
 	}
 
 	time_now = time(NULL);
-	time_now_tm = localtime(&time_now);
+	time_now_tm = slurm_localtime(&time_now);
 
 	for (pos=0; ((time_str[pos] != '\0') && (time_str[pos] != '\n'));
 	     pos++) {
@@ -478,7 +479,7 @@ extern time_t parse_time(char *time_str, int past)
 		}
 		if (strncasecmp(time_str+pos, "tomorrow", 8) == 0) {
 			time_t later = time_now + (24 * 60 * 60);
-			struct tm *later_tm = localtime(&later);
+			struct tm *later_tm = slurm_localtime(&later);
 			month = later_tm->tm_mon;
 			mday  = later_tm->tm_mday;
 			year  = later_tm->tm_year;
@@ -536,7 +537,7 @@ extern time_t parse_time(char *time_str, int past)
 				goto prob;
 			}
 			later    = time_now + delta;
-			later_tm = localtime(&later);
+			later_tm = slurm_localtime(&later);
 			month    = later_tm->tm_mon;
 			mday     = later_tm->tm_mday;
 			year     = later_tm->tm_year;
@@ -580,7 +581,7 @@ extern time_t parse_time(char *time_str, int past)
 			year  = time_now_tm->tm_year;
 		} else {/* tomorrow */
 			time_t later = time_now + (24 * 60 * 60);
-			struct tm *later_tm = localtime(&later);
+			struct tm *later_tm = slurm_localtime(&later);
 			month = later_tm->tm_mon;
 			mday  = later_tm->tm_mday;
 			year  = later_tm->tm_year;
@@ -624,7 +625,7 @@ extern time_t parse_time(char *time_str, int past)
 	res_tm.tm_isdst = -1;
 
 /* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour,minute); */
-	if ((ret_time = mktime(&res_tm)) != -1)
+	if ((ret_time = slurm_mktime(&res_tm)) != -1)
 		return ret_time;
 
  prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s\n", pos, time_str);
@@ -644,7 +645,7 @@ int main(int argc, char *argv[])
 		||  (in_line[0] == '\n'))
 			break;
 		when = parse_time(in_line);
-		printf("%s", asctime(localtime(&when)));
+		printf("%s", slurm_asctime(slurm_localtime(&when)));
 	}
 }
 #endif
@@ -670,7 +671,7 @@ static char *_relative_date_fmt(const struct tm *when)
 		time_t now = time(NULL);
 		struct tm tm;
 
-		localtime_r(&now, &tm);
+		slurm_localtime_r(&now, &tm);
 		todays_date = 1000 * (tm.tm_year + 1900) + tm.tm_yday;
 	}
 
@@ -705,7 +706,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 {
 	struct tm time_tm;
 
-	localtime_r(time, &time_tm);
+	slurm_localtime_r(time, &time_tm);
 	if ((*time == (time_t) 0) || (*time == (time_t) INFINITE)) {
 		snprintf(string, size, "Unknown");
 	} else {

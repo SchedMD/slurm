@@ -59,9 +59,10 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/parse_time.h"
-#include "src/common/slurmdb_defs.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -595,7 +596,7 @@ static void _make_time_str(time_t * time, char *string, int size)
 {
 	struct tm time_tm;
 
-	gmtime_r(time, &time_tm);
+	slurm_gmtime_r(time, &time_tm);
 	if (*time == (time_t) 0) {
 		snprintf(string, size, "Unknown");
 	} else {

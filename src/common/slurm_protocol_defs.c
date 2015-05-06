@@ -62,6 +62,7 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -3455,29 +3456,6 @@ extern bool valid_spank_job_env(char **spank_job_env,
 		xfree (entry);
 	}
 	return true;
-}
-
-/* Return ctime like string without the newline.
- * Not thread safe */
-extern char *slurm_ctime(const time_t *timep)
-{
-	static char time_str[25];
-
-	strftime(time_str, sizeof(time_str), "%a %b %d %T %Y",
-		 localtime(timep));
-
-	return time_str;
-}
-
-/* Return ctime like string without the newline, thread safe. */
-extern char *slurm_ctime_r(const time_t *timep, char *time_str)
-{
-	struct tm newtime;
-	localtime_r(timep, &newtime);
-
-	strftime(time_str, 25, "%a %b %d %T %Y", &newtime);
-
-	return time_str;
 }
 
 /* slurm_free_license_info()

@@ -178,21 +178,22 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	slurm_acct_gather_profile.h slurm_acct_gather_infiniband.c \
 	slurm_acct_gather_infiniband.h slurm_acct_gather_filesystem.c \
 	slurm_acct_gather_filesystem.h slurm_jobcomp.c slurm_jobcomp.h \
-	slurm_route.c slurm_route.h slurm_topology.c slurm_topology.h \
-	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
-	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
-	slurm_selecttype_info.c slurm_selecttype_info.h \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h job_resources.c job_resources.h \
-	parse_time.c parse_time.h job_options.c job_options.h \
-	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
-	stepd_api.h write_labelled_message.c write_labelled_message.h \
-	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
-	node_conf.h node_conf.c gres.h gres.c entity.h entity.c \
-	layout.h layout.c layouts_mgr.h layouts_mgr.c mapping.c \
-	mapping.h xcgroup_read_config.c xcgroup_read_config.h \
-	callerid.c callerid.h
+	slurm_route.c slurm_route.h slurm_time.c slurm_time.h \
+	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
+	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
+	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_selecttype_info.h slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h job_resources.c job_resources.h parse_time.c \
+	parse_time.h job_options.c job_options.h global_defaults.c \
+	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
+	write_labelled_message.c write_labelled_message.h proc_args.c \
+	proc_args.h slurm_strcasestr.c slurm_strcasestr.h node_conf.h \
+	node_conf.c gres.h gres.c entity.h entity.c layout.h layout.c \
+	layouts_mgr.h layouts_mgr.c mapping.c mapping.h \
+	xcgroup_read_config.c xcgroup_read_config.h callerid.c \
+	callerid.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
 	xassert.lo xstring.lo xsignal.lo strnatcmp.lo forward.lo \
@@ -210,8 +211,8 @@ am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
 	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
 	slurm_acct_gather_infiniband.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
-	slurm_route.lo slurm_topology.lo switch.lo arg_desc.lo \
-	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
+	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
 	slurm_step_layout.lo checkpoint.lo job_resources.lo \
 	parse_time.lo job_options.lo global_defaults.lo timers.lo \
@@ -638,7 +639,8 @@ libcommon_la_SOURCES = \
 	slurm_acct_gather_infiniband.c slurm_acct_gather_infiniband.h \
 	slurm_acct_gather_filesystem.c slurm_acct_gather_filesystem.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_route.c slurm_route.h \
+	slurm_route.c slurm_route.h	\
+	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
@@ -847,6 +849,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_strcasestr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_topology.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_pack.Plo@am__quote@

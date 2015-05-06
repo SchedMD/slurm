@@ -54,6 +54,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "filetxt_jobcomp_process.h"
 
@@ -214,7 +215,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 {
 	struct tm time_tm;
 
-	localtime_r(time, &time_tm);
+	slurm_localtime_r(time, &time_tm);
 	if ( *time == (time_t) 0 ) {
 		snprintf(string, size, "Unknown");
 	} else {

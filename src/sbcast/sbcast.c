@@ -55,13 +55,14 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/sbcast/sbcast.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/sbcast/sbcast.h"
 
 /* global variables */
 int fd;					/* source file descriptor */
@@ -107,9 +108,9 @@ int main(int argc, char *argv[])
 	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
 	verbose("uid      = %d", (int) f_stat.st_uid);
 	verbose("gid      = %d", (int) f_stat.st_gid);
-	verbose("atime    = %s", slurm_ctime(&f_stat.st_atime));
-	verbose("mtime    = %s", slurm_ctime(&f_stat.st_mtime));
-	verbose("ctime    = %s", slurm_ctime(&f_stat.st_ctime));
+	verbose("atime    = %s", slurm_ctime2(&f_stat.st_atime));
+	verbose("mtime    = %s", slurm_ctime2(&f_stat.st_mtime));
+	verbose("ctime    = %s", slurm_ctime2(&f_stat.st_ctime));
 	verbose("size     = %ld", (long) f_stat.st_size);
 	verbose("-----------------------------");
 

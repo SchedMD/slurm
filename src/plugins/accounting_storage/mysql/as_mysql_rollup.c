@@ -41,6 +41,7 @@
 #include "as_mysql_rollup.h"
 #include "as_mysql_archive.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_time.h"
 
 enum {
 	TIME_ALLOC,
@@ -509,8 +510,8 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 	/*      loc_tres->time_down + loc_tres->time_alloc + */
 	/*      loc_tres->time_resv + loc_tres->time_idle, */
 	/*      loc_tres->total_time, */
-	/*      slurm_ctime(&loc_tres->start)); */
-	/* info("to %s", slurm_ctime(&loc_tres->end)); */
+	/*      slurm_ctime2(&loc_tres->start)); */
+	/* info("to %s", slurm_ctime2(&loc_tres->end)); */
 	if (*query)
 		xstrfmtcat(*query, ", (%ld, %ld, %ld, %u, %"PRIu64", "
 			   "%"PRIu64", %"PRIu64", %"PRIu64", "
@@ -937,8 +938,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
 	}
 
-/* 	info("begin start %s", slurm_ctime(&curr_start)); */
-/* 	info("begin end %s", slurm_ctime(&curr_end)); */
+/* 	info("begin start %s", slurm_ctime2(&curr_start)); */
+/* 	info("begin end %s", slurm_ctime2(&curr_end)); */
 	a_itr = list_iterator_create(assoc_usage_list);
 	c_itr = list_iterator_create(cluster_down_list);
 	w_itr = list_iterator_create(wckey_usage_list);
@@ -958,8 +959,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			DB_DEBUG(mysql_conn->conn,
 				 "%s curr hour is now %ld-%ld",
 				 cluster_name, curr_start, curr_end);
-/* 		info("start %s", slurm_ctime(&curr_start)); */
-/* 		info("end %s", slurm_ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime2(&curr_start)); */
+/* 		info("end %s", slurm_ctime2(&curr_end)); */
 
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
@@ -1546,8 +1547,8 @@ end_it:
 	FREE_NULL_LIST(wckey_usage_list);
 	FREE_NULL_LIST(resv_usage_list);
 
-/* 	info("stop start %s", slurm_ctime(&curr_start)); */
-/* 	info("stop end %s", slurm_ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime2(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime2(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 
@@ -1575,7 +1576,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 	uint16_t track_wckey = slurm_get_track_wckey();
 	char *unit_name;
 
-	if (!localtime_r(&curr_start, &start_tm)) {
+	if (!slurm_localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from start %ld", curr_start);
 		return SLURM_ERROR;
 	}
@@ -1594,15 +1595,15 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_mday++;
 	}
 
-	curr_end = mktime(&start_tm);
+	curr_end = slurm_mktime(&start_tm);
 
 	while (curr_start < end) {
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn,
 				 "curr %s is now %ld-%ld",
 				 unit_name, curr_start, curr_end);
-/* 		info("start %s", slurm_ctime(&curr_start)); */
-/* 		info("end %s", slurm_ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime2(&curr_start)); */
+/* 		info("end %s", slurm_ctime2(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, id, "
 			"id_tres, time_start, alloc_secs) "
@@ -1677,7 +1678,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		}
 
 		curr_start = curr_end;
-		if (!localtime_r(&curr_start, &start_tm)) {
+		if (!slurm_localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from %s start %ld",
 			      unit_name, curr_start);
 			return SLURM_ERROR;
@@ -1687,11 +1688,11 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday++;
 		start_tm.tm_isdst = -1;
-		curr_end = mktime(&start_tm);
+		curr_end = slurm_mktime(&start_tm);
 	}
 
-/* 	info("stop start %s", slurm_ctime(&curr_start)); */
-/* 	info("stop end %s", slurm_ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime2(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime2(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 	rc = _process_purge(mysql_conn, cluster_name, archive_data,

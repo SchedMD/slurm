@@ -38,15 +38,16 @@
 
 #include <stdlib.h>
 
-#include "src/common/slurmdb_defs.h"
 #include "src/common/assoc_mgr.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/node_select.h"
+#include "src/common/parse_time.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/parse_time.h"
-#include "src/common/node_select.h"
-#include "src/common/slurm_auth.h"
+#include "src/common/slurm_time.h"
+#include "src/common/slurmdb_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
 #define FORMAT_STRING_SIZE 34
@@ -2247,16 +2248,16 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 //	info("now got %d and %d sent", (*start), (*end));
 	/* Default is going to be the last day */
 	if (!sent_end) {
-		if (!localtime_r(&my_time, &end_tm)) {
+		if (!slurm_localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
-		//(*end) = mktime(&end_tm);
+		//(*end) = slurm_mktime(&end_tm);
 	} else {
 		temp_time = sent_end;
-		if (!localtime_r(&temp_time, &end_tm)) {
+		if (!slurm_localtime_r(&temp_time, &end_tm)) {
 			error("Couldn't get localtime from user end %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
@@ -2270,20 +2271,20 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
-	(*end) = mktime(&end_tm);
+	(*end) = slurm_mktime(&end_tm);
 
 	if (!sent_start) {
-		if (!localtime_r(&my_time, &start_tm)) {
+		if (!slurm_localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
 		}
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
-		//(*start) = mktime(&start_tm);
+		//(*start) = slurm_mktime(&start_tm);
 	} else {
 		temp_time = sent_start;
-		if (!localtime_r(&temp_time, &start_tm)) {
+		if (!slurm_localtime_r(&temp_time, &start_tm)) {
 			error("Couldn't get localtime from user start %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
@@ -2296,7 +2297,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_isdst = -1;
-	(*start) = mktime(&start_tm);
+	(*start) = slurm_mktime(&start_tm);
 
 	if ((*end)-(*start) < 3600)
 		(*end) = (*start) + 3600;

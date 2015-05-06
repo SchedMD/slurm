@@ -58,6 +58,7 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 #include "src/slurmd/common/proctrack.h"
 #include "hdf5_api.h"
 
@@ -369,7 +370,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	put_int_attribute(gid_node, ATTR_NTASKS, g_job->node_tasks);
 	start_time = time(NULL);
 	put_string_attribute(gid_node, ATTR_STARTTIME,
-			     slurm_ctime(&start_time));
+			     slurm_ctime2(&start_time));
 
 	return rc;
 }

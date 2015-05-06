@@ -1353,13 +1353,6 @@ extern char *priority_flags_string(uint16_t priority_flags);
 /* user needs to xfree return value */
 extern char *reservation_flags_string(uint32_t flags);
 
-/* Return ctime like string without the newline.
- * Not thread safe */
-extern char *slurm_ctime(const time_t *timep);
-
-/* Return ctime like string without the newline, thread safe. */
-extern char *slurm_ctime_r(const time_t *timep, char *time_str);
-
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t
  * to its name.

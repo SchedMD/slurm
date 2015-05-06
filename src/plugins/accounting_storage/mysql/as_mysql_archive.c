@@ -43,8 +43,9 @@
 #include <unistd.h>
 
 #include "as_mysql_archive.h"
-#include "src/common/slurmdbd_defs.h"
 #include "src/common/env.h"
+#include "src/common/slurm_time.h"
+#include "src/common/slurmdbd_defs.h"
 
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
@@ -2298,7 +2299,7 @@ uint32_t _get_begin_next_month(time_t start)
 {
 	struct tm parts;
 
-	localtime_r(&start, &parts);
+	slurm_localtime_r(&start, &parts);
 
 	parts.tm_mon++;
 	parts.tm_mday  = 1;
@@ -2312,7 +2313,7 @@ uint32_t _get_begin_next_month(time_t start)
 		parts.tm_mon = 0;
 	}
 
-	return mktime(&parts);
+	return slurm_mktime(&parts);
 }
 
 /* Get the oldest purge'able record.
