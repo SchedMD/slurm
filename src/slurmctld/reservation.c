@@ -828,7 +828,6 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	}
 
 	rc = acct_storage_g_modify_reservation(acct_db_conn, &resv);
-	xfree(resv.tres_str);
 
 	return rc;
 }

@@ -128,9 +128,9 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 	}
 
 	if (resv->tres_str) {
-		xstrcat(*cols, ", tres_str");
+		xstrcat(*cols, ", tres");
 		xstrfmtcat(*vals, ", '%s'", resv->tres_str);
-		xstrfmtcat(*extra, ", tres_str='%s'", resv->tres_str);
+		xstrfmtcat(*extra, ", tres='%s'", resv->tres_str);
 	}
 
 	return SLURM_SUCCESS;
@@ -272,7 +272,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		"nodelist",
 		"node_inx",
 		"flags",
-		"tres_str"
+		"tres"
 	};
 	enum {
 		RESV_ASSOCS,
@@ -525,7 +525,7 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		"resv_name",
 		"time_start",
 		"time_end",
-		"tres_str"
+		"tres"
 	};
 
 	enum {
