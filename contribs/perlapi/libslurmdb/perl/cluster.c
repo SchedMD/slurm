@@ -21,8 +21,8 @@ av_to_cluster_grouping_list(AV* av, List grouping_list)
     int    i, elements = 0;
 
     elements = av_len(av) + 1;
-    for(i = 0; i < elements; i ++) {
-	if((svp = av_fetch(av, i, FALSE))) {
+    for (i = 0; i < elements; i ++) {
+	if ((svp = av_fetch(av, i, FALSE))) {
 	    str = slurm_xstrdup((char*)SvPV_nolen(*svp));
 	    slurm_list_append(grouping_list, str);
 	} else {
@@ -258,11 +258,13 @@ report_job_grouping_to_hv(slurmdb_report_job_grouping_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -290,11 +292,13 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_job_grouping_to_hv(jgr, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_job_grouping to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "groups", newRV((SV*)my_av));
 
@@ -305,11 +309,13 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -335,11 +341,13 @@ report_cluster_grouping_to_hv(slurmdb_report_cluster_grouping_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_acct_grouping_to_hv(agr, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_acct_grouping to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "acct_list", newRV((SV*)my_av));
 
@@ -350,11 +358,13 @@ report_cluster_grouping_to_hv(slurmdb_report_cluster_grouping_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -374,11 +384,13 @@ cluster_grouping_list_to_av(List list, AV* av)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_cluster_grouping_to_hv(rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_cluster_grouping to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
 
     return 0;
@@ -422,11 +434,13 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (cluster_accounting_rec_to_hv(ar, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a cluster_accounting_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "accounting_list", newRV((SV*)my_av));
 
@@ -464,11 +478,13 @@ report_assoc_rec_to_hv(slurmdb_report_assoc_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -497,11 +513,13 @@ report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_assoc_rec_to_hv(ar, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_assoc_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "assoc_list", newRV((SV*)my_av));
 
@@ -514,11 +532,13 @@ report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -529,11 +549,13 @@ report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_user_rec_to_hv(ur, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_user_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "user_list", newRV((SV*)my_av));
 
@@ -553,11 +575,13 @@ report_cluster_rec_list_to_av(List list, AV* av)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_cluster_rec_to_hv(rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_cluster_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
 
     return 0;
@@ -579,6 +603,7 @@ report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 	while ((acct = slurm_list_next(itr))) {
 	    av_push(my_av, newSVpv(acct, strlen(acct)));
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "acct_list", newRV((SV*)my_av));
 
@@ -589,11 +614,13 @@ report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (report_assoc_rec_to_hv(ar, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a report_assoc_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "assoc_list", newRV((SV*)my_av));
 
@@ -607,11 +634,13 @@ report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 	    rh = (HV*)sv_2mortal((SV*)newHV());
 	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
 		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		slurm_list_iterator_destroy(itr);
 		return -1;
 	    } else {
 		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
@@ -708,6 +737,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
 	    step_rec_to_hv(step, step_hv);
 	    av_push(steps_av, newRV((SV*)step_hv));
 	}
+	slurm_list_iterator_destroy(itr);
     }
     hv_store_sv(hv, "steps", newRV((SV*)steps_av));
 
@@ -762,8 +792,5 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, wckey,           charp);
     STORE_FIELD(hv, rec, wckeyid,         uint32_t);
 
-
     return 0;
 }
-
-

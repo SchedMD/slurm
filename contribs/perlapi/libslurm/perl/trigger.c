@@ -18,7 +18,7 @@ trigger_info_to_hv(trigger_info_t *trigger_info, HV *hv)
 {
 	STORE_FIELD(hv, trigger_info, trig_id, uint32_t);
 	STORE_FIELD(hv, trigger_info, res_type, uint16_t);
-	if(trigger_info->res_id)
+	if (trigger_info->res_id)
 		STORE_FIELD(hv, trigger_info, res_id, charp);
 	STORE_FIELD(hv, trigger_info, trig_type, uint32_t);
 	STORE_FIELD(hv, trigger_info, offset, uint16_t);
@@ -58,7 +58,7 @@ trigger_info_msg_to_hv(trigger_info_msg_t *trigger_info_msg, HV *hv)
 
 	/* record_count implied in node_array */
 	av = newAV();
-	for(i = 0; i < trigger_info_msg->record_count; i ++) {
+	for (i = 0; i < trigger_info_msg->record_count; i ++) {
 		hv_info =newHV();
 		if (trigger_info_to_hv(trigger_info_msg->trigger_array + i, hv_info) < 0) {
 			SvREFCNT_dec((SV*)hv_info);

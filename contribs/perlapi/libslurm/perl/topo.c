@@ -18,11 +18,11 @@ topo_info_to_hv(topo_info_t *topo_info, HV *hv)
 {
 	STORE_FIELD(hv, topo_info, level, uint16_t);
 	STORE_FIELD(hv, topo_info, link_speed, uint32_t);
-	if(topo_info->name)
+	if (topo_info->name)
 		STORE_FIELD(hv, topo_info, name, charp);
-	if(topo_info->nodes)
+	if (topo_info->nodes)
 		STORE_FIELD(hv, topo_info, nodes, charp);
-	if(topo_info->switches)
+	if (topo_info->switches)
 		STORE_FIELD(hv, topo_info, switches, charp);
 	return 0;
 }
@@ -55,7 +55,7 @@ topo_info_response_msg_to_hv(topo_info_response_msg_t *topo_info_msg, HV *hv)
 
 	/* record_count implied in node_array */
 	av = newAV();
-	for(i = 0; i < topo_info_msg->record_count; i ++) {
+	for (i = 0; i < topo_info_msg->record_count; i ++) {
 		hv_info =newHV();
 		if (topo_info_to_hv(topo_info_msg->topo_array + i, hv_info) < 0) {
 			SvREFCNT_dec((SV*)hv_info);
