@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     value of MessageTimeout rather than 30 seconds.
  -- sshare -U/--Users only flag was used uninitialized.
  -- Cray systems, add "plugstack.conf.template" sample SPANK configuration file.
+ -- BLUEGENE - Set DB2NOEXITLIST when starting the slurmctld daemon to avoid
+    random crashing in db2 when the slurmctld is exiting.
 
 * Changes in Slurm 14.11.6
 ==========================
