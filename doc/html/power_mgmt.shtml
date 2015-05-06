@@ -7,7 +7,7 @@ The mode of operation is to take the configured power cap for the system and
 distribute it across the compute nodes under Slurm control.
 Initially that power is distributed evenly across all compute nodes.
 Slurm then monitors actual power consumption and redistributes power as appropriate.
-Specifically, Slurm lowers the power caps on nodes using less then their cap
+Specifically, Slurm lowers the power caps on nodes using less than their cap
 and redistributes that power across the other nodes.
 The thresholds at which a node's power cap are raised or lowered are configurable
 as are the rate of change the power cap.
@@ -229,6 +229,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
   balance_interval and synchronizing changes may be difficult</li>
 </ul>
 
-<p style="text-align:center;">Last modified 12 March 2015</p>
+<p style="text-align:center;">Last modified 5 May 2015</p>
 
 <!--#include virtual="footer.txt"-->
