@@ -1627,7 +1627,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if (resv_ptr->node_bitmap) {
+	if (resv_ptr->full_nodes && resv_ptr->node_bitmap) {
 #ifdef HAVE_BG
 		if (!cnodes_per_mp)
 			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -1664,10 +1664,10 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 #endif
 
 	xfree(resv_ptr->tres_str);
-
-	xstrfmtcat(resv_ptr->tres_str, "%s%u=%"PRIu64,
-		   resv_ptr->tres_str ? "," : "",
-		   TRES_CPU, cpu_cnt);
+	if (cpu_cnt)
+		xstrfmtcat(resv_ptr->tres_str, "%s%u=%"PRIu64,
+			   resv_ptr->tres_str ? "," : "",
+			   TRES_CPU, cpu_cnt);
 
 	if ((name1 = licenses_2_tres_str(resv_ptr->license_list))) {
 		xstrfmtcat(resv_ptr->tres_str, "%s%s",
