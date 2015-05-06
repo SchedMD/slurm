@@ -93,6 +93,7 @@ typedef enum {
 	PRINT_ACCT,
 	PRINT_CLUSTER,
 	PRINT_COORDS,
+	PRINT_CPUS,
 	PRINT_DESC,
 	PRINT_FLAGS,
 	PRINT_NAME,
@@ -135,7 +136,7 @@ typedef enum {
 	PRINT_CHOST = 3000,
 	PRINT_CPORT,
 	PRINT_CLASS,
-	PRINT_CPUS,
+	PRINT_TRES,
 	PRINT_NODECNT,
 	PRINT_CLUSTER_NODES,
 	PRINT_RPC_VERSION,
@@ -204,6 +205,7 @@ extern void *db_conn;
 extern uint32_t my_uid;
 extern List g_qos_list;
 extern List g_res_list;
+extern List g_tres_list;
 
 extern bool tree_display;
 

@@ -375,8 +375,6 @@ static int _resv_field(const slurmctld_resv_t *resv_ptr,
 		lua_pushstring(L, resv_ptr->accounts);
 	} else if (!strcmp(name, "assoc_list")) {
 		lua_pushstring(L, resv_ptr->assoc_list);
-	} else if (!strcmp(name, "cpu_cnt")) {
-		lua_pushnumber(L, resv_ptr->cpu_cnt);
 	} else if (!strcmp(name, "duration")) {
 		lua_pushnumber(L, resv_ptr->duration);
 	} else if (!strcmp(name, "end_time")) {

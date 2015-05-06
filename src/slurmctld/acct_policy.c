@@ -269,8 +269,8 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t used_cpu_run_secs = 0;
 	uint32_t job_memory = 0;
 	uint32_t node_cnt;
@@ -1455,8 +1455,8 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t used_cpu_run_secs, new_used_cpu_run_secs;
 
 	if (!IS_JOB_RUNNING(job_ptr) || (job_ptr->time_limit == new_time_limit))
@@ -1517,8 +1517,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	uint32_t job_memory = 0;
 	bool admin_set_memory_limit = false;
 	struct job_record job_rec;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	bool strict_checking;
 
 	xassert(acct_policy_limit_set);
@@ -1831,8 +1831,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -2011,8 +2011,8 @@ extern bool acct_policy_job_runnable_post_select(
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -2369,8 +2369,8 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 					  uint32_t *wait_reason)
 {
 	uint32_t max_nodes_limit = INFINITE, qos_max_p_limit = INFINITE;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
@@ -2590,8 +2590,8 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
 
 	/* Now see if we are enforcing limits.  If Safe is set then

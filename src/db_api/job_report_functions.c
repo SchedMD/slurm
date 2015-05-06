@@ -92,7 +92,7 @@ static void _check_create_grouping(
 	}
 
 	itr = list_iterator_create(cluster_group->acct_list);
-	while((acct_group = list_next(itr))) {
+	while ((acct_group = list_next(itr))) {
 		if (!strcmp(name, acct_group->acct))
 			break;
 	}
@@ -143,6 +143,7 @@ static void _check_create_grouping(
 	}
 }
 
+/* FIXME: This only works for CPUS now */
 static List _process_grouped_report(
 	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
 	bool flat_view, bool wckey_type, bool both)
@@ -169,6 +170,7 @@ static List _process_grouped_report(
 	bool destroy_job_cond = 0;
 	bool destroy_grouping_list = 0;
 	bool individual = 0;
+	uint32_t tres_id = TRES_CPU;
 
 	uid_t my_uid = getuid();
 
@@ -203,14 +205,23 @@ static List _process_grouped_report(
 	/* make a group for each job size we find. */
 	if (!list_count(grouping_list)) {
 		char *group = NULL;
-		char *tmp = NULL;
+
 		individual = 1;
 		itr = list_iterator_create(job_list);
-		while((job = list_next(itr))) {
-			if (!job->elapsed || !job->alloc_cpus)
+		while ((job = list_next(itr))) {
+			char *tmp = NULL;
+			uint64_t count;
+
+			if (!job->elapsed)
 				continue;
-			tmp = xstrdup_printf("%u", job->alloc_cpus);
-			while((group = list_next(group_itr))) {
+
+			if (!(count = slurmdb_find_tres_count_in_string(
+				      job->tres_alloc_str, tres_id)))
+				continue;
+
+			tmp = xstrdup_printf("%"PRIu64, count);
+
+			while ((group = list_next(group_itr))) {
 				if (!strcmp(group, tmp)) {
 					break;
 				}
@@ -272,7 +283,7 @@ static List _process_grouped_report(
 	itr = list_iterator_create(object_list);
 	if (object2_list)
 		itr2 = list_iterator_create(object2_list);
-	while((object = list_next(itr))) {
+	while ((object = list_next(itr))) {
 		char *cluster = NULL;
 		slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
 		slurmdb_assoc_rec_t *assoc =
@@ -292,7 +303,7 @@ static List _process_grouped_report(
 			continue;
 		}
 
-		while((object2 = list_next(itr2))) {
+		while ((object2 = list_next(itr2))) {
 			slurmdb_wckey_rec_t *wckey2 =
 				(slurmdb_wckey_rec_t *)object2;
 			slurmdb_assoc_rec_t *assoc2 =
@@ -456,20 +467,29 @@ no_objects:
 		}
 
 		local_itr = list_iterator_create(acct_group->groups);
-		while((job_group = list_next(local_itr))) {
-			uint64_t total_secs = 0;
-			if ((job->alloc_cpus < job_group->min_size)
-			   || (job->alloc_cpus > job_group->max_size))
+		while ((job_group = list_next(local_itr))) {
+			uint64_t count;
+
+			if (!(count = slurmdb_find_tres_count_in_string(
+				      job->tres_alloc_str, tres_id)) ||
+			    (count < job_group->min_size) ||
+			    (count > job_group->max_size))
 				continue;
+
 			list_append(job_group->jobs, job);
 			job_group->count++;
 			acct_group->count++;
 			cluster_group->count++;
-			total_secs = (uint64_t)job->elapsed
-				* (uint64_t)job->alloc_cpus;
-			job_group->cpu_secs += total_secs;
-			acct_group->cpu_secs += total_secs;
-			cluster_group->cpu_secs += total_secs;
+
+			slurmdb_transfer_tres_time(
+				&job_group->tres_list, job->tres_alloc_str,
+				job->elapsed);
+			slurmdb_transfer_tres_time(
+				&acct_group->tres_list, job->tres_alloc_str,
+				job->elapsed);
+			slurmdb_transfer_tres_time(
+				&cluster_group->tres_list, job->tres_alloc_str,
+				job->elapsed);
 		}
 		list_iterator_destroy(local_itr);
 	}

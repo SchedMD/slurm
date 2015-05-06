@@ -879,7 +879,7 @@ no_calc:
 		bool valid;
 		char *token, *last = NULL;
 		slurmdb_qos_rec_t *qos = NULL;
-		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK,
 					   READ_LOCK, NO_LOCK,
 					   NO_LOCK, NO_LOCK };
 

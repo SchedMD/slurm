@@ -1241,6 +1241,8 @@ extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 extern void slurm_free_suspend_msg(suspend_msg_t *msg);
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg);
 extern void slurm_free_update_step_msg(step_update_request_msg_t * msg);
+extern void slurm_free_resource_allocation_response_msg_members (
+	resource_allocation_response_msg_t * msg);
 extern void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
 extern void slurm_free_job_alloc_info_response_msg (

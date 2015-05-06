@@ -560,6 +560,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 			job_resrcs_ptr->memory_allocated[j] =
 				job_memory_cpu * node_cpus;
 		}
+		job_resrcs_ptr->nmem += job_resrcs_ptr->memory_allocated[j];
 
 		if (set_job_resources_node(job_resrcs_ptr, j)) {
 			error("_build_select_struct: set_job_resources_node: "

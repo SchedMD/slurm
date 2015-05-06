@@ -45,13 +45,13 @@
 
 typedef struct {
 	char *cluster_name;
-	uint32_t cluster_cpus;
 	uint16_t ctld_port; /* slurmctld_port */
 	void *db_conn; /* database connection */
 	char ip[32];
 	slurm_fd_t newsockfd; /* socket connection descriptor */
 	uint16_t orig_port;
 	uint16_t rpc_version; /* version of rpc */
+	char *tres_str;
 } slurmdbd_conn_t;
 
 /* Process an incoming RPC

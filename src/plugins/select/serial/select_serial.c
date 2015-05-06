@@ -903,7 +903,18 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 
 		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
-				continue;	/* no memory allocated */
+				continue;	/* no memory allocated
+						 * */
+
+			if (job->nmem < job->memory_allocated[n]) {
+				error("cons_res: job total memory is "
+				      "underallocated (%u-%u) for job %u",
+				      job->nmem, job->memory_allocated[n],
+				      job_ptr->job_id);
+				job->nmem = 0;
+			} else
+				job->nmem -= job->memory_allocated[n];
+
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("select/serial: node %s memory is "

@@ -45,7 +45,6 @@ enum {
 	PRINT_RESV_CLUSTER,
 	PRINT_RESV_CPUS,
 	PRINT_RESV_ACPU,
-	PRINT_RESV_DCPU,
 	PRINT_RESV_ICPU,
 	PRINT_RESV_NODES,
 	PRINT_RESV_ASSOCS,
@@ -68,6 +67,17 @@ typedef enum {
 } report_grouping_t;
 
 static List print_fields_list = NULL; /* types are of print_field_t */
+
+static int _find_resv(void *x, void *key)
+{
+	slurmdb_reservation_rec_t *rec = (slurmdb_reservation_rec_t *)x;
+	uint32_t id = *(uint32_t *)key;
+
+	if (rec->id == id)
+		return 1;
+
+	return 0;
+}
 
 static int _set_resv_cond(int *start, int argc, char *argv[],
 			  slurmdb_reservation_cond_t *resv_cond,
@@ -244,16 +254,6 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Id");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-        } else if (!strncasecmp("down", object, MAX(command_len, 1))) {
-			field->type = PRINT_RESV_DCPU;
-			field->name = xstrdup("Down");
-			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
-			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
-			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
-				field->len = 20;
-			else
-				field->len = 9;
-			field->print_routine = slurmdb_report_print_time;
 		} else if (!strncasecmp("idle", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_ICPU;
 			field->name = xstrdup("Idle");
@@ -410,7 +410,6 @@ extern int resv_utilization(int argc, char *argv[])
 	tot_resv_list = list_create(NULL);
 
 	itr = list_iterator_create(resv_list);
-	tot_itr = list_iterator_create(tot_resv_list);
 	itr2 = list_iterator_create(print_fields_list);
 
 	print_fields_header(print_fields_list);
@@ -422,46 +421,79 @@ extern int resv_utilization(int argc, char *argv[])
 	   node count changes or something after the reservation
 	   starts.  Here we colapse them into 1 record.
 	*/
-	while((resv = list_next(itr))) {
-		while((tot_resv = list_next(tot_itr))) {
-			if (tot_resv->id == resv->id) {
-				/* get an average of cpus if the
-				   reservation changes we will just
-				   get an average.
-				*/
-				tot_resv->cpus += resv->cpus;
-				tot_resv->cpus /= 2;
-				tot_resv->alloc_secs += resv->alloc_secs;
-				tot_resv->down_secs += resv->down_secs;
-				if (resv->time_start < tot_resv->time_start)
-					tot_resv->time_start = resv->time_start;
-				if (resv->time_end > tot_resv->time_end)
-					tot_resv->time_end = resv->time_end;
-				break;
+	while ((resv = list_next(itr))) {
+		if (!(tot_resv = list_find_first(
+			      tot_resv_list, _find_resv, &resv->id))) {
+			list_append(tot_resv_list, resv);
+			continue;
+		}
+		/* get an average of cpus if the reservation changes
+		 * we will just get an average.
+		 */
+
+		if (resv->tres_list && list_count(resv->tres_list)) {
+			if (!tot_resv->tres_list)
+				tot_resv->tres_list = slurmdb_copy_tres_list(
+					resv->tres_list);
+			else {
+				slurmdb_tres_rec_t *tres_rec, *loc_tres_rec;
+				ListIterator tres_itr = list_iterator_create(
+					resv->tres_list);
+				while ((tres_rec = list_next(tres_itr))) {
+					if (!(loc_tres_rec = list_find_first(
+						      tot_resv->tres_list,
+						      slurmdb_find_tres_in_list,
+						      &tres_rec->id))) {
+						loc_tres_rec =
+							slurmdb_copy_tres_rec(
+								tres_rec);
+						list_append(tot_resv->tres_list,
+							    loc_tres_rec);
+						continue;
+					}
+					loc_tres_rec->count += tres_rec->count;
+					loc_tres_rec->count /= 2;
+					loc_tres_rec->alloc_secs +=
+						tres_rec->alloc_secs;
+				}
+				list_iterator_destroy(tres_itr);
 			}
 		}
-		if (!tot_resv)
-			list_append(tot_resv_list, resv);
-
-		list_iterator_reset(tot_itr);
+		if (resv->time_start < tot_resv->time_start)
+			tot_resv->time_start = resv->time_start;
+		if (resv->time_end > tot_resv->time_end)
+			tot_resv->time_end = resv->time_end;
 	}
 
 	list_sort(tot_resv_list, (ListCmpF)sort_reservations_dec);
-	list_iterator_reset(tot_itr);
-	while((tot_resv = list_next(tot_itr))) {
+	tot_itr = list_iterator_create(tot_resv_list);
+	while ((tot_resv = list_next(tot_itr))) {
 		uint64_t idle_secs = 0, total_reported = 0;
 		int curr_inx = 1;
 		char *temp_char = NULL;
+		uint32_t tres_id = TRES_CPU;
+		slurmdb_tres_rec_t *tres_rec;
+		uint64_t cpu_alloc = 0;
+		uint64_t cpu_alloc_secs = 0;
 
 		total_time = tot_resv->time_end - tot_resv->time_start;
 		if (total_time <= 0)
 			continue;
-		total_reported = (uint64_t)(total_time * tot_resv->cpus);
 
-		idle_secs = total_reported
-			- tot_resv->alloc_secs - tot_resv->down_secs;
+		/* FIXME: this only works for CPUS now */
+		if (tot_resv->tres_list &&
+		    (tres_rec = list_find_first(
+			    tot_resv->tres_list,
+			    slurmdb_find_tres_in_list,
+			    &tres_id))) {
+			cpu_alloc = tres_rec->count;
+			cpu_alloc_secs = tres_rec->alloc_secs;
+		}
 
-		while((field = list_next(itr2))) {
+		total_reported = (uint64_t)(total_time * cpu_alloc);
+		idle_secs = total_reported - cpu_alloc_secs;
+
+		while ((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_RESV_NAME:
 				field->print_routine(field,
@@ -477,7 +509,7 @@ extern int resv_utilization(int argc, char *argv[])
 				break;
 			case PRINT_RESV_CPUS:
 				field->print_routine(field,
-						     tot_resv->cpus,
+						     cpu_alloc,
 						     (curr_inx ==
 						      field_count));
 				break;
@@ -489,14 +521,7 @@ extern int resv_utilization(int argc, char *argv[])
 				break;
 			case PRINT_RESV_ACPU:
 				field->print_routine(field,
-						     tot_resv->alloc_secs,
-						     total_reported,
-						     (curr_inx ==
-						      field_count));
-				break;
-			case PRINT_RESV_DCPU:
-				field->print_routine(field,
-						     tot_resv->down_secs,
+						     cpu_alloc_secs,
 						     total_reported,
 						     (curr_inx ==
 						      field_count));
@@ -533,7 +558,8 @@ extern int resv_utilization(int argc, char *argv[])
 						      field_count));
 				break;
 			case PRINT_RESV_FLAGS:
-				temp_char = reservation_flags_string(tot_resv->flags);
+				temp_char = reservation_flags_string(
+					tot_resv->flags);
 				field->print_routine(field,
 						     temp_char,
 						     (curr_inx ==

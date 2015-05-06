@@ -44,6 +44,7 @@
 
 extern time_t global_last_rollup;
 extern pthread_mutex_t rollup_lock;
+extern pthread_mutex_t usage_rollup_lock;
 
 extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 			      slurmdbd_msg_type_t type, List object_list,

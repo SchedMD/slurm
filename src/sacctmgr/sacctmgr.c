@@ -59,6 +59,7 @@ void *db_conn = NULL;
 uint32_t my_uid = 0;
 List g_qos_list = NULL;
 List g_res_list = NULL;
+List g_tres_list = NULL;
 bool tree_display = 0;
 
 static void	_add_it (int argc, char *argv[]);
@@ -242,10 +243,10 @@ main (int argc, char *argv[])
 		exit_code = local_exit_code;
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
-	if (g_qos_list)
-		list_destroy(g_qos_list);
-	if (g_res_list)
-		list_destroy(g_res_list);
+	FREE_NULL_LIST(g_qos_list);
+	FREE_NULL_LIST(g_res_list);
+	FREE_NULL_LIST(g_tres_list);
+
 	exit(exit_code);
 }
 
@@ -983,8 +984,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             ParentID, ParentName, Partition, RawQOS, RGT,  \n\
                             User                                           \n\
                                                                            \n\
-       Cluster            - Classification, Cluster, ClusterNodes,         \n\
-                            ControlHost, ControlPort, CpuCount, DefaultQOS,\n\
+       Cluster            - TRES, Classification, Cluster, ClusterNodes, \n\
+                            ControlHost, ControlPort, DefaultQOS,          \n\
                             Fairshare, Flags, GrpCPUMins, GrpCPUs, GrpJobs,\n\
                             GrpMemory, GrpNodes, GrpSubmitJob, MaxCPUMins, \n\
                             MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\

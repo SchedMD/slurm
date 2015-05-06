@@ -972,5 +972,7 @@ alloc_job:
 		/* memory is per-node */
 		job_res->memory_allocated[0] = save_mem;
 	}
+	job_res->nmem = job_res->memory_allocated[0];
+
 	return error_code;
 }

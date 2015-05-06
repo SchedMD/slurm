@@ -4733,7 +4733,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
-		safe_unpack32(&resv->core_cnt,		buffer);
+		safe_unpack32(&resv->core_cnt,          buffer);
 		safe_unpack_time(&resv->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->flags,		buffer);
@@ -4743,6 +4743,8 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->partition, &uint32_tmp, buffer);
 		safe_unpack_time(&resv->start_time,	buffer);
+
+		safe_unpackstr_xmalloc(&resv->tres_str, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_inx_str,   &uint32_tmp, buffer);
 		if (node_inx_str == NULL)
@@ -4754,7 +4756,9 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 		}
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
-		safe_unpack32(&resv->core_cnt,		buffer);
+		safe_unpack32(&resv->core_cnt,          buffer);
+		resv->tres_str = xstrdup_printf(
+			"%d=%u", TRES_CPU, resv->core_cnt);
 		safe_unpack_time(&resv->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->flags,		buffer);
@@ -4831,9 +4835,13 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 			step->node_inx = bitfmt2int(node_inx_str);
 			xfree(node_inx_str);
 		}
+
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&step->tres_alloc_str,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
@@ -4842,6 +4850,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpack16(&step->ckpt_interval, buffer);
 		safe_unpack32(&step->user_id, buffer);
 		safe_unpack32(&step->num_cpus, buffer);
+		step->tres_alloc_str = xstrdup_printf(
+			"%d=%u", TRES_CPU, step->num_cpus);
 		safe_unpack32(&step->cpu_freq_max, buffer);
 		safe_unpack32(&step->num_tasks, buffer);
 		safe_unpack32(&step->time_limit, buffer);
@@ -5244,6 +5254,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 			xfree(mc_ptr);
 		}
 		safe_unpack32(&job->bitflags, buffer);
+		safe_unpackstr_xmalloc(&job->tres_alloc_str,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
@@ -5327,6 +5339,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->command,    &uint32_tmp, buffer);
 
 		safe_unpack32(&job->num_cpus, buffer);
+		job->tres_alloc_str = xstrdup_printf(
+			"%d=%u", TRES_CPU, job->num_cpus);
+
 		safe_unpack32(&job->max_cpus, buffer);
 		safe_unpack32(&job->num_nodes,   buffer);
 		safe_unpack32(&job->max_nodes,   buffer);
@@ -5450,6 +5465,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->command,    &uint32_tmp, buffer);
 
 		safe_unpack32(&job->num_cpus, buffer);
+
 		safe_unpack32(&job->max_cpus, buffer);
 		safe_unpack32(&job->num_nodes,   buffer);
 		safe_unpack32(&job->max_nodes,   buffer);
@@ -7417,7 +7433,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->task_plugin,
 				       &uint32_tmp, buffer);
-		safe_unpack16((uint16_t *)&build_ptr->task_plugin_param, buffer);
+		safe_unpack16((uint16_t *)&build_ptr->task_plugin_param,
+			      buffer);
 		safe_unpackstr_xmalloc(&build_ptr->tmp_fs, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&build_ptr->topology_plugin,

@@ -431,17 +431,17 @@ long int xstrntol(const char *str, char **endptr, size_t n, int base)
  *   pattern (IN)	substring to look for in str
  *   replacement (IN)   string with which to replace the "pattern" string
  */
-void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
+bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 {
 	int pat_len, rep_len;
 	char *ptr, *end_copy;
 	int pat_offset;
 
 	if (*str == NULL || pattern == NULL || pattern[0] == '\0')
-		return;
+		return 0;
 
 	if ((ptr = strstr(*str, pattern)) == NULL)
-		return;
+		return 0;
 	pat_offset = ptr - (*str);
 	pat_len = strlen(pattern);
 	if (replacement == NULL)
@@ -456,6 +456,8 @@ void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 	}
 	strcpy((*str)+pat_offset+rep_len, end_copy);
 	xfree(end_copy);
+
+	return 1;
 }
 
 /*

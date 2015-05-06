@@ -3318,7 +3318,7 @@ void make_node_idle(struct node_record *node_ptr,
 		last_job_update = now;
 		bit_clear(node_bitmap, inx);
 
-		job_update_cpu_cnt(job_ptr, inx);
+		job_update_tres_cnt(job_ptr, inx);
 
 		if (job_ptr->node_cnt) {
 			/* Clean up the JOB_COMPLETING flag

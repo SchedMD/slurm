@@ -50,7 +50,8 @@ extern void dump_update_list(List update_list);
 
 extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version);
 
-extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
+extern int set_usage_information(char **usage_table,
+				 slurmdbd_msg_type_t type,
 				 time_t *usage_start, time_t *usage_end);
 
 extern void merge_delta_qos_list(List qos_list, List delta_qos_list);

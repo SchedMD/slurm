@@ -48,9 +48,11 @@
 
 #include "accounting_storage_mysql.h"
 #include "as_mysql_acct.h"
+#include "as_mysql_tres.h"
 #include "as_mysql_archive.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
+#include "as_mysql_convert.h"
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_problems.h"
@@ -118,6 +120,7 @@ static char *mysql_db_name = NULL;
 
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
+char *tres_table = "tres_table";
 char *assoc_day_table = "assoc_usage_day_table";
 char *assoc_hour_table = "assoc_usage_hour_table";
 char *assoc_month_table = "assoc_usage_month_table";
@@ -141,6 +144,15 @@ char *wckey_day_table = "wckey_usage_day_table";
 char *wckey_hour_table = "wckey_usage_hour_table";
 char *wckey_month_table = "wckey_usage_month_table";
 char *wckey_table = "wckey_table";
+
+char *event_view = "event_view";
+char *event_ext_view = "event_ext_view";
+char *job_view = "job_view";
+char *job_ext_view = "job_ext_view";
+char *resv_view = "resv_view";
+char *resv_ext_view = "resv_ext_view";
+char *step_view = "step_view";
+char *step_ext_view = "step_ext_view";
 
 uint64_t debug_flags = 0;
 
@@ -441,45 +453,6 @@ static bool _check_jobs_before_remove_without_assoctable(
 	return rc;
 }
 
-/* This rename was put in in 15.08.  2 versions after this this can
- * be removed.
- */
-static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
-{
-	MYSQL_ROW row;
-	MYSQL_RES *result = NULL;
-	char *query = NULL;
-	int rc = SLURM_SUCCESS;
-
-	/* see if the clus_info table has been made */
-	query = xstrdup_printf(
-		"show columns from %s where field like '%%cpu_%%';",
-		table);
-
-	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	while ((row = mysql_fetch_row(result))) {
-		char *new_char = xstrdup(row[0]);
-		xstrsubstitute(new_char, "cpu_", "");
-		query = xstrdup_printf("alter table %s change %s %s "
-				       "bigint default 0 not null",
-				       table, row[0], new_char);
-		xfree(new_char);
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
-		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
-			error("Can't update %s %m", table);
-		xfree(query);
-	}
-
-	mysql_free_result(result);
-	return rc;
-}
-
 /* Any time a new table is added set it up here */
 static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 {
@@ -499,6 +472,15 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t tres_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "deleted", "tinyint default 0 not null" },
+		{ "id", "int not null auto_increment" },
+		{ "type", "tinytext not null" },
+		{ "name", "tinytext not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -724,6 +706,37 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				  ", primary key (id))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
+	if (mysql_db_create_table(mysql_conn, tres_table,
+				  tres_table_fields,
+				  ", primary key (id), "
+				  "unique index (type(20), name(20))) "
+				  "auto_increment=1001")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+	else {
+		/* We always want CPU to be the first one, so create
+		   it now.  We also add MEM here, the others tres
+		   are site specific and could vary.  None but CPU
+		   matter on order though.  CPU always has to be 1.
+		*/
+		query = xstrdup_printf(
+			"insert into %s (creation_time, id, type) values "
+			"(%ld, %d, 'cpu'), "
+			"(%ld, %d, 'mem'), "
+			"(%ld, %d, 'energy') "
+			"on duplicate key update deleted=0, type=VALUES(type);",
+			tres_table,
+			now, TRES_CPU,
+			now, TRES_MEM,
+			now, TRES_ENERGY);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn, "%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			fatal("problem adding tres 'cpu'");
+	}
+
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	if (!(as_mysql_cluster_list = _get_cluster_names(mysql_conn, 0))) {
 		error("issue getting contents of %s", cluster_table);
@@ -738,6 +751,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (!(as_mysql_total_cluster_list =
 	      _get_cluster_names(mysql_conn, 1))) {
 		error("issue getting total contents of %s", cluster_table);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		return SLURM_ERROR;
+	}
+
+	if (as_mysql_convert_tables(mysql_conn) != SLURM_SUCCESS) {
+		error("issue converting tables");
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		return SLURM_ERROR;
 	}
@@ -957,7 +976,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
-		{ "id_assoc", "int not null auto_increment" },
+		{ "id_assoc", "int unsigned not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
 		{ "acct", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
@@ -986,30 +1005,19 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
-	storage_field_t assoc_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0 not null" },
-		{ "id_assoc", "int not null" },
-		{ "time_start", "int unsigned not null" },
-		{ "alloc_secs", "bigint default 0 not null" },
-		{ "consumed_energy", "bigint unsigned default 0 not null" },
-		{ NULL, NULL}
-	};
-
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
+		{ "id_tres", "int not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "count", "int default 0 not null" },
-		{ "alloc_secs", "bigint default 0 not null" },
-		{ "down_secs", "bigint default 0 not null" },
-		{ "pdown_secs", "bigint default 0 not null" },
-		{ "idle_secs", "bigint default 0 not null" },
-		{ "resv_secs", "bigint default 0 not null" },
-		{ "over_secs", "bigint default 0 not null" },
-		{ "consumed_energy", "bigint unsigned default 0 not null" },
+		{ "count", "bigint unsigned default 0 not null" },
+		{ "alloc_secs", "bigint unsigned default 0 not null" },
+		{ "down_secs", "bigint unsigned default 0 not null" },
+		{ "pdown_secs", "bigint unsigned default 0 not null" },
+		{ "idle_secs", "bigint unsigned default 0 not null" },
+		{ "resv_secs", "bigint unsigned default 0 not null" },
+		{ "over_secs", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1018,15 +1026,26 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_end", "int unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
-		{ "count", "int not null" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "smallint unsigned default 0 not null" },
+		{ "tres", "text not null default ''" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t id_usage_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0 not null" },
+		{ "id", "int unsigned not null" },
+		{ "id_tres", "int default 1 not null" },
+		{ "time_start", "int unsigned not null" },
+		{ "alloc_secs", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t job_table_fields[] = {
-		{ "job_db_inx", "int not null auto_increment" },
+		{ "job_db_inx", "int unsigned not null auto_increment" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "account", "tinytext" },
@@ -1034,7 +1053,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "array_max_tasks", "int unsigned default 0 not null" },
 		{ "array_task_pending", "int unsigned default 0 not null" },
 		{ "cpus_req", "int unsigned not null" },
-		{ "cpus_alloc", "int unsigned not null" },
 		{ "derived_ec", "int unsigned default 0 not null" },
 		{ "derived_es", "text" },
 		{ "exit_code", "int unsigned default 0 not null" },
@@ -1068,6 +1086,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "gres_used", "text not null default ''" },
 		{ "wckey", "tinytext not null default ''" },
 		{ "track_steps", "tinyint not null" },
+		{ "tres_alloc", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -1082,20 +1101,19 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_resv", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "assoclist", "text not null default ''" },
-		{ "cpus", "int unsigned not null" },
 		{ "flags", "smallint unsigned default 0 not null" },
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
 		{ "resv_name", "text not null" },
 		{ "time_start", "int unsigned default 0 not null"},
 		{ "time_end", "int unsigned default 0 not null" },
+		{ "tres", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t step_table_fields[] = {
-		{ "job_db_inx", "int not null" },
+		{ "job_db_inx", "int unsigned not null" },
 		{ "deleted", "tinyint default 0 not null" },
-		{ "cpus_alloc", "int unsigned not null" },
 		{ "exit_code", "int default 0 not null" },
 		{ "id_step", "int not null" },
 		{ "kill_requid", "int default -1 not null" },
@@ -1142,11 +1160,12 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_disk_write_task", "int unsigned default 0 not null" },
 		{ "max_disk_write_node", "int unsigned default 0 not null" },
 		{ "ave_disk_write", "double unsigned default 0.0 not null" },
+		{ "tres_alloc", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
 	storage_field_t suspend_table_fields[] = {
-		{ "job_db_inx", "int not null" },
+		{ "job_db_inx", "int unsigned not null" },
 		{ "id_assoc", "int not null" },
 		{ "time_start", "int unsigned default 0 not null" },
 		{ "time_end", "int unsigned default 0 not null" },
@@ -1158,22 +1177,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "is_def", "tinyint default 0 not null" },
-		{ "id_wckey", "int not null auto_increment" },
+		{ "id_wckey", "int unsigned not null auto_increment" },
 		{ "wckey_name", "tinytext not null default ''" },
 		{ "user", "tinytext not null" },
-		{ NULL, NULL}
-	};
-
-	storage_field_t wckey_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "tinyint default 0 not null" },
-		{ "id_wckey", "int not null" },
-		{ "time_start", "int unsigned not null" },
-		{ "alloc_secs", "bigint default 0" },
-		{ "resv_secs", "bigint default 0" },
-		{ "over_secs", "bigint default 0" },
-		{ "consumed_energy", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1193,81 +1199,63 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  assoc_usage_table_fields,
-				  ", primary key (id_assoc, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_hour_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  assoc_usage_table_fields,
-				  ", primary key (id_assoc, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_month_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  assoc_usage_table_fields,
-				  ", primary key (id_assoc, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_day_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (time_start))")
+				  ", primary key (id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_hour_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (time_start))")
+				  ", primary key (id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, cluster_month_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (time_start))")
+				  ", primary key (id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, event_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  event_table_fields,
-				  ", primary key (node_name(20), "
-				  "time_start))")
+				  ", primary key (node_name(20), time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1333,36 +1321,27 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_day_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  wckey_usage_table_fields,
-				  ", primary key (id_wckey, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_hour_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  wckey_usage_table_fields,
-				  ", primary key (id_wckey, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, wckey_month_table);
 
-	_rename_usage_columns(mysql_conn, table_name);
-
 	if (mysql_db_create_table(mysql_conn, table_name,
-				  wckey_usage_table_fields,
-				  ", primary key (id_wckey, "
-				  "time_start))")
+				  id_usage_table_fields,
+				  ", primary key (id, id_tres, time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1399,11 +1378,11 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	}
 	mysql_free_result(result);
 	xstrfmtcat(mysql_conn->pre_commit_query,
-		   "drop table \"%s_%s\", \"%s_%s\", "
+		   "drop table \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
 		   "\"%s_%s\", \"%s_%s\", \"%s_%s\", \"%s_%s\", "
-		   "\"%s_%s\", \"%s_%s\", \"%s_%s\";",
+		   "\"%s_%s\", \"%s_%s\";",
 		   cluster_name, assoc_table,
 		   cluster_name, assoc_day_table,
 		   cluster_name, assoc_hour_table,
@@ -1819,7 +1798,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-	char *loc_assoc_char = NULL;
+	char *loc_assoc_char = NULL, *loc_usage_id_char = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
@@ -1981,7 +1960,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		rc = 0;
-		loc_assoc_char = NULL;
+		xfree(loc_assoc_char);
 		while ((row = mysql_fetch_row(result))) {
 			slurmdb_assoc_rec_t *rem_assoc = NULL;
 			if (loc_assoc_char)
@@ -2005,6 +1984,9 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		return rc;
 	}
 
+	loc_usage_id_char = xstrdup(loc_assoc_char);
+	xstrsubstituteall(loc_usage_id_char, "id_assoc", "id");
+
 	/* We should not have to delete from usage table, only flag since we
 	 * only delete things that are typos.
 	 */
@@ -2012,9 +1994,10 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);"
 		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);"
 		   "update \"%s_%s\" set mod_time=%ld, deleted=1 where (%s);",
-		   cluster_name, assoc_day_table, now, loc_assoc_char,
-		   cluster_name, assoc_hour_table, now, loc_assoc_char,
-		   cluster_name, assoc_month_table, now, loc_assoc_char);
+		   cluster_name, assoc_day_table, now, loc_usage_id_char,
+		   cluster_name, assoc_hour_table, now, loc_usage_id_char,
+		   cluster_name, assoc_month_table, now, loc_usage_id_char);
+	xfree(loc_usage_id_char);
 
 	if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 		DB_DEBUG(mysql_conn->conn, "query\n%s %zd",
@@ -2234,6 +2217,7 @@ extern int fini ( void )
 	destroy_mysql_db_info(mysql_db_info);
 	xfree(mysql_db_name);
 	xfree(default_qos_str);
+
 	mysql_db_cleanup();
 	return SLURM_SUCCESS;
 }
@@ -2348,7 +2332,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		mysql_free_result(result);
 	skip:
-		(void) assoc_mgr_update(mysql_conn->update_list);
+		(void) assoc_mgr_update(mysql_conn->update_list, 0);
 
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 		itr2 = list_iterator_create(as_mysql_cluster_list);
@@ -2415,9 +2399,15 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_clusters(mysql_conn, uid, cluster_list);
 }
 
+extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,
+				   uint32_t uid, List tres_list_in)
+{
+	return as_mysql_add_tres(mysql_conn, uid, tres_list_in);
+}
+
 extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
-					   List assoc_list)
+				     uint32_t uid,
+				     List assoc_list)
 {
 	return as_mysql_add_assocs(mysql_conn, uid, assoc_list);
 }
@@ -2587,6 +2577,13 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_p_get_tres(
+	mysql_conn_t *mysql_conn, uid_t uid,
+	slurmdb_tres_cond_t *tres_cond)
+{
+	return as_mysql_get_tres(mysql_conn, uid, tres_cond);
 }
 
 extern List acct_storage_p_get_assocs(
@@ -2783,13 +2780,13 @@ extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,
 	return as_mysql_fini_ctld(mysql_conn, cluster_rec);
 }
 
-extern int clusteracct_storage_p_cluster_cpus(mysql_conn_t *mysql_conn,
+extern int clusteracct_storage_p_cluster_tres(mysql_conn_t *mysql_conn,
 					      char *cluster_nodes,
-					      uint32_t cpus,
+					      char *tres_str_in,
 					      time_t event_time)
 {
-	return as_mysql_cluster_cpus(mysql_conn,
-				     cluster_nodes, cpus, event_time);
+	return as_mysql_cluster_tres(mysql_conn,
+				     cluster_nodes, &tres_str_in, event_time);
 }
 
 /*

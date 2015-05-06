@@ -62,6 +62,7 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 List g_qos_list = NULL;
+List g_tres_list = NULL;
 
 void _help_fields_msg(void)
 {
@@ -448,7 +449,6 @@ int get_data(void)
 		itr_step = list_iterator_create(job->steps);
 		while((step = list_next(itr_step)) != NULL) {
 			/* now aggregate the aggregatable */
-			job->alloc_cpus = MAX(job->alloc_cpus, step->ncpus);
 
 			if (step->state < JOB_COMPLETE)
 				continue;
@@ -565,13 +565,13 @@ void parse_command_line(int argc, char **argv)
 		case 'c':
 			params.opt_completion = 1;
 			break;
+		case OPT_LONG_DELIMITER:
+			fields_delimiter = optarg;
+			break;
 		case 'C':
 			/* 'C' is deprecated since 'M' is cluster on
 			   everything else.
 			*/
-		case OPT_LONG_DELIMITER:
-			fields_delimiter = optarg;
-			break;
 		case 'M':
 			if (!strcasecmp(optarg, "-1")) {
 				all_clusters = 1;
@@ -1187,6 +1187,8 @@ void sacct_fini()
 		list_destroy(jobs);
 	if (g_qos_list)
 		list_destroy(g_qos_list);
+	if (g_tres_list)
+		list_destroy(g_tres_list);
 
 	if (params.opt_completion)
 		g_slurm_jobcomp_fini();

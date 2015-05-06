@@ -65,7 +65,6 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 	slurmdb_user_rec_t *user = NULL;
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_accounting_rec_t *assoc_acct = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
 	uid_t my_uid = getuid();
@@ -252,16 +251,9 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 			if (!object)
 				list_append(slurmdb_report_user->acct_list,
 					    xstrdup(assoc->acct));
-			itr3 = list_iterator_create(assoc->accounting_list);
-			while((assoc_acct = list_next(itr3))) {
-				slurmdb_report_user->cpu_secs +=
-					(uint64_t)assoc_acct->alloc_secs;
-				slurmdb_report_user->consumed_energy +=
-					(uint64_t)assoc_acct->consumed_energy;
-/* 				slurmdb_report_cluster->cpu_secs +=  */
-/* 					(uint64_t)assoc_acct->alloc_secs; */
-			}
-			list_iterator_destroy(itr3);
+			slurmdb_transfer_acct_list_2_tres(
+				assoc->accounting_list,
+				&slurmdb_report_user->tres_list);
 		}
 		list_iterator_destroy(itr2);
 	}

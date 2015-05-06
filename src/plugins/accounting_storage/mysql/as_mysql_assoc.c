@@ -273,7 +273,7 @@ static int _check_coord_qos(mysql_conn_t *mysql_conn, char *cluster_name,
 	MYSQL_RES *result;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK,
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!qos_list || !list_count(qos_list))
@@ -1542,7 +1542,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						    assoc->qos_list)
 				   == SLURM_ERROR) {
 				assoc_mgr_lock_t locks = {
-					NO_LOCK, NO_LOCK, READ_LOCK,
+					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					NO_LOCK, NO_LOCK, NO_LOCK };
 				char *requested_qos;
 
@@ -2596,7 +2596,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						 object->qos_list)
 		    == SLURM_ERROR) {
 			assoc_mgr_lock_t locks = {
-				NO_LOCK, NO_LOCK, READ_LOCK,
+				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
 			char *requested_qos;
 

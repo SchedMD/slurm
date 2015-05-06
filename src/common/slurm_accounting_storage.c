@@ -84,6 +84,8 @@ typedef struct slurm_acct_storage_ops {
 				    List acct_list);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
 				    List cluster_list);
+	int  (*add_tres)           (void *db_conn, uint32_t uid,
+				    List tres_list_in);
 	int  (*add_assocs)         (void *db_conn, uint32_t uid,
 				    List assoc_list);
 	int  (*add_qos)            (void *db_conn, uint32_t uid,
@@ -103,7 +105,7 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_clusters)    (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond,
 				    slurmdb_cluster_rec_t *cluster);
-	List (*modify_assocs)(void *db_conn, uint32_t uid,
+	List (*modify_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond,
 				    slurmdb_assoc_rec_t *assoc);
 	List (*modify_job)         (void *db_conn, uint32_t uid,
@@ -146,6 +148,8 @@ typedef struct slurm_acct_storage_ops {
 	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
 	List (*get_config)         (void *db_conn, char *config_name);
+	List (*get_tres)           (void *db_conn, uint32_t uid,
+				    slurmdb_tres_cond_t *tres_cond);
 	List (*get_assocs)         (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
 	List (*get_events)         (void *db_conn, uint32_t uid,
@@ -176,8 +180,8 @@ typedef struct slurm_acct_storage_ops {
 	int  (*node_up)            (void *db_conn,
 				    struct node_record *node_ptr,
 				    time_t event_time);
-	int  (*cluster_cpus)       (void *db_conn, char *cluster_nodes,
-				    uint32_t cpus, time_t event_time);
+	int  (*cluster_tres)       (void *db_conn, char *cluster_nodes,
+				    char *tres_str_in, time_t event_time);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
 	int  (*register_disconn_ctld)(void *db_conn, char *control_host);
 	int  (*fini_ctld)          (void *db_conn,
@@ -214,6 +218,7 @@ static const char *syms[] = {
 	"acct_storage_p_add_coord",
 	"acct_storage_p_add_accts",
 	"acct_storage_p_add_clusters",
+	"acct_storage_p_add_tres",
 	"acct_storage_p_add_assocs",
 	"acct_storage_p_add_qos",
 	"acct_storage_p_add_res",
@@ -241,6 +246,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_accts",
 	"acct_storage_p_get_clusters",
 	"acct_storage_p_get_config",
+	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
 	"acct_storage_p_get_events",
 	"acct_storage_p_get_problems",
@@ -253,7 +259,7 @@ static const char *syms[] = {
 	"acct_storage_p_roll_usage",
 	"clusteracct_storage_p_node_down",
 	"clusteracct_storage_p_node_up",
-	"clusteracct_storage_p_cluster_cpus",
+	"clusteracct_storage_p_cluster_tres",
 	"clusteracct_storage_p_register_ctld",
 	"clusteracct_storage_p_register_disconn_ctld",
 	"clusteracct_storage_p_fini_ctld",
@@ -399,8 +405,16 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 	return (*(ops.add_clusters))(db_conn, uid, cluster_list);
 }
 
+extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
+				   List tres_list_in)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.add_tres))(db_conn, uid, tres_list_in);
+}
+
 extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
-					   List assoc_list)
+				     List assoc_list)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -625,6 +639,15 @@ extern List acct_storage_g_get_config(void *db_conn, char *config_name)
 	return (*(ops.get_config))(db_conn, config_name);
 }
 
+extern List acct_storage_g_get_tres(
+	void *db_conn, uint32_t uid,
+	slurmdb_tres_cond_t *tres_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.get_tres))(db_conn, uid, tres_cond);
+}
+
 extern List acct_storage_g_get_assocs(
 	void *db_conn, uint32_t uid,
 	slurmdb_assoc_cond_t *assoc_cond)
@@ -789,14 +812,15 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 }
 
 
-extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
+extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
-					      uint32_t cpus,
+					      char *tres_str_in,
 					      time_t event_time)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(ops.cluster_cpus))(db_conn, cluster_nodes, cpus, event_time);
+	return (*(ops.cluster_tres))(db_conn, cluster_nodes,
+				     tres_str_in, event_time);
 }
 
 

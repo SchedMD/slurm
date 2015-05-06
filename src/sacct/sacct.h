@@ -95,6 +95,7 @@ typedef enum {
 		PRINT_ACCOUNT,
 		PRINT_ALLOC_CPUS,
 		PRINT_ALLOC_GRES,
+		PRINT_TRES,
 		PRINT_ASSOCID,
 		PRINT_AVECPU,
 		PRINT_ACT_CPUFREQ,
@@ -193,6 +194,7 @@ extern List print_fields_list;
 extern ListIterator print_fields_itr;
 extern int field_count;
 extern List g_qos_list;
+extern List g_tres_list;
 
 /* process.c */
 char *find_hostname(uint32_t pos, char *hosts);

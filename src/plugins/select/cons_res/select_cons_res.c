@@ -1177,6 +1177,17 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		if (action != 2) {
 			if (job->memory_allocated[n] == 0)
 				continue;	/* no memory allocated */
+
+			if (job->nmem < job->memory_allocated[n]) {
+				error("_rm_job_from_res: job total memory is "
+				      "underallocated (%u-%u) for job %u",
+				      job->nmem, job->memory_allocated[n],
+				      job_ptr->job_id);
+				job->nmem = 0;
+			} else
+				job->nmem -= job->memory_allocated[n];
+
+
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("cons_res: node %s memory is "
@@ -1323,14 +1334,25 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		job->cpus[n] = 0;
 		job->ncpus = build_job_resources_cpu_array(job);
 		clear_job_resources_node(job, n);
+
+		if (job->nmem < job->memory_allocated[n]) {
+			error("cons_res: job total memory is underallocated "
+			      "(%u-%u) for job %u",
+			      job->nmem, job->memory_allocated[n],
+			      job_ptr->job_id);
+			job->nmem = 0;
+		} else
+			job->nmem -= job->memory_allocated[n];
+
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
 			error("cons_res: node %s memory is underallocated "
 			      "(%u-%u) for job %u",
 			      node_ptr->name, node_usage[i].alloc_memory,
 			      job->memory_allocated[n], job_ptr->job_id);
 			node_usage[i].alloc_memory = 0;
-		} else
+		} else {
 			node_usage[i].alloc_memory -= job->memory_allocated[n];
+		}
 		job->memory_allocated[n] = 0;
 		break;
 	}

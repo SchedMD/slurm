@@ -123,6 +123,7 @@ struct job_resources {
 	uint32_t	node_req;
 	char *		nodes;
 	uint32_t	ncpus;
+	uint32_t        nmem;
 	uint32_t *	sock_core_rep_count;
 	uint16_t *	sockets_per_node;
 	uint8_t		whole_node;

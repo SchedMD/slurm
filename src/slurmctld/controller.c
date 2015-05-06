@@ -183,6 +183,7 @@ slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
 int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
+List    cluster_tres_list = NULL;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -493,6 +494,10 @@ int main(int argc, char *argv[])
 				      "slurmctld start time");
 			}
 		}
+
+
+		acct_storage_g_add_tres(acct_db_conn,
+					  slurmctld_conf.slurm_user_id, NULL);
 
 		info("Running as primary controller");
 		if ((slurmctld_config.resume_backup == false) &&
@@ -1150,13 +1155,13 @@ static int _accounting_cluster_ready()
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
 	bitstr_t *total_node_bitmap = NULL;
-	char *cluster_nodes = NULL;
+	char *cluster_nodes = NULL, *cluster_tres_str;
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	lock_slurmctld(node_read_lock);
 
-	set_cluster_cpus();
+	set_cluster_tres();
 
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
@@ -1165,12 +1170,16 @@ static int _accounting_cluster_ready()
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
+	cluster_tres_str = slurmdb_make_tres_string(cluster_tres_list, 1);
 	unlock_slurmctld(node_read_lock);
 
-	rc = clusteracct_storage_g_cluster_cpus(acct_db_conn,
+	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
 						cluster_nodes,
-						cluster_cpus, event_time);
+						cluster_tres_str, event_time);
+
 	xfree(cluster_nodes);
+	xfree(cluster_tres_str);
+
 	if (rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
@@ -1770,7 +1779,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS   |
-				     ASSOC_MGR_CACHE_RES;
+				     ASSOC_MGR_CACHE_RES   |
+                         	     ASSOC_MGR_CACHE_TRES;
 	if (slurmctld_conf.track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
@@ -1844,33 +1854,104 @@ extern void send_all_to_accounting(time_t event_time)
 	send_resvs_to_accounting();
 }
 
+static int _add_node_gres_tres(void *x, void *arg)
+{
+	slurmdb_tres_rec_t *tres_rec_in = (slurmdb_tres_rec_t *)x;
+	struct node_record *node_ptr = (struct node_record *)arg;
+
+	xassert(tres_rec_in);
+
+	if (strcmp(tres_rec_in->type, "gres"))
+		return 0;
+
+	xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
+		   node_ptr->tres_str ? "," : "",
+		   tres_rec_in->id,
+		   gres_plugin_node_config_cnt(
+			   node_ptr->gres_list, tres_rec_in->name));
+
+	return 0;
+}
+
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_cpus(void)
+extern void set_cluster_tres(void)
 {
-	uint32_t cpus = 0;
 	struct node_record *node_ptr;
+	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
+	ListIterator itr;
 	int i;
+
+	xassert(cluster_tres_list);
+
+	itr = list_iterator_create(cluster_tres_list);
+	while ((tres_rec = list_next(itr))) {
+		if (!tres_rec->type) {
+			error("TRES %d doesn't have a type given, "
+			      "this should never happen",
+			      tres_rec->id);
+			continue; /* this should never happen */
+		}
+		/* reset them now since we are about to add to them */
+		tres_rec->count = 0;
+		if (tres_rec->id == TRES_CPU) {
+			cpu_tres = tres_rec;
+			continue;
+		} else if (tres_rec->id == TRES_MEM) {
+			mem_tres = tres_rec;
+			continue;
+		} else if (!strcmp(tres_rec->type, "gres")) {
+			tres_rec->count = gres_get_system_cnt(tres_rec->name);
+			continue;
+		} else if (!strcmp(tres_rec->type, "license")) {
+			tres_rec->count = get_total_license_cnt(
+				tres_rec->name);
+			continue;
+		}
+		/* FIXME: set up the other tres here that aren't specific */
+	}
+	list_iterator_destroy(itr);
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		uint64_t cpu_count = 0, mem_count = 0;
 		if (node_ptr->name == '\0')
 			continue;
+
 #ifdef SLURM_NODE_ACCT_REGISTER
-		if (slurmctld_conf.fast_schedule)
-			cpus += node_ptr->config_ptr->cpus;
-		else
-			cpus += node_ptr->cpus;
+		if (slurmctld_conf.fast_schedule) {
+			cpu_count += node_ptr->config_ptr->cpus;
+			mem_count += node_ptr->config_ptr->real_memory;
+		} else {
+			cpu_count += node_ptr->cpus;
+			mem_count += node_ptr->real_memory;
+		}
 #else
-		cpus += node_ptr->config_ptr->cpus;
+		cpu_count += node_ptr->config_ptr->cpus;
+		mem_count += node_ptr->config_ptr->real_memory;
+
 #endif
+		cpu_tres->count += cpu_count;
+		mem_tres->count += mem_count;
+
+		xfree(node_ptr->tres_str);
+
+		/* add the cpu tres to the node */
+		xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
+			   node_ptr->tres_str ? "," : "",
+			   TRES_CPU, cpu_count);
+
+		/* add the mem tres to the node */
+		xstrfmtcat(node_ptr->tres_str, "%u=%"PRIu64,
+			   TRES_MEM, mem_count);
+
+		list_for_each(cluster_tres_list, _add_node_gres_tres, node_ptr);
 	}
 
-	/* Since cluster_cpus is used else where we need to keep a
-	   local var here to avoid race conditions on cluster_cpus
-	   not being correct.
-	*/
-	cluster_cpus = cpus;
+	/* FIXME: cluster_cpus probably needs to be removed and handled
+	 * differently in the spots this is used.
+	 */
+	cluster_cpus = cpu_tres->count;
 }
 
 /*
@@ -2290,7 +2371,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			return NULL;
 		}
 		lock_slurmctld(job_write_lock);
-		assoc_mgr_refresh_lists(acct_db_conn);
+		assoc_mgr_refresh_lists(acct_db_conn, 0);
 		if (running_cache)
 			unlock_slurmctld(job_write_lock);
 		slurm_mutex_unlock(&assoc_cache_mutex);

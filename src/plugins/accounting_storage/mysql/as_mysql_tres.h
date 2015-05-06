@@ -1,11 +1,9 @@
 /*****************************************************************************\
- *  as_mysql_cluster.h - functions dealing with clusters.
+ *  as_mysql_tres.c - functions dealing with tres.
  *****************************************************************************
  *
- *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Copyright (C) 2015 SchedMD LLC.
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -36,44 +34,16 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_CLUSTER_H
-#define _HAVE_MYSQL_CLUSTER_H
+
+#ifndef _HAVE_AS_MYSQL_TRES_H
+#define _HAVE_AS_MYSQL_TRES_H
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 List cluster_list);
+extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
+			     uint32_t uid, List tres_list_in);
 
-extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond,
-				     slurmdb_cluster_rec_t *cluster);
-
-extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond);
-
-extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-				  slurmdb_cluster_cond_t *cluster_cond);
-
-extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_event_cond_t *event_cond);
-
-extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
-			      struct node_record *node_ptr,
-			      time_t event_time, char *reason,
-			      uint32_t reason_uid);
-
-extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
-			    struct node_record *node_ptr,
-			    time_t event_time);
-
-extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
-				  char *cluster, uint16_t port);
-
-extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
-			      slurmdb_cluster_rec_t *cluster_rec);
-
-extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
-				 char *cluster_nodes, char **tres_str_in,
-				 time_t event_time);
+extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_tres_cond_t *tres_cond);
 
 #endif

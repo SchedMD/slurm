@@ -73,11 +73,12 @@
 
 extern char *acct_coord_table;
 extern char *acct_table;
+extern char *tres_table;
 extern char *assoc_day_table;
 extern char *assoc_hour_table;
 extern char *assoc_month_table;
 extern char *assoc_table;
-extern char * clus_res_table;
+extern char *clus_res_table;
 extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;

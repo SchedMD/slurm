@@ -182,7 +182,8 @@ int main(int argc, char *argv[])
 
 	/* If we are tacking wckey we need to cache
 	   wckeys, if we aren't only cache the users, qos */
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER |
+		ASSOC_MGR_CACHE_QOS | ASSOC_MGR_CACHE_TRES;
 	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
@@ -207,7 +208,7 @@ int main(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 1);
 			run_dbd_backup();
 			if (!shutdown_time)
-				assoc_mgr_refresh_lists(db_conn);
+				assoc_mgr_refresh_lists(db_conn, 0);
 		} else if (slurmdbd_conf->dbd_host &&
 			   (!strcmp(slurmdbd_conf->dbd_host, node_name) ||
 			    !strcmp(slurmdbd_conf->dbd_host, "localhost"))) {
@@ -219,6 +220,8 @@ int main(int argc, char *argv[])
 			      node_name, slurmdbd_conf->dbd_host,
 			      slurmdbd_conf->dbd_backup);
 		}
+
+		acct_storage_g_add_tres(db_conn, getuid(), NULL);
 
 		if (!shutdown_time) {
 			/* Create attached thread to process incoming RPCs */

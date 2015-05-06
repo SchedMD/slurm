@@ -254,7 +254,9 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step->elapsed = filetxt_step->elapsed;
 	slurmdb_step->end = filetxt_step->end;
 	slurmdb_step->exitcode = filetxt_step->exitcode;
-	slurmdb_step->ncpus = filetxt_step->ncpus;
+	slurmdb_step->tres_alloc_str = xstrdup_printf(
+		"cpu=%u", filetxt_step->ncpus);
+
 	if (filetxt_step->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_step->nodes);
 		slurmdb_step->nnodes = hostlist_count(hl);
@@ -319,7 +321,9 @@ no_cond:
 	slurmdb_job->jobname = xstrdup(filetxt_job->jobname);
 	slurmdb_job->partition = xstrdup(filetxt_job->header.partition);
 	slurmdb_job->req_cpus = filetxt_job->ncpus;
-	slurmdb_job->alloc_cpus = filetxt_job->ncpus;
+	slurmdb_job->tres_alloc_str = xstrdup_printf(
+		"cpu=%u", filetxt_step->ncpus);
+
 	if (filetxt_job->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_job->nodes);
 		slurmdb_job->alloc_nodes = hostlist_count(hl);

@@ -209,6 +209,8 @@ void print_fields(type_t type, void *object)
 	struct	group *gr = NULL;
 	char outbuf[FORMAT_STRING_SIZE];
 	bool got_stats = false;
+	int cpu_tres_rec_count = 0;
+	int step_cpu_tres_rec_count = 0;
 
 	switch(type) {
 	case JOB:
@@ -221,14 +223,32 @@ void print_fields(type_t type, void *object)
 		*/
 		if (!step)
 			job->track_steps = 1;
+		else
+			step_cpu_tres_rec_count =
+				slurmdb_find_tres_count_in_string(
+					step->tres_alloc_str, TRES_CPU);
+
 		if (job->stats.cpu_min != NO_VAL)
 			got_stats = true;
+
 		job_comp = NULL;
+
+		cpu_tres_rec_count = slurmdb_find_tres_count_in_string(
+			job->tres_alloc_str, TRES_CPU);
 		break;
 	case JOBSTEP:
 		job = step->job_ptr;
+
 		if (step->stats.cpu_min != NO_VAL)
 			got_stats = true;
+
+		if (!(step_cpu_tres_rec_count =
+		      slurmdb_find_tres_count_in_string(
+			      step->tres_alloc_str, TRES_CPU)))
+			step_cpu_tres_rec_count =
+				slurmdb_find_tres_count_in_string(
+					job->tres_alloc_str, TRES_CPU);
+
 		job_comp = NULL;
 		break;
 	case JOBCOMP:
@@ -252,12 +272,13 @@ void print_fields(type_t type, void *object)
 		case PRINT_ALLOC_CPUS:
 			switch(type) {
 			case JOB:
-				tmp_int = job->alloc_cpus;
+				tmp_int = cpu_tres_rec_count;
+
 				// we want to use the step info
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_int = step->ncpus;
+				tmp_int = step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
 			default:
@@ -582,11 +603,11 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_uint64 = (uint64_t)job->elapsed
-					* (uint64_t)job->alloc_cpus;
+					* (uint64_t)cpu_tres_rec_count;
 				break;
 			case JOBSTEP:
 				tmp_uint64 = (uint64_t)step->elapsed
-					* (uint64_t)step->ncpus;
+					* (uint64_t)step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
 				break;
@@ -601,11 +622,11 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_uint64 = (uint64_t)job->elapsed
-					* (uint64_t)job->alloc_cpus;
+					* (uint64_t)cpu_tres_rec_count;
 				break;
 			case JOBSTEP:
 				tmp_uint64 = (uint64_t)step->elapsed
-					* (uint64_t)step->ncpus;
+					* (uint64_t)step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
 				break;
@@ -1390,7 +1411,7 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps && !step)
-					tmp_int = job->alloc_cpus;
+					tmp_int = cpu_tres_rec_count;
 				// we want to use the step info
 				if (!step)
 					break;
@@ -1556,7 +1577,7 @@ void print_fields(type_t type, void *object)
 				tmp_int = job->req_cpus;
 				break;
 			case JOBSTEP:
-				tmp_int = step->ncpus;
+				tmp_int = step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
 
@@ -1894,6 +1915,37 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			tmp_char = _elapsed_time(tmp_int, tmp_int2);
+
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_TRES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->tres_alloc_str;
+				break;
+			case JOBSTEP:
+				tmp_char = step->tres_alloc_str;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			if (!g_tres_list) {
+				slurmdb_tres_cond_t tres_cond;
+				memset(&tres_cond, 0,
+				       sizeof(slurmdb_tres_cond_t));
+				tres_cond.with_deleted = 1;
+				g_tres_list = slurmdb_tres_get(
+					acct_db_conn, &tres_cond);
+			}
+
+			tmp_char = slurmdb_make_tres_string_from_simple(
+				tmp_char, g_tres_list);
 
 			field->print_routine(field,
 					     tmp_char,

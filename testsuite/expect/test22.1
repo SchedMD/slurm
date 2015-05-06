@@ -161,6 +161,8 @@ set user2_wckey1_alloc $job2_alloc
 #node0 down
 set node0_down_start [expr $period_start+(60*45)]
 set node0_down_end [expr $period_start+(60*75)]
+set node0_start_str [timestamp -format %Y-%m-%dT%X -seconds $node0_down_start]
+set node0_end_str [timestamp -format %Y-%m-%dT%X -seconds $node0_down_end]
 
 #
 # Check accounting config and bail if not found.
@@ -319,20 +321,20 @@ set file [open $sql_in "w"]
 
 # put in the cluster for back in the day before accounting was made here for us we are using 'Tue Jan  1 00:00:00 2008' = 1199174400 as the start
 
-puts $file "insert into cluster_event_table (node_name, cluster, cpu_count, period_start, period_end, reason, cluster_nodes) values"
-puts $file "('', '$cluster', $cluster_cpus, $period_start, $period_end, 'Cluster processor count', '$node_list' )"
+puts $file "insert into cluster_event_table (node_name, cluster, tres, period_start, period_end, reason, cluster_nodes) values"
+puts $file "('', '$cluster', '1=$cluster_cpus', $period_start, $period_end, 'Cluster processor count', '$node_list' )"
 
 #put a node down for 30 minutes starting at 45 minutes after the start to make sure our rollups work so we should get 15 minutes on one hour and 15 on the other
-puts $file ", ('$node0', '$cluster', $node0_cpus, $node0_down_start, $node0_down_end, 'down','')"
-#puts $file ", ('$node1', '$cluster', $node1_cpus, $period_start, $period_end, 'down')"
+puts $file ", ('$node0', '$cluster', '1=$node0_cpus', $node0_down_start, $node0_down_end, 'down','')"
+#puts $file ", ('$node1', '$cluster', '1=$node1_cpus', $period_start, $period_end, 'down')"
 puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
 
 #now we will put in a job running for an hour and 5 minutes
-puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
-puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
+puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
+puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
+puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
 close $file
 
 exec $bin_rm -f $sql_rem
@@ -373,7 +375,7 @@ set matches 0
 set my_pid [eval spawn $sacct -p -C $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 expect {
 	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacct command\n"
 	    	incr exit_code 1
 	}
 	-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
@@ -404,6 +406,52 @@ expect {
 
 if {$matches != 3} {
 	send_user "\nFAILURE:  job wasn't loaded correctly with only $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	#incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+#
+# Use sacctmgr to see if node event loaded
+#
+
+send_user "$cluster..$start_str.$end_str.$cluster_cpus.$node_list.\n"
+
+set matches 0
+set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,node,start,end,cpu --noheader start=$start_str end=$end_str]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		incr exit_code 1
+	}
+	-re "($cluster..$start_str.$end_str.$cluster_cpus.)" {
+		send_user "got 1\n"
+		incr matches
+		exp_continue
+	}
+	-re "($cluster.$node0.$node0_start_str.$node0_end_str.$node0_cpus.)" {
+		send_user "got 2\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE:  cluster env wasn't loaded correctly with only $matches.\n"
 	incr exit_code 1
 }
 

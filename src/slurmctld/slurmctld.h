@@ -362,6 +362,7 @@ extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
+extern List cluster_tres_list;
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures
@@ -374,7 +375,6 @@ typedef struct slurmctld_resv {
 	bool account_not;	/* account_list users NOT permitted to use */
 	char *assoc_list;	/* list of associations			*/
 	char *burst_buffer;	/* burst buffer resources		*/
-	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
 	uint32_t duration;	/* time in seconds for this
 				 * reservation to last                  */
@@ -403,6 +403,8 @@ typedef struct slurmctld_resv {
 	time_t start_time_prev;	/* If start time was changed this is
 				 * the pervious start time.  Needed
 				 * for accounting */
+	char *tres_fmt_str;     /* formatted string of tres to deal with */
+	char *tres_str;         /* simple string of tres to deal with */
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
@@ -708,6 +710,8 @@ struct job_record {
 					 * for accounting */
 	uint32_t total_nodes;		/* number of allocated nodes
 					 * for accounting */
+	char *tres_alloc_str;           /* simple tres string for job */
+	char *tres_fmt_alloc_str;       /* formatted tres string for job */
 	uint32_t user_id;		/* user the job runs as */
 	uint16_t wait_all_nodes;	/* if set, wait for all nodes to boot
 					 * before starting the job */
@@ -799,6 +803,8 @@ struct 	step_record {
 	switch_jobinfo_t *switch_job;	/* switch context, opaque */
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */
+	char *tres_alloc_str;           /* simple tres string for step */
+	char *tres_fmt_alloc_str;       /* formatted tres string for step */
 };
 
 extern List job_list;			/* list of job_record entries */
@@ -1445,13 +1451,18 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
 extern void job_time_limit (void);
 
 /*
- * job_update_cpu_cnt - when job is completing remove allocated cpus
+ * job_set_tres - set the tres up when allocating the job.
+ */
+extern void job_set_tres(struct job_record *job_ptr);
+
+/*
+ * job_update_tres_cnt - when job is completing remove allocated tres
  *                      from count.
  * IN/OUT job_ptr - job structure to be updated
  * IN node_inx    - node bit that is finished with job.
  * RET SLURM_SUCCES on success SLURM_ERROR on cpu_cnt underflow
  */
-extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx);
+extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx);
 
 /*
  * check_job_step_time_limit - terminate jobsteps which have exceeded
@@ -1913,7 +1924,7 @@ extern void send_all_to_accounting(time_t event_time);
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_cpus(void);
+extern void set_cluster_tres(void);
 
 /* sends all jobs in eligible state to accounting.  Only needed at
  * first registration

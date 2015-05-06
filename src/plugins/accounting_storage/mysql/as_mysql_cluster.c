@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "as_mysql_tres.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_usage.h"
@@ -643,7 +644,7 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"rpc_version",
 		"dimensions",
 		"flags",
-		"plugin_id_select",
+		"plugin_id_select"
 	};
 	enum {
 		CLUSTER_REQ_NAME,
@@ -706,22 +707,12 @@ empty:
 	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-
 		cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
 		cluster->name = xstrdup(row[CLUSTER_REQ_NAME]);
 
 		list_append(assoc_cond.cluster_list, cluster->name);
-
-		/* get the usage if requested */
-		if (cluster_cond && cluster_cond->with_usage) {
-			as_mysql_get_usage(
-				mysql_conn, uid, cluster,
-				DBD_GET_CLUSTER_USAGE,
-				cluster_cond->usage_start,
-				cluster_cond->usage_end);
-		}
 
 		cluster->classification = slurm_atoul(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
@@ -733,23 +724,32 @@ empty:
 			slurm_atoul(row[CLUSTER_REQ_PI_SELECT]);
 
 		query = xstrdup_printf(
-			"select count, cluster_nodes from "
+			"select tres, cluster_nodes from "
 			"\"%s_%s\" where time_end=0 and node_name='' limit 1",
 			cluster->name, event_table);
-		debug4("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (!(result2 = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
+		if (debug_flags & DEBUG_FLAG_DB_TRES)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		if (!(result2 = mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
 			continue;
 		}
 		xfree(query);
 		if ((row2 = mysql_fetch_row(result2))) {
-			cluster->cpu_count = slurm_atoul(row2[0]);
+			cluster->tres_str = xstrdup(row2[0]);
 			if (row2[1] && row2[1][0])
 				cluster->nodes = xstrdup(row2[1]);
 		}
 		mysql_free_result(result2);
+
+		/* get the usage if requested */
+		if (cluster_cond && cluster_cond->with_usage) {
+			as_mysql_get_usage(
+				mysql_conn, uid, cluster,
+				DBD_GET_CLUSTER_USAGE,
+				cluster_cond->usage_start,
+				cluster_cond->usage_end);
+		}
+
 	}
 	mysql_free_result(result);
 
@@ -818,24 +818,24 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
 		"cluster_nodes",
-		"count",
 		"node_name",
 		"state",
 		"time_start",
 		"time_end",
 		"reason",
 		"reason_uid",
+		"tres",
 	};
 
 	enum {
 		EVENT_REQ_CNODES,
-		EVENT_REQ_CPU,
 		EVENT_REQ_NODE,
 		EVENT_REQ_STATE,
 		EVENT_REQ_START,
 		EVENT_REQ_END,
 		EVENT_REQ_REASON,
 		EVENT_REQ_REASON_UID,
+		EVENT_REQ_TRES,
 		EVENT_REQ_COUNT
 	};
 
@@ -1022,7 +1022,6 @@ empty:
 			} else
 				event->event_type = SLURMDB_EVENT_CLUSTER;
 
-			event->cpu_count = slurm_atoul(row[EVENT_REQ_CPU]);
 			event->state = slurm_atoul(row[EVENT_REQ_STATE]);
 			event->period_start = slurm_atoul(row[EVENT_REQ_START]);
 			event->period_end = slurm_atoul(row[EVENT_REQ_END]);
@@ -1035,6 +1034,9 @@ empty:
 			if (row[EVENT_REQ_CNODES] && row[EVENT_REQ_CNODES][0])
 				event->cluster_nodes =
 					xstrdup(row[EVENT_REQ_CNODES]);
+
+			if (row[EVENT_REQ_TRES] && row[EVENT_REQ_TRES][0])
+				event->tres_str = xstrdup(row[EVENT_REQ_TRES]);
 		}
 		mysql_free_result(result);
 	}
@@ -1053,7 +1055,6 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 			      time_t event_time, char *reason,
 			      uint32_t reason_uid)
 {
-	uint16_t cpus;
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
 	char *my_reason;
@@ -1073,10 +1074,10 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
-		cpus = node_ptr->config_ptr->cpus;
-	else
-		cpus = node_ptr->cpus;
+	if (!node_ptr->tres_str) {
+		error("node ptr has no tres_list!");
+		return SLURM_ERROR;
+	}
 
 	query = xstrdup_printf("select state, reason from \"%s_%s\" where "
 			       "time_end=0 and node_name='%s';",
@@ -1108,8 +1109,8 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	debug2("inserting %s(%s) with %u cpus",
-	       node_ptr->name, mysql_conn->cluster_name, cpus);
+	debug2("inserting %s(%s) with tres of '%s'",
+	       node_ptr->name, mysql_conn->cluster_name, node_ptr->tres_str);
 
 	query = xstrdup_printf(
 		"update \"%s_%s\" set time_end=%ld where "
@@ -1126,14 +1127,15 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
-		   "(node_name, state, count, time_start, "
+		   "(node_name, state, tres, time_start, "
 		   "reason, reason_uid) "
-		   "values ('%s', %u, %u, %ld, '%s', %u) "
-		   "on duplicate key update time_end=0;",
+		   "values ('%s', %u, '%s', %ld, '%s', %u) "
+		   "on duplicate key update time_end=0, "
+		   "inx=LAST_INSERT_ID(inx);",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
-		   cpus, event_time, my_reason, reason_uid);
-	debug4("%d(%s:%d) query\n%s",
+		   node_ptr->tres_str, event_time, my_reason, reason_uid);
+	debug2("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
@@ -1234,6 +1236,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	char *query = NULL;
+	bool free_it = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1261,20 +1264,22 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	    || (slurmdbd_conf && !slurmdbd_conf->track_ctld))
 		return rc;
 
-	/* If cpus is 0 we can get the current number of cpus by
-	   sending 0 for the cpus param in the as_mysql_cluster_cpus
+	/* If tres is NULL we can get the current number of tres by
+	   sending NULL for the tres param in the as_mysql_cluster_tres
 	   function.
 	*/
-	if (!cluster_rec->cpu_count) {
-		cluster_rec->cpu_count = as_mysql_cluster_cpus(
-			mysql_conn, cluster_rec->control_host, 0, now);
+	if (!cluster_rec->tres_str) {
+		free_it = true;
+		as_mysql_cluster_tres(
+			mysql_conn, cluster_rec->control_host,
+			&cluster_rec->tres_str, now);
 	}
 
-	/* Since as_mysql_cluster_cpus could change the
+	/* Since as_mysql_cluster_tres could change the
 	   last_affected_rows we can't group this with the above
 	   return.
 	*/
-	if (!cluster_rec->cpu_count)
+	if (!cluster_rec->tres_str)
 		return rc;
 
 	/* If we affected things we need to now drain the nodes in the
@@ -1285,11 +1290,14 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	 * info.
 	 */
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (count, state, "
-		"time_start, reason) "
-		"values ('%u', %u, %ld, 'slurmctld disconnect')",
+		"insert into \"%s_%s\" (tres, state, time_start, reason) "
+		"values ('%s', %u, %ld, 'slurmctld disconnect');",
 		cluster_rec->name, event_table,
-		cluster_rec->cpu_count, NODE_STATE_DOWN, (long)now);
+		cluster_rec->tres_str, NODE_STATE_DOWN, (long)now);
+
+	if (free_it)
+		xfree(cluster_rec->tres_str);
+
 	if (debug_flags & DEBUG_FLAG_DB_EVENT)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
@@ -1298,8 +1306,8 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
-				 char *cluster_nodes, uint32_t cpus,
+extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
+				 char *cluster_nodes, char **tres_str_in,
 				 time_t event_time)
 {
 	char* query;
@@ -1307,6 +1315,8 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 	int first = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+
+	xassert(tres_str_in);
 
  	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1318,7 +1328,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select count, cluster_nodes from \"%s_%s\" where "
+		"select tres, cluster_nodes from \"%s_%s\" where "
 		"time_end=0 and node_name='' and state=0 limit 1",
 		mysql_conn->cluster_name, event_table);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -1345,7 +1355,7 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		 * may not be up when we run this in the controller or
 		 * in the slurmdbd.
 		 */
-		if (!cpus) {
+		if (!*tres_str_in) {
 			rc = 0;
 			goto end_it;
 		}
@@ -1354,18 +1364,21 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto add_it;
 	}
 
-	/* If cpus is 0 we want to return the cpu count for this cluster */
-	if (!cpus) {
-		rc = atoi(row[0]);
+	/* If tres is NULL we want to return the tres for this cluster */
+	if (!*tres_str_in) {
+		*tres_str_in = xstrdup(row[0]);
 		goto end_it;
-	}
-
-	if (slurm_atoul(row[0]) == cpus) {
+	} else if (xstrcmp(*tres_str_in, row[0])) {
+		debug("%s has changed tres from %s to %s",
+		      mysql_conn->cluster_name,
+		      row[0], *tres_str_in);
+	} else {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
-				 "we have the same cpu count as before for %s, "
+				 "We have the same tres as before for %s, "
 				 "no need to update the database.",
 				 mysql_conn->cluster_name);
+
 		if (cluster_nodes) {
 			if (!row[1][0]) {
 				debug("Adding cluster nodes '%s' to "
@@ -1389,14 +1402,12 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 						 "update the database.");
 				goto update_it;
 			}
-		} else
-			goto end_it;
-	} else {
-		debug("%s has changed from %s cpus to %u",
-		      mysql_conn->cluster_name, row[0], cpus);
+		}
+
+		goto end_it;
 	}
 
-	/* reset all the entries for this cluster since the cpus
+	/* reset all the entries for this cluster since the tres
 	   changed some of the downed nodes may have gone away.
 	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
@@ -1409,11 +1420,11 @@ extern int as_mysql_cluster_cpus(mysql_conn_t *mysql_conn,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into \"%s_%s\" (cluster_nodes, count, "
+		"insert into \"%s_%s\" (cluster_nodes, tres, "
 		"time_start, reason) "
-		"values ('%s', %u, %ld, 'Cluster processor count')",
+		"values ('%s', '%s', %ld, 'Cluster Registered TRES');",
 		mysql_conn->cluster_name, event_table,
-		cluster_nodes, cpus, event_time);
+		cluster_nodes, *tres_str_in, event_time);
 	(void) mysql_db_query(mysql_conn, query);
 	xfree(query);
 update_it:

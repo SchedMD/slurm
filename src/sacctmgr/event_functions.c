@@ -573,7 +573,8 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 			field->name = xstrdup("Node Name");
 			field->len = -15;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Reason", object, MAX(command_len, 1))) {
+		} else if (!strncasecmp("Reason", object,
+					MAX(command_len, 1))) {
 			field->type = PRINT_REASON;
 			field->name = xstrdup("Reason");
 			field->len = 30;
@@ -594,6 +595,12 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 			field->type = PRINT_STATE;
 			field->name = xstrdup("State");
 			field->len = 6;
+			field->print_routine = print_fields_str;
+		} else if (!strncasecmp("TRES", object,
+					MAX(command_len, 2))) {
+			field->type = PRINT_TRES;
+			field->name = xstrdup("TRES");
+			field->len = 20;
 			field->print_routine = print_fields_str;
 		} else if (!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
@@ -640,6 +647,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 		int curr_inx = 1;
 		char tmp[20], *tmp_char;
 		time_t newend = event->period_end;
+
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
@@ -653,8 +661,12 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			case PRINT_CPUS:
-				convert_num_unit((float)event->cpu_count,
-						 tmp, sizeof(tmp), UNIT_NONE);
+				convert_num_unit(
+					(float)slurmdb_find_tres_count_in_string(
+						event->tres_str, TRES_CPU),
+					tmp, sizeof(tmp),
+					UNIT_NONE);
+
 				field->print_routine(
 					field,
 					tmp,
@@ -717,6 +729,25 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 				field->print_routine(field,
 						     tmp_char,
 						     (curr_inx == field_count));
+				break;
+			case PRINT_TRES:
+				if (!g_tres_list) {
+					slurmdb_tres_cond_t tres_cond;
+					memset(&tres_cond, 0,
+					       sizeof(slurmdb_tres_cond_t));
+					tres_cond.with_deleted = 1;
+					g_tres_list = slurmdb_tres_get(
+						db_conn, &tres_cond);
+				}
+
+				tmp_char = slurmdb_make_tres_string_from_simple(
+					event->tres_str, g_tres_list);
+
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				xfree(tmp_char);
 				break;
 			case PRINT_USER:
 				if (event->reason_uid != NO_VAL) {

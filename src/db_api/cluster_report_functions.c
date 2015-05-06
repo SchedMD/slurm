@@ -59,7 +59,6 @@ static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
-	slurmdb_accounting_rec_t *accting = NULL;
 
 	/* make sure we add all associations to this
 	   user rec because we could have some in
@@ -93,24 +92,17 @@ static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
 
 		list_append(user_list, slurmdb_report_user);
 	}
+
 	/* get the amount of time this assoc used
 	   during the time we are looking at */
-	itr = list_iterator_create(assoc->accounting_list);
-	while((accting = list_next(itr))) {
-		slurmdb_report_user->cpu_secs +=
-			(uint64_t)accting->alloc_secs;
-		slurmdb_report_user->consumed_energy +=
-			(uint64_t)accting->consumed_energy;
-	}
-	list_iterator_destroy(itr);
+	slurmdb_transfer_acct_list_2_tres(assoc->accounting_list,
+					  &slurmdb_report_user->tres_list);
 }
 
 static void _process_au(List assoc_list, slurmdb_assoc_rec_t *assoc)
 {
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc =
 		xmalloc(sizeof(slurmdb_report_assoc_rec_t));
-	ListIterator itr = NULL;
-	slurmdb_accounting_rec_t *accting = NULL;
 
 	list_append(assoc_list, slurmdb_report_assoc);
 
@@ -121,22 +113,13 @@ static void _process_au(List assoc_list, slurmdb_assoc_rec_t *assoc)
 
 	/* get the amount of time this assoc used
 	   during the time we are looking at */
-	itr = list_iterator_create(assoc->accounting_list);
-	while((accting = list_next(itr))) {
-		slurmdb_report_assoc->cpu_secs +=
-			(uint64_t)accting->alloc_secs;
-		slurmdb_report_assoc->consumed_energy +=
-			(uint64_t)accting->consumed_energy;
-	}
-	list_iterator_destroy(itr);
-
+	slurmdb_transfer_acct_list_2_tres(assoc->accounting_list,
+					  &slurmdb_report_assoc->tres_list);
 }
 
 static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
 {
-	ListIterator itr = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
-	slurmdb_accounting_rec_t *accting = NULL;
 	struct passwd *passwd_ptr = NULL;
 	uid_t uid = NO_VAL;
 
@@ -158,14 +141,8 @@ static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
 
 	/* get the amount of time this wckey used
 	   during the time we are looking at */
-	itr = list_iterator_create(wckey->accounting_list);
-	while((accting = list_next(itr))) {
-		slurmdb_report_user->cpu_secs +=
-			(uint64_t)accting->alloc_secs;
-		slurmdb_report_user->consumed_energy +=
-			(uint64_t)accting->consumed_energy;
-	}
-	list_iterator_destroy(itr);
+	slurmdb_transfer_acct_list_2_tres(wckey->accounting_list,
+					  &slurmdb_report_user->tres_list);
 }
 
 static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
@@ -173,7 +150,6 @@ static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL,
 		*parent_assoc = NULL;
 	ListIterator itr = NULL;
-	slurmdb_accounting_rec_t *accting = NULL;
 
 	/* find the parent */
 	itr = list_iterator_create(assoc_list);
@@ -200,18 +176,10 @@ static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
 
 	/* get the amount of time this wckey used
 	   during the time we are looking at */
-	itr = list_iterator_create(wckey->accounting_list);
-	while((accting = list_next(itr))) {
-		slurmdb_report_assoc->cpu_secs +=
-			(uint64_t)accting->alloc_secs;
-		parent_assoc->cpu_secs +=
-			(uint64_t)accting->alloc_secs;
-		slurmdb_report_assoc->consumed_energy +=
-			(uint64_t)accting->consumed_energy;
-		parent_assoc->consumed_energy +=
-			(uint64_t)accting->consumed_energy;
-	}
-	list_iterator_destroy(itr);
+	slurmdb_transfer_acct_list_2_tres(wckey->accounting_list,
+					  &slurmdb_report_assoc->tres_list);
+	slurmdb_transfer_acct_list_2_tres(wckey->accounting_list,
+					  &parent_assoc->tres_list);
 }
 
 static void _process_assoc_type(

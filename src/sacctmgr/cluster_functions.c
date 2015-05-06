@@ -491,17 +491,23 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 							     classification),
 						     (curr_inx == field_count));
 				break;
-			case PRINT_CPUS:
-			{
-				char tmp_char[9];
-				convert_num_unit((float)cluster->cpu_count,
-						 tmp_char, sizeof(tmp_char),
-						 UNIT_NONE);
+			case PRINT_TRES:
+				if (!g_tres_list) {
+					slurmdb_tres_cond_t tres_cond;
+					memset(&tres_cond, 0,
+					       sizeof(slurmdb_tres_cond_t));
+					tres_cond.with_deleted = 1;
+					g_tres_list = slurmdb_tres_get(
+						db_conn, &tres_cond);
+				}
+
+				tmp_char = slurmdb_make_tres_string_from_simple(
+					cluster->tres_str, g_tres_list);
 				field->print_routine(field,
 						     tmp_char,
 						     (curr_inx == field_count));
+				xfree(tmp_char);
 				break;
-			}
 			case PRINT_DQOS:
 				if (!g_qos_list) {
 					g_qos_list = acct_storage_g_get_qos(

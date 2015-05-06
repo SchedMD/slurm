@@ -139,6 +139,7 @@ typedef enum {
 	SLURMDB_REMOVE_RES,
 	SLURMDB_MODIFY_RES,
 	SLURMDB_REMOVE_QOS_USAGE,
+	SLURMDB_ADD_TRES,
 } slurmdb_update_type_t;
 
 /* Define QOS flags */
@@ -220,6 +221,21 @@ typedef struct assoc_mgr_qos_usage assoc_mgr_qos_usage_t;
 /********************************************/
 
 /* Association conditions used for queries of the database */
+
+/* slurmdb_tres_rec_t is used in other structures below so this needs
+ * to be declared before hand.
+ */
+typedef struct {
+	uint64_t alloc_secs; /* total amount of secs allocated if used in an
+				accounting_list */
+	uint32_t rec_count;  /* number of records alloc_secs is, DON'T PACK */
+	uint64_t count; /* Count of tres on a given cluster, 0 if
+			   listed generically. */
+	uint32_t id;    /* Database ID for the tres */
+	char *name;     /* Name of tres if type is generic like GRES
+			   or License. */
+	char *type;     /* Type of tres (CPU, MEM, etc) */
+} slurmdb_tres_rec_t;
 
 /* slurmdb_assoc_cond_t is used in other structures below so
  * this needs to be declared first.
@@ -361,9 +377,9 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
-	uint64_t consumed_energy; /* energy allocated in Joules */
 	uint32_t id;	/* association/wckey ID		*/
 	time_t period_start; /* when this record was started */
+	slurmdb_tres_rec_t tres_rec;
 } slurmdb_accounting_rec_t;
 
 typedef struct {
@@ -400,10 +416,22 @@ typedef struct {
 			     insert of jobs since past */
 } slurmdb_archive_rec_t;
 
+typedef struct {
+	uint64_t count;  /* Count of tres on a given cluster, 0 if
+			    listed generically. */
+	List id_list;    /* Database ID */
+	List name_list;  /* Name of tres if type is generic like GRES
+			    or License. */
+	List type_list;  /* Type of tres (CPU, MEM, etc) */
+	uint16_t with_deleted;
+} slurmdb_tres_cond_t;
+
+/* slurmdb_tres_rec_t is defined above alphabetical */
+
 /* slurmdb_assoc_cond_t is defined above alphabetical */
 
 typedef struct slurmdb_assoc_rec {
-	List accounting_list; 	   /* list of slurmdb_accounting_rec_t *'s */
+	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		   /* account/project associated to
 				    * assoc */
 	struct slurmdb_assoc_rec *assoc_next; /* next assoc with
@@ -509,7 +537,6 @@ typedef struct {
 				    * DOESN'T GET PACKED */
 	char *control_host;
 	uint32_t control_port;
-	uint32_t cpu_count;
 	uint16_t dimensions; /* number of dimensions this cluster is */
 	int *dim_size; /* For convenience only.
 			* Size of each dimension For now only on
@@ -522,18 +549,18 @@ typedef struct {
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* version of rpc this cluter is running */
+	char *tres_str;       /* comma separated list of TRES */
 } slurmdb_cluster_rec_t;
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
-	uint64_t consumed_energy; /* energy allocated in Joules */
-	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
 	uint64_t idle_secs; /* number of cpu seconds idle */
 	uint64_t over_secs; /* number of cpu seconds overcommitted */
 	uint64_t pdown_secs; /* number of cpu seconds planned down */
 	time_t period_start; /* when this record was started */
 	uint64_t resv_secs; /* number of cpu seconds reserved */
+	slurmdb_tres_rec_t tres_rec;
 } slurmdb_cluster_accounting_rec_t;
 
 typedef struct {
@@ -565,7 +592,6 @@ typedef struct {
 	char *cluster;          /* Name of associated cluster */
 	char *cluster_nodes;    /* node list in cluster during time
 				 * period (only set in a cluster event) */
-	uint32_t cpu_count;     /* Number of CPUs effected by event */
 	uint16_t event_type;    /* type of event (slurmdb_event_type_t) */
 	char *node_name;        /* Name of node (only set in a node event) */
 	time_t period_end;      /* End of period */
@@ -575,6 +601,7 @@ typedef struct {
 	uint32_t reason_uid;    /* uid of that who set the reason */
 	uint16_t state;         /* State of node during time
 				   period (only set in a node event) */
+	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;
 
 /* slurmdb_job_cond_t is defined above alphabetical */
@@ -587,7 +614,6 @@ typedef struct {
 
 typedef struct {
 	char    *account;
-	uint32_t alloc_cpus;
 	char	*alloc_gres;
 	uint32_t alloc_nodes;
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
@@ -636,6 +662,7 @@ typedef struct {
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	uint16_t track_steps;
+	char *tres_alloc_str;
 	uint32_t uid;
 	char 	*used_gres;
 	char    *user;
@@ -726,11 +753,8 @@ typedef struct {
 } slurmdb_reservation_cond_t;
 
 typedef struct {
-	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	char *assocs; /* comma separated list of associations */
 	char *cluster; /* cluster reservation is for */
-	uint32_t cpus; /* how many cpus are in reservation */
-	uint64_t down_secs; /* number of cpu seconds down */
 	uint32_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
 	char *name; /* name of reservation */
@@ -741,6 +765,10 @@ typedef struct {
 	time_t time_start_prev; /* If start time was changed this is
 				 * the pervious start time.  Needed
 				 * for accounting */
+	char *tres_str;
+	List tres_list; /* list of slurmdb_tres_rec_t, only set when
+			 * job usage is requested.
+			 */
 } slurmdb_reservation_rec_t;
 
 typedef struct {
@@ -755,7 +783,6 @@ typedef struct {
 	time_t end;
 	int32_t exitcode;
 	slurmdb_job_rec_t *job_ptr;
-	uint32_t ncpus;
 	uint32_t nnodes;
 	char *nodes;
 	uint32_t ntasks;
@@ -775,6 +802,7 @@ typedef struct {
 	uint16_t task_dist;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
+	char *tres_alloc_str;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;
 } slurmdb_step_rec_t;
@@ -906,8 +934,7 @@ typedef struct {
 } slurmdb_wckey_cond_t;
 
 typedef struct {
-	List accounting_list; 	/* list of slurmdb_accounting_rec_t *'s */
-
+	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *cluster;		/* cluster associated */
 
 	uint32_t id;		/* id identifing a combination of
@@ -939,9 +966,8 @@ typedef struct {
 typedef struct {
 	char *acct;
 	char *cluster;
-	uint64_t consumed_energy;
-	uint64_t cpu_secs;
 	char *parent_acct;
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 	char *user;
 } slurmdb_report_assoc_rec_t;
 
@@ -949,49 +975,44 @@ typedef struct {
 	char *acct;
 	List acct_list; /* list of char *'s */
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t's */
-	uint64_t consumed_energy;
-	uint64_t cpu_secs;
 	char *name;
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 	uid_t uid;
 } slurmdb_report_user_rec_t;
 
 typedef struct {
+	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t *'s */
-	uint64_t consumed_energy;
-	uint32_t cpu_count;
-	uint64_t cpu_secs;
 	char *name;
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 	List user_list; /* list of slurmdb_report_user_rec_t *'s */
 } slurmdb_report_cluster_rec_t;
 
 typedef struct {
+	uint32_t count; /* count of jobs */
 	List jobs; /* This should be a NULL destroy since we are just
 		    * putting a pointer to a slurmdb_job_rec_t here
 		    * not allocating any new memory */
 	uint32_t min_size; /* smallest size of job in cpus here 0 if first */
 	uint32_t max_size; /* largest size of job in cpus here INFINITE if
 			    * last */
-	uint32_t count; /* count of jobs */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * grouping */
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_job_grouping_t;
 
 typedef struct {
 	char *acct; /*account name */
 	uint32_t count; /* total count of jobs taken up by this acct */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * acct */
 	List groups; /* containing slurmdb_report_job_grouping_t's*/
 	uint32_t lft;
 	uint32_t rgt;
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_acct_grouping_t;
 
 typedef struct {
+	List acct_list; /* containing slurmdb_report_acct_grouping_t's */
 	char *cluster; /*cluster name */
 	uint32_t count; /* total count of jobs taken up by this cluster */
-	uint64_t cpu_secs; /* how many cpus secs taken up by this
-			    * cluster */
-	List acct_list; /* containing slurmdb_report_acct_grouping_t's */
+	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
 /* global variable for cross cluster communication */
@@ -1327,6 +1348,8 @@ extern void slurmdb_destroy_res_rec(void *object);
 extern void slurmdb_destroy_txn_rec(void *object);
 extern void slurmdb_destroy_wckey_rec(void *object);
 extern void slurmdb_destroy_archive_rec(void *object);
+extern void slurmdb_destroy_tres_rec_noalloc(void *object);
+extern void slurmdb_destroy_tres_rec(void *object);
 extern void slurmdb_destroy_report_assoc_rec(void *object);
 extern void slurmdb_destroy_report_user_rec(void *object);
 extern void slurmdb_destroy_report_cluster_rec(void *object);
@@ -1334,6 +1357,7 @@ extern void slurmdb_destroy_report_cluster_rec(void *object);
 extern void slurmdb_destroy_user_cond(void *object);
 extern void slurmdb_destroy_account_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
@@ -1368,6 +1392,8 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 				 bool free_it);
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
 				   bool free_it);
+extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
+				    bool free_it);
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 				      bool free_it);
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
@@ -1455,6 +1481,24 @@ extern List slurmdb_qos_modify(void *db_conn,
  * note List needs to be freed with slurm_list_destroy() when called
  */
 extern List slurmdb_qos_remove(void *db_conn, slurmdb_qos_cond_t *qos_cond);
+
+/************** tres functions **************/
+
+/*
+ * add tres's to accounting system
+ * IN:  tres_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_tres_add(void *db_conn, uint32_t uid, List tres_list);
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_tres_cond_t *
+ * RET: List of slurmdb_tres_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_tres_get(void *db_conn, slurmdb_tres_cond_t *tres_cond);
+
 
 /************** usage functions **************/
 

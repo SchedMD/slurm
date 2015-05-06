@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  as_mysql_cluster.h - functions dealing with clusters.
- *****************************************************************************
- *
- *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  tres_functions.c - Interface to functions dealing with tres
+ *                        in the database.
+ ******************************************************************************
+ *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>
+ *  Written by Danny Auble da@llnl.gov, et. al.
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -36,44 +36,34 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _HAVE_MYSQL_CLUSTER_H
-#define _HAVE_MYSQL_CLUSTER_H
 
-#include "accounting_storage_mysql.h"
-
-extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				 List cluster_list);
-
-extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond,
-				     slurmdb_cluster_rec_t *cluster);
-
-extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
-				     slurmdb_cluster_cond_t *cluster_cond);
-
-extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
-				  slurmdb_cluster_cond_t *cluster_cond);
-
-extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
-					slurmdb_event_cond_t *event_cond);
-
-extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
-			      struct node_record *node_ptr,
-			      time_t event_time, char *reason,
-			      uint32_t reason_uid);
-
-extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
-			    struct node_record *node_ptr,
-			    time_t event_time);
-
-extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
-				  char *cluster, uint16_t port);
-
-extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
-			      slurmdb_cluster_rec_t *cluster_rec);
-
-extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
-				 char *cluster_nodes, char **tres_str_in,
-				 time_t event_time);
-
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
 #endif
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "slurm/slurmdb.h"
+
+#include "src/common/slurm_accounting_storage.h"
+
+/*
+ * add tres's to accounting system
+ * IN:  tres_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int slurmdb_tres_add(void *db_conn, uint32_t uid, List tres_list)
+{
+	return acct_storage_g_add_tres(db_conn, getuid(), tres_list);
+}
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_tres_cond_t *
+ * RET: List of slurmdb_tres_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_tres_get(void *db_conn, slurmdb_tres_cond_t *tres_cond)
+{
+	return acct_storage_g_get_tres(db_conn, getuid(), tres_cond);
+}

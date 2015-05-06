@@ -162,6 +162,7 @@ static int _validate_and_set_defaults(slurm_ctl_conf_t *conf,
 static uint16_t *_parse_srun_ports(const char *);
 
 s_p_options_t slurm_conf_options[] = {
+	{"AccountingStorageTRES", S_P_STRING},
 	{"AccountingStorageEnforce", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
 	{"AccountingStorageBackupHost", S_P_STRING},
@@ -2267,6 +2268,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->accounting_storage_host);
 	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
+	xfree (ctl_conf_ptr->accounting_storage_tres);
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
 	if (ctl_conf_ptr->acct_gather_conf)
@@ -2390,6 +2392,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	ctl_conf_ptr->accounting_storage_port             = 0;
+	xfree (ctl_conf_ptr->accounting_storage_tres);
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
 	xfree (ctl_conf_ptr->authinfo);
@@ -3371,6 +3374,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
+
+	if (!s_p_get_string(&conf->accounting_storage_tres,
+			    "AccountingStorageTRES", hashtbl))
+		conf->accounting_storage_tres =
+			xstrdup(DEFAULT_ACCOUNTING_TRES);
+	else
+		xstrfmtcat(conf->accounting_storage_tres,
+			   ",%s", DEFAULT_ACCOUNTING_TRES);
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
 		if (slurm_strcasestr(temp_str, "1")
@@ -4426,6 +4437,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "DB_Assoc");
 	}
+	if (debug_flags & DEBUG_FLAG_DB_TRES) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DB_TRES");
+	}
 	if (debug_flags & DEBUG_FLAG_DB_EVENT) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4645,6 +4661,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DB_ARCHIVE;
 		else if (strcasecmp(tok, "DB_Assoc") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_ASSOC;
+		else if (strcasecmp(tok, "DB_TRES") == 0)
+			(*flags_out) |= DEBUG_FLAG_DB_TRES;
 		else if (strcasecmp(tok, "DB_Event") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_EVENT;
 		else if (strcasecmp(tok, "DB_Job") == 0)

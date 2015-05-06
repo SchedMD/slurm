@@ -727,6 +727,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->std_err);
 		xfree(job->std_in);
 		xfree(job->std_out);
+		xfree(job->tres_alloc_str);
 		xfree(job->wckey);
 		xfree(job->work_dir);
 	}
@@ -2480,6 +2481,23 @@ extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
 	return nids;
 }
 
+extern void slurm_free_resource_allocation_response_msg_members (
+	resource_allocation_response_msg_t * msg)
+{
+	if (msg) {
+		select_g_select_jobinfo_free(msg->select_jobinfo);
+		msg->select_jobinfo = NULL;
+		xfree(msg->account);
+		xfree(msg->alias_list);
+		xfree(msg->cpus_per_node);
+		xfree(msg->cpu_count_reps);
+		xfree(msg->node_list);
+		xfree(msg->partition);
+		xfree(msg->account);
+		xfree(msg->qos);
+		xfree(msg->resv_name);
+	}
+}
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
@@ -2490,19 +2508,8 @@ extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
 extern void slurm_free_resource_allocation_response_msg (
 	resource_allocation_response_msg_t * msg)
 {
-	if (msg) {
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
-		xfree(msg->alias_list);
-		xfree(msg->cpus_per_node);
-		xfree(msg->cpu_count_reps);
-		xfree(msg->node_list);
-		xfree(msg->partition);
-		xfree(msg->account);
-		xfree(msg->qos);
-		xfree(msg->resv_name);
-		xfree(msg);
-	}
+	slurm_free_resource_allocation_response_msg_members(msg);
+	xfree(msg);
 }
 
 /*
@@ -2677,6 +2684,7 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 		xfree(msg->resv_ports);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
+		xfree(msg->tres_alloc_str);
 	}
 }
 
@@ -2863,6 +2871,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 		xfree(resv->node_inx);
 		xfree(resv->node_list);
 		xfree(resv->partition);
+		xfree(resv->tres_str);
 		xfree(resv->users);
 	}
 }

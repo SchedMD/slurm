@@ -12,7 +12,6 @@
 
 extern char* slurm_xstrdup(const char* str);
 extern int slurmdb_report_set_start_end_time(time_t* start, time_t* end);
-extern char *slurmdb_get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
 
 int
 av_to_cluster_grouping_list(AV* av, List grouping_list)
@@ -226,14 +225,46 @@ hv_to_user_cond(HV* hv, slurmdb_user_cond_t* user_cond)
 }
 
 int
+tres_rec_to_hv(slurmdb_tres_rec_t* rec, HV* hv)
+{
+	STORE_FIELD(hv, rec, alloc_secs, uint64_t);
+	STORE_FIELD(hv, rec, rec_count,  uint32_t);
+	STORE_FIELD(hv, rec, count,      uint64_t);
+	STORE_FIELD(hv, rec, id,         uint32_t);
+	STORE_FIELD(hv, rec, name,       charp);
+	STORE_FIELD(hv, rec, type,       charp);
+
+	return 0;
+}
+
+int
 report_job_grouping_to_hv(slurmdb_report_job_grouping_t* rec, HV* hv)
 {
+    AV* my_av;
+    HV* rh;
+    slurmdb_tres_rec_t *tres_rec = NULL;
+    ListIterator itr = NULL;
+
     /* FIX ME: include the job list here (is is not NULL, as
      * previously thought) */
     STORE_FIELD(hv, rec, min_size, uint32_t);
     STORE_FIELD(hv, rec, max_size, uint32_t);
     STORE_FIELD(hv, rec, count,    uint32_t);
-    STORE_FIELD(hv, rec, cpu_secs, uint64_t);
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
     return 0;
 }
@@ -241,17 +272,18 @@ report_job_grouping_to_hv(slurmdb_report_job_grouping_t* rec, HV* hv)
 int
 report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 {
-    AV* group_av = (AV*)sv_2mortal((SV*)newAV());
+    AV* my_av;
     HV* rh;
     slurmdb_report_job_grouping_t* jgr = NULL;
+    slurmdb_tres_rec_t *tres_rec = NULL;
     ListIterator itr = NULL;
 
     STORE_FIELD(hv, rec, acct,     charp);
     STORE_FIELD(hv, rec, count,    uint32_t);
-    STORE_FIELD(hv, rec, cpu_secs, uint64_t);
     STORE_FIELD(hv, rec, lft,      uint32_t);
     STORE_FIELD(hv, rec, rgt,      uint32_t);
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->groups) {
 	itr = slurm_list_iterator_create(rec->groups);
 	while ((jgr = slurm_list_next(itr))) {
@@ -260,11 +292,26 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a report_job_grouping to a hv");
 		return -1;
 	    } else {
-		av_push(group_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "groups", newRV((SV*)group_av));
+    hv_store_sv(hv, "groups", newRV((SV*)my_av));
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
     return 0;
 }
@@ -272,15 +319,16 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 int
 report_cluster_grouping_to_hv(slurmdb_report_cluster_grouping_t* rec, HV* hv)
 {
-    AV* acct_av = (AV*)sv_2mortal((SV*)newAV());
+    AV* my_av;
     HV* rh;
     slurmdb_report_acct_grouping_t* agr = NULL;
+    slurmdb_tres_rec_t *tres_rec = NULL;
     ListIterator itr = NULL;
 
     STORE_FIELD(hv, rec, cluster,  charp);
     STORE_FIELD(hv, rec, count,    uint32_t);
-    STORE_FIELD(hv, rec, cpu_secs, uint64_t);
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->acct_list) {
 	itr = slurm_list_iterator_create(rec->acct_list);
 	while ((agr = slurm_list_next(itr))) {
@@ -289,11 +337,26 @@ report_cluster_grouping_to_hv(slurmdb_report_cluster_grouping_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a report_acct_grouping to a hv");
 		return -1;
 	    } else {
-		av_push(acct_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "acct_list", newRV((SV*)acct_av));
+    hv_store_sv(hv, "acct_list", newRV((SV*)my_av));
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
 
     return 0;
 }
@@ -324,8 +387,9 @@ cluster_grouping_list_to_av(List list, AV* av)
 int
 cluster_accounting_rec_to_hv(slurmdb_cluster_accounting_rec_t* ar, HV* hv)
 {
+    HV*   rh;
+
     STORE_FIELD(hv, ar, alloc_secs,   uint64_t);
-    STORE_FIELD(hv, ar, cpu_count,    uint32_t);
     STORE_FIELD(hv, ar, down_secs,    uint64_t);
     STORE_FIELD(hv, ar, idle_secs,    uint64_t);
     STORE_FIELD(hv, ar, over_secs,    uint64_t);
@@ -333,17 +397,25 @@ cluster_accounting_rec_to_hv(slurmdb_cluster_accounting_rec_t* ar, HV* hv)
     STORE_FIELD(hv, ar, period_start, time_t);
     STORE_FIELD(hv, ar, resv_secs,    uint64_t);
 
+    rh = (HV*)sv_2mortal((SV*)newHV());
+    if (tres_rec_to_hv(&ar->tres_rec, rh) < 0) {
+	    Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+	    return -1;
+    }
+    hv_store_sv(hv, "tres_rec", newRV((SV*)rh));
+
     return 0;
 }
 
 int
 cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
 {
-    AV* acc_av = (AV*)sv_2mortal((SV*)newAV());
+    AV* my_av;
     HV* rh;
     ListIterator itr = NULL;
     slurmdb_cluster_accounting_rec_t* ar = NULL;
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->accounting_list) {
 	itr = slurm_list_iterator_create(rec->accounting_list);
 	while ((ar = slurm_list_next(itr))) {
@@ -352,16 +424,15 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a cluster_accounting_rec to a hv");
 		return -1;
 	    } else {
-		av_push(acc_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "accounting_list", newRV((SV*)acc_av));
+    hv_store_sv(hv, "accounting_list", newRV((SV*)my_av));
 
     STORE_FIELD(hv, rec, classification, uint16_t);
     STORE_FIELD(hv, rec, control_host,   charp);
     STORE_FIELD(hv, rec, control_port,   uint32_t);
-    STORE_FIELD(hv, rec, cpu_count,      uint32_t);
     STORE_FIELD(hv, rec, dimensions,     uint16_t);
     STORE_FIELD(hv, rec, flags,          uint32_t);
     STORE_FIELD(hv, rec, name,           charp);
@@ -369,18 +440,39 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, plugin_id_select, uint32_t);
     /* slurmdb_assoc_rec_t* root_assoc; */
     STORE_FIELD(hv, rec, rpc_version,    uint16_t);
+    STORE_FIELD(hv, rec, tres_str,          charp);
 
     return 0;
 }
 
 int
-report_assoc_rec_to_hv(slurmdb_report_assoc_rec_t* ar, HV* hv)
+report_assoc_rec_to_hv(slurmdb_report_assoc_rec_t* rec, HV* hv)
 {
-    STORE_FIELD(hv, ar, acct,        charp);
-    STORE_FIELD(hv, ar, cluster,     charp);
-    STORE_FIELD(hv, ar, cpu_secs,    uint64_t);
-    STORE_FIELD(hv, ar, parent_acct, charp);
-    STORE_FIELD(hv, ar, user,        charp);
+    AV* my_av;
+    HV* rh;
+    slurmdb_tres_rec_t *tres_rec = NULL;
+    ListIterator itr = NULL;
+
+    STORE_FIELD(hv, rec, acct,        charp);
+    STORE_FIELD(hv, rec, cluster,     charp);
+    STORE_FIELD(hv, rec, parent_acct, charp);
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
+
+    STORE_FIELD(hv, rec, user,        charp);
 
     return 0;
 }
@@ -388,13 +480,17 @@ report_assoc_rec_to_hv(slurmdb_report_assoc_rec_t* ar, HV* hv)
 int
 report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 {
-    AV* acc_av = (AV*)sv_2mortal((SV*)newAV());
-    AV* usr_av = (AV*)sv_2mortal((SV*)newAV());
+    AV* my_av;
     HV* rh;
     slurmdb_report_assoc_rec_t* ar = NULL;
     slurmdb_report_user_rec_t* ur = NULL;
+    slurmdb_tres_rec_t *tres_rec = NULL;
     ListIterator itr = NULL;
 
+    /* FIXME: do the accounting_list (add function to parse
+     * slurmdb_accounting_rec_t) */
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->assoc_list) {
 	itr = slurm_list_iterator_create(rec->assoc_list);
 	while ((ar = slurm_list_next(itr))) {
@@ -403,16 +499,30 @@ report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a report_assoc_rec to a hv");
 		return -1;
 	    } else {
-		av_push(acc_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "assoc_list", newRV((SV*)acc_av));
+    hv_store_sv(hv, "assoc_list", newRV((SV*)my_av));
 
-    STORE_FIELD(hv, rec, cpu_count, uint32_t);
-    STORE_FIELD(hv, rec, cpu_secs,  uint64_t);
     STORE_FIELD(hv, rec, name,      charp);
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->user_list) {
 	itr = slurm_list_iterator_create(rec->user_list);
 	while ((ur = slurm_list_next(itr))) {
@@ -421,11 +531,11 @@ report_cluster_rec_to_hv(slurmdb_report_cluster_rec_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a report_user_rec to a hv");
 		return -1;
 	    } else {
-		av_push(usr_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "user_list", newRV((SV*)usr_av));
+    hv_store_sv(hv, "user_list", newRV((SV*)my_av));
 
     return 0;
 }
@@ -456,21 +566,23 @@ report_cluster_rec_list_to_av(List list, AV* av)
 int
 report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 {
-    AV*   acc_av = (AV*)sv_2mortal((SV*)newAV());
-    AV*   char_av = (AV*)sv_2mortal((SV*)newAV());
+    AV*   my_av;
     HV*   rh;
     char* acct;
     slurmdb_report_assoc_rec_t* ar = NULL;
+    slurmdb_tres_rec_t *tres_rec = NULL;
     ListIterator itr = NULL;
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->acct_list) {
 	itr = slurm_list_iterator_create(rec->acct_list);
 	while ((acct = slurm_list_next(itr))) {
-	    av_push(char_av, newSVpv(acct, strlen(acct)));
+	    av_push(my_av, newSVpv(acct, strlen(acct)));
 	}
     }
-    hv_store_sv(hv, "acct_list", newRV((SV*)char_av));
+    hv_store_sv(hv, "acct_list", newRV((SV*)my_av));
 
+    my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->assoc_list) {
 	itr = slurm_list_iterator_create(rec->assoc_list);
 	while ((ar = slurm_list_next(itr))) {
@@ -479,15 +591,30 @@ report_user_rec_to_hv(slurmdb_report_user_rec_t* rec, HV* hv)
 		Perl_warn(aTHX_ "Failed to convert a report_assoc_rec to a hv");
 		return -1;
 	    } else {
-		av_push(acc_av, newRV((SV*)rh));
+		av_push(my_av, newRV((SV*)rh));
 	    }
 	}
     }
-    hv_store_sv(hv, "assoc_list", newRV((SV*)acc_av));
+    hv_store_sv(hv, "assoc_list", newRV((SV*)my_av));
 
     STORE_FIELD(hv, rec, acct,     charp);
-    STORE_FIELD(hv, rec, cpu_secs, uint64_t);
     STORE_FIELD(hv, rec, name,     charp);
+
+    my_av = (AV*)sv_2mortal((SV*)newAV());
+    if (rec->tres_list) {
+	itr = slurm_list_iterator_create(rec->tres_list);
+	while ((tres_rec = slurm_list_next(itr))) {
+	    rh = (HV*)sv_2mortal((SV*)newHV());
+	    if (tres_rec_to_hv(tres_rec, rh) < 0) {
+		Perl_warn(aTHX_ "Failed to convert a tres_rec to a hv");
+		return -1;
+	    } else {
+		av_push(my_av, newRV((SV*)rh));
+	    }
+	}
+    }
+    hv_store_sv(hv, "tres_list", newRV((SV*)my_av));
+
     STORE_FIELD(hv, rec, uid,      uid_t);
 
     return 0;
@@ -530,13 +657,13 @@ int
 step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
 {
     HV* stats_hv = (HV*)sv_2mortal((SV*)newHV());
+
     stats_to_hv(&rec->stats, stats_hv);
     hv_store_sv(hv, "stats", newRV((SV*)stats_hv));
 
     STORE_FIELD(hv, rec, elapsed,         uint32_t);
     STORE_FIELD(hv, rec, end,             time_t);
     STORE_FIELD(hv, rec, exitcode,        int32_t);
-    STORE_FIELD(hv, rec, ncpus,           uint32_t);
     STORE_FIELD(hv, rec, nnodes,          uint32_t);
     STORE_FIELD(hv, rec, nodes,           charp);
     STORE_FIELD(hv, rec, ntasks,          uint32_t);
@@ -555,6 +682,7 @@ step_rec_to_hv(slurmdb_step_rec_t *rec, HV* hv)
     STORE_FIELD(hv, rec, task_dist,       uint16_t);
     STORE_FIELD(hv, rec, tot_cpu_sec,     uint32_t);
     STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
+    STORE_FIELD(hv, rec, tres_alloc_str,  charp);
     STORE_FIELD(hv, rec, user_cpu_sec,    uint32_t);
     STORE_FIELD(hv, rec, user_cpu_usec,   uint32_t);
 
@@ -584,7 +712,6 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     hv_store_sv(hv, "steps", newRV((SV*)steps_av));
 
     STORE_FIELD(hv, rec, account,         charp);
-    STORE_FIELD(hv, rec, alloc_cpus,      uint32_t);
     STORE_FIELD(hv, rec, alloc_gres,      charp);
     STORE_FIELD(hv, rec, alloc_nodes,     uint32_t);
     STORE_FIELD(hv, rec, array_job_id,    uint32_t);
@@ -626,6 +753,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, tot_cpu_sec,     uint32_t);
     STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
     STORE_FIELD(hv, rec, track_steps,     uint16_t);
+    STORE_FIELD(hv, rec, tres_alloc_str,  charp);
     STORE_FIELD(hv, rec, uid,             uint32_t);
     STORE_FIELD(hv, rec, used_gres,       charp);
     STORE_FIELD(hv, rec, user,            charp);
@@ -634,60 +762,8 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, wckey,           charp);
     STORE_FIELD(hv, rec, wckeyid,         uint32_t);
 
-    return 0;
-}
-
-int
-hv_to_qos_cond(HV* hv, slurmdb_qos_cond_t* qos_cond)
-{
-    AV*    element_av;
-    char*  str = NULL;
-    int    i, elements = 0;
-
-    FETCH_FIELD(hv, qos_cond, preempt_mode, uint16_t, FALSE);
-    FETCH_FIELD(hv, qos_cond, with_deleted, uint16_t, FALSE);
-
-    FETCH_LIST_FIELD(hv, qos_cond, description_list);
-    FETCH_LIST_FIELD(hv, qos_cond, id_list);
-    FETCH_LIST_FIELD(hv, qos_cond, name_list);
 
     return 0;
 }
 
-int
-qos_rec_to_hv(slurmdb_qos_rec_t* rec, HV* hv, List all_qos)
-{
-    char *preempt = NULL;
-    preempt = slurmdb_get_qos_complete_str_bitstr(all_qos, rec->preempt_bitstr);
-    hv_store_charp(hv, "preempt", preempt);
 
-    STORE_FIELD(hv, rec, description,         charp);
-    STORE_FIELD(hv, rec, id,                  uint32_t);
-    STORE_FIELD(hv, rec, flags,               uint32_t);
-    STORE_FIELD(hv, rec, grace_time,          uint32_t);
-    STORE_FIELD(hv, rec, grp_cpu_mins,        uint64_t);
-    STORE_FIELD(hv, rec, grp_cpu_run_mins,    uint64_t);
-    STORE_FIELD(hv, rec, grp_cpus,            uint32_t);
-    STORE_FIELD(hv, rec, grp_jobs,            uint32_t);
-    STORE_FIELD(hv, rec, grp_mem,             uint32_t);
-    STORE_FIELD(hv, rec, grp_nodes,           uint32_t);
-    STORE_FIELD(hv, rec, grp_submit_jobs,     uint32_t);
-    STORE_FIELD(hv, rec, grp_wall,            uint32_t);
-    STORE_FIELD(hv, rec, max_cpu_mins_pj,     uint64_t);
-    STORE_FIELD(hv, rec, max_cpu_run_mins_pu, uint64_t);
-    STORE_FIELD(hv, rec, max_cpus_pj,         uint32_t);
-    STORE_FIELD(hv, rec, max_cpus_pu,         uint32_t);
-    STORE_FIELD(hv, rec, max_jobs_pu,         uint32_t);
-    STORE_FIELD(hv, rec, max_nodes_pj,        uint32_t);
-    STORE_FIELD(hv, rec, max_nodes_pu,        uint32_t);
-    STORE_FIELD(hv, rec, max_submit_jobs_pu,  uint32_t);
-    STORE_FIELD(hv, rec, max_wall_pj,         uint32_t);
-    STORE_FIELD(hv, rec, min_cpus_pj,         uint32_t);
-    STORE_FIELD(hv, rec, name,                charp);
-    STORE_FIELD(hv, rec, preempt_mode,        uint16_t);
-    STORE_FIELD(hv, rec, priority,            uint32_t);
-    STORE_FIELD(hv, rec, usage_factor,        double);
-    STORE_FIELD(hv, rec, usage_thres,         double);
-
-    return 0;
-}

@@ -97,6 +97,21 @@ extern void license_free_rec(void *x)
 	}
 }
 
+/* Find a slurmdb_tres_rec that is a license of a certain name */
+static int _license_find_tres(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
+
+	if (!tres_rec->type || xstrcmp(tres_rec->type, "license"))
+		return 0;
+
+	if (key && tres_rec->name && !xstrcmp(tres_rec->name, (char *)key))
+		return 1;
+
+	return 0;
+
+}
+
 /* Find a license_t record by license name (for use by list_find_first) */
 static int _license_find_rec(void *x, void *key)
 {
@@ -105,7 +120,7 @@ static int _license_find_rec(void *x, void *key)
 
 	if ((license_entry->name == NULL) || (name == NULL))
 		return 0;
-	if (strcmp(license_entry->name, name))
+	if (xstrcmp(license_entry->name, name))
 		return 0;
 	return 1;
 }
@@ -811,6 +826,61 @@ get_all_license_info(char **buffer_ptr,
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }
+
+extern uint32_t get_total_license_cnt(char *name)
+{
+	uint32_t count = 0;
+	licenses_t *lic;
+
+	slurm_mutex_lock(&license_mutex);
+	if (license_list) {
+		lic = list_find_first(
+			license_list, _license_find_rec, name);
+
+		if (lic)
+			count = lic->total;
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	return count;
+}
+
+/* node_read should be locked before coming in here
+ * returns 1 if change happened.
+ */
+extern char *licenses_2_tres_str(List license_list)
+{
+	ListIterator itr;
+	slurmdb_tres_rec_t *tres_rec;
+	licenses_t *license_entry;
+	char *tres_str = NULL;
+
+	xassert(cluster_tres_list); /* global */
+
+	if (!license_list)
+		return NULL;
+
+	itr = list_iterator_create(license_list);
+	while ((license_entry = list_next(itr))) {
+		if (!(tres_rec = list_find_first(cluster_tres_list,
+						 _license_find_tres,
+						 license_entry->name)))
+			continue; /* not tracked */
+
+		if (slurmdb_find_tres_count_in_string(
+			    tres_str, tres_rec->id))
+			continue; /* already handled */
+
+		/* New license */
+		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+			   tres_str ? "," : "",
+			   tres_rec->id, (uint64_t)license_entry->total);
+	}
+	list_iterator_destroy(itr);
+
+	return tres_str;
+}
+
 
 /* pack_license()
  *

@@ -67,6 +67,7 @@ libslurmdb_la_SOURCES =	\
 	qos_functions.c \
 	resource_functions.c \
 	resv_report_functions.c \
+	tres_functions.c \
 	usage_functions.c \
 	user_functions.c \
 	user_report_functions.c \

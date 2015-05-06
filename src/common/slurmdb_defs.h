@@ -52,6 +52,12 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
+typedef enum {
+	TRES_CPU = 1,
+	TRES_MEM,
+	TRES_ENERGY,
+} tres_types_t;
+
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
 	int preempt_cnt;
@@ -117,5 +123,35 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 extern char *slurmdb_get_selected_step_id(
 	char *job_id_str, int len,
 	slurmdb_selected_step_t *selected_step);
+
+extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
+extern List slurmdb_copy_tres_list(List tres);
+extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
+extern char *slurmdb_tres_string_combine_lists(
+	List tres_list_old, List tres_list_new);
+extern char *slurmdb_make_tres_string(List tres, bool simple);
+extern List slurmdb_tres_list_from_string(char *tres);
+extern char *slurmdb_make_tres_string_from_simple(
+	char *tres_in, List full_tres_list);
+extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
+	char *tres_str_in, int id);
+extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);
+extern int slurmdb_find_tres_in_list(void *x, void *key);
+extern int slurmdb_find_cluster_accting_tres_in_list(void *x, void *key);
+extern int slurmdb_add_cluster_accounting_to_tres_list(
+	slurmdb_cluster_accounting_rec_t *accting,
+	List *tres);
+extern int slurmdb_add_accounting_to_tres_list(
+	slurmdb_accounting_rec_t *accting,
+	List *tres);
+extern int slurmdb_add_time_from_count_to_tres_list(
+	slurmdb_tres_rec_t *tres_in, List *tres, time_t elapsed);
+extern int slurmdb_sum_accounting_list(
+	slurmdb_cluster_accounting_rec_t *accting,
+	List *total_tres_acct);
+extern void slurmdb_transfer_acct_list_2_tres(
+	List accounting_list, List *tres);
+extern void slurmdb_transfer_tres_time(
+	List *tres_list_out, char *tres_str, int elapsed);
 
 #endif

@@ -93,7 +93,7 @@ typedef enum {
 	DBD_ADD_ASSOCS,         /* Add new association to the mix       */
 	DBD_ADD_CLUSTERS,       /* Add new cluster to the mix           */
 	DBD_ADD_USERS,          /* Add new user to the mix              */
-	DBD_CLUSTER_CPUS,	/* Record total processors on cluster	*/
+	DBD_CLUSTER_TRES,	/* Record total tres on cluster	*/
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
@@ -178,6 +178,9 @@ typedef enum {
 	DBD_ADD_CLUS_RES,    	/* Add cluster using a resource    	*/
 	DBD_REMOVE_CLUS_RES,   	/* Remove existing cluster resource    	*/
 	DBD_MODIFY_CLUS_RES,   	/* Modify existing cluster resource   	*/
+	DBD_ADD_TRES,         /* Add tres to the database           */
+	DBD_GET_TRES,         /* Get tres from the database         */
+	DBD_GOT_TRES,         /* Got tres from the database         */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -194,11 +197,11 @@ typedef struct {
 	slurmdb_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 
-typedef struct dbd_cluster_cpus_msg {
+typedef struct dbd_cluster_tres_msg {
 	char *cluster_nodes;	/* nodes in cluster */
-	uint32_t cpu_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
-} dbd_cluster_cpus_msg_t;
+	char *tres_str;	        /* Simple comma separated list of TRES */
+} dbd_cluster_tres_msg_t;
 
 typedef struct {
 	void *rec; /* this could be anything based on the type types
@@ -269,7 +272,6 @@ typedef struct dbd_job_comp_msg {
 typedef struct dbd_job_start_msg {
 	char *   account;       /* Account name for those not running
 				 * with associations */
-	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t alloc_nodes;   /* how many nodes used in job */
 	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
 	uint32_t array_max_tasks;/* max number of tasks able to run at once */
@@ -304,6 +306,7 @@ typedef struct dbd_job_start_msg {
 				 * type for the entire job on all nodes. */
 	char*    gres_used;     /* String depicting the GRES actually used by
 				 * type for the entire job on all nodes. */
+	char    *tres_alloc_str;/* Simple comma separated list of TRES */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 
@@ -342,7 +345,6 @@ typedef struct {
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
-	uint32_t cpu_count;     /* number of cpus on node */
 	time_t event_time;	/* time of transition */
 	char *hostlist;		/* name of hosts */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
@@ -351,6 +353,7 @@ typedef struct dbd_node_state_msg {
 				 * no reason is set. */
 	uint32_t state;         /* current state of node.  Used to get
 				   flags on the state (i.e. maintenance) */
+	char *tres_str;	        /* Simple comma separated list of TRES */
 } dbd_node_state_msg_t;
 
 typedef struct dbd_rc_msg {
@@ -400,8 +403,8 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
-	uint32_t total_cpus;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
+	char *tres_alloc_str;   /* Simple comma separated list of TRES */
 } dbd_step_start_msg_t;
 
 /* flag to let us know if we are running on cache or from the actual
@@ -465,7 +468,7 @@ extern void slurmdbd_free_buffer(void *x);
  * Free various SlurmDBD message structures
 \*****************************************************************************/
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
-extern void slurmdbd_free_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg);
+extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
@@ -493,9 +496,9 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 extern void slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
 					 uint16_t rpc_version,
 					 Buf buffer);
-extern void slurmdbd_pack_cluster_cpus_msg(dbd_cluster_cpus_msg_t *msg,
-					   uint16_t rpc_version,
-					   Buf buffer);
+extern void slurmdbd_pack_cluster_tres_msg(dbd_cluster_tres_msg_t *msg,
+					     uint16_t rpc_version,
+					     Buf buffer);
 extern void slurmdbd_pack_rec_msg(dbd_rec_msg_t *msg,
 				  uint16_t rpc_version,
 				  slurmdbd_msg_type_t type, Buf buffer);
@@ -556,9 +559,9 @@ extern void slurmdbd_pack_buffer(void *in,
 extern int slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
 					  uint16_t rpc_version,
 					  Buf buffer);
-extern int slurmdbd_unpack_cluster_cpus_msg(dbd_cluster_cpus_msg_t **msg,
-					    uint16_t rpc_version,
-					    Buf buffer);
+extern int slurmdbd_unpack_cluster_tres_msg(dbd_cluster_tres_msg_t **msg,
+					      uint16_t rpc_version,
+					      Buf buffer);
 extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 				   uint16_t rpc_version,
 				   slurmdbd_msg_type_t type,

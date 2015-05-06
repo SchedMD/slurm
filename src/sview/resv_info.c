@@ -502,7 +502,8 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_BURST_BUFFER),
 				   resv_ptr->burst_buffer);
 
-	convert_num_unit((float)resv_ptr->core_cnt,
+	convert_num_unit((float)slurmdb_find_tres_count_in_string(
+				 resv_ptr->tres_str, TRES_CPU),
 			 time_buf, sizeof(time_buf), UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
@@ -587,7 +588,8 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 
 	tmp_flags = reservation_flags_string(resv_ptr->flags);
 
-	convert_num_unit((float)resv_ptr->core_cnt,
+	convert_num_unit((float)slurmdb_find_tres_count_in_string(
+				 resv_ptr->tres_str, TRES_CPU),
 			 tmp_cores, sizeof(tmp_cores), UNIT_NONE);
 
 	convert_num_unit((float)resv_ptr->node_cnt,

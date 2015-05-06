@@ -111,6 +111,7 @@ static void _filter_by_node_owner(struct job_record *job_ptr,
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
 				 char **err_msg);
+
 static bool _first_array_task(struct job_record *job_ptr);
 static void _launch_prolog(struct job_record *job_ptr);
 static int  _match_feature(char *seek, struct node_set *node_set_ptr);
@@ -578,7 +579,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 				build_cg_bitmap(job_ptr);
 			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
-			job_update_cpu_cnt(job_ptr, i);
+			job_update_tres_cnt(job_ptr, i);
 			/* node_cnt indicates how many nodes we are waiting
 			 * to get epilog complete messages from, so do not
 			 * count down nodes. NOTE: The job's node_cnt will not
@@ -1984,6 +1985,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      THIS_FILE, __LINE__, job_ptr->job_id,
 		      job_ptr->gres, job_ptr->gres_alloc);
 
+	job_set_tres(job_ptr);
+
 	/* If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already
 	 * become eligible and registered in the db then the start
@@ -3001,7 +3004,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				    (!bit_test(job_ptr->node_bitmap_cg, i)))
 					continue;
 				bit_clear(job_ptr->node_bitmap_cg, i);
-				job_update_cpu_cnt(job_ptr, i);
+				job_update_tres_cnt(job_ptr, i);
 				if (node_ptr->comp_job_cnt)
 					(node_ptr->comp_job_cnt)--;
 				if ((job_ptr->node_cnt > 0) &&
@@ -3031,7 +3034,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 		} else if (IS_NODE_DOWN(node_ptr)) {
 			/* Consider job already completed */
 			bit_clear(job_ptr->node_bitmap_cg, i);
-			job_update_cpu_cnt(job_ptr, i);
+			job_update_tres_cnt(job_ptr, i);
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			if ((job_ptr->node_cnt > 0) &&

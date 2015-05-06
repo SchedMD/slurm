@@ -1129,15 +1129,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_ptr->job_id);
-		xfree(alloc_msg.account);
-		xfree(alloc_msg.cpu_count_reps);
-		xfree(alloc_msg.cpus_per_node);
-		xfree(alloc_msg.node_list);
-		xfree(alloc_msg.partition);
-		xfree(alloc_msg.alias_list);
-		xfree(alloc_msg.qos);
-		xfree(alloc_msg.resv_name);
-		select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
+
+		slurm_free_resource_allocation_response_msg_members(&alloc_msg);
+
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
@@ -2714,15 +2708,8 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
-		xfree(job_info_resp_msg.cpu_count_reps);
-		xfree(job_info_resp_msg.cpus_per_node);
-		xfree(job_info_resp_msg.account);
-		xfree(job_info_resp_msg.alias_list);
-		xfree(job_info_resp_msg.node_list);
-		xfree(job_info_resp_msg.partition);
-		xfree(job_info_resp_msg.qos);
-		xfree(job_info_resp_msg.resv_name);
-		select_g_select_jobinfo_free(job_info_resp_msg.select_jobinfo);
+		slurm_free_resource_allocation_response_msg_members(
+			&job_info_resp_msg);
 	}
 }
 
@@ -4838,6 +4825,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
+	bool sent_rc = false;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -4858,13 +4846,34 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 
 	slurm_send_rc_msg(msg, rc);
 
-	if (update_ptr->update_list && list_count(update_ptr->update_list))
-		rc = assoc_mgr_update(update_ptr->update_list);
+	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
+		slurmdb_update_object_t *object =
+			list_peek(update_ptr->update_list);
+		if (object->type != SLURMDB_ADD_TRES) {
+			/* If not specific message types, send message back
+			 * to the caller immediately letting him know we got it.
+			 * In most cases there is no need to wait since the end
+			 * result would be the same if we wait or not
+			 * since the update has already happened in
+			 * the database.
+			 */
+			slurm_send_rc_msg(msg, rc);
+			sent_rc = true;
+		}
+		rc = assoc_mgr_update(update_ptr->update_list, 0);
+	}
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
-	if (rc != SLURM_SUCCESS)
-		error("assoc_mgr_update gave error: %s", slurm_strerror(rc));
+	if (sent_rc) {
+		if (rc != SLURM_SUCCESS)
+			error("assoc_mgr_update gave error: %s",
+			      slurm_strerror(rc));
+	} else {
+		info("sending after");
+		slurm_send_rc_msg(msg, rc);
+	}
+
 }
 
 /* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */

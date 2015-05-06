@@ -135,12 +135,11 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	flag_str = reservation_flags_string(resv_ptr->flags);
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "%s=%s %sCnt=%u %sCnt=%u Features=%s "
+		 "%s=%s %sCnt=%u Features=%s "
 		 "PartitionName=%s Flags=%s",
 		 is_bluegene ? "Midplanes" : "Nodes", resv_ptr->node_list,
 		 is_bluegene ? "Midplane" : "Node",
 		 (resv_ptr->node_cnt == NO_VAL) ? 0 : resv_ptr->node_cnt,
-		 is_bluegene ? "Cnode" : "Core", resv_ptr->core_cnt,
 		 resv_ptr->features,  resv_ptr->partition, flag_str);
 	xfree(flag_str);
 	xstrcat(out, tmp_line);
@@ -148,8 +147,19 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		xstrcat(out, " ");
 	else
 		xstrcat(out, "\n   ");
-
 	/****** Line 3 ******/
+	xstrsubstitute(resv_ptr->tres_str, "cpu",
+		       is_bluegene ? "CnodeCnt" : "CoreCnt");
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "TRES=%s", resv_ptr->tres_str);
+	xfree(flag_str);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 4 ******/
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	snprintf(tmp_line, sizeof(tmp_line),

@@ -1102,6 +1102,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		tmp_32 = NO_VAL;
 		pack32(tmp_32, buffer);
 	}
+
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -1224,6 +1225,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	list_iterator_destroy(step_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 	pack32(dump_job_ptr->bit_flags, buffer);
+	packstr(dump_job_ptr->tres_alloc_str, buffer);
+	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1272,6 +1275,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 	char jbuf[JBUFSIZ];
+	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -1457,6 +1461,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			safe_unpack16(&step_flag, buffer);
 		}
 		safe_unpack32(&job_ptr->bit_flags, buffer);
+		safe_unpackstr_xmalloc(&tres_alloc_str,
+				       &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
+				       &name_len, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1840,6 +1848,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	if (job_id_sequence <= job_id)
 		job_id_sequence = job_id + 1;
 
+	xfree(job_ptr->tres_alloc_str);
+	job_ptr->tres_alloc_str = tres_alloc_str;
+	tres_alloc_str = NULL;
+
+	xfree(job_ptr->tres_fmt_alloc_str);
+	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
+	tres_fmt_alloc_str = NULL;
+
 	xfree(job_ptr->account);
 	job_ptr->account = account;
 	xstrtolower(job_ptr->account);
@@ -2072,6 +2088,23 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		} else
 			job_ptr->qos_id = qos_rec.id;
 	}
+
+	if (job_ptr->total_cpus && !job_ptr->tres_alloc_str &&
+	    !IS_JOB_PENDING(job_ptr))
+		job_ptr->tres_alloc_str = xstrdup_printf(
+			"%d=%u", TRES_CPU, job_ptr->total_cpus);
+
+	if (job_ptr->tres_alloc_str && !job_ptr->tres_fmt_alloc_str) {
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock(&locks);
+		job_ptr->tres_fmt_alloc_str =
+			slurmdb_make_tres_string_from_simple(
+				job_ptr->tres_alloc_str,
+				assoc_mgr_tres_list);
+		assoc_mgr_unlock(&locks);
+	}
+
 	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;
 
@@ -2100,6 +2133,8 @@ unpack_error:
 	xfree(spank_job_env);
 	xfree(state_desc);
 	xfree(task_id_str);
+	xfree(tres_alloc_str);
+	xfree(tres_fmt_alloc_str);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
@@ -2889,13 +2924,13 @@ extern int kill_job_by_front_end_name(char *node_name)
 			kill_job_cnt++;
 			while ((i = bit_ffs(job_ptr->node_bitmap_cg)) >= 0) {
 				bit_clear(job_ptr->node_bitmap_cg, i);
-				job_update_cpu_cnt(job_ptr, i);
 				if (job_ptr->node_cnt)
 					(job_ptr->node_cnt)--;
 				else {
 					error("node_cnt underflow on JobId=%u",
 					      job_ptr->job_id);
 				}
+				job_update_tres_cnt(job_ptr, i);
 				if (job_ptr->node_cnt == 0) {
 					delete_step_records(job_ptr);
 					job_ptr->job_state &= (~JOB_COMPLETING);
@@ -3119,7 +3154,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				continue;
 			kill_job_cnt++;
 			bit_clear(job_ptr->node_bitmap_cg, bit_position);
-			job_update_cpu_cnt(job_ptr, bit_position);
+			job_update_tres_cnt(job_ptr, bit_position);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
 			else {
@@ -7034,9 +7069,67 @@ void job_time_limit(void)
 	fini_job_resv_check();
 }
 
-extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
+extern void job_set_tres(struct job_record *job_ptr)
 {
-	int cnt, offset, rc = SLURM_SUCCESS;
+	uint64_t tres_count;
+	char *tmp_tres_str = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	xfree(job_ptr->tres_alloc_str);
+
+	xstrfmtcat(job_ptr->tres_alloc_str, "%s%u=%"PRIu64,
+		   job_ptr->tres_alloc_str ? "," : "",
+		   TRES_CPU, (uint64_t)job_ptr->total_cpus);
+
+	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
+	if (tres_count & MEM_PER_CPU) {
+		tres_count &= (~MEM_PER_CPU);
+		tres_count *= job_ptr->total_cpus;
+	} else {
+		uint32_t alloc_nodes = 0;
+#ifdef HAVE_BG
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &alloc_nodes);
+#else
+		alloc_nodes = job_ptr->node_cnt;
+#endif
+
+		tres_count *= (uint64_t)alloc_nodes;
+	}
+
+	xstrfmtcat(job_ptr->tres_alloc_str, "%s%u=%"PRIu64,
+		   job_ptr->tres_alloc_str ? "," : "",
+		   TRES_MEM, tres_count);
+
+	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list,
+					    cluster_tres_list, 1))) {
+		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
+			   job_ptr->tres_alloc_str ? "," : "",
+			   tmp_tres_str);
+		xfree(tmp_tres_str);
+	}
+
+	if ((tmp_tres_str = licenses_2_tres_str(job_ptr->license_list))) {
+		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
+			   job_ptr->tres_alloc_str ? "," : "",
+			   tmp_tres_str);
+		xfree(tmp_tres_str);
+	}
+
+	xfree(job_ptr->tres_fmt_alloc_str);
+	assoc_mgr_lock(&locks);
+	job_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
+		job_ptr->tres_alloc_str, assoc_mgr_tres_list);
+	assoc_mgr_unlock(&locks);
+
+	return;
+}
+
+extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
+{
+	int cpu_cnt, offset = -1, rc = SLURM_SUCCESS;
 
 	xassert(job_ptr);
 
@@ -7053,38 +7146,40 @@ extern int job_update_cpu_cnt(struct job_record *job_ptr, int node_inx)
 		struct node_record *node_ptr =
 			node_record_table_ptr + node_inx;
 		if (slurmctld_conf.fast_schedule)
-			cnt = node_ptr->config_ptr->cpus;
+			cpu_cnt = node_ptr->config_ptr->cpus;
 		else
-			cnt = node_ptr->cpus;
+			cpu_cnt = node_ptr->cpus;
 	} else {
 		if ((offset = job_resources_node_inx_to_cpu_inx(
 			     job_ptr->job_resrcs, node_inx)) < 0) {
-			error("job_update_cpu_cnt: problem getting "
+			error("job_update_tres_cnt: problem getting "
 			      "offset of job %u",
 			      job_ptr->job_id);
 			job_ptr->cpu_cnt = 0;
 			return SLURM_ERROR;
 		}
 
-		cnt = job_ptr->job_resrcs->cpus[offset];
+		cpu_cnt = job_ptr->job_resrcs->cpus[offset];
 	}
-	if (cnt > job_ptr->cpu_cnt) {
-		error("job_update_cpu_cnt: cpu_cnt underflow on job_id %u",
+	if (cpu_cnt > job_ptr->cpu_cnt) {
+		error("job_update_tres_cnt: cpu_cnt underflow on job_id %u",
 		      job_ptr->job_id);
 		job_ptr->cpu_cnt = 0;
 		rc = SLURM_ERROR;
 	} else
-		job_ptr->cpu_cnt -= cnt;
+		job_ptr->cpu_cnt -= cpu_cnt;
 
 	if (IS_JOB_RESIZING(job_ptr)) {
-		if (cnt > job_ptr->total_cpus) {
-			error("job_update_cpu_cnt: total_cpus "
+		if (cpu_cnt > job_ptr->total_cpus) {
+			error("job_update_tres_cnt: total_cpus "
 			      "underflow on job_id %u",
 			      job_ptr->job_id);
 			job_ptr->total_cpus = 0;
 			rc = SLURM_ERROR;
 		} else
-			job_ptr->total_cpus -= cnt;
+			job_ptr->total_cpus -= cpu_cnt;
+
+		job_set_tres(job_ptr);
 	}
 	return rc;
 }
@@ -7334,6 +7429,8 @@ static void _list_delete_job(void *job_entry)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
+	xfree(job_ptr->tres_alloc_str);
+	xfree(job_ptr->tres_fmt_alloc_str);
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
@@ -7686,8 +7783,8 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	struct job_details *detail_ptr;
 	time_t begin_time = 0;
 	char *nodelist = NULL;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
@@ -7701,6 +7798,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			packnull(buffer);
 			pack32((uint32_t) 0, buffer);
 		}
+
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id,   buffer);
 		pack32(dump_job_ptr->user_id,  buffer);
@@ -7832,6 +7930,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
 		pack32(dump_job_ptr->bit_flags, buffer);
+		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
@@ -9149,6 +9248,9 @@ static void _merge_job_licenses(struct job_record *shrink_job_ptr,
 {
 	xassert(shrink_job_ptr);
 	xassert(expand_job_ptr);
+
+	/* FIXME: do we really need to update accounting here?  It
+	 * might already happen */
 
 	if (!shrink_job_ptr->licenses)		/* No licenses to add */
 		return;
@@ -10639,6 +10741,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 			FREE_NULL_LIST(license_list);
 		}
+
+		update_accounting = 1;
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;

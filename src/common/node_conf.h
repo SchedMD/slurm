@@ -173,6 +173,7 @@ struct node_record {
 	bitstr_t *node_spec_bitmap;	/* node cpu specialization bitmap */
 	uint32_t owner;			/* User allowed to use node or NO_VAL */
 	uint16_t owner_job_cnt;		/* Count of exclusive jobs by "owner" */
+	char *tres_str;                 /* tres this node has */
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

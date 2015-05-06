@@ -356,6 +356,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_t hl, hl_last;
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
 	uint32_t threads;
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
@@ -689,6 +690,18 @@ line6:
 		xstrcat(out, "\n   ");
 
 	/****** Line 16 ******/
+	/* Tres should already of been converted at this point from simple */
+	xstrsubstitute(job_ptr->tres_alloc_str, "cpu",
+		       is_bluegene ? "CnodeCnt" : "CoreCnt");
+	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
+		 job_ptr->tres_alloc_str);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 17 ******/
 	if (job_ptr->sockets_per_node == (uint16_t) NO_VAL)
 		strcpy(tmp1, "*");
 	else
@@ -892,7 +905,7 @@ line6:
 		hostlist_destroy(hl);
 		hostlist_destroy(hl_last);
 	}
-	/****** Line 17 ******/
+	/****** Line 18 ******/
 line15:
 	if (job_ptr->pn_min_memory & MEM_PER_CPU) {
 		job_ptr->pn_min_memory &= (~MEM_PER_CPU);
@@ -923,7 +936,7 @@ line15:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 18 ******/
+	/****** Line 19 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "Features=%s Gres=%s Reservation=%s",
 		 job_ptr->features, job_ptr->gres, job_ptr->resv_name);
@@ -933,7 +946,7 @@ line15:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 19 ******/
+	/****** Line 20 ******/
 	if (job_ptr->shared == 0)
 		tmp6_ptr = "0";
 	else if (job_ptr->shared == 1)
@@ -952,7 +965,7 @@ line15:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 20 ******/
+	/****** Line 21 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Command=%s",
 		 job_ptr->command);
 	xstrcat(out, tmp_line);
@@ -961,13 +974,13 @@ line15:
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 21 ******/
+	/****** Line 22 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "WorkDir=%s",
 		 job_ptr->work_dir);
 	xstrcat(out, tmp_line);
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		/****** Line 22 (optional) ******/
+		/****** Line 23 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_BG_ID);
@@ -981,7 +994,7 @@ line15:
 			xstrcat(out, tmp_line);
 		}
 
-		/****** Line 23 (optional) ******/
+		/****** Line 24 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_MIXED_SHORT);
@@ -994,7 +1007,7 @@ line15:
 		}
 
 		if (cluster_flags & CLUSTER_FLAG_BGL) {
-			/****** Line 24 (optional) ******/
+			/****** Line 25 (optional) ******/
 			select_g_select_jobinfo_sprint(
 				job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
@@ -1009,7 +1022,7 @@ line15:
 				xstrcat(out, tmp_line);
 			}
 		}
-		/****** Line 25 (optional) ******/
+		/****** Line 26 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_LINUX_IMAGE);
@@ -1027,7 +1040,7 @@ line15:
 
 			xstrcat(out, tmp_line);
 		}
-		/****** Line 26 (optional) ******/
+		/****** Line 27 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_MLOADER_IMAGE);
@@ -1040,7 +1053,7 @@ line15:
 				 "MloaderImage=%s", select_buf);
 			xstrcat(out, tmp_line);
 		}
-		/****** Line 27 (optional) ******/
+		/****** Line 28 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
 					       SELECT_PRINT_RAMDISK_IMAGE);
@@ -1059,7 +1072,7 @@ line15:
 		}
 	}
 
-	/****** Line 28 (optional) ******/
+	/****** Line 29 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1070,7 +1083,7 @@ line15:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 29 (optional) ******/
+	/****** Line 30 (optional) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1080,7 +1093,7 @@ line15:
 		xstrfmtcat(out, "StdErr=%s", tmp_line);
 	}
 
-	/****** Line 30 (optional) ******/
+	/****** Line 31 (optional) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1090,7 +1103,7 @@ line15:
 		xstrfmtcat(out, "StdIn=%s", tmp_line);
 	}
 
-	/****** Line 31 (optional) ******/
+	/****** Line 32 (optional) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1100,7 +1113,7 @@ line15:
 		xstrfmtcat(out, "StdOut=%s", tmp_line);
 	}
 
-	/****** Line 32 (optional) ******/
+	/****** Line 33 (optional) ******/
 	if (job_ptr->batch_script) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1110,7 +1123,7 @@ line15:
 		xstrcat(out, job_ptr->batch_script);
 	}
 
-	/****** Line 33 (optional) ******/
+	/****** Line 34 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];
 		if (one_liner)
@@ -1124,7 +1137,7 @@ line15:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 34 (optional) ******/
+	/****** Line 35 (optional) ******/
 	if (job_ptr->burst_buffer) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -1135,7 +1148,7 @@ line15:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 35 (optional) ******/
+	/****** Line 36 (optional) ******/
 	if (cpu_freq_debug(NULL, NULL, tmp1, sizeof(tmp1),
 			   job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
 			   job_ptr->cpu_freq_max, NO_VAL) != 0) {
@@ -1146,7 +1159,7 @@ line15:
 		xstrcat(out, tmp1);
 	}
 
-	/****** Line 36 ******/
+	/****** Line 37 ******/
 	if (one_liner)
 		xstrcat(out, " ");
 	else
@@ -1156,7 +1169,7 @@ line15:
 		 power_flags_str(job_ptr->power_flags), job_ptr->sicp_mode);
 	xstrcat(out, tmp_line);
 
-	/****** Line 37 (optional) ******/
+	/****** Line 38 (optional) ******/
 	if (job_ptr->bitflags) {
 		if (one_liner)
 			xstrcat(out, " ");

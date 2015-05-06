@@ -167,7 +167,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 	uint64_t unused_cpu_run_secs = 0;
 	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
+	assoc_mgr_lock_t locks = { NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* No unused cpu_run_secs if job ran past its time limit */

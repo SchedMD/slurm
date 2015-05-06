@@ -264,8 +264,8 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 
 	itr = list_iterator_create(columns);
-	query = xstrdup_printf("alter table %s", table_name);
-	correct_query = xstrdup_printf("alter table %s", table_name);
+	query = xstrdup_printf("alter ignore table %s", table_name);
+	correct_query = xstrdup_printf("alter ignore table %s", table_name);
 	START_TIMER;
 	while (fields[i].name) {
 		int found = 0;
