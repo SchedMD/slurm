@@ -92,7 +92,8 @@ static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 
 
 static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
-				      char *cluster_name)
+				      char *cluster_name,
+				      char *count_col_name)
 {
 	/* These tables are the 14_11 defs plus things we added in 15.08 */
 
@@ -114,7 +115,7 @@ static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 		{ "deleted", "tinyint default 0 not null" },
 		{ "id_tres", "int default 1 not null" },
 		{ "time_start", "int unsigned not null" },
-		{ "cpu_count", "int default 0 not null" },
+		{ count_col_name, "int default 0 not null" },
 		{ "alloc_cpu_secs", "bigint default 0 not null" },
 		{ "down_cpu_secs", "bigint default 0 not null" },
 		{ "pdown_cpu_secs", "bigint default 0 not null" },
@@ -130,7 +131,7 @@ static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 		{ "time_end", "int unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
-		{ "cpu_count", "int not null" },
+		{ count_col_name, "int not null" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "smallint unsigned default 0 not null" },
@@ -269,6 +270,7 @@ static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 	char table_name[200];
 
 	xassert(cluster_name);
+	xassert(count_col_name);
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
 		 cluster_name, assoc_day_table);
@@ -393,12 +395,13 @@ static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
-static int _convert_event_table(mysql_conn_t *mysql_conn, char *cluster_name)
+static int _convert_event_table(mysql_conn_t *mysql_conn, char *cluster_name,
+				char *count_col_name)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = xstrdup_printf(
-		"update \"%s_%s\" set tres=concat('%d=', cpu_count);",
-		cluster_name, event_table, TRES_CPU);
+		"update \"%s_%s\" set tres=concat('%d=', %s);",
+		cluster_name, event_table, TRES_CPU, count_col_name);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
@@ -525,10 +528,8 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = xstrdup_printf("update \"%s_%s\" set tres_alloc="
-				     "concat(concat('%d=', cpus_alloc), "
-				     "concat(',%d=', mem_req));",
-				     cluster_name, job_table,
-				     TRES_CPU, TRES_MEM);
+				     "concat(concat('%d=', cpus_alloc));",
+				     cluster_name, job_table, TRES_CPU);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
@@ -575,6 +576,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 {
 	char *query;
 	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 	int i = 0, rc = SLURM_SUCCESS;
 	ListIterator itr;
 	char *cluster_name;
@@ -589,7 +591,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	   default_acct and default_wckey won't exist.
 	*/
 	query = xstrdup_printf("show columns from \"%s_%s\" where "
-			       "Field='cpu_count';",
+			       "Field='cpu_count' || Field='count';",
 			       cluster_name, event_table);
 
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
@@ -614,16 +616,42 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
+		query = xstrdup_printf("show columns from \"%s_%s\" where "
+				       "Field='cpu_count' || Field='count';",
+				       cluster_name, event_table);
+
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			error("QUERY BAD: No count col name for cluster %s, "
+			      "this should never happen", cluster_name);
+			continue;
+		}
+		xfree(query);
+
+		if (!(row = mysql_fetch_row(result)) || !row[0] || !row[0][0]) {
+			error("No count col name for cluster %s, "
+			      "this should never happen", cluster_name);
+			continue;
+		}
+
 		/* make sure old tables are up to date */
-		if ((rc = _update_old_cluster_tables(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
+		if ((rc = _update_old_cluster_tables(mysql_conn, cluster_name,
+						     row[0])
+		     != SLURM_SUCCESS)) {
+			mysql_free_result(result);
 			break;
+		}
 
 		/* Convert the event table first */
 		info("converting event table for %s", cluster_name);
-		if ((rc = _convert_event_table(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
+		if ((rc = _convert_event_table(mysql_conn, cluster_name, row[0])
+		     != SLURM_SUCCESS)) {
+			mysql_free_result(result);
 			break;
+		}
+		mysql_free_result(result);
+
 
 		/* Now convert the cluster usage tables */
 		info("converting cluster usage tables for %s", cluster_name);
