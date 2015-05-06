@@ -1934,10 +1934,10 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 }
 
 extern int assoc_mgr_fill_in_tres(void *db_conn,
-				   slurmdb_tres_rec_t *tres,
-				   int enforce,
-				   slurmdb_tres_rec_t **tres_pptr,
-				   bool locked)
+				  slurmdb_tres_rec_t *tres,
+				  int enforce,
+				  slurmdb_tres_rec_t **tres_pptr,
+				  bool locked)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *found_tres = NULL;
@@ -1956,8 +1956,9 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 		int rc = SLURM_SUCCESS;
 
 		if (enforce & ACCOUNTING_ENFORCE_TRES) {
-			error("No TRES list available, "
-			      "this should never happen");
+			error("No TRES list available, this should never "
+			      "happen when running with the database, "
+			      "make sure it is configured.");
 			rc = SLURM_ERROR;
 		}
 		return rc;
@@ -2006,7 +2007,7 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 	if (!found_tres) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
-		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+		if (enforce & ACCOUNTING_ENFORCE_TRES)
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;

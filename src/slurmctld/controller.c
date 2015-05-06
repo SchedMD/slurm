@@ -1931,8 +1931,9 @@ extern void set_cluster_tres(void)
 		mem_count += node_ptr->config_ptr->real_memory;
 
 #endif
-		cpu_tres->count += cpu_count;
-		mem_tres->count += mem_count;
+		cluster_cpus += cpu_count;
+		if (mem_tres)
+			mem_tres->count += mem_count;
 
 		xfree(node_ptr->tres_str);
 
@@ -1951,7 +1952,8 @@ extern void set_cluster_tres(void)
 	/* FIXME: cluster_cpus probably needs to be removed and handled
 	 * differently in the spots this is used.
 	 */
-	cluster_cpus = cpu_tres->count;
+	if (cpu_tres)
+		cpu_tres->count = cluster_cpus;
 }
 
 /*

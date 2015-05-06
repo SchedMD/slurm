@@ -48,6 +48,7 @@ set exit_code		0
 set res_name		""
 set res_name_save	""
 set res_nodes		""
+set res_nodecnt		0
 set res_thread_cnt	0
 set user_name		""
 set def_partition 	""

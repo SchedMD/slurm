@@ -555,10 +555,13 @@ static int _init_tres(void)
 
 		tres_rec->type = temp_char;
 
-		if (!strcasecmp(temp_char, "cpu") ||
-		    !strcasecmp(temp_char, "mem") ||
-		    !strcasecmp(temp_char, "energy")) {
-		} else if (!strncasecmp(temp_char, "gres/", 5)) {
+		if (!strcasecmp(temp_char, "cpu"))
+			tres_rec->id = TRES_CPU;
+		else if (!strcasecmp(temp_char, "mem"))
+			tres_rec->id = TRES_MEM;
+		else if (!strcasecmp(temp_char, "energy"))
+			tres_rec->id = TRES_ENERGY;
+		else if (!strncasecmp(temp_char, "gres/", 5)) {
 			tres_rec->type[4] = '\0';
 			tres_rec->name = xstrdup(temp_char+5);
 			if (!tres_rec->name)
@@ -580,8 +583,10 @@ static int _init_tres(void)
 			xfree(tres_rec);
 		}
 
-		if (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec, 1, NULL, 0)
-		    != SLURM_SUCCESS) {
+		if (!tres_rec->id &&
+		    (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
+					    ACCOUNTING_ENFORCE_TRES, NULL, 0)
+		     != SLURM_SUCCESS)) {
 			if (!add_list)
 				add_list = list_create(
 					slurmdb_destroy_tres_rec);
@@ -606,7 +611,8 @@ static int _init_tres(void)
 
 		while ((tres_rec = list_pop(add_list))) {
 			if (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
-						    1, NULL, 0)
+						   ACCOUNTING_ENFORCE_TRES,
+						   NULL, 0)
 			    != SLURM_SUCCESS) {
 				fatal("Unknown tres %s%s%s after adding.  "
 				      "It appears "
