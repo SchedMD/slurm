@@ -711,7 +711,8 @@ _cancel_job_id (void *ci)
 			      cancel_info->job_id_str,
 			      slurm_strerror(slurm_get_errno()));
 		}
-		if ((error_code == ESLURM_ALREADY_DONE) &&
+		if (((error_code == ESLURM_ALREADY_DONE) ||
+		     (error_code == ESLURM_INVALID_JOB_ID)) &&
 		    (cancel_info->sig == SIGKILL)) {
 			error_code = 0;	/* Ignore error if job done */
 		}	
