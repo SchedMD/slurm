@@ -4797,7 +4797,7 @@ static int
 _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 {
 	pid_t cpid;
-	int status = 0;
+	int status = 0, timeout;
 	int pfds[2];
 
 	if (pipe (pfds) < 0) {
@@ -4851,11 +4851,9 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 		error ("Failed to send slurmd conf to slurmstepd\n");
 	close (pfds[1]);
 
-	/*
-	 *  Wait for up to 120s for all spank plugins to complete:
-	 */
-	if (waitpid_timeout (mode, cpid, &status, 120) < 0) {
-		error ("spank/%s timed out after 120s", mode);
+	timeout = MAX(slurm_get_prolog_timeout(), 120); /* 120 secs in v15.08 */
+	if (waitpid_timeout (mode, cpid, &status, timeout) < 0) {
+		error ("spank/%s timed out after %u secs", mode, timeout);
 		return (-1);
 	}
 

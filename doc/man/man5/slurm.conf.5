@@ -1874,8 +1874,9 @@ See \fBProlog and Epilog Scripts\fR for more information.
 \fBPrologEpilogTimeout\fR
 The interval in seconds Slurms waits for Prolog and Epilog before terminating
 them. The dafault behavior is to wait indefinitely. This interval applies to
-the Prolog and Epilog ran by slurmd before and after the job starts and also to
-PrologSlurmctld and EpilogSlurmctld.
+the Prolog and Epilog run by slurmd daemon before and after the job, the
+PrologSlurmctld and EpilogSlurmctld run by slurmctld daemon, and the SPANK
+plugins run by the slurmstep daemon.
 
 .TP
 \fBPrologFlags\fR
