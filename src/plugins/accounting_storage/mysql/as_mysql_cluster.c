@@ -1130,8 +1130,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		   "(node_name, state, tres, time_start, "
 		   "reason, reason_uid) "
 		   "values ('%s', %u, '%s', %ld, '%s', %u) "
-		   "on duplicate key update time_end=0, "
-		   "inx=LAST_INSERT_ID(inx);",
+		   "on duplicate key update time_end=0;",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
 		   node_ptr->tres_str, event_time, my_reason, reason_uid);
