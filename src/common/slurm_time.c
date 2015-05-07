@@ -48,15 +48,13 @@
 #  include <pthread.h>
 
 static pthread_mutex_t  time_lock = PTHREAD_MUTEX_INITIALIZER;
-static void _atfork_prep()   { slurm_mutex_lock(&time_lock);   }
-static void _atfork_parent() { slurm_mutex_unlock(&time_lock); }
-static void _atfork_child()  { slurm_mutex_unlock(&time_lock); }
+static void _atfork_child()  { pthread_mutex_init(&time_lock, NULL); }
 static bool at_forked = false;
 
 inline static void _init(void)
 {
 	while (!at_forked) {
-		pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child);
+		pthread_atfork(NULL, NULL, _atfork_child);
 		at_forked = true;
 	}
 }
