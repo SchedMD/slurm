@@ -367,13 +367,13 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	for (i = 0; cur_delay < max_delay; i++) {
 		if (i) {
-			cur_sleep= POLL_SLEEP * i;
+			cur_sleep = POLL_SLEEP * i;
 			if (i == 1) {
-				verbose("Waiting for nodes to boot "
-					"max_delay = %d", max_delay);
+				verbose("Waiting for nodes to boot (delay looping %d times @ %f secs x index)",
+					max_delay, POLL_SLEEP);
 			} else {
-				debug("Waited %f sec and still waiting: next "
-				      "sleep for %f sec", cur_delay, cur_sleep);
+				debug("Waited %f sec and still waiting: next sleep for %f sec",
+				      cur_delay, cur_sleep);
 			}
 			usleep(1000000 * cur_sleep);
 			cur_delay += cur_sleep;
