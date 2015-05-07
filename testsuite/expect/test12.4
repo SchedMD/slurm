@@ -72,7 +72,7 @@ expect {
 	}
 }
 
-spawn $bin_id -u
+spawn $bin_id -g
 expect {
 	 -re "($alpha_numeric_under)" {
 		set user_gid $expect_out(1,string)
