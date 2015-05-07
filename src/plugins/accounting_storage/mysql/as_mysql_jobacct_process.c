@@ -695,6 +695,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 
+		if (row[JOB_REQ_TRES])
+			job->tres_alloc_str = xstrdup(row[JOB_REQ_TRES]);
+
 		if (only_pending || (job_cond && job_cond->without_steps))
 			goto skip_steps;
 
@@ -734,9 +737,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			if (set)
 				xstrcat(extra, ")");
 		}
-
-		if (row[JOB_REQ_TRES])
-			job->tres_alloc_str = xstrdup(row[JOB_REQ_TRES]);
 
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
 				       "where t1.job_db_inx=%s",
