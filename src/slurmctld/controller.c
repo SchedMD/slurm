@@ -1912,6 +1912,8 @@ extern void set_cluster_tres(void)
 	}
 	list_iterator_destroy(itr);
 
+	cluster_cpus = 0;
+
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		uint64_t cpu_count = 0, mem_count = 0;
