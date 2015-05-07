@@ -2924,7 +2924,8 @@ extern char *slurmdb_make_tres_string_from_simple(
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 
-	if (!tmp_str || !tmp_str[0] || tmp_str[0] < '0' || tmp_str[0] > '9')
+	if (!full_tres_list || !tmp_str || !tmp_str[0]
+	    || tmp_str[0] < '0' || tmp_str[0] > '9')
 		return tres_str;
 
 	while (tmp_str) {
