@@ -227,6 +227,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->core_bitmap = bit_copy(resv_orig_ptr->
 						      core_bitmap);
 	}
+	resv_copy_ptr->core_cnt = resv_orig_ptr->core_cnt;
 	resv_copy_ptr->duration = resv_orig_ptr->duration;
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
@@ -297,6 +298,7 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->core_bitmap = src_resv->core_bitmap;
 	src_resv->core_bitmap = NULL;
 
+	dest_resv->core_cnt = src_resv->core_cnt;
 	dest_resv->duration = src_resv->duration;
 	dest_resv->end_time = src_resv->end_time;
 
@@ -1310,7 +1312,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal, uint16_t protocol_version)
 {
 	time_t now = time(NULL), start_relative, end_relative;
-	uint32_t count = 0;
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		last_resv_update = now;
@@ -1333,6 +1334,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		packstr(resv_ptr->burst_buffer,	buffer);
+		pack32(resv_ptr->core_cnt,	buffer);
 		pack_time(end_relative,		buffer);
 		packstr(resv_ptr->features,	buffer);
 		pack32(resv_ptr->flags,		buffer);
@@ -1365,9 +1367,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		}
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
-		count = slurmdb_find_tres_count_in_string(
-			resv_ptr->tres_str, TRES_CPU);
-		pack32(count,           	buffer);
+		pack32(resv_ptr->core_cnt,	buffer);
 		pack_time(end_relative,		buffer);
 		packstr(resv_ptr->features,	buffer);
 		pack32(resv_ptr->flags,		buffer);
@@ -1413,6 +1413,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
 				       &uint32_tmp,	buffer);
+		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->features,
 				       &uint32_tmp, 	buffer);
@@ -1461,11 +1462,11 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
-		safe_unpack32(&uint32_tmp, buffer);
+		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		resv_ptr->tres_str = xstrdup_printf(
-			"%d=%u", TRES_CPU, uint32_tmp);
+			"%d=%u", TRES_CPU, resv_ptr->core_cnt);
 		resv_ptr->tres_fmt_str = xstrdup_printf(
-			"cpu=%u", uint32_tmp);
+			"cpu=%u", resv_ptr->core_cnt);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->features,
 				       &uint32_tmp, 	buffer);
@@ -1624,6 +1625,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (resv_ptr->full_nodes && resv_ptr->node_bitmap) {
+		resv_ptr->core_cnt = 0;
 #ifdef HAVE_BG
 		if (!cnodes_per_mp)
 			select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -1635,18 +1637,28 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				continue;
 #ifdef HAVE_BG
 			if (cnodes_per_mp)
-				cpu_cnt += cnodes_per_mp;
+				resv_ptr->core_cnt += cnodes_per_mp;
 			else
-				cpu_cnt += node_ptr->sockets;
+				resv_ptr->core_cnt += node_ptr->sockets;
 #else
-			if (slurmctld_conf.fast_schedule)
+			if (slurmctld_conf.fast_schedule) {
+				resv_ptr->core_cnt +=
+					node_ptr->config_ptr->cores;
 				cpu_cnt += node_ptr->config_ptr->cpus;
-			else
+			} else {
+				resv_ptr->core_cnt += node_ptr->cores;
 				cpu_cnt += node_ptr->cpus;
+			}
 #endif
 		}
+		resv_ptr->core_cnt = cpu_cnt;
 	} else if (resv_ptr->core_bitmap) {
-		cpu_cnt = bit_set_count(resv_ptr->core_bitmap);
+		/* This doesn't work on bluegene systems so don't
+		 * worry about it.
+		 */
+		resv_ptr->core_cnt = cpu_cnt =
+			bit_set_count(resv_ptr->core_bitmap);
+
 		if (resv_ptr->node_bitmap) {
 			for (i=0; i<node_record_count; i++, node_ptr++) {
 				if (!bit_test(resv_ptr->node_bitmap, i))
@@ -1668,7 +1680,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		(void)select_g_alter_node_cnt(
 			SELECT_GET_NODE_CPU_CNT, &cpu_mult);
 
-	cpu_cnt *= cpu_mult;
+	cpu_cnt = resv_ptr->core_cnt * cpu_mult;
 #endif
 
 	xfree(resv_ptr->tres_str);
@@ -1704,11 +1716,11 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	} else
 		name2 = val2 = "";
 
-	info("sched: %s reservation=%s%s%s%s%s nodes=%s "
+	info("sched: %s reservation=%s%s%s%s%s nodes=%s cores=%u"
 	     "licenses=%s tres=%s start=%s end=%s",
 	     old_resv_ptr ? "Updated" : "Created",
 	     resv_ptr->name, name1, val1, name2, val2,
-	     resv_ptr->node_list, resv_ptr->licenses,
+	     resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
 	     resv_ptr->tres_str,
 	     start_time, end_time);
 	if (old_resv_ptr)

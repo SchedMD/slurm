@@ -4733,6 +4733,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
+		safe_unpack32(&resv->core_cnt,          buffer);
 		safe_unpack_time(&resv->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->flags,		buffer);
