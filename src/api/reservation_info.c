@@ -148,8 +148,6 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	else
 		xstrcat(out, "\n   ");
 	/****** Line 3 ******/
-	xstrsubstitute(resv_ptr->tres_str, "cpu",
-		       is_bluegene ? "CnodeCnt" : "CoreCnt");
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "TRES=%s", resv_ptr->tres_str);
 	xfree(flag_str);

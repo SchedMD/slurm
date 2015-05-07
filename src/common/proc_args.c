@@ -892,7 +892,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 	/* BGQ's runjob command required a fully qualified path */
-	if ((cmd[0] == '.') || (cmd[0] == '/')) &&
+	if (((cmd[0] == '.') || (cmd[0] == '/')) &&
 	    (access(cmd, access_mode) == 0)) {
 		if (cmd[0] == '.')
 			xstrfmtcat(fullpath, "%s/", cwd);

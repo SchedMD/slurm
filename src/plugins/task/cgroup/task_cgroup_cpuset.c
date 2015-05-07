@@ -291,6 +291,8 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	return XCGROUP_SUCCESS;
 }
 
+#ifdef HAVE_HWLOC
+
 static void
 _slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 {
@@ -358,7 +360,6 @@ _slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 			status);
 }
 
-#ifdef HAVE_HWLOC
 /*
  * Get sched cpuset for ldom
  *

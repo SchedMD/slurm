@@ -711,10 +711,6 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
-#ifdef HAVE_BG
-	slurmdb_tres_rec_t *tres_rec;
-	uint32_t tres_id = TRES_CPU;
-#endif
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return rc;
