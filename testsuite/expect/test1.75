@@ -214,6 +214,6 @@ if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) || ($freq_l
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
-	send_user "\nSUCCCESS\n"
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

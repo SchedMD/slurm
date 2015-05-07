@@ -366,6 +366,6 @@ check_tasks_off $ntaskpn [array get tasks] 2
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in
-	send_user "\nSUCCCESS\n"
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code

@@ -170,6 +170,6 @@ expect {
 check_alloc
 
 if {$exit_code == 0} {
-	send_user "\nSUCCCESS\n"
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code
