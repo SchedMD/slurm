@@ -1028,6 +1028,7 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn,
 	}
 end_it:
 	if (rc == SLURM_SUCCESS) {
+		xfree(slurmdbd_conn->tres_str);
 		slurmdbd_conn->tres_str = cluster_tres_msg->tres_str;
 		cluster_tres_msg->tres_str = NULL;
 	}
