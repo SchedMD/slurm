@@ -428,7 +428,7 @@ int _setup_assoc_list(void)
 	assoc->user = xstrdup("u2");
 	list_append(update.objects, assoc);
 
-	if (assoc_mgr_update_assocs(&update))
+	if (assoc_mgr_update_assocs(&update, false))
 		error("assoc_mgr_update_assocs: %m");
 	list_destroy(update.objects);
 
