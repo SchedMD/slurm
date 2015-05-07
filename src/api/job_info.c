@@ -356,7 +356,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	hostlist_t hl, hl_last;
 	char select_buf[122];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
 	uint32_t threads;
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
@@ -691,8 +690,6 @@ line6:
 
 	/****** Line 16 ******/
 	/* Tres should already of been converted at this point from simple */
-	xstrsubstitute(job_ptr->tres_alloc_str, "cpu",
-		       is_bluegene ? "CnodeCnt" : "CoreCnt");
 	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
 		 job_ptr->tres_alloc_str);
 	xstrcat(out, tmp_line);

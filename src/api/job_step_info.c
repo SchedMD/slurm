@@ -154,7 +154,6 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	char tmp_line[128];
 	char *out = NULL;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
@@ -166,7 +165,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 				limit_str, sizeof(limit_str));
 	if (job_step_ptr->array_job_id) {
 		if (job_step_ptr->step_id == INFINITE) {	/* Pending */
-			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u_%u.TBD ",
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "StepId=%u_%u.TBD ",
 				 job_step_ptr->array_job_id,
 				 job_step_ptr->array_task_id);
 		} else {
@@ -255,8 +255,6 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 4 ******/
-	xstrsubstitute(job_step_ptr->tres_alloc_str, "cpu",
-		       is_bluegene ? "CnodeCnt" : "CoreCnt");
 	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
 		 job_step_ptr->tres_alloc_str);
 	xstrcat(out, tmp_line);
