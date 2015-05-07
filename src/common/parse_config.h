@@ -330,7 +330,7 @@ int s_p_parse_pair(s_p_hashtbl_t *hashtbl, const char *key, const char *value);
  * Set the operator of the updated s_p_values_t to the provided one.
  */
 int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
-			   const char *value, slurm_parser_operator_t operator);
+			   const char *value, slurm_parser_operator_t opt);
 
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
@@ -530,7 +530,7 @@ int s_p_get_long_double(long double *num, const char *key,
  * Returns 1 when a operator was set for "key" during parsing and
  *     "operator" was successfully set, otherwise returns 0;
  */
-int s_p_get_operator(slurm_parser_operator_t *operator, const char *key,
+int s_p_get_operator(slurm_parser_operator_t *opt, const char *key,
 		     const s_p_hashtbl_t *hashtbl);
 
 /*

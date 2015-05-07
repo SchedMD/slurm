@@ -1735,7 +1735,7 @@ cleanup:
  * Set the operator of the targeted s_p_values_t to the provided value.
  */
 int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
-			   const char *value, slurm_parser_operator_t operator)
+			   const char *value, slurm_parser_operator_t opt)
 {
 	s_p_values_t *p;
 	char *leftover, *v;
@@ -1749,7 +1749,7 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		error("%s: Value pointer is NULL for key %s", __func__, key);
 		return 0;
 	}
-	p-> operator = operator;
+	p-> operator = opt;
 	/* we have value separated from key here so parse it different way */
 	while (*value != '\0' && isspace(*value))
 		value++; /* skip spaces at start if any */
@@ -1859,7 +1859,7 @@ int s_p_get_uint32(uint32_t *num, const char *key,
 	return 0;
 }
 
-int s_p_get_operator(slurm_parser_operator_t *operator, const char *key,
+int s_p_get_operator(slurm_parser_operator_t *opt, const char *key,
 		     const s_p_hashtbl_t *hashtbl)
 {
 	s_p_values_t *p;
@@ -1867,7 +1867,7 @@ int s_p_get_operator(slurm_parser_operator_t *operator, const char *key,
 		return 0;
 	p = _conf_hashtbl_lookup(hashtbl, key);
 	if (p) {
-		*operator = p->operator;
+		*opt = p->operator;
 		return 1;
 	}
 	error("Invalid key \"%s\"", key);
