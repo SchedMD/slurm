@@ -1645,8 +1645,20 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				cpu_cnt += node_ptr->cpus;
 #endif
 		}
-	} else if (resv_ptr->core_bitmap)
+	} else if (resv_ptr->core_bitmap) {
 		cpu_cnt = bit_set_count(resv_ptr->core_bitmap);
+		if (resv_ptr->node_bitmap) {
+			for (i=0; i<node_record_count; i++, node_ptr++) {
+				if (!bit_test(resv_ptr->node_bitmap, i))
+					continue;
+				if (slurmctld_conf.fast_schedule)
+					cpu_cnt *=
+						node_ptr->config_ptr->threads;
+				else
+					cpu_cnt *= node_ptr->threads;
+			}
+		}
+	}
 
 #ifdef HAVE_BG
 	/* Since on a bluegene we track cnodes instead of cpus do the
