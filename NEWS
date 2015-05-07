@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray systems, add "plugstack.conf.template" sample SPANK configuration file.
  -- BLUEGENE - Set DB2NOEXITLIST when starting the slurmctld daemon to avoid
     random crashing in db2 when the slurmctld is exiting.
+ -- Make full node reservations display correctly the core count instead of
+    cpu count.
 
 * Changes in Slurm 14.11.6
 ==========================

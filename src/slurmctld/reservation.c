@@ -1643,9 +1643,9 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 			cpu_cnt += node_ptr->sockets;
 #else
 		if (slurmctld_conf.fast_schedule)
-			cpu_cnt += node_ptr->config_ptr->cpus;
+			cpu_cnt += node_ptr->config_ptr->cores;
 		else
-			cpu_cnt += node_ptr->cpus;
+			cpu_cnt += node_ptr->cores;
 #endif
 	}
 	resv_ptr->cpu_cnt = cpu_cnt;
