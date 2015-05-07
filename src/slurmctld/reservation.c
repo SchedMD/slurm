@@ -1651,25 +1651,40 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			}
 #endif
 		}
-		resv_ptr->core_cnt = cpu_cnt;
 	} else if (resv_ptr->core_bitmap) {
 		/* This doesn't work on bluegene systems so don't
 		 * worry about it.
 		 */
-		resv_ptr->core_cnt = cpu_cnt =
+		resv_ptr->core_cnt =
 			bit_set_count(resv_ptr->core_bitmap);
 
 		if (resv_ptr->node_bitmap) {
 			for (i=0; i<node_record_count; i++, node_ptr++) {
+				int offset, core;
+				uint32_t cores, threads;
 				if (!bit_test(resv_ptr->node_bitmap, i))
 					continue;
-				if (slurmctld_conf.fast_schedule)
-					cpu_cnt *=
-						node_ptr->config_ptr->threads;
-				else
-					cpu_cnt *= node_ptr->threads;
+
+				if (slurmctld_conf.fast_schedule) {
+					cores = node_ptr->config_ptr->cores;
+					threads = node_ptr->config_ptr->threads;
+				} else {
+					cores = node_ptr->cores;
+					threads = node_ptr->config_ptr->threads;
+				}
+				offset = cr_get_coremap_offset(i);
+
+				for (core=0; core < cores; core++) {
+					if (!bit_test(resv_ptr->core_bitmap,
+						     core + offset))
+						continue;
+					cpu_cnt += threads;
+				}
+				/* info("cpu_cnt is now %"PRIu64" after %s", */
+				/*      cpu_cnt, node_ptr->name); */
 			}
-		}
+		} else
+			  cpu_cnt = resv_ptr->core_cnt;
 	}
 
 #ifdef HAVE_BG
@@ -1716,7 +1731,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	} else
 		name2 = val2 = "";
 
-	info("sched: %s reservation=%s%s%s%s%s nodes=%s cores=%u"
+	info("sched: %s reservation=%s%s%s%s%s nodes=%s cores=%u "
 	     "licenses=%s tres=%s start=%s end=%s",
 	     old_resv_ptr ? "Updated" : "Created",
 	     resv_ptr->name, name1, val1, name2, val2,

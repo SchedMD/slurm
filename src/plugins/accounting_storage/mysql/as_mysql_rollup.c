@@ -148,6 +148,7 @@ static void _remove_job_tres_time_from_cluster(List c_tres, List j_tres,
 {
 	ListIterator c_itr;
 	local_tres_usage_t *loc_c_tres, *loc_j_tres;
+	uint64_t time;
 
 	if ((seconds <= 0) || !c_tres || !j_tres ||
 	    !list_count(c_tres) || !list_count(j_tres))
@@ -158,29 +159,30 @@ static void _remove_job_tres_time_from_cluster(List c_tres, List j_tres,
 		if (!(loc_j_tres = list_find_first(
 			      j_tres, _find_loc_tres, &loc_c_tres->id)))
 			continue;
+		time = seconds * loc_j_tres->count;
 
-		if ((seconds * loc_j_tres->count) >= loc_c_tres->total_time)
+		if (time >= loc_c_tres->total_time)
 			loc_c_tres->total_time = 0;
 		else
-			loc_c_tres->total_time -= seconds * loc_j_tres->count;
+			loc_c_tres->total_time -= time;
 	}
 	list_iterator_destroy(c_itr);
 }
 
 
-static void _add_time_tres(List tres_list, int type, uint32_t id, uint64_t time,
-			   bool times_count)
+static local_tres_usage_t *_add_time_tres(List tres_list, int type, uint32_t id,
+					  uint64_t time, bool times_count)
 {
 	local_tres_usage_t *loc_tres;
 
 	if (!time)
-		return;
+		return NULL;
 
 	loc_tres = list_find_first(tres_list, _find_loc_tres, &id);
 
 	if (!loc_tres) {
 		if (times_count)
-			return;
+			return NULL;
 		loc_tres = xmalloc(sizeof(local_tres_usage_t));
 		loc_tres->id = id;
 		list_append(tres_list, loc_tres);
@@ -188,7 +190,7 @@ static void _add_time_tres(List tres_list, int type, uint32_t id, uint64_t time,
 
 	if (times_count) {
 		if (!loc_tres->count)
-			return;
+			return NULL;
 		time *= loc_tres->count;
 	}
 
@@ -210,6 +212,8 @@ static void _add_time_tres(List tres_list, int type, uint32_t id, uint64_t time,
 		xassert(0);
 		break;
 	}
+
+	return loc_tres;
 }
 
 static void _add_time_tres_list(List tres_list_out, List tres_list_in, int type,
@@ -273,7 +277,7 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 
 	while (tmp_str) {
 		id = atoi(tmp_str);
-		if (id < 0) {
+		if (id < 1) {
 			error("_add_tres_2_list: no id "
 			      "found at %s instead", tmp_str);
 			break;
@@ -283,8 +287,8 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 			xassert(0);
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
 
+		count = slurm_atoull(++tmp_str);
 		_setup_cluster_tres(tres_list, id, count, seconds);
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
@@ -300,7 +304,8 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 {
 	char *tmp_str = tres_str;
 	int id;
-	uint64_t time;
+	uint64_t time, count;
+	local_tres_usage_t *loc_tres;
 
 	xassert(tres_list);
 
@@ -309,7 +314,7 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 
 	while (tmp_str) {
 		id = atoi(tmp_str);
-		if (id < 0) {
+		if (id < 1) {
 			error("_add_tres_time_2_list: no id "
 			      "found at %s", tmp_str);
 			break;
@@ -320,9 +325,13 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 			xassert(0);
 			break;
 		}
-		time = slurm_atoull(++tmp_str) * seconds;
+		count = slurm_atoull(++tmp_str);
+		time = count * seconds;
 
-		_add_time_tres(tres_list, type, id, time, times_count);
+		loc_tres = _add_time_tres(tres_list, type, id,
+					  time, times_count);
+		if (loc_tres)
+			loc_tres->count = count;
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
@@ -817,10 +826,9 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 					/* info("Node %s was down for " */
 					/*      "%d seconds while " */
 					/*      "cluster %s's slurmctld " */
-					/*      "wasn't responding %"PRIu64, */
+					/*      "wasn't responding", */
 					/*      row[EVENT_REQ_NAME], */
-					/*      seconds, cluster_name, */
-					/*      loc_c_usage->total_time); */
+					/*      seconds, cluster_name); */
 				}
 			}
 		}
@@ -1264,18 +1272,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				if (loc_c_usage->end < temp_end)
 					temp_end = loc_c_usage->end;
 				loc_seconds = (temp_end - temp_start);
-				/* info(" Job %u was running for " */
-				/*      "%"PRIu64" seconds while " */
-				/*      "cluster %s's slurmctld " */
-				/*      "wasn't responding", */
-				/*      job_id, */
-				/*      (uint64_t) */
-				/*      (seconds * row_acpu), */
-				/*      cluster_name); */
+				if (loc_seconds < 1)
+					continue;
+
 				_remove_job_tres_time_from_cluster(
 					loc_c_usage->loc_tres,
 					loc_tres,
 					loc_seconds);
+				/* info("Job %u was running for " */
+				/*      "%d seconds while " */
+				/*      "cluster %s's slurmctld " */
+				/*      "wasn't responding", */
+				/*      job_id, loc_seconds, cluster_name); */
 			}
 
 			/* first figure out the reservation */
@@ -1453,7 +1461,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						a_usage->loc_tres = list_create(
 							_destroy_local_tres_usage);
 					}
-					/* This only works with CPUs now. */
+
 					_add_time_tres(a_usage->loc_tres,
 						       TIME_ALLOC, loc_tres->id,
 						       seconds, 0);
