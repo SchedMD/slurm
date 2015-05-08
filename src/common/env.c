@@ -670,6 +670,13 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->job_name) {
+		if (setenvf(&env->env, "SLURM_JOB_NAME", "%s", env->job_name)) {
+			error("Unable to set SLURM_JOB_NAME environment");
+			rc = SLURM_FAILURE;
+		}
+	}
+
 	if (!(cluster_flags & CLUSTER_FLAG_BG)
 	    && !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 		/* These aren't relavant to a system not using Slurm
@@ -960,6 +967,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *
  * Sets the variables:
  *	SLURM_JOB_ID
+ *	SLURM_JOB_NAME
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
@@ -1000,6 +1008,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NAME", "%s", desc->name);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);

@@ -436,10 +436,8 @@ no_rollup_change:
 #endif
 	}
 
-	/* If there is a start_time get the wckeyid.  If the job is
-	 * cancelled before the job starts we also want to grab it. */
-	if (job_ptr->assoc_id
-	    && (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
+	/* Grab the wckey once to make sure it is placed. */
+	if (job_ptr->assoc_id && (!job_ptr->db_index || job_ptr->wckey))
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id,
 				       mysql_conn->cluster_name,
@@ -462,13 +460,15 @@ no_rollup_change:
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, id_array_job, id_array_task, "
-			"id_assoc, id_qos, id_wckey, id_user, "
+			"id_assoc, id_qos, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
 			"nodes_alloc, mem_req",
 			mysql_conn->cluster_name, job_table);
 
+		if (wckeyid)
+			xstrcat(query, ", id_wckey");
 		if (job_ptr->account)
 			xstrcat(query, ", account");
 		if (partition)
@@ -493,12 +493,12 @@ no_rollup_change:
 			xstrcat(query, ", tres_alloc");
 
 		xstrfmtcat(query,
-			   ") values (%u, %u, %u, %u, %u, %u, %u, %u, "
+			   ") values (%u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
 			   "'%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->array_job_id,
 			   job_ptr->array_task_id, job_ptr->assoc_id,
-			   job_ptr->qos_id, wckeyid,
+			   job_ptr->qos_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   begin_time, submit_time, start_time,
@@ -507,6 +507,8 @@ no_rollup_change:
 			   node_cnt,
 			   job_ptr->details->pn_min_memory);
 
+		if (wckeyid)
+			xstrfmtcat(query, ", %u", wckeyid);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
 		if (partition)
@@ -535,7 +537,7 @@ no_rollup_change:
 		xstrfmtcat(query,
 			   ") on duplicate key update "
 			   "job_db_inx=LAST_INSERT_ID(job_db_inx), "
-			   "id_wckey=%u, id_user=%u, id_group=%u, "
+			   "id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
 			   "time_submit=%ld, time_eligible=%ld, "
 			   "time_start=%ld, "
@@ -543,7 +545,7 @@ no_rollup_change:
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
 			   "mem_req=%u, id_array_job=%u, id_array_task=%u",
-			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
+			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, begin_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
@@ -553,6 +555,8 @@ no_rollup_change:
 			   job_ptr->array_job_id,
 			   job_ptr->array_task_id);
 
+		if (wckeyid)
+			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
@@ -603,6 +607,8 @@ no_rollup_change:
 				       mysql_conn->cluster_name,
 				       job_table, nodes);
 
+		if (wckeyid)
+			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
@@ -634,13 +640,13 @@ no_rollup_change:
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "nodes_alloc=%u, id_qos=%u, "
-			   "id_assoc=%u, id_wckey=%u, id_resv=%u, "
+			   "id_assoc=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%u, "
 			   "id_array_job=%u, id_array_task=%u, "
 			   "time_eligible=%ld where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   node_cnt, job_ptr->qos_id,
-			   job_ptr->assoc_id, wckeyid,
+			   job_ptr->assoc_id,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id,

@@ -866,6 +866,7 @@ char *process_options_first_pass(int argc, char **argv)
 			break;
 		case LONG_OPT_WRAP:
 			opt.wrap = xstrdup(optarg);
+			opt.job_name = xstrdup("wrap");
 			break;
 		default:
 			/* will be parsed in second pass function */
