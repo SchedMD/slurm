@@ -597,7 +597,7 @@ no_rollup_change:
 				       job_table, nodes);
 
 		if (wckeyid)
-			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
+			xstrfmtcat(query, "id_wckey=%u, ", wckeyid);
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
