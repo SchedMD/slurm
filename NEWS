@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Preserve original errno on execve() failure in task plugin.
  -- Add SLURM_JOB_NAME env variable to an salloc's environment.
  -- Overwrite SLURM_JOB_NAME in an srun when it gets an allocation.
+ -- Make sure each job has a wckey if that is something that is tracked.
 
 * Changes in Slurm 14.11.6
 ==========================
