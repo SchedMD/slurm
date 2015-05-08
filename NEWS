@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     utilization.
  -- Add re-entrant versions of glibc time functions (e.g. localtime) to Slurm
     in order to eliminate rare deadlock of slurmstepd fork and exec calls.
+ -- Constrain kernel memory (if available) in cgroups.
 
 * Changes in Slurm 15.08.0pre4
 ==============================
