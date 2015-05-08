@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     random crashing in db2 when the slurmctld is exiting.
  -- Make full node reservations display correctly the core count instead of
     cpu count.
+ -- Preserve original errno on execve() failure in task plugin.
 
 * Changes in Slurm 14.11.6
 ==========================
