@@ -330,7 +330,7 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 
 		loc_tres = _add_time_tres(tres_list, type, id,
 					  time, times_count);
-		if (loc_tres)
+		if (loc_tres && !loc_tres->count)
 			loc_tres->count = count;
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
