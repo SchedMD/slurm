@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_NAME env variable to an salloc's environment.
  -- Overwrite SLURM_JOB_NAME in an srun when it gets an allocation.
  -- Make sure each job has a wckey if that is something that is tracked.
+ -- Make sure old step data is cleared when job is requeued.
 
 * Changes in Slurm 14.11.6
 ==========================

@@ -2030,10 +2030,19 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	xassert(job_resrcs_ptr->core_bitmap_used);
 	if (step_ptr->core_bitmap_job) {
 		/* Mark the job's cores as no longer in use */
-		bit_not(step_ptr->core_bitmap_job);
-		bit_and(job_resrcs_ptr->core_bitmap_used,
-			step_ptr->core_bitmap_job);
-		/* no need for bit_not(step_ptr->core_bitmap_job); */
+		int job_core_size, step_core_size;
+		job_core_size  = bit_size(job_resrcs_ptr->core_bitmap_used);
+		step_core_size = bit_size(step_ptr->core_bitmap_job);
+		if (job_core_size != step_core_size) {
+			error("%s: %u.%u core_bitmap size mismatch (%d != %d)",
+			      __func__, job_ptr->job_id, step_ptr->step_id,
+			      job_core_size, step_core_size);
+		} else {
+			bit_not(step_ptr->core_bitmap_job);
+			bit_and(job_resrcs_ptr->core_bitmap_used,
+				step_ptr->core_bitmap_job);
+			/* no need for bit_not(step_ptr->core_bitmap_job); */
+		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}
 #endif
