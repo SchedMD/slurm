@@ -35,7 +35,7 @@ AC_DEFUN([X_AC_NCURSES],
       ac_have_some_curses="yes"
    fi
    if test "$ac_have_tinfo" = "yes"; then
-     NCURESES="$NCURSES -ltinfo"
+     NCURSES="$NCURSES -ltinfo"
    fi
 
    if test "$ac_have_some_curses" = "yes"; then
