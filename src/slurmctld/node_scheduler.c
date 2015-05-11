@@ -1886,13 +1886,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		goto cleanup;
 	}
 
-	/* This job may be getting requeued, clear vestigial
-	 * state information before over-writing and leaking
-	 * memory. */
+	/* This job may be getting requeued, clear vestigial state information
+	 * before over-writing and leaking memory or referencing old GRES or
+	 * step data. */
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
+	gres_plugin_job_clear(job_ptr->gres_list);
+	step_list_purge(job_ptr);
+	job_ptr->step_list = list_create(NULL);
 
 	job_ptr->node_bitmap = select_bitmap;
 
@@ -1911,8 +1914,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	job_end_time_reset(job_ptr);
-	/* Clear any vestigial GRES in case job was requeued */
-	gres_plugin_job_clear(job_ptr->gres_list);
 
 	job_array_post_sched(job_ptr);
 	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
