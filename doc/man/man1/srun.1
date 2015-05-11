@@ -920,6 +920,8 @@ to the amount of memory allocated to the job, but not remove any of the job's
 memory allocation from being available to other job steps.
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+NOTE: A memory size specification is treated as a special case and grants
+the job access to all of the memory on each node.
 NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
 or enabling of accounting, which samples memory use on a periodic basis (data
 need not be stored, just collected). In both cases memory use is based upon
