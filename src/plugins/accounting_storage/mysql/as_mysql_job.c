@@ -113,7 +113,7 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	if ((row = mysql_fetch_row(result)))
+	if ((row = mysql_fetch_row(result)) && row[0][0])
 		user = xstrdup(row[0]);
 
 	mysql_free_result(result);
