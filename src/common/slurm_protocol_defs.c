@@ -3049,6 +3049,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		slurm_free_job_array_resp(data);
 		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
+		slurm_free_trigger_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
