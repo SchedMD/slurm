@@ -70,6 +70,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurm_route.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/log.h"
@@ -493,6 +494,25 @@ char *slurm_get_mpi_params(void)
 		slurm_conf_unlock();
 	}
 	return mpi_params;
+}
+
+/* slurm_get_msg_aggr_params
+ * get message aggregation parameters value from slurmctld_conf object
+ * RET char *   - message aggregation value from slurm.conf,
+ * MUST be xfreed by caller
+ */
+char *slurm_get_msg_aggr_params(void)
+{
+	char *msg_aggr_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		msg_aggr_params = xstrdup(conf->msg_aggr_params);
+		slurm_conf_unlock();
+	}
+	return msg_aggr_params;
 }
 
 /* slurm_get_msg_timeout
@@ -2776,7 +2796,6 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 	Buf buffer;
 
 	xassert(fd >= 0);
-
 	slurm_msg_t_init(msg);
 	msg->conn_fd = fd;
 
@@ -3307,7 +3326,6 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-
 	msg->auth_cred = (void *) auth_cred;
 
 	free_buf(buffer);
@@ -4070,8 +4088,6 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	return ret_list;
 }
 
-
-
 /*
  *  Open a connection to the "address" specified in the slurm msg "req".
  *    Then read back an "rc" message returning the "return_code" specified
@@ -4131,6 +4147,113 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	return ret_c;
 }
 
+/*
+ *  Send a msg to the next msg aggregation collector node. If primary
+ *  collector is unavailable or returns error, try backup collector.
+ *  If backup collector is unavailable or returns error, send msg
+ *  directly to controller.
+ */
+int slurm_send_to_next_collector(slurm_msg_t *msg)
+{
+	slurm_addr_t *next_dest = NULL;
+	bool i_am_collector;
+	char addrbuf[100];
+	int rc = SLURM_SUCCESS;
+	uint32_t debug_flags = slurm_get_debug_flags();
+
+	if (debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: send_to_next_collector: getting primary next "
+		     "collector");
+	next_dest = route_g_next_collector(&i_am_collector);
+	if (next_dest == NULL) {
+		if (debug_flags & DEBUG_FLAG_ROUTE)
+			info("msg aggr: send_to_next_collector: primary is "
+			     "null, getting backup");
+		next_dest = route_g_next_collector_backup();
+		if (next_dest == NULL) {
+			if (debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: _send_to_next_collector: backup"
+				     " is null, sending msg to controller");
+			rc = slurm_send_only_controller_msg(msg);
+		} else {
+			memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
+			rc = slurm_send_only_node_msg(msg);
+			if (rc != SLURM_SUCCESS) {
+				if (debug_flags & DEBUG_FLAG_ROUTE)
+					info("msg aggr: send_to_next_collector"
+					     ":error from backup, sending msg "
+					     "to controller");
+				rc = slurm_send_only_controller_msg(msg);
+			}
+		}
+	} else {
+		if (debug_flags & DEBUG_FLAG_ROUTE) {
+			slurm_print_slurm_addr(next_dest, addrbuf, 32);
+			info("msg aggr: send_to_next_collector: *next_dest is "
+			     "%s", addrbuf);
+		}
+		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
+		rc = slurm_send_only_node_msg(msg);
+		if (rc != SLURM_SUCCESS) {
+			if (debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: send_to_next_collector, "
+				     "error from primary, getting backup");
+			next_dest = route_g_next_collector_backup();
+			if (next_dest == NULL) {
+				if (debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: send_to_next_collector, backup "
+				     "is null, sending msg to controller");
+				rc = slurm_send_only_controller_msg(msg);
+			} else {
+				memcpy(&msg->address, next_dest,
+				       sizeof(slurm_addr_t));
+				rc = slurm_send_only_node_msg(msg);
+				if (rc != SLURM_SUCCESS) {
+					if (debug_flags & DEBUG_FLAG_ROUTE)
+					info("msg aggr: send_to_next_collector,"
+					     " error from backup, sending msg "
+					     "to controller");
+					rc = slurm_send_only_controller_msg(msg);
+				}
+			}
+		}
+	}
+	return rc;
+}
+
+/*
+ * Send a composite msg response msg to the message collector node
+ * that sent the composite msg (i.e. the previous collector)
+ * TODO: if previous collector unavailable, send to previous collector backup
+ */
+int slurm_send_to_prev_collector(slurm_msg_t *msg)
+{
+	slurm_msg_t  *cmp_msg;
+	composite_msg_t *cmp;
+	composite_response_msg_t *resp_msg;
+	slurm_addr_t *prev_dest = NULL;
+	int rc = SLURM_SUCCESS;
+	uint32_t debug_flags = slurm_get_debug_flags();
+
+	resp_msg = msg->data;
+	cmp_msg = resp_msg->comp_msg;
+	cmp = cmp_msg->data;
+
+	prev_dest = &cmp->sender;
+	if (debug_flags & DEBUG_FLAG_ROUTE) {
+		info("msg aggr: send_to_prev_collector: cmp_msg->msg_type = %u",
+				cmp_msg->msg_type);
+	}
+	memcpy(&msg->address, prev_dest, sizeof(slurm_addr_t));
+	rc = slurm_send_only_node_msg(msg);
+	if (rc != SLURM_SUCCESS) {
+		if (debug_flags & DEBUG_FLAG_ROUTE)
+			info("msg aggr: send_to_prev_collector: error sending "
+			     "composite response msg");
+	}
+	return rc;
+}
+
 /* this is used to set how many nodes are going to be on each branch
  * of the tree.
  * IN total       - total number of nodes to send to
@@ -4139,7 +4262,6 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
  *		    containing the number of nodes to send to each hop
  *		    on the span.
  */
-
 extern int *set_span(int total,  uint16_t tree_width)
 {
 	int *span = NULL;
@@ -4191,15 +4313,16 @@ extern int *set_span(int total,  uint16_t tree_width)
  */
 extern void slurm_free_msg(slurm_msg_t * msg)
 {
-	if (msg->auth_cred)
-		(void) g_slurm_auth_destroy(msg->auth_cred);
-
-	if (msg->ret_list) {
-		list_destroy(msg->ret_list);
-		msg->ret_list = NULL;
+	if (msg) {
+		if (msg->auth_cred) {
+			(void) g_slurm_auth_destroy(msg->auth_cred);
+		}
+		if (msg->ret_list) {
+			list_destroy(msg->ret_list);
+			msg->ret_list = NULL;
+		}
+		xfree(msg);
 	}
-
-	xfree(msg);
 }
 
 extern char *nodelist_nth_host(const char *nodelist, int inx)
@@ -4418,3 +4541,174 @@ uint16_t slurm_get_prolog_timeout(void)
 
 	return timeout;
 }
+
+/*
+ * vi: shiftwidth=8 tabstop=8 expandtab
+ */
+
+/*
+ * Pack composite message msg_list message as if it were being packed
+ * by slurm_send_node_msg
+ */
+extern int pack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg)
+{
+	header_t header;
+	int      rc = SLURM_SUCCESS;
+	void *   auth_cred;
+	time_t   start_time = time(NULL);
+
+	/*
+	 * Initialize header with Auth credential and message type.
+	 * We get the credential now rather than later so the work can
+	 * can be done in parallel with waiting for message to forward,
+	 * but we may need to generate the credential again later if we
+	 * wait too long for the incoming message.
+	 */
+	if (msg->flags & SLURM_GLOBAL_AUTH_KEY)
+		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
+	else
+		auth_cred = g_slurm_auth_create(NULL, 2, slurm_get_auth_info());
+
+	if (msg->forward.init != FORWARD_INIT) {
+		forward_init(&msg->forward, NULL);
+		msg->ret_list = NULL;
+	}
+	forward_wait(msg);
+
+	if (difftime(time(NULL), start_time) >= 60) {
+		(void) g_slurm_auth_destroy(auth_cred);
+		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
+			auth_cred = g_slurm_auth_create(NULL, 2,
+							_global_auth_key());
+		} else {
+			auth_cred = g_slurm_auth_create(NULL, 2,
+							slurm_get_auth_info());
+		}
+	}
+	if (auth_cred == NULL) {
+		error("authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+	}
+
+	init_header(&header, msg, msg->flags);
+
+	/*
+	 * Pack header into buffer for transmission
+	 */
+	pack_header(&header, buffer);
+
+	/*
+	 * Pack auth credential
+	 */
+	rc = g_slurm_auth_pack(auth_cred, buffer);
+
+	(void) g_slurm_auth_destroy(auth_cred);
+	if (rc) {
+		error("authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		free_buf(buffer);
+		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+	}
+
+	/*
+	 * Pack message into buffer
+	 */
+	_pack_msg(msg, &header, buffer);
+	return rc;
+}
+
+/*
+ * Unpack composite message msg_list message as if it were being unpacked
+ * by slurm_receive_msg
+ */
+extern int unpack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg)
+{
+	header_t header;
+	int rc;
+	void *auth_cred = NULL;
+
+	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+		free_buf(buffer);
+		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+		goto total_return;
+	}
+
+	if (check_header_version(&header) < 0) {
+		free_buf(buffer);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
+		goto total_return;
+	}
+	//info("ret_cnt = %d",header.ret_cnt);
+	if (header.ret_cnt > 0) {
+		error("we received more than one message back use "
+		      "slurm_receive_msgs instead");
+		header.ret_cnt = 0;
+		list_destroy(header.ret_list);
+		header.ret_list = NULL;
+	}
+
+	/* Forward message to other nodes */
+	if (header.forward.cnt > 0) {
+		error("We need to forward this to other nodes use "
+		      "slurm_receive_msg_and_forward instead");
+	}
+
+	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
+		error( "authentication: %s ",
+		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
+					  _global_auth_key() );
+	} else {
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2,
+					  slurm_get_auth_info() );
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		error( "authentication: %s ",
+		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		(void) g_slurm_auth_destroy(auth_cred);
+		free_buf(buffer);
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto total_return;
+	}
+
+	/*
+	 * Unpack message body
+	 */
+	msg->protocol_version = header.version;
+	msg->msg_type = header.msg_type;
+	msg->flags = header.flags;
+
+	if ((header.body_length > remaining_buf(buffer)) ||
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		(void) g_slurm_auth_destroy(auth_cred);
+		free_buf(buffer);
+		goto total_return;
+	}
+
+
+	msg->auth_cred = (void *)auth_cred;
+	rc = SLURM_SUCCESS;
+
+total_return:
+	destroy_forward(&header.forward);
+
+	slurm_seterrno(rc);
+	if (rc != SLURM_SUCCESS) {
+		msg->auth_cred = (void *) NULL;
+		error("slurm_receive_msg: %s", slurm_strerror(rc));
+		rc = -1;
+		usleep(10000);	/* Discourage brute force attack */
+	} else {
+		rc = 0;
+	}
+	return rc;
+}
+

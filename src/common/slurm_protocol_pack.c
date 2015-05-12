@@ -693,6 +693,15 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
 				     uint16_t protocol_version);
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
 				       uint16_t protocol_version);
+
+static void _pack_composite_msg(composite_msg_t *msg, Buf buffer,
+				uint16_t protocol_version);
+static int  _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
+				  uint16_t protocol_version);
+static void _pack_composite_resp_msg(composite_response_msg_t *msg, Buf buffer,
+				     uint16_t protocol_version);
+static int  _unpack_composite_resp_msg(composite_response_msg_t **msg,
+				       Buf buffer, uint16_t protocol_version);
 static int
 _unpack_burst_buffer_info_msg(burst_buffer_info_msg_t **burst_buffer_info,
 			      Buf buffer,
@@ -1377,6 +1386,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_LICENSE_INFO:
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
 		break;
+	case MESSAGE_COMPOSITE:
+		_pack_composite_msg((composite_msg_t *) msg->data, buffer,
+				     msg->protocol_version);
+		break;
+	case RESPONSE_MESSAGE_COMPOSITE:
+		_pack_composite_resp_msg((composite_response_msg_t *) msg->data,
+					  buffer, msg->protocol_version);
+		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
@@ -2048,6 +2065,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		                                      &(msg->data),
 		                                      buffer,
 		                                      msg->protocol_version);
+		break;
+	case MESSAGE_COMPOSITE:
+		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
+					    buffer, msg->protocol_version);
+		break;
+	case RESPONSE_MESSAGE_COMPOSITE:
+		rc = _unpack_composite_resp_msg((composite_response_msg_t **)
+						&(msg->data),
+						buffer,
+						msg->protocol_version);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
@@ -4366,7 +4393,6 @@ _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-
 	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->return_code, buffer);
@@ -4390,7 +4416,6 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer,
 {
 	epilog_complete_msg_t *tmp_ptr;
 	uint32_t uint32_tmp;
-
 	/* alloc memory for structure */
 	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(epilog_complete_msg_t));
@@ -4422,6 +4447,92 @@ unpack_error:
 	slurm_free_epilog_complete_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
+}
+
+static void
+_pack_composite_msg(composite_msg_t * msg, Buf buffer, uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+	slurm_msg_t *tmp_info = NULL;
+	ListIterator itr = NULL;
+
+	xassert(msg != NULL);
+	if (msg->msg_list)
+		count = list_count(msg->msg_list);
+	pack32(count, buffer);
+	pack16(msg->base_msgs, buffer);
+	pack16(msg->comp_msgs, buffer);
+	slurm_pack_slurm_addr(&msg->sender, buffer);
+	if (count && count != NO_VAL) {
+		itr = list_iterator_create(msg->msg_list);
+		while ((tmp_info = list_next(itr))) {
+			pack_comp_msg_list_msg(buffer, tmp_info);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+}
+
+static int
+_unpack_composite_msg(composite_msg_t **msg, Buf buffer,
+		      uint16_t protocol_version)
+{
+	uint32_t count = NO_VAL;
+	int i;
+	slurm_msg_t *tmp_info;
+	composite_msg_t *object_ptr = NULL;
+	uint32_t debug_flags = slurm_get_debug_flags();
+
+	xassert(msg != NULL);
+	object_ptr = (composite_msg_t *) xmalloc(sizeof(composite_msg_t));
+	*msg = object_ptr;
+	safe_unpack32(&count, buffer);
+	safe_unpack16(&object_ptr->base_msgs, buffer);
+	safe_unpack16(&object_ptr->comp_msgs, buffer);
+	slurm_unpack_slurm_addr_no_alloc(&object_ptr->sender, buffer);
+	if (debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: _unpack_composite_msg: number of msgs in "
+		     "collection = %d", count);
+	if (count != NO_VAL) {
+		object_ptr->msg_list = list_create(slurm_free_comp_msg_list);
+		for (i=0; i<count; i++) {
+			tmp_info = (slurm_msg_t *) xmalloc(sizeof(slurm_msg_t));
+			slurm_msg_t_init(tmp_info);
+			unpack_comp_msg_list_msg(buffer, tmp_info);
+			list_append(object_ptr->msg_list, tmp_info);
+		}
+	}
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
+}
+
+static void
+_pack_composite_resp_msg(composite_response_msg_t * msg, Buf buffer,
+			 uint16_t protocol_version)
+{
+	slurm_msg_t *cmp;
+
+	xassert(msg != NULL);
+	cmp = msg->comp_msg;
+	pack_comp_msg_list_msg(buffer, cmp);
+}
+
+static int
+_unpack_composite_resp_msg(composite_response_msg_t **msg, Buf buffer,
+		      uint16_t protocol_version)
+{
+	slurm_msg_t *tmp_info;
+	composite_response_msg_t *tmp_ptr = NULL;
+
+	xassert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(composite_response_msg_t));
+	*msg = tmp_ptr;
+	tmp_info = (slurm_msg_t *) xmalloc(sizeof(slurm_msg_t));
+	tmp_ptr->comp_msg = tmp_info;
+	slurm_msg_t_init(tmp_info);
+	unpack_comp_msg_list_msg(buffer, tmp_info);
+	return SLURM_SUCCESS;
 }
 
 static void
@@ -5673,6 +5784,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->min_job_age, buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
+		packstr(build_ptr->msg_aggr_params, buffer);
 		pack16(build_ptr->msg_timeout, buffer);
 
 		pack32(build_ptr->next_job_id, buffer);
@@ -6541,6 +6653,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_params,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->msg_aggr_params,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->msg_timeout, buffer);
 

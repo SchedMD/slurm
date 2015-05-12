@@ -206,6 +206,13 @@ char *slurm_get_mpi_default(void);
  */
 char *slurm_get_mpi_params(void);
 
+/* slurm_get_msg_aggr_params
+ * get message aggregation parameters value from slurmctld_conf object
+ * RET char *   - msg aggregation parameters default value from slurm.conf,
+ *                MUST be xfreed by caller
+ */
+char *slurm_get_msg_aggr_params(void);
+
 /* slurm_get_msg_timeout
  * get default message timeout value from slurmctld_conf object
  */
@@ -1185,6 +1192,20 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg);
  */
 int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 
+/* slurm_send_to_next_collector
+ * sends a message to the next msg aggregation collector node
+ * IN request_msg	- slurm_msg request
+ * RET int 		- return code
+ */
+int slurm_send_to_next_collector(slurm_msg_t *msg);
+
+/* slurm_send_to_prev_collector
+ * sends a composite message to the previous msg aggregation collector node
+ * IN request_msg	- slurm_msg request
+ * RET int 		- return code
+ */
+int slurm_send_to_prev_collector(slurm_msg_t *msg);
+
 /* Slurm message functions */
 
 /* set_span
@@ -1230,5 +1251,15 @@ extern int slurm_job_step_create (
  */
 extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
 	char *data);
+
+/* pack_comp_msg_list_msg
+ * packs a message from the message list of a composite message
+ */
+extern int pack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg);
+
+/* unpack_comp_msg_list_msg
+ * unpacks a message into a message list
+ */
+extern int unpack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg);
 
 #endif
