@@ -1414,6 +1414,59 @@ Used to identify ports used by OpenMPI only and the input format is
 "ports=12000\-12999" to identify a range of communication ports to be used.
 
 .TP
+\fBMsgAggregationParams\fR
+Message aggregation parameters. Message aggregation
+is an optional feature that may improve system performance by reducing
+the number of separate messages passed between nodes. The feature
+works by routing messages through one or more message collector
+nodes between their source and destination nodes. At each
+collector node, messages with the same destination received
+during a defined message collection window are packaged into a single
+composite message. When the window expires, the composite message
+is sent to the next collector node on
+the route to its destination. The route between each source
+and destination node is provided by the Route plugin. When a
+composite message is received at its destination node, the
+original messages are extracted and processed as if they
+had been sent directly.
+.br
+.br
+Currently, the only message type supported by message
+aggregation is the epilog complete message.
+.br
+.br
+.RE
+The format for this parameter is as follows:
+.b.br
+.RS
+.TP 12
+\fBMsgAggregationParams=\fR\fI<option>\fR\fB=\fR\fI<value>\fR
+where \fI<option>\fR=\fI<value>\fR specify a particular control
+variable. Multiple, comma-separated \fI<option>\fR=\fI<value>\fR
+pairs may be specified. Supported options are as follows:
+.br
+.RS
+.TP
+\fBWindowMsgs=\fI<number>\fR
+where \fI<number>\fR is the maximum number of messages
+in each message collection window.
+.TP
+\fBWindowTime=\fI<time>\fR
+where \fI<time>\fR is the maximum elapsed time in milliseconds of
+each message collection window.
+.br
+.br
+.TP
+.RE
+.RE
+A window expires when either \fBWindowMsgs\fR or \fBWindowTime\fR is
+reached. By default, message aggregation is disabled. To enable
+the feature, set \fBWindowMsgs\fR to a value greater than 1. The
+default value for \fBWindowTime\fR is 100 milliseconds.
+.RE
+.RE
+
+.TP
 \fBOverTimeLimit\fR
 Number of minutes by which a job can exceed its time limit before
 being canceled.
@@ -2179,7 +2232,7 @@ etc. are equal to or greater than the values configured in slurm.conf.
 .TP
 \fBRoutePlugin\fR
 Identifies the plugin to be used for defining which nodes will be used
-to forward a message.
+for message forwarding and message aggregation.
 .RS
 .TP
 \fBroute/default\fR
