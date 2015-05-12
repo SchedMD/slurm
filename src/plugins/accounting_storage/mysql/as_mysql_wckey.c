@@ -513,8 +513,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!object->cluster || !object->cluster[0]
 		    || !object->user || !object->user[0]
 		    || !object->name) {
-			error("We need a wckey name, cluster, "
-			      "and user to add.");
+			error("We need a wckey name (%s), cluster (%s), "
+			      "and user (%s) to add.",
+			      object->name, object->cluster, object->user);
 			rc = SLURM_ERROR;
 			continue;
 		}
