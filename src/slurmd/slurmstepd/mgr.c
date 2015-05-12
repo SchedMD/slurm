@@ -554,8 +554,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 						job->task[ii]->id,
 						same ? job->task[ii]->id : -2);
 					if (rc != SLURM_SUCCESS) {
-						error("Could not open output "
-						      "file %s: %m",
+						error("Could not open output file %s: %m",
 						      job->task[ii]->ofname);
 						rc = ESLURMD_IO_ERROR;
 						goto claim;
@@ -571,8 +570,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 					file_flags, job, job->labelio,
 					-1, same ? -1 : -2);
 				if (rc != SLURM_SUCCESS) {
-					error("Could not open output "
-					      "file %s: %m",
+					error("Could not open output file %s: %m",
 					      job->task[0]->ofname);
 					rc = ESLURMD_IO_ERROR;
 					goto claim;
@@ -593,9 +591,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 							job->labelio,
 							-2, job->task[ii]->id);
 						if (rc != SLURM_SUCCESS) {
-							error("Could not "
-							      "open error "
-							      "file %s: %m",
+							error("Could not open error file %s: %m",
 							      job->task[ii]->
 							      efname);
 							rc = ESLURMD_IO_ERROR;
@@ -610,8 +606,7 @@ _setup_normal_io(stepd_step_rec_t *job)
 						file_flags, job, job->labelio,
 						-2, -1);
 					if (rc != SLURM_SUCCESS) {
-						error("Could not open error "
-						      "file %s: %m",
+						error("Could not open error file %s: %m",
 						      job->task[0]->efname);
 						rc = ESLURMD_IO_ERROR;
 						goto claim;
@@ -958,6 +953,63 @@ extern void agent_queue_request(void *dummy)
 	      "checkpoint plugin");
 }
 
+static int _spawn_job_container(stepd_step_rec_t *job)
+{
+	jobacctinfo_t *jobacct = NULL;
+	struct rusage rusage;
+	jobacct_id_t jobacct_id;
+	int rc = SLURM_SUCCESS;
+	int status = 0;
+	pid_t pid;
+
+	acct_gather_profile_g_task_start(0);
+	pid = fork();
+	if (pid == 0) {
+		setpgid(0, 0);
+		setsid();
+		acct_gather_profile_g_child_forked();
+		while (1)
+			sleep(10);	/* Run until signalled */
+		exit(0);
+	}
+
+	job->pgid = pid;
+	proctrack_g_add(job, pid);
+
+	jobacct_id.nodeid = job->nodeid;
+	jobacct_id.taskid = job->nodeid;   /* Treat node ID as global task ID */
+	jobacct_id.job    = job;
+	jobacct_gather_set_proctrack_container_id(job->cont_id);
+	jobacct_gather_add_task(pid, &jobacct_id, 1);
+	container_g_add_cont(job->jobid, job->cont_id);
+
+	job->state = SLURMSTEPD_STEP_RUNNING;
+	if (!conf->job_acct_gather_freq)
+		jobacct_gather_stat_task(0);
+
+	while ((wait4(pid, &status, 0, &rusage) < 0) && (errno == EINTR)) {
+		;	       /* Wait until above processs exits from signal */
+	}
+
+	jobacct = jobacct_gather_remove_task(pid);
+	if (jobacct) {
+		jobacctinfo_setinfo(jobacct,
+				    JOBACCT_DATA_RUSAGE, &rusage,
+				    SLURM_PROTOCOL_VERSION);
+		job->jobacct->energy.consumed_energy = 0;
+		jobacctinfo_aggregate(job->jobacct, jobacct);
+		jobacctinfo_destroy(jobacct);
+	}
+	acct_gather_profile_g_task_end(pid);
+
+	acct_gather_profile_endpoll();
+	acct_gather_profile_g_node_step_end();
+	acct_gather_profile_fini();
+	_send_step_complete_msgs(job);
+
+	return rc;
+}
+
 /*
  * Executes the functions of the slurmd job manager process,
  * which runs as root and performs shared memory and interconnect
@@ -1001,7 +1053,7 @@ job_manager(stepd_step_rec_t *job)
 		goto fail1;
 	}
 
-	if (!job->batch &&
+	if (!job->batch && (job->stepid != INFINITE) &&
 	    (switch_g_job_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
@@ -1013,6 +1065,9 @@ job_manager(stepd_step_rec_t *job)
 		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
 		goto fail1;
 	}
+
+	if (job->stepid == INFINITE)
+		return _spawn_job_container(job);
 
 #ifdef HAVE_ALPS_CRAY
 	/*
@@ -1233,13 +1288,13 @@ struct exec_wait_info {
 	int childfd;
 };
 
-static struct exec_wait_info * exec_wait_info_create (int i)
+static struct exec_wait_info * _exec_wait_info_create (int i)
 {
 	int fdpair[2];
 	struct exec_wait_info * e;
 
 	if (pipe (fdpair) < 0) {
-		error ("exec_wait_info_create: pipe: %m");
+		error ("_exec_wait_info_create: pipe: %m");
 		return NULL;
 	}
 
@@ -1255,15 +1310,19 @@ static struct exec_wait_info * exec_wait_info_create (int i)
 	return (e);
 }
 
-static void exec_wait_info_destroy (struct exec_wait_info *e)
+static void _exec_wait_info_destroy (struct exec_wait_info *e)
 {
 	if (e == NULL)
 		return;
 
-	if (e->parentfd >= 0)
+	if (e->parentfd >= 0) {
 		close (e->parentfd);
-	if (e->childfd >= 0)
+		e->parentfd = -1;
+	}
+	if (e->childfd >= 0) {
 		close (e->childfd);
+		e->childfd = -1;
+	}
 	e->id = -1;
 	e->pid = -1;
 	xfree(e);
@@ -1276,15 +1335,15 @@ static pid_t exec_wait_get_pid (struct exec_wait_info *e)
 	return (e->pid);
 }
 
-static struct exec_wait_info * fork_child_with_wait_info (int id)
+static struct exec_wait_info * _fork_child_with_wait_info (int id)
 {
 	struct exec_wait_info *e;
 
-	if (!(e = exec_wait_info_create (id)))
+	if (!(e = _exec_wait_info_create (id)))
 		return (NULL);
 
 	if ((e->pid = fork ()) < 0) {
-		exec_wait_info_destroy (e);
+		_exec_wait_info_destroy (e);
 		return (NULL);
 	}
 	/*
@@ -1293,20 +1352,19 @@ static struct exec_wait_info * fork_child_with_wait_info (int id)
 	if (e->pid == 0) {
 		close (e->parentfd);
 		e->parentfd = -1;
-	}
-	else {
+	} else {
 		close (e->childfd);
 		e->childfd = -1;
 	}
 	return (e);
 }
 
-static int exec_wait_child_wait_for_parent (struct exec_wait_info *e)
+static int _exec_wait_child_wait_for_parent (struct exec_wait_info *e)
 {
 	char c;
 
 	if (read (e->childfd, &c, sizeof (c)) != 1)
-		return error ("wait_for_parent: failed: %m");
+		return error ("_exec_wait_child_wait_for_parent: failed: %m");
 
 	return (0);
 }
@@ -1495,7 +1553,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		goto fail4;
 	}
 
-	exec_wait_list = list_create ((ListDelF) exec_wait_info_destroy);
+	exec_wait_list = list_create ((ListDelF) _exec_wait_info_destroy);
 	if (!exec_wait_list) {
 		error ("Unable to create exec_wait_list");
 		rc = SLURM_ERROR;
@@ -1511,7 +1569,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		struct exec_wait_info *ei;
 
 		acct_gather_profile_g_task_start(i);
-		if ((ei = fork_child_with_wait_info (i)) == NULL) {
+		if ((ei = _fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
 			exec_wait_kill_children (exec_wait_list);
 			rc = SLURM_ERROR;
@@ -1570,7 +1628,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 *   children in any process groups or containers
 			 *   before they make a call to exec(2).
 			 */
-			if (exec_wait_child_wait_for_parent (ei) < 0)
+			if (_exec_wait_child_wait_for_parent (ei) < 0)
 				exit (1);
 
 			exec_task(job, i);
@@ -2582,7 +2640,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		return -1;
 	}
 
-	if ((ei = fork_child_with_wait_info(0)) == NULL) {
+	if ((ei = _fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
 		return -1;
 	}
@@ -2628,7 +2686,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		/*
 		 *  Wait for signal from parent
 		 */
-		exec_wait_child_wait_for_parent (ei);
+		_exec_wait_child_wait_for_parent (ei);
 
 		execve(path, argv, env);
 		error("execve(%s): %m", path);
@@ -2637,7 +2695,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 	if (exec_wait_signal_child (ei) < 0)
 		error ("run_script_as_user: Failed to wakeup %s", name);
-	exec_wait_info_destroy (ei);
+	_exec_wait_info_destroy (ei);
 
 	if (max_wait < 0)
 		opt = 0;

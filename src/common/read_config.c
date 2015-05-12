@@ -4361,6 +4361,8 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 	while (tok) {
 		if (strcasecmp(tok, "Alloc") == 0)
 			rc |= PROLOG_FLAG_ALLOC;
+		else if (strcasecmp(tok, "Contain") == 0)
+			rc |= PROLOG_FLAG_CONTAIN;
 		else if (strcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
 		else {

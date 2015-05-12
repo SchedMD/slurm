@@ -859,19 +859,21 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct prolog_launch_msg {
-	uint32_t job_id;		/* slurm job_id */
-	uint32_t uid;
-	uint32_t gid;
 	char *alias_list;		/* node name/address/hostnamne aliases */
+	slurm_cred_t *cred;
+	uint32_t gid;
+	uint32_t job_id;		/* slurm job_id */
+	uint32_t job_mem_limit;		/* job's memory limit, passed via cred */
+	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */
+	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
+	char **spank_job_env;		/* SPANK job environment variables */
+	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	char *std_err;			/* pathname of stderr */
 	char *std_out;			/* pathname of stdout */
+	uint32_t uid;
 	char *work_dir;			/* full pathname of working directory */
-	char **spank_job_env;	/* SPANK job environment variables */
-	uint32_t spank_job_env_size;			/* size of spank_job_env */
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
-	slurm_cred_t *cred;
 } prolog_launch_msg_t;
 
 typedef struct batch_job_launch_msg {

@@ -124,6 +124,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     is supported.
  -- Added a slurm.conf parameter "PrologEpilogTimeout" to control how long
     prolog/epilog can run.
+ -- Add PrologFlags option of "Contain" to create a proctrack container at
+    job resource allocation time.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

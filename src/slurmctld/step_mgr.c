@@ -3219,12 +3219,27 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	}
 
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
+	if ((step_ptr == NULL) && (req->job_step_id == INFINITE)) {
+		step_ptr = _create_step_record(job_ptr);
+		checkpoint_alloc_jobinfo(&step_ptr->check_job);
+		step_ptr->ext_sensors = ext_sensors_alloc();
+		step_ptr->name = xstrdup("");
+		if (job_ptr->node_bitmap) {
+			step_ptr->step_node_bitmap =
+				bit_copy(job_ptr->node_bitmap);
+		}
+		step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
+		step_ptr->state = JOB_RUNNING;
+		step_ptr->start_time = job_ptr->start_time;
+		step_ptr->step_id = INFINITE;
+		jobacct_storage_g_step_start(acct_db_conn, step_ptr);
+	}
 	if (step_ptr == NULL) {
 		info("step_partial_comp: StepID=%u.%u invalid",
 		     req->job_id, req->job_step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if (step_ptr->batch_step) {
+	if ((step_ptr->batch_step) || (req->job_step_id == INFINITE)) {
 		if (rem)
 			*rem = 0;
 		step_ptr->exit_code = req->step_rc;

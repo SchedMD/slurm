@@ -1881,9 +1881,10 @@ plugins run by the slurmstep daemon.
 .TP
 \fBPrologFlags\fR
 Flags to control the Prolog behavior. By default no flags are set.
-Currently the options are:
+Multiple flags may be specified in a comma\-separated list.
+Currently supported options are:
 .RS
-.TP 6
+.TP 8
 \fBAlloc\fR
 If set, the Prolog script will be executed at job allocation. By default,
 Prolog is executed just before the task is launched. Therefore, when salloc
@@ -1891,13 +1892,20 @@ is started, no Prolog is executed. \fBAlloc\fR is useful for preparing things
 before a user starts to use any allocated resources.
 In particular, this flag is needed on a Cray system when cluster compatibility
 mode is enabled.
-.TP 6
+.TP
+\fBContain\fR
+At job allocation time, use the ProcTrack plugin to create a job container
+on all allocated compute nodes.
+This container may be used for user processes not launched under Slurm control,
+for example the PAM module may place processes launch through a direct user
+login into this container.
+.TP
 \fBNoHold\fR
-If set, Alloc is also set.  This will allow for salloc to not block until the
-prolog is finished on each node.  The blocking will happen when steps reach
-the slurmd and before any execution has happened in the step. This is a much
-faster way to work and if using srun to launch your tasks you should use this
-flag.
+If set, the Alloc flag should also be set.  This will allow for salloc to not
+block until the prolog is finished on each node.  The blocking will happen when
+steps reach the slurmd and before any execution has happened in the step.
+This is a much faster way to work and if using srun to launch your tasks you
+should use this flag.
 .RE
 
 .TP
