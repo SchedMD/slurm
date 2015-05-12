@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
-2 February 2015
+12 May 2015
 
 
 IMPORTANT NOTES:
@@ -79,10 +79,13 @@ HIGHLIGHTS
     Libcurl is required for build. Configure slurm.conf as follows
     JobCompType=jobcomp/elasticsearch
     JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200
+ -- Added TRES (Trackable resources) to track Mem, GRES, license, etc.
+    utilization in the accounting database.
  -- DATABASE SCHEME HAS CHANGED.  WHEN UPDATING THE MIGRATION PROCESS MAY TAKE
     SOME AMOUNT OF TIME DEPENDING ON HOW LARGE YOUR DATABASE IS.  WHILE UPDATING
     NO RECORDS WILL BE LOST, BUT THE SLURMDBD MAY NOT BE RESPONSIVE DURING THE
-    UPDATE.  PLAN ACCORDINGLY.
+    UPDATE. IT WILL ALSO NOT BE POSSIBLE TO AUTOMATICALLY REVERT THE DATABASE
+    TO THE FORMAT FOR AN EARLIER VERSION OF SLURM. PLAN ACCORDINGLY.
 
 RPMBUILD CHANGES
 ================
@@ -119,6 +122,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added new partition configuration parameter "ExclusiveUser=yes|no".
  -- Add TopologyParam configuration parameter. Optional value of "dragonfly"
     is supported.
+ -- Added a slurm.conf parameter "PrologEpilogTimeout" to control how long
+    prolog/epilog can run.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -153,6 +158,9 @@ COMMAND CHANGES (see man pages for details)
     or documented since Slurm version 2.0.
  -- Add "--thread-spec" option to salloc, sbatch and srun commands. This is
     the count of threads reserved for system use per node.
+ -- Introduce new sbatch option '--kill-on-invalid-dep=yes|no' which allows
+    users to specify which behavior they want if a job dependency is not
+    satisfied.
 
 OTHER CHANGES
 =============
