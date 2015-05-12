@@ -283,8 +283,8 @@ static bool init_run = false;
 static uint16_t enforce = 0;
 
 /*
- * load into the storage information about a job,
- * typically when it begins execution, but possibly earlier
+ * If running with slurmdbd don't run if we don't have an index, else
+ * go ahead.
  */
 extern int jobacct_storage_job_start_direct(void *db_conn,
 					    struct job_record *job_ptr)

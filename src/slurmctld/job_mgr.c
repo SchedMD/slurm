@@ -7522,7 +7522,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 	 * when slurmdbd comes back up since we won't get another chance.
 	 * job_start won't pend for job_db_inx when the job is finished.
 	 */
-	jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
+	if (with_slurmdbd && !job_ptr->db_index)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	return 1;		/* Purge the job */
 }
