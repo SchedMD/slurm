@@ -90,6 +90,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_route.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -125,6 +126,11 @@ int devnull = -1;
 slurmd_conf_t * conf = NULL;
 
 /*
+ * Message collection data & controls
+ */
+msg_collection_type_t msg_collection;
+
+/*
  * count of active threads
  */
 static int             active_threads = 0;
@@ -156,6 +162,7 @@ static int	ncpus;			/* number of CPUs on this node */
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
+static pthread_t msg_aggr_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
 static void      _atfork_final(void);
@@ -167,6 +174,7 @@ static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static int       _drain_node(char *reason);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static uint64_t  _get_int(const char *my_str);
 static void      _handle_connection(slurm_fd_t fd, slurm_addr_t *client);
 static void      _hup_handler(int);
 static void      _increment_thd_count(void);
@@ -174,7 +182,9 @@ static void      _init_conf(void);
 static void      _install_fork_handlers(void);
 static void 	 _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
+static void     *_msg_aggregation_engine(void *arg);
 static void      _msg_engine(void);
+static uint64_t  _parse_msg_aggr_params(int type, char *params);
 static void      _print_conf(void);
 static void      _print_config(void);
 static void      _process_cmdline(int ac, char **av);
@@ -186,10 +196,12 @@ static int       _resource_spec_init(void);
 static int       _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
+static void      _set_msg_aggr_params(void);
 static int       _set_slurmd_spooldir(void);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
+static void      _spawn_msg_aggregation_engine(void);
 static void      _spawn_registration_engine(void);
 static void      _term_handler(int);
 static void      _update_logging(void);
@@ -358,6 +370,7 @@ main (int argc, char *argv[])
 		fatal("failed to initialize slurmd_plugstack");
 
 	_spawn_registration_engine();
+	_spawn_msg_aggregation_engine();
 	_msg_engine();
 
 	/*
@@ -427,6 +440,99 @@ _registration_engine(void *arg)
 	}
 
 	_decrement_thd_count();
+	return NULL;
+}
+
+static void
+_spawn_msg_aggregation_engine(void)
+{
+	int            rc;
+	pthread_attr_t attr;
+	pthread_t      id;
+	int            retries = 0;
+
+	slurm_attr_init(&attr);
+	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (rc != 0) {
+		errno = rc;
+		fatal("msg aggregation: unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr);
+		return;
+	}
+
+	while (pthread_create(&id, &attr, &_msg_aggregation_engine, NULL)) {
+		error("msg aggregation: pthread_create: %m");
+		if (++retries > 3)
+			fatal("msg aggregation: pthread_create: %m");
+		usleep(10);	/* sleep and again */
+	}
+	return;
+}
+
+/*
+ * _msg_aggregation_engine()
+ *
+ *  Start and terminate message collection windows.
+ *  Send collected msgs to next collector node or final destination
+ *  at window expiration.
+ */
+static void *
+_msg_aggregation_engine(void *arg)
+{
+	struct timeval now;
+	struct timespec timeout;
+	slurm_msg_t *msg;
+	composite_msg_t *cmp;
+
+	msg_aggr_pthread = pthread_self();
+	slurm_mutex_init(&msg_collection.mutex);
+	pthread_cond_init(&msg_collection.cond, NULL);
+	slurm_mutex_lock(&msg_collection.mutex);
+	msg_collection.msgs.msg_list = list_create(slurm_free_comp_msg_list);
+	msg_collection.msgs.base_msgs = 0;
+	msg_collection.msgs.comp_msgs = 0;
+	msg_collection.max_msgs = false;
+
+	while (!_shutdown) {
+		/* Wait for a new msg to be collected */
+		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+		/* A msg has been collected; start new window */
+		gettimeofday(&now, NULL);
+		timeout.tv_sec = time(NULL) + conf->msg_aggr_window_time / 1000;
+		timeout.tv_nsec = now.tv_usec * 1000 + 1000 * 1000 *
+				  (conf->msg_aggr_window_time % 1000);
+		timeout.tv_sec += timeout.tv_nsec / (1000 * 1000 * 1000);
+		timeout.tv_nsec %= (1000 * 1000 * 1000);
+		pthread_cond_timedwait(&msg_collection.cond,
+				       &msg_collection.mutex, &timeout);
+		msg_collection.max_msgs = true;
+		/* Msg collection window has expired and message collection
+		 * is suspended; now build and send composite msg */
+		msg = xmalloc(sizeof(slurm_msg_t));
+		cmp = xmalloc(sizeof(composite_msg_t));
+		slurm_msg_t_init(msg);
+		cmp->msg_list = list_create(slurm_free_comp_msg_list);
+		list_transfer(cmp->msg_list, msg_collection.msgs.msg_list);
+		slurm_set_addr(&cmp->sender, conf->port, conf->hostname);
+		cmp->base_msgs = msg_collection.msgs.base_msgs;
+		cmp->comp_msgs = msg_collection.msgs.comp_msgs;
+		msg->msg_type    = MESSAGE_COMPOSITE;
+		msg->data        = cmp;
+		msg->protocol_version = SLURM_PROTOCOL_VERSION;
+		if (slurm_send_to_next_collector(msg) != SLURM_SUCCESS) {
+			error("_msg_aggregation_engine: Unable to send "
+			      "composite msg: %m");
+		}
+		list_destroy(cmp->msg_list);
+		msg_collection.msgs.base_msgs = 0;
+		msg_collection.msgs.comp_msgs = 0;
+		msg_collection.max_msgs = false;
+		xfree(cmp);
+		msg->data = NULL;
+		slurm_free_msg(msg);
+		/* Resume message collection */
+		pthread_cond_broadcast(&msg_collection.cond);
+	}
 	return NULL;
 }
 
@@ -588,7 +694,8 @@ cleanup:
 
 	xfree(con->cli_addr);
 	xfree(con);
-	slurm_free_msg(msg);
+	if (msg->msg_type != MESSAGE_COMPOSITE)
+		slurm_free_msg(msg);
 	_decrement_thd_count();
 	return NULL;
 }
@@ -959,6 +1066,9 @@ _read_config(void)
 		      xstrdup(cf->acct_gather_profile_type));
 	_free_and_set(conf->job_acct_gather_type,
 		      xstrdup(cf->job_acct_gather_type));
+	_free_and_set(conf->msg_aggr_params,
+		      xstrdup(cf->msg_aggr_params));
+	_set_msg_aggr_params();
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )
@@ -1203,6 +1313,7 @@ _destroy_conf(void)
 		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
+		xfree(conf->msg_aggr_params);
 		xfree(conf->node_name);
 		xfree(conf->node_addr);
 		xfree(conf->node_topo_addr);
@@ -1762,6 +1873,8 @@ _term_handler(int signum)
 		_shutdown = 1;
 		if (msg_pthread && (pthread_self() != msg_pthread))
 			pthread_kill(msg_pthread, SIGTERM);
+		if (msg_aggr_pthread && (pthread_self() != msg_aggr_pthread))
+			pthread_kill(msg_aggr_pthread, SIGTERM);
 	}
 }
 
@@ -1955,6 +2068,61 @@ static int _set_topo_info(void)
 	return rc;
 }
 
+static uint64_t _get_int(const char *my_str)
+{
+	char *end = NULL;
+	uint64_t value;
+
+	if (!my_str)
+		return NO_VAL;
+	value = strtol(my_str, &end, 10);
+	if (my_str == end)
+		return NO_VAL;
+	return value;
+}
+
+static uint64_t _parse_msg_aggr_params(int type, char *params)
+{
+	uint64_t value = NO_VAL;
+	char *sub_str = NULL;
+
+	if (!params)
+		return NO_VAL;
+
+	switch (type) {
+	case WINDOW_TIME:
+		if ((sub_str = slurm_strcasestr(params, "WindowTime=")))
+			value = _get_int(sub_str + 11);
+		break;
+	case WINDOW_MSGS:
+		if ((sub_str = slurm_strcasestr(params, "WindowMsgs=")))
+			value = _get_int(sub_str + 11);
+		break;
+	default:
+		fatal("invalid message aggregation parameters: %s", params);
+	}
+	return value;
+}
+
+static void _set_msg_aggr_params(void)
+{
+	conf->msg_aggr_window_time = _parse_msg_aggr_params(WINDOW_TIME,
+			       conf->msg_aggr_params);
+	conf->msg_aggr_window_msgs = _parse_msg_aggr_params(WINDOW_MSGS,
+			       conf->msg_aggr_params);
+
+	if (conf->msg_aggr_window_time == NO_VAL)
+		conf->msg_aggr_window_time = DEFAULT_MSG_AGGR_WINDOW_TIME;
+	if (conf->msg_aggr_window_msgs == NO_VAL)
+		conf->msg_aggr_window_msgs = DEFAULT_MSG_AGGR_WINDOW_MSGS;
+	if (conf->msg_aggr_window_msgs > 1) {
+		info("Message aggregation enabled: WindowMsgs=%lu, "
+		     "WindowTime=%lu", conf->msg_aggr_window_msgs,
+		     conf->msg_aggr_window_time);
+	} else
+		info("Message aggregation disabled");
+}
+
 /*
  * Initialize resource specialization
  */
@@ -1976,7 +2144,8 @@ static int _core_spec_init(void)
 	pid_t pid;
 
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
-		debug("No specialized cores configured by default on this node");
+		debug("Resource spec: No specialized cores configured by "
+		      "default on this node");
 		return SLURM_SUCCESS;
 	}
 	if (!check_cgroup_job_confinement()) {

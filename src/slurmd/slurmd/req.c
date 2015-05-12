@@ -77,6 +77,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -97,6 +98,8 @@
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
+
+#define EPIL_RETRY_MAX 2	/* max retries of epilog complete message */
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -137,15 +140,20 @@ typedef struct {
 	uint32_t spank_job_env_size;
 	uid_t uid;
 	char *user_name;
+	pthread_cond_t epil_cond;
+	pthread_mutex_t epil_mutex;
 } job_env_t;
 
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
+static void _collect_message(slurm_msg_t *);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
+static job_env_t *_find_job_env(uint32_t jobid);
 static int  _get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
 			   int *ngroups, gid_t **groups);
 static bool _is_batch_job_finished(uint32_t job_id);
+static void _job_env_free(void *x);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
@@ -166,6 +174,7 @@ static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
 static void _rpc_complete_batch(slurm_msg_t *);
+static void _rpc_composite_resp(slurm_msg_t *msg);
 static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
@@ -217,6 +226,11 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _compare_job_running_prolog(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
+
+/*
+ * List of job_env for jobs waiting for response to epilog complete msg
+ */
+static List job_env_list = NULL;
 
 /*
  *  List of threads waiting for jobs to complete
@@ -449,6 +463,15 @@ slurmd_req(slurm_msg_t *msg)
 		debug2("Processing RPC: REQUEST_NETWORK_CALLERID");
 		_rpc_network_callerid(msg);
 		slurm_free_network_callerid_msg(msg->data);
+		break;
+	case MESSAGE_COMPOSITE:
+		debug2("Processing RPC: MESSAGE_COMPOSITE");
+		_collect_message(msg);
+		break;
+	case RESPONSE_MESSAGE_COMPOSITE:
+		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
+		_rpc_composite_resp(msg);
+		slurm_free_composite_resp_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:	/* Defunct, see REQUEST_SUSPEND_INT */
 	default:
@@ -1948,7 +1971,6 @@ static void _job_limits_free(void *x)
 {
 	xfree(x);
 }
-
 
 static int _job_limits_match(void *x, void *key)
 {
@@ -3630,8 +3652,79 @@ _steps_completed_now(uint32_t jobid)
 	return rc;
 }
 
+static void _rpc_composite_resp(slurm_msg_t *msg)
+{
+	slurm_msg_t *comp_resp_msg, *next_msg;
+	slurm_msg_t *comp_msg;
+	composite_msg_t *cmp_msg;
+	composite_response_msg_t *resp_msg, *cmp;
+	epilog_complete_msg_t *ec_msg;
+	job_env_t *job_env_ptr;
+	ListIterator itr;
+	uint32_t jobid;
+
+	resp_msg = (composite_response_msg_t *)msg->data;
+	comp_msg = (slurm_msg_t *)resp_msg->comp_msg;
+	cmp_msg = (composite_msg_t *)comp_msg->data;
+	itr = list_iterator_create(cmp_msg->msg_list);
+	if (conf->debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: _rpc_composite_resp: processing composite "
+		     "msg_list...");
+	while ((next_msg = list_next(itr))) {
+		switch (next_msg->msg_type) {
+		case MESSAGE_EPILOG_COMPLETE:
+			if (conf->debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: _rpc_composite_resp: epilog "
+				     "complete msg found; signalling sending "
+				     "thread");
+			/* signal sending thread that slurmctld received this
+			 * epilog complete msg */
+			ec_msg = (epilog_complete_msg_t *) next_msg->data;
+			jobid = ec_msg->job_id;
+			job_env_ptr = _find_job_env(jobid);
+			if (job_env_ptr == NULL) {
+				debug2("_rpc_composite_resp: error: unable to "
+				       "locate job environment struct");
+				continue;
+			}
+			pthread_cond_signal(&job_env_ptr->epil_cond);
+			break;
+		case MESSAGE_COMPOSITE:
+			if (conf->debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: _rpc_composite_resp: composite "
+				     "msg found; building and sending new "
+				     "response msg");
+			/* build and send composite message response msg */
+			comp_resp_msg = xmalloc(sizeof(slurm_msg_t));
+			cmp = xmalloc(sizeof(composite_response_msg_t));
+			slurm_msg_t_init(comp_resp_msg);
+			cmp->comp_msg = next_msg;
+			comp_resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
+			comp_resp_msg->data = cmp;
+			comp_resp_msg->protocol_version = SLURM_PROTOCOL_VERSION;
+			if (slurm_send_to_prev_collector(comp_resp_msg) !=
+					SLURM_SUCCESS) {
+				error("_rpc_composite_resp: unable to "
+				      "send composite response msg: %m");
+			}
+			xfree(cmp);
+			slurm_free_msg(comp_resp_msg);
+			break;
+		default:
+			error("_rpc_composite_resp: invalid msg type in "
+			      "composite msg_list");
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	if (conf->debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: _rpc_composite_resp: finished processing "
+		     "composite msg_list...");
+}
+
 /*
  *  Send epilog complete message to currently active controller.
+ *  If enabled, use message aggregation.
  *   Returns SLURM_SUCCESS if message sent successfully,
  *           SLURM_FAILURE if epilog complete message fails to be sent.
  */
@@ -3639,27 +3732,36 @@ static int
 _epilog_complete(uint32_t jobid, int rc)
 {
 	int                    ret = SLURM_SUCCESS;
-	slurm_msg_t            msg;
-	epilog_complete_msg_t  req;
+	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+	epilog_complete_msg_t *req = xmalloc(sizeof(epilog_complete_msg_t));
 
-	slurm_msg_t_init(&msg);
+	slurm_msg_t_init(msg);
 
-	req.job_id      = jobid;
-	req.return_code = rc;
-	req.node_name   = conf->node_name;
+	req->job_id      = jobid;
+	req->return_code = rc;
+	req->node_name   = xstrdup(conf->node_name);
 
-	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
-	msg.data        = &req;
+	msg->msg_type    = MESSAGE_EPILOG_COMPLETE;
+	msg->protocol_version = SLURM_PROTOCOL_VERSION;
+	msg->data        = req;
 
-	/* Note: No return code to message, slurmctld will resend
-	 * TERMINATE_JOB request if message send fails */
-	if (slurm_send_only_controller_msg(&msg) < 0) {
-		error("Unable to send epilog complete message: %m");
-		ret = SLURM_ERROR;
-	} else {
-		debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
+	if (conf->msg_aggr_window_msgs > 1) {
+		/* message aggregation is enabled */
+		_collect_message(msg);
 	}
-
+	else {
+		/* Note: No return code to message, slurmctld will resend
+		 * TERMINATE_JOB request if message send fails */
+		if (slurm_send_only_controller_msg(msg) < 0) {
+			error("Unable to send epilog complete message: %m");
+			ret = SLURM_ERROR;
+		} else {
+			debug ("Job %u: sent epilog complete msg: rc = %d",
+				jobid, rc);
+		}
+		xfree(req);
+		slurm_free_msg(msg);
+	}
 	return ret;
 }
 
@@ -4303,7 +4405,13 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	int             nsteps = 0;
 	int		delay;
-	job_env_t       job_env;
+//	slurm_ctl_conf_t *cf;
+//	struct stat	stat_buf;
+	uint16_t        msg_timeout;
+	job_env_t       *job_env;
+	struct timeval  now;
+	struct timespec timeout;
+	int epil_retry;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/*
@@ -4479,24 +4587,25 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	job_env = xmalloc(sizeof(job_env_t));
+	memset(job_env, 0, sizeof(job_env_t));
 
-	job_env.jobid = req->job_id;
-	job_env.node_list = req->nodes;
-	job_env.spank_job_env = req->spank_job_env;
-	job_env.spank_job_env_size = req->spank_job_env_size;
-	job_env.uid = req->job_uid;
+	job_env->jobid = req->job_id;
+	job_env->node_list = req->nodes;
+	job_env->spank_job_env = req->spank_job_env;
+	job_env->spank_job_env_size = req->spank_job_env_size;
+	job_env->uid = req->job_uid;
 
 #if defined(HAVE_BG)
 	select_g_select_jobinfo_get(req->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
-				    &job_env.resv_id);
+				    &job_env->resv_id);
 #elif defined(HAVE_ALPS_CRAY)
-	job_env.resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
+	job_env->resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
-	rc = _run_epilog(&job_env);
-	xfree(job_env.resv_id);
+	rc = _run_epilog(job_env);
+	xfree(job_env->resv_id);
 
 	if (rc) {
 		int term_sig, exit_status;
@@ -4520,7 +4629,32 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	_wait_state_completed(req->job_id, 5);
 	_waiter_complete(req->job_id);
 	_sync_messages_kill(req);
-	_epilog_complete(req->job_id, rc);
+	if (conf->msg_aggr_window_msgs > 1) {
+		if (job_env_list == NULL)
+			job_env_list = list_create(_job_env_free);
+		slurm_mutex_init(&job_env->epil_mutex);
+		pthread_cond_init(&job_env->epil_cond, NULL);
+		list_append(job_env_list, job_env);
+		msg_timeout = slurm_get_msg_timeout();
+		timeout.tv_sec = time(NULL) + msg_timeout;
+		timeout.tv_nsec = now.tv_usec * 1000;
+		timeout.tv_sec += timeout.tv_nsec / (1000 * 1000 * 1000);
+		timeout.tv_nsec %= (1000 * 1000 * 1000);
+		epil_retry = 0;
+		while (epil_retry < EPIL_RETRY_MAX) {
+			_epilog_complete(req->job_id, rc);
+			if (pthread_cond_timedwait(&job_env->epil_cond,
+					&job_env->epil_mutex, &timeout) ==
+					ETIMEDOUT) {
+				epil_retry++;
+			} else {
+				break;
+			}
+		}
+	} else {
+		_epilog_complete(req->job_id, rc);
+		xfree(job_env);
+	}
 }
 
 /* On a parallel job, every slurmd may send the EPILOG_COMPLETE
@@ -5584,6 +5718,42 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
+/* _collect_message()
+ *
+ *  Collect a message for message aggregation.
+ *  Signal msg_aggregation_engine to initiate and terminate
+ *   message collection windows.
+ */
+static void
+_collect_message(slurm_msg_t *msg)
+{
+	slurm_msg_t *msg_ptr;
+
+	slurm_mutex_lock(&msg_collection.mutex);
+	if (msg_collection.max_msgs == true) {
+		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+	}
+	msg_ptr = msg;
+	/* Add msg to message collection */
+	list_append(msg_collection.msgs.msg_list, msg_ptr);
+	if (msg_ptr->msg_type == MESSAGE_COMPOSITE) {
+		msg_collection.msgs.comp_msgs++;
+	} else {
+		msg_collection.msgs.base_msgs++;
+	}
+	if (list_count(msg_collection.msgs.msg_list) == 1) {
+		/* First msg in collection; initiate new window */
+		pthread_cond_signal(&msg_collection.cond);
+	}
+	if (list_count(msg_collection.msgs.msg_list) >=
+			conf->msg_aggr_window_msgs) {
+		/* Max msgs reached; terminate window */
+		msg_collection.max_msgs = true;
+		pthread_cond_signal(&msg_collection.cond);
+	}
+	slurm_mutex_unlock(&msg_collection.mutex);
+}
+
 static void _launch_complete_add(uint32_t job_id)
 {
 	int j, empty;
@@ -5694,4 +5864,26 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
+}
+
+static job_env_t *_find_job_env(uint32_t jobid)
+{
+	job_env_t *job_env;
+	ListIterator itr;
+
+	itr = list_iterator_create(job_env_list);
+	while ((job_env = list_next(itr))) {
+		if (job_env->jobid == jobid) {
+			list_iterator_destroy(itr);
+			return job_env;
+		}
+	}
+	debug2("_find_job_env: unable to find jobid in job env list");
+	list_iterator_destroy(itr);
+	return NULL;
+}
+
+static void _job_env_free(void *x)
+{
+	xfree(x);
 }
