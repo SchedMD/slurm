@@ -958,7 +958,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
 	jobacct_id_t jobacct_id;
-	int rc = SLURM_SUCCESS;
 	int status = 0;
 	pid_t pid;
 
@@ -968,9 +967,15 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		setpgid(0, 0);
 		setsid();
 		acct_gather_profile_g_child_forked();
-		while (1)
-			sleep(10);	/* Run until signalled */
+		/* Need to exec() something for proctrack/linuxproc to work,
+		 * it will not keep a process named "slurmstepd" */
+		execl("/bin/sleep", "sleep", "1000000", NULL);
+		error("execl: %m");
+		sleep(1);
 		exit(0);
+	} else if (pid < 0) {
+		error("fork: %m");
+		return SLURM_ERROR;
 	}
 
 	job->pgid = pid;
@@ -1008,7 +1013,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	acct_gather_profile_fini();
 	_send_step_complete_msgs(job);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
