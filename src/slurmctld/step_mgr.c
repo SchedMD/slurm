@@ -214,18 +214,20 @@ static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-	job_ptr->derived_ec = MAX(job_ptr->derived_ec,
-				  step_ptr->exit_code);
+	if (step_ptr->step_id != INFINITE) {
+		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
+					  step_ptr->exit_code);
 
-	/* This operations are needed for Cray systems and also provide a
-	 * cleaner state for requeued jobs. */
-	step_ptr->state = JOB_COMPLETING;
-	select_g_step_finish(step_ptr);
+		/* This operations are needed for Cray systems and also provide
+		 * a cleaner state for requeued jobs. */
+		step_ptr->state = JOB_COMPLETING;
+		select_g_step_finish(step_ptr);
 #if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	/* On native Cray, post_job_step is called after NHC completes.
-	 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
-	post_job_step(step_ptr);
+		/* On native Cray, post_job_step is called after NHC completes.
+		 * IF SIMULATING A CRAY THIS NEEDS TO BE COMMENTED OUT!!!! */
+		post_job_step(step_ptr);
 #endif
+	}
 }
 
 /*
@@ -256,6 +258,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 			/* _internal_step_complete() will purge step record */
 			_internal_step_complete(job_ptr, step_ptr);
 		} else {
+			_internal_step_complete(job_ptr, step_ptr);
 			list_remove (step_iterator);
 			_free_step_rec(step_ptr);
 		}
@@ -3239,7 +3242,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		     req->job_id, req->job_step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if ((step_ptr->batch_step) || (req->job_step_id == INFINITE)) {
+	if (step_ptr->batch_step) {
 		if (rem)
 			*rem = 0;
 		step_ptr->exit_code = req->step_rc;

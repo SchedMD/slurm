@@ -1001,6 +1001,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		jobacctinfo_destroy(jobacct);
 	}
 	acct_gather_profile_g_task_end(pid);
+	step_complete.rank = job->nodeid;
 
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
