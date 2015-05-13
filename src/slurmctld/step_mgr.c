@@ -202,12 +202,15 @@ static void _build_pending_step(struct job_record *job_ptr,
 	if (step_ptr == NULL)
 		return;
 
-	step_ptr->port      = step_specs->port;
-	step_ptr->host      = xstrdup(step_specs->host);
-	step_ptr->state     = JOB_PENDING;
-	step_ptr->cpu_count = step_specs->num_tasks;
+	step_ptr->cpu_count	= step_specs->num_tasks;
+	step_ptr->port		= step_specs->port;
+	step_ptr->host		= xstrdup(step_specs->host);
+	step_ptr->state		= JOB_PENDING;
+	step_ptr->step_id	= INFINITE;
+	if (job_ptr->node_bitmap)
+		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
-	step_ptr->step_id   = INFINITE;
+
 }
 
 static void _internal_step_complete(struct job_record *job_ptr,
@@ -3227,14 +3230,15 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		checkpoint_alloc_jobinfo(&step_ptr->check_job);
 		step_ptr->ext_sensors = ext_sensors_alloc();
 		step_ptr->name = xstrdup("");
-		if (job_ptr->node_bitmap) {
-			step_ptr->step_node_bitmap =
-				bit_copy(job_ptr->node_bitmap);
-		}
 		step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 		step_ptr->state = JOB_RUNNING;
 		step_ptr->start_time = job_ptr->start_time;
 		step_ptr->step_id = INFINITE;
+		if (job_ptr->node_bitmap) {
+			step_ptr->step_node_bitmap =
+				bit_copy(job_ptr->node_bitmap);
+		}
+		step_ptr->time_last_active = time(NULL);
 		jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	}
 	if (step_ptr == NULL) {
