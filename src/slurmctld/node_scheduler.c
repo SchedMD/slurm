@@ -2086,7 +2086,6 @@ static void _launch_prolog(struct job_record *job_ptr)
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
-	cred_arg.step_gres_list      = job_ptr->gres_list;
 	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
 	cred_arg.job_constraints     = job_ptr->details->features;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
