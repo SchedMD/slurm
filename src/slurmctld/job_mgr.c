@@ -8974,6 +8974,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
 		if ((step_ptr->step_node_bitmap == NULL) &&
+		    (step_ptr->step_id == INFINITE) &&
 		    (step_ptr->batch_step == 0)) {
 			error("Missing node_list for step_id %u.%u",
 			      job_ptr->job_id, step_ptr->step_id);
