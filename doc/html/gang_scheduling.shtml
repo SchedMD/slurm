@@ -491,7 +491,7 @@ Note that the runtime of all 6 jobs is roughly equal. Jobs 51-54 ran first so
 they're slightly ahead, but so far all jobs have run for at least 3 minutes.
 </P>
 <P>
-At the core level this means tha. Slurm relies on the Linux kernel to move
+At the core level this means that Slurm relies on the Linux kernel to move
 jobs around on the cores to maximize performance.
 This is different than when <I>CR_Core_Memory</I> was configured and the jobs
 would effectively remain "pinned" to their specific cores for the duration of
