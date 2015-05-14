@@ -1861,8 +1861,8 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	if (config_timeout == 0)	/* just read directly from cache */
 		 return _load_env_cache(username);
 
-	if (stat("/bin/su", &buf))
-		fatal("Could not locate command: /bin/su");
+	if (stat(SUCMD, &buf))
+		fatal("Could not locate command: "SUCMD);
 	if (stat("/bin/echo", &buf))
 		fatal("Could not locate command: /bin/echo");
 	if (stat(stepd_path, &buf) == 0) {
@@ -1898,14 +1898,14 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		close(2);
 		open("/dev/null", O_WRONLY);
 		if      (mode == 1)
-			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+			execl(SUCMD, "su", username, "-c", cmdstr, NULL);
 		else if (mode == 2)
-			execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+			execl(SUCMD, "su", "-", username, "-c", cmdstr, NULL);
 		else {	/* Default system configuration */
 #ifdef LOAD_ENV_NO_LOGIN
-			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+			execl(SUCMD, "su", username, "-c", cmdstr, NULL);
 #else
-			execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+			execl(SUCMD, "su", "-", username, "-c", cmdstr, NULL);
 #endif
 		}
 		exit(1);
@@ -1933,13 +1933,13 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {
-			verbose("timeout waiting for /bin/su to complete");
+			verbose("timeout waiting for "SUCMD" to complete");
 			kill(-child, 9);
 			break;
 		}
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if (rc == 0) {
-				verbose("timeout waiting for /bin/su to complete");
+				verbose("timeout waiting for "SUCMD" to complete");
 				break;
 			}
 			if ((errno == EINTR) || (errno == EAGAIN))
