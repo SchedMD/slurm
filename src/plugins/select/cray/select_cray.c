@@ -167,17 +167,21 @@ static alpsc_topology_t *topology = NULL;
 #ifdef HAVE_NATIVE_CRAY
 
 /* Used for aeld communication */
-alpsc_ev_app_t *app_list = NULL;	// List of running/suspended apps
-int32_t app_list_size = 0;		// Number of running/suspended apps
-size_t app_list_capacity = 0;		// Capacity of app list
-alpsc_ev_app_t *event_list = NULL;	// List of app state changes
-int32_t event_list_size = 0;		// Number of events
-size_t event_list_capacity = 0;		// Capacity of event list
-volatile sig_atomic_t aeld_running = 0;	// 0 if the aeld thread has exited
-					// 1 if the session is temporarily down
-					// 2 if the session is running
-pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;	// Mutex for the above
-pthread_t aeld_thread;
+static alpsc_ev_app_t *app_list = NULL;	  // List of running/suspended apps
+static int32_t app_list_size = 0;	  // Number of running/suspended apps
+static size_t app_list_capacity = 0;	  // Capacity of app list
+static alpsc_ev_app_t *event_list = NULL; // List of app state changes
+static int32_t event_list_size = 0;	  // Number of events
+static size_t event_list_capacity = 0;	  // Capacity of event list
+
+// 0 if the aeld thread has exited
+// 1 if the session is temporarily down
+// 2 if the session is running
+static volatile sig_atomic_t aeld_running = 0;
+
+// Mutex for the above
+static pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t aeld_thread;
 
 #define AELD_SESSION_INTERVAL	60	// aeld session retry interval (s)
 #define AELD_EVENT_INTERVAL	110	// aeld event sending interval (ms)
