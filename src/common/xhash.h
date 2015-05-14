@@ -40,6 +40,8 @@
 #include <stdint.h>
 #include <pthread.h>
 
+#define xhash_free(__p) xhash_free_ptr(&(__p));
+
 /** Opaque definition of the hash table */
 typedef struct xhash_st xhash_t;
 
@@ -126,7 +128,7 @@ void xhash_clear(xhash_t* table);
  * @parameter table is the hash table to free. The table pointer is invalid
  *                  after this call.
  */
-void xhash_free(xhash_t* table);
+void xhash_free_ptr(xhash_t** table);
 
 /* String hash table using the pjw hashing algorithm
  * and chaining conflict resolution.

@@ -380,6 +380,7 @@ static void *_background_rpc_mgr(void *no_data)
 		    (slurmctld_config.shutdown_time == 0))
 			slurmctld_config.shutdown_time = time(NULL);
 
+		slurm_free_msg_data(msg->msg_type, msg->data);
 		slurm_free_msg(msg);
 
 		slurm_close(newsockfd);	/* close new socket */

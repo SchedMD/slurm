@@ -271,6 +271,9 @@ documents those changes that are of interest to users and administrators.
  -- Make sure each job has a wckey if that is something that is tracked.
  -- Make sure old step data is cleared when job is requeued.
  -- Load libtinfo as needed when building ncurses tools.
+ -- Fix small memory leak in backup controller.
+ -- Fix segfault when backup controller takes control for second time.
+ -- Cray - Fix backup controller running native Slurm.
 
 * Changes in Slurm 14.11.6
 ==========================

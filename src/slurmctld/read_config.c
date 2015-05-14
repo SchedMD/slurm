@@ -1015,8 +1015,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		node_record_table_ptr = NULL;
 		node_record_count = 0;
-		xhash_free (node_hash_table);
-		node_hash_table = NULL;
+		xhash_free(node_hash_table);
 		old_part_list = part_list;
 		part_list = NULL;
 		old_def_part_name = default_part_name;
