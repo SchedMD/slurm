@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Provide prototypes for init_setproctitle()/fini_setproctitle on
     NetBSD.
  -- Add configuration test to find out the full path to su command.
+ -- preempt/job_prio plugin: Fix for possible infinite loop when identifying
+    preemptable jobs.
 
 * Changes in Slurm 14.11.6
 ==========================

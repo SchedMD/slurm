@@ -371,6 +371,7 @@ _get_job_fs_ass(char *job_type, struct job_record *job_ptr)
 			     temp_fs_ass->acct,
 			     ((slurmdb_association_rec_t*)
 			      temp_fs_ass->usage->parent_assoc_ptr)->acct);
+		temp_fs_ass = temp_fs_ass->usage->parent_assoc_ptr;
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
