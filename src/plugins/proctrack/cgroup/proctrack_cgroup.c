@@ -86,8 +86,7 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]      = "Process tracking via linux "
-	"cgroup freezer subsystem";
+const char plugin_name[]      = "Process tracking via linux cgroup freezer subsystem";
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
@@ -173,8 +172,8 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (*user_cgroup_path == '\0') {
 		if (snprintf(user_cgroup_path, PATH_MAX,
 			     "%s/uid_%u", pre, uid) >= PATH_MAX) {
-			error("unable to build uid %u cgroup relative "
-			      "path : %m", uid);
+			error("unable to build uid %u cgroup relative path : %m",
+			      uid);
 			xfree(pre);
 			goto bail;
 		}
@@ -185,8 +184,8 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
 			     user_cgroup_path, job->jobid) >= PATH_MAX) {
-			error("unable to build job %u cgroup relative "
-			      "path : %m", job->jobid);
+			error("unable to build job %u cgroup relative path : %m",
+			      job->jobid);
 			goto bail;
 		}
 	}
@@ -197,16 +196,22 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 			if (snprintf(jobstep_cgroup_path, PATH_MAX,
 				     "%s/step_batch", job_cgroup_path)
 			    >= PATH_MAX) {
-				error("proctrack/cgroup unable to build job step"
-				      " %u.batch freezer cg relative path: %m",
+				error("proctrack/cgroup unable to build job step %u.batch freezer cg relative path: %m",
+				      job->jobid);
+				goto bail;
+			}
+		} else if (job->stepid == INFINITE) {
+			if (snprintf(jobstep_cgroup_path, PATH_MAX,
+				     "%s/step_extern", job_cgroup_path)
+			    >= PATH_MAX) {
+				error("proctrack/cgroup unable to build job step %u.extern freezer cg relative path: %m",
 				      job->jobid);
 				goto bail;
 			}
 		} else {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
 				     job_cgroup_path, job->stepid) >= PATH_MAX) {
-				error("proctrack/cgroup unable to build job step"
-				      " %u.%u freezer cg relative path: %m",
+				error("proctrack/cgroup unable to build job step %u.%u freezer cg relative path: %m",
 				      job->jobid, job->stepid);
 				goto bail;
 			}
@@ -252,7 +257,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	/* inhibit release agent for the step cgroup thus letting
 	 * slurmstepd being able to add new pids to the container
 	 * when the job ends (TaskEpilog,...) */
-	xcgroup_set_param(&step_freezer_cg,"notify_on_release","0");
+	xcgroup_set_param(&step_freezer_cg, "notify_on_release", "0");
 	slurm_freezer_init = true;
 
 	xcgroup_unlock(&freezer_cg);
@@ -271,8 +276,8 @@ int _slurm_cgroup_destroy(void)
 
 	if (jobstep_cgroup_path[0] != '\0') {
 		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
-			debug("_slurm_cgroup_destroy: problem deleting step "
-			      "cgroup path %s: %m", step_freezer_cg.path);
+			debug("_slurm_cgroup_destroy: problem deleting step cgroup path %s: %m",
+			      step_freezer_cg.path);
 			xcgroup_unlock(&freezer_cg);
 			return SLURM_ERROR;
 		}
@@ -572,8 +577,7 @@ extern int proctrack_p_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("%s: Unable to destroy container %"PRIu64" "
-			      "in cgroup plugin, giving up after %d sec",
+			error("%s: Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %d sec",
 			      __func__, cont_id, delay);
 			break;
 		}

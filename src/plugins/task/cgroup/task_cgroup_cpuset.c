@@ -1011,7 +1011,16 @@ again:
 				     "%s/step_batch", job_cgroup_path)
 			    >= PATH_MAX) {
 				error("task/cgroup: unable to build job step"
-				      " %u.batch cpuset cg relative path: %m",
+				      " %u_batch cpuset cg relative path: %m",
+				      jobid);
+				return SLURM_ERROR;
+			}
+		} else if (stepid == INFINITE) {
+			if (snprintf(jobstep_cgroup_path, PATH_MAX,
+				     "%s/step_exter", job_cgroup_path)
+			    >= PATH_MAX) {
+				error("task/cgroup: unable to build job step"
+				      " %u_exter cpuset cg relative path: %m",
 				      jobid);
 				return SLURM_ERROR;
 			}
