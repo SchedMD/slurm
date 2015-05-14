@@ -1702,6 +1702,12 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	}
 
 	_throttle_start(&active_rpc_cnt);
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
+		info("_slurm_rpc_epilog_complete: "
+		     "node_name = %s, job_id = %u", epilog_msg->node_name,
+		     epilog_msg->job_id);
+
 	lock_slurmctld(job_write_lock);
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
@@ -1924,11 +1930,6 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_COMPLETE_PROLOG from "
 	       "JobId=%u", comp_msg->job_id);
-
-	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-		info("_slurm_rpc_epilog_complete: "
-		     "node_name = %s, job_id = %u", epilog_msg->node_name,
-		     epilog_msg->job_id);
 
 	lock_slurmctld(job_write_lock);
 	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc);
@@ -2898,7 +2899,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		}
 		in_progress = false;
-		slurm_sched_g_partition_change();	/* notify sched plugin */
+		slurm_sched_g_partition_change();      /* notify sched plugin */
 		unlock_slurmctld(config_write_lock);
 		assoc_mgr_set_missing_uids();
 		start_power_mgr(&slurmctld_config.thread_id_power);
@@ -4601,7 +4602,8 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
 	      (unsigned int) uid);
 	if (!validate_slurm_user(uid)) {
 		rc = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_TRIGGER_PULL RPC from uid=%d",
+		error("Security violation, REQUEST_TRIGGER_PULL RPC "
+		      "from uid=%d",
 		      uid);
 	} else
 		rc = trigger_pull(trigger_ptr);
@@ -5340,8 +5342,8 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 			epilog_msg = (epilog_complete_msg_t *) next_msg->data;
 			START_TIMER;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-				info("Processing embedded MESSAGE_EPILOG_COMPLETE"
-				     " uid=%d", uid);
+				info("Processing embedded "
+				     "MESSAGE_EPILOG_COMPLETE uid=%d", uid);
 			if (!validate_slurm_user(uid)) {
 				error("Security violation, EPILOG_COMPLETE RPC "
 				      "from uid=%d", uid);
@@ -5358,14 +5360,17 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 
 			if (epilog_msg->return_code)
 				error("%s: epilog error %s Node=%s Err=%s %s",
-				__func__, jobid2str(job_ptr, jbuf),
+				__func__, jobid2str(job_ptr, jbuf,
+						    sizeof(jbuf)),
 				epilog_msg->node_name,
 				slurm_strerror(epilog_msg->return_code),
 						TIME_STR);
 			else
-				if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
+				if (slurmctld_conf.debug_flags &
+				    DEBUG_FLAG_ROUTE)
 					info("%s: %s Node=%s %s",
-					     __func__, jobid2str(job_ptr, jbuf),
+					     __func__, jobid2str(job_ptr, jbuf,
+								 sizeof(jbuf)),
 					     epilog_msg->node_name, TIME_STR);
 			break;
 		default:
@@ -5390,7 +5395,8 @@ static void _slurm_composite_msg_resp(slurm_msg_t *msg)
 	comp_resp_msg->data = cmp;
 	comp_resp_msg->protocol_version = SLURM_PROTOCOL_VERSION;
 	if (slurm_send_to_prev_collector(comp_resp_msg) != SLURM_SUCCESS) {
-		error("msg aggr: unable to send composite msg response msg: %m");
+		error("msg aggr: unable to send composite msg "
+		      "response msg: %m");
 	}
 	cmp->comp_msg = NULL;
 	slurm_free_composite_resp_msg(cmp);

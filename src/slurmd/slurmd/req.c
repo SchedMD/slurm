@@ -3701,7 +3701,8 @@ static void _rpc_composite_resp(slurm_msg_t *msg)
 			cmp->comp_msg = next_msg;
 			comp_resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
 			comp_resp_msg->data = cmp;
-			comp_resp_msg->protocol_version = SLURM_PROTOCOL_VERSION;
+			comp_resp_msg->protocol_version =
+				SLURM_PROTOCOL_VERSION;
 			if (slurm_send_to_prev_collector(comp_resp_msg) !=
 					SLURM_SUCCESS) {
 				error("_rpc_composite_resp: unable to "
@@ -4408,7 +4409,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 //	slurm_ctl_conf_t *cf;
 //	struct stat	stat_buf;
 	uint16_t        msg_timeout;
-	job_env_t       *job_env;
+	job_env_t       *job_env = NULL;
 	struct timeval  now;
 	struct timespec timeout;
 	int epil_retry;
@@ -4601,8 +4602,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &job_env->resv_id);
 #elif defined(HAVE_ALPS_CRAY)
-	job_env->resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-							  SELECT_PRINT_RESV_ID);
+	job_env->resv_id = select_g_select_jobinfo_xstrdup(
+		req->select_jobinfo, SELECT_PRINT_RESV_ID);
 #endif
 	rc = _run_epilog(job_env);
 	xfree(job_env->resv_id);
@@ -4629,7 +4630,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	_wait_state_completed(req->job_id, 5);
 	_waiter_complete(req->job_id);
 	_sync_messages_kill(req);
-	if (conf->msg_aggr_window_msgs > 1) {
+	if (job_env && conf->msg_aggr_window_msgs > 1) {
 		if (job_env_list == NULL)
 			job_env_list = list_create(_job_env_free);
 		slurm_mutex_init(&job_env->epil_mutex);
@@ -4644,8 +4645,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		while (epil_retry < EPIL_RETRY_MAX) {
 			_epilog_complete(req->job_id, rc);
 			if (pthread_cond_timedwait(&job_env->epil_cond,
-					&job_env->epil_mutex, &timeout) ==
-					ETIMEDOUT) {
+						   &job_env->epil_mutex,
+						   &timeout) == ETIMEDOUT) {
 				epil_retry++;
 			} else {
 				break;
