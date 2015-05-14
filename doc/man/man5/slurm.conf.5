@@ -1195,7 +1195,7 @@ For examples of use, see the SLURM code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
 SLURM can be configured to use multiple job_submit plugins if desired,
 however the lua plugin will only execute one lua script named "job_submit.lua"
-and located in default script directory (typically the subdirectory "etc" of
+located in the default script directory (typically the subdirectory "etc" of
 the installation directory).
 No job submission plugins are used by default.
 
@@ -1606,9 +1606,10 @@ This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
-in the SLURM database a database.
-This is not compatible with \fBPreemptMode=OFF\fR and \fBPreemptMode=SUSPEND\fR
-is only supported by the \fBselect/cons_res\fR plugin.
+in the SLURM database.
+This optioin is not compatible with \fBPreemptMode=OFF\fR.
+A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
+\fBselect/cons_res\fR plugin.
 .RE
 
 .TP

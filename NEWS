@@ -276,6 +276,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leak in backup controller.
  -- Fix segfault when backup controller takes control for second time.
  -- Cray - Fix backup controller running native Slurm.
+ -- Provide prototypes for init_setproctitle()/fini_setproctitle on
+    NetBSD.
+ -- Add configuration test to find out the full path to su command.
 
 * Changes in Slurm 14.11.6
 ==========================
