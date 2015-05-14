@@ -110,6 +110,9 @@ PKG_PROG_PKG_CONFIG([0.9.0])
 AM_CONDITIONAL(WITH_CXX, test -n "$ac_ct_CXX")
 AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
 
+AC_PATH_PROG([SLEEP_CMD], [sleep], [/bin/sleep])
+AC_DEFINE_UNQUOTED([SLEEP_CMD], ["$SLEEP_CMD"], [Define path to sleep command])
+
 AC_PATH_PROG([SUCMD], [su], [/bin/su])
 AC_DEFINE_UNQUOTED([SUCMD], ["$SUCMD"], [Define path to su command])
 

@@ -969,7 +969,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		acct_gather_profile_g_child_forked();
 		/* Need to exec() something for proctrack/linuxproc to work,
 		 * it will not keep a process named "slurmstepd" */
-		execl("/bin/sleep", "sleep", "1000000", NULL);
+		execl(SLEEP_CMD, "sleep", "1000000", NULL);
 		error("execl: %m");
 		sleep(1);
 		exit(0);
