@@ -3560,7 +3560,9 @@ Also see \fBFeature\fR.
 .TP
 \fBMemSpecLimit\fR
 Limit on combined real memory allocation for compute node daemons
-(slurmd, slurmstepd), in megabytes.
+(slurmd, slurmstepd), in megabytes. This memory is not available to job
+allocations. The deamons won't be killed when they exhaust the memory allocation
+(ie. the OOM Killer is disabled for the daemon's memory cgroup).
 
 .TP
 \fBPort\fR
