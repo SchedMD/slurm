@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with incorrect time calculation in the priority plugin when
     a job runs past it's time limit.
  -- Prevent users from setting job's partition to an invalid partition.
+ -- Fix sreport core dump when requesting 'job SizesByAccount grouping=individual'.
 
 * Changes in Slurm 14.11.7
 ==========================
