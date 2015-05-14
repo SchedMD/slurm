@@ -4334,6 +4334,12 @@ extern char * prolog_flags2str(uint16_t prolog_flags)
 		xstrcat(rc, "Alloc");
 	}
 
+	if (prolog_flags & PROLOG_FLAG_CONTAIN) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Contain");
+	}
+
 	if (prolog_flags & PROLOG_FLAG_NOHOLD) {
 		if (rc)
 			xstrcat(rc, ",");
