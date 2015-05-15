@@ -2357,8 +2357,40 @@ proc get_job_acct_freq { } {
 
 	log_user 1
 	return $freq_val
+}
 
+################################################################
+#
+# Proc: get_job_acct_type
+#
+# Purpose: gets the value of JobAcctGatherType
+#
+# Returns: JobAcctGatherType value
+#
+################################################################
+proc get_job_acct_type { } {
+	global scontrol alpha
 
+	log_user 0
+	set gather_type "none"
+
+	spawn $scontrol show config
+	expect {
+		-re "JobAcctGatherType *= jobacct_gather/($alpha)" {
+			set gather_type $expect_out(1,string)
+			exp_continue
+		}
+		-re "JobAcctGatherType *= ($alpha)" {
+			set gather_type $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $gather_type
 }
 
 ################################################################
