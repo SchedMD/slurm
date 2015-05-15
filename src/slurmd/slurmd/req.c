@@ -152,7 +152,7 @@ static char **_build_env(job_env_t *job_env);
 static void _collect_message(slurm_msg_t *);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
-static int  _find_msg_aggr(void *x, void *key);
+static msg_aggr_t *_handle_msg_aggr_ret(uint32_t jobid);
 static int  _get_grouplist(char **user_name, uid_t my_uid, gid_t my_gid,
 			   int *ngroups, gid_t **groups);
 static bool _is_batch_job_finished(uint32_t job_id);
@@ -3693,10 +3693,8 @@ static void _rpc_composite_resp(slurm_msg_t *msg)
 				     "complete msg found for job %u; "
 				     "signaling sending thread",
 				     ec_msg->job_id);
-			if (!(msg_aggr = list_find_first(
-				      msg_aggr_list,
-				      _find_msg_aggr,
-				      &ec_msg->job_id))) {
+			if (!(msg_aggr = _handle_msg_aggr_ret(
+				      ec_msg->job_id))) {
 				debug2("_rpc_composite_resp: error: unable to "
 				       "locate aggr message struct for job %u",
 					ec_msg->job_id);
@@ -4668,9 +4666,15 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						   &timeout) == ETIMEDOUT) {
 				epil_retry++;
 			} else {
+				_msg_aggr_free(msg_aggr);
 				break;
 			}
 		}
+
+		if (epil_retry >= EPIL_RETRY_MAX)
+			_msg_aggr_free(_handle_msg_aggr_ret(req->job_id));
+
+		info("out for %d", req->job_id);
 	} else
 		_epilog_complete(req->job_id, rc);
 }
@@ -4942,6 +4946,22 @@ _destroy_env(char **env)
 	}
 
 	return;
+}
+
+static msg_aggr_t *_handle_msg_aggr_ret(uint32_t jobid)
+{
+	msg_aggr_t *msg_aggr;
+	ListIterator itr = list_iterator_create(msg_aggr_list);
+
+	while ((msg_aggr = list_next(itr))) {
+		if (msg_aggr->jobid == jobid) {
+			list_remove(itr);
+			break;
+		}
+
+	}
+	list_iterator_destroy(itr);
+	return msg_aggr;
 }
 
 /* Trigger srun of spank prolog or epilog in slurmstepd */
@@ -5882,26 +5902,4 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
-}
-
-static job_env_t *_find_job_env(uint32_t jobid)
-{
-	job_env_t *job_env;
-	ListIterator itr;
-
-	itr = list_iterator_create(job_env_list);
-	while ((job_env = list_next(itr))) {
-		if (job_env->jobid == jobid) {
-			list_iterator_destroy(itr);
-			return job_env;
-		}
-	}
-	debug2("_find_job_env: unable to find jobid in job env list");
-	list_iterator_destroy(itr);
-	return NULL;
-}
-
-static void _job_env_free(void *x)
-{
-	xfree(x);
 }
