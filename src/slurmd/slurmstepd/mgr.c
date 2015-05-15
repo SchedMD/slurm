@@ -762,6 +762,18 @@ _wait_for_children_slurmstepd(stepd_step_rec_t *job)
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
+/* If accounting by the job is minimal (i.e. just our "sleep"), then don't
+ * send accounting information to slurmctld */
+static bool _minimal_acctg(stepd_step_rec_t *job)
+{
+	if (!job->jobacct)			/* No accounting data */
+		return true;
+	if ((job->jobacct->sys_cpu_sec == 0) &&	/* No measurable usage */
+	    (job->jobacct->user_cpu_sec == 0))
+		return true;
+
+	return false;
+}
 
 /*
  * Send a single step completion message, which represents a single range
@@ -782,15 +794,18 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
 
-	memset(&msg, 0, sizeof(step_complete_msg_t));
-	msg.job_id = job->jobid;
-	msg.job_step_id = job->stepid;
+	if ((job->stepid == SLURM_EXTERN_CONT) && _minimal_acctg(job))
+		return;
+
 	if (job->batch) {	/* Nested batch step anomalies */
 		if (first == -1)
 			first = 0;
 		if (last == -1)
 			last = 0;
 	}
+	memset(&msg, 0, sizeof(step_complete_msg_t));
+	msg.job_id = job->jobid;
+	msg.job_step_id = job->stepid;
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;

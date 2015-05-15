@@ -3229,7 +3229,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr = _create_step_record(job_ptr);
 		checkpoint_alloc_jobinfo(&step_ptr->check_job);
 		step_ptr->ext_sensors = ext_sensors_alloc();
-		step_ptr->name = xstrdup("");
+		step_ptr->name = xstrdup("extern");
 		step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 		step_ptr->state = JOB_RUNNING;
 		step_ptr->start_time = job_ptr->start_time;
