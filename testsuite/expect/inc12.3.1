@@ -54,7 +54,7 @@ proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 
 	}
 	if {$idmatch != 1} {
-		send_user "\nFAILURE: sacct could not match job id to job name (Within: inc12.3.1)\n"
+		send_user "\nFAILURE: sacct could not match job id to job name ($idmatch != 1, Within: inc12.3.1)\n"
 		set exit_code 1
 	}
 
@@ -79,7 +79,7 @@ proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 		}
 	}
 	if {$idmatch != 1} {
-		send_user "\nFAILURE: sacct could not match job id to job name (Within: 12.3.1)\n"
+		send_user "\nFAILURE: sacct could not match job id to job name ($idmatch != 1, Within: 12.3.1)\n"
 		set exit_code 1
 	}
 }
