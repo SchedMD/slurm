@@ -2082,7 +2082,7 @@ static void _launch_prolog(struct job_record *job_ptr)
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 	cred_arg.jobid               = job_ptr->job_id;
-	cred_arg.stepid              = INFINITE;
+	cred_arg.stepid              = SLURM_EXTERN_CONT;
 	cred_arg.uid                 = job_ptr->user_id;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_gres_list       = job_ptr->gres_list;

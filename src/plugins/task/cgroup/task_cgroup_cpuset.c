@@ -1015,7 +1015,7 @@ again:
 				      jobid);
 				return SLURM_ERROR;
 			}
-		} else if (stepid == INFINITE) {
+		} else if (stepid == SLURM_EXTERN_CONT) {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX,
 				     "%s/step_exter", job_cgroup_path)
 			    >= PATH_MAX) {

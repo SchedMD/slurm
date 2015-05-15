@@ -232,7 +232,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		if (stepid == SLURM_BATCH_SCRIPT) {
 			len = snprintf(jobstep_cgroup_path, PATH_MAX,
 				       "%s/step_batch", job_cgroup_path);
-		} else if (stepid == INFINITE) {
+		} else if (stepid == SLURM_EXTERN_CONT) {
 			len = snprintf(jobstep_cgroup_path, PATH_MAX,
 				       "%s/step_extern", job_cgroup_path);
 		} else {

@@ -186,7 +186,7 @@ set_umask(stepd_step_rec_t *job)
 	char *val;
 
 	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
-		if (job->stepid != INFINITE)
+		if (job->stepid != SLURM_EXTERN_CONT)
 			debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}

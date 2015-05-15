@@ -206,7 +206,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 	step_ptr->port		= step_specs->port;
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
-	step_ptr->step_id	= INFINITE;
+	step_ptr->step_id	= SLURM_EXTERN_CONT;
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
@@ -217,7 +217,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
 	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-	if (step_ptr->step_id != INFINITE) {
+	if (step_ptr->step_id != SLURM_EXTERN_CONT) {
 		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
 					  step_ptr->exit_code);
 
@@ -251,7 +251,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		/* Only check if not a pending step */
-		if (step_ptr->step_id != INFINITE) {
+		if (step_ptr->step_id != SLURM_EXTERN_CONT) {
 			uint16_t cleaning = 0;
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 						    SELECT_JOBDATA_CLEANING,
@@ -731,7 +731,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if (step_ptr->step_id == INFINITE)	/* batch step */
+	if (step_ptr->step_id == SLURM_EXTERN_CONT)
 		return SLURM_SUCCESS;
 
 	/* If the job is already cleaning we have already been here
@@ -3225,7 +3225,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	}
 
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
-	if ((step_ptr == NULL) && (req->job_step_id == INFINITE)) {
+	if ((step_ptr == NULL) && (req->job_step_id == SLURM_EXTERN_CONT)) {
 		step_ptr = _create_step_record(job_ptr);
 		checkpoint_alloc_jobinfo(&step_ptr->check_job);
 		step_ptr->ext_sensors = ext_sensors_alloc();
@@ -3233,7 +3233,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 		step_ptr->state = JOB_RUNNING;
 		step_ptr->start_time = job_ptr->start_time;
-		step_ptr->step_id = INFINITE;
+		step_ptr->step_id = SLURM_EXTERN_CONT;
 		if (job_ptr->node_bitmap) {
 			step_ptr->step_node_bitmap =
 				bit_copy(job_ptr->node_bitmap);

@@ -1059,7 +1059,7 @@ job_manager(stepd_step_rec_t *job)
 		goto fail1;
 	}
 
-	if (!job->batch && (job->stepid != INFINITE) &&
+	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT) &&
 	    (switch_g_job_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
@@ -1072,7 +1072,7 @@ job_manager(stepd_step_rec_t *job)
 		goto fail1;
 	}
 
-	if (job->stepid == INFINITE)
+	if (job->stepid == SLURM_EXTERN_CONT)
 		return _spawn_job_container(job);
 
 #ifdef HAVE_ALPS_CRAY

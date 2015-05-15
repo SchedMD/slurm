@@ -200,7 +200,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 				      job->jobid);
 				goto bail;
 			}
-		} else if (job->stepid == INFINITE) {
+		} else if (job->stepid == SLURM_EXTERN_CONT) {
 			if (snprintf(jobstep_cgroup_path, PATH_MAX,
 				     "%s/step_extern", job_cgroup_path)
 			    >= PATH_MAX) {

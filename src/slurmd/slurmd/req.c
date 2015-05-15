@@ -510,7 +510,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		if (type == LAUNCH_TASKS) {
 			launch_tasks_request_msg_t *launch_req;
 			launch_req = (launch_tasks_request_msg_t *) req;
-			if (launch_req->job_step_id != INFINITE)
+			if (launch_req->job_step_id != SLURM_EXTERN_CONT)
 				send_error = true;
 		}
 		if (send_error)
@@ -1571,7 +1571,7 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 		if (!job_limits_list)
 			job_limits_list = list_create(_job_limits_free);
 		step_info.jobid  = req->job_id;
-		step_info.stepid = INFINITE;
+		step_info.stepid = SLURM_EXTERN_CONT;
 		job_limits_ptr = list_find_first (job_limits_list,
 						  _step_limits_match,
 						  &step_info);
@@ -1579,7 +1579,7 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
 			job_limits_ptr->job_id   = req->job_id;
 			job_limits_ptr->job_mem  = req->job_mem_limit;
-			job_limits_ptr->step_id  = INFINITE;
+			job_limits_ptr->step_id  = SLURM_EXTERN_CONT;
 			job_limits_ptr->step_mem = req->job_mem_limit;
 #if _LIMIT_INFO
 			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
@@ -1614,7 +1614,7 @@ static void _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->ifname		= "/dev/null";
 	launch_req->job_id		= req->job_id;
 	launch_req->job_mem_lim		= req->job_mem_limit;
-	launch_req->job_step_id		= INFINITE;
+	launch_req->job_step_id		= SLURM_EXTERN_CONT;
 	launch_req->nnodes		= req->nnodes;
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";

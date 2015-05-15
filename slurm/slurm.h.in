@@ -228,6 +228,8 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
+/* Job step ID of external process container */
+#define SLURM_EXTERN_CONT  (0xffffffff)
 
 /* How many seconds to wait after eio_signal_shutdown() is called before
  * terminating the job and abandoning any I/O remaining to be processed.

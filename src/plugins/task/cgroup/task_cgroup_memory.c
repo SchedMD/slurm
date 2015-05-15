@@ -362,7 +362,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 				      "step batch memory cg path : %m");
 
 			}
-		} else if (stepid == INFINITE) {
+		} else if (stepid == SLURM_EXTERN_CONT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_extern", job_cgroup_path);
 			if (cc >= PATH_MAX) {
