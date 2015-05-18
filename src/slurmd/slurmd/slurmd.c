@@ -498,11 +498,13 @@ _msg_aggregation_engine(void *arg)
 		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
 		/* A msg has been collected; start new window */
 		gettimeofday(&now, NULL);
-		timeout.tv_sec = time(NULL) + conf->msg_aggr_window_time / 1000;
-		timeout.tv_nsec = now.tv_usec * 1000 + 1000 * 1000 *
-				  (conf->msg_aggr_window_time % 1000);
-		timeout.tv_sec += timeout.tv_nsec / (1000 * 1000 * 1000);
-		timeout.tv_nsec %= (1000 * 1000 * 1000);
+		timeout.tv_sec = now.tv_sec +
+			(conf->msg_aggr_window_time / 1000);
+		timeout.tv_nsec = (now.tv_usec * 1000) +
+			(1000000 * (conf->msg_aggr_window_time % 1000));
+		timeout.tv_sec += timeout.tv_nsec / 1000000000;
+		timeout.tv_nsec %= 1000000000;
+
 		pthread_cond_timedwait(&msg_collection.cond,
 				       &msg_collection.mutex, &timeout);
 		msg_collection.max_msgs = true;

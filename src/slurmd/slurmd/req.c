@@ -4653,11 +4653,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		list_append(msg_aggr_list, msg_aggr);
 
 		msg_timeout = slurm_get_msg_timeout();
-		timeout.tv_sec = time(NULL) + msg_timeout;
 		gettimeofday(&now, NULL);
+		timeout.tv_sec = now.tv_sec + msg_timeout;
 		timeout.tv_nsec = now.tv_usec * 1000;
-		timeout.tv_sec += timeout.tv_nsec / (1000 * 1000 * 1000);
-		timeout.tv_nsec %= (1000 * 1000 * 1000);
 		epil_retry = 0;
 		while (epil_retry < EPIL_RETRY_MAX) {
 			_epilog_complete(req->job_id, rc);
