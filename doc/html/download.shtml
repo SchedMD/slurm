@@ -5,10 +5,11 @@
 <a href="http://www.schedmd.com/#repos">
 http://www.schedmd.com/#repos</a>.<br>
 Slurm has also been packaged for
-<a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and
-<a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
-(named <i>slurm-llnl</i> or <i>slurm-wlm</i> depending upon the version) plus
-<a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc).</p>
+<a href="https://packages.debian.org/search?keywords=slurm-wlm">Debian</a> and
+<a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
+(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version) and
+<a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
+as <a href="http://www.freshports.org/sysutils/slurm-hpc/">FreeBSD</a>.</p>
 
 <!--
 Slurm interface to PHP
