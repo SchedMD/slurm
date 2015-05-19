@@ -481,8 +481,8 @@ _msg_aggregation_engine(void *arg)
 {
 	struct timeval now;
 	struct timespec timeout;
-	slurm_msg_t *msg;
-	composite_msg_t *cmp;
+	slurm_msg_t msg;
+	composite_msg_t cmp;
 
 	msg_aggr_pthread = pthread_self();
 	slurm_mutex_init(&msg_collection.mutex);
@@ -510,28 +510,31 @@ _msg_aggregation_engine(void *arg)
 		msg_collection.max_msgs = true;
 		/* Msg collection window has expired and message collection
 		 * is suspended; now build and send composite msg */
-		msg = xmalloc(sizeof(slurm_msg_t));
-		cmp = xmalloc(sizeof(composite_msg_t));
-		slurm_msg_t_init(msg);
-		cmp->msg_list = list_create(slurm_free_comp_msg_list);
-		list_transfer(cmp->msg_list, msg_collection.msgs.msg_list);
-		slurm_set_addr(&cmp->sender, conf->port, conf->hostname);
-		cmp->base_msgs = msg_collection.msgs.base_msgs;
-		cmp->comp_msgs = msg_collection.msgs.comp_msgs;
-		msg->msg_type    = MESSAGE_COMPOSITE;
-		msg->data        = cmp;
-		msg->protocol_version = SLURM_PROTOCOL_VERSION;
-		if (slurm_send_to_next_collector(msg) != SLURM_SUCCESS) {
-			error("_msg_aggregation_engine: Unable to send "
-			      "composite msg: %m");
-		}
-		list_destroy(cmp->msg_list);
+		memset(&msg, 0, sizeof(slurm_msg_t));
+		memset(&cmp, 0, sizeof(composite_msg_t));
+
+		slurm_set_addr(&cmp.sender, conf->port, conf->hostname);
+		cmp.base_msgs = msg_collection.msgs.base_msgs;
+		cmp.comp_msgs = msg_collection.msgs.comp_msgs;
+		cmp.msg_list = msg_collection.msgs.msg_list;
+
+		msg_collection.msgs.msg_list =
+			list_create(slurm_free_comp_msg_list);
 		msg_collection.msgs.base_msgs = 0;
 		msg_collection.msgs.comp_msgs = 0;
 		msg_collection.max_msgs = false;
-		xfree(cmp);
-		msg->data = NULL;
-		slurm_free_msg(msg);
+
+		slurm_msg_t_init(&msg);
+		msg.msg_type = MESSAGE_COMPOSITE;
+		msg.protocol_version = SLURM_PROTOCOL_VERSION;
+		slurm_msg_t_init(&msg);
+
+		if (slurm_send_to_next_collector(&msg) != SLURM_SUCCESS) {
+			error("_msg_aggregation_engine: Unable to send "
+			      "composite msg: %m");
+		}
+		list_destroy(cmp.msg_list);
+
 		/* Resume message collection */
 		pthread_cond_broadcast(&msg_collection.cond);
 	}
