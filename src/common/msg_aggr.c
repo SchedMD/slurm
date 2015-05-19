@@ -73,6 +73,72 @@ typedef struct {
  * Message collection data & controls
  */
 static msg_collection_type_t msg_collection;
+
+static int _send_to_backup_collector(slurm_msg_t *msg, int rc,
+				     uint32_t debug_flags)
+{
+	slurm_addr_t *next_dest = NULL;
+
+	if (debug_flags & DEBUG_FLAG_ROUTE) {
+		info("_send_to_backup_collector: primary %s, "
+		     "getting backup",
+		     rc ? "can't be reached" : "is null");
+	}
+
+	if ((next_dest = route_g_next_collector_backup())) {
+		if (debug_flags & DEBUG_FLAG_ROUTE) {
+			char addrbuf[100];
+			slurm_print_slurm_addr(next_dest, addrbuf, 32);
+			info("_send_to_backup_collector: *next_dest is "
+			     "%s", addrbuf);
+		}
+		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
+		rc = slurm_send_only_node_msg(msg);
+	}
+
+	if (!next_dest ||  (rc != SLURM_SUCCESS)) {
+		if (debug_flags & DEBUG_FLAG_ROUTE)
+			info("_send_to_backup_collector: backup %s, "
+			     "sending msg to controller",
+			     rc ? "can't be reached" : "is null");
+		rc = slurm_send_only_controller_msg(msg);
+	}
+
+	return rc;
+}
+
+/*
+ *  Send a msg to the next msg aggregation collector node. If primary
+ *  collector is unavailable or returns error, try backup collector.
+ *  If backup collector is unavailable or returns error, send msg
+ *  directly to controller.
+ */
+static int _send_to_next_collector(slurm_msg_t *msg)
+{
+	slurm_addr_t *next_dest = NULL;
+	bool i_am_collector;
+	int rc = SLURM_SUCCESS;
+	uint32_t debug_flags = slurm_get_debug_flags();
+
+	if (debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: send_to_next_collector: getting primary next "
+		     "collector");
+	if ((next_dest = route_g_next_collector(&i_am_collector))) {
+		if (debug_flags & DEBUG_FLAG_ROUTE) {
+			char addrbuf[100];
+			slurm_print_slurm_addr(next_dest, addrbuf, 32);
+			info("msg aggr: send_to_next_collector: *next_dest is "
+			     "%s", addrbuf);
+		}
+		memcpy(&msg->address, next_dest, sizeof(slurm_addr_t));
+		rc = slurm_send_only_node_msg(msg);
+	}
+
+	if (!next_dest || (rc != SLURM_SUCCESS))
+		rc = _send_to_backup_collector(msg, rc, debug_flags);
+
+	return rc;
+}
 static pthread_t msg_aggr_pthread = (pthread_t) 0;
 static bool msg_aggr_running = 0;
 
