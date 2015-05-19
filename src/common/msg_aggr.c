@@ -140,7 +140,6 @@ static int _send_to_next_collector(slurm_msg_t *msg)
 
 	return rc;
 }
-static pthread_t msg_aggr_pthread = (pthread_t) 0;
 
 /*
  * _msg_aggregation_sender()
@@ -224,9 +223,7 @@ static void * _msg_aggregation_sender(void *arg)
 extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 				 uint64_t max_msg_cnt)
 {
-	int            rc;
 	pthread_attr_t attr;
-	pthread_t      id;
 	int            retries = 0;
 
 	if (msg_collection.running || (max_msg_cnt <= 1))
@@ -249,18 +246,12 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	slurm_mutex_unlock(&msg_collection.mutex);
 
 	slurm_attr_init(&attr);
-	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		errno = rc;
-		fatal("msg aggregation: unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr);
-		return;
-	}
 
-	while (pthread_create(&id, &attr, &_msg_aggregation_sender, NULL)) {
-		error("msg aggregation: pthread_create: %m");
+	while (pthread_create(&msg_collection.thread_id, &attr,
+			      &_msg_aggregation_sender, NULL)) {
+		error("msg_aggr_sender_init: pthread_create: %m");
 		if (++retries > 3)
-			fatal("msg aggregation: pthread_create: %m");
+			fatal("msg_aggr_sender_init: pthread_create: %m");
 		usleep(10);	/* sleep and again */
 	}
 
@@ -288,8 +279,11 @@ extern void msg_aggr_sender_fini(void)
 	slurm_mutex_lock(&msg_collection.mutex);
 	msg_collection.running = 0;
 
-	if (msg_aggr_pthread && (pthread_self() != msg_aggr_pthread))
-		pthread_kill(msg_aggr_pthread, SIGTERM);
+	pthread_cond_signal(&msg_collection.cond);
+	slurm_mutex_unlock(&msg_collection.mutex);
+
+	pthread_join(msg_collection.thread_id, NULL);
+	msg_collection.thread_id = (pthread_t) 0;
 
 	pthread_cond_destroy(&msg_collection.cond);
 	FREE_NULL_LIST(msg_collection.msgs.msg_list);
