@@ -60,10 +60,12 @@
 #endif /* WITH_PTHREADS */
 
 typedef struct {
+	pthread_mutex_t	aggr_mutex;
 	pthread_cond_t	cond;
 	uint32_t        debug_flags;
 	bool		max_msgs;
 	uint64_t        max_msg_cnt;
+	List            msg_aggr_list;
 	List            msg_list;
 	pthread_mutex_t	mutex;
 	slurm_addr_t    node_addr;
@@ -72,10 +74,48 @@ typedef struct {
 	uint64_t        window;
 } msg_collection_type_t;
 
+typedef struct {
+	uint16_t msg_index;
+	pthread_cond_t wait_cond;
+} msg_aggr_t;
+
+
 /*
  * Message collection data & controls
  */
 static msg_collection_type_t msg_collection;
+
+
+static void _msg_aggr_free(void *x)
+{
+	msg_aggr_t *object = (msg_aggr_t *)x;
+	if (object) {
+		pthread_cond_destroy(&object->wait_cond);
+		xfree(object);
+	}
+}
+
+static msg_aggr_t *_handle_msg_aggr_ret(uint32_t msg_index)
+{
+	msg_aggr_t *msg_aggr;
+	ListIterator itr;
+
+	slurm_mutex_lock(&msg_collection.aggr_mutex);
+
+	itr = list_iterator_create(msg_collection.msg_aggr_list);
+
+	while ((msg_aggr = list_next(itr))) {
+		if (msg_aggr->msg_index == msg_index) {
+			list_remove(itr);
+			break;
+		}
+
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&msg_collection.aggr_mutex);
+
+	return msg_aggr;
+}
 
 static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 {
@@ -227,16 +267,20 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 
 	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
 
+	slurm_mutex_init(&msg_collection.aggr_mutex);
 	slurm_mutex_init(&msg_collection.mutex);
 
 	slurm_mutex_lock(&msg_collection.mutex);
+	slurm_mutex_lock(&msg_collection.aggr_mutex);
 	pthread_cond_init(&msg_collection.cond, NULL);
 	slurm_set_addr(&msg_collection.node_addr, port, host);
 	msg_collection.window = window;
 	msg_collection.max_msg_cnt = max_msg_cnt;
+	msg_collection.msg_aggr_list = list_create(_msg_aggr_free);
 	msg_collection.msg_list = list_create(slurm_free_comp_msg_list);
 	msg_collection.max_msgs = false;
 	msg_collection.debug_flags = slurm_get_debug_flags();
+	slurm_mutex_unlock(&msg_collection.aggr_mutex);
 	slurm_mutex_unlock(&msg_collection.mutex);
 
 	slurm_attr_init(&attr);
@@ -270,8 +314,8 @@ extern void msg_aggr_sender_fini(void)
 {
 	if (!msg_collection.running)
 		return;
-	slurm_mutex_lock(&msg_collection.mutex);
 	msg_collection.running = 0;
+	slurm_mutex_lock(&msg_collection.mutex);
 
 	pthread_cond_signal(&msg_collection.cond);
 	slurm_mutex_unlock(&msg_collection.mutex);
@@ -280,14 +324,18 @@ extern void msg_aggr_sender_fini(void)
 	msg_collection.thread_id = (pthread_t) 0;
 
 	pthread_cond_destroy(&msg_collection.cond);
+	slurm_mutex_lock(&msg_collection.aggr_mutex);
+	FREE_NULL_LIST(msg_collection.msg_aggr_list);
+	slurm_mutex_unlock(&msg_collection.aggr_mutex);
 	FREE_NULL_LIST(msg_collection.msg_list);
+	slurm_mutex_destroy(&msg_collection.aggr_mutex);
 	slurm_mutex_destroy(&msg_collection.mutex);
 }
 
-extern void msg_aggr_add_msg(slurm_msg_t *msg)
+extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 {
-	slurm_msg_t *msg_ptr;
 	int count;
+	static uint16_t msg_index = 0;
 
 	if (!msg_collection.running)
 		return;
@@ -296,9 +344,11 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg)
 	if (msg_collection.max_msgs == true) {
 		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
 	}
-	msg_ptr = msg;
+
+	msg->msg_index = msg_index++;
+
 	/* Add msg to message collection */
-	list_append(msg_collection.msg_list, msg_ptr);
+	list_append(msg_collection.msg_list, msg);
 
 	count = list_count(msg_collection.msg_list);
 
@@ -312,6 +362,93 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg)
 		msg_collection.max_msgs = true;
 		pthread_cond_signal(&msg_collection.cond);
 	}
-	info("out with running at %d", msg_collection.running);
 	slurm_mutex_unlock(&msg_collection.mutex);
+
+	if (wait) {
+		pthread_mutex_t wait_mutex = PTHREAD_MUTEX_INITIALIZER;
+		msg_aggr_t *msg_aggr = xmalloc(sizeof(msg_aggr_t));
+		struct timespec timeout;
+
+		msg_aggr->msg_index = msg->msg_index;
+		pthread_cond_init(&msg_aggr->wait_cond, NULL);
+
+		slurm_mutex_lock(&msg_collection.aggr_mutex);
+		list_append(msg_collection.msg_aggr_list, msg_aggr);
+		slurm_mutex_unlock(&msg_collection.aggr_mutex);
+
+		pthread_cond_timedwait(&msg_aggr->wait_cond,
+				       &wait_mutex,
+				       &timeout);
+		_msg_aggr_free(_handle_msg_aggr_ret(msg_aggr->msg_index));
+	}
+
+}
+
+extern void msg_aggr_resp(slurm_msg_t *msg)
+{
+	slurm_msg_t *comp_resp_msg, *next_msg;
+	slurm_msg_t *comp_msg;
+	composite_msg_t *cmp_msg;
+	composite_response_msg_t *resp_msg, *cmp;
+	msg_aggr_t *msg_aggr;
+	ListIterator itr;
+
+	resp_msg = (composite_response_msg_t *)msg->data;
+	comp_msg = (slurm_msg_t *)resp_msg->comp_msg;
+	cmp_msg = (composite_msg_t *)comp_msg->data;
+	itr = list_iterator_create(cmp_msg->msg_list);
+	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: _rpc_composite_resp: processing composite "
+		     "msg_list...");
+	while ((next_msg = list_next(itr))) {
+		switch (next_msg->msg_type) {
+		case MESSAGE_EPILOG_COMPLETE:
+			/* signal sending thread that slurmctld received this
+			 * epilog complete msg */
+			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: _rpc_composite_resp: epilog "
+				     "complete msg found for job %u; "
+				     "signaling sending thread",
+				     next_msg->msg_index);
+			if (!(msg_aggr = _handle_msg_aggr_ret(
+				      next_msg->msg_index))) {
+				debug2("_rpc_composite_resp: error: unable to "
+				       "locate aggr message struct for job %u",
+					next_msg->msg_index);
+				continue;
+			}
+			pthread_cond_signal(&msg_aggr->wait_cond);
+			break;
+		case MESSAGE_COMPOSITE:
+			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
+				info("msg aggr: _rpc_composite_resp: composite "
+				     "msg found; building and sending new "
+				     "response msg");
+			/* build and send composite message response msg */
+			comp_resp_msg = xmalloc(sizeof(slurm_msg_t));
+			cmp = xmalloc(sizeof(composite_response_msg_t));
+			slurm_msg_t_init(comp_resp_msg);
+			cmp->comp_msg = next_msg;
+			comp_resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
+			comp_resp_msg->data = cmp;
+			comp_resp_msg->protocol_version =
+				SLURM_PROTOCOL_VERSION;
+			if (slurm_send_to_prev_collector(comp_resp_msg) !=
+					SLURM_SUCCESS) {
+				error("_rpc_composite_resp: unable to "
+				      "send composite response msg: %m");
+			}
+			xfree(cmp);
+			slurm_free_msg(comp_resp_msg);
+			break;
+		default:
+			error("_rpc_composite_resp: invalid msg type in "
+			      "composite msg_list");
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
+		info("msg aggr: _rpc_composite_resp: finished processing "
+		     "composite msg_list...");
 }

@@ -746,20 +746,41 @@ void
 pack_header(header_t * header, Buf buffer)
 {
 	pack16((uint16_t)header->version, buffer);
-	pack16((uint16_t)header->flags, buffer);
-	pack16((uint16_t)header->msg_type, buffer);
-	pack32((uint32_t)header->body_length, buffer);
-	pack16((uint16_t)header->forward.cnt, buffer);
-	if (header->forward.cnt > 0) {
-		packstr(header->forward.nodelist, buffer);
-		pack32((uint32_t)header->forward.timeout, buffer);
+
+	if (header->version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack16((uint16_t)header->flags, buffer);
+		pack16((uint16_t)header->msg_index, buffer);
+		pack16((uint16_t)header->msg_type, buffer);
+		pack32((uint32_t)header->body_length, buffer);
+		pack16((uint16_t)header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			packstr(header->forward.nodelist, buffer);
+			pack32((uint32_t)header->forward.timeout, buffer);
+		}
+		pack16((uint16_t)header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			_pack_ret_list(header->ret_list,
+				       header->ret_cnt, buffer,
+				       header->version);
+		}
+		slurm_pack_slurm_addr(&header->orig_addr, buffer);
+	} else {
+		pack16((uint16_t)header->flags, buffer);
+		pack16((uint16_t)header->msg_type, buffer);
+		pack32((uint32_t)header->body_length, buffer);
+		pack16((uint16_t)header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			packstr(header->forward.nodelist, buffer);
+			pack32((uint32_t)header->forward.timeout, buffer);
+		}
+		pack16((uint16_t)header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			_pack_ret_list(header->ret_list,
+				       header->ret_cnt, buffer,
+				       header->version);
+		}
+		slurm_pack_slurm_addr(&header->orig_addr, buffer);
 	}
-	pack16((uint16_t)header->ret_cnt, buffer);
-	if (header->ret_cnt > 0) {
-		_pack_ret_list(header->ret_list,
-			       header->ret_cnt, buffer, header->version);
-	}
-	slurm_pack_slurm_addr(&header->orig_addr, buffer);
 }
 
 /* unpack_header
@@ -778,25 +799,51 @@ unpack_header(header_t * header, Buf buffer)
 	forward_init(&header->forward, NULL);
 	header->ret_list = NULL;
 	safe_unpack16(&header->version, buffer);
-	safe_unpack16(&header->flags, buffer);
-	safe_unpack16(&header->msg_type, buffer);
-	safe_unpack32(&header->body_length, buffer);
-	safe_unpack16(&header->forward.cnt, buffer);
-	if (header->forward.cnt > 0) {
-		safe_unpackstr_xmalloc(&header->forward.nodelist,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&header->forward.timeout, buffer);
-	}
 
-	safe_unpack16(&header->ret_cnt, buffer);
-	if (header->ret_cnt > 0) {
-		if (_unpack_ret_list(&(header->ret_list),
-				     header->ret_cnt, buffer, header->version))
-			goto unpack_error;
+	if (header->version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack16(&header->flags, buffer);
+		safe_unpack16(&header->msg_index, buffer);
+		safe_unpack16(&header->msg_type, buffer);
+		safe_unpack32(&header->body_length, buffer);
+		safe_unpack16(&header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			safe_unpackstr_xmalloc(&header->forward.nodelist,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&header->forward.timeout, buffer);
+		}
+
+		safe_unpack16(&header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			if (_unpack_ret_list(&(header->ret_list),
+					     header->ret_cnt, buffer,
+					     header->version))
+				goto unpack_error;
+		} else {
+			header->ret_list = NULL;
+		}
+		slurm_unpack_slurm_addr_no_alloc(&header->orig_addr, buffer);
 	} else {
-		header->ret_list = NULL;
+		safe_unpack16(&header->flags, buffer);
+		safe_unpack16(&header->msg_type, buffer);
+		safe_unpack32(&header->body_length, buffer);
+		safe_unpack16(&header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			safe_unpackstr_xmalloc(&header->forward.nodelist,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&header->forward.timeout, buffer);
+		}
+
+		safe_unpack16(&header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			if (_unpack_ret_list(&(header->ret_list),
+					     header->ret_cnt, buffer,
+					     header->version))
+				goto unpack_error;
+		} else {
+			header->ret_list = NULL;
+		}
+		slurm_unpack_slurm_addr_no_alloc(&header->orig_addr, buffer);
 	}
-	slurm_unpack_slurm_addr_no_alloc(&header->orig_addr, buffer);
 
 	return SLURM_SUCCESS;
 
