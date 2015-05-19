@@ -232,7 +232,7 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	task_dist_states_t result = SLURM_DIST_UNKNOWN;
 	bool pack_nodes = false, no_pack_nodes = false;
 	char *tok, *tmp, *save_ptr = NULL;
-	int i,j;
+	int i, j;
 	char *cur_ptr;
 	char buf[3][25];
 	buf[0][0] = '\0';
@@ -282,18 +282,18 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 		strcat(outstr, buf[0]);
 		if (strcmp(buf[1], "\0") != 0) {
 			strcat(outstr, ":");
-			if ((strcmp(buf[1], "*") == 0) ||
-					strcmp(buf[1], "\0") == 0)
+			if (!strcmp(buf[1], "*") || !strcmp(buf[1], "\0")) {
 				/* default socket distribution is cyclic */
 				strcpy(buf[1], "cyclic");
+			}
 			strcat(outstr, buf[1]);
 		}
 		if (strcmp(buf[2], "\0") != 0) {
 			strcat(outstr, ":");
-			if ((strcmp(buf[2], "*") == 0) ||
-					strcmp(buf[2], "\0") == 0)
+			if (!strcmp(buf[2], "*") || !strcmp(buf[2], "\0")) {
 				/* default core dist is inherited socket dist */
 				strcpy(buf[2], buf[1]);
+			}
 			strcat(outstr, buf[2]);
 		}
 
@@ -393,6 +393,70 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 		result |= SLURM_DIST_NO_PACK_NODES;
 
 	return result;
+}
+
+extern char *format_task_dist_states(task_dist_states_t t)
+{
+	switch (t & SLURM_DIST_STATE_BASE) {
+	case SLURM_DIST_BLOCK:
+		return "block";
+	case SLURM_DIST_CYCLIC:
+		return "cyclic";
+	case SLURM_DIST_PLANE:
+		return "plane";
+	case SLURM_DIST_ARBITRARY:
+		return "arbitrary";
+	case SLURM_DIST_CYCLIC_CYCLIC:
+		return "cyclic:cyclic";
+	case SLURM_DIST_CYCLIC_BLOCK:
+		return "cyclic:block";
+	case SLURM_DIST_CYCLIC_CFULL:
+		return "cyclic:fcyclic";
+	case SLURM_DIST_BLOCK_CYCLIC:
+		return "block:cyclic";
+	case SLURM_DIST_BLOCK_BLOCK:
+		return "block:block";
+	case SLURM_DIST_BLOCK_CFULL:
+		return "block:fcyclic";
+	case SLURM_DIST_CYCLIC_CYCLIC_CYCLIC:
+		return "cyclic:cyclic:cyclic";
+	case SLURM_DIST_CYCLIC_CYCLIC_BLOCK:
+		return "cyclic:cyclic:block";
+	case SLURM_DIST_CYCLIC_CYCLIC_CFULL:
+		return "cyclic:cyclic:fcyclic";
+	case SLURM_DIST_CYCLIC_BLOCK_CYCLIC:
+		return "cyclic:block:cyclic";
+	case SLURM_DIST_CYCLIC_BLOCK_BLOCK:
+		return "cyclic:block:block";
+	case SLURM_DIST_CYCLIC_BLOCK_CFULL:
+		return "cyclic:block:fcyclic";
+	case SLURM_DIST_CYCLIC_CFULL_CYCLIC:
+		return "cyclic:fcyclic:cyclic" ;
+	case SLURM_DIST_CYCLIC_CFULL_BLOCK:
+		return "cyclic:fcyclic:block";
+	case SLURM_DIST_CYCLIC_CFULL_CFULL:
+		return "cyclic:fcyclic:fcyclic";
+	case SLURM_DIST_BLOCK_CYCLIC_CYCLIC:
+		return "block:cyclic:cyclic";
+	case SLURM_DIST_BLOCK_CYCLIC_BLOCK:
+		return "block:cyclic:block";
+	case SLURM_DIST_BLOCK_CYCLIC_CFULL:
+		return "block:cyclic:fcyclic";
+	case SLURM_DIST_BLOCK_BLOCK_CYCLIC:
+		return "block:block:cyclic";
+	case SLURM_DIST_BLOCK_BLOCK_BLOCK:
+		return "block:block:block";
+	case SLURM_DIST_BLOCK_BLOCK_CFULL:
+		return "block:block:fcyclic";
+	case SLURM_DIST_BLOCK_CFULL_CYCLIC:
+		return "block:fcyclic:cyclic";
+	case SLURM_DIST_BLOCK_CFULL_BLOCK:
+		return "block:fcyclic:block";
+	case SLURM_DIST_BLOCK_CFULL_CFULL:
+		return "block:fcyclic:fcyclic";
+	default:
+		return "unknown";
+	}
 }
 
 static uint16_t _get_conn_type(char *arg, bool bgp)

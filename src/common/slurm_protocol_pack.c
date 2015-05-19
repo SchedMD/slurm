@@ -727,6 +727,121 @@ static int
 _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 					    Buf buffer,
 					    uint16_t protocol_version);
+
+/* These functions should be removed when version 14.11 protocol is no longer
+ * supported */
+#define OLD_DIST_CYCLIC		1
+#define OLD_DIST_BLOCK		2
+#define OLD_DIST_ARBITRARY	3
+#define OLD_DIST_PLANE		4
+#define OLD_DIST_CYCLIC_CYCLIC	5
+#define OLD_DIST_CYCLIC_BLOCK	6
+#define OLD_DIST_BLOCK_CYCLIC	7
+#define OLD_DIST_BLOCK_BLOCK	8
+#define OLD_DIST_NO_LLLP	9
+#define OLD_DIST_UNKNOWN	10
+#define OLD_DIST_CYCLIC_CFULL	11
+#define OLD_DIST_BLOCK_CFULL	12
+#define OLD_DIST_STATE_BASE	0x00ff
+#define OLD_DIST_STATE_FLAGS	0xff00
+#define OLD_DIST_PACK_NODES	0x8000
+#define OLD_DIST_NO_PACK_NODES	0x4000
+uint16_t _task_dist_new2old(uint32_t new_task_dist)
+{
+	uint16_t old_task_dist = 0;
+
+	switch (new_task_dist & SLURM_DIST_NODESOCKMASK) {
+	case SLURM_DIST_CYCLIC:
+		old_task_dist = OLD_DIST_CYCLIC;
+		break;
+	case SLURM_DIST_BLOCK:
+		old_task_dist = OLD_DIST_BLOCK;
+		break;
+	case SLURM_DIST_ARBITRARY:
+		old_task_dist = OLD_DIST_ARBITRARY;
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC:
+		old_task_dist = OLD_DIST_CYCLIC_CYCLIC;
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK:
+		old_task_dist = OLD_DIST_CYCLIC_BLOCK;
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC:
+		old_task_dist = OLD_DIST_BLOCK_CYCLIC;
+		break;
+	case SLURM_DIST_BLOCK_BLOCK:
+		old_task_dist = OLD_DIST_BLOCK_BLOCK;
+		break;
+	case SLURM_DIST_NO_LLLP:
+		old_task_dist = OLD_DIST_NO_LLLP;
+		break;
+	case SLURM_DIST_CYCLIC_CFULL:
+		old_task_dist = OLD_DIST_CYCLIC_CFULL;
+		break;
+	case SLURM_DIST_BLOCK_CFULL:
+		old_task_dist = OLD_DIST_BLOCK_CFULL;
+		break;
+	default:
+		new_task_dist = OLD_DIST_UNKNOWN;
+		break;
+	}
+
+	if (new_task_dist & SLURM_DIST_PACK_NODES)
+		old_task_dist |= OLD_DIST_PACK_NODES;
+	if (new_task_dist & SLURM_DIST_NO_PACK_NODES)
+		old_task_dist |= OLD_DIST_NO_PACK_NODES;
+
+	return old_task_dist;
+}
+uint32_t _task_dist_old2new(uint16_t old_task_dist)
+{
+	uint32_t new_task_dist = 0;
+
+	switch (old_task_dist & OLD_DIST_STATE_BASE) {
+	case OLD_DIST_CYCLIC:
+		new_task_dist = SLURM_DIST_CYCLIC;
+		break;
+	case OLD_DIST_BLOCK:
+		new_task_dist = SLURM_DIST_BLOCK;
+		break;
+	case OLD_DIST_ARBITRARY:
+		new_task_dist = SLURM_DIST_ARBITRARY;
+		break;
+	case OLD_DIST_CYCLIC_CYCLIC:
+		new_task_dist = SLURM_DIST_CYCLIC_CYCLIC;
+		break;
+	case OLD_DIST_CYCLIC_BLOCK:
+		new_task_dist = SLURM_DIST_CYCLIC_BLOCK;
+		break;
+	case OLD_DIST_BLOCK_CYCLIC:
+		new_task_dist = SLURM_DIST_BLOCK_CYCLIC;
+		break;
+	case OLD_DIST_BLOCK_BLOCK:
+		new_task_dist = SLURM_DIST_BLOCK_BLOCK;
+		break;
+	case OLD_DIST_NO_LLLP:
+		new_task_dist = SLURM_DIST_NO_LLLP;
+		break;
+	case OLD_DIST_CYCLIC_CFULL:
+		new_task_dist = SLURM_DIST_CYCLIC_CFULL;
+		break;
+	case OLD_DIST_BLOCK_CFULL:
+		new_task_dist = SLURM_DIST_BLOCK_CFULL;
+		break;
+	default:
+		new_task_dist = SLURM_DIST_UNKNOWN;
+		break;
+	}
+
+	if (old_task_dist & OLD_DIST_PACK_NODES)
+		new_task_dist |= SLURM_DIST_PACK_NODES;
+	if (old_task_dist & OLD_DIST_NO_PACK_NODES)
+		new_task_dist |= SLURM_DIST_NO_PACK_NODES;
+
+	return new_task_dist;
+}
+
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -4123,6 +4238,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t task_dist_old;
 		pack32(msg->job_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -4134,7 +4250,8 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
-		pack32(msg->task_dist, buffer);
+		task_dist_old = _task_dist_new2old(msg->task_dist);
+		pack16(task_dist_old, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
 		pack16(msg->ckpt_interval, buffer);
@@ -9060,7 +9177,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						       buffer,
 						       protocol_version);
 		}
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
@@ -9073,7 +9191,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		safe_unpack32(&msg->nnodes, buffer);
 		safe_unpack16(&msg->cpus_per_task, buffer);
-		safe_unpack16(&msg->task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		msg->task_dist = _task_dist_old2new(old_task_dist);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);
 
@@ -12847,7 +12966,6 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-
 
 /* template
    void pack_ ( * msg , Buf buffer )

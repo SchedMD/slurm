@@ -400,7 +400,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 
 	/* for now, PMI2 only supports vector processor mapping */
 
-	if ((task_dist & SLURM_DIST_NODEMASK ) == SLURM_DIST_NODECYCLIC) {
+	if ((task_dist & SLURM_DIST_NODEMASK) == SLURM_DIST_NODECYCLIC) {
 		mapping = xstrdup("(vector");
 
 		rounds = xmalloc (node_cnt * sizeof(uint16_t));

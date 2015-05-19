@@ -50,38 +50,8 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 
-
-#define format_task_dist_states(t)			\
-(t == SLURM_DIST_BLOCK) ? "block" :			\
-(t == SLURM_DIST_CYCLIC) ? "cyclic" :			\
-(t == SLURM_DIST_PLANE) ? "plane" :			\
-(t == SLURM_DIST_ARBITRARY) ? "arbitrary" :		\
-(t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" :	\
-(t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" :	\
-(t == SLURM_DIST_CYCLIC_CFULL) ? "cyclic:fcyclic" :	\
-(t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" :	\
-(t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" :		\
-(t == SLURM_DIST_BLOCK_CFULL) ? "block:fcyclic" :	\
-(t == SLURM_DIST_CYCLIC_CYCLIC_CYCLIC) ? "cyclic:cyclic:cyclic":	\
-(t == SLURM_DIST_CYCLIC_CYCLIC_BLOCK) ? "cyclic:cyclic:block" :		\
-(t == SLURM_DIST_CYCLIC_CYCLIC_CFULL) ? "cyclic:cyclic:fcyclic" :	\
-(t == SLURM_DIST_CYCLIC_BLOCK_CYCLIC) ? "cyclic:block:cyclic" :		\
-(t == SLURM_DIST_CYCLIC_BLOCK_BLOCK) ? "cyclic:block:block" :		\
-(t == SLURM_DIST_CYCLIC_BLOCK_CFULL) ? "cyclic:block:fcyclic" :		\
-(t == SLURM_DIST_CYCLIC_CFULL_CYCLIC) ? "cyclic:fcyclic:cyclic" :	\
-(t == SLURM_DIST_CYCLIC_CFULL_BLOCK) ? "cyclic:fcyclic:block" :		\
-(t == SLURM_DIST_CYCLIC_CFULL_CFULL) ? "cyclic:fcyclic:fcyclic" :	\
-(t == SLURM_DIST_BLOCK_CYCLIC_CYCLIC) ? "block:cyclic:cyclic" :		\
-(t == SLURM_DIST_BLOCK_CYCLIC_BLOCK) ? "block:cyclic:block" :		\
-(t == SLURM_DIST_BLOCK_CYCLIC_CFULL) ? "block:cyclic:fcyclic" :		\
-(t == SLURM_DIST_BLOCK_BLOCK_CYCLIC) ? "block:block:cyclic" :		\
-(t == SLURM_DIST_BLOCK_BLOCK_BLOCK) ? "block:block:block" :		\
-(t == SLURM_DIST_BLOCK_BLOCK_CFULL) ? "block:block:fcyclic" :		\
-(t == SLURM_DIST_BLOCK_CFULL_CYCLIC) ? "block:fcyclic:cyclic" :		\
-(t == SLURM_DIST_BLOCK_CFULL_BLOCK) ? "block:fcyclic:block" :		\
-(t == SLURM_DIST_BLOCK_CFULL_CFULL) ? "block:fcyclic:fcyclic" :		\
-"unknown"
-
+/* convert task state ID to equivalent string */
+extern char *format_task_dist_states(task_dist_states_t t);
 
 /* print this version of SLURM */
 void print_slurm_version(void);
