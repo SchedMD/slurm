@@ -1945,7 +1945,7 @@ extern void set_cluster_tres(void)
 			   TRES_CPU, cpu_count);
 
 		/* add the mem tres to the node */
-		xstrfmtcat(node_ptr->tres_str, "%u=%"PRIu64,
+		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
 			   TRES_MEM, mem_count);
 
 		list_for_each(cluster_tres_list, _add_node_gres_tres, node_ptr);
