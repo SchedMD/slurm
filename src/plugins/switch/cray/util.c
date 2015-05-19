@@ -175,11 +175,6 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 		non_smp = 1;
 		break;
 	}
-	if ((non_smp == 0) &&
-	    (slurm_get_select_type_param() & CR_PACK_NODES)) {
-		CRAY_INFO("Non-SMP ordering identified; CR_PACK_NODES");
-		non_smp = 1;
-	}
 	rc = env_array_overwrite_fmt(&job->env, PMI_CRAY_NO_SMP_ENV,
 				     "%d", non_smp);
 	if (rc == 0) {
