@@ -3431,6 +3431,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_BURST_BUFFER_INFO:
 		slurm_free_burst_buffer_info_msg(data);
 		break;
+	case MESSAGE_COMPOSITE:
+		slurm_free_composite_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
