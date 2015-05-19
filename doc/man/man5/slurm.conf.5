@@ -120,6 +120,17 @@ Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
+\fBAccountingStorageTRES\fR
+Comma separated list of resources you wish to track on the cluster.
+Currently this consists of any GRES, or license along with CPU, Memory,
+and Energy.  By default CPU, Memory, and Energy are tracked.
+AccountingStorageTRES=cpu,mem,energy,gres/craynetwork,license/iop1
+will track cpu, memory, energy along with a gres called craynetwork as well as
+a license called iop1.  Whenever these resources are used on the cluster
+it is recorded.  These TRES do not need to be set up in the database, it will
+happen automatically on the start of the slurmctld.
+
+.TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
 present include "accounting_storage/filetxt",
