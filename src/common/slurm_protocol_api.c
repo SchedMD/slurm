@@ -4608,6 +4608,7 @@ extern int unpack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg)
 	 * Unpack message body
 	 */
 	msg->protocol_version = header.version;
+	msg->msg_index = header.msg_index;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 
