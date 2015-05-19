@@ -61,6 +61,7 @@
 
 typedef struct {
 	pthread_cond_t	cond;
+	uint32_t        debug_flags;
 	bool		max_msgs;
 	uint64_t        max_msg_cnt;
 	composite_msg_t	msgs;
@@ -76,19 +77,18 @@ typedef struct {
  */
 static msg_collection_type_t msg_collection;
 
-static int _send_to_backup_collector(slurm_msg_t *msg, int rc,
-				     uint32_t debug_flags)
+static int _send_to_backup_collector(slurm_msg_t *msg, int rc)
 {
 	slurm_addr_t *next_dest = NULL;
 
-	if (debug_flags & DEBUG_FLAG_ROUTE) {
+	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
 		info("_send_to_backup_collector: primary %s, "
 		     "getting backup",
 		     rc ? "can't be reached" : "is null");
 	}
 
 	if ((next_dest = route_g_next_collector_backup())) {
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
 			info("_send_to_backup_collector: *next_dest is "
@@ -99,7 +99,7 @@ static int _send_to_backup_collector(slurm_msg_t *msg, int rc,
 	}
 
 	if (!next_dest ||  (rc != SLURM_SUCCESS)) {
-		if (debug_flags & DEBUG_FLAG_ROUTE)
+		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
 			info("_send_to_backup_collector: backup %s, "
 			     "sending msg to controller",
 			     rc ? "can't be reached" : "is null");
@@ -120,13 +120,12 @@ static int _send_to_next_collector(slurm_msg_t *msg)
 	slurm_addr_t *next_dest = NULL;
 	bool i_am_collector;
 	int rc = SLURM_SUCCESS;
-	uint32_t debug_flags = slurm_get_debug_flags();
 
-	if (debug_flags & DEBUG_FLAG_ROUTE)
+	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
 		info("msg aggr: send_to_next_collector: getting primary next "
 		     "collector");
 	if ((next_dest = route_g_next_collector(&i_am_collector))) {
-		if (debug_flags & DEBUG_FLAG_ROUTE) {
+		if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
 			char addrbuf[100];
 			slurm_print_slurm_addr(next_dest, addrbuf, 32);
 			info("msg aggr: send_to_next_collector: *next_dest is "
@@ -137,12 +136,11 @@ static int _send_to_next_collector(slurm_msg_t *msg)
 	}
 
 	if (!next_dest || (rc != SLURM_SUCCESS))
-		rc = _send_to_backup_collector(msg, rc, debug_flags);
+		rc = _send_to_backup_collector(msg, rc);
 
 	return rc;
 }
 static pthread_t msg_aggr_pthread = (pthread_t) 0;
-static bool msg_aggr_running = 0;
 
 /*
  * _msg_aggregation_sender()
@@ -158,20 +156,18 @@ static void * _msg_aggregation_sender(void *arg)
 	slurm_msg_t msg;
 	composite_msg_t cmp;
 
-	msg_aggr_running = 1;
+	msg_collection.running = 1;
 
-	msg_aggr_pthread = pthread_self();
-	slurm_mutex_init(&msg_collection.mutex);
-	pthread_cond_init(&msg_collection.cond, NULL);
 	slurm_mutex_lock(&msg_collection.mutex);
-	msg_collection.msgs.msg_list = list_create(slurm_free_comp_msg_list);
-	msg_collection.msgs.base_msgs = 0;
-	msg_collection.msgs.comp_msgs = 0;
-	msg_collection.max_msgs = false;
 
-	while (msg_aggr_running) {
+	while (msg_collection.running) {
 		/* Wait for a new msg to be collected */
 		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
+
+
+		if (!msg_collection.running &&
+		    !list_count(msg_collection.msgs.msg_list))
+			break;
 
 		/* A msg has been collected; start new window */
 		gettimeofday(&now, NULL);
@@ -183,6 +179,10 @@ static void * _msg_aggregation_sender(void *arg)
 
 		pthread_cond_timedwait(&msg_collection.cond,
 				       &msg_collection.mutex, &timeout);
+
+		if (!msg_collection.running &&
+		    !list_count(msg_collection.msgs.msg_list))
+			break;
 
 		msg_collection.max_msgs = true;
 
@@ -217,6 +217,7 @@ static void * _msg_aggregation_sender(void *arg)
 		pthread_cond_broadcast(&msg_collection.cond);
 	}
 
+	slurm_mutex_unlock(&msg_collection.mutex);
 	return NULL;
 }
 
@@ -228,12 +229,24 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	pthread_t      id;
 	int            retries = 0;
 
-	if (msg_aggr_running)
+	if (msg_collection.running || (max_msg_cnt <= 1))
 		return;
 
+	memset(&msg_collection, 0, sizeof(msg_collection_type_t));
+
+	slurm_mutex_init(&msg_collection.mutex);
+
+	slurm_mutex_lock(&msg_collection.mutex);
+	pthread_cond_init(&msg_collection.cond, NULL);
 	slurm_set_addr(&msg_collection.node_addr, port, host);
 	msg_collection.window = window;
 	msg_collection.max_msg_cnt = max_msg_cnt;
+	msg_collection.msgs.msg_list = list_create(slurm_free_comp_msg_list);
+	msg_collection.msgs.base_msgs = 0;
+	msg_collection.msgs.comp_msgs = 0;
+	msg_collection.max_msgs = false;
+	msg_collection.debug_flags = slurm_get_debug_flags();
+	slurm_mutex_unlock(&msg_collection.mutex);
 
 	slurm_attr_init(&attr);
 	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -256,23 +269,40 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 
 extern void msg_aggr_sender_reconfig(uint64_t window, uint64_t max_msg_cnt)
 {
-	if (msg_aggr_running) {
+	if (msg_collection.running) {
+		slurm_mutex_lock(&msg_collection.mutex);
 		msg_collection.window = window;
 		msg_collection.max_msg_cnt = max_msg_cnt;
+		msg_collection.debug_flags = slurm_get_debug_flags();
+		slurm_mutex_unlock(&msg_collection.mutex);
+	} else if (max_msg_cnt > 1) {
+		error("can't start the msg_aggr on a reconfig, "
+		      "a restart is needed");
 	}
 }
 
 extern void msg_aggr_sender_fini(void)
 {
-	msg_aggr_running = 0;
+	if (!msg_collection.running)
+		return;
+	slurm_mutex_lock(&msg_collection.mutex);
+	msg_collection.running = 0;
 
 	if (msg_aggr_pthread && (pthread_self() != msg_aggr_pthread))
 		pthread_kill(msg_aggr_pthread, SIGTERM);
+
+	pthread_cond_destroy(&msg_collection.cond);
+	FREE_NULL_LIST(msg_collection.msgs.msg_list);
+	slurm_mutex_destroy(&msg_collection.mutex);
 }
 
 extern void msg_aggr_add_msg(slurm_msg_t *msg)
 {
 	slurm_msg_t *msg_ptr;
+	int count;
+
+	if (!msg_collection.running)
+		return;
 
 	slurm_mutex_lock(&msg_collection.mutex);
 	if (msg_collection.max_msgs == true) {
@@ -281,20 +311,24 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg)
 	msg_ptr = msg;
 	/* Add msg to message collection */
 	list_append(msg_collection.msgs.msg_list, msg_ptr);
+
 	if (msg_ptr->msg_type == MESSAGE_COMPOSITE) {
 		msg_collection.msgs.comp_msgs++;
 	} else {
 		msg_collection.msgs.base_msgs++;
 	}
-	if (list_count(msg_collection.msgs.msg_list) == 1) {
-		/* First msg in collection; initiate new window */
+
+	count = list_count(msg_collection.msgs.msg_list);
+
+	/* First msg in collection; initiate new window */
+	if (count == 1)
 		pthread_cond_signal(&msg_collection.cond);
-	}
-	if (list_count(msg_collection.msgs.msg_list) >=
-	    msg_collection.max_msg_cnt) {
-		/* Max msgs reached; terminate window */
+
+	/* Max msgs reached; terminate window */
+	if (count >= msg_collection.max_msg_cnt) {
 		msg_collection.max_msgs = true;
 		pthread_cond_signal(&msg_collection.cond);
 	}
+	info("out with running at %d", msg_collection.running);
 	slurm_mutex_unlock(&msg_collection.mutex);
 }
