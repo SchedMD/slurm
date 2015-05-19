@@ -457,10 +457,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		}
 	}
 
-        if (((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC) ||
-            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_CYCLIC) ||
-            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_CFULL) ||
-            ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_CYCLIC_BLOCK))
+        if ((task_dist & SLURM_DIST_NODEMASK) == SLURM_DIST_NODECYCLIC)
 		return _task_layout_cyclic(step_layout, cpus);
 	else if (((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) &&
 		!(cluster_flags & CLUSTER_FLAG_FE))
@@ -811,6 +808,60 @@ extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 	case SLURM_DIST_BLOCK_CFULL:	/* block for node and full
 					 * cyclic for lllp  */
 		strcat(name, "BFCyclic");
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC_CYCLIC:
+		return "CCyclicCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC_BLOCK:
+		return "CCyclicBlock";
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC_CFULL:
+		return "CCyclicFCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK_CYCLIC:
+		return "CBlockCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK_BLOCK:
+		return "CBlockBlock";
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK_CFULL:
+		return "CCyclicFCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_CFULL_CYCLIC:
+		return "CFCyclicCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_CFULL_BLOCK:
+		return "CFCyclicBlock";
+		break;
+	case SLURM_DIST_CYCLIC_CFULL_CFULL:
+		return "CFCyclicFCyclic";
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC_CYCLIC:
+		return "BCyclicCyclic";
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC_BLOCK:
+		return "BCyclicBlock";
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC_CFULL:
+		return "BCyclicFCyclic";
+		break;
+	case SLURM_DIST_BLOCK_BLOCK_CYCLIC:
+		return "BBlockCyclic";
+		break;
+	case SLURM_DIST_BLOCK_BLOCK_BLOCK:
+		return "BBlockBlock";
+		break;
+	case SLURM_DIST_BLOCK_BLOCK_CFULL:
+		return "BBlockFCyclic";
+		break;
+	case SLURM_DIST_BLOCK_CFULL_CYCLIC:
+		return "BFCyclicCyclic";
+		break;
+	case SLURM_DIST_BLOCK_CFULL_BLOCK:
+		return "BFCyclicBlock";
+		break;
+	case SLURM_DIST_BLOCK_CFULL_CFULL:
+		return "BFCyclicFCyclic";
 		break;
 	case SLURM_DIST_NO_LLLP:	/* No distribution specified for lllp */
 	case SLURM_DIST_UNKNOWN:

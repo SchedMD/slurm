@@ -399,7 +399,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
 	debug3("   cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u "
-	       "relative=%u task_dist=%u plane=%u",
+	       "relative=%u task_dist=0x%X plane=%u",
 	       step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
 	       step_spec->cpu_freq_min, step_spec->relative,
 	       step_spec->task_dist, step_spec->plane_size);
@@ -2155,16 +2155,34 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_ALREADY_DONE;
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
-	if ((task_dist != SLURM_DIST_CYCLIC) &&
-	    (task_dist != SLURM_DIST_BLOCK) &&
-	    (task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
-	    (task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
-	    (task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
-	    (task_dist != SLURM_DIST_BLOCK_BLOCK) &&
-	    (task_dist != SLURM_DIST_CYCLIC_CFULL) &&
-	    (task_dist != SLURM_DIST_BLOCK_CFULL) &&
-	    (task_dist != SLURM_DIST_PLANE) &&
-	    (task_dist != SLURM_DIST_ARBITRARY))
+	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_BLOCK_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CFULL_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CYCLIC_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_BLOCK_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL_CYCLIC) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL_BLOCK) &&
+	    (step_specs->task_dist != SLURM_DIST_BLOCK_CFULL_CFULL) &&
+	    (step_specs->task_dist != SLURM_DIST_PLANE) &&
+	    (step_specs->task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
 	if ((task_dist == SLURM_DIST_ARBITRARY) &&
@@ -2353,7 +2371,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	step_ptr->step_node_bitmap = nodeset;
 
-	switch (step_specs->task_dist & SLURM_DIST_STATE_BASE) {
+	switch (step_specs->task_dist & SLURM_DIST_NODESOCKMASK) {
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
 	case SLURM_DIST_CYCLIC_CFULL:

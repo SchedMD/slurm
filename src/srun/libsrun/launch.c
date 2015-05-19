@@ -248,7 +248,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 #endif
 	}
 
-	switch (opt.distribution & SLURM_DIST_STATE_BASE) {
+	switch (opt.distribution & SLURM_DIST_NODESOCKMASK) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_ARBITRARY:
 	case SLURM_DIST_CYCLIC:

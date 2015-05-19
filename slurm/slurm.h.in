@@ -561,36 +561,76 @@ enum acct_energy_type {
 	ENERGY_DATA_LAST_POLL,
 };
 
-/* Possible task distributions across the nodes */
+/*
+ * Task distribution states/methods
+ *
+ * Symbol format is SLURM_DIST_<node>_<socket>_<core>
+ *
+ * <node>   = Method for distributing tasks to nodes.
+ *            This determines the order in which task ids are 
+ *            distributed to the nodes selected for the job/step.
+ * <socket> = Method for distributing allocated lllps across sockets.
+ *            This determines the order in which allocated lllps are
+ *            distributed across sockets for binding to tasks.
+ * <core>   = Method for distributing allocated lllps across cores.
+ *            This determines the order in which allocated lllps are
+ *            distributed across cores for binding to tasks.
+ *
+ * Note that the socket and core distributions apply only to task affinity.
+ */
 typedef enum task_dist_states {
 	/* NOTE: start SLURM_DIST_CYCLIC at 1 for HP MPI */
-	SLURM_DIST_CYCLIC = 1,	/* distribute tasks 1 per node, round robin */
-	SLURM_DIST_BLOCK,	/* distribute tasks filling node by node */
-	SLURM_DIST_ARBITRARY,	/* arbitrary task distribution  */
-	SLURM_DIST_PLANE,	/* distribute tasks by filling up
-				   planes of lllp first and then by
-				   going across the nodes See
-				   documentation for more
-				   information */
-	SLURM_DIST_CYCLIC_CYCLIC,/* distribute tasks 1 per node,
-				    round robin, same for lowest
-				    level of logical processor (lllp) */
-	SLURM_DIST_CYCLIC_BLOCK, /* cyclic for node and block for lllp  */
-	SLURM_DIST_BLOCK_CYCLIC, /* block for node and cyclic for lllp  */
-	SLURM_DIST_BLOCK_BLOCK,	/* block for node and block for lllp  */
-	SLURM_DIST_NO_LLLP,	/* No distribution specified for lllp */
-	SLURM_DIST_UNKNOWN,	/* unknown dist */
-	SLURM_DIST_CYCLIC_CFULL, /* Same as cyclic:cyclic except for
-				    multi-cpu tasks cyclically
-				    bind cpus */
-	SLURM_DIST_BLOCK_CFULL, /* Same as block:cyclic except for
-				   multi-cpu tasks cyclically
-				   bind cpus  */
+	SLURM_DIST_CYCLIC               = 0x0001,
+	SLURM_DIST_BLOCK                = 0x0002,
+	SLURM_DIST_ARBITRARY            = 0x0003,
+	SLURM_DIST_PLANE                = 0x0004,
+	SLURM_DIST_CYCLIC_CYCLIC        = 0x0011,
+	SLURM_DIST_CYCLIC_BLOCK         = 0x0021,
+	SLURM_DIST_CYCLIC_CFULL         = 0x0031,
+	SLURM_DIST_BLOCK_CYCLIC         = 0x0012,
+	SLURM_DIST_BLOCK_BLOCK          = 0x0022,
+	SLURM_DIST_BLOCK_CFULL          = 0x0032,
+	SLURM_DIST_CYCLIC_CYCLIC_CYCLIC = 0x0111,
+	SLURM_DIST_CYCLIC_CYCLIC_BLOCK  = 0x0211,
+	SLURM_DIST_CYCLIC_CYCLIC_CFULL  = 0x0311,
+	SLURM_DIST_CYCLIC_BLOCK_CYCLIC  = 0x0121,
+	SLURM_DIST_CYCLIC_BLOCK_BLOCK   = 0x0221,
+	SLURM_DIST_CYCLIC_BLOCK_CFULL   = 0x0321,
+	SLURM_DIST_CYCLIC_CFULL_CYCLIC  = 0x0131,
+	SLURM_DIST_CYCLIC_CFULL_BLOCK   = 0x0231,
+	SLURM_DIST_CYCLIC_CFULL_CFULL   = 0x0331,
+	SLURM_DIST_BLOCK_CYCLIC_CYCLIC  = 0x0112,
+	SLURM_DIST_BLOCK_CYCLIC_BLOCK   = 0x0212,
+	SLURM_DIST_BLOCK_CYCLIC_CFULL   = 0x0312,
+	SLURM_DIST_BLOCK_BLOCK_CYCLIC   = 0x0122,
+	SLURM_DIST_BLOCK_BLOCK_BLOCK    = 0x0222,
+	SLURM_DIST_BLOCK_BLOCK_CFULL    = 0x0322,
+	SLURM_DIST_BLOCK_CFULL_CYCLIC   = 0x0132,
+	SLURM_DIST_BLOCK_CFULL_BLOCK    = 0x0232,
+	SLURM_DIST_BLOCK_CFULL_CFULL    = 0x0332,
+	
+	SLURM_DIST_NODECYCLIC           = 0x0001,
+	SLURM_DIST_NODEBLOCK            = 0x0002,	
+	SLURM_DIST_SOCKCYCLIC           = 0x0010,
+	SLURM_DIST_SOCKBLOCK            = 0x0020,
+	SLURM_DIST_SOCKCFULL            = 0x0030,
+	SLURM_DIST_CORECYCLIC           = 0x0100,
+	SLURM_DIST_COREBLOCK            = 0x0200,
+	SLURM_DIST_CORECFULL            = 0x0300,
+
+	SLURM_DIST_NO_LLLP              = 0x1000,
+	SLURM_DIST_UNKNOWN              = 0x2000,
 } task_dist_states_t;
-#define SLURM_DIST_STATE_BASE		0x00ff
-#define SLURM_DIST_STATE_FLAGS		0xff00
-#define SLURM_DIST_PACK_NODES		0x8000
-#define SLURM_DIST_NO_PACK_NODES	0x4000
+
+#define SLURM_DIST_STATE_BASE		0x00FFFF
+#define SLURM_DIST_STATE_FLAGS		0xFF0000
+#define SLURM_DIST_PACK_NODES		0x800000
+#define SLURM_DIST_NO_PACK_NODES	0x400000
+
+#define SLURM_DIST_NODEMASK               0xF00F
+#define SLURM_DIST_SOCKMASK               0xF0F0
+#define SLURM_DIST_COREMASK               0xFF00
+#define SLURM_DIST_NODESOCKMASK           0xF0FF
 
 /* Open stdout/err file mode, 0 for system default (JobFileAppend) */
 #define OPEN_MODE_APPEND	1

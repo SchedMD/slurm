@@ -143,8 +143,79 @@ void set_distribution(task_dist_states_t distribution,
 			*dist      = "block:fcyclic";
 			*lllp_dist = "cyclic";
 			break;
+		case SLURM_DIST_CYCLIC_CYCLIC_CYCLIC:
+			*dist      = "cyclic:cyclic:cyclic";
+			*lllp_dist = "cyclic:cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC_BLOCK:
+			*dist      = "cyclic:cyclic:block";
+			*lllp_dist = "cyclic:block";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC_CFULL:
+			*dist      = "cyclic:cyclic:fcyclic";
+			*lllp_dist = "cyclic:fcyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK_CYCLIC:
+			*dist      = "cyclic:block:cyclic";
+			*lllp_dist = "block:cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK_BLOCK:
+			*dist      = "cyclic:block:block";
+			*lllp_dist = "block:block";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK_CFULL:
+			*dist      = "cyclic:cylic:cyclic";
+			*lllp_dist = "cyclic:cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_CFULL_CYCLIC:
+			*dist      = "cyclic:cylic:cyclic";
+			*lllp_dist = "cyclic:cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_CFULL_BLOCK:
+			*dist      = "cyclic:fcyclic:block";
+			*lllp_dist = "fcyclic:block";
+		case SLURM_DIST_CYCLIC_CFULL_CFULL:
+			*dist      = "cyclic:fcyclic:fcyclic";
+			*lllp_dist = "fcyclic:fcyclic";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC_CYCLIC:
+			*dist      = "block:cyclic:cyclic";
+			*lllp_dist = "cyclic:cyclic";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC_BLOCK:
+			*dist      = "block:cyclic:block";
+			*lllp_dist = "cyclic:block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC_CFULL:
+			*dist      = "block:cyclic:fcyclic";
+			*lllp_dist = "cyclic:fcyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK_CYCLIC:
+			*dist      = "block:block:cyclic";
+			*lllp_dist = "block:cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK_BLOCK:
+			*dist      = "block:block:block";
+			*lllp_dist = "block:block";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK_CFULL:
+			*dist      = "block:block:fcyclic";
+			*lllp_dist = "block:fcyclic";
+			break;
+		case SLURM_DIST_BLOCK_CFULL_CYCLIC:
+			*dist      = "block:fcyclic:cyclic";
+			*lllp_dist = "fcyclic:cyclic";
+			break;
+		case SLURM_DIST_BLOCK_CFULL_BLOCK:
+			*dist      = "block:fcyclic:block";
+			*lllp_dist = "fcyclic:block";
+			break;
+		case SLURM_DIST_BLOCK_CFULL_CFULL:
+			*dist      = "block:fcyclic:fcyclic";
+			*lllp_dist = "fcyclic:fcyclic";
+			break;
 		default:
-			error("unknown dist, type %d", distribution);
+			error("unknown dist, type 0x%X", distribution);
 			break;
 		}
 	}
@@ -161,6 +232,14 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	task_dist_states_t result = SLURM_DIST_UNKNOWN;
 	bool pack_nodes = false, no_pack_nodes = false;
 	char *tok, *tmp, *save_ptr = NULL;
+	int i,j;
+	char *cur_ptr;
+	char buf[3][25];
+	buf[0][0] = '\0';
+	buf[1][0] = '\0';
+	buf[2][0] = '\0';
+	char outstr[100];
+	outstr[0]='\0';
 
 	if (!arg)
 		return result;
@@ -184,19 +263,107 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 			}
 		}
 
+		cur_ptr = tok;
+	 	for (j = 0; j < 3; j++) {
+			for (i = 0; i < 24; i++) {
+				if (*cur_ptr == '\0' || *cur_ptr ==':')
+					break;
+				buf[j][i] = *cur_ptr++;
+			}
+			buf[j][i] = '\0';
+			if (*cur_ptr == '\0')
+				break;
+			buf[j][i] = '\0';
+			cur_ptr++;
+		}
+		if (strcmp(buf[0], "*") == 0)
+			/* default node distribution is block */
+			strcpy(buf[0], "block");
+		strcat(outstr, buf[0]);
+		if (strcmp(buf[1], "\0") != 0) {
+			strcat(outstr, ":");
+			if ((strcmp(buf[1], "*") == 0) ||
+					strcmp(buf[1], "\0") == 0)
+				/* default socket distribution is cyclic */
+				strcpy(buf[1], "cyclic");
+			strcat(outstr, buf[1]);
+		}
+		if (strcmp(buf[2], "\0") != 0) {
+			strcat(outstr, ":");
+			if ((strcmp(buf[2], "*") == 0) ||
+					strcmp(buf[2], "\0") == 0)
+				/* default core dist is inherited socket dist */
+				strcpy(buf[2], buf[1]);
+			strcat(outstr, buf[2]);
+		}
+
 		if (lllp_dist) {
-			if (strcasecmp(tok, "cyclic:cyclic") == 0) {
+			if (strcasecmp(outstr, "cyclic:cyclic") == 0) {
 				result = SLURM_DIST_CYCLIC_CYCLIC;
-			} else if (strcasecmp(tok, "cyclic:block") == 0) {
+			} else if (strcasecmp(outstr, "cyclic:block") == 0) {
 				result = SLURM_DIST_CYCLIC_BLOCK;
-			} else if (strcasecmp(tok, "block:block") == 0) {
+			} else if (strcasecmp(outstr, "block:block") == 0) {
 				result = SLURM_DIST_BLOCK_BLOCK;
-			} else if (strcasecmp(tok, "block:cyclic") == 0) {
+			} else if (strcasecmp(outstr, "block:cyclic") == 0) {
 				result = SLURM_DIST_BLOCK_CYCLIC;
-			} else if (strcasecmp(tok, "block:fcyclic") == 0) {
+			} else if (strcasecmp(outstr, "block:fcyclic") == 0) {
 				result = SLURM_DIST_BLOCK_CFULL;
-			} else if (strcasecmp(tok, "cyclic:fcyclic") == 0) {
+			} else if (strcasecmp(outstr, "cyclic:fcyclic") == 0) {
 				result = SLURM_DIST_CYCLIC_CFULL;
+			} else if (strcasecmp(outstr, "cyclic:cyclic:cyclic")
+				   == 0) {
+				result = SLURM_DIST_CYCLIC_CYCLIC_CYCLIC;
+			} else if (strcasecmp(outstr, "cyclic:cyclic:block")
+				   == 0) {
+				result = SLURM_DIST_CYCLIC_CYCLIC_BLOCK;
+			} else if (strcasecmp(outstr, "cyclic:cyclic:fcyclic")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_CYCLIC_CFULL;
+			} else if (strcasecmp(outstr, "cyclic:block:cyclic")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_BLOCK_CYCLIC;
+			} else if (strcasecmp(outstr, "cyclic:block:block")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_BLOCK_BLOCK;
+			} else if (strcasecmp(outstr, "cyclic:block:fcyclic")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_BLOCK_CFULL;
+			} else if (strcasecmp(outstr, "cyclic:fcyclic:cyclic")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_CFULL_CYCLIC;
+			} else if (strcasecmp(outstr, "cyclic:fcyclic:block")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_CFULL_BLOCK;
+			} else if (strcasecmp(outstr, "cyclic:fcyclic:fcyclic")
+				== 0) {
+				result = SLURM_DIST_CYCLIC_CFULL_CFULL;
+			} else if (strcasecmp(outstr, "block:cyclic:cyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CYCLIC_CYCLIC;
+			} else if (strcasecmp(outstr, "block:cyclic:block")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CYCLIC_BLOCK;
+			} else if (strcasecmp(outstr, "block:cyclic:fcyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CYCLIC_CFULL;
+			} else if (strcasecmp(outstr, "block:block:cyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_BLOCK_CYCLIC;
+			} else if (strcasecmp(outstr, "block:block:block")
+				== 0) {
+				result = SLURM_DIST_BLOCK_BLOCK_BLOCK;
+			} else if (strcasecmp(outstr, "block:block:fcyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_BLOCK_CFULL;
+			} else if (strcasecmp(outstr, "block:fcyclic:cyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CFULL_CYCLIC;
+			} else if (strcasecmp(outstr, "block:fcyclic:block")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CFULL_BLOCK;
+			} else if (strcasecmp(outstr, "block:fcyclic:fcyclic")
+				== 0) {
+				result = SLURM_DIST_BLOCK_CFULL_CFULL;
 			}
 		} else if (plane_dist) {
 			if (strncasecmp(tok, "plane", len) == 0) {

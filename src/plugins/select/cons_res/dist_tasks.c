@@ -967,7 +967,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	 * by the next code block
 	 */
 	if ( slurmctld_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK ) {
-		switch(job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) {
+		switch(job_ptr->details->task_dist & SLURM_DIST_NODEMASK) {
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
 		case SLURM_DIST_CYCLIC:
@@ -980,7 +980,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	/* Determine the number of logical processors per node needed
 	 * for this job. Make sure below matches the layouts in
 	 * lllp_distribution in plugins/task/affinity/dist_task.c (FIXME) */
-	switch(job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) {
+	switch(job_ptr->details->task_dist & SLURM_DIST_NODESOCKMASK) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:

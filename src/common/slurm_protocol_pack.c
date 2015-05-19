@@ -4104,7 +4104,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
-		pack16(msg->task_dist, buffer);
+		pack32(msg->task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
 		pack16(msg->ckpt_interval, buffer);
@@ -4134,7 +4134,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
-		pack16(msg->task_dist, buffer);
+		pack32(msg->task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
 		pack16(msg->ckpt_interval, buffer);
@@ -4185,7 +4185,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 		safe_unpack16(&(tmp_ptr->relative), buffer);
-		safe_unpack16(&(tmp_ptr->task_dist), buffer);
+		safe_unpack32(&(tmp_ptr->task_dist), buffer);
 		safe_unpack16(&(tmp_ptr->plane_size), buffer);
 		safe_unpack16(&(tmp_ptr->port), buffer);
 		safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
@@ -4219,7 +4219,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 		safe_unpack16(&(tmp_ptr->relative), buffer);
-		safe_unpack16(&(tmp_ptr->task_dist), buffer);
+		safe_unpack32(&(tmp_ptr->task_dist), buffer);
 		safe_unpack16(&(tmp_ptr->plane_size), buffer);
 		safe_unpack16(&(tmp_ptr->port), buffer);
 		safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
