@@ -207,8 +207,7 @@ static void * _msg_aggregation_sender(void *arg)
 		msg.msg_type = MESSAGE_COMPOSITE;
 		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 		msg.data = &cmp;
-
-		if (slurm_send_to_next_collector(&msg) != SLURM_SUCCESS) {
+		if (_send_to_next_collector(&msg) != SLURM_SUCCESS) {
 			error("_msg_aggregation_engine: Unable to send "
 			      "composite msg: %m");
 		}
