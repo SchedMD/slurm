@@ -60,12 +60,14 @@
 #endif /* WITH_PTHREADS */
 
 typedef struct {
-	pthread_mutex_t	mutex;
 	pthread_cond_t	cond;
 	bool		max_msgs;
 	uint64_t        max_msg_cnt;
 	composite_msg_t	msgs;
+	pthread_mutex_t	mutex;
 	slurm_addr_t    node_addr;
+	bool            running;
+	pthread_t       thread_id;
 	uint64_t        window;
 } msg_collection_type_t;
 
