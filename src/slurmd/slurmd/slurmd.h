@@ -76,15 +76,6 @@ typedef enum {
 	WINDOW_MSGS
 } msg_aggr_param_type_t;
 
-typedef struct msg_collection_type {
-	pthread_mutex_t	mutex;
-	pthread_cond_t	cond;
-	bool		max_msgs;
-	composite_msg_t	msgs;
-} msg_collection_type_t;
-
-extern msg_collection_type_t msg_collection;
-
 /*
  * Global config type
  */

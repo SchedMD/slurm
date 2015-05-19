@@ -75,6 +75,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/msg_aggr.h"
 #include "src/common/node_conf.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
@@ -126,11 +127,6 @@ int devnull = -1;
 slurmd_conf_t * conf = NULL;
 
 /*
- * Message collection data & controls
- */
-msg_collection_type_t msg_collection;
-
-/*
  * count of active threads
  */
 static int             active_threads = 0;
@@ -162,7 +158,6 @@ static int	ncpus;			/* number of CPUs on this node */
 static sig_atomic_t _shutdown = 0;
 static sig_atomic_t _reconfig = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
-static pthread_t msg_aggr_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
 static void      _atfork_final(void);
@@ -182,7 +177,6 @@ static void      _init_conf(void);
 static void      _install_fork_handlers(void);
 static void 	 _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
-static void     *_msg_aggregation_engine(void *arg);
 static void      _msg_engine(void);
 static uint64_t  _parse_msg_aggr_params(int type, char *params);
 static void      _print_conf(void);
@@ -201,7 +195,6 @@ static int       _set_slurmd_spooldir(void);
 static int       _set_topo_info(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void      _spawn_msg_aggregation_engine(void);
 static void      _spawn_registration_engine(void);
 static void      _term_handler(int);
 static void      _update_logging(void);
@@ -370,7 +363,9 @@ main (int argc, char *argv[])
 		fatal("failed to initialize slurmd_plugstack");
 
 	_spawn_registration_engine();
-	_spawn_msg_aggregation_engine();
+	msg_aggr_sender_init(conf->hostname, conf->port,
+			     conf->msg_aggr_window_time,
+			     conf->msg_aggr_window_msgs);
 	_msg_engine();
 
 	/*
@@ -440,104 +435,6 @@ _registration_engine(void *arg)
 	}
 
 	_decrement_thd_count();
-	return NULL;
-}
-
-static void
-_spawn_msg_aggregation_engine(void)
-{
-	int            rc;
-	pthread_attr_t attr;
-	pthread_t      id;
-	int            retries = 0;
-
-	slurm_attr_init(&attr);
-	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		errno = rc;
-		fatal("msg aggregation: unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr);
-		return;
-	}
-
-	while (pthread_create(&id, &attr, &_msg_aggregation_engine, NULL)) {
-		error("msg aggregation: pthread_create: %m");
-		if (++retries > 3)
-			fatal("msg aggregation: pthread_create: %m");
-		usleep(10);	/* sleep and again */
-	}
-	return;
-}
-
-/*
- * _msg_aggregation_engine()
- *
- *  Start and terminate message collection windows.
- *  Send collected msgs to next collector node or final destination
- *  at window expiration.
- */
-static void *
-_msg_aggregation_engine(void *arg)
-{
-	struct timeval now;
-	struct timespec timeout;
-	slurm_msg_t msg;
-	composite_msg_t cmp;
-
-	msg_aggr_pthread = pthread_self();
-	slurm_mutex_init(&msg_collection.mutex);
-	pthread_cond_init(&msg_collection.cond, NULL);
-	slurm_mutex_lock(&msg_collection.mutex);
-	msg_collection.msgs.msg_list = list_create(slurm_free_comp_msg_list);
-	msg_collection.msgs.base_msgs = 0;
-	msg_collection.msgs.comp_msgs = 0;
-	msg_collection.max_msgs = false;
-
-	while (!_shutdown) {
-		/* Wait for a new msg to be collected */
-		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
-		/* A msg has been collected; start new window */
-		gettimeofday(&now, NULL);
-		timeout.tv_sec = now.tv_sec +
-			(conf->msg_aggr_window_time / 1000);
-		timeout.tv_nsec = (now.tv_usec * 1000) +
-			(1000000 * (conf->msg_aggr_window_time % 1000));
-		timeout.tv_sec += timeout.tv_nsec / 1000000000;
-		timeout.tv_nsec %= 1000000000;
-
-		pthread_cond_timedwait(&msg_collection.cond,
-				       &msg_collection.mutex, &timeout);
-		msg_collection.max_msgs = true;
-		/* Msg collection window has expired and message collection
-		 * is suspended; now build and send composite msg */
-		memset(&msg, 0, sizeof(slurm_msg_t));
-		memset(&cmp, 0, sizeof(composite_msg_t));
-
-		slurm_set_addr(&cmp.sender, conf->port, conf->hostname);
-		cmp.base_msgs = msg_collection.msgs.base_msgs;
-		cmp.comp_msgs = msg_collection.msgs.comp_msgs;
-		cmp.msg_list = msg_collection.msgs.msg_list;
-
-		msg_collection.msgs.msg_list =
-			list_create(slurm_free_comp_msg_list);
-		msg_collection.msgs.base_msgs = 0;
-		msg_collection.msgs.comp_msgs = 0;
-		msg_collection.max_msgs = false;
-
-		slurm_msg_t_init(&msg);
-		msg.msg_type = MESSAGE_COMPOSITE;
-		msg.protocol_version = SLURM_PROTOCOL_VERSION;
-		slurm_msg_t_init(&msg);
-
-		if (slurm_send_to_next_collector(&msg) != SLURM_SUCCESS) {
-			error("_msg_aggregation_engine: Unable to send "
-			      "composite msg: %m");
-		}
-		list_destroy(cmp.msg_list);
-
-		/* Resume message collection */
-		pthread_cond_broadcast(&msg_collection.cond);
-	}
 	return NULL;
 }
 
@@ -1114,6 +1011,9 @@ _reconfigure(void)
 	_set_topo_info();
 	route_g_reconfigure();
 	cpu_freq_reconfig();
+
+	msg_aggr_sender_reconfig(conf->msg_aggr_window_time,
+				 conf->msg_aggr_window_msgs);
 
 	/*
 	 * In case the administrator changed the cpu frequency set capabilities
@@ -1878,8 +1778,7 @@ _term_handler(int signum)
 		_shutdown = 1;
 		if (msg_pthread && (pthread_self() != msg_pthread))
 			pthread_kill(msg_pthread, SIGTERM);
-		if (msg_aggr_pthread && (pthread_self() != msg_aggr_pthread))
-			pthread_kill(msg_aggr_pthread, SIGTERM);
+		msg_aggr_sender_fini();
 	}
 }
 

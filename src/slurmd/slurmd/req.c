@@ -67,6 +67,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/msg_aggr.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
@@ -149,7 +150,6 @@ typedef struct {
 
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
-static void _collect_message(slurm_msg_t *);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static msg_aggr_t *_handle_msg_aggr_ret(uint32_t jobid);
@@ -469,7 +469,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case MESSAGE_COMPOSITE:
 		debug2("Processing RPC: MESSAGE_COMPOSITE");
-		_collect_message(msg);
+		msg_aggr_add_msg(msg);
 		break;
 	case RESPONSE_MESSAGE_COMPOSITE:
 		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
@@ -3761,7 +3761,7 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	if (conf->msg_aggr_window_msgs > 1) {
 		/* message aggregation is enabled */
-		_collect_message(msg);
+		msg_aggr_add_msg(msg);
 	} else {
 		/* Note: No return code to message, slurmctld will resend
 		 * TERMINATE_JOB request if message send fails */
@@ -5752,42 +5752,6 @@ done:
 		close(fd);
 	rc = errno;
 	slurm_send_rc_msg(msg, rc);
-}
-
-/* _collect_message()
- *
- *  Collect a message for message aggregation.
- *  Signal msg_aggregation_engine to initiate and terminate
- *   message collection windows.
- */
-static void
-_collect_message(slurm_msg_t *msg)
-{
-	slurm_msg_t *msg_ptr;
-
-	slurm_mutex_lock(&msg_collection.mutex);
-	if (msg_collection.max_msgs == true) {
-		pthread_cond_wait(&msg_collection.cond, &msg_collection.mutex);
-	}
-	msg_ptr = msg;
-	/* Add msg to message collection */
-	list_append(msg_collection.msgs.msg_list, msg_ptr);
-	if (msg_ptr->msg_type == MESSAGE_COMPOSITE) {
-		msg_collection.msgs.comp_msgs++;
-	} else {
-		msg_collection.msgs.base_msgs++;
-	}
-	if (list_count(msg_collection.msgs.msg_list) == 1) {
-		/* First msg in collection; initiate new window */
-		pthread_cond_signal(&msg_collection.cond);
-	}
-	if (list_count(msg_collection.msgs.msg_list) >=
-			conf->msg_aggr_window_msgs) {
-		/* Max msgs reached; terminate window */
-		msg_collection.max_msgs = true;
-		pthread_cond_signal(&msg_collection.cond);
-	}
-	slurm_mutex_unlock(&msg_collection.mutex);
 }
 
 static void _launch_complete_add(uint32_t job_id)
