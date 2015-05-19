@@ -5277,9 +5277,9 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 
 	comp_msg = (composite_msg_t *) msg->data;
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-		info("Processing RPC: MESSAGE_COMPOSITE  epilog complete msgs ="
-			" %d, composite msgs = %d", comp_msg->base_msgs,
-			comp_msg->comp_msgs);
+		info("Processing RPC: MESSAGE_COMPOSITE msg with %d direct "
+		     "messages", comp_msg->msg_list ?
+		     list_count(comp_msg->msg_list) : 0);
 
 	/* Locks: Read configuration, write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -5332,10 +5332,10 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 		case MESSAGE_COMPOSITE:
 			ncomp_msg = (composite_msg_t *) next_msg->data;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-				info("Processing embedded MESSAGE_COMPOSITE  "
-					"epilog complete msgs = %d, composite "
-					"msgs = %d", ncomp_msg->base_msgs,
-					ncomp_msg->comp_msgs);
+				info("Processing embedded MESSAGE_COMPOSITE "
+				     "msg with %d direct "
+				     "messages", ncomp_msg->msg_list ?
+				     list_count(ncomp_msg->msg_list) : 0);
 			_slurm_rpc_comp_msg_list(ncomp_msg, run_scheduler);
 			break;
 		case MESSAGE_EPILOG_COMPLETE:

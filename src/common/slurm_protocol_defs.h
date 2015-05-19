@@ -803,8 +803,6 @@ typedef struct network_callerid_resp {
 
 typedef struct composite_msg {
 	slurm_addr_t sender;	/* address of sending node/port */
-	uint16_t base_msgs;	/* number of base msgs in msg_list */
-	uint16_t comp_msgs;	/* number of composite msgs in msg_list */
 	List	 msg_list;
 } composite_msg_t;
 

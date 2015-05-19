@@ -64,7 +64,7 @@ typedef struct {
 	uint32_t        debug_flags;
 	bool		max_msgs;
 	uint64_t        max_msg_cnt;
-	composite_msg_t	msgs;
+	List            msg_list;
 	pthread_mutex_t	mutex;
 	slurm_addr_t    node_addr;
 	bool            running;
@@ -165,7 +165,7 @@ static void * _msg_aggregation_sender(void *arg)
 
 
 		if (!msg_collection.running &&
-		    !list_count(msg_collection.msgs.msg_list))
+		    !list_count(msg_collection.msg_list))
 			break;
 
 		/* A msg has been collected; start new window */
@@ -180,7 +180,7 @@ static void * _msg_aggregation_sender(void *arg)
 				       &msg_collection.mutex, &timeout);
 
 		if (!msg_collection.running &&
-		    !list_count(msg_collection.msgs.msg_list))
+		    !list_count(msg_collection.msg_list))
 			break;
 
 		msg_collection.max_msgs = true;
@@ -192,14 +192,10 @@ static void * _msg_aggregation_sender(void *arg)
 
 		memcpy(&cmp.sender, &msg_collection.node_addr,
 		       sizeof(slurm_addr_t));
-		cmp.base_msgs = msg_collection.msgs.base_msgs;
-		cmp.comp_msgs = msg_collection.msgs.comp_msgs;
-		cmp.msg_list = msg_collection.msgs.msg_list;
+		cmp.msg_list = msg_collection.msg_list;
 
-		msg_collection.msgs.msg_list =
+		msg_collection.msg_list =
 			list_create(slurm_free_comp_msg_list);
-		msg_collection.msgs.base_msgs = 0;
-		msg_collection.msgs.comp_msgs = 0;
 		msg_collection.max_msgs = false;
 
 		slurm_msg_t_init(&msg);
@@ -238,9 +234,7 @@ extern void msg_aggr_sender_init(char *host, uint16_t port, uint64_t window,
 	slurm_set_addr(&msg_collection.node_addr, port, host);
 	msg_collection.window = window;
 	msg_collection.max_msg_cnt = max_msg_cnt;
-	msg_collection.msgs.msg_list = list_create(slurm_free_comp_msg_list);
-	msg_collection.msgs.base_msgs = 0;
-	msg_collection.msgs.comp_msgs = 0;
+	msg_collection.msg_list = list_create(slurm_free_comp_msg_list);
 	msg_collection.max_msgs = false;
 	msg_collection.debug_flags = slurm_get_debug_flags();
 	slurm_mutex_unlock(&msg_collection.mutex);
@@ -286,7 +280,7 @@ extern void msg_aggr_sender_fini(void)
 	msg_collection.thread_id = (pthread_t) 0;
 
 	pthread_cond_destroy(&msg_collection.cond);
-	FREE_NULL_LIST(msg_collection.msgs.msg_list);
+	FREE_NULL_LIST(msg_collection.msg_list);
 	slurm_mutex_destroy(&msg_collection.mutex);
 }
 
@@ -304,15 +298,10 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg)
 	}
 	msg_ptr = msg;
 	/* Add msg to message collection */
-	list_append(msg_collection.msgs.msg_list, msg_ptr);
+	list_append(msg_collection.msg_list, msg_ptr);
 
-	if (msg_ptr->msg_type == MESSAGE_COMPOSITE) {
-		msg_collection.msgs.comp_msgs++;
-	} else {
-		msg_collection.msgs.base_msgs++;
-	}
+	count = list_count(msg_collection.msg_list);
 
-	count = list_count(msg_collection.msgs.msg_list);
 
 	/* First msg in collection; initiate new window */
 	if (count == 1)

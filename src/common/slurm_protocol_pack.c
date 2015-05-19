@@ -4450,18 +4450,19 @@ unpack_error:
 }
 
 static void
-_pack_composite_msg(composite_msg_t * msg, Buf buffer, uint16_t protocol_version)
+_pack_composite_msg(composite_msg_t * msg, Buf buffer,
+		    uint16_t protocol_version)
 {
-	uint32_t count = NO_VAL;
+	uint32_t count;
 	slurm_msg_t *tmp_info = NULL;
 	ListIterator itr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	if (msg->msg_list)
 		count = list_count(msg->msg_list);
+	else
+		count = NO_VAL;
 	pack32(count, buffer);
-	pack16(msg->base_msgs, buffer);
-	pack16(msg->comp_msgs, buffer);
 	slurm_pack_slurm_addr(&msg->sender, buffer);
 	if (count && count != NO_VAL) {
 		itr = list_iterator_create(msg->msg_list);
@@ -4487,8 +4488,6 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 	object_ptr = (composite_msg_t *) xmalloc(sizeof(composite_msg_t));
 	*msg = object_ptr;
 	safe_unpack32(&count, buffer);
-	safe_unpack16(&object_ptr->base_msgs, buffer);
-	safe_unpack16(&object_ptr->comp_msgs, buffer);
 	slurm_unpack_slurm_addr_no_alloc(&object_ptr->sender, buffer);
 	if (debug_flags & DEBUG_FLAG_ROUTE)
 		info("msg aggr: _unpack_composite_msg: number of msgs in "
