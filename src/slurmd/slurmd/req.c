@@ -3772,7 +3772,7 @@ _epilog_complete(uint32_t jobid, int rc)
 			debug ("Job %u: sent epilog complete msg: rc = %d",
 				jobid, rc);
 		}
-		xfree(req);
+		slurm_free_epilog_complete_msg(req);
 		slurm_free_msg(msg);
 	}
 	return ret;
