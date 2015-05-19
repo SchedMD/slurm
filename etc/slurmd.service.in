@@ -6,7 +6,7 @@ ConditionPathExists=@sysconfdir@/slurm.conf
 [Service]
 Type=forking
 ExecStart=@sbindir@/slurmd
-PIDFile=/var/run/slurm/slurmd.pid
+PIDFile=/var/run/slurmd.pid
 
 [Install]
 WantedBy=multi-user.target
