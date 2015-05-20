@@ -372,6 +372,7 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 		struct timespec timeout;
 
 		msg_aggr->msg_index = msg->msg_index;
+
 		pthread_cond_init(&msg_aggr->wait_cond, NULL);
 
 		slurm_mutex_lock(&msg_collection.aggr_mutex);
@@ -382,11 +383,13 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 		gettimeofday(&now, NULL);
 		timeout.tv_sec = now.tv_sec + msg_timeout;
 		timeout.tv_nsec = now.tv_usec * 1000;
-		pthread_cond_timedwait(&msg_aggr->wait_cond,
-				       &wait_mutex,
-				       &timeout);
-		_msg_aggr_free(_handle_msg_aggr_ret(msg_aggr->msg_index));
 
+		if (pthread_cond_timedwait(&msg_aggr->wait_cond,
+					   &wait_mutex,
+					   &timeout) == ETIMEDOUT)
+			_handle_msg_aggr_ret(msg_aggr->msg_index);
+
+		_msg_aggr_free(msg_aggr);
 	}
 }
 
