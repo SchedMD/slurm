@@ -3710,8 +3710,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 		safe_unpack32(&time_limit, buffer);
 		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
