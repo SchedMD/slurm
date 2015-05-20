@@ -65,10 +65,10 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes,
 			     uint16_t *cpus_per_node, uint32_t *cpu_count_reps,
 			     uint16_t cpus_per_task,
-			     uint16_t task_dist, uint16_t plane_size);
+			     uint32_t task_dist, uint16_t plane_size);
 
 static int _task_layout_block(slurm_step_layout_t *step_layout,
-			      uint16_t *cpus, uint16_t task_dist);
+			      uint16_t *cpus, uint32_t task_dist);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus);
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
@@ -97,7 +97,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t num_hosts,
 	uint32_t num_tasks,
 	uint16_t cpus_per_task,
-	uint16_t task_dist,
+	uint32_t task_dist,
 	uint16_t plane_size)
 {
 	char *arbitrary_nodes = NULL;
@@ -264,9 +264,9 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 {
 	uint32_t i = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		if (step_layout)
-			i=1;
+			i = 1;
 
 		pack16(i, buffer);
 		if (!i)
@@ -275,9 +275,29 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 		packstr(step_layout->node_list, buffer);
 		pack32(step_layout->node_cnt, buffer);
 		pack32(step_layout->task_cnt, buffer);
-		pack16(step_layout->task_dist, buffer);
+		pack32(step_layout->task_dist, buffer);
 
-		for (i=0; i<step_layout->node_cnt; i++) {
+		for (i = 0; i < step_layout->node_cnt; i++) {
+			pack32_array(step_layout->tids[i],
+				     step_layout->tasks[i],
+				     buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist;
+		if (step_layout)
+			i = 1;
+
+		pack16(i, buffer);
+		if (!i)
+			return;
+		packstr(step_layout->front_end, buffer);
+		packstr(step_layout->node_list, buffer);
+		pack32(step_layout->node_cnt, buffer);
+		pack32(step_layout->task_cnt, buffer);
+		old_task_dist = task_dist_new2old(step_layout->task_dist);
+		pack16(old_task_dist, buffer);
+
+		for (i = 0; i < step_layout->node_cnt; i++) {
 			pack32_array(step_layout->tids[i],
 				     step_layout->tasks[i],
 				     buffer);
@@ -296,7 +316,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
 			return SLURM_SUCCESS;
@@ -310,7 +330,35 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_layout->node_cnt, buffer);
 		safe_unpack32(&step_layout->task_cnt, buffer);
-		safe_unpack16(&step_layout->task_dist, buffer);
+		safe_unpack32(&step_layout->task_dist, buffer);
+
+		step_layout->tasks =
+			xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
+		step_layout->tids = xmalloc(sizeof(uint32_t *)
+					    * step_layout->node_cnt);
+		for (i = 0; i < step_layout->node_cnt; i++) {
+			safe_unpack32_array(&(step_layout->tids[i]),
+					    &num_tids,
+					    buffer);
+			step_layout->tasks[i] = num_tids;
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
+		safe_unpack16(&uint16_tmp, buffer);
+		if (!uint16_tmp)
+			return SLURM_SUCCESS;
+
+		step_layout = xmalloc(sizeof(slurm_step_layout_t));
+		*layout = step_layout;
+
+		safe_unpackstr_xmalloc(&step_layout->front_end,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step_layout->node_list,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&step_layout->node_cnt, buffer);
+		safe_unpack32(&step_layout->task_cnt, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		step_layout->task_dist = task_dist_old2new(old_task_dist);
 
 		step_layout->tasks =
 			xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
@@ -382,7 +430,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes,
 			     uint16_t *cpus_per_node, uint32_t *cpu_count_reps,
 			     uint16_t cpus_per_task,
-			     uint16_t task_dist, uint16_t plane_size)
+			     uint32_t task_dist, uint16_t plane_size)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -550,7 +598,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 }
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
-			      uint16_t task_dist)
+			      uint32_t task_dist)
 {
 	static uint16_t select_params = (uint16_t) NO_VAL;
 	int i, j, task_id = 0;

@@ -94,7 +94,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->rotate		= (uint16_t) NO_VAL;
 	job_desc_msg->shared		= (uint16_t) NO_VAL;
 	job_desc_msg->sockets_per_node	= (uint16_t) NO_VAL;
-	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
+	job_desc_msg->task_dist		= NO_VAL;
 	job_desc_msg->threads_per_core	= (uint16_t) NO_VAL;
 	job_desc_msg->time_limit	= NO_VAL;
 	job_desc_msg->time_min		= NO_VAL;

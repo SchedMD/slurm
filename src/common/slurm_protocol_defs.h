@@ -724,7 +724,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *resp_port;   /* array of available response ports      */
 
         /* Distribution at the lowest level of logical processor (lllp) */
-	uint16_t task_dist;  /* --distribution=, -m dist	*/
+	uint32_t task_dist;  /* --distribution=, -m dist	*/
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
 	slurm_addr_t orig_addr;	  /* where message really came from for io */

@@ -386,9 +386,9 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 static char *
 _get_proc_mapping(const mpi_plugin_client_info_t *job)
 {
-	uint32_t node_cnt, task_cnt, task_mapped, node_task_cnt, **tids,
-		block;
-	uint16_t task_dist, *tasks, *rounds;
+	uint32_t node_cnt, task_cnt, task_mapped, node_task_cnt, **tids;
+	uint32_t task_dist, block;
+	uint16_t *tasks, *rounds;
 	int i, start_id, end_id;
 	char *mapping = NULL;
 

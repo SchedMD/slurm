@@ -2108,7 +2108,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
-	uint16_t task_dist;
+	uint32_t task_dist;
 	char *tmp_tres_str = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -2568,7 +2568,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,
-					       uint16_t task_dist,
+					       uint32_t task_dist,
 					       uint16_t plane_size)
 {
 	uint16_t cpus_per_node[node_count];

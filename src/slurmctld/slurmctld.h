@@ -514,7 +514,7 @@ struct job_details {
 	char *std_in;			/* pathname of job's stdin file */
 	char *std_out;			/* pathname of job's stdout file */
 	time_t submit_time;		/* time of submission */
-	uint16_t task_dist;		/* task layout for this job. Only
+	uint32_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources
 					 * is enabled */
 	uint32_t usable_nodes;		/* node count needed by preemption */
@@ -2034,7 +2034,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,
-					       uint16_t task_dist,
+					       uint32_t task_dist,
 					       uint16_t plane_size);
 
 /*

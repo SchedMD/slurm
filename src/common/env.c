@@ -1131,7 +1131,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = batch->ntasks;
 	uint16_t cpus_per_task;
-	uint16_t task_dist;
+	uint32_t task_dist;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	_setup_particulars(cluster_flags, dest, batch->select_jobinfo);

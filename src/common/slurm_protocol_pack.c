@@ -746,9 +746,13 @@ _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 #define OLD_DIST_STATE_FLAGS	0xff00
 #define OLD_DIST_PACK_NODES	0x8000
 #define OLD_DIST_NO_PACK_NODES	0x4000
-uint16_t _task_dist_new2old(uint32_t new_task_dist)
+/* Translate task_dist value from v15.08+ format to v14.11- format */
+extern uint16_t task_dist_new2old(uint32_t new_task_dist)
 {
 	uint16_t old_task_dist = 0;
+
+	if (new_task_dist == NO_VAL)
+		return ((uint16_t) NO_VAL);
 
 	switch (new_task_dist & SLURM_DIST_NODESOCKMASK) {
 	case SLURM_DIST_CYCLIC:
@@ -793,9 +797,13 @@ uint16_t _task_dist_new2old(uint32_t new_task_dist)
 
 	return old_task_dist;
 }
-uint32_t _task_dist_old2new(uint16_t old_task_dist)
+/* Translate task_dist value from v14.11- format to v15.08+ format */
+extern uint32_t task_dist_old2new(uint16_t old_task_dist)
 {
 	uint32_t new_task_dist = 0;
+
+	if (new_task_dist == (uint16_t) NO_VAL)
+		return NO_VAL;
 
 	switch (old_task_dist & OLD_DIST_STATE_BASE) {
 	case OLD_DIST_CYCLIC:
@@ -4238,7 +4246,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack8(msg->no_kill, buffer);
 		pack8(msg->overcommit, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint16_t task_dist_old;
+		uint16_t old_task_dist;
 		pack32(msg->job_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -4250,8 +4258,8 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
-		task_dist_old = _task_dist_new2old(msg->task_dist);
-		pack16(task_dist_old, buffer);
+		old_task_dist = task_dist_new2old(msg->task_dist);
+		pack16(old_task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
 		pack16(msg->ckpt_interval, buffer);
@@ -4325,6 +4333,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack8(&(tmp_ptr->no_kill), buffer);
 		safe_unpack8(&(tmp_ptr->overcommit), buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		safe_unpack32(&(tmp_ptr->job_id), buffer);
 		safe_unpack32(&(tmp_ptr->user_id), buffer);
 		safe_unpack32(&(tmp_ptr->min_nodes), buffer);
@@ -4336,7 +4345,8 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 		safe_unpack16(&(tmp_ptr->relative), buffer);
-		safe_unpack32(&(tmp_ptr->task_dist), buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		tmp_ptr->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack16(&(tmp_ptr->plane_size), buffer);
 		safe_unpack16(&(tmp_ptr->port), buffer);
 		safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
@@ -7601,7 +7611,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
-		pack16(job_desc_ptr->task_dist, buffer);
+		pack32(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
 		packstr(job_desc_ptr->gres, buffer);
@@ -7759,9 +7769,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack32(job_desc_ptr->bitflags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint16_t old_task_dist;
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
-		pack16(job_desc_ptr->task_dist, buffer);
+		old_task_dist = task_dist_new2old(job_desc_ptr->task_dist);
+		pack16(old_task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
 		packstr(job_desc_ptr->gres, buffer);
@@ -7911,9 +7923,11 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t old_task_dist;
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
-		pack16(job_desc_ptr->task_dist, buffer);
+		old_task_dist = task_dist_new2old(job_desc_ptr->task_dist);
+		pack16(old_task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
 		packstr(job_desc_ptr->gres, buffer);
@@ -8089,7 +8103,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
 		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack16(&job_desc_ptr->task_dist, buffer);
+		safe_unpack32(&job_desc_ptr->task_dist, buffer);
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
@@ -8236,13 +8250,15 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->bitflags, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
 		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack16(&job_desc_ptr->task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		job_desc_ptr->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
@@ -8380,13 +8396,15 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		job_desc_ptr->ramdiskimage = NULL;
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
 		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack16(&job_desc_ptr->task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		job_desc_ptr->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,
 				       &uint32_tmp, buffer);
@@ -8911,7 +8929,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
-		pack16(msg->task_dist, buffer);
+		pack32(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 		pack16(msg->job_core_spec, buffer);
 
@@ -8978,6 +8996,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 						     protocol_version);
 		}
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t old_task_dist;
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
@@ -8990,7 +9009,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
-		pack16(msg->task_dist, buffer);
+		old_task_dist = task_dist_new2old(msg->task_dist);
+		pack16(old_task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 		pack16(msg->job_core_spec, buffer);
 
@@ -9087,7 +9107,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		safe_unpack32(&msg->nnodes, buffer);
 		safe_unpack16(&msg->cpus_per_task, buffer);
-		safe_unpack16(&msg->task_dist, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);
 
@@ -9192,7 +9212,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack32(&msg->nnodes, buffer);
 		safe_unpack16(&msg->cpus_per_task, buffer);
 		safe_unpack16(&old_task_dist, buffer);
-		msg->task_dist = _task_dist_old2new(old_task_dist);
+		msg->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);
 

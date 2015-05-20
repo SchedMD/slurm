@@ -2167,7 +2167,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
-	pack16(detail_ptr->task_dist, buffer);
+	pack32(detail_ptr->task_dist, buffer);
 
 	pack8(detail_ptr->share_res, buffer);
 	pack8(detail_ptr->whole_node, buffer);
@@ -2226,9 +2226,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
 	uint32_t cpu_freq_gov = NO_VAL;
-	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
+	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0, task_dist;
 	uint16_t contiguous, core_spec = (uint16_t) NO_VAL, nice;
-	uint16_t ntasks_per_node, cpus_per_task, requeue, task_dist;
+	uint16_t ntasks_per_node, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	uint8_t share_res, whole_node;
@@ -2251,7 +2251,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&nice, buffer);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&task_dist, buffer);
+		safe_unpack32(&task_dist, buffer);
 
 		safe_unpack8(&share_res, buffer);
 		safe_unpack8(&whole_node, buffer);
@@ -2293,6 +2293,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2306,7 +2307,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&nice, buffer);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		task_dist = task_dist_old2new(old_task_dist);
 
 		safe_unpack8(&share_res, buffer);
 		safe_unpack8(&whole_node, buffer);
@@ -6723,7 +6725,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->core_spec = (uint16_t) NO_VAL;
 	if (detail_ptr->core_spec != (uint16_t) NO_VAL)
 		detail_ptr->whole_node = 1;
-	if (job_desc->task_dist != (uint16_t) NO_VAL)
+	if (job_desc->task_dist != NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
@@ -7236,7 +7238,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
 
-	if (job_desc_msg->task_dist == (uint16_t) NO_VAL) {
+	if (job_desc_msg->task_dist == NO_VAL) {
 		/* not typically set by salloc or sbatch */
 		job_desc_msg->task_dist = SLURM_DIST_CYCLIC;
 	}
