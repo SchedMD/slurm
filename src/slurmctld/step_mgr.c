@@ -3665,6 +3665,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&tres_alloc_str, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str, &name_len, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint32_t utmp32 = 0;
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);
@@ -3687,9 +3688,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (core_size)
 			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
 		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack32(&utmp32, buffer);
+		_cpu_freq_old2new(utmp32, &cpu_freq_min, &cpu_freq_max,
+				  &cpu_freq_gov);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
