@@ -1,4 +1,4 @@
- This file describes changes in recent versions of Slurm. It primarily
+This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.7
@@ -38,8 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix small memory leak in backup controller.
  -- Fix segfault when backup controller takes control for second time.
  -- Cray - Fix backup controller running native Slurm.
- -- Provide prototypes for init_setproctitle()/fini_setproctitle on
-    NetBSD.
+ -- Provide prototypes for init_setproctitle()/fini_setproctitle on NetBSD.
  -- Add configuration test to find out the full path to su command.
  -- preempt/job_prio plugin: Fix for possible infinite loop when identifying
     preemptable jobs.
