@@ -2816,6 +2816,10 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack32(step_ptr->cpu_freq_max, buffer);
 		pack32(step_ptr->cpu_freq_gov, buffer);
 		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
 		pack32(step_ptr->time_limit, buffer);
 		pack16(step_ptr->state, buffer);
 

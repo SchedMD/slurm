@@ -4942,6 +4942,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpack32(&step->cpu_freq_max, buffer);
 		safe_unpack32(&step->cpu_freq_gov, buffer);
 		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
 		safe_unpack32(&step->time_limit, buffer);
 		safe_unpack16(&step->state, buffer);
 

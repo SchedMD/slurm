@@ -818,6 +818,7 @@ extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 {
 	static char name[64] = "";
 
+	name[0] = '\0';
 	switch (task_dist & SLURM_DIST_STATE_BASE) {
 	case SLURM_DIST_CYCLIC:
 		strcat(name, "Cyclic");
