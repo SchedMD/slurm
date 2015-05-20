@@ -1530,6 +1530,10 @@ static void _convert_job_mem(slurm_msg_t *msg)
 			i_first_bit += arg.sockets_per_node[i] *
 				       arg.cores_per_socket[i] *
 				       arg.sock_core_rep_count[i];
+			i_last_bit = i_first_bit +
+				     arg.sockets_per_node[i] *
+				     arg.cores_per_socket[i] *
+				     arg.sock_core_rep_count[i];
 			hi -= arg.sock_core_rep_count[i];
 		} else {
 			i_first_bit += arg.sockets_per_node[i] *
@@ -1550,9 +1554,11 @@ static void _convert_job_mem(slurm_msg_t *msg)
 
 	/* NOTE: alloc_lps is the count of allocated resources
 	 * (typically cores). Convert to CPU count as needed */
-	i = conf->cpus / (i_last_bit - i_first_bit);
-	if (i > 1)
-		job_cpus *= i;
+	if (i_last_bit > i_first_bit) {
+		i = conf->cpus / (i_last_bit - i_first_bit);
+		if (i > 1)
+			job_cpus *= i;
+	}
 
 	req->job_mem_limit *= job_cpus;
 

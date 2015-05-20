@@ -1996,7 +1996,7 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_tres_cond_t *object = (slurmdb_tres_cond_t *)in;
 	ListIterator itr = NULL;
-	uint32_t count = NO_VAL;
+	uint32_t count;
 	char *tmp_info = NULL;
 
 	if (!object) {
@@ -2011,7 +2011,8 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 	if (object->id_list)
 		count = list_count(object->id_list);
-
+	else
+		count = NO_VAL;
 	pack32(count, buffer);
 
 	if (count && count != NO_VAL) {
@@ -2021,11 +2022,11 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	if (object->name_list)
 		count = list_count(object->name_list);
-
+	else
+		count = NO_VAL;
 	pack32(count, buffer);
 
 	if (count && count != NO_VAL) {
@@ -2035,11 +2036,11 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	if (object->type_list)
 		count = list_count(object->type_list);
-
+	else
+		count = NO_VAL;
 	pack32(count, buffer);
 
 	if (count && count != NO_VAL) {
@@ -2049,7 +2050,6 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 }
 
 extern int slurmdb_unpack_tres_cond(void **object, uint16_t rpc_version,

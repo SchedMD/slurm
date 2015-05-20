@@ -322,7 +322,7 @@ no_cond:
 	slurmdb_job->partition = xstrdup(filetxt_job->header.partition);
 	slurmdb_job->req_cpus = filetxt_job->ncpus;
 	slurmdb_job->tres_alloc_str = xstrdup_printf(
-		"cpu=%u", filetxt_step->ncpus);
+		"cpu=%u", filetxt_job->ncpus);
 
 	if (filetxt_job->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_job->nodes);
