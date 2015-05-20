@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Make srun wait KillWait time when a task is cancelled.
  -- switch/cray: Revert logic added to 14.11.6 that set "PMI_CRAY_NO_SMP_ENV=1"
     if CR_PACK_NODES is configured.
+ -- Prevent users from setting job's partition to an invalid partition.
 
 * Changes in Slurm 14.11.6
 ==========================
