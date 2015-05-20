@@ -335,7 +335,7 @@ extern void msg_aggr_sender_fini(void)
 extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 {
 	int count;
-	static uint16_t msg_index = 0;
+	static uint16_t msg_index = 1;
 
 	if (!msg_collection.running)
 		return;
