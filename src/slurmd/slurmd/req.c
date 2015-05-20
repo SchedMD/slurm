@@ -3642,6 +3642,20 @@ _steps_completed_now(uint32_t jobid)
 	return rc;
 }
 
+static void _epilog_complete_msg_setup(
+	slurm_msg_t *msg, epilog_complete_msg_t *req, uint32_t jobid, int rc)
+{
+	slurm_msg_t_init(msg);
+	memset(req, 0, sizeof(epilog_complete_msg_t));
+
+	req->job_id      = jobid;
+	req->return_code = rc;
+	req->node_name   = conf->node_name;
+
+	msg->msg_type    = MESSAGE_EPILOG_COMPLETE;
+	msg->data        = req;
+}
+
 /*
  *  Send epilog complete message to currently active controller.
  *  If enabled, use message aggregation.
@@ -3651,35 +3665,35 @@ _steps_completed_now(uint32_t jobid)
 static int
 _epilog_complete(uint32_t jobid, int rc)
 {
-	int                    ret = SLURM_SUCCESS;
-	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	epilog_complete_msg_t *req = xmalloc(sizeof(epilog_complete_msg_t));
-
-	slurm_msg_t_init(msg);
-
-	req->job_id      = jobid;
-	req->return_code = rc;
-	req->node_name   = xstrdup(conf->node_name);
-
-	msg->msg_type    = MESSAGE_EPILOG_COMPLETE;
-	msg->protocol_version = SLURM_PROTOCOL_VERSION;
-	msg->data        = req;
+	int ret = SLURM_SUCCESS;
 
 	if (conf->msg_aggr_window_msgs > 1) {
 		/* message aggregation is enabled */
+		slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
+		epilog_complete_msg_t *req =
+			xmalloc(sizeof(epilog_complete_msg_t));
+
+		_epilog_complete_msg_setup(msg, req, jobid, rc);
+
+		/* we need to copy this symbol */
+		req->node_name   = xstrdup(conf->node_name);
+
 		msg_aggr_add_msg(msg, 1);
 	} else {
+		slurm_msg_t msg;
+		epilog_complete_msg_t req;
+
+		_epilog_complete_msg_setup(&msg, &req, jobid, rc);
+
 		/* Note: No return code to message, slurmctld will resend
 		 * TERMINATE_JOB request if message send fails */
-		if (slurm_send_only_controller_msg(msg) < 0) {
+		if (slurm_send_only_controller_msg(&msg) < 0) {
 			error("Unable to send epilog complete message: %m");
 			ret = SLURM_ERROR;
 		} else {
-			debug ("Job %u: sent epilog complete msg: rc = %d",
-				jobid, rc);
+			debug("Job %u: sent epilog complete msg: rc = %d",
+			      jobid, rc);
 		}
-		slurm_free_epilog_complete_msg(req);
-		slurm_free_msg(msg);
 	}
 	return ret;
 }
