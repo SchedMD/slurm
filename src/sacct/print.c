@@ -808,18 +808,22 @@ void print_fields(type_t type, void *object)
 						 job->jobid);
 			}
 
-			switch(type) {
+			switch (type) {
 			case JOB:
 				tmp_char = xstrdup(id);
 				break;
 			case JOBSTEP:
-				if (step->stepid == NO_VAL)
+				if (step->stepid == SLURM_BATCH_SCRIPT) {
 					tmp_char = xstrdup_printf(
 						"%s.batch", id);
-				else
+				} else if (step->stepid == SLURM_EXTERN_CONT) {
+					tmp_char = xstrdup_printf(
+						"%s.extern", id);
+				} else {
 					tmp_char = xstrdup_printf(
 						"%s.%u",
 						id, step->stepid);
+				}
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
@@ -834,20 +838,25 @@ void print_fields(type_t type, void *object)
 			xfree(tmp_char);
 			break;
 		case PRINT_JOBIDRAW:
-			switch(type) {
+			switch (type) {
 			case JOB:
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				if (step->stepid == NO_VAL)
+				if (step->stepid == SLURM_BATCH_SCRIPT) {
 					tmp_char = xstrdup_printf(
 						"%u.batch",
 						step->job_ptr->jobid);
-				else
+				} else if (step->stepid == SLURM_EXTERN_CONT) {
+					tmp_char = xstrdup_printf(
+						"%u.extern",
+						step->job_ptr->jobid);
+				} else {
 					tmp_char = xstrdup_printf(
 						"%u.%u",
 						step->job_ptr->jobid,
 						step->stepid);
+				}
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",

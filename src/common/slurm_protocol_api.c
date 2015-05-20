@@ -2725,8 +2725,10 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 			if (have_backup) {
 				fd = slurm_open_msg_conn(&myproto->
 							 secondary_controller);
-				if (fd >= 0)
+				if (fd >= 0) {
+					debug("Contacted secondary controller");
 					goto end_it;
+				}
 				debug("Failed to contact secondary "
 				      "controller: %m");
 			}

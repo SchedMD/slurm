@@ -548,6 +548,9 @@
 /* Define to the setproctitle() emulation type */
 #undef SETPROCTITLE_STRATEGY
 
+/* Define path to sleep command */
+#undef SLEEP_CMD
+
 /* Define the default port number for slurmctld */
 #undef SLURMCTLD_PORT
 
@@ -604,6 +607,9 @@
 
 /* Define to 1 if strerror_r returns char *. */
 #undef STRERROR_R_CHAR_P
+
+/* Define path to su command */
+#undef SUCMD
 
 /* 3-dimensional architecture */
 #undef SYSTEM_DIMENSIONS

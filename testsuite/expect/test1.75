@@ -56,9 +56,13 @@ if { [test_using_slurmdbd] == 0 } {
 	exit 0
 }
 if {![string compare [test_proctrack] "linuxproc"]} {
-	send_user "\nWARNING: this test cannot run on proctracktype of linuxproc\n"
+	send_user "\nWARNING: this test cannot run on ProctrackType of linuxproc\n"
 	exit 0
 }
+if {![string compare [get_job_acct_type] "none"]} {
+	send_user "\nWARNING: this test cannot run on JobAcctGatherType of none\n"
+	exit 0
+} 
 if {[slurmd_user_root] == 0} {
 	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
 	exit 0
@@ -197,7 +201,7 @@ array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
 if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
-	send_user "\nFAILURE: CPU frequencies are not correct\n"
+	send_user "\nFAILURE: CPU frequency values are not valid\n"
 	foreach name [array names freq_lvl_1] {
 		send_user "$name is $freq_lvl_1($name)\n"
 	}
@@ -206,9 +210,12 @@ if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
 
 array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
 
-if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) || ($freq_lvl_2(performance) == 0) ||
-    ($freq_lvl_2(powersave) == 0)} {
-	send_user "\nFAILURE: CPU frequencies are not correct\n"
+if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0)
+     || ($freq_lvl_2(performance) == 0) || ($freq_lvl_2(powersave) == 0)} {
+	send_user "\nFAILURE: CPU frequency values are invalid\n"
+	foreach name [array names freq_lvl_2] {
+		send_user "$name is $freq_lvl_2($name)\n"
+	}
 	set exit_code 1
 }
 

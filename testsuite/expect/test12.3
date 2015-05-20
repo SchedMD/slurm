@@ -146,7 +146,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
+	send_user "\nFAILURE:  sacctmgr had a problem adding account ($aamatches != 1)\n"
 	exit 1
 }
 

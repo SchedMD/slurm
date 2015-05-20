@@ -2001,7 +2001,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* Request asynchronous launch of a prolog for a
 	 * non batch job. */
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) ||
+	    (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN))
 		_launch_prolog(job_ptr);
 
       cleanup:
@@ -2041,6 +2042,7 @@ static void _launch_prolog(struct job_record *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
+	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
 #ifndef HAVE_FRONT_END
 	int i;
@@ -2059,7 +2061,8 @@ static void _launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
 	/* Locks: Write job */
-	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		job_ptr->state_reason = WAIT_PROLOG;
 
 	prolog_msg_ptr->job_id = job_ptr->job_id;
@@ -2076,15 +2079,30 @@ static void _launch_prolog(struct job_record *job_ptr)
 						  job_ptr->spank_job_env);
 
 	xassert(job_ptr->job_resrcs);
+	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
-	cred_arg.job_gres_list   = job_ptr->gres_list;
-	cred_arg.job_nhosts      = job_ptr->job_resrcs->nhosts;
-	cred_arg.job_constraints = job_ptr->details->features;
+	cred_arg.jobid               = job_ptr->job_id;
+	cred_arg.stepid              = SLURM_EXTERN_CONT;
+	cred_arg.uid                 = job_ptr->user_id;
+	cred_arg.job_core_spec       = job_ptr->details->core_spec;
+	cred_arg.job_gres_list       = job_ptr->gres_list;
+	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
+	cred_arg.job_constraints     = job_ptr->details->features;
+	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
+	cred_arg.step_mem_limit      = job_ptr->details->pn_min_memory;
+	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
+	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
+	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
+	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
+	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
+
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	cred_arg.job_hostlist   = job_ptr->batch_host;
+	cred_arg.job_hostlist    = job_ptr->batch_host;
+	cred_arg.step_hostlist   = job_ptr->batch_host;
 #else
-	cred_arg.job_hostlist   = job_ptr->job_resrcs->nodes;
+	cred_arg.job_hostlist    = job_ptr->job_resrcs->nodes;
+	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,

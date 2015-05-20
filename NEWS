@@ -13,6 +13,10 @@ documents those changes that are of interest to users and administrators.
  -- Add re-entrant versions of glibc time functions (e.g. localtime) to Slurm
     in order to eliminate rare deadlock of slurmstepd fork and exec calls.
  -- Constrain kernel memory (if available) in cgroups.
+ -- Add PrologFlags option of "Contain" to create a proctrack container at
+    job resource allocation time.
+ -- Disable the OOM Killer in slurmd and slurmstepd's memory cgroup when using
+    MemSpecLimit.
 
 * Changes in Slurm 15.08.0pre4
 ==============================
@@ -269,6 +273,19 @@ documents those changes that are of interest to users and administrators.
  -- Make sure each job has a wckey if that is something that is tracked.
  -- Make sure old step data is cleared when job is requeued.
  -- Load libtinfo as needed when building ncurses tools.
+ -- Fix small memory leak in backup controller.
+ -- Fix segfault when backup controller takes control for second time.
+ -- Cray - Fix backup controller running native Slurm.
+ -- Provide prototypes for init_setproctitle()/fini_setproctitle on NetBSD.
+ -- Add configuration test to find out the full path to su command.
+ -- preempt/job_prio plugin: Fix for possible infinite loop when identifying
+    preemptable jobs.
+ -- preempt/job_prio plugin: Implement the concept of Warm-up Time here. Use
+    the QoS GraceTime as the amount of time to wait before preempting.
+    Basically, skip preemption if your time is not up.
+ -- Make srun wait KillWait time when a task is cancelled.
+ -- switch/cray: Revert logic added to 14.11.6 that set "PMI_CRAY_NO_SMP_ENV=1"
+    if CR_PACK_NODES is configured.
 
 * Changes in Slurm 14.11.6
 ==========================

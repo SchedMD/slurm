@@ -48,7 +48,7 @@ in other Slurm functions used by the plugin.</p>
 
 <p>Slurm can be configured to use multiple job_submit plugins if desired,
 however the lua plugin will only execute one lua script named "job_submit.lua"
-and located in default script directory (typically the subdirectory "etc" of
+located in the default script directory (typically the subdirectory "etc" of
 the installation directory).</p>
 
 <p class="footer"><a href="#top">top</a>

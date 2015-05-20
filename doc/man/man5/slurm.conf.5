@@ -120,6 +120,17 @@ Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
+\fBAccountingStorageTRES\fR
+Comma separated list of resources you wish to track on the cluster.
+Currently this consists of any GRES, or license along with CPU, Memory,
+and Energy.  By default CPU, Memory, and Energy are tracked.
+AccountingStorageTRES=cpu,mem,energy,gres/craynetwork,license/iop1
+will track cpu, memory, energy along with a gres called craynetwork as well as
+a license called iop1.  Whenever these resources are used on the cluster
+it is recorded.  These TRES do not need to be set up in the database, it will
+happen automatically on the start of the slurmctld.
+
+.TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
 present include "accounting_storage/filetxt",
@@ -400,6 +411,8 @@ If configured, then any processes invoked on the user behalf (namely the
 SPANK prolog/epilog scripts and the slurmstepd processes, which in turn spawn
 the user batch script and applications) are not directly executed by the slurmd
 daemon, but instead the \fBChosLoc\fR program is executed.
+Both are spawned with the same user ID as the configured SlurmdUser
+(typically user root).
 That program's argument are the program and arguments that would otherwise be
 invoked directly by the slurmd daemon.
 The intent of this feature is to be able to run a user application in some
@@ -1195,7 +1208,7 @@ For examples of use, see the SLURM code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
 SLURM can be configured to use multiple job_submit plugins if desired,
 however the lua plugin will only execute one lua script named "job_submit.lua"
-and located in default script directory (typically the subdirectory "etc" of
+located in the default script directory (typically the subdirectory "etc" of
 the installation directory).
 No job submission plugins are used by default.
 
@@ -1659,9 +1672,10 @@ This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
-in the SLURM database a database.
-This is not compatible with \fBPreemptMode=OFF\fR and \fBPreemptMode=SUSPEND\fR
-is only supported by the \fBselect/cons_res\fR plugin.
+in the SLURM database.
+This optioin is not compatible with \fBPreemptMode=OFF\fR.
+A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
+\fBselect/cons_res\fR plugin.
 .RE
 
 .TP
@@ -1934,9 +1948,10 @@ plugins run by the slurmstep daemon.
 .TP
 \fBPrologFlags\fR
 Flags to control the Prolog behavior. By default no flags are set.
-Currently the options are:
+Multiple flags may be specified in a comma\-separated list.
+Currently supported options are:
 .RS
-.TP 6
+.TP 8
 \fBAlloc\fR
 If set, the Prolog script will be executed at job allocation. By default,
 Prolog is executed just before the task is launched. Therefore, when salloc
@@ -1944,13 +1959,20 @@ is started, no Prolog is executed. \fBAlloc\fR is useful for preparing things
 before a user starts to use any allocated resources.
 In particular, this flag is needed on a Cray system when cluster compatibility
 mode is enabled.
-.TP 6
+.TP
+\fBContain\fR
+At job allocation time, use the ProcTrack plugin to create a job container
+on all allocated compute nodes.
+This container may be used for user processes not launched under Slurm control,
+for example the PAM module may place processes launch through a direct user
+login into this container.
+.TP
 \fBNoHold\fR
-If set, Alloc is also set.  This will allow for salloc to not block until the
-prolog is finished on each node.  The blocking will happen when steps reach
-the slurmd and before any execution has happened in the step. This is a much
-faster way to work and if using srun to launch your tasks you should use this
-flag.
+If set, the Alloc flag should also be set.  This will allow for salloc to not
+block until the prolog is finished on each node.  The blocking will happen when
+steps reach the slurmd and before any execution has happened in the step.
+This is a much faster way to work and if using srun to launch your tasks you
+should use this flag.
 .RE
 
 .TP
@@ -3605,8 +3627,9 @@ Also see \fBFeature\fR.
 .TP
 \fBMemSpecLimit\fR
 Limit on combined real memory allocation for compute node daemons
-(slurmd, slurmstepd), in megabytes. Use of this parameter may improve
-job performance.
+(slurmd, slurmstepd), in megabytes. This memory is not available to job
+allocations. The deamons won't be killed when they exhaust the memory allocation
+(ie. the OOM Killer is disabled for the daemon's memory cgroup).
 
 .TP
 \fBPort\fR

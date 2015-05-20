@@ -747,7 +747,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 		/* this means we are a cluster registration
 		   entry */
 		if (!row[EVENT_REQ_NAME][0]) {
-			local_cluster_usage_t *loc_c_usage = c_usage;
+			local_cluster_usage_t *loc_c_usage;
 
 			/* if the cpu count changes we will
 			 * only care about the last cpu count but

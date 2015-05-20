@@ -195,6 +195,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 				      "step batch devices cg path : %m");
 
 			}
+		} else if (stepid == SLURM_EXTERN_CONT) {
+			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
+				      "%s/step_extern", job_cgroup_path);
+			if (cc >= PATH_MAX) {
+				error("task/cgroup: unable to build "
+				      "step extern devices cg path : %m");
+
+			}
 		} else {
 
 			if (snprintf(jobstep_cgroup_path,PATH_MAX, "%s/step_%u",

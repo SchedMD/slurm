@@ -923,6 +923,7 @@ extern int init_node_conf (void)
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
+	xhash_free(node_hash_table);
 
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();

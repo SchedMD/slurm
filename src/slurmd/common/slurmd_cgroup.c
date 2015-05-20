@@ -438,6 +438,13 @@ extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit)
 	return SLURM_SUCCESS;
 }
 
+extern int disable_system_cgroup_mem_oom()
+{
+	/* 1: disables the oom killer */
+	return xcgroup_set_uint64_param(&system_memory_cg, "memory.oom_control",
+					1);
+}
+
 extern int attach_system_cpuset_pid(pid_t pid)
 {
 	if (xcgroup_add_pids(&system_cpuset_cg, &pid, 1) != XCGROUP_SUCCESS)

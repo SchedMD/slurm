@@ -250,7 +250,9 @@ or additional resources to be allowed only within a reservation.
   which has been selected for preemption.
 <li><b>UsageFactor</b> Usage factor when running with this QOS
   (i.e. .5 would make it use only half the time as normal in
-  accounting and 2 would make it use twice as much.)
+  accounting and 2 would make it use twice as much.) This only applies to the
+  usage used in determining priority and doesn't modify the real usage in the
+  database.
 <li><b>UsageThreshold</b>
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has

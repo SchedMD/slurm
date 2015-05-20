@@ -83,19 +83,23 @@ proc check_step { num } {
 	}
 }
 
+# Count the number of jobs and steps with a specific job ID and state
+# NOTE: Skip "extern" job container optionally spawned by "PrologFlags=contain"
 proc check_sacct_states { states log_it } {
 	global job_id sacct
 
 	log_user $log_it
 	set state_num 0
 	if { $log_it == 1 } {
-		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today
+		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today -o JobID,State
 	} else {
-		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --noheader --format=state
+		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --noheader -o JobID,State
 	}
 	expect {
-		-re ($states) {
-			incr state_num
+		-re "(\[0-9_\.a-z\]+)\\|($states)" {
+			if {[string first "extern" $expect_out(1,string)] == -1} {
+				incr state_num
+			}
 			exp_continue
 		}
 		timeout {

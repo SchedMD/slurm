@@ -3400,6 +3400,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_BURST_BUFFER_INFO:
 		slurm_free_burst_buffer_info_msg(data);
 		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
+		slurm_free_trigger_msg(data);
+		break;
 	case MESSAGE_COMPOSITE:
 	case RESPONSE_MESSAGE_COMPOSITE:
 		slurm_free_composite_msg(data);

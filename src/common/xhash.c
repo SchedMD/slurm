@@ -184,12 +184,12 @@ void xhash_clear(xhash_t* table)
 	table->count = 0;
 }
 
-void xhash_free(xhash_t* table)
+void xhash_free_ptr(xhash_t** table)
 {
-	if (!table)
+	if (!table || !*table)
 		return;
-	xhash_clear(table);
-	xfree(table);
+	xhash_clear(*table);
+	xfree(*table);
 }
 
 /* String hash table using the pjw hashing algorithm

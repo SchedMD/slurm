@@ -519,10 +519,15 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	 * and there is no reason to send step completion messages to slurmctld.
 	 */
 	if (step_hset == NULL) {
+		bool send_error = false;
 		if (type == LAUNCH_TASKS) {
-			info("task rank unavailable due to invalid job "
-			     "credential, step completion RPC impossible");
+			launch_tasks_request_msg_t *launch_req;
+			launch_req = (launch_tasks_request_msg_t *) req;
+			if (launch_req->job_step_id != SLURM_EXTERN_CONT)
+				send_error = true;
 		}
+		if (send_error)
+			info("task rank unavailable due to invalid job credential, step completion RPC impossible");
 		rank = -1;
 		parent_rank = -1;
 		children = 0;
@@ -1495,15 +1500,189 @@ static void _notify_slurmctld_prolog_fini(
 		error("Error sending prolog completion notification: %m");
 }
 
+/* Convert memory limits from per-CPU to per-node */
+static void _convert_job_mem(slurm_msg_t *msg)
+{
+	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	slurm_cred_arg_t arg;
+	hostset_t j_hset = NULL;
+	int rc, hi, host_index, job_cpus;
+	int i, i_first_bit = 0, i_last_bit = 0;
+
+	rc = slurm_cred_verify(conf->vctx, req->cred, &arg,
+			       msg->protocol_version);
+	if (rc < 0) {
+		error("%s: slurm_cred_verify failed: %m", __func__);
+		req->nnodes = 1;	/* best guess */
+		return;
+	}
+
+	req->nnodes = arg.job_nhosts;
+
+	if (arg.job_mem_limit == 0)
+		goto fini;
+	if ((arg.job_mem_limit & MEM_PER_CPU) == 0) {
+		req->job_mem_limit = arg.job_mem_limit;
+		goto fini;
+	}
+
+	/* Assume 1 CPU on error */
+	req->job_mem_limit = arg.job_mem_limit & (~MEM_PER_CPU);
+
+	if (!(j_hset = hostset_create(arg.job_hostlist))) {
+		error("%s: Unable to parse credential hostlist: `%s'",
+		      __func__, arg.step_hostlist);
+		goto fini;
+	}
+	host_index = hostset_find(j_hset, conf->node_name);
+	hostset_destroy(j_hset);
+
+	hi = host_index + 1;	/* change from 0-origin to 1-origin */
+	for (i = 0; hi; i++) {
+		if (hi > arg.sock_core_rep_count[i]) {
+			i_first_bit += arg.sockets_per_node[i] *
+				       arg.cores_per_socket[i] *
+				       arg.sock_core_rep_count[i];
+			i_last_bit = i_first_bit +
+				     arg.sockets_per_node[i] *
+				     arg.cores_per_socket[i] *
+				     arg.sock_core_rep_count[i];
+			hi -= arg.sock_core_rep_count[i];
+		} else {
+			i_first_bit += arg.sockets_per_node[i] *
+				       arg.cores_per_socket[i] * (hi - 1);
+			i_last_bit = i_first_bit +
+				     arg.sockets_per_node[i] *
+				     arg.cores_per_socket[i];
+			break;
+		}
+	}
+
+	/* Now count the allocated processors on this node */
+	job_cpus = 0;
+	for (i = i_first_bit; i < i_last_bit; i++) {
+		if (bit_test(arg.job_core_bitmap, i))
+			job_cpus++;
+	}
+
+	/* NOTE: alloc_lps is the count of allocated resources
+	 * (typically cores). Convert to CPU count as needed */
+	if (i_last_bit > i_first_bit) {
+		i = conf->cpus / (i_last_bit - i_first_bit);
+		if (i > 1)
+			job_cpus *= i;
+	}
+
+	req->job_mem_limit *= job_cpus;
+
+fini:	slurm_cred_free_args(&arg);
+}
+
+static void _make_prolog_mem_container(slurm_msg_t *msg)
+{
+	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	job_mem_limits_t *job_limits_ptr;
+	step_loc_t step_info;
+
+	_convert_job_mem(msg);	/* Convert per-CPU mem limit */
+	if (req->job_mem_limit) {
+		slurm_mutex_lock(&job_limits_mutex);
+		if (!job_limits_list)
+			job_limits_list = list_create(_job_limits_free);
+		step_info.jobid  = req->job_id;
+		step_info.stepid = SLURM_EXTERN_CONT;
+		job_limits_ptr = list_find_first (job_limits_list,
+						  _step_limits_match,
+						  &step_info);
+		if (!job_limits_ptr) {
+			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
+			job_limits_ptr->job_id   = req->job_id;
+			job_limits_ptr->job_mem  = req->job_mem_limit;
+			job_limits_ptr->step_id  = SLURM_EXTERN_CONT;
+			job_limits_ptr->step_mem = req->job_mem_limit;
+#if _LIMIT_INFO
+			info("AddLim step:%u.%u job_mem:%u step_mem:%u",
+			      job_limits_ptr->job_id, job_limits_ptr->step_id,
+			      job_limits_ptr->job_mem,
+			      job_limits_ptr->step_mem);
+#endif
+			list_append(job_limits_list, job_limits_ptr);
+		}
+		slurm_mutex_unlock(&job_limits_mutex);
+	}
+}
+
+static void _spawn_prolog_stepd(slurm_msg_t *msg)
+{
+	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	launch_tasks_request_msg_t *launch_req;
+	slurm_addr_t self;
+	slurm_addr_t *cli = &msg->orig_addr;
+	int i;
+
+	launch_req = xmalloc(sizeof(launch_tasks_request_msg_t));
+	launch_req->alias_list		= req->alias_list;
+	launch_req->complete_nodelist	= req->nodes;
+	launch_req->cpus_per_task	= 1;
+	launch_req->cred		= req->cred;
+	launch_req->cwd			= req->work_dir;
+	launch_req->efname		= "/dev/null";
+	launch_req->gid			= req->gid;
+	launch_req->global_task_ids	= xmalloc(sizeof(uint32_t *)
+						  * req->nnodes);
+	launch_req->ifname		= "/dev/null";
+	launch_req->job_id		= req->job_id;
+	launch_req->job_mem_lim		= req->job_mem_limit;
+	launch_req->job_step_id		= SLURM_EXTERN_CONT;
+	launch_req->nnodes		= req->nnodes;
+	launch_req->ntasks		= req->nnodes;
+	launch_req->ofname		= "/dev/null";
+	launch_req->partition		= req->partition;
+	launch_req->spank_job_env_size	= req->spank_job_env_size;
+	launch_req->spank_job_env	= req->spank_job_env;
+	launch_req->step_mem_lim	= req->job_mem_limit;
+	launch_req->tasks_to_launch	= xmalloc(sizeof(uint16_t)
+						  * req->nnodes);
+	launch_req->uid			= req->uid;
+
+	for (i = 0; i < req->nnodes; i++) {
+		uint32_t *tmp32 = xmalloc(sizeof(uint32_t));
+		*tmp32 = i;
+		launch_req->global_task_ids[i] = tmp32;
+		launch_req->tasks_to_launch[i] = 1;
+	}
+
+	slurm_get_stream_addr(msg->conn_fd, &self);
+
+	debug3("%s: call to _forkexec_slurmstepd", __func__);
+	(void) _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req, cli,
+				     &self, NULL, msg->protocol_version);
+	debug3("%s: return from _forkexec_slurmstepd", __func__);
+
+	for (i = 0; i < req->nnodes; i++)
+		xfree(launch_req->global_task_ids[i]);
+	xfree(launch_req->global_task_ids);
+	xfree(launch_req->tasks_to_launch);
+	xfree(launch_req);
+}
+
 static void _rpc_prolog(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_env_t job_env;
 	bool     first_job_run;
+	uid_t    req_uid;
 
 	if (req == NULL)
 		return;
+
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (!_slurm_authorized_user(req_uid)) {
+		error("REQUEST_LAUNCH_PROLOG request from uid %u",
+		      (unsigned int) req_uid);
+		return;
+	}
 
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error starting prolog: %m");
@@ -1521,6 +1700,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		      req->job_id, exit_status, term_sig);
 		rc = ESLURMD_PROLOG_FAILED;
 	}
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+		_make_prolog_mem_container(msg);
 
 	if (container_g_create(req->job_id))
 		error("container_g_create(%u): %m", req->job_id);
@@ -1570,6 +1752,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	if (!(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		_notify_slurmctld_prolog_fini(req->job_id, rc);
+
+	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+		_spawn_prolog_stepd(msg);
 }
 
 static void

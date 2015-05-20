@@ -371,6 +371,7 @@ _get_job_fs_ass(char *job_type, struct job_record *job_ptr)
 			     temp_fs_ass->acct,
 			     ((slurmdb_assoc_rec_t*)
 			      temp_fs_ass->usage->parent_assoc_ptr)->acct);
+		temp_fs_ass = temp_fs_ass->usage->parent_assoc_ptr;
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
@@ -736,6 +737,9 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	struct job_record *preemptee_job_ptr;
 	struct job_record *preemptor_job_ptr = job_ptr;
 	List preemptee_job_list = NULL;
+	uint32_t preemptor_grace_time, remaining_time;
+	time_t now = time(NULL), wait_time;
+	slurmdb_qos_rec_t *preemptor_qos;
 
 	/* Validate the preemptor job */
 	if (preemptor_job_ptr == NULL) {
@@ -756,6 +760,28 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		error("%s: partition %s node_bitmap==NULL",
 		      plugin_type, preemptor_job_ptr->part_ptr->name);
 		return preemptee_job_list;
+	}
+
+	/* Implement the concept of Warm-up Time here. Use the QoS GraceTime
+	 * as the amount of time to wait before preempting. Basically, skip
+	 * preemption if your time is not up.
+	 * Get Grace Time from QoS accounting information */
+	preemptor_qos = preemptor_job_ptr->qos_ptr;    
+	preemptor_grace_time = preemptor_qos->grace_time;
+	if ((preemptor_job_ptr->details->submit_time + preemptor_grace_time)
+	    > now) {
+		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+			wait_time = now-preemptor_job_ptr->details->submit_time;
+			remaining_time = preemptor_grace_time - wait_time;
+			info("%s: JobId %u will reach grace time of %u in %u secs",
+			     plugin_type, preemptor_job_ptr->job_id,
+			     preemptor_grace_time, remaining_time);
+		}
+		return preemptee_job_list;
+	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
+		info("%s: JobId %u has reached grace time of %u secs",
+		     plugin_type, preemptor_job_ptr->job_id,
+		     preemptor_grace_time);
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {

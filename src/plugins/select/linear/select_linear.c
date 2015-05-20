@@ -1848,7 +1848,6 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (j = 0; j < switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
-			sufficient = false;
 			/* If multiple leaf switches must be used, prefer use
 			 * of leaf switches with fewest number of idle CPUs.
 			 * This results in more leaf switches being used and
@@ -2194,7 +2193,6 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
-			sufficient = false;
 			/* If multiple leaf switches must be used, prefer use
 			 * of leaf switches with fewest number of idle CPUs.
 			 * This results in more leaf switches being used and

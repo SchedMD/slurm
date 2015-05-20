@@ -259,6 +259,8 @@ if {$matches != 1} {
 #
 cancel_job $job_id
 if {$exit_code == 0} {
+#	The checkpoint file, if any, has the same name as the job step ID
+	exec $bin_rm -rf $job_id.$step_id
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }

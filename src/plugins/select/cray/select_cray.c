@@ -130,19 +130,23 @@ typedef enum {
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
+slurmctld_config_t slurmctld_config __attribute__((weak_import));
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 struct node_record *node_record_table_ptr __attribute__((weak_import));
 int node_record_count __attribute__((weak_import));
 time_t last_node_update __attribute__((weak_import));
+int slurmctld_primary __attribute__((weak_import));
 #else
+slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
 int bg_recover = NOT_FROM_CONTROLLER;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 struct node_record *node_record_table_ptr;
 int node_record_count;
 time_t last_node_update;
+int slurmctld_primary;
 #endif
 
 static blade_info_t *blade_array = NULL;
@@ -163,16 +167,21 @@ static alpsc_topology_t *topology = NULL;
 #ifdef HAVE_NATIVE_CRAY
 
 /* Used for aeld communication */
-alpsc_ev_app_t *app_list = NULL;	// List of running/suspended apps
-int32_t app_list_size = 0;		// Number of running/suspended apps
-size_t app_list_capacity = 0;		// Capacity of app list
-alpsc_ev_app_t *event_list = NULL;	// List of app state changes
-int32_t event_list_size = 0;		// Number of events
-size_t event_list_capacity = 0;		// Capacity of event list
-volatile sig_atomic_t aeld_running = 0;	// 0 if the aeld thread has exited
-					// 1 if the session is temporarily down
-					// 2 if the session is running
-pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;	// Mutex for the above
+static alpsc_ev_app_t *app_list = NULL;	  // List of running/suspended apps
+static int32_t app_list_size = 0;	  // Number of running/suspended apps
+static size_t app_list_capacity = 0;	  // Capacity of app list
+static alpsc_ev_app_t *event_list = NULL; // List of app state changes
+static int32_t event_list_size = 0;	  // Number of events
+static size_t event_list_capacity = 0;	  // Capacity of event list
+
+// 0 if the aeld thread has exited
+// 1 if the session is temporarily down
+// 2 if the session is running
+static volatile sig_atomic_t aeld_running = 0;
+
+// Mutex for the above
+static pthread_mutex_t aeld_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t aeld_thread;
 
 #define AELD_SESSION_INTERVAL	60	// aeld session retry interval (s)
 #define AELD_EVENT_INTERVAL	110	// aeld event sending interval (ms)
@@ -454,7 +463,12 @@ static void *_aeld_event_loop(void *args)
 	struct pollfd fds[1];
 	char *errmsg;
 
+	debug("cray: %s", __func__);
+
 	aeld_running = 1;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	// Start out by creating a session
 	_start_session(&session, &sessionfd);
@@ -729,6 +743,32 @@ static void _update_app(struct job_record *job_ptr,
 
 	_free_event(&app);
 	return;
+}
+
+static void _start_aeld_thread()
+{
+	debug("cray: %s", __func__);
+
+	// Spawn the aeld thread, only in slurmctld.
+	if (run_in_daemon("slurmctld")) {
+		pthread_attr_t attr;
+
+		slurm_attr_init(&attr);
+		if (pthread_create(&aeld_thread, &attr, _aeld_event_loop, NULL))
+			error("pthread_create of message thread: %m");
+		slurm_attr_destroy(&attr);
+	}
+}
+
+static void _stop_aeld_thread()
+{
+	debug("cray: %s", __func__);
+
+	_aeld_cleanup();
+
+	pthread_cancel(aeld_thread);
+	pthread_join(aeld_thread, NULL);
+	aeld_running = 0;
 }
 #endif
 
@@ -1129,13 +1169,6 @@ extern int init ( void )
 		plugin_id = 108;
 	debug_flags = slurm_get_debug_flags();
 
-#ifdef HAVE_NATIVE_CRAY
-	// Spawn the aeld thread, only in slurmctld.
-	if (run_in_daemon("slurmctld")) {
-		_spawn_cleanup_thread(NULL, _aeld_event_loop);
-	}
-#endif
-
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -1241,6 +1274,12 @@ extern int select_p_state_save(char *dir_name)
 	xfree(new_file);
 
 	free_buf(buffer);
+
+#ifdef HAVE_NATIVE_CRAY
+	if (slurmctld_config.shutdown_time)
+		_stop_aeld_thread();
+#endif
+
 	END_TIMER2("select_p_state_save");
 
 	return other_state_save(dir_name);
@@ -1599,6 +1638,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 extern int select_p_block_init(List part_list)
 {
+#ifdef HAVE_NATIVE_CRAY
+	if (!aeld_running)
+		_start_aeld_thread();
+#endif
+
 	return other_block_init(part_list);
 }
 
@@ -1641,6 +1685,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
+#ifdef HAVE_NATIVE_CRAY
+	/* Restart if the thread ever has an unrecoverable error and exits. */
+	if (!aeld_running)
+		_start_aeld_thread();
+#endif
+
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 	slurm_mutex_lock(&blade_mutex);
 
