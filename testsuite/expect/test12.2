@@ -45,7 +45,7 @@ set aix         0
 
 # job parameters
 set mem_size    1024000
-set sleep_time  21
+set sleep_time  25
 set ret_code    42
 set file_size   10485760
 print_header $test_id
@@ -304,7 +304,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 }
 
 # Wait for data to get logged
-exec $bin_sleep 10
+exec $bin_sleep 15
 
 if {[_get_mem $sstat] != 0} {
 	set exit_code 1
