@@ -209,12 +209,8 @@ static void _set_collectors(char *this_node_name)
 					info("ROUTE -- message collector backup"
 					     " address is %s", addrbuf);
 				}
-			} else {
-				if (debug_flags & DEBUG_FLAG_ROUTE) {
-					info("ROUTE -- no message collector "
-					     "backup");
-				}
-
+			} else if (debug_flags & DEBUG_FLAG_ROUTE) {
+				info("ROUTE -- no message collector backup");
 			}
 			goto clean;
 		}
@@ -250,15 +246,19 @@ static void _set_collectors(char *this_node_name)
 			backup_port = slurm_conf_get_port(backup);
 		} else
 			backup_port = 0;
-
 	}
 clean:
 	if (debug_flags & DEBUG_FLAG_ROUTE) {
-		if (this_is_collector)
-			info("ROUTE -- %s is a collector node", this_node_name);
-		else
-			info("ROUTE -- %s is a leaf node", this_node_name);
+		char addrbuf2[32];
+		slurm_print_slurm_addr(msg_collect_node,
+				       addrbuf, 32);
+		slurm_print_slurm_addr(msg_collect_backup,
+				       addrbuf2, 32);
+		info("ROUTE -- %s is a %s node (parent: %s, backup: %s)",
+		     this_node_name, this_is_collector ? "collector" : "leaf",
+		     addrbuf, addrbuf2);
 	}
+
 	hostlist_destroy(nodes);
 	if (parent)
 		free(parent);
