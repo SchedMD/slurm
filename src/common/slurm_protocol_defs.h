@@ -808,10 +808,6 @@ typedef struct composite_msg {
 	List	 msg_list;
 } composite_msg_t;
 
-typedef struct composite_response_msg {
-	slurm_msg_t *comp_msg;
-} composite_response_msg_t;
-
 /* Note: We include the node list here for reliable cleanup on XCPU systems.
  *
  * Note: We include select_jobinfo here in addition to the job launch
@@ -1181,7 +1177,6 @@ extern void slurm_free_priority_factors_response_msg(
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
 extern void slurm_free_comp_msg_list(void *x);
 extern void slurm_free_composite_msg(composite_msg_t *msg);
-extern void slurm_free_composite_resp_msg(composite_response_msg_t *msg);
 extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \

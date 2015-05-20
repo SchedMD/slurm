@@ -1192,13 +1192,6 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg);
  */
 int slurm_send_only_node_msg(slurm_msg_t * request_msg);
 
-/* slurm_send_to_prev_collector
- * sends a composite message to the previous msg aggregation collector node
- * IN request_msg	- slurm_msg request
- * RET int 		- return code
- */
-int slurm_send_to_prev_collector(slurm_msg_t *msg);
-
 /* Slurm message functions */
 
 /* set_span

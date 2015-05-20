@@ -698,10 +698,6 @@ static void _pack_composite_msg(composite_msg_t *msg, Buf buffer,
 				uint16_t protocol_version);
 static int  _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 				  uint16_t protocol_version);
-static void _pack_composite_resp_msg(composite_response_msg_t *msg, Buf buffer,
-				     uint16_t protocol_version);
-static int  _unpack_composite_resp_msg(composite_response_msg_t **msg,
-				       Buf buffer, uint16_t protocol_version);
 static int
 _unpack_burst_buffer_info_msg(burst_buffer_info_msg_t **burst_buffer_info,
 			      Buf buffer,
@@ -1434,12 +1430,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
 		_pack_composite_msg((composite_msg_t *) msg->data, buffer,
 				     msg->protocol_version);
-		break;
-	case RESPONSE_MESSAGE_COMPOSITE:
-		_pack_composite_resp_msg((composite_response_msg_t *) msg->data,
-					  buffer, msg->protocol_version);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
@@ -2114,14 +2107,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		                                      msg->protocol_version);
 		break;
 	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
 		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
 					    buffer, msg->protocol_version);
-		break;
-	case RESPONSE_MESSAGE_COMPOSITE:
-		rc = _unpack_composite_resp_msg((composite_response_msg_t **)
-						&(msg->data),
-						buffer,
-						msg->protocol_version);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
@@ -4551,34 +4539,6 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 	return SLURM_SUCCESS;
 unpack_error:
 	return SLURM_ERROR;
-}
-
-static void
-_pack_composite_resp_msg(composite_response_msg_t * msg, Buf buffer,
-			 uint16_t protocol_version)
-{
-	slurm_msg_t *cmp;
-
-	xassert(msg != NULL);
-	cmp = msg->comp_msg;
-	pack_comp_msg_list_msg(buffer, cmp);
-}
-
-static int
-_unpack_composite_resp_msg(composite_response_msg_t **msg, Buf buffer,
-		      uint16_t protocol_version)
-{
-	slurm_msg_t *tmp_info;
-	composite_response_msg_t *tmp_ptr = NULL;
-
-	xassert(msg != NULL);
-	tmp_ptr = xmalloc(sizeof(composite_response_msg_t));
-	*msg = tmp_ptr;
-	tmp_info = (slurm_msg_t *) xmalloc(sizeof(slurm_msg_t));
-	tmp_ptr->comp_msg = tmp_info;
-	slurm_msg_t_init(tmp_info);
-	unpack_comp_msg_list_msg(buffer, tmp_info);
-	return SLURM_SUCCESS;
 }
 
 static void

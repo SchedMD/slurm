@@ -3148,21 +3148,7 @@ extern void slurm_free_comp_msg_list(void *x)
 {
 	slurm_msg_t *msg = (slurm_msg_t*)x;
 	if (msg) {
-		switch(msg->msg_type) {
-		case MESSAGE_COMPOSITE:
-			slurm_free_composite_msg((composite_msg_t *)msg->data);
-			break;
-		case MESSAGE_EPILOG_COMPLETE:
-			slurm_free_epilog_complete_msg((epilog_complete_msg_t *)
-							msg->data);
-			msg->data = NULL;
-			/* epilog_complete_msg_t has already been freed ???*/
-			break;
-		default:
-			error("slurm_free_comp_msg_list: "
-			      "Invalid message type in composite msg msg_list");
-			break;
-		}
+		slurm_free_msg_data(msg->msg_type, msg->data);
 		slurm_free_msg(msg);
 	}
 }
@@ -3170,24 +3156,7 @@ extern void slurm_free_comp_msg_list(void *x)
 extern void slurm_free_composite_msg(composite_msg_t *msg)
 {
 	if (msg) {
-		if (msg->msg_list) {
-			list_destroy(msg->msg_list);
-			msg->msg_list = NULL;
-		}
-		xfree(msg);
-	}
-}
-
-extern void slurm_free_composite_resp_msg(composite_response_msg_t *msg)
-{
-	slurm_msg_t *cmp;
-
-	if (msg) {
-		if (msg->comp_msg) {
-			cmp = msg->comp_msg;
-			slurm_free_composite_msg((composite_msg_t *)cmp->data);
-			slurm_free_msg(cmp);
-		}
+		FREE_NULL_LIST(msg->msg_list);
 		xfree(msg);
 	}
 }
@@ -3432,6 +3401,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_burst_buffer_info_msg(data);
 		break;
 	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
 		slurm_free_composite_msg(data);
 		break;
 	default:
@@ -3878,6 +3848,8 @@ rpc_num2string(uint16_t opcode)
 		return "ACCOUNTING_REGISTER_CTLD";
 	case MESSAGE_COMPOSITE:
 		return "MESSAGE_COMPOSITE";
+	case RESPONSE_MESSAGE_COMPOSITE:
+		return "RESPONSE_MESSAGE_COMPOSITE";
 	case REQUEST_BURST_BUFFER_INFO:
 		return "REQUEST_BURST_BUFFER_INFO";
 	case RESPONSE_BURST_BUFFER_INFO:

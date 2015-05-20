@@ -461,7 +461,7 @@ slurmd_req(slurm_msg_t *msg)
 	case RESPONSE_MESSAGE_COMPOSITE:
 		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
 		msg_aggr_resp(msg);
-		slurm_free_composite_resp_msg(msg->data);
+		slurm_free_composite_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:	/* Defunct, see REQUEST_SUSPEND_INT */
 	default:

@@ -3647,6 +3647,24 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
+			  return_code_msg_t *rc_msg, int rc)
+{
+	memset(rc_msg, 0, sizeof(return_code_msg_t));
+	rc_msg->return_code = rc;
+
+	slurm_msg_t_init(resp_msg);
+	resp_msg->protocol_version = msg->protocol_version;
+	resp_msg->address  = msg->address;
+	resp_msg->msg_type = RESPONSE_SLURM_RC;
+	resp_msg->data     = rc_msg;
+	resp_msg->flags = msg->flags;
+	resp_msg->forward = msg->forward;
+	resp_msg->forward_struct = msg->forward_struct;
+	resp_msg->ret_list = msg->ret_list;
+	resp_msg->orig_addr = msg->orig_addr;
+}
+
 
 /**********************************************************************\
  * simplified communication routines
@@ -3662,28 +3680,34 @@ unpack_error:
  */
 int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
+	if (msg->msg_index && msg->ret_list) {
+		slurm_msg_t *resp_msg = xmalloc_nz(sizeof(slurm_msg_t));
+		return_code_msg_t *rc_msg =
+			xmalloc_nz(sizeof(return_code_msg_t));
 
-	if (msg->conn_fd < 0) {
-		slurm_seterrno(ENOTCONN);
-		return SLURM_ERROR;
+		_rc_msg_setup(msg, resp_msg, rc_msg, rc);
+
+		resp_msg->msg_index = msg->msg_index;
+		resp_msg->ret_list = NULL;
+		/* The return list here is the list we are sending to
+		   the node, so after we attach this message to it set
+		   it to NULL to remove it.
+		*/
+		list_append(msg->ret_list, resp_msg);
+		return SLURM_SUCCESS;
+	} else {
+		slurm_msg_t resp_msg;
+		return_code_msg_t rc_msg;
+
+		if (msg->conn_fd < 0) {
+			slurm_seterrno(ENOTCONN);
+			return SLURM_ERROR;
+		}
+		_rc_msg_setup(msg, &resp_msg, &rc_msg, rc);
+
+		/* send message */
+		return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	}
-	rc_msg.return_code = rc;
-
-	slurm_msg_t_init(&resp_msg);
-	resp_msg.protocol_version = msg->protocol_version;
-	resp_msg.address  = msg->address;
-	resp_msg.msg_type = RESPONSE_SLURM_RC;
-	resp_msg.data     = &rc_msg;
-	resp_msg.flags = msg->flags;
-	resp_msg.forward = msg->forward;
-	resp_msg.forward_struct = msg->forward_struct;
-	resp_msg.ret_list = msg->ret_list;
-	resp_msg.orig_addr = msg->orig_addr;
-
-	/* send message */
-	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 /* slurm_send_rc_err_msg
@@ -4145,39 +4169,6 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
 	}
 
 	return ret_c;
-}
-
-/*
- * Send a composite msg response msg to the message collector node
- * that sent the composite msg (i.e. the previous collector)
- * TODO: if previous collector unavailable, send to previous collector backup
- */
-int slurm_send_to_prev_collector(slurm_msg_t *msg)
-{
-	slurm_msg_t  *cmp_msg;
-	composite_msg_t *cmp;
-	composite_response_msg_t *resp_msg;
-	slurm_addr_t *prev_dest = NULL;
-	int rc = SLURM_SUCCESS;
-	uint32_t debug_flags = slurm_get_debug_flags();
-
-	resp_msg = msg->data;
-	cmp_msg = resp_msg->comp_msg;
-	cmp = cmp_msg->data;
-
-	prev_dest = &cmp->sender;
-	if (debug_flags & DEBUG_FLAG_ROUTE) {
-		info("msg aggr: send_to_prev_collector: cmp_msg->msg_type = %u",
-				cmp_msg->msg_type);
-	}
-	memcpy(&msg->address, prev_dest, sizeof(slurm_addr_t));
-	rc = slurm_send_only_node_msg(msg);
-	if (rc != SLURM_SUCCESS) {
-		if (debug_flags & DEBUG_FLAG_ROUTE)
-			info("msg aggr: send_to_prev_collector: error sending "
-			     "composite response msg");
-	}
-	return rc;
 }
 
 /* this is used to set how many nodes are going to be on each branch

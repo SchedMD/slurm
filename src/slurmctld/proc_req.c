@@ -194,8 +194,8 @@ inline static void  _update_cred_key(void);
 
 static void  _slurm_rpc_composite_msg(slurm_msg_t *msg);
 static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
-				      bool * run_scheduler);
-static void  _slurm_composite_msg_resp(slurm_msg_t *msg);
+				      bool *run_scheduler,
+				      List msg_list_in);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -545,14 +545,14 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_kill_job2(msg);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
-	 case MESSAGE_COMPOSITE:
+	case MESSAGE_COMPOSITE:
 		_slurm_rpc_composite_msg(msg);
 		slurm_free_composite_msg(msg->data);
 		break;
-	 case REQUEST_CACHE_INFO:
-		 _slurm_rpc_dump_cache(msg);
-		 slurm_free_cache_info_request_msg(msg->data);
-		 break;
+	case REQUEST_CACHE_INFO:
+		_slurm_rpc_dump_cache(msg);
+		slurm_free_cache_info_request_msg(msg->data);
+		break;
 	case REQUEST_SICP_INFO:
 		_slurm_rpc_dump_sicp(msg);
 		/* No body to free */
@@ -5273,7 +5273,10 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	static time_t config_update = 0;
 	static bool defer_sched = false;
 	bool run_scheduler = false;
-	composite_msg_t *comp_msg;
+	composite_msg_t *comp_msg, comp_resp_msg;
+
+	memset(&comp_resp_msg, 0, sizeof(composite_msg_t));
+	comp_resp_msg.msg_list = list_create(slurm_free_comp_msg_list);
 
 	comp_msg = (composite_msg_t *) msg->data;
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
@@ -5292,7 +5295,8 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		xfree(sched_params);
 	}
 	lock_slurmctld(job_write_lock);
-	_slurm_rpc_comp_msg_list(comp_msg, &run_scheduler);
+	_slurm_rpc_comp_msg_list(comp_msg, &run_scheduler,
+				 comp_resp_msg.msg_list);
 	unlock_slurmctld(job_write_lock);
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
@@ -5309,14 +5313,28 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		schedule_node_save();		/* Has own locking */
 		schedule_job_save();		/* Has own locking */
 	}
-	_slurm_composite_msg_resp(msg);
+	if (list_count(comp_resp_msg.msg_list)) {
+		slurm_msg_t resp_msg;
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.flags    = msg->flags;
+		resp_msg.protocol_version = msg->protocol_version;
+		memcpy(&resp_msg.address, &comp_msg->sender,
+		       sizeof(slurm_addr_t));
+		resp_msg.msg_type = RESPONSE_MESSAGE_COMPOSITE;
+		resp_msg.data     = &comp_resp_msg;
+		slurm_send_only_node_msg(&resp_msg);
+	}
+
+	FREE_NULL_LIST(comp_resp_msg.msg_list);
 }
 
 static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
-				      bool * run_scheduler)
+				      bool *run_scheduler,
+				      List msg_list_in)
 {
 	uid_t uid;
 	epilog_complete_msg_t *epilog_msg;
+	composite_msg_t *comp_resp_msg;
 	struct job_record  *job_ptr;
 	char jbuf[JBUFSIZ];
 	DEF_TIMERS;
@@ -5330,20 +5348,50 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 		uid = g_slurm_auth_get_uid(next_msg->auth_cred, NULL);
 		switch (next_msg->msg_type) {
 		case MESSAGE_COMPOSITE:
+			comp_resp_msg = xmalloc(sizeof(composite_msg_t));
+			comp_resp_msg->msg_list =
+				list_create(slurm_free_comp_msg_list);
+
 			ncomp_msg = (composite_msg_t *) next_msg->data;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 				info("Processing embedded MESSAGE_COMPOSITE "
 				     "msg with %d direct "
 				     "messages", ncomp_msg->msg_list ?
 				     list_count(ncomp_msg->msg_list) : 0);
-			_slurm_rpc_comp_msg_list(ncomp_msg, run_scheduler);
+			_slurm_rpc_comp_msg_list(ncomp_msg, run_scheduler,
+						 comp_resp_msg->msg_list);
+			if (list_count(comp_resp_msg->msg_list)) {
+				slurm_msg_t *resp_msg =
+					xmalloc_nz(sizeof(slurm_msg_t));
+				slurm_msg_t_init(resp_msg);
+				resp_msg->msg_index = next_msg->msg_index;
+				resp_msg->flags = next_msg->flags;
+				resp_msg->protocol_version =
+					next_msg->protocol_version;
+				resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
+				/* You can't just set the
+				 * resp_msg->address here, it won't
+				 * make it to where it needs to be
+				 * used, set the sender and let it be
+				 * handled on the tree node.
+				 */
+				memcpy(&comp_resp_msg->sender,
+				       &comp_msg->sender,
+				       sizeof(slurm_addr_t));
+
+				resp_msg->data = comp_resp_msg;
+
+				list_append(msg_list_in, resp_msg);
+			} else
+				slurm_free_composite_msg(comp_resp_msg);
 			break;
 		case MESSAGE_EPILOG_COMPLETE:
 			epilog_msg = (epilog_complete_msg_t *) next_msg->data;
 			START_TIMER;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 				info("Processing embedded "
-				     "MESSAGE_EPILOG_COMPLETE uid=%d", uid);
+				     "MESSAGE_EPILOG_COMPLETE uid=%d %d",
+				     uid, next_msg->msg_index);
 			if (!validate_slurm_user(uid)) {
 				error("Security violation, EPILOG_COMPLETE RPC "
 				      "from uid=%d", uid);
@@ -5372,6 +5420,10 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 					     __func__, jobid2str(job_ptr, jbuf,
 								 sizeof(jbuf)),
 					     epilog_msg->node_name, TIME_STR);
+			FREE_NULL_LIST(next_msg->ret_list);
+			next_msg->ret_list = msg_list_in;
+			slurm_send_rc_msg(next_msg, SLURM_SUCCESS);
+			next_msg->ret_list = NULL;
 			break;
 		default:
 			error("_slurm_rpc_comp_msg_list: invalid msg type");
@@ -5380,27 +5432,6 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	}
 	list_iterator_destroy(itr);
 	/* NOTE: RPC has no response */
-}
-
-static void _slurm_composite_msg_resp(slurm_msg_t *msg)
-{
-	slurm_msg_t *comp_resp_msg;
-	composite_response_msg_t *cmp;
-
-	comp_resp_msg = xmalloc(sizeof(slurm_msg_t));
-	cmp = xmalloc(sizeof(composite_response_msg_t));
-	slurm_msg_t_init(comp_resp_msg);
-	cmp->comp_msg = msg;
-	comp_resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
-	comp_resp_msg->data = cmp;
-	comp_resp_msg->protocol_version = SLURM_PROTOCOL_VERSION;
-	if (slurm_send_to_prev_collector(comp_resp_msg) != SLURM_SUCCESS) {
-		error("msg aggr: unable to send composite msg "
-		      "response msg: %m");
-	}
-	cmp->comp_msg = NULL;
-	slurm_free_composite_resp_msg(cmp);
-	slurm_free_msg(comp_resp_msg);
 }
 
 /* _slurm_rpc_dump_cache()

@@ -395,60 +395,49 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 
 extern void msg_aggr_resp(slurm_msg_t *msg)
 {
-	slurm_msg_t *comp_resp_msg, *next_msg;
-	slurm_msg_t *comp_msg;
-	composite_msg_t *cmp_msg;
-	composite_response_msg_t *resp_msg, *cmp;
+	slurm_msg_t *next_msg;
+	composite_msg_t *comp_msg;
 	msg_aggr_t *msg_aggr;
 	ListIterator itr;
 
-	resp_msg = (composite_response_msg_t *)msg->data;
-	comp_msg = (slurm_msg_t *)resp_msg->comp_msg;
-	cmp_msg = (composite_msg_t *)comp_msg->data;
-	itr = list_iterator_create(cmp_msg->msg_list);
+	comp_msg = (composite_msg_t *)msg->data;
+	itr = list_iterator_create(comp_msg->msg_list);
 	if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-		info("msg aggr: _rpc_composite_resp: processing composite "
-		     "msg_list...");
+		info("msg_aggr_resp: processing composite msg_list...");
 	while ((next_msg = list_next(itr))) {
 		switch (next_msg->msg_type) {
-		case MESSAGE_EPILOG_COMPLETE:
+		case RESPONSE_SLURM_RC:
 			/* signal sending thread that slurmctld received this
 			 * epilog complete msg */
 			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-				info("msg aggr: _rpc_composite_resp: epilog "
-				     "complete msg found for job %u; "
-				     "signaling sending thread",
+				info("msg_aggr_resp: rc message found for "
+				     "index %u signaling sending thread",
 				     next_msg->msg_index);
 			if (!(msg_aggr = _handle_msg_aggr_ret(
 				      next_msg->msg_index))) {
-				debug2("_rpc_composite_resp: error: unable to "
+				debug2("msg_aggr_resp: error: unable to "
 				       "locate aggr message struct for job %u",
 					next_msg->msg_index);
 				continue;
 			}
 			pthread_cond_signal(&msg_aggr->wait_cond);
 			break;
-		case MESSAGE_COMPOSITE:
-			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-				info("msg aggr: _rpc_composite_resp: composite "
-				     "msg found; building and sending new "
-				     "response msg");
-			/* build and send composite message response msg */
-			comp_resp_msg = xmalloc(sizeof(slurm_msg_t));
-			cmp = xmalloc(sizeof(composite_response_msg_t));
-			slurm_msg_t_init(comp_resp_msg);
-			cmp->comp_msg = next_msg;
-			comp_resp_msg->msg_type = RESPONSE_MESSAGE_COMPOSITE;
-			comp_resp_msg->data = cmp;
-			comp_resp_msg->protocol_version =
-				SLURM_PROTOCOL_VERSION;
-			if (slurm_send_to_prev_collector(comp_resp_msg) !=
-					SLURM_SUCCESS) {
-				error("_rpc_composite_resp: unable to "
-				      "send composite response msg: %m");
+		case RESPONSE_MESSAGE_COMPOSITE:
+			comp_msg = (composite_msg_t *)next_msg->data;
+			/* set up the address here for the next node */
+			memcpy(&next_msg->address, &comp_msg->sender,
+			       sizeof(slurm_addr_t));
+
+			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE) {
+				char addrbuf[100];
+				slurm_print_slurm_addr(&next_msg->address,
+						       addrbuf, 32);
+				info("msg_aggr_resp: composite response msg "
+				     "found for %s", addrbuf);
 			}
-			xfree(cmp);
-			slurm_free_msg(comp_resp_msg);
+
+			slurm_send_only_node_msg(next_msg);
+
 			break;
 		default:
 			error("_rpc_composite_resp: invalid msg type in "
