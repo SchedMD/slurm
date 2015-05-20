@@ -154,6 +154,11 @@ extern slurm_addr_t* route_p_next_collector ( bool *is_collector )
  */
 extern slurm_addr_t* route_p_next_collector_backup ( void )
 {
-	return route_next_collector_backup();
+	/* return NULL until we have a clearly defined backup.
+	 * Otherwise we could get into a sending loop if the primary
+	 * fails with us sending to a sibling that may have me as a
+	 * parent.
+	 */
+	return NULL;
 }
 
