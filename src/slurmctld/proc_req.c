@@ -3950,7 +3950,8 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_LAYOUT_INFO");
 	if (layout_req_msg->layout_type == NULL) {
 		dump = slurm_get_layouts();
-		packstr(dump,buffer);
+		pack32((uint32_t) 1, buffer);	/* Record count */
+		packstr(dump, buffer);
 		xfree(dump);
 	} else {
 		if ( layouts_pack_layout(layout_req_msg->layout_type,
@@ -3958,15 +3959,15 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 					 layout_req_msg->type,
 					 layout_req_msg->no_relation,
 					 buffer) != SLURM_SUCCESS) {
-			debug2("_slurm_rpc_layout_show, unable to get layout[%s]",
-			       layout_req_msg->layout_type);
-			//FIXME: use an adapted response
+			debug2("%s: unable to get layout[%s]",
+			       __func__, layout_req_msg->layout_type);
 			slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 			flag = 0;
 		}
 	}
 	if ( flag == 1 ) {
 		dump_size = get_buf_offset(buffer);
+		high_buffer_size = MAX(high_buffer_size, dump_size);
 		dump = xfer_buf_data(buffer);
 		END_TIMER2("_slurm_rpc_resv_show");
 

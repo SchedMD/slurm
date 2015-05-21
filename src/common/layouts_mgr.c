@@ -1587,6 +1587,7 @@ typedef struct _pack_args {
 	char       *type;
 	uint32_t   all;
 	uint32_t   no_relation;
+	uint32_t   record_count;
 } _pack_args_t;
 
 /*
@@ -1747,6 +1748,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 		    hostlist_find(pargs->list_entities, e_name) != -1) {
 			str = xstrdup_printf("Root=%s\n", e_name);
 			packstr(str, buffer);
+			pargs->record_count++;
 			xfree(str);
 		}
 	}
@@ -1761,9 +1763,10 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 
 	/* add entity keys matching the layout to the current str */
 	pargs->current_line = str;
-	if (enode && enode->entity)
+	if (enode && enode->entity) {
 		xhash_walk(enode->entity->data, _pack_entity_layout_data,
 			   pargs);
+	}
 	/* the current line might have been extended/remalloced, so
 	 * we need to sync it again in str for further actions */
 	str = pargs->current_line;
@@ -1812,6 +1815,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	}
 
 	packstr(str, buffer);
+	pargs->record_count++;
 	xfree(str);
 
 	return 1;
@@ -2527,12 +2531,14 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 {
 	_pack_args_t pargs;
 	layout_t* layout;
+	int orig_offset, fini_offset;
 	char *str;
 
 	slurm_mutex_lock(&mgr->lock);
 
 	layout = layouts_get_layout_nolock(l_type);
 	if (layout == NULL) {
+		slurm_mutex_unlock(&mgr->lock);
 		error("unable to get layout of type '%s'", l_type);
 		return SLURM_ERROR;
 	}
@@ -2550,7 +2556,9 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 	}
 	pargs.type = type;
 	pargs.no_relation = no_relation;
-
+	pargs.record_count = 0;
+	orig_offset = get_buf_offset(buffer);
+	pack32(pargs.record_count, buffer);
 
 	if ( pargs.no_relation == 0
 	     && pargs.list_entities == NULL
@@ -2558,21 +2566,25 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 		/* start by packing the layout priority */
 		str = xstrdup_printf("Priority=%u\n", layout->priority);
 		packstr(str, buffer);
+		pargs.record_count++;
 		xfree(str);
 	}
 
 	/* pack according to the layout struct type */
-	switch(layout->struct_type) {
+	switch (layout->struct_type) {
 	case LAYOUT_STRUCT_TREE:
 		xtree_walk(layout->tree, NULL, 0, XTREE_LEVEL_MAX,
 			   _pack_layout_tree, &pargs);
 		break;
 	}
+
 	if (pargs.list_entities != NULL)
 		slurm_hostlist_destroy(pargs.list_entities);
 
-	/* EOF */
-	packstr("", buffer);
+	fini_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, orig_offset);
+	pack32(pargs.record_count, buffer);
+	set_buf_offset(buffer, fini_offset);
 
 	slurm_mutex_unlock(&mgr->lock);
 

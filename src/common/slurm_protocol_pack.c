@@ -4962,43 +4962,33 @@ static int
 _unpack_layout_info_msg(layout_info_msg_t ** msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	static int base_buffer_size = 1024;
 	int i;
 	char **records;
 	uint32_t utmp32;
 	char *tmp_str = NULL;
 
 	xassert(msg != NULL);
-	*msg = xmalloc(sizeof(layout_info_msg_t));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		records = (*msg)->records =
-			xmalloc(sizeof(char*) * base_buffer_size);
-		(*msg)->record_count = base_buffer_size;
+		*msg = xmalloc(sizeof(layout_info_msg_t));
+		safe_unpack32(&(*msg)->record_count, buffer);
+		(*msg)->records = xmalloc(sizeof(char*) * (*msg)->record_count);
+		records = (*msg)->records;
 
 		i = 0;
 		while (remaining_buf(buffer) > 0) {
 			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
 			if (tmp_str != NULL) {
-				if (*tmp_str == '\0') {
-						xfree(tmp_str);
-						break;
+				if (tmp_str[0] == '\0') {
+					xfree(tmp_str);
+					break;
 				}
-				if (i == (*msg)->record_count) {
-					(*msg)->record_count
-						+= base_buffer_size;
-					records = xrealloc(records,
-						  sizeof(char*) *
-						  (*msg)->record_count);
-				}
-				records[i] = tmp_str;
-				++i;
-				//xfree(tmp_str);
+				records[i++] = tmp_str;
+				// tmp_str = NULL; /* Nothing left to free */
 				continue;
 			}
 		}
 		(*msg)->record_count = i;
-		xrealloc(records, sizeof(char*) * (*msg)->record_count);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
