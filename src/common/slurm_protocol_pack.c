@@ -4964,31 +4964,29 @@ _unpack_layout_info_msg(layout_info_msg_t ** msg, Buf buffer,
 {
 	int i;
 	char **records;
-	uint32_t utmp32;
+	uint32_t utmp32, record_count = 0;
 	char *tmp_str = NULL;
 
 	xassert(msg != NULL);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		*msg = xmalloc(sizeof(layout_info_msg_t));
-		safe_unpack32(&(*msg)->record_count, buffer);
-		(*msg)->records = xmalloc(sizeof(char*) * (*msg)->record_count);
+		(*msg)->record_count = 0;
+		safe_unpack32(&record_count, buffer);
+		(*msg)->records = xmalloc(sizeof(char*) * record_count);
 		records = (*msg)->records;
-
-		i = 0;
-		while (remaining_buf(buffer) > 0) {
+		for (i = 0; i < record_count; i++) {
 			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
 			if (tmp_str != NULL) {
 				if (tmp_str[0] == '\0') {
 					xfree(tmp_str);
-					break;
+				} else {
+					records[(*msg)->record_count] = tmp_str;
+					// tmp_str = NULL; /* Nothing to free */
+					((*msg)->record_count)++;
 				}
-				records[i++] = tmp_str;
-				// tmp_str = NULL; /* Nothing left to free */
-				continue;
 			}
 		}
-		(*msg)->record_count = i;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
