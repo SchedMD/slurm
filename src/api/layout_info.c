@@ -113,9 +113,14 @@ extern int slurm_load_layout (char *layout_type, char *entities, char *type,
 void slurm_print_layout_info ( FILE* out, layout_info_msg_t *layout_info_ptr,
 			       int one_liner )
 {
+	char *nl;
 	int i;
-	for (i=0; i<layout_info_ptr->record_count; i++) {
-		//FIXME change "\n" if one_liner
+
+	for (i = 0; i < layout_info_ptr->record_count; i++) {
+		if (one_liner) {
+			while ((nl = strchr(layout_info_ptr->records[i], '\n')))
+				nl[0] = ' ';
+		}
 		fprintf ( out, "%s", layout_info_ptr->records[i]);
 	}
 	if (!one_liner)
