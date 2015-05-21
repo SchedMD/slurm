@@ -422,7 +422,6 @@ extern void msg_aggr_add_comp(Buf buffer, void *auth_cred, header_t *header)
 	msg->data = buffer;
 	msg->data_size = remaining_buf(buffer);
 
-	info("adding size %d type %d", msg->data_size, msg->msg_type);
 	msg_aggr_add_msg(msg, 0);
 }
 
