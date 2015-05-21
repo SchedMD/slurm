@@ -3616,12 +3616,10 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 static void _slurm_rpc_update_layout(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
-	Buf buffer = init_buf(BUF_SIZE);
-	uint32_t utmp32;
-	char *tmp_str = NULL;
+	Buf buffer;
 	DEF_TIMERS;
-	update_layout_msg_t *msg_ptr =
-		(update_layout_msg_t *) msg->data;
+	update_layout_msg_t *msg_ptr = (update_layout_msg_t *) msg->data;
+	int shrink_size;
 
 	/* Locks: Write job and write node */
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
@@ -3635,21 +3633,20 @@ static void _slurm_rpc_update_layout(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
+		buffer = init_buf(BUF_SIZE);
 		packstr(msg_ptr->arg, buffer);
-		/* FIXME it is not needed to rebuild the buffer*/
-		utmp32 = get_buf_offset(buffer);
-		tmp_str = xfer_buf_data(buffer);
-		buffer = create_buf(tmp_str, utmp32);
-		error_code = layouts_update_layout(msg_ptr->layout,
-						   buffer);
+		shrink_size = (int)get_buf_offset(buffer) - size_buf(buffer);
+		set_buf_offset(buffer, 0);
+		grow_buf(buffer, shrink_size);	/* Shrink actually */
+		error_code = layouts_update_layout(msg_ptr->layout, buffer);
+		free_buf(buffer);
 		END_TIMER2("_slurm_rpc_update_node");
 	}
 
 	/* return result */
 	if (error_code) {
 		info("_slurm_rpc_update_layout for %s: %s",
-		     msg_ptr->layout,
-		     slurm_strerror(error_code));
+		     msg_ptr->layout, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("_slurm_rpc_update_layout complete for %s %s",
