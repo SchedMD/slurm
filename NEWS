@@ -239,6 +239,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.8
+==========================
+
 * Changes in Slurm 14.11.7
 ==========================
  -- Initialize some variables used with the srun --no-alloc option that may
