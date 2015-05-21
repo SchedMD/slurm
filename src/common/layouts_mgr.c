@@ -1191,7 +1191,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 	s_p_hashtbl_t* entity_tbl = NULL;
 	int entities_tbl_count = 0, i;
 	entity_t** updated_entities = NULL;
-	int rc = SLURM_ERROR;
+	int rc = SLURM_SUCCESS;
 
 	uint32_t l_priority;
 
@@ -1208,15 +1208,17 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 				 plugin->ops->spec->options);
 	if (filename) {
 		if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
-			fatal("layouts: something went wrong when opening/reading "
+			info("layouts: something went wrong when opening/reading "
 			      "'%s': %m", filename);
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 		debug3("layouts: configuration file '%s' is loaded", filename);
 	} else if (buffer) {
 		if (s_p_parse_buffer(tbl, NULL, buffer, false) == SLURM_ERROR) {
 			error("layouts: something went wrong when parsing "
 			      "buffer : %m");
-			rc =  SLURM_ERROR;
+			rc = SLURM_ERROR;
 			goto cleanup;
 		}
 		debug3("layouts: buffer loaded");
@@ -1236,6 +1238,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		error("layouts: no valid Entity found, can not append any "
 		      "information nor construct relations for %s/%s",
 		      plugin->layout->type, plugin->layout->name);
+		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
@@ -1253,6 +1256,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		if (!s_p_get_string(&e_name, "Entity", entity_tbl)) {
 			info("layouts: no name associated to entity[%d], "
 			      "skipping...", i);
+			rc = SLURM_ERROR;
 			continue;
 		}
 
@@ -1264,12 +1268,14 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 				info("layouts: entity '%s' does not already "
 				     "exists and no type was specified, "
 				     "skipping", e_name);
+				rc = SLURM_ERROR;
 				continue;
 			}
 			if (!_string_in_array(e_type,
 					      plugin->ops->spec->etypes)) {
 				info("layouts: entity '%s' type (%s) is "
 				     "invalid, skipping", e_name, e_type);
+				rc = SLURM_ERROR;
 				continue;
 			}
 
@@ -1283,12 +1289,14 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 					      plugin->ops->spec->etypes)) {
 				info("layouts: entity '%s' type (%s) is "
 				     "invalid, skipping", e_name, e_type);
+				rc = SLURM_ERROR;
 				continue;
 			}
 			if (!e->type || strcmp(e_type, e->type)) {
 				info("layouts: entity '%s' type (%s) differs "
 				     "from already registered entity type (%s)"
 				     " skipping", e_name, e_type, e->type);
+				rc = SLURM_ERROR;
 				continue;
 			}
 		}
@@ -1347,6 +1355,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 			error("layouts: plugin %s/%s has an error parsing its"
 			      " configuration", plugin->layout->type,
 			      plugin->layout->name);
+			rc = SLURM_ERROR;
 			goto cleanup;
 		}
 	}
@@ -1376,12 +1385,11 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 			error("layouts: plugin %s/%s has an error reacting to"
 			      " entities update", plugin->layout->type,
 			      plugin->layout->name);
+			rc = SLURM_ERROR;
 			goto cleanup;
 		}
 	}
 	xfree(updated_entities);
-
-	rc = SLURM_SUCCESS;
 
 cleanup:
 	s_p_hashtbl_destroy(tbl);

@@ -105,7 +105,7 @@ scontrol_update_layout (int argc, char *argv[])
 
 done:	xfree(msg.arg);
 	xfree(opt);
-	if (rc) {
+	if (rc) {	
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else
