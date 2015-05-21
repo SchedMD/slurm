@@ -145,7 +145,9 @@ inline static void  _slurm_rpc_dump_sicp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
-inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg,
+					       bool *run_scheduler,
+					       bool running_composite);
 inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
 inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg);
 inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
@@ -311,7 +313,8 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		slurm_free_part_info_request_msg(msg->data);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		_slurm_rpc_epilog_complete(msg);
+		i = 0;
+		_slurm_rpc_epilog_complete(msg, (bool *)&i, 0);
 		slurm_free_epilog_complete_msg(msg->data);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
@@ -1669,7 +1672,9 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 /* _slurm_rpc_epilog_complete - process RPC noting the completion of
  * the epilog denoting the completion of a job it its entirety */
-static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
+static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
+					bool *run_scheduler,
+					bool running_composite)
 {
 	static int active_rpc_cnt = 0;
 	static time_t config_update = 0;
@@ -1681,7 +1686,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	epilog_complete_msg_t *epilog_msg =
 		(epilog_complete_msg_t *) msg->data;
-	bool run_scheduler = false;
 	struct job_record  *job_ptr;
 	char jbuf[JBUFSIZ];
 
@@ -1694,26 +1698,35 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	}
 
 	job_ptr = find_job_record(epilog_msg->job_id);
-	if (config_update != slurmctld_conf.last_update) {
-		char *sched_params = slurm_get_sched_params();
-		defer_sched = (sched_params && strstr(sched_params,"defer"));
-		xfree(sched_params);
-		config_update = slurmctld_conf.last_update;
-	}
+	/* Only throttle on none composite messages, the lock should
+	 * already be set earlier. */
+	if (!running_composite) {
+		if (config_update != slurmctld_conf.last_update) {
+			char *sched_params = slurm_get_sched_params();
+			defer_sched = (sched_params &&
+				       strstr(sched_params, "defer"));
+			xfree(sched_params);
+			config_update = slurmctld_conf.last_update;
+		}
 
-	_throttle_start(&active_rpc_cnt);
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 		info("_slurm_rpc_epilog_complete: "
 		     "node_name = %s, job_id = %u", epilog_msg->node_name,
 		     epilog_msg->job_id);
 
-	lock_slurmctld(job_write_lock);
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
-		run_scheduler = true;
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
+		*run_scheduler = true;
+
+	if (!running_composite) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
+
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	if (epilog_msg->return_code)
@@ -1727,7 +1740,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		       epilog_msg->node_name, TIME_STR);
 
 	/* Functions below provide their own locking */
-	if (run_scheduler) {
+	if (!running_composite && *run_scheduler) {
 		/*
 		 * In defer mode, avoid triggering the scheduler logic
 		 * for every epilog complete message.
@@ -5333,20 +5346,16 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				      bool *run_scheduler,
 				      List msg_list_in)
 {
-	uid_t uid;
-	epilog_complete_msg_t *epilog_msg;
-	composite_msg_t *comp_resp_msg;
-	struct job_record  *job_ptr;
-	char jbuf[JBUFSIZ];
-	DEF_TIMERS;
-
 	ListIterator itr;
 	slurm_msg_t *next_msg;
 	composite_msg_t *ncomp_msg;
+	composite_msg_t *comp_resp_msg;
 
 	itr = list_iterator_create(comp_msg->msg_list);
 	while ((next_msg = list_next(itr))) {
-		uid = g_slurm_auth_get_uid(next_msg->auth_cred, NULL);
+		/* The ret_list is used by slurm_send_rc_msg to house
+		   replys going back to the nodes.
+		*/
 		FREE_NULL_LIST(next_msg->ret_list);
 		next_msg->ret_list = msg_list_in;
 		switch (next_msg->msg_type) {
@@ -5389,40 +5398,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				slurm_free_composite_msg(comp_resp_msg);
 			break;
 		case MESSAGE_EPILOG_COMPLETE:
-			epilog_msg = (epilog_complete_msg_t *) next_msg->data;
-			START_TIMER;
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
-				info("Processing embedded "
-				     "MESSAGE_EPILOG_COMPLETE uid=%d %d",
-				     uid, next_msg->msg_index);
-			if (!validate_slurm_user(uid)) {
-				error("Security violation, EPILOG_COMPLETE RPC "
-				      "from uid=%d", uid);
-				return;
-			}
-
-			job_ptr = find_job_record(epilog_msg->job_id);
-
-			if (job_epilog_complete(epilog_msg->job_id,
-						epilog_msg->node_name,
-						epilog_msg->return_code))
-				*run_scheduler = true;
-			END_TIMER2("_slurm_rpc_comp_msg_list");
-
-			if (epilog_msg->return_code)
-				error("%s: epilog error %s Node=%s Err=%s %s",
-				__func__, jobid2str(job_ptr, jbuf,
-						    sizeof(jbuf)),
-				epilog_msg->node_name,
-				slurm_strerror(epilog_msg->return_code),
-						TIME_STR);
-			else
-				if (slurmctld_conf.debug_flags &
-				    DEBUG_FLAG_ROUTE)
-					info("%s: %s Node=%s %s",
-					     __func__, jobid2str(job_ptr, jbuf,
-								 sizeof(jbuf)),
-					     epilog_msg->node_name, TIME_STR);
+			_slurm_rpc_epilog_complete(next_msg, run_scheduler, 1);
 			slurm_send_rc_msg(next_msg, SLURM_SUCCESS);
 			break;
 		case MESSAGE_NODE_REGISTRATION_STATUS:
