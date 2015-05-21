@@ -476,7 +476,7 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 }
 
 static int
-_send_slurmstepd_init(int fd, uint16_t type, void *req,
+_send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
@@ -5481,7 +5481,7 @@ _add_starting_step(uint16_t type, void *req)
 		rc = SLURM_FAILURE;
 		goto fail;
 	}
-	switch(type) {
+	switch (type) {
 	case LAUNCH_BATCH_JOB:
 		starting_step->job_id =
 			((batch_job_launch_msg_t *)req)->job_id;
@@ -5504,6 +5504,7 @@ _add_starting_step(uint16_t type, void *req)
 		xfree(starting_step);
 		goto fail;
 	}
+
 	if (!list_append(conf->starting_steps, starting_step)) {
 		error("%s failed to allocate memory for list", __func__);
 		rc = SLURM_FAILURE;
@@ -5536,10 +5537,6 @@ _remove_starting_step(uint16_t type, void *req)
 	case LAUNCH_TASKS:
 		job_id =  ((launch_tasks_request_msg_t *)req)->job_id;
 		step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
-		break;
-	case REQUEST_LAUNCH_PROLOG:
-		job_id  = ((prolog_launch_msg_t *)req)->job_id;
-		step_id = SLURM_EXTERN_CONT;
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
