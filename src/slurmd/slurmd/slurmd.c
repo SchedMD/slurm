@@ -607,26 +607,36 @@ extern int
 send_registration_msg(uint32_t status, bool startup)
 {
 	int rc, ret_val = SLURM_SUCCESS;
-	slurm_msg_t req;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
-
-	slurm_msg_t_init(&req);
 
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
 	msg->status  = status;
 
-	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
-	req.data     = msg;
+	if (conf->msg_aggr_window_msgs > 1) {
+		slurm_msg_t *req = xmalloc_nz(sizeof(slurm_msg_t));
 
-	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
-		error("Unable to register: %m");
-		ret_val = SLURM_FAILURE;
+		slurm_msg_t_init(req);
+		req->msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
+		req->data     = msg;
+
+		msg_aggr_add_msg(req, 1);
 	} else {
-		sent_reg_time = time(NULL);
+		slurm_msg_t req;
+		slurm_msg_t_init(&req);
+		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
+		req.data     = msg;
+
+		if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+			error("Unable to register: %m");
+			ret_val = SLURM_FAILURE;
+		}
+		slurm_free_node_registration_status_msg(msg);
 	}
-	slurm_free_node_registration_status_msg (msg);
+
+	if (ret_val == SLURM_SUCCESS)
+		sent_reg_time = time(NULL);
 
 	return ret_val;
 }

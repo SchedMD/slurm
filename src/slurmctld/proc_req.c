@@ -159,7 +159,7 @@ inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
-inline static void  _slurm_rpc_node_registration(slurm_msg_t * msg);
+inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg, bool locked);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reboot_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
@@ -344,7 +344,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		slurm_free_job_desc_msg(msg->data);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
-		_slurm_rpc_node_registration(msg);
+		_slurm_rpc_node_registration(msg, 0);
 		slurm_free_node_registration_status_msg(msg->data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
@@ -2459,7 +2459,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
  *	actual configuration satisfies the configured specification */
-static void _slurm_rpc_node_registration(slurm_msg_t * msg)
+static void _slurm_rpc_node_registration(slurm_msg_t * msg, bool locked)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2498,7 +2498,8 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 			      "set DebugFlags=NO_CONF_HASH in your slurm.conf.",
 			      node_reg_stat_msg->node_name);
 		}
-		lock_slurmctld(job_write_lock);
+		if (!locked)
+			lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
 							  msg->protocol_version,
@@ -2509,7 +2510,8 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 						 msg->protocol_version,
 						 &newly_up);
 #endif
-		unlock_slurmctld(job_write_lock);
+		if (!locked)
+			unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
 		if (newly_up) {
 			queue_job_scheduler();
@@ -5324,7 +5326,6 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		resp_msg.data     = &comp_resp_msg;
 		slurm_send_only_node_msg(&resp_msg);
 	}
-
 	FREE_NULL_LIST(comp_resp_msg.msg_list);
 }
 
@@ -5346,6 +5347,8 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	itr = list_iterator_create(comp_msg->msg_list);
 	while ((next_msg = list_next(itr))) {
 		uid = g_slurm_auth_get_uid(next_msg->auth_cred, NULL);
+		FREE_NULL_LIST(next_msg->ret_list);
+		next_msg->ret_list = msg_list_in;
 		switch (next_msg->msg_type) {
 		case MESSAGE_COMPOSITE:
 			comp_resp_msg = xmalloc(sizeof(composite_msg_t));
@@ -5420,15 +5423,16 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 					     __func__, jobid2str(job_ptr, jbuf,
 								 sizeof(jbuf)),
 					     epilog_msg->node_name, TIME_STR);
-			FREE_NULL_LIST(next_msg->ret_list);
-			next_msg->ret_list = msg_list_in;
 			slurm_send_rc_msg(next_msg, SLURM_SUCCESS);
-			next_msg->ret_list = NULL;
+			break;
+		case MESSAGE_NODE_REGISTRATION_STATUS:
+			_slurm_rpc_node_registration(next_msg, 1);
 			break;
 		default:
 			error("_slurm_rpc_comp_msg_list: invalid msg type");
 			break;
 		}
+		next_msg->ret_list = NULL;
 	}
 	list_iterator_destroy(itr);
 	/* NOTE: RPC has no response */
