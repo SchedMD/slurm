@@ -796,6 +796,15 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
+extern void slurm_free_update_layout_msg(update_layout_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->layout);
+		xfree(msg->arg);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
@@ -839,6 +848,22 @@ extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
 {
+	xfree(msg);
+}
+
+extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg)
+{
+	xfree(msg->layout_type);
+	xfree(msg->entities);
+	xfree(msg);
+}
+
+extern void slurm_free_layout_info_msg(layout_info_msg_t * msg)
+{
+	int i;
+	for (i=0; i<msg->record_count; i++)
+		xfree(msg->records[i]);
+	xfree(msg->records);
 	xfree(msg);
 }
 
@@ -3240,6 +3265,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
+	case REQUEST_UPDATE_LAYOUT:
+		slurm_free_update_layout_msg(data);
+		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
@@ -3257,6 +3285,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_RESERVATION_INFO:
 		slurm_free_resv_info_request_msg(data);
+		break;
+	case REQUEST_LAYOUT_INFO:
+		slurm_free_layout_info_request_msg(data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
@@ -3621,6 +3652,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_RESERVATION_INFO";
 	case RESPONSE_RESERVATION_INFO:
 		return "RESPONSE_RESERVATION_INFO";
+	case REQUEST_LAYOUT_INFO:
+		return "REQUEST_LAYOUT_INFO";
+	case RESPONSE_LAYOUT_INFO:
+		return "RESPONSE_LAYOUT_INFO";
 	case REQUEST_PRIORITY_FACTORS:
 		return "REQUEST_PRIORITY_FACTORS";
 	case RESPONSE_PRIORITY_FACTORS:
@@ -3651,6 +3686,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_UPDATE_JOB";
 	case REQUEST_UPDATE_NODE:
 		return "REQUEST_UPDATE_NODE";
+	case REQUEST_UPDATE_LAYOUT:
+		return "REQUEST_UPDATE_LAYOUT";
 	case REQUEST_CREATE_PARTITION:
 		return "REQUEST_CREATE_PARTITION";
 	case REQUEST_DELETE_PARTITION:

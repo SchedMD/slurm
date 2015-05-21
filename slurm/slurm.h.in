@@ -1852,6 +1852,15 @@ typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 } job_alloc_info_msg_t;
 
+typedef struct layout_info_msg {
+        uint32_t record_count;  /* number of char* */
+	char** records;		/*layout or list of layouts*/
+} layout_info_msg_t;
+
+typedef struct update_layout_msg {
+	char* layout;
+	char* arg;
+} update_layout_msg_t;
 
 typedef struct step_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
@@ -3986,6 +3995,17 @@ extern int slurm_update_partition PARAMS((update_part_msg_t * part_msg));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_delete_partition PARAMS((delete_part_msg_t * part_msg));
+
+/*****************************************************************************\
+ *      SLURM LAYOUT PRINT/UPDATE FUNCTIONS
+\*****************************************************************************/
+extern void slurm_print_layout_info PARAMS(
+	(FILE* out, layout_info_msg_t *layout_info_ptr, int one_liner ));
+extern int slurm_load_layout PARAMS(
+	(char *layout_type, char *entities, char *type,
+	 uint32_t norelation, layout_info_msg_t **resp));
+extern int slurm_update_layout PARAMS((update_layout_msg_t * layout_info_msg));
+
 
 /*****************************************************************************\
  *	SLURM RESERVATION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

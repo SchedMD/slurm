@@ -94,6 +94,7 @@ slurmapi_src =           \
 	job_step_info.c  \
 	license_info.c   \
 	node_info.c      \
+	layout_info.c     \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \

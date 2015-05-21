@@ -75,6 +75,7 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -170,6 +171,7 @@ inline static void  _slurm_rpc_resv_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_delete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
+inline static void  _slurm_rpc_layout_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_takeover(slurm_msg_t * msg);
 inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg);
@@ -190,6 +192,7 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_front_end(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
+inline static void  _slurm_rpc_update_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_cache(slurm_msg_t * msg);
@@ -405,6 +408,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_update_node(msg);
 		slurm_free_update_node_msg(msg->data);
 		break;
+	case REQUEST_UPDATE_LAYOUT:
+		_slurm_rpc_update_layout(msg);
+		slurm_free_update_layout_msg(msg->data);
+		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
@@ -433,6 +440,10 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
 		slurm_free_resv_info_request_msg(msg->data);
+		break;
+	case REQUEST_LAYOUT_INFO:
+		_slurm_rpc_layout_show(msg);
+		slurm_free_layout_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "
@@ -3598,6 +3609,55 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	trigger_reconfig();
 }
 
+/*
+ * _slurm_rpc_update_layout - process RPC to update the configuration of a
+ *	layout (e.g. params of entities)
+ */
+static void _slurm_rpc_update_layout(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	Buf buffer = init_buf(BUF_SIZE);
+	uint32_t utmp32;
+	char *tmp_str = NULL;
+	DEF_TIMERS;
+	update_layout_msg_t *msg_ptr =
+		(update_layout_msg_t *) msg->data;
+
+	/* Locks: Write job and write node */
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_UPDATE_LAYOUT from uid=%d", uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, UPDATE_LAYOUT RPC from uid=%d", uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		packstr(msg_ptr->arg, buffer);
+		/* FIXME it is not needed to rebuild the buffer*/
+		utmp32 = get_buf_offset(buffer);
+		tmp_str = xfer_buf_data(buffer);
+		buffer = create_buf(tmp_str, utmp32);
+		error_code = layouts_update_layout(msg_ptr->layout,
+						   buffer);
+		END_TIMER2("_slurm_rpc_update_node");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_update_layout for %s: %s",
+		     msg_ptr->layout,
+		     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_update_layout complete for %s %s",
+		       msg_ptr->layout, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+}
+
 /* _slurm_rpc_update_partition - process RPC to update the configuration
  *	of a partition (e.g. UP/DOWN) */
 static void _slurm_rpc_update_partition(slurm_msg_t * msg)
@@ -3864,6 +3924,58 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 		response_msg.protocol_version = msg->protocol_version;
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_RESERVATION_INFO;
+		response_msg.data = dump;
+		response_msg.data_size = dump_size;
+
+		/* send message */
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		xfree(dump);
+	}
+}
+
+/* _slurm_rpc_layout_show - process RPC to dump layout info */
+static void _slurm_rpc_layout_show(slurm_msg_t * msg)
+{
+	layout_info_request_msg_t *layout_req_msg = (layout_info_request_msg_t *)
+		msg->data;
+	DEF_TIMERS;
+	slurm_msg_t response_msg;
+	char *dump;
+	int dump_size;
+	static int high_buffer_size = (1024 * 1024);
+	Buf buffer = init_buf(high_buffer_size);
+	int flag = 1;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_LAYOUT_INFO");
+	if (layout_req_msg->layout_type == NULL) {
+		dump = slurm_get_layouts();
+		packstr(dump,buffer);
+		xfree(dump);
+	} else {
+		if ( layouts_pack_layout(layout_req_msg->layout_type,
+					 layout_req_msg->entities,
+					 layout_req_msg->type,
+					 layout_req_msg->norelation,
+					 buffer) != SLURM_SUCCESS) {
+			debug2("_slurm_rpc_layout_show, unable to get layout[%s]",
+			       layout_req_msg->layout_type);
+			//FIXME: use an adapted response
+			slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
+			flag = 0;
+		}
+	}
+	if ( flag == 1 ) {
+		dump_size = get_buf_offset(buffer);
+		dump = xfer_buf_data(buffer);
+		END_TIMER2("_slurm_rpc_resv_show");
+
+		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_LAYOUT_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
 

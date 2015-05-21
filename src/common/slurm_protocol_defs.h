@@ -246,6 +246,8 @@ typedef enum {
 	RESPONSE_CACHE_INFO,
 	REQUEST_SICP_INFO,
 	RESPONSE_SICP_INFO,
+	REQUEST_LAYOUT_INFO,
+	RESPONSE_LAYOUT_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -258,6 +260,7 @@ typedef enum {
 	REQUEST_UPDATE_RESERVATION,
 	REQUEST_UPDATE_BLOCK,
 	REQUEST_UPDATE_FRONT_END,
+	REQUEST_UPDATE_LAYOUT,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -581,6 +584,13 @@ typedef struct part_info_request_msg {
 typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
+
+typedef struct layout_info_request_msg {
+        char* layout_type;
+        char* entities;
+        char* type;
+        uint32_t norelation;
+} layout_info_request_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_id;
@@ -1208,6 +1218,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg);
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
+extern void slurm_free_update_layout_msg(update_layout_msg_t * msg);
 extern void slurm_free_update_part_msg(update_part_msg_t * msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
@@ -1276,6 +1287,8 @@ extern void slurm_free_node_info_msg(node_info_msg_t * msg);
 extern void slurm_free_node_info_members(node_info_t * node);
 extern void slurm_free_partition_info_msg(partition_info_msg_t * msg);
 extern void slurm_free_partition_info_members(partition_info_t * part);
+extern void slurm_free_layout_info_msg(layout_info_msg_t * msg);
+extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
 extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);

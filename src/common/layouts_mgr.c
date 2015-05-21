@@ -1580,9 +1580,13 @@ static int _layouts_build_relations(layout_plugin_t* plugin)
  * functions used when packing layouts into a buffer as a set of strings.
  */
 typedef struct _pack_args {
-	Buf       buffer;
-	char      *current_line;
-	layout_t* layout;
+	Buf        buffer;
+	char       *current_line;
+	layout_t   *layout;
+	hostlist_t list_entities;
+	char       *type;
+	uint32_t   all;
+	uint32_t   norelation;
 } _pack_args_t;
 
 /*
@@ -1738,10 +1742,14 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	}
 
 	/* print this entity as root if necessary */
-	if (level == 0) {
-		str = xstrdup_printf("Root=%s\n", e_name);
-		packstr(str, buffer);
-		xfree(str);
+	if (level == 0 && pargs->norelation != 1 && pargs->type == NULL) {
+		if( pargs->all != 0 ||
+		    pargs->list_entities == NULL ||
+		    hostlist_find(pargs->list_entities, e_name) != -1) {
+			str = xstrdup_printf("Root=%s\n", e_name);
+			packstr(str, buffer);
+			xfree(str);
+		}
 	}
 
 	/* print entity name and type when possible */
@@ -1762,6 +1770,38 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	str = pargs->current_line;
 	pargs->current_line = NULL;
 
+	/*don't print enclosed if norelation option*/
+	if( pargs->norelation == 1
+	    && enclosed_str != NULL
+	    && pargs->list_entities == NULL) {
+		xfree(enclosed_str);
+		xfree(str);
+		return 1;
+	}
+
+	/*don't print non enclosed if no "entities char*" option*/
+	if( pargs->all == 0
+	    && pargs->list_entities == NULL
+	    && enclosed_str == NULL ) {
+		xfree(str);
+		return 1;
+	}
+
+	/*don't print entities if not named in "entities char*"*/
+	if( pargs->all == 0
+	    && pargs->list_entities != NULL
+	    && hostlist_find(pargs->list_entities, e_name) == -1) {
+		xfree(str);
+		return 1;
+	}
+
+	/*don't print entities if not type of "type char*"*/
+	if( pargs->type != NULL
+	    && (e_type == NULL || strcasecmp(e_type,pargs->type)!=0)) {
+		xfree(str);
+		return 1;
+	}
+
 	/* print enclosed entities if any */
 	if (!enclosed_str) {
 		xstrcat(str, "\n");
@@ -1771,9 +1811,10 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 		xfree(str);
 		str = strdump;
 	}
-	packstr(str, buffer);
-	xfree(str);
 
+	packstr(str, buffer);
+
+	xfree(str);
 	return 1;
 }
 
@@ -2481,7 +2522,9 @@ entity_t* layouts_get_entity(const char* name)
 	return e;
 }
 
-int layouts_pack_layout(char *l_type, Buf buffer)
+
+int layouts_pack_layout(char *l_type, char *char_entities, char *type,
+			uint32_t norelation, Buf buffer)
 {
 	_pack_args_t pargs;
 	layout_t* layout;
@@ -2494,16 +2537,30 @@ int layouts_pack_layout(char *l_type, Buf buffer)
 		error("unable to get layout of type '%s'", l_type);
 		return SLURM_ERROR;
 	}
-
 	/* initialize args for recursive packing */
 	pargs.buffer = buffer;
 	pargs.layout = layout;
 	pargs.current_line = NULL;
+	pargs.all = 0;
+	pargs.list_entities = NULL;
+	if (char_entities != NULL) {
+		if (strcmp(char_entities, "*") == 0)
+			pargs.all = 1;
+		else
+			pargs.list_entities = hostlist_create(char_entities);
+	}
+	pargs.type = type;
+	pargs.norelation = norelation;
 
-	/* start by packing the layout priority */
-	str = xstrdup_printf("Priority=%u\n", layout->priority);
-	packstr(str, buffer);
-	xfree(str);
+
+	if ( pargs.norelation == 0
+	     && pargs.list_entities == NULL
+	     && pargs.type == NULL ) {
+		/* start by packing the layout priority */
+		str = xstrdup_printf("Priority=%u\n", layout->priority);
+		packstr(str, buffer);
+		xfree(str);
+	}
 
 	/* pack according to the layout struct type */
 	switch(layout->struct_type) {
@@ -2512,6 +2569,8 @@ int layouts_pack_layout(char *l_type, Buf buffer)
 			   _pack_layout_tree, &pargs);
 		break;
 	}
+	if (pargs.list_entities != NULL)
+		slurm_hostlist_destroy(pargs.list_entities);
 
 	/* EOF */
 	packstr("", buffer);
@@ -2571,7 +2630,8 @@ int layouts_state_save_layout(char* l_type)
 	START_TIMER;
 
 	/* pack the targeted layout into a tmp buffer */
-	error_code = layouts_pack_layout(l_type, buffer);
+	error_code = layouts_pack_layout(l_type, NULL, NULL, 0, buffer);
+
 	if (error_code != SLURM_SUCCESS) {
 		error("unable to save layout[%s] state", l_type);
 		return error_code;

@@ -129,6 +129,17 @@ slurm_update_node ( update_node_msg_t * node_msg)
 {
 	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
 }
+/*
+ * slurm_update_layout - issue RPC to a layout's configuration per request,
+ *	only usable by user root
+ * IN layout_msg - command line (same format as conf)
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int
+slurm_update_layout ( update_layout_msg_t * layout_msg)
+{
+	return _slurm_update ((void *) layout_msg, REQUEST_UPDATE_LAYOUT);
+}
 
 /*
  * slurm_create_partition - create a new partition, only usable by user root

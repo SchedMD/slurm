@@ -189,10 +189,11 @@ am__objects_1 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo cache_info.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo front_end_info.lo init_msg.lo \
 	job_info.lo job_step_info.lo license_info.lo node_info.lo \
-	partition_info.lo pmi_server.lo reservation_info.lo signal.lo \
-	slurm_get_statistics.lo slurm_hostlist.lo slurm_pmi.lo \
-	step_ctx.lo step_io.lo step_launch.lo submit.lo suspend.lo \
-	topo_info.lo triggers.lo reconfigure.lo update_config.lo
+	layout_info.lo partition_info.lo pmi_server.lo \
+	reservation_info.lo signal.lo slurm_get_statistics.lo \
+	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
+	step_launch.lo submit.lo suspend.lo topo_info.lo triggers.lo \
+	reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
@@ -599,6 +600,7 @@ slurmapi_src = \
 	job_step_info.c  \
 	license_info.c   \
 	node_info.c      \
+	layout_info.c     \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
@@ -788,6 +790,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/init_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_step_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/layout_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/license_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@

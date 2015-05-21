@@ -1466,20 +1466,25 @@ _show_it (int argc, char *argv[])
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
+	bool allow_opt=false;
 
-	if (argc > 3) {
+	if (argc < 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr,
+				"too few arguments for keyword:%s\n", argv[0]);
+		return;
+	}
+
+	if (strncasecmp (argv[1], "layouts", MAX(tag_len, 2)) != 0)
+		allow_opt=true;
+
+	if (argc > 3 && allow_opt) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr,
 				"too many arguments for keyword:%s\n",
 				argv[0]);
-		return;
-	}
-	else if (argc < 2) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr,
-				"too few arguments for keyword:%s\n", argv[0]);
 		return;
 	}
 
@@ -1489,7 +1494,7 @@ _show_it (int argc, char *argv[])
 	if (val) {
 		tag_len = val - argv[1];
 		val++;
-	} else if (argc == 3) {
+	} else if (argc == 3 && !allow_opt) {
 		val = argv[2];
 	} else {
 		val = NULL;
@@ -1543,6 +1548,8 @@ _show_it (int argc, char *argv[])
 		scontrol_print_job (val);
 	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
 		scontrol_print_licenses(val);
+	} else if (strncasecmp (tag, "layouts", MAX(tag_len, 2)) == 0) {
+		scontrol_print_layout(argc-1, &argv[1]);
 	} else if (strncasecmp (tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 1)) == 0 ||
@@ -1584,6 +1591,7 @@ _update_it (int argc, char *argv[])
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int block_tag = 0, sub_tag = 0, res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
+	int layout_tag=0;
 	int jerror_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
@@ -1623,9 +1631,10 @@ _update_it (int argc, char *argv[])
 		} else if (!strncasecmp(tag, "SlurmctldDebug",
 					MAX(tag_len, 2))) {
 			debug_tag = 1;
+		} else if (!strncasecmp(tag, "Layouts",	MAX(tag_len, 5))) {
+			layout_tag = 1;
 		}
 	}
-
 	/* The order of tests matters here.  An update job request can include
 	 * partition and reservation tags, possibly before the jobid tag, but
 	 * none of the other updates have a jobid tag, so check jobtag first.
@@ -1651,6 +1660,8 @@ _update_it (int argc, char *argv[])
 		error_code = _update_bluegene_submp (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
+	else if (layout_tag)
+		error_code = scontrol_update_layout(argc, argv);
 	else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
@@ -1660,7 +1671,7 @@ _update_it (int argc, char *argv[])
 				"(i.e. bgl000[0-3]),");
 		}
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-			"\"JobId\", or \"SlurmctldDebug\" \n");
+			"\"JobId\", \"SlurmctldDebug\" or \"Layouts\"\n");
 	}
 
 	if (error_code) {

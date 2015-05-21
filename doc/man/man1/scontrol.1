@@ -1472,6 +1472,42 @@ NOTE: Even on BGQ where node names are given in bg0000[00000] format
 this option takes an ionode name bg0000[0].
 
 .TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, LAYOUTS \fR
+.TP
+\fILayout\fP=<name>
+Identify the layout to be updated. This specification is required.
+.TP
+\fIEntity\fP=<entity list>
+Identify the entities to be updated. This specification is required.
+.TP
+\fIKey\fP=<value>
+Keys/Values to update for the entities. The format must respect the layout.d
+configuration files. Key=Type cannot be updated. One Key/Value is required,
+several can be set.
+
+.TP
+\fBSPECIFICATIONS FOR SHOW COMMAND, LAYOUTS\fR
+.PP
+Without options, lists all configured layouts. With a layout specified,
+shows entities with following options:
+
+.TP
+\fIKey\fP=<value>
+Keys/Values to update for the entities. The format must respect the layout.d
+configuration files. Key=Type cannot be updated. One Key/Value is required,
+several can be set.
+.TP
+\fIEntity\fP=<value>
+Entities to show, default is not used. Can be set to "*".
+.TP
+\fIType\fP=<value>
+Type of entities to show, default is not used.
+.TP
+\fInolayout\fP
+If not used, only entities with defining the tree are shown.
+With the option, only leaves are shown.
+
+.TP
 \fBDESCRIPTION FOR SHOW COMMAND, NODES\fR
 .TP
 The meaning of the energy information is as follows:

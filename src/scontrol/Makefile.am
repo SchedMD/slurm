@@ -16,12 +16,14 @@ scontrol_SOURCES =	\
 	info_node.c	\
 	info_part.c	\
 	info_res.c	\
+	info_layout.c	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
-	update_step.c   
+	update_step.c   \
+	update_layout.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 
