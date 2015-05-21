@@ -1236,16 +1236,6 @@ extern int slurm_job_step_create (
  * RET: error code
  */
 extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
-	char *data);
-
-/* pack_comp_msg_list_msg
- * packs a message from the message list of a composite message
- */
-extern int pack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg);
-
-/* unpack_comp_msg_list_msg
- * unpacks a message into a message list
- */
-extern int unpack_comp_msg_list_msg(Buf buffer, slurm_msg_t *msg);
+			      char *data);
 
 #endif
