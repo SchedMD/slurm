@@ -95,24 +95,32 @@ static void _msg_aggr_free(void *x)
 	}
 }
 
-static msg_aggr_t *_handle_msg_aggr_ret(uint32_t msg_index)
+static msg_aggr_t *_handle_msg_aggr_ret(uint32_t msg_index, bool locked)
 {
 	msg_aggr_t *msg_aggr;
 	ListIterator itr;
 
-	slurm_mutex_lock(&msg_collection.aggr_mutex);
+	if (!locked)
+		slurm_mutex_lock(&msg_collection.aggr_mutex);
 
 	itr = list_iterator_create(msg_collection.msg_aggr_list);
 
 	while ((msg_aggr = list_next(itr))) {
-		if (msg_aggr->msg_index == msg_index) {
+		/* just remove them all */
+		if (!msg_index) {
+			/* make sure we don't wait any longer */
+			pthread_cond_signal(&msg_aggr->wait_cond);
+			list_remove(itr);
+		} else if (msg_aggr->msg_index == msg_index) {
 			list_remove(itr);
 			break;
 		}
 
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&msg_collection.aggr_mutex);
+
+	if (!locked)
+		slurm_mutex_unlock(&msg_collection.aggr_mutex);
 
 	return msg_aggr;
 }
@@ -324,7 +332,9 @@ extern void msg_aggr_sender_fini(void)
 	msg_collection.thread_id = (pthread_t) 0;
 
 	pthread_cond_destroy(&msg_collection.cond);
+	/* signal and clear the waiting list */
 	slurm_mutex_lock(&msg_collection.aggr_mutex);
+	_handle_msg_aggr_ret(0, 1);
 	FREE_NULL_LIST(msg_collection.msg_aggr_list);
 	slurm_mutex_unlock(&msg_collection.aggr_mutex);
 	FREE_NULL_LIST(msg_collection.msg_list);
@@ -365,7 +375,6 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 	slurm_mutex_unlock(&msg_collection.mutex);
 
 	if (wait) {
-		pthread_mutex_t wait_mutex = PTHREAD_MUTEX_INITIALIZER;
 		msg_aggr_t *msg_aggr = xmalloc(sizeof(msg_aggr_t));
 		uint16_t        msg_timeout;
 		struct timeval  now;
@@ -377,7 +386,6 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 
 		slurm_mutex_lock(&msg_collection.aggr_mutex);
 		list_append(msg_collection.msg_aggr_list, msg_aggr);
-		slurm_mutex_unlock(&msg_collection.aggr_mutex);
 
 		msg_timeout = slurm_get_msg_timeout();
 		gettimeofday(&now, NULL);
@@ -385,9 +393,11 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 		timeout.tv_nsec = now.tv_usec * 1000;
 
 		if (pthread_cond_timedwait(&msg_aggr->wait_cond,
-					   &wait_mutex,
+					   &msg_collection.aggr_mutex,
 					   &timeout) == ETIMEDOUT)
-			_handle_msg_aggr_ret(msg_aggr->msg_index);
+			_handle_msg_aggr_ret(msg_aggr->msg_index, 1);
+		slurm_mutex_unlock(&msg_collection.aggr_mutex);
+
 
 		_msg_aggr_free(msg_aggr);
 	}
@@ -413,14 +423,17 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 				info("msg_aggr_resp: rc message found for "
 				     "index %u signaling sending thread",
 				     next_msg->msg_index);
+			slurm_mutex_lock(&msg_collection.aggr_mutex);
 			if (!(msg_aggr = _handle_msg_aggr_ret(
-				      next_msg->msg_index))) {
+				      next_msg->msg_index, 1))) {
 				debug2("msg_aggr_resp: error: unable to "
 				       "locate aggr message struct for job %u",
 					next_msg->msg_index);
+				slurm_mutex_unlock(&msg_collection.aggr_mutex);
 				continue;
 			}
 			pthread_cond_signal(&msg_aggr->wait_cond);
+			slurm_mutex_unlock(&msg_collection.aggr_mutex);
 			break;
 		case RESPONSE_MESSAGE_COMPOSITE:
 			comp_msg = (composite_msg_t *)next_msg->data;
