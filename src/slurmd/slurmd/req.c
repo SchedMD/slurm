@@ -455,7 +455,8 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_network_callerid_msg(msg->data);
 		break;
 	case MESSAGE_COMPOSITE:
-		debug2("Processing RPC: MESSAGE_COMPOSITE");
+		error("Processing RPC: MESSAGE_COMPOSITE: "
+		      "This should never happen");
 		msg_aggr_add_msg(msg, 0);
 		break;
 	case RESPONSE_MESSAGE_COMPOSITE:
