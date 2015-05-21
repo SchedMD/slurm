@@ -588,7 +588,9 @@ _service_connection(void *arg)
 		goto cleanup;
 	}
 	debug2("got this type of message %d", msg->msg_type);
-	slurmd_req(msg);
+
+	if (msg->msg_type != MESSAGE_COMPOSITE)
+		slurmd_req(msg);
 
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close(msg->conn_fd) < 0)
@@ -596,8 +598,7 @@ cleanup:
 
 	xfree(con->cli_addr);
 	xfree(con);
-	if (msg->msg_type != MESSAGE_COMPOSITE)
-		slurm_free_msg(msg);
+	slurm_free_msg(msg);
 	_decrement_thd_count();
 	return NULL;
 }

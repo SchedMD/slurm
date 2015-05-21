@@ -403,6 +403,29 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 	}
 }
 
+extern void msg_aggr_add_comp(Buf buffer, void *auth_cred, header_t *header)
+{
+	slurm_msg_t *msg;
+
+	if (!msg_collection.running)
+		return;
+
+	msg = xmalloc_nz(sizeof(slurm_msg_t));
+	slurm_msg_t_init(msg);
+
+	msg->protocol_version = header->version;
+	msg->msg_type = header->msg_type;
+	msg->flags = header->flags;
+
+	msg->auth_cred = auth_cred;
+
+	msg->data = buffer;
+	msg->data_size = remaining_buf(buffer);
+
+	info("adding size %d type %d", msg->data_size, msg->msg_type);
+	msg_aggr_add_msg(msg, 0);
+}
+
 extern void msg_aggr_resp(slurm_msg_t *msg)
 {
 	slurm_msg_t *next_msg;

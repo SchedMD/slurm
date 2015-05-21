@@ -4485,28 +4485,70 @@ unpack_error:
 }
 
 static void
-_pack_composite_msg(composite_msg_t * msg, Buf buffer,
-		    uint16_t protocol_version)
+_pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t count;
 	slurm_msg_t *tmp_info = NULL;
 	ListIterator itr = NULL;
+	Buf tmp_buf;
 
 	xassert(msg);
+
 	if (msg->msg_list)
 		count = list_count(msg->msg_list);
 	else
 		count = NO_VAL;
+
 	pack32(count, buffer);
+
 	slurm_pack_slurm_addr(&msg->sender, buffer);
 	if (count && count != NO_VAL) {
 		itr = list_iterator_create(msg->msg_list);
 		while ((tmp_info = list_next(itr))) {
-			pack_comp_msg_list_msg(buffer, tmp_info);
+			if (tmp_info->protocol_version == (uint16_t)NO_VAL)
+				tmp_info->protocol_version = protocol_version;
+			pack16(tmp_info->protocol_version, buffer);
+			pack16(tmp_info->msg_type, buffer);
+			pack16(tmp_info->flags, buffer);
+			pack16(tmp_info->msg_index, buffer);
+
+			if (!tmp_info->auth_cred) {
+				char *auth = slurm_get_auth_info();
+				/* FIXME: this should handle the
+				   _global_auth_key() as well.
+				*/
+				tmp_info->auth_cred =
+					g_slurm_auth_create(NULL, 2, auth);
+				xfree(auth);
+			}
+
+			g_slurm_auth_pack(tmp_info->auth_cred, buffer);
+
+			if (!tmp_info->data_size) {
+				pack_msg(tmp_info, buffer);
+				continue;
+			}
+
+			/* If we are here it means we are already
+			 * packed so just add our packed buffer to the
+			 * mix.
+			 */
+			if (remaining_buf(buffer) < tmp_info->data_size) {
+				int new_size = buffer->processed +
+					tmp_info->data_size;
+				new_size += 1024; /* padded for paranoia */
+				xrealloc_nz(buffer->head, new_size);
+				buffer->size = new_size;
+			}
+			tmp_buf = tmp_info->data;
+
+			memcpy(&buffer->head[buffer->processed],
+			       &tmp_buf->head[tmp_buf->processed],
+			       tmp_info->data_size);
+			buffer->processed += tmp_info->data_size;
 		}
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 }
 
 static int
@@ -4514,30 +4556,59 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	uint32_t count = NO_VAL;
-	int i;
+	int i, rc;
 	slurm_msg_t *tmp_info;
 	composite_msg_t *object_ptr = NULL;
-	uint32_t debug_flags = slurm_get_debug_flags();
+	char *auth = slurm_get_auth_info();
 
-	xassert(msg != NULL);
-	object_ptr = (composite_msg_t *) xmalloc(sizeof(composite_msg_t));
+	xassert(msg);
+	object_ptr = xmalloc(sizeof(composite_msg_t));
 	*msg = object_ptr;
 	safe_unpack32(&count, buffer);
 	slurm_unpack_slurm_addr_no_alloc(&object_ptr->sender, buffer);
-	if (debug_flags & DEBUG_FLAG_ROUTE)
-		info("msg aggr: _unpack_composite_msg: number of msgs in "
-		     "collection = %d", count);
+
 	if (count != NO_VAL) {
 		object_ptr->msg_list = list_create(slurm_free_comp_msg_list);
 		for (i=0; i<count; i++) {
-			tmp_info = (slurm_msg_t *) xmalloc(sizeof(slurm_msg_t));
+			tmp_info = xmalloc_nz(sizeof(slurm_msg_t));
 			slurm_msg_t_init(tmp_info);
-			unpack_comp_msg_list_msg(buffer, tmp_info);
-			list_append(object_ptr->msg_list, tmp_info);
+			safe_unpack16(&tmp_info->protocol_version, buffer);
+			safe_unpack16(&tmp_info->msg_type, buffer);
+			safe_unpack16(&tmp_info->flags, buffer);
+			safe_unpack16(&tmp_info->msg_index, buffer);
+
+			if (!(tmp_info->auth_cred =
+			      g_slurm_auth_unpack(buffer))) {
+				error("authentication: %s ",
+				      g_slurm_auth_errstr(
+					      g_slurm_auth_errno(NULL)));
+				free_buf(buffer);
+				rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+				goto unpack_error;
+			}
+
+			if (unpack_msg(tmp_info, buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+
+			rc = g_slurm_auth_verify(
+				tmp_info->auth_cred, NULL, 2, auth);
+
+			if (rc != SLURM_SUCCESS) {
+				error("authentication: %s ",
+				      g_slurm_auth_errstr(
+					      g_slurm_auth_errno(
+						      tmp_info->auth_cred)));
+				slurm_free_comp_msg_list(tmp_info);
+			} else
+				list_append(object_ptr->msg_list, tmp_info);
 		}
 	}
+	xfree(auth);
 	return SLURM_SUCCESS;
 unpack_error:
+	slurm_free_composite_msg(object_ptr);
+	*msg = NULL;
+	xfree(auth);
 	return SLURM_ERROR;
 }
 

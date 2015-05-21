@@ -50,6 +50,7 @@ extern void msg_aggr_sender_reconfig(uint64_t window, uint64_t max_msg_cnt);
 extern void msg_aggr_sender_fini(void);
 
 extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait);
+extern void msg_aggr_add_comp(Buf buffer, void *auth_cred, header_t *header);
 extern void msg_aggr_resp(slurm_msg_t *msg);
 
 #endif

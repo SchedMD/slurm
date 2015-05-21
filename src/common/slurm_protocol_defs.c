@@ -3148,7 +3148,11 @@ extern void slurm_free_comp_msg_list(void *x)
 {
 	slurm_msg_t *msg = (slurm_msg_t*)x;
 	if (msg) {
-		slurm_free_msg_data(msg->msg_type, msg->data);
+		if (msg->data_size) {
+			free_buf(msg->data);
+			msg->data = NULL;
+		} else
+			slurm_free_msg_data(msg->msg_type, msg->data);
 		slurm_free_msg(msg);
 	}
 }

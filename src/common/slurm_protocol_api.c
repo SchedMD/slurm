@@ -75,6 +75,7 @@
 #include "src/common/xstring.h"
 #include "src/common/log.h"
 #include "src/common/forward.h"
+#include "src/common/msg_aggr.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 
@@ -3320,6 +3321,11 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
+
+	if (header.msg_type == MESSAGE_COMPOSITE) {
+		msg_aggr_add_comp(buffer, auth_cred, &header);
+		goto total_return;
+	}
 
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
