@@ -143,8 +143,8 @@ ReqCPUFreqMin    ReqCPUFreqMax   ReqCPUFreqGov  ReqCPUs
 ReqMem           Reservation     ReservationId  Reserved
 ResvCPU          ResvCPURAW      Start          State
 Submit           Suspended       SystemCPU      Timelimit
-TotalCPU         UID             User           UserCPU
-WCKey            WCKeyID
+TotalCPU         Tres            UID            User
+UserCPU          WCKey           WCKeyID
 
 .ft 1
 .fi
@@ -780,6 +780,11 @@ identical to that of the \f3Elapsed\fP field.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
+
+.TP
+\f3Tres\fP
+Trackable resources. These are the resources specified by the
+job at submission time. For more details see AccountingStorageTRES in slurm.conf.
 
 .TP
 \f3UID\fP

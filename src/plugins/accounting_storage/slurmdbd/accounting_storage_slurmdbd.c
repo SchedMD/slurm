@@ -1667,7 +1667,7 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 }
 
 extern List acct_storage_p_get_tres(void *db_conn, uid_t uid,
-				      slurmdb_tres_cond_t *tres_cond)
+				    slurmdb_tres_cond_t *tres_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;

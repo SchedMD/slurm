@@ -577,8 +577,8 @@ static int _init_tres(void)
 				      "You gave %s",
 				      temp_char);
 		} else {
-			fatal("Unknown tres type '%s', acceptiable types are "
-			      "CPU,Gres/,License/,Mem", temp_char);
+			fatal("%s: Unknown tres type '%s', acceptable types are "
+			      "CPU,Gres/,License/,Mem", __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);
 		}

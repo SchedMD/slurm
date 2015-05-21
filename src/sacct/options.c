@@ -421,7 +421,6 @@ int get_data(void)
 {
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
-
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
