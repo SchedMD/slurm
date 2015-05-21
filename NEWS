@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 14.11.8
+==========================
+
 * Changes in Slurm 14.11.7
 ==========================
  -- Initialize some variables used with the srun --no-alloc option that may
