@@ -161,7 +161,8 @@ inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_kill_job2(slurm_msg_t *msg);
-inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg, bool locked);
+inline static void  _slurm_rpc_node_registration(slurm_msg_t *msg,
+						 bool running_composite);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reboot_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
@@ -2472,7 +2473,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
  *	actual configuration satisfies the configured specification */
-static void _slurm_rpc_node_registration(slurm_msg_t * msg, bool locked)
+static void _slurm_rpc_node_registration(slurm_msg_t * msg,
+					 bool running_composite)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2511,7 +2513,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg, bool locked)
 			      "set DebugFlags=NO_CONF_HASH in your slurm.conf.",
 			      node_reg_stat_msg->node_name);
 		}
-		if (!locked)
+		if (!running_composite)
 			lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
@@ -2523,7 +2525,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg, bool locked)
 						 msg->protocol_version,
 						 &newly_up);
 #endif
-		if (!locked)
+		if (!running_composite)
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
 		if (newly_up) {
@@ -5289,6 +5291,9 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 	static bool defer_sched = false;
 	bool run_scheduler = false;
 	composite_msg_t *comp_msg, comp_resp_msg;
+	/* Locks: Read configuration, write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&comp_resp_msg, 0, sizeof(composite_msg_t));
 	comp_resp_msg.msg_list = list_create(slurm_free_comp_msg_list);
@@ -5299,35 +5304,18 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		     "messages", comp_msg->msg_list ?
 		     list_count(comp_msg->msg_list) : 0);
 
-	/* Locks: Read configuration, write job, write node */
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 		info("msg aggr: entering _slurm_rpc_composite_msg");
 	if (config_update != slurmctld_conf.last_update) {
 		char *sched_params = slurm_get_sched_params();
-		defer_sched = (sched_params && strstr(sched_params,"defer"));
+		defer_sched = (sched_params && strstr(sched_params, "defer"));
 		xfree(sched_params);
 	}
 	lock_slurmctld(job_write_lock);
 	_slurm_rpc_comp_msg_list(comp_msg, &run_scheduler,
 				 comp_resp_msg.msg_list);
 	unlock_slurmctld(job_write_lock);
-	/* Functions below provide their own locking */
-	if (run_scheduler) {
-		/*
-		* In defer mode, avoid triggering the scheduler logic
-		* for every epilog complete message.
-		* As one epilog message is sent from every node of each
-		* job at termination, the number of simultaneous schedule
-		* calls can be very high for large machine or large number
-		* of managed jobs.
-		*/
-		if (!defer_sched)
-			(void) schedule(0);	/* Has own locking */
-		schedule_node_save();		/* Has own locking */
-		schedule_job_save();		/* Has own locking */
-	}
+
 	if (list_count(comp_resp_msg.msg_list)) {
 		slurm_msg_t resp_msg;
 		slurm_msg_t_init(&resp_msg);
@@ -5340,6 +5328,22 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		slurm_send_only_node_msg(&resp_msg);
 	}
 	FREE_NULL_LIST(comp_resp_msg.msg_list);
+
+	/* Functions below provide their own locking */
+	if (run_scheduler) {
+		/*
+		 * In defer mode, avoid triggering the scheduler logic
+		 * for every epilog complete message.
+		 * As one epilog message is sent from every node of each
+		 * job at termination, the number of simultaneous schedule
+		 * calls can be very high for large machine or large number
+		 * of managed jobs.
+		 */
+		if (!LOTS_OF_AGENTS && !defer_sched)
+			(void) schedule(0);	/* Has own locking */
+		schedule_node_save();		/* Has own locking */
+		schedule_job_save();		/* Has own locking */
+	}
 }
 
 static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
