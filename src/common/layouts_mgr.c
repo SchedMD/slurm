@@ -1251,7 +1251,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		xfree(e_name);
 		xfree(e_type);
 		if (!s_p_get_string(&e_name, "Entity", entity_tbl)) {
-			error("layouts: no name associated to entity[%d], "
+			info("layouts: no name associated to entity[%d], "
 			      "skipping...", i);
 			continue;
 		}
@@ -1261,15 +1261,15 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		if (!e) {
 			/* if the entity does not already exists, create it */
 			if (!s_p_get_string(&e_type, "Type", entity_tbl)) {
-				error("layouts: entity '%s' does not already "
-				      "exists and no type was specified, "
-				      "skipping", e_name);
+				info("layouts: entity '%s' does not already "
+				     "exists and no type was specified, "
+				     "skipping", e_name);
 				continue;
 			}
 			if (!_string_in_array(e_type,
 					      plugin->ops->spec->etypes)) {
-				error("layouts: entity '%s' type (%s) is "
-				      "invalid, skipping", e_name, e_type);
+				info("layouts: entity '%s' type (%s) is "
+				     "invalid, skipping", e_name, e_type);
 				continue;
 			}
 
@@ -1281,14 +1281,14 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 			/* if defined, check that the type is consistent */
 			if (!_string_in_array(e_type,
 					      plugin->ops->spec->etypes)) {
-				error("layouts: entity '%s' type (%s) is "
-				      "invalid, skipping", e_name, e_type);
+				info("layouts: entity '%s' type (%s) is "
+				     "invalid, skipping", e_name, e_type);
 				continue;
 			}
 			if (!e->type || strcmp(e_type, e->type)) {
-				error("layouts: entity '%s' type (%s) differs "
-				      "from already registered entity type (%s)"
-				      " skipping", e_name, e_type, e->type);
+				info("layouts: entity '%s' type (%s) differs "
+				     "from already registered entity type (%s)"
+				     " skipping", e_name, e_type, e->type);
 				continue;
 			}
 		}
