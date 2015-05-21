@@ -919,6 +919,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->mpi_params);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MsgAggregationParams");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->msg_aggr_params);
+	list_append(ret_list, key_pair);
+
 	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("MULTIPLE_SLURMD");

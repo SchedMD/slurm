@@ -39,6 +39,7 @@ libcommon_la_SOURCES = 			\
 	xsignal.c xsignal.h		\
 	strnatcmp.c strnatcmp.h		\
 	forward.c forward.h     	\
+	msg_aggr.c msg_aggr.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	xtree.c xtree.h			\

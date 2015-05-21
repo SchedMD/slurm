@@ -3144,6 +3144,27 @@ extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 	}
 }
 
+extern void slurm_free_comp_msg_list(void *x)
+{
+	slurm_msg_t *msg = (slurm_msg_t*)x;
+	if (msg) {
+		if (msg->data_size) {
+			free_buf(msg->data);
+			msg->data = NULL;
+		} else
+			slurm_free_msg_data(msg->msg_type, msg->data);
+		slurm_free_msg(msg);
+	}
+}
+
+extern void slurm_free_composite_msg(composite_msg_t *msg)
+{
+	if (msg) {
+		FREE_NULL_LIST(msg->msg_list);
+		xfree(msg);
+	}
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	switch(type) {
@@ -3389,6 +3410,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TRIGGER_CLEAR:
 	case REQUEST_TRIGGER_PULL:
 		slurm_free_trigger_msg(data);
+		break;
+	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
+		slurm_free_composite_msg(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
@@ -3832,6 +3857,10 @@ rpc_num2string(uint16_t opcode)
 		return "ACCOUNTING_FIRST_REG";
 	case ACCOUNTING_REGISTER_CTLD:
 		return "ACCOUNTING_REGISTER_CTLD";
+	case MESSAGE_COMPOSITE:
+		return "MESSAGE_COMPOSITE";
+	case RESPONSE_MESSAGE_COMPOSITE:
+		return "RESPONSE_MESSAGE_COMPOSITE";
 	case REQUEST_BURST_BUFFER_INFO:
 		return "REQUEST_BURST_BUFFER_INFO";
 	case RESPONSE_BURST_BUFFER_INFO:

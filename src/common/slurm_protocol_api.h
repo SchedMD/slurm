@@ -206,6 +206,13 @@ char *slurm_get_mpi_default(void);
  */
 char *slurm_get_mpi_params(void);
 
+/* slurm_get_msg_aggr_params
+ * get message aggregation parameters value from slurmctld_conf object
+ * RET char *   - msg aggregation parameters default value from slurm.conf,
+ *                MUST be xfreed by caller
+ */
+char *slurm_get_msg_aggr_params(void);
+
 /* slurm_get_msg_timeout
  * get default message timeout value from slurmctld_conf object
  */
@@ -1229,6 +1236,6 @@ extern int slurm_job_step_create (
  * RET: error code
  */
 extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
-	char *data);
+			      char *data);
 
 #endif

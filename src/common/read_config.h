@@ -124,6 +124,9 @@ extern char *default_plugstack;
 #define DEFAULT_MAX_MEM_PER_CPU     0
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
+#define DEFAULT_MSG_AGGREGATION_PARAMS "WindowMsgs=1,WindowTime=100"
+#define DEFAULT_MSG_AGGR_WINDOW_MSGS 1
+#define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */

@@ -367,6 +367,9 @@ typedef enum {
 	ACCOUNTING_UPDATE_MSG = 10001,
 	ACCOUNTING_FIRST_REG,
 	ACCOUNTING_REGISTER_CTLD,
+
+	MESSAGE_COMPOSITE = 11001,
+	RESPONSE_MESSAGE_COMPOSITE,
 } slurm_msg_type_t;
 
 typedef enum {
@@ -388,6 +391,7 @@ typedef struct forward {
 typedef struct slurm_protocol_header {
 	uint16_t version;
 	uint16_t flags;
+	uint16_t msg_index;
 	uint16_t msg_type; /* really slurm_msg_type_t but needs to be
 			      uint16_t for packing purposes. */
 	uint32_t body_length;
@@ -425,6 +429,7 @@ typedef struct slurm_msg {
 	void *data;
 	uint32_t data_size;
 	uint16_t flags;
+	uint16_t msg_index;
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
 	uint16_t protocol_version; /* DON'T PACK!  Only used if
@@ -798,6 +803,11 @@ typedef struct network_callerid_resp {
 	char *node_name;
 } network_callerid_resp_t;
 
+typedef struct composite_msg {
+	slurm_addr_t sender;	/* address of sending node/port */
+	List	 msg_list;
+} composite_msg_t;
+
 /* Note: We include the node list here for reliable cleanup on XCPU systems.
  *
  * Note: We include select_jobinfo here in addition to the job launch
@@ -1167,6 +1177,8 @@ extern void slurm_free_priority_factors_request_msg(
 extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
+extern void slurm_free_comp_msg_list(void *x);
+extern void slurm_free_composite_msg(composite_msg_t *msg);
 extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
