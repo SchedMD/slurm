@@ -1799,7 +1799,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 
 	/* don't print entities if not type of "type char*" */
 	if (pargs->type != NULL
-	    && (e_type == NULL || strcasecmp(e_type,pargs->type)!=0)) {
+	    && (e_type == NULL || strcasecmp(e_type, pargs->type)!=0)) {
 		xfree(str);
 		return 1;
 	}
@@ -2539,7 +2539,7 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 	layout = layouts_get_layout_nolock(l_type);
 	if (layout == NULL) {
 		slurm_mutex_unlock(&mgr->lock);
-		error("unable to get layout of type '%s'", l_type);
+		info("unable to get layout of type '%s'", l_type);
 		return SLURM_ERROR;
 	}
 	/* initialize args for recursive packing */
@@ -2604,8 +2604,7 @@ int layouts_update_layout(char *l_type, Buf buffer)
 			return rc;
 		}
 	}
-	error("layouts: update layout : no plugin matching layout=%s, skipping",
-	      l_type);
+	info("%s: no plugin matching layout=%s, skipping", __func__, l_type);
 	slurm_mutex_unlock(&mgr->lock);
 	return SLURM_ERROR;
 }
@@ -2618,7 +2617,7 @@ int layouts_autoupdate_layout(char *l_type)
 	slurm_mutex_lock(&mgr->lock);
 	layout = layouts_get_layout_nolock(l_type);
 	if (layout == NULL) {
-		error("unable to get layout of type '%s'", l_type);
+		info("unable to get layout of type '%s'", l_type);
 	} else {
 		rc = _layouts_autoupdate_layout(layout);
 	}

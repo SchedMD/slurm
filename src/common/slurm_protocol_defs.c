@@ -853,18 +853,23 @@ extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
 
 extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg)
 {
-	xfree(msg->layout_type);
-	xfree(msg->entities);
-	xfree(msg);
+	if (msg) {
+		xfree(msg->layout_type);
+		xfree(msg->entities);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_layout_info_msg(layout_info_msg_t * msg)
 {
 	int i;
-	for (i = 0; i < msg->record_count; i++)
-		xfree(msg->records[i]);
-	xfree(msg->records);
-	xfree(msg);
+
+	if (msg) {
+		for (i = 0; i < msg->record_count; i++)
+			xfree(msg->records[i]);
+		xfree(msg->records);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_job_step_create_request_msg(

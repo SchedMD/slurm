@@ -53,7 +53,7 @@ scontrol_update_layout (int argc, char *argv[])
 	char *opt = NULL;
 
 	opt = xstrdup_printf(" ");
-
+	memset(&msg, 0, sizeof(update_layout_msg_t));
 	while (i < argc) {
 		tag = argv[i];
 		tag_len = strlen(tag);
