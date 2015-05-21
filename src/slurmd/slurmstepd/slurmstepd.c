@@ -466,7 +466,7 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_msg_t_init(msg);
 	msg->protocol_version = (uint16_t)proto;
 
-	switch(step_type) {
+	switch (step_type) {
 	case LAUNCH_BATCH_JOB:
 		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		break;
@@ -474,7 +474,7 @@ _init_from_slurmd(int sock, char **argv,
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
 		break;
 	default:
-		fatal("Unrecognized launch RPC");
+		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
 		break;
 	}
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)

@@ -211,8 +211,8 @@ static uid_t _get_job_uid(uint32_t jobid);
 
 static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 
-static int  _add_starting_step(slurmd_step_type_t type, void *req);
-static int  _remove_starting_step(slurmd_step_type_t type, void *req);
+static int  _add_starting_step(uint16_t type, void *req);
+static int  _remove_starting_step(uint16_t type, void *req);
 static int  _compare_starting_steps(void *s0, void *s1);
 static int  _wait_for_starting_step(uint32_t job_id, uint32_t step_id);
 static bool _step_is_starting(uint32_t job_id, uint32_t step_id);
@@ -490,7 +490,7 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 }
 
 static int
-_send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
+_send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
@@ -740,7 +740,7 @@ rwfail:
  * will be init, not slurmd.
  */
 static int
-_forkexec_slurmstepd(slurmd_step_type_t type, void *req,
+_forkexec_slurmstepd(uint16_t type, void *req,
 		     slurm_addr_t *cli, slurm_addr_t *self,
 		     const hostset_t step_hset, uint16_t protocol_version)
 {
@@ -5506,7 +5506,7 @@ init_gids_cache(int cache)
 
 
 static int
-_add_starting_step(slurmd_step_type_t type, void *req)
+_add_starting_step(uint16_t type, void *req)
 {
 	starting_step_t *starting_step;
 	int rc = SLURM_SUCCESS;
@@ -5516,11 +5516,11 @@ _add_starting_step(slurmd_step_type_t type, void *req)
 	slurm_mutex_lock(&conf->starting_steps_lock);
 	starting_step = xmalloc(sizeof(starting_step_t));
 	if (!starting_step) {
-		error("_add_starting_step failed to allocate memory");
+		error("%s failed to allocate memory", __func__);
 		rc = SLURM_FAILURE;
 		goto fail;
 	}
-	switch(type) {
+	switch (type) {
 	case LAUNCH_BATCH_JOB:
 		starting_step->job_id =
 			((batch_job_launch_msg_t *)req)->job_id;
@@ -5533,14 +5533,19 @@ _add_starting_step(slurmd_step_type_t type, void *req)
 		starting_step->step_id =
 			((launch_tasks_request_msg_t *)req)->job_step_id;
 		break;
+	case REQUEST_LAUNCH_PROLOG:
+		starting_step->job_id  = ((prolog_launch_msg_t *)req)->job_id;
+		starting_step->step_id = SLURM_EXTERN_CONT;
+		break;
 	default:
-		error("_add_starting_step called with an invalid type");
+		error("%s called with an invalid type: %u", __func__, type);
 		rc = SLURM_FAILURE;
 		xfree(starting_step);
 		goto fail;
 	}
+
 	if (!list_append(conf->starting_steps, starting_step)) {
-		error("_add_starting_step failed to allocate memory for list");
+		error("%s failed to allocate memory for list", __func__);
 		rc = SLURM_FAILURE;
 		xfree(starting_step);
 		goto fail;
@@ -5553,7 +5558,7 @@ fail:
 
 
 static int
-_remove_starting_step(slurmd_step_type_t type, void *req)
+_remove_starting_step(uint16_t type, void *req)
 {
 	uint32_t job_id, step_id;
 	ListIterator iter;
@@ -5573,7 +5578,7 @@ _remove_starting_step(slurmd_step_type_t type, void *req)
 		step_id = ((launch_tasks_request_msg_t *)req)->job_step_id;
 		break;
 	default:
-		error("_remove_starting_step called with an invalid type");
+		error("%s called with an invalid type: %u", __func__, type);
 		rc = SLURM_FAILURE;
 		goto fail;
 	}
@@ -5591,7 +5596,7 @@ _remove_starting_step(slurmd_step_type_t type, void *req)
 		}
 	}
 	if (!found) {
-		error("_remove_starting_step: step not found");
+		error("%s: step %u.%u not found", __func__, job_id, step_id);
 		rc = SLURM_FAILURE;
 	}
 fail:
