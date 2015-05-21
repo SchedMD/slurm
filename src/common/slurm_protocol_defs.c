@@ -861,7 +861,7 @@ extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg)
 extern void slurm_free_layout_info_msg(layout_info_msg_t * msg)
 {
 	int i;
-	for (i=0; i<msg->record_count; i++)
+	for (i = 0; i < msg->record_count; i++)
 		xfree(msg->records[i]);
 	xfree(msg->records);
 	xfree(msg);

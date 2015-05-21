@@ -1586,7 +1586,7 @@ typedef struct _pack_args {
 	hostlist_t list_entities;
 	char       *type;
 	uint32_t   all;
-	uint32_t   norelation;
+	uint32_t   no_relation;
 } _pack_args_t;
 
 /*
@@ -1699,7 +1699,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	hostlist_t enclosed;
 	char *enclosed_str = NULL, *e_name = NULL, *e_type = NULL;
 	Buf buffer;
-	char *strdump, *str;
+	char *strdump, *str = NULL;
 
 	/* only need to work for preorder and leaf cases */
 	if (which != XTREE_PREORDER && which != XTREE_LEAF) {
@@ -1735,15 +1735,14 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	if (!enode || !enode->entity) {
 		e_name = (char*) "NULL";
 		e_type = NULL;
-	}
-	else {
+	} else {
 		e_name = enode->entity->name;
 		e_type = enode->entity->type;
 	}
 
 	/* print this entity as root if necessary */
-	if (level == 0 && pargs->norelation != 1 && pargs->type == NULL) {
-		if( pargs->all != 0 ||
+	if (level == 0 && pargs->no_relation != 1 && pargs->type == NULL) {
+		if (pargs->all != 0 ||
 		    pargs->list_entities == NULL ||
 		    hostlist_find(pargs->list_entities, e_name) != -1) {
 			str = xstrdup_printf("Root=%s\n", e_name);
@@ -1770,8 +1769,8 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	str = pargs->current_line;
 	pargs->current_line = NULL;
 
-	/*don't print enclosed if norelation option*/
-	if( pargs->norelation == 1
+	/* don't print enclosed if no_relation option */
+	if (pargs->no_relation == 1
 	    && enclosed_str != NULL
 	    && pargs->list_entities == NULL) {
 		xfree(enclosed_str);
@@ -1779,24 +1778,24 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 		return 1;
 	}
 
-	/*don't print non enclosed if no "entities char*" option*/
-	if( pargs->all == 0
+	/* don't print non enclosed if no "entities char*" option */
+	if (pargs->all == 0
 	    && pargs->list_entities == NULL
 	    && enclosed_str == NULL ) {
 		xfree(str);
 		return 1;
 	}
 
-	/*don't print entities if not named in "entities char*"*/
-	if( pargs->all == 0
+	/* don't print entities if not named in "entities char*" */
+	if (pargs->all == 0
 	    && pargs->list_entities != NULL
 	    && hostlist_find(pargs->list_entities, e_name) == -1) {
 		xfree(str);
 		return 1;
 	}
 
-	/*don't print entities if not type of "type char*"*/
-	if( pargs->type != NULL
+	/* don't print entities if not type of "type char*" */
+	if (pargs->type != NULL
 	    && (e_type == NULL || strcasecmp(e_type,pargs->type)!=0)) {
 		xfree(str);
 		return 1;
@@ -1813,8 +1812,8 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	}
 
 	packstr(str, buffer);
-
 	xfree(str);
+
 	return 1;
 }
 
@@ -2524,7 +2523,7 @@ entity_t* layouts_get_entity(const char* name)
 
 
 int layouts_pack_layout(char *l_type, char *char_entities, char *type,
-			uint32_t norelation, Buf buffer)
+			uint32_t no_relation, Buf buffer)
 {
 	_pack_args_t pargs;
 	layout_t* layout;
@@ -2550,10 +2549,10 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 			pargs.list_entities = hostlist_create(char_entities);
 	}
 	pargs.type = type;
-	pargs.norelation = norelation;
+	pargs.no_relation = no_relation;
 
 
-	if ( pargs.norelation == 0
+	if ( pargs.no_relation == 0
 	     && pargs.list_entities == NULL
 	     && pargs.type == NULL ) {
 		/* start by packing the layout priority */

@@ -44,10 +44,10 @@
 extern void
 scontrol_print_layout (int argc, char *argv[])
 {
-	int i=0, tag_len = 0;
+	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;
-	char *layout_type=NULL, *entities=NULL, *type=NULL;
-	uint32_t norelation=0;
+	char *layout_type = NULL, *entities = NULL, *type = NULL;
+	uint32_t no_relation = 0;
 	layout_info_msg_t *layout_info_ptr = NULL;
 
 	while (i < argc) {
@@ -64,26 +64,26 @@ scontrol_print_layout (int argc, char *argv[])
 		} else {
 			val = NULL;
 		}
-		if (strncasecmp(tag, "layout", MAX(tag_len, 3)) == 0) {
+		if (strncasecmp(tag, "layouts", MAX(tag_len, 3)) == 0) {
 			layout_type = val;
-		} else if (strncasecmp (tag, "entity", MAX(tag_len, 5)) == 0) {
+		} else if (strncasecmp (tag, "entity", MAX(tag_len, 3)) == 0) {
 			entities = val;
 		} else if (strncasecmp (tag, "type", MAX(tag_len, 3)) == 0) {
 			type = val;
-		} else if (strncasecmp (tag, "nolayout", MAX(tag_len, 4)) == 0) {
-			norelation = 1;
+		} else if (strncasecmp (tag, "nolayout", MAX(tag_len, 4)) == 0){
+			no_relation = 1;
 		} else {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf (stderr,
-					 "invalid option:%s for layouts \n",
+					 "invalid option for layouts: %s\n",
 					 tag);
 		}
 		i++;
 	}
 	if (slurm_load_layout (layout_type,
 			       entities, type,
-			       norelation, &layout_info_ptr)
+			       no_relation, &layout_info_ptr)
 					== SLURM_PROTOCOL_SUCCESS) {
 		slurm_print_layout_info ( stdout, layout_info_ptr, one_liner );
 	}

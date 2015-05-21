@@ -3956,7 +3956,7 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 		if ( layouts_pack_layout(layout_req_msg->layout_type,
 					 layout_req_msg->entities,
 					 layout_req_msg->type,
-					 layout_req_msg->norelation,
+					 layout_req_msg->no_relation,
 					 buffer) != SLURM_SUCCESS) {
 			debug2("_slurm_rpc_layout_show, unable to get layout[%s]",
 			       layout_req_msg->layout_type);

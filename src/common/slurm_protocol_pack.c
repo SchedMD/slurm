@@ -2940,13 +2940,13 @@ _pack_update_layout_msg(update_layout_msg_t * msg, Buf buffer,
 {
 	xassert(msg != NULL);
 
-	/*if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {*/
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		packstr(msg->layout, buffer);
 		packstr(msg->arg, buffer);
-	/*} else {
-		error("_pack_update_node_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}*/
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
 }
 
 static int _unpack_update_layout_msg(update_layout_msg_t ** msg, Buf buffer,
@@ -2960,16 +2960,16 @@ static int _unpack_update_layout_msg(update_layout_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_layout_msg_t));
 	*msg = tmp_ptr;
 
-	/*if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {*/
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->layout,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->arg,
 				       &uint32_tmp, buffer);
-	/*} else {
-		error("_unpack_update_layout_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
-	}*/
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4976,32 +4976,32 @@ _unpack_layout_info_msg(layout_info_msg_t ** msg, Buf buffer,
 			xmalloc(sizeof(char*) * base_buffer_size);
 		(*msg)->record_count = base_buffer_size;
 
-		i=0;
+		i = 0;
 		while (remaining_buf(buffer) > 0) {
 			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
 			if (tmp_str != NULL) {
-					if (*tmp_str == '\0') {
-							xfree(tmp_str);
-							break;
-					}
-					if (i == (*msg)->record_count) {
-						(*msg)->record_count
-							+= base_buffer_size;
-						xrealloc(records,
-							 sizeof(char*) *
-							 (*msg)->record_count);
-					}
-					records[i] = tmp_str;
-					++i;
-					//xfree(tmp_str);
-					continue;
+				if (*tmp_str == '\0') {
+						xfree(tmp_str);
+						break;
+				}
+				if (i == (*msg)->record_count) {
+					(*msg)->record_count
+						+= base_buffer_size;
+					records = xrealloc(records,
+						  sizeof(char*) *
+						  (*msg)->record_count);
+				}
+				records[i] = tmp_str;
+				++i;
+				//xfree(tmp_str);
+				continue;
 			}
 		}
 		(*msg)->record_count = i;
 		xrealloc(records, sizeof(char*) * (*msg)->record_count);
 	} else {
-		error("_unpack_reserve_layout_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
@@ -10858,7 +10858,7 @@ _pack_layout_info_request_msg(layout_info_request_msg_t * msg, Buf buffer,
 	packstr(msg->layout_type, buffer);
 	packstr(msg->entities, buffer);
 	packstr(msg->type, buffer);
-	pack32(msg->norelation, buffer);
+	pack32(msg->no_relation, buffer);
 }
 
 static int
@@ -10874,7 +10874,7 @@ _unpack_layout_info_request_msg(layout_info_request_msg_t ** msg, Buf buffer,
 	safe_unpackstr_xmalloc(&layout_info->layout_type, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&layout_info->entities, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&layout_info->type, &uint32_tmp, buffer);
-	safe_unpack32(&layout_info->norelation, buffer);
+	safe_unpack32(&layout_info->no_relation, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

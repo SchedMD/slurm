@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     job resource allocation time.
  -- Disable the OOM Killer in slurmd and slurmstepd's memory cgroup when using
     MemSpecLimit.
+ -- Add scontrol options to view and modify layouts tables.
 
 * Changes in Slurm 15.08.0pre4
 ==============================

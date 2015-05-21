@@ -47,10 +47,10 @@ extern int
 scontrol_update_layout (int argc, char *argv[])
 {
 	int rc;
-	int i=0, tag_len = 0;
+	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;
 	update_layout_msg_t msg;
-	char *opt=NULL;
+	char *opt = NULL;
 
 	opt = xstrdup_printf(" ");
 
@@ -69,7 +69,7 @@ scontrol_update_layout (int argc, char *argv[])
 				 tag);
 			goto done;
 		}
-		if (strncasecmp(tag, "Layouts", MAX(tag_len, 2)) == 0) {
+		if (strncasecmp(tag, "layouts", MAX(tag_len, 2)) == 0) {
 			msg.layout = val;
 		} else if (strncasecmp(tag, "entity", MAX(tag_len, 2)) == 0) {
 			msg.arg = xstrdup_printf("Entity=%s", val);
@@ -83,19 +83,19 @@ scontrol_update_layout (int argc, char *argv[])
 	if (msg.layout == NULL) {
 		exit_code = 1;
 		fprintf (stderr,
-			 "No valide layout name in update command\n");
+			 "No valid layout name in update command\n");
 		goto done;
 	}
 	if (msg.arg == NULL) {
 		exit_code = 1;
 		fprintf (stderr,
-			 "No valide layout enity in update command\n");
+			 "No valid layout enity in update command\n");
 		goto done;
 	}
 	if ( strlen(opt) <= 1 ) {
 		exit_code = 1;
 		fprintf (stderr,
-			 "No valide upates arguments in update command\n");
+			 "No valid updates arguments in update command\n");
 		goto done;
 	}
 

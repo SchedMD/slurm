@@ -139,11 +139,11 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	info_burst_buffer.$(OBJEXT) info_cache.$(OBJEXT) \
-	info_job.$(OBJEXT) info_lics.$(OBJEXT) info_node.$(OBJEXT) \
-	info_part.$(OBJEXT) info_res.$(OBJEXT) info_layout.$(OBJEXT) \
-	scontrol.$(OBJEXT) update_job.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT) update_step.$(OBJEXT) \
-	update_layout.$(OBJEXT)
+	info_job.$(OBJEXT) info_layout.$(OBJEXT) info_lics.$(OBJEXT) \
+	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
+	scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	update_layout.$(OBJEXT) update_node.$(OBJEXT) \
+	update_part.$(OBJEXT) update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
@@ -471,18 +471,18 @@ scontrol_SOURCES = \
 	info_burst_buffer.c \
 	info_cache.c    \
 	info_job.c	\
+	info_layout.c	\
 	info_lics.c	\
 	info_node.c	\
 	info_part.c	\
 	info_res.c	\
-	info_layout.c	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\
+	update_layout.c \
 	update_node.c	\
 	update_part.c	\
-	update_step.c   \
-	update_layout.c
+	update_step.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 scontrol_LDADD = \

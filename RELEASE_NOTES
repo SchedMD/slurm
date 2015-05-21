@@ -163,6 +163,7 @@ COMMAND CHANGES (see man pages for details)
  -- Introduce new sbatch option '--kill-on-invalid-dep=yes|no' which allows
     users to specify which behavior they want if a job dependency is not
     satisfied.
+ -- Add scontrol options to view and modify layouts tables.
 
 OTHER CHANGES
 =============
@@ -228,7 +229,8 @@ Changed the following enums and #defines
 
 Added the following API's
 =========================
-
+ -- Added APIs to load, print, and update layouts:
+    slurm_print_layout_info, slurm_load_layout, slurm_update_layout.
 
 Changed the following API's
 ============================

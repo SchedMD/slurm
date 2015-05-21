@@ -1466,7 +1466,7 @@ _show_it (int argc, char *argv[])
 {
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
-	bool allow_opt=false;
+	bool allow_opt = false;
 
 	if (argc < 2) {
 		exit_code = 1;
@@ -1477,7 +1477,7 @@ _show_it (int argc, char *argv[])
 	}
 
 	if (strncasecmp (argv[1], "layouts", MAX(tag_len, 2)) != 0)
-		allow_opt=true;
+		allow_opt = true;
 
 	if (argc > 3 && allow_opt) {
 		exit_code = 1;
@@ -1546,10 +1546,10 @@ _show_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "jobs", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "jobid", MAX(tag_len, 1)) == 0 ) {
 		scontrol_print_job (val);
+	} else if (strncasecmp (tag, "layouts", MAX(tag_len, 2)) == 0) {
+		scontrol_print_layout(argc-1, argv + 1);
 	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
 		scontrol_print_licenses(val);
-	} else if (strncasecmp (tag, "layouts", MAX(tag_len, 2)) == 0) {
-		scontrol_print_layout(argc-1, &argv[1]);
 	} else if (strncasecmp (tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 1)) == 0 ||
@@ -1591,7 +1591,7 @@ _update_it (int argc, char *argv[])
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int block_tag = 0, sub_tag = 0, res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
-	int layout_tag=0;
+	int layout_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
@@ -1966,8 +1966,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"burstBuffer\", \"config\", \"daemons\",   \n\
        \"frontend\", \"hostlist\", \"hostlistsorted\", \"hostnames\",      \n\
-       \"job\", \"node\", \"partition\", \"reservation\", \"slurmd\",      \n\
-        \"step\", or \"topology\"                                          \n\
+       \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
+       \"slurmd\", \"step\", or \"topology\"                               \n\
        (also for BlueGene only: \"block\" or \"submp\").                   \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\

@@ -586,10 +586,10 @@ typedef struct resv_info_request_msg {
 } resv_info_request_msg_t;
 
 typedef struct layout_info_request_msg {
-        char* layout_type;
-        char* entities;
-        char* type;
-        uint32_t norelation;
+	char* layout_type;
+	char* entities;
+	char* type;
+	uint32_t no_relation;
 } layout_info_request_msg_t;
 
 typedef struct complete_job_allocation {

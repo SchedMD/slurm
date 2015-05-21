@@ -92,9 +92,9 @@ slurmapi_src =           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
+	layout_info.c    \
 	license_info.c   \
 	node_info.c      \
-	layout_info.c     \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
