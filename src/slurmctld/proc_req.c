@@ -5403,7 +5403,6 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 			break;
 		case MESSAGE_EPILOG_COMPLETE:
 			_slurm_rpc_epilog_complete(next_msg, run_scheduler, 1);
-			slurm_send_rc_msg(next_msg, SLURM_SUCCESS);
 			break;
 		case MESSAGE_NODE_REGISTRATION_STATUS:
 			_slurm_rpc_node_registration(next_msg, 1);

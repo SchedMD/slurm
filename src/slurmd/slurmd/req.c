@@ -3864,7 +3864,7 @@ _epilog_complete(uint32_t jobid, int rc)
 		/* we need to copy this symbol */
 		req->node_name   = xstrdup(conf->node_name);
 
-		msg_aggr_add_msg(msg, 1);
+		msg_aggr_add_msg(msg, 0);
 	} else {
 		slurm_msg_t msg;
 		epilog_complete_msg_t req;
