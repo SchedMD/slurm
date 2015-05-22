@@ -488,7 +488,6 @@ s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
 	int len, i;
 
 	xassert(from_hashtbl);
-	xassert(to_hashtbl);
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
 	to_hashtbl = (s_p_hashtbl_t *)xmalloc(len);
