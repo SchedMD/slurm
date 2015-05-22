@@ -245,6 +245,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.8
 ==========================
+ -- Eliminate need for user to set user_id on job_update calls.
 
 * Changes in Slurm 14.11.7
 ==========================

@@ -9310,6 +9310,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 #endif
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 
+	if (job_specs->user_id == NO_VAL) {
+		/* Used by job_submit/lua to find default partition and
+		 * access control logic below to validate partition change */
+		job_specs->user_id = job_ptr->user_id;
+	}
 	error_code = job_submit_plugin_modify(job_specs, job_ptr,
 					      (uint32_t) uid);
 	if (error_code != SLURM_SUCCESS)

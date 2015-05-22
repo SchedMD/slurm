@@ -382,7 +382,6 @@ scontrol_hold(char *op, char *job_str)
 		job_str += 4;
 
 	slurm_init_job_desc_msg (&job_msg);
-	job_msg.user_id = getuid();
 	if ((strncasecmp(op, "holdu", 5) == 0) ||
 	    (strncasecmp(op, "uhold", 5) == 0)) {
 		job_msg.priority = 0;
@@ -724,10 +723,6 @@ scontrol_update_job (int argc, char *argv[])
 	uint32_t job_uid = NO_VAL;
 
 	slurm_init_job_desc_msg (&job_msg);
-
-	/* set current user, needed e.g., for AllowGroups checks */
-	job_msg.user_id = getuid();
-
 	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
