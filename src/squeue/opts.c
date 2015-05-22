@@ -215,7 +215,7 @@ parse_command_line( int argc, char* argv[] )
 			if (params.format == NULL) {
 				params.format_long = xstrdup(optarg);
 			} else {
-				error ("-O (--Format) is incompatable with -o "
+				error ("-O (--Format) is incompatible with -o "
 				       "(--format)");
 				exit(1);
 			}
