@@ -779,11 +779,13 @@ The list of nodes allocated to the job.
 The NodeIndices expose the internal indices into the node table
 associated with the node(s) allocated to the job.
 .TP
+.na
 \fINtasksPerN:B:S:C\fP=
 <tasks_per_node>:<tasks_per_baseboard>:<tasks_per_socket>:<tasks_per_core>
 Specifies the number of tasks to be started per hardware component (node,
 baseboard, socket and core).
 Unconstrained values may be shown as "0" or "*".
+.ad
 .TP
 \fIPreemptTime\fP
 Time at which job was signaled that it was selected for preemption.
@@ -796,10 +798,12 @@ Time the job ran prior to last suspend.
 \fIReason\fP
 The reason job is not running: e.g., waiting "Resources".
 .TP
+.na
 \fIReqB:S:C:T\fP=
 <baseboard_count>:<socket_per_baseboard_count>:<core_per_socket_count>:<thread_per_core_count>
 Specifies the count of various hardware components requested by the job.
 Unconstrained values may be shown as "0" or "*".
+.ad
 .TP
 \fISecsPreSuspend\fP=<seconds>
 If the job is suspended, this is the run time accumulated by the job
