@@ -1,7 +1,42 @@
-/*
- * Implements logic for PMIX_Ring.
- * by Adam Moody <moody20@llnl.gov>
+/*****************************************************************************\
+ **  ring.c - Implements logic for PMIX_Ring
+ *****************************************************************************
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.
+ * Produced at the Lawrence Livermore National Laboratory.
+ * Written by Adam Moody <moody20@llnl.gov>.
+ * LLNL-CODE-670614
+ * All rights reserved.
  *
+ * This file is part of SLURM, a resource management program.
+ * For details, see <http://slurm.schedmd.com/>.
+ * Please also read the included file: DISCLAIMER.
+ * 
+ * LLNL Preamble Notice
+ *
+ * A. This notice is required to be provided under our contract with
+ * the U.S. Department of Energy (DOE). This work was produced at the
+ * Lawrence Livermore National Laboratory under Contract No.
+ * DE-AC52-07NA27344 with the DOE.
+ *
+ * B. Neither the United States Government nor Lawrence Livermore
+ * National Security, LLC nor any of their employees, makes any
+ * warranty, express or implied, or assumes any liability or
+ * responsibility for the accuracy, completeness, or usefulness of
+ * any information, apparatus, product, or process disclosed, or
+ * represents that its use would not infringe privately-owned rights.
+ *
+ * C. Also, reference herein to any specific commercial products,
+ * process, or services by trade name, trademark, manufacturer or
+ * otherwise does not necessarily constitute or imply its endorsement,
+ * recommendation, or favoring by the United States Government or
+ * Lawrence Livermore National Security, LLC. The views and opinions
+ * of authors expressed herein do not necessarily state or reflect
+ * those of the United States Government or Lawrence Livermore
+ * National Security, LLC, and shall not be used for advertising or
+ * product endorsement purposes.
+\*****************************************************************************/
+
+/*
  * -----------------------------------------------------------
  * PMIX_Ring - execute ring exchange over processes in group
  *
@@ -71,6 +106,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -82,6 +118,9 @@
 #include "setup.h"
 #include "tree.h"
 #include "ring.h"
+
+/* max number of times to retry sending to stepd before giving up */
+#define MAX_RETRIES 5
 
 /* tracks values received from child in pmix_ring_in message */
 typedef struct {
@@ -167,13 +206,38 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* TODO: add retry logic like temp_kvs_send in kvs.c */
-
 	/* map rank to host name */
 	char* host = hostlist_nth(pmix_stepd_hostlist, rank); /* strdup-ed */
 
-	/* send message */
-	rc = slurm_forward_data(host, tree_sock_addr, size, (char*) buf);
+	/* delay to sleep between retries in seconds,
+	 * if there are multiple retires, we'll grow this delay
+          * using exponential backoff, doubling it each time */
+	unsigned int delay = 1;
+
+	/* we'll try multiple times to send message to stepd,
+	 * we retry in case stepd is just slow to get started */
+	int retries = 0;
+	while (1) {
+		/* attempt to send message */
+		rc = slurm_forward_data(host, tree_sock_addr, size, (char*) buf);
+		if (rc == SLURM_SUCCESS) {
+			/* message sent successfully, we're done */
+			break;
+		}
+
+		/* check whether we've exceeded our retry count */
+		retries++;
+		if (retries >= MAX_RETRIES) {
+			/* cancel the step to avoid tasks hang */
+			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+					    SIGKILL);
+		}
+
+		/* didn't succeeded, but we'll retry again,
+		 * sleep for a bit first */
+		sleep(delay);
+		delay *= 2;
+	}
 
 	/* free host name */
 	free(host); /* strdup-ed */
@@ -368,6 +432,8 @@ int pmix_ring_out(int count, char* left, char* right)
 		/* send message to child */
 		rc = pmix_stepd_send(get_buf_data(buf), (uint32_t) size_buf(buf), rank);
 
+		/* TODO: use tmp_rc here to catch any failure */
+
 		/* free message */
 		free_buf(buf);
 	}
@@ -377,6 +443,8 @@ int pmix_ring_out(int count, char* left, char* right)
 	for (i = 0; i < pmix_app_children; i++) {
 		/* get pointer to message data for this child */
 		pmix_ring_msg* msg = &outmsgs[i];
+
+		/* TODO: want to catch send failure here? */
 
 		/* construct message and send to client */
 		client_resp_t *resp = client_resp_new();
@@ -494,6 +562,8 @@ int pmix_ring_in(int ring_id, int count, char* left, char* right)
 
 			/* send message to parent */
                         rc = pmix_stepd_send(get_buf_data(buf), (uint32_t) size_buf(buf), rank);
+
+			/* TODO: use tmp_rc here to catch any failure */
 
 			/* free message */
 			free_buf(buf);
