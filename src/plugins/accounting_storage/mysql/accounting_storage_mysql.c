@@ -2859,10 +2859,17 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 				     slurmdb_archive_cond_t *arch_cond)
 {
+	int rc;
+
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	return as_mysql_jobacct_process_archive(mysql_conn, arch_cond);
+	/* Make sure only 1 archive is happening at a time. */
+	slurm_mutex_lock(&usage_rollup_lock);
+	rc = as_mysql_jobacct_process_archive(mysql_conn, arch_cond);
+	slurm_mutex_unlock(&usage_rollup_lock);
+
+	return rc;
 }
 
 /*
