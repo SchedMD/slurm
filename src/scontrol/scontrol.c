@@ -1494,7 +1494,7 @@ _show_it (int argc, char *argv[])
 	if (val) {
 		tag_len = val - argv[1];
 		val++;
-	} else if (argc == 3 && !allow_opt) {
+	} else if (argc == 3) {
 		val = argv[2];
 	} else {
 		val = NULL;
