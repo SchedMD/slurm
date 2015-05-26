@@ -1065,6 +1065,11 @@ The job's QOS has reached its time limit.
 .TP
 \fBReqNodeNotAvail\fR
 Some node specifically required by the job is not currently available.
+The node may currently be in use, reserved for another job, in an advanced
+reservation, DOWN, DRAINED, or not responding.
+Nodes which are DOWN, DRAINED, or not responding will be identified as part
+of the job's "reason" field as "UnavailableNodes". Such nodes will typically
+require the intervention of a system administrator to make available.
 .TP
 \fBReservation\fR
 The job is waiting its advanced reservation to become available.
