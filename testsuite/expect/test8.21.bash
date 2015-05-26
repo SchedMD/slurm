@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ $# -ne 5 ]; then
 	echo "test8.21.bash <srun_path> <squeue_path> <job_id> <job_size> <mode:1|2?"

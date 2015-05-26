@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Run "srun cat" and read srun's stdout SLOWLY, creating
 #          stdout back pressure in srun.  (srun used to lose data on stdout

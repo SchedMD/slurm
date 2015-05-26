@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Tests #PBS entry functionality in a batch script.

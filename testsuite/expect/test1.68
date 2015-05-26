@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Test that an srun program can move from the foreground to the

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
     if [[ -z "$SLURM_PROCID" ]]
         then exit

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Executes the full battery of tests.

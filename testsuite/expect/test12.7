@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Validate that sacct -D shows correct job steps and states
@@ -38,6 +38,11 @@ set node       ""
 set file_in    "test$test_id\_sc"
 
 print_header $test_id
+
+if { [test_super_user] == 0 } {
+	send_user "WARNING: Test can only be run as SlurmUser\n"
+	exit $exit_code
+}
 
 proc mod_state { state reason } {
 

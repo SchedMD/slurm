@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################
 # Simple SLURM stress test
 # Usage: <prog> <exec1> <exec2> <exec3> <sleep_time> <iterations>
