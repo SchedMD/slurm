@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     which can be used to aggregate messages to the slurmctld into a single
     message to reduce communication to the slurmctld.  Currently only epilog
     complete messages and node registration messages use this logic.
+ -- Add sacct and squeue options to print trackable resources.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

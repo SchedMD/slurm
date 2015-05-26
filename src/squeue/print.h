@@ -271,6 +271,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_min_time)
 #define job_format_add_wait4switch(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_wait4switch)
+#define job_format_add_tres(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_tres)
 
 
 /*****************************************************************************
@@ -453,6 +455,8 @@ int _print_job_min_time(job_info_t * job, int width,
 			bool right_justify, char* suffix);
 int _print_job_wait4switch(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
+int _print_job_tres(job_info_t * job, int width,
+		    bool right_justify, char *suffix);
 
 /*****************************************************************************
  * Step Print Format Functions

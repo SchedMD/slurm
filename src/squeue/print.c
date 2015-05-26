@@ -1811,6 +1811,23 @@ int _print_job_wait4switch(job_info_t * job, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_tres(job_info_t *job, int width,
+		    bool right_justify, char *suffix)
+{
+	if (job == NULL) {
+		_print_str("TRES", width, right_justify, true);
+	} else {
+		if (job->tres_alloc_str)
+			_print_str(job->tres_alloc_str, width,
+				   right_justify, true);
+		else
+			_print_str("N/A", width,
+				   right_justify, true);
+
+	}
+	return SLURM_SUCCESS;
+}
+
 
 /*****************************************************************************
  * Job Step Print Functions
