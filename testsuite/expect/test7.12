@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose:  Test of slurm_job_step_stat() and slurm_load_job() API calls.
 #

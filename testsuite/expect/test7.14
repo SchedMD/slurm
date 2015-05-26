@@ -1,4 +1,4 @@
-#!/usr/bin/expect
+#!/usr/bin/env expect
 ############################################################################
 # Purpose: Verify the ability to modify the Derived Exit Code and Comment
 #          fields of a job record in the database.
