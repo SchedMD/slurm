@@ -1619,6 +1619,7 @@ static bool _first_array_task(struct job_record *job_ptr)
  * IN select_node_bitmap - bitmap of nodes to be used for the
  *	job's resource allocation (not returned if NULL), caller
  *	must free
+ * IN unavail_node_str - Nodes which are currently unavailable.
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -1633,7 +1634,8 @@ static bool _first_array_task(struct job_record *job_ptr)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
-			bitstr_t **select_node_bitmap, char **err_msg)
+			bitstr_t **select_node_bitmap, char *unavail_node_str,
+			char **err_msg)
 {
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -1850,19 +1852,18 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 		/* Non-fatal errors for job below */
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
-			char *tmp_nodelist;
 			/* Required nodes are down or drained */
 			debug3("JobId=%u required nodes not avail",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
-			bit_not(avail_node_bitmap);
-			tmp_nodelist = bitmap2node_name(avail_node_bitmap);
-			bit_not(avail_node_bitmap);
 			xstrfmtcat(job_ptr->state_desc,
-				   "ReqNodeNotAvail(Unavailable:%s)",
-				   tmp_nodelist);
-			xfree(tmp_nodelist);
+				   "ReqNodeNotAvail, May be reserved for other job");
+			if (unavail_node_str) {
+				xstrfmtcat(job_ptr->state_desc,
+					   ", UnavailableNodes:%s",
+					   unavail_node_str);
+			}
 			last_job_update = now;
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {

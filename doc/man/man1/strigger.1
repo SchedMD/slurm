@@ -278,6 +278,15 @@ Name of the user requesting the action
 \fBPROGRAM\fP
 Pathname of the program to execute when the event occurs
 
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBstrigger\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed below.
+(Note: commandline options will always override these settings)
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+
 .SH "EXAMPLES"
 Execute the program "/usr/sbin/primary_slurmctld_failure" whenever the
 primary slurmctld fails.

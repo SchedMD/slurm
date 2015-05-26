@@ -1383,20 +1383,6 @@ Same as \fB\-v, \-\-verbose\fR
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR
 .TP
-\fBSLURM_EXIT_ERROR\fR
-Specifies the exit code generated when a SLURM error occurs
-(e.g. invalid options).
-This can be used by a script to distinguish application exit codes from
-various SLURM error conditions.
-Also see \fBSLURM_EXIT_IMMEDIATE\fR.
-.TP
-\fBSLURM_EXIT_IMMEDIATE\fR
-Specifies the exit code generated when the \fB\-\-immediate\fR option
-is used and resources are not currently available.
-This can be used by a script to distinguish application exit codes from
-various SLURM error conditions.
-Also see \fBSLURM_EXIT_ERROR\fR.
-.TP
 \fBSALLOC_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR
 .TP
@@ -1470,6 +1456,23 @@ Same as \fB\-\-wckey\fR
 .TP
 \fBSALLOC_WAIT4SWITCH\fR
 Max time waiting for requested switches. See \fB\-\-switches\fR
+.TP
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+.TP
+\fBSLURM_EXIT_ERROR\fR
+Specifies the exit code generated when a SLURM error occurs
+(e.g. invalid options).
+This can be used by a script to distinguish application exit codes from
+various SLURM error conditions.
+Also see \fBSLURM_EXIT_IMMEDIATE\fR.
+.TP
+\fBSLURM_EXIT_IMMEDIATE\fR
+Specifies the exit code generated when the \fB\-\-immediate\fR option
+is used and resources are not currently available.
+This can be used by a script to distinguish application exit codes from
+various SLURM error conditions.
+Also see \fBSLURM_EXIT_ERROR\fR.
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1481,6 +1484,15 @@ The reservation ID on Cray systems running ALPS/BASIL only.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.
+.TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allocate a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.
@@ -1541,15 +1553,6 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
-.TP
-\fBMPIRUN_NOALLOCATE\fR
-Do not allocate a block on Blue Gene L/P systems only.
-.TP
-\fBMPIRUN_NOFREE\fR
-Do not free a block on Blue Gene L/P systems only.
-.TP
-\fBMPIRUN_PARTITION\fR
-The block name on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP

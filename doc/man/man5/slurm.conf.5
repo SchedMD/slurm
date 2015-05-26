@@ -1382,8 +1382,8 @@ May not exceed 65533.
 .TP
 \fBMemLimitEnforce\fR
 If set to "no" then Slurm will not terminate the job or the job step
-if they exceeds the value requested using the --mem-per-cpu option of
-salloc/sbatch/srun. This is useful if jobs need to specify --mem-per-cpu
+if they exceeds the value requested using the \-\-mem\-per\-cpu option of
+salloc/sbatch/srun. This is useful if jobs need to specify \-\-mem\-per\-cpu
 for scheduling but they should not be terminate if they exceed the
 estimated value. The default value is 'yes', terminate the job/step
 if exceed the requested memory.
