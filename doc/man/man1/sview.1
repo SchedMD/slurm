@@ -35,6 +35,15 @@ actively being made.
 Disable \fIAdmin Mode\fR immediately after the changes to avoid possibly making
 unintended changes.
 
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsview\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed below.
+(Note: commandline options will always override these settings)
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+
 .SH "NOTES"
 The sview command can only be build if \fIgtk+\-2.0\fR is installed.
 Systems lacking these libraries will have SLURM installed without
