@@ -2518,7 +2518,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 {
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list;
 	ListIterator itr = NULL;
 
 //	DEF_TIMERS;
@@ -2531,8 +2531,20 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	if (arch_cond->job_cond && arch_cond->job_cond->cluster_list
 	    && list_count(arch_cond->job_cond->cluster_list))
 		use_cluster_list = arch_cond->job_cond->cluster_list;
-	else
+	else {
+		/* execute_archive may take a long time to run, so
+		 * don't keep the as_mysql_cluster_list_lock locked
+		 * the whole time, just copy the list and work off
+		 * that.
+		 */
+		use_cluster_list = list_create(slurm_destroy_char);
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		itr = list_iterator_create(as_mysql_cluster_list);
+		while ((cluster_name = list_next(itr)))
+			list_append(use_cluster_list, xstrdup(cluster_name));
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -2542,8 +2554,8 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	}
 	list_iterator_destroy(itr);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (use_cluster_list != arch_cond->job_cond->cluster_list)
+		FREE_NULL_LIST(use_cluster_list);
 
 	return rc;
 }
