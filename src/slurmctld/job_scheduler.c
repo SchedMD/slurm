@@ -695,7 +695,7 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap =
 			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
-		error_code = select_nodes(job_ptr, false, NULL, NULL);
+		error_code = select_nodes(job_ptr, false, NULL, NULL, NULL);
 		bit_free(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
@@ -918,6 +918,7 @@ static int _schedule(uint32_t job_limit)
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
 	uint16_t reject_state_reason = WAIT_NO_REASON;
+	char *unavail_node_str = NULL;
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
@@ -1137,6 +1138,9 @@ static int _schedule(uint32_t job_limit)
 	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
 	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	bit_not(avail_node_bitmap);
+	unavail_node_str = bitmap2node_name(avail_node_bitmap);
+	bit_not(avail_node_bitmap);
 
 	if (max_jobs_per_part) {
 		ListIterator part_iterator;
@@ -1438,7 +1442,8 @@ next_task:
 			continue;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL, NULL);
+		error_code = select_nodes(job_ptr, false, NULL,
+					  unavail_node_str, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
@@ -1624,6 +1629,7 @@ next_task:
 	save_last_part_update = last_part_update;
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
+	xfree(unavail_node_str);
 	xfree(failed_parts);
 	xfree(failed_resv);
 	if (fifo_sched) {
