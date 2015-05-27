@@ -803,7 +803,7 @@ static int _attempt_backfill(void)
 	} else {
 		debug("backfill: %u jobs to backfill", job_test_count);
 		job_test_count = 0;
-        }
+	}
 
 	if (backfill_continue)
 		_clear_job_start_times();
@@ -1297,7 +1297,6 @@ next_task:
 				      __func__);
 			}
 
-                        }
 			if ((rc == ESLURM_ACCOUNTING_POLICY) ||
 			    (rc == ESLURM_RESERVATION_BUSY) ||
 			    (rc == ESLURM_POWER_NOT_AVAIL)) {
