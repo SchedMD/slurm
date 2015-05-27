@@ -253,6 +253,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) &&
 	    ((errno == ESLURM_NODES_BUSY) ||
+	     (errno == ESLURM_POWER_NOT_AVAIL) ||
 	     (errno == ESLURM_PORTS_BUSY) ||
 	     (errno == ESLURM_INTERCONNECT_BUSY))) {
 		struct pollfd fds;

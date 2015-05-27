@@ -792,14 +792,18 @@ static int _attempt_backfill(void)
 		filter_root = true;
 
 	job_queue = build_job_queue(true, true);
-	if (list_count(job_queue) == 0) {
+	job_test_count = list_count(job_queue);
+	if (job_test_count == 0) {		
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			info("backfill: no jobs to backfill");
 		else
 			debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);
 		return 0;
-	}
+	} else {
+		debug("backfill: %u jobs to backfill", job_test_count);
+		job_test_count = 0;
+        }
 
 	if (backfill_continue)
 		_clear_job_start_times();
@@ -1293,8 +1297,10 @@ next_task:
 				      __func__);
 			}
 
+                        }
 			if ((rc == ESLURM_ACCOUNTING_POLICY) ||
-			    (rc == ESLURM_RESERVATION_BUSY)) {
+			    (rc == ESLURM_RESERVATION_BUSY) ||
+			    (rc == ESLURM_POWER_NOT_AVAIL)) {
 				/* Unknown future start time, just skip job */
 				if (orig_start_time != 0) {
 					/* Can start in different partition */

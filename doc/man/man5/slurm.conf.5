@@ -1620,7 +1620,9 @@ The value can only be set between the lowest threshold computed based on
 the sum of the idle power of all the nodes and the highest threshold
 based on the sum of the max power of all the nodes.
 The power capping logic is only activated when this parameter is set
-to a value greater than 0.
+to a value greater than 0 or the special value INFINITE asking to
+enable the powercapping logic but automatically set the cap to the
+highest threshold.
 The default value is 0.
 
 .TP

@@ -1163,6 +1163,7 @@ static int _schedule(uint32_t job_limit)
 				continue;
 			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
 			    (job_ptr->state_reason != WAIT_RESOURCES) &&
+			    (job_ptr->state_reason != WAIT_POWER_NOT_AVAIL) &&
 			    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
 				continue;
 			job_ptr->state_reason = WAIT_FRONT_END;
@@ -1506,7 +1507,8 @@ next_task:
 
 		error_code = select_nodes(job_ptr, false, NULL,
 					  unavail_node_str, NULL);
-		if (error_code == ESLURM_NODES_BUSY) {
+		if ((error_code == ESLURM_NODES_BUSY) ||
+		   (error_code == ESLURM_POWER_NOT_AVAIL)){
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
 			       job_ptr->job_id,

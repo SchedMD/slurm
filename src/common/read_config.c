@@ -265,7 +265,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
-	{"PowerCap", S_P_UINT32},
+	{"PowerCap", S_P_STRING},
 	{"PowerParameters", S_P_STRING},
 	{"PowerPlugin", S_P_STRING},
 	{"PreemptMode", S_P_STRING},
@@ -3546,7 +3546,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->power_plugin, "PowerPlugin", hashtbl))
 		conf->power_plugin = xstrdup(DEFAULT_POWER_PLUGIN);
 
-	if (!s_p_get_uint32(&conf->powercap, "PowerCap", hashtbl))
+	if (s_p_get_string(&temp_str, "PowerCap", hashtbl)) {
+		if (strcmp(temp_str, "INFINITE") == 0)
+			conf->powercap = (uint32_t) INFINITE;
+		else if (parse_uint32(temp_str, &conf->powercap))
+			fatal("PowerCap=%s invalid", temp_str);
+		xfree(temp_str);
+	} else
 		conf->powercap = 0;
 
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
