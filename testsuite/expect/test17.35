@@ -56,31 +56,28 @@ wait
 set match 0
 set time_used  100000
 set timeout [expr $max_job_delay * 10]
-spawn time -f "elapsed %E" ./$file_in
+spawn time -p ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		incr match
 		exp_continue
 	}
-	-re "elapsed ($number):($digit)($digit).($digit)($digit)" {
-		set mins       $expect_out(1,string)
-		set secs       [expr $expect_out(2,string) * 10 + $expect_out(3,string)]
-		set tenths     $expect_out(4,string)
-		set hundredths $expect_out(5,string)
-		set time_used [expr $mins * 60000 + $secs * 1000 + $tenths * 100 + $hundredths * 10]
+	-re "real *($number).($digit)($digit)" {
+		set secs       $expect_out(1,string)
+		set tenths     $expect_out(2,string)
+		set hundredths $expect_out(3,string)
+		set time_used [expr $secs * 1000 + $tenths * 100 + $hundredths * 10]
 		exp_continue
 	}
-	-re "elapsed ($number):($digit)($digit).($digit)" {
-		set mins   $expect_out(1,string)
-		set secs   [expr $expect_out(2,string) * 10 + $expect_out(3,string)]
-		set tenths $expect_out(4,string)
-		set time_used [expr $mins * 60000 + $secs * 1000 + $tenths * 100]
+	-re "real *($number).($digit)" {
+		set secs       $expect_out(1,string)
+		set tenths     $expect_out(2,string)
+		set time_used [expr $secs * 1000 + $tenths * 100]
 		exp_continue
 	}
-	-re "elapsed ($number):($digit)($digit)" {
-		set mins   $expect_out(1,string)
-		set secs   [expr $expect_out(2,string) * 10 + $expect_out(3,string)]
-		set time_used [expr $mins * 60000 + $secs * 1000]
+	-re "real *($number)" {
+		set secs       $expect_out(1,string)
+		set time_used [expr $secs * 1000]
 		exp_continue
 	}
 	timeout {
