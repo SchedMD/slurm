@@ -7040,6 +7040,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		}
 	} else if (!_validate_min_mem_partition(job_desc_msg, part_ptr, part_list))
 		return ESLURM_INVALID_TASK_MEMORY;
+	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
+		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */
+		job_desc_msg->pn_min_memory = 0;
+	}
 
 	/* Validate a job's accounting frequency, if specified */
 	if (acct_gather_check_acct_freq_task(
@@ -9659,7 +9663,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (job_specs->pn_min_memory != NO_VAL) {
-
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->pn_min_memory
@@ -9668,6 +9671,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			      "to old limit for job %u", job_ptr->job_id);
 		} else {
 			char *entity;
+			if (job_specs->pn_min_memory == MEM_PER_CPU) {
+				/* Map --mem-per-cpu=0 to --mem=0 */
+				job_specs->pn_min_memory = 0;
+			}
 			if (job_specs->pn_min_memory & MEM_PER_CPU)
 				entity = "cpu";
 			else
