@@ -1378,6 +1378,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
@@ -1411,7 +1412,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
-		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->users,	buffer);
 
@@ -1463,6 +1463,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
 				       &uint32_tmp, 	buffer);
@@ -1516,7 +1517,6 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
-		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
 

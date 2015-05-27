@@ -92,6 +92,7 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/powercapping.h"
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 

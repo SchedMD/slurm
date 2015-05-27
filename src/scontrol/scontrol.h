@@ -159,6 +159,7 @@ extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
 extern void	scontrol_print_layout (int argc, char *argv[]);
+extern void	scontrol_print_powercap (char *node_list);
 extern void	scontrol_requeue(int argc, char **argv);
 extern void	scontrol_requeue_hold(int argc, char **argv);
 extern void	scontrol_suspend(char *op, char *job_id_str);
@@ -169,5 +170,6 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
 extern int	scontrol_update_step (int argc, char *argv[]);
+extern int	scontrol_update_powercap (int argc, char *argv[]);
 
 #endif

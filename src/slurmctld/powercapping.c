@@ -120,14 +120,15 @@ uint32_t powercap_get_cluster_adjusted_max_watts(void)
 	/*TODO: make changes for powercap_priority*/
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++){
-		if (bit_test(power_node_bitmap, i))
+		if (bit_test(power_node_bitmap, i)){
 			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
 			    L_MIN, &val, L_T_UINT32))
                 		return 0;
-		else
+		} else {
 			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
-			    L_MIN, &val, L_T_UINT32))
+			    L_MAX, &val, L_T_UINT32))
 				return 0;
+		}
 		adj_max_watts += val;
 	}
 
@@ -147,7 +148,7 @@ uint32_t powercap_get_cluster_current_max_watts(void)
 
 uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 {
-	uint32_t max_watts = 0;
+	uint32_t max_watts = 0, val;
 	struct node_record *node_ptr;
 	int i;
 	bitstr_t *tmp_bitmap = NULL;
@@ -170,7 +171,7 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 		/* TODO: we should have an additional parameters to decide if
 		 * we need to use min_watts or 0 for nodes powered down by SLURM
 		 */
-		if (!bit_test(idle_bitmap, i)) {
+		if (bit_test(idle_bitmap, i)) {
 			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
 			    L_NODE_MIN, &val, L_T_UINT32))
 				return 0;

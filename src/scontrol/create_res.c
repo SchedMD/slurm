@@ -434,7 +434,7 @@ scontrol_create_res(int argc, char *argv[])
 	     resv_msg.burst_buffer[0] == '\0') &&
 	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
-	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) &&
+	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
 	    (resv_msg.resv_watts == (uint32_t) NO_VAL)) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
@@ -457,7 +457,7 @@ scontrol_create_res(int argc, char *argv[])
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 	if (resv_msg.resv_watts != (uint32_t) NO_VAL &&
-	    (!(resv_msg.flags & RESERVE_FLAG_LIC_ONLY) ||
+	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
 	     (resv_msg.core_cnt != 0) ||
 	     (resv_msg.node_cnt  != NULL && resv_msg.node_cnt[0]  != 0) ||
 	     (resv_msg.node_list != NULL && resv_msg.node_list[0] != '\0') ||

@@ -1946,14 +1946,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			if (error_code == ESLURM_POWER_NOT_AVAIL)
 				job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
 			else if (error_code == ESLURM_POWER_RESERVED)
-				job_ptr->state_reason = WAIT_POWER_RESERVED
+				job_ptr->state_reason = WAIT_POWER_RESERVED;
 			else
 				job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 			if ((error_code == ESLURM_NODES_BUSY) ||
 			    (error_code == ESLURM_POWER_NOT_AVAIL) ||
 			    (error_code == ESLURM_POWER_RESERVED))
-				slurm_sched_job_is_pending();
+				slurm_sched_g_job_is_pending();
 		}
 		goto cleanup;
 	}
