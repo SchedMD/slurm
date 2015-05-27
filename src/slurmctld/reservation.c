@@ -247,6 +247,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
+	resv_copy_ptr->resv_watts = resv_orig_ptr->resv_watts;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
 	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
 	resv_copy_ptr->start_time_prev = resv_orig_ptr->start_time_prev;
@@ -343,6 +344,7 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 
 	dest_resv->part_ptr = src_resv->part_ptr;
 	dest_resv->resv_id = src_resv->resv_id;
+	dest_resv->resv_watts = src_resv->resv_watts;
 	dest_resv->start_time = src_resv->start_time;
 	dest_resv->start_time_first = src_resv->start_time_first;
 	dest_resv->start_time_prev = src_resv->start_time_prev;
@@ -425,6 +427,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
 	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
+	char watts_str[32] = "n/a";
 	char *node_cnt_str = NULL;
 	int duration, i;
 
@@ -438,6 +441,9 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	if (resv_ptr->end_time != (time_t) NO_VAL) {
 		slurm_make_time_str(&resv_ptr->end_time,
 				    end_str,  sizeof(end_str));
+	}
+	if (resv_ptr->resv_watts != (time_t) NO_VAL) {
+		snprintf(watts_str, 32, "%u", resv_ptr->resv_watts);
 	}
 	if (resv_ptr->flags != NO_VAL)
 		flag_str = reservation_flags_string(resv_ptr->flags);
@@ -461,12 +467,13 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
 	     "Flags=%s NodeCnt=%s NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s",
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s"
+	     "Watts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, node_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
-	     resv_ptr->burst_buffer);
+	     resv_ptr->burst_buffer, watts_str);
 
 	xfree(flag_str);
 	xfree(node_cnt_str);
@@ -1376,6 +1383,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->users,	buffer);
 
@@ -1480,6 +1488,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
 
@@ -2152,6 +2161,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
+	resv_ptr->resv_watts	= resv_desc_ptr->resv_watts;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
 	resv_ptr->start_time_first = resv_ptr->start_time;
 	resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -2317,6 +2327,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
 	}
+	if (resv_desc_ptr->resv_watts != (time_t) NO_VAL)
+		resv_ptr->resv_watts = resv_desc_ptr->resv_watts;
 	if (resv_desc_ptr->accounts) {
 		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
 		if (rc) {
@@ -4334,6 +4346,52 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 
 	/* info("job %u blocked from %d licenses of type %s",
 	     job_ptr->job_id, resv_cnt, lic_name); */
+	return resv_cnt;
+}
+
+/*
+ * Determine how many watts the specified job is prevented from using 
+ * due to reservations
+ *
+ * TODO: this code, replicated from job_test_lic_resv seems to not being
+ * protected against consecutives reservations for which reserved watts
+ * (or licenses count) can not be added directly. Thus, if the job
+ * overlaps multiplenon-overlapping reservations, it will be prevented
+ * to use more watts (or licenses) than necessary.
+ *
+ * IN job_ptr   - job to test
+ * IN when      - when the job is expected to start
+ * RET amount of watts the job is prevented from using
+ */
+extern uint32_t job_test_watts_resv(struct job_record *job_ptr,
+				    time_t when)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t job_start_time, job_end_time, now = time(NULL);
+	ListIterator iter;
+	uint32_t resv_cnt = 0;
+
+	job_start_time = when;
+	job_end_time   = when + _get_job_duration(job_ptr);
+	iter = list_iterator_create(resv_list);
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
+		if (resv_ptr->resv_watts == (uint32_t) NO_VAL ||
+		    resv_ptr->resv_watts == 0)
+			continue;       /* not a power reservation */
+		if ((resv_ptr->start_time >= job_end_time) ||
+		    (resv_ptr->end_time   <= job_start_time))
+			continue;	/* reservation at different time */
+
+		if (job_ptr->resv_name &&
+		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+			continue;	/* job can use this reservation */
+
+		resv_cnt += resv_ptr->resv_watts;
+	}
+	list_iterator_destroy(iter);
+
 	return resv_cnt;
 }
 

@@ -345,7 +345,9 @@ enum job_state_reason {
 	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
 	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
 	WAIT_QOS_TIME_LIMIT,	/* QOS time limit reached */
-	WAIT_POWER_NOT_AVAIL,   /* not enough power available */	
+	WAIT_POWER_NOT_AVAIL,   /* not enough power available */
+	WAIT_POWER_RESERVED     /* job is waiting for available power 
+				   because of power reservations */	
 	WAIT_BLOCK_MAX_ERR,     /* BLUEGENE Block has too many cnodes
 				 * in error state to allow more jobs. */
 	WAIT_BLOCK_D_ACTION,    /* BLUEGENE Block is being freed,
@@ -2166,6 +2168,7 @@ typedef struct reserve_info {
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
 	time_t start_time;	/* start time of reservation */
+	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */
 	char *users;		/* names of users permitted to use */
 } reserve_info_t;
@@ -2194,6 +2197,7 @@ typedef struct resv_desc_msg {
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
 	time_t start_time;	/* start time of reservation */
+	uint32_t resv_watts;    /* amount of power to reserve  */
 	char *tres_str;         /* list of TRES's used by reservation */
 	char *users;		/* names of users permitted to use */
 } resv_desc_msg_t;

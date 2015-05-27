@@ -1372,6 +1372,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "BurstBufferStageIn";
 	case WAIT_POWER_NOT_AVAIL:
 		return "PowerNotAvail";
+	case WAIT_POWER_RESERVED:
+		return "PowerReserved";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;

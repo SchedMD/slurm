@@ -40,6 +40,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/slurmctld/powercapping.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/layouts_mgr.h"
 
@@ -186,4 +187,23 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 		bit_free(tmp_bitmap);
 
 	return max_watts;
+}
+
+uint32_t powercap_get_job_cap(struct job_record *job_ptr,
+			      time_t when)
+{
+	uint32_t powercap = 0, resv_watts;
+
+	powercap = slurm_get_powercap();
+	if (powercap == NO_VAL)
+		return 0;
+	else if (powercap == (uint32_t) INFINITE)
+		powercap = powercap_get_cluster_max_watts();
+	if (powercap == 0)
+		return 0; /* should not happened */
+
+	/* get the amount of watts reserved for the job */
+	resv_watts = job_test_watts_resv(job_ptr, when);
+
+	return (powercap - resv_watts);
 }

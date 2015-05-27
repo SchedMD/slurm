@@ -1098,6 +1098,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	/* return result */
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
 	    (error_code == ESLURM_POWER_NOT_AVAIL) ||
+	    (error_code == ESLURM_POWER_RESERVED) ||
 	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 	    (error_code == ESLURM_QOS_THRES) ||
 	    (error_code == ESLURM_NODE_NOT_AVAIL) ||
@@ -3407,7 +3408,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	    (error_code != ESLURM_QOS_THRES) &&
 	    (error_code != ESLURM_RESERVATION_NOT_USABLE) &&
 	    (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-	    (error_code != ESLURM_POWER_NOT_AVAIL)) {
+	    (error_code != ESLURM_POWER_NOT_AVAIL) &&
+	    (error_code != ESLURM_POWER_RESERVED)) {
 		info("_slurm_rpc_submit_batch_job: %s",
 		     slurm_strerror(error_code));
 		if (err_msg)

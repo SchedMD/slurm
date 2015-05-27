@@ -1299,7 +1299,8 @@ next_task:
 
 			if ((rc == ESLURM_ACCOUNTING_POLICY) ||
 			    (rc == ESLURM_RESERVATION_BUSY) ||
-			    (rc == ESLURM_POWER_NOT_AVAIL)) {
+			    (rc == ESLURM_POWER_NOT_AVAIL) ||
+			    (rc == ESLURM_POWER_RESERVED)) {
 				/* Unknown future start time, just skip job */
 				if (orig_start_time != 0) {
 					/* Can start in different partition */

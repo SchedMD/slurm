@@ -1034,8 +1034,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 * we need to ensure that using this nodes respects the amount of 
 	 * available power as returned by the capping logic.
 	 * If it is not the case, then ensure that the job stays pending 
-	 * by returning the relevant error code : 
-	 * ESLURM_POWER_NOT_AVAIL
+	 * by returning a relevant error code : 
+	 *  ESLURM_POWER_NOT_AVAIL : if the current capping is blocking
+	 *  ESLURM_POWER_RESERVED  : if the current capping and the power
+	 *                           reservations are blocking
 	 */
         if (error_code != SLURM_SUCCESS) {
 		debug3("powercapping: checking job %u : skipped, not eligible",
@@ -1044,10 +1046,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		debug3("powercapping: checking job %u : skipped, capping "
 		       "disabled", job_ptr->job_id);
 	} else {
-		uint32_t min_watts, max_watts;
+		uint32_t min_watts, max_watts, job_cap;
 		uint32_t cur_max_watts, tmp_max_watts;
 		bitstr_t *tmp_bitmap;
-		bool power_check_ok = false;
 
 		/*
 		 * get current powercapping logic state (min,cur,max)
@@ -1055,8 +1056,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		max_watts = powercap_get_cluster_max_watts();
 		min_watts = powercap_get_cluster_min_watts();
 		cur_max_watts = powercap_get_cluster_current_max_watts();
-
-		/* in case of INFINITE cap, set it to max watts */
+		/* in case of INFINITE cap, set it to max watts as it
+		   is done in the powercapping logic */
 		if (powercap == (uint32_t) INFINITE)
 			powercap = max_watts;
 
@@ -1072,16 +1073,26 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		tmp_max_watts = powercap_get_node_bitmap_maxwatts(tmp_bitmap);
 		bit_free(tmp_bitmap);
 
-		if (tmp_max_watts <= powercap)
-			power_check_ok = true;
-		else {
+		/* get job cap based on power reservation on the system,
+		   if no reservation matches the job caracteristics, the
+		   powercap or the max_wattswill be returned.
+		   select the return code based on the impact of
+		   reservations on the failure */
+		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
+
+		if (tmp_max_watts > job_cap) {
 			FREE_NULL_BITMAP(*select_bitmap);
-			error_code = ESLURM_POWER_NOT_AVAIL;
+			if (job_cap < powercap && 
+			    tmp_max_watts <= powercap)
+				error_code = ESLURM_POWER_RESERVED;
+			else
+				error_code = ESLURM_POWER_NOT_AVAIL;
 		}
 		debug2("powercapping: checking job %u : min=%u cur=%u "
-		       "[new=%u] [cap=%u] max=%u : %s", job_ptr->job_id,
-		       min_watts, cur_max_watts, tmp_max_watts, powercap,
-		       max_watts, power_check_ok ? "success" : "failure");
+		       "[new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
+		       job_ptr->job_id, min_watts, cur_max_watts,
+		       tmp_max_watts, job_cap, powercap, max_watts, 
+		       slurm_strerror(error_code));
 	}
 
 	if (preemptee_candidates)
@@ -1934,11 +1945,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		} else {
 			if (error_code == ESLURM_POWER_NOT_AVAIL)
 				job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
+			else if (error_code == ESLURM_POWER_RESERVED)
+				job_ptr->state_reason = WAIT_POWER_RESERVED
 			else
 				job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 			if ((error_code == ESLURM_NODES_BUSY) ||
-			    (error_code == ESLURM_POWER_NOT_AVAIL))
+			    (error_code == ESLURM_POWER_NOT_AVAIL) ||
+			    (error_code == ESLURM_POWER_RESERVED))
 				slurm_sched_job_is_pending();
 		}
 		goto cleanup;

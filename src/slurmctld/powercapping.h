@@ -34,8 +34,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _POWERCAPPING_H
+#define _POWERCAPPING_H
+
 #include <stdint.h>
 #include <time.h>
+#include "src/slurmctld/slurmctld.h"
 
 /**
  * powercap_get_cluster_max_watts 
@@ -86,3 +90,16 @@ uint32_t powercap_get_cluster_current_max_watts(void);
  * RET uint32_t - the max consumption in watts
  */
 uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t* select_bitmap);
+
+/**
+ * powercap_get_job_cap
+ * return the cap value of a job taking into account the current cap
+ * as well as the power reservations defined on the interval
+ *
+ * IN struct job_record* job_ptr
+ * IN time_t when
+ * RET uint32_t - the cap the job is restricted to
+ */
+uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when);
+
+#endif /* !_POWERCAPPING_H */
