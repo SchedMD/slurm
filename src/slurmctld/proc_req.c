@@ -4169,9 +4169,6 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_t *agent_arg_ptr;
 	struct node_record *node_ptr;
 
-	if (job_desc_msg->array_inx && job_desc_msg->array_inx[0])
-		return ESLURM_INVALID_ARRAY;
-
 	/*
 	 * Create a job step. Note that a credential is not necessary,
 	 * since the slurmctld will be submitting this job directly to
@@ -4179,6 +4176,9 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	 */
 	job_step_create_request_msg_t req_step_msg;
 	struct step_record *step_rec;
+
+	if (job_desc_msg->array_inx && job_desc_msg->array_inx[0])
+		return ESLURM_INVALID_ARRAY;
 
 	/*
 	 * As far as the step record in slurmctld goes, we are just
