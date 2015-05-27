@@ -106,6 +106,34 @@ uint32_t  cnodes_per_mp = 0;
 uint32_t  cpus_per_mp = 0;
 #endif
 
+/*
+ * the two following structs enable to build a
+ * planning of a constraint evolution over time
+ * taking into account temporal overlapping
+ */
+typedef struct constraint_planning {
+	List slot_list;
+} constraint_planning_t;
+
+typedef struct constraint_slot {
+	time_t start;
+	time_t end;
+	uint32_t value;
+} constraint_slot_t;
+/*
+ * the associated functions are the following
+ */
+static void _free_slot(void *x);
+static void _init_constraint_planning(constraint_planning_t* sched);
+static void _print_constraint_planning(constraint_planning_t* sched);
+static void _free_constraint_planning(constraint_planning_t* sched);
+static void _update_constraint_planning(constraint_planning_t* sched,
+					uint32_t value, time_t start,
+					time_t end);
+static uint32_t _max_constraint_planning(constraint_planning_t* sched,
+					 time_t *start, time_t *end);
+
+
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -4349,15 +4377,172 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	return resv_cnt;
 }
 
+
+static void _free_slot(void *x)
+{
+	xfree(x);
+}
+
+static void _init_constraint_planning(constraint_planning_t* sched)
+{
+	sched->slot_list = list_create(_free_slot);
+}
+
+static void _free_constraint_planning(constraint_planning_t* sched)
+{
+	list_destroy(sched->slot_list);
+}
+
+/*
+ * update the list of slots with the new time delimited constraint
+ * the new slot may have to be :
+ * - inserted
+ * - added to a previously added slot, if it corresponds to the same
+ *   period
+ * - shrinked if it overlaps temporarily a previously slot
+ *   (in that case it will result in a new slot insertion and an
+ *    already defined slot update with the addition of the value)
+ * - splitted in two chunks if it is nested in a previously slot
+ *   (in that case it will result in the insertion of new head,
+ *    the update of the previously defined slot, and the iteration
+ *    of the logic with a new slot reduced to the remaining time)
+ */
+static void _update_constraint_planning(constraint_planning_t* sched,
+					uint32_t value,
+					time_t start, time_t end)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot, *cstr_slot, *tmp_slot;
+	bool done = false;
+
+	/* create the constraint slot to add */
+	cstr_slot = xmalloc(sizeof(constraint_slot_t));
+	cstr_slot->value = value;
+	cstr_slot->start = start;
+	cstr_slot->end = end;
+
+	/* iterate on the current slot list to identify 
+	 * the modifications and do them live */
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		/* cur_slot is posterior or contiguous, insert cstr,
+		 * mark the state as done and break */
+		if (cstr_slot->end <= cur_slot->start) {
+			list_insert(iter,cstr_slot);
+			done = true;
+			break;
+		}
+		/* cur_slot has the same time period, update it,
+		   mark the state as done and break */
+		if (cstr_slot->start == cur_slot->start &&
+		    cstr_slot->end == cur_slot->end) {
+			cur_slot->value += cstr_slot->value;
+			xfree(cstr_slot);
+			done = true;
+			break;
+		}
+		/* cur_slot is anterior or contiguous, continue*/
+		if (cur_slot->end <= cstr_slot->start)
+			continue;
+		/* new slot starts after this one */
+		if (cur_slot->start <= cstr_slot->start) {
+			/* we may need up to 2 insertions and one update */
+			if (cur_slot->start < cstr_slot->start) {
+				tmp_slot = xmalloc(sizeof(constraint_slot_t));
+				tmp_slot->value = cur_slot->value;
+				tmp_slot->start = cur_slot->start;
+				tmp_slot->end = cstr_slot->start;
+				list_insert(iter,tmp_slot);
+				cur_slot->start = tmp_slot->end;
+			}
+			if (cstr_slot->end < cur_slot->end) {
+				cstr_slot->value += cur_slot->value;
+				list_insert(iter,cstr_slot);
+				cur_slot->start = cstr_slot->end;
+			} else if (cstr_slot->end > cur_slot->end) {
+				cur_slot->value += cstr_slot->value;
+				cstr_slot->start = cur_slot->end;
+				continue;
+			} else {
+				cur_slot->value += cstr_slot->value;
+				xfree(cstr_slot);
+			}
+			done = true;
+			break;
+		} else {
+			/* new slot starts before, and we know that it is
+			 * not contiguous (previously checked) */
+			tmp_slot = xmalloc(sizeof(constraint_slot_t));
+			tmp_slot->value = cstr_slot->value;
+			tmp_slot->start = cstr_slot->start;
+			tmp_slot->end = cur_slot->start;
+			list_insert(iter,tmp_slot);
+			if (cstr_slot->end == cur_slot-> end) {
+				cur_slot->value += cstr_slot->value;
+				xfree(cstr_slot);
+				done = true;
+				break;
+			} else if (cstr_slot->end < cur_slot-> end) {
+				cstr_slot->start = cur_slot->start;
+				cstr_slot->value += cur_slot->value;
+				list_insert(iter,cstr_slot);
+				cur_slot->start = cstr_slot->end;
+				done = true;
+				break;
+			} else {
+				cur_slot->value += cstr_slot->value;
+				cstr_slot->start = cur_slot->end;
+				continue;
+			}
+		}
+	}
+	/* we might still need to add the [updated] constrain slot */
+	if (!done)
+		list_append(sched->slot_list, cstr_slot);
+	list_iterator_destroy(iter);
+}
+
+static uint32_t _max_constraint_planning(constraint_planning_t* sched,
+					 time_t *start, time_t *end)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot;
+	uint32_t max = 0;
+
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		if (cur_slot->value > max) {
+			max = cur_slot->value;
+			*start = cur_slot->start;
+			*end = cur_slot->end;
+		}
+	}
+
+	return max;
+}
+
+static void _print_constraint_planning(constraint_planning_t* sched)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot;
+	char start_str[32] = "-1", end_str[32] = "-1";
+	uint32_t i=0;
+
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		slurm_make_time_str(&cur_slot->start,
+				    start_str, sizeof(start_str));
+		slurm_make_time_str(&cur_slot->end,
+				    end_str, sizeof(end_str));
+		debug2("constraint_planning: slot[%u]: %s to %s count=%u",
+		       i, start_str, end_str, cur_slot->value);
+		i++;
+	}
+}
+
 /*
  * Determine how many watts the specified job is prevented from using 
  * due to reservations
- *
- * TODO: this code, replicated from job_test_lic_resv seems to not being
- * protected against consecutives reservations for which reserved watts
- * (or licenses count) can not be added directly. Thus, if the job
- * overlaps multiplenon-overlapping reservations, it will be prevented
- * to use more watts (or licenses) than necessary.
  *
  * IN job_ptr   - job to test
  * IN when      - when the job is expected to start
@@ -4369,7 +4554,12 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr,
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time, now = time(NULL);
 	ListIterator iter;
+	constraint_planning_t wsched;
+	time_t start, end;
+	char start_str[32] = "-1", end_str[32] = "-1";
 	uint32_t resv_cnt = 0;
+
+	_init_constraint_planning(&wsched);
 
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr);
@@ -4388,9 +4578,21 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr,
 		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
 			continue;	/* job can use this reservation */
 
-		resv_cnt += resv_ptr->resv_watts;
+		_update_constraint_planning(&wsched, resv_ptr->resv_watts,
+					    resv_ptr->start_time,
+					    resv_ptr->end_time);
 	}
 	list_iterator_destroy(iter);
+
+	resv_cnt = _max_constraint_planning(&wsched, &start, &end);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+		_print_constraint_planning(&wsched);
+		slurm_make_time_str(&start, start_str, sizeof(start_str));
+		slurm_make_time_str(&end, end_str, sizeof(end_str));
+		debug2("reservation: max reserved watts=%u (%s to %s)",
+		       resv_cnt, start_str, end_str);
+	}
+	_free_constraint_planning(&wsched);
 
 	return resv_cnt;
 }

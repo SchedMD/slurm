@@ -205,5 +205,9 @@ uint32_t powercap_get_job_cap(struct job_record *job_ptr,
 	/* get the amount of watts reserved for the job */
 	resv_watts = job_test_watts_resv(job_ptr, when);
 
+	/* avoid underflow of the cap value, return at least 0 */
+	if (resv_watts > powercap)
+		resv_watts = powercap;
+
 	return (powercap - resv_watts);
 }
