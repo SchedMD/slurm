@@ -1611,21 +1611,6 @@ More information about system power management is available here
 By default, no power plugin is loaded.
 
 .TP
-\fBPowerCap\fR
-An integer value that sets the amount of Watts the cluster is limited to.
-When set to a value greater than 0, the amount of nodes available for
-jobs will automatically be limited by ignoring nodes in order to respect
-the constraint.
-The value can only be set between the lowest threshold computed based on
-the sum of the idle power of all the nodes and the highest threshold
-based on the sum of the max power of all the nodes.
-The power capping logic is only activated when this parameter is set
-to a value greater than 0 or the special value INFINITE asking to
-enable the powercapping logic but automatically set the cap to the
-highest threshold.
-The default value is 0.
-
-.TP
 \fBPreemptMode\fR
 Enables gang scheduling and/or controls the mechanism used to preempt
 jobs.  When the \fBPreemptType\fR parameter is set to enable preemption, the

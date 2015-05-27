@@ -6323,8 +6323,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->plugindir, buffer);
 		packstr(build_ptr->plugstack, buffer);
 
-		pack32(build_ptr->powercap, buffer);
-
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_type, buffer);
 
@@ -7306,8 +7304,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->plugstack,
 				       &uint32_tmp, buffer);
-
-		safe_unpack32(&build_ptr->powercap, buffer);
 
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->preempt_type,

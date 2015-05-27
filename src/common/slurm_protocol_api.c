@@ -556,25 +556,6 @@ char *slurm_get_plugin_dir(void)
 	return plugin_dir;
 }
 
-/* slurm_get_powercap
- * returns the power capping cap of the cluster from slurmctld_conf object
- * RET uint32_t - amount of watts.
- */
-uint32_t slurm_get_powercap(void)
-{
-	uint32_t powercap = NO_VAL;
-	slurm_ctl_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		powercap = conf->powercap;
-		slurm_conf_unlock();
-	}
-
-	return powercap;
-}
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurmctld_conf object
  * RET uint32_t - decay_hl in secs.
@@ -965,6 +946,22 @@ extern char *slurm_get_power_parameters(void)
 		slurm_conf_unlock();
 	}
 	return power_parameters;
+}
+
+/* slurm_set_power_parameters
+ * reset the PowerParameters object
+ */
+extern void slurm_set_power_parameters(char *power_parameters)
+{
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->power_parameters);
+		conf->power_parameters = xstrdup(power_parameters);
+		slurm_conf_unlock();
+	}
 }
 
 /* slurm_get_power_plugin

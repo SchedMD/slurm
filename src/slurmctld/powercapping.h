@@ -63,6 +63,14 @@ uint32_t powercap_get_cluster_min_watts(void);
 uint32_t powercap_get_cluster_current_cap(void);
 
 /**
+ * powercap_set_cluster_cap
+ * set a new powercap value
+ * IN uint32_t - new_cap
+ * RET int - 0 or error code
+ */
+int powercap_set_cluster_cap(uint32_t new_cap);
+
+/**
  * powercap_get_cluster_adjusted_max_watts
  * return max power consumption of the cluster, 
  * taking into consideration the nodes which are POWERED DOWN

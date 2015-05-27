@@ -277,13 +277,6 @@ char *slurm_get_slurmd_plugstack(void);
  */
 char *slurm_get_plugin_dir(void);
 
-
-/* slurm_get_powercap
- * returns the power capping cap of the cluster from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_powercap(void);
-
 /* slurm_get_priority_decay_hl
  * returns the priority decay half life in seconds from slurmctld_conf object
  * RET uint32_t - decay_hl in secs.
@@ -436,6 +429,11 @@ extern uint16_t slurm_get_use_spec_resources(void);
  * RET char *    - PowerParameters, MUST be xfreed by caller
  */
 extern char *slurm_get_power_parameters(void);
+
+/* slurm_set_power_parameters
+ * reset the PowerParameters object
+ */
+extern void slurm_set_power_parameters(char *power_parameters);
 
 /* slurm_get_power_plugin
  * returns the PowerPlugin from slurmctld_conf object

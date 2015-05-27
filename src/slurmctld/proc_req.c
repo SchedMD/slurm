@@ -775,8 +775,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->power_parameters    = xstrdup(conf->power_parameters);
 	conf_ptr->power_plugin        = xstrdup(conf->power_plugin);
 
-	conf_ptr->powercap            = conf->powercap;
-
 	conf_ptr->preempt_mode        = conf->preempt_mode;
 	conf_ptr->preempt_type        = xstrdup(conf->preempt_type);
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
@@ -3755,16 +3753,17 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 			 * the current value is 0 in order to
 			 * enable the capping system and get 
 			 * the min and max values */
-			orig_cap = slurmctld_conf.powercap;
-			slurmctld_conf.powercap = INFINITE;
+			orig_cap = powercap_get_cluster_current_cap();
+			powercap_set_cluster_cap(INFINITE);
 			min = powercap_get_cluster_min_watts();
 			max = powercap_get_cluster_max_watts();
-			slurmctld_conf.powercap = orig_cap;
 			if (min <= ptr->powercap && max >= ptr->powercap)
 				valid_cap = true;
+			else
+				powercap_set_cluster_cap(orig_cap);
 		}
 		if (valid_cap)
-			slurmctld_conf.powercap = ptr->powercap;
+			powercap_set_cluster_cap(ptr->powercap);
 		else
 			error_code = ESLURM_INVALID_POWERCAP;
 		unlock_slurmctld(config_write_lock);
