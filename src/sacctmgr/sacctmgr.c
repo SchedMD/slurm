@@ -662,6 +662,8 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_wckey((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "tres", MAX(command_len, 2)) == 0) {
+		error_code = sacctmgr_list_tres(argc - 1, &argv[1]);
 	} else {
 	helpme:
 		exit_code = 1;

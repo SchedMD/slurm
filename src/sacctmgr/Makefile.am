@@ -26,7 +26,8 @@ sacctmgr_SOURCES =	\
 	txn_functions.c		\
 	user_functions.c	\
 	wckey_functions.c	\
-	problem_functions.c
+	problem_functions.c     \
+	tres_function.c
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
