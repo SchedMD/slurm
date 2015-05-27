@@ -180,7 +180,6 @@ cset bin_sleep  "sleep"
 cset bin_sort   "sort"
 cset bin_touch  "touch"
 cset bin_uname	"uname"
-cset bin_usleep "usleep"
 cset bin_wc	"wc"
 cset bin_printenv "printenv"
 
@@ -423,7 +422,7 @@ proc get_my_gid {  } {
 ################################################################
 
 proc kill_salloc {  } {
-	global bin_id bin_pkill bin_sleep bin_usleep number
+	global bin_id bin_pkill bin_sleep number
 
 	spawn $bin_id -u
 	expect {
@@ -459,7 +458,7 @@ proc kill_salloc {  } {
 ################################################################
 
 proc kill_srun {  } {
-	global bin_id bin_pkill bin_sleep bin_usleep number
+	global bin_id bin_pkill bin_sleep number
 
 	spawn $bin_id -u
 	expect {

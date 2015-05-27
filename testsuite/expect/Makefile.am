@@ -529,8 +529,7 @@ EXTRA_DIST = \
 	etc.33.1.4/testcases		\
 	etc.33.1.4/topology.conf	\
 	test34.1			\
-	test34.2			\
-	usleep
+	test34.2
 
 distclean-local:
 	rm -rf *error *output
