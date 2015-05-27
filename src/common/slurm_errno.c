@@ -149,6 +149,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested partition configuration not available now" },
 	{ ESLURM_POWER_NOT_AVAIL,
 	  "Required power not available now"},
+	{ ESLURM_INVALID_POWERCAP,
+	  "Required powercap is not valid, check min/max values"},
 	{ ESLURM_NODES_BUSY,
 	  "Requested nodes are busy"				},
 	{ ESLURM_INVALID_JOB_ID,

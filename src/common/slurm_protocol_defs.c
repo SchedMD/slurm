@@ -2968,6 +2968,20 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	}
 }
 
+/*
+ * slurm_free_powercap_info_msg - free the powercapping information
+ *	response message
+ * IN msg - pointer to powercapping information response message
+ * NOTE: buffer is loaded by slurm_load_powercap.
+ */
+extern void slurm_free_powercap_info_msg(powercap_info_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
+
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
@@ -3279,6 +3293,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
 		break;
+	case REQUEST_UPDATE_POWERCAP:
+		slurm_free_powercap_info_msg(data);
+		break;
 	case REQUEST_DELETE_PARTITION:
 		slurm_free_delete_part_msg(data);
 		break;
@@ -3413,6 +3430,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TOPO_INFO:
  	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_SICP_INFO:
+	case REQUEST_POWERCAP_INFO:
 		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:

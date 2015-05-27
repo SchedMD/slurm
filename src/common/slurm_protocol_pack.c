@@ -208,6 +208,11 @@ static void _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 static int _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 					uint16_t protocol_version);
 
+static void _pack_update_powercap_msg(update_powercap_msg_t * msg, Buf buffer,
+				      uint16_t protocol_version);
+static int _unpack_update_powercap_msg(update_powercap_msg_t ** msg, Buf buffer,
+				       uint16_t protocol_version);
+
 static void _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer,
 				       uint16_t protocol_version);
 static int _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer,
@@ -647,6 +652,11 @@ static int  _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 				  Buf buffer,
 				  uint16_t protocol_version);
 
+static void _pack_powercap_info_msg(powercap_info_msg_t *msg, Buf buffer,
+				    uint16_t protocol_version);
+static int  _unpack_powercap_info_msg(powercap_info_msg_t **msg,
+				      Buf buffer, uint16_t protocol_version);
+
 static void _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t *msg, Buf buffer,
 				      uint16_t protocol_version);
 static int  _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t **msg,
@@ -971,6 +981,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_SICP_INFO:
+	case REQUEST_POWERCAP_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1028,6 +1039,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_update_partition_msg((update_part_msg_t *) msg->
 					   data, buffer,
 					   msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_POWERCAP:
+		_pack_update_powercap_msg((update_powercap_msg_t *) msg->
+					  data, buffer,
+					  msg->protocol_version);
 		break;
 	case REQUEST_DELETE_PARTITION:
 		_pack_delete_partition_msg((delete_part_msg_t *) msg->
@@ -1404,6 +1420,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(topo_info_response_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_POWERCAP_INFO:
+		_pack_powercap_info_msg(
+			(powercap_info_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		_pack_job_sbcast_cred_msg(
 			(job_sbcast_cred_msg_t *)msg->data, buffer,
@@ -1612,6 +1633,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_SICP_INFO:
+	case REQUEST_POWERCAP_INFO:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -1671,6 +1693,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_update_partition_msg((update_part_msg_t **) &
 						  (msg->data), buffer,
 						  msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_POWERCAP:
+		rc = _unpack_update_powercap_msg((update_powercap_msg_t **) &
+						 (msg->data), buffer,
+						 msg->protocol_version);
 		break;
 	case REQUEST_DELETE_PARTITION:
 		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
@@ -2086,6 +2113,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case RESPONSE_TOPO_INFO:
 		rc = _unpack_topo_info_msg(
 			(topo_info_response_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_POWERCAP_INFO:
+		rc = _unpack_powercap_info_msg(
+			(powercap_info_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
@@ -3966,6 +3998,22 @@ unpack_error:
 	slurm_free_update_part_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
+}
+
+static void
+_pack_update_powercap_msg(update_powercap_msg_t * msg, Buf buffer,
+			  uint16_t protocol_version)
+{
+	_pack_powercap_info_msg((powercap_info_msg_t *) msg,
+				buffer, protocol_version);
+}
+
+static int
+_unpack_update_powercap_msg(update_powercap_msg_t ** msg, Buf buffer,
+			    uint16_t protocol_version)
+{
+	return _unpack_powercap_info_msg((powercap_info_msg_t **) msg,
+					 buffer, protocol_version);
 }
 
 static void
@@ -12724,6 +12772,36 @@ static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 
 unpack_error:
 	slurm_free_topo_info_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_powercap_info_msg(powercap_info_msg_t *msg, Buf buffer,
+				    uint16_t protocol_version)
+{
+	pack32(msg->powercap, buffer);
+	pack32(msg->min_watts, buffer);
+	pack32(msg->cur_max_watts, buffer);
+	pack32(msg->adj_max_watts, buffer);
+	pack32(msg->max_watts, buffer);
+}
+
+static int  _unpack_powercap_info_msg(powercap_info_msg_t **msg, Buf buffer,
+				  uint16_t protocol_version)
+{
+	powercap_info_msg_t *msg_ptr = xmalloc(sizeof(powercap_info_msg_t));
+
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->powercap, buffer);
+	safe_unpack32(&msg_ptr->min_watts, buffer);
+	safe_unpack32(&msg_ptr->cur_max_watts, buffer);
+	safe_unpack32(&msg_ptr->adj_max_watts, buffer);
+	safe_unpack32(&msg_ptr->max_watts, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_powercap_info_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

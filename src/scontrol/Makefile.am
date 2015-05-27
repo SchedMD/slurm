@@ -23,7 +23,8 @@ scontrol_SOURCES =	\
 	update_layout.c \
 	update_node.c	\
 	update_part.c	\
-	update_step.c
+	update_step.c   \
+	update_powercap.c 
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 

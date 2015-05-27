@@ -143,7 +143,8 @@ am_scontrol_OBJECTS = create_res.$(OBJEXT) info_block.$(OBJEXT) \
 	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
 	scontrol.$(OBJEXT) update_job.$(OBJEXT) \
 	update_layout.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT) update_step.$(OBJEXT)
+	update_part.$(OBJEXT) update_step.$(OBJEXT) \
+	update_powercap.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
@@ -482,7 +483,8 @@ scontrol_SOURCES = \
 	update_layout.c \
 	update_node.c	\
 	update_part.c	\
-	update_step.c
+	update_step.c   \
+	update_powercap.c 
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 scontrol_LDADD = \
@@ -599,6 +601,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_layout.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_powercap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_step.Po@am__quote@
 
 .c.o:

@@ -344,7 +344,7 @@ contents of the slurm.conf configuration file.
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIcache\fP, \fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP,
-\fIjob\fP, \fInode\fP, \fIpartition\fP, \fIreservation\fP, \fIslurmd\fP,
+\fIjob\fP, \fInode\fP, \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP,
 \fIstep\fP, \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or
 \fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
@@ -430,12 +430,12 @@ system administrator (also see the \fBhold\fP command).
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, step, node, partition, or reservation configuration per the
-supplied specification. \fISPECIFICATION\fP is in the same format as the Slurm
-configuration file and the output of the \fIshow\fP command described above. It
-may be desirable to execute the \fIshow\fP command (described above) on the
-specific entity you which to update, then use cut\-and\-paste tools to enter
-updated configuration values to the \fIupdate\fP. Note that while most
+Update job, step, node, partition, powercapping or reservation configuration per
+the supplied specification. \fISPECIFICATION\fP is in the same format as the
+Slurm configuration file and the output of the \fIshow\fP command described 
+above. It may be desirable to execute the \fIshow\fP command (described above)
+on the specific entity you which to update, then use cut\-and\-paste tools to
+enter updated configuration values to the \fIupdate\fP. Note that while most
 configuration values can be changed using this command, not all can be changed
 using this mechanism. In particular, the hardware configuration of a node or
 the physical addition or removal of nodes from the cluster may only be
@@ -1208,6 +1208,17 @@ Designates that no new jobs may be queued on the partition,
 and jobs already queued may not be allocated nodes and run.
 See also the "Alternate" partition specification.
 .RE
+
+.TP
+\fBSPECIFICATIONS FOR UPDATE COMMAND, POWERCAP\fR
+
+.TP
+\fIPowerCap\fP=<count>
+Set the amount of watts the cluster is limited to.
+Specify a number, "INFINITE" to enable the power capping logic without
+power restriction or "0" to disable the power capping logic.
+Update slurm.conf with any changes meant to be persistent across normal
+restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
