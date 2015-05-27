@@ -920,6 +920,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_script.so
+%{_libdir}/slurm/layouts_power_default.so
 %{_libdir}/slurm/layouts_unit_default.so
 %if ! %{slurm_with bluegene}
 %{_libdir}/slurm/mpi_lam.so
