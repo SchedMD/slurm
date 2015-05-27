@@ -1045,6 +1045,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
 		debug3("powercapping: checking job %u : skipped, capping "
 		       "disabled", job_ptr->job_id);
+	} else if (!power_layout_ready()){
+		debug3("powercapping:checking job %u : skipped, problems with"
+		       "layouts, capping disabled", job_ptr->job_id);
 	} else {
 		uint32_t min_watts, max_watts, job_cap;
 		uint32_t cur_max_watts, tmp_max_watts;

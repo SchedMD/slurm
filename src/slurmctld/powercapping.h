@@ -102,4 +102,6 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t* select_bitmap);
  */
 uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when);
 
+bool power_layout_ready(void);
+
 #endif /* !_POWERCAPPING_H */

@@ -44,14 +44,16 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/layouts_mgr.h"
 
-#define L_POWER     "power"
-#define L_CLUSTER   "Cluster"
-#define L_MAX   "MaxSumWatts"
-#define L_MIN   "IdleSumWatts"
-#define L_CUR   "CurrentSumPower"
-#define L_NODE_CUR   "CurrentPower"
-#define L_NODE_MAX   "MaxWatts"
-#define L_NODE_MIN   "IdleWatts"
+#define L_POWER     	"power"
+#define L_CLUSTER   	"Cluster"
+#define L_SUM_MAX   	"MaxSumWatts"
+#define L_SUM_IDLE  	"IdleSumWatts"
+#define L_SUM_CUR   	"CurrentSumPower"
+#define L_NODE_MAX   	"MaxWatts"
+#define L_NODE_IDLE   	"IdleWatts"
+#define L_NODE_DOWN   	"DownWatts"
+#define L_NODE_SAVE   	"PowerSaveWatts"
+#define L_NODE_CUR   	"CurrentPower"
 
 bool _powercap_enabled(void)
 {
@@ -61,6 +63,26 @@ bool _powercap_enabled(void)
 		return true;
 }
 
+bool power_layout_ready(void)
+{
+	struct node_record *node_ptr;
+	uint32_t *data = xmalloc(sizeof(uint32_t) * 2);
+	int i;
+
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
+            i++, node_ptr++){
+		if (layouts_entity_get_mkv(L_POWER, node_ptr->name, 
+		   "MaxWatts,IdleWatts", data, (sizeof(uint32_t) * 2), 
+		   L_T_UINT32)){
+			error("powercapping: node %s is not in the"
+			     "layouts.d/power.conf file", node_ptr->name);
+			return false;
+		}
+	}
+	return true;
+}
+
+
 uint32_t powercap_get_cluster_max_watts(void)
 {
 	uint32_t max_watts;
@@ -68,28 +90,40 @@ uint32_t powercap_get_cluster_max_watts(void)
 	if (!_powercap_enabled())
 		return 0;
 
-	if (layouts_entity_pullget_kv(L_POWER, L_CLUSTER, L_MAX, &max_watts,
-				      L_T_UINT32))
+	if (!power_layout_ready())
 		return 0;
+
+	layouts_entity_pullget_kv(L_POWER, L_CLUSTER, L_SUM_MAX, &max_watts,
+				  L_T_UINT32);
 
 	return max_watts;
 }
 
-/* 
- * Nodes configured with powercap_priority=0 are always 
- * considered as being allowed to consume their max power
- */
 uint32_t powercap_get_cluster_min_watts(void)
 {
-	uint32_t min_watts;
+	uint32_t min_watts=0, tmp_watts, save_watts, down_watts;
+	struct node_record *node_ptr;
+	int i;
 
 	if (!_powercap_enabled())
 		return 0;
-
-	/*TODO: make changes for powercap_priority*/
-	if (layouts_entity_pullget_kv(L_POWER, L_CLUSTER, L_MIN, &min_watts,
-				      L_T_UINT32))
+	
+	if (!power_layout_ready())
 		return 0;
+
+	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
+            i++, node_ptr++){
+
+		layouts_entity_pullget_kv(L_POWER, node_ptr->name, L_NODE_IDLE,
+					  &tmp_watts, L_T_UINT32);
+		layouts_entity_pullget_kv(L_POWER, node_ptr->name, L_NODE_DOWN, 
+					  &down_watts, L_T_UINT32);
+		tmp_watts = MIN(tmp_watts, down_watts);
+		layouts_entity_pullget_kv(L_POWER, node_ptr->name, L_NODE_SAVE, 
+					  &save_watts, L_T_UINT32);
+		tmp_watts = MIN(tmp_watts, save_watts);
+		min_watts += tmp_watts;
+	}
 
 	return min_watts;
 }
@@ -107,27 +141,25 @@ uint32_t powercap_get_cluster_current_cap(void)
 
 uint32_t powercap_get_cluster_adjusted_max_watts(void)
 {
-	uint32_t adj_max_watts,val;
+	uint32_t adj_max_watts=0,val;
 	struct node_record *node_ptr;
 	int i;
 
 	if (!_powercap_enabled())
 		return 0;
-
-	/* TODO: we should have an additional parameters to decide if
-	 * we need to use min_watts or 0 for nodes powered down by SLURM
-	 */
-	/*TODO: make changes for powercap_priority*/
+	if (!power_layout_ready())
+		return 0;
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-	     i++, node_ptr++){
+	    i++, node_ptr++){
 		if (bit_test(power_node_bitmap, i)){
-			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
-			    L_MIN, &val, L_T_UINT32))
-                		return 0;
+			layouts_entity_pullget_kv(L_POWER, node_ptr->name,
+			    L_NODE_SAVE, &val, L_T_UINT32);
+		} else if (!bit_test(up_node_bitmap, i)){
+			layouts_entity_pullget_kv(L_POWER, node_ptr->name,
+                            L_NODE_DOWN, &val, L_T_UINT32);
 		} else {
-			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
-			    L_MAX, &val, L_T_UINT32))
-				return 0;
+			layouts_entity_pullget_kv(L_POWER, node_ptr->name,
+			    L_NODE_MAX, &val, L_T_UINT32);
 		}
 		adj_max_watts += val;
 	}
@@ -140,6 +172,8 @@ uint32_t powercap_get_cluster_current_max_watts(void)
 	uint32_t cur_max_watts=0;
 
 	if (!_powercap_enabled())
+		return 0;
+	if (!power_layout_ready())
 		return 0;
 
 	cur_max_watts = powercap_get_node_bitmap_maxwatts(NULL);
@@ -155,6 +189,8 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 
 	if (!_powercap_enabled())
 		return 0;
+	if (!power_layout_ready())
+		return 0;
 
 	/* if no input bitmap, consider the current idle nodes 
 	   bitmap as the input bitmap tagging nodes to consider 
@@ -164,24 +200,29 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 		idle_bitmap = tmp_bitmap;
 	}
 
-	/* TODO: optimize the iteration over the nodes using consecutive 
-	   set bits when possible */
 	for(i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	    i++, node_ptr++){
-		/* TODO: we should have an additional parameters to decide if
-		 * we need to use min_watts or 0 for nodes powered down by SLURM
-		 */
+		/* non reserved node, evaluate the different cases */
 		if (bit_test(idle_bitmap, i)) {
-			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
-			    L_NODE_MIN, &val, L_T_UINT32))
-				return 0;
-                 /* TODO: same logic to apply here too */
+			 /* idle nodes, 2 cases : power save or not */
+			if (bit_test(power_node_bitmap, i)){
+				layouts_entity_pullget_kv(L_POWER, 
+				 node_ptr->name, L_NODE_SAVE, &val, L_T_UINT32);
+			} else {
+				layouts_entity_pullget_kv(L_POWER, 
+                                 node_ptr->name, L_NODE_IDLE, &val, L_T_UINT32);
+			}
 		} else {
-			if (layouts_entity_pullget_kv(L_POWER, node_ptr->name,
-			    L_NODE_MAX, &val, L_T_UINT32))
-				return 0;
+			/* non idle nodes, 2 cases : down or not */
+			if (!bit_test(up_node_bitmap, i)){
+				layouts_entity_pullget_kv(L_POWER, 
+				 node_ptr->name, L_NODE_DOWN, &val, L_T_UINT32);
+			} else {
+				layouts_entity_pullget_kv(L_POWER,
+				 node_ptr->name, L_NODE_MAX, &val, L_T_UINT32);
+			}
                 }
-		max_watts += val;
+		max_watts += val;	
 	}
 
 	if (tmp_bitmap)
