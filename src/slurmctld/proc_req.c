@@ -764,6 +764,8 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->power_parameters    = xstrdup(conf->power_parameters);
 	conf_ptr->power_plugin        = xstrdup(conf->power_plugin);
 
+	conf_ptr->powercap            = conf->powercap;
+
 	conf_ptr->preempt_mode        = conf->preempt_mode;
 	conf_ptr->preempt_type        = xstrdup(conf->preempt_type);
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;

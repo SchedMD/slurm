@@ -968,6 +968,16 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->power_plugin);
 	list_append(ret_list, key_pair);
 
+	if (slurm_ctl_conf_ptr->powercap == (uint32_t) 0)
+		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
+	else
+		snprintf(tmp_str, sizeof(tmp_str), "%u Watts",
+			 slurm_ctl_conf_ptr->powercap);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PowerCap");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PreemptMode");
 	key_pair->value = xstrdup(preempt_mode_string(slurm_ctl_conf_ptr->
