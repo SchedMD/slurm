@@ -4668,7 +4668,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 				      g_slurm_auth_errstr(
 					      g_slurm_auth_errno(NULL)));
 				free_buf(buffer);
-				rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+				slurm_seterrno(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 				goto unpack_error;
 			}
 
