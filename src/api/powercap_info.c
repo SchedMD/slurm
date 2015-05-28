@@ -114,7 +114,7 @@ extern void slurm_print_powercap_info_msg(FILE * out, powercap_info_msg_t *ptr,
 		/****** Line 1 ******/
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "Powercapping disabled by configuration."
-			 " See PowerCap parameter in `man slurm.conf'");
+			 " See PowerParameters in `man slurm.conf'");
 		xstrcat(out_buf, tmp_line);
 		xstrcat(out_buf, "\n");
 		fprintf(out, "%s", out_buf);

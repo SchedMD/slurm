@@ -46,7 +46,7 @@
 extern int
 scontrol_update_layout (int argc, char *argv[])
 {
-	int rc;
+	int rc = 0;
 	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;
 	update_layout_msg_t msg;
@@ -56,7 +56,6 @@ scontrol_update_layout (int argc, char *argv[])
 	memset(&msg, 0, sizeof(update_layout_msg_t));
 	while (i < argc) {
 		tag = argv[i];
-		tag_len = strlen(tag);
 		val = strchr(argv[i], '=');
 		if (val) {
 			tag_len = val - argv[i];

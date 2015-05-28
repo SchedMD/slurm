@@ -1552,9 +1552,11 @@ _show_it (int argc, char *argv[])
 		scontrol_print_licenses(val);
 	} else if (strncasecmp (tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
-	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 1)) == 0 ||
-		   strncasecmp (tag, "partitionname", MAX(tag_len, 1)) == 0) {
+	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 2)) == 0 ||
+		   strncasecmp (tag, "partitionname", MAX(tag_len, 2)) == 0) {
 		scontrol_print_part (val);
+	} else if (strncasecmp (tag, "powercapping", MAX(tag_len, 2)) == 0) {
+		scontrol_print_powercap (val);
 	} else if (strncasecmp (tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);
@@ -1566,9 +1568,6 @@ _show_it (int argc, char *argv[])
 		scontrol_print_step (val);
 	} else if (strncasecmp (tag, "topology", MAX(tag_len, 1)) == 0) {
 		scontrol_print_topo (val);
-	} else if (strncasecmp (tag, "powercap", MAX(tag_len, 1)) == 0 ||
-		   strncasecmp (tag, "powercapping", MAX(tag_len, 1)) == 0) {
-		scontrol_print_powercap (val);
 	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)
