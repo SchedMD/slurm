@@ -246,7 +246,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->account_list = xmalloc(sizeof(char *) *
 					      resv_orig_ptr->account_cnt);
 	resv_copy_ptr->account_not = resv_orig_ptr->account_not;
-	for (i=0; i<resv_copy_ptr->account_cnt; i++) {
+	for (i = 0; i < resv_copy_ptr->account_cnt; i++) {
 		resv_copy_ptr->account_list[i] =
 				xstrdup(resv_orig_ptr->account_list[i]);
 	}
@@ -269,7 +269,10 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->flags_set_node = resv_orig_ptr->flags_set_node;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
-	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
+	if (resv_orig_ptr->node_bitmap) {
+		resv_copy_ptr->node_bitmap =
+			bit_copy(resv_orig_ptr->node_bitmap);
+	}
 	resv_copy_ptr->node_cnt = resv_orig_ptr->node_cnt;
 	resv_copy_ptr->node_list = xstrdup(resv_orig_ptr->node_list);
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
@@ -286,7 +289,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->user_list = xmalloc(sizeof(uid_t) *
 					   resv_orig_ptr->user_cnt);
 	resv_copy_ptr->user_not = resv_orig_ptr->user_not;
-	for (i=0; i<resv_copy_ptr->user_cnt; i++)
+	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
 
 	return resv_copy_ptr;
@@ -1770,11 +1773,11 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		name2 = val2 = "";
 
 	info("sched: %s reservation=%s%s%s%s%s nodes=%s cores=%u "
-	     "licenses=%s tres=%s start=%s end=%s",
+	     "licenses=%s tres=%s watts=%u start=%s end=%s",
 	     old_resv_ptr ? "Updated" : "Created",
 	     resv_ptr->name, name1, val1, name2, val2,
 	     resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
-	     resv_ptr->tres_str,
+	     resv_ptr->tres_str, resv_ptr->resv_watts,
 	     start_time, end_time);
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
