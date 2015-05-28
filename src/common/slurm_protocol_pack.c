@@ -4178,6 +4178,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->partition,
 				       &uint32_tmp, buffer);
+		tmp_ptr->resv_watts = NO_VAL;
 
 		safe_unpackstr_xmalloc(&tmp_ptr->users,
 				       &uint32_tmp, buffer);
@@ -6322,7 +6323,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->plugindir, buffer);
 		packstr(build_ptr->plugstack, buffer);
-
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_type, buffer);
 
@@ -7308,7 +7308,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->preempt_type,
 				       &uint32_tmp, buffer);
-
 		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);
 		safe_unpack16(&build_ptr->priority_favor_small, buffer);

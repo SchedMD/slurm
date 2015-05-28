@@ -285,7 +285,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 				resv_msg_ptr->users = val;
 			}
 		} else if (strncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			if (parse_uint32(val,&(resv_msg_ptr->resv_watts))) {
+			if (parse_uint32(val, &(resv_msg_ptr->resv_watts))) {
 				error("Invalid Watts value: %s", val);
 				return -1;
 			}
@@ -435,7 +435,7 @@ scontrol_create_res(int argc, char *argv[])
 	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
-	    (resv_msg.resv_watts == (uint32_t) NO_VAL)) {
+	    (resv_msg.resv_watts == NO_VAL)) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
 			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses"
@@ -456,7 +456,7 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.resv_watts != (uint32_t) NO_VAL &&
+	if (resv_msg.resv_watts != NO_VAL &&
 	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
 	     (resv_msg.core_cnt != 0) ||
 	     (resv_msg.node_cnt  != NULL && resv_msg.node_cnt[0]  != 0) ||
