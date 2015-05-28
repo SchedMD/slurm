@@ -125,7 +125,7 @@ static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
 static int _mysql_jobcomp_check_tables()
 {
 	if (mysql_db_create_table(jobcomp_mysql_conn, jobcomp_table,
-				 jobcomp_table_fields,
+				  jobcomp_table_fields,
 				  ", primary key (jobid, starttime, endtime))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
