@@ -2745,7 +2745,7 @@ proc get_node_cnt { } {
 proc get_node_cnt_in_part { partition } {
 	global scontrol number
 
-#	log_user 0
+	log_user 0
 	set node_cnt 0
 	set scon_pid [spawn -noecho $scontrol show partition $partition]
 	expect {
@@ -2762,7 +2762,7 @@ proc get_node_cnt_in_part { partition } {
 		eof {
 		}
 	}
-#	log_user 1
+	log_user 1
 
 	return $node_cnt
 }
