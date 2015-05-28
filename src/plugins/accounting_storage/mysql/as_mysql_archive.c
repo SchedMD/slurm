@@ -2519,9 +2519,8 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *cluster_name = NULL;
 	List use_cluster_list;
+	bool new_cluster_list = false;
 	ListIterator itr = NULL;
-
-//	DEF_TIMERS;
 
 	if (!arch_cond) {
 		error("No arch_cond was given to archive from.  returning");
@@ -2529,14 +2528,15 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	}
 
 	if (arch_cond->job_cond && arch_cond->job_cond->cluster_list
-	    && list_count(arch_cond->job_cond->cluster_list))
+	    && list_count(arch_cond->job_cond->cluster_list)) {
 		use_cluster_list = arch_cond->job_cond->cluster_list;
-	else {
+	} else {
 		/* execute_archive may take a long time to run, so
 		 * don't keep the as_mysql_cluster_list_lock locked
 		 * the whole time, just copy the list and work off
 		 * that.
 		 */
+		new_cluster_list = true;
 		use_cluster_list = list_create(slurm_destroy_char);
 		slurm_mutex_lock(&as_mysql_cluster_list_lock);
 		itr = list_iterator_create(as_mysql_cluster_list);
@@ -2554,7 +2554,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	}
 	list_iterator_destroy(itr);
 
-	if (use_cluster_list != arch_cond->job_cond->cluster_list)
+	if (new_cluster_list)
 		FREE_NULL_LIST(use_cluster_list);
 
 	return rc;
