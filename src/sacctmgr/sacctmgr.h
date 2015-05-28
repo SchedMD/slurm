@@ -188,7 +188,7 @@ typedef enum {
 	PRINT_CALLOWED,
 	PRINT_ALLOWED,
 	PRINT_ALLOCATED,
-	PRINT_USED,
+	PRINT_USED
 } sacctmgr_print_t;
 
 

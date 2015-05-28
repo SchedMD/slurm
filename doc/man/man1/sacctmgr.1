@@ -1577,6 +1577,22 @@ about the various associations the user may have on all the
 clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
+.SH "LIST/SHOW TRES"
+
+.TP
+\fIName\fP
+The name of the trackable resource. For the default trackable resources
+CPU, Memory and Energy the names are equal to their types.
+
+.TP
+\fIID\fP
+The identification number of the trackable resource as it appears
+in the database.
+
+.TP
+\fIType\fP
+The type of the trackable resource. For example if license is the
+type then name is the denomination of the license itself e.g. vcs.
 
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a
@@ -2085,6 +2101,27 @@ QOS expedite and it will not have access to QOS normal.
   zebra     banana       expedite
 .br
   zebra         g1       expedite,normal
+.br
+
+An example of trackable resources
+.br
+
+.br
+->sacctmgr show tres
+.br
+      Name     ID     Type
+.br
+---------- ------ --------
+.br
+       cpu      1      cpu
+.br
+       mem      2      mem
+.br
+    energy      3   energy
+.br
+       gpu   1001     gres
+.br
+       vcs   1002  license
 .br
 
 .ec

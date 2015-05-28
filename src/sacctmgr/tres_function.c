@@ -41,22 +41,84 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
+/* sacctmgr_list_tres()
+ */
 int
 sacctmgr_list_tres(int argc, char **argv)
 {
         List tres_list;
         ListIterator itr;
+	ListIterator itr2;
+	List format_list;
+	List print_fields_list;
         slurmdb_tres_cond_t cond;
         slurmdb_tres_rec_t *tres;
+	int field_count;
+	print_field_t *field;
 
+	format_list = list_create(slurm_destroy_char);
+	/* Append to the format list the fields
+	 * we want to print, these are the data structure
+	 * members of the type returned by slurmdbd
+	 */
+	slurm_addto_char_list(format_list, "NAME,ID,TYPE");
+
+	if (exit_code) {
+		list_destroy(format_list);
+		return SLURM_ERROR;
+	}
+
+	/* Process the format list creating a list of
+	 * print field_t structures
+	 */
+	print_fields_list = sacctmgr_process_format_list(format_list);
+	list_destroy(format_list);
+
+	/* Call slurmdbd to get all tres with not
+	 * condition
+	 */
         memset(&cond, 0, sizeof(slurmdb_tres_cond_t));
-
         tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
 
         itr = list_iterator_create(tres_list);
+	itr2 = list_iterator_create(print_fields_list);
+	print_fields_header(print_fields_list);
+	field_count = list_count(print_fields_list);
+
+	/* For each tres prints the data structure members
+	 */
         while ((tres = list_next(itr))) {
-                printf("name: %s\n", tres->name);
+		while ((field = list_next(itr2))) {
+			switch (field->type) {
+				case PRINT_NAME:
+					if (tres->name)
+						field->print_routine(field,
+								     tres->name,
+								     field_count);
+					else
+						field->print_routine(field,
+								     tres->type,
+								     field_count);
+					break;
+				case PRINT_ID:
+					field->print_routine(field,
+							     tres->id,
+							     field_count);
+					break;
+				case PRINT_TYPE:
+					field->print_routine(field,
+							     tres->type,
+							     field_count);
+					break;
+			}
+		}
+		list_iterator_reset(itr2);
+		printf("\n");
         }
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+	list_destroy(tres_list);
+	list_destroy(print_fields_list);
 
         return 0;
 }
