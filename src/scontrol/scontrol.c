@@ -1679,7 +1679,7 @@ _update_it (int argc, char *argv[])
 		}
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
 			"\"JobId\", \"SlurmctldDebug\" , \"PowerCap\"" 
-		        "or \"Layouts\"\n");
+			"or \"Layouts\"\n");
 	}
 
 	if (error_code) {

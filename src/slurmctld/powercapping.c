@@ -42,6 +42,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/node_conf.h"
+#include "src/common/power.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/powercapping.h"
@@ -68,17 +69,23 @@ static bool _powercap_enabled(void)
 
 bool power_layout_ready(void)
 {
+	static time_t last_error_time = (time_t) 0;
+	time_t now = time(NULL);
 	struct node_record *node_ptr;
-	uint32_t *data = xmalloc(sizeof(uint32_t) * 2);
+	uint32_t data[2];
 	int i;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++){
+	     i++, node_ptr++) {
 		if (layouts_entity_get_mkv(L_POWER, node_ptr->name, 
 		    "MaxWatts,IdleWatts", data, (sizeof(uint32_t) * 2), 
 		    L_T_UINT32)) {
-			error("powercapping: node %s is not in the"
-			     "layouts.d/power.conf file", node_ptr->name);
+			/* Limit error message frequency, once per minute */
+			if (difftime(now, last_error_time) < 60)
+				return false;
+			last_error_time = now;
+			error("%s: node %s is not in the layouts.d/power.conf file",
+			     __func__, node_ptr->name);
 			return false;
 		}
 	}
@@ -115,8 +122,7 @@ uint32_t powercap_get_cluster_min_watts(void)
 		return 0;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++){
-
+	     i++, node_ptr++) {
 		layouts_entity_pullget_kv(L_POWER, node_ptr->name, L_NODE_IDLE,
 					  &tmp_watts, L_T_UINT32);
 		layouts_entity_pullget_kv(L_POWER, node_ptr->name, L_NODE_DOWN, 
@@ -197,6 +203,7 @@ int powercap_set_cluster_cap(uint32_t new_cap)
 	else
 		xstrfmtcat(sched_params, "%scap_watts=%u", sep, new_cap);
 	slurm_set_power_parameters(sched_params);
+	power_g_reconfig();
 	xfree(sched_params);
 
 	return 0;
@@ -213,7 +220,7 @@ uint32_t powercap_get_cluster_adjusted_max_watts(void)
 	if (!power_layout_ready())
 		return 0;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++){
+	     i++, node_ptr++) {
 		if (bit_test(power_node_bitmap, i)) {
 			layouts_entity_pullget_kv(L_POWER, node_ptr->name,
 					L_NODE_SAVE, &val, L_T_UINT32);
@@ -256,8 +263,8 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 		return 0;
 
 	/* if no input bitmap, consider the current idle nodes 
-	   bitmap as the input bitmap tagging nodes to consider 
-	   as idle while computing the max watts of the cluster */
+	 * bitmap as the input bitmap tagging nodes to consider 
+	 * as idle while computing the max watts of the cluster */
 	if (idle_bitmap == NULL) {
 		tmp_bitmap = bit_copy(idle_node_bitmap);
 		idle_bitmap = tmp_bitmap;

@@ -2978,9 +2978,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
  */
 extern void slurm_free_powercap_info_msg(powercap_info_msg_t *msg)
 {
-	if (msg) {
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 

@@ -260,6 +260,8 @@ static uint32_t _parse_watts(char * watts_str)
 
 	if (!strcasecmp(watts_str, "n/a") || !strcasecmp(watts_str, "none"))
 		return watts_num;
+	if (!strcasecmp(watts_str, "INFINITE"))
+		return INFINITE;
 	watts_num = strtol(watts_str, &end_ptr, 10);
 	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 		watts_num *= 1000;

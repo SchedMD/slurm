@@ -125,12 +125,13 @@ extern void slurm_print_powercap_info_msg(FILE * out, powercap_info_msg_t *ptr,
 			 "MinWatts=%u CurrentWatts=%u ",
 			 ptr->min_watts, ptr->cur_max_watts);
 		xstrcat(out_buf, tmp_line);
-		if (ptr->powercap == (uint32_t) INFINITE)
+		if (ptr->powercap == INFINITE) {
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "PowerCap=INFINITE ");
-		else
+		} else {
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "PowerCap=%u ", ptr->powercap);
+		}
 		xstrcat(out_buf, tmp_line);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "AdjustedMaxWatts=%u MaxWatts=%u",

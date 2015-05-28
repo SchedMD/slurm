@@ -1029,7 +1029,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 }
 #endif
 
-        /* 
+	/* 
 	 * PowerCapping logic : now that we have the list of selected nodes
 	 * we need to ensure that using this nodes respects the amount of 
 	 * available power as returned by the capping logic.
@@ -1039,7 +1039,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 *  ESLURM_POWER_RESERVED  : if the current capping and the power
 	 *                           reservations are blocking
 	 */
-        if (error_code != SLURM_SUCCESS) {
+	if (error_code != SLURM_SUCCESS) {
 		debug3("powercapping: checking job %u : skipped, not eligible",
 		       job_ptr->job_id);
 	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
@@ -1060,15 +1060,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		min_watts = powercap_get_cluster_min_watts();
 		cur_max_watts = powercap_get_cluster_current_max_watts();
 		/* in case of INFINITE cap, set it to max watts as it
-		   is done in the powercapping logic */
-		if (powercap == (uint32_t) INFINITE)
+		 * is done in the powercapping logic */
+		if (powercap == INFINITE)
 			powercap = max_watts;
 
 		/* build a temporary bitmap using idle_node_bitmap and
-		   remove the selected bitmap from this bitmap.
-		   Then compute the amount of power required for such a
-		   configuration to check that is is allowed by the current
-		   power cap */
+		 * remove the selected bitmap from this bitmap.
+		 * Then compute the amount of power required for such a
+		 * configuration to check that is is allowed by the current
+		 * power cap */
 		tmp_bitmap = bit_copy(idle_node_bitmap);
 		bit_not(*select_bitmap);
 		bit_and(tmp_bitmap, *select_bitmap);
@@ -1077,10 +1077,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bit_free(tmp_bitmap);
 
 		/* get job cap based on power reservation on the system,
-		   if no reservation matches the job caracteristics, the
-		   powercap or the max_wattswill be returned.
-		   select the return code based on the impact of
-		   reservations on the failure */
+		 * if no reservation matches the job caracteristics, the
+		 * powercap or the max_wattswill be returned.
+		 * select the return code based on the impact of
+		 * reservations on the failure */
 		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
 
 		if (tmp_max_watts > job_cap) {

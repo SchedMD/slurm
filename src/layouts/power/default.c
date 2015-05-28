@@ -13,15 +13,15 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* specific options for power tests layout */
 s_p_options_t entity_options[] = {
 	/* base keys */
-        {"CurrentPower", S_P_UINT32},
-        {"IdleWatts", S_P_UINT32},
-        {"MaxWatts", S_P_UINT32},
-        {"DownWatts",S_P_UINT32},
-        {"PowerSaveWatts",S_P_UINT32},
+	{"CurrentPower", S_P_UINT32},
+	{"IdleWatts", S_P_UINT32},
+	{"MaxWatts", S_P_UINT32},
+	{"DownWatts",S_P_UINT32},
+	{"PowerSaveWatts",S_P_UINT32},
 	/* parents aggregated keys */
-        {"CurrentSumPower", S_P_UINT32},
-        {"IdleSumWatts", S_P_UINT32},
-        {"MaxSumWatts", S_P_UINT32},
+	{"CurrentSumPower", S_P_UINT32},
+	{"IdleSumWatts", S_P_UINT32},
+	{"MaxSumWatts", S_P_UINT32},
 	{NULL}
 };
 s_p_options_t options[] = {
@@ -31,20 +31,20 @@ s_p_options_t options[] = {
 
 const layouts_keyspec_t keyspec[] = {
 	/* base keys */
-        {"CurrentPower", L_T_UINT32},
-        {"IdleWatts", L_T_UINT32},
-        {"MaxWatts", L_T_UINT32},
-        {"DownWatts",L_T_UINT32},
-        {"PowerSaveWatts",L_T_UINT32},
-        {"NumFreqChoices",L_T_UINT32},
-        /* parents aggregated keys */
-        {"CurrentSumPower", L_T_UINT32,
+	{"CurrentPower", L_T_UINT32},
+	{"IdleWatts", L_T_UINT32},
+	{"MaxWatts", L_T_UINT32},
+	{"DownWatts",L_T_UINT32},
+	{"PowerSaveWatts",L_T_UINT32},
+	{"NumFreqChoices",L_T_UINT32},
+	/* parents aggregated keys */
+	{"CurrentSumPower", L_T_UINT32,
 	KEYSPEC_UPDATE_CHILDREN_SUM, "CurrentPower"},
-        {"IdleSumWatts", L_T_UINT32,
+	{"IdleSumWatts", L_T_UINT32,
 	KEYSPEC_UPDATE_CHILDREN_SUM, "IdleWatts"},
-        {"MaxSumWatts", L_T_UINT32,
+	{"MaxSumWatts", L_T_UINT32,
 	KEYSPEC_UPDATE_CHILDREN_SUM, "MaxWatts"},
-        {NULL}
+	{NULL}
 
 };
 
@@ -95,7 +95,7 @@ int layouts_p_update_done(layout_t* layout, entity_t** e_array, int e_cnt)
 	int i;
 	debug3("layouts/power: receiving update callback for %d entities",
 	       e_cnt);
-	for (i=0; i < e_cnt; i++) {
+	for (i = 0; i < e_cnt; i++) {
 		if (e_array[i] == NULL) {
 			debug3("layouts/power: skipping update of nullified"
 			       "entity[%d]", i);

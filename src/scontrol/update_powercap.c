@@ -37,6 +37,25 @@
 #include "src/common/proc_args.h"
 #include "src/scontrol/scontrol.h"
 
+static uint32_t _parse_watts(char * watts_str)
+{
+	uint32_t watts_num = 0;
+	char *end_ptr = NULL;
+
+	if (!strcasecmp(watts_str, "n/a") || !strcasecmp(watts_str, "none"))
+		return watts_num;
+	if (!strcasecmp(watts_str, "INFINITE"))
+		return INFINITE;
+	watts_num = strtol(watts_str, &end_ptr, 10);
+	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+		watts_num *= 1000;
+	else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
+		watts_num *= 1000000;
+	else if (end_ptr[0] != '\0')
+		watts_num = NO_VAL;
+	return watts_num;
+}
+
 /*
  * scontrol_update_powercap - update the slurm powercapping configuration per the
  *	supplied arguments
@@ -51,22 +70,21 @@ scontrol_update_powercap (int argc, char *argv[])
 	update_powercap_msg_t powercap_msg;
 	int i;
 	char *tag, *val;
-	int taglen, vallen;
+	int taglen;
 
 	memset(&powercap_msg, 0, sizeof(update_powercap_msg_t));
-	powercap_msg.powercap = (uint32_t) NO_VAL;
-	powercap_msg.min_watts = (uint32_t) NO_VAL;
-	powercap_msg.cur_max_watts = (uint32_t) NO_VAL;
-	powercap_msg.adj_max_watts = (uint32_t) NO_VAL;
-	powercap_msg.max_watts = (uint32_t) NO_VAL;
+	powercap_msg.powercap = NO_VAL;
+	powercap_msg.min_watts = NO_VAL;
+	powercap_msg.cur_max_watts = NO_VAL;
+	powercap_msg.adj_max_watts = NO_VAL;
+	powercap_msg.max_watts = NO_VAL;
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
 			taglen = val - argv[i];
 			val++;
-			vallen = strlen(val);
 		} else {
 			exit_code = 1;
 			error("Invalid input: %s  Request aborted", argv[i]);
@@ -74,19 +92,12 @@ scontrol_update_powercap (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "PowerCap", MAX(taglen, 8)) == 0) {
-			if (strncasecmp(val, "INFINITE",
-					MAX(vallen, 8)) == 0 ) {
-				powercap_msg.powercap = (uint32_t) INFINITE;
-			} else if (parse_uint32(val,&(powercap_msg.powercap))) {
-				error("Invalid PowerCap value: %s", val);
-				return -1;
-			}
-			/* for now, we can break as we do not have other args */
+			powercap_msg.powercap = _parse_watts(val);
 			break;
 		}
 	}
 
-	if (powercap_msg.powercap == (uint32_t) NO_VAL) {
+	if (powercap_msg.powercap == NO_VAL) {
 		exit_code = 1;
 		error("Invalid PowerCap value.");
 		return 0;

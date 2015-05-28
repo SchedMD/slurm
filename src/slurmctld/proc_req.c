@@ -60,22 +60,22 @@
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
+#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_ext_sensors.h"
-#include "src/common/slurm_acct_gather.h"
-#include "src/common/slurm_protocol_interface.h"
-#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -84,6 +84,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -92,7 +93,6 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/powercapping.h"
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
@@ -3746,9 +3746,12 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 		/* do RPC call */
 		lock_slurmctld(config_write_lock);
 		if (ptr->powercap == 0 ||
-		    ptr->powercap == (uint32_t) INFINITE)
+		    ptr->powercap == INFINITE) {
 			valid_cap = true;
-		else {
+		} else if (!power_layout_ready()) {
+			/* Not using layouts/power framework */
+			valid_cap = true;
+		} else {
 			/* we need to set a cap if 
 			 * the current value is 0 in order to
 			 * enable the capping system and get 
@@ -4878,7 +4881,7 @@ inline static void  _slurm_rpc_get_powercap(slurm_msg_t * msg)
 	ptr->min_watts = powercap_get_cluster_min_watts();
 	ptr->cur_max_watts = powercap_get_cluster_current_max_watts();
 	ptr->adj_max_watts = powercap_get_cluster_adjusted_max_watts();
-	ptr->max_watts = powercap_get_cluster_max_watts();;
+	ptr->max_watts = powercap_get_cluster_max_watts();
 	unlock_slurmctld(config_read_lock);
 	END_TIMER2("_slurm_rpc_get_powercap");
 

@@ -1510,7 +1510,7 @@ next_task:
 					  unavail_node_str, NULL);
 		if ((error_code == ESLURM_NODES_BUSY) ||
 		    (error_code == ESLURM_POWER_NOT_AVAIL) ||
-		    (error_code == ESLURM_POWER_RESERVED)){
+		    (error_code == ESLURM_POWER_RESERVED)) {
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u. Partition=%s.",
 			       job_ptr->job_id,
