@@ -1165,7 +1165,7 @@ int _print_pn_min_memory(job_info_t * job, int width, bool right_justify,
 	    	tmp_char[0] = '\0';
 		job->pn_min_memory &= (~MEM_PER_CPU);
 		convert_num_unit((float)job->pn_min_memory, min_mem,
-				 sizeof(min_mem), UNIT_NONE);
+				 sizeof(min_mem), UNIT_MEGA);
 		strcat(tmp_char, min_mem);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -1185,7 +1185,7 @@ _print_pn_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
 		convert_num_unit((float)job->pn_min_tmp_disk,
-				 tmp_char, sizeof(tmp_char), UNIT_NONE);
+				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 

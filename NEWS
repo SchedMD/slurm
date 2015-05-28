@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct list of unavailable nodes reported in a job's "reason" field when
     that job can not start.
  -- Map job --mem-per-cpu=0 to --mem=0.
+ -- Fix squeue -o %m and %d unit conversion to Megabytes.
 
 * Changes in Slurm 14.11.7
 ==========================
