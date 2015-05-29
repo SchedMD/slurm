@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     that job can not start.
  -- Map job --mem-per-cpu=0 to --mem=0.
  -- Fix squeue -o %m and %d unit conversion to Megabytes.
+ -- Fix issue with incorrect time calculation in the priority plugin when
+    a job runs past it's time limit.
 
 * Changes in Slurm 14.11.7
 ==========================
