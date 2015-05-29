@@ -1550,6 +1550,22 @@ fair\-share of allocation, etc).
 Also see \fBPriorityFlags\fR for configuration options.
 The default value is "priority/basic".
 
+.RS
+.nr step 1 1
+When not FIFO scheduling, jobs are prioritized in the following order:
+.IP \n[step]. 3
+Jobs that can preempt
+.IP \n+[step].
+Jobs with an advanced reservation
+.IP \n+[step].
+Partition Priority
+.IP \n+[step].
+Job Priority
+.IP \n+[step].
+Job Id
+.RE
+
+
 .TP
 \fBPriorityWeightAge\fR
 An integer value that sets the degree to which the queue wait time
@@ -2335,7 +2351,7 @@ This is the default configuration.
 This is the FIFO scheduler which initiates jobs in priority order.
 If any job in the partition can not be scheduled, no lower priority job in that
 partition will be scheduled.
-An exception is made for jobs can not run due to partition constraints
+An exception is made for jobs that can not run due to partition constraints
 (e.g. the time limit) or down/drained nodes.
 In that case, lower priority jobs can be initiated and not impact the higher
 priority job.
