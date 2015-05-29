@@ -1481,11 +1481,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 					int k;
 
 					rem_cpus   -= _get_avail_cpus(job_ptr, idx);
-					total_cpus += adjust_cpus_nppcu(
-							_get_ntasks_per_core(
-								job_ptr->details),
-							_get_total_threads(idx),
-							_get_total_cpus(idx));
+					total_cpus += _get_total_cpus(idx);
 
 					/*
 					 * Add the required nodes data to the
@@ -1563,10 +1559,7 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Allocate the CPUs from the node */
 		bit_set(bitmap, node_index);
 		rem_cpus   -= _get_avail_cpus(job_ptr, node_index);
-		total_cpus += adjust_cpus_nppcu(
-			_get_ntasks_per_core(job_ptr->details),
-			_get_total_threads(node_index),
-			_get_total_cpus(node_index));
+		total_cpus += _get_total_cpus(node_index);
 
 		rem_nodes--;
 		alloc_nodes++;
@@ -1786,10 +1779,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= avail_cpus;
-				total_cpus += adjust_cpus_nppcu(
-						_get_ntasks_per_core(job_ptr->details),
-						_get_total_threads(i),
-						_get_total_cpus(i));
+				total_cpus += _get_total_cpus(i);
 			}
 		}
 	}
@@ -1850,10 +1840,7 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			j = _get_avail_cpus(job_ptr, i);
 			switches_cpu_cnt[best_fit_location] -= j;
 			rem_cpus -= j;
-			total_cpus += adjust_cpus_nppcu(
-					_get_ntasks_per_core(job_ptr->details),
-					_get_total_threads(i),
-					_get_total_cpus(i));
+			total_cpus += _get_total_cpus(i);
 			break;
 		}
 		leaf_switch_count++;
