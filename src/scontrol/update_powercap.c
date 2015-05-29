@@ -1,6 +1,8 @@
 /*****************************************************************************\
- *  update_layout.c - layout update functions for scontrol.
+ *  update_powercap.c - powercapping update function for scontrol.
  *****************************************************************************
+ *  Copyright (C) 2013 CEA/DAM/DIF
+ *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -32,79 +34,76 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "scontrol.h"
-#include "src/common/pack.h"
-#include "src/common/slurm_protocol_defs.h"
+#include "src/common/proc_args.h"
+#include "src/scontrol/scontrol.h"
+
+static uint32_t _parse_watts(char * watts_str)
+{
+	uint32_t watts_num = 0;
+	char *end_ptr = NULL;
+
+	if (!strcasecmp(watts_str, "n/a") || !strcasecmp(watts_str, "none"))
+		return watts_num;
+	if (!strcasecmp(watts_str, "INFINITE"))
+		return INFINITE;
+	watts_num = strtol(watts_str, &end_ptr, 10);
+	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+		watts_num *= 1000;
+	else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
+		watts_num *= 1000000;
+	else if (end_ptr[0] != '\0')
+		watts_num = NO_VAL;
+	return watts_num;
+}
 
 /*
- * scontrol_print_layout - print information about the supplied layout
+ * scontrol_update_powercap - update the slurm powercapping configuration per the
+ *	supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
  * RET 0 if no slurm error, errno otherwise. parsing error prints
  *			error message and returns 0
  */
 extern int
-scontrol_update_layout (int argc, char *argv[])
+scontrol_update_powercap (int argc, char *argv[])
 {
-	int rc = 0;
-	int i = 0, tag_len = 0;
-	char *tag = NULL, *val = NULL;
-	update_layout_msg_t msg;
-	char *opt = NULL;
+	update_powercap_msg_t powercap_msg;
+	int i;
+	char *tag, *val;
+	int taglen;
 
-	opt = xstrdup_printf(" ");
-	memset(&msg, 0, sizeof(update_layout_msg_t));
-	while (i < argc) {
+	memset(&powercap_msg, 0, sizeof(update_powercap_msg_t));
+	powercap_msg.power_cap = NO_VAL;
+	powercap_msg.min_watts = NO_VAL;
+	powercap_msg.cur_max_watts = NO_VAL;
+	powercap_msg.adj_max_watts = NO_VAL;
+	powercap_msg.max_watts = NO_VAL;
+
+	for (i = 0; i < argc; i++) {
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
-			tag_len = val - argv[i];
+			taglen = val - argv[i];
 			val++;
 		} else {
 			exit_code = 1;
-			fprintf (stderr,
-				 "invalid option:%s for layouts "
-				 "(\"=\" mandatory)\n",
-				 tag);
-			goto done;
+			error("Invalid input: %s  Request aborted", argv[i]);
+			return -1;
 		}
-		if (strncasecmp(tag, "layouts", MAX(tag_len, 2)) == 0) {
-			msg.layout = val;
-		} else if (strncasecmp(tag, "entity", MAX(tag_len, 2)) == 0) {
-			msg.arg = xstrdup_printf("Entity=%s", val);
-		} else {
-			xstrcat(opt, tag);
-			xstrcat(opt, " ");
+
+		if (strncasecmp(tag, "PowerCap", MAX(taglen, 8)) == 0) {
+			powercap_msg.power_cap = _parse_watts(val);
+			break;
 		}
-		i++;
 	}
 
-	if (msg.layout == NULL) {
+	if (powercap_msg.power_cap == NO_VAL) {
 		exit_code = 1;
-		fprintf (stderr,
-			 "No valid layout name in update command\n");
-		goto done;
-	}
-	if (msg.arg == NULL) {
-		exit_code = 1;
-		fprintf (stderr,
-			 "No valid layout enity in update command\n");
-		goto done;
-	}
-	if ( strlen(opt) <= 1 ) {
-		exit_code = 1;
-		fprintf (stderr,
-			 "No valid updates arguments in update command\n");
-		goto done;
+		error("Invalid PowerCap value.");
+		return 0;
 	}
 
-	xstrcat(msg.arg, opt);
-
-	rc = slurm_update_layout(&msg);
-
-done:	xfree(msg.arg);
-	xfree(opt);
-	if (rc) {	
+	if (slurm_update_powercap(&powercap_msg)) {
 		exit_code = 1;
 		return slurm_get_errno ();
 	} else

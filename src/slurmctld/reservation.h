@@ -137,6 +137,22 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 			     time_t when);
 
 /*
+ * Determine how many watts the specified job is prevented from using 
+ * due to reservations
+ *
+ * TODO: this code, replicated from job_test_lic_resv seems to not being
+ * protected against consecutives reservations for which reserved watts
+ * (or licenses count) can not be added directly. Thus, if the job
+ * overlaps multiple non-overlapping reservations, it will be prevented
+ * to use more watts (or licenses) than necessary.
+ *
+ * IN job_ptr   - job to test
+ * IN when      - when the job is expected to start
+ * RET amount of watts the job is prevented from using
+ */
+extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when);
+
+/*
  * Determine which nodes a job can use based upon reservations
  *
  * IN job_ptr      - job to test

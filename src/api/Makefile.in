@@ -189,7 +189,7 @@ am__objects_1 = allocate.lo allocate_msg.lo block_info.lo \
 	burst_buffer_info.lo cache_info.lo cancel.lo checkpoint.lo \
 	complete.lo config_info.lo front_end_info.lo init_msg.lo \
 	job_info.lo job_step_info.lo layout_info.lo license_info.lo \
-	node_info.lo partition_info.lo pmi_server.lo \
+	node_info.lo partition_info.lo pmi_server.lo powercap_info.lo \
 	reservation_info.lo signal.lo slurm_get_statistics.lo \
 	slurm_hostlist.lo slurm_pmi.lo step_ctx.lo step_io.lo \
 	step_launch.lo submit.lo suspend.lo topo_info.lo triggers.lo \
@@ -604,6 +604,7 @@ slurmapi_src = \
 	partition_info.c \
 	pmi_server.c     \
 	pmi_server.h     \
+	powercap_info.c  \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \
@@ -796,6 +797,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi_server.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/powercap_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reconfigure.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signal.Plo@am__quote@

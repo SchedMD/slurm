@@ -243,6 +243,29 @@ extern void	scontrol_print_topo (char *node_list)
 }
 
 /*
+ * scontrol_print_powercap - print the powercapping related information
+ * above the specified node(s)
+ * IN node_list - NULL to print the overall powercapping details
+ */
+extern void	scontrol_print_powercap (char *node_list)
+{
+	static powercap_info_msg_t *powercap_info_msg = NULL;
+
+	if ((powercap_info_msg == NULL) &&
+	    slurm_load_powercap(&powercap_info_msg)) {
+		slurm_perror ("slurm_load_powercap error");
+		return;
+	}
+
+	/* TODO: the case of a particular node list is not yet treated here */
+	if ((node_list == NULL) || (node_list[0] == '\0')) {
+		slurm_print_powercap_info_msg(stdout, powercap_info_msg,
+					      one_liner);
+		return;
+	}
+}
+
+/*
  * Load current front_end table information into *node_buffer_pptr
  */
 extern int

@@ -1,0 +1,7 @@
+Priority=10
+Root=Cluster
+
+Entity=Cluster Type=Center CurrentSumPower=0 IdleSumWatts=0 MaxSumWatts=0 Enclosed=nodes[0-199]
+
+Entity=nodes[0-199] Type=Node CurrentPower=0 IdleWatts=103 MaxWatts=308 DownWatts=103 PowerSaveWatts=12
+

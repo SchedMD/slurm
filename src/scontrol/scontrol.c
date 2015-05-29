@@ -1552,9 +1552,11 @@ _show_it (int argc, char *argv[])
 		scontrol_print_licenses(val);
 	} else if (strncasecmp (tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
-	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 1)) == 0 ||
-		   strncasecmp (tag, "partitionname", MAX(tag_len, 1)) == 0) {
+	} else if (strncasecmp (tag, "partitions", MAX(tag_len, 2)) == 0 ||
+		   strncasecmp (tag, "partitionname", MAX(tag_len, 2)) == 0) {
 		scontrol_print_part (val);
+	} else if (strncasecmp (tag, "powercapping", MAX(tag_len, 2)) == 0) {
+		scontrol_print_powercap (val);
 	} else if (strncasecmp (tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);
@@ -1592,6 +1594,7 @@ _update_it (int argc, char *argv[])
 	int block_tag = 0, sub_tag = 0, res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
 	int layout_tag = 0;
+	int powercap_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
@@ -1633,6 +1636,8 @@ _update_it (int argc, char *argv[])
 			debug_tag = 1;
 		} else if (!strncasecmp(tag, "Layouts",	MAX(tag_len, 5))) {
 			layout_tag = 1;
+		} else if (!strncasecmp(tag, "PowerCap", MAX(tag_len, 3))) {
+			powercap_tag = 1;
 		}
 	}
 	/* The order of tests matters here.  An update job request can include
@@ -1662,6 +1667,8 @@ _update_it (int argc, char *argv[])
 		error_code = _update_slurmctld_debug(val);
 	else if (layout_tag)
 		error_code = scontrol_update_layout(argc, argv);
+	else if (powercap_tag)
+		error_code = scontrol_update_powercap (argc, argv);
 	else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
@@ -1671,7 +1678,8 @@ _update_it (int argc, char *argv[])
 				"(i.e. bgl000[0-3]),");
 		}
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-			"\"JobId\", \"SlurmctldDebug\" or \"Layouts\"\n");
+			"\"JobId\", \"SlurmctldDebug\" , \"PowerCap\"" 
+			"or \"Layouts\"\n");
 	}
 
 	if (error_code) {

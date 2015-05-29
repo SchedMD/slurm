@@ -430,6 +430,11 @@ extern uint16_t slurm_get_use_spec_resources(void);
  */
 extern char *slurm_get_power_parameters(void);
 
+/* slurm_set_power_parameters
+ * reset the PowerParameters object
+ */
+extern void slurm_set_power_parameters(char *power_parameters);
+
 /* slurm_get_power_plugin
  * returns the PowerPlugin from slurmctld_conf object
  * RET char *    - PowerPlugin, MUST be xfreed by caller

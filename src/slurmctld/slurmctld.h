@@ -397,6 +397,7 @@ typedef struct slurmctld_resv {
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
+	uint32_t resv_watts;	/* amount of power to reserve */
 	bool run_epilog;	/* set if epilog has been executed	*/
 	bool run_prolog;	/* set if prolog has been executed	*/
 	time_t start_time;	/* start time of reservation		*/

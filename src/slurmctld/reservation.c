@@ -106,6 +106,34 @@ uint32_t  cnodes_per_mp = 0;
 uint32_t  cpus_per_mp = 0;
 #endif
 
+/*
+ * the two following structs enable to build a
+ * planning of a constraint evolution over time
+ * taking into account temporal overlapping
+ */
+typedef struct constraint_planning {
+	List slot_list;
+} constraint_planning_t;
+
+typedef struct constraint_slot {
+	time_t start;
+	time_t end;
+	uint32_t value;
+} constraint_slot_t;
+/*
+ * the associated functions are the following
+ */
+static void _free_slot(void *x);
+static void _init_constraint_planning(constraint_planning_t* sched);
+static void _print_constraint_planning(constraint_planning_t* sched);
+static void _free_constraint_planning(constraint_planning_t* sched);
+static void _update_constraint_planning(constraint_planning_t* sched,
+					uint32_t value, time_t start,
+					time_t end);
+static uint32_t _max_constraint_planning(constraint_planning_t* sched,
+					 time_t *start, time_t *end);
+
+
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -218,7 +246,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->account_list = xmalloc(sizeof(char *) *
 					      resv_orig_ptr->account_cnt);
 	resv_copy_ptr->account_not = resv_orig_ptr->account_not;
-	for (i=0; i<resv_copy_ptr->account_cnt; i++) {
+	for (i = 0; i < resv_copy_ptr->account_cnt; i++) {
 		resv_copy_ptr->account_list[i] =
 				xstrdup(resv_orig_ptr->account_list[i]);
 	}
@@ -241,12 +269,16 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->flags_set_node = resv_orig_ptr->flags_set_node;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
-	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
+	if (resv_orig_ptr->node_bitmap) {
+		resv_copy_ptr->node_bitmap =
+			bit_copy(resv_orig_ptr->node_bitmap);
+	}
 	resv_copy_ptr->node_cnt = resv_orig_ptr->node_cnt;
 	resv_copy_ptr->node_list = xstrdup(resv_orig_ptr->node_list);
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
+	resv_copy_ptr->resv_watts = resv_orig_ptr->resv_watts;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
 	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
 	resv_copy_ptr->start_time_prev = resv_orig_ptr->start_time_prev;
@@ -257,7 +289,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->user_list = xmalloc(sizeof(uid_t) *
 					   resv_orig_ptr->user_cnt);
 	resv_copy_ptr->user_not = resv_orig_ptr->user_not;
-	for (i=0; i<resv_copy_ptr->user_cnt; i++)
+	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
 
 	return resv_copy_ptr;
@@ -343,6 +375,7 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 
 	dest_resv->part_ptr = src_resv->part_ptr;
 	dest_resv->resv_id = src_resv->resv_id;
+	dest_resv->resv_watts = src_resv->resv_watts;
 	dest_resv->start_time = src_resv->start_time;
 	dest_resv->start_time_first = src_resv->start_time_first;
 	dest_resv->start_time_prev = src_resv->start_time_prev;
@@ -425,6 +458,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
 	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
+	char watts_str[32] = "n/a";
 	char *node_cnt_str = NULL;
 	int duration, i;
 
@@ -438,6 +472,10 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	if (resv_ptr->end_time != (time_t) NO_VAL) {
 		slurm_make_time_str(&resv_ptr->end_time,
 				    end_str,  sizeof(end_str));
+	}
+	if (resv_ptr->resv_watts != NO_VAL) {
+		snprintf(watts_str, sizeof(watts_str), "%u",
+			 resv_ptr->resv_watts);
 	}
 	if (resv_ptr->flags != NO_VAL)
 		flag_str = reservation_flags_string(resv_ptr->flags);
@@ -461,12 +499,13 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
 	     "Flags=%s NodeCnt=%s NodeList=%s Features=%s "
-	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s",
+	     "PartitionName=%s Users=%s Accounts=%s Licenses=%s BurstBuffer=%s"
+	     "Watts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, node_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->accounts, resv_ptr->licenses,
-	     resv_ptr->burst_buffer);
+	     resv_ptr->burst_buffer, watts_str);
 
 	xfree(flag_str);
 	xfree(node_cnt_str);
@@ -1343,6 +1382,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack32(resv_ptr->node_cnt,	buffer);
 		packstr(resv_ptr->node_list,	buffer);
 		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->resv_watts,    buffer);
 		pack_time(start_relative,	buffer);
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
@@ -1427,6 +1467,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->resv_watts,    buffer);
 		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
 				       &uint32_tmp, 	buffer);
@@ -1732,11 +1773,11 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		name2 = val2 = "";
 
 	info("sched: %s reservation=%s%s%s%s%s nodes=%s cores=%u "
-	     "licenses=%s tres=%s start=%s end=%s",
+	     "licenses=%s tres=%s watts=%u start=%s end=%s",
 	     old_resv_ptr ? "Updated" : "Created",
 	     resv_ptr->name, name1, val1, name2, val2,
 	     resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
-	     resv_ptr->tres_str,
+	     resv_ptr->tres_str, resv_ptr->resv_watts,
 	     start_time, end_time);
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
@@ -2152,6 +2193,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
+	resv_ptr->resv_watts	= resv_desc_ptr->resv_watts;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
 	resv_ptr->start_time_first = resv_ptr->start_time;
 	resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -2317,6 +2359,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
 	}
+	if (resv_desc_ptr->resv_watts != NO_VAL)
+		resv_ptr->resv_watts = resv_desc_ptr->resv_watts;
 	if (resv_desc_ptr->accounts) {
 		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
 		if (rc) {
@@ -4334,6 +4378,228 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 
 	/* info("job %u blocked from %d licenses of type %s",
 	     job_ptr->job_id, resv_cnt, lic_name); */
+	return resv_cnt;
+}
+
+
+static void _free_slot(void *x)
+{
+	xfree(x);
+}
+
+static void _init_constraint_planning(constraint_planning_t* sched)
+{
+	sched->slot_list = list_create(_free_slot);
+}
+
+static void _free_constraint_planning(constraint_planning_t* sched)
+{
+	list_destroy(sched->slot_list);
+}
+
+/*
+ * update the list of slots with the new time delimited constraint
+ * the new slot may have to be :
+ * - inserted
+ * - added to a previously added slot, if it corresponds to the same
+ *   period
+ * - shrinked if it overlaps temporarily a previously slot
+ *   (in that case it will result in a new slot insertion and an
+ *    already defined slot update with the addition of the value)
+ * - splitted in two chunks if it is nested in a previously slot
+ *   (in that case it will result in the insertion of new head,
+ *    the update of the previously defined slot, and the iteration
+ *    of the logic with a new slot reduced to the remaining time)
+ */
+static void _update_constraint_planning(constraint_planning_t* sched,
+					uint32_t value,
+					time_t start, time_t end)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot, *cstr_slot, *tmp_slot;
+	bool done = false;
+
+	/* create the constraint slot to add */
+	cstr_slot = xmalloc(sizeof(constraint_slot_t));
+	cstr_slot->value = value;
+	cstr_slot->start = start;
+	cstr_slot->end = end;
+
+	/* iterate on the current slot list to identify 
+	 * the modifications and do them live */
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		/* cur_slot is posterior or contiguous, insert cstr,
+		 * mark the state as done and break */
+		if (cstr_slot->end <= cur_slot->start) {
+			list_insert(iter,cstr_slot);
+			done = true;
+			break;
+		}
+		/* cur_slot has the same time period, update it,
+		 * mark the state as done and break */
+		if (cstr_slot->start == cur_slot->start &&
+		    cstr_slot->end == cur_slot->end) {
+			cur_slot->value += cstr_slot->value;
+			xfree(cstr_slot);
+			done = true;
+			break;
+		}
+		/* cur_slot is anterior or contiguous, continue */
+		if (cur_slot->end <= cstr_slot->start)
+			continue;
+		/* new slot starts after this one */
+		if (cur_slot->start <= cstr_slot->start) {
+			/* we may need up to 2 insertions and one update */
+			if (cur_slot->start < cstr_slot->start) {
+				tmp_slot = xmalloc(sizeof(constraint_slot_t));
+				tmp_slot->value = cur_slot->value;
+				tmp_slot->start = cur_slot->start;
+				tmp_slot->end = cstr_slot->start;
+				list_insert(iter,tmp_slot);
+				cur_slot->start = tmp_slot->end;
+			}
+			if (cstr_slot->end < cur_slot->end) {
+				cstr_slot->value += cur_slot->value;
+				list_insert(iter,cstr_slot);
+				cur_slot->start = cstr_slot->end;
+			} else if (cstr_slot->end > cur_slot->end) {
+				cur_slot->value += cstr_slot->value;
+				cstr_slot->start = cur_slot->end;
+				continue;
+			} else {
+				cur_slot->value += cstr_slot->value;
+				xfree(cstr_slot);
+			}
+			done = true;
+			break;
+		} else {
+			/* new slot starts before, and we know that it is
+			 * not contiguous (previously checked) */
+			tmp_slot = xmalloc(sizeof(constraint_slot_t));
+			tmp_slot->value = cstr_slot->value;
+			tmp_slot->start = cstr_slot->start;
+			tmp_slot->end = cur_slot->start;
+			list_insert(iter,tmp_slot);
+			if (cstr_slot->end == cur_slot-> end) {
+				cur_slot->value += cstr_slot->value;
+				xfree(cstr_slot);
+				done = true;
+				break;
+			} else if (cstr_slot->end < cur_slot-> end) {
+				cstr_slot->start = cur_slot->start;
+				cstr_slot->value += cur_slot->value;
+				list_insert(iter,cstr_slot);
+				cur_slot->start = cstr_slot->end;
+				done = true;
+				break;
+			} else {
+				cur_slot->value += cstr_slot->value;
+				cstr_slot->start = cur_slot->end;
+				continue;
+			}
+		}
+	}
+	list_iterator_destroy(iter);
+
+	/* we might still need to add the [updated] constrain slot */
+	if (!done)
+		list_append(sched->slot_list, cstr_slot);
+}
+
+static uint32_t _max_constraint_planning(constraint_planning_t* sched,
+					 time_t *start, time_t *end)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot;
+	uint32_t max = 0;
+
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		if (cur_slot->value > max) {
+			max = cur_slot->value;
+			*start = cur_slot->start;
+			*end = cur_slot->end;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return max;
+}
+
+static void _print_constraint_planning(constraint_planning_t* sched)
+{
+	ListIterator iter;
+	constraint_slot_t *cur_slot;
+	char start_str[32] = "-1", end_str[32] = "-1";
+	uint32_t i = 0;
+
+	iter = list_iterator_create(sched->slot_list);
+	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+		slurm_make_time_str(&cur_slot->start,
+				    start_str, sizeof(start_str));
+		slurm_make_time_str(&cur_slot->end,
+				    end_str, sizeof(end_str));
+		debug2("constraint_planning: slot[%u]: %s to %s count=%u",
+		       i, start_str, end_str, cur_slot->value);
+		i++;
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * Determine how many watts the specified job is prevented from using 
+ * due to reservations
+ *
+ * IN job_ptr   - job to test
+ * IN when      - when the job is expected to start
+ * RET amount of watts the job is prevented from using
+ */
+extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t job_start_time, job_end_time, now = time(NULL);
+	ListIterator iter;
+	constraint_planning_t wsched;
+	time_t start, end;
+	char start_str[32] = "-1", end_str[32] = "-1";
+	uint32_t resv_cnt = 0;
+
+	_init_constraint_planning(&wsched);
+
+	job_start_time = when;
+	job_end_time   = when + _get_job_duration(job_ptr);
+	iter = list_iterator_create(resv_list);
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time <= now)
+			_advance_resv_time(resv_ptr);
+		if (resv_ptr->resv_watts == NO_VAL ||
+		    resv_ptr->resv_watts == 0)
+			continue;       /* not a power reservation */
+		if ((resv_ptr->start_time >= job_end_time) ||
+		    (resv_ptr->end_time   <= job_start_time))
+			continue;	/* reservation at different time */
+
+		if (job_ptr->resv_name &&
+		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+			continue;	/* job can use this reservation */
+
+		_update_constraint_planning(&wsched, resv_ptr->resv_watts,
+					    resv_ptr->start_time,
+					    resv_ptr->end_time);
+	}
+	list_iterator_destroy(iter);
+
+	resv_cnt = _max_constraint_planning(&wsched, &start, &end);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+		_print_constraint_planning(&wsched);
+		slurm_make_time_str(&start, start_str, sizeof(start_str));
+		slurm_make_time_str(&end, end_str, sizeof(end_str));
+		debug2("reservation: max reserved watts=%u (%s to %s)",
+		       resv_cnt, start_str, end_str);
+	}
+	_free_constraint_planning(&wsched);
+
 	return resv_cnt;
 }
 

@@ -10,6 +10,7 @@ EXTRA_DIST =			\
 	etc/cgroup_allowed_devices_file.conf.example \
 	etc/init.d.slurm.in	\
 	etc/init.d.slurmdbd.in	\
+	etc/layouts.d.power.conf.example \
 	etc/slurm.conf.example	\
 	etc/slurm.epilog.clean	\
 	etc/slurmctld.service.in \

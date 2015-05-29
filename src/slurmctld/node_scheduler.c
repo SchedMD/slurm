@@ -77,6 +77,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
@@ -804,6 +805,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	List preemptee_candidates = NULL;
 	bool has_xand = false;
 	bool resv_overlap = false;
+	uint32_t powercap;
 
 	/* Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
@@ -996,6 +998,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		job_ptr->details->min_cpus = saved_min_cpus;
 		job_ptr->details->min_nodes = saved_job_min_nodes;
 	}
+
 #if 0
 {
 	char *tmp_str = bitmap2node_name(job_ptr->details->req_node_bitmap);
@@ -1025,6 +1028,76 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	xfree(tmp_str);
 }
 #endif
+
+	/* 
+	 * PowerCapping logic : now that we have the list of selected nodes
+	 * we need to ensure that using this nodes respects the amount of 
+	 * available power as returned by the capping logic.
+	 * If it is not the case, then ensure that the job stays pending 
+	 * by returning a relevant error code : 
+	 *  ESLURM_POWER_NOT_AVAIL : if the current capping is blocking
+	 *  ESLURM_POWER_RESERVED  : if the current capping and the power
+	 *                           reservations are blocking
+	 */
+	if (error_code != SLURM_SUCCESS) {
+		debug3("powercapping: checking job %u : skipped, not eligible",
+		       job_ptr->job_id);
+	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
+		debug3("powercapping: checking job %u : skipped, capping "
+		       "disabled", job_ptr->job_id);
+	} else if (!power_layout_ready()){
+		debug3("powercapping:checking job %u : skipped, problems with"
+		       "layouts, capping disabled", job_ptr->job_id);
+	} else {
+		uint32_t min_watts, max_watts, job_cap;
+		uint32_t cur_max_watts, tmp_max_watts;
+		bitstr_t *tmp_bitmap;
+
+		/*
+		 * get current powercapping logic state (min,cur,max)
+		 */
+		max_watts = powercap_get_cluster_max_watts();
+		min_watts = powercap_get_cluster_min_watts();
+		cur_max_watts = powercap_get_cluster_current_max_watts();
+		/* in case of INFINITE cap, set it to max watts as it
+		 * is done in the powercapping logic */
+		if (powercap == INFINITE)
+			powercap = max_watts;
+
+		/* build a temporary bitmap using idle_node_bitmap and
+		 * remove the selected bitmap from this bitmap.
+		 * Then compute the amount of power required for such a
+		 * configuration to check that is is allowed by the current
+		 * power cap */
+		tmp_bitmap = bit_copy(idle_node_bitmap);
+		bit_not(*select_bitmap);
+		bit_and(tmp_bitmap, *select_bitmap);
+		bit_not(*select_bitmap);
+		tmp_max_watts = powercap_get_node_bitmap_maxwatts(tmp_bitmap);
+		bit_free(tmp_bitmap);
+
+		/* get job cap based on power reservation on the system,
+		 * if no reservation matches the job caracteristics, the
+		 * powercap or the max_wattswill be returned.
+		 * select the return code based on the impact of
+		 * reservations on the failure */
+		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
+
+		if (tmp_max_watts > job_cap) {
+			FREE_NULL_BITMAP(*select_bitmap);
+			if (job_cap < powercap && 
+			    tmp_max_watts <= powercap)
+				error_code = ESLURM_POWER_RESERVED;
+			else
+				error_code = ESLURM_POWER_NOT_AVAIL;
+		}
+		debug2("powercapping: checking job %u : min=%u cur=%u "
+		       "[new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
+		       job_ptr->job_id, min_watts, cur_max_watts,
+		       tmp_max_watts, job_cap, powercap, max_watts, 
+		       slurm_strerror(error_code));
+	}
+
 	if (preemptee_candidates)
 		list_destroy(preemptee_candidates);
 
@@ -1873,9 +1946,16 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			   (job_ptr->state_reason == WAIT_BLOCK_D_ACTION)) {
 			/* state_reason was already setup */
 		} else {
-			job_ptr->state_reason = WAIT_RESOURCES;
+			if (error_code == ESLURM_POWER_NOT_AVAIL)
+				job_ptr->state_reason = WAIT_POWER_NOT_AVAIL;
+			else if (error_code == ESLURM_POWER_RESERVED)
+				job_ptr->state_reason = WAIT_POWER_RESERVED;
+			else
+				job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
-			if (error_code == ESLURM_NODES_BUSY)
+			if ((error_code == ESLURM_NODES_BUSY) ||
+			    (error_code == ESLURM_POWER_NOT_AVAIL) ||
+			    (error_code == ESLURM_POWER_RESERVED))
 				slurm_sched_g_job_is_pending();
 		}
 		goto cleanup;
