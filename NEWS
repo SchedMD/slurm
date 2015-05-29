@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     a job runs past it's time limit.
  -- Prevent users from setting job's partition to an invalid partition.
  -- Fix sreport core dump when requesting 'job SizesByAccount grouping=individual'.
+ -- select/linear: Correct count of CPUs allocated to job on system with
+    hyperthreads.
 
 * Changes in Slurm 14.11.7
 ==========================
