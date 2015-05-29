@@ -1727,6 +1727,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 				"updating end_time",
 				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
+			job_ptr->end_time_exp = job_ptr->end_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
@@ -1745,6 +1746,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 				"updating end_time",
 				launch_msg_ptr->job_id, delay_time);
 			job_ptr->end_time += delay_time;
+			job_ptr->end_time_exp = job_ptr->end_time;
 		}
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;

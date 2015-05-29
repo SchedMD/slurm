@@ -2991,7 +2991,7 @@ static void _usage(void)
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
-"              [--jobid=id] [--verbose] [--gid=group] [--uid=user] [-W sec] \n"
+"              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */

@@ -1892,7 +1892,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->derived_ec   = derived_ec;
-	job_ptr->end_time     = end_time;
+	job_ptr->end_time_exp = job_ptr->end_time = end_time;
 	job_ptr->exit_code    = exit_code;
 	job_ptr->group_id     = group_id;
 	job_ptr->job_state    = job_state;
@@ -10040,6 +10040,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				    (list_is_empty(job_ptr->step_list) == 0)) {
 					_xmit_new_end_time(job_ptr);
 				}
+				job_ptr->end_time_exp = job_ptr->end_time;
 			}
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit,
@@ -12123,7 +12124,7 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	/* Clear everything so this appears to be a new job and then restart
 	 * it in accounting. */
 	job_ptr->start_time = 0;
-	job_ptr->end_time = 0;
+	job_ptr->end_time_exp = job_ptr->end_time = 0;
 	job_ptr->total_cpus = 0;
 	job_ptr->pre_sus_time = 0;
 	job_ptr->suspend_time = 0;
@@ -12864,7 +12865,8 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		    (!job_ptr->preempt_time)) {
 			debug3("Job %u resumed, updating end_time",
 			       job_ptr->job_id);
-			job_ptr->end_time = now + (job_ptr->time_limit * 60)
+			job_ptr->end_time_exp = job_ptr->end_time =
+				now + (job_ptr->time_limit * 60)
 				- job_ptr->pre_sus_time;
 		}
 		resume_job_step(job_ptr);
@@ -14562,7 +14564,7 @@ _set_job_requeue_exit_value(struct job_record *job_ptr)
 extern void job_end_time_reset(struct job_record  *job_ptr)
 {
 	if (job_ptr->preempt_time)
-		return;
+		return; /* Preemption in progress */
 	if (job_ptr->time_limit == INFINITE) {
 		job_ptr->end_time = job_ptr->start_time +
 				    (365 * 24 * 60 * 60); /* secs in year */
@@ -14570,6 +14572,7 @@ extern void job_end_time_reset(struct job_record  *job_ptr)
 		job_ptr->end_time = job_ptr->start_time +
 				    (job_ptr->time_limit * 60);	/* secs */
 	}
+	job_ptr->end_time_exp = job_ptr->end_time;
 }
 
 /*

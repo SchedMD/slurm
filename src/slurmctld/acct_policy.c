@@ -1447,7 +1447,12 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
  */
 extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
-	_adjust_limit_usage(ACCT_POLICY_JOB_FINI, job_ptr);
+	/* if end_time_exp == NO_VAL this has already happened */
+	if (job_ptr->end_time_exp != (time_t)NO_VAL)
+		_adjust_limit_usage(ACCT_POLICY_JOB_FINI, job_ptr);
+	else
+		debug2("We have already ran the job_fini for job %u",
+		       job_ptr->job_id);
 }
 
 extern void acct_policy_alter_job(struct job_record *job_ptr,
