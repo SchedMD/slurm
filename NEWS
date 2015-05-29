@@ -11,10 +11,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with incorrect time calculation in the priority plugin when
     a job runs past it's time limit.
  -- Prevent users from setting job's partition to an invalid partition.
- -- Fix sreport core dump when requesting 'job SizesByAccount grouping=individual'.
+ -- Fix sreport core dump when requesting
+    'job SizesByAccount grouping=individual'.
  -- select/linear: Correct count of CPUs allocated to job on system with
     hyperthreads.
  -- Fix race condition where last array task might not get updated in the db.
+ -- CRAY - Remove libpmi from rpm install
 
 * Changes in Slurm 14.11.7
 ==========================
