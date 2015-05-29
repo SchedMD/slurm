@@ -962,15 +962,15 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			if (row_start && (seconds > 0)) {
 				/* info("%d assoc %d adds " */
-				/*      "(%d)(%d-%d) * %d = %d " */
-				/*      "to %d", */
+				/*      "(%d)(%ld-%ld) * %d = %d " */
+				/*      "to %"PRIu64, */
 				/*      job_id, */
 				/*      a_usage->id, */
 				/*      seconds, */
 				/*      row_end, row_start, */
 				/*      row_acpu, */
 				/*      seconds * row_acpu, */
-				/*      row_acpu); */
+				/*      c_usage->a_cpu); */
 
 				c_usage->a_cpu += seconds * row_acpu;
 				c_usage->energy += row_energy;
@@ -1076,9 +1076,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		list_iterator_reset(a_itr);
 		while ((a_usage = list_next(a_itr))) {
-/* 			info("association (%d) %d alloc %d", */
-/* 			     a_usage->id, last_id, */
-/* 			     a_usage->a_cpu); */
+			/* info("association (%d) %d alloc %"PRIu64, */
+			/*      a_usage->id, last_id, */
+			/*      a_usage->a_cpu); */
 			if (query) {
 				xstrfmtcat(query,
 					   ", (%ld, %ld, %d, %ld, %"PRIu64", "
