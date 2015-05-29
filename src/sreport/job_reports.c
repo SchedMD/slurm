@@ -314,9 +314,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 2))) {
 			if (!strncasecmp(argv[i]+end, "individual", 1)) {
 				individual_grouping = 1;
-			} else if (grouping_list)
-				slurm_addto_char_list(grouping_list,
-						      argv[i]+end);
+				if (grouping_list)
+					slurm_addto_char_list(grouping_list,
+							      argv[i]+end);
+			}
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
@@ -679,7 +680,9 @@ static int _run_report(int type, int argc, char *argv[])
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	_setup_grouping_print_fields_list(grouping_list);
+	if (_setup_grouping_print_fields_list(grouping_list) != SLURM_SUCCESS) {
+		goto end_it;
+	}
 
 	if (print_fields_have_header) {
 		char start_char[20];
