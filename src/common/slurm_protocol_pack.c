@@ -12777,7 +12777,9 @@ unpack_error:
 static void _pack_powercap_info_msg(powercap_info_msg_t *msg, Buf buffer,
 				    uint16_t protocol_version)
 {
-	pack32(msg->powercap, buffer);
+	pack32(msg->power_cap, buffer);
+	pack32(msg->power_floor, buffer);
+	pack32(msg->power_change, buffer);
 	pack32(msg->min_watts, buffer);
 	pack32(msg->cur_max_watts, buffer);
 	pack32(msg->adj_max_watts, buffer);
@@ -12790,7 +12792,9 @@ static int  _unpack_powercap_info_msg(powercap_info_msg_t **msg, Buf buffer,
 	powercap_info_msg_t *msg_ptr = xmalloc(sizeof(powercap_info_msg_t));
 
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->powercap, buffer);
+	safe_unpack32(&msg_ptr->power_cap, buffer);
+	safe_unpack32(&msg_ptr->power_floor, buffer);
+	safe_unpack32(&msg_ptr->power_change, buffer);
 	safe_unpack32(&msg_ptr->min_watts, buffer);
 	safe_unpack32(&msg_ptr->cur_max_watts, buffer);
 	safe_unpack32(&msg_ptr->adj_max_watts, buffer);

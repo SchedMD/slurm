@@ -1871,7 +1871,9 @@ typedef struct step_alloc_info_msg {
 } step_alloc_info_msg_t;
 
 typedef struct powercap_info_msg {
-	uint32_t powercap;	/* powercap value in watts */
+	uint32_t power_cap;	/* power cap value in watts */
+	uint32_t power_floor;	/* power floor value in watts */
+	uint32_t power_change;	/* power change rate limit in watts/minute */
 	uint32_t min_watts;	/* min consumption of the cluster in watts */
 	uint32_t cur_max_watts;	/* current max consumption of the cluster in
 				 * watts */

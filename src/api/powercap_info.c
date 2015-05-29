@@ -110,7 +110,7 @@ extern void slurm_print_powercap_info_msg(FILE * out, powercap_info_msg_t *ptr,
 	char tmp_line[512];
 	char *out_buf = NULL;
 
-	if (ptr->powercap == 0) {
+	if (ptr->power_cap == 0) {
 		/****** Line 1 ******/
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "Powercapping disabled by configuration."
@@ -125,13 +125,17 @@ extern void slurm_print_powercap_info_msg(FILE * out, powercap_info_msg_t *ptr,
 			 "MinWatts=%u CurrentWatts=%u ",
 			 ptr->min_watts, ptr->cur_max_watts);
 		xstrcat(out_buf, tmp_line);
-		if (ptr->powercap == INFINITE) {
+		if (ptr->power_cap == INFINITE) {
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "PowerCap=INFINITE ");
 		} else {
 			snprintf(tmp_line, sizeof(tmp_line),
-				 "PowerCap=%u ", ptr->powercap);
+				 "PowerCap=%u ", ptr->power_cap);
 		}
+		xstrcat(out_buf, tmp_line);
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "PowerFloor=%u PowerChangeRate=%u",
+			 ptr->power_floor, ptr->power_change);
 		xstrcat(out_buf, tmp_line);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "AdjustedMaxWatts=%u MaxWatts=%u",

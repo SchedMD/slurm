@@ -73,7 +73,7 @@ scontrol_update_powercap (int argc, char *argv[])
 	int taglen;
 
 	memset(&powercap_msg, 0, sizeof(update_powercap_msg_t));
-	powercap_msg.powercap = NO_VAL;
+	powercap_msg.power_cap = NO_VAL;
 	powercap_msg.min_watts = NO_VAL;
 	powercap_msg.cur_max_watts = NO_VAL;
 	powercap_msg.adj_max_watts = NO_VAL;
@@ -92,12 +92,12 @@ scontrol_update_powercap (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "PowerCap", MAX(taglen, 8)) == 0) {
-			powercap_msg.powercap = _parse_watts(val);
+			powercap_msg.power_cap = _parse_watts(val);
 			break;
 		}
 	}
 
-	if (powercap_msg.powercap == NO_VAL) {
+	if (powercap_msg.power_cap == NO_VAL) {
 		exit_code = 1;
 		error("Invalid PowerCap value.");
 		return 0;

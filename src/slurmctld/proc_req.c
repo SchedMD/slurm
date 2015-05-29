@@ -3745,8 +3745,8 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(config_write_lock);
-		if (ptr->powercap == 0 ||
-		    ptr->powercap == INFINITE) {
+		if (ptr->power_cap == 0 ||
+		    ptr->power_cap == INFINITE) {
 			valid_cap = true;
 		} else if (!power_layout_ready()) {
 			/* Not using layouts/power framework */
@@ -3760,13 +3760,13 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 			powercap_set_cluster_cap(INFINITE);
 			min = powercap_get_cluster_min_watts();
 			max = powercap_get_cluster_max_watts();
-			if (min <= ptr->powercap && max >= ptr->powercap)
+			if (min <= ptr->power_cap && max >= ptr->power_cap)
 				valid_cap = true;
 			else
 				powercap_set_cluster_cap(orig_cap);
 		}
 		if (valid_cap)
-			powercap_set_cluster_cap(ptr->powercap);
+			powercap_set_cluster_cap(ptr->power_cap);
 		else
 			error_code = ESLURM_INVALID_POWERCAP;
 		unlock_slurmctld(config_write_lock);
@@ -4877,7 +4877,7 @@ inline static void  _slurm_rpc_get_powercap(slurm_msg_t * msg)
 	lock_slurmctld(config_read_lock);
 	powercap_resp_msg = xmalloc(sizeof(powercap_info_msg_t));
 	ptr = powercap_resp_msg;
-	ptr->powercap = powercap_get_cluster_current_cap();
+	ptr->power_cap = powercap_get_cluster_current_cap();
 	ptr->min_watts = powercap_get_cluster_min_watts();
 	ptr->cur_max_watts = powercap_get_cluster_current_max_watts();
 	ptr->adj_max_watts = powercap_get_cluster_adjusted_max_watts();
