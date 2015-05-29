@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sreport core dump when requesting 'job SizesByAccount grouping=individual'.
  -- select/linear: Correct count of CPUs allocated to job on system with
     hyperthreads.
+ -- Fix race condition where last array task might not get updated in the db.
 
 * Changes in Slurm 14.11.7
 ==========================

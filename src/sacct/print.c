@@ -133,6 +133,9 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 	if (!in_buf)
 		return;
 
+	if (strlen(in_buf) < 3 || in_buf[1] != 'x')
+		return;
+
 	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
 	bit_unfmt_hexmask(task_bitmap, in_buf);
