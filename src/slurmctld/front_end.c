@@ -219,24 +219,41 @@ extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 	uint32_t state_flags;
 	int i;
 
-	for (i = 0, front_end_ptr = front_end_nodes; i < front_end_node_cnt;
-	     i++, front_end_ptr++) {
-		if (job_ptr->batch_host) {   /* Find specific front-end node */
-			if (strcmp(job_ptr->batch_host, front_end_ptr->name))
-				continue;
-			if (!_front_end_access(front_end_ptr, job_ptr))
-				break;
-		} else {		/* Find some usable front-end node */
-			if (IS_NODE_DOWN(front_end_ptr) ||
-			    IS_NODE_DRAIN(front_end_ptr) ||
-			    IS_NODE_NO_RESPOND(front_end_ptr))
-				continue;
-			if (!_front_end_access(front_end_ptr, job_ptr))
-				continue;
-		}
-		if ((best_front_end == NULL) ||
-		    (front_end_ptr->job_cnt_run < best_front_end->job_cnt_run))
+	if (!job_ptr->batch_host && (job_ptr->batch_flag == 0) &&
+	    (front_end_ptr = find_front_end_record(job_ptr->alloc_node))) {
+		/* Use submit host for interactive job */
+		if (!IS_NODE_DOWN(front_end_ptr)  &&
+		    !IS_NODE_DRAIN(front_end_ptr) &&
+		    !IS_NODE_NO_RESPOND(front_end_ptr) &&
+		    _front_end_access(front_end_ptr, job_ptr)) {
 			best_front_end = front_end_ptr;
+		} else {
+			info("%s: front-end node %s not available for job %u",
+			     __func__, job_ptr->alloc_node, job_ptr->job_id);
+			return NULL;
+		}
+	} else {
+		for (i = 0, front_end_ptr = front_end_nodes;
+		     i < front_end_node_cnt; i++, front_end_ptr++) {
+			if (job_ptr->batch_host) { /* Find specific front-end */
+				if (strcmp(job_ptr->batch_host,
+					   front_end_ptr->name))
+					continue;
+				if (!_front_end_access(front_end_ptr, job_ptr))
+					break;
+			} else {	      /* Find a usable front-end node */
+				if (IS_NODE_DOWN(front_end_ptr) ||
+				    IS_NODE_DRAIN(front_end_ptr) ||
+				    IS_NODE_NO_RESPOND(front_end_ptr))
+					continue;
+				if (!_front_end_access(front_end_ptr, job_ptr))
+					continue;
+			}
+			if ((best_front_end == NULL) ||
+			    (front_end_ptr->job_cnt_run <
+			     best_front_end->job_cnt_run))
+				best_front_end = front_end_ptr;
+		}
 	}
 
 	if (best_front_end) {

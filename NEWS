@@ -10,6 +10,10 @@ documents those changes that are of interest to users and administrators.
     complete messages and node registration messages use this logic.
  -- Add sacct and squeue options to print trackable resources.
  -- Add sacctmgr option to display trackable resources.
+ -- If an salloc or srun command is executed on a "front-end" configuration,
+    that job will be assigned a slurmd shepherd daemon on the same host as used
+    to execute the command when possible rather than an slurmd daemon on an
+    arbitrary front-end node.
 
 * Changes in Slurm 15.08.0pre5
 ==============================
