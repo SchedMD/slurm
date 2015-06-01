@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition where last array task might not get updated in the db.
  -- CRAY - Remove libpmi from rpm install
  -- Fix squeue -o %X output to correctly handle NO_VAL and suffix.
+ -- When deleting a job from the system set the job_id to 0 to avoid memory
+    corruption if thread uses the pointer basing validity off the id.
 
 * Changes in Slurm 14.11.7
 ==========================
