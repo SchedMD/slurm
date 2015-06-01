@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     hyperthreads.
  -- Fix race condition where last array task might not get updated in the db.
  -- CRAY - Remove libpmi from rpm install
+ -- Fix squeue -o %X output to correctly handle NO_VAL and suffix.
 
 * Changes in Slurm 14.11.7
 ==========================
