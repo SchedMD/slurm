@@ -90,6 +90,9 @@
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 
+/* Define to 1 if DataWarp library found */
+#undef HAVE_DATAWARP
+
 /* Define to 1 if you have the declaration of `hstrerror', and to 0 if you
    don't. */
 #undef HAVE_DECL_HSTRERROR

@@ -16,6 +16,7 @@
 #    Tests for required libraries (non-Cray systems with a Cray network):
 #    * libalpscomm_sn
 #    * libalpscomm_cn
+#    Tests for DataWarp files
 #*****************************************************************************
 #
 # Copyright 2013 Cray Inc. All Rights Reserved.
@@ -247,4 +248,45 @@ AC_DEFUN([X_AC_CRAY],
   AC_SUBST(CRAY_TASK_CPPFLAGS)
   AC_SUBST(CRAY_TASK_LDFLAGS)
 
+
+  _x_ac_datawarp_dirs="/opt/cray/dws/default"
+  _x_ac_datawarp_libs="lib64 lib"
+
+  AC_ARG_WITH(
+    [datawarp],
+    AS_HELP_STRING(--with-datawarp=PATH,Specify path to DataWarp installation),
+    [_x_ac_datawarp_dirs="$withval $_x_ac_datawarp_dirs"])
+
+  AC_CACHE_CHECK(
+    [for datawarp installation],
+    [x_ac_cv_datawarp_dir],
+    [
+      for d in $_x_ac_datawarp_dirs; do
+        test -d "$d" || continue
+        test -d "$d/include" || continue
+        test -f "$d/include/dws_thin.h" || continue
+	for bit in $_x_ac_datawarp_libs; do
+          test -d "$d/$bit" || continue
+          test -f "$d/$bit/libdws_thin.so" || continue
+          AS_VAR_SET(x_ac_cv_datawarp_dir, $d)
+          break
+        done
+        test -n "$x_ac_cv_datawarp_dir" && break
+      done
+    ])
+
+  if test -z "$x_ac_cv_datawarp_dir"; then
+    AC_MSG_WARN([unable to locate DataWarp installation])
+  else
+    DATAWARP_CPPFLAGS="-I$x_ac_cv_datawarp_dir/include"
+    if test "$ac_with_rpath" = "yes"; then
+      DATAWARP_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_datawarp_dir/$bit -L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
+    else
+      DATAWARP_LDFLAGS="-L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
+    fi
+    AC_DEFINE(HAVE_DATAWARP, 1, [Define to 1 if DataWarp library found])
+  fi
+
+  AC_SUBST(DATAWARP_CPPFLAGS)
+  AC_SUBST(DATAWARP_LDFLAGS)
 ])
