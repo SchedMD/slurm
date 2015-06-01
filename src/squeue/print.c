@@ -459,7 +459,12 @@ int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL) 	/* Print the Header instead */
 		_print_str("CORE_SPEC", width, right, true);
 	else
-		_print_int(job->core_spec, width, right, true);
+		if (job->core_spec == (uint16_t) NO_VAL)
+			_print_str("*", width, right, true);
+		else
+			_print_int(job->core_spec, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
