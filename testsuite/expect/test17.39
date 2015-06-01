@@ -41,6 +41,16 @@ set exit_code     0
 
 print_header $test_id
 
+set select_type [test_select_type]
+if {![string compare $select_type "linear"]} {
+	set def_part_name [default_partition]
+	set nb_nodes [get_node_cnt_in_part $def_part_name]
+	if {$nb_nodes < 2} {
+		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
+		exit $exit_code
+	}
+}
+
 make_bash_script $slow_job "sleep 120"
 make_bash_script $fast_job "sleep 30"
 
