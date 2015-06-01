@@ -482,7 +482,8 @@ int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 	} else {
 		_print_int(job->core_spec, width, right, true);
 	}
-
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
