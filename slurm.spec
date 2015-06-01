@@ -459,12 +459,11 @@ DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
    fi
 %endif
 
-# Do not package Slurm's version of libpmi on Cray systems with ALPS.
+# Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
-   %if %{slurm_with cray_alps}
-      rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
-   %else
+   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
+   %if %{slurm_with cray}
       install -D -m644 contribs/cray/plugstack.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/plugstack.conf.template
       install -D -m644 contribs/cray/slurm.conf.template ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.template
    %endif

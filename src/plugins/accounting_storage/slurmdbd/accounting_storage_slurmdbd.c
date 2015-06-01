@@ -376,8 +376,16 @@ static void *_set_db_inx_thread(void *no_data)
 				itr = list_iterator_create(got_msg->my_list);
 				while ((id_ptr = list_next(itr))) {
 					if ((job_ptr = find_job_record(
-						     id_ptr->job_id)))
+						     id_ptr->job_id)) &&
+					    job_ptr->db_index) {
+						/* Only set if db_index != 0.
+						 * Is set to NO_VAL previously
+						 * but may have been set to 0
+						 * after the fact, which means
+						 * the start needs to be sent
+						 * again. */
 						job_ptr->db_index = id_ptr->id;
+					}
 				}
 				list_iterator_destroy(itr);
 				unlock_slurmctld(job_write_lock);
