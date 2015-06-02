@@ -7446,6 +7446,7 @@ static void _list_delete_job(void *job_entry)
 	} else {
 		job_count -= job_array_size;
 	}
+	job_ptr->job_id = 0;
 	xfree(job_ptr);
 }
 

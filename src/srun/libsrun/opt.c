@@ -2069,6 +2069,12 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (!opt.ntasks_per_node) {
+		error("ntasks-per-node is 0");
+		verified = false;
+	}
+
+
 	/* bound max_threads/cores from ntasks_cores/sockets */
 	if (opt.ntasks_per_core > 0) {
 		/* if cpu_bind_type doesn't already have a auto pref,
