@@ -22,7 +22,6 @@ documents those changes that are of interest to users and administrators.
     corruption if thread uses the pointer basing validity off the id.
  -- Fix issue where sbatch would set ntasks-per-node to 0 making any srun
     afterward cause a divide by zero error.
- -- Fix issue where command line options were parsed twice in sbatch.
  -- switch/cray: Refine logic to set PMI_CRAY_NO_SMP_ENV environment variable.
  -- When sacctmgr loads archives with version less than 14.11 set the array
     task id to NO_VAL, so sacct can display the job ids correctly.
