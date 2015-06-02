@@ -438,7 +438,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			cpus[i] = 1;
 		}
 
-		if ((plane_size != (uint16_t)NO_VAL)
+		if (plane_size && (plane_size != (uint16_t)NO_VAL)
 		    && (task_dist != SLURM_DIST_PLANE)) {
 			/* plane_size when dist != plane is used to
 			   convey ntasks_per_node. Adjust the number

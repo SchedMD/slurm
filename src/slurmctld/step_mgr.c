@@ -1073,7 +1073,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN(total_tasks, gres_cnt);
-			if (step_spec->plane_size != (uint16_t) NO_VAL) {
+			if (step_spec->plane_size &&
+			    step_spec->plane_size != (uint16_t) NO_VAL) {
 				if (avail_tasks < step_spec->plane_size)
 					avail_tasks = 0;
 				else {
