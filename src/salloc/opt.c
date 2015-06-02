@@ -191,9 +191,6 @@ int immediate_exit = 1;
 
 typedef struct env_vars env_vars_t;
 
-/* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what);
-
 static void  _help(void);
 
 /* fill in default options  */
@@ -630,38 +627,13 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_THREAD_SPEC:
-		opt.core_spec = _get_int(val, "thread_spec") |
+		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
 		break;
 	default:
 		/* do nothing */
 		break;
 	}
-}
-
-/*
- *  Get a decimal integer from arg.
- *
- *  Returns the integer on success, exits program on failure.
- *
- */
-static int
-_get_int(const char *arg, const char *what)
-{
-	char *p;
-	long int result = strtol(arg, &p, 10);
-
-	if ((*p != '\0') || (result < 0L)) {
-		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(error_exit);
-	}
-
-	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
-		exit(error_exit);
-	}
-
-	return (int) result;
 }
 
 void set_options(const int argc, char **argv)
@@ -801,7 +773,8 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'c':
 			opt.cpus_set = true;
-			opt.cpus_per_task = _get_int(optarg, "cpus-per-task");
+			opt.cpus_per_task = parse_int("cpus-per-task",
+						      optarg, true);
 			break;
 		case 'C':
 			xfree(opt.constraints);
@@ -842,7 +815,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case 'I':
 			if (optarg)
-				opt.immediate = _get_int(optarg, "immediate");
+				opt.immediate = parse_int("immediate", optarg, true);
 			else
 				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
@@ -879,7 +852,7 @@ void set_options(const int argc, char **argv)
 		case 'n':
 			opt.ntasks_set = true;
 			opt.ntasks =
-				_get_int(optarg, "number of tasks");
+				parse_int("number of tasks", optarg, true);
 			break;
 		case 'N':
 			opt.nodes_set =
@@ -912,7 +885,7 @@ void set_options(const int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case 'S':
-			opt.core_spec = _get_int(optarg, "core_spec");
+			opt.core_spec = parse_int("core_spec", optarg, false);
 			break;
 		case 't':
 			xfree(opt.time_limit_str);
@@ -944,7 +917,7 @@ void set_options(const int argc, char **argv)
 		case 'W':
 			verbose("wait option has been deprecated, use "
 				"immediate option");
-			opt.immediate = _get_int(optarg, "wait");
+			opt.immediate = parse_int("wait", optarg, true);
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
@@ -966,7 +939,7 @@ void set_options(const int argc, char **argv)
 			}
                         break;
 		case LONG_OPT_MINCPU:
-			opt.mincpus = _get_int(optarg, "mincpus");
+			opt.mincpus = parse_int("mincpus", optarg, true);
 			if (opt.mincpus < 0) {
 				error("invalid mincpus constraint %s",
 				      optarg);
@@ -976,7 +949,7 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINCORES:
 			verbose("mincores option has been deprecated, use "
 				"cores-per-socket");
-			opt.cores_per_socket = _get_int(optarg, "mincores");
+			opt.cores_per_socket = parse_int("mincores", optarg, true);
 			if (opt.cores_per_socket < 0) {
 				error("invalid mincores constraint %s",
 				      optarg);
@@ -986,7 +959,7 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINSOCKETS:
 			verbose("minsockets option has been deprecated, use "
 				"sockets-per-node");
-			opt.sockets_per_node = _get_int(optarg, "minsockets");
+			opt.sockets_per_node = parse_int("minsockets", optarg, true);
 			if (opt.sockets_per_node < 0) {
 				error("invalid minsockets constraint %s",
 				      optarg);
@@ -996,7 +969,7 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_MINTHREADS:
 			verbose("minthreads option has been deprecated, use "
 				"threads-per-core");
-			opt.threads_per_core = _get_int(optarg, "minthreads");
+			opt.threads_per_core = parse_int("minthreads", optarg, true);
 			if (opt.threads_per_core < 0) {
 				error("invalid minthreads constraint %s",
 				      optarg);
@@ -1108,7 +1081,7 @@ void set_options(const int argc, char **argv)
 			opt.bell = BELL_NEVER;
 			break;
 		case LONG_OPT_JOBID:
-			opt.jobid = _get_int(optarg, "jobid");
+			opt.jobid = parse_int("jobid", optarg, true);
 			break;
 		case LONG_OPT_PROFILE:
 			opt.profile = acct_gather_profile_from_string(optarg);
@@ -1149,16 +1122,16 @@ void set_options(const int argc, char **argv)
 				opt.threads_per_core = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg,
-				"ntasks-per-node");
+			opt.ntasks_per_node = parse_int("ntasks-per-node",
+							optarg, true);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
-			opt.ntasks_per_socket = _get_int(optarg,
-				"ntasks-per-socket");
+			opt.ntasks_per_socket = parse_int("ntasks-per-socket",
+							  optarg, true);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
-			opt.ntasks_per_core = _get_int(optarg,
-				"ntasks-per-core");
+			opt.ntasks_per_core = parse_int("ntasks-per-core",
+							optarg, true);
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1270,15 +1243,15 @@ void set_options(const int argc, char **argv)
 				pos_delimit++;
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
-			opt.req_switch = _get_int(optarg, "switches");
+			opt.req_switch = parse_int("switches", optarg, true);
 			break;
 		case LONG_OPT_BURST_BUFFER:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
-			opt.core_spec = _get_int(optarg, "thread_spec") |
-					CORE_SPEC_THREAD;
+			opt.core_spec = parse_int("thread_spec", optarg, true) |
+				CORE_SPEC_THREAD;
 			break;
 		default:
 			if (spank_process_option(opt_char, optarg) < 0) {

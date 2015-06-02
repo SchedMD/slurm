@@ -202,10 +202,6 @@ int ignore_pbs = 0;
 
 typedef struct env_vars env_vars_t;
 
-
-/* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what);
-
 static void  _help(void);
 
 /* fill in default options  */
@@ -680,7 +676,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.sicp_mode = 1;
 		break;
 	case OPT_THREAD_SPEC:
-		opt.core_spec = _get_int(val, "thread_spec") |
+		opt.core_spec = parse_int("thread_spec", val, false) |
 					 CORE_SPEC_THREAD;
 		break;
 	default:
@@ -1236,7 +1232,8 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'c':
 			opt.cpus_set = true;
-			opt.cpus_per_task = _get_int(optarg, "cpus-per-task");
+			opt.cpus_per_task = parse_int("cpus-per-task",
+						      optarg, true);
 			break;
 		case 'C':
 			xfree(opt.constraints);
@@ -1319,7 +1316,7 @@ static void _set_options(int argc, char **argv)
 		case 'n':
 			opt.ntasks_set = true;
 			opt.ntasks =
-				_get_int(optarg, "number of tasks");
+				parse_int("number of tasks", optarg, true);
 			break;
 		case 'N':
 			opt.nodes_set =
@@ -1361,7 +1358,7 @@ static void _set_options(int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case 'S':
-			opt.core_spec = _get_int(optarg, "core_spec");
+			opt.core_spec = parse_int("core_spec", optarg, false);
 			break;
 		case 't':
 			xfree(opt.time_limit_str);
@@ -1401,7 +1398,7 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			break;
 		case LONG_OPT_MINCPU:
-			opt.mincpus = _get_int(optarg, "mincpus");
+			opt.mincpus = parse_int("mincpus", optarg, true);
 			if (opt.mincpus < 0) {
 				error("invalid mincpus constraint %s", optarg);
 				exit(error_exit);
@@ -1410,7 +1407,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINCORES:
 			verbose("mincores option has been deprecated, use "
 				"cores-per-socket");
-			opt.cores_per_socket = _get_int(optarg, "mincores");
+			opt.cores_per_socket = parse_int("mincores",
+							 optarg, true);
 			if (opt.cores_per_socket < 0) {
 				error("invalid mincores constraint %s",
 				      optarg);
@@ -1420,7 +1418,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINSOCKETS:
 			verbose("minsockets option has been deprecated, use "
 				"sockets-per-node");
-			opt.sockets_per_node = _get_int(optarg, "minsockets");
+			opt.sockets_per_node = parse_int("minsockets",
+							 optarg, true);
 			if (opt.sockets_per_node < 0) {
 				error("invalid minsockets constraint %s",
 				      optarg);
@@ -1430,7 +1429,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MINTHREADS:
 			verbose("minthreads option has been deprecated, use "
 				"threads-per-core");
-			opt.threads_per_core = _get_int(optarg, "minthreads");
+			opt.threads_per_core = parse_int("minthreads",
+							 optarg, true);
 			if (opt.threads_per_core < 0) {
 				error("invalid minthreads constraint %s",
 				      optarg);
@@ -1461,7 +1461,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_JOBID:
-			opt.jobid = _get_int(optarg, "jobid");
+			opt.jobid = parse_int("jobid", optarg, true);
 			opt.jobid_set = true;
 			break;
 		case LONG_OPT_UID:
@@ -1587,21 +1587,21 @@ static void _set_options(int argc, char **argv)
 				opt.threads_per_core = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg,
-						       "ntasks-per-node");
+			opt.ntasks_per_node = parse_int("ntasks-per-node",
+							optarg, true);
 			if (opt.ntasks_per_node > 0)
 				setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
 					opt.ntasks_per_node);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
-			opt.ntasks_per_socket = _get_int(optarg,
-				"ntasks-per-socket");
+			opt.ntasks_per_socket = parse_int("ntasks-per-socket",
+							  optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_SOCKET", "%d",
 				opt.ntasks_per_socket);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
-			opt.ntasks_per_core = _get_int(optarg,
-				"ntasks-per-core");
+			opt.ntasks_per_core = parse_int("ntasks-per-core",
+							optarg, true);
 			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
 				opt.ntasks_per_core);
 			break;
@@ -1741,7 +1741,7 @@ static void _set_options(int argc, char **argv)
 				pos_delimit++;
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
-			opt.req_switch = _get_int(optarg, "switches");
+			opt.req_switch = parse_int("switches", optarg, true);
 			break;
 		case LONG_OPT_IGNORE_PBS:
 			ignore_pbs = 1;
@@ -1759,7 +1759,8 @@ static void _set_options(int argc, char **argv)
 			opt.sicp_mode = 1;
 			break;
 		case LONG_OPT_THREAD_SPEC:
-			opt.core_spec = _get_int(optarg, "thread_spec") |
+			opt.core_spec = parse_int("thread_spec",
+						  optarg, false) |
 					CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_KILL_INV_DEP:
@@ -2155,7 +2156,8 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 4;
-				opt.ntasks_per_node = _get_int(temp, "mpiprocs");
+				opt.ntasks_per_node = parse_int("mpiprocs",
+								temp, true);
 				xfree(temp);
 			}
 #if defined(HAVE_ALPS_CRAY) || defined(HAVE_NATIVE_CRAY)
@@ -2168,7 +2170,8 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				opt.cpus_per_task = _get_int(temp, "mppdepth");
+				opt.cpus_per_task = parse_int("mppdepth",
+							      temp, false);
 				opt.cpus_set	  = true;
 			}
 			xfree(temp);
@@ -2187,14 +2190,15 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 8;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				opt.ntasks_per_node = _get_int(temp, "mppnppn");
+				opt.ntasks_per_node = parse_int("mppnppn",
+								temp, true);
 			xfree(temp);
 		} else if (!strncmp(rl + i, "mppwidth=", 9)) {
 			/* Cray: task width (number of processing elements) */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				opt.ntasks     = _get_int(temp, "mppwidth");
+				opt.ntasks = parse_int("mppwidth", temp, true);
 				opt.ntasks_set = true;
 			}
 			xfree(temp);
@@ -2203,7 +2207,7 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				gpus = _get_int(temp, "naccelerators");
+				gpus = parse_int("naccelerators", temp, true);
 				xfree(temp);
 			}
 		} else if (!strncasecmp(rl+i, "ncpus=", 6)) {
@@ -2211,7 +2215,7 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 2;
-				opt.mincpus = _get_int(temp, "ncpus");
+				opt.mincpus = parse_int("ncpus", temp, true);
 				xfree(temp);
 			}
 		} else if (!strncmp(rl+i, "nice=", 5)) {
@@ -2280,7 +2284,7 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 1;
-				opt.min_nodes = _get_int(temp, "select");
+				opt.min_nodes = parse_int("select", temp, true);
 				opt.max_nodes = opt.min_nodes;
 				opt.nodes_set = true;
 				xfree(temp);
@@ -2802,32 +2806,6 @@ static char *print_constraints()
 
 	return buf;
 }
-
-/*
- *  Get a decimal integer from arg.
- *
- *  Returns the integer on success, exits program on failure.
- *
- */
-static int
-_get_int(const char *arg, const char *what)
-{
-	char *p;
-	long int result = strtol(arg, &p, 10);
-
-	if ((*p != '\0') || (result < 0L)) {
-		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(error_exit);
-	}
-
-	if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
-		exit(error_exit);
-	}
-
-	return (int) result;
-}
-
 
 /*
  * Return an absolute path for the "filename".  If "filename" is already
