@@ -847,22 +847,7 @@ _process_env_var(env_vars_t *e, const char *val)
 static int
 _get_int(const char *arg, const char *what, bool positive)
 {
-	char *p;
-	long int result = strtol(arg, &p, 10);
-
-	if ((*p != '\0') || (result < 0L)
-	||  (positive && (result <= 0L))) {
-		error ("Invalid numeric value \"%s\" for %s.", arg, what);
-		exit(error_exit);
-	} else if (result > INT_MAX) {
-		error ("Numeric argument (%ld) to big for %s.", result, what);
-		exit(error_exit);
-	} else if (result < INT_MIN) {
-		error ("Numeric argument %ld to small for %s.", result, what);
-		exit(error_exit);
-	}
-
-	return (int) result;
+	return parse_int(what, arg, positive);
 }
 
 static void _set_options(const int argc, char **argv)

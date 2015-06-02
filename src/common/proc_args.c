@@ -1118,6 +1118,35 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	return 0;
 }
 
+/*
+ *  Get a decimal integer from arg.
+ *
+ *  Returns the integer on success, exits program on failure.
+ *
+ */
+extern int parse_int(const char *name, const char *val, bool positive)
+{
+	char *p;
+	int result = 0;
+
+	if (val)
+		result = strtol(val, &p, 10);
+
+	if ((*p != '\0') || (result < 0L)
+	||  (positive && (result <= 0L))) {
+		error ("Invalid numeric value \"%s\" for %s.", val, name);
+		exit(1);
+	} else if (result > INT_MAX) {
+		error ("Numeric argument (%d) to big for %s.", result, name);
+		exit(1);
+	} else if (result < INT_MIN) {
+		error ("Numeric argument %d to small for %s.", result, name);
+		exit(1);
+	}
+
+	return (int) result;
+}
+
 /* print_db_notok() - Print an error message about slurmdbd
  *                    is unreachable or wrong cluster name.
  * IN  cname - char * cluster name

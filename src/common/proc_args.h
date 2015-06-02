@@ -177,6 +177,15 @@ extern int	parse_uint16(char *aval, uint16_t *ival);
  */
 extern int	parse_uint32(char *aval, uint32_t *ival);
 
+/* Get a decimal integer from arg
+ * IN      name - command line name
+ * IN      val - command line argument value
+ * IN      positive - true if number needs to be greater than 0
+ * RET     Returns the integer on success, exits program on failure.
+ */
+extern int parse_int(const char *name, const char *val, bool positive);
+
+
 /* print_db_notok() - Print an error message about slurmdbd
  *                    is unreachable or wrong cluster name.
  * IN  cname - char * cluster name
