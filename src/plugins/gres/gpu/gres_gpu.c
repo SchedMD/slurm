@@ -61,9 +61,9 @@
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -124,6 +124,7 @@ extern int fini(void)
 
 	return SLURM_SUCCESS;
 }
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -282,8 +283,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 	} else if (gres_job_ptr && (gres_job_ptr->gres_cnt_alloc > 0)) {
 		/* The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var */
-		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
-		      "no device files configured");
+		debug("gres/gpu unable to set CUDA_VISIBLE_DEVICES, no device files configured");
 	} else {
 		xstrcat(local_list, "NoDevFiles");
 	}
@@ -343,9 +343,9 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 	}
 
 	if (dev_list) {
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+		env_array_overwrite(job_env_ptr, "CUDA_VISIBLE_DEVICES",
 				    dev_list);
-		env_array_overwrite(job_env_ptr,"GPU_DEVICE_ORDINAL",
+		env_array_overwrite(job_env_ptr, "GPU_DEVICE_ORDINAL",
 				    dev_list);
 		xfree(dev_list);
 	}

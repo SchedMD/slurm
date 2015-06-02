@@ -99,6 +99,7 @@ typedef struct srun_options {
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
+	uint16_t accel_bind_type; /* --accel-bind= */
 	bool nodes_set;		/* true if nodes explicitly set */
 	bool nodes_set_env;	/* true if nodes set via SLURM_NNODES */
 	bool nodes_set_opt;	/* true if nodes explicitly set using

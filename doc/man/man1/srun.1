@@ -19,6 +19,22 @@ http://slurm.schedmd.com/cpu_management.html
 .LP
 
 .TP
+\fB\-\-accel\-bind\fR=<\fIoptions\fR>
+Control how tasks are bound to GPUs and NICs.
+Multiple options may be specified. Supported options are as include:
+.RS
+.TP
+\fBg\fR
+Bind each task to one GPU which is closest to the allocated CPUs.
+.TP
+\fBn\fR
+Bind each task to one NIC which is closest to the allocated CPUs.
+.TP
+\fBv\fR
+Verbose mode. Log how tasks are bound to GPU and NIC devices.
+.RE
+
+.TP
 \fB\-A\fR, \fB\-\-account\fR=<\fIaccount\fR>
 Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may

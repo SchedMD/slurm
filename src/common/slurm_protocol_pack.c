@@ -9169,6 +9169,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		pack16(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 		pack16(msg->job_core_spec, buffer);
+		pack16(msg->accel_bind_type, buffer);
 
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		for (i = 0; i < msg->nnodes; i++) {
@@ -9345,6 +9346,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack16(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);
+		safe_unpack16(&msg->accel_bind_type, buffer);
 
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;

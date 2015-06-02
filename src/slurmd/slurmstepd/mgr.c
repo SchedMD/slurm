@@ -251,6 +251,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	job->envtp->cli = cli;
 	job->envtp->self = self;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
+	job->accel_bind_type = msg->accel_bind_type;
 
 	return job;
 }
@@ -1349,7 +1350,7 @@ static void _exec_wait_info_destroy (struct exec_wait_info *e)
 	xfree(e);
 }
 
-static pid_t exec_wait_get_pid (struct exec_wait_info *e)
+static pid_t _exec_wait_get_pid (struct exec_wait_info *e)
 {
 	if (e == NULL)
 		return (-1);
@@ -1595,7 +1596,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			exec_wait_kill_children (exec_wait_list);
 			rc = SLURM_ERROR;
 			goto fail4;
-		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
+		} else if ((pid = _exec_wait_get_pid (ei)) == 0)  { /* child */
 			/*
 			 *  Destroy exec_wait_list in the child.
 			 *   Only exec_wait_info for previous tasks have been
@@ -2665,7 +2666,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		error ("executing %s: fork: %m", name);
 		return -1;
 	}
-	if ((cpid = exec_wait_get_pid (ei)) == 0) {
+	if ((cpid = _exec_wait_get_pid (ei)) == 0) {
 		struct priv_state sprivs;
 		char *argv[2];
 

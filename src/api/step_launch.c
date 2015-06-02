@@ -265,6 +265,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.cpu_freq_gov	= params->cpu_freq_gov;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
+	launch.accel_bind_type	= params->accel_bind_type;
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
@@ -444,6 +445,7 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.cpu_freq_gov	= params->cpu_freq_gov;
 	launch.mem_bind_type	= params->mem_bind_type;
 	launch.mem_bind		= params->mem_bind;
+	launch.accel_bind_type	= params->accel_bind_type;
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
