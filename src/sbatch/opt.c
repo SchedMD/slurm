@@ -1160,8 +1160,7 @@ static void _set_options(int argc, char **argv)
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
-			error("Try \"sbatch --help\" for more information");
-			exit(error_exit);
+			/* handled in process_options_first_pass() */
 			break;
 		case 'a':
 			xfree(opt.array_inx);
@@ -1233,8 +1232,8 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			break;
 		case 'h':
-			_help();
-			exit(0);
+			/* handled in process_options_first_pass() */
+			break;
 		case 'H':
 			opt.hold = true;
 			break;
@@ -1313,7 +1312,7 @@ static void _set_options(int argc, char **argv)
 			opt.dependency = xstrdup(optarg);
 			break;
 		case 'Q':
-			opt.quiet++;
+			/* handled in process_options_first_pass() */
 			break;
 		case 'R':
 			opt.no_rotate = true;
@@ -1329,14 +1328,9 @@ static void _set_options(int argc, char **argv)
 			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case 'u':
-			_usage();
-			exit(0);
 		case 'v':
-			opt.verbose++;
-			break;
 		case 'V':
-			print_slurm_version();
-			exit(0);
+			/* handled in process_options_first_pass() */
 			break;
 		case 'w':
 			xfree(opt.nodelist);
