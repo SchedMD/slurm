@@ -1182,8 +1182,7 @@ static void _set_options(const int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case (int)'S':
-			opt.core_spec = _get_int(optarg, "core_spec",
-				false);
+			opt.core_spec = _get_int(optarg, "core_spec", false);
 			opt.core_spec_set = true;
 			break;
 		case (int)'t':
@@ -1520,16 +1519,17 @@ static void _set_options(const int argc, char **argv)
 				opt.threads_per_core = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node",
-				true);
+			opt.ntasks_per_node = _get_int(optarg,
+						       "ntasks-per-node", true);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
 			opt.ntasks_per_socket = _get_int(optarg,
-				"ntasks-per-socket", true);
+							 "ntasks-per-socket",
+							 true);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
-			opt.ntasks_per_core = _get_int(optarg, "ntasks-per-core",
-				true);
+			opt.ntasks_per_core = _get_int(optarg,
+						       "ntasks-per-core", true);
 			break;
 		case LONG_OPT_HINT:
 			/* Keep after other options filled in */
@@ -1662,8 +1662,7 @@ static void _set_options(const int argc, char **argv)
 				pos_delimit++;
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
-			opt.req_switch = _get_int(optarg, "switches",
-				true);
+			opt.req_switch = _get_int(optarg, "switches", true);
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
@@ -1673,7 +1672,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = _get_int(optarg, "thread_spec", true) |
-					CORE_SPEC_THREAD;
+				CORE_SPEC_THREAD;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
