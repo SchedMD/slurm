@@ -400,6 +400,8 @@ enum {
 	STEP_REQ_COUNT,
 };
 
+static void _init_local_job(local_job_t *);
+
 /* if this changes you will need to edit the corresponding
  * enum below */
 static char *suspend_req_inx[] = {
@@ -1701,8 +1703,9 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	}
 	xstrcat(insert, ") values ");
 	xstrcat(format, ")");
-	for(i=0; i<rec_cnt; i++) {
-		memset(&object, 0, sizeof(local_job_t));
+	for(i = 0; i < rec_cnt; i++) {
+
+		_init_local_job(&object);
 		if (_unpack_local_job(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
@@ -1710,6 +1713,8 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			xfree(insert);
 			break;
 		}
+		if (rpc_version >= SLURMDBD_2_6_VERSION)
+
 		if (i)
 			xstrcat(insert, ", ");
 
@@ -1756,6 +1761,17 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	xfree(format);
 
 	return insert;
+}
+
+/* _init_local_job()
+ */
+static void
+_init_local_job(local_job_t *job)
+{
+	/* Init the array_taskid to NO_VAL
+	 */
+	memset(job, 0, sizeof(local_job_t));
+	xstrcat(job->array_taskid, "4294967294");
 }
 
 /* returns count of resvations archived or SLURM_ERROR on error */
