@@ -197,8 +197,11 @@ static void
 _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		    char *ifname, char *ofname, char *efname)
 {
-	int          i, j, node_id = job->nodeid;
+	int          i, node_id = job->nodeid;
 	char        *in, *out, *err;
+#if defined(HAVE_NATIVE_CRAY)
+	int j;
+#endif
 
 	if (job->node_tasks == 0) {
 		error("User requested launch of zero tasks!");
