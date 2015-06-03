@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where sbatch would set ntasks-per-node to 0 making any srun
     afterward cause a divide by zero error.
  -- Fix issue where command line options were parsed twice in sbatch.
+ -- switch/cray: Refine logic to set PMI_CRAY_NO_SMP_ENV environment variable.
 
 * Changes in Slurm 14.11.7
 ==========================

@@ -197,7 +197,7 @@ static void
 _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		    char *ifname, char *ofname, char *efname)
 {
-	int          i, node_id = job->nodeid;
+	int          i, j, node_id = job->nodeid;
 	char        *in, *out, *err;
 
 	if (job->node_tasks == 0) {
@@ -206,10 +206,21 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 		return;
 	}
 
+#if defined(HAVE_NATIVE_CRAY)
+	for (i = 0; i < job->nnodes; i++) {
+		for (j = 1; j < job->task_cnts[i]; j++) {
+			if (gtid[i][j] != gtid[i][j-1] + 1)) {
+				job->non_smp = 1;
+				break;
+			}
+		}
+	}
+#endif
+
 	job->task = (stepd_step_task_info_t **)
 		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
 
-	for (i = 0; i < job->node_tasks; i++){
+	for (i = 0; i < job->node_tasks; i++) {
 		in = _expand_stdio_filename(ifname, gtid[node_id][i], job);
 		out = _expand_stdio_filename(ofname, gtid[node_id][i], job);
 		err = _expand_stdio_filename(efname, gtid[node_id][i], job);
