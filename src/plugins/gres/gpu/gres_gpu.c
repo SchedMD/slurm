@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #if HAVE_CONFIG_H
 #  include "config.h"
 #  if STDC_HEADERS
@@ -62,6 +63,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <ctype.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -340,6 +342,69 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 		      "no device files configured");
 	} else {
 		xstrcat(dev_list, "NoDevFiles");
+	}
+
+	if (dev_list) {
+		env_array_overwrite(job_env_ptr, "CUDA_VISIBLE_DEVICES",
+				    dev_list);
+		env_array_overwrite(job_env_ptr, "GPU_DEVICE_ORDINAL",
+				    dev_list);
+		xfree(dev_list);
+	}
+}
+
+/*
+ * Reset environment variables as appropriate for a job (i.e. this one tasks)
+ * based upon the job step's GRES state and assigned CPUs.
+ */
+extern void step_reset_env(char ***job_env_ptr, void *gres_ptr,
+			   bitstr_t *usable_gres)
+{
+	int i, len, local_inx = 0, first_match = -1;
+	char *dev_list = NULL;
+	gres_step_state_t *gres_step_ptr = (gres_step_state_t *) gres_ptr;
+	bool use_local_dev_index = _use_local_device_index();
+
+	if ((gres_step_ptr != NULL) &&
+	    (gres_step_ptr->node_cnt == 1) &&
+	    (gres_step_ptr->gres_bit_alloc != NULL) &&
+	    (gres_step_ptr->gres_bit_alloc[0] != NULL) &&
+	    (usable_gres != NULL)) {
+		len = MIN(bit_size(gres_step_ptr->gres_bit_alloc[0]),
+			  bit_size(usable_gres));
+		for (i = 0; i < len; i++) {
+			if (!bit_test(gres_step_ptr->gres_bit_alloc[0], i))
+				continue;
+			if (first_match == -1)
+				first_match = i;
+			if (!bit_test(usable_gres, i))
+				continue;
+			if (!dev_list)
+				dev_list = xmalloc(128);
+			else
+				xstrcat(dev_list, ",");
+			if (use_local_dev_index) {
+				xstrfmtcat(dev_list, "%d", local_inx++);
+			} else if (gpu_devices && (i < nb_available_files) &&
+				   (gpu_devices[i] >= 0)) {
+				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
+			} else {
+				xstrfmtcat(dev_list, "%d", i);
+			}
+		}
+		if (!dev_list && (first_match != -1)) {
+			i = first_match;
+			dev_list = xmalloc(128);
+			xstrcat(dev_list, ",");
+			if (use_local_dev_index) {
+				xstrfmtcat(dev_list, "%d", local_inx++);
+			} else if (gpu_devices && (i < nb_available_files) &&
+				   (gpu_devices[i] >= 0)) {
+				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
+			} else {
+				xstrfmtcat(dev_list, "%d", i);
+			}
+		}
 	}
 
 	if (dev_list) {

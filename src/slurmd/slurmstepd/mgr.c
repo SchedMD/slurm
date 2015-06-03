@@ -90,6 +90,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/mpi.h"
@@ -1091,6 +1092,9 @@ job_manager(stepd_step_rec_t *job)
 	if (job->stepid == SLURM_EXTERN_CONT)
 		return _spawn_job_container(job);
 
+	if (!job->batch && job->accel_bind_type)
+		(void) gres_plugin_node_config_load(conf->cpus,conf->node_name);
+
 #ifdef HAVE_ALPS_CRAY
 	/*
 	 * Note that the previously called proctrack_g_create function is
@@ -1152,6 +1156,23 @@ job_manager(stepd_step_rec_t *job)
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_FAILURE;
 		goto fail2;
+	}
+
+	if (!job->batch && job->accel_bind_type && (job->node_tasks <= 1))
+		job->accel_bind_type = 0;
+	if (!job->batch && job->accel_bind_type && (job->node_tasks > 1)) {
+		uint64_t gpu_cnt, mic_cnt, nic_cnt;
+		gpu_cnt = gres_plugin_step_count(job->step_gres_list, "gpu");
+		mic_cnt = gres_plugin_step_count(job->step_gres_list, "mic");
+		nic_cnt = gres_plugin_step_count(job->step_gres_list, "nic");
+		if ((gpu_cnt <= 1) || (gpu_cnt == NO_VAL64))
+			job->accel_bind_type &= (~ACCEL_BIND_CLOSEST_GPU);
+		if ((mic_cnt <= 1) || (mic_cnt == NO_VAL64))
+			job->accel_bind_type &= (~ACCEL_BIND_CLOSEST_MIC);
+		if ((nic_cnt <= 1) || (nic_cnt == NO_VAL64))
+			job->accel_bind_type &= (~ACCEL_BIND_CLOSEST_NIC);
+		if (job->accel_bind_type == ACCEL_BIND_VERBOSE)
+			job->accel_bind_type = 0;
 	}
 
 	/* Calls pam_setup() and requires pam_finish() if

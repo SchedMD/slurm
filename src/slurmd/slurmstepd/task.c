@@ -443,8 +443,8 @@ exec_task(stepd_step_rec_t *job, int i)
 
 	/* task plugin hook */
 	if (task_g_pre_launch(job)) {
-		error ("Failed task affinity setup");
-		exit (1);
+		error("Failed task affinity setup");
+		exit(1);
 	}
 	if (!job->batch && job->accel_bind_type) {
 		/* Modify copy of job's environment. Do not alter in place or

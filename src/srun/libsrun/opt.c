@@ -1698,6 +1698,8 @@ static void _set_options(const int argc, char **argv)
 				opt.accel_bind_type |= ACCEL_BIND_VERBOSE;
 			if (strchr(optarg, 'g'))
 				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
+			if (strchr(optarg, 'm'))
+				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
 			if (strchr(optarg, 'n'))
 				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 			break;
