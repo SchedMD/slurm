@@ -86,7 +86,7 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
  */
 int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 {
-	int rc, i, non_smp;
+	int rc, i;
 	char *buff = NULL, *resv_ports = NULL, *tmp = NULL;
 
 	/*
@@ -141,42 +141,9 @@ int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
 
 	}
 
-	/*
-	 * Determine whether non-SMP ordering is used.
-	 * That is, if distribution is cyclic and there are more
-	 * tasks than nodes, or the distribution is arbitrary.
-	 */
-	switch (job->task_dist & SLURM_DIST_STATE_BASE) {
-	case SLURM_DIST_BLOCK:
-	case SLURM_DIST_BLOCK_CYCLIC:
-	case SLURM_DIST_BLOCK_BLOCK:
-		non_smp = 0;
-		break;
-	case SLURM_DIST_CYCLIC:
-	case SLURM_DIST_CYCLIC_CYCLIC:
-	case SLURM_DIST_CYCLIC_BLOCK:
-		if (job->ntasks > job->nnodes) {
-			CRAY_INFO("Non-SMP ordering identified; distribution"
-				  " %s tasks %"PRIu32" nodes %"PRIu32,
-				  slurm_step_layout_type_name(job->task_dist),
-				  job->ntasks, job->nnodes);
-			non_smp = 1;
-		} else {
-		    non_smp = 0;
-		}
-		break;
-	case SLURM_DIST_ARBITRARY:
-	case SLURM_DIST_PLANE:
-	case SLURM_DIST_NO_LLLP:
-	case SLURM_DIST_UNKNOWN:
-	default:
-		CRAY_INFO("Non-SMP ordering identified; distribution %s",
-			  slurm_step_layout_type_name(job->task_dist));
-		non_smp = 1;
-		break;
-	}
+	/* Set if task IDs are not monotonically increasing across all nodes */
 	rc = env_array_overwrite_fmt(&job->env, PMI_CRAY_NO_SMP_ENV,
-				     "%d", non_smp);
+				     "%d", job->non_smp);
 	if (rc == 0) {
 		CRAY_ERR("Failed to set env var "PMI_CRAY_NO_SMP_ENV);
 		return SLURM_ERROR;
