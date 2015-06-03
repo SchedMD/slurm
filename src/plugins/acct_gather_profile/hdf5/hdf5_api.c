@@ -1108,7 +1108,7 @@ static hid_t _task_create_memory_datatype(void)
 	MEM_ADD_DATE_TIME(mtyp_task, "Date_Time", profile_task_t, tod);
 	MEM_ADD_UINT64(mtyp_task, "Time", profile_task_t, time);
 	MEM_ADD_UINT64(mtyp_task, "CPU_Frequency", profile_task_t, cpu_freq);
-	MEM_ADD_DBL(mtyp_task, "CPU_Time", profile_task_t, cpu_time);
+	MEM_ADD_UINT64(mtyp_task, "CPU_Time", profile_task_t, cpu_time);
 	MEM_ADD_DBL(mtyp_task, "CPU_Utilization",
 		    profile_task_t, cpu_utilization);
 	MEM_ADD_UINT64(mtyp_task, "RSS", profile_task_t, rss);
@@ -1131,7 +1131,7 @@ static hid_t _task_create_file_datatype(void)
 	FILE_ADD_DATE_TIME(ftyp_task, "Date_Time", 0);
 	FILE_ADD_UINT64(ftyp_task, "Time");
 	FILE_ADD_UINT64(ftyp_task, "CPU_Frequency");
-	FILE_ADD_DBL(ftyp_task, "CPU_Time");
+	FILE_ADD_UINT64(ftyp_task, "CPU_Time");
 	FILE_ADD_DBL(ftyp_task, "CPU_Utilization");
 	FILE_ADD_UINT64(ftyp_task, "RSS");
 	FILE_ADD_UINT64(ftyp_task, "VM_Size");
@@ -1161,13 +1161,13 @@ static hid_t _task_s_create_memory_datatype(void)
 		       cpu_freq.max);
 	MEM_ADD_UINT64(mtyp_task, "Total CPU Frequency", profile_task_s_t,
 		       cpu_freq.total);
-	MEM_ADD_DBL(mtyp_task, "Min CPU Time", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task, "Min CPU Time", profile_task_s_t,
 		       cpu_time.min);
-	MEM_ADD_DBL(mtyp_task, "Ave CPU Time", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task, "Ave CPU Time", profile_task_s_t,
 		       cpu_time.ave);
-	MEM_ADD_DBL(mtyp_task, "Max CPU Time", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task, "Max CPU Time", profile_task_s_t,
 		       cpu_time.max);
-	MEM_ADD_DBL(mtyp_task, "Total CPU Time", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task, "Total CPU Time", profile_task_s_t,
 		       cpu_time.total);
 	MEM_ADD_DBL(mtyp_task, "Min CPU Utilization", profile_task_s_t,
 		    cpu_utilization.min);
@@ -1224,10 +1224,10 @@ static hid_t _task_s_create_file_datatype(void)
 	FILE_ADD_UINT64(ftyp_task, "Ave CPU Frequency");
 	FILE_ADD_UINT64(ftyp_task, "Max CPU Frequency");
 	FILE_ADD_UINT64(ftyp_task, "Total CPU Frequency");
-	FILE_ADD_DBL(ftyp_task, "Min CPU Time");
-	FILE_ADD_DBL(ftyp_task, "Ave CPU Time");
-	FILE_ADD_DBL(ftyp_task, "Max CPU Time");
-	FILE_ADD_DBL(ftyp_task, "Total CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Min CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Ave CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Max CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Total CPU Time");
 	FILE_ADD_DBL(ftyp_task, "Min CPU Utilization");
 	FILE_ADD_DBL(ftyp_task, "Ave CPU Utilization");
 	FILE_ADD_DBL(ftyp_task, "Max CPU Utilization");
@@ -1428,7 +1428,7 @@ static void _task_extract_series(
 	}
 	n_items = size_data / sizeof(profile_task_t);
 	for (ix=0; ix < n_items; ix++) {
-		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%.3f",
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%ld,%.3f",
 			job, step, node, series,
 			task_data[ix].tod, task_data[ix].time,
 			task_data[ix].cpu_freq,
@@ -1465,7 +1465,7 @@ static void _task_extract_total(
 	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
 		task_data->start_time, task_data->elapsed_time);
 	PUT_UINT_SUM(fp, task_data->cpu_freq, ",");
-	PUT_DBL_SUM(fp, task_data->cpu_time, ",");
+	PUT_UINT_SUM(fp, task_data->cpu_time, ",");
 	PUT_DBL_SUM(fp, task_data->cpu_utilization, ",");
 	PUT_UINT_SUM(fp, task_data->rss, ",");
 	PUT_UINT_SUM(fp, task_data->vm_size, ",");

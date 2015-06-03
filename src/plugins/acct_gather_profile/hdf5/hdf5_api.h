@@ -188,7 +188,7 @@ typedef struct profile_task {
 	char		tod[TOD_LEN];	// Not used in node-step
 	time_t		time;
 	uint64_t	cpu_freq;
-	double		cpu_time;
+	uint64_t	cpu_time;
 	double		cpu_utilization;
 	uint64_t	rss;
 	uint64_t	vm_size;
@@ -201,7 +201,7 @@ typedef struct profile_task_s {
 	char		start_time[TOD_LEN];
 	uint64_t	elapsed_time;
 	prof_uint_sum_t	cpu_freq;
-	prof_dbl_sum_t cpu_time;
+	prof_uint_sum_t cpu_time;
 	prof_dbl_sum_t 	cpu_utilization;
 	prof_uint_sum_t rss;
 	prof_uint_sum_t vm_size;

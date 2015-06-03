@@ -728,7 +728,7 @@ extern void jag_common_poll_data(
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
-				double cpu_calc;
+				uint32_t cpu_calc;
 #if _DEBUG
 				info("pid:%u ppid:%u rss:%d KB",
 				     prec->pid, prec->ppid, prec->rss);
@@ -737,7 +737,7 @@ extern void jag_common_poll_data(
 				if (callbacks->get_offspring_data)
 					(*(callbacks->get_offspring_data))
 						(prec_list, prec, prec->pid);
-				cpu_calc = (double)(prec->ssec + prec->usec)/hertz;
+				cpu_calc = (prec->ssec + prec->usec)/hertz;
 				/* tally their usage */
 				jobacct->max_rss =
 					MAX(jobacct->max_rss, prec->rss);

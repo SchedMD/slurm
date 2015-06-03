@@ -115,11 +115,11 @@ struct jobacctinfo {
 			     (used to figure out ave later) */
 	uint32_t min_cpu; /* min cpu time */
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
-	double tot_cpu; /* total cpu time(used to figure out ave later) */
+	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
 	uint32_t act_cpufreq; /* actual cpu frequency */
 	acct_gather_energy_t energy;
-	double last_total_cputime;
-	double this_sampled_cputime;
+	uint32_t last_total_cputime;
+	uint32_t this_sampled_cputime;
 	uint32_t current_weighted_freq;
 	uint32_t current_weighted_power;
 	double max_disk_read; /* max disk read data */
