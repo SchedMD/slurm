@@ -501,20 +501,20 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 				 * reached the value set in
 				 * memory.memsw.limit_in_bytes.
 				 */
-				info("Exceeded step memory limit at some point.");
+				error("Exceeded step memory limit at some point.");
 			else if (failcnt_non_zero(&step_memory_cg,
 						  "memory.failcnt"))
 				/* reports the number of times that the
 				 * memory limit has reached the value set
 				 * in memory.limit_in_bytes.
 				 */
-				info("Exceeded step memory limit at some point.");
+				error("Exceeded step memory limit at some point.");
 			if (failcnt_non_zero(&job_memory_cg,
 					     "memory.memsw.failcnt"))
-				info("Exceeded job memory limit at some point.");
+				error("Exceeded job memory limit at some point.");
 			else if (failcnt_non_zero(&job_memory_cg,
 						  "memory.failcnt"))
-				info("Exceeded job memory limit at some point.");
+				error("Exceeded job memory limit at some point.");
 			xcgroup_unlock(&memory_cg);
 		} else
 			error("task/cgroup task_cgroup_memory_check_oom: "
