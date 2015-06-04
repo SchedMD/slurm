@@ -1064,7 +1064,7 @@ static int _schedule(uint32_t job_limit)
 		if (sched_params &&
 		    (tmp_ptr=strstr(sched_params, "sched_max_job_start=")))
 			sched_max_job_start = atoi(tmp_ptr + 20);
-		if (sched_interval < 0) {
+		if (sched_max_job_start < 0) {
 			error("Invalid sched_max_job_start: %d",
 			      sched_max_job_start);
 			sched_max_job_start = 0;
