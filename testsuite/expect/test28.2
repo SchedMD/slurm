@@ -181,7 +181,7 @@ for {set index 0} {$index < $array_end} {incr index} {
 	set err_match 0
 	spawn $bin_cat test$test_id-$job_id\_$index\.error
 	expect {
-		-re "invalid time" {
+		-re "$sleep_error_message" {
 			send_user "\nDo not worry this error is expected\n"
 			incr err_match
 		}
