@@ -199,9 +199,6 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 {
 	int          i, node_id = job->nodeid;
 	char        *in, *out, *err;
-#if defined(HAVE_NATIVE_CRAY)
-	int j;
-#endif
 
 	if (job->node_tasks == 0) {
 		error("User requested launch of zero tasks!");
@@ -211,6 +208,7 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 
 #if defined(HAVE_NATIVE_CRAY)
 	for (i = 0; i < job->nnodes; i++) {
+		int j;
 		for (j = 1; j < job->task_cnts[i]; j++) {
 			if (gtid[i][j] != gtid[i][j-1] + 1)) {
 				job->non_smp = 1;
