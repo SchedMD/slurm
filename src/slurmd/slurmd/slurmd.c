@@ -1083,7 +1083,7 @@ _reconfigure(void)
 	if (did_change) {
 		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 		(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name,
-						    (void *)xcpuinfo_abs_to_mac);
+						    NULL);
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
@@ -1473,8 +1473,7 @@ _slurmd_init(void)
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
-	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name,
-					  (void *) xcpuinfo_abs_to_mac)
+	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL)
 	     != SLURM_SUCCESS))
 		return SLURM_FAILURE;
 	if (slurm_topo_init() != SLURM_SUCCESS)
