@@ -135,6 +135,12 @@ typedef struct gres_state {
 	void		*gres_data;
 } gres_state_t;
 
+/* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
+typedef struct xcpuinfo_funcs {
+	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
+} xcpuinfo_funcs_t;
+xcpuinfo_funcs_t xcpuinfo_ops;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -783,13 +789,23 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	p->cpu_cnt = gres_cpu_cnt;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
+		char *local_cpus = NULL;
 		p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
-		i = bit_unfmt(p->cpus_bitmap, p->cpus);
-		if (i != 0) {
+		if (xcpuinfo_ops.xcpuinfo_abs_to_mac) {
+			i = (xcpuinfo_ops.xcpuinfo_abs_to_mac)
+				(p->cpus, &local_cpus);
+			if (i != SLURM_SUCCESS) {
+				fatal("Invalid gres data for %s, CPUs=%s",
+				      p->name, p->cpus);
+			}
+		} else
+			local_cpus = xstrdup(p->cpus);
+		if (bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
 			fatal("Invalid gres data for %s, CPUs=%s (only %u CPUs"
 			      " are available)",
 			      p->name, p->cpus, gres_cpu_cnt);
 		}
+		xfree(local_cpus);
 	}
 
 	if (s_p_get_string(&p->file, "File", tbl)) {
@@ -1016,8 +1032,10 @@ static int _no_gres_conf(uint32_t cpu_cnt)
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs on configured on this node
  * IN node_name - Name of this node
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  */
-extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name)
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
+					void *xcpuinfo_abs_to_mac)
 {
 	static s_p_options_t _gres_options[] = {
 		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
@@ -1030,6 +1048,9 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name)
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file;
+
+	if (xcpuinfo_abs_to_mac)
+		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
 
 	rc = gres_plugin_init();
 	if (gres_context_cnt == 0)

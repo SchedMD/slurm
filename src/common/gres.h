@@ -191,9 +191,11 @@ extern int gres_plugin_help_msg(char *msg, int msg_size);
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs on configured on this node
- * IN array_len - count of elements in dev_path and gres_name
+ * IN node_name - Name of this node
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  */
-extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name);
+extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
+					void *xcpuinfo_abs_to_mac);
 
 /*
  * Pack this node's gres configuration into a buffer

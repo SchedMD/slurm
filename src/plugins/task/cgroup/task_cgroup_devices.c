@@ -95,7 +95,8 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		goto error;
 	}
 
-	(void) gres_plugin_node_config_load(cpunum, conf->node_name);
+	(void) gres_plugin_node_config_load(cpunum, conf->node_name, NULL);
+
 
 	strcpy(cgroup_allowed_devices_file,
 	       slurm_cgroup_conf->allowed_devices_file);
