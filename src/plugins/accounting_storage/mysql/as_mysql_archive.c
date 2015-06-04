@@ -1713,7 +1713,6 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			xfree(insert);
 			break;
 		}
-		if (rpc_version >= SLURMDBD_2_6_VERSION)
 
 		if (i)
 			xstrcat(insert, ", ");
