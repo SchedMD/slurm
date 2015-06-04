@@ -395,7 +395,6 @@ extern void step_reset_env(char ***job_env_ptr, void *gres_ptr,
 		if (!dev_list && (first_match != -1)) {
 			i = first_match;
 			dev_list = xmalloc(128);
-			xstrcat(dev_list, ",");
 			if (use_local_dev_index) {
 				xstrfmtcat(dev_list, "%d", local_inx++);
 			} else if (gpu_devices && (i < nb_available_files) &&

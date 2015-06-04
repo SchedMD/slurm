@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #if HAVE_CONFIG_H
 #  include "config.h"
 #  if STDC_HEADERS
@@ -66,6 +67,7 @@
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -629,6 +631,7 @@ static void _destroy_gres_slurmd_conf(void *x)
 
 	xassert(p);
 	xfree(p->cpus);
+	FREE_NULL_BITMAP(p->cpus_bitmap);
 	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->name);
 	xfree(p->type);
@@ -780,15 +783,13 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	p->cpu_cnt = gres_cpu_cnt;
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
-		bitstr_t *cpu_bitmap;	/* Just use to validate config */
-		cpu_bitmap = bit_alloc(gres_cpu_cnt);
-		i = bit_unfmt(cpu_bitmap, p->cpus);
+		p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
+		i = bit_unfmt(p->cpus_bitmap, p->cpus);
 		if (i != 0) {
 			fatal("Invalid gres data for %s, CPUs=%s (only %u CPUs"
 			      " are available)",
 			      p->name, p->cpus, gres_cpu_cnt);
 		}
-		FREE_NULL_BITMAP(cpu_bitmap);
 	}
 
 	if (s_p_get_string(&p->file, "File", tbl)) {
@@ -5468,6 +5469,61 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name)
 	return gres_cnt;
 }
 
+/* Given a GRES context index, return a bitmap representing those GRES
+ * which are available from the CPUs current allocated to this process */
+static bitstr_t * _get_usable_gres(int context_inx)
+{
+	cpu_set_t mask;
+	bitstr_t *usable_gres = NULL;
+	int i, i_last, rc;
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	int gres_inx = 0;
+
+
+	CPU_ZERO(&mask);
+#ifdef SCHED_GETAFFINITY_THREE_ARGS
+	rc = sched_getaffinity(0, sizeof(mask), &mask);
+#else
+	rc = sched_getaffinity(0, &mask);
+#endif
+	if (rc) {
+		error("sched_getaffinity error: %m");
+		return usable_gres;
+	}
+
+	usable_gres = bit_alloc(MAX_GRES_BITMAP);
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
+		if (gres_slurmd_conf->plugin_id !=
+		    gres_context[context_inx].plugin_id)
+			continue;
+		if (gres_inx + gres_slurmd_conf->count >= MAX_GRES_BITMAP) {
+			error("GRES %s bitmap overflow",gres_slurmd_conf->name);
+			continue;
+		}
+		if (!gres_slurmd_conf->cpus_bitmap) {
+			bit_nset(usable_gres, gres_inx,
+				 gres_inx + gres_slurmd_conf->count - 1);
+		} else {
+			i_last = bit_fls(gres_slurmd_conf->cpus_bitmap);
+			for (i = 0; i <= i_last; i++) {
+				if (!bit_test(gres_slurmd_conf->cpus_bitmap,i))
+					continue;
+				if (!CPU_ISSET(i, &mask))
+					continue;
+				bit_nset(usable_gres, gres_inx,
+					 gres_inx + gres_slurmd_conf->count-1);
+				break;
+			}
+		}
+		gres_inx += gres_slurmd_conf->count;
+	}
+	list_iterator_destroy(iter);
+
+	return usable_gres;
+}
+
 /*
  * Set environment variables as required for all tasks of a job step
  * IN/OUT job_env_ptr - environment variable array
@@ -5485,35 +5541,29 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	bool bind_mic = accel_bind_type & ACCEL_BIND_CLOSEST_MIC;
 	bitstr_t *usable_gres = NULL;
 
-if (bind_gpu) {
-//FIXME: Determine which GRES are usable based upon CPU maps
-//static int k = 0;
-usable_gres = bit_alloc(4);
-//bit_set(usable_gres, 0);
-bit_set(usable_gres, 1);
-//if (k > 1) k=0;
-}
-
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
+		if (gres_context[i].ops.step_set_env == NULL)
+			continue;	/* No plugin to call */
 		if (bind_gpu || bind_mic || bind_nic) {
 			if (!strcmp(gres_context[i].gres_name, "gpu")) {
 				if (!bind_gpu)
 					continue;
+				usable_gres = _get_usable_gres(i);
 			} else if (!strcmp(gres_context[i].gres_name, "mic")) {
 				if (!bind_mic)
 					continue;
+				usable_gres = _get_usable_gres(i);
 			} else if (!strcmp(gres_context[i].gres_name, "nic")) {
 				if (!bind_nic)
 					continue;
+				usable_gres = _get_usable_gres(i);
 			} else {
 				continue;
 			}
 		}
-		if (gres_context[i].ops.step_set_env == NULL)
-			continue;	/* No plugin to call */
 		if (step_gres_list) {
 			gres_iter = list_iterator_create(step_gres_list);
 			while ((gres_ptr = (gres_state_t *)
@@ -5544,6 +5594,7 @@ bit_set(usable_gres, 1);
 					(job_env_ptr, NULL);
 			}
 		}
+		FREE_NULL_BITMAP(usable_gres);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	FREE_NULL_BITMAP(usable_gres);
