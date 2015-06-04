@@ -14,6 +14,10 @@ documents those changes that are of interest to users and administrators.
     that job will be assigned a slurmd shepherd daemon on the same host as used
     to execute the command when possible rather than an slurmd daemon on an
     arbitrary front-end node.
+ -- Add srun --accel-bind option to control how tasks are bound to GPUs and NIC
+    Generic RESources (GRES).
+ -- gres/nic plugin modified to set OMPI_MCA_btl_openib_if_include environment
+    variable based upon allocated devices (usable with OpenMPI and Melanox).
 
 * Changes in Slurm 15.08.0pre5
 ==============================

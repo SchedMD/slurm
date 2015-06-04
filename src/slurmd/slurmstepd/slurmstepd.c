@@ -513,7 +513,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 {
 	stepd_step_rec_t *job = NULL;
 
-	switch(msg->msg_type) {
+	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
 		job = mgr_launch_batch_job_setup(msg->data, cli);
@@ -545,7 +545,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH)
 		gres_plugin_job_set_env(&job->env, job->job_gres_list);
 	else if (msg->msg_type == REQUEST_LAUNCH_TASKS)
-		gres_plugin_step_set_env(&job->env, job->step_gres_list);
+		gres_plugin_step_set_env(&job->env, job->step_gres_list, 0);
 
 	/*
 	 * Add slurmd node topology informations to job env array

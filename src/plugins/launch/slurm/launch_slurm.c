@@ -552,6 +552,7 @@ extern int launch_p_step_launch(
 	launch_params.cpu_bind_type = opt.cpu_bind_type;
 	launch_params.mem_bind = opt.mem_bind;
 	launch_params.mem_bind_type = opt.mem_bind_type;
+	launch_params.accel_bind_type = opt.accel_bind_type;
 	launch_params.open_mode = opt.open_mode;
 	if (opt.acctg_freq >= 0)
 		launch_params.acctg_freq = opt.acctg_freq;

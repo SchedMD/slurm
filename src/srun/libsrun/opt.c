@@ -205,6 +205,7 @@
 #define LONG_OPT_PROFILE         0x157
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_PRIORITY        0x160
+#define LONG_OPT_ACCEL_BIND      0x161
 
 extern char **environ;
 
@@ -415,6 +416,7 @@ static void _opt_default(void)
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.accel_bind_type = 0;
 	opt.core_spec = (uint16_t) NO_VAL;
 	opt.core_spec_set = false;
 	opt.time_limit = NO_VAL;
@@ -896,6 +898,7 @@ static void _set_options(const int argc, char **argv)
 		{"exclude",       required_argument, 0, 'x'},
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
+		{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
@@ -994,8 +997,8 @@ static void _set_options(const int argc, char **argv)
 	else
 		error("opt.progname is already set.");
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv, opt_string,
+				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 
 		case (int)'?':
@@ -1673,6 +1676,16 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = _get_int(optarg, "thread_spec", true) |
 				CORE_SPEC_THREAD;
+			break;
+		case LONG_OPT_ACCEL_BIND:
+			if (strchr(optarg, 'v'))
+				opt.accel_bind_type |= ACCEL_BIND_VERBOSE;
+			if (strchr(optarg, 'g'))
+				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
+			if (strchr(optarg, 'm'))
+				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
+			if (strchr(optarg, 'n'))
+				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
