@@ -84,7 +84,7 @@ expect {
 		send_user "\nFAILURE: sbatch did not submit jobs\n"
 		set exit_code 1
 	}
-	timout {
+	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
 	}
