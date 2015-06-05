@@ -224,7 +224,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-	if (opt.verbose > 3)
+	if (opt.verbose)
 		_opt_list();
 
 	return 1;

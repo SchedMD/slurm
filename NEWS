@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     Generic RESources (GRES).
  -- gres/nic plugin modified to set OMPI_MCA_btl_openib_if_include environment
     variable based upon allocated devices (usable with OpenMPI and Melanox).
+ -- Make it so info options for srun/salloc/sbatch print with just 1 -v instead
+    of 4.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

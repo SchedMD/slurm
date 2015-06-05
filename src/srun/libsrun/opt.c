@@ -264,7 +264,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	if (!_opt_verify())
 		exit(error_exit);
 
-	if (_verbose > 3)
+	if (_verbose)
 		_opt_list();
 
 	if (opt.launch_cmd) {
