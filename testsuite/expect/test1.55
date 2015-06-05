@@ -85,8 +85,8 @@ expect {
 		slow_kill $srun_pid
 		exit 1
 	}
-	wait {
-		eof
+	eof {
+		wait
 	}
 }
 if {$jobid == 0 || $job_running == 0} {
