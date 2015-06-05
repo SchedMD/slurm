@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test3.7.prog.c - Test of slurm job suspend/resume.
  *
- *  Counts down, printing counter, with sleep(1) with each interation.
+ *  Counts down, printing counter, with sleep(1) with each iteration.
  *  Prints "JobSuspended" if execution is suspended and then resumed.
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.

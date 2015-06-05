@@ -59,7 +59,7 @@ if {![string compare $select_type "bluegene"]} {
 	exit $exit_code
 }
 
-# remove any remainging files
+# remove any remaining files
 exec $bin_rm -f $test_timer $test_srun $file_in
 
 make_bash_script $test_timer "

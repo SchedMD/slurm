@@ -327,7 +327,7 @@ if {![string compare $select_type "linear"] || [default_part_exclusive]} {
 	exit 0
 }
 
-# Remove any vesitgial accounts or qos
+# Remove any vestigial accounts or qos
 spawn $sacctmgr -i delete qos $qostest
 expect {
 	-re "Deleting QOS(s)" {

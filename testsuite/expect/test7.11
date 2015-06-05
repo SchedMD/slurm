@@ -120,7 +120,7 @@ expect {
 	}
 }
 
-# Allow enough time for configuration file in NFS to be propogated
+# Allow enough time for configuration file in NFS to be propagated
 # to all nodes of cluster
 exec sleep 60
 

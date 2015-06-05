@@ -140,7 +140,7 @@ if { $matches > $tasks_per_node } {
 }
 
 if {$exit_code == 0} {
-	send_user "\nSo far, so good. Trying with --imediate option\n\n"
+	send_user "\nSo far, so good. Trying with --immediate option\n\n"
 } else {
 	exit $exit_code
 }

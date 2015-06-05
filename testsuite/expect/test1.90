@@ -292,7 +292,7 @@ expect {
 	-re $prompt
 }
 if {$verbose_cnt != $task_cnt} {
-	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt,$task_cnt)\n"
+	send_user "\nFAILURE: verbose messages count inconsistent ($verbose_cnt,$task_cnt)\n"
 	set exit_code 1
 }
 
@@ -364,7 +364,7 @@ while {$cpu_cnt < $task_cnt} {
 }
 
 #
-# Generate foward and reverse masks and maps
+# Generate forward and reverse masks and maps
 #
 set cpu_cnt 0
 set fwd_mask ""

@@ -74,7 +74,7 @@ expect {
 		if { [test_front_end] } {
 			send_user "\nWARNING: error expected, Testing is incompatible with front-end systems\n"
 		} else {
-			 send_user "\nWARNING: test not compatable with this configuration\n"
+			 send_user "\nWARNING: test not compatible with this configuration\n"
 		}
 		if {$job_id != 0} {
                         cancel_job $job_id

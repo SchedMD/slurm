@@ -192,7 +192,7 @@ cset bin_printenv "printenv"
 cset max_job_delay 120
 
 #
-# Files must be propogated between nodes within this number of seconds.
+# Files must be propagated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
 cset max_file_delay 90
@@ -783,7 +783,7 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 #
 # Proc: test_fast_schedule_2
 #
-# Purpose: Determine if we are runnning FastSchedule=2 usually meaning we are pretending we have more resources than reality.
+# Purpose: Determine if we are running FastSchedule=2 usually meaning we are pretending we have more resources than reality.
 # This is based upon
 # the value of FastSchedule in the slurm.conf.
 #
@@ -1468,7 +1468,7 @@ proc test_front_end { } {
 #
 # Proc: test_multiple_slurmd
 #
-# Returns 1 if running multple slurmd per node
+# Returns 1 if running multiple slurmd per node
 #
 ################################################################
 

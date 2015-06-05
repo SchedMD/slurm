@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of job dependencies and deferred begin time (--depedency
+#          Test of job dependencies and deferred begin time (--dependency
 #          and --begin options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR

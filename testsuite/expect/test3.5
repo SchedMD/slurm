@@ -116,7 +116,7 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node
 expect {
 	-re "error" {
-		send_user "\nFAILURE: something bad happened on partitiion create\n"
+		send_user "\nFAILURE: something bad happened on partition create\n"
 		set exit_code 1
 		exp_continue
 	}

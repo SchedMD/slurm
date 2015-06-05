@@ -264,7 +264,7 @@ proc check_part { } {
 # Check that partition names have not been used
 check_part
 
-# Remove any vestigial paritions or scripts
+# Remove any vestigial partitions or scripts
 exec $bin_rm -f $file_in
 
 make_bash_script $file_in "sleep 10"

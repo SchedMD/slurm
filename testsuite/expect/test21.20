@@ -188,9 +188,9 @@ if {$matches != 27} {
 
 #modify user1 QoS
 
-# First array: information about user (ie. cluster,acount,partition...)
-# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
-# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 incr exit_code [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]]
 if { $exit_code } {
@@ -236,9 +236,9 @@ if {$matches != 21} {
 
 #modify user2 QoS
 
-# First array: information about user (ie. cluster,acount,partition...)
-# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
-# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 incr exit_code [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]]
 
@@ -290,9 +290,9 @@ if {$matches != 15} {
 
 #modify user3 QoS
 
-# First array: information about user (ie. cluster,acount,partition...)
-# Second array: account inforamtion about user (ie. adminlevel, default account, ...)
-# Third array: assocoiation information about user (ie. fairshare, grpcpumins, grpcpu...)
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 incr exit_code [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]]
 

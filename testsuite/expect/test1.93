@@ -143,7 +143,7 @@ if {[string compare $host_0 ""] == 0} {
 	set exit_code   1
 }
 if {[string compare $host_0 $host_1] == 0} {
-	send_user "\nFAILURE: mulitple tasks ran on a single node with --mpi=lam option\n"
+	send_user "\nFAILURE: multiple tasks ran on a single node with --mpi=lam option\n"
 	set exit_code   1
 }
 

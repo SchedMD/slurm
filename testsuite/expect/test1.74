@@ -210,7 +210,7 @@ if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1]} {
 ############################# Test QoS Limits #################################
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: acount was not modified\n"
+	send_user "\nFAILURE: account was not modified\n"
 	cleanup
 	exit 1
 }
@@ -227,7 +227,7 @@ srun_test [expr $node_cnt-1] $acct
 # now make sure the maxnodes of the QOS overrides the association
 set mod_acct_assoc_vals(maxnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: acount was not modified\n"
+	send_user "\nFAILURE: account was not modified\n"
 	cleanup
 	exit 1
 }
@@ -244,7 +244,7 @@ srun_test [expr $node_cnt-1] $acct
 # now make sure the grpnodes of the QOS overrides the association
 set mod_acct_assoc_vals(grpnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: acount was not modified\n"
+	send_user "\nFAILURE: account was not modified\n"
 	cleanup
 	exit 1
 }
@@ -256,7 +256,7 @@ set mod_acct_assoc_vals(grpnodes) -1
 set mod_acct_assoc_vals(maxnodes) 1
 
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
-	send_user "\nFAILURE: acount was not modified\n"
+	send_user "\nFAILURE: account was not modified\n"
 	cleanup
 	exit 1
 }
