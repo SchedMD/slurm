@@ -26,7 +26,7 @@ $Id$
   <group>Applications/batch</group>
   <packager>
     <name>Morris Jette</name>
-    <email>jette1@llnl.gov</email>
+    <email>jette@schedmd.com</email>
   </packager>
 
   <description>The Simple Linux Utility for Resource Management (SLURM) is an 
@@ -41,7 +41,7 @@ $Id$
   conflicting requests for resources by managing a queue of pending work.
   </description>
 
-  <url>http://www.llnl.gov/linux/slurm</url>
+  <url>http://slurm.schedmd.com</url>
   <rpmlist>
       <rpm>slurm</rpm>
       <rpm>slurm-devel</rpm>
