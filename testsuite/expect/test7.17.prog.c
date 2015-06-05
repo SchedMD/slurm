@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	/* FIXME: Read values from slurm.conf? */
 	cpu_count = 32;
 	node_name = "jette";
-	rc = gres_plugin_node_config_load(cpu_count, node_name);
+	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("FAILURE: gres_plugin_node_config_load");
 		exit(1);
