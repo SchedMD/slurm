@@ -332,7 +332,7 @@ if {[string match "*CR_SOCKET*" $select_type_params]} {
 	exit 0
 }
 
-# Remove any vesitgial accounts or qos
+# Remove any vestigial accounts or qos
 spawn $sacctmgr -i delete qos $qostest
 expect {
 	-re "Deleting QOS(s)" {

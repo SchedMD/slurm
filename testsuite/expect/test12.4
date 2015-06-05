@@ -760,7 +760,7 @@ if {$job_id == 0} {
 
 	set matches [sacct_job -verbose $job_id]
 	if {$matches != 4} {
-		send_user "\nFAILURE: sacct --verbosee failed ($matches != 4)\n"
+		send_user "\nFAILURE: sacct --verbose failed ($matches != 4)\n"
 		set exit_code 1
 	}
 }

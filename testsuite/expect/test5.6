@@ -44,7 +44,7 @@ set job_name2    "test$test_id.job2"
 print_header $test_id
 
 if {[job_submit_all_partitions] != 0} {
-	send_user "\nWARNING: This test is incompatable with JobSubmitPlugins=all_partitions\n"
+	send_user "\nWARNING: This test is incompatible with JobSubmitPlugins=all_partitions\n"
 	exit 0
 }
 

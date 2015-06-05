@@ -46,7 +46,7 @@ set exit_code  0
 #
 # exp_node = 0: job must only use the specified node
 # exp_node = 1: job must use more then specified node
-# exp_node = -1: job must fail because the job execeeds the number or cores
+# exp_node = -1: job must fail because the job exceeds the number or cores
 #
 #############################################################################
 proc core_spec_job {task node core_spec exp_nodes} {
@@ -280,7 +280,7 @@ core_spec_job -2 $first_node [expr $core_cnt - 2] 0
 
 #
 # Using core spec with more tasks then the node can handle. This should
-# cause the tasks to spread accross mutliple nodes as needed
+# cause the tasks to spread across multiple nodes as needed
 #
 send_user "\n\nSpread job across multiple nodes\n"
 core_spec_job 1 $first_node [expr $core_cnt - 2] 1

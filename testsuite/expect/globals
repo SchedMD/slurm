@@ -192,7 +192,7 @@ cset bin_printenv "printenv"
 cset max_job_delay 120
 
 #
-# Files must be propogated between nodes within this number of seconds.
+# Files must be propagated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
 cset max_file_delay 90
@@ -1463,7 +1463,7 @@ proc test_front_end { } {
 #
 # Proc: test_multiple_slurmd
 #
-# Returns 1 if running multple slurmd per node
+# Returns 1 if running multiple slurmd per node
 #
 ################################################################
 

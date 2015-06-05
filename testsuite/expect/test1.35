@@ -73,7 +73,7 @@ log_user 1
 # Build input script file
 # Sleep between initiation of job steps to avoid overwhelming slurmd
 #
-# NOTE: Explicity set a small memory limit. Without explicitly setting the step
+# NOTE: Explicitly set a small memory limit. Without explicitly setting the step
 #   memory limit, it will use the system default (same as the job) which may
 #   prevent the level of parallelism desired.
 #

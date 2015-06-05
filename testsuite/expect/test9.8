@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Stress test with maximum slurmctld message concurrency.
 #          We start a large number of job steps, the simultaneously
-#          cancel them all. Message can get lost/restransmitted, so
+#          cancel them all. Message can get lost/retransmitted, so
 #          there is a delayed test for job step removal.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -72,7 +72,7 @@ if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
 # NOTE: The initial sleep is so that all of the submissions have time
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
-# NOTE: Explicity set a small memory limit. Without explicitly setting the step
+# NOTE: Explicitly set a small memory limit. Without explicitly setting the step
 #   memory limit, it will use the system default (same as the job) which may
 #   prevent the level of parallelism desired.
 #

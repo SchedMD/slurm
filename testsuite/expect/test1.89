@@ -268,7 +268,7 @@ expect {
 # Both task/affinity and task/cpu will generate verbose message,
 # so check for double messages in case both plugins are configured.
 if {$verbose_cnt != $task_cnt && $verbose_cnt != [expr $task_cnt * 2]} {
-	send_user "\nFAILURE: verbose messages count inconsisent ($verbose_cnt != $task_cnt)\n"
+	send_user "\nFAILURE: verbose messages count inconsistent ($verbose_cnt != $task_cnt)\n"
 	set exit_code 1
 }
 
@@ -340,7 +340,7 @@ while {$cpu_cnt < $task_cnt} {
 }
 
 #
-# Generate foward and reverse masks and maps
+# Generate forward and reverse masks and maps
 #
 set cpu_cnt 0
 set fwd_mask ""

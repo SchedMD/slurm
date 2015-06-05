@@ -56,8 +56,8 @@ Core_ID x threads_per_core + Thread_ID).
 .TP
 \fBFile\fR
 Fully qualified pathname of the device files associated with a resource. 
-The file name parsing logic does not include any support for regular
-expressions. Each file must be explicitly named, one per line.
+The file name parsing logic includes support for simple regular expressions as
+shown in the example.
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
 use of resources allocated to a different user).

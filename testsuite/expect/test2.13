@@ -66,7 +66,7 @@ make_bash_script $file_in1 "
 #
 # Build step file
 # The second sleep is because with some proctrack plugins, the bash shell may
-# be terminiated slighly later than the first sleep process
+# be terminated slighly later than the first sleep process
 #
 make_bash_script $file_in2 "
   $bin_echo STEP_BEGIN
@@ -107,7 +107,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 sleep 5
 
 #
-# Validate that step's origianl time limit
+# Validate that step's original time limit
 #
 spawn  $scontrol show step $job_id.$step_id
 expect {

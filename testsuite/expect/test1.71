@@ -111,7 +111,7 @@ expect {
 }
 
 if {$error_match != 2} {
-	send_user "\nFAILURE: srun did not have a segmentation error when runnning the program ($error_match != 2)\n"
+	send_user "\nFAILURE: srun did not have a segmentation error when running the program ($error_match != 2)\n"
 	set exit_code 1
 } else {
 	send_user "\nThis error is expected\n"

@@ -54,7 +54,7 @@ if {![string match *CR_PACK_NODES* [test_select_type_params]]} {
 }
 
 if {[test_front_end] != 0} {
-	send_user "\nWARNING: this test is not compatable with front-end configurations\n"
+	send_user "\nWARNING: this test is not compatible with front-end configurations\n"
 	exit 0
 }
 
@@ -279,7 +279,7 @@ proc submit_tasks {ntasks ntaskpn} {
 	}
 
 	if {$x != 3} {
-		send_user "\nFAILURE: srun did not submit the jobs correctlty $x != 3\n"
+		send_user "\nFAILURE: srun did not submit the jobs correctly $x != 3\n"
 		exit 1
 	}
 }

@@ -55,7 +55,7 @@ if {[is_super_user] == 0} {
 }
 
 #
-# Slurm time limit enforcement is performed within one minute of the actucal
+# Slurm time limit enforcement is performed within one minute of the actual
 # job time limit, so a one minute limit job will be killed 60 to 120 seconds
 # after initiation. With OverTimeLimit=2, that is moved to 180 to 240 seconds.
 #

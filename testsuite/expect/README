@@ -717,7 +717,7 @@ test32.5   Validates that sgather -k keeps the original source file.
 test32.6   Validates that sgather -C compress the copied file.
 test32.7   Validates that sgather -f ignores nonexistent source files.
 test32.8   Validates that sgather -F changes the fanout message.
-test32.9   Validates that sgather -p option perserves file state.
+test32.9   Validates that sgather -p option preserves file state.
 test32.10  Validates that sgather -r copies files recursively.
 test32.11  Validates that sgather -v prints the output logging of the job.
 test32.12  Validates that sgather -t changes the timeout message.

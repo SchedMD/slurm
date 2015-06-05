@@ -58,7 +58,7 @@ foreach p $range {
 
 if {[expr $ports(1) - $ports(0)] < 5} {
 	send_user "\nWARNING: this test requires SrunPortRange to be "
-	send_user "configured with atleast 5 ports\n"
+	send_user "configured with at least 5 ports\n"
 	exit 0
 }
 

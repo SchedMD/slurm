@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Bluegene/P only: Confirm that salloc can reserve the HTC partitons.
+#          Bluegene/P only: Confirm that salloc can reserve the HTC partitions.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR

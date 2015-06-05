@@ -252,7 +252,7 @@ static void _get_jobs(void)
 	if (_xmit(out_msg))
 		exit(1);
 
-	/* Dump volitile data */
+	/* Dump volatile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) 1);
@@ -279,7 +279,7 @@ static void _get_nodes(void)
 	if (_xmit(out_msg))
 		exit(1);
 
-	/* Dump volitile data */
+	/* Dump volatile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) 1);

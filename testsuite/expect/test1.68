@@ -67,7 +67,7 @@ echo \"Test finished\"
 make_bash_script $stop_srun "
 $bin_sleep 15
 srun_proc=\$(ps -C srun -o pid=)
-echo \"sending job to the backgound, pid=\$srun_proc\"
+echo \"sending job to the background, pid=\$srun_proc\"
 kill -s stop \$srun_proc
 "
 
@@ -93,7 +93,7 @@ set fini_match 0
 set time_num 0
 spawn bash -i $file_in
 expect {
-	-re "sending job to the backgound" {
+	-re "sending job to the background" {
 		if {$time_num == 0} {
 			send_user "\nFAILURE: srun is not generating output\n"
 			set exit_code 1
