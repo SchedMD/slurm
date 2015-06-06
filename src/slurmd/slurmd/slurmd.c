@@ -2032,9 +2032,8 @@ static void _set_msg_aggr_params(void)
 	if (conf->msg_aggr_window_msgs == NO_VAL)
 		conf->msg_aggr_window_msgs = DEFAULT_MSG_AGGR_WINDOW_MSGS;
 	if (conf->msg_aggr_window_msgs > 1) {
-		info("Message aggregation enabled: WindowMsgs=%lu, "
-		     "WindowTime=%lu", conf->msg_aggr_window_msgs,
-		     conf->msg_aggr_window_time);
+		info("Message aggregation enabled: WindowMsgs=%"PRIu64", WindowTime=%"PRIu64,
+		     conf->msg_aggr_window_msgs, conf->msg_aggr_window_time);
 	} else
 		info("Message aggregation disabled");
 }
