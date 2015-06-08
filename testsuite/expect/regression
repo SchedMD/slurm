@@ -56,7 +56,7 @@ fi
 /bin/date
 BEGIN_TIME=`date +%s`
 for major in `seq 1 100`; do
-	for minor in `seq 1 100`; do
+	for minor in `seq 1 150`; do
 		TEST=test${major}.${minor}
 		if [ ! -f ./$TEST ]; then continue; fi
 

@@ -209,7 +209,9 @@ test1.94   Test of MPICH2 task spawn logic
 test1.95   Basic UPC (Unified Parallel C) test via srun.
 test1.96   Basic SHMEM test via srun.
 test1.97   Test that --ntask-per-node and -c options are enforced
+test1.98   AVAILBLE...
 test1.99   Validate that SrunPortRange is enforced when using srun
+test1.100  Test of pack/nopack task distribution.
 **NOTE**   The above tests for multiple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
