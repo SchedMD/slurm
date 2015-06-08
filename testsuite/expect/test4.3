@@ -197,7 +197,9 @@ if {$matches != 6} {
 #
 # Check the sinfo long format
 #
-
+if {[info exists env(SINFO_FORMAT)]} {
+    unset env(SINFO_FORMAT)
+}
 set matches     0
 spawn $sinfo --long
 expect {
