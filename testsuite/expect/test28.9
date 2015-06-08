@@ -1,8 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validates that scontrol update will update job using
-#          the jobid and jobid with array index
+#          Test of maximum running task count in a job array.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id       "28.4"
+set test_id       "28.9"
 set exit_code     0
 set array_size    4
 set file_script   "test$test_id.sh"
@@ -45,64 +44,10 @@ if {[get_array_config] < [expr $array_size + 1]} {
 	exit 0
 }
 
-proc check_update { job job_time } {
-
-	global scontrol number exit_code
-
-	set new_job_id 0
-	set time_match 0
-	spawn $scontrol show job $job
-	expect {
-		-re "JobId=($number) ArrayJobId" {
-			set new_job_id $expect_out(1,string)
-			exp_continue
-		}	
-		-re "TimeLimit=00:($number):00" {
-			if {$expect_out(1,string) == $job_time } {
-				incr time_match
-			}
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$new_job_id == 0} {
-		send_user "\nFAILURE: failed to get new job id\n"
-		set exit_code 1
-	}
-	if {$time_match != 1} {
-		send_user "\nFAILURE: job $job was never updated\n"
-		set exit_code 1
-	}
-	return $new_job_id
-}
-
-proc update_job { job job_time } {
-
-	global scontrol exit_code
-
-	spawn $scontrol update jobid=$job TimeLimit=$job_time
-	expect {
-		timeout {
-			send_user "FAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-#####################Test starts here######################
 # Submit a job array with 4 elements
-make_bash_script $file_script "sleep 10"
+make_bash_script $file_script "sleep 20"
 
-spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script
+spawn $sbatch -N1 --array=0-[expr $array_size -1]%2 --output=/dev/null -t1 $file_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -125,16 +70,40 @@ if {$job_id == 0} {
 	exit 1
 }
 
-# Update a specific job using job array syntax
-update_job ${job_id}_$array_in 2
-set new_job_id [check_update ${job_id}_$array_in 2]
+if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start\n"
+	cancel_job $job_id
+	exit 1
+}
 
-# Update a specific job using job ID syntax
-update_job $new_job_id 4
-set new_job_id [check_update ${job_id}_2 4]
-
-# Make sure other tasks remain unchanged
-check_update ${job_id}_1 1
+set inx 0
+while { $inx < 10 } {
+	$bin_sleep 9
+	set run_count 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "RUNNING" {
+			incr run_count
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$run_count > 2} {
+		send_user "\nFAILURE: too many tasks in the job array are running ($run_count > 2)\n"
+		set exit_code 1
+	}
+	send_user "\n+++ $run_count running tasks +++\n"
+	if {$run_count == 0} {
+		break
+	}
+	incr inx
+}
 
 if {[cancel_job $job_id] != 0} {
 	set exit_code 1
