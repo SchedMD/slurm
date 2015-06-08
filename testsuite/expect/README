@@ -178,6 +178,8 @@ test1.73   Validate OverTimeLimit configuration parameter is enforced.
 test1.74   Validate MaxNode and GrpNode limit enforcment with QoS & association.
 test1.75   Test that --cpu-freq is enforced when using non-numeric values
 test1.76   Test that --cpu-freq sets min-max:gov
+test1.77   Test that job name specified at the command line overwrites
+           the environment variable SLURM_JOB_NAME
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of

@@ -1,0 +1,142 @@
+#!/usr/bin/expect
+################################################################################
+# Purpose: Test of SLURM functionality
+#          Sets the job name environment variable, and changes it using srun,
+#          sbatch and salloc.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Martin Thomas <mt@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"1.77"
+set exit_code	0
+set job_id      0
+set number      "\[0-9\]+"
+set name        "banana"
+set my_cmd      ./mycmd
+set file_in     "test$test_id.in"
+
+# Set env path to SLURM_JOB_NAME
+set env(SLURM_JOB_NAME) "zebra"
+
+print_header $test_id
+
+make_bash_script $file_in "
+/usr/bin/env|grep SLURM_JOB_NAME
+"
+#
+# Tests -J by using srun
+#
+set found 0
+set srun_pid [spawn $srun -J $name $file_in]
+expect {
+        "SLURM_JOB_NAME=$name" {
+            set found 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if  {$found != 1} {
+	send_user "ERROR: COULD NOT FIND SLURM_JOB_NAME=banana\n"
+	exit 1
+}
+send_user "SUCCESS\n"
+#
+# Tests -J using sbatch
+#
+set found 0
+set sbatch_pid [spawn $sbatch -J $name --wrap=env]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+
+
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+set wait_file [wait_for_file slurm-$job_id.out]
+spawn $bin_grep SLURM_JOB_NAME=banana slurm-$job_id.out
+expect {
+        -re "SLURM_JOB_NAME=($alpha_numeric)" {
+            send_user "Job name matched $expect_out(1,string)\n"
+            set found 1
+            exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if  {$found != 1} {
+	send_user "ERROR: COULD NOT FIND SLURM_JOB_NAME=banana\n"
+	exit 1
+}
+if {$exit_code == 0} {
+	exec $bin_rm -f slurm-$job_id.out
+	send_user "SUCCESS\n"
+}
+exec rm -f slurm-$job_id.out
+#
+# Tests -J using salloc
+#
+set found 0
+set salloc_pid [spawn $salloc -J $name $file_in]
+expect {
+        "SLURM_JOB_NAME=$name" {
+		set found 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if  {$found != 1} {
+	send_user "ERROR: COULD NOT FIND SLURM_JOB_NAME=banana\n"
+	exit 1
+}
+exec rm -f $file_in
+send_user "SUCCESS\n"
+exit $exit_code
