@@ -555,6 +555,7 @@ proc wait_for_file { file_name } {
 #                            DONE any terminated state
 #                            PENDING job is pending
 #                            RUNNING job is running
+#                            SUSPENDED job is suspended
 #
 # NOTE: We sleep for two seconds before replying that a job is
 # done to give time for I/O completion (stdout/stderr files)
@@ -569,6 +570,7 @@ proc wait_for_job { job_id desired_state } {
 		"DONE" {}
 		"PENDING" {}
 		"RUNNING" {}
+		"SUSPENDED" {}
 		default {
 			send_user "FAILURE: wait_for_job with invalid state: $desired_state\n"
 			return 1
@@ -607,6 +609,10 @@ proc wait_for_job { job_id desired_state } {
 					send_user "Job $job_id is $state, "
 					send_user "but we wanted RUNNING\n"
 				}
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					send_user "Job $job_id is $state, "
+					send_user "but we wanted SUSPENDED\n"
+				}
 				return 1
 			}
 			"PENDING" {
@@ -620,6 +626,14 @@ proc wait_for_job { job_id desired_state } {
 			"RUNNING" {
 				if {[string compare $desired_state "RUNNING"] == 0} {
 					send_user "Job $job_id is RUNNING\n"
+					return 0
+				}
+				send_user "Job $job_id is in state $state, "
+				send_user "desire $desired_state\n"
+			}
+			"SUSPENDED" {
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					send_user "Job $job_id is SUSPENDED\n"
 					return 0
 				}
 				send_user "Job $job_id is in state $state, "
