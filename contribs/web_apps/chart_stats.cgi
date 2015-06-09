@@ -66,6 +66,9 @@ my ($time_begin, $time_end);
 my ($yb, $mb, $db, $ye, $me, $de);
 my ($user, $account, $x_axis, $y_axis, $cluster);
 
+my $slurm_bindir = "/usr/bin";
+my $sacctmgr_bin = "$slurm_bindir/sacctmgr";
+my $sreport_bin = "$slurm_bindir/sreport";
 
 if (param) {
     if (valid_input()) {
@@ -788,7 +791,7 @@ sub add_utilizatn_bars {
 #
 sub cluster_list {
     my @clusters;
-    my @results = `/usr/bin/sacctmgr -nr show cluster format=cluster`;
+    my @results = `$sacctmgr_bin -nr show cluster format=cluster`;
 
     for (@results) {
 	chomp;
@@ -806,7 +809,7 @@ sub chart_user {
     my $title = "$user Usage of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $cmd = "$sreport_bin -nt $y_axis";
     my $request = " cluster UserUtilizationByAccount" .
 	" cluster=$cluster user=$user format=Account,Used";
 
@@ -826,7 +829,7 @@ sub chart_account {
     my $title = "$account Usage of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $cmd = "$sreport_bin -nt $y_axis";
     my $request = " cluster AccountUtilizationByUser" .
 	" cluster=$cluster account=$account format=Login,Used";
 
@@ -847,7 +850,7 @@ sub chart_top_users {
     my $title = "$cluster Top Users";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $cmd = "$sreport_bin -nt $y_axis";
     my $request = " user TopUsage Group cluster=$cluster format=Login,Used";
 
     if (add_bars($cmd, $request)) {
@@ -865,7 +868,7 @@ sub chart_top_accounts {
     my $title = "$cluster Top Accounts";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $cmd = "$sreport_bin -nt $y_axis";
     my $request = " cluster AccountUtilizationByUser" .
 	" cluster=$cluster format=Account,Used";
 
@@ -882,7 +885,7 @@ sub chart_top_accounts {
 #
 sub chart_job_size {
     my @brink;
-    my $cpus = `/usr/bin/sacctmgr -nr show cluster cluster=$cluster format=cpucount`;
+    my $cpus = `$sacctmgr_bin -nr show cluster cluster=$cluster format=cpucount`;
     chomp;
     $cpus =~ s/^\s+//;
     $cpus =~ s/\s+$//;
@@ -895,7 +898,7 @@ sub chart_job_size {
     $brink[1] = int(0.3 * $cpus);
     $brink[2] = int(0.75 * $cpus);
 
-    my $cmd = "/usr/bin/sreport -nt hours";
+    my $cmd = "$sreport_bin -nt hours";
     my $request = " job SizesByAccount cluster=$cluster" .
 	" format=Account grouping=$brink[0],$brink[1],$brink[2]";
 
@@ -915,7 +918,7 @@ sub chart_job_size {
 #
 sub chart_size_accounts {
     my @brink;
-    my $cpus = `/usr/bin/sacctmgr -nr show cluster cluster=$cluster format=cpucount`;
+    my $cpus = `$sacctmgr_bin -nr show cluster cluster=$cluster format=cpucount`;
     chomp;
     $cpus =~ s/^\s+//;
     $cpus =~ s/\s+$//;
@@ -928,7 +931,7 @@ sub chart_size_accounts {
     $brink[1] = int(0.3 * $cpus);
     $brink[2] = int(0.75 * $cpus);
 
-    my $cmd = "/usr/bin/sreport -nt hours";
+    my $cmd = "$sreport_bin -nt hours";
     my $request = " job SizesByAccount FlatView cluster=$cluster" .
 	" format=Account grouping=$brink[0],$brink[1],$brink[2]";
 
@@ -948,7 +951,7 @@ sub chart_utilizatn {
     my $title = "Utilization of $cluster";
     $obj->set ('title' => $title);
 
-    my $cmd = "/usr/bin/sreport -nt $y_axis";
+    my $cmd = "$sreport_bin -nt $y_axis";
     my $request = " cluster Utilization cluster=$cluster" .
 	" format=Allocated,Reserved,Idle,Down";
 
