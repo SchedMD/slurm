@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "no_backup_scheduling" SchedulerParameter to prevent jobs from being
     scheduled when the backup takes over. Jobs can be submitted, modified and
     cancelled while the backup is in control.
+ -- Enable native Slurm backup controller to reside on an external Cray node
+    when the "no_backup_scheduling" SchedulerParameter is used.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

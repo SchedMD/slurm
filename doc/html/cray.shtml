@@ -7,6 +7,7 @@
 <li><a href="#features">Cray Specific Features</a></li>
 <li><a href="#admin_guide">Administrator Guide</a></li>
 <li><a href="#setup">Cray System Setup</a></li>
+<li><a href="#ha">High Availability</a></li>
 <li><a href="http://www.cray.com">Cray</a></li>
 </ul>
 
@@ -175,6 +176,7 @@ details.</p>
     <li>WLM_DETECT_ACTIVE=SLURM /etc/init.d/ncmd restart</li>
     <lI>WLM_DETECT_ACTIVE=SLURM /etc/init.d/apptermd restart</li>
   </ul>
+</ul>
 <p>
   As with Linux clusters you will need to start a slurmd on each of your
   compute nodes.  If you choose to use munge authentication, advised,
@@ -183,6 +185,18 @@ details.</p>
   quick start guide</a> for more info.  Outside of the differences
   listed in this file it can be used to set up your Cray system to run
   Slurm natively.
+</p>
+
+<h2><a name="ha">High Availability</a></h2>
+<p>
+A backup controller can be setup in or outside the Cray. However, when the
+backup is within the Cray, both the primary and the backup controllers will go
+down when the Cray is rebooted. It is best to setup the backup controller on a
+Cray external node so that the controller can still receive new jobs when the
+Cray is down.  When the backup is configured on an external node the
+<b><i>no_backup_scheduling</i></b> <b><i>SchedulerParameter</i></b> should be
+specified in the slurm.conf. This allows new jobs to be submitted while the Cray
+is down and prevents any new jobs from being started.
 </p>
 
 <p class="footer"><a href="#top">top</a></p>

@@ -159,6 +159,8 @@ static int active_post_nhc_cnt = 0;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
+static bool scheduling_disabled = false; //Backup running on external cray node?
+
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 static size_t topology_num_nodes = 0;
 static alpsc_topology_t *topology = NULL;
@@ -242,6 +244,9 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 
 static int _run_nhc(nhc_info_t *nhc_info)
 {
+	if (scheduling_disabled)
+		return 0;
+
 #ifdef HAVE_NATIVE_CRAY
 	int argc = 13, status = 1, wait_rc, i = 0;
 	char *argv[argc];
@@ -747,6 +752,9 @@ static void _update_app(struct job_record *job_ptr,
 
 static void _start_aeld_thread()
 {
+	if (scheduling_disabled)
+		return;
+
 	debug("cray: %s", __func__);
 
 	// Spawn the aeld thread, only in slurmctld.
@@ -762,6 +770,9 @@ static void _start_aeld_thread()
 
 static void _stop_aeld_thread()
 {
+	if (scheduling_disabled)
+		return;
+
 	debug("cray: %s", __func__);
 
 	_aeld_cleanup();
@@ -1161,6 +1172,10 @@ unpack_error:
  */
 extern int init ( void )
 {
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+	char *err_msg = NULL;
+#endif
+
 	/* We must call the api here since we call this from other
 	 * things other than the slurmctld.
 	 */
@@ -1168,6 +1183,21 @@ extern int init ( void )
 	if (select_type_param & CR_OTHER_CONS_RES)
 		plugin_id = 108;
 	debug_flags = slurm_get_debug_flags();
+
+	if (!slurmctld_primary && run_in_daemon("slurmctld")) {
+		if (slurmctld_config.scheduling_disabled) {
+			info("Scheduling disabled on backup");
+			scheduling_disabled = true;
+		}
+
+#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+		else if (alpsc_get_topology(&err_msg, &topology,
+					    &topology_num_nodes))
+			fatal("Running backup on an external node requires "
+			      "the \"no_backup_scheduling\" "
+			      "SchedulerParameter.");
+#endif
+	}
 
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -1295,6 +1325,9 @@ extern int select_p_state_restore(char *dir_name)
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t record_count;
+
+	if (scheduling_disabled)
+		return SLURM_SUCCESS;
 
 	debug("cray: select_p_state_restore");
 
@@ -1518,6 +1551,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	struct node_record *node_rec;
 	int i, j;
 	uint64_t blade_id = 0;
+
+	if (scheduling_disabled)
+		return other_node_init(node_ptr, node_cnt);
 
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	int nn, end_nn, last_nn = 0;
@@ -2035,6 +2071,9 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	int i;
 	static time_t last_set_all = 0;
+
+	if (scheduling_disabled)
+		return other_select_nodeinfo_set_all();
 
 	/* only set this once when the last_bg_update is newer than
 	   the last time we set things up. */
