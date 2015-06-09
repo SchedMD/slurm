@@ -150,6 +150,7 @@ typedef struct slurmctld_config {
 	time_t	boot_time;
 	time_t	shutdown_time;
 	int	server_thread_count;
+	bool scheduling_disabled;
 
 	slurm_cred_ctx_t cred_ctx;
 #ifdef WITH_PTHREADS

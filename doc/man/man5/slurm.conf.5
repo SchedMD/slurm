@@ -2519,6 +2519,13 @@ For example if MessageTimeout=10, the time limit will be 2 seconds
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
 .TP
+\fBno_backup_scheduling\fR
+If used, the backup controller will not schedule jobs when it takes over. The
+backup controller will allow jobs to be submitted, modified and cancelled but
+won't schedule new jobs. This is useful in Cray environments when the backup
+controller resides on an external Cray node.  A restart is required to alter
+this option. This is explicitly set on a Cray/ALPS system.
+.TP
 \fBpack_serial_at_end\fR
 If used with the select/cons_res plugin then put serial jobs at the end of
 the available nodes rather than using a best fit algorithm.

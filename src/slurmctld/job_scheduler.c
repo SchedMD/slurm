@@ -841,6 +841,9 @@ extern int schedule(uint32_t job_limit)
 	struct timeval now;
 	long delta_t;
 
+	if (slurmctld_config.scheduling_disabled)
+		return 0;
+
 	gettimeofday(&now, NULL);
 	if (sched_last.tv_sec == 0) {
 		delta_t = sched_min_interval;
@@ -985,11 +988,6 @@ static int _schedule(uint32_t job_limit)
 	char get_name[16];
 #endif
 	DEF_TIMERS;
-
-#ifdef HAVE_ALPS_CRAY
-	if (!slurmctld_primary)
-		return 0;
-#endif
 
 	if (slurmctld_config.shutdown_time)
 		return 0;

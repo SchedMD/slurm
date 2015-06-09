@@ -399,6 +399,23 @@ int main(int argc, char *argv[])
 			slurmctld_conf.job_credential_private_key);
 	}
 
+	/* Must set before plugins are loaded. */
+	if (slurmctld_conf.backup_controller &&
+	    (strcmp(node_name, slurmctld_conf.backup_controller) == 0)) {
+		char *sched_params = NULL;
+		slurmctld_primary = 0;
+
+#ifdef HAVE_ALPS_CRAY
+		slurmctld_config.scheduling_disabled = true;
+#else
+		sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    strstr(sched_params, "no_backup_scheduling"))
+			slurmctld_config.scheduling_disabled = true;
+		xfree(sched_params);
+#endif
+	}
+
 
 	/* Not used in creator
 	 *
@@ -434,11 +451,8 @@ int main(int argc, char *argv[])
 		slurmctld_config.resume_backup = false;
 
 		/* start in primary or backup mode */
-		if (slurmctld_conf.backup_controller &&
-		    (strcmp(node_name,
-			    slurmctld_conf.backup_controller) == 0)) {
+		if (!slurmctld_primary) {
 			slurm_sched_fini();	/* make sure shutdown */
-			slurmctld_primary = 0;
 			run_backup(&callbacks);
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 				fatal("failed to initialize "
@@ -467,9 +481,6 @@ int main(int argc, char *argv[])
 				slurmctld_init_db = 1;
 				_accounting_mark_all_nodes_down("cold-start");
 			}
-
-			slurmctld_primary = 1;
-
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
@@ -757,6 +768,7 @@ static void  _init_config(void)
 	slurmctld_config.server_thread_count = 0;
 	slurmctld_config.shutdown_time  = (time_t) 0;
 	slurmctld_config.thread_id_main = pthread_self();
+	slurmctld_config.scheduling_disabled = false;
 #ifdef WITH_PTHREADS
 	pthread_mutex_init(&slurmctld_config.thread_count_lock, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
