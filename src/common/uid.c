@@ -37,12 +37,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <stdlib.h>
 #include <pwd.h>
 #include <grp.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 
 #include "src/common/macros.h"
 #include "src/common/uid.h"
@@ -293,4 +298,31 @@ gid_to_string (gid_t gid)
 	else
 		gstring = xstrdup("nobody");
 	return gstring;
+}
+
+int
+slurm_find_group_user(struct passwd *pwd, gid_t gid)
+{
+	struct group grp;
+	struct group *grpp;
+	char buf[PW_BUF_SIZE];
+	int cc;
+
+	setgrent();
+	while (1) {
+		cc = getgrent_r(&grp, buf, PW_BUF_SIZE, &grpp);
+		if (cc)
+			break;
+		if (grpp->gr_gid != gid)
+			continue;
+		for (cc = 0; grpp->gr_mem[cc] ; cc++) {
+			if (strcmp(pwd->pw_name, grpp->gr_mem[cc]) == 0) {
+				endgrent();
+				return 1;
+			}
+		}
+	}
+	endgrent();
+
+	return 0;
 }
