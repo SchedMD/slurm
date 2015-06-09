@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     the failures are logged into memory.failcnt count file by cgroup
     and the user is notified by slurmstepd about it.
  -- Fix scheduling inconsistency with GRES bound to specific CPUs.
+ -- If user belongs to a group which has split entries in /etc/group
+    search for its username in all groups.
 
 * Changes in Slurm 14.11.7
 ==========================

@@ -63,6 +63,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/uid.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -127,7 +128,10 @@ znovu:
 		       	return 1;
 	       	}
 	}
-
+	if (*gid != 0) {
+		if (slurm_find_group_user(pwd, *gid))
+			return 1;
+	}
 	/* root user may have launched this job for this user, but
 	 * root did not explicitly set the gid. This would set the
 	 * gid to 0. In this case we should set the appropriate
