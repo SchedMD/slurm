@@ -168,9 +168,9 @@ Pluggable Authentication Module (PAM) for restricting access to compute nodes
 where Slurm performs workload management. Access to the node is restricted to
 user root and users who have been allocated resources on that node.
 NOTE: pam_slurm is included within the Slurm distribution.
-For earlier Slurm versions, pam_slurm is available for download from<br>
-<a href="http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2">
-http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2</a><br>
+For earlier Slurm versions, pam_slurm is available for download
+<a href="http://www.schedmd.com/download/extras/pam_slurm-1.6.tar.bz2">here</a>.
+<br>
 Slurm's PAM module has also been packaged for
 <a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
@@ -180,20 +180,16 @@ Slurm's PAM module has also been packaged for
 <ul>
 <li><a href="http://www.sdsc.edu/catalina/">Catalina</a> a scheduler supporting the
 <a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
-<li><a href="http://web.mit.edu/star/cluster/docs/latest/index.html">StarCluster</a>
-cloud computing toolkit has a
-<a href="https://github.com/jlafon/StarCluster">Slurm port available</a>.
-<li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
-<li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+<li><a href="http://www-03.ibm.com/systems/platformcomputing/products/lsf/">Load Sharing Facility (LSF)</a></li>
+<li><a href="http://www.adaptivecomputing.com/products/open-source/maui/">
 Maui Scheduler</a></li>
-<li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+<li><a href="http://www.adaptivecomputing.com/products/hpc-products/moab-hpc-suite-enterprise-edition/">
 Moab Cluster Suite</a></li>
 </ul><br>
 
 <li><b>Command wrappers</b><br>
-There is a wrapper for Maui/Moab's showq command at
-<a href="https://github.com/pedmon/slurm_showq">
-https://github.com/pedmon/slurm_showq</a>.<br><br>
+There is a wrapper for Maui/Moab's showq command
+<a href="https://github.com/pedmon/slurm_showq">here</a>.<br><br>
 
 <li><b>Job Script Generator</b><br>
 Brigham Young University has developed a Javascript tool to generate
@@ -208,8 +204,8 @@ batch job scripts for Slurm which is available
 <li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
 Python/Pyrex module to interface with Slurm.
 There is also a Python module to expand and collect hostlist expressions 
-available at <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
-http://www.nsc.liu.se/~kent/python-hostlist/</a>.</li>
+available <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
+here</a>.</li>
 
 <!--
 This directly communicates with the database, so it is something that we
