@@ -109,6 +109,9 @@
 /* Enables module specific debugging */
 #define _DEBUG 0
 
+static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
+			      bitstr_t *part_core_map, const uint32_t node_i,
+			      bool entire_sockets_only);
 static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
@@ -125,10 +128,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *node_map,
 			uint32_t min_nodes, uint32_t max_nodes,
 			uint32_t req_nodes, uint32_t cr_node_cnt,
 			uint16_t *cpu_cnt);
-
-static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
-			      bitstr_t *part_core_map, const uint32_t node_i,
-			      bool entire_sockets_only);
 
 /* _allocate_sockets - Given the job requirements, determine which sockets
  *                     from the given node can be allocated (if any) to this
