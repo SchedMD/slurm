@@ -162,16 +162,17 @@ EXTRA_DIST = \
 	test3.9				\
 	test3.10			\
 	test3.11			\
-	inc3.11.1                      \
-	inc3.11.2                      \
-	inc3.11.3                      \
-	inc3.11.4                      \
-	inc3.11.5                      \
-	inc3.11.6                      \
-	inc3.11.7                      \
-	inc3.11.8                      \
+	inc3.11.1			\
+	inc3.11.2			\
+	inc3.11.3			\
+	inc3.11.4			\
+	inc3.11.5			\
+	inc3.11.6			\
+	inc3.11.7			\
+	inc3.11.8			\
 	test3.12			\
 	test3.13			\
+	test3.14			\
 	test4.1				\
 	test4.2				\
 	test4.3				\

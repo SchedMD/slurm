@@ -1,0 +1,168 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of advanced reservation "replace" option.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Morris Jette <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id		"3.11"
+set exit_code		0
+set node_list_new       ""
+set node_list_orig      ""
+set resv_name           "resv$test_id"
+set user_name		""
+
+print_header $test_id
+
+if {[is_super_user] == 0} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
+	exit 0
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 3} {
+	send_user "\nWARNING: This test requires at least 3 nodes in the cluster.\n"
+	exit 0
+}
+
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Create the advanced reservation
+#
+spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=replace partition=$def_part_name users=$user_name
+expect {
+	-re "Error|error" {
+		send_user "\nFAILURE: error creating reservation\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check the advanced reservation's allocated nodes and "REPLACE" flag
+#
+set match 0
+spawn $scontrol show ReservationName=$resv_name
+expect {
+	-re "Nodes=($alpha_numeric_nodelist)" {
+		set node_list_orig $expect_out(1,string)
+		exp_continue
+	}
+	-re "Flags=REPLACE" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: reservation REPLACE flag not found\n"
+	set exit_code 1
+}
+
+#
+# Use a node from the reservation, so it gets replaced
+#
+spawn $srun -n1 --reservation=$resv_name $bin_hostname
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check that advanced reservation's allocated nodes has been updated
+#
+spawn $scontrol show ReservationName=$resv_name
+expect {
+	-re "Nodes=($alpha_numeric_nodelist)" {
+		set node_list_new $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {![string compare $node_list_orig $node_list_new]} {
+	send_user "\nFAILURE: reservation failed to replace allocated node\n"
+	set exit_code 1
+}
+
+#
+# Delete the advanced reservation
+#
+spawn $scontrol delete ReservationName=$resv_name
+expect {
+	-re "Error|error" {
+		send_user "\nFAILURE: error deleting reservation\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
