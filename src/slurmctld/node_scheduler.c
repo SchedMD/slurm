@@ -1243,7 +1243,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (total_nodes > max_nodes) {	/* exceeds node limit */
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
-		if (job_ptr->details->core_spec != (uint16_t) NO_VAL) {
+		if ((job_ptr->details->core_spec != (uint16_t) NO_VAL) &&
+		    ((job_ptr->details->core_spec & CORE_SPEC_THREAD) == 0)) {
 			i = bit_ffs(job_ptr->details->req_node_bitmap);
 			if (i >= 0) {
 				node_ptr = node_record_table_ptr + i;
