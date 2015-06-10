@@ -69,9 +69,7 @@
 #include "src/common/read_config.h"
 #include "src/common/proc_args.h"
 #include "src/common/xstring.h"
-#include "../hdf5_api.h"
-
-#include "libsh5util_old/sh5util_old.h"
+#include "hdf5_api.h"
 
 typedef enum {
 	SH5UTIL_MODE_MERGE,
@@ -145,8 +143,7 @@ Usage sh5util [<OPTION>] -j <job[.stepid]>\n"
 " --usage              Display brief usage message\n");
 }
 
-int
-main(int argc, char **argv)
+extern int run_old(int argc, char **argv)
 {
 	int cc;
 
