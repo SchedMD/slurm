@@ -294,6 +294,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix scheduling inconsistency with GRES bound to specific CPUs.
  -- If user belongs to a group which has split entries in /etc/group
     search for its username in all groups.
+ -- Do not consider nodes explicitly powered up as DOWN with reason of "Node
+    unexpected rebooted".
 
 * Changes in Slurm 14.11.7
 ==========================
