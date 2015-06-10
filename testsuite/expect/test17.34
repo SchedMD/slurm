@@ -46,7 +46,7 @@ set exit_code  0
 #
 # exp_node = 0: job must only use the specified node
 # exp_node = 1: job must use more then specified node
-# exp_node = -1: job must fail because the job exceeds the number or cores
+# exp_node = -1: job must fail because the job exceeds the number of cores
 #
 #############################################################################
 proc core_spec_job {task node core_spec exp_nodes} {
@@ -57,7 +57,11 @@ proc core_spec_job {task node core_spec exp_nodes} {
 
 	# Determine the number of tasks that can be run
 	set cpu_used_by_spec [expr $thread_cnt * $core_spec]
-	set task_limit [expr $cpu_tot - $cpu_used_by_spec]
+	if {$cpu_tot > $cpu_used_by_spec} {
+		set task_limit [expr $cpu_tot - $cpu_used_by_spec]
+	} else {
+		set task_limit 1
+	}
 	set error_chk 0
 	spawn $sbatch -t1 -w$node -S$core_spec -n[expr abs($task_limit + $task)] -o$file_out $spec_in
 	expect {
