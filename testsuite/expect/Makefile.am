@@ -393,6 +393,7 @@ EXTRA_DIST = \
 	test17.37			\
 	test17.38			\
 	test17.39			\
+	test17.40			\
 	test19.1			\
 	test19.2			\
 	test19.3			\
