@@ -1193,7 +1193,6 @@ cpu_freq_reset(stepd_step_rec_t *job)
 			}
 		}
 	}
-	xfree(slurmd_spooldir);
 }
 
 /* Convert a cpu_freq number to its equivalent string */
