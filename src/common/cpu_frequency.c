@@ -955,5 +955,4 @@ cpu_freq_reset(stepd_step_rec_t *job)
 		       cpufreq[i].new_governor);
 	}
 	debug("%s: #cpus reset = %u", __func__, j);
-	xfree(slurmd_spooldir);
 }
