@@ -274,9 +274,13 @@ cpu_freq_init(slurmd_conf_t *conf)
 	/* get the cpu frequency info into the cpu_freq_data structure */
 	cpu_freq_count = conf->block_map_size;
 	if (!cpufreq) {
+		int cpuidx;
 		cpufreq = (struct cpu_freq_data *)
 			  xmalloc(cpu_freq_count *
 				  sizeof(struct cpu_freq_data));
+
+		for (cpuidx = 0; cpuidx < cpu_freq_count; cpuidx++)
+			_cpu_freq_init_data(cpuidx);
 	}
 
 	debug2("Gathering cpu frequency information for %u cpus",
@@ -1136,7 +1140,7 @@ cpu_freq_reset(stepd_step_rec_t *job)
 	for (i = 0; i < cpu_freq_count; i++) {
 		if (cpufreq[i].new_frequency == NO_VAL
 		    && cpufreq[i].new_min_freq == NO_VAL
-		    && cpufreq[i].new_min_freq == NO_VAL
+		    && cpufreq[i].new_max_freq == NO_VAL
 		    && cpufreq[i].new_governor[0] == '\0')
 			continue; /* Nothing to reset on this CPU */
 
