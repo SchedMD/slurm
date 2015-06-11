@@ -54,6 +54,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/read_config.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #define PATH_TO_CPU	"/sys/devices/system/cpu/"
 #define LINE_LEN	100
@@ -75,7 +77,7 @@ static struct cpu_freq_data {
 	uint32_t new_frequency;
 	char     new_governor[GOV_NAME_LEN];
 } * cpufreq = NULL;
-char *slurmd_spooldir = NULL;
+static char *slurmd_spooldir = NULL;
 
 static void	_cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx);
 static uint16_t	_cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
@@ -113,9 +115,6 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	char tmp[64];
 	int fd, sz;
 
-	if (!slurmd_spooldir)
-		slurmd_spooldir = slurm_get_slurmd_spooldir();
-
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
 	(void) mkdir(tmp, 0700);
 	snprintf(tmp, sizeof(tmp), "%s/cpu/%d", slurmd_spooldir, cpu_id);
@@ -138,9 +137,6 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	char tmp[64];
 	uint32_t in_job_id;
 	int fd, sz;
-
-	if (!slurmd_spooldir)
-		slurmd_spooldir = slurm_get_slurmd_spooldir();
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
 	(void) mkdir(tmp, 0700);
@@ -186,6 +182,12 @@ cpu_freq_init(slurmd_conf_t *conf)
 	FILE *fp;
 	char value[LINE_LEN];
 	unsigned int i, j;
+
+	xfree(slurmd_spooldir);
+	slurmd_spooldir = conf->spooldir;
+
+	if (run_in_daemon("slurmstepd"))
+		return;
 
 	/* check for cpufreq support */
 	if ( stat(PATH_TO_CPU "cpu0/cpufreq", &statbuf) != 0 ) {
@@ -273,6 +275,7 @@ extern void
 cpu_freq_fini(void)
 {
 	xfree(cpufreq);
+	xfree(slurmd_spooldir);
 }
 
 /*

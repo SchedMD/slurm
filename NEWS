@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     search for its username in all groups.
  -- Do not consider nodes explicitly powered up as DOWN with reason of "Node
     unexpected rebooted".
+ -- Use correct slurmd spooldir when creating cpu-frequency locks.
 
 * Changes in Slurm 14.11.7
 ==========================

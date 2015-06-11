@@ -450,6 +450,9 @@ _init_from_slurmd(int sock, char **argv,
 	/* Receive GRES information from slurmd */
 	gres_plugin_recv_stepd(sock);
 
+	/* Grab the slurmd's spooldir. Has %n expanded. */
+	cpu_freq_init(conf);
+
 	/* Receive cpu_frequency info from slurmd */
 	cpu_freq_recv_info(sock);
 
