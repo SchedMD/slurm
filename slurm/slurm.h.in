@@ -807,10 +807,6 @@ enum ctx_keys {
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age
 						 * priority to pending jobs ignoring
 						 * dependencies or holds */
-#define PRIORITY_FLAGS_TICKET_BASED     0x0002 /* Enable the ticket based multifactor
-						* plugin. The default is usage based
-						* multifactor plugin.
-						*/
 #define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
 						 * relative to its time limit */
 #define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious

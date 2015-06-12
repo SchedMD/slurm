@@ -3629,9 +3629,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (slurm_strcasestr(temp_str, "CALCULATE_RUNNING"))
 			conf->priority_flags |= PRIORITY_FLAGS_CALCULATE_RUNNING;
 
-		if (slurm_strcasestr(temp_str, "TICKET_BASED"))
-			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
-		else if (slurm_strcasestr(temp_str, "DEPTH_OBLIVIOUS"))
+		if (slurm_strcasestr(temp_str, "DEPTH_OBLIVIOUS"))
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
 		else if (slurm_strcasestr(temp_str, "FAIR_TREE"))
 			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
@@ -3689,14 +3687,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);
-	if (!strcasecmp(conf->priority_type, "priority/multifactor2")) {
-		error("PriorityType=priority/multifactor2 is deprecated.  "
-		      "In the future use\nPriorityType=priority/multifactor\n"
-		      "PriortyFlags=Ticket_Based\nThis is what is loaded now.");
-		xfree(conf->priority_type);
-		conf->priority_type = xstrdup("priority/multifactor");
-		conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
-	}
 
 	if (!s_p_get_uint32(&conf->priority_weight_age,
 			    "PriorityWeightAge", hashtbl))

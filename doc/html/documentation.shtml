@@ -53,7 +53,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li>Workload Prioritization</li>
 <ul>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
-<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
 <li><a href="fair_tree.html">Fair Tree Fairshare Algorithm</a></li>
 </ul>

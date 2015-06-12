@@ -150,8 +150,6 @@ static uint32_t weight_qos;  /* weight for QOS factor */
 static uint32_t flags;       /* Priority Flags */
 static uint32_t prevflags;    /* Priority Flags before _internal_setup() resets
 			       * flags after a reconfigure */
-static uint32_t max_tickets; /* Maximum number of tickets given to a
-			      * user. Protected by assoc_mgr lock. */
 static time_t g_last_ran = 0; /* when the last poll ran */
 static double decay_factor = 1; /* The decay factor when decaying time. */
 
@@ -391,34 +389,6 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 }
 
 
-/* Set the effective usage of a node. */
-static void _ticket_based_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
-{
-	long double min_shares_norm;
-	slurmdb_assoc_rec_t *fs_assoc = assoc;
-
-	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-	    && assoc->usage->fs_assoc_ptr) {
-		/* This function needs to find the fairshare parent because
-		 * shares_raw needs to be a useful value, not
-		 * SLURMDB_FS_USE_PARENT */
-		fs_assoc = assoc->usage->fs_assoc_ptr;
-		assoc->usage->shares_norm = fs_assoc->usage->shares_norm;
-		assoc->usage->usage_norm = fs_assoc->usage->usage_norm;
-	}
-
-	if (fs_assoc->usage->level_shares) {
-		min_shares_norm = (long double) MIN_USAGE_FACTOR
-			* fs_assoc->shares_raw / fs_assoc->usage->level_shares;
-		if (fs_assoc->usage->usage_norm > min_shares_norm)
-			assoc->usage->usage_efctv = fs_assoc->usage->usage_norm;
-		else
-			assoc->usage->usage_efctv = min_shares_norm;
-	} else
-		assoc->usage->usage_efctv = fs_assoc->usage->usage_norm;
-}
-
-
 /* This should initially get the children list from assoc_mgr_root_assoc.
  * Since our algorithm goes from top down we calculate all the non-user
  * associations now.  When a user submits a job, that norm_fairshare is
@@ -446,61 +416,6 @@ static int _set_children_usage_efctv(List children_list)
 		_set_children_usage_efctv(assoc->usage->children_list);
 	}
 	list_iterator_destroy(itr);
-	return SLURM_SUCCESS;
-}
-
-
-/* Distribute the tickets to child nodes recursively.
- *
- * NOTE: acct_mgr_assoc_lock must be locked before this is called.
- */
-static int _distribute_tickets(List children_list, uint32_t tickets)
-{
-	ListIterator itr;
-	slurmdb_assoc_rec_t *assoc;
-	double sfsum = 0, fs;
-
-	if (!children_list || !list_count(children_list))
-		return SLURM_SUCCESS;
-
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		if (assoc->usage->active_seqno
-		    != assoc_mgr_root_assoc->usage->active_seqno)
-			continue;
-		if (fuzzy_equal(assoc->usage->usage_efctv, NO_VAL))
-			priority_p_set_assoc_usage(assoc);
-		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv,
-					       assoc->usage->shares_norm);
-		sfsum += assoc->usage->shares_norm * fs;
-	}
-	list_iterator_destroy(itr);
-
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		if (assoc->usage->active_seqno
-		    != assoc_mgr_root_assoc->usage->active_seqno)
-			continue;
-		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv,
-					       assoc->usage->shares_norm);
-		assoc->usage->tickets = tickets * assoc->usage->shares_norm
-			* fs / sfsum;
-		if (priority_debug) {
-			if (assoc->user)
-				info("User %s in account %s gets %u tickets",
-				     assoc->user, assoc->acct,
-				     assoc->usage->tickets);
-			else
-				info("Account %s gets %u tickets",
-				     assoc->acct, assoc->usage->tickets);
-		}
-		if (assoc->user && assoc->usage->tickets > max_tickets)
-			max_tickets = assoc->usage->tickets;
-		_distribute_tickets(assoc->usage->children_list,
-				    assoc->usage->tickets);
-	}
-	list_iterator_destroy(itr);
-
 	return SLURM_SUCCESS;
 }
 
@@ -539,19 +454,7 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 
 	/* Priority is 0 -> 1 */
 	priority_fs = 0;
-	if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		if (fs_assoc->usage->active_seqno ==
-		    assoc_mgr_root_assoc->usage->active_seqno && max_tickets) {
-			priority_fs = (double) fs_assoc->usage->tickets /
-				max_tickets;
-		}
-		if (priority_debug) {
-			info("Fairshare priority of job %u for user %s in acct"
-			     " %s is %f",
-			     job_ptr->job_id, job_assoc->user, job_assoc->acct,
-			     priority_fs);
-		}
-	} else if (flags & PRIORITY_FLAGS_FAIR_TREE) {
+	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		priority_fs = job_assoc->usage->fs_factor;
 		if (priority_debug) {
 			info("Fairhare priority of job %u for user %s in acct"
@@ -704,33 +607,6 @@ static uint32_t _get_priority_internal(time_t start_time,
 		     priority);
 	}
 	return (uint32_t)priority;
-}
-
-
-/* Mark an association and its parents as active (i.e. it may be given
- * tickets) during the current scheduling cycle.  The association
- * manager lock should be held on entry.  */
-static bool _mark_assoc_active(struct job_record *job_ptr)
-{
-	slurmdb_assoc_rec_t *job_assoc =
-		(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr,
-		*assoc;
-
-	if (!job_assoc) {
-		error("Job %u has no association.  Unable to "
-		      "mark assiciation as active.", job_ptr->job_id);
-		return false;
-	}
-
-	for (assoc = job_assoc; assoc != assoc_mgr_root_assoc;
-	     assoc = assoc->usage->parent_assoc_ptr) {
-		if (assoc->usage->active_seqno
-		    == assoc_mgr_root_assoc->usage->active_seqno)
-			break;
-		assoc->usage->active_seqno
-			= assoc_mgr_root_assoc->usage->active_seqno;
-	}
-	return true;
 }
 
 
@@ -1069,93 +945,6 @@ static int _apply_new_usage(struct job_record *job_ptr,
 }
 
 
-static void _ticket_based_decay(List job_list, time_t start_time)
-{
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	ListIterator itr = NULL;
-	struct job_record *job_ptr = NULL;
-
-	/* Read lock on jobs, nodes, and partitions */
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
-
-	/* Multifactor Ticket Based core algo 1/3. Iterate through all jobs,
-	 * mark parent associations with the current sequence id, so that we
-	 * know which associations/users are active. At the same time as we're
-	 * looping through all the jobs anyway, apply the new usage of running
-	 * jobs too.
-	 */
-
-	lock_slurmctld(job_read_lock);
-	assoc_mgr_lock(&locks);
-	/* seqno 0 is a special invalid value. */
-	assoc_mgr_root_assoc->usage->active_seqno++;
-	if (!assoc_mgr_root_assoc->usage->active_seqno)
-		assoc_mgr_root_assoc->usage->active_seqno++;
-	assoc_mgr_unlock(&locks);
-	itr = list_iterator_create(job_list);
-	while ((job_ptr = list_next(itr))) {
-		/* Don't need to handle finished jobs. */
-		if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr))
-			continue;
-		/* apply new usage */
-		if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
-		     !IS_JOB_PENDING(job_ptr)) &&
-		    job_ptr->start_time && job_ptr->assoc_ptr
-		    && g_last_ran)
-			_apply_new_usage(job_ptr,
-					 g_last_ran,
-					 start_time, 0);
-
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->assoc_ptr) {
-			assoc_mgr_lock(&locks);
-			_mark_assoc_active(job_ptr);
-			assoc_mgr_unlock(&locks);
-		}
-	}
-	list_iterator_destroy(itr);
-	unlock_slurmctld(job_read_lock);
-
-	/* Multifactor Ticket Based core algo 2/3. Start from the root,
-	 * distribute tickets to active child associations proportional to the
-	 * fair share (s*F). We start with UINT32_MAX tickets at the root.
-	 */
-	assoc_mgr_lock(&locks);
-	max_tickets = 0;
-	assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
-	_distribute_tickets(
-		assoc_mgr_root_assoc->usage->children_list,
-		(uint32_t) -1);
-	assoc_mgr_unlock(&locks);
-
-	/* Multifactor Ticket Based core algo 3/3. Iterate through the job
-	 * list again, give priorities proportional to the  maximum number of
-	 * tickets given to any user.
-	 */
-	lock_slurmctld(job_write_lock);
-	itr = list_iterator_create(job_list);
-	while ((job_ptr = list_next(itr))) {
-		/*
-		 * Priority 0 is reserved for held
-		 * jobs. Also skip priority
-		 * calculation for non-pending jobs.
-		 */
-		if ((job_ptr->priority == 0) || !IS_JOB_PENDING(job_ptr))
-			continue;
-
-		job_ptr->priority = _get_priority_internal(start_time, job_ptr);
-		last_job_update = time(NULL);
-		debug2("priority for job %u is now %u",
-		       job_ptr->job_id, job_ptr->priority);
-	}
-	list_iterator_destroy(itr);
-	unlock_slurmctld(job_write_lock);
-}
-
-
 static int _decay_apply_new_usage_and_weighted_factors(
 	struct job_record *job_ptr,
 	time_t *start_time_ptr)
@@ -1329,8 +1118,7 @@ static void *_decay_thread(void *no_data)
 			break;
 		}
 
-		if (!(flags & (PRIORITY_FLAGS_TICKET_BASED
-			       | PRIORITY_FLAGS_FAIR_TREE))) {
+		if (!(flags & PRIORITY_FLAGS_FAIR_TREE)) {
 			lock_slurmctld(job_write_lock);
 			list_for_each(
 				job_list,
@@ -1341,9 +1129,7 @@ static void *_decay_thread(void *no_data)
 		}
 
 	get_usage:
-		if (flags & PRIORITY_FLAGS_TICKET_BASED)
-			_ticket_based_decay(job_list, start_time);
-		else if (flags & PRIORITY_FLAGS_FAIR_TREE)
+		if (flags & PRIORITY_FLAGS_FAIR_TREE)
 			fair_tree_decay(job_list, start_time);
 
 		g_last_ran = start_time;
@@ -1773,14 +1559,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 	if (shares_norm <= 0)
 		return priority_fs;
 
-	if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		if (usage_efctv < MIN_USAGE_FACTOR * shares_norm)
-			usage_efctv = MIN_USAGE_FACTOR * shares_norm;
-		priority_fs = shares_norm / usage_efctv;
-	} else {
-		priority_fs =
-			pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
-	}
+	priority_fs = pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
 
 	return priority_fs;
 }
@@ -2049,8 +1828,6 @@ static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	if (assoc->usage->fs_assoc_ptr == assoc_mgr_root_assoc)
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
-	else if (flags & PRIORITY_FLAGS_TICKET_BASED)
-		_ticket_based_set_usage_efctv(assoc);
 	else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
 		slurmdb_assoc_rec_t *parent_assoc =
 			assoc->usage->fs_assoc_ptr;
@@ -2092,12 +1869,6 @@ static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc)
 		     assoc->usage->fs_assoc_ptr->acct,
 		     assoc->usage->usage_efctv,
 		     assoc->usage->usage_norm);
-	} else if (flags & PRIORITY_FLAGS_TICKET_BASED) {
-		info("Effective usage for %s %s off %s(%s) = %Lf",
-		     child, child_str,
-		     assoc->usage->parent_assoc_ptr->acct,
-		     assoc->usage->fs_assoc_ptr->acct,
-		     assoc->usage->usage_efctv);
 	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
 		slurmdb_assoc_rec_t *parent_assoc =
 			assoc->usage->fs_assoc_ptr;

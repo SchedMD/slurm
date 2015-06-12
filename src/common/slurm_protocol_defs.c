@@ -1878,11 +1878,6 @@ extern char *priority_flags_string(uint16_t priority_flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "CALCULATE_RUNNING");
 	}
-	if (priority_flags & PRIORITY_FLAGS_TICKET_BASED) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "TICKET_BASED");
-	}
 	if (priority_flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");

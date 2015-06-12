@@ -150,14 +150,12 @@ struct assoc_mgr_assoc_usage {
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 
-	/* Currently FAIR_TREE and TICKET_BASED systems are defining data on
+	/* Currently FAIR_TREE systems are defining data on
 	 * this struct but instead we could keep a void pointer to system
 	 * specific data. This would allow subsystems to define whatever data
 	 * they need without having to modify this struct; it would also save
 	 * space.
 	 */
-	uint32_t tickets;       /* Number of tickets (for multifactor2
-				 * plugin). (DON'T PACK) */
 	unsigned active_seqno;  /* Sequence number for identifying
 				 * active associations (DON'T PACK) */
 
