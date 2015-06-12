@@ -13,6 +13,10 @@
 <a name=intro>
 <h2>Introduction</h2></a>
 
+<p><b>Note:</b> This algorithm is deprecated and has been removed in 15.08. Please
+consider using the <a href="fair_tree.html">Fair Tree</a> algorithm.
+</p>
+
 <p>A ticket-based variant of the priority/multifactor plugin is available.
 The reader is assumed to be familiar with the priority/multifactor plugin
 and only the differences are documented here.</p>

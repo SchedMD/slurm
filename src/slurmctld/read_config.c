@@ -1118,6 +1118,10 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* Sync select plugin with synchronized job/node/part data */
 	select_g_reconfigure();
 
+	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_TICKET_BASED)
+		info("TICKET_BASED fairshare is deprecated. Please consider "
+		     "using the \"FAIR_TREE\" algorithm.");
+
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");
 	return error_code;
