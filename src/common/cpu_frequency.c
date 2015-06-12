@@ -255,7 +255,7 @@ cpu_freq_init(slurmd_conf_t *conf)
 	debug_flags = slurm_get_debug_flags(); /* init for slurmd */
 
 	xfree(slurmd_spooldir);
-	slurmd_spooldir = conf->spooldir;
+	slurmd_spooldir = xstrdup(conf->spooldir);
 
 	if (run_in_daemon("slurmstepd"))
 		return;
