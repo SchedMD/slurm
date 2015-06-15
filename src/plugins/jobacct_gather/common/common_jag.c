@@ -787,6 +787,7 @@ extern void jag_common_poll_data(
 	if (!callbacks->get_precs)
 		callbacks->get_precs = _get_precs;
 
+	ct = time(NULL);
 	prec_list = (*(callbacks->get_precs))(task_list, pgid_plugin, cont_id,
 					      callbacks);
 
@@ -877,8 +878,9 @@ extern void jag_common_poll_data(
 				       jobacct->energy.consumed_energy);
 				energy_counted = 1;
 			}
+			break;
+		}
 		if (acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
-			ct = time(NULL);
 			if (jobacct->cur_time == 0) {
 				jobacct->last_time = ct;
 			} else {
@@ -887,6 +889,7 @@ extern void jag_common_poll_data(
 			jobacct->cur_time = ct;
 			_record_profile(jobacct);
 		}
+
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
