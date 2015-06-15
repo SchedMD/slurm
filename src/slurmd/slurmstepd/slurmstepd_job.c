@@ -214,7 +214,7 @@ _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 	for (i = 0; i < job->nnodes; i++) {
 		int j;
 		for (j = 1; j < job->task_cnts[i]; j++) {
-			if (gtid[i][j] != gtid[i][j-1] + 1)) {
+			if (gtid[i][j] != gtid[i][j-1] + 1) {
 				job->non_smp = 1;
 				break;
 			}
