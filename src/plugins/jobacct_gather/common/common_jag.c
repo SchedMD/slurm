@@ -824,10 +824,15 @@ extern void jag_common_poll_data(
 				jobacct->max_disk_read = MAX(
 					jobacct->max_disk_read,
 					prec->disk_read);
+				jobacct->last_tot_disk_read =
+					jobacct->tot_disk_read;
 				jobacct->tot_disk_read = prec->disk_read;
 				jobacct->max_disk_write = MAX(
 					jobacct->max_disk_write,
 					prec->disk_write);
+
+				jobacct->last_tot_disk_write =
+					jobacct->tot_disk_write;
 				jobacct->tot_disk_write = prec->disk_write;
 				jobacct->min_cpu =
 					MAX(jobacct->min_cpu, cpu_calc);
