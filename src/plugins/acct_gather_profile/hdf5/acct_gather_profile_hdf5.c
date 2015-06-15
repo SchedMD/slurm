@@ -520,7 +520,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
 	}
 
 	/* insert fields */
-	if (H5Tinsert(dtype_id, "Time", 0, H5T_NATIVE_UINT64) < 0)
+	if (H5Tinsert(dtype_id, "ElapsedTime", 0, H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
 	offset = sizeof(uint64_t);
 	for (i = 0; i < nb_fields; i++) {

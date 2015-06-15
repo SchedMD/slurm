@@ -1134,7 +1134,7 @@ static int _extract_series(void)
 
 	if (level_total) {
 		/* do not aggregate time values */
-		list_delete_all(fields, _str_cmp, "Time");
+		list_delete_all(fields, _str_cmp, "ElapsedTime");
 		fputs(",ElapsedTime", output);
 	}
 
