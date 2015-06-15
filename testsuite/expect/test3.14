@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id		"3.11"
+set test_id		"3.14"
 set exit_code		0
 set node_list_new       ""
 set node_list_orig      ""
