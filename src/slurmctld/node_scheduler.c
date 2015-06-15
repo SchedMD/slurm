@@ -2729,12 +2729,15 @@ static int _build_node_list(struct job_record *job_ptr,
 		info("%s: No nodes satisfy job %u requirements in partition %s",
 		     __func__, job_ptr->job_id, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
+		xfree(job_ptr->state_desc);
 		if (job_ptr->resv_name) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			rc = ESLURM_NODES_BUSY;
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   (_no_reg_nodes() > 0)) {
 			rc = ESLURM_NODES_BUSY;
+		} else {
+			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		}
 		return rc;
 	}

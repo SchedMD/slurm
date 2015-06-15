@@ -299,6 +299,8 @@ documents those changes that are of interest to users and administrators.
     unexpected rebooted".
  -- Use correct slurmd spooldir when creating cpu-frequency locks.
  -- Deprecated TICKET_BASED fairshare. Consider using the FAIR_TREE algorithm.
+ -- Set job's reason to BadConstaints when job can't run on any node.
+ -- Prevent abort on update of reservation with no nodes (licenses only).
 
 * Changes in Slurm 14.11.7
 ==========================
