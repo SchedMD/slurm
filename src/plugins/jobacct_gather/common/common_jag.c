@@ -798,87 +798,85 @@ extern void jag_common_poll_data(
 		prec = NULL;
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
-			if (prec->pid == jobacct->pid) {
-				uint32_t cpu_calc;
+			uint32_t cpu_calc;
+			if (prec->pid != jobacct->pid)
+				continue;
 #if _DEBUG
-				info("pid:%u ppid:%u rss:%d KB",
-				     prec->pid, prec->ppid, prec->rss);
+			info("pid:%u ppid:%u rss:%d KB",
+			     prec->pid, prec->ppid, prec->rss);
 #endif
-				/* find all my descendents */
-				if (callbacks->get_offspring_data)
-					(*(callbacks->get_offspring_data))
-						(prec_list, prec, prec->pid);
-				cpu_calc = (prec->ssec + prec->usec)/hertz;
-				/* tally their usage */
-				jobacct->max_rss =
-					MAX(jobacct->max_rss, prec->rss);
-				jobacct->tot_rss = prec->rss;
-				total_job_mem += prec->rss;
-				jobacct->max_vsize =
-					MAX(jobacct->max_vsize, prec->vsize);
-				jobacct->tot_vsize = prec->vsize;
-				total_job_vsize += prec->vsize;
-				jobacct->max_pages =
-					MAX(jobacct->max_pages, prec->pages);
-				jobacct->tot_pages = prec->pages;
-				jobacct->max_disk_read = MAX(
-					jobacct->max_disk_read,
-					prec->disk_read);
-				jobacct->last_tot_disk_read =
-					jobacct->tot_disk_read;
-				jobacct->tot_disk_read = prec->disk_read;
-				jobacct->max_disk_write = MAX(
-					jobacct->max_disk_write,
-					prec->disk_write);
+			/* find all my descendents */
+			if (callbacks->get_offspring_data)
+				(*(callbacks->get_offspring_data))
+					(prec_list, prec, prec->pid);
+			cpu_calc = (prec->ssec + prec->usec)/hertz;
+			/* tally their usage */
+			jobacct->max_rss =
+				MAX(jobacct->max_rss, prec->rss);
+			jobacct->tot_rss = prec->rss;
+			total_job_mem += prec->rss;
+			jobacct->max_vsize =
+				MAX(jobacct->max_vsize, prec->vsize);
+			jobacct->tot_vsize = prec->vsize;
+			total_job_vsize += prec->vsize;
+			jobacct->max_pages =
+				MAX(jobacct->max_pages, prec->pages);
+			jobacct->tot_pages = prec->pages;
+			jobacct->max_disk_read = MAX(
+				jobacct->max_disk_read,
+				prec->disk_read);
+			jobacct->last_tot_disk_read =
+				jobacct->tot_disk_read;
+			jobacct->tot_disk_read = prec->disk_read;
+			jobacct->max_disk_write = MAX(
+				jobacct->max_disk_write,
+				prec->disk_write);
 
-				jobacct->last_tot_disk_write =
-					jobacct->tot_disk_write;
-				jobacct->tot_disk_write = prec->disk_write;
-				jobacct->min_cpu =
-					MAX(jobacct->min_cpu, cpu_calc);
-				jobacct->last_total_cputime = jobacct->tot_cpu;
-				/* Update the cpu times
-				 */
-				jobacct->tot_cpu = cpu_calc;
-				jobacct->user_cpu_sec = prec->usec/hertz;
-				jobacct->sys_cpu_sec = prec->ssec/hertz;
-				debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)", __func__,
-				       jobacct->pid, jobacct->max_rss,
-				       jobacct->max_vsize, jobacct->tot_cpu,
-				       jobacct->user_cpu_sec,
-				       jobacct->sys_cpu_sec);
-				/* compute frequency */
-				jobacct->this_sampled_cputime =
-					cpu_calc - jobacct->last_total_cputime;
-				_get_sys_interface_freq_line(
-					prec->last_cpu,
-					"cpuinfo_cur_freq", sbuf);
-				jobacct->act_cpufreq =
-					_update_weighted_freq(jobacct, sbuf);
-				debug2("%s: Task average frequency = %u "
-				       "pid %d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)", __func__,
-				       jobacct->act_cpufreq,
-				       jobacct->pid, jobacct->max_rss,
-				       jobacct->max_vsize, jobacct->tot_cpu,
-				       jobacct->user_cpu_sec,
-				       jobacct->sys_cpu_sec);
-				/* get energy consumption
-  				 * only once is enough since we
- 				 * report per node energy consumption */
-				debug2("energycounted = %d", energy_counted);
-				if (energy_counted == 0) {
-					acct_gather_energy_g_get_data(
-						energy_profile,
-						&jobacct->energy);
-					debug2("getjoules_task energy = %u",
-					       jobacct->energy.consumed_energy);
-					energy_counted = 1;
-				}
-				break;
+			jobacct->last_tot_disk_write =
+				jobacct->tot_disk_write;
+			jobacct->tot_disk_write = prec->disk_write;
+			jobacct->min_cpu =
+				MAX(jobacct->min_cpu, cpu_calc);
+			jobacct->last_total_cputime = jobacct->tot_cpu;
+			/* Update the cpu times
+			 */
+			jobacct->tot_cpu = cpu_calc;
+			jobacct->user_cpu_sec = prec->usec/hertz;
+			jobacct->sys_cpu_sec = prec->ssec/hertz;
+			debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
+			       "time %u(%u+%u)", __func__,
+			       jobacct->pid, jobacct->max_rss,
+			       jobacct->max_vsize, jobacct->tot_cpu,
+			       jobacct->user_cpu_sec,
+			       jobacct->sys_cpu_sec);
+			/* compute frequency */
+			jobacct->this_sampled_cputime =
+				cpu_calc - jobacct->last_total_cputime;
+			_get_sys_interface_freq_line(
+				prec->last_cpu,
+				"cpuinfo_cur_freq", sbuf);
+			jobacct->act_cpufreq =
+				_update_weighted_freq(jobacct, sbuf);
+			debug2("%s: Task average frequency = %u "
+			       "pid %d mem size %"PRIu64" %"PRIu64" "
+			       "time %u(%u+%u)", __func__,
+			       jobacct->act_cpufreq,
+			       jobacct->pid, jobacct->max_rss,
+			       jobacct->max_vsize, jobacct->tot_cpu,
+			       jobacct->user_cpu_sec,
+			       jobacct->sys_cpu_sec);
+			/* get energy consumption
+			 * only once is enough since we
+			 * report per node energy consumption */
+			debug2("energycounted = %d", energy_counted);
+			if (energy_counted == 0) {
+				acct_gather_energy_g_get_data(
+					energy_profile,
+					&jobacct->energy);
+				debug2("getjoules_task energy = %u",
+				       jobacct->energy.consumed_energy);
+				energy_counted = 1;
 			}
-		}
 		if (acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
 			ct = time(NULL);
 			if (jobacct->cur_time == 0) {
