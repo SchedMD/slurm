@@ -86,6 +86,10 @@ HIGHLIGHTS
     NO RECORDS WILL BE LOST, BUT THE SLURMDBD MAY NOT BE RESPONSIVE DURING THE
     UPDATE. IT WILL ALSO NOT BE POSSIBLE TO AUTOMATICALLY REVERT THE DATABASE
     TO THE FORMAT FOR AN EARLIER VERSION OF SLURM. PLAN ACCORDINGLY.
+ -- The performance of Profiling with HDF5 is improved. In addition, internal
+    structures are changed to make it easier to add new profile types,
+    particularly energy sensors. This has introduced an operational issue. See
+    OTHER CHANGES.
 
 RPMBUILD CHANGES
 ================
@@ -177,6 +181,15 @@ OTHER CHANGES
     the Prolog and Epilog scripts.
  -- job_submit/lua: Enable reading and writing job environment variables.
     For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
+ -- The format of HDF5 node-step files has changed, so the sh5util program that
+    merges them into job files has changed. The command line options to sh5util
+    have not changed. The old sh5util program is available in the contribs
+    section. It may be used to extract data from HDF5 profiles collected with
+    earlier versions of slurm.
+    A batch job that invokes sh5util as the last step that is launched on 15-08
+    will require no change. One that started pre 15-8 but finished on 15-08,
+    will not correctly merge the node-step files. The merge will have to be done
+    manually with the sh5util in contribs.
 
 API CHANGES
 ===========

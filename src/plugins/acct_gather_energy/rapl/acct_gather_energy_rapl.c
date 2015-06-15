@@ -130,6 +130,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static acct_gather_energy_t *local_energy = NULL;
 static uint64_t debug_flags = 0;
 
+static int dataset_id = -1; /* id of the dataset for profile data */
+
 /* one cpu in the package */
 static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
 static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
@@ -389,7 +391,7 @@ static int _running_profile(void)
 
 static int _send_profile(void)
 {
-	acct_energy_data_t ener;
+	uint32_t curr_watts;
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
@@ -398,16 +400,27 @@ static int _send_profile(void)
 		info("_send_profile: consumed %d watts",
 		     local_energy->current_watts);
 
-	memset(&ener, 0, sizeof(acct_energy_data_t));
-	/*TODO function to calculate Average CPUs Frequency*/
-	/*ener->cpu_freq = // read /proc/...*/
-	ener.cpu_freq = 1;
-	ener.time = time(NULL);
-	ener.power = local_energy->current_watts;
-	acct_gather_profile_g_add_sample_data(
-		ACCT_GATHER_PROFILE_ENERGY, &ener);
 
-	return SLURM_ERROR;
+	if (dataset_id < 0) {
+		const char* field_names[] = {"Power"};
+		const field_type_t field_types[] = {TYPE_UINT64};
+		dataset_id = acct_gather_profile_g_create_dataset("Energy",
+			  NO_PARENT, 1, field_names, field_types);
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			debug("Energy: dataset created (id = %d)", dataset_id);
+		if (dataset_id == SLURM_ERROR) {
+			error("Energy: Failed to create the dataset for RAPL");
+			return SLURM_ERROR;
+		}
+	}
+
+	curr_watts = local_energy->current_watts;
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		info("PROFILE-Energy: power=%d", local_energy->current_watts);
+	}
+
+	return acct_gather_profile_g_add_sample_data(dataset_id,
+	                                             (void *)&curr_watts);
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)
@@ -416,7 +429,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 
 	xassert(_run_in_daemon());
 
-	if (!local_energy || local_energy->current_watts == NO_VAL)
+	if (local_energy->current_watts == NO_VAL)
 		return rc;
 
 	_get_joules_task(local_energy);
@@ -466,6 +479,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 	acct_gather_energy_t *energy = (acct_gather_energy_t *)data;
 	time_t *last_poll = (time_t *)data;
+	size_t *nb_sensors = (size_t *)data;
 
 	xassert(_run_in_daemon());
 
@@ -476,11 +490,15 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		else
 			_get_joules_task(energy);
 		break;
+	case ENERGY_DATA_NODE_ENERGY:
 	case ENERGY_DATA_STRUCT:
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		break;
 	case ENERGY_DATA_LAST_POLL:
 		*last_poll = local_energy->poll_time;
+		break;
+	case ENERGY_DATA_NB_SENSORS:
+		*nb_sensors = 1;
 		break;
 	default:
 		error("acct_gather_energy_p_get_data: unknown enum %d",

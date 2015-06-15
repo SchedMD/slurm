@@ -70,8 +70,12 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
+	int (*create_group)     (const char*);
+	int (*create_dataset)   (const char*, int, int, const char*[],
+	                         const field_type_t*);
 	int (*add_sample_data)  (uint32_t, void*);
 	void (*conf_values)     (List *data);
+	bool (*is_active)     (uint32_t);
 
 } slurm_acct_gather_profile_ops_t;
 
@@ -88,8 +92,11 @@ static const char *syms[] = {
 	"acct_gather_profile_p_node_step_end",
 	"acct_gather_profile_p_task_start",
 	"acct_gather_profile_p_task_end",
+	"acct_gather_profile_p_create_group",
+	"acct_gather_profile_p_create_dataset",
 	"acct_gather_profile_p_add_sample_data",
 	"acct_gather_profile_p_conf_values",
+	"acct_gather_profile_p_is_active",
 };
 
 acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
@@ -548,7 +555,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 	return retval;
 }
 
-extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
+extern int acct_gather_profile_g_create_group(const char *name)
 {
 	int retval = SLURM_ERROR;
 
@@ -556,7 +563,36 @@ extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
 		return retval;
 
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_sample_data))(type, data);
+	retval = (*(ops.create_group))(name);
+	slurm_mutex_unlock(&profile_mutex);
+	return retval;
+}
+
+extern int acct_gather_profile_g_create_dataset(const char *name, int parent,
+	int nb_fields, const char *field_names[],
+	const field_type_t *field_types)
+{
+	int retval = SLURM_ERROR;
+
+	if (acct_gather_profile_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&profile_mutex);
+	retval = (*(ops.create_dataset))(name, parent, nb_fields, field_names,
+	                                 field_types);
+	slurm_mutex_unlock(&profile_mutex);
+	return retval;
+}
+
+extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data)
+{
+	int retval = SLURM_ERROR;
+
+	if (acct_gather_profile_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&profile_mutex);
+	retval = (*(ops.add_sample_data))(dataset_id, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }
@@ -567,4 +603,12 @@ extern void acct_gather_profile_g_conf_values(void *data)
 		return;
 
 	(*(ops.conf_values))(data);
+}
+
+extern bool acct_gather_profile_g_is_active(uint32_t type)
+{
+	if (acct_gather_profile_init() < 0)
+		return false;
+
+	return (*(ops.is_active))(type);
 }

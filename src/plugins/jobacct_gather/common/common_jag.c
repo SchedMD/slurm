@@ -41,6 +41,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
 #include <ctype.h>
 
 #include "src/common/slurm_xlator.h"
@@ -59,6 +60,7 @@ static long hertz = 0;
 static int my_pagesize = 0;
 static DIR  *slash_proc = NULL;
 static int energy_profile = ENERGY_DATA_JOULES_TASK;
+static uint64_t debug_flags = 0;
 
 /* return weighted frequency in mhz */
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
@@ -623,9 +625,77 @@ finished:
 	return prec_list;
 }
 
+static void _record_profile(struct jobacctinfo *jobacct)
+{
+	static int profile_gid = -1;
+	const int nb_fields = 8;
+	double et;
+
+	if (profile_gid == -1) {
+		profile_gid = acct_gather_profile_g_create_group("Tasks");
+	}
+	/* Create the dataset first */
+	if (jobacct->dataset_id < 0) {
+		const char* field_names[] = {
+			"CPUFrequency", "CPUTime", "CPUUtilization",
+			"RSS", "VMSize", "Pages", "ReadMiB", "WriteMiB"};
+		const field_type_t field_types[] = {
+			TYPE_UINT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_UINT64,
+			TYPE_UINT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_DOUBLE};
+		char ds_name[32];
+		snprintf(ds_name, sizeof(ds_name), "%d", jobacct->id.taskid);
+
+		jobacct->dataset_id = acct_gather_profile_g_create_dataset(
+			ds_name, profile_gid, nb_fields,
+			field_names, field_types);
+		if (jobacct->dataset_id == SLURM_ERROR) {
+			error("JobAcct: Failed to create the dataset for task %d",
+			      jobacct->pid);
+			return;
+		}
+		jobacct->cur_time = time(NULL);
+		jobacct->last_time = jobacct->cur_time;
+		return;
+	}
+
+	if (jobacct->dataset_id < 0)
+		return;
+
+	int8_t data[nb_fields * 8];
+	uint64_t *data_i = (uint64_t *)data;
+	double *data_d = (double *)data;
+
+	data_i[0] = jobacct->act_cpufreq;
+	data_i[3] = jobacct->tot_rss;
+	data_i[4] = jobacct->tot_vsize;
+	data_i[5] = jobacct->tot_pages;
+
+	/* delta from last snapshot */
+	et = (jobacct->cur_time - jobacct->last_time);
+	data_i[1] = jobacct->tot_cpu - jobacct->last_total_cputime;
+	if (et == 0) {
+		data_d[2] = 0.0;
+	} else {
+		data_d[2] = (100.0 * (double)data_i[1]) / ((double) et);
+	}
+	data_d[6] = jobacct->tot_disk_read - jobacct->last_tot_disk_read;
+	data_d[7] = jobacct->tot_disk_write - jobacct->last_tot_disk_write;
+
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		info("PROFILE-Task: cpufreq=%ld cputime=%ld rss-%ld vmsize=%ld "
+			"pages=%ld readsize=%lf writesize=%lf",
+			data_i[0], data_i[1], data_i[3], data_i[4],
+			data_i[5], data_d[6], data_d[7]);
+	}
+	acct_gather_profile_g_add_sample_data(jobacct->dataset_id,
+	                                      (void *)data);
+}
+
 extern void jag_common_init(long in_hertz)
 {
 	uint32_t profile_opt;
+
+	debug_flags = slurm_get_debug_flags();
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 				  &profile_opt);
@@ -633,7 +703,7 @@ extern void jag_common_init(long in_hertz)
 	   different rate, so just grab the last one.
 	*/
 	if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
-		energy_profile = ENERGY_DATA_STRUCT;
+		energy_profile = ENERGY_DATA_NODE_ENERGY;
 
 	if (in_hertz) {
 		hertz = in_hertz;
@@ -689,7 +759,7 @@ extern void jag_common_poll_data(
 	static int processing = 0;
 	char sbuf[72];
 	int energy_counted = 0;
-	static int first = 1;
+	time_t ct;
 	static int no_over_memory_kill = -1;
 
 	xassert(callbacks);
@@ -725,6 +795,7 @@ extern void jag_common_poll_data(
 
 	itr = list_iterator_create(task_list);
 	while ((jobacct = list_next(itr))) {
+		prec = NULL;
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
@@ -800,13 +871,18 @@ extern void jag_common_poll_data(
 					       jobacct->energy.consumed_energy);
 					energy_counted = 1;
 				}
-				/* We only profile on after the first poll. */
-				if (!first)
-					acct_gather_profile_g_add_sample_data(
-						ACCT_GATHER_PROFILE_TASK,
-						jobacct);
 				break;
 			}
+		}
+		if (acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
+			ct = time(NULL);
+			if (jobacct->cur_time == 0) {
+				jobacct->last_time = ct;
+			} else {
+				jobacct->last_time = jobacct->cur_time;
+			}
+			jobacct->cur_time = ct;
+			_record_profile(jobacct);
 		}
 		list_iterator_destroy(itr2);
 	}
@@ -819,5 +895,4 @@ extern void jag_common_poll_data(
 finished:
 	list_destroy(prec_list);
 	processing = 0;
-	first = 0;
 }

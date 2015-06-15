@@ -47,6 +47,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/common/slurm_acct_gather_profile.h"
 
 #include <fcntl.h>
 #include <signal.h>
@@ -151,7 +152,20 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_sample_data(uint32_t type, void* data)
+extern int acct_gather_profile_p_create_group(const char* name)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
+                                                int nb_fields,
+                                                const char* field_names[],
+                                                const field_type_t* field_types)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_profile_p_add_sample_data(int dataset_id, void* data)
 {
 	return SLURM_SUCCESS;
 }
@@ -160,3 +174,9 @@ extern void acct_gather_profile_p_conf_values(List *data)
 {
 	return;
 }
+
+extern bool acct_gather_profile_p_is_active(uint32_t type)
+{
+	return false;
+}
+

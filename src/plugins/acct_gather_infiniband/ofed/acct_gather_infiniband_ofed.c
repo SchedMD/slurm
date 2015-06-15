@@ -137,6 +137,8 @@ static slurm_ofed_conf_t ofed_conf;
 static uint64_t debug_flags = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static int dataset_id = -1; /* id of the dataset for profile data */
+
 static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
 				     unsigned timeout, unsigned id,
 				     const struct ibmad_port *srcport)
@@ -260,20 +262,36 @@ static int _read_ofed_values(void)
  */
 static int _update_node_infiniband(void)
 {
-	acct_network_data_t net;
-	int rc = SLURM_SUCCESS;
+	uint8_t data[4 * 8];
+	uint64_t *data_i = (uint64_t *)data;
+	double *data_d = (double *)data;
+	int rc;
+
+	if (dataset_id < 0) {
+		const char* field_names[] = {"PacketsIn", "MiBIn",
+		                             "PacketsOut", "MiBOut"};
+		const field_type_t field_types[] = {TYPE_UINT64, TYPE_DOUBLE,
+		                                    TYPE_UINT64, TYPE_DOUBLE};
+		dataset_id = acct_gather_profile_g_create_dataset("Network",
+			NO_PARENT, 4, field_names, field_types);
+		if (debug_flags & DEBUG_FLAG_INFINIBAND)
+			debug("IB: dataset created (id = %d)", dataset_id);
+		if (dataset_id == SLURM_ERROR) {
+			error("IB: Failed to create the dataset for ofed");
+			return SLURM_ERROR;
+		}
+	}
 
 	slurm_mutex_lock(&ofed_lock);
-	rc = _read_ofed_values();
+	if ((rc = _read_ofed_values()) != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&ofed_lock);
+		return rc;
+	}
 
-	memset(&net, 0, sizeof(acct_network_data_t));
-
-	net.packets_in = ofed_sens.rcvpkts;
-	net.packets_out = ofed_sens.xmtpkts;
-	net.size_in = (double) ofed_sens.rcvdata / 1048576;
-	net.size_out = (double) ofed_sens.xmtdata / 1048576;
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK,
-					      &net);
+	data_i[0] = ofed_sens.rcvpkts;
+	data_d[1] = (double) ofed_sens.rcvdata / (1 << 20);
+	data_i[2] = ofed_sens.xmtpkts;
+	data_d[3] = (double) ofed_sens.xmtdata / (1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
@@ -283,7 +301,12 @@ static int _update_node_infiniband(void)
 	}
 	slurm_mutex_unlock(&ofed_lock);
 
-	return rc;
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		info("Profile-Network: packetsin=%ld sizein=%lf"
+		     " packetsout=%ld sizeout=%lf",
+			data_i[0], data_d[2], data_i[1], data_d[3]);
+	}
+	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
 }
 
 static bool _run_in_daemon(void)

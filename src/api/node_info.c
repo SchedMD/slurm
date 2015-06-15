@@ -585,15 +585,19 @@ extern int slurm_load_node_single (node_info_msg_t **resp,
 }
 
 /*
- * slurm_node_energy - issue RPC to get the energy data on this machine
+ * slurm_get_node_energy_n - issue RPC to get the energy data of all
+ * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
  * IN  delta - Use cache if data is newer than this in seconds
- * OUT acct_gather_energy_t structure on success or NULL other wise
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_acct_gather_energy_destroy
+ * OUT nb_sensors - number of sensors
+ * OUT energy - array of acct_gather_energy_t structures on success or
+ *                NULL other wise
+ * RET 0 on success or a slurm error code
+ * NOTE: free the response using xfree
  */
 extern int slurm_get_node_energy(char *host, uint16_t delta,
-				 acct_gather_energy_t **acct_gather_energy)
+				   size_t *nb_sensors,
+				   acct_gather_energy_t **energy)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -647,9 +651,12 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_ACCT_GATHER_ENERGY:
-		*acct_gather_energy = ((acct_gather_node_resp_msg_t *)
+		*nb_sensors = ((acct_gather_node_resp_msg_t *)
+				       resp_msg.data)->nb_sensors;
+		*energy = ((acct_gather_node_resp_msg_t *)
 				       resp_msg.data)->energy;
-		((acct_gather_node_resp_msg_t *) resp_msg.data)->energy = NULL;
+		((acct_gather_node_resp_msg_t *) resp_msg.data)->energy
+			= NULL;
 		slurm_free_acct_gather_node_resp_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:

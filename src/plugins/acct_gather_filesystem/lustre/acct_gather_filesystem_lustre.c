@@ -270,57 +270,70 @@ static int _read_lustre_counters(void)
  */
 static int _update_node_filesystem(void)
 {
-	static acct_filesystem_data_t fls;
-	static acct_filesystem_data_t current;
+	const int nb_fields = 8;
 	static acct_filesystem_data_t previous;
+	static int dataset_id = -1;
 	static bool first = true;
-	int cc;
+	acct_filesystem_data_t current;
 
 	slurm_mutex_lock(&lustre_lock);
 
-	cc = _read_lustre_counters();
-	if (cc != SLURM_SUCCESS) {
+	if (_read_lustre_counters() != SLURM_SUCCESS) {
 		error("%s: Cannot read lustre counters", __func__);
 		slurm_mutex_unlock(&lustre_lock);
 		return SLURM_FAILURE;
 	}
 
 	if (first) {
-		/* First time initialize the counters and return.
-		 */
+		/* First time create the dataset and initialize the counters */
+		const char* field_names[] = {"NbReads", "MiBRead",
+			"NbWrites", "MiBWrite"};
+		const field_type_t field_types[] = {TYPE_UINT64, TYPE_DOUBLE,
+			TYPE_UINT64, TYPE_DOUBLE};
+
+		dataset_id = acct_gather_profile_g_create_dataset("Network",
+			NO_PARENT, nb_fields, field_names, field_types);
+		if (dataset_id == SLURM_ERROR) {
+			error("FileSystem: Failed to create the dataset "
+			      "for Lustre");
+			return SLURM_ERROR;
+		}
+
 		previous.reads = lustre_se.all_lustre_nb_reads;
 		previous.writes = lustre_se.all_lustre_nb_writes;
-		previous.read_size
-			= (double)lustre_se.all_lustre_read_bytes/1048576.0;
-		previous.write_size
-			= (double)lustre_se.all_lustre_write_bytes/1048576.0;
+		previous.read_size = (double)lustre_se.all_lustre_read_bytes;
+		previous.write_size = (double)lustre_se.all_lustre_write_bytes;
 
 		first = false;
-		memset(&lustre_se, 0, sizeof(lustre_sens_t));
-		slurm_mutex_unlock(&lustre_lock);
-
-		return SLURM_SUCCESS;
 	}
 
-	/* Compute the current values read from all lustre-xxxx
-	 * directories
-	 */
+	if (dataset_id < 0) {
+		slurm_mutex_unlock(&lustre_lock);
+		return SLURM_ERROR;
+	}
+
+	/* Compute the current values read from all lustre-xxxx directories */
 	current.reads = lustre_se.all_lustre_nb_reads;
 	current.writes = lustre_se.all_lustre_nb_writes;
-	current.read_size = (double)lustre_se.all_lustre_read_bytes/1048576.0;
-	current.write_size = (double)lustre_se.all_lustre_write_bytes/1048576.0;
+	current.read_size = (double)lustre_se.all_lustre_read_bytes;
+	current.write_size = (double)lustre_se.all_lustre_write_bytes;
 
-	/* Now compute the difference between the two snapshots
-	 * and send it to hdf5 log.
-	 */
-	fls.reads = fls.reads + (current.reads - previous.reads);
-	fls.writes = fls.writes + (current.writes - previous.writes);
-	fls.read_size = fls.read_size
-		+ (current.read_size - previous.read_size);
-	fls.write_size = fls.write_size
-		+ (current.write_size - previous.write_size);
+	/* record sample */
+	uint8_t data[nb_fields * 8];
+	uint64_t *data_i = (uint64_t *)data;
+	double *data_d = (double *)data;
 
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, &fls);
+	data_i[0] = current.reads - previous.reads;
+	data_i[1] = current.writes - previous.writes;
+	data_d[2] = (current.read_size - previous.read_size) / (1 << 20);
+	data_d[3] = (current.write_size - previous.write_size) / (1 << 20);
+
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		info("Profile-Lustre: reads=%ld readsize=%lf"
+		     " writes=%ld writesize=%lf",
+			data_i[0], data_d[2], data_i[1], data_d[3]);
+	}
+	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
 
 	/* Save current as previous and clean up the working
 	 * data structure.
@@ -329,8 +342,8 @@ static int _update_node_filesystem(void)
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
 
 	info("%s: num reads %"PRIu64" nums write %"PRIu64" "
-	     "read %f MB wrote %f MB",
-	     __func__, fls.reads, fls.writes, fls.read_size, fls.write_size);
+	     "read %f MiB wrote %f MiB",
+	     __func__, data_i[0], data_i[1], data_d[2], data_d[3]);
 
 	slurm_mutex_unlock(&lustre_lock);
 

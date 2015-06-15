@@ -756,7 +756,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	if (!msg->energy)
 		msg->energy = acct_gather_energy_alloc();
-	acct_gather_energy_g_get_data(ENERGY_DATA_STRUCT, msg->energy);
+	acct_gather_energy_g_get_data(ENERGY_DATA_NODE_ENERGY, msg->energy);
 
 	msg->timestamp = time(NULL);
 

@@ -376,6 +376,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	}
 
 	jobacct->pid = pid;
+	memcpy(&jobacct->id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->min_cpu = 0;
 	debug2("adding task %u pid %d on node %u to jobacct",
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
@@ -585,6 +586,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 		jobacct_id = &temp_id;
 	}
 	memset(jobacct, 0, sizeof(struct jobacctinfo));
+	jobacct->dataset_id = -1;
 	jobacct->sys_cpu_sec = 0;
 	jobacct->sys_cpu_usec = 0;
 	jobacct->user_cpu_sec = 0;
