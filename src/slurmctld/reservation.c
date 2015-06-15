@@ -1536,7 +1536,8 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 	struct job_record *job_ptr;
 	bool overlap = false;
 
-	if (flags & RESERVE_FLAG_IGN_JOBS)	/* ignore job overlap */
+	if (!node_bitmap ||			/* No nodes to test for */
+	    (flags & RESERVE_FLAG_IGN_JOBS))	/* ignore job overlap */
 		return overlap;
 	if (flags & RESERVE_FLAG_TIME_FLOAT)
 		start_time += time(NULL);
