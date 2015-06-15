@@ -38,52 +38,6 @@ set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
 
-proc get_jobacct_freq {} {
-	global scontrol
-	set task_freq 30
-	log_user 0
-	match_max -d 100000
-	spawn $scontrol show config
-	expect {
-		timeout {
-			send_user "\nCan't find JobAcctGatherFrequency in slurm.conf. Using $task_freq"
-			return $task_freq
-		}
-	}
-	wait
-	log_user 1
-	set opt ""
-	set lines [split $expect_out(buffer) "\n"]
-	set nl [llength $lines]
-	for {set lx 0} {$lx < $nl} {incr lx} {
-		set line [lindex $lines $lx]
-		if {[string first "JobAcctGatherFrequency" $line] != -1	} {
-			set poseq [string first "=" $line]
-			set opt [string range $line $poseq+2 end]
-			set opt [string tolower $opt]
-			break
-		}
-	}
-	if {$opt == ""} {
-		send_user "\nJobAcctGatherFrequency in slurm.conf. Using $task_freq"
-	}
-
-	set tokens [split $opt ","]
-	set nt [llength $tokens]
-	if {$nt == 1} {
-		if {[string first "task=" $opt] == -1} {
-			return $opt
-		}
-	}
-	for {set tx 0} {$tx < $nt} {incr tx} {
-		set opt [lindex $tokens $tx]
-		if {[string first "task=" $opt] != -1} {
-			return [string range $opt 5 end]
-		}
-	}
-	return task_freq
-}
-
 print_header $test_id
 
 if {[test_front_end]} {
@@ -111,7 +65,10 @@ if {$profile == 0} {
 send_user "\nacct_gather_profile/hdf5 plugin installed\n"
 send_user "Note: this test takes 3 minutes to run\n"
 
-set task_freq [get_jobacct_freq]
+set task_freq [get_job_acct_freq]
+if {$task_freq < 30} {
+	send_user "\nWarning: jobacct_gather_freq < 30 ($task_freq), results are unreliable\n"
+}
 
 #
 # Build a test program to put a known load on the system
@@ -194,8 +151,6 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		set last_et $et
 		set low_rd [expr 0.975 * 10 * $cur_et]
 		set hi_rd  [expr 1.025 * 10 * $cur_et]
-		if {$lno == 2 && $et < 30} {
-			send_user "\nWarning: jobacct_gather_freq < 30, results are unreliable\n"
 		}
 		if {$lno == 2 && $et < $task_freq} {
 			send_user "\nFAILURE: sample $et is not --acctg-freq=$task_freq\n"
