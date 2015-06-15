@@ -649,7 +649,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 			ds_name, profile_gid, nb_fields,
 			field_names, field_types);
 		if (jobacct->dataset_id == SLURM_ERROR) {
-			error("JobAcct: Failed to create the dataset for task %d",
+			error("JobAcct: Failed to create the dataset for "
+			      "task %d",
 			      jobacct->pid);
 			return;
 		}
@@ -881,11 +882,10 @@ extern void jag_common_poll_data(
 			break;
 		}
 		if (acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
-			if (jobacct->cur_time == 0) {
+			if (!jobacct->cur_time)
 				jobacct->last_time = ct;
-			} else {
+			else
 				jobacct->last_time = jobacct->cur_time;
-			}
 			jobacct->cur_time = ct;
 			_record_profile(jobacct);
 		}
