@@ -137,49 +137,70 @@ set lno 0
 set fd 0
 set last_et 0
 set fd [open $file_out "r"]
+set et_col -1
+set cpu_util_col -1
+set read_disk_col -1
 while {$fd > 0 && [gets $fd line] != -1} {
 	incr lno
-	if {$lno > 2} {
-		set tokens [split $line ","]
-		if {[llength $tokens] < 14} {
-			send_user "\nFAILURE: too few items on line $lno"
+
+	set tokens [split $line ","]
+
+	if {$lno == 1} {
+		set et_col [lsearch $tokens "ElapsedTime"]
+		set cpu_util_col [lsearch $tokens "CPUUtilization"]
+		set read_disk_col [lsearch $tokens "ReadMiB"]
+
+		if {$et_col == -1} {
+			send_user "\nFAILURE: no ElapsedTime column found\n"
 			set exit_code 1
+		}
+		if {$cpu_util_col == -1} {
+			send_user "\nFAILURE: no CPUUtilization column found\n"
+			set exit_code 1
+		}
+		if {$read_disk_col == -1} {
+			send_user "\nFAILURE: no ReadMiB column found\n"
+			set exit_code 1
+		}
+
+		if {$exit_code} {
 			break;
 		}
-		set et [lindex $tokens 5]
-		set cur_et [expr $et - $last_et]
-		set last_et $et
-		set low_rd [expr 0.975 * 10 * $cur_et]
-		set hi_rd  [expr 1.025 * 10 * $cur_et]
-		}
-		if {$lno == 2 && $et < $task_freq} {
-			send_user "\nFAILURE: sample $et is not --acctg-freq=$task_freq\n"
-			set exit_code 1
-		}
-		set cputil [lindex $tokens 8]
-		# The range on cpu utilization is pretty wide
-		# Linux accounting resolution is only to one second, so in a
-		# typical 30 interval an extra second is 3%. The burn loop
-		# consumes a bit more that asked for. There is additional type
-		# managing the I/O portion. Slurm and linux also consume some
-		# cpu.
-		if {$cputil < 38.0} {
-			send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
-			incr nerr
-		}
-		if {$cputil > 47.0} {
-			send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
-			incr nerr
-		}
-		set rdmb [lindex $tokens 12]
-		if {$rdmb < $low_rd} {
-			send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
-			incr nerr
-		}
-		if {$rdmb  > $hi_rd} {
-			send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
-			incr nerr
-		}
+		continue;
+	}
+
+	set et [lindex $tokens $et_col]
+	set cur_et [expr $et - $last_et]
+	set last_et $et
+
+	if { $lno == 2 } {
+		continue;
+	}
+
+	if {$cur_et < $task_freq} {
+		send_user "\nWarning: Poll interval was only $cur_et instead of expected $task_freq on line $lno\n"
+		incr nerr
+	}
+
+	set cputil [lindex $tokens $cpu_util_col]
+	# The range on cpu utilization is pretty wide
+	# Linux accounting resolution is only to one second, so in a
+	# typical 30 interval an extra second is 3%. The burn loop
+	# consumes a bit more that asked for. There is additional type
+	# managing the I/O portion. Slurm and linux also consume some
+	# cpu.
+	if {$cputil < 38.0 || $cputil > 47.0 } {
+		send_user "\nWarning: CPU Busy $cputil not near 40% on line $lno\n"
+		incr nerr
+	}
+
+	set rdmb [lindex $tokens $read_disk_col]
+	set low_rd [expr 0.975 * 10 * $cur_et]
+	set hi_rd  [expr 1.025 * 10 * $cur_et]
+
+	if {$rdmb < $low_rd || $rdmb  > $hi_rd } {
+		send_user "\nWarning: Read Megabytes $rdmb not near 100.0 on line $lno\n"
+		incr nerr
 	}
 }
 close $fd
