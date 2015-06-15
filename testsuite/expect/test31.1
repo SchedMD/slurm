@@ -232,7 +232,6 @@ if { [test_front_end] == 1 } {
 }
 
 set got_config 0
-log_user 0
 spawn $scontrol show config
 expect {
 	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
@@ -248,7 +247,10 @@ expect {
 		wait
 	}
 }
-log_user 1
+if {$got_config == 0} {
+	send_user "\nFAILURE: Could not identify slurm.conf location\n"
+	exit 1
+}
 
 set get_name 0
 spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
@@ -277,6 +279,7 @@ if {$get_name != 1} {
 #
 # Copy slurm.conf file
 #
+exec $bin_rm -fr $cwd/slurm.conf.orig
 spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
 expect {
 	timeout {
