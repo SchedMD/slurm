@@ -379,7 +379,8 @@ static int _set_options(const int argc, char **argv)
 		switch (cc) {
 			case 'd':
 				params.data_item = xstrdup(optarg);
-				/* params.data_item = xstrtolower(params.data_item); */
+				/* params.data_item =
+				   xstrtolower(params.data_item); */
 				break;
 			case 'E':
 				params.mode = SH5UTIL_MODE_EXTRACT;
@@ -419,8 +420,10 @@ static int _set_options(const int argc, char **argv)
 				if (strcmp(optarg, GRP_ENERGY)
 				    && strcmp(optarg, GRP_LUSTRE)
 				    && strcmp(optarg, GRP_NETWORK)
-				    && strncmp(optarg,GRP_TASK,strlen(GRP_TASK))) {
-					error("Bad value for --series=\"%s\"", optarg);
+				    && strncmp(optarg,GRP_TASK,
+					       strlen(GRP_TASK))) {
+					error("Bad value for --series=\"%s\"",
+					      optarg);
 					return -1;
 				}
 				params.series = xstrdup(optarg);
@@ -430,7 +433,8 @@ static int _set_options(const int argc, char **argv)
 				break;
 			case 'u':
 				if (uid_from_string(optarg, &u) < 0) {
-					error("No such user --uid=\"%s\"", optarg);
+					error("No such user --uid=\"%s\"",
+					      optarg);
 					return -1;
 				}
 				params.user = uid_to_string(u);
