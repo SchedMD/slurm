@@ -1,0 +1,355 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of advanced reservation of licenses.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Morris Jette <jette@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id		"3.15"
+set exit_code		0
+set script_name         "test$test_id.bash"
+set license_name        "test$test_id"
+set resv_name           "resv$test_id"
+set user_name		""
+
+proc reconfigure { } {
+	global error_code scontrol
+	spawn $scontrol reconfigure
+	expect {
+		-re "Error|error" {
+			send_user "\nFAILURE: scontrol reconfigure error\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc submit_job { license_count } {
+	global script_name bin_sleep license_name sbatch number exit_code
+	set job_id 0
+	make_bash_script $script_name "$bin_sleep 300"
+	spawn $sbatch -n1 -t1 -L $license_name:$license_count $script_name
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if { $job_id == 0 } {
+		send_user "\nFAILURE: failed to submit job\n"
+		set exit_code 1
+	}
+	return $job_id
+}
+
+proc reason_is_licenses { job_id } {
+	global squeue
+	set reason_licenses 0
+	spawn $squeue -j $job_id -o "%r"
+	expect {
+		-re "Licenses" {
+			set reason_licenses 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	return $reason_licenses
+}
+
+proc update_resv { license_count } {
+	global scontrol resv_name license_name exit_code
+	set updated_ok 0
+	spawn $scontrol update reservation ReservationName=$resv_name licenses=$license_name:$license_count
+	expect {
+		-re "updated" {
+			set updated_ok 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if { $updated_ok == 0 } {
+		send_user "\nFAILURE: failed to set update reservation\n"
+		set exit_code 1
+	}
+}
+
+proc test_license_count {want_total want_used want_free } {
+	global scontrol license_name number exit_code
+	set license_free  0
+	set license_total 0
+	set license_used  0
+	spawn $scontrol -o show license $license_name
+	expect {
+		-re "Total=($number)" {
+			set license_total $expect_out(1,string)
+			exp_continue
+		}
+		-re "Used=($number)" {
+			set license_used $expect_out(1,string)
+			exp_continue
+		}
+		-re "Free=($number)" {
+			set license_free $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if { $license_total != $want_total } {
+		send_user "\nFAILURE: Incorrect license_total count ($license_total != $want_total)\n"
+		set exit_code 1
+	}
+	if { $license_used != $want_used } {
+		send_user "\nFAILURE: Incorrect license_used count ($license_used != $want_used)\n"
+		set exit_code 1
+	}
+	if { $license_free != $want_free } {
+		send_user "\nFAILURE: Incorrect license_free count ($license_free != $want_free)\n"
+		set exit_code 1
+	}
+}
+
+################# TEST STARTS HERE ######################
+print_header $test_id
+
+if {[is_super_user] == 0} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
+	exit 0
+}
+
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Add licenses to system configuration, 8 licenses named "test3.15"
+#
+set got_config 0
+set licenses   ""
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "Licenses += .null" {
+		exp_continue
+	}
+	-re "Licenses += ($alpha_numeric_colon)" {
+		set licenses $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_CONF *= (/.*)/($alpha).*SLURM_VERSION" {
+		set config_dir $expect_out(1,string)
+		set got_config 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {[string first ${license_name} ${licenses}] != -1} {
+	send_user "\nFAILURE: License ${license_name} already configured, likely vestigial from previous test, fix slurm.conf and test again\n"
+	exit 1
+}
+if {$got_config == 0} {
+	send_user "\nFAILURE: Could not identify slurm.conf location\n"
+	exit 1
+}
+
+set cwd "[$bin_pwd]"
+
+exec $bin_rm -fr $cwd/slurm.conf.orig
+spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
+expect {
+	timeout {
+		send_user "\nFAILURE: slurm.conf was not copied\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+set sep ""
+if {[string length ${licenses}] > 0} {
+	set sep ","
+}
+exec $bin_grep -v Licenses $config_dir/slurm.conf > $cwd/slurm.conf.work
+exec $bin_echo "Licenses=${licenses}${sep}${license_name}:8" >> $cwd/slurm.conf.work
+exec $bin_cp $cwd/slurm.conf.work $config_dir/slurm.conf
+exec $bin_rm -f $cwd/slurm.conf.work
+
+reconfigure
+
+#
+# Create the advanced reservation with 6 of 8 licenses named "test3.15"
+#
+spawn $scontrol create reservation ReservationName=$resv_name starttime=now duration=2 nodecnt=2 flags=license_only users=$user_name licenses=${license_name}:6
+expect {
+	-re "Error|error" {
+		send_user "\nFAILURE: error creating reservation\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Submit batch job to claim 3 of 2 unreserved licenses of type "test3.15"
+#
+set job_id1 [submit_job 3]
+
+#
+# Check that job reason is "Licenses"
+#
+sleep 5
+if { [reason_is_licenses $job_id1] == 0 } {
+	send_user "\nFAILURE: failed to set proper job reason for job $job_id1\n"
+	set exit_code 1
+}
+
+#
+# Drop reservation to only 2 of the "test3.15" licenses (leaving 6 licenses)
+#
+update_resv 2
+
+#
+# Check that job reason is no longer "Licenses"
+#
+sleep 5
+if { [reason_is_licenses $job_id1] != 0 } {
+	send_user "\nFAILURE: failed to set proper job reason for job $job_id1\n"
+	set exit_code 1
+}
+
+#
+# Test scontrol show license output
+#
+test_license_count 8 3 5
+
+if {$exit_code == 0} {
+	send_user "\nSo far, so good. Starting test of second job\n\n"
+}
+
+#
+# Submit batch job to claim 4 of 3 unreserved licenses of type "test3.15"
+#
+set job_id2 [submit_job 4]
+
+#
+# Check that job reason is "Licenses"
+#
+sleep 5
+if { [reason_is_licenses $job_id2] == 0 } {
+	send_user "\nFAILURE: failed to set proper job reason for job $job_id2\n"
+	set exit_code 1
+}
+
+#
+# Drop reservation to only 1 of the "test3.15" licenses (leaving 7 licenses)
+#
+update_resv 1
+
+#
+# Check that job reason is no longer "Licenses"
+#
+sleep 5
+if { [reason_is_licenses $job_id2] != 0 } {
+	send_user "\nFAILURE: failed to set proper job reason for job $job_id2\n"
+	set exit_code 1
+}
+
+#
+# Test scontrol show license output
+#
+test_license_count 8 7 1
+
+#
+# Cancel the jobs and
+# Restore the configuration
+#
+cancel_job $job_id1
+cancel_job $job_id2
+exec $bin_cp $cwd/slurm.conf.orig $config_dir/slurm.conf
+reconfigure
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $cwd/slurm.conf.orig $script_name
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
