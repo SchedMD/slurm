@@ -374,7 +374,7 @@ static int _set_options(const int argc, char **argv)
 
 	_init_opts();
 
-	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:LN:o:p:sSu:UvV",
+	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:LN:o:p:s:Su:UvV",
 	                         long_options, &option_index)) != EOF) {
 		switch (cc) {
 			case 'd':
