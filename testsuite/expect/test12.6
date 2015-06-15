@@ -79,12 +79,6 @@ exec $bin_chmod 700 $file_prog
 
 set timeout [expr $max_job_delay + 200]
 
-# Override task polling supplied by slurm.conf
-# I am not sure why we are doing this (but we are)
-# The original task_freq had a + 5 here.  That will always fail with a bad
-# allocation if you are enforcing memory limits, so we changed it to - 5
-# instead.  I don't think it really matters though.
-set task_freq [expr $task_freq - 5]
 set srun_pid [spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog]
 expect {
 	-re "SLURM_JobId=($number)" {
