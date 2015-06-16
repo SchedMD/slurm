@@ -639,10 +639,13 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	static int profile_gid = -1;
 	const int nb_fields = 8;
 	double et;
+	int8_t data[nb_fields * 8];
+	uint64_t *data_i = (uint64_t *)data;
+	double *data_d = (double *)data;
 
-	if (profile_gid == -1) {
+	if (profile_gid == -1)
 		profile_gid = acct_gather_profile_g_create_group("Tasks");
-	}
+
 	/* Create the dataset first */
 	if (jobacct->dataset_id < 0) {
 		const char* field_names[] = {
@@ -663,17 +666,10 @@ static void _record_profile(struct jobacctinfo *jobacct)
 			      jobacct->pid);
 			return;
 		}
-		jobacct->cur_time = time(NULL);
-		jobacct->last_time = jobacct->cur_time;
-		return;
 	}
 
 	if (jobacct->dataset_id < 0)
 		return;
-
-	int8_t data[nb_fields * 8];
-	uint64_t *data_i = (uint64_t *)data;
-	double *data_d = (double *)data;
 
 	data_i[0] = jobacct->act_cpufreq;
 	data_i[3] = jobacct->tot_rss;
@@ -681,18 +677,29 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	data_i[5] = jobacct->tot_pages;
 
 	/* delta from last snapshot */
-	et = (jobacct->cur_time - jobacct->last_time);
-	data_i[1] = jobacct->tot_cpu - jobacct->last_total_cputime;
-	if (et == 0) {
+	if (!jobacct->last_time) {
+		et = 0;
+		data_i[1] = 0;
 		data_d[2] = 0.0;
+		data_d[6] = 0.0;
+		data_d[7] = 0.0;
 	} else {
-		data_d[2] = (100.0 * (double)data_i[1]) / ((double) et);
+		data_i[1] = jobacct->tot_cpu - jobacct->last_total_cputime;
+		et = (jobacct->cur_time - jobacct->last_time);
+		if (!et)
+			data_d[2] = 0.0;
+		else
+			data_d[2] = (100.0 * (double)data_i[1]) / ((double) et);
+
+		data_d[6] = jobacct->tot_disk_read -
+			jobacct->last_tot_disk_read;
+
+		data_d[7] = jobacct->tot_disk_write -
+			jobacct->last_tot_disk_write;
 	}
-	data_d[6] = jobacct->tot_disk_read - jobacct->last_tot_disk_read;
-	data_d[7] = jobacct->tot_disk_write - jobacct->last_tot_disk_write;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("PROFILE-Task: cpufreq=%ld cputime=%ld rss-%ld vmsize=%ld "
+		info("PROFILE-Task: cpufreq=%ld cputime=%ld rss=%ld vmsize=%ld "
 			"pages=%ld readsize=%lf writesize=%lf",
 			data_i[0], data_i[1], data_i[3], data_i[4],
 			data_i[5], data_d[6], data_d[7]);
@@ -887,22 +894,22 @@ extern void jag_common_poll_data(
 		}
 		if (profile &&
 		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
-			if (!jobacct->cur_time)
-				jobacct->last_time = ct;
-			else
-				jobacct->last_time = jobacct->cur_time;
 			jobacct->cur_time = ct;
-			_record_profile(jobacct);
-		}
 
+			_record_profile(jobacct);
+
+			jobacct->last_tot_disk_read = jobacct->tot_disk_read;
+			jobacct->last_tot_disk_write = jobacct->tot_disk_write;
+			jobacct->last_total_cputime = jobacct->tot_cpu;
+			jobacct->last_time = jobacct->cur_time;
+		}
 	}
 	list_iterator_destroy(itr);
 
-	if (! no_over_memory_kill) {
+	if (!no_over_memory_kill)
 		jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
-	}
 
 finished:
-	list_destroy(prec_list);
+	FREE_NULL_LIST(prec_list);
 	processing = 0;
 }
