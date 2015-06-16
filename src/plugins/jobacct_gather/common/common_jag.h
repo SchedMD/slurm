@@ -72,6 +72,6 @@ extern void print_jag_prec(jag_prec_t *prec);
 
 extern void jag_common_poll_data(
 	List task_list, bool pgid_plugin, uint64_t cont_id,
-	jag_callbacks_t *callbacks);
+	jag_callbacks_t *callbacks, bool profile);
 
 #endif

@@ -757,7 +757,7 @@ extern void print_jag_prec(jag_prec_t *prec)
 
 extern void jag_common_poll_data(
 	List task_list, bool pgid_plugin, uint64_t cont_id,
-	jag_callbacks_t *callbacks)
+	jag_callbacks_t *callbacks, bool profile)
 {
 	/* Update the data */
 	List prec_list = NULL;
@@ -885,7 +885,8 @@ extern void jag_common_poll_data(
 			       jobacct->energy.consumed_energy);
 			energy_counted = 1;
 		}
-		if (acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
+		if (profile &&
+		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
 			if (!jobacct->cur_time)
 				jobacct->last_time = ct;
 			else

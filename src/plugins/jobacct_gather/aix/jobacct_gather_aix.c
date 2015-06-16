@@ -236,7 +236,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
  *    wrong.
  */
 extern void jobacct_gather_p_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id)
+	List task_list, bool pgid_plugin, uint64_t cont_id, bool profile)
 {
 	static jag_callbacks_t callbacks;
 	static bool first = 1;
@@ -248,7 +248,8 @@ extern void jobacct_gather_p_poll_data(
 		callbacks.get_offspring_data = _get_offspring_data;
 	}
 
-	jag_common_poll_data(task_list, pgid_plugin, cont_id, &callbacks);
+	jag_common_poll_data(task_list, pgid_plugin, cont_id, &callbacks,
+			     profile);
 	return;
 }
 
