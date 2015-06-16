@@ -573,6 +573,9 @@ extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
 
 extern int acct_gather_profile_p_add_sample_data(int table_id, void *data)
 {
+	table_t *ds = &tables[table_id];
+	uint8_t send_data[ds->type_size];
+
 	debug("acct_gather_profile_p_add_sample_data %d", table_id);
 
 	if (file_id < 0) {
@@ -596,15 +599,13 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return SLURM_ERROR;
 
-	table_t *ds = &tables[table_id];
-	uint8_t data_[ds->type_size];
-
 	/* prepend relative time */
-	((uint64_t *)data_)[0] = difftime(time(NULL), step_start_time);
-	memcpy(data_+sizeof(uint64_t), data, ds->type_size-sizeof(uint64_t));
+	((uint64_t *)send_data)[0] = difftime(time(NULL), step_start_time);
+	memcpy(send_data + sizeof(uint64_t), data,
+	       ds->type_size - sizeof(uint64_t));
 
 	/* append the record to the table */
-	if (H5PTappend(ds->table_id, 1, data_) < 0) {
+	if (H5PTappend(ds->table_id, 1, send_data) < 0) {
 		error("PROFILE: Impossible to add data to the table %d; "
 		      "maybe the table has not been created?", table_id);
 		return SLURM_ERROR;
