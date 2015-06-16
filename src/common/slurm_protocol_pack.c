@@ -3020,15 +3020,15 @@ _pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		packstr(msg->node_name, buffer);
-		pack16(msg->nb_sensors, buffer);
-		for (i = 0; i < msg->nb_sensors; i++)
+		pack16(msg->sensor_cnt, buffer);
+		for (i = 0; i < msg->sensor_cnt; i++)
 			acct_gather_energy_pack(&msg->energy[i],
 						buffer, protocol_version);
 	} else {
 		acct_gather_energy_t *energy = NULL;
 
 		packstr(msg->node_name, buffer);
-		if (msg->nb_sensors)
+		if (msg->sensor_cnt)
 			energy = &msg->energy[0];
 		acct_gather_energy_pack(energy, buffer, protocol_version);
 	}
@@ -3049,10 +3049,10 @@ _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node_data_ptr->node_name,
 				       &uint32_tmp, buffer);
-		safe_unpack64(&node_data_ptr->nb_sensors, buffer);
+		safe_unpack16(&node_data_ptr->sensor_cnt, buffer);
 		node_data_ptr->energy = xmalloc(sizeof(acct_gather_energy_t)
-		      * node_data_ptr->nb_sensors);
-		for (i = 0; i < node_data_ptr->nb_sensors; ++i) {
+						* node_data_ptr->sensor_cnt);
+		for (i = 0; i < node_data_ptr->sensor_cnt; ++i) {
 			e=NULL;
 			if (acct_gather_energy_unpack(&e, buffer,
 			      protocol_version) != SLURM_SUCCESS)

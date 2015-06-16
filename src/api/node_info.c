@@ -596,8 +596,8 @@ extern int slurm_load_node_single (node_info_msg_t **resp,
  * NOTE: free the response using xfree
  */
 extern int slurm_get_node_energy(char *host, uint16_t delta,
-				   size_t *nb_sensors,
-				   acct_gather_energy_t **energy)
+				 uint16_t *sensor_cnt,
+				 acct_gather_energy_t **energy)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -651,12 +651,11 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_ACCT_GATHER_ENERGY:
-		*nb_sensors = ((acct_gather_node_resp_msg_t *)
-				       resp_msg.data)->nb_sensors;
+		*sensor_cnt = ((acct_gather_node_resp_msg_t *)
+			       resp_msg.data)->sensor_cnt;
 		*energy = ((acct_gather_node_resp_msg_t *)
-				       resp_msg.data)->energy;
-		((acct_gather_node_resp_msg_t *) resp_msg.data)->energy
-			= NULL;
+			   resp_msg.data)->energy;
+		((acct_gather_node_resp_msg_t *) resp_msg.data)->energy = NULL;
 		slurm_free_acct_gather_node_resp_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:

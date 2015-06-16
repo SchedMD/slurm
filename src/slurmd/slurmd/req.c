@@ -2576,13 +2576,13 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 		acct_gather_node_resp_msg_t acct_msg;
 		time_t now = time(NULL), last_poll = 0;
 		int data_type = ENERGY_DATA_STRUCT;
-		size_t nb_sensors;
+		uint16_t sensor_cnt;
 		acct_gather_energy_req_msg_t *req = msg->data;
 
 		acct_gather_energy_g_get_data(ENERGY_DATA_LAST_POLL,
 					      &last_poll);
-		acct_gather_energy_g_get_data(ENERGY_DATA_NB_SENSORS,
-					      &nb_sensors);
+		acct_gather_energy_g_get_data(ENERGY_DATA_SENSOR_CNT,
+					      &sensor_cnt);
 
 		/* If we polled later than delta seconds then force a
 		   new poll.
@@ -2591,8 +2591,8 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 			data_type = ENERGY_DATA_JOULES_TASK;
 
 		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
-		acct_msg.nb_sensors = nb_sensors;
-		acct_msg.energy = acct_gather_energy_alloc(nb_sensors);
+		acct_msg.sensor_cnt = sensor_cnt;
+		acct_msg.energy = acct_gather_energy_alloc(sensor_cnt);
 
 		acct_gather_energy_g_get_data(data_type, acct_msg.energy);
 

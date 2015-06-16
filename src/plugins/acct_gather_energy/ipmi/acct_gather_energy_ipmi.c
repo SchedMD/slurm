@@ -140,17 +140,17 @@ typedef struct sensor_status {
 	acct_gather_energy_t energy;
 } sensor_status_t;
 static sensor_status_t *sensors;
-static size_t           sensors_len;
+static uint16_t           sensors_len;
 static uint32_t *start_current_energies;
 
 /* array of struct describing the configuration of the sensors */
 typedef struct description {
 	const char* label;
-	size_t *sensor_idxs;
-	size_t nb_sensors;
+	uint16_t sensor_cnt;
+	uint16_t *sensor_idxs;
 } description_t;
 static description_t *descriptions;
-static size_t         descriptions_len;
+static uint16_t       descriptions_len;
 static const char *NODE_DESC = "Node";
 
 static int dataset_id = -1; /* id of the dataset for profile data */
@@ -329,7 +329,7 @@ static int _check_power_sensor(void)
 	void *sensor_reading;
 	int rc;
 	int sensor_units;
-	size_t i;
+	uint16_t i;
 	unsigned int ids[sensors_len];
 
 	for (i = 0; i < sensors_len; ++i)
@@ -444,8 +444,8 @@ static int _find_power_sensor(void)
 			descriptions_len = 1;
 			descriptions = xmalloc(sizeof(description_t));
 			descriptions[0].label = xstrdup(NODE_DESC);
-			descriptions[0].nb_sensors = 1;
-			descriptions[0].sensor_idxs = xmalloc(sizeof(size_t));
+			descriptions[0].sensor_cnt = 1;
+			descriptions[0].sensor_idxs = xmalloc(sizeof(uint16_t));
 			descriptions[0].sensor_idxs[0] = 0;
 
 			start_current_energies = xmalloc(sizeof(uint32_t));
@@ -478,7 +478,7 @@ static int _read_ipmi_values(void)
 	/* read sensors list */
 	void *sensor_reading;
 	int rc;
-	size_t i;
+	uint16_t i;
 	unsigned int ids[sensors_len];
 
 	for (i = 0; i < sensors_len; ++i)
@@ -549,7 +549,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt)
 static int _thread_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
-	size_t i;
+	uint16_t i;
 
 	rc = _read_ipmi_values();
 
@@ -587,7 +587,7 @@ static int _thread_init(void)
 	static bool first = true;
 	static bool first_init = SLURM_FAILURE;
 	int rc = SLURM_SUCCESS;
-	size_t i;
+	uint16_t i;
 
 	if (!first)
 		return first_init;
@@ -631,8 +631,8 @@ static int _thread_init(void)
 
 static int _ipmi_send_profile(void)
 {
-	size_t i, j;
-	const size_t nb_fields = descriptions_len;
+	uint16_t i, j;
+	const uint16_t nb_fields = descriptions_len;
 	const char *field_names[nb_fields];
 	field_type_t field_types[nb_fields];
 	uint8_t data[nb_fields * 8];
@@ -664,7 +664,7 @@ static int _ipmi_send_profile(void)
 	memset(data, 0, nb_fields * 8);
 	ptr = (uint64_t *) data;
 	for (i = 0; i < descriptions_len; ++i) {
-		for (j = 0; j < descriptions[i].nb_sensors; ++j) {
+		for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
 			id = descriptions[i].sensor_idxs[j];
 			*ptr += sensors[id].energy.current_watts;
 		}
@@ -797,24 +797,25 @@ static int _get_joules_task(uint16_t delta)
 	time_t now = time(NULL);
 	static bool first = true;
 	uint32_t adjustment = 0;
-	size_t i;
+	uint16_t i;
+	acct_gather_energy_t *new;
+	acct_gather_energy_t *old;
 
 	/* sensors list */
 	acct_gather_energy_t *energies;
-	size_t nb_sensors;
-	if (slurm_get_node_energy(NULL, delta, &nb_sensors, &energies)) {
+	uint16_t sensor_cnt;
+
+	if (slurm_get_node_energy(NULL, delta, &sensor_cnt, &energies)) {
 		error("_get_joules_task: can't get info from slurmd");
 		return SLURM_ERROR;
 	}
-	if (nb_sensors != sensors_len) {
-		error("_get_joules_task: received %lu sensors, %lu expected",
-			nb_sensors, sensors_len);
+	if (sensor_cnt != sensors_len) {
+		error("_get_joules_task: received %u sensors, %u expected",
+		      sensor_cnt, sensors_len);
 		return SLURM_ERROR;
 	}
 
-	acct_gather_energy_t *new;
-	acct_gather_energy_t *old;
-	for (i = 0; i < nb_sensors; ++i) {
+	for (i = 0; i < sensor_cnt; ++i) {
 		new = &energies[i];
 		old = &sensors[i].energy;
 		new->previous_consumed_energy = old->consumed_energy;
@@ -862,7 +863,7 @@ static int _get_joules_task(uint16_t delta)
 
 static void _get_node_energy(acct_gather_energy_t *energy)
 {
-	size_t i, j, id;
+	uint16_t i, j, id;
 	acct_gather_energy_t *e;
 
 	/* find the "Node" description */
@@ -875,7 +876,7 @@ static void _get_node_energy(acct_gather_energy_t *energy)
 
 	/* sum the energy of all sensors described for "Node" */
 	memset(energy, 0, sizeof(acct_gather_energy_t));
-	for (j = 0; j < descriptions[i].nb_sensors; ++j) {
+	for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
 		id = descriptions[i].sensor_idxs[j];
 		e = &sensors[id].energy;
 		energy->base_consumed_energy += e->base_consumed_energy;
@@ -906,7 +907,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	size_t i;
+	uint16_t i;
 
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
@@ -943,11 +944,11 @@ extern int acct_gather_energy_p_update_node_energy(void)
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 void *data)
 {
-	size_t i;
+	uint16_t i;
 	int rc = SLURM_SUCCESS;
 	acct_gather_energy_t *energy = (acct_gather_energy_t *)data;
 	time_t *last_poll = (time_t *)data;
-	size_t *nb_sensors = (size_t *)data;
+	uint16_t *sensor_cnt = (uint16_t *)data;
 
 	xassert(_run_in_daemon());
 
@@ -962,8 +963,8 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		*last_poll = last_update_time;
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
-	case ENERGY_DATA_NB_SENSORS:
-		*nb_sensors = sensors_len;
+	case ENERGY_DATA_SENSOR_CNT:
+		*sensor_cnt = sensors_len;
 		break;
 	case ENERGY_DATA_STRUCT:
 		slurm_mutex_lock(&ipmi_mutex);
@@ -1033,9 +1034,9 @@ static int _parse_sensor_descriptions(void)
 	const char *sep2 = ",";
 	char *str_desc_list, *str_desc, *str_id, *mid, *endptr;
 	char *saveptr1, *saveptr2; // pointers for strtok_r storage
-	size_t i, j, k;
-	size_t id;
-	size_t *idx;
+	uint16_t i, j, k;
+	uint16_t id;
+	uint16_t *idx;
 	description_t *d;
 	bool found;
 
@@ -1076,9 +1077,10 @@ static int _parse_sensor_descriptions(void)
 			id = strtol(str_id, &endptr, 10);
 			if (*endptr != '\0')
 				goto error;
-			d->nb_sensors++;
-			xrealloc(d->sensor_idxs, sizeof(size_t)*d->nb_sensors);
-			d->sensor_idxs[d->nb_sensors - 1] = id;
+			d->sensor_cnt++;
+			xrealloc(d->sensor_idxs,
+				 sizeof(uint16_t) * d->sensor_cnt);
+			d->sensor_idxs[d->sensor_cnt - 1] = id;
 			str_id = strtok_r(NULL, sep2, &saveptr2);
 		}
 		++i;
@@ -1098,7 +1100,7 @@ static int _parse_sensor_descriptions(void)
 	 * gather the unique sensors ids and replace sensors_idxs by their
 	 * indexes in the sensors array */
 	for (i = 0; i < descriptions_len; ++i) {
-		for (j = 0; j < descriptions[i].nb_sensors; ++j) {
+		for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
 			idx = &descriptions[i].sensor_idxs[j];
 			found = false;
 			for (k = 0; k < sensors_len && !found; ++k)
