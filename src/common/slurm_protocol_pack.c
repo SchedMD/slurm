@@ -3018,11 +3018,20 @@ _pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
 
 	xassert(msg != NULL);
 
-	packstr(msg->node_name, buffer);
-	pack64(msg->nb_sensors, buffer);
-	for (i = 0; i < msg->nb_sensors; ++i)
-		acct_gather_energy_pack(&msg->energy[i],
-		      buffer, protocol_version);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr(msg->node_name, buffer);
+		pack16(msg->nb_sensors, buffer);
+		for (i = 0; i < msg->nb_sensors; i++)
+			acct_gather_energy_pack(&msg->energy[i],
+						buffer, protocol_version);
+	} else {
+		acct_gather_energy_t *energy = NULL;
+
+		packstr(msg->node_name, buffer);
+		if (msg->nb_sensors)
+			energy = &msg->energy[0];
+		acct_gather_energy_pack(energy, buffer, protocol_version);
+	}
 
 }
 static int
