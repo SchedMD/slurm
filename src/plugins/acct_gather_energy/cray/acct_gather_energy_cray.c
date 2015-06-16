@@ -316,7 +316,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 	if (!flag_init) {
 		flag_init = 1;
-		local_energy = acct_gather_energy_alloc();
+		local_energy = acct_gather_energy_alloc(1);
 		if (!_get_latest_stats(GET_ENERGY))
 			local_energy->current_watts = NO_VAL;
 		else

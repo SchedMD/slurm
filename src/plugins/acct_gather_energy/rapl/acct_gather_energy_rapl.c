@@ -551,7 +551,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	for (i = 0; i < nb_pkg; i++)
 		pkg_fd[i] = _open_msr(pkg2cpu[i]);
 
-	local_energy = acct_gather_energy_alloc();
+	local_energy = acct_gather_energy_alloc(1);
 
 	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 	if (result == 0)
