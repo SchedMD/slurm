@@ -3053,18 +3053,18 @@ _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
 		node_data_ptr->energy = xmalloc(sizeof(acct_gather_energy_t)
 						* node_data_ptr->sensor_cnt);
 		for (i = 0; i < node_data_ptr->sensor_cnt; ++i) {
-			e=NULL;
-			if (acct_gather_energy_unpack(&e, buffer,
-			      protocol_version) != SLURM_SUCCESS)
+			e = &node_data_ptr->energy[i];
+			if (acct_gather_energy_unpack(
+				    &e, buffer, protocol_version, 0)
+			    != SLURM_SUCCESS)
 				goto unpack_error;
-			memcpy(&node_data_ptr->energy[i], e,
-					sizeof(acct_gather_energy_t));
 		}
 	} else {
 		safe_unpackstr_xmalloc(&node_data_ptr->node_name,
 				       &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node_data_ptr->energy, buffer,
-				      protocol_version) != SLURM_SUCCESS)
+					      protocol_version, 1)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
 	}
 	return SLURM_SUCCESS;
@@ -3266,7 +3266,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 							     gres_info_size);
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&node_reg_ptr->version,
@@ -3323,7 +3323,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 							     gres_info_size);
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&node_reg_ptr->version,
@@ -3766,7 +3766,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
@@ -3817,7 +3817,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
@@ -3857,7 +3857,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
