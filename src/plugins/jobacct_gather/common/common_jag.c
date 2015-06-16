@@ -508,16 +508,14 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
-			ListIterator itr = list_iterator_create(task_list);
 			struct jobacctinfo *jobacct = NULL;
-			if ((jobacct = list_next(itr))) {
+			if ((jobacct = list_peek(task_list))) {
 				acct_gather_energy_g_get_data(
 					energy_profile,
 					&jobacct->energy);
 				debug2("getjoules_task energy = %u",
 				       jobacct->energy.consumed_energy);
 			}
-			list_iterator_destroy(itr);
 
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
