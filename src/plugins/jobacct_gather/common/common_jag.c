@@ -636,10 +636,33 @@ finished:
 
 static void _record_profile(struct jobacctinfo *jobacct)
 {
+	enum {
+		FIELD_CPUFREQ,
+		FIELD_CPUTIME,
+		FIELD_CPUUTIL,
+		FIELD_RSS,
+		FIELD_VMSIZE,
+		FIELD_PAGES,
+		FIELD_READ,
+		FIELD_WRITE,
+		FIELD_CNT
+	};
+
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "CPUFrequency", TYPE_UINT64 },
+		{ "CPUTime", TYPE_UINT64 },
+		{ "CPUUtilization", TYPE_DOUBLE },
+		{ "RSS", TYPE_UINT64 },
+		{ "VMSize", TYPE_UINT64 },
+		{ "Pages", TYPE_UINT64 },
+		{ "ReadMB", TYPE_DOUBLE },
+		{ "WriteMB", TYPE_DOUBLE },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
 	static int profile_gid = -1;
-	const int nb_fields = 8;
 	double et;
-	int8_t data[nb_fields * 8];
+	int8_t data[FIELD_CNT * sizeof(uint64_t)];
 	uint64_t *data_i = (uint64_t *)data;
 	double *data_d = (double *)data;
 
@@ -648,18 +671,11 @@ static void _record_profile(struct jobacctinfo *jobacct)
 
 	/* Create the dataset first */
 	if (jobacct->dataset_id < 0) {
-		const char* field_names[] = {
-			"CPUFrequency", "CPUTime", "CPUUtilization",
-			"RSS", "VMSize", "Pages", "ReadMiB", "WriteMiB"};
-		const field_type_t field_types[] = {
-			TYPE_UINT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_UINT64,
-			TYPE_UINT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_DOUBLE};
 		char ds_name[32];
-		snprintf(ds_name, sizeof(ds_name), "%d", jobacct->id.taskid);
+		snprintf(ds_name, sizeof(ds_name), "%u", jobacct->id.taskid);
 
 		jobacct->dataset_id = acct_gather_profile_g_create_dataset(
-			ds_name, profile_gid, nb_fields,
-			field_names, field_types);
+			ds_name, profile_gid, dataset);
 		if (jobacct->dataset_id == SLURM_ERROR) {
 			error("JobAcct: Failed to create the dataset for "
 			      "task %d",
@@ -671,38 +687,40 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	if (jobacct->dataset_id < 0)
 		return;
 
-	data_i[0] = jobacct->act_cpufreq;
-	data_i[3] = jobacct->tot_rss;
-	data_i[4] = jobacct->tot_vsize;
-	data_i[5] = jobacct->tot_pages;
+	data_i[FIELD_CPUFREQ] = jobacct->act_cpufreq;
+	data_i[FIELD_RSS] = jobacct->tot_rss;
+	data_i[FIELD_VMSIZE] = jobacct->tot_vsize;
+	data_i[FIELD_PAGES] = jobacct->tot_pages;
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
 		et = 0;
-		data_i[1] = 0;
-		data_d[2] = 0.0;
-		data_d[6] = 0.0;
-		data_d[7] = 0.0;
+		data_i[FIELD_CPUTIME] = 0;
+		data_d[FIELD_CPUUTIL] = 0.0;
+		data_d[FIELD_READ] = 0.0;
+		data_d[FIELD_WRITE] = 0.0;
 	} else {
-		data_i[1] = jobacct->tot_cpu - jobacct->last_total_cputime;
+		data_i[FIELD_CPUTIME] =
+			jobacct->tot_cpu - jobacct->last_total_cputime;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
-			data_d[2] = 0.0;
+			data_d[FIELD_CPUUTIL] = 0.0;
 		else
-			data_d[2] = (100.0 * (double)data_i[1]) / ((double) et);
+			data_d[FIELD_CPUUTIL] =
+				(100.0 * (double)data_i[FIELD_CPUTIME]) /
+				((double) et);
 
-		data_d[6] = jobacct->tot_disk_read -
+		data_d[FIELD_READ] = jobacct->tot_disk_read -
 			jobacct->last_tot_disk_read;
 
-		data_d[7] = jobacct->tot_disk_write -
+		data_d[FIELD_WRITE] = jobacct->tot_disk_write -
 			jobacct->last_tot_disk_write;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("PROFILE-Task: cpufreq=%ld cputime=%ld rss=%ld vmsize=%ld "
-			"pages=%ld readsize=%lf writesize=%lf",
-			data_i[0], data_i[1], data_i[3], data_i[4],
-			data_i[5], data_d[6], data_d[7]);
+		char str[256];
+		info("PROFILE-Task: %s", acct_gather_profile_dataset_str(
+			     dataset, data, str, sizeof(str)));
 	}
 	acct_gather_profile_g_add_sample_data(jobacct->dataset_id,
 	                                      (void *)data);

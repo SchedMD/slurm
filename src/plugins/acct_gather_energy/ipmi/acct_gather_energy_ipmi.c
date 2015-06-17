@@ -632,10 +632,7 @@ static int _thread_init(void)
 static int _ipmi_send_profile(void)
 {
 	uint16_t i, j;
-	const uint16_t nb_fields = descriptions_len;
-	const char *field_names[nb_fields];
-	field_type_t field_types[nb_fields];
-	uint8_t data[nb_fields * 8];
+	uint8_t data[descriptions_len * sizeof(uint64_t)];
 	uint64_t *ptr;
 	uint32_t id;
 
@@ -643,15 +640,18 @@ static int _ipmi_send_profile(void)
 		return SLURM_SUCCESS;
 
 	if (dataset_id < 0) {
-		for (i = 0; i < nb_fields; ++i) {
-			field_names[i] = xstrdup_printf("%sPower",
-			                 descriptions[i].label);
-			field_types[i] = TYPE_UINT64;
+		acct_gather_profile_dataset_t dataset[descriptions_len+1];
+		for (i = 0; i < descriptions_len; i++) {
+			dataset[i].name = xstrdup_printf(
+				"%sPower", descriptions[i].label);
+			dataset[i].type = TYPE_UINT64;
 		}
-		dataset_id = acct_gather_profile_g_create_dataset("Energy",
-			NO_PARENT, nb_fields, field_names, field_types);
-		for (i = 0; i < nb_fields; ++i)
-			xfree(field_names[i]);
+		dataset[i].name = NULL;
+		dataset[i].type = PROFILE_FIELD_NOT_SET;
+		dataset_id = acct_gather_profile_g_create_dataset(
+			"Energy", NO_PARENT, dataset);
+		for (i = 0; i < descriptions_len; ++i)
+			xfree(dataset[i].name);
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			debug("Energy: dataset created (id = %d)", dataset_id);
 		if (dataset_id == SLURM_ERROR) {
@@ -661,7 +661,7 @@ static int _ipmi_send_profile(void)
 	}
 
 	/* pack an array of uint64_t with current power of sensors */
-	memset(data, 0, nb_fields * 8);
+	memset(data, 0, descriptions_len * 8);
 	ptr = (uint64_t *) data;
 	for (i = 0; i < descriptions_len; ++i) {
 		for (j = 0; j < descriptions[i].sensor_cnt; ++j) {

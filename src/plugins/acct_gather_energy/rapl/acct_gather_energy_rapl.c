@@ -392,20 +392,21 @@ static int _running_profile(void)
 static int _send_profile(void)
 {
 	uint32_t curr_watts;
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "Power", TYPE_UINT64 },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_send_profile: consumed %d watts",
+		info("_send_profile: consumed %u watts",
 		     local_energy->current_watts);
 
-
 	if (dataset_id < 0) {
-		const char* field_names[] = {"Power"};
-		const field_type_t field_types[] = {TYPE_UINT64};
-		dataset_id = acct_gather_profile_g_create_dataset("Energy",
-			  NO_PARENT, 1, field_names, field_types);
+		dataset_id = acct_gather_profile_g_create_dataset(
+			"Energy", NO_PARENT, dataset);
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			debug("Energy: dataset created (id = %d)", dataset_id);
 		if (dataset_id == SLURM_ERROR) {
@@ -416,7 +417,7 @@ static int _send_profile(void)
 
 	curr_watts = local_energy->current_watts;
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("PROFILE-Energy: power=%d", local_energy->current_watts);
+		info("PROFILE-Energy: power=%u", local_energy->current_watts);
 	}
 
 	return acct_gather_profile_g_add_sample_data(dataset_id,

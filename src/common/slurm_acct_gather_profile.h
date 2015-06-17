@@ -67,6 +67,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define NO_PARENT -1
+#define TOD_LEN 24
 
 typedef enum {
 	PROFILE_ENERGY,
@@ -77,10 +78,16 @@ typedef enum {
 } acct_gather_profile_type_t;
 
 typedef enum {
+	PROFILE_FIELD_NOT_SET,
 	TYPE_TOD,
 	TYPE_UINT64,
 	TYPE_DOUBLE
 } field_type_t;
+
+typedef struct {
+	char *name;
+	field_type_t type;
+} acct_gather_profile_dataset_t;
 
 typedef struct {
 	int freq;
@@ -112,7 +119,9 @@ extern char *acct_gather_profile_type_to_string(uint32_t series);
 extern uint32_t acct_gather_profile_type_from_string(char *series_str);
 
 extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type);
-
+extern char *acct_gather_profile_dataset_str(
+	acct_gather_profile_dataset_t *dataset, void *data,
+	char *str, int str_len);
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def);
 extern void acct_gather_profile_endpoll(void);
 
@@ -210,16 +219,13 @@ extern int acct_gather_profile_g_create_group(const char* name);
  *  parent      -- id of the parent group created with
  *                 acct_gather_profile_g_create_group, or NO_PARENT for
  *                 default group
- *  nb_fields   -- number of fields in the dataset
- *  field_names -- name of each field; lenght must be equal to nb_fields
- *  field_types -- type of each field; lenght must be equal to nb_fields
- *
+ *  profile_series -- profile_series_def_t array filled in with the
+ *                    series definition
  * Returns -- an identifier to the dataset on success
  *            a negative value on failure
  */
-extern int acct_gather_profile_g_create_dataset(const char *name, int parent,
-	int nb_fields, const char *field_names[],
-	const field_type_t *field_types);
+extern int acct_gather_profile_g_create_dataset(
+	const char *name, int parent, acct_gather_profile_dataset_t *dataset);
 
 /*
  * Put data at the Node Samples level. Typically called from something called

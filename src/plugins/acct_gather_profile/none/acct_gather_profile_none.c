@@ -157,10 +157,8 @@ extern int acct_gather_profile_p_create_group(const char* name)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
-                                                int nb_fields,
-                                                const char* field_names[],
-                                                const field_type_t* field_types)
+extern int acct_gather_profile_p_create_dataset(
+	const char* name, int parent, acct_gather_profile_dataset_t *dataset)
 {
 	return SLURM_SUCCESS;
 }

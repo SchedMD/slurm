@@ -267,13 +267,25 @@ static int _update_node_infiniband(void)
 	double *data_d = (double *)data;
 	int rc;
 
+	enum {
+		FIELD_PACKIN,
+		FIELD_PACKOUT,
+		FIELD_MBIN,
+		FIELD_MBOUT,
+		FIELD_CNT
+	};
+
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "PacketsIn", TYPE_UINT64 },
+		{ "PacketsOut", TYPE_UINT64 },
+		{ "InMB", TYPE_DOUBLE },
+		{ "OutMB", TYPE_DOUBLE },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
 	if (dataset_id < 0) {
-		const char* field_names[] = {"PacketsIn", "MiBIn",
-		                             "PacketsOut", "MiBOut"};
-		const field_type_t field_types[] = {TYPE_UINT64, TYPE_DOUBLE,
-		                                    TYPE_UINT64, TYPE_DOUBLE};
 		dataset_id = acct_gather_profile_g_create_dataset("Network",
-			NO_PARENT, 4, field_names, field_types);
+			NO_PARENT, dataset);
 		if (debug_flags & DEBUG_FLAG_INFINIBAND)
 			debug("IB: dataset created (id = %d)", dataset_id);
 		if (dataset_id == SLURM_ERROR) {
@@ -288,10 +300,10 @@ static int _update_node_infiniband(void)
 		return rc;
 	}
 
-	data_i[0] = ofed_sens.rcvpkts;
-	data_d[1] = (double) ofed_sens.rcvdata / (1 << 20);
-	data_i[2] = ofed_sens.xmtpkts;
-	data_d[3] = (double) ofed_sens.xmtdata / (1 << 20);
+	data_i[FIELD_PACKIN] = ofed_sens.rcvpkts;
+	data_i[FIELD_PACKOUT] = ofed_sens.xmtpkts;
+	data_d[FIELD_MBIN] = (double) ofed_sens.rcvdata / (1 << 20);
+	data_d[FIELD_MBOUT] = (double) ofed_sens.xmtdata / (1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
@@ -302,9 +314,9 @@ static int _update_node_infiniband(void)
 	slurm_mutex_unlock(&ofed_lock);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("Profile-Network: packetsin=%ld sizein=%lf"
-		     " packetsout=%ld sizeout=%lf",
-			data_i[0], data_d[2], data_i[1], data_d[3]);
+		char str[256];
+		info("PROFILE-Network: %s", acct_gather_profile_dataset_str(
+			     dataset, data, str, sizeof(str)));
 	}
 	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
 }

@@ -142,7 +142,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	if {$lno == 1} {
 		set et_col [lsearch $tokens "ElapsedTime"]
 		set cpu_util_col [lsearch $tokens "CPUUtilization"]
-		set read_disk_col [lsearch $tokens "ReadMiB"]
+		set read_disk_col [lsearch $tokens "ReadMB"]
 
 		if {$et_col == -1} {
 			send_user "\nFAILURE: no ElapsedTime column found\n"
@@ -153,7 +153,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 			set exit_code 1
 		}
 		if {$read_disk_col == -1} {
-			send_user "\nFAILURE: no ReadMiB column found\n"
+			send_user "\nFAILURE: no ReadMB column found\n"
 			set exit_code 1
 		}
 

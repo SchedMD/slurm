@@ -98,7 +98,6 @@
 
 // Data types supported by all HDF5 plugins of this type
 
-#define TOD_LEN 24
 #define TOD_FMT "%F %T"
 
 /*

@@ -79,8 +79,6 @@
 #define GRP_NETWORK "Network"
 #define GRP_TASK "Task"
 
-#define TOD_LEN 24
-
 /*
  * Initialize profile (initialize static memory)
  */

@@ -270,11 +270,31 @@ static int _read_lustre_counters(void)
  */
 static int _update_node_filesystem(void)
 {
-	const int nb_fields = 8;
 	static acct_filesystem_data_t previous;
 	static int dataset_id = -1;
 	static bool first = true;
 	acct_filesystem_data_t current;
+
+	enum {
+		FIELD_READ,
+		FIELD_READMB,
+		FIELD_WRITE,
+		FIELD_WRITEMB,
+		FIELD_CNT
+	};
+
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "Reads", TYPE_UINT64 },
+		{ "ReadMB", TYPE_DOUBLE },
+		{ "Writes", TYPE_UINT64 },
+		{ "WriteMB", TYPE_DOUBLE },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
+	uint8_t data[FIELD_CNT * sizeof(uint64_t)];
+	uint64_t *data_i = (uint64_t *)data;
+	double *data_d = (double *)data;
+
 
 	slurm_mutex_lock(&lustre_lock);
 
@@ -285,14 +305,8 @@ static int _update_node_filesystem(void)
 	}
 
 	if (first) {
-		/* First time create the dataset and initialize the counters */
-		const char* field_names[] = {"NbReads", "MiBRead",
-			"NbWrites", "MiBWrite"};
-		const field_type_t field_types[] = {TYPE_UINT64, TYPE_DOUBLE,
-			TYPE_UINT64, TYPE_DOUBLE};
-
 		dataset_id = acct_gather_profile_g_create_dataset("Network",
-			NO_PARENT, nb_fields, field_names, field_types);
+			NO_PARENT, dataset);
 		if (dataset_id == SLURM_ERROR) {
 			error("FileSystem: Failed to create the dataset "
 			      "for Lustre");
@@ -319,19 +333,17 @@ static int _update_node_filesystem(void)
 	current.write_size = (double)lustre_se.all_lustre_write_bytes;
 
 	/* record sample */
-	uint8_t data[nb_fields * 8];
-	uint64_t *data_i = (uint64_t *)data;
-	double *data_d = (double *)data;
-
-	data_i[0] = current.reads - previous.reads;
-	data_i[1] = current.writes - previous.writes;
-	data_d[2] = (current.read_size - previous.read_size) / (1 << 20);
-	data_d[3] = (current.write_size - previous.write_size) / (1 << 20);
+	data_i[FIELD_READ] = current.reads - previous.reads;
+	data_d[FIELD_READMB] = (current.read_size - previous.read_size) /
+		(1 << 20);
+	data_i[FIELD_WRITE] = current.writes - previous.writes;
+	data_d[FIELD_WRITEMB] = (current.write_size - previous.write_size) /
+		(1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		info("Profile-Lustre: reads=%ld readsize=%lf"
-		     " writes=%ld writesize=%lf",
-			data_i[0], data_d[2], data_i[1], data_d[3]);
+		char str[256];
+		info("PROFILE-Lustre: %s", acct_gather_profile_dataset_str(
+			     dataset, data, str, sizeof(str)));
 	}
 	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
 

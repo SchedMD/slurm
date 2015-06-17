@@ -71,8 +71,8 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
 	int (*create_group)     (const char*);
-	int (*create_dataset)   (const char*, int, int, const char*[],
-	                         const field_type_t*);
+	int (*create_dataset)   (const char*, int,
+				 acct_gather_profile_dataset_t *);
 	int (*add_sample_data)  (uint32_t, void*);
 	void (*conf_values)     (List *data);
 	bool (*is_active)     (uint32_t);
@@ -355,6 +355,47 @@ extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type)
 	return "Unknown";
 }
 
+extern char *acct_gather_profile_dataset_str(
+	acct_gather_profile_dataset_t *dataset, void *data,
+	char *str, int str_len)
+{
+	int cur_loc = 0;
+
+        while (dataset && (dataset->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset->type) {
+		case TYPE_TOD:
+			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
+					    "%s%s=%s",
+					    cur_loc ? " " : "",
+					    dataset->name, (char *)data);
+			data += TOD_LEN;
+			break;
+		case TYPE_UINT64:
+			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
+					    "%s%s=%"PRIu64,
+					    cur_loc ? " " : "",
+					    dataset->name, *(uint64_t *)data);
+			data += sizeof(uint64_t);
+			break;
+		case TYPE_DOUBLE:
+			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
+					    "%s%s=%lf",
+					    cur_loc ? " " : "",
+					    dataset->name, *(double *)data);
+			data += sizeof(double);
+			break;
+		default:
+			break;
+		}
+
+		if (cur_loc >= str_len)
+			break;
+		dataset++;
+	}
+
+	return str;
+}
+
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 {
 	int retval = SLURM_SUCCESS;
@@ -568,9 +609,9 @@ extern int acct_gather_profile_g_create_group(const char *name)
 	return retval;
 }
 
-extern int acct_gather_profile_g_create_dataset(const char *name, int parent,
-	int nb_fields, const char *field_names[],
-	const field_type_t *field_types)
+extern int acct_gather_profile_g_create_dataset(
+	const char *name, int parent,
+	acct_gather_profile_dataset_t *dataset)
 {
 	int retval = SLURM_ERROR;
 
@@ -578,8 +619,7 @@ extern int acct_gather_profile_g_create_dataset(const char *name, int parent,
 		return retval;
 
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.create_dataset))(name, parent, nb_fields, field_names,
-	                                 field_types);
+	retval = (*(ops.create_dataset))(name, parent, dataset);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }

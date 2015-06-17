@@ -481,35 +481,38 @@ extern int acct_gather_profile_p_create_group(const char* name)
 	return gid_group;
 }
 
-extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
-                                                int nb_fields,
-                                                const char* field_names[],
-                                                const field_type_t* field_types)
+extern int acct_gather_profile_p_create_dataset(
+	const char* name, int parent, acct_gather_profile_dataset_t *dataset)
 {
-	debug("acct_gather_profile_p_create_dataset %s %d", name, nb_fields);
-
-	size_t i;
 	size_t type_size;
 	size_t offset, field_size;
 	hid_t dtype_id;
 	hid_t field_id;
 	hid_t table_id;
+	acct_gather_profile_dataset_t *dataset_loc = dataset;
 
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return SLURM_ERROR;
 
+	debug("acct_gather_profile_p_create_dataset %s", name);
+
 	/* compute the size of the type needed to create the table */
 	type_size = sizeof(uint64_t); /* size for time field */
-	for (i = 0; i < nb_fields; ++i) {
-		switch (field_types[i]) {
+	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset_loc->type) {
 		case TYPE_TOD:
 			type_size += TOD_LEN;
 			break;
 		case TYPE_UINT64:
+			type_size += sizeof(uint64_t);
+			break;
 		case TYPE_DOUBLE:
-			type_size += 8;
+			type_size += sizeof(double);
+			break;
+		default:
 			break;
 		}
+		dataset_loc++;
 	}
 
 	/* create the datatype for the dataset */
@@ -522,9 +525,12 @@ extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
 	/* insert fields */
 	if (H5Tinsert(dtype_id, "ElapsedTime", 0, H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
+
+	dataset_loc = dataset;
+
 	offset = sizeof(uint64_t);
-	for (i = 0; i < nb_fields; i++) {
-		switch (field_types[i]) {
+	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset_loc->type) {
 		case TYPE_TOD:
 			field_id = typTOD;
 			field_size = TOD_LEN;
@@ -537,10 +543,14 @@ extern int acct_gather_profile_p_create_dataset(const char* name, int parent,
 			field_id = H5T_NATIVE_DOUBLE;
 			field_size = sizeof(double);
 			break;
+		default:
+			break;
 		}
-		if (H5Tinsert(dtype_id, field_names[i], offset, field_id) < 0)
+		if (H5Tinsert(dtype_id, dataset_loc->name,
+			      offset, field_id) < 0)
 			return SLURM_ERROR;
 		offset += field_size;
+		dataset_loc++;
 	}
 
 	/* create the table */
