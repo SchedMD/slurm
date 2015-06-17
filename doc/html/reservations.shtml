@@ -421,11 +421,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<<<<<<< HEAD
-<p style="text-align: center;">Last modified 12 January 2015</p>
-=======
 <p style="text-align: center;">Last modified 15 April 2015</p>
->>>>>>> slurm-14.11
 
 <!--#include virtual="footer.txt"-->
 
