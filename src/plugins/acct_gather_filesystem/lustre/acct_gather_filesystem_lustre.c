@@ -291,10 +291,10 @@ static int _update_node_filesystem(void)
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 
-	uint8_t data[FIELD_CNT * sizeof(uint64_t)];
-	uint64_t *data_i = (uint64_t *)data;
-	double *data_d = (double *)data;
-
+	union {
+		double d;
+		uint64_t u64;
+	} data[FIELD_CNT];
 
 	slurm_mutex_lock(&lustre_lock);
 
@@ -333,11 +333,11 @@ static int _update_node_filesystem(void)
 	current.write_size = (double)lustre_se.all_lustre_write_bytes;
 
 	/* record sample */
-	data_i[FIELD_READ] = current.reads - previous.reads;
-	data_d[FIELD_READMB] = (current.read_size - previous.read_size) /
+	data[FIELD_READ].u64 = current.reads - previous.reads;
+	data[FIELD_READMB].d = (current.read_size - previous.read_size) /
 		(1 << 20);
-	data_i[FIELD_WRITE] = current.writes - previous.writes;
-	data_d[FIELD_WRITEMB] = (current.write_size - previous.write_size) /
+	data[FIELD_WRITE].u64 = current.writes - previous.writes;
+	data[FIELD_WRITEMB].d = (current.write_size - previous.write_size) /
 		(1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -353,10 +353,6 @@ static int _update_node_filesystem(void)
 	 */
 	memcpy(&previous, &current, sizeof(acct_filesystem_data_t));
 	memset(&lustre_se, 0, sizeof(lustre_sens_t));
-
-	info("%s: num reads %"PRIu64" nums write %"PRIu64" "
-	     "read %f MiB wrote %f MiB",
-	     __func__, data_i[0], data_i[1], data_d[2], data_d[3]);
 
 	slurm_mutex_unlock(&lustre_lock);
 

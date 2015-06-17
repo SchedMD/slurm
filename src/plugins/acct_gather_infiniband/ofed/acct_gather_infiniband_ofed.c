@@ -262,9 +262,6 @@ static int _read_ofed_values(void)
  */
 static int _update_node_infiniband(void)
 {
-	uint8_t data[4 * 8];
-	uint64_t *data_i = (uint64_t *)data;
-	double *data_d = (double *)data;
 	int rc;
 
 	enum {
@@ -283,6 +280,11 @@ static int _update_node_infiniband(void)
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 
+	union {
+		double d;
+		uint64_t u64;
+	} data[FIELD_CNT];
+
 	if (dataset_id < 0) {
 		dataset_id = acct_gather_profile_g_create_dataset("Network",
 			NO_PARENT, dataset);
@@ -300,10 +302,10 @@ static int _update_node_infiniband(void)
 		return rc;
 	}
 
-	data_i[FIELD_PACKIN] = ofed_sens.rcvpkts;
-	data_i[FIELD_PACKOUT] = ofed_sens.xmtpkts;
-	data_d[FIELD_MBIN] = (double) ofed_sens.rcvdata / (1 << 20);
-	data_d[FIELD_MBOUT] = (double) ofed_sens.xmtdata / (1 << 20);
+	data[FIELD_PACKIN].u64 = ofed_sens.rcvpkts;
+	data[FIELD_PACKOUT].u64 = ofed_sens.xmtpkts;
+	data[FIELD_MBIN].d = (double) ofed_sens.rcvdata / (1 << 20);
+	data[FIELD_MBOUT].d = (double) ofed_sens.xmtdata / (1 << 20);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "

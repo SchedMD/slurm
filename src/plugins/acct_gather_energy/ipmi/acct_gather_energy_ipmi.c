@@ -632,8 +632,7 @@ static int _thread_init(void)
 static int _ipmi_send_profile(void)
 {
 	uint16_t i, j;
-	uint8_t data[descriptions_len * sizeof(uint64_t)];
-	uint64_t *ptr;
+	uint64_t data[descriptions_len];
 	uint32_t id;
 
 	if (!_running_profile())
@@ -661,14 +660,12 @@ static int _ipmi_send_profile(void)
 	}
 
 	/* pack an array of uint64_t with current power of sensors */
-	memset(data, 0, descriptions_len * 8);
-	ptr = (uint64_t *) data;
+	memset(data, 0, sizeof(data));
 	for (i = 0; i < descriptions_len; ++i) {
 		for (j = 0; j < descriptions[i].sensor_cnt; ++j) {
 			id = descriptions[i].sensor_idxs[j];
-			*ptr += sensors[id].energy.current_watts;
+			data[i] += sensors[id].energy.current_watts;
 		}
-		++ptr;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {

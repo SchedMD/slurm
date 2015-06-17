@@ -662,9 +662,10 @@ static void _record_profile(struct jobacctinfo *jobacct)
 
 	static int profile_gid = -1;
 	double et;
-	int8_t data[FIELD_CNT * sizeof(uint64_t)];
-	uint64_t *data_i = (uint64_t *)data;
-	double *data_d = (double *)data;
+	union {
+		double d;
+		uint64_t u64;
+	} data[FIELD_CNT];
 
 	if (profile_gid == -1)
 		profile_gid = acct_gather_profile_g_create_group("Tasks");
@@ -687,33 +688,33 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	if (jobacct->dataset_id < 0)
 		return;
 
-	data_i[FIELD_CPUFREQ] = jobacct->act_cpufreq;
-	data_i[FIELD_RSS] = jobacct->tot_rss;
-	data_i[FIELD_VMSIZE] = jobacct->tot_vsize;
-	data_i[FIELD_PAGES] = jobacct->tot_pages;
+	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
+	data[FIELD_RSS].u64 = jobacct->tot_rss;
+	data[FIELD_VMSIZE].u64 = jobacct->tot_vsize;
+	data[FIELD_PAGES].u64 = jobacct->tot_pages;
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
 		et = 0;
-		data_i[FIELD_CPUTIME] = 0;
-		data_d[FIELD_CPUUTIL] = 0.0;
-		data_d[FIELD_READ] = 0.0;
-		data_d[FIELD_WRITE] = 0.0;
+		data[FIELD_CPUTIME].u64 = 0;
+		data[FIELD_CPUUTIL].d = 0.0;
+		data[FIELD_READ].d = 0.0;
+		data[FIELD_WRITE].d = 0.0;
 	} else {
-		data_i[FIELD_CPUTIME] =
+		data[FIELD_CPUTIME].u64 =
 			jobacct->tot_cpu - jobacct->last_total_cputime;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
-			data_d[FIELD_CPUUTIL] = 0.0;
+			data[FIELD_CPUUTIL].d = 0.0;
 		else
-			data_d[FIELD_CPUUTIL] =
-				(100.0 * (double)data_i[FIELD_CPUTIME]) /
+			data[FIELD_CPUUTIL].d =
+				(100.0 * (double)data[FIELD_CPUTIME].u64) /
 				((double) et);
 
-		data_d[FIELD_READ] = jobacct->tot_disk_read -
+		data[FIELD_READ].d = jobacct->tot_disk_read -
 			jobacct->last_tot_disk_read;
 
-		data_d[FIELD_WRITE] = jobacct->tot_disk_write -
+		data[FIELD_WRITE].d = jobacct->tot_disk_write -
 			jobacct->last_tot_disk_write;
 	}
 

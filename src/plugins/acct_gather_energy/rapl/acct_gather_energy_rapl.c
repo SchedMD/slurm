@@ -391,7 +391,7 @@ static int _running_profile(void)
 
 static int _send_profile(void)
 {
-	uint32_t curr_watts;
+	uint64_t curr_watts;
 	acct_gather_profile_dataset_t dataset[] = {
 		{ "Power", PROFILE_FIELD_UINT64 },
 		{ NULL, PROFILE_FIELD_NOT_SET }
@@ -415,7 +415,7 @@ static int _send_profile(void)
 		}
 	}
 
-	curr_watts = local_energy->current_watts;
+	curr_watts = (uint64_t)local_energy->current_watts;
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		info("PROFILE-Energy: power=%u", local_energy->current_watts);
 	}
