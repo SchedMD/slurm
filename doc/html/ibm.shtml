@@ -6,7 +6,7 @@
 
 <p>This document describes the unique features of Slurm on the
 IBM AIX computers with a Federation switch.
-SLURM support for AIX has been thoroughly tested, but we
+Slurm support for AIX has been thoroughly tested, but we
 know of no AIX installations using Slurm after 2008.
 You should be familiar with the Slurm's mode of operation on Linux clusters
 before studying the relatively few differences in IBM system operation
@@ -21,7 +21,7 @@ AIX system, it does not support use of the Federation switch or IBM's MPI.
 Job steps should be launched using IBM's poe command.
 This architecture insures proper operation of all IBM tools.</p>
 
-<p>You will use srun to submit a batch script to SLURM.
+<p>You will use srun to submit a batch script to Slurm.
 This script should contain one or more invocations of poe to launch
 the tasks.
 If you want to run a job interactively, just execute poe directly.
@@ -67,9 +67,9 @@ This component is packaged with the Slurm distribution.</li>
 <li>There is a process tracking kernel extension required.
 This is used to insure that all processes associated with a job
 are tracked.
-SLURM normally uses session ID and process group ID on Linux systems,
+Slurm normally uses session ID and process group ID on Linux systems,
 but these mechanisms can not prevent user processes from establishing
-their own session or process group and thus "escape" from SLURM
+their own session or process group and thus "escape" from Slurm
 tracking.
 This kernel extension is not packaged with Slurm, but is available
 upon request.</li>

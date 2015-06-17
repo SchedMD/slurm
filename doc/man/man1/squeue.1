@@ -1,14 +1,14 @@
 .TH squeue "1" "Slurm Commands" "April 2015" "Slurm Commands"
 
 .SH "NAME"
-squeue \- view information about jobs located in the SLURM scheduling queue.
+squeue \- view information about jobs located in the Slurm scheduling queue.
 
 .SH "SYNOPSIS"
 \fBsqueue\fR [\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
 \fBsqueue\fR is used to view job and job step information for jobs managed by
-SLURM.
+Slurm.
 
 .SH "OPTIONS"
 
@@ -924,7 +924,7 @@ Any of these options may be explicitly changed as desired by
 combining the \fB\-\-start\fR option with other option values
 (e.g. to use a different output format).
 The expected start time of pending jobs is only available if the
-SLURM is configured to use the backfill scheduling plugin.
+Slurm is configured to use the backfill scheduling plugin.
 
 .TP
 \fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
@@ -1074,7 +1074,7 @@ The job is waiting its advanced reservation to become available.
 The job is waiting for resources to become available.
 .TP
 \fBSystemFailure\fR
-Failure of the SLURM system, a file system, the network, etc.
+Failure of the Slurm system, a file system, the network, etc.
 .TP
 \fBTimeLimit\fR
 The job exhausted its time limit.
@@ -1154,7 +1154,7 @@ Larger values may adversely impact the application performance.
 Same as \fB\-\-clusters\fR
 .TP
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 .TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the
@@ -1271,15 +1271,15 @@ Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
 Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

@@ -8,8 +8,8 @@ Basic Installation
 ==================
 
    These are generic Linux installation instructions. Build instructions 
-specific to SLURM are available at 
-http://www.llnl.gov/linux/slurm/quickstart_admin.html
+specific to Slurm are available at 
+http://slurm.schedmd.com/quickstart_admin.html
 (also found in the file doc/html/quickstart_admin.shtml).
 
    The `configure' shell script attempts to guess correct values for

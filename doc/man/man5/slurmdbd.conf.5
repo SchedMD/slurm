@@ -110,7 +110,7 @@ mechanism being used.
 
 .TP
 \fBAuthType\fR
-Define the authentication method for communications between SLURM
+Define the authentication method for communications between Slurm
 components.
 Acceptable values at present include "auth/none", "auth/authd",
 and "auth/munge".
@@ -121,7 +121,7 @@ This may be fine for testing purposes, but
 "auth/authd" indicates that Brett Chun's authd is to be used (see
 "http://www.theether.org/authd/" for more information).
 "auth/munge" indicates that LLNL's Munge system is to be used
-(this is the best supported authentication mechanism for SLURM,
+(this is the best supported authentication mechanism for Slurm,
 see "https://code.google.com/p/munge/" for more information).
 SlurmDBD must be terminated prior to changing the value of \fBAuthType\fR
 and later restarted.
@@ -283,7 +283,7 @@ The default value is "/var/run/slurmdbd.pid".
 
 .TP
 \fBPluginDir\fR
-Identifies the places in which to look for SLURM plugins.
+Identifies the places in which to look for Slurm plugins.
 This is a colon\-separated list of directories, like the PATH
 environment variable.
 The default value is "/usr/local/lib/slurm".
@@ -508,15 +508,15 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

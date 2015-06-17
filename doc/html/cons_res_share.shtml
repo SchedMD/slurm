@@ -127,7 +127,7 @@ of each node in the partition.
 </P>
 <H3>Nodes in Multiple Partitions</H3>
 <P>
-SLURM has supported configuring nodes in more than one partition since version
+Slurm has supported configuring nodes in more than one partition since version
 0.7.0. The following table describes how nodes configured in two partitions with
 different <CODE>Shared</CODE> settings will be allocated to jobs. Note that
 "shared" jobs are jobs that are submitted to partitions configured with

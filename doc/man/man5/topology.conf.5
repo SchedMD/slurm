@@ -15,12 +15,12 @@ Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
-SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 The network topology configuration one one line defining a switch name and
 its children, either node names or switch names.
-SLURM's hostlist expression parser is used, so the node and switch
+Slurm's hostlist expression parser is used, so the node and switch
 names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
 and "Switches=s[0\-2,4\-8,12]" will parse fine).
 An optional link speed may also be specified.
@@ -33,7 +33,7 @@ The overall configuration parameters available include:
 
 .TP
 \fBSwitchName\fR
-The name of a switch. This name is internal to SLURM and arbitrary.
+The name of a switch. This name is internal to Slurm and arbitrary.
 Each switch should have a unique name.
 This field must be specified.
 .TP
@@ -55,7 +55,7 @@ It may be used in the future to optimize resource allocations.
 .br
 ##################################################################
 .br
-# SLURM's network topology configuration file for use with the
+# Slurm's network topology configuration file for use with the
 .br
 # topology/tree plugin
 .br
@@ -75,15 +75,15 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

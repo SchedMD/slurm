@@ -23,7 +23,7 @@ of an appropriate format.</p>
 <i>HAVE_SUN_CONST</i> and <i>SYSTEM_DIMENSIONS=4</i>
 (more on that value later).
 This can be accomplished in several different ways depending upon how
-SLURM is being built.
+Slurm is being built.
 <ol>
 <li>Execute the <i>configure</i> command with the option
 <i>--enable-sun-const</i> <b>OR</b></li>
@@ -45,7 +45,7 @@ case letters for higher values, for up to 36 nodes at a specific coordinate
 (e.g. 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, ... Z).
 To avoid confusion, we recommend that the node name prefix consist of
 lower case letters.
-Numerically sequential node names may specified by in SLURM
+Numerically sequential node names may specified by in Slurm
 commands and configuration files using the system name prefix with the
 end-points enclosed in square brackets and separated by an "-".
 For example "tux[0000-000B]" is used to represent the twelve nodes
@@ -150,7 +150,7 @@ In order to locate specific nodes with the <i>sview</i> command, select
 node names.
 The output of other Slurm commands (e.g. <i>sinfo</i> and <i>squeue</i>)
 will use a Slurm hostlist expression with the node names numerically ordered).
-SLURM partitions should contain nodes which are defined sequentially
+Slurm partitions should contain nodes which are defined sequentially
 by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>

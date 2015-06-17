@@ -65,7 +65,7 @@ are common to all cgroup plugins, plus additional options that apply only to
 specific plugins.</li>
 <li>System-level resource specialization is enabled using node configuration 
 parameters.</li>
-<li>Additional configuration is required to enable automatic removal of SLURM
+<li>Additional configuration is required to enable automatic removal of Slurm
 cgroups when they are no longer in use.
 See <a href="#cleanup">Cleanup of Slurm Cgroups</a> below for details.</li>
 </ul>
@@ -142,7 +142,7 @@ hierarchies are created below this base directory. A separate hierarchy is
 created for each cgroup subsystem in use. The name of the root cgroup in each
 hierarchy is the subsystem name. A cgroup named <i>slurm</i> is created below
 the root cgroup in each hierarchy. Below each <i>slurm</i> cgroup, cgroups for
-SLURM users, jobs, steps and tasks are created dynamically as needed. The names
+Slurm users, jobs, steps and tasks are created dynamically as needed. The names
 of these cgroups consist of a prefix identifying the Slurm entity (user, job,
 step or task), followed by the relevant numeric id. The following example shows
 the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
@@ -160,7 +160,7 @@ use more than one node will have a cgroup structure on each node.</p>
 <p>Linux provides a mechanism for the automatic removal of a cgroup when its
 state changes from non-empty to empty.  A cgroup is empty when no processes are
 attached to it and it has no child cgroups.  The Slurm cgroups implementation
-allows this mechanism to be used to automatically remove the relevant SLURM
+allows this mechanism to be used to automatically remove the relevant Slurm
 cgroups when tasks, steps and jobs terminate. To enable this automatic removal
 feature, follow these steps:</p>
 <ul>
@@ -175,10 +175,10 @@ The default location is /etc/slurm/cgroup.</li>
 </pre>
 <li>Create the common release agent file.  This file should be named
 <i>release_common</i>.  An example script for this file is provided in the
-SLURM delivery at etc/cgroup.release_common.example. The example script will
+Slurm delivery at etc/cgroup.release_common.example. The example script will
 automatically remove user, job, step and task cgroups as they become empty. The
 file must have execute permission for root.</li><br>
-<li>Create release agent files for each cgroup subsystem to be used by SLURM.
+<li>Create release agent files for each cgroup subsystem to be used by Slurm.
 This depends on which cgroup plugins are enabled.  For example, the
 proctrack/cgroup plugin uses the <i>freezer</i> subsystem.  See
 <a href="#available">Currently Available Cgroup Plugins</a> above to find out

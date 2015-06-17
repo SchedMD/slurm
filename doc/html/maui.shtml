@@ -3,7 +3,7 @@
 <h1>Maui Scheduler Integration Guide</h1>
 <h2>Overview</h2>
 <p>Maui configuration is quite complicated and is really beyond the scope
-of any documents we could supply with SLURM.
+of any documents we could supply with Slurm.
 The best resource for Maui configuration information is the
 online documents at Cluster Resources Inc.:
 <a href="http://www.clusterresources.com/products/maui/docs/mauiadmin.shtml">
@@ -69,7 +69,7 @@ considering both the desired system responsiveness and the overhead of
 executing Maui daemons too frequently.</p>
 
 <p>In order for Maui to be able to access your Slurm partition, you will
-need to define in maui.conf a partition with the same name as the SLURM
+need to define in maui.conf a partition with the same name as the Slurm
 partition(s). For example if nodes "linux[0-3]" are in Slurm partition
 "PartA", slurm.conf includes a line of this sort:</p>
 <pre>
@@ -134,7 +134,7 @@ as those may conflict with those managed by Maui.</li>
 communications between Slurm and Maui or Moab.
 This use of this key is essential to insure that a user
 not build his own program to cancel other user's jobs in
-SLURM.
+Slurm.
 This should be no more than 32-bit unsigned integer and match
 the the encryption key in Maui (<i>--with-key</i> on the
 configure line) or Moab (<i>KEY</i> parameter in the

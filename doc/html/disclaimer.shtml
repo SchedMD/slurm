@@ -44,7 +44,7 @@ can be found at the <a href="team.html">Slurm Team</a> web page.</p>
 
 <p>While many organizations contributed code and/or documentation without
 including a copyright notice, the following copyright notices are found in
-SLURM's code and documentation files:<br>
+Slurm's code and documentation files:<br>
 Copyright (C) 2013 Cray<br>
 Copyright (C) 2011 Trinity Centre for High Performance Computing<br>
 Copyright (C) 2010-2013 SchedMD LLC<br>

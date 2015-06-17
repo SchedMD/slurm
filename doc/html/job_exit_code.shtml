@@ -15,7 +15,7 @@ result in a Job State of FAILED with a Reason of
 
 <p>The exit code is an 8 bit unsigned number ranging between 0 and
 255.  While it is possible for a job to return a negative exit code,
-SLURM will display it as an unsigned value in the 0 - 255 range.</p>
+Slurm will display it as an unsigned value in the 0 - 255 range.</p>
 
 <h2>Job Step Exit Codes</h2>
 
@@ -26,7 +26,7 @@ record.</p>
 <h2>Signaled Jobs</h2>
 
 <p>When a job or step is sent a signal that causes its termination,
-SLURM also captures the signal number and saves it to the job or step
+Slurm also captures the signal number and saves it to the job or step
 record.</p>
 
 <h2>Displaying Exit Codes and Signals</h2>
@@ -41,7 +41,7 @@ signal number will be displayed after the exit code, delineated by a
 colon(:).</p>
 
 <h2>Database Job/Step Records</h2>
-<p>The Slurm control daemon sends job and step records to the SLURM
+<p>The Slurm control daemon sends job and step records to the Slurm
 database when the Slurm accounting_storage plugin is installed.  Job
 and step records sent to the Slurm db can be viewed using the
 <b>sacct</b> command.  The default <b>sacct</b> output contains an
@@ -64,7 +64,7 @@ job's derived exit code is determined by the Slurm control daemon
 and sent to the database when the accounting_storage plugin is
 enabled.</p>
 
-<p>In addition to the derived exit code, the job record in the SLURM
+<p>In addition to the derived exit code, the job record in the Slurm
 database contains a comment string.  This is initialized to the job's
 comment string (when AccountingStoreJobComment parameter in the
 slurm.conf is set) and can only be changed by the user.</p>

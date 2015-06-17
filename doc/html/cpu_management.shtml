@@ -1320,7 +1320,7 @@ srun/salloc/sbatch option:
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
 This option provides a list of the CPU masks used by task affinity to bind tasks to CPUs. 
-Note that the CPU ids represented by these masks are Linux/hardware CPU ids, not SLURM 
+Note that the CPU ids represented by these masks are Linux/hardware CPU ids, not Slurm 
 abstract CPU ids as reported by scontrol, etc.
 </font></p>
 			</td>
@@ -1576,7 +1576,7 @@ PartitionName=hypernode Nodes=n3 State=UP
 The <font face="Courier New, monospace">SelectType=select/linear</font>
 configuration option specifies allocation in units of whole nodes.
 The<font face="Courier New, monospace"> --nodes=2</font> srun option causes
-SLURM to allocate at least 2 nodes to the job.<p></p>
+Slurm to allocate at least 2 nodes to the job.<p></p>
 <br>
 <a name="Example2"></a>
 <h3>Example 2: Simple allocation of cores as consumable resources</h3>
@@ -1844,7 +1844,7 @@ SelectTypeParameters=CR_Core
 </pre>
 <p>Comments:</p>
 <p>The options specify the following conditions for the job: 6 tasks, 2 unique CPUs per task, 
-using exactly 2 nodes, and with 3 tasks per node. To satisfy these conditions, SLURM 
+using exactly 2 nodes, and with 3 tasks per node. To satisfy these conditions, Slurm 
 must allocate 6 CPUs from each of the 2 nodes. The <font face="Courier New, monospace">
 --distribution=cyclic</font> option causes the tasks to be distributed to the nodes in a 
 round-robin fashion. The following table shows a possible pattern of allocation and 
@@ -1935,7 +1935,7 @@ SelectTypeParameters=CR_Core
 per task, using all 3 nodes in the partition. To satisfy these conditions using 
 the default allocation method across nodes (block), Slurm allocates 8 CPUs from 
 the first node, 6 CPUs from the second node and 2 CPUs from the third node. 
-The <font face="Courier New, monospace">--distribution=plane=2</font> option causes SLURM 
+The <font face="Courier New, monospace">--distribution=plane=2</font> option causes Slurm 
 to distribute tasks in blocks of two to each of the nodes in a round-robin fashion,
 subject to the number of CPUs allocated on each node.  So, for example, only 1 task
 is distributed to the third node because only 2 CPUs were allocated on that node and
