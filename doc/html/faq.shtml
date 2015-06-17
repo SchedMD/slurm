@@ -1849,7 +1849,7 @@ show columns from "tux_assoc_table" where Field='is_def';
 "Node unexpectedly rebooted"?</b></a></br>
 This is indicative of the slurmctld daemon running on the cluster's head node
 as well as the slurmd daemon on the compute node when the compute node reboots.
-If you which to prevent this condition from setting the node into a DOWN state
+If you want to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
 
