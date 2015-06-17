@@ -679,7 +679,8 @@ static int _ipmi_send_profile(void)
 			     sensors[id].energy.current_watts);
 		}
 	}
-	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
+	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
+						     last_update_time);
 }
 
 

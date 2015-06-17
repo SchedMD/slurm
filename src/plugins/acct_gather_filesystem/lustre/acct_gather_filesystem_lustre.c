@@ -345,7 +345,8 @@ static int _update_node_filesystem(void)
 		info("PROFILE-Lustre: %s", acct_gather_profile_dataset_str(
 			     dataset, data, str, sizeof(str)));
 	}
-	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
+	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
+					      lustre_se.update_time);
 
 	/* Save current as previous and clean up the working
 	 * data structure.

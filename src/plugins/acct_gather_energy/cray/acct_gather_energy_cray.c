@@ -202,7 +202,7 @@ static int _send_profile(void)
 	ener.time = time(NULL);
 	ener.power = local_energy->current_watts;
 	acct_gather_profile_g_add_sample_data(
-		ACCT_GATHER_PROFILE_ENERGY, &ener);
+		ACCT_GATHER_PROFILE_ENERGY, &ener, local_energy->poll_time);
 
 	return SLURM_ERROR;
 }

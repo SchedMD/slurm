@@ -73,7 +73,7 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*create_group)     (const char*);
 	int (*create_dataset)   (const char*, int,
 				 acct_gather_profile_dataset_t *);
-	int (*add_sample_data)  (uint32_t, void*);
+	int (*add_sample_data)  (uint32_t, void*, time_t);
 	void (*conf_values)     (List *data);
 	bool (*is_active)     (uint32_t);
 
@@ -624,7 +624,8 @@ extern int acct_gather_profile_g_create_dataset(
 	return retval;
 }
 
-extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data)
+extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
+						 time_t sample_time)
 {
 	int retval = SLURM_ERROR;
 
@@ -632,7 +633,7 @@ extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data)
 		return retval;
 
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_sample_data))(dataset_id, data);
+	retval = (*(ops.add_sample_data))(dataset_id, data, sample_time);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }

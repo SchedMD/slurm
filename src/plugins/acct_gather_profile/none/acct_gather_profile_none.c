@@ -163,7 +163,8 @@ extern int acct_gather_profile_p_create_dataset(
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_sample_data(int dataset_id, void* data)
+extern int acct_gather_profile_p_add_sample_data(int dataset_id, void* data,
+						 time_t sample_time)
 {
 	return SLURM_SUCCESS;
 }

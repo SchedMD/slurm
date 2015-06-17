@@ -421,7 +421,8 @@ static int _send_profile(void)
 	}
 
 	return acct_gather_profile_g_add_sample_data(dataset_id,
-	                                             (void *)&curr_watts);
+	                                             (void *)&curr_watts,
+						     local_energy->poll_time);
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)

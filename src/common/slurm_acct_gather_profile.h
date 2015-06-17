@@ -235,10 +235,12 @@ extern int acct_gather_profile_g_create_dataset(
  * Parameters
  *	dataset_id -- identifies the dataset to add data to.
  *	data       -- data structure to be recorded
+ *      sample_time-- when the sample happened
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_sample_data(int dataset_id, void *data);
+extern int acct_gather_profile_g_add_sample_data(int dataset_id, void *data,
+						 time_t sample_time);
 
 /* Get the values from the plugin that are setup in the .conf
  * file. This function should most likely only be called from

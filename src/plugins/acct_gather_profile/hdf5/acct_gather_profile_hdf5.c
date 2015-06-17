@@ -497,7 +497,7 @@ extern int acct_gather_profile_p_create_dataset(
 	debug("acct_gather_profile_p_create_dataset %s", name);
 
 	/* compute the size of the type needed to create the table */
-	type_size = sizeof(uint64_t); /* size for time field */
+	type_size = sizeof(uint64_t) * 2; /* size for time field */
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
 		case TYPE_TOD:
@@ -523,12 +523,15 @@ extern int acct_gather_profile_p_create_dataset(
 	}
 
 	/* insert fields */
-	if (H5Tinsert(dtype_id, "ElapsedTime", 0, H5T_NATIVE_UINT64) < 0)
+	if (H5Tinsert(dtype_id, "EpochTime", 0, H5T_NATIVE_UINT64) < 0)
+		return SLURM_ERROR;
+	if (H5Tinsert(dtype_id, "ElapsedTime", sizeof(uint64_t),
+		      H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
 
 	dataset_loc = dataset;
 
-	offset = sizeof(uint64_t);
+	offset = sizeof(uint64_t) * 2;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
 		case TYPE_TOD:
@@ -581,7 +584,8 @@ extern int acct_gather_profile_p_create_dataset(
 	return tables_cur_len - 1;
 }
 
-extern int acct_gather_profile_p_add_sample_data(int table_id, void *data)
+extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
+						 time_t sample_time)
 {
 	table_t *ds = &tables[table_id];
 	uint8_t send_data[ds->type_size];
@@ -609,10 +613,11 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data)
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return SLURM_ERROR;
 
-	/* prepend relative time */
-	((uint64_t *)send_data)[0] = difftime(time(NULL), step_start_time);
-	memcpy(send_data + sizeof(uint64_t), data,
-	       ds->type_size - sizeof(uint64_t));
+	/* prepend timestampe and relative time */
+	((uint64_t *)send_data)[0] = sample_time;
+	((uint64_t *)send_data)[1] = difftime(sample_time, step_start_time);
+	memcpy(send_data + (sizeof(uint64_t) * 2), data,
+	       ds->type_size - (sizeof(uint64_t) * 2));
 
 	/* append the record to the table */
 	if (H5PTappend(ds->table_id, 1, send_data) < 0) {

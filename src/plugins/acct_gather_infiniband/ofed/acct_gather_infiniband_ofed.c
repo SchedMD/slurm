@@ -318,7 +318,8 @@ static int _update_node_infiniband(void)
 		info("PROFILE-Network: %s", acct_gather_profile_dataset_str(
 			     dataset, data, str, sizeof(str)));
 	}
-	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data);
+	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
+						     ofed_sens.update_time);
 }
 
 static bool _run_in_daemon(void)

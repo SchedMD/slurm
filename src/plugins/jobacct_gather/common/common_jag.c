@@ -723,7 +723,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 			     dataset, data, str, sizeof(str)));
 	}
 	acct_gather_profile_g_add_sample_data(jobacct->dataset_id,
-	                                      (void *)data);
+	                                      (void *)data, jobacct->cur_time);
 }
 
 extern void jag_common_init(long in_hertz)
