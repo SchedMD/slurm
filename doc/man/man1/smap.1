@@ -1,14 +1,14 @@
 .TH smap "1" "Slurm Commands" "April 2015" "Slurm Commands"
 
 .SH "NAME"
-smap \- graphically view information about SLURM jobs, partitions, and set
+smap \- graphically view information about Slurm jobs, partitions, and set
 configurations parameters.
 
 .SH "SYNOPSIS"
 \fBsmap\fR [\fIOPTIONS\fR...]
 .SH "DESCRIPTION"
 \fBsmap\fR is used to graphically view job, partition and node information
-for a system running SLURM.
+for a system running Slurm.
 Note that information about nodes and partitions to which you lack
 access will always be displayed to avoid obvious gaps in the output.
 This is equivalent to the \fB\-\-all\fR option of the \fBsinfo\fR and
@@ -403,16 +403,16 @@ one or more jobs are in the process of COMPLETING.
 \fBCOMPLETING\fR
 All jobs associated with this node are in the process of
 COMPLETING.  This node state will be removed when
-all of the job's processes have terminated and the SLURM
+all of the job's processes have terminated and the Slurm
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR man page for
 more information.
 .TP
 \fBDOWN\fR
-The node is unavailable for use. SLURM can automatically
+The node is unavailable for use. Slurm can automatically
 place nodes in this state if some failure occurs. System
 administrators may also explicitly place nodes in this state. If
-a node resumes normal operation, SLURM can automatically
+a node resumes normal operation, Slurm can automatically
 return it to service. See the \fBReturnToService\fR
 and \fBSlurmdTimeout\fR parameter descriptions in the
 \fBslurm.conf\fR(5) man page for more information.
@@ -450,7 +450,7 @@ The node is not allocated to any jobs and is available for use.
 The node is currently in a reservation with a flag value of "maintainence".
 .TP
 \fBUNKNOWN\fR
-The SLURM controller has just started and the node's state
+The Slurm controller has just started and the node's state
 has not yet been determined.
 
 .SH "JOB STATE CODES"
@@ -514,7 +514,7 @@ The following environment variables can be used to override settings
 compiled into smap.
 .TP 20
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 
 .SH "COPYING"
 Copyright (C) 2004\-2007 The Regents of the University of California.
@@ -524,15 +524,15 @@ Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 .br
 Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

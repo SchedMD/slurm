@@ -32,7 +32,7 @@ purpose plugin mechanism. A Slurm plugin is a dynamically linked code object tha
 is loaded explicitly at run time by the Slurm libraries. It provides a customized
 implementation of a well-defined API connected to tasks such as authentication,
 interconnect fabric, task scheduling, etc. A set of functions is defined for use
-by all of the different infrastructures of a particular variety. When a SLURM
+by all of the different infrastructures of a particular variety. When a Slurm
 daemon is initiated, it reads the configuration file to determine which of the
 available plugins should be used. A <a href="plugins.html">plugin developer's
 guide</a> is available with general information about plugins. Most plugin
@@ -52,7 +52,7 @@ of subdirectories for each type of file.</p>
 <b>configure.ac</b>, <b>Makefile.am</b>, <b>Make-rpm.mk</b>, <b>META</b>, <b>README</b>,
 <b>slurm.spec.in</b>, and the contents of the <b>auxdir</b> directory. <span class="commandline">autoconf</span>
 and <span class="commandline">make</span> commands are used to build and install
-SLURM in an automated fashion. NOTE: <span class="commandline">autoconf</span>
+Slurm in an automated fashion. NOTE: <span class="commandline">autoconf</span>
 version 2.52 or higher is required to build Slurm. Execute
 <span class="commandline">autoconf -V</span> to check your version number.
 The build process is described in the README file.
@@ -93,7 +93,7 @@ as follows: </p>
 the Slurm code. Used to send and get Slurm information from the central manager.
 These are the functions user applications might utilize.<br>
 <b>common</b>&#151;General purpose functions for widespread use throughout
-SLURM.<br>
+Slurm.<br>
 <b>database</b>&#151;Various database files that support the accounting
  storage plugin.<br>
 <b>plugins</b>&#151;Plugin functions for various infrastructures or optional
@@ -184,7 +184,7 @@ The <b>slurm.conf</b> can be built using a <a href="configurator.html">configura
 See <b>doc/man/man5/slurm.conf.5</b> and the man pages for other configuration files
 for more details.
 <b>init.d.slurm</b> is a script that determines which
-SLURM daemon(s) should execute on any node based upon the configuration file contents.
+Slurm daemon(s) should execute on any node based upon the configuration file contents.
 It will also manage these daemons: starting, signalling, restarting, and stopping them.</p>
 
 <h2>Test Suite</h2>

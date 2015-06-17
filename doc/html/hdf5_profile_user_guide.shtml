@@ -38,7 +38,7 @@ daemon via RPC may not scale to very large clusters or jobs with
 many allocated nodes.</p>
 
 <p>A separate <a href="acct_gather_profile_plugins.html">
-SLURM Profile Accounting Plugin API (AcctGatherProfileType)</a> documents how
+Slurm Profile Accounting Plugin API (AcctGatherProfileType)</a> documents how
 to write other Profile Accounting plugins.</P>
 
 <a id="Administration"></a>

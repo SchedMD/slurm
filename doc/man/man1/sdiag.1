@@ -2,7 +2,7 @@
 
 .SH "NAME"
 .LP
-sdiag \- Scheduling diagnostic tool for SLURM
+sdiag \- Scheduling diagnostic tool for Slurm
 
 .SH "SYNOPSIS"
 .LP
@@ -13,7 +13,7 @@ sview
 sdiag shows information related to slurmctld execution about: threads, agents,
 jobs, and scheduling algorithms. The goal is to obtain data from slurmctld
 behaviour helping to adjust configuration parameters or queues policies. The
-main reason behind is to know SLURM behaviour under systems with a high throughput.
+main reason behind is to know Slurm behaviour under systems with a high throughput.
 .LP
 It has two execution modes. The default mode \fB\-\-all\fR shows several counters
 and statistics explained later, and there is another execution option
@@ -31,7 +31,7 @@ bottleneck.
 
 .TP
 \fBAgent queue size\fR
-SLURM design has scalability in mind and sending messages to thousands of nodes
+Slurm design has scalability in mind and sending messages to thousands of nodes
 is not a trivial task. The agent mechanism helps to control communication
 between the slurm daemons and the controller for a best effort. If this values
 is close to MAX_AGENT_CNT there could be some delays affecting jobs management.
@@ -231,19 +231,19 @@ environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 
 .SH "COPYING"
 Copyright (C) 2010-2011 Barcelona Supercomputing Center.
 .br
 Copyright (C) 2010\-2014 SchedMD LLC.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

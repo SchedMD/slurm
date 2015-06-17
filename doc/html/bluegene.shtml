@@ -59,7 +59,7 @@ MPs=0000 type=small 32cnblocks=16
 ...
 </pre>
 <p>This will create a small block on each nodeboard on the system.  If your
-system is different than this, adjust appropriately.  The idea is SLURM
+system is different than this, adjust appropriately.  The idea is Slurm
 will create the smallest block possible on every possible hardware
 location.  The system will then check for missing hardware and remove
 blocks that are invalid.  This will get around the problem if you
@@ -106,7 +106,7 @@ Note that this is a c-node count.</p>
 
 <p>Use Slurm's <i>srun</i> command to launch tasks (<i>srun</i> uses
 an api interface into IBM's <i>runjob</i> command).
-SLURM job step information, including accounting, functions as
+Slurm job step information, including accounting, functions as
 expected.  Totalview and other debuggers will also work with srun.
 If Slurm is installed and configured correctly IBM's runjob will not
 work.</p>
@@ -147,7 +147,7 @@ coordinates with a zero origin. The suffix contains three digits on BlueGene/L
 and BlueGene/P systems, while four digits are required for the BlueGene/Q
 systems. For example, "bgp012" represents the midplane whose coordinate
 is at X=0, Y=1 and Z=2.
-SLURM uses an abbreviated format for describing midplanes in which the
+Slurm uses an abbreviated format for describing midplanes in which the
 end-points of the block enclosed are in square-brackets and separated by an "x".
 For example, "bgp[620x731]" is used to represent the eight midplanes
 enclosed in a block with end-points and bgp620 and bgp731 (bgp620, bgp621,
@@ -277,12 +277,12 @@ information from the system and manipulate blocks.
 
 <p>In order to make <i>srun</i> operate correctly with the underlying system
 and to ensure security for new MPI jobs, it is necessary to enable the
-SLURM plugin for the IBM runjob_mux.  This is
+Slurm plugin for the IBM runjob_mux.  This is
 done by altering the bg.properties file. In the [runjob.mux]
 section of the bg.properties file change the plugin option to
 <i>$prefix/lib/slurm/runjob_plugin.so</i> and also set the plugin_flags
 option to <i>0x0109</i> (RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND)
-which allows the forwarding of symbols to shared objects like SLURM
+which allows the forwarding of symbols to shared objects like Slurm
 uses for plugins.</p>
 <pre>
 [runjob.mux]
@@ -363,7 +363,7 @@ not allow a sub-block to be used with any dimension of 3.
 </p><p>
 In the current IBM API it does not allow wrapping inside a midplane.
 Meaning you can not create a sub-block of 2 with nodes in the 0 and 3 position.
-SLURM will support this in the future when the underlying system allows it.
+Slurm will support this in the future when the underlying system allows it.
 </p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -597,7 +597,7 @@ file (i.e. <i>MidplaneNodeCnt=512</i> and <i>NodeCardNodeCnt=32</i>).</p>
 
 <p>Note that the <i>IONodesPerMP</i> value defined in
 <i>bluegene.conf</i> represents how many ionodes are on each midplane.
-SLURM does not support heterogeneous ionode configurations so if your
+Slurm does not support heterogeneous ionode configurations so if your
 environment is like this place the smallest number here.  For most BlueGene/L
 systems this value is either 8 (for IO poor systems) or 64 (for IO rich
 systems). For BlueGene/Q systems 4 to 16 are most common.</p>
@@ -736,7 +736,7 @@ If defining blocks of <i>Type=SMALL</i>, the Slurm partition
 containing them as defined in <i>slurm.conf</i> must have the
 parameter <i>Shared=force</i> to enable scheduling of multiple
 jobs on wha. Slurm considers a single node.
-SLURM partitions that do not contain blocks of <i>Type=SMALL</i>
+Slurm partitions that do not contain blocks of <i>Type=SMALL</i>
 may have the parameter <i>Shared=no</i> for a slight improvement in
 scheduler performance.
 As in all Slurm configuration files, parameters and values
@@ -769,7 +769,7 @@ When a job is scheduled, the appropriate block is identified,
 its user set, and it is booted.
 On BlueGene/L and BlueGene/P systems Node use (virtual or coprocessor)
 is set from the mpirun command line.
-SLURM has nothing to do with setting the node use.
+Slurm has nothing to do with setting the node use.
 Subsequent jobs use this same block without rebooting by changing
 the associated user field.
 The only time blocks should be freed and rebooted, in normal operation,

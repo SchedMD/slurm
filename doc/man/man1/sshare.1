@@ -7,12 +7,12 @@ sshare \- Tool for listing the shares of associations to a cluster.
 \fBsshare\fR [\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
-\fBsshare\fR is used to view SLURM share information.  This command is
+\fBsshare\fR is used to view Slurm share information.  This command is
 only viable when running with the priority/multifactor plugin.
 The sshare information is derived from a database with the interface
-being provided by \fBslurmdbd\fR (SLURM Database daemon) which is
+being provided by \fBslurmdbd\fR (Slurm Database daemon) which is
 read in from the slurmctld and used to process the shares available
-to a given association.  sshare provides SLURM share information of
+to a given association.  sshare provides Slurm share information of
 Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
 Usage, Effective Usage, the Fair-share factor, the GrpCPUMins limit
 and accumulated currently running CPU-minutes for each association.
@@ -157,7 +157,7 @@ environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
 .eo
@@ -176,15 +176,15 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

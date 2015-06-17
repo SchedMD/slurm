@@ -212,11 +212,11 @@ Execute this function before issuing a request to submit or modify a job.
 .LP
 \fBslurm_job_will_run2\fR Determine when and where the supplied job description can be executed.
 .LP
-\fBslurm_read_hostfile\fR Read a SLURM hostfile specified by
-"filename".  "filename" must contain a list of SLURM NodeNames, one
+\fBslurm_read_hostfile\fR Read a Slurm hostfile specified by
+"filename".  "filename" must contain a list of Slurm NodeNames, one
 per line.  Reads up to "n" number of hostnames from the file. Returns
 a string representing a hostlist ranged string of the contents
-of the file.  This is a helper function, it does not contact any SLURM
+of the file.  This is a helper function, it does not contact any Slurm
 daemons.
 .LP
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if
@@ -289,7 +289,7 @@ the partition's time limit.
 \fBESLURM_BAD_DIST\fR task distribution specification is invalid.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with
-SLURM controller.
+Slurm controller.
 .SH "NON-BLOCKING EXAMPLE"
 .LP
 #include <stdio.h>
@@ -441,15 +441,15 @@ Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

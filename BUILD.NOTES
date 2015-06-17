@@ -21,9 +21,9 @@ and libtool installed):
  ./autogen.sh
 then check-in the new Makefile.am and Makefile.in files
 
-Here is a step-by-step HOWTO for creating a new release of SLURM on a
+Here is a step-by-step HOWTO for creating a new release of Slurm on a
 Linux cluster (See BlueGene and AIX specific notes below for some differences).
-0. Get current copies of SLURM and buildfarm
+0. Get current copies of Slurm and buildfarm
    > git clone https://<user_name>@github.com/chaos/slurm.git
    > svn co https://eris.llnl.gov/svn/chaos/private/buildfarm/trunk buildfarm
    place the buildfarm directory in your search path
@@ -86,7 +86,7 @@ BlueGene build notes:
    /usr/src/packages/RPMS/ppc64
 
 To build and run on AIX:
-0. Get current copies of SLURM and buildfarm
+0. Get current copies of Slurm and buildfarm
    > git clone https://<user_name>@github.com/chaos/slurm.git
    > svn co https://eris.llnl.gov/svn/chaos/private/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
@@ -116,7 +116,7 @@ To build and run on AIX:
 3. To build RPMs (NOTE: GNU tools early in PATH as described above in #0):
    Create a .rpmmacros file specifying system specific files:
 	#
-	# RPM Macros for use with SLURM on AIX
+	# RPM Macros for use with Slurm on AIX
 	# The system-wide macros for RPM are in /usr/lib/rpm/macros
 	# and this overrides a few of them
 	#
@@ -142,7 +142,7 @@ To build and run on AIX:
    --nosnapshot will name the tar-ball and RPMs based upon the META file
    --snapshot will name the tar-ball and RPMs based upon the META file plus a
    timestamp. Do this to make a tar-ball for a non-tagged release.
-4. Test POE after telling POE where to find SLURM's LoadLeveler wrapper.
+4. Test POE after telling POE where to find Slurm's LoadLeveler wrapper.
    > export MP_RMLIB=./slurm_ll_api.so
    > export CHECKPOINT=yes
 5. > poe hostname -rmpool debug
@@ -182,8 +182,8 @@ BlueGene bglblock boot problem diagnosis
   - Execute /admin/bglscripts/fatalras
     This will produce a list of failures including Rack and Midplane number
     <date> R<rack> M<midplane> <failure details>
-  - Translate the Rack and Midplane to SLURM node id: smap -R r<rack><midplane>
-  - Drain only the bad SLURM node, return others to service using scontrol
+  - Translate the Rack and Midplane to Slurm node id: smap -R r<rack><midplane>
+  - Drain only the bad Slurm node, return others to service using scontrol
 
 Configuration file update procedures:
   - cd /usr/bgl/dist/slurm (on bgli)
@@ -199,7 +199,7 @@ Some RPM commands:
   rpm -e slurm-1.1.8-1                  (erase an rpm)
   rpm --upgrade slurm-1.1.9-1.rpm       (replace existing rpm with new version)
   rpm -i --ignoresize slurm-1.1.9-1.rpm (install a new rpm)
-For main SLURM plugin installation on BGL service node:
+For main Slurm plugin installation on BGL service node:
   rpm -i --force --nodeps --ignoresize slurm-1.1.9-1.rpm
   rpm -U --force --nodeps --ignoresize slurm-1.1.9-1.rpm  (upgrade option)
 

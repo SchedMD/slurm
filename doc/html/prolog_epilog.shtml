@@ -382,7 +382,7 @@ Name of the job.
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_NODELIST</b>
-Nodes assigned to job. A SLURM hostlist expression.
+Nodes assigned to job. A Slurm hostlist expression.
 "scontrol show hostnames" can be used to convert this to a
 list of individual host names.
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>

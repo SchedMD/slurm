@@ -4,25 +4,25 @@ Copyright (C) 2008-2011 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 You should have received a copy of the GNU General Public License along
-with SLURM; if not, write to the Free Software Foundation, Inc.,
+with Slurm; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 -->
 <HTML>
-<HEAD><TITLE>SLURM System Configuration Tool</TITLE>
+<HEAD><TITLE>Slurm System Configuration Tool</TITLE>
 <SCRIPT type="text/javascript">
 <!--
 function get_field(name,form)
@@ -186,24 +186,24 @@ function displayfile()
 </HEAD>
 <BODY>
 <FORM name=config>
-<H1>SLURM Version @SLURM_MAJOR@.@SLURM_MINOR@ Configuration Tool - Easy Version</H1>
-<P>This form can be used to create a SLURM configuration file with
+<H1>Slurm Version @SLURM_MAJOR@.@SLURM_MINOR@ Configuration Tool - Easy Version</H1>
+<P>This form can be used to create a Slurm configuration file with
 you controlling many of the important configuration parameters.</P>
 
-<p>This is a simplified version of the SLURM configuration tool. This version
-has fewer  options for creating a SLURM configuration file. The full version
-of the SLURM configuration tool is available at
+<p>This is a simplified version of the Slurm configuration tool. This version
+has fewer  options for creating a Slurm configuration file. The full version
+of the Slurm configuration tool is available at
 <a href="configurator.html">configurator.html</a>.</p>
 
-<P><B>This tool supports SLURM version @SLURM_MAJOR@.@SLURM_MINOR@ only.</B>
-Configuration files for other versions of SLURM should be built
+<P><B>This tool supports Slurm version @SLURM_MAJOR@.@SLURM_MINOR@ only.</B>
+Configuration files for other versions of Slurm should be built
 using the tool distributed with it in <i>doc/html/configurator.html</i>.
 Some parameters will be set to default values, but you can
 manually edit the resulting <I>slurm.conf</I> as desired
 for greater flexibility. See <I>man slurm.conf</I> for more
 details about the configuration parameters.</P>
 
-<P>Note the while SLURM daemons create log files and other files as needed,
+<P>Note the while Slurm daemons create log files and other files as needed,
 it treats the lack of parent directories as a fatal error.
 This prevents the daemons from running if critical file systems are
 not mounted and will minimize the risk of cold-starting (starting
@@ -215,13 +215,13 @@ in your cluster.</P>
 <P>After you have filled in the fields of interest, use the
 "Submit" button on the bottom of the page to build the <I>slurm.conf</I>
 file. It will appear on your web browser. Save the file in text format
-as <I>slurm.conf</I> for use by SLURM.
+as <I>slurm.conf</I> for use by Slurm.
 
-<P>For more information about SLURM, see
+<P>For more information about Slurm, see
 <A HREF="http://slurm.schedmd.com/slurm.html">http://slurm.schedmd.com/slurm.html</A>
 
 <H2>Control Machines</H2>
-Define the hostname of the computer on which the SLURM controller and
+Define the hostname of the computer on which the Slurm controller and
 optional backup controller will execute. You can also specify addresses
 of these computers if desired (defaults to their hostnames).
 The IP addresses can be either numeric IP addresses or names.
@@ -294,8 +294,8 @@ consumable resource with the select/cons_res plug-in. See below
 under Resource Selection.
 <P>
 
-<H2>SLURM User</H2>
-The SLURM controller (slurmctld) can run without elevated privileges,
+<H2>Slurm User</H2>
+The Slurm controller (slurmctld) can run without elevated privileges,
 so it is recommended that a user "slurm" be created for it. For testing
 purposes any user name can be used.
 <P>
@@ -305,7 +305,7 @@ purposes any user name can be used.
 <H2>State Preservation</H2>
 Define the location of a directory where the slurmctld daemon saves its state.
 This should be a fully qualified pathname which can be read and written to
-by the SLURM user on both the control machine and backup controller (if configured).
+by the Slurm user on both the control machine and backup controller (if configured).
 The location of a directory where slurmd saves state should also be defined.
 This must be a unique directory on each compute server (local disk).
 The use of a highly reliable file system (e.g. RAID) is recommended.
@@ -359,7 +359,7 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 <P>
 
 <H2>Default MPI Type</H2>
-Specify the type of MPI to be used by default. SLURM will configure environment
+Specify the type of MPI to be used by default. Slurm will configure environment
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
 <input type="radio" name="mpi_default" value="mpichgm"> <B>MPICH-GM</B><BR>
@@ -386,11 +386,11 @@ Linux <i>cgroup</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
 <input type="radio" name="proctrack_type" value="cray"> <B>Cray</B>: Cray proprietary process tracking<BR>
 <input type="radio" name="proctrack_type" value="pgid" checked> <B>Pgid</B>: Use Unix
-Process Group ID, processes changing their process group ID can escape from SLURM
+Process Group ID, processes changing their process group ID can escape from Slurm
 control<BR>
 <input type="radio" name="proctrack_type" value="linuxproc"> <B>LinuxProc</B>: Use
 parent process ID records, required for MPICH-GM use, processes can escape
-from SLURM control<BR>
+from Slurm control<BR>
 <input type="radio" name="proctrack_type" value="rms"> <B>RMS</B>: Use Quadrics
 kernel infrastructure, recommended for systems where this is available<BR>
 <input type="radio" name="proctrack_type" value="sgi_job"> <B>SGI's PAGG
@@ -478,7 +478,7 @@ log goes to syslog, string "%h" in name gets replaced with hostname)
 <P>
 
 <H2>Job Accounting Gather</H2>
-SLURM accounts for resource use per job.  System specifics can be polled
+Slurm accounts for resource use per job.  System specifics can be polled
 determined by system type<BR>
 Select one value for <B>JobAcctGatherType</B>:<BR>
 <input type="radio" name="job_acct_gather_type" value="none" checked> <B>None</B>: No
@@ -489,7 +489,7 @@ AIX process table information gathered, use with AIX systems only<BR>
 Linux process table information gathered, use with Linux systems only<BR>
 
 <H2>Job Accounting Storage</H2>
-Used with the Job Accounting Gather SLURM can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
+Used with the Job Accounting Gather Slurm can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
 Select one value for <B>AccountingStorageType</B>:<BR>
 <input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>:
 No job accounting storage<BR>

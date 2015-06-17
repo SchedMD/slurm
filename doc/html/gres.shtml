@@ -79,7 +79,7 @@ CPUs option for improved speed in the Slurm scheduling logic.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
-The name can include a numeric range suffix to be interpreted by SLURM
+The name can include a numeric range suffix to be interpreted by Slurm
 (e.g. <I>File=/dev/nvidia[0-3]</I>).
 This field is generally required if enforcement of generic resource
 allocations are to be supported (i.e. prevents a user from making
@@ -189,7 +189,7 @@ file and insure they are in the increasing numeric order.</P>
 
 <P>Slurm can be used to provide resource management for systems with the
 Intel&reg; Many Integrated Core (MIC) processor.
-SLURM sets an OFFLOAD_DEVICES environment variable, which controls the
+Slurm sets an OFFLOAD_DEVICES environment variable, which controls the
 selection of MICs available to a job step.
 The OFFLOAD_DEVICES environment variable is used by both Intel
 LEO (Language Extensioins for Offload) and the MKL (Math Kernel Library)

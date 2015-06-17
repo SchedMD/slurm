@@ -6,7 +6,7 @@
 <p>All of the Slurm commands utilize a collection of Application Programming
 Interfaces (APIs).
 User and system applications can directly use these APIs as desired to
-achieve tighter integration with SLURM.
+achieve tighter integration with Slurm.
 For example, Slurm data structures and error codes can be directly
 examined rather than executing Slurm commands and parsing their output.
 This document describes Slurm APIs.
@@ -128,7 +128,7 @@ last Slurm API function executed.</li>
 standard output.</li>
 
 <li><b>slurm_strerror</b>&#151;Return a string describing a specific
-SLURM error code.</li>
+Slurm error code.</li>
 
 </ul>
 <p class="footer"><a href="#top">top</a></p>
@@ -312,7 +312,7 @@ into a list of individual node names.</p>
 
 <ul>
 
-<li><b>slurm_hostlist_create</b>&#151;Translate a SLURM
+<li><b>slurm_hostlist_create</b>&#151;Translate a Slurm
 node name expression into a record used for parsing.
 Use <i>slurm_hostlist_destroy</i> to free the allocated
 storage.</li>

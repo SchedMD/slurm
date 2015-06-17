@@ -1,7 +1,7 @@
 .TH slurmd "8" "Slurm Daemon" "April 2015" "Slurm Daemon"
 
 .SH "NAME"
-slurmd \- The compute node daemon for SLURM.
+slurmd \- The compute node daemon for Slurm.
 
 .SH "SYNOPSIS"
 \fBslurmd\fR [\fIOPTIONS\fR...]
@@ -54,7 +54,7 @@ Also note the \fBPropagatePrioProcess\fR configuration parameter.
 .TP
 \fB\-N <hostname>\fR
 Run the daemon with the given hostname. Used to emulate a larger system
-with more than one slurmd daemon per node. Requires that SLURM be built using
+with more than one slurmd daemon per node. Requires that Slurm be built using
 the \-\-enable\-multiple\-slurmd configure option.
 
 .TP
@@ -69,7 +69,7 @@ The following environment variables can be used to override settings
 compiled into slurmd.
 .TP 20
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.  This is overridden by
+The location of the Slurm configuration file.  This is overridden by
 explicitly naming a configuration file on the command line.
 
 .SH "CORE FILE LOCATION"
@@ -98,15 +98,15 @@ Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

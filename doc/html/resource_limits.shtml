@@ -45,7 +45,7 @@ for SlurmDBD execution.</p>
 
 <p>Both accounting and scheduling policies are configured based upon
 an <i>association</i>. An <i>association</i> is a 4-tuple consisting
-of the cluster name, bank account, user and (optionally) the SLURM
+of the cluster name, bank account, user and (optionally) the Slurm
 partition.
 In order to enforce scheduling policy, set the value of
 <b>AccountingStorageEnforce</b>.
@@ -217,7 +217,7 @@ specified then no limit will apply.</p>
 </ul>
 
 <p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in
-SLURM's configuration on a per-partition basis, but the above options
+Slurm's configuration on a per-partition basis, but the above options
 provide the ability to impose limits on a per-user basis.  The
 <b>MaxJobs</b> option provides an entirely new mechanism for Slurm to
 control the workload any individual may place on a cluster in order to

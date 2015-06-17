@@ -24,7 +24,7 @@
   COMPLETED?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job
   allocation?</a></li>
-<li><a href="#user_env">How doe. Slurm establish the environment for my
+<li><a href="#user_env">How does Slurm establish the environment for my
   job?</a></li>
 <li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
 <li><a href="#batch_out">How can I get the task ID in the output or error file
@@ -399,7 +399,7 @@ If you specify that a batch job should use an existing allocation,
 that job allocation will be released upon the termination of
 that batch job.</p>
 
-<p><a name="user_env"><b>11. How doe. Slurm establish the environment
+<p><a name="user_env"><b>11. How does Slurm establish the environment
 for my job?</b></a><br>
 Slurm processes are not run under a shell, but directly exec'ed
 by the <i>slurmd</i> daemon (assuming <i>srun</i> is used to launch
@@ -727,7 +727,7 @@ a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain.
 Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
-After the job size is changed, some environment variables created by SLURM
+After the job size is changed, some environment variables created by Slurm
 containing information about the job's environment will no longer be valid and
 should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
 SLURM_NPROCS).
@@ -847,7 +847,7 @@ salloc: Relinquishing job allocation 65542
 </pre>
 
 <p><a name="mpi_symbols"><b>25. Why is my MPIHCH2 or MVAPICH2 job not running with
-SLURM? Why does the DAKOTA program not run with Slurm?</b></a><br>
+Slurm? Why does the DAKOTA program not run with Slurm?</b></a><br>
 The Slurm library used to support MPIHCH2 or MVAPICH2 references a variety of
 symbols. If those symbols resolve to functions or variables in your program
 rather than the appropriate library, the application will fail. For example
@@ -1697,8 +1697,8 @@ dset -set_as_default TV::bulk_launch_tmpfile1_host_lines {%R}
 </pre></p>
 <!-- OLD FORMAT
 dset TV::parallel_configs {
-	name: SLURM;
-	description: SLURM;
+	name: Slurm;
+	description: Slurm;
 	starter: srun %s %p %a;
 	style: manager_process;
 	tasks_option: -n;
@@ -2017,6 +2017,6 @@ add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 16 June 2015</p>
 
 <!--#include virtual="footer.txt"-->

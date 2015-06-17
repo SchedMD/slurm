@@ -4,7 +4,7 @@
 slurm.conf \- Slurm configuration file
 
 .SH "DESCRIPTION"
-\fBslurm.conf\fP is an ASCII file which describes general SLURM
+\fBslurm.conf\fP is an ASCII file which describes general Slurm
 configuration information, the nodes to be managed, information about
 how those nodes are grouped into partitions, and various scheduling
 parameters associated with those partitions. This file should be
@@ -12,7 +12,7 @@ consistent across all nodes in the cluster.
 .LP
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
-environment variable. The SLURM daemons also allow you to override
+environment variable. The Slurm daemons also allow you to override
 both the built\-in and environment\-provided location using the "\-f"
 option on the command line.
 .LP
@@ -20,7 +20,7 @@ The contents of the file are case insensitive except for the names of nodes
 and partitions. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
-SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 If a line begins with the word "Include" followed by whitespace
@@ -31,14 +31,14 @@ MODIFIERS for more details).
 .LP
 Note on file permissions:
 .LP
-The \fIslurm.conf\fR file must be readable by all users of SLURM, since it
-is used by many of the SLURM commands.  Other files that are defined
+The \fIslurm.conf\fR file must be readable by all users of Slurm, since it
+is used by many of the Slurm commands.  Other files that are defined
 in the \fIslurm.conf\fR file, such as log files and job accounting files,
 may need to be created/owned by the user "SlurmUser" to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
-about the various files and directories used by SLURM.
+about the various files and directories used by Slurm.
 
 .SH "PARAMETERS"
 .LP
@@ -104,7 +104,7 @@ Also see \fBDefaultStorageLoc\fR.
 \fBAccountingStoragePass\fR
 The password used to gain access to the database to store the
 accounting data.  Only used for database type storage plugins, ignored
-otherwise.  In the case of SLURM DBD (Database Daemon) with MUNGE
+otherwise.  In the case of Slurm DBD (Database Daemon) with MUNGE
 authentication this can be configured to use a MUNGE daemon
 specifically configured to provide authentication between clusters
 while the default MUNGE daemon provides authentication within a
@@ -144,7 +144,7 @@ will be written to the file specified by the
 value indicates that accounting records will be written to a MySQL or
 MariaDB database specified by the \fBAccountingStorageLoc\fR parameter.
 The "accounting_storage/slurmdbd" value indicates that accounting records
-will be written to the SLURM DBD, which manages an underlying MySQL
+will be written to the Slurm DBD, which manages an underlying MySQL
 database. See "man slurmdbd" for more information.  The
 default value is "accounting_storage/none" and indicates that account
 records are not maintained.
@@ -305,7 +305,7 @@ The default value is dependent upon the Munge installation, but is typically
 
 .TP
 \fBAuthType\fR
-The authentication method for communications between SLURM
+The authentication method for communications between Slurm
 components.
 Acceptable values at present include "auth/none", "auth/authd",
 and "auth/munge".
@@ -317,10 +317,10 @@ This may be fine for testing purposes, but
 "http://www.theether.org/authd/" for more information. Note that
 authd is no longer actively supported).
 "auth/munge" indicates that LLNL's MUNGE is to be used
-(this is the best supported authentication mechanism for SLURM,
+(this is the best supported authentication mechanism for Slurm,
 see "http://munge.googlecode.com/" for more information).
-All SLURM daemons and commands must be terminated prior to changing
-the value of \fBAuthType\fR and later restarted (SLURM jobs can be
+All Slurm daemons and commands must be terminated prior to changing
+the value of \fBAuthType\fR and later restarted (Slurm jobs can be
 preserved).
 
 .TP
@@ -335,7 +335,7 @@ By default the \fBBackupAddr\fR will be identical in value to
 
 .TP
 \fBBackupController\fR
-The name of the machine where SLURM control functions are to be
+The name of the machine where Slurm control functions are to be
 executed in the event that \fBControlMachine\fR fails. This node
 may also be used as a compute server if so desired. It will come into service
 as a controller only upon the failure of ControlMachine and will revert
@@ -392,10 +392,10 @@ for IBM AIX systems only
 .TP
 \fBcheckpoint/blcr\fR
 Berkeley Lab Checkpoint Restart (BLCR).
-NOTE: If a file is found at sbin/scch (relative to the SLURM installation
+NOTE: If a file is found at sbin/scch (relative to the Slurm installation
 location), it will be executed upon completion of the checkpoint. This can
 be a script used for managing the checkpoint files.
-NOTE: SLURM's BLCR logic only supports batch jobs.
+NOTE: Slurm's BLCR logic only supports batch jobs.
 .TP
 \fBcheckpoint/none\fR
 no checkpoint support (default)
@@ -424,7 +424,7 @@ This option specified the fully qualified pathname of the chos command
 
 .TP
 \fBClusterName\fR
-The name by which this SLURM managed cluster is known in the
+The name by which this Slurm managed cluster is known in the
 accounting database.  This is needed distinguish accounting records
 when multiple clusters report to the same database. Because of limitations
 in some databases, any upper case letters in the name will be silently mapped
@@ -460,7 +460,7 @@ By default the \fBControlAddr\fR will be identical in value to
 
 .TP
 \fBControlMachine\fR
-The short hostname of the machine where SLURM control functions are
+The short hostname of the machine where Slurm control functions are
 executed (i.e. the name returned by the command "hostname \-s", use
 "tux001" rather than "tux001.my.com").
 This value must be specified.
@@ -644,7 +644,7 @@ Job container plugin details
 License management details
 .TP
 \fBNO_CONF_HASH\fR
-Do not log when the slurm.conf files differs between SLURM daemons
+Do not log when the slurm.conf files differs between Slurm daemons
 .TP
 \fBPower\fR
 Power management plugin
@@ -863,7 +863,7 @@ Consider which value you want to be used for scheduling purposes.
 .TP 5
 \fB0\fR
 Base scheduling decisions upon the actual configuration of each individual
-node except that the node's processor count in SLURM's configuration must
+node except that the node's processor count in Slurm's configuration must
 match the actual hardware configuration if \fBSchedulerType=sched/gang\fR
 or \fBSelectType=select/cons_res\fR are configured (both of those plugins
 maintain resource allocation information using bitmaps for the cores in the
@@ -884,7 +884,7 @@ This option is generally only useful for testing purposes.
 
 .TP
 \fBFirstJobId\fR
-The job id to be used for the first submitted to SLURM without a
+The job id to be used for the first submitted to Slurm without a
 specific requested value. Job id values generated will incremented by 1
 for each subsequent job. This may be used to provide a meta\-scheduler
 with a job id space which is disjoint from the interactive jobs.
@@ -1057,7 +1057,7 @@ The default value for task sampling interval
 is 30 seconds. The default value for all other intervals is 0.
 An interval of 0 disables sampling of the specified type.
 If the task sampling interval is 0, accounting
-information is collected only at job termination (reducing SLURM
+information is collected only at job termination (reducing Slurm
 interference with the job).
 .br
 .br
@@ -1171,13 +1171,13 @@ used for all other system types
 .TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for
-authentication by SLURM daemons.
+authentication by Slurm daemons.
 This parameter is ignored if \fBCryptoType=crypto/munge\fR.
 
 .TP
 \fBJobCredentialPublicCertificate\fR
 Fully qualified pathname of a file containing a public key used for
-authentication by SLURM daemons.
+authentication by Slurm daemons.
 This parameter is ignored if \fBCryptoType=crypto/munge\fR.
 
 .TP
@@ -1207,9 +1207,9 @@ These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
 Sample plugins available in the distribution include "all_partitions", "cnode",
 "defaults", "logging", "lua", and "partition".
-For examples of use, see the SLURM code in "src/plugins/job_submit" and
+For examples of use, see the Slurm code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
-SLURM can be configured to use multiple job_submit plugins if desired,
+Slurm can be configured to use multiple job_submit plugins if desired,
 however the lua plugin will only execute one lua script named "job_submit.lua"
 located in the default script directory (typically the subdirectory "etc" of
 the installation directory).
@@ -1280,9 +1280,9 @@ License names can optionally be followed by a colon
 and count with a default count of one.
 Multiple license names should be comma separated (e.g.
 "Licenses=foo:4,bar").
-Note that SLURM prevents jobs from being scheduled if their
+Note that Slurm prevents jobs from being scheduled if their
 required license specification is not available.
-SLURM does not prevent jobs from using licenses that are
+Slurm does not prevent jobs from using licenses that are
 not explicitly listed in the job submission specification.
 
 .TP
@@ -1376,7 +1376,7 @@ The default value is 40000 steps.
 
 .TP
 \fBMaxTasksPerNode\fR
-Maximum number of tasks SLURM will allow a job step to spawn
+Maximum number of tasks Slurm will allow a job step to spawn
 on a single node. The default \fBMaxTasksPerNode\fR is 128.
 May not exceed 65533.
 
@@ -1399,7 +1399,7 @@ necessitate higher values.
 .TP
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from
-SLURM's active database. Set the values of \fBMaxJobCount\fR and
+Slurm's active database. Set the values of \fBMaxJobCount\fR and
   to insure the slurmctld daemon does not exhaust
 its memory or other resources. The default value is 300 seconds.
 A value of zero prevents any job record purging.
@@ -1497,14 +1497,14 @@ A value of "UNLIMITED" is also supported.
 
 .TP
 \fBPluginDir\fR
-Identifies the places in which to look for SLURM plugins.
+Identifies the places in which to look for Slurm plugins.
 This is a colon\-separated list of directories, like the PATH
 environment variable.
 The default value is "/usr/local/lib/slurm".
 
 .TP
 \fBPlugStackConfig\fR
-Location of the config file for SLURM stackable plugins that use
+Location of the config file for Slurm stackable plugins that use
 the Stackable Plugin Architecture for Node job (K)control (SPANK).
 This provides support for a highly configurable set of plugins to
 be called before and/or after execution of each task spawned as
@@ -1675,7 +1675,7 @@ This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
-in the SLURM database.
+in the Slurm database.
 This optioin is not compatible with \fBPreemptMode=OFF\fR.
 A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
 \fBselect/cons_res\fR plugin.
@@ -1857,7 +1857,7 @@ Acceptable values include:
 .RS
 .TP
 \fBaccounts\fR
-(NON-SLURMDBD ACCOUNTING ONLY) Prevents users from viewing any account
+(NON-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing any account
 definitions unless they are coordinators of them.
 .TP
 \fBcloud\fR
@@ -1865,7 +1865,7 @@ Powered down nodes in the cloud are visible.
 .TP
 \fBjobs\fR
 Prevents users from viewing jobs or job steps belonging
-to other users. (NON-SLURMDBD ACCOUNTING ONLY) Prevents users from viewing
+to other users. (NON-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
 job records belonging to other users unless they are coordinators of
 the association running the job when using sacct.
 .TP
@@ -1880,11 +1880,11 @@ Prevents regular users from viewing reservations which they can not use.
 .TP
 \fBusage\fR
 Prevents users from viewing usage of any other user, this applies to sshare.
-(NON-SLURMDBD ACCOUNTING ONLY) Prevents users from viewing
+(NON-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
 usage of any other user, this applies to sreport.
 .TP
 \fBusers\fR
-(NON-SLURMDBD ACCOUNTING ONLY) Prevents users from viewing
+(NON-SlurmDBD ACCOUNTING ONLY) Prevents users from viewing
 information of any user other than themselves, this also makes it so users can
 only see associations they deal with.
 Coordinators can see associations of all users they are coordinator of,
@@ -2056,7 +2056,7 @@ the default action is to propagate all limits.
 Only one of the parameters, either
 \fBPropagateResourceLimits\fR or \fBPropagateResourceLimitsExcept\fR,
 may be specified.
-The following limit names are supported by SLURM (although some
+The following limit names are supported by Slurm (although some
 options may not be supported on some systems):
 .RS
 .TP 10
@@ -2164,7 +2164,7 @@ set to the number of times the job has been restarted.
 
 .TP
 \fBResumeProgram\fR
-SLURM supports a mechanism to reduce power consumption on nodes that
+Slurm supports a mechanism to reduce power consumption on nodes that
 remain idle for an extended period of time.
 This is typically accomplished by reducing voltage and frequency or powering
 the node down.
@@ -2176,13 +2176,13 @@ If \fBResumeProgram\fR is unable to restore a node to service, it should
 requeue any node associated with the node and set the node state to DRAIN.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
-be removed from power savings mode (using SLURM's hostlist
+be removed from power savings mode (using Slurm's hostlist
 expression format).
 By default no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
-More information is available at the SLURM web site
+More information is available at the Slurm web site
 ( http://slurm.schedmd.com/power_save.html ).
 
 .TP
@@ -2208,7 +2208,7 @@ The default value is 60 seconds.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
-More information is available at the SLURM web site
+More information is available at the Slurm web site
 ( http://slurm.schedmd.com/power_save.html ).
 
 .TP
@@ -2817,14 +2817,14 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 The name of the user that the \fBslurmctld\fR daemon executes as.
 For security purposes, a user other than "root" is recommended.
 This user must exist on all nodes of the cluster for authentication
-of communications between SLURM components.
+of communications between Slurm components.
 The default value is "root".
 
 .TP
 \fBSlurmdUser\fR
 The name of the user that the \fBslurmd\fR daemon executes as.
 This user must exist on all nodes of the cluster for authentication
-of communications between SLURM components.
+of communications between Slurm components.
 The default value is "root".
 
 .TP
@@ -2882,13 +2882,13 @@ The default value is "/var/run/slurmctld.pid".
 
 .TP
 \fBSlurmctldPlugstack\fR
-A comma delimited list of SLURM controller plugins to be started when the
+A comma delimited list of Slurm controller plugins to be started when the
 daemon begins and terminated when it ends.
 Only the plugin's init and fini functions are called.
 
 .TP
 \fBSlurmctldPort\fR
-The port number that the SLURM controller, \fBslurmctld\fR, listens
+The port number that the Slurm controller, \fBslurmctld\fR, listens
 to for work. The default value is SLURMCTLD_PORT as established at system
 build time. If none is explicitly specified, it will be set to 6817.
 \fBSlurmctldPort\fR may also be configured to support a range of port
@@ -2949,7 +2949,7 @@ logs are written.
 The default value is none (performs logging via syslog).
 Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the SLURM node name on which the
+Any "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 .br
 See the section \fBLOGGING\fR if a pathname is specified.
@@ -2960,19 +2960,19 @@ Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write
 its process id. This may be used for automated signal processing.
 Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the SLURM node name on which the
+Any "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 The default value is "/var/run/slurmd.pid".
 
 .TP
 \fBSlurmdPlugstack\fR
-A comma delimited list of SLURM compute node plugins to be started when the
+A comma delimited list of Slurm compute node plugins to be started when the
 daemon begins and terminated when it ends.
 Only the plugin's init and fini functions are called.
 
 .TP
 \fBSlurmdPort\fR
-The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
+The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work. The default value is SLURMD_PORT as established at system
 build time. If none is explicitly specified, its value will be 6818.
 NOTE: Either slurmctld and slurmd daemons must not execute
@@ -2988,19 +2988,19 @@ is local to each node (reference a local file system). The default value
 is "/var/spool/slurmd".
 Any "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the SLURM node name on which the
+Any "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 
 .TP
 \fBSlurmdTimeout\fR
-The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR
+The interval, in seconds, that the Slurm controller waits for \fBslurmd\fR
 to respond before configuring that node's state to DOWN.
 A value of zero indicates the node will not be tested by \fBslurmctld\fR to
 confirm the state of \fBslurmd\fR, the node will not be automatically set to
 a DOWN state indicating a non\-responsive \fBslurmd\fR, and some other tool
 will take responsibility for monitoring the state of each compute node
 and its \fBslurmd\fR daemon.
-SLURM's hierarchical communication mechanism is used to ping the \fBslurmd\fR
+Slurm's hierarchical communication mechanism is used to ping the \fBslurmd\fR
 daemons in order to minimize system noise and overhead.
 The default value is 300 seconds.
 The value may not exceed 65533 seconds.
@@ -3070,9 +3070,9 @@ executing.
 
 .TP
 \fBStateSaveLocation\fR
-Fully qualified pathname of a directory into which the SLURM controller,
+Fully qualified pathname of a directory into which the Slurm controller,
 \fBslurmctld\fR, saves its state (e.g. "/usr/local/slurm/checkpoint").
-SLURM state will saved here to recover from system failures.
+Slurm state will saved here to recover from system failures.
 \fBSlurmUser\fR must be able to create files in this directory.
 If you have a \fBBackupController\fR configured, this location should be
 readable and writable by both systems.
@@ -3086,7 +3086,7 @@ into this directory.
 \fBSuspendExcNodes\fR
 Specifies the nodes which are to not be placed in power save mode, even
 if the node remains idle for an extended period of time.
-Use SLURM's hostlist expression to identify nodes.
+Use Slurm's hostlist expression to identify nodes.
 By default no nodes are excluded.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
 \fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR,
@@ -3111,7 +3111,7 @@ This can be used to reduce the frequency and voltage of a node or
 completely power the node off.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
-be placed into power savings mode (using SLURM's hostlist
+be placed into power savings mode (using Slurm's hostlist
 expression format).
 By default, no program is run.
 Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
@@ -3148,7 +3148,7 @@ The default value is 30 seconds.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBResumeTimeout\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR,
 \fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
-More information is available at the SLURM web site
+More information is available at the Slurm web site
 ( http://slurm.schedmd.com/power_save.html ).
 
 .TP
@@ -3160,7 +3160,7 @@ Acceptable values include
 or termination (Myrinet, Ethernet, and InfiniBand) and
 "switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
-All SLURM daemons, commands and running jobs must be restarted for a
+All Slurm daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
@@ -3336,7 +3336,7 @@ systems, best\-fit logic over three\-dimensional topology
 .TP
 \fBtopology/node_rank\fR
 orders nodes based upon information a node_rank field in the node record
-as generated by a select plugin. SLURM performs a best\-fit algorithm over
+as generated by a select plugin. Slurm performs a best\-fit algorithm over
 those ordered nodes
 .TP
 \fBtopology/none\fR
@@ -3379,7 +3379,7 @@ By default no program is run.
 
 .TP
 \fBUnkillableStepTimeout\fR
-The length of time, in seconds, that SLURM will wait before deciding that
+The length of time, in seconds, that Slurm will wait before deciding that
 processes in a job step are unkillable (after they have been signaled with
 SIGKILL) and execute \fBUnkillableStepProgram\fR as described above.
 The default timeout value is 60 seconds.
@@ -3393,7 +3393,7 @@ limits. Changing the upper bound of a resource limit will not alter the limits
 of running jobs, only jobs started after a change has been made will pick up
 the new limits.
 The default value is 0 (not to enable PAM support).
-Remember that PAM also needs to be configured to support SLURM as a service.
+Remember that PAM also needs to be configured to support Slurm as a service.
 For sites using PAM's directory based configuration option, a configuration
 file named \fBslurm\fR should be created. The module\-type, control\-flags, and
 module\-path names that should be included in the file are:
@@ -3434,7 +3434,7 @@ The default value is 0, which disables this feature.
 May not exceed 65533 seconds.
 
 .LP
-The configuration of nodes (or machines) to be managed by SLURM is
+The configuration of nodes (or machines) to be managed by Slurm is
 also specified in \fB/etc/slurm.conf\fR.
 Changes in node configuration (e.g. adding nodes, changing their
 processor count, etc.) require restarting both the slurmctld daemon
@@ -3448,7 +3448,7 @@ especially if the cluster is heterogeneous.
 Nodes which register to the system with less than the configured resources
 (e.g. too little memory), will be placed in the "DOWN" state to
 avoid scheduling jobs on them.
-Establishing baseline configurations will also speed SLURM's
+Establishing baseline configurations will also speed Slurm's
 scheduling process by permitting it to compare job requirements
 against these (relatively few) configuration parameters and
 possibly avoid having to check job requirements
@@ -3486,7 +3486,7 @@ in a DOWN, DRAIN or FAILING state without altering permanent
 configuration information.
 A job step's tasks are allocated to nodes in order the nodes appear
 in the configuration file. There is presently no capability within
-SLURM to arbitrarily order a job step's tasks.
+Slurm to arbitrarily order a job step's tasks.
 .LP
 Multiple node names may be comma separated (e.g. "alpha,beta,gamma")
 and/or a simple node range expression may optionally be used to
@@ -3513,7 +3513,7 @@ The node configuration specified the following information:
 
 .TP
 \fBNodeName\fR
-Name that SLURM uses to refer to a node (or base partition for
+Name that Slurm uses to refer to a node (or base partition for
 BlueGene systems).
 Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
@@ -3656,7 +3656,7 @@ allocations. The deamons won't be killed when they exhaust the memory allocation
 
 .TP
 \fBPort\fR
-The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
+The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work on this particular node. By default there is a single port number
 for all \fBslurmd\fR daemons on all compute nodes as defined by the
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
@@ -3713,7 +3713,7 @@ Also see the \fBDownNodes\fR parameter below.
 \fBCLOUD\fP
 Indicates the node exists in the cloud.
 It's initial state will be treated as powered down.
-The node will be available for use after it's state is recovered from SLURM's
+The node will be available for use after it's state is recovered from Slurm's
 state save file or the slurmd daemon starts on the compute node.
 .TP
 \fBDOWN\fP
@@ -3734,11 +3734,11 @@ to any new jobs.
 .TP
 \fBFUTURE\fP
 Indicates the node is defined for future use and need not
-exist when the SLURM daemons are started. These nodes can be made available
+exist when the Slurm daemons are started. These nodes can be made available
 for use simply by updating the node state using the scontrol command rather
 than restarting the slurmctld daemon. After these nodes are made available,
 change their \fRState\fR in the slurm.conf file. Until these nodes are made
-available, they will not be seen using any SLURM commands or nor will
+available, they will not be seen using any Slurm commands or nor will
 any attempt be made to contact them.
 .TP
 \fBUNKNOWN\fP
@@ -3751,7 +3751,7 @@ The default value is "UNKNOWN".
 .TP
 \fBThreadsPerCore\fR
 Number of logical threads in a single physical core (e.g. "2").
-Note that the SLURM can allocate resources to jobs down to the
+Note that the Slurm can allocate resources to jobs down to the
 resolution of a core. If your system is configured with more than
 one thread per core, execution of a different job on each thread
 is not supported unless you configure \fBSelectTypeParameters=CR_CPU\fR
@@ -3891,7 +3891,7 @@ May not be used with the \fBAllowUsers\fR option.
 
 .TP
 \fBFrontendName\fR
-Name that SLURM uses to refer to a frontend node.
+Name that Slurm uses to refer to a frontend node.
 Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), or any valid domain name associated with the host
@@ -3927,7 +3927,7 @@ By default, the \fBFrontendAddr\fR will be identical in value to
 
 .TP
 \fBPort\fR
-The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
+The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work on this particular frontend node. By default there is a single port
 number for all \fBslurmd\fR daemons on all frontend nodes as defined by the
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
@@ -4013,14 +4013,14 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups
 identified by AllowGroups for the job to successfully execute.
 The default value is "ALL".
-\fBNOTE:\fR For performance reasons, SLURM maintains a list of user IDs
+\fBNOTE:\fR For performance reasons, Slurm maintains a list of user IDs
 allowed to use each partition and this is checked at job submission time.
 This list of user IDs is updated when the \fBslurmctld\fR daemon is restarted,
 reconfigured (e.g. "scontrol reconfig") or the partition's \fBAllowGroups\fR
 value is reset, even if is value is unchanged
 (e.g. "scontrol update PartitionName=name AllowGroups=group").
 For a user's access to a partition to change, both his group membership must
-change and SLURM's internal user ID list must change using one of the methods
+change and Slurm's internal user ID list must change using one of the methods
 described above.
 
 .TP
@@ -4118,7 +4118,7 @@ this partition.
 .TP
 \fBHidden\fR
 Specifies if the partition and its jobs are to be hidden by default.
-Hidden partitions will by default not be reported by the SLURM APIs or commands.
+Hidden partitions will by default not be reported by the Slurm APIs or commands.
 Possible values are "YES" and "NO".
 The default value is "NO".
 Note that partitions that a user lacks access to by virtue of the
@@ -4483,7 +4483,7 @@ Name of the job.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_NODELIST\fR
-Nodes assigned to job. A SLURM hostlist expression.
+Nodes assigned to job. A Slurm hostlist expression.
 "scontrol show hostnames" can be used to convert this to a
 list of individual host names.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
@@ -4499,15 +4499,15 @@ User ID of the job's owner.
 User name of the job's owner.
 
 .SH "NETWORK TOPOLOGY"
-SLURM is able to optimize job allocations to minimize network contention.
-Special SLURM logic is used to optimize allocations on systems with a
+Slurm is able to optimize job allocations to minimize network contention.
+Special Slurm logic is used to optimize allocations on systems with a
 three\-dimensional interconnect (BlueGene, Sun Constellation, etc.)
 and information about configuring those systems are available on
 web pages available here: <http://slurm.schedmd.com/>.
-For a hierarchical network, SLURM needs to have detailed information
+For a hierarchical network, Slurm needs to have detailed information
 about how nodes are configured on the network switches.
 .LP
-Given network topology information, SLURM allocates all of a job's
+Given network topology information, Slurm allocates all of a job's
 resources onto a single leaf of the network (if possible) using a best\-fit
 algorithm.
 Otherwise it will allocate a job's resources onto multiple leaf switches
@@ -4524,7 +4524,7 @@ upon information contained in a topology.conf file,
 see "man topology.conf" for more information).
 Future plugins may gather topology information directly from the network.
 The topology information is optional.
-If not provided, SLURM will perform a best\-fit algorithm assuming the
+If not provided, Slurm will perform a best\-fit algorithm assuming the
 nodes are in a one\-dimensional array as configured and the communications
 cost is related to the node distance in this array.
 
@@ -4534,13 +4534,13 @@ will be out of service for an extended period of time, it may be
 desirable to relocate them.
 In order to do so, follow this procedure:
 .LP
-1. Stop the SLURM daemons
+1. Stop the Slurm daemons
 .br
 2. Modify the slurm.conf file appropriately
 .br
 3. Distribute the updated slurm.conf file to all nodes
 .br
-4. Restart the SLURM daemons
+4. Restart the Slurm daemons
 .LP
 There should be no loss of any running or pending jobs.
 Insure that any nodes added to the cluster have the current
@@ -4804,7 +4804,7 @@ The file must be accessible by the primary and backup control machines.
 
 .SH "LOGGING"
 .LP
-Note that while SLURM daemons create log files and other files as needed,
+Note that while Slurm daemons create log files and other files as needed,
 it treats the lack of parent directories as a fatal error.
 This prevents the daemons from running if critical file systems are
 not mounted and will minimize the risk of cold\-starting (starting
@@ -4815,7 +4815,7 @@ may need to be created/owned by the "SlurmUser" uid to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
 See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
-about the various files and directories used by SLURM.
+about the various files and directories used by Slurm.
 .LP
 It is recommended that the logrotate utility be used to insure that
 various log files do not become too large.
@@ -4828,7 +4828,7 @@ See the \fBlogrotate\fR man page for more details.
 .LP
 ##
 .br
-# SLURM Logrotate Configuration
+# Slurm Logrotate Configuration
 .br
 ##
 .br
@@ -4875,15 +4875,15 @@ Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
 Copyright (C) 2010-2015 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

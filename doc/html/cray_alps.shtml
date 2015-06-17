@@ -36,7 +36,7 @@ can be translated so there are options that are not available.
 The <i>srun</i> option <i>--launcher-opts=</i> can be used
 to specify <i>aprun</i> options which lack an equivalent within <i>srun</i>.
 For example, <i>srun --launcher-opts="-a xt" -n 4 a.out</i>.
-Since <i>aprun</i> is used to launch tasks (the equivalent of a SLURM
+Since <i>aprun</i> is used to launch tasks (the equivalent of a Slurm
 job step), the job steps will not be visible using Slurm commands.
 Other than Slurm's <i>srun</i> command being replaced by <i>aprun</i>
 and the job steps not being visible, all other Slurm commands will operate
@@ -177,7 +177,7 @@ batch job with a node count specification of zero.</p>
 sbatch -N0 pre_process.bash
 </pre>
 <p><b>Note</b>: Job allocations with zero compute nodes can only be made in
-SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
+Slurm partitions explicitly configured with <b>MinNodes=0</b> (the default
 minimum node count for a partition is one compute node).</p>
 
 <h3>External Node Use</h3>
@@ -626,7 +626,7 @@ from the user's environment, lower limits may apply to user jobs, but this
 script will insure that higher limits are possible. Copy the file
 <i>contribs/cray/etc_sysconfig_slurm</i> into <i>/etc/sysconfig/slurm</i>
 for these limits to take effect. This script is executed from
-<i>/etc/init.d/slurm</i>, which is typically executed to start the SLURM
+<i>/etc/init.d/slurm</i>, which is typically executed to start the Slurm
 daemons. An excerpt of <i>contribs/cray/etc_sysconfig_slurm</i> is shown
 below.</p>
 

@@ -1,13 +1,13 @@
 .TH sinfo "1" "Slurm Commands" "April 2015" "Slurm Commands"
 
 .SH "NAME"
-sinfo \- view information about SLURM nodes and partitions.
+sinfo \- view information about Slurm nodes and partitions.
 
 .SH "SYNOPSIS"
 \fBsinfo\fR [\fIOPTIONS\fR...]
 .SH "DESCRIPTION"
 \fBsinfo\fR is used to view partition and node information for a
-system running SLURM.
+system running Slurm.
 
 .SH "OPTIONS"
 
@@ -264,7 +264,7 @@ If set only report state information for responding nodes.
 .TP
 \fB\-R\fR, \fB\-\-list\-reasons\fR
 List reasons nodes are in the down, drained, fail or failing state.
-When nodes are in these states SLURM supports optional inclusion
+When nodes are in these states Slurm supports optional inclusion
 of a "reason" string by an administrator.
 This option will display the first 35 characters of the reason
 field and list of nodes with that reason for all nodes that are,
@@ -291,7 +291,7 @@ separated by commas.  The field specifications may be preceded
 by "+" or "\-" for ascending (default) and descending order
 respectively.  The partition field specification, "P", may be
 preceded by a "#" to report partitions in the same order that
-they appear in SLURM's  configuration file, \fBslurm.conf\fR.
+they appear in Slurm's  configuration file, \fBslurm.conf\fR.
 For example, a sort value of "+P,\-m" requests that records
 be printed in order of increasing partition name and within a
 partition by decreasing memory size.  The default value of sort
@@ -315,7 +315,7 @@ used to filtering nodes by the responding flag.
 
 .TP
 \fB\-T\fR, \fB\-\-reservation\fR
-Only display information about SLURM reservations.
+Only display information about Slurm reservations.
 
 .TP
 \fB\-\-usage\fR
@@ -450,16 +450,16 @@ one or more jobs are in the process of COMPLETING.
 \fBCOMPLETING\fR
 All jobs associated with this node are in the process of
 COMPLETING.  This node state will be removed when
-all of the job's processes have terminated and the SLURM
+all of the job's processes have terminated and the Slurm
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR man page for
 more information.
 .TP
 \fBDOWN\fR
-The node is unavailable for use. SLURM can automatically
+The node is unavailable for use. Slurm can automatically
 place nodes in this state if some failure occurs. System
 administrators may also explicitly place nodes in this state. If
-a node resumes normal operation, SLURM can automatically
+a node resumes normal operation, Slurm can automatically
 return it to service. See the \fBReturnToService\fR
 and \fBSlurmdTimeout\fR parameter descriptions in the
 \fBslurm.conf\fR(5) man page for more information.
@@ -480,9 +480,9 @@ node\fR command in the \fBscontrol\fR(1) man page or the
 .TP
 \fBERROR\fR
 The node is currently in an error state and not capable of running any jobs.
-SLURM can automatically place nodes in this state if some failure occurs.
+Slurm can automatically place nodes in this state if some failure occurs.
 System administrators may also explicitly place nodes in this state. If
-a node resumes normal operation, SLURM can automatically
+a node resumes normal operation, Slurm can automatically
 return it to service. See the \fBReturnToService\fR
 and \fBSlurmdTimeout\fR parameter descriptions in the
 \fBslurm.conf\fR(5) man page for more information.
@@ -527,7 +527,7 @@ The node is currently in the process of being powered up.
 The node is in an advanced reservation and not generally available.
 .TP
 \fBUNKNOWN\fR
-The SLURM controller has just started and the node's state
+The Slurm controller has just started and the node's state
 has not yet been determined.
 
 .SH "ENVIRONMENT VARIABLES"
@@ -553,7 +553,7 @@ Commandline options will always override these settings.)
 Same as \fB\-\-clusters\fR
 .TP
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 .TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the
@@ -641,15 +641,15 @@ Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 .br
 Copyright (C) 2010-2013 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

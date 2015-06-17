@@ -187,7 +187,7 @@ not appear to add any measurable overhead.</li>
 appropriate for your environment.</li>
 </ul>
 
-<h2>SLURMDBD Configuration</h2>
+<h2>SlurmDBD Configuration</h2>
 
 <p>Starting in Slurm 14.11 there was work done to improve the speedup
 of the database which makes turning accounting off a minimal
