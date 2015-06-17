@@ -523,10 +523,10 @@ extern int acct_gather_profile_p_create_dataset(
 	}
 
 	/* insert fields */
-	if (H5Tinsert(dtype_id, "EpochTime", 0, H5T_NATIVE_UINT64) < 0)
-		return SLURM_ERROR;
 	if (H5Tinsert(dtype_id, "ElapsedTime", sizeof(uint64_t),
 		      H5T_NATIVE_UINT64) < 0)
+		return SLURM_ERROR;
+	if (H5Tinsert(dtype_id, "EpochTime", 0, H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
 
 	dataset_loc = dataset;
@@ -589,7 +589,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 {
 	table_t *ds = &tables[table_id];
 	uint8_t send_data[ds->type_size];
-
+	int header_size = 0;
 	debug("acct_gather_profile_p_add_sample_data %d", table_id);
 
 	if (file_id < 0) {
@@ -614,10 +614,12 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		return SLURM_ERROR;
 
 	/* prepend timestampe and relative time */
-	((uint64_t *)send_data)[0] = sample_time;
-	((uint64_t *)send_data)[1] = difftime(sample_time, step_start_time);
-	memcpy(send_data + (sizeof(uint64_t) * 2), data,
-	       ds->type_size - (sizeof(uint64_t) * 2));
+	((uint64_t *)send_data)[0] = difftime(sample_time, step_start_time);
+	header_size += sizeof(uint64_t);
+	((uint64_t *)send_data)[1] = sample_time;
+	header_size += sizeof(uint64_t);
+
+	memcpy(send_data + header_size, data, ds->type_size - header_size);
 
 	/* append the record to the table */
 	if (H5PTappend(ds->table_id, 1, send_data) < 0) {
