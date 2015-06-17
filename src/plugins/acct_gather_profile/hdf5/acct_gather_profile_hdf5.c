@@ -500,13 +500,13 @@ extern int acct_gather_profile_p_create_dataset(
 	type_size = sizeof(uint64_t) * 2; /* size for time field */
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
-		case TYPE_TOD:
+		case PROFILE_FIELD_TOD:
 			type_size += TOD_LEN;
 			break;
-		case TYPE_UINT64:
+		case PROFILE_FIELD_UINT64:
 			type_size += sizeof(uint64_t);
 			break;
-		case TYPE_DOUBLE:
+		case PROFILE_FIELD_DOUBLE:
 			type_size += sizeof(double);
 			break;
 		default:
@@ -534,15 +534,15 @@ extern int acct_gather_profile_p_create_dataset(
 	offset = sizeof(uint64_t) * 2;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
-		case TYPE_TOD:
+		case PROFILE_FIELD_TOD:
 			field_id = typTOD;
 			field_size = TOD_LEN;
 			break;
-		case TYPE_UINT64:
+		case PROFILE_FIELD_UINT64:
 			field_id = H5T_NATIVE_UINT64;
 			field_size = sizeof(uint64_t);
 			break;
-		case TYPE_DOUBLE:
+		case PROFILE_FIELD_DOUBLE:
 			field_id = H5T_NATIVE_DOUBLE;
 			field_size = sizeof(double);
 			break;

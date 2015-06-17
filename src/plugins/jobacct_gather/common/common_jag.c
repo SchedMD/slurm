@@ -649,14 +649,14 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	};
 
 	acct_gather_profile_dataset_t dataset[] = {
-		{ "CPUFrequency", TYPE_UINT64 },
-		{ "CPUTime", TYPE_UINT64 },
-		{ "CPUUtilization", TYPE_DOUBLE },
-		{ "RSS", TYPE_UINT64 },
-		{ "VMSize", TYPE_UINT64 },
-		{ "Pages", TYPE_UINT64 },
-		{ "ReadMB", TYPE_DOUBLE },
-		{ "WriteMB", TYPE_DOUBLE },
+		{ "CPUFrequency", PROFILE_FIELD_UINT64 },
+		{ "CPUTime", PROFILE_FIELD_UINT64 },
+		{ "CPUUtilization", PROFILE_FIELD_DOUBLE },
+		{ "RSS", PROFILE_FIELD_UINT64 },
+		{ "VMSize", PROFILE_FIELD_UINT64 },
+		{ "Pages", PROFILE_FIELD_UINT64 },
+		{ "ReadMB", PROFILE_FIELD_DOUBLE },
+		{ "WriteMB", PROFILE_FIELD_DOUBLE },
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 

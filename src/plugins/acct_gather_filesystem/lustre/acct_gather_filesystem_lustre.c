@@ -284,10 +284,10 @@ static int _update_node_filesystem(void)
 	};
 
 	acct_gather_profile_dataset_t dataset[] = {
-		{ "Reads", TYPE_UINT64 },
-		{ "ReadMB", TYPE_DOUBLE },
-		{ "Writes", TYPE_UINT64 },
-		{ "WriteMB", TYPE_DOUBLE },
+		{ "Reads", PROFILE_FIELD_UINT64 },
+		{ "ReadMB", PROFILE_FIELD_DOUBLE },
+		{ "Writes", PROFILE_FIELD_UINT64 },
+		{ "WriteMB", PROFILE_FIELD_DOUBLE },
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 

@@ -79,14 +79,14 @@ typedef enum {
 
 typedef enum {
 	PROFILE_FIELD_NOT_SET,
-	TYPE_TOD,
-	TYPE_UINT64,
-	TYPE_DOUBLE
-} field_type_t;
+	PROFILE_FIELD_TOD,
+	PROFILE_FIELD_UINT64,
+	PROFILE_FIELD_DOUBLE
+} acct_gather_profile_field_type_t;
 
 typedef struct {
 	char *name;
-	field_type_t type;
+	acct_gather_profile_field_type_t type;
 } acct_gather_profile_dataset_t;
 
 typedef struct {

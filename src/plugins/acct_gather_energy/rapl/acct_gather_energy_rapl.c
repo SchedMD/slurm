@@ -393,7 +393,7 @@ static int _send_profile(void)
 {
 	uint32_t curr_watts;
 	acct_gather_profile_dataset_t dataset[] = {
-		{ "Power", TYPE_UINT64 },
+		{ "Power", PROFILE_FIELD_UINT64 },
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 

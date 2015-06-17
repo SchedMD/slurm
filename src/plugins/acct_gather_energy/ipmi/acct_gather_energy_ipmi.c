@@ -644,7 +644,7 @@ static int _ipmi_send_profile(void)
 		for (i = 0; i < descriptions_len; i++) {
 			dataset[i].name = xstrdup_printf(
 				"%sPower", descriptions[i].label);
-			dataset[i].type = TYPE_UINT64;
+			dataset[i].type = PROFILE_FIELD_UINT64;
 		}
 		dataset[i].name = NULL;
 		dataset[i].type = PROFILE_FIELD_NOT_SET;

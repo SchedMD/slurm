@@ -276,10 +276,10 @@ static int _update_node_infiniband(void)
 	};
 
 	acct_gather_profile_dataset_t dataset[] = {
-		{ "PacketsIn", TYPE_UINT64 },
-		{ "PacketsOut", TYPE_UINT64 },
-		{ "InMB", TYPE_DOUBLE },
-		{ "OutMB", TYPE_DOUBLE },
+		{ "PacketsIn", PROFILE_FIELD_UINT64 },
+		{ "PacketsOut", PROFILE_FIELD_UINT64 },
+		{ "InMB", PROFILE_FIELD_DOUBLE },
+		{ "OutMB", PROFILE_FIELD_DOUBLE },
 		{ NULL, PROFILE_FIELD_NOT_SET }
 	};
 

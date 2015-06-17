@@ -363,21 +363,21 @@ extern char *acct_gather_profile_dataset_str(
 
         while (dataset && (dataset->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset->type) {
-		case TYPE_TOD:
+		case PROFILE_FIELD_TOD:
 			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
 					    "%s%s=%s",
 					    cur_loc ? " " : "",
 					    dataset->name, (char *)data);
 			data += TOD_LEN;
 			break;
-		case TYPE_UINT64:
+		case PROFILE_FIELD_UINT64:
 			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
 					    "%s%s=%"PRIu64,
 					    cur_loc ? " " : "",
 					    dataset->name, *(uint64_t *)data);
 			data += sizeof(uint64_t);
 			break;
-		case TYPE_DOUBLE:
+		case PROFILE_FIELD_DOUBLE:
 			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
 					    "%s%s=%lf",
 					    cur_loc ? " " : "",
