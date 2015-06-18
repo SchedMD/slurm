@@ -939,12 +939,12 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
 		fprintf(output, ",%s", table->name);
 
 	/* elapsed time (first field in the last record) */
-	fprintf(output, ",%lu", *(uint64_t *)data);
+	fprintf(output, ",%"PRIu64, *(uint64_t *)data);
 
 	/* aggregate values */
 	for (j = 0; j < nb_fields; ++j) {
 		if (H5Tequal(types[j], H5T_NATIVE_UINT64)) {
-			fprintf(output, ",%lu,%lu,%lu,%lf",
+			fprintf(output, ",%"PRIu64",%"PRIu64",%"PRIu64",%lf",
 			        agg_i[j * 4 + 0],
 			        agg_i[j * 4 + 1],
 			        agg_i[j * 4 + 2],
@@ -1059,7 +1059,7 @@ static int _extract_series_table(hid_t fid_job, table_t *table, List fields,
 
 			for (j = 0; j < nb_fields; ++j) {
 				if (H5Tequal(types[j], H5T_NATIVE_UINT64)) {
-					fprintf(output, ",%lu",
+					fprintf(output, ",%"PRIu64,
 					        *(uint64_t *)(data+offsets[j]));
 				} else if (H5Tequal(types[j],
 				                    H5T_NATIVE_DOUBLE)) {
@@ -1261,14 +1261,16 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 
 		if (group_mode) {
 			fprintf(output_file,
-			        "%s,%ld,%s %s,%ld,%s %s,%ld,%ld,%lf,%ld",
+			        "%s,%"PRIu64",%s %s,%"PRIu64",%s %s,"
+				"%"PRIu64",%"PRIu64",%lf,%"PRIu64,
 			        step_name, et,
 			        names[min_idx], nodes[min_idx], min_val,
 			        names[max_idx], nodes[max_idx], max_val,
 			        sum, avg, nb_series_in_smp);
 		} else {
 			fprintf(output_file,
-			        "%s,%ld,%s,%ld,%s,%ld,%ld,%lf,%ld",
+			        "%s,%"PRIu64",%s,%"PRIu64",%s,%"PRIu64",%"
+				PRIu64",%lf,%"PRIu64,
 			        step_name, et,
 			        nodes[min_idx], min_val,
 			        nodes[max_idx], max_val,
@@ -1277,7 +1279,7 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 
 		/* print value of each series */
 		for (i = 0; i < nb_tables; ++i) {
-			fprintf(output_file, ",%ld", values[i]);
+			fprintf(output_file, ",%"PRIu64, values[i]);
 			/* and set their values to zero if no more values */
 			if (values[i] && nb_records[i] == 0)
 				values[i] = 0;
@@ -1285,8 +1287,8 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 		fputc('\n', output_file);
 	}
 
-	printf("    Step %s Maximum accumulated %s Value (%ld) occurred "
-	       "at Time=%ld, Ave Node %lf\n",
+	printf("    Step %s Maximum accumulated %s Value (%"PRIu64") occurred "
+	       "at Time=%"PRIu64", Ave Node %lf\n",
 	       step_name, params.data_item, sum_max, et_max, avg_max);
 }
 
@@ -1356,7 +1358,8 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 			et_max = et;
 		}
 
-		fprintf(output_file, "%s,%ld,%s,%lf,%s,%lf,%lf,%lf,%ld",
+		fprintf(output_file,
+			"%s,%"PRIu64",%s,%lf,%s,%lf,%lf,%lf,%"PRIu64,
 		        step_name, et,
 		        names[min_idx], min_val, names[max_idx], max_val,
 		        sum, avg, nb_series_in_smp);
@@ -1372,7 +1375,7 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 	}
 
 	printf("    Step %s Maximum accumulated %s Value (%lf) occurred "
-	       "at Time=%ld, Ave Node %lf\n",
+	       "at Time=%"PRIu64", Ave Node %lf\n",
 	       step_name, params.data_item, sum_max, et_max, avg_max);
 }
 
