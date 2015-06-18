@@ -791,7 +791,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
-		error("job %u has no job_resrcs info", job_ptr->job_id);
+		error("%s: job %u has no job_resrcs info",
+		      __func__, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -1139,7 +1140,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		return SLURM_SUCCESS;
 	}
 	if (!job || !job->core_bitmap) {
-		error("job %u has no job_resrcs info", job_ptr->job_id);
+		error("%s: job %u has no job_resrcs info",
+		      __func__, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -1283,8 +1285,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	List gres_list;
 
 	if (!job || !job->core_bitmap) {
-		error("select/cons_res: job %u has no job_resrcs info",
-		      job_ptr->job_id);
+		error("%s: select/cons_res: job %u has no job_resrcs info",
+		      __func__, job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
