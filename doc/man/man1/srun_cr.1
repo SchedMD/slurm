@@ -10,7 +10,7 @@ srun_cr \- run parallel jobs with checkpoint/restart support
 The design of \fBsrun_cr\fR is inspired by \fBmpiexec_cr\fR from MVAPICH2 and
 \fBcr_restart\fR form BLCR.
 It is a wrapper around the \fBsrun\fR command to enable batch job
-checkpoint/restart support when used with SLURM's \fBcheckpoint/blcr\fR plugin.
+checkpoint/restart support when used with Slurm's \fBcheckpoint/blcr\fR plugin.
 
 .SH "OPTIONS"
 
@@ -30,7 +30,7 @@ SIGCHLD will be captured to mimic the exit status of \fBsrun\fR when it exits.
 Then \fBsrun_cr\fR loops waiting for termination of tasks being launched
 from \fBsrun\fR.
 
-The step launch logic of SLURM is augmented to check if \fBsrun\fR is running
+The step launch logic of Slurm is augmented to check if \fBsrun\fR is running
 under \fBsrun_cr\fR.
 If true, the environment variable \fBSLURM_SRUN_CR_SOCKET\fR should be present,
 the value of which is the address of a Unix domain socket created and listened
@@ -40,7 +40,7 @@ the job ID, step ID and the nodes allocated to the step to \fBsrun_cr\fR.
 
 Upon checkpoint, \fRsrun_cr\fR checks to see if the tasks have been launched.
 If not \fRsrun_cr\fR first forwards the checkpoint request to the tasks by
-calling the SLURM API \fBslurm_checkpoint_tasks()\fR before dumping its process
+calling the Slurm API \fBslurm_checkpoint_tasks()\fR before dumping its process
 context.
 
 Upon restart, \fBsrun_cr\fR checks to see if the tasks have been previously
@@ -55,15 +55,15 @@ execution of the tasks from the previous checkpoint.
 Copyright (C) 2009 National University of Defense Technology, China.
 Produced at National University of Defense Technology, China (cf, DISCLAIMER).
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

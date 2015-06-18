@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes Slurm priority plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own
-SLURM priority plugins. This is version 100 of the API.</p>
+Slurm priority plugins. This is version 100 of the API.</p>
 
 <p>Slurm priority plugins are Slurm plugins that implement the Slurm priority
 API described herein. They must conform to the Slurm Plugin API with the
@@ -24,7 +24,7 @@ job priority.</li>
 </ul>
 
 <p>The <span class="commandline">plugin_name</span> and
-<span class="commandline">plugin_version</span> symbols required by the SLURM
+<span class="commandline">plugin_version</span> symbols required by the Slurm
 Plugin API require no specialization for job priority support.
 Note carefully, however, the versioning discussion below.</p>
 
@@ -91,8 +91,8 @@ be stubbed.</p>
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
@@ -141,7 +141,7 @@ containing the requested job priority factors</p>
 <h2>Versioning</h2>
 <p> This document describes version 101 of the Slurm Priority API. Future
 releases of Slurm may revise this API. A priority plugin conveys its ability
-to implement a particular API version using the mechanism outlined for SLURM
+to implement a particular API version using the mechanism outlined for Slurm
 plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>

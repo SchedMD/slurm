@@ -128,7 +128,7 @@ allocated, the <i>ResumeProgram</i> is executed and should do the following:</p>
 Note that configuration file will generally be identical on all nodes and not
 include NodeAddr or NodeHostname configuration parameters for any nodes in the
 cloud.
-SLURM commands executed on this node only need to communicate with the
+Slurm commands executed on this node only need to communicate with the
 slurmctld daemon on the ControlMachine.
 <li>Notify the slurmctld daemon of the node's hostname and network address:<br>
 <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>

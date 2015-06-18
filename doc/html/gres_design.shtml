@@ -12,7 +12,7 @@ to provide details abou. Slurm's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
 <a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
 the APIs provided by GRES plugins, see <a href="gres_plugins.html">
-SLURM Generic Resource (GRES) Plugin API</a>.</p>
+Slurm Generic Resource (GRES) Plugin API</a>.</p>
 
 <h2>Data Structures</h2>
 

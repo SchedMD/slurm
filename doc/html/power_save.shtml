@@ -14,7 +14,7 @@ Of particular note, Slurm can power nodes up or down
 at a configurable rate to prevent rapid changes in power demands.
 For example, starting a 1000 node job on an idle cluster could result
 in an instantaneous surge in power demand of multiple megawatts without
-SLURM's support to increase power demands in a gradual fashion.</p>
+Slurm's support to increase power demands in a gradual fashion.</p>
 
 
 <h2>Configuration</h2>

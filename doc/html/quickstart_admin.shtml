@@ -26,10 +26,10 @@ and <i>--sysconfdir=</i></li>
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
 <i>doc/html/configurator.html</i>.<br>
-NOTE: The <i>SlurmUser</i> must exist prior to starting SLURM
+NOTE: The <i>SlurmUser</i> must exist prior to starting Slurm
 and must exist on all nodes of the cluster.<br>
 NOTE: The parent directories for Slurm's log files, process ID files,
-state save directories, etc. are not created by SLURM.
+state save directories, etc. are not created by Slurm.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
 starting Slurm daemons.<br>
 NOTE: If any parent directories are created during the installation process
@@ -161,7 +161,7 @@ Some macro definitions that may be used in building Slurm include:
 # .rpmmacros
 # For AIX at LLNL
 # Override some RPM macros from /usr/lib/rpm/macros
-# Set SLURM-specific macros for unconventional file locations
+# Set Slurm-specific macros for unconventional file locations
 #
 %_enable_debug     "--with-debug"
 %_prefix           /admin/llnl
@@ -283,7 +283,7 @@ users and groups must be configured on those hosts.</p>
 <h3>Authentication of Slurm communications</h3>
 <p>All communications between Slurm components are authenticated. The
 authentication infrastructure is provided by a dynamically loaded
-plugin chosen at runtime via the <b>AuthType</b> keyword in the SLURM
+plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>,
 <a href="https://code.google.com/p/munge/">munge</a>, and none.
@@ -384,11 +384,11 @@ This is meant to be exploited by any parallel debugger (notably, TotalView),
 and support is unconditionally compiled into Slurm code.</p>
 
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
-for TotalView to operate with SLURM:
+for TotalView to operate with Slurm:
 <pre>
 dset TV::parallel_configs {
-	name: SLURM;
-	description: SLURM;
+	name: Slurm;
+	description: Slurm;
 	starter: srun %s %p %a;
 	style: manager_process;
 	tasks_option: -n;
@@ -406,7 +406,7 @@ to compute nodes available for download.
 When installed, the Slurm PAM module will prevent users from logging
 into any node that has not be assigned to that user.
 On job termination, any processes initiated by the user outside of
-SLURM's control may be killed using an <i>Epilog</i> script configured
+Slurm's control may be killed using an <i>Epilog</i> script configured
 in <i>slurm.conf</i>.
 An example of such a script is included as <i>etc/slurm.epilog.clean</i>.
 Without these mechanisms any user can login to any compute node,
@@ -432,10 +432,10 @@ In this case &quot;emcri&quot; is the private management network interface
 for the host &quot;mcri&quot;. Port numbers to be used for
 communications are specified as well as various timer values.</p>
 
-<p>The <i>SlurmUser</i> must be created as needed prior to starting SLURM
+<p>The <i>SlurmUser</i> must be created as needed prior to starting Slurm
 and must exist on all nodes in your cluster.
 The parent directories for Slurm's log files, process ID files,
-state save directories, etc. are not created by SLURM.
+state save directories, etc. are not created by Slurm.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
 starting Slurm daemons.</p>
 

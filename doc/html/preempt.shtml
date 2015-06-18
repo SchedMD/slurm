@@ -3,7 +3,7 @@
 <H1>Preemption</H1>
 
 <P>
-SLURM supports job preemption, the act of stopping one or more "low-priority"
+Slurm supports job preemption, the act of stopping one or more "low-priority"
 jobs to let a "high-priority" job run uninterrupted until it completes.
 Job preemption is implemented as a variation of Slurm's
 <a href="gang_scheduling.html">Gang Scheduling</a> logic.
@@ -12,12 +12,12 @@ allocated to one or more low priority jobs, the low priority job(s) are
 preempted.
 The low priority job(s) can resume once the high priority job completes.
 Alternately, the low priority job(s) can be requeued and started using other
-resources if so configured in newer versions of SLURM.
+resources if so configured in newer versions of Slurm.
 </P>
 <P>
 The job's partition priority or its Quality Of Service (QOS) can be used to
 identify the which jobs can preempt or be preempted by other jobs.
-SLURM offers the ability to configure the preemption mechanism used on a per
+Slurm offers the ability to configure the preemption mechanism used on a per
 partition or per QOS basis.
 For example, jobs in a low priority queue may get requeued,
 while jobs in a medium priority queue may get suspended.
@@ -156,7 +156,7 @@ allocated to a common resource (and gang scheduled), set
 <P>
 To enable preemption after making the configuration changes described above,
 restart Slurm if it is already running. Any change to the plugin settings in
-SLURM requires a full restart of the daemons. If you just change the partition
+Slurm requires a full restart of the daemons. If you just change the partition
 <I>Priority</I> or <I>Shared</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>

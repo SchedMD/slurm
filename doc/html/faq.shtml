@@ -727,7 +727,7 @@ a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain.
 Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
-After the job size is changed, some environment variables created by SLURM
+After the job size is changed, some environment variables created by Slurm
 containing information about the job's environment will no longer be valid and
 should either be removed or altered (e.g. SLURM_NNODES, SLURM_NODELIST and
 SLURM_NPROCS).
@@ -847,7 +847,7 @@ salloc: Relinquishing job allocation 65542
 </pre>
 
 <p><a name="mpi_symbols"><b>25. Why is my MPIHCH2 or MVAPICH2 job not running with
-SLURM? Why does the DAKOTA program not run with Slurm?</b></a><br>
+Slurm? Why does the DAKOTA program not run with Slurm?</b></a><br>
 The Slurm library used to support MPIHCH2 or MVAPICH2 references a variety of
 symbols. If those symbols resolve to functions or variables in your program
 rather than the appropriate library, the application will fail. For example
@@ -1697,8 +1697,8 @@ dset -set_as_default TV::bulk_launch_tmpfile1_host_lines {%R}
 </pre></p>
 <!-- OLD FORMAT
 dset TV::parallel_configs {
-	name: SLURM;
-	description: SLURM;
+	name: Slurm;
+	description: Slurm;
 	starter: srun %s %p %a;
 	style: manager_process;
 	tasks_option: -n;
@@ -1849,7 +1849,7 @@ show columns from "tux_assoc_table" where Field='is_def';
 "Node unexpectedly rebooted"?</b></a></br>
 This is indicative of the slurmctld daemon running on the cluster's head node
 as well as the slurmd daemon on the compute node when the compute node reboots.
-If you which to prevent this condition from setting the node into a DOWN state
+If you want to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
 

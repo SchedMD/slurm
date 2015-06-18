@@ -147,7 +147,7 @@ REM_TIME = ISLURM_GET_REM_TIME2()
 .LP
 ISLURM_GET_REM_TIME2() is equivalent to ISLURM_GET_REM_TIME() except
 that the JOBID is taken from the SLURM_JOB_ID environment variable,
-which is set by SLURM for tasks which it launches.
+which is set by Slurm for tasks which it launches.
 Both functions return the number of seconds remaining before the job
 reaches the end of it's allocated time.
 
@@ -246,14 +246,14 @@ allocation response message.
 \fBslurm_load_jobs\fR function.
 .LP
 \fBslurm_get_end_time\fR Returns the expected termination time of a specified
-SLURM job. The time corresponds to the exhaustion of the job\'s or partition\'s
+Slurm job. The time corresponds to the exhaustion of the job\'s or partition\'s
 time limit. NOTE: The data is cached locally and only retrieved from the
-SLURM controller once per minute.
+Slurm controller once per minute.
 .LP
 \fBslurm_get_rem_time\fR Returns the number of seconds remaining before the
-expected termination time of a specified SLURM job id. The time corresponds
+expected termination time of a specified Slurm job id. The time corresponds
 to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is
-cached locally and only retrieved from the SLURM controller once per minute.
+cached locally and only retrieved from the Slurm controller once per minute.
 .LP
 \fBslurm_job_cpus_allocated_on_node\fR and 
 \fBslurm_job_cpus_allocated_on_node_id\fR return the number of CPUs allocated
@@ -302,7 +302,7 @@ your code.
 \fBESLURM_INVALID_JOB_ID\fR Request for information about a non\-existent job.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with
-SLURM controller.
+Slurm controller.
 .LP
 \fBINVAL\fR Invalid function argument.
 
@@ -421,7 +421,7 @@ Some data structures contain index values to cross\-reference each other.
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this
 data, these index values will be invalid.
 .LP
-The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
+The \fBslurm_hostlist_\fR functions can be used to convert Slurm node list
 expressions into a collection of individual node names.
 
 .SH "COPYING"
@@ -430,15 +430,15 @@ Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.

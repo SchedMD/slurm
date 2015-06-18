@@ -78,7 +78,7 @@ Note: All running jobs and other state information will be lost.</li>
 
 <h2><a name="sched">Jobs are not getting scheduled</a></h2>
 
-<p>This is dependent upon the scheduler used by SLURM.
+<p>This is dependent upon the scheduler used by Slurm.
 Executing the command "<i>scontrol show config | grep SchedulerType</i>"
 to determine this.
 For any scheduler, you can check priorities of jobs using the
@@ -118,7 +118,7 @@ Please refer to its documentation for help.</li>
 <h2><a name="completing">Jobs and nodes are stuck in COMPLETING state</a></h2>
 
 <p>This is typically due to non-killable processes associated with the job.
-SLURM will continue to attempt terminating the processes with SIGKILL, but
+Slurm will continue to attempt terminating the processes with SIGKILL, but
 some jobs may stuck performing I/O and non-killable.
 This is typically due to a file system problem and may be addressed in
 a couple of ways.</p>

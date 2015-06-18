@@ -8,7 +8,7 @@ that defines them. It is intended as a resource to programmers wishing
 to write their own Slurm scheduler plugins. This is version 2 of the API.</p>
 
 <p>Slurm task management plugins are Slurm plugins that implement the
-SLURM task management API described herein. They would typically be
+Slurm task management API described herein. They would typically be
 used to control task affinity (i.e. binding tasks to processors).
 They must conform to the Slurm Plugin API with the following
 specifications:</p>
@@ -20,7 +20,7 @@ abbreviation for the type of task management. We recommend, for example:</p>
 The actual mechanism used to task binding is dependent upon the available
 infrastructure as determined by the "configure" program when Slurm is built
 and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
-(SLURM configuration file).</li>
+(Slurm configuration file).</li>
 <li><b>cgroup</b>&#151;Use Linux cgroups for binding tasks to resources.</li>
 <li><b>none</b>&#151;A plugin that implements the API without providing any
 services. This is the default behavior and provides no task binding.</li>
@@ -63,8 +63,8 @@ be stubbed.</p>
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 

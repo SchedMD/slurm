@@ -20,7 +20,7 @@ allocated to the job.</p>
 The IBM BlueGene computers is one example of this which has highly
 constrained resource allocation scheme, essentially requiring that
 jobs be allocated a set of nodes logically having a rectangular prism shape.
-SLURM has a plugin specifically written for BlueGene to select appropriate
+Slurm has a plugin specifically written for BlueGene to select appropriate
 nodes for jobs, change network switch routing, boot nodes, etc as described
 in the <a href="bluegene.html">BlueGene User and Administrator Guide</a>.</p>
 
@@ -28,11 +28,11 @@ in the <a href="bluegene.html">BlueGene User and Administrator Guide</a>.</p>
 torus interconnects, but do not require that jobs execute in adjacent nodes.
 On those systems, Slurm only needs to allocate resources to a job which
 are nearby on the network.
-SLURM accomplishes this using a
+Slurm accomplishes this using a
 <a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>
 to map the nodes from a three-dimensional space into a one-dimensional
 space.
-SLURM's native best-fit algorithm is thus able to achieve a high degree
+Slurm's native best-fit algorithm is thus able to achieve a high degree
 of locality for jobs.
 For more information, see Slurm's documentation for
 <a href="sun_const.html">Sun Constellation</a> and
@@ -71,7 +71,7 @@ plus a <i>Nodes</i> field to identify the nodes connected to the
 switch.
 Higher-level switch descriptions contain a <i>SwitchName</i> field
 plus a <i>Switches</i> field to identify the child switches.
-SLURM's hostlist expression parser is used, so the node and switch
+Slurm's hostlist expression parser is used, so the node and switch
 names need not be consecutive (e.g. "Nodes=tux[0-3,12,18-20]"
 and "Switches=s[0-2,4-8,12]" will parse fine).
 </p>
@@ -116,11 +116,11 @@ SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 <img src=topo_ex2.gif width=600>
 
 <p>As a practical matter, listing every switch connection
-definitely results in a slower scheduling algorithm for SLURM
+definitely results in a slower scheduling algorithm for Slurm
 to optimize job placement.
 The application performance may achieve little benefit from such optimization.
 Listing the leaf switches with their nodes plus one top level switch
-should result in good performance for both applications and SLURM.
+should result in good performance for both applications and Slurm.
 The previous example might be configured as follows:
 <pre>
 # topology.conf

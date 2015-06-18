@@ -67,13 +67,13 @@ sacctmgr).
 Making potentially sensitive information available to all users makes
 database security more difficult to provide. Sending the data through
 an intermediate daemon can provide better security and performance
-(through caching data). SlurmDBD (SLURM Database Daemon) provides such services.
+(through caching data). SlurmDBD (Slurm Database Daemon) provides such services.
 SlurmDBD is written in C, multi-threaded, secure and fast.
 The configuration required to use SlurmDBD will be described below.
 Storing information directly into a database would be similar.</p>
 
 <p>Note that SlurmDBD relies upon existing Slurm plugins
-for authentication and Slurm sql for database use, but the other SLURM
+for authentication and Slurm sql for database use, but the other Slurm
 commands and daemons are not required on the host where
 SlurmDBD is installed. Install the <i>slurmdbd</i>,
 <i>slurm-plugins</i>, and <i>slurm-sql</i> RPMs on the computer when SlurmDBD
@@ -122,7 +122,7 @@ communications to the SlurmDBD and we recommend
 If you have one cluster managed by Slurm and execute the SlurmDBD
 on that one cluster, the normal MUNGE configuration will suffice.
 Otherwise MUNGE should then be installed on all nodes of all
-SLURM managed clusters, plus the machine where SlurmDBD executes.
+Slurm managed clusters, plus the machine where SlurmDBD executes.
 You then have a choice of either having a single MUNGE key for
 all of these computers or maintaining a unique key for each of the
 clusters plus a second key for communications between the clusters
@@ -133,7 +133,7 @@ started with different configurations to support two different keys
 (create two key files and start the daemons with the
 <i>--key-file</i> option to locate the proper key plus the
 <i>--socket</i> option to specify distinct local domain sockets for each).
-The pathname of local domain socket will be needed in the SLURM
+The pathname of local domain socket will be needed in the Slurm
 and SlurmDBD configuration files (slurm.conf and slurmdbd.conf
 respectively, more details are provided below).</p>
 
@@ -345,7 +345,7 @@ the named socket used by MUNGE to provide enterprise-wide.
 Otherwise the default MUNGE daemon will be used.</li>
 
 <li><b>AuthType</b>:
-Define the authentication method for communications between SLURM
+Define the authentication method for communications between Slurm
 components. A value of "auth/munge" is recommended.</li>
 
 <li><b>DbdHost</b>:

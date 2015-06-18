@@ -16,7 +16,7 @@ Maui scheduler would give its type as &quot;sched/maui.&quot; It would implement
 the Slurm Scheduler API.</p>
 <h2>Versioning</h2>
 <p>Slurm plugin version numbers comprise a major and minor revision number. As
-SLURM evolves, changes to the individual plugin APIs may be necessary to implement
+Slurm evolves, changes to the individual plugin APIs may be necessary to implement
 new features. The major number identifies the version of the applicable API that
 the plugin implements. Incrementing the major version number denotes that the
 API has changed significantly and possibly incompatibly over prior versions.</p>
@@ -25,9 +25,9 @@ third parties, version skew may occur in a Slurm installation. Slurm may support
 multiple versions of each API in a backward-compatible fashion to provide time
 for plugin authors to update their plugins. Conversely, the plugin may support
 multiple versions of the API in order to be transparently portable across different
-SLURM installations. The version of the API spoken in an installation will be
+Slurm installations. The version of the API spoken in an installation will be
 the highest-numbered version which is common to both Slurm and the plugin. Each
-SLURM release will document which API versions it supports. From time to time
+Slurm release will document which API versions it supports. From time to time
 ancient API versions will be deprecated.</p>
 <p>The minor version number is incremented at the discretion of the plugin author
 and denotes revisions or upgrades particular to that implementation. If two or
@@ -81,8 +81,8 @@ after the last plugin-specific API call is made.</p>
 <p><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
-The system <span class="commandline">_init()</span> is called before the SLURM
-<span class="commandline">init()</span>, and the SLURM
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 <p>The functions need not appear. The plugin may provide either

@@ -26,8 +26,8 @@ commit the changes and exit.
 
 .TP "7"
 \f3Note: \fP\c
-The content's of SLURM's database are maintained in lower case. This may
-result in some \f3sacctmgr\fP output differing from that of other SLURM
+The content's of Slurm's database are maintained in lower case. This may
+result in some \f3sacctmgr\fP output differing from that of other Slurm
 commands.
 
 .SH "OPTIONS"
@@ -956,7 +956,7 @@ completion.
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
 
 The \fBsacct\fR command is the exclusive command to display job
-records from the SLURM database.
+records from the Slurm database.
 
 .SH "SPECIFICATIONS FOR QOS"
 \fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
@@ -1177,8 +1177,8 @@ inside the limit.
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
+value of \-1.  (NOTE: This limit is not currently enforced in Slurm.
+You can still set this, but have to wait for future versions of Slurm
 before it is enforced.)
 
 .TP
@@ -1224,8 +1224,8 @@ value of \-1.
 \fIMaxCPUs\fP
 Maximum number of CPUs each job is able to use.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
+value of \-1.  (NOTE: This limit is not currently enforced in Slurm.
+You can still set this, but have to wait for future versions of Slurm
 before it is enforced.)
 
 .TP
@@ -1582,10 +1582,10 @@ e.g. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
 
 .SH "FLAT FILE DUMP AND LOAD"
-sacctmgr has the capability to load and dump SLURM association data to and
+sacctmgr has the capability to load and dump Slurm association data to and
 from a file.  This method can easily add a new cluster or copy an
 existing clusters associations into a new cluster with similar
-accounts. Each file contains SLURM association data for a single
+accounts. Each file contains Slurm association data for a single
 cluster.  Comments can be put into the file with the # character.
 Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
 User\fP. Following the title is a space, dash, space, entity value,
@@ -1881,7 +1881,7 @@ environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
 \fBSLURM_CONF\fR
-The location of the SLURM configuration file.
+The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
 \fBNOTE:\fR There is an order to set up accounting associations.
@@ -2091,15 +2091,15 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
-This file is part of SLURM, a resource management program.
+This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
 .LP
-SLURM is free software; you can redistribute it and/or modify it under
+Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
 Software Foundation; either version 2 of the License, or (at your option)
 any later version.
 .LP
-SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
