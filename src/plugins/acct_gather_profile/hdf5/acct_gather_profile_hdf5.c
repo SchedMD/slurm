@@ -509,7 +509,7 @@ extern int acct_gather_profile_p_create_dataset(
 		case PROFILE_FIELD_DOUBLE:
 			type_size += sizeof(double);
 			break;
-		default:
+		case PROFILE_FIELD_NOT_SET:
 			break;
 		}
 		dataset_loc++;
@@ -546,7 +546,7 @@ extern int acct_gather_profile_p_create_dataset(
 			field_id = H5T_NATIVE_DOUBLE;
 			field_size = sizeof(double);
 			break;
-		default:
+		case PROFILE_FIELD_NOT_SET:
 			break;
 		}
 		if (H5Tinsert(dtype_id, dataset_loc->name,

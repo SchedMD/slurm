@@ -384,7 +384,7 @@ extern char *acct_gather_profile_dataset_str(
 					    dataset->name, *(double *)data);
 			data += sizeof(double);
 			break;
-		default:
+		case PROFILE_FIELD_NOT_SET:
 			break;
 		}
 
