@@ -471,13 +471,24 @@ int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
+	int len;
+	char *buf;
 
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
 	} else if (job->array_task_str) {
-		snprintf(id, FORMAT_STRING_SIZE, "%u_[%s]",
-			 job->array_job_id, job->array_task_str);
-		_print_str(id, width, right, true);
+		if (getenv("SLURM_BITSTR_LEN")) {
+			len = strlen(job->array_task_str) + 64;
+			buf = xmalloc(len);
+			sprintf(buf, "%u_[%s]\n", job->array_job_id,
+				job->array_task_str);
+			_print_str(buf, width, right, false);
+			xfree(buf);
+		} else {
+			snprintf(id, FORMAT_STRING_SIZE, "%u_[%s]",
+				 job->array_job_id, job->array_task_str);
+			_print_str(id, width, right, true);
+		}
 	} else if (job->array_task_id != NO_VAL) {
 		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
 			 job->array_job_id, job->array_task_id);
