@@ -1905,6 +1905,12 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
 
+	if (job_ptr->job_resrcs == NULL) {
+		error("%s: job %u is missing job_resrcs info",
+		      __func__, job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 
 	cred_arg.jobid     = launch_msg_ptr->job_id;
