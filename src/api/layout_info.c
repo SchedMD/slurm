@@ -115,7 +115,6 @@ void slurm_print_layout_info ( FILE* out, layout_info_msg_t *layout_info_ptr,
 {
 	char *nl;
 	int i;
-
 	for (i = 0; i < layout_info_ptr->record_count; i++) {
 		if (one_liner) {
 			while ((nl = strchr(layout_info_ptr->records[i], '\n')))
@@ -123,6 +122,4 @@ void slurm_print_layout_info ( FILE* out, layout_info_msg_t *layout_info_ptr,
 		}
 		fprintf ( out, "%s", layout_info_ptr->records[i]);
 	}
-	if (!one_liner)
-		fprintf(out, "\n");
 }

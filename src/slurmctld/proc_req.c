@@ -4029,8 +4029,10 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_LAYOUT_INFO");
 	if (layout_req_msg->layout_type == NULL) {
 		dump = slurm_get_layouts();
-		pack32((uint32_t) 1, buffer);	/* Record count */
+		pack32((uint32_t) 2, buffer);	/* 1 record + trailing \n */
 		packstr(dump, buffer);
+		packstr("\n", buffer); /* to be consistent with
+					* layouts internal prints */
 		xfree(dump);
 	} else {
 		if ( layouts_pack_layout(layout_req_msg->layout_type,
