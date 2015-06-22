@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix squeue to print array task ids according to man page when
     SLURM_BITSTR_LEN is defined in the environment.
  -- In squeue sort jobs based on array jobid if available.
+ -- Fix the calculation of job energy by not including the NO_VAL values.
 
 * Changes in Slurm 14.11.7
 ==========================
