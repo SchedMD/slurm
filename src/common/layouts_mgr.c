@@ -2641,14 +2641,14 @@ int layouts_state_save_layout(char* l_type)
 	static int high_buffer_size = (1024 * 1024);
 	Buf buffer = init_buf(high_buffer_size);
 	FILE* fdump;
-	uint32_t utmp32;
+	uint32_t utmp32, record_count = 0;
 	char *tmp_str = NULL;
 
 	DEF_TIMERS;
 	START_TIMER;
 
 	/* pack the targeted layout into a tmp buffer */
-	error_code = layouts_pack_layout(l_type, NULL, NULL, 0, buffer);
+	error_code = layouts_pack_layout(l_type, "*", NULL, 0, buffer);
 
 	if (error_code != SLURM_SUCCESS) {
 		error("unable to save layout[%s] state", l_type);
@@ -2668,7 +2668,11 @@ int layouts_state_save_layout(char* l_type)
 		      new_file);
 		error_code = errno;
 	} else {
-		/* start dumping packed strings into the temporary file */
+		/* extract the amount of records and then proceed
+		 * then dump packed strings into the temporary file */
+		safe_unpack32(&record_count, buffer);
+		debug("layouts/%s: dumping %u records into state file",
+		      l_type, record_count);
 		while (remaining_buf(buffer) > 0) {
 			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
 			if (tmp_str != NULL) {
