@@ -3592,7 +3592,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 				cr_get_coremap_offset(node_bitmap_inx);
 			allocated = 0;
 
-			for (i_core=0;i_core < cores_in_a_node;i_core++) {
+			for (i_core = 0; i_core < cores_in_a_node; i_core++) {
 #if _DEBUG
 				info("i_core: %d, start: %d, allocated: %d",
 				     i_core, start, allocated);
@@ -3600,8 +3600,8 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
-				bit_set(*core_bitmap,
-					global_core_start + i_core);
+					bit_set(*core_bitmap,
+						global_core_start + i_core);
 				}
 			}
 #if _DEBUG
