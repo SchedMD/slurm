@@ -372,6 +372,8 @@ static void _validate_switches(void)
 		}
 		if (resolved)
 			break;
+		if (depth > 20)	/* Prevent infinite loop */
+			fatal("Switch configuration is not a tree");
 	}
 
 	switch_levels = 0;

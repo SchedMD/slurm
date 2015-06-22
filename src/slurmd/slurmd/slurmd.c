@@ -175,7 +175,8 @@ static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
 static void      _install_fork_handlers(void);
-static void 	 _kill_old_slurmd(void);
+static bool      _is_core_spec_cray(void);
+static void      _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
 static void      _msg_engine(void);
 static uint64_t  _parse_msg_aggr_params(int type, char *params);
@@ -2051,6 +2052,17 @@ static int _resource_spec_init(void)
 	return SLURM_SUCCESS;
 }
 
+/* Return TRUE if CoreSpecPlugin=core_spec/cray */
+static bool _is_core_spec_cray(void)
+{
+	bool use_core_spec_cray = false;
+	char *core_spec_plugin = slurm_get_core_spec_plugin();
+	if (core_spec_plugin && strstr(core_spec_plugin, "cray"))
+		use_core_spec_cray = true;
+	xfree(core_spec_plugin);
+	return use_core_spec_cray;
+}
+
 /*
  * If configured, initialize core specialization
  */
@@ -2061,6 +2073,10 @@ static int _core_spec_init(void)
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
 		debug("Resource spec: No specialized cores configured by "
 		      "default on this node");
+		return SLURM_SUCCESS;
+	}
+	if (_is_core_spec_cray()) {	/* No need to use cgroups */
+		debug("Using core_spec/cray to manage specialized cores");
 		return SLURM_SUCCESS;
 	}
 	if (!check_cgroup_job_confinement()) {
