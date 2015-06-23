@@ -154,6 +154,7 @@ static void	_load_state(void);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
 static int	_parse_interactive(struct job_descriptor *job_desc);
 static void	_purge_bb_files(struct job_record *job_ptr);
+static void	_python2json(char *buf);
 static int	_queue_stage_in(struct job_record *job_ptr);
 static int	_queue_stage_out(struct job_record *job_ptr);
 static void	_queue_teardown(uint32_t job_id, bool hurry);
@@ -166,6 +167,30 @@ static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
 				uint32_t job_id);
+
+/* Convert a Python string to real JSON format. Specifically replace single
+ * quotes with double quotes and strip leading "u" before the single quotes.
+ * See: https://github.com/stedolan/jq/issues/312 */
+static void _python2json(char *buf)
+{
+	bool quoted = false;
+	int i, o;
+
+	if (!buf)
+		return;
+	for (i = 0, o = 0; ; i++) {
+		if (buf[i] == '\'') {
+			buf[o++] = '\"';
+			quoted = !quoted;
+		} else if ((buf[i] == 'u') && (buf[i+1] == '\'') && !quoted) {
+			/* Skip over unicode flag */
+		} else {
+			buf[o++] = buf[i];
+			if (buf[i] == '\0')
+				break;
+		}
+	}
+}
 
 /* Free an array of xmalloced records. The array must be NULL terminated */
 static void _free_script_argv(char **script_argv)
@@ -2455,6 +2480,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 		return ents;
 	}
 
+	_python2json(output_buf);
 	j = json_tokener_parse(output_buf);
 	if (j == NULL) {
 		error("%s: json parser failed on %s", __func__, output_buf);
@@ -2486,6 +2512,7 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	}
 	_free_script_argv(script_argv);
 
+	_python2json(string);
 	j = json_tokener_parse(string);
 	if (j == NULL) {
 		error("%s: json parser failed on %s", __func__, string);
