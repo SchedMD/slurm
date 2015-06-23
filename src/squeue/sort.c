@@ -362,10 +362,24 @@ static int _sort_job_by_id(void *void1, void *void2)
 	int diff;
 	job_info_t *job1;
 	job_info_t *job2;
+	uint32_t job_id1, job_id2;
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	diff = _diff_uint32(job1->job_id , job2->job_id);
+	if (job1->array_task_id == NO_VAL)
+		job_id1 = job1->job_id;
+	else
+		job_id1 = job1->array_job_id;
+	if (job2->array_task_id == NO_VAL)
+		job_id2 = job2->job_id;
+	else
+		job_id2 = job2->array_job_id;
+	if (job_id1 == job_id2) {
+		job_id1 = job1->array_task_id;
+		job_id2 = job2->array_task_id;
+	}
+
+	diff = _diff_uint32(job_id1, job_id2);
 
 	if (reverse_order)
 		diff = -diff;

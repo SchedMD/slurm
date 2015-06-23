@@ -212,6 +212,22 @@ static void _advance_time(time_t *res_time, int day_cnt)
 	}
 }
 
+static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
+{
+	if (*core_bitmap)
+		return;
+
+#ifdef HAVE_BG
+	if (!cnodes_per_mp) {
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&cnodes_per_mp);
+	}
+	*core_bitmap = cr_create_cluster_core_bitmap(cnodes_per_mp);
+#else
+	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
+#endif
+}
+
 static List _list_dup(List license_list)
 {
 	ListIterator iter;
@@ -2067,9 +2083,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
 							&cnodes_per_mp);
 
-			if (!core_bitmap)
-				core_bitmap = cr_create_cluster_core_bitmap(
-					cnodes_per_mp);
+			_create_cluster_core_bitmap(&core_bitmap);
 			if (!resv_desc_ptr->core_cnt) {
 				resv_desc_ptr->core_cnt =
 					xmalloc(sizeof(uint32_t) * 2);
@@ -2274,9 +2288,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
 	/* FIXME: Support more core based reservation updates */
+#ifndef HAVE_BG
 	if ((resv_ptr->full_nodes == 0) &&
-	    (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list))
+	    (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list)) {
+		info("Core-based reservation %s can not be updated",
+		     resv_desc_ptr->name);
 		return ESLURM_RESERVATION_NOT_USABLE;
+	}
+#endif
 
 	/* Make backup to restore state in case of failure */
 	resv_backup = _copy_resv(resv_ptr);
@@ -2340,7 +2359,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
-	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
+	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
 		xfree(resv_desc_ptr->partition);
 		xfree(resv_ptr->partition);
@@ -2474,6 +2493,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 
 	if (resv_ptr->start_time >= resv_ptr->end_time) {
+		info("Reservation %s request has invalid times (start > end)",
+		     resv_desc_ptr->name);
 		error_code = ESLURM_INVALID_TIME_VALUE;
 		goto update_failure;
 	}
@@ -2517,6 +2538,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 			if (node_name2bitmap(resv_desc_ptr->node_list,
 					    false, &node_bitmap)) {
+				info("Reservation %s request has invalid node name (%s)",
+				     resv_desc_ptr->name,
+				     resv_desc_ptr->node_list);
 				error_code = ESLURM_INVALID_NODE_NAME;
 				goto update_failure;
 			}
@@ -3540,20 +3564,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				int core_mult = 1;
-#ifdef HAVE_BG
-				if (!cnodes_per_mp)
-					select_g_alter_node_cnt(
-						SELECT_GET_NODE_SCALING,
-						&cnodes_per_mp);
-				core_mult = cnodes_per_mp;
-#endif
-
-				if (!*core_bitmap) {
-					*core_bitmap =
-						cr_create_cluster_core_bitmap(
-							core_mult);
-				}
+				_create_cluster_core_bitmap(core_bitmap);
 				bit_or(*core_bitmap, resv_ptr->core_bitmap);
 			}
 		}
@@ -3740,7 +3751,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
-	int i_core, i_node, core_mult = 1;
+	int i_core, i_node;
 	int start = 0;
 	int rep_count = 0;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -3761,17 +3772,8 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 }
 #endif
 
-#ifdef HAVE_BG
-	if (!cnodes_per_mp)
-		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
-					&cnodes_per_mp);
-	core_mult = cnodes_per_mp;
-#endif
-
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
-
-	if (!*core_bitmap)
-		*core_bitmap = cr_create_cluster_core_bitmap(core_mult);
+	_create_cluster_core_bitmap(core_bitmap);
 
 	i_node = 0;
 	while (i_node < total_nodes) {
@@ -3798,7 +3800,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 				cr_get_coremap_offset(node_bitmap_inx);
 			allocated = 0;
 
-			for (i_core=0;i_core < cores_in_a_node;i_core++) {
+			for (i_core = 0; i_core < cores_in_a_node; i_core++) {
 #if _DEBUG
 				info("i_core: %d, start: %d, allocated: %d",
 				     i_core, start, allocated);
@@ -3806,8 +3808,8 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
-				bit_set(*core_bitmap,
-					global_core_start + i_core);
+					bit_set(*core_bitmap,
+						global_core_start + i_core);
 				}
 			}
 #if _DEBUG

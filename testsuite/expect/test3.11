@@ -446,11 +446,11 @@ inc3_11_3
 inc3_11_4
 inc3_11_5
 inc3_11_6
-if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
+if {$cons_res_actived == 1 && $cores_per_node > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
 }
-if {$cons_res_actived == 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0} {
+if {$cons_res_actived == 1 && $cores_per_node > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0} {
 	inc3_11_9
 }
 

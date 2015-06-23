@@ -1028,10 +1028,13 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->sys_cpu_usec -= 1E6;
 	}
 	dest->act_cpufreq 	+= from->act_cpufreq;
-	if (from->energy.consumed_energy == NO_VAL)
-		dest->energy.consumed_energy = NO_VAL;
-	else
-		dest->energy.consumed_energy += from->energy.consumed_energy;
+	if (dest->energy.consumed_energy != NO_VAL) {
+		if (from->energy.consumed_energy == NO_VAL)
+			dest->energy.consumed_energy = NO_VAL;
+		else
+			dest->energy.consumed_energy +=
+					from->energy.consumed_energy;
+	}
 
 	if (dest->max_disk_read < from->max_disk_read) {
 		dest->max_disk_read = from->max_disk_read;
