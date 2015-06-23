@@ -98,7 +98,6 @@ $ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 &gt; srun --mpi=pmi2 -n 4 a.out
 </pre>
 
-
 <p>If the ports reserved for a job step are found by the Open MPI library
 to be in use, a message of this form will be printed and the job step
 will be re-launched:<br>
@@ -107,6 +106,12 @@ After three failed attempts, the job step will be aborted.
 Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
 ports.</p>
+
+<p>NOTE: Some kernels and system configurations have resulted in a locked memory
+too small for proper OpemMPI functionality, resulting in application failure
+with a segmentation fault. This may be fixed by configuring the slurmd daemon
+to execute with a larger limit. For example, add "LimitMEMLOCK=infinity" to
+your slurmd.service file.</p>
 
 <hr size=4 width="100%">
 
@@ -512,6 +517,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 20 April 2015</p>
+<p style="text-align:center;">Last modified 23 June 2015</p>
 
 <!--#include virtual="footer.txt"-->
