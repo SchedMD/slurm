@@ -37,6 +37,10 @@ set exit_code    0
 
 print_header $test_id
 
+if {[file executable $qalter] == 0} {
+	send_user "\nWARNING: $qalter does not exits\n"
+	exit 0
+}
 if {[file executable $qsub] == 0} {
 	send_user "\nWARNING: $qsub does not exits\n"
 	exit 0
