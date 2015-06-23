@@ -50,7 +50,11 @@
 #  include <json-c/json.h>
 #endif
 
-//FIXME: Test in "configure" to find the header is required
+/* Cray's plan at one point was to make a DataWarp API available. That plan
+ * seems to have been abandonded. If it moves forward, the configure script
+ * needs modification to see if dw_wlm_lib.h exists and the function calls
+ * in this module must be validated. The command calls could eventually be
+ * removed. */
 #if HAVE_DW_WLM_LIB_H
 #  include <dw_wlm_lib.h>
 #endif
@@ -138,6 +142,7 @@ static bb_entry_t *
 static void	_bb_free_entry(struct bb_entry *ents, int num_ent);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
+static void	_free_script_argv(char **script_argv);
 static bb_job_t *
 		_get_bb_spec(struct job_record *job_ptr);
 static void	_job_queue_del(void *x);
@@ -152,7 +157,6 @@ static void	_purge_bb_files(struct job_record *job_ptr);
 static int	_queue_stage_in(struct job_record *job_ptr);
 static int	_queue_stage_out(struct job_record *job_ptr);
 static void	_queue_teardown(uint32_t job_id, bool hurry);
-static char *	_set_cmd_path(char *cmd);
 static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
@@ -162,6 +166,16 @@ static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
 				uint32_t job_id);
+
+/* Free an array of xmalloced records. The array must be NULL terminated */
+static void _free_script_argv(char **script_argv)
+{
+	int i;
+
+	for (i = 0; script_argv[i]; i++)
+		xfree(script_argv[i]);
+	xfree(script_argv);
+}
 
 static void _job_queue_del(void *x)
 {
@@ -224,26 +238,11 @@ static void _purge_bb_files(struct job_record *job_ptr)
 /* Validate that our configuration is valid for this plugin type */
 static void _test_config(void)
 {
-	if (!bb_state.bb_config.get_sys_state)
-		fatal("%s: GetSysState is NULL", __func__);
-}
-
-/* Return the path to the specified command using the configured "get_sys_state"
- * path as a base.
- * xfree the return value */
-static char *_set_cmd_path(char *cmd)
-{
-	char *tmp, *sep;
-
-	tmp = xstrdup(bb_state.bb_config.get_sys_state);
-	sep = strrchr(tmp, '/');
-	if (sep)
-		sep[1] = '\0';
-	else
-		tmp[0] = '\0';
-	xstrcat(tmp, cmd);
-
-	return tmp;
+	if (!bb_state.bb_config.get_sys_state) {
+		debug("%s: GetSysState is NULL", __func__);
+		bb_state.bb_config.get_sys_state =
+			xstrdup("/opt/cray/dw_wlm/default/bin/dw_wlm_cli");
+	}
 }
 
 static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec)
@@ -619,23 +618,31 @@ static int _queue_stage_in(struct job_record *job_ptr)
 				    job_ptr->sched_nodes, job_ptr->job_id))
 			xfree(client_nodes_file_nid);
 	}
-	setup_argv = xmalloc(sizeof(char *) * 10);
-	setup_argv[0] = xstrdup("dws_setup");
-	xstrfmtcat(setup_argv[1], "--token=%u", job_ptr->job_id);
-	xstrfmtcat(setup_argv[2], "--caller=%s", "SLURM");
-	xstrfmtcat(setup_argv[3], "--owner=%d", job_ptr->user_id);
-	xstrfmtcat(setup_argv[4], "--capacity=%s", capacity);
-	xstrfmtcat(setup_argv[5], "--job-environment-file=%s/setup_env",
-		   job_dir);
+	setup_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
+	setup_argv[0] = xstrdup("dw_wlm_cli");
+	setup_argv[1] = xstrdup("--function");
+	setup_argv[2] = xstrdup("setup");
+	setup_argv[3] = xstrdup("--token");
+	xstrfmtcat(setup_argv[4], "%u", job_ptr->job_id);
+	setup_argv[5] = xstrdup("--caller");
+	setup_argv[6] = xstrdup("SLURM");
+	setup_argv[7] = xstrdup("--user");
+	xstrfmtcat(setup_argv[8], "%d", job_ptr->user_id);
+	setup_argv[9] = xstrdup("--capacity");
+	xstrfmtcat(setup_argv[10], "%s", capacity);
+	setup_argv[11] = xstrdup("--environmentfile");
+	xstrfmtcat(setup_argv[12], "%s/setup_env", job_dir);
 	if (client_nodes_file_nid) {
-		xstrfmtcat(setup_argv[6], "--client-nodes-file-nids=%s",
-			   client_nodes_file_nid);
+		setup_argv[13] = xstrdup("--nidlistfile");
+		xstrfmtcat(setup_argv[14], "%s", client_nodes_file_nid);
 	}
 
-	data_in_argv = xmalloc(sizeof(char *) * 10);
-	data_in_argv[0] = xstrdup("dws_data_in");
-	xstrfmtcat(data_in_argv[1], "--job-environment-file=%s/data_in_env",
-		   job_dir);
+	data_in_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	data_in_argv[0] = xstrdup("dw_wlm_cli");
+	data_in_argv[1] = xstrdup("--function");
+	data_in_argv[2] = xstrdup("data_in");
+	data_in_argv[3] = xstrdup("--environmentfile");
+	xstrfmtcat(data_in_argv[4], "%s/data_in_env", job_dir);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->job_id  = job_ptr->job_id;
@@ -667,9 +674,8 @@ static int _queue_stage_in(struct job_record *job_ptr)
 static void *_start_stage_in(void *x)
 {
 	stage_args_t *stage_args;
-	char *dws_setup_path, *dws_data_in_path;
 	char **setup_argv, **data_in_argv, *resp_msg = NULL;
-	int i, rc = SLURM_SUCCESS, status = 0, timeout;
+	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
 		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
@@ -708,9 +714,10 @@ static void *_start_stage_in(void *x)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
-	dws_setup_path = _set_cmd_path("dws_setup");
+
 	START_TIMER;
-	resp_msg = bb_run_script("dws_setup", dws_setup_path,
+	resp_msg = bb_run_script("dws_setup",
+				 bb_state.bb_config.get_sys_state,
 				 setup_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
@@ -743,13 +750,13 @@ static void *_start_stage_in(void *x)
 		     __func__, teardown_args->job_id, TIME_STR, output_buf);
 	}
 #else
-	dws_data_in_path = _set_cmd_path("dws_data_in");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 24 * 60 * 60 * 1000;	/* One day */
 	START_TIMER;
-	resp_msg = bb_run_script("dws_data_in", dws_data_in_path,
+	resp_msg = bb_run_script("dws_data_in",
+				 bb_state.bb_config.get_sys_state,
 				 data_in_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 5000000) {	/* 5 secs */
@@ -801,15 +808,9 @@ static void *_start_stage_in(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
-	for (i = 0; setup_argv[i]; i++)
-		xfree(setup_argv[i]);
-	xfree(setup_argv);
-	for (i = 0; data_in_argv[i]; i++)
-		xfree(data_in_argv[i]);
-	xfree(data_in_argv);
+	_free_script_argv(setup_argv);
+	_free_script_argv(data_in_argv);
 	xfree(stage_args);
-	xfree(dws_setup_path);
-	xfree(dws_data_in_path);
 	return NULL;
 }
 
@@ -825,14 +826,19 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	post_run_argv = xmalloc(sizeof(char *) * 10);
-	post_run_argv[0] = xstrdup("dws_post_run");
-	xstrfmtcat(post_run_argv[1], "--job-environment-file=%s/post_run_env",
-		   job_dir);
-	data_out_argv = xmalloc(sizeof(char *) * 10);
-	data_out_argv[0] = xstrdup("dws_data_out");
-	xstrfmtcat(data_out_argv[1], "--job-environment-file=%s/data_out_env",
-		   job_dir);
+	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	post_run_argv[0] = xstrdup("dw_wlm_cli");
+	post_run_argv[1] = xstrdup("--function");
+	post_run_argv[2] = xstrdup("post_run");
+	post_run_argv[3] = xstrdup("--environmentfile");
+	xstrfmtcat(post_run_argv[4], "%s/post_run_env", job_dir);
+
+	data_out_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	data_out_argv[0] = xstrdup("dw_wlm_cli");
+	data_out_argv[1] = xstrdup("--function");
+	data_out_argv[2] = xstrdup("data_out");
+	data_out_argv[3] = xstrdup("--environmentfile");
+	xstrfmtcat(data_out_argv[4], "%s/data_out_env", job_dir);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->job_id  = job_ptr->job_id;
@@ -862,9 +868,8 @@ static int _queue_stage_out(struct job_record *job_ptr)
 static void *_start_stage_out(void *x)
 {
 	stage_args_t *stage_args;
-	char *dws_post_run_path, *dws_data_out_path;
 	char **post_run_argv, **data_out_argv, *resp_msg = NULL;
-	int i, rc = SLURM_SUCCESS, status = 0, timeout;
+	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
 		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
@@ -895,13 +900,13 @@ static void *_start_stage_out(void *x)
 		      TIME_STR);
 	}
 #else
-	dws_post_run_path = _set_cmd_path("dws_post_run");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
 	START_TIMER;
-	resp_msg = bb_run_script("dws_post_run", dws_post_run_path,
+	resp_msg = bb_run_script("dws_post_run",
+				 bb_state.bb_config.get_sys_state,
 				 post_run_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
@@ -930,17 +935,17 @@ static void *_start_stage_out(void *x)
 	}
 	if (bb_state.bb_config.debug_flag) {
 		debug("%s: dw_wlm_lib_data_out for %s ran for %s",  __func__,
-		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 		      TIME_STR);
 	}
 #else
-	dws_data_out_path = _set_cmd_path("dws_data_out");
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 24 * 60 * 60 * 1000;	/* One day */
 	START_TIMER;
-	resp_msg = bb_run_script("dws_data_out", dws_data_out_path,
+	resp_msg = bb_run_script("dws_data_out",
+				 bb_state.bb_config.get_sys_state,
 				 data_out_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 5000000) {	/* 5 secs */
@@ -988,15 +993,9 @@ static void *_start_stage_out(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
-	for (i = 0; post_run_argv[i]; i++)
-		xfree(post_run_argv[i]);
-	xfree(post_run_argv);
-	for (i = 0; data_out_argv[i]; i++)
-		xfree(data_out_argv[i]);
-	xfree(data_out_argv);
+	_free_script_argv(post_run_argv);
+	_free_script_argv(data_out_argv);
 	xfree(stage_args);
-	xfree(dws_post_run_path);
-	xfree(dws_data_out_path);
 	return NULL;
 }
 
@@ -1008,13 +1007,15 @@ static void _queue_teardown(uint32_t job_id, bool hurry)
 	pthread_attr_t teardown_attr;
 	pthread_t teardown_tid = 0;
 
-	teardown_argv = xmalloc(sizeof(char *) * 10);
-	teardown_argv[0] = xstrdup("dws_teardown");
-	xstrfmtcat(teardown_argv[1],
-		   "--job-environment-file=%s/hash.%d/job.%u/teardown_env",
+	teardown_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	teardown_argv[0] = xstrdup("dw_wlm_cli");
+	teardown_argv[1] = xstrdup("--function");
+	teardown_argv[2] = xstrdup("teardown");
+	teardown_argv[3] = xstrdup("--environmentfile");
+	xstrfmtcat(teardown_argv[4], "%s/hash.%d/job.%u/teardown_env",
 		   state_save_loc, hash_inx, job_id);
 	if (hurry)
-		teardown_argv[2] = xstrdup("1");
+		teardown_argv[5] = xstrdup("--hurry");
 
 	teardown_args = xmalloc(sizeof(stage_args_t));
 	teardown_args->job_id  = job_id;
@@ -1039,8 +1040,8 @@ static void _queue_teardown(uint32_t job_id, bool hurry)
 static void *_start_teardown(void *x)
 {
 	stage_args_t *teardown_args;
-	char *dws_teardown_path, **teardown_argv, *resp_msg = NULL;
-	int i, status = 0, timeout;
+	char **teardown_argv, *resp_msg = NULL;
+	int status = 0, timeout;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr = NULL;
 	DEF_TIMERS;
@@ -1053,7 +1054,6 @@ static void *_start_teardown(void *x)
 	teardown_argv = teardown_args->args1;
 
 	START_TIMER;
-	dws_teardown_path = _set_cmd_path("dws_teardown");
 	if (teardown_args->timeout)
 		timeout = teardown_args->timeout * 1000;
 	else
@@ -1073,8 +1073,9 @@ static void *_start_teardown(void *x)
 		     __func__, teardown_args->job_id, TIME_STR, output_buf);
 	}
 #else
-	resp_msg = bb_run_script("dws_teardown", dws_teardown_path,
-				teardown_argv, timeout, &status);
+	resp_msg = bb_run_script("dws_teardown",
+				 bb_state.bb_config.get_sys_state,
+				 teardown_argv, timeout, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    (bb_state.bb_config.debug_flag)) {
@@ -1105,12 +1106,8 @@ static void *_start_teardown(void *x)
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-	for (i = 0; teardown_argv[i]; i++)
-		xfree(teardown_argv[i]);
-	xfree(teardown_argv);
-	xfree(teardown_argv);
+	_free_script_argv(teardown_argv);
 	xfree(teardown_args);
-	xfree(dws_teardown_path);
 	return NULL;
 }
 
@@ -1908,8 +1905,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 			      bool is_job_array)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
-	char *resp_msg = NULL, **script_argv, *dws_job_process_path;
-	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
+	char *resp_msg = NULL, **script_argv;
+	int hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
 	DEF_TIMERS;
 #if HAVE_DW_WLM_LIB_H
@@ -1939,19 +1936,24 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xstrfmtcat(script_file, "%s/script", job_dir);
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
-	dws_job_process_path = _set_cmd_path("dws_job_process");
-	script_argv = xmalloc(sizeof(char *) * 10);
-	script_argv[0] = xstrdup("dws_job_process");
-	xstrfmtcat(script_argv[1], "--job=%s", script_file);
-	xstrfmtcat(script_argv[2], "--setup-env-file=%s/setup_env", job_dir);
-	xstrfmtcat(script_argv[3], "--data-in-env-file=%s/data_in_env",job_dir);
-	xstrfmtcat(script_argv[4], "--pre-run-env-file=%s/pre_run_env",job_dir);
-	xstrfmtcat(script_argv[5], "--post-run-env-file=%s/post_run_env",
-		   job_dir);
-	xstrfmtcat(script_argv[6], "--data-out-env-file=%s/data_out_env",
-		   job_dir);
-	xstrfmtcat(script_argv[7], "--teardown-env-file=%s/teardown_env",
-		  job_dir);
+	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("job_process");
+	script_argv[3] = xstrdup("--job");
+	xstrfmtcat(script_argv[4], "%s", script_file);
+	script_argv[5] = xstrdup("--setupfile");
+	xstrfmtcat(script_argv[6], "%s/setup_env", job_dir);
+	script_argv[7] = xstrdup("--datainfile");
+	xstrfmtcat(script_argv[8], "%s/data_in_env", job_dir);
+	script_argv[9] = xstrdup("--prerunfile");
+	xstrfmtcat(script_argv[10], "%s/pre_run_env", job_dir);
+	script_argv[11] = xstrdup("--postrunfile");
+	xstrfmtcat(script_argv[12], "%s/post_run_env", job_dir);
+	script_argv[13] = xstrdup("--dataoutfile");
+	xstrfmtcat(script_argv[14], "%s/data_out_env", job_dir);
+	script_argv[15] = xstrdup("--teardownfile");
+	xstrfmtcat(script_argv[16], "%s/teardown_env", job_dir);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	START_TIMER;
@@ -1989,7 +1991,8 @@ teardown_env_filename = script_argv[7];
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
 #else
-	resp_msg = bb_run_script("dws_job_process", dws_job_process_path,
+	resp_msg = bb_run_script("dws_job_process",
+				 bb_state.bb_config.get_sys_state,
 				 script_argv, 2000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
@@ -2011,13 +2014,10 @@ teardown_env_filename = script_argv[7];
 	if (is_job_array)
 		_purge_job_files(job_dir);
 
-	for (i = 0; script_argv[i]; i++)
-		xfree(script_argv[i]);
-	xfree(script_argv);
+	_free_script_argv(script_argv);
 	xfree(hash_dir);
 	xfree(job_dir);
 	xfree(script_file);
-	xfree(dws_job_process_path);
 
 	return rc;
 }
@@ -2195,9 +2195,9 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 extern int bb_p_job_begin(struct job_record *job_ptr)
 {
 	char *pre_run_env_file = NULL, *client_nodes_file_nid = NULL;
-	char *dws_pre_run_path = NULL, **pre_run_argv = NULL;
+	char **pre_run_argv = NULL;
 	char *job_dir = NULL;
-	int i, hash_inx, rc = SLURM_SUCCESS, status = 0;
+	int hash_inx, rc = SLURM_SUCCESS, status = 0;
 	bb_alloc_t *bb_ptr;
 	char jobid_buf[32];
 	DEF_TIMERS;
@@ -2264,14 +2264,15 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			      TIME_STR);
 		}
 #else
-//FIXME: Remove bb_run_script logic once the API is functional
 		pre_run_argv = xmalloc(sizeof(char *) * 10);
-		pre_run_argv[0] = xstrdup("dws_pre_run");
-		xstrfmtcat(pre_run_argv[1],
-			   "--job-environment-file=%s/pre_run_env", job_dir);
-		dws_pre_run_path = _set_cmd_path("dws_pre_run");
+		pre_run_argv[0] = xstrdup("dw_wlm_cli");
+		pre_run_argv[1] = xstrdup("--function");
+		pre_run_argv[2] = xstrdup("pre_run");
+		pre_run_argv[3] = xstrdup("--environmentfile");
+		xstrfmtcat(pre_run_argv[4], "%s/pre_run_env", job_dir);
 		START_TIMER;
-		resp_msg = bb_run_script("dws_pre_run", dws_pre_run_path,
+		resp_msg = bb_run_script("dws_pre_run",
+					 bb_state.bb_config.get_sys_state,
 					 pre_run_argv, 2000, &status);
 		END_TIMER;
 		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
@@ -2302,16 +2303,13 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			rc = SLURM_ERROR;
 		}
 		xfree(resp_msg);
-		for (i = 0; pre_run_argv[i]; i++)
-			xfree(pre_run_argv[i]);
-		xfree(pre_run_argv);
+		_free_script_argv(pre_run_argv);
 #endif
 	}
 
 	xfree(job_dir);
 	xfree(pre_run_env_file);
 	xfree(client_nodes_file_nid);
-	xfree(dws_pre_run_path);
 	return rc;
 }
 
@@ -2465,14 +2463,13 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	}
 	free(output_buf);
 #else
-//FIXME: Remove bb_run_script logic once the API is functional
 	char *string;
 	char **script_argv;
-	int i;
 
-	script_argv = xmalloc(sizeof(char *) * 3);
-	xstrfmtcat(script_argv[0], "%s", "dws_pools");
-	xstrfmtcat(script_argv[1], "%s", "pools");
+	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("pools");
 
 	START_TIMER;
 	string = bb_run_script("dws_pools",
@@ -2482,16 +2479,12 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: dws_pools ran for %s", __func__, TIME_STR);
 	if (string == NULL) {
-		error("%s: %s did not return any pool",
+		error("%s: %s returned no pools",
 		      __func__, state_ptr->bb_config.get_sys_state);
-		for (i = 0; script_argv[i]; i++)
-			xfree(script_argv[i]);
-		xfree(script_argv);
+		_free_script_argv(script_argv);
 		return ents;
 	}
-	for (i = 0; script_argv[i]; i++)
-		xfree(script_argv[i]);
-	xfree(script_argv);
+	_free_script_argv(script_argv);
 
 	j = json_tokener_parse(string);
 	if (j == NULL) {
