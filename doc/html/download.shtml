@@ -260,12 +260,20 @@ there is
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
 <li><b>Accounting Tools</b><br>
-UBMoD is a web based tool for displaying accounting data from various resource
-managers. It aggregates the accounting data from sacct into a MySQL data
-warehouse and provide a front end web interface for browsing the data.
-For more information, see
+<ul>
+<li><b>UBMoD</b> is a web based tool for displaying accounting data from various
+resource managers. It aggregates the accounting data from sacct into a MySQL
+data warehouse and provide a front end web interface for browsing the data.
+For more information, see the
 <a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
-<a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
+<a href="https://github.com/ubccr/ubmod">source code</a>.<br></li>
+
+<li><a href="http://xdmod.sourceforge.net"><b>XDMoD</b></a> (XD Metrics on Demand)
+is an NSF-funded open source tool designed to audit and facilitate the utilization
+of the XSEDE cyberinfrastructure by providing a wide range of metrics on XSEDE
+resources, including resource utilization, resource performance, and impact on
+scholarship and research.</li>
+</ul></li><br>
 
 <li><b>STUBL (Slurm Tools and UBiLities)</b><br>
 STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
@@ -355,6 +363,6 @@ easy and elegantly manner.
 
 </ul>
 
-<p style="text-align:center;">Last modified 29 April 2015</p>
+<p style="text-align:center;">Last modified 24 June 2015</p>
 
 <!--#include virtual="footer.txt"-->
