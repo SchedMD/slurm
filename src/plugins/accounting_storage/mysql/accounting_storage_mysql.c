@@ -2218,7 +2218,12 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
-	int rc = check_connection(mysql_conn);
+	int rc;
+
+	rc = check_connection(mysql_conn);
+	if (rc != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
 	/* always reset this here */
 	mysql_conn->cluster_deleted = 0;
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_CLUSTER_DELETED))
