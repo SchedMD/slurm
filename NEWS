@@ -299,7 +299,8 @@ documents those changes that are of interest to users and administrators.
  -- Do not consider nodes explicitly powered up as DOWN with reason of "Node
     unexpected rebooted".
  -- Use correct slurmd spooldir when creating cpu-frequency locks.
- -- Deprecated TICKET_BASED fairshare. Consider using the FAIR_TREE algorithm.
+ -- Note that TICKET_BASED fairshare will be deprecated in the future. Consider
+    using the FAIR_TREE algorithm instead.
  -- Set job's reason to BadConstaints when job can't run on any node.
  -- Prevent abort on update of reservation with no nodes (licenses only).
  -- Prevent slurmctld from dumping core ifjob_resrcs is missing in the
