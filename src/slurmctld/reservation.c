@@ -1886,6 +1886,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->flags == NO_VAL)
 		resv_desc_ptr->flags = 0;
 	else {
+#ifdef HAVE_BG
+		resv_desc_ptr->flags &= (~RESERVE_FLAG_REPLACE);
+#endif
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
 					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS |
@@ -2328,6 +2331,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
+#ifndef HAVE_BG
 		if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 			    (resv_ptr->full_nodes == 0)) {
@@ -2336,6 +2340,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			}
 			resv_ptr->flags |= RESERVE_FLAG_REPLACE;
 		}
+#endif
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
 			    (resv_desc_ptr->partition == NULL)) {

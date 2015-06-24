@@ -357,7 +357,8 @@ $ scontrol create reservation user=operator nodes=tux8 \
 <p>Slurm can create an advanced reservation for which nodes which are allocated
 to jobs are automatically replaced with new idle nodes.
 The effect of this is to always maintain a constant size pool of resources.
-This is accomplished by using a "replace" flag as shown in the example below.</p>
+This is accomplished by using a "replace" flag as shown in the example below.
+This option is not supported on IBM Bluegene systems.</p>
 <pre>
 $ scontrol create reservation starttime=now duration=60 \
   users=foo nodecnt=2 flags=replace
@@ -421,7 +422,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 15 April 2015</p>
+<p style="text-align: center;">Last modified 24 June 2015</p>
 
 <!--#include virtual="footer.txt"-->
 

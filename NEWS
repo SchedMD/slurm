@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Enable native Slurm backup controller to reside on an external Cray node
     when the "no_backup_scheduling" SchedulerParameter is used.
  -- Removed TICKET_BASED fairshare. Consider using the FAIR_TREE algorithm.
+ -- Disable advanced reservation "REPLACE" option on IBM Bluegene systems.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

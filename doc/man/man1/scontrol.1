@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2015" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1403,6 +1403,7 @@ This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation.
+This option is not supported on IBM Bluegene systems.
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)
