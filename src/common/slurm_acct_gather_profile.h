@@ -67,7 +67,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define NO_PARENT -1
-#define TOD_LEN 24
 
 typedef enum {
 	PROFILE_ENERGY,
@@ -79,7 +78,6 @@ typedef enum {
 
 typedef enum {
 	PROFILE_FIELD_NOT_SET,
-	PROFILE_FIELD_TOD,
 	PROFILE_FIELD_UINT64,
 	PROFILE_FIELD_DOUBLE
 } acct_gather_profile_field_type_t;

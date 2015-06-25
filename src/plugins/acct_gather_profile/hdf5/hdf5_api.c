@@ -48,19 +48,13 @@
 
 #include "hdf5_api.h"
 
-static hid_t typTOD;
-
 extern void profile_init(void)
 {
-	typTOD = H5Tcopy (H5T_C_S1);
-	H5Tset_size (typTOD, TOD_LEN); /* create string of length TOD_LEN */
-
 	return;
 }
 
 extern void profile_fini(void)
 {
-	H5Tclose(typTOD);
 	H5close(); /* make sure all H5 Objects are closed */
 
 	return;

@@ -100,8 +100,6 @@ const char plugin_name[] = "AcctGatherProfile hdf5 plugin";
 const char plugin_type[] = "acct_gather_profile/hdf5";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-hid_t typTOD;
-
 typedef struct {
 	char *dir;
 	uint32_t def;
@@ -500,9 +498,6 @@ extern int acct_gather_profile_p_create_dataset(
 	type_size = sizeof(uint64_t) * 2; /* size for time field */
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
-		case PROFILE_FIELD_TOD:
-			type_size += TOD_LEN;
-			break;
 		case PROFILE_FIELD_UINT64:
 			type_size += sizeof(uint64_t);
 			break;
@@ -534,10 +529,6 @@ extern int acct_gather_profile_p_create_dataset(
 	offset = sizeof(uint64_t) * 2;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		switch (dataset_loc->type) {
-		case PROFILE_FIELD_TOD:
-			field_id = typTOD;
-			field_size = TOD_LEN;
-			break;
 		case PROFILE_FIELD_UINT64:
 			field_id = H5T_NATIVE_UINT64;
 			field_size = sizeof(uint64_t);
