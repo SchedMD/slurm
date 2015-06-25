@@ -912,8 +912,8 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 {
 	if (!mysql_conn) {
 		error("We need a connection to run this");
-		errno = SLURM_ERROR;
-		return SLURM_ERROR;
+		errno = ESLURM_DB_CONNECTION;
+		return ESLURM_DB_CONNECTION;
 	} else if (mysql_db_ping(mysql_conn) != 0) {
 		if (mysql_db_get_db_connection(
 			    mysql_conn, mysql_db_name, mysql_db_info)
@@ -2267,14 +2267,12 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
-	int rc;
-
-	rc = check_connection(mysql_conn);
-	if (rc != SLURM_SUCCESS)
-		return ESLURM_DB_CONNECTION;
+	int rc = check_connection(mysql_conn);
 
 	/* always reset this here */
-	mysql_conn->cluster_deleted = 0;
+	if (mysql_conn)
+		mysql_conn->cluster_deleted = 0;
+
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_CLUSTER_DELETED))
 		return rc;
 
