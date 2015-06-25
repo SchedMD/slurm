@@ -1357,13 +1357,13 @@ extern int parse_uint16(char *aval, uint16_t *ival)
  */
 extern int parse_int(const char *name, const char *val, bool positive)
 {
-	char *p;
+	char *p = NULL;
 	int result = 0;
 
 	if (val)
 		result = strtol(val, &p, 10);
 
-	if ((*p != '\0') || (result < 0L)
+	if ((p == NULL) || (p[0] != '\0') || (result < 0L)
 	||  (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", val, name);
 		exit(1);

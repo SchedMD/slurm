@@ -453,7 +453,6 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 		priority_p_set_assoc_usage(fs_assoc);
 
 	/* Priority is 0 -> 1 */
-	priority_fs = 0;
 	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		priority_fs = job_assoc->usage->fs_factor;
 		if (priority_debug) {

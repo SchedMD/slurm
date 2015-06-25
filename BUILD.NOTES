@@ -260,5 +260,7 @@ Before new major release:
  - Test that the prolog and epilog run
  - Run the test suite with SlurmUser NOT being self
  - Test for errors reported by CLANG tool:
+   NOTE: Run "configure" with "--enable-developer" option so assert functions
+   take effect.
    scan-build -k -v make >m.sb.out 2>&1 
    # and look for output in /tmp/scan-build-<DATE>
