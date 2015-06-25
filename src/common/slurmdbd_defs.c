@@ -4187,10 +4187,11 @@ slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, uint16_t rpc_version,
 		pack32(msg->req_cpufreq_max, buffer);
 		pack32(msg->req_cpufreq_gov, buffer);
 		pack32(msg->step_id, buffer);
-		pack16(msg->task_dist, buffer);
+		pack32(msg->task_dist, buffer);
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
 	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		uint16_t old_task_dist;
 		pack32(msg->assoc_id, buffer);
 		pack32(msg->db_index, buffer);
 		pack32(msg->job_id, buffer);
@@ -4202,7 +4203,8 @@ slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, uint16_t rpc_version,
 		pack_time(msg->job_submit_time, buffer);
 		pack32(msg->req_cpufreq_min, buffer);
 		pack32(msg->step_id, buffer);
-		pack16(msg->task_dist, buffer);
+		old_task_dist = task_dist_new2old(msg->task_dist);
+		pack16(old_task_dist, buffer);
 		count = (uint32_t)slurmdb_find_tres_count_in_string(
 			msg->tres_alloc_str, TRES_CPU);
 		pack32(count, buffer);
@@ -4233,11 +4235,12 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->req_cpufreq_max, buffer);
 		safe_unpack32(&msg_ptr->req_cpufreq_gov, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
-		safe_unpack16(&msg_ptr->task_dist, buffer);
+		safe_unpack32(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		uint16_t old_task_dist = 0;
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
@@ -4249,7 +4252,8 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpack32(&msg_ptr->req_cpufreq_min, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
-		safe_unpack16(&msg_ptr->task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		msg_ptr->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack32(&count, buffer);
 		msg_ptr->tres_alloc_str = xstrdup_printf(
 			"%d=%u", TRES_CPU, count);

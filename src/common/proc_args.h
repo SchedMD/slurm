@@ -50,20 +50,8 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
 
-
-#define format_task_dist_states(t)			\
-(t == SLURM_DIST_BLOCK) ? "block" :			\
-(t == SLURM_DIST_CYCLIC) ? "cyclic" :			\
-(t == SLURM_DIST_PLANE) ? "plane" :			\
-(t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" :	\
-(t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" :	\
-(t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" :	\
-(t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" :		\
-(t == SLURM_DIST_BLOCK_CFULL) ? "block:fcyclic" :	\
-(t == SLURM_DIST_CYCLIC_CFULL) ? "cyclic:fcyclic" :	\
-(t == SLURM_DIST_ARBITRARY) ? "arbitrary" :		\
-"unknown"
-
+/* convert task state ID to equivalent string */
+extern char *format_task_dist_states(task_dist_states_t t);
 
 /* print this version of SLURM */
 void print_slurm_version(void);

@@ -4608,13 +4608,14 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
-		pack16(step->task_dist, buffer);
+		pack32(step->task_dist, buffer);
 		pack32(step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		packstr(step->tres_alloc_str, buffer);
 		pack32(step->user_cpu_sec, buffer);
 		pack32(step->user_cpu_usec, buffer);
 	} else	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist;
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
@@ -4634,7 +4635,8 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
-		pack16(step->task_dist, buffer);
+		old_task_dist = task_dist_new2old(step->task_dist);
+		pack16(old_task_dist, buffer);
 		pack32(step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		pack32(step->user_cpu_sec, buffer);
@@ -4675,7 +4677,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->suspended, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
-		safe_unpack16(&step_ptr->task_dist, buffer);
+		safe_unpack32(&step_ptr->task_dist, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->tres_alloc_str,
@@ -4683,6 +4685,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
 	} else 	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t old_task_dist = 0;
 		safe_unpack32(&step_ptr->elapsed, buffer);
 		safe_unpack_time(&step_ptr->end, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -4707,7 +4710,8 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpack32(&step_ptr->suspended, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
-		safe_unpack16(&step_ptr->task_dist, buffer);
+		safe_unpack16(&old_task_dist, buffer);
+		step_ptr->task_dist = task_dist_old2new(old_task_dist);
 		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->user_cpu_sec, buffer);

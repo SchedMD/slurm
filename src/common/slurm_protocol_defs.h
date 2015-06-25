@@ -696,7 +696,7 @@ typedef struct job_step_specs {
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
-	uint16_t task_dist;	/* see enum task_dist_state in slurm.h */
+	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
 	uint32_t user_id;	/* user the job runs as */
@@ -743,7 +743,7 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  *resp_port;   /* array of available response ports      */
 
         /* Distribution at the lowest level of logical processor (lllp) */
-	uint16_t task_dist;  /* --distribution=, -m dist	*/
+	uint32_t task_dist;  /* --distribution=, -m dist	*/
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
 	slurm_addr_t orig_addr;	  /* where message really came from for io */
