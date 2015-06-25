@@ -27,6 +27,9 @@ documents those changes that are of interest to users and administrators.
     when the "no_backup_scheduling" SchedulerParameter is used.
  -- Removed TICKET_BASED fairshare. Consider using the FAIR_TREE algorithm.
  -- Disable advanced reservation "REPLACE" option on IBM Bluegene systems.
+ -- Add support for control distribution of tasks across cores (in addition
+    to existing support for nodes and sockets, (e.g. "block", "cyclic" or
+    "fcyclic" task distribution at 3 levels in the hardware rather than 2).
 
 * Changes in Slurm 15.08.0pre5
 ==============================
