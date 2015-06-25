@@ -82,7 +82,8 @@ strong_alias(jobacctinfo_destroy, slurm_jobacctinfo_destroy);
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_gather_ops {
-	void (*poll_data) (List task_list, bool pgid_plugin, uint64_t cont_id);
+	void (*poll_data) (List task_list, bool pgid_plugin, uint64_t cont_id,
+			   bool profile);
 	int (*endpoll)    ();
 	int (*add_task)   (pid_t pid, jobacct_id_t *jobacct_id);
 } slurm_jobacct_gather_ops_t;
@@ -168,12 +169,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _poll_data(void)
+static void _poll_data(bool profile)
 {
 	/* Update the data */
 	slurm_mutex_lock(&task_list_lock);
 	if (task_list)
-		(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
+		(*(ops.poll_data))(task_list, pgid_plugin, cont_id, profile);
 	slurm_mutex_unlock(&task_list_lock);
 }
 
@@ -200,13 +201,14 @@ static void *_watch_tasks(void *arg)
 	_task_sleep(1);
 	while (!jobacct_shutdown && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
-		_poll_data();
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
 			&acct_gather_profile_timer[type].notify,
 			&acct_gather_profile_timer[type].notify_mutex);
 		slurm_mutex_unlock(&acct_gather_profile_timer[type].
 				   notify_mutex);
+		/* The initial poll is done after the last task is added */
+		_poll_data(1);
 	}
 	return NULL;
 }
@@ -376,6 +378,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	}
 
 	jobacct->pid = pid;
+	memcpy(&jobacct->id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->min_cpu = 0;
 	debug2("adding task %u pid %d on node %u to jobacct",
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
@@ -385,7 +388,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	(*(ops.add_task))(pid, jobacct_id);
 
 	if (poll == 1)
-		_poll_data();
+		_poll_data(1);
 
 	return SLURM_SUCCESS;
 error:
@@ -403,7 +406,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		struct jobacctinfo *ret_jobacct = NULL;
 		ListIterator itr = NULL;
 
-		_poll_data();
+		_poll_data(0);
 
 		slurm_mutex_lock(&task_list_lock);
 		if (!task_list) {
@@ -433,7 +436,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		 * spawned, which would prevent a valid checkpoint/restart
 		 * with some systems */
 		_task_sleep(1);
-		_poll_data();
+		_poll_data(0);
 		return NULL;
 	}
 }
@@ -448,7 +451,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 
 	/* poll data one last time before removing task
 	 * mainly for updating energy consumption */
-	_poll_data();
+	_poll_data(1);
 
 	if (jobacct_shutdown)
 		return NULL;
@@ -585,6 +588,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 		jobacct_id = &temp_id;
 	}
 	memset(jobacct, 0, sizeof(struct jobacctinfo));
+	jobacct->dataset_id = -1;
 	jobacct->sys_cpu_sec = 0;
 	jobacct->sys_cpu_usec = 0;
 	jobacct->user_cpu_sec = 0;

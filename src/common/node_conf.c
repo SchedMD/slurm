@@ -804,7 +804,7 @@ extern struct node_record *create_node_record (
 	node_ptr->node_spec_bitmap = NULL;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
-	node_ptr->energy = acct_gather_energy_alloc();
+	node_ptr->energy = acct_gather_energy_alloc(1);
 	node_ptr->ext_sensors = ext_sensors_alloc();
 	node_ptr->owner = NO_VAL;
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;

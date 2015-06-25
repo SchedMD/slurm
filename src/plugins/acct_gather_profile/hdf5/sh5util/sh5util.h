@@ -1,12 +1,14 @@
 /*****************************************************************************\
- *  common_jag.h - slurm job accounting gather common plugin functions.
+ *  sh5util.h - slurm profile accounting plugin for io and energy using hdf5.
+ *            - Utility to merge node-step files into a job file
+ *            - or extract data from an job file
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC
- *  Written by Danny Auble <da@schedmd.com>, who borrowed heavily
- *  from the original code in jobacct_gather/linux
+ *  Copyright (C) 2015 SchedMD LLC
+ *
+ *  Written by Danny Auble <da@schedmd.com> @ SchedMD.
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -34,44 +36,35 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef __COMMON_JAG_H__
-#define __COMMON_JAG_H__
+#ifndef __ACCT_SH5UTIL_H__
+#define __ACCT_SH5UTIL_H__
 
-#include "src/common/list.h"
+typedef enum {
+	SH5UTIL_MODE_MERGE,
+	SH5UTIL_MODE_EXTRACT,
+	SH5UTIL_MODE_ITEM_EXTRACT,
+	SH5UTIL_MODE_ITEM_LIST,
+} sh5util_mode_t;
 
-typedef struct jag_prec {	/* process record */
-	int	act_cpufreq;	/* actual average cpu frequency */
-	double	disk_read;	/* local disk read */
-	double	disk_write;	/* local disk write */
-	int	last_cpu;	/* last cpu */
-	int     pages;  /* pages */
-	pid_t	pid;
-	pid_t	ppid;
-	uint64_t rss;	/* rss */
-	int     ssec;   /* system cpu time */
-	int     usec;   /* user cpu time */
-	uint64_t vsize;	/* virtual size */
-} jag_prec_t;
+typedef struct {
+	char *dir;
+	int help;
+	char *input;
+	int job_id;
+	bool keepfiles;
+	char *level;
+	sh5util_mode_t mode;
+	char *node;
+	char *output;
+	char *series;
+	char *data_item;
+	int step_id;
+	char *user;
+	int verbose;
+} sh5util_opts_t;
 
-typedef struct jag_callbacks {
-	void (*prec_extra) (jag_prec_t *prec);
-	List (*get_precs) (List task_list, bool pgid_plugin, uint64_t cont_id,
-			   struct jag_callbacks *callbacks);
-	void (*get_offspring_data) (List prec_list,
-				    jag_prec_t *ancestor, pid_t pid);
-} jag_callbacks_t;
+extern sh5util_opts_t params;
 
-extern void jag_common_init(long in_hertz);
-extern void jag_common_fini(void);
-extern void destroy_jag_prec(void *object);
-extern void print_jag_prec(jag_prec_t *prec);
-
-extern void jag_common_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id,
-	jag_callbacks_t *callbacks, bool profile);
-
-#endif
+#endif // __ACCT_SH5UTIL_H__

@@ -4,10 +4,12 @@
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
- *  Written by Rod Schultz <rod.schultz@bull.com>
  *
  *  Portions Copyright (C) 2013 SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
+ *
+ *  Initially written by Rod Schultz <rod.schultz@bull.com> @ Bull
+ *  and Danny Auble <da@schedmd.com> @ SchedMD.
+ *  Adapted by Yoann Blein <yoann.blein@bull.net> @ Bull.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -62,6 +64,13 @@
 #include "src/slurmd/common/proctrack.h"
 #include "hdf5_api.h"
 
+#define HDF5_CHUNK_SIZE 10
+/* Compression level, a value of 0 through 9. Level 0 is faster but offers the
+ * least compression; level 9 is slower but offers maximum compression.
+ * A setting of -1 indicates that no compression is desired. */
+/* TODO: Make this configurable with a parameter */
+#define HDF5_COMPRESS 0
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -91,12 +100,15 @@ const char plugin_name[] = "AcctGatherProfile hdf5 plugin";
 const char plugin_type[] = "acct_gather_profile/hdf5";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-hid_t typTOD;
-
 typedef struct {
 	char *dir;
 	uint32_t def;
 } slurm_hdf5_conf_t;
+
+typedef struct {
+	hid_t  table_id;
+	size_t type_size;
+} table_t;
 
 // Global HDF5 Variables
 //	The HDF5 file and base objects will remain open for the duration of the
@@ -113,6 +125,13 @@ static slurm_hdf5_conf_t hdf5_conf;
 static uint64_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 static stepd_step_rec_t *g_job = NULL;
+static time_t step_start_time;
+
+static hid_t *groups = NULL;
+static size_t groups_len = 0;
+static table_t *tables = NULL;
+static size_t   tables_max_len = 0;
+static size_t   tables_cur_len = 0;
 
 static void _reset_slurm_profile_conf(void)
 {
@@ -134,22 +153,6 @@ static uint32_t _determine_profile(void)
 		profile = hdf5_conf.def;
 
 	return profile;
-}
-
-static int _get_taskid_from_pid(pid_t pid, uint32_t *gtid)
-{
-	int tx;
-
-	xassert(g_job);
-
-	for (tx=0; tx<g_job->node_tasks; tx++) {
-		if (g_job->task[tx]->pid == pid) {
-			*gtid = g_job->task[tx]->gtid;
-			return SLURM_SUCCESS;
-		}
-	}
-
-	return SLURM_ERROR;
 }
 
 static int _create_directories(void)
@@ -196,17 +199,6 @@ static int _create_directories(void)
 	return SLURM_SUCCESS;
 }
 
-static bool _do_profile(uint32_t profile, uint32_t req_profiles)
-{
-	if (req_profiles <= ACCT_GATHER_PROFILE_NONE)
-		return false;
-	if ((profile == ACCT_GATHER_PROFILE_NOT_SET)
-	    || (req_profiles & profile))
-		return true;
-
-	return false;
-}
-
 static bool _run_in_daemon(void)
 {
 	static bool set = false;
@@ -231,11 +223,17 @@ extern int init(void)
 
 	debug_flags = slurm_get_debug_flags();
 
+	/* Move HDF5 trace printing to log file instead of stderr */
+	H5Eset_auto(H5E_DEFAULT, (herr_t (*)(hid_t, void *))H5Eprint,
+	            log_fp());
+
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	xfree(tables);
+	xfree(groups);
 	xfree(hdf5_conf.dir);
 	return SLURM_SUCCESS;
 }
@@ -303,8 +301,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 {
 	int rc = SLURM_SUCCESS;
 
-	time_t start_time;
-	char    *profile_file_name;
+	char *profile_file_name;
 	char *profile_str;
 
 	xassert(_run_in_daemon());
@@ -343,7 +340,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	}
 
 	// Create a new file using the default properties.
-	profile_init();
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
 	if (chown(profile_file_name, (uid_t)g_job->uid,
@@ -357,10 +353,9 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		return SLURM_FAILURE;
 	}
 	/* fd_set_close_on_exec(file_id); Not supported for HDF5 */
-	sprintf(group_node, "/%s_%s", GRP_NODE, g_job->node_name);
-	gid_node = H5Gcreate(file_id, group_node, H5P_DEFAULT,
-			     H5P_DEFAULT, H5P_DEFAULT);
-	if (gid_node < 1) {
+	sprintf(group_node, "/%s", g_job->node_name);
+	gid_node = make_group(file_id, group_node);
+	if (gid_node < 0) {
 		H5Fclose(file_id);
 		file_id = -1;
 		info("PROFILE: Failed to create Node group");
@@ -368,9 +363,11 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	}
 	put_string_attribute(gid_node, ATTR_NODENAME, g_job->node_name);
 	put_int_attribute(gid_node, ATTR_NTASKS, g_job->node_tasks);
-	start_time = time(NULL);
+	put_int_attribute(gid_node, ATTR_CPUPERTASK, g_job->cpus_per_task);
+
+	step_start_time = time(NULL);
 	put_string_attribute(gid_node, ATTR_STARTTIME,
-			     slurm_ctime2(&start_time));
+			     slurm_ctime2(&step_start_time));
 
 	return rc;
 }
@@ -394,6 +391,7 @@ extern int acct_gather_profile_p_child_forked(void)
 extern int acct_gather_profile_p_node_step_end(void)
 {
 	int rc = SLURM_SUCCESS;
+	size_t i;
 
 	xassert(_run_in_daemon());
 
@@ -411,6 +409,15 @@ extern int acct_gather_profile_p_node_step_end(void)
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: node_step_end (shutdown)");
+
+	/* close tables */
+	for (i = 0; i < tables_cur_len; ++i) {
+		H5PTclose(tables[i].table_id);
+	}
+	/* close groups */
+	for (i = 0; i < groups_len; ++i) {
+		H5Gclose(groups[i]);
+	}
 
 	if (gid_totals > 0)
 		H5Gclose(gid_totals);
@@ -451,181 +458,165 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 
 extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
-	hid_t   gid_task;
-	char 	group_task[MAX_GROUP_NAME+1];
-	uint32_t task_id;
-	int rc = SLURM_SUCCESS;
-
-	xassert(_run_in_daemon());
-	xassert(g_job);
-
-	if (g_job->stepid == NO_VAL)
-		return rc;
-
-	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
-
-	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, g_profile_running))
-		return rc;
-
-	if (_get_taskid_from_pid(taskpid, &task_id) != SLURM_SUCCESS)
-		return SLURM_FAILURE;
-	if (file_id == -1) {
-		info("PROFILE: add_task_data, HDF5 file is not open");
-		return SLURM_FAILURE;
-	}
-	if (gid_tasks < 0) {
-		gid_tasks = make_group(gid_node, GRP_TASKS);
-		if (gid_tasks < 1) {
-			info("PROFILE: Failed to create Tasks group");
-			return SLURM_FAILURE;
-		}
-	}
-	sprintf(group_task, "%s_%d", GRP_TASK, task_id);
-	gid_task = get_group(gid_tasks, group_task);
-	if (gid_task == -1) {
-		gid_task = make_group(gid_tasks, group_task);
-		if (gid_task < 0) {
-			info("Failed to open tasks %s", group_task);
-			return SLURM_FAILURE;
-		}
-		put_int_attribute(gid_task, ATTR_TASKID, task_id);
-	}
-	put_int_attribute(gid_task, ATTR_CPUPERTASK, g_job->cpus_per_task);
-
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_end");
-	return rc;
+	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
+extern int acct_gather_profile_p_create_group(const char* name)
 {
-	hid_t   g_sample_grp;
-	char    group[MAX_GROUP_NAME+1];
-	char 	group_sample[MAX_GROUP_NAME+1];
-	static uint32_t sample_no = 0;
-	uint32_t task_id = 0;
-	void *send_profile = NULL;
-	char *type_name = NULL;
-
-	profile_task_t  profile_task;
-	profile_network_t  profile_network;
-	profile_energy_t  profile_energy;
-	profile_io_t  profile_io;
-
-	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
-	acct_network_data_t *net = (acct_network_data_t *)data;
-	acct_energy_data_t *ener = (acct_energy_data_t *)data;
-	struct lustre_data *lus = (struct lustre_data *)data;
-
-	xassert(_run_in_daemon());
-	xassert(g_job);
-
-	if (g_job->stepid == NO_VAL)
-		return SLURM_SUCCESS;
-
-	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
-
-	if (!_do_profile(type, g_profile_running))
-		return SLURM_SUCCESS;
-
-	switch (type) {
-	case ACCT_GATHER_PROFILE_ENERGY:
-		snprintf(group, sizeof(group), "%s", GRP_ENERGY);
-
-		memset(&profile_energy, 0, sizeof(profile_energy_t));
-		profile_energy.time = ener->time;
-		profile_energy.cpu_freq = ener->cpu_freq;
-		profile_energy.power = ener->power;
-
-		send_profile = &profile_energy;
-		break;
-	case ACCT_GATHER_PROFILE_TASK:
-		if (_get_taskid_from_pid(jobacct->pid, &task_id)
-		    != SLURM_SUCCESS)
-			return SLURM_ERROR;
-
-		snprintf(group, sizeof(group), "%s_%u", GRP_TASK, task_id);
-
-		memset(&profile_task, 0, sizeof(profile_task_t));
-		profile_task.time = time(NULL);
-		profile_task.cpu_freq = jobacct->act_cpufreq;
-		profile_task.cpu_time = jobacct->tot_cpu;
-		profile_task.cpu_utilization = jobacct->tot_cpu;
-		profile_task.pages = jobacct->tot_pages;
-		profile_task.read_size = jobacct->tot_disk_read;
-		profile_task.rss = jobacct->tot_rss;
-		profile_task.vm_size = jobacct->tot_vsize;
-		profile_task.write_size = jobacct->tot_disk_write;
-
-		send_profile = &profile_task;
-		break;
-	case ACCT_GATHER_PROFILE_LUSTRE:
-		snprintf(group, sizeof(group), "%s", GRP_LUSTRE);
-
-		memset(&profile_io, 0, sizeof(profile_io_t));
-		profile_io.time = time(NULL);
-		profile_io.reads = lus->reads;
-		profile_io.read_size = lus->read_size;
-		profile_io.writes = lus->writes;
-		profile_io.write_size = lus->write_size;
-
-		send_profile = &profile_io;
-
-		break;
-	case ACCT_GATHER_PROFILE_NETWORK:
-
-		snprintf(group, sizeof(group), "%s", GRP_NETWORK);
-
-		memset(&profile_network, 0, sizeof(profile_network_t));
-		profile_network.time = time(NULL);
-		profile_network.packets_in = net->packets_in;
-		profile_network.size_in = net->size_in;
-		profile_network.packets_out = net->packets_out;
-		profile_network.size_out = net->size_out;
-
-		send_profile = &profile_network;
-
-		break;
-	default:
-		error("acct_gather_profile_p_add_sample_data: "
-		      "Unknown type %d sent", type);
+	hid_t gid_group = make_group(gid_node, name);
+	if (gid_group < 0) {
 		return SLURM_ERROR;
 	}
 
-	type_name = acct_gather_profile_type_to_string(type);
+	/* store the group to keep track of it */
+	groups = xrealloc(groups, (groups_len + 1) * sizeof(hid_t));
+	groups[groups_len] = gid_group;
+	++groups_len;
 
-	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: add_sample_data Group-%s Type=%s",
-		     group, type_name);
+	return gid_group;
+}
 
-	if (file_id == -1) {
-		if (debug_flags & DEBUG_FLAG_PROFILE) {
-			// This can happen from samples from the gather threads
-			// before the step actually starts.
-			info("PROFILE: add_sample_data, HDF5 file not open");
+extern int acct_gather_profile_p_create_dataset(
+	const char* name, int parent, acct_gather_profile_dataset_t *dataset)
+{
+	size_t type_size;
+	size_t offset, field_size;
+	hid_t dtype_id;
+	hid_t field_id;
+	hid_t table_id;
+	acct_gather_profile_dataset_t *dataset_loc = dataset;
+
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
+		return SLURM_ERROR;
+
+	debug("acct_gather_profile_p_create_dataset %s", name);
+
+	/* compute the size of the type needed to create the table */
+	type_size = sizeof(uint64_t) * 2; /* size for time field */
+	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset_loc->type) {
+		case PROFILE_FIELD_UINT64:
+			type_size += sizeof(uint64_t);
+			break;
+		case PROFILE_FIELD_DOUBLE:
+			type_size += sizeof(double);
+			break;
+		case PROFILE_FIELD_NOT_SET:
+			break;
 		}
-		return SLURM_FAILURE;
+		dataset_loc++;
 	}
-	if (gid_samples < 0) {
-		gid_samples = make_group(gid_node, GRP_SAMPLES);
-		if (gid_samples < 1) {
-			info("PROFILE: failed to create TimeSeries group");
-			return SLURM_FAILURE;
+
+	/* create the datatype for the dataset */
+	if ((dtype_id = H5Tcreate(H5T_COMPOUND, type_size)) < 0) {
+		debug3("PROFILE: failed to create datatype for table %s",
+		       name);
+		return SLURM_ERROR;
+	}
+
+	/* insert fields */
+	if (H5Tinsert(dtype_id, "ElapsedTime", sizeof(uint64_t),
+		      H5T_NATIVE_UINT64) < 0)
+		return SLURM_ERROR;
+	if (H5Tinsert(dtype_id, "EpochTime", 0, H5T_NATIVE_UINT64) < 0)
+		return SLURM_ERROR;
+
+	dataset_loc = dataset;
+
+	offset = sizeof(uint64_t) * 2;
+	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset_loc->type) {
+		case PROFILE_FIELD_UINT64:
+			field_id = H5T_NATIVE_UINT64;
+			field_size = sizeof(uint64_t);
+			break;
+		case PROFILE_FIELD_DOUBLE:
+			field_id = H5T_NATIVE_DOUBLE;
+			field_size = sizeof(double);
+			break;
+		case PROFILE_FIELD_NOT_SET:
+			break;
 		}
+		if (H5Tinsert(dtype_id, dataset_loc->name,
+			      offset, field_id) < 0)
+			return SLURM_ERROR;
+		offset += field_size;
+		dataset_loc++;
 	}
-	g_sample_grp = get_group(gid_samples, group);
-	if (g_sample_grp < 0) {
-		g_sample_grp = make_group(gid_samples, group);
-		if (g_sample_grp < 0) {
-			info("PROFILE: failed to open TimeSeries %s", group);
-			return SLURM_FAILURE;
-		}
-		put_string_attribute(g_sample_grp, ATTR_DATATYPE, type_name);
+
+	/* create the table */
+	if (parent < 0)
+		parent = gid_node; /* default parent is the node group */
+	table_id = H5PTcreate_fl(parent, name, dtype_id, HDF5_CHUNK_SIZE,
+	                         HDF5_COMPRESS);
+	if (table_id < 0) {
+		error("PROFILE: Impossible to create the table %s", name);
+		H5Tclose(dtype_id);
+		return SLURM_ERROR;
 	}
-	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
-	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,
-		      group_sample, send_profile, 1);
-	H5Gclose(g_sample_grp);
+	H5Tclose(dtype_id); /* close the datatype since H5PT keeps a copy */
+
+	/* resize the tables array if full */
+	if (tables_cur_len == tables_max_len) {
+		if (tables_max_len == 0)
+			++tables_max_len;
+		tables_max_len *= 2;
+		tables = xrealloc(tables, tables_max_len * sizeof(table_t));
+	}
+
+	/* reserve a new table */
+	tables[tables_cur_len].table_id  = table_id;
+	tables[tables_cur_len].type_size = type_size;
+	++tables_cur_len;
+
+	return tables_cur_len - 1;
+}
+
+extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
+						 time_t sample_time)
+{
+	table_t *ds = &tables[table_id];
+	uint8_t send_data[ds->type_size];
+	int header_size = 0;
+	debug("acct_gather_profile_p_add_sample_data %d", table_id);
+
+	if (file_id < 0) {
+		debug("PROFILE: Trying to add data but profiling is over");
+		return SLURM_SUCCESS;
+	}
+
+	if (table_id < 0 || table_id >= tables_cur_len) {
+		error("PROFILE: trying to add samples to an invalid table %d",
+		      table_id);
+		return SLURM_ERROR;
+	}
+
+	/* ensure that we have to record something */
+	xassert(_run_in_daemon());
+	xassert(g_job);
+	if (g_job->stepid == NO_VAL)
+		return SLURM_SUCCESS;
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
+
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
+		return SLURM_ERROR;
+
+	/* prepend timestampe and relative time */
+	((uint64_t *)send_data)[0] = difftime(sample_time, step_start_time);
+	header_size += sizeof(uint64_t);
+	((uint64_t *)send_data)[1] = sample_time;
+	header_size += sizeof(uint64_t);
+
+	memcpy(send_data + header_size, data, ds->type_size - header_size);
+
+	/* append the record to the table */
+	if (H5PTappend(ds->table_id, 1, send_data) < 0) {
+		error("PROFILE: Impossible to add data to the table %d; "
+		      "maybe the table has not been created?", table_id);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -649,3 +640,12 @@ extern void acct_gather_profile_p_conf_values(List *data)
 	return;
 
 }
+
+extern bool acct_gather_profile_p_is_active(uint32_t type)
+{
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
+		return false;
+	return (type == ACCT_GATHER_PROFILE_NOT_SET)
+		|| (g_profile_running & type);
+}
+

@@ -188,7 +188,13 @@ static int _running_profile(void)
 
 static int _send_profile(void)
 {
-	acct_energy_data_t ener;
+	uint64_t curr_watts;
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "Power", PROFILE_FIELD_UINT64 },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
+	static int dataset_id = -1; /* id of the dataset for profile data */
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
@@ -197,14 +203,26 @@ static int _send_profile(void)
 		info("_send_profile: consumed %d watts",
 		     local_energy->current_watts);
 
-	memset(&ener, 0, sizeof(acct_energy_data_t));
-	ener.cpu_freq = 1;
-	ener.time = time(NULL);
-	ener.power = local_energy->current_watts;
-	acct_gather_profile_g_add_sample_data(
-		ACCT_GATHER_PROFILE_ENERGY, &ener);
+	if (dataset_id < 0) {
+		dataset_id = acct_gather_profile_g_create_dataset(
+			"Energy", NO_PARENT, dataset);
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			debug("Energy: dataset created (id = %d)", dataset_id);
+		if (dataset_id == SLURM_ERROR) {
+			error("Energy: Failed to create the dataset for RAPL");
+			return SLURM_ERROR;
+		}
+	}
 
-	return SLURM_ERROR;
+	curr_watts = (uint64_t)local_energy->current_watts;
+
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		info("PROFILE-Energy: power=%u", local_energy->current_watts);
+	}
+
+	return acct_gather_profile_g_add_sample_data(dataset_id,
+	                                             (void *)&curr_watts,
+						     local_energy->poll_time);
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)
@@ -316,7 +334,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 	if (!flag_init) {
 		flag_init = 1;
-		local_energy = acct_gather_energy_alloc();
+		local_energy = acct_gather_energy_alloc(1);
 		if (!_get_latest_stats(GET_ENERGY))
 			local_energy->current_watts = NO_VAL;
 		else

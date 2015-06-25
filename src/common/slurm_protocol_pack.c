@@ -3137,28 +3137,59 @@ static void
 _pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
 				Buf buffer, uint16_t protocol_version)
 {
+	unsigned int i;
+
 	xassert(msg != NULL);
 
-	packstr(msg->node_name, buffer);
-	acct_gather_energy_pack(msg->energy, buffer, protocol_version);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr(msg->node_name, buffer);
+		pack16(msg->sensor_cnt, buffer);
+		for (i = 0; i < msg->sensor_cnt; i++)
+			acct_gather_energy_pack(&msg->energy[i],
+						buffer, protocol_version);
+	} else {
+		acct_gather_energy_t *energy = NULL;
+
+		packstr(msg->node_name, buffer);
+		if (msg->sensor_cnt)
+			energy = &msg->energy[0];
+		acct_gather_energy_pack(energy, buffer, protocol_version);
+	}
+
 }
 static int
 _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
 				  Buf buffer, uint16_t protocol_version)
 {
+	unsigned int i;
 	acct_gather_node_resp_msg_t *node_data_ptr;
 	uint32_t uint32_tmp;
+	acct_gather_energy_t *e;
 	/* alloc memory for structure */
 	xassert(msg != NULL);
 	node_data_ptr = xmalloc(sizeof(acct_gather_node_resp_msg_t));
 	*msg = node_data_ptr;
-
-	safe_unpackstr_xmalloc(&node_data_ptr->node_name,
-			       &uint32_tmp, buffer);
-	if (acct_gather_energy_unpack(&node_data_ptr->energy, buffer,
-				      protocol_version) != SLURM_SUCCESS)
-		goto unpack_error;
-
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node_data_ptr->node_name,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&node_data_ptr->sensor_cnt, buffer);
+		node_data_ptr->energy = xmalloc(sizeof(acct_gather_energy_t)
+						* node_data_ptr->sensor_cnt);
+		for (i = 0; i < node_data_ptr->sensor_cnt; ++i) {
+			e = &node_data_ptr->energy[i];
+			if (acct_gather_energy_unpack(
+				    &e, buffer, protocol_version, 0)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+		}
+	} else {
+		safe_unpackstr_xmalloc(&node_data_ptr->node_name,
+				       &uint32_tmp, buffer);
+		if (acct_gather_energy_unpack(&node_data_ptr->energy, buffer,
+					      protocol_version, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3358,7 +3389,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 							     gres_info_size);
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&node_reg_ptr->version,
@@ -3415,7 +3446,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 							     gres_info_size);
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&node_reg_ptr->version,
@@ -3858,7 +3889,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
@@ -3909,7 +3940,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
@@ -3949,7 +3980,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
-					      protocol_version)
+					      protocol_version, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,

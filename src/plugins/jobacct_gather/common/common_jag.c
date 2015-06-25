@@ -41,6 +41,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h>
 #include <ctype.h>
 
 #include "src/common/slurm_xlator.h"
@@ -59,6 +60,18 @@ static long hertz = 0;
 static int my_pagesize = 0;
 static DIR  *slash_proc = NULL;
 static int energy_profile = ENERGY_DATA_JOULES_TASK;
+static uint64_t debug_flags = 0;
+
+static int _find_prec(void *x, void *key)
+{
+	jag_prec_t *prec = (jag_prec_t *) x;
+	struct jobacctinfo *jobacct = (struct jobacctinfo *) key;
+
+	if (prec->pid == jobacct->pid)
+		return 1;
+
+	return 0;
+}
 
 /* return weighted frequency in mhz */
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
@@ -506,16 +519,14 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
-			ListIterator itr = list_iterator_create(task_list);
 			struct jobacctinfo *jobacct = NULL;
-			if ((jobacct = list_next(itr))) {
+			if ((jobacct = list_peek(task_list))) {
 				acct_gather_energy_g_get_data(
 					energy_profile,
 					&jobacct->energy);
 				debug2("getjoules_task energy = %u",
 				       jobacct->energy.consumed_energy);
 			}
-			list_iterator_destroy(itr);
 
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
@@ -623,9 +634,104 @@ finished:
 	return prec_list;
 }
 
+static void _record_profile(struct jobacctinfo *jobacct)
+{
+	enum {
+		FIELD_CPUFREQ,
+		FIELD_CPUTIME,
+		FIELD_CPUUTIL,
+		FIELD_RSS,
+		FIELD_VMSIZE,
+		FIELD_PAGES,
+		FIELD_READ,
+		FIELD_WRITE,
+		FIELD_CNT
+	};
+
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "CPUFrequency", PROFILE_FIELD_UINT64 },
+		{ "CPUTime", PROFILE_FIELD_UINT64 },
+		{ "CPUUtilization", PROFILE_FIELD_DOUBLE },
+		{ "RSS", PROFILE_FIELD_UINT64 },
+		{ "VMSize", PROFILE_FIELD_UINT64 },
+		{ "Pages", PROFILE_FIELD_UINT64 },
+		{ "ReadMB", PROFILE_FIELD_DOUBLE },
+		{ "WriteMB", PROFILE_FIELD_DOUBLE },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
+	static int profile_gid = -1;
+	double et;
+	union {
+		double d;
+		uint64_t u64;
+	} data[FIELD_CNT];
+
+	if (profile_gid == -1)
+		profile_gid = acct_gather_profile_g_create_group("Tasks");
+
+	/* Create the dataset first */
+	if (jobacct->dataset_id < 0) {
+		char ds_name[32];
+		snprintf(ds_name, sizeof(ds_name), "%u", jobacct->id.taskid);
+
+		jobacct->dataset_id = acct_gather_profile_g_create_dataset(
+			ds_name, profile_gid, dataset);
+		if (jobacct->dataset_id == SLURM_ERROR) {
+			error("JobAcct: Failed to create the dataset for "
+			      "task %d",
+			      jobacct->pid);
+			return;
+		}
+	}
+
+	if (jobacct->dataset_id < 0)
+		return;
+
+	data[FIELD_CPUFREQ].u64 = jobacct->act_cpufreq;
+	data[FIELD_RSS].u64 = jobacct->tot_rss;
+	data[FIELD_VMSIZE].u64 = jobacct->tot_vsize;
+	data[FIELD_PAGES].u64 = jobacct->tot_pages;
+
+	/* delta from last snapshot */
+	if (!jobacct->last_time) {
+		et = 0;
+		data[FIELD_CPUTIME].u64 = 0;
+		data[FIELD_CPUUTIL].d = 0.0;
+		data[FIELD_READ].d = 0.0;
+		data[FIELD_WRITE].d = 0.0;
+	} else {
+		data[FIELD_CPUTIME].u64 =
+			jobacct->tot_cpu - jobacct->last_total_cputime;
+		et = (jobacct->cur_time - jobacct->last_time);
+		if (!et)
+			data[FIELD_CPUUTIL].d = 0.0;
+		else
+			data[FIELD_CPUUTIL].d =
+				(100.0 * (double)data[FIELD_CPUTIME].u64) /
+				((double) et);
+
+		data[FIELD_READ].d = jobacct->tot_disk_read -
+			jobacct->last_tot_disk_read;
+
+		data[FIELD_WRITE].d = jobacct->tot_disk_write -
+			jobacct->last_tot_disk_write;
+	}
+
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		char str[256];
+		info("PROFILE-Task: %s", acct_gather_profile_dataset_str(
+			     dataset, data, str, sizeof(str)));
+	}
+	acct_gather_profile_g_add_sample_data(jobacct->dataset_id,
+	                                      (void *)data, jobacct->cur_time);
+}
+
 extern void jag_common_init(long in_hertz)
 {
 	uint32_t profile_opt;
+
+	debug_flags = slurm_get_debug_flags();
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 				  &profile_opt);
@@ -633,7 +739,7 @@ extern void jag_common_init(long in_hertz)
 	   different rate, so just grab the last one.
 	*/
 	if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
-		energy_profile = ENERGY_DATA_STRUCT;
+		energy_profile = ENERGY_DATA_NODE_ENERGY;
 
 	if (in_hertz) {
 		hertz = in_hertz;
@@ -677,19 +783,18 @@ extern void print_jag_prec(jag_prec_t *prec)
 
 extern void jag_common_poll_data(
 	List task_list, bool pgid_plugin, uint64_t cont_id,
-	jag_callbacks_t *callbacks)
+	jag_callbacks_t *callbacks, bool profile)
 {
 	/* Update the data */
 	List prec_list = NULL;
 	uint64_t total_job_mem = 0, total_job_vsize = 0;
 	ListIterator itr;
-	ListIterator itr2;
 	jag_prec_t *prec = NULL;
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 	char sbuf[72];
 	int energy_counted = 0;
-	static int first = 1;
+	time_t ct;
 	static int no_over_memory_kill = -1;
 
 	xassert(callbacks);
@@ -717,6 +822,7 @@ extern void jag_common_poll_data(
 	if (!callbacks->get_precs)
 		callbacks->get_precs = _get_precs;
 
+	ct = time(NULL);
 	prec_list = (*(callbacks->get_precs))(task_list, pgid_plugin, cont_id,
 					      callbacks);
 
@@ -725,99 +831,104 @@ extern void jag_common_poll_data(
 
 	itr = list_iterator_create(task_list);
 	while ((jobacct = list_next(itr))) {
-		itr2 = list_iterator_create(prec_list);
-		while ((prec = list_next(itr2))) {
-			if (prec->pid == jobacct->pid) {
-				uint32_t cpu_calc;
+		uint32_t cpu_calc;
+		uint32_t last_total_cputime;
+		if (!(prec = list_find_first(prec_list, _find_prec, jobacct)))
+			continue;
+
 #if _DEBUG
-				info("pid:%u ppid:%u rss:%d KB",
-				     prec->pid, prec->ppid, prec->rss);
+		info("pid:%u ppid:%u rss:%d KB",
+		     prec->pid, prec->ppid, prec->rss);
 #endif
-				/* find all my descendents */
-				if (callbacks->get_offspring_data)
-					(*(callbacks->get_offspring_data))
-						(prec_list, prec, prec->pid);
-				cpu_calc = (prec->ssec + prec->usec)/hertz;
-				/* tally their usage */
-				jobacct->max_rss =
-					MAX(jobacct->max_rss, prec->rss);
-				jobacct->tot_rss = prec->rss;
-				total_job_mem += prec->rss;
-				jobacct->max_vsize =
-					MAX(jobacct->max_vsize, prec->vsize);
-				jobacct->tot_vsize = prec->vsize;
-				total_job_vsize += prec->vsize;
-				jobacct->max_pages =
-					MAX(jobacct->max_pages, prec->pages);
-				jobacct->tot_pages = prec->pages;
-				jobacct->max_disk_read = MAX(
-					jobacct->max_disk_read,
-					prec->disk_read);
-				jobacct->tot_disk_read = prec->disk_read;
-				jobacct->max_disk_write = MAX(
-					jobacct->max_disk_write,
-					prec->disk_write);
-				jobacct->tot_disk_write = prec->disk_write;
-				jobacct->min_cpu =
-					MAX(jobacct->min_cpu, cpu_calc);
-				jobacct->last_total_cputime = jobacct->tot_cpu;
-				/* Update the cpu times
-				 */
-				jobacct->tot_cpu = cpu_calc;
-				jobacct->user_cpu_sec = prec->usec/hertz;
-				jobacct->sys_cpu_sec = prec->ssec/hertz;
-				debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)", __func__,
-				       jobacct->pid, jobacct->max_rss,
-				       jobacct->max_vsize, jobacct->tot_cpu,
-				       jobacct->user_cpu_sec,
-				       jobacct->sys_cpu_sec);
-				/* compute frequency */
-				jobacct->this_sampled_cputime =
-					cpu_calc - jobacct->last_total_cputime;
-				_get_sys_interface_freq_line(
-					prec->last_cpu,
-					"cpuinfo_cur_freq", sbuf);
-				jobacct->act_cpufreq =
-					_update_weighted_freq(jobacct, sbuf);
-				debug2("%s: Task average frequency = %u "
-				       "pid %d mem size %"PRIu64" %"PRIu64" "
-				       "time %u(%u+%u)", __func__,
-				       jobacct->act_cpufreq,
-				       jobacct->pid, jobacct->max_rss,
-				       jobacct->max_vsize, jobacct->tot_cpu,
-				       jobacct->user_cpu_sec,
-				       jobacct->sys_cpu_sec);
-				/* get energy consumption
-  				 * only once is enough since we
- 				 * report per node energy consumption */
-				debug2("energycounted = %d", energy_counted);
-				if (energy_counted == 0) {
-					acct_gather_energy_g_get_data(
-						energy_profile,
-						&jobacct->energy);
-					debug2("getjoules_task energy = %u",
-					       jobacct->energy.consumed_energy);
-					energy_counted = 1;
-				}
-				/* We only profile on after the first poll. */
-				if (!first)
-					acct_gather_profile_g_add_sample_data(
-						ACCT_GATHER_PROFILE_TASK,
-						jobacct);
-				break;
-			}
+		/* find all my descendents */
+		if (callbacks->get_offspring_data)
+			(*(callbacks->get_offspring_data))
+				(prec_list, prec, prec->pid);
+
+		last_total_cputime = jobacct->tot_cpu;
+
+		cpu_calc = (prec->ssec + prec->usec)/hertz;
+		/* tally their usage */
+		jobacct->max_rss =
+			MAX(jobacct->max_rss, prec->rss);
+		jobacct->tot_rss = prec->rss;
+		total_job_mem += prec->rss;
+		jobacct->max_vsize =
+			MAX(jobacct->max_vsize, prec->vsize);
+		jobacct->tot_vsize = prec->vsize;
+		total_job_vsize += prec->vsize;
+		jobacct->max_pages =
+			MAX(jobacct->max_pages, prec->pages);
+		jobacct->tot_pages = prec->pages;
+		jobacct->max_disk_read = MAX(
+			jobacct->max_disk_read,
+			prec->disk_read);
+		jobacct->tot_disk_read = prec->disk_read;
+		jobacct->max_disk_write = MAX(
+			jobacct->max_disk_write,
+			prec->disk_write);
+
+		jobacct->tot_disk_write = prec->disk_write;
+		jobacct->min_cpu =
+			MAX(jobacct->min_cpu, cpu_calc);
+
+		/* Update the cpu times
+		 */
+		jobacct->tot_cpu = cpu_calc;
+		jobacct->user_cpu_sec = prec->usec/hertz;
+		jobacct->sys_cpu_sec = prec->ssec/hertz;
+		debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
+		       "time %u(%u+%u)", __func__,
+		       jobacct->pid, jobacct->max_rss,
+		       jobacct->max_vsize, jobacct->tot_cpu,
+		       jobacct->user_cpu_sec,
+		       jobacct->sys_cpu_sec);
+		/* compute frequency */
+		jobacct->this_sampled_cputime =
+			cpu_calc - last_total_cputime;
+		_get_sys_interface_freq_line(
+			prec->last_cpu,
+			"cpuinfo_cur_freq", sbuf);
+		jobacct->act_cpufreq =
+			_update_weighted_freq(jobacct, sbuf);
+		debug("%s: Task average frequency = %u "
+		       "pid %d mem size %"PRIu64" %"PRIu64" "
+		       "time %u(%u+%u)", __func__,
+		       jobacct->act_cpufreq,
+		       jobacct->pid, jobacct->max_rss,
+		       jobacct->max_vsize, jobacct->tot_cpu,
+		       jobacct->user_cpu_sec,
+		       jobacct->sys_cpu_sec);
+		/* get energy consumption
+		 * only once is enough since we
+		 * report per node energy consumption */
+		debug2("energycounted = %d", energy_counted);
+		if (energy_counted == 0) {
+			acct_gather_energy_g_get_data(
+				energy_profile,
+				&jobacct->energy);
+			debug2("getjoules_task energy = %u",
+			       jobacct->energy.consumed_energy);
+			energy_counted = 1;
 		}
-		list_iterator_destroy(itr2);
+		if (profile &&
+		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {
+			jobacct->cur_time = ct;
+
+			_record_profile(jobacct);
+
+			jobacct->last_tot_disk_read = jobacct->tot_disk_read;
+			jobacct->last_tot_disk_write = jobacct->tot_disk_write;
+			jobacct->last_total_cputime = jobacct->tot_cpu;
+			jobacct->last_time = jobacct->cur_time;
+		}
 	}
 	list_iterator_destroy(itr);
 
-	if (! no_over_memory_kill) {
+	if (!no_over_memory_kill)
 		jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
-	}
 
 finished:
-	list_destroy(prec_list);
+	FREE_NULL_LIST(prec_list);
 	processing = 0;
-	first = 0;
 }

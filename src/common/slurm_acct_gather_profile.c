@@ -70,8 +70,12 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
-	int (*add_sample_data)  (uint32_t, void*);
+	int (*create_group)     (const char*);
+	int (*create_dataset)   (const char*, int,
+				 acct_gather_profile_dataset_t *);
+	int (*add_sample_data)  (uint32_t, void*, time_t);
 	void (*conf_values)     (List *data);
+	bool (*is_active)     (uint32_t);
 
 } slurm_acct_gather_profile_ops_t;
 
@@ -88,8 +92,11 @@ static const char *syms[] = {
 	"acct_gather_profile_p_node_step_end",
 	"acct_gather_profile_p_task_start",
 	"acct_gather_profile_p_task_end",
+	"acct_gather_profile_p_create_group",
+	"acct_gather_profile_p_create_dataset",
 	"acct_gather_profile_p_add_sample_data",
 	"acct_gather_profile_p_conf_values",
+	"acct_gather_profile_p_is_active",
 };
 
 acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
@@ -348,6 +355,40 @@ extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type)
 	return "Unknown";
 }
 
+extern char *acct_gather_profile_dataset_str(
+	acct_gather_profile_dataset_t *dataset, void *data,
+	char *str, int str_len)
+{
+	int cur_loc = 0;
+
+        while (dataset && (dataset->type != PROFILE_FIELD_NOT_SET)) {
+		switch (dataset->type) {
+		case PROFILE_FIELD_UINT64:
+			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
+					    "%s%s=%"PRIu64,
+					    cur_loc ? " " : "",
+					    dataset->name, *(uint64_t *)data);
+			data += sizeof(uint64_t);
+			break;
+		case PROFILE_FIELD_DOUBLE:
+			cur_loc += snprintf(str+cur_loc, str_len-cur_loc,
+					    "%s%s=%lf",
+					    cur_loc ? " " : "",
+					    dataset->name, *(double *)data);
+			data += sizeof(double);
+			break;
+		case PROFILE_FIELD_NOT_SET:
+			break;
+		}
+
+		if (cur_loc >= str_len)
+			break;
+		dataset++;
+	}
+
+	return str;
+}
+
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 {
 	int retval = SLURM_SUCCESS;
@@ -548,7 +589,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 	return retval;
 }
 
-extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
+extern int acct_gather_profile_g_create_group(const char *name)
 {
 	int retval = SLURM_ERROR;
 
@@ -556,7 +597,36 @@ extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
 		return retval;
 
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_sample_data))(type, data);
+	retval = (*(ops.create_group))(name);
+	slurm_mutex_unlock(&profile_mutex);
+	return retval;
+}
+
+extern int acct_gather_profile_g_create_dataset(
+	const char *name, int parent,
+	acct_gather_profile_dataset_t *dataset)
+{
+	int retval = SLURM_ERROR;
+
+	if (acct_gather_profile_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&profile_mutex);
+	retval = (*(ops.create_dataset))(name, parent, dataset);
+	slurm_mutex_unlock(&profile_mutex);
+	return retval;
+}
+
+extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
+						 time_t sample_time)
+{
+	int retval = SLURM_ERROR;
+
+	if (acct_gather_profile_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&profile_mutex);
+	retval = (*(ops.add_sample_data))(dataset_id, data, sample_time);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }
@@ -567,4 +637,12 @@ extern void acct_gather_profile_g_conf_values(void *data)
 		return;
 
 	(*(ops.conf_values))(data);
+}
+
+extern bool acct_gather_profile_g_is_active(uint32_t type)
+{
+	if (acct_gather_profile_init() < 0)
+		return false;
+
+	return (*(ops.is_active))(type);
 }

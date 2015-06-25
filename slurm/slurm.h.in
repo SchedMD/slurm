@@ -562,6 +562,8 @@ enum acct_energy_type {
 	ENERGY_DATA_RECONFIG,
 	ENERGY_DATA_PROFILE,
 	ENERGY_DATA_LAST_POLL,
+	ENERGY_DATA_SENSOR_CNT,
+	ENERGY_DATA_NODE_ENERGY,
 };
 
 /*
@@ -1930,8 +1932,9 @@ typedef struct powercap_info_msg {
 typedef struct powercap_info_msg update_powercap_msg_t;
 
 typedef struct acct_gather_node_resp_msg {
-	char *node_name;	  /* node name */
 	acct_gather_energy_t *energy;
+	char *node_name;	  /* node name */
+	uint16_t sensor_cnt;
 } acct_gather_node_resp_msg_t;
 
 typedef struct acct_gather_energy_req_msg {
@@ -3758,16 +3761,20 @@ extern int slurm_load_node_single PARAMS((node_info_msg_t **resp,
 					 char *node_name, uint16_t show_flags));
 
 /*
- * slurm_node_energy - issue RPC to get the energy data on this machine
+ * slurm_get_node_energy_n - issue RPC to get the energy data of all
+ * configured sensors on the target machine
  * IN  host  - name of node to query, NULL if localhost
  * IN  delta - Use cache if data is newer than this in seconds
- * OUT acct_gather_energy_t structure on success or NULL other wise
- * RET 0 or a slurm error code
- * NOTE: free the response using slurm_acct_gather_energy_destroy
+ * OUT sensor_cnt - number of sensors
+ * OUT energy - array of acct_gather_energy_t structures on success or
+ *                NULL other wise
+ * RET 0 on success or a slurm error code
+ * NOTE: free the response using xfree
  */
 extern int slurm_get_node_energy PARAMS(
 	(char *host, uint16_t delta,
-	 acct_gather_energy_t **acct_gather_energy));
+	 uint16_t *sensors_cnt,
+	 acct_gather_energy_t **energy));
 
 /*
  * slurm_free_node_info_msg - free the node information response message

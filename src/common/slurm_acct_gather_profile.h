@@ -66,6 +66,8 @@
 #include "src/common/slurm_acct_gather.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#define NO_PARENT -1
+
 typedef enum {
 	PROFILE_ENERGY,
 	PROFILE_TASK,
@@ -73,6 +75,17 @@ typedef enum {
 	PROFILE_NETWORK,
 	PROFILE_CNT
 } acct_gather_profile_type_t;
+
+typedef enum {
+	PROFILE_FIELD_NOT_SET,
+	PROFILE_FIELD_UINT64,
+	PROFILE_FIELD_DOUBLE
+} acct_gather_profile_field_type_t;
+
+typedef struct {
+	char *name;
+	acct_gather_profile_field_type_t type;
+} acct_gather_profile_dataset_t;
 
 typedef struct {
 	int freq;
@@ -104,7 +117,9 @@ extern char *acct_gather_profile_type_to_string(uint32_t series);
 extern uint32_t acct_gather_profile_type_from_string(char *series_str);
 
 extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type);
-
+extern char *acct_gather_profile_dataset_str(
+	acct_gather_profile_dataset_t *dataset, void *data,
+	char *str, int str_len);
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def);
 extern void acct_gather_profile_endpoll(void);
 
@@ -185,23 +200,53 @@ extern int acct_gather_profile_g_task_start(uint32_t taskid);
 extern int acct_gather_profile_g_task_end(pid_t taskpid);
 
 /*
- * Put data at the Node Samples level. Typically called from something called
- * at either job_acct_gather interval or acct_gather_energy interval.
- * All samples in the same group will eventually be consolidated in one
- * dataset
+ * Create a new group which can contain datasets.
+ *
+ * Returns -- the identifier of the group on success,
+ *            a negative value on failure
+ */
+extern int acct_gather_profile_g_create_group(const char* name);
+
+/*
+ * Create a new dataset to record profiling data in the group "parent".
+ * Must be called by each accounting plugin in order to record data.
+ * A "Time" field is automatically added.
  *
  * Parameters
- *	type  -- identifies the type of data.
- *	data  -- data structure to be put to the file.
+ *  name        -- name of the dataset
+ *  parent      -- id of the parent group created with
+ *                 acct_gather_profile_g_create_group, or NO_PARENT for
+ *                 default group
+ *  profile_series -- profile_series_def_t array filled in with the
+ *                    series definition
+ * Returns -- an identifier to the dataset on success
+ *            a negative value on failure
+ */
+extern int acct_gather_profile_g_create_dataset(
+	const char *name, int parent, acct_gather_profile_dataset_t *dataset);
+
+/*
+ * Put data at the Node Samples level. Typically called from something called
+ * at either job_acct_gather interval or acct_gather_energy interval.
+ * Time is automatically added.
+ *
+ * Parameters
+ *	dataset_id -- identifies the dataset to add data to.
+ *	data       -- data structure to be recorded
+ *      sample_time-- when the sample happened
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_sample_data(uint32_t type, void *data);
+extern int acct_gather_profile_g_add_sample_data(int dataset_id, void *data,
+						 time_t sample_time);
 
 /* Get the values from the plugin that are setup in the .conf
  * file. This function should most likely only be called from
  * src/common/slurm_acct_gather.c (acct_gather_get_values())
  */
 extern void acct_gather_profile_g_conf_values(void *data);
+
+/* Return true if the given type of plugin must be profiled */
+extern bool acct_gather_profile_g_is_active(uint32_t type);
 
 #endif /*__SLURM_ACCT_GATHER_PROFILE_H__*/
