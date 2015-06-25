@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for control distribution of tasks across cores (in addition
     to existing support for nodes and sockets, (e.g. "block", "cyclic" or
     "fcyclic" task distribution at 3 levels in the hardware rather than 2).
+ -- Create db index on <cluster>_assoc_table.acct. Deleting accounts that didn't
+    have jobs in the job table could take a long time.
 
 * Changes in Slurm 15.08.0pre5
 ==============================
