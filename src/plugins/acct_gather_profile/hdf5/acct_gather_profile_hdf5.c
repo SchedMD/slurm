@@ -340,7 +340,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	}
 
 	// Create a new file using the default properties.
-	profile_init();
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
 	if (chown(profile_file_name, (uid_t)g_job->uid,

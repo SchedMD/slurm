@@ -70,154 +70,44 @@
 #include "src/common/proc_args.h"
 #include "src/common/xstring.h"
 #include "hdf5_api.h"
+#include "../sh5util.h"
 
-typedef enum {
-	SH5UTIL_MODE_MERGE,
-	SH5UTIL_MODE_EXTRACT,
-	SH5UTIL_MODE_ITEM_EXTRACT,
-} sh5util_mode_t;
-
-typedef struct {
-	char *dir;
-	int help;
-	char *input;
-	int job_id;
-	bool keepfiles;
-	char *level;
-	sh5util_mode_t mode;
-	char *node;
-	char *output;
-	char *series;
-	char *data_item;
-	int step_id;
-	char *user;
-	int verbose;
-} sh5util_opts_t;
-
-
-static sh5util_opts_t params;
 static char **series_names;
 static int num_series;
 
-static int _set_options(const int argc, char **argv);
 static int _merge_step_files(void);
 static int _extract_data(void);
 static int _series_data(void);
-static int  _check_params(void);
-static void _free_options(void);
-static void _remove_empty_output(void);
-
-static void _help_msg(void)
-{
-	printf("\
-Usage sh5util [<OPTION>] -j <job[.stepid]>\n"
-"\n"
-"Valid <OPTION> values are:\n"
-" -E, --extract        Extract data series from job file.\n"
-"     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
-"     -N, --node       Node name to extract (default is all)\n"
-"     -l, --level      Level to which series is attached\n"
-"                      [Node:Totals|Node:TimeSeries] (default Node:Totals)\n"
-"     -s, --series     Name of series:\n"
-"                      Energy | Lustre | Network | Tasks | Task_#\n"
-"                      'Tasks' is all tasks, Task_# is task_id (default is all)\n"
-" -I, --item-extract   Extract data item from one series from \n"
-"                      all samples on all nodes from thejob file.\n"
-"     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
-"     -s, --series     Name of series:\n"
-"                      Energy | Lustre | Network | Task\n"
-"     -d, --data       Name of data item in series (see man page) \n"
-" -j, --jobs           Format is <job(.step)>. Merge this job/step.\n"
-"                      or comma-separated list of job steps. This option is\n"
-"                      required.  Not specifying a step will result in all\n"
-"                      steps found to be processed.\n"
-" -h, --help           Print this description of use.\n"
-" -o, --output         Path to a file into which to write.\n"
-"                      Default for merge is ./job_$jobid.h5\n"
-"                      Default for extract is ./extract_$jobid.csv\n"
-" -p, --profiledir     Profile directory location where node-step files exist\n"
-"		               default is what is set in acct_gather.conf\n"
-" -S, --savefiles      Don't remove node-step files after merging them \n"
-" --user               User who profiled job. (Handy for root user, defaults to \n"
-"		               user running this command.)\n"
-" --usage              Display brief usage message\n");
-}
 
 extern int run_old(int argc, char **argv)
 {
 	int cc;
 
-	cc = _set_options(argc, argv);
-	if (cc < 0)
-		goto ouch;
-
-	cc = _check_params();
-	if (cc < 0)
-		goto ouch;
-
-	profile_init();
+	profile_init_old();
 
 	switch (params.mode) {
-
 		case SH5UTIL_MODE_MERGE:
-
-			info("Merging node-step files into %s",
-			     params.output);
 			cc = _merge_step_files();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		case SH5UTIL_MODE_EXTRACT:
-
-			info("Extracting job data from %s into %s",
-			     params.input, params.output);
 			cc = _extract_data();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		case SH5UTIL_MODE_ITEM_EXTRACT:
-
-			info("Extracting '%s' from '%s' data from %s into %s",
-			     params.data_item, params.series,
-			     params.input, params.output);
 			cc = _series_data();
-			if (cc < 0)
-				goto ouch;
 			break;
-
+		case SH5UTIL_MODE_ITEM_LIST:
+			cc = SLURM_ERROR;
+			break;
 		default:
 			error("Unknown type %d", params.mode);
 			break;
 	}
 
-	_remove_empty_output();
-	profile_fini();
-	_free_options();
+	profile_fini_old();
 
-	return 0;
-
-ouch:
-	_remove_empty_output();
-	_free_options();
-
-	return -1;
+	return cc;
 }
 
-/* _free_options()
- */
-static void
-_free_options(void)
-{
-	xfree(params.dir);
-	xfree(params.input);
-	xfree(params.node);
-	xfree(params.output);
-	xfree(params.series);
-	xfree(params.data_item);
-	xfree(params.user);
-}
 /*
  * delete list of strings
  *
@@ -238,202 +128,6 @@ static void _delete_string_list(char **list, int listLen)
 
 	xfree(list);
 
-}
-
-static void _remove_empty_output(void)
-{
-	struct stat sb;
-
-	if (stat(params.output, &sb) == -1) {
-		/* Ignore the error as the file may have
-		 * not been created yet.
-		 */
-		return;
-	}
-
-	/* Remove the file if 0 size which means
-	 * the program failed somewhere along the
-	 * way and the file is just left hanging...
-	 */
-	if (sb.st_size == 0)
-		remove(params.output);
-}
-
-static void _init_opts(void)
-{
-	memset(&params, 0, sizeof(sh5util_opts_t));
-	params.job_id = -1;
-	params.mode = SH5UTIL_MODE_MERGE;
-	params.step_id = -1;
-}
-
-static int _set_options(const int argc, char **argv)
-{
-	int option_index = 0;
-	int cc;
-	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	char *next_str = NULL;
-	uid_t u;
-
-	static struct option long_options[] = {
-		{"extract", no_argument, 0, 'E'},
-		{"item-extract", no_argument, 0, 'I'},
-		{"data", required_argument, 0, 'd'},
-		{"help", no_argument, 0, 'h'},
-		{"jobs", required_argument, 0, 'j'},
-		{"input", required_argument, 0, 'i'},
-		{"level", required_argument, 0, 'l'},
-		{"node", required_argument, 0, 'N'},
-		{"output", required_argument, 0, 'o'},
-		{"profiledir", required_argument, 0, 'p'},
-		{"series", required_argument, 0, 's'},
-		{"savefiles", no_argument, 0, 'S'},
-		{"usage", no_argument, 0, 'U'},
-		{"user", required_argument, 0, 'u'},
-		{"verbose", no_argument, 0, 'v'},
-		{"version", no_argument, 0, 'V'},
-		{0, 0, 0, 0}};
-
-	log_init(xbasename(argv[0]), logopt, 0, NULL);
-
-	_init_opts();
-
-	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:N:o:p:s:S:u:UvV",
-	                         long_options, &option_index)) != EOF) {
-		switch (cc) {
-			case 'd':
-				params.data_item = xstrdup(optarg);
-				params.data_item = xstrtolower(params.data_item);
-				break;
-			case 'E':
-				params.mode = SH5UTIL_MODE_EXTRACT;
-				break;
-			case 'I':
-				params.mode = SH5UTIL_MODE_ITEM_EXTRACT;
-				break;
-			case 'h':
-				_help_msg();
-				return -1;
-				break;
-			case 'i':
-				params.input = xstrdup(optarg);
-				break;
-			case 'j':
-				params.job_id = strtol(optarg, &next_str, 10);
-				if (next_str[0] == '.')
-					params.step_id =
-						strtol(next_str + 1, NULL, 10);
-				break;
-			case 'l':
-				params.level = xstrdup(optarg);
-				break;
-			case 'N':
-				params.node = xstrdup(optarg);
-				break;
-			case 'o':
-				params.output = xstrdup(optarg);
-				break;
-			case 'p':
-				params.dir = xstrdup(optarg);
-				break;
-			case 's':
-				if (strcmp(optarg, GRP_ENERGY)
-				    && strcmp(optarg, GRP_LUSTRE)
-				    && strcmp(optarg, GRP_NETWORK)
-				    && strncmp(optarg,GRP_TASK,strlen(GRP_TASK))) {
-					error("Bad value for --series=\"%s\"", optarg);
-					return -1;
-				}
-				params.series = xstrdup(optarg);
-				break;
-			case 'S':
-				params.keepfiles = 1;
-				break;
-			case 'u':
-				if (uid_from_string(optarg, &u) < 0) {
-					error("No such user --uid=\"%s\"", optarg);
-					return -1;
-				}
-				params.user = uid_to_string(u);
-				break;
-			case 'U':
-				_help_msg();
-				return -1;
-				break;
-			case 'v':
-				params.verbose++;
-				break;
-			case 'V':
-				print_slurm_version();
-				return -1;
-				break;
-			case ':':
-			case '?': /* getopt() has explained it */
-				return -1;
-		}
-	}
-
-	if (params.verbose) {
-		logopt.stderr_level += params.verbose;
-		log_alter(logopt, SYSLOG_FACILITY_USER, NULL);
-	}
-
-	return 0;
-}
-
-/* _check_params()
- */
-static int
-_check_params(void)
-{
-	if (params.job_id == -1) {
-		error("JobID must be specified.");
-		return -1;
-	}
-
-	if (params.user == NULL)
-		params.user = uid_to_string(getuid());
-
-	if (!params.dir)
-		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_DIR, &params.dir);
-
-	if (!params.dir) {
-		error("Cannot read/parse acct_gather.conf");
-		return -1;
-	}
-
-	if (params.mode == SH5UTIL_MODE_EXTRACT) {
-		if (!params.level)
-			params.level = xstrdup("Node:Totals");
-		if (!params.input)
-			params.input = xstrdup_printf(
-				"./job_%d.h5", params.job_id);
-		if (!params.output)
-			params.output = xstrdup_printf(
-				"./extract_%d.csv", params.job_id);
-
-	}
-	if (params.mode == SH5UTIL_MODE_ITEM_EXTRACT) {
-		if (!params.data_item)
-			fatal("Must specify data option --data ");
-
-		if (!params.series)
-			fatal("Must specify series option --series");
-
-		if (!params.input)
-			params.input = xstrdup_printf("./job_%d.h5", params.job_id);
-
-		if (!params.output)
-			params.output = xstrdup_printf("./%s_%s_%d.csv",
-			                               params.series,
-			                               params.data_item,
-			                               params.job_id);
-	}
-
-	if (!params.output)
-		params.output = xstrdup_printf("./job_%d.h5", params.job_id);
-
-	return 0;
 }
 
 /* ============================================================================

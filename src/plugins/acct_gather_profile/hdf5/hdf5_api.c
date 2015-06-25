@@ -48,11 +48,6 @@
 
 #include "hdf5_api.h"
 
-extern void profile_init(void)
-{
-	return;
-}
-
 extern void profile_fini(void)
 {
 	H5close(); /* make sure all H5 Objects are closed */

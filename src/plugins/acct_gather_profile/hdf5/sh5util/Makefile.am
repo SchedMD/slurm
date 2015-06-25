@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = foreign
 # hdf5 could of been installed with a link to the generic mpi.h.
 AM_CPPFLAGS = -I$(top_srcdir) -I../ $(HDF5_CPPFLAGS)
 
-SHDF5_SOURCES = sh5util.c
+SHDF5_SOURCES = sh5util.c sh5util.h
 
 if BUILD_HDF5
 

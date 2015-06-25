@@ -71,6 +71,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "../hdf5_api.h"
+#include "sh5util.h"
 
 #include "libsh5util_old/sh5util_old.h"
 
@@ -112,32 +113,7 @@
 
 // Data types supported by all HDF5 plugins of this type
 
-// #define TOD_LEN 24
-// #define TOD_FMT "%F %T"
-
-typedef enum {
-	SH5UTIL_MODE_MERGE,
-	SH5UTIL_MODE_EXTRACT,
-	SH5UTIL_MODE_ITEM_EXTRACT,
-	SH5UTIL_MODE_ITEM_LIST,
-} sh5util_mode_t;
-
-typedef struct {
-	char *dir;
-	int help;
-	char *input;
-	int job_id;
-	bool keepfiles;
-	char *level;
-	sh5util_mode_t mode;
-	char *node;
-	char *output;
-	char *series;
-	char *data_item;
-	int step_id;
-	char *user;
-	int verbose;
-} sh5util_opts_t;
+sh5util_opts_t params;
 
 typedef struct table {
 	const char *step;
@@ -145,8 +121,6 @@ typedef struct table {
 	const char *group;
 	const char *name;
 } table_t;
-
-static sh5util_opts_t params;
 
 static FILE* output_file;
 static bool group_mode = false;
@@ -221,54 +195,37 @@ main(int argc, char **argv)
 		goto ouch;
 
 	switch (params.mode) {
-
 		case SH5UTIL_MODE_MERGE:
-
 			info("Merging node-step files into %s",
 			     params.output);
 			cc = _merge_step_files();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		case SH5UTIL_MODE_EXTRACT:
-
 			info("Extracting job data from %s into %s",
 			     params.input, params.output);
 			cc = _extract_series();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		case SH5UTIL_MODE_ITEM_EXTRACT:
-
 			info("Extracting '%s' from '%s' data from %s into %s",
 			     params.data_item, params.series,
 			     params.input, params.output);
 			cc = _extract_item();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		case SH5UTIL_MODE_ITEM_LIST:
-
 			info("Listing items from %s", params.input);
 			cc = _list_items();
-			if (cc < 0)
-				goto ouch;
 			break;
-
 		default:
 			error("Unknown type %d", params.mode);
 			break;
 	}
 
-	_cleanup();
-	return 0;
-
+	if (cc == SLURM_PROTOCOL_VERSION_ERROR)
+		cc = run_old(argc, argv);
 ouch:
 	_cleanup();
-	return -1;
+
+	return cc;
 }
 
 static void _cleanup(void)
@@ -530,8 +487,8 @@ _check_params(void)
 
 /* Copy the group "/{NodeName}" of the hdf5 file file_name into the location
  * jgid_nodes */
-static void _merge_node_step_data(char* file_name, char* node_name,
-                                  hid_t jgid_nodes, hid_t jgid_tasks)
+static int _merge_node_step_data(char* file_name, char* node_name,
+				 hid_t jgid_nodes, hid_t jgid_tasks)
 {
 	hid_t fid_nodestep;
 	char group_name[MAX_GROUP_NAME+1];
@@ -539,7 +496,7 @@ static void _merge_node_step_data(char* file_name, char* node_name,
 	fid_nodestep = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if (fid_nodestep < 0) {
 		error("Failed to open %s",file_name);
-		return;
+		return SLURM_ERROR;
 	}
 
 	sprintf(group_name, "/%s", node_name);
@@ -547,9 +504,10 @@ static void _merge_node_step_data(char* file_name, char* node_name,
 	hid_t lcpl_id   = H5Pcreate(H5P_LINK_CREATE); /* parameters */
 	if (H5Ocopy(fid_nodestep, group_name, jgid_nodes, node_name,
 	            ocpypl_id, lcpl_id) < 0) {
-		error("Failed to copy node step data of %s into the job file",
+		debug("Failed to copy node step data of %s into the job file, "
+		      "trying with old method",
 		      node_name);
-		return;
+		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
 
 	H5Fclose(fid_nodestep);
@@ -557,7 +515,7 @@ static void _merge_node_step_data(char* file_name, char* node_name,
 	if (!params.keepfiles)
 		remove(file_name);
 
-	return;
+	return SLURM_SUCCESS;
 }
 
 /* Look for step and node files and merge them together into one job file */
@@ -584,6 +542,7 @@ static int _merge_step_files(void)
 	int max_step = -1;
 	int	jobid, stepid;
 	bool found_files = false;
+	int rc = SLURM_SUCCESS;
 
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
 
@@ -685,8 +644,8 @@ static int _merge_step_files(void)
 
 			sprintf(step_path, "%s/%s", step_dir, de->d_name);
 			debug("Adding %s to the job file", step_path);
-			_merge_node_step_data(step_path, step_node,
-			                      jgid_nodes, jgid_tasks);
+			rc = _merge_node_step_data(step_path, step_node,
+						   jgid_nodes, jgid_tasks);
 			nodex++;
 		}
 
@@ -719,7 +678,7 @@ static int _merge_step_files(void)
 	if (fid_job != -1)
 		H5Fclose(fid_job);
 
-	return 0;
+	return rc;
 }
 
 /* ============================================================================
@@ -804,8 +763,8 @@ static herr_t _collect_tables_node(hid_t g_id, const char *name,
 		err = H5Literate(object_id, H5_INDEX_NAME, H5_ITER_INC, NULL,
 		                 _collect_tables_group, op_data);
 		if (err < 0) {
-			debug("Failed to iterate through group %s", object_path);
-			return -1;
+			debug("2 Failed to iterate through group %s", object_path);
+			return SLURM_PROTOCOL_VERSION_ERROR;
 		}
 	} else {
 		error("Object of unknown type: %s", object_path);
@@ -835,7 +794,7 @@ static herr_t _collect_tables_step(hid_t g_id, const char *name,
 	                         H5_ITER_INC, NULL, _collect_tables_node,
 	                         op_data, H5P_DEFAULT);
 	if (err < 0) {
-		debug("Failed to iterate through group /"GRP_STEPS"/%s",
+		debug("3 Failed to iterate through group /"GRP_STEPS"/%s",
 		      nodes_path);
 		return err;
 	}
@@ -846,19 +805,20 @@ static herr_t _collect_tables_step(hid_t g_id, const char *name,
 static int _tables_list(hid_t fid_job, List tables)
 {
 	herr_t err;
+	ListIterator it;
+	table_t *t;
 
 	/* Find the list of tables to be extracted */
 	err = H5Literate_by_name(fid_job, "/"GRP_STEPS, H5_INDEX_NAME,
 	                         H5_ITER_INC, NULL, _collect_tables_step,
 	                         (void *)tables, H5P_DEFAULT);
 	if (err < 0) {
-		debug("Failed to iterate through group /" GRP_STEPS);
-		return SLURM_ERROR;
+		debug("4 Failed to iterate through group /" GRP_STEPS);
+		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
 
 	debug("tables found (group mode: %d):", group_mode);
-	ListIterator it = list_iterator_create(tables);
-	table_t *t;
+	it = list_iterator_create(tables);
 	while ((t = list_next(it))) {
 		debug(" /"GRP_STEPS"/%s/"GRP_NODES"/%s/%s/%s",
 		      t->step, t->node, t->group, t->name);
@@ -1099,6 +1059,8 @@ static int _extract_series(void)
 	List fields = NULL;
 	ListIterator it;
 	FILE *output = NULL;
+	int rc = SLURM_ERROR;
+	table_t *t;
 
 	level_total = (xstrcasecmp(params.level, "Node:Totals") == 0);
 
@@ -1117,14 +1079,15 @@ static int _extract_series(void)
 
 	/* Find the list of tables to be extracted */
 	tables = list_create(_table_free);
-	if (_tables_list(fid_job, tables) < 0) {
+	if ((rc = _tables_list(fid_job, tables)) != SLURM_SUCCESS) {
 		debug("Failed to list tables %s", params.series);
 		goto error;
 	}
 
 	/* Find the fields to be extracted */
 	fields = list_create(_void_free);
-	if (_fields_intersection(fid_job, tables, fields) < 0) {
+	if ((rc = _fields_intersection(fid_job, tables, fields))
+	    != SLURM_SUCCESS) {
 		error("Failed to find data items for series %s", params.series);
 		goto error;
 	}
@@ -1156,7 +1119,6 @@ static int _extract_series(void)
 
 	/* Extract from every table */
 	it = list_iterator_create(tables);
-	table_t *t;
 	while ((t = list_next(it))) {
 		if (_extract_series_table(fid_job, t, fields,
 		                          output, level_total) < 0) {
@@ -1176,7 +1138,7 @@ error:
 	if (tables) list_destroy(tables);
 	if (output) fclose(output);
 	if (fid_job >= 0) H5Fclose(fid_job);
-	return SLURM_ERROR;
+	return rc;
 }
 
 /* ============================================================================
@@ -1418,7 +1380,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	                         H5_ITER_INC, NULL, _collect_tables_node,
 	                         (void *)tables, H5P_DEFAULT);
 	if (err < 0) {
-		debug("Failed to iterate through group /"GRP_STEPS"/%s",
+		debug("1 Failed to iterate through group /"GRP_STEPS"/%s",
 		      nodes_path);
 		list_destroy(tables);
 		return -1;
@@ -1584,10 +1546,10 @@ static int _extract_item(void)
 	                         H5_ITER_INC, NULL, _extract_item_step,
 	                         (void *)(&fid_job), H5P_DEFAULT);
 	if (err < 0) {
-		debug("Failed to iterate through group /" GRP_STEPS);
+		debug("hnere Failed to iterate through group /" GRP_STEPS);
 		H5Fclose(fid_job);
 		fclose(output_file);
-		return SLURM_ERROR;
+		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
 
 	H5Fclose(fid_job);
@@ -1674,6 +1636,8 @@ static int _list_items(void)
 	List fields;
 	ListIterator it;
 	const char *field;
+	int rc = SLURM_ERROR;
+	List tables;
 
 	/* get series names */
 	fid_job = H5Fopen(params.input, H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -1683,21 +1647,22 @@ static int _list_items(void)
 	}
 
 	/* Find the list of tables to be extracted */
-	List tables = list_create(_table_free);
-	if (_tables_list(fid_job, tables) < 0) {
+	tables = list_create(_table_free);
+	if ((rc = _tables_list(fid_job, tables)) != SLURM_SUCCESS) {
 		debug("Failed to list tables %s", params.series);
 		H5Fclose(fid_job);
 		list_destroy(tables);
-		return SLURM_ERROR;
+		return rc;
 	}
 
 	fields = list_create(_void_free);
-	if (_fields_intersection(fid_job, tables, fields) < 0) {
+	if ((rc = _fields_intersection(fid_job, tables, fields))
+	    != SLURM_SUCCESS) {
 		error("Failed to intersect fields");
 		H5Fclose(fid_job);
 		list_destroy(tables);
 		list_destroy(fields);
-		return SLURM_ERROR;
+		return rc;
 	}
 
 	it = list_iterator_create(fields);

@@ -40,8 +40,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
-#ifndef __ACCT_GATHER_HDF5_API_H__
-#define __ACCT_GATHER_HDF5_API_H__
+#ifndef __ACCT_GATHER_HDF5_OLD_API_H__
+#define __ACCT_GATHER_HDF5_OLD_API_H__
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -60,6 +60,7 @@
 
 #include <hdf5.h>
 #include "src/common/slurm_acct_gather_profile.h"
+#include "../../hdf5_api.h"
 
 #define MAX_PROFILE_PATH 1024
 #define MAX_ATTR_NAME 64
@@ -270,12 +271,12 @@ hdf5_api_ops_t* profile_factory(uint32_t type);
 /*
  * Initialize profile (initialize static memory)
  */
-void profile_init(void);
+void profile_init_old(void);
 
 /*
  * Finialize profile (initialize static memory)
  */
-void profile_fini(void);
+void profile_fini_old(void);
 
 /*
  * Make a dataset name
@@ -298,49 +299,6 @@ char* get_data_set_name(char* type);
 void hdf5_obj_info(hid_t group, char* namGroup);
 
 /*
- * get attribute handle by name.
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the attribute
- *
- * Returns - handle for attribute (or -1 when not found), caller must close
- */
-hid_t get_attribute_handle(hid_t parent, char* name);
-
-/*
- * get group by name.
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the group
- *
- * Returns - handle for group (or -1 when not found), caller must close
- */
-hid_t get_group(hid_t parent, char* name);
-
-/*
- * make group by name.
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the group
- *
- * Returns - handle for group (or -1 on error), caller must close
- */
-hid_t make_group(hid_t parent, char* name);
-
-/*
- * Put string attribute
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the attribute
- *	value	- value of the attribute
- */
-void put_string_attribute(hid_t parent, char* name, char* value);
-
-/*
  * get string attribute
  *
  * Parameters
@@ -352,16 +310,6 @@ void put_string_attribute(hid_t parent, char* name, char* value);
 char* get_string_attribute(hid_t parent, char* name);
 
 /*
- * Put integer attribute
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the attribute
- *	value	- value of the attribute
- */
-void put_int_attribute(hid_t parent, char* name, int value);
-
-/*
  * get int attribute
  *
  * Parameters
@@ -371,16 +319,6 @@ void put_int_attribute(hid_t parent, char* name, int value);
  * Return: value
  */
 int get_int_attribute(hid_t parent, char* name);
-
-/*
- * Put uint32_t attribute
- *
- * Parameters
- *	parent	- handle to parent group.
- *	name	- name of the attribute
- *	value	- value of the attribute
- */
-void put_uint32_attribute(hid_t parent, char* name, uint32_t value);
 
 /*
  * get uint32_t attribute
@@ -420,4 +358,4 @@ void* get_hdf5_data(hid_t parent, uint32_t type, char* namGroup, int* sizeData);
 void put_hdf5_data(hid_t parent, uint32_t type, char* subtype, char* group,
 		   void* data, int nItems);
 
-#endif /*__ACCT_GATHER_HDF5_API_H__*/
+#endif /*__ACCT_GATHER_HDF5_OLD_API_H__*/

@@ -80,11 +80,6 @@
 #define GRP_TASK "Task"
 
 /*
- * Initialize profile (initialize static memory)
- */
-void profile_init(void);
-
-/*
  * Finalize profile (initialize static memory)
  */
 void profile_fini(void);
