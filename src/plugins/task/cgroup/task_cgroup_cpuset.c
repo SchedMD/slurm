@@ -3,8 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
- *  Portions copyright (C) 2012 Bull
- *  Written by Martin Perry <martin.perry@bull.com>
+ *  Portions copyright (C) 2012,2015 Bull/Atos
+ *  Written by Martin Perry <martin.perry@atos.net>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -107,6 +107,9 @@ static inline int hwloc_bitmap_isequal(
 }
 
 # endif
+
+hwloc_obj_type_t obj_types[3] = {HWLOC_OBJ_SOCKET, HWLOC_OBJ_CORE,
+			         HWLOC_OBJ_PU};
 
 static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
 			    CPU_BIND_RANK   | CPU_BIND_MAP    |
@@ -639,25 +642,49 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_bitmap_t cpuset)
 {
 	hwloc_obj_t obj;
-	uint32_t *obj_idx;
-	uint32_t i, j, sock_idx, sock_loop, ntskip, npdist;
+	uint32_t  s_ix;		/* socket index */
+	uint32_t *c_ixc;	/* core index by socket (current taskid) */
+	uint32_t *c_ixn;	/* core index by socket (next taskid) */
+	uint32_t *t_ix;		/* thread index by core by socket */
 	uint32_t npus, ncores, nsockets;
 	uint32_t taskid = job->envtp->localid;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 
-	if (bind_verbose) {
-		info("task/cgroup: task[%u] using %s distribution "
-		     "(task_dist=%u)", taskid,
-		     format_task_dist_states(job->task_dist), job->task_dist);
-	}
+	uint32_t obj_idxs[3], nthreads, cps,
+		 tpc, i, j, sock_loop, ntskip, npdist;;
+	bool core_cyclic, core_fcyclic, sock_fcyclic, core_block;
+
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						       HWLOC_OBJ_SOCKET);
 	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						     HWLOC_OBJ_CORE);
+						       HWLOC_OBJ_CORE);
+	nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						       HWLOC_OBJ_PU);
+	cps = ncores/nsockets;
+	tpc = nthreads/ncores;
+
+	sock_fcyclic = (job->task_dist & SLURM_DIST_SOCKMASK) ==
+		SLURM_DIST_SOCKCFULL ? true : false;
+	core_block = (job->task_dist & SLURM_DIST_COREMASK) ==
+		SLURM_DIST_COREBLOCK ? true : false;
+	core_cyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
+		SLURM_DIST_CORECYCLIC ? true : false;
+	core_fcyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
+		SLURM_DIST_CORECFULL ? true : false;
+
+	if (bind_verbose) {
+		info("task/cgroup: task[%u] using %s distribution "
+		     "(task_dist=0x%x)", taskid,
+		     format_task_dist_states(job->task_dist), job->task_dist);
+	}
+
 	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						   HWLOC_OBJ_PU);
-	obj_idx = xmalloc(nsockets * sizeof(uint32_t));
+
+	t_ix = xmalloc(ncores * sizeof(uint32_t));
+	c_ixc = xmalloc(nsockets * sizeof(uint32_t));
+	c_ixn = xmalloc(nsockets * sizeof(uint32_t));
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
 		/* cores or threads granularity */
@@ -702,50 +729,83 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	   current task cpuset. To prevent infinite loop, check
 	   that we do not loop more than npdist times around the available
 	   sockets, which is the worst scenario we should afford here. */
-	i = 0;
-	j = 0;
-	sock_idx = 0;
-	sock_loop = 0;
-	while (i < ntskip + 1 && sock_loop < npdist + 1) {
+	i = j = s_ix = sock_loop = 0;
+	while (i < ntskip + 1 && (sock_loop/tpc) < npdist + 1) {
 		/* fill one or multiple sockets using block mode, unless
 		   otherwise stated in the job->task_dist field */
-		while ((sock_idx < nsockets) && (j < npdist)) {
+		while ((s_ix < nsockets) && (j < npdist)) {
+			if (c_ixc[s_ix] == cps)
+				c_ixc[s_ix] = 0;
 			obj = hwloc_get_obj_below_by_type(
-				topology, HWLOC_OBJ_SOCKET, sock_idx,
-				hwtype, obj_idx[sock_idx]);
+				topology, HWLOC_OBJ_SOCKET, s_ix,
+				hwtype, c_ixc[s_ix]);
 			if (obj != NULL) {
-				obj_idx[sock_idx]++;
-				j++;
-				if (i == ntskip) {
-					_add_hwloc_cpuset(hwtype, req_hwtype,
-							  obj, taskid,
-							  bind_verbose, cpuset);
+				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
+									>= 0) {
+					/* granularity is thread */
+					obj_idxs[0]=s_ix;
+					obj_idxs[1]=c_ixc[s_ix];
+					obj_idxs[2]=t_ix[(s_ix*cps)+c_ixc[s_ix]];
+					obj = hwloc_get_obj_below_array_by_type(
+						topology, 3, obj_types, obj_idxs);
+					if (obj != NULL) {
+						t_ix[(s_ix*cps)+c_ixc[s_ix]]++;
+						j++;
+						if (i == ntskip)
+							_add_hwloc_cpuset(hwtype,
+							req_hwtype, obj, taskid,
+							bind_verbose, cpuset);
+						if (j < npdist) {
+							if (core_cyclic) {
+								c_ixn[s_ix] =
+								c_ixc[s_ix] + 1;
+							} else if (core_fcyclic){
+								c_ixc[s_ix]++;
+								c_ixn[s_ix] =
+								c_ixc[s_ix];
+							}
+							if (sock_fcyclic)
+								s_ix++;
+						}
+					} else {
+						c_ixc[s_ix]++;
+						if (c_ixc[s_ix] == cps)
+							s_ix++;
+					}
+				} else {
+					/* granularity is core or larger */
+					c_ixc[s_ix]++;
+					j++;
+					if (i == ntskip)
+						_add_hwloc_cpuset(hwtype,
+							req_hwtype, obj, taskid,
+						  	bind_verbose, cpuset);
+					if ((j < npdist) && (sock_fcyclic))
+						s_ix++;
 				}
-				if ((j < npdist) &&
-				    (((job->task_dist & SLURM_DIST_STATE_BASE) ==
-				      SLURM_DIST_CYCLIC_CFULL) ||
-				     ((job->task_dist & SLURM_DIST_STATE_BASE) ==
-				      SLURM_DIST_BLOCK_CFULL)))
-					sock_idx++;
-			} else {
-				sock_idx++;
-			}
+			} else
+				s_ix++;
 		}
-		/* if it succeed, switch to the next task, starting
-		   with the next available socket, otherwise, loop back
-		   from the first socket trying to find available slots. */
+		/* if it succeeds, switch to the next task, starting
+		 * with the next available socket, otherwise, loop back
+		 * from the first socket trying to find available slots. */
 		if (j == npdist) {
 			i++;
 			j = 0;
-			sock_idx++; // no validity check, handled by the while
+			if (!core_block)
+				c_ixn[s_ix] = c_ixc[s_ix] + 1;
+			memcpy(c_ixc, c_ixn, nsockets * sizeof(uint32_t));
+			s_ix++; // no validity check, handled by the while
 			sock_loop = 0;
 		} else {
 			sock_loop++;
-			sock_idx = 0;
+			s_ix = 0;
 		}
 	}
+	xfree(t_ix);
+	xfree(c_ixc);
+	xfree(c_ixn);
 
-	xfree(obj_idx);
 	if (spec_threads) {
 		for (i = 0; i < npus; i++) {
 			if (bit_test(spec_threads, i)) {
@@ -755,7 +815,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		FREE_NULL_BITMAP(spec_threads);
 	}
 
-	/* should never happened in normal scenario */
+	/* should never happen in normal scenario */
 	if (sock_loop > npdist) {
 		error("task/cgroup: task[%u] infinite loop broken while trying "
 		      "to provision compute elements using %s", taskid,
@@ -771,23 +831,83 @@ static int _task_cgroup_cpuset_dist_block(
 	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
 {
 	hwloc_obj_t obj;
-	uint32_t i, pfirst, plast;
+	uint32_t core_loop, ntskip, npdist;
+	uint32_t i, j, pfirst, plast;
 	uint32_t taskid = job->envtp->localid;
 	int hwdepth;
 	uint32_t npus, ncores, nsockets;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 
-	if (bind_verbose) {
-		info("task/cgroup: task[%u] using block distribution, "
-		     "task_dist %u", taskid, job->task_dist);
-	}
+	uint32_t *thread_idx;
+	uint32_t core_idx;
+	bool core_fcyclic, core_block;
+
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						       HWLOC_OBJ_SOCKET);
 	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						     HWLOC_OBJ_CORE);
 	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						   HWLOC_OBJ_PU);
+
+	core_block = (job->task_dist & SLURM_DIST_COREMASK) ==
+		SLURM_DIST_COREBLOCK ? true : false;
+	core_fcyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
+		SLURM_DIST_CORECFULL ? true : false;
+
+	thread_idx = xmalloc(ncores * sizeof(uint32_t));
+
+	if (bind_verbose) {
+		info("task/cgroup: task[%u] using block distribution, "
+		     "task_dist 0x%x", taskid, job->task_dist);
+	}
+
+	if ((hwloc_compare_types(hwtype, HWLOC_OBJ_PU) == 0) && !core_block) {
+		thread_idx = xmalloc(ncores * sizeof(uint32_t));
+		ntskip = taskid;
+		npdist = job->cpus_per_task;
+
+		i = 0; j = 0;
+		core_idx = 0;
+		core_loop = 0;
+		while (i < ntskip + 1 && core_loop < npdist + 1) {
+			while ((core_idx < ncores) && (j < npdist)) {
+				obj = hwloc_get_obj_below_by_type(
+					topology, HWLOC_OBJ_CORE, core_idx,
+					hwtype, thread_idx[core_idx]);
+				if (obj != NULL) {
+					thread_idx[core_idx]++;
+					j++;
+					if (i == ntskip)
+						_add_hwloc_cpuset(hwtype,
+							req_hwtype, obj, taskid,
+							bind_verbose, cpuset);
+					if ((j < npdist) && core_fcyclic)
+						core_idx++;
+				} else {
+					core_idx++;
+				}
+			}
+			if (j == npdist) {
+				i++; j = 0;
+				core_idx++; // no validity check, handled by the while
+				core_loop = 0;
+			} else {
+				core_loop++;
+				core_idx = 0;
+			}
+		}
+		xfree(thread_idx);
+
+		/* should never happen in normal scenario */
+		if (core_loop > npdist) {
+			error("task/cgroup: task[%u] infinite loop broken while "
+			      "trying to provision compute elements using %s",
+			      taskid, format_task_dist_states(job->task_dist));
+			return XCGROUP_ERROR;
+		} else
+			return XCGROUP_SUCCESS;
+	}
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
 		/* cores or threads granularity */
@@ -1244,6 +1364,12 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	uint32_t taskid = job->envtp->localid;
 	uint32_t jntasks = job->node_tasks;
 	uint32_t jnpus;
+
+	/* Allocate and initialize hwloc objects */
+	hwloc_topology_init(&topology);
+	hwloc_topology_load(topology);
+	cpuset = hwloc_bitmap_alloc();
+
 	int spec_threads = 0;
 
 	if (job->batch) {
@@ -1256,11 +1382,6 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	if ((conf->task_plugin_param & CPU_BIND_VERBOSE) ||
 	    (bind_type & CPU_BIND_VERBOSE))
 		bind_verbose = 1 ;
-
-	/* Allocate and initialize hwloc objects */
-	hwloc_topology_init(&topology);
-	hwloc_topology_load(topology);
-	cpuset = hwloc_bitmap_alloc();
 
 	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
@@ -1412,6 +1533,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 				error("task/cgroup: task[%u] unable to set "
 				      "mask 0x%s", taskid,
 				      cpuset_to_str(&ts, mstr));
+				error("sched_setaffinity rc = %d", rc);
 				fstatus = SLURM_ERROR;
 			} else if (bind_verbose) {
 				info("task/cgroup: task[%u] mask 0x%s",
@@ -1431,48 +1553,20 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 			     job->task_dist);
 		}
 
-		/* There are two "distributions,"  controlled by the
-		 * -m option of srun and friends. The first is the
-		 * distribution of tasks to nodes.  The second is the
-		 * distribution of allocated cpus to tasks for
-		 * binding.  This code is handling the second
-		 * distribution.  Here's how the values get set, based
-		 * on the value of -m
-		 *
-		 * SLURM_DIST_CYCLIC = srun -m cyclic
-		 * SLURM_DIST_BLOCK = srun -m block
-		 * SLURM_DIST_CYCLIC_CYCLIC = srun -m cyclic:cyclic
-		 * SLURM_DIST_BLOCK_CYCLIC = srun -m block:cyclic
-		 *
-		 * In the first two cases, the user only specified the
-		 * first distribution.  The second distribution
-		 * defaults to cyclic.  In the second two cases, the
-		 * user explicitly requested a second distribution of
-		 * cyclic.  So all these four cases correspond to a
-		 * second distribution of cyclic.   So we want to call
-		 * _task_cgroup_cpuset_dist_cyclic.
-		 *
-		 * If the user explicitly specifies a second
-		 * distribution of block, or if
-		 * CR_CORE_DEFAULT_DIST_BLOCK is configured and the
-		 * user does not explicitly specify a second
-		 * distribution of cyclic, the second distribution is
-		 * block, and we need to call
-		 * _task_cgroup_cpuset_dist_block. In these cases,
-		 * task_dist would be set to SLURM_DIST_CYCLIC_BLOCK
-		 * or SLURM_DIST_BLOCK_BLOCK.
+		/* See srun man page for detailed information on --distribution
+		 * option.
 		 *
 		 * You can see the equivalent code for the
 		 * task/affinity plugin in
 		 * src/plugins/task/affinity/dist_tasks.c, around line 368
 		 */
-		switch (job->task_dist & SLURM_DIST_STATE_BASE) {
+		switch (job->task_dist & SLURM_DIST_NODESOCKMASK) {
 		case SLURM_DIST_BLOCK_BLOCK:
 		case SLURM_DIST_CYCLIC_BLOCK:
 		case SLURM_DIST_PLANE:
 			/* tasks are distributed in blocks within a plane */
-			_task_cgroup_cpuset_dist_block(
-				topology, hwtype, req_hwtype,
+			_task_cgroup_cpuset_dist_block(topology,
+				hwtype, req_hwtype,
 				nobj, job, bind_verbose, cpuset);
 			break;
 		case SLURM_DIST_ARBITRARY:
@@ -1481,8 +1575,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		case SLURM_DIST_UNKNOWN:
 			if (slurm_get_select_type_param()
 			    & CR_CORE_DEFAULT_DIST_BLOCK) {
-				_task_cgroup_cpuset_dist_block(
-					topology, hwtype, req_hwtype,
+				_task_cgroup_cpuset_dist_block(topology,
+					hwtype, req_hwtype,
 					nobj, job, bind_verbose, cpuset);
 				break;
 			}
@@ -1490,8 +1584,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 			   default dist block.
 			*/
 		default:
-			_task_cgroup_cpuset_dist_cyclic(
-				topology, hwtype, req_hwtype,
+			_task_cgroup_cpuset_dist_cyclic(topology,
+				hwtype, req_hwtype,
 				job, bind_verbose, cpuset);
 			break;
 		}
