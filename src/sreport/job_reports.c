@@ -308,10 +308,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 2))) {
 			if (!strncasecmp(argv[i]+end, "individual", 1)) {
 				individual_grouping = 1;
-				if (grouping_list)
+			} else if (grouping_list)
 					slurm_addto_char_list(grouping_list,
 							      argv[i]+end);
-			}
 		} else if (!strncasecmp (argv[i], "Jobs",
 					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
