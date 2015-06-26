@@ -369,7 +369,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	energy->poll_time = time(NULL);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: current %.6f Joules, consumed %"PRIu64"",
+		info("_get_joules_task: current %.6f Joules, "
+		     "consumed %"PRIu64"",
 		     ret, energy->consumed_energy);
 }
 
