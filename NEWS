@@ -32,6 +32,10 @@ documents those changes that are of interest to users and administrators.
     "fcyclic" task distribution at 3 levels in the hardware rather than 2).
  -- Create db index on <cluster>_assoc_table.acct. Deleting accounts that didn't
     have jobs in the job table could take a long time.
+ -- The performance of Profiling with HDF5 is improved. In addition, internal
+    structures are changed to make it easier to add new profile types,
+    particularly energy sensors. sh5util will continue to work with either
+    format.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

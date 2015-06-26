@@ -183,13 +183,8 @@ OTHER CHANGES
     For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
  -- The format of HDF5 node-step files has changed, so the sh5util program that
     merges them into job files has changed. The command line options to sh5util
-    have not changed. The old sh5util program is available in the contribs
-    section. It may be used to extract data from HDF5 profiles collected with
-    earlier versions of slurm.
-    A batch job that invokes sh5util as the last step that is launched on 15-08
-    will require no change. One that started pre 15-8 but finished on 15-08,
-    will not correctly merge the node-step files. The merge will have to be done
-    manually with the sh5util in contribs.
+    have not changed and will continue to service both versions for the next
+    few releases of Slurm.
 
 API CHANGES
 ===========
