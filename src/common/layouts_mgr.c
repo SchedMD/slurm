@@ -2636,9 +2636,9 @@ int layouts_autoupdate_layout(char *l_type)
 
 int layouts_state_save_layout(char* l_type)
 {
-	int error_code = 0, log_fd;
+	int error_code = 0, log_fd, offset;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	static int high_buffer_size = (1024 * 1024);
+	static int high_buffer_size = (16 * 1024);
 	Buf buffer = init_buf(high_buffer_size);
 	FILE* fdump;
 	uint32_t utmp32, record_count = 0;
@@ -2656,6 +2656,8 @@ int layouts_state_save_layout(char* l_type)
 	}
 
 	/* rewind the freshly created buffer to unpack it into a file */
+	offset = get_buf_offset(buffer);
+	high_buffer_size = MAX(high_buffer_size, offset);
 	set_buf_offset(buffer, 0);
 
 	/* create working files */
@@ -2673,7 +2675,7 @@ int layouts_state_save_layout(char* l_type)
 		safe_unpack32(&record_count, buffer);
 		debug("layouts/%s: dumping %u records into state file",
 		      l_type, record_count);
-		while (remaining_buf(buffer) > 0) {
+		while (get_buf_offset(buffer) < offset) {
 			safe_unpackstr_xmalloc(&tmp_str, &utmp32, buffer);
 			if (tmp_str != NULL) {
 				if (*tmp_str == '\0') {
