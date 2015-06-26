@@ -255,9 +255,6 @@ _sacctmgr()
 
     local subopts=""
     local commands="add create delete dump list load modify show "
-    local entities="account association cluster configuration coordinator\
-	    event job qos resource transaction user wckeys"
-
     local shortoptions="-h -i -n -p -P -Q -r -s -v -V"
     local longoptions="--help --immediate --noheader --parsable \
 	--parsable2 --quiet --readonly --associations --verbose --version"
@@ -293,10 +290,6 @@ _sacctmgr()
 
     # Load command has a specific syntax. Treat it first
     [[ $command == "load" ]] && { _filedir ; return ; }
-
-    entity=$(find_first_occurence "${COMP_WORDS[*]}" "$entities")
-
-    [[ $entity == "" ]] && { offer "$entities" ; return ; }
 
     case $command in
     add|create)
