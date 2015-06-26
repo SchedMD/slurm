@@ -517,7 +517,7 @@ static int _read_ipmi_values(void)
 /* updates the given energy according to the last watt reading of the sensor */
 static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt)
 {
-	if (e->current_watts != 0) {
+	if (e->current_watts) {
 		e->base_watts = e->current_watts;
 		e->current_watts = last_update_watt;
 		if (previous_update_time == 0)
@@ -531,7 +531,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt)
 					e->current_watts);
 		e->previous_consumed_energy = e->consumed_energy;
 		e->consumed_energy += e->base_consumed_energy;
-	} else if (e->current_watts == 0) {
+	} else {
 		e->consumed_energy = 0;
 		e->base_watts = 0;
 		e->current_watts = last_update_watt;
