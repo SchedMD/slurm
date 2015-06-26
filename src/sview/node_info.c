@@ -419,7 +419,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "%u", node_ptr->energy->base_watts);
 		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "%u", node_ptr->energy->consumed_energy);
+			 "%"PRIu64"", node_ptr->energy->consumed_energy);
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -487,7 +487,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "%u", node_ptr->energy->base_watts);
 		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "%u", node_ptr->energy->consumed_energy);
+			 "%"PRIu64"", node_ptr->energy->consumed_energy);
 	}
 
 	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {

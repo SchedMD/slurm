@@ -1225,7 +1225,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			   "max_pages_node=%u, ave_pages=%f, "
 			   "min_cpu=%u, min_cpu_task=%u, "
 			   "min_cpu_node=%u, ave_cpu=%f, "
-			   "act_cpufreq=%u, consumed_energy=%u",
+			   "act_cpufreq=%u, consumed_energy=%"PRIu64"",
 			   /* user seconds */
 			   jobacct->user_cpu_sec,
 			   /* user microseconds */

@@ -137,15 +137,15 @@ static bool _run_in_daemon(void)
 
 static void _get_joules_task(acct_gather_energy_t *energy)
 {
-	uint32_t curr_energy, curr_power;
-	uint32_t diff_energy = 0;
+	uint64_t curr_energy, diff_energy = 0;
+	uint32_t curr_power;
 	time_t now;
 
 	if (energy->current_watts == NO_VAL)
 		return;
 
 	now = time(NULL);
-	curr_energy = _get_latest_stats(GET_ENERGY);
+	curr_energy = (uint64_t) _get_latest_stats(GET_ENERGY);
 	curr_power = _get_latest_stats(GET_POWER);
 
 	if (energy->previous_consumed_energy) {
@@ -161,8 +161,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		energy->base_watts = curr_power;
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: %u Joules consumed over last %ld secs. "
-		     "Currently at %u watts, lowest watts %u",
+		info("_get_joules_task: %"PRIu64" Joules consumed over last"
+		     " %ld secs. Currently at %u watts, lowest watts %u",
 		     diff_energy,
 		     energy->poll_time ? now - energy->poll_time : 0,
 		     curr_power, energy->base_watts);

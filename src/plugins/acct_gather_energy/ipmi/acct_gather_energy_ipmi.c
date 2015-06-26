@@ -141,7 +141,7 @@ typedef struct sensor_status {
 } sensor_status_t;
 static sensor_status_t *sensors;
 static uint16_t           sensors_len;
-static uint32_t *start_current_energies;
+static uint64_t *start_current_energies;
 
 /* array of struct describing the configuration of the sensors */
 typedef struct description {
@@ -216,13 +216,10 @@ static int _running_profile(void)
  * _get_additional_consumption computes consumption between 2 times
  * method is set to third method strongly
  */
-static uint32_t _get_additional_consumption(time_t time0, time_t time1,
+static uint64_t _get_additional_consumption(time_t time0, time_t time1,
 					    uint32_t watt0, uint32_t watt1)
 {
-	uint32_t consumption;
-	consumption = (uint32_t) ((time1 - time0)*(watt1 + watt0)/2);
-
-	return consumption;
+	return (uint64_t) ((time1 - time0)*(watt1 + watt0)/2);
 }
 
 /*
@@ -448,7 +445,7 @@ static int _find_power_sensor(void)
 			descriptions[0].sensor_idxs = xmalloc(sizeof(uint16_t));
 			descriptions[0].sensor_idxs[0] = 0;
 
-			start_current_energies = xmalloc(sizeof(uint32_t));
+			start_current_energies = xmalloc(sizeof(uint64_t));
 
 			previous_update_time = last_update_time;
 			last_update_time = time(NULL);
@@ -569,7 +566,7 @@ static int _thread_update_node_energy(void)
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		for (i = 0; i < sensors_len; ++i)
 			info("ipmi-thread: sensor %u current_watts: %u, "
-			     "consumed %d, new %d",
+			     "consumed %"PRIu64" Joules %"PRIu64" new",
 			     sensors[i].id,
 			     sensors[i].energy.current_watts,
 			     sensors[i].energy.consumed_energy,
@@ -794,7 +791,7 @@ static int _get_joules_task(uint16_t delta)
 {
 	time_t now = time(NULL);
 	static bool first = true;
-	uint32_t adjustment = 0;
+	uint64_t adjustment = 0;
 	uint16_t i;
 	acct_gather_energy_t *new;
 	acct_gather_energy_t *old;
@@ -849,11 +846,11 @@ static int _get_joules_task(uint16_t delta)
 
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		for (i = 0; i < sensors_len; ++i)
-			info("_get_joules_task: consumed %u Joules "
-				"(received %u(%u watts) from slurmd)",
-				sensors[i].energy.consumed_energy,
-				sensors[i].energy.base_consumed_energy,
-				sensors[i].energy.current_watts);
+			info("_get_joules_task: consumed %"PRIu64" Joules "
+			     "(received %"PRIu64"(%u watts) from slurmd)",
+			     sensors[i].energy.consumed_energy,
+			     sensors[i].energy.base_consumed_energy,
+			     sensors[i].energy.current_watts);
 	}
 
 	return SLURM_SUCCESS;
@@ -1115,7 +1112,7 @@ static int _parse_sensor_descriptions(void)
 		}
 	}
 
-	start_current_energies = xmalloc(sensors_len * sizeof(uint32_t));
+	start_current_energies = xmalloc(sensors_len * sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 

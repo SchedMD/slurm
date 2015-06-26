@@ -547,7 +547,7 @@ enum jobacct_data_type {
 	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
 	JOBACCT_DATA_TOT_CPU,	/* data-> uint32_t psize */
 	JOBACCT_DATA_ACT_CPUFREQ, /* data-> uint32_t psize hb*/
-	JOBACCT_DATA_CONSUMED_ENERGY, /* data-> uint32_t psize hb*/
+	JOBACCT_DATA_CONSUMED_ENERGY, /* data-> uint64_t psize hb*/
 	JOBACCT_DATA_MAX_DISK_READ, /* data->double psize */
 	JOBACCT_DATA_MAX_DISK_READ_ID, /* data->jobacct_id_t psize */
 	JOBACCT_DATA_TOT_DISK_READ, /* data->double psize */
@@ -1177,16 +1177,16 @@ typedef struct dynamic_plugin_data {
 } dynamic_plugin_data_t;
 
 typedef struct acct_gather_energy {
-	uint32_t base_consumed_energy;
+	uint64_t base_consumed_energy;
 	uint32_t base_watts;	  /* lowest power consump of node, in watts */
-	uint32_t consumed_energy; /* total energy consumed by node, in joules */
+	uint64_t consumed_energy; /* total energy consumed by node, in joules */
 	uint32_t current_watts;	  /* current power consump of node, in watts */
-	uint32_t previous_consumed_energy;
+	uint64_t previous_consumed_energy;
 	time_t poll_time;         /* When information was last retrieved */
 } acct_gather_energy_t;
 
 typedef struct ext_sensors_data {
-	uint32_t consumed_energy;    /* total energy consumed, in joules */
+	uint64_t consumed_energy;    /* total energy consumed, in joules */
 	uint32_t temperature;	     /* temperature, in celsius */
 	time_t   energy_update_time; /* last update time for consumed_energy */
 	uint32_t current_watts;      /* current power consumption, in watts */

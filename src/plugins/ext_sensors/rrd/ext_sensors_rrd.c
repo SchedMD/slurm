@@ -118,7 +118,7 @@ static rrd_value_t _validate_watt(rrd_value_t *v);
 static char* _get_node_rrd_path(char* component_name,
 				enum ext_sensors_value_type sensor_type);
 static uint32_t _rrd_get_last_one(char* filename, char* rra_name);
-static uint32_t _rrd_consolidate_one(time_t t0, time_t t1,
+static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 				     char* filename, char* rra_name,
 				     bool flag_approximate);
 
@@ -243,7 +243,7 @@ static uint32_t _rrd_get_last_one(char* filename, char* rra_name)
 	return temperature;
 }
 
-static uint32_t _rrd_consolidate_one(time_t t0, time_t t1,
+static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 				     char* filename, char* rra_name,
 				     bool flag_approximate)
 {
@@ -401,14 +401,14 @@ static uint32_t _rrd_consolidate_one(time_t t0, time_t t1,
 	free(ds_names);
 	free(rrd_data);
 
-	return (uint32_t)consumed_energy;
+	return (uint64_t)consumed_energy;
 }
 
-extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
+extern uint64_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 				bitstr_t* bitmap_of_nodes)
 {
-	uint32_t consumed_energy = 0;
-	uint32_t tmp;
+	uint64_t consumed_energy = 0;
+	uint64_t tmp;
 	char *node_name = NULL;
 	hostlist_t hl;
 	char* path;
@@ -439,7 +439,7 @@ static int _update_node_data(void)
 {
 	int i;
 	char* path;
-	uint32_t tmp;
+	uint64_t tmp;
 	ext_sensors_data_t *ext_sensors;
 	time_t now = time(NULL);
 
