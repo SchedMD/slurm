@@ -254,7 +254,7 @@ _sacctmgr()
     _split_long_opt
 
     local subopts=""
-    local commands="add create delete dump list load modify show "
+    local commands="add archive create delete dump list load modify show "
     local shortoptions="-h -i -n -p -P -Q -r -s -v -V"
     local longoptions="--help --immediate --noheader --parsable \
 	--parsable2 --quiet --readonly --associations --verbose --version"
@@ -343,6 +343,20 @@ _sacctmgr()
 	    fi
 	    ;;
 	*) offer "$objects" ;;
+	esac
+	;;
+    archive)
+	objects="dump load"
+	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
+	case $object in
+	dump)
+            _filedir
+	    ;;
+	load)
+            _filedir
+	    ;;
+	*) offer "$objects"
+	    ;;
 	esac
 	;;
     delete)
