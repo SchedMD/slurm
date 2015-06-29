@@ -2815,6 +2815,12 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
 
+		if (assoc->partition) {
+			share->partition =  xstrdup(assoc->partition);
+		} else {
+			share->partition = NULL;
+		}
+
 		if (assoc->user) {
 			/* We only calculate user effective usage when
 			 * we need it

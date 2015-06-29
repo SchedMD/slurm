@@ -3115,6 +3115,7 @@ extern void slurm_destroy_assoc_shares_object(void *object)
 		xfree(obj_ptr->cluster);
 		xfree(obj_ptr->name);
 		xfree(obj_ptr->parent);
+		xfree(obj_ptr->partition);
 		xfree(obj_ptr);
 	}
 }
