@@ -916,14 +916,14 @@ extern int fini(void)
 		pthread_join(cleanup_handler_thread, NULL);
 	slurm_mutex_unlock(&ipmi_mutex);
 
-	xfree(sensors); sensors = NULL;
-	xfree(start_current_energies); start_current_energies = NULL;
+	xfree(sensors);
+	xfree(start_current_energies);
 
 	for (i = 0; i < descriptions_len; ++i) {
 		xfree(descriptions[i].label);
 		xfree(descriptions[i].sensor_idxs);
 	}
-	xfree(descriptions); descriptions = NULL;
+	xfree(descriptions);
 
 	return SLURM_SUCCESS;
 }
