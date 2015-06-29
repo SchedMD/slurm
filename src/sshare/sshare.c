@@ -79,6 +79,7 @@ main (int argc, char *argv[])
 		{"cluster",  1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
 		{"noheader", 0, 0, 'h'},
+		{"partition",0, 0, 'm'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
 		{"users",    1, 0, 'u'},
@@ -98,7 +99,7 @@ main (int argc, char *argv[])
 	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqUu:t:vV",
+	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqUu:t:vVm",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -132,6 +133,9 @@ main (int argc, char *argv[])
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);
+			break;
+		case 'm':
+			options |= PRINT_PARTITIONS;
 			break;
 		case 'n':
 			print_fields_have_header = 0;

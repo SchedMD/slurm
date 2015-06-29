@@ -14,8 +14,8 @@ being provided by \fBslurmdbd\fR (Slurm Database daemon) which is
 read in from the slurmctld and used to process the shares available
 to a given association.  sshare provides Slurm share information of
 Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
-Usage, Effective Usage, the Fair-share factor, the GrpCPUMins limit
-and accumulated currently running CPU-minutes for each association.
+Usage, Effective Usage, the Fair-share factor, the GrpCPUMins limit,
+Partitions and accumulated currently running CPU-minutes for each association.
 
 
 .SH "OPTIONS"
@@ -39,6 +39,11 @@ Long listing - includes the normalized usage information.
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
+
+.TP
+\fB\-m\fR, \fB\-\-partition\fR
+Is there are association based partition in the system
+print their names.
 
 .TP
 \fB\-p\fR, \fB\-\-parsable\fR

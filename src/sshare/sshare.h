@@ -90,6 +90,10 @@
 /* Print only the users and not the hierarchy.
  */
 #define PRINT_USERS_ONLY 0x01
+/* If you have partition base associations
+ * print them
+ */
+#define PRINT_PARTITIONS 0x02
 
 typedef enum {
 	SSHARE_TIME_SECS,

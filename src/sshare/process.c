@@ -83,26 +83,58 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	format_list = list_create(slurm_destroy_char);
 	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		if (long_flag) {
-			slurm_addto_char_list(format_list,
-					      "A,User,P,RawShares,NormShares,"
-					      "RawUsage,NormUsage,EffUsage,"
-					      "FSFctr,LevelFS,GrpCPUMins,"
-					      "CPURunMins");
+			if (options & PRINT_PARTITIONS)
+				slurm_addto_char_list(
+					format_list,
+					"A,User,P,RawShares,NormShares,"
+					"RawUsage,NormUsage,EffUsage,"
+					"FSFctr,LevelFS,GrpCPUMins,"
+					"CPURunMins");
+			else
+				slurm_addto_char_list(
+					format_list,
+					"A,User,RawShares,NormShares,"
+					"RawUsage,NormUsage,EffUsage,"
+					"FSFctr,LevelFS,GrpCPUMins,"
+					"CPURunMins");
+
 		} else {
-			slurm_addto_char_list(format_list,
-					      "A,User,P,RawShares,NormShares,"
-					      "RawUsage,EffUsage,FSFctr");
+			if (options & PRINT_PARTITIONS)
+				slurm_addto_char_list(
+					format_list,
+					"A,User,P,RawShares,NormShares,"
+					"RawUsage,EffUsage,FSFctr");
+			else
+				slurm_addto_char_list(
+					format_list,
+					"A,User,RawShares,NormShares,"
+					"RawUsage,EffUsage,FSFctr");
 		}
 	} else {
 		if (long_flag) {
-			slurm_addto_char_list(format_list,
-					      "A,User,P,RawShares,NormShares,"
-					      "RawUsage,NormUsage,EffUsage,"
-					      "FSFctr,GrpCPUMins,CPURunMins");
+			if (options & PRINT_PARTITIONS)
+				slurm_addto_char_list(
+					format_list,
+					"A,User,P,RawShares,NormShares,"
+					"RawUsage,NormUsage,EffUsage,"
+					"FSFctr,GrpCPUMins,CPURunMins");
+			else
+				slurm_addto_char_list(
+					format_list,
+					"A,User,RawShares,NormShares,"
+					"RawUsage,NormUsage,EffUsage,"
+					"FSFctr,GrpCPUMins,CPURunMins");
 		} else {
-			slurm_addto_char_list(format_list,
-					      "A,User,P,RawShares,NormShares,"
-					      "RawUsage,EffUsage,FSFctr");
+			if (options & PRINT_PARTITIONS)
+				slurm_addto_char_list(
+					format_list,
+					"A,User,P,RawShares,NormShares,"
+					"RawUsage,EffUsage,FSFctr");
+			else
+				slurm_addto_char_list(
+					format_list,
+					"A,User,RawShares,NormShares,"
+					"RawUsage,EffUsage,FSFctr");
 		}
 	}
 

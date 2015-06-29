@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     structures are changed to make it easier to add new profile types,
     particularly energy sensors. sh5util will continue to work with either
     format.
+ -- Add partition information to sshare output if the --partition option
+    is specified on the sshare command line.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

@@ -2355,7 +2355,7 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 {
 	assoc_shares_object_t *object = (assoc_shares_object_t *)in;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(0, buffer);
 
@@ -2387,6 +2387,51 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 		packstr(object->name, buffer);
 		packstr(object->parent, buffer);
 		packstr(object->partition, buffer);
+
+		packdouble(object->shares_norm, buffer);
+		pack32(object->shares_raw, buffer);
+
+		packdouble(object->usage_efctv, buffer);
+		packdouble(object->usage_norm, buffer);
+		pack64(object->usage_raw, buffer);
+
+		pack64(object->grp_cpu_mins, buffer);
+		pack64(object->cpu_run_mins, buffer);
+		packdouble(object->fs_factor, buffer);
+		packdouble(object->level_fs, buffer);
+
+		pack16(object->user, buffer);
+
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(0, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			packdouble(0, buffer);
+			pack32(0, buffer);
+
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			pack64(0, buffer);
+
+			pack64(0, buffer);
+			pack64(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+
+			pack16(0, buffer);
+
+			return;
+		}
+
+		pack32(object->assoc_id, buffer);
+
+		packstr(object->cluster, buffer);
+		packstr(object->name, buffer);
+		packstr(object->parent, buffer);
 
 		packdouble(object->shares_norm, buffer);
 		pack32(object->shares_raw, buffer);
@@ -2456,7 +2501,7 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 
 	*object = (void *) object_ptr;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&object_ptr->assoc_id, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->cluster,
@@ -2464,6 +2509,29 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->parent,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition,
+				       &uint32_tmp, buffer);
+
+		safe_unpackdouble(&object_ptr->shares_norm, buffer);
+		safe_unpack32(&object_ptr->shares_raw, buffer);
+
+		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
+		safe_unpackdouble(&object_ptr->usage_norm, buffer);
+		safe_unpack64(&object_ptr->usage_raw, buffer);
+
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
+		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+		safe_unpackdouble(&object_ptr->fs_factor, buffer);
+		safe_unpackdouble(&object_ptr->level_fs, buffer);
+
+		safe_unpack16(&object_ptr->user, buffer);
+
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->assoc_id, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->cluster,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->partition,
 				       &uint32_tmp, buffer);
 
