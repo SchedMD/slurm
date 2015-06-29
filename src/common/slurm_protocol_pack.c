@@ -2362,6 +2362,7 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 
 			packdouble(0, buffer);
 			pack32(0, buffer);
@@ -2385,6 +2386,7 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 		packstr(object->cluster, buffer);
 		packstr(object->name, buffer);
 		packstr(object->parent, buffer);
+		packstr(object->partition, buffer);
 
 		packdouble(object->shares_norm, buffer);
 		pack32(object->shares_raw, buffer);
@@ -2461,6 +2463,8 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->parent,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition,
 				       &uint32_tmp, buffer);
 
 		safe_unpackdouble(&object_ptr->shares_norm, buffer);

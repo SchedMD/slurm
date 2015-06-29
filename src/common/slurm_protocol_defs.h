@@ -472,6 +472,7 @@ typedef struct assoc_shares_object {
 
 	char *name;             /* name */
 	char *parent;           /* parent name */
+	char *partition;	/* partition */
 
 	double shares_norm;     /* normalized shares */
 	uint32_t shares_raw;	/* number of shares allocated */

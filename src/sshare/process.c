@@ -69,6 +69,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		PRINT_ID,
 		PRINT_NORMS,
 		PRINT_NORMU,
+		PRINT_PART,
 		PRINT_RAWS,
 		PRINT_RAWU,
 		PRINT_RUNMINS,
@@ -83,24 +84,24 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		if (long_flag) {
 			slurm_addto_char_list(format_list,
-					      "A,User,RawShares,NormShares,"
+					      "A,User,P,RawShares,NormShares,"
 					      "RawUsage,NormUsage,EffUsage,"
 					      "FSFctr,LevelFS,GrpCPUMins,"
 					      "CPURunMins");
 		} else {
 			slurm_addto_char_list(format_list,
-					      "A,User,RawShares,NormShares,"
+					      "A,User,P,RawShares,NormShares,"
 					      "RawUsage,EffUsage,FSFctr");
 		}
 	} else {
 		if (long_flag) {
 			slurm_addto_char_list(format_list,
-					      "A,User,RawShares,NormShares,"
+					      "A,User,P,RawShares,NormShares,"
 					      "RawUsage,NormUsage,EffUsage,"
 					      "FSFctr,GrpCPUMins,CPURunMins");
 		} else {
 			slurm_addto_char_list(format_list,
-					      "A,User,RawShares,NormShares,"
+					      "A,User,P,RawShares,NormShares,"
 					      "RawUsage,EffUsage,FSFctr");
 		}
 	}
@@ -151,6 +152,11 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
 			field->print_routine = print_fields_double;
+		} else if (!strncasecmp("Partition", object, 1)) {
+			field->type = PRINT_PART;
+			field->name = xstrdup("Partition");
+			field->len = 12;
+			field->print_routine = print_fields_str;
 		} else if (!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
@@ -316,6 +322,11 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 					tmp_char = share->name;
 				field->print_routine(field,
 						     tmp_char,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_PART:
+				field->print_routine(field,
+						     share->partition,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_CPUMINS:
