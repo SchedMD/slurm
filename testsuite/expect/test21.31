@@ -27,34 +27,61 @@ source ./globals_accounting
 set test_id     "test21.31"
 set exit_code   0
 set tc2		"$test_id-cluster-2"
-set nm		name
-set sr		res
 set sr1		[format "%s%s" $test_id "res_1"]
 set sr2		[format "%s%s" $test_id "res_2"]
 set sr3		[format "%s%s" $test_id "res_3"]
-set rs		-1
-set dsc		description
-set dsc1	sr1
-set dsc2	"sr2&sr3"
-set cnt		count
-set cnt1	80
-set cnt1a	50
-set cnt2	100
-set man		ServerType
-set man1	server_type_1
-set man2	server_type_2
+
+set res1_desc   sr1
+set res1_cnt    80
+set res1_srvtyp server_type_1
+set res1_srv    server_1
+set res1_type   license
+set res1_allw   50
+
+set res2_desc   "sr2&sr3"
+set res2_cnt    100
+set res2_srvtyp server_type_2
+set res2_srv    server_2
+set res2_type   license
+
 set ser		server
-set ser1	server_1
-set ser2	server_2
-set clu		clusters
-set typ		type
-set typ1	license
-set typ2	license
-set all		percentallowed
-set all1	50
 set ect1	40
 set ect1a	25
 set access_err  0
+
+# First test resource
+array set resource1 {}
+set resource1(description)           $res1_desc
+set resource1(count)                 $res1_cnt
+set resource1(ServerType)            $res1_srvtyp
+set resource1(Server)                $res1_srv
+set resource1(type)                  $res1_type
+set resource1(percentallowed)        $res1_allw
+
+# First check test resources
+array set resource1_chck {}
+set resource1_chck(description)      $res1_desc
+set resource1_chck(count)            $res1_cnt
+set resource1_chck(ServerType)       $res1_srvtyp
+set resource1_chck(Server)           $res1_srv
+
+# Limit changes to the first resource
+array set resource1_chng {}
+set resource1_chng(count)            50
+
+# Second and thrid test resources
+array set resource2 {}
+set resource2(description)           $res2_desc
+set resource2(count)                 $res2_cnt
+set resource2(ServerType)            $res2_srvtyp
+set resource2(Server)                $res2_srv
+set resource2(type)                  $res2_type
+
+array set resource2_chck {}
+set resource2_chck(description)      $res2_desc
+set resource2_chck(count)            $res2_cnt
+set resource2_chck(ServerType)       $res2_srvtyp
+set resource2_chck(Server)           $res2_srv
 
 # Cluster
 array set clus_req {}
@@ -86,7 +113,7 @@ if {[test_super_user] == 0} {
 
 # verify a clean system and permission to do this work
 remove_cluster "$tc2"
-remove_res "$sr1,rs3,rsr3"
+remove_res "$sr1"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
@@ -104,59 +131,18 @@ if { $exit_code } {
 # get name of this cluster
 #
 set cluster [get_cluster_name]
+set resource1(cluster) "$cluster,$tc2"
 
 #
 # add a global resource designating multiple clusters
 #
-set my_pid [spawn $sacctmgr -i add res $nm=$sr1 $dsc=$dsc1 $cnt=$cnt1 $man=$man1 $ser=$ser1 $typ=$typ1 $clu=$cluster,$tc2 $all=$all1]
-expect {
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+add_res $sr1 [array get resource1]
 
 #
 # Use sacctmgr list to verify the test global resource fields
 #
-set matches 0
-set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$sr1.$cnt1.$man1.$ser1.$dsc1" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list res not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: list resource output is incorrect ($matches != 1).\n"
-	send_user "  Expected:$sr1|$cnt1|$man1|$ser1|$dsc1\n\n\n"
+if {[check_res_limits $sr1 [array get resource1_chck]] == 1} {
+	send_user "\nFAILURE: list resource output is incorrect. \n"
 	incr exit_code 1
 }
 
@@ -166,7 +152,7 @@ if {$matches != 1} {
 set matches 0
 set my_pid [eval spawn $scontrol show lic]
 expect {
-	-re "LicenseName=($sr1@$ser1)" {
+	-re "LicenseName=($sr1@$resource1(Server))" {
 		incr matches
 		exp_continue
 	}
@@ -184,7 +170,7 @@ expect {
 }
 if {$matches != 2} {
 	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
-	send_user "  Expected: LicenseName=$sr1@$ser1\n"
+	send_user "  Expected: LicenseName=$sr1@$resource1(Server)\n"
 	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
 	incr exit_code 1
 }
@@ -192,43 +178,7 @@ if {$matches != 2} {
 #
 # modify resources
 #
-set matches 0
-set my_pid [eval spawn $sacctmgr -i mod res where $nm=$sr1 set $cnt=$cnt1a]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Nothing modified" {
-		send_user "FAILURE: sacctmgr command unable to modify\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re " Modified server resource ..." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr modify res not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
+if {[mod_res $sr1 [array get resource1_chng]] == 1} {
 	send_user "\nFAILURE: Resource modify not working ($matches != 1).\n"
 	incr exit_code 1
 }
@@ -238,41 +188,9 @@ if {$matches != 1} {
 #
 # Use sacctmgr list to verify the test res fields
 #
-set matches 0
-set my_pid [spawn $sacctmgr -n -p list res $sr1 format="$nm,$cnt,$man,$ser,$dsc" ]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$sr1.$cnt1a.$man1.$ser1.$dsc1" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list res not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: list resource output is incorrect ($matches != 1).\n"
-	send_user "  Expected:$sr1|$cnt1a|$man1|$ser1|$dsc1\n\n\n"
+set resource1_chck(count) $resource1_chng(count)
+if {[check_res_limits $sr1 [array get resource1_chck]] == 1} {
+	send_user "\nFAILURE: list resource output is incorrect.\n"
 	incr exit_code 1
 }
 
@@ -280,9 +198,9 @@ if {$matches != 1} {
 # use scontrol to verify the modified cluster license
 #
 set matches 0
-set my_pid [eval spawn $scontrol show lic $sr1@$ser1]
+set my_pid [eval spawn $scontrol show lic $sr1@$resource1(Server)]
 expect {
-	-re "LicenseName=$sr1@$ser1" {
+	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches
 		exp_continue
 	}
@@ -300,7 +218,7 @@ expect {
 }
 if {$matches != 2} {
 	send_user "\nFAILURE: license output is incorrect ($matches != 2).\n"
-	send_user "  Expected: LicenseName=$sr1@$ser1\n"
+	send_user "  Expected: LicenseName=$sr1@$resource1(Server)\n"
 	send_user "  Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes\n\n\n"
 	incr exit_code 1
 }
@@ -316,7 +234,7 @@ incr exit_code [remove_res $sr1]
 set matches 0
 set my_pid [eval spawn $scontrol show lic]
 expect {
-	-re "LicenseName=$sr1@$ser1" {
+	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches
 		exp_continue
 	}
@@ -329,68 +247,27 @@ expect {
 	}
 }
 if {$matches != 0} {
-	send_user "\nFAILURE: scontrol failed to remove license $sr1@$ser1.\n"
+	send_user "\nFAILURE: scontrol failed to remove license $sr1@$resource1(Server).\n"
 	incr exit_code 1
 }
 
 #
 # add multiple global resources in a single call
 #
-spawn $sacctmgr -i add res $nm="$sr2,$sr3" $dsc=$dsc2 $cnt=$cnt2 $man=$man2 $ser=$ser2 $typ=$typ2
-expect {
-	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+add_res "$sr2,$sr3" [array get resource2]
 
 #
 # Use sacctmgr list to verify both global resources were added
 #
-set matches 0
-set my_pid [spawn $sacctmgr -n -p list res format="$nm,$cnt,$ser,$man,$dsc" ]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-		incr exit_code 1
-	}
-	-re "$sr2.$cnt2.$ser2.$man2.$dsc2" {
-		incr matches
-		exp_continue
-	}
-	-re "$sr3.$cnt2.$ser2.$man2.$dsc2" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list res not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
+# Check resource 2
+if {[check_res_limits $sr2 [array get resource2_chck]] == 1} {
+	send_user "\nFAILURE: list resource output is incorrect.\n"
+	incr exit_code 1
 }
 
-if {$matches != 2} {
-	send_user "\nFAILURE: list resource output is incorrect ($matches != 2).\n"
-	send_user "  Expected:$sr2|$cnt2|$ser2|$man2|$dsc2\n"
-	send_user "  Expected:$sr3|$cnt2|$ser2|$man2|$dsc2\n\n\n"
+# Check resource 3
+if {[check_res_limits $sr3 [array get resource2_chck]] == 1} {
+	send_user "\nFAILURE: list resource output is incorrect.\n"
 	incr exit_code 1
 }
 

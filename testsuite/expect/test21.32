@@ -155,7 +155,7 @@ if {$access_err != 0} {
 }
 
 # Add a few QoS
-add_qos $qos_names_str
+add_qos $qos_names_str ""
 if { $exit_code } {
 	remove_qos $qos_names_str
 	send_user "\nFAILURE\n"

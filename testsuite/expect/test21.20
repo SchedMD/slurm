@@ -127,7 +127,7 @@ if { $exit_code } {
 }
 
 #add qos
-incr exit_code [add_qos "$qs1,$qs2,$qs3"]
+incr exit_code [add_qos "$qs1,$qs2,$qs3" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"

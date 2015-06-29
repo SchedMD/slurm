@@ -35,50 +35,31 @@ source ./globals_accounting
 
 set test_id     "test21.29"
 set test_nu     "test21-29"
+set usagefactor_reset  1.000000
+set priority_reset     0
 set exit_code   0
-set nm		name
-set qs		QOS
-set qs1		[format "%s%s" $test_nu "qosnormal"]
-set rs		-1
-set dsc		description
-set ds1		tqos1
-set gc		GrpCpus
-set gc1		80
-set gcm		GrpCpuMins
-set gcm1	240000
-set gj		GrpJobs
-set gj1		500
-set gn		GrpNodes
-set gn1		10
-set gs		GrpSubmit
-set gs1		800
-set gw		GrpWall
-set gw1		01:00:00
-set mc		MaxCpus
-set mc1		80
-set mcm		MaxCpuMins
-set mcm1	60000
-set mj		MaxJobs
-set mj1		50
-set mn		MaxNodes
-set mn1		2
-set ms		MaxSubmit
-set ms1		100
-set msj		MaxSubmitJobs
-set msj1	100
-set mw		Maxwall
-set mw1		01:00:00
-set pre		Preempt
-set pe1		normal
-set pm		PreemptMode
-set pm1		cluster
-set pri		Priority
-set pi1		2500
-set pi3		0
-set uf		UsageFactor
-set uf1		5.000000
-set uf3		1.000000
 set access_err  0
+
+# QoS Limits
+array set qos {}
+set qos_name          [format "%s%s" $test_nu "qosnormal"]
+set qos(GrpCPUMins)    240000
+set qos(GrpCPUs)       80
+set qos(GrpJobs)       500
+set qos(GrpSubmitJobs) 800
+set qos(GrpNodes)      10
+set qos(GrpWall)       01:00:00
+set qos(MaxCPUs)       80
+set qos(MaxCPUMins)    60000
+set qos(MaxJobs)       50
+set qos(MaxSubmitJobs) 100
+set qos(MaxNodes)      2
+set qos(MaxWall)       01:00:00
+set qos(Description)   "tqos1"
+set qos(Preempt)       "normal"
+set qos(PreemptMode)   "cluster"
+set qos(Priority)      2500
+set qos(UsageFactor)   5.000000
 
 print_header $test_id
 
@@ -98,158 +79,37 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 }
 
 # verify a clean QOS entity and permission to do this work
-remove_qos "$qs1"
+remove_qos "$qos_name"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
 
 #add qos
-spawn $sacctmgr -i add qos $nm=$qs1 $dsc=$ds1 $gc=$gc1 $gcm=$gcm1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mcm=$mcm1 $mj=$mj1 $mn=$mn1 $ms=$ms1 $msj=$msj1 $mw=$mw1 $pre=$pe1 $pm=$pm1 $pri=$pi1 $uf=$uf1
-expect {
-	 timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+add_qos $qos_name [array get qos]
 
 # Use sacctmgr list to verify the test qos fields
-#
-set matches 0
-set my_pid [spawn $sacctmgr -n -p list qos $qs1 format="$gc,$gcm,$gj,$gn,$gs,$gw,$mc,$mcm,$mj,$mn,$ms,$msj,$mw,$pre,$pm,$pri,$uf" ]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "($gc1.$gcm1.$gj1.$gn1.$gs1.01.00.00.$mc1.$mcm1.$mj1.$mn1.$ms1.$msj1.01.00.00.$pe1.$pm1.$pi1.$uf1)" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set exit_code [check_qos_limits $qos_name  [array get qos]]
 
-if {$matches != 1} {
-	send_user "\n\n QoS matches is $matches.\n\n"
-	send_user "\nFAILURE:  QOS field incorrect.\n"
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-	incr exit_code 1
+# Setup the qos array so that we clear all the limits
+foreach option [array name qos] {
+	if {[string compare $option "PreemptMode"] != 0 &&
+	    [string compare $option "Preempt"] != 0} {
+		set qos($option) -1
+	}
 }
+set qos(UsageFactor) $usagefactor_reset
+set qos(Description) ""
+set qos(Priority) $priority_reset
 
 #modify qos
-set matches 0
-set my_pid [eval spawn $sacctmgr -i mod qos where $nm=$qs1 set $gc=$rs $gcm=$rs $gj=$rs $gn=$rs $gs=$rs $gw=$rs $mc=$rs $mcm=$rs $mj=$rs $mn=$rs $ms=$rs $msj=$rs $mw=$rs $pri=$rs $uf=$rs]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Nothing modified" {
-		send_user "FAILURE: sacctmgr command unable to modify\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Modified qos" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr modify associations not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set exit_code [mod_qos $qos_name [array get qos]]
 
-if {$matches != 1} {
-	send_user "\n\n QoS matches is $matches.\n\n"
-	send_user "\nFAILURE:  QOS modify not working.\n"
-	incr exit_code 1
-}
-
-#
-# Use sacctmgr to list the test qos modifications
-#
-# Use sacctmgr list to verify the test qos fields
-#
-set matches 0
-set my_pid [spawn $sacctmgr -n -p list qos $qs1 format="$gc,$gcm,$gj,$gn,$gs,$gw,$mc,$mcm,$mj,$mn,$ms,$msj,$mw,$pre,$pm,$pri,$uf" ]
-expect {
-	-re "No valid entity in list command" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "invalid keyword" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown condition" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "Unknown field" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "(.............$pe1.$pm1.$pi3.$uf3)" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\n\n QoS matches is $matches.\n\n"
-	send_user "\nFAILURE:  QOS field incorrect.\n"
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-	incr exit_code 1
-}
+# Check that the modified QoS limits are correct
+set exit_code [check_qos_limits $qos_name [array get qos]]
 
 # Next is clean up and the end
-
-incr exit_code [remove_qos "$qs1"]
+incr exit_code [remove_qos "$qos_name"]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
