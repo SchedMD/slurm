@@ -1270,7 +1270,13 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 		if (s_p_get_string(&tmp_char, "EnergyIPMIVariable", tbl)) {
 			if (!strcmp(tmp_char, "Temp"))
 				slurm_ipmi_conf.variable =
-					IPMI_MONITORING_SENSOR_TYPE_TEMPERATURE;
+					IPMI_MONITORING_SENSOR_UNITS_CELSIUS;
+			else if (!strcmp(tmp_char, "Voltage"))
+				slurm_ipmi_conf.variable =
+					IPMI_MONITORING_SENSOR_UNITS_VOLTS;
+			else if (!strcmp(tmp_char, "Fan"))
+				slurm_ipmi_conf.variable =
+					IPMI_MONITORING_SENSOR_UNITS_RPM;
 			xfree(tmp_char);
 		}
 	}
@@ -1465,8 +1471,14 @@ extern void acct_gather_energy_p_conf_values(List *data)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("EnergyIPMIVariable");
 	switch (slurm_ipmi_conf.variable) {
-	case IPMI_MONITORING_SENSOR_TYPE_TEMPERATURE:
+	case IPMI_MONITORING_SENSOR_UNITS_CELSIUS:
 		key_pair->value = xstrdup("Temp");
+		break;
+	case IPMI_MONITORING_SENSOR_UNITS_RPM:
+		key_pair->value = xstrdup("Fan");
+		break;
+	case IPMI_MONITORING_SENSOR_UNITS_VOLTS:
+		key_pair->value = xstrdup("Voltage");
 		break;
 	case IPMI_MONITORING_SENSOR_UNITS_WATTS:
 		key_pair->value = xstrdup("Watts");
