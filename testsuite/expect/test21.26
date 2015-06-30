@@ -158,7 +158,7 @@ if { $exit_code } {
 # exit
 
 #add qos
-incr exit_code [add_qos "$qos1"]
+incr exit_code [add_qos "$qos1" ""]
 if { $exit_code } {
 	remove_qos "$qos1"
 	exit $exit_code

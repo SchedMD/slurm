@@ -325,6 +325,7 @@ documents those changes that are of interest to users and administrators.
  -- Set the totalview_stepid to the value of the job step instead of NO_VAL.
  -- Fix slurmdbd core dump if the daemon does not have connection with
     the database.
+ -- Display error message when attempting to modify priority of a held job.
 
 * Changes in Slurm 14.11.7
 ==========================

@@ -10212,6 +10212,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			   (job_specs->priority != INFINITE)) {
 			info("ignore priority reset request on held job %u",
 			     job_ptr->job_id);
+			error_code = ESLURM_JOB_HELD;
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
 			if (job_specs->priority != 0)

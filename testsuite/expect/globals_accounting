@@ -838,18 +838,28 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 #
 # Use sacctmgr to create a QoS
 #
-proc add_qos {name} {
+proc add_qos {name qos_req_in} {
 	global sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
+	array set qos_req $qos_req_in
 
 	if { ![string length $name] } {
 		send_user "FAILURE: Need name of qos to add\n"
 		return 1
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add qos $name]
+	set command "$name"
+
+	foreach option [array names qos_req] {
+		if { ![string compare $qos_req($option) " "] } {
+			set $qos_req($option) "''"
+		}
+		set command "$command $option=$qos_req($option)"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add qos $command]
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1200,32 +1210,24 @@ proc archive_load { file } {
 #
 # Use sacctmgr to create a res
 #
-proc add_res {name count manager server desc} {
+proc add_res {name res_limits} {
 	global sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
+	set command "name=$name"
+	array set res_req $res_limits
 
 	if { ![string length $name] } {
 		send_user "FAILURE: Need name of res to add\n"
 		return 1
 	}
-	set command "name=$name"
 
-	if { [string length $count] } {
-		set command "$command count=$count"
-	}
-
-	if { [string length $manager] } {
-		set command "$command manager=$manager"
-	}
-
-	if { [string length $server] } {
-		set command "$command server=$server"
-	}
-
-	if { [string length $manager] } {
-		set command "$command description=$desc"
+	foreach option [array names res_req] {
+		if { ![string compare $res_req($option) " "] } {
+			set $res_req($option) "''"
+		}
+		set command "$command $option=$res_req($option)"
 	}
 
 	set my_pid [eval spawn $sacctmgr -i add res $command]
@@ -1242,7 +1244,7 @@ proc add_res {name count manager server desc} {
 			send_user "FAILURE: there was an unknown problem\n"
 			incr exit_code 1
 		}
-		-re "Adding system resource(s)" {
+		-re "Adding Resource" {
 			incr matches
 			exp_continue
 		}
@@ -1640,4 +1642,178 @@ proc check_wckey_tracking { } {
 	}
 	log_user 1
 	return $wckey
+}
+
+###############################################################
+#
+# Proc: check_qos_limits
+#
+# Purpose: Verify that the qos limits are correct
+#
+# Returns: 0 if successful, 1 otherwise
+#
+#
+###############################################################
+proc check_qos_limits { name qos_req } {
+	global sacctmgr
+
+	set command "format="
+	set values ""
+	set exit_code 0
+	array set qos_limits $qos_req
+
+	if { ![string length $name] } {
+		send_user "\nFAILURE: we need a name to check\n"
+		return 1
+	}
+
+	foreach option [array names qos_limits] {
+		if { ![string compare $qos_limits($option) " "] } {
+			set $qos_limits($option) "''"
+		}
+
+		set command "$command$option\,"
+		if { ![string compare $qos_limits($option) "-1"] } {
+			set values "$values."
+		} else {
+			set values "$values$qos_limits($option)."
+		}
+	}
+
+	log_user 0
+	set match 0
+	spawn $sacctmgr -n -p show qos $name "$command"
+	expect {
+		-re "($values)" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$match == 0} {
+		send_user "\nFAILURE: limits do not match\n"
+		set exit_code 1
+	}
+
+	return $exit_code
+}
+
+###############################################################
+#
+# Proc: check_res_limits
+#
+# Purpose: Verify that the reservation limits are correct
+#
+# Returns: 0 if successful, 1 otherwise
+#
+#
+###############################################################
+proc check_res_limits { name res_limits } {
+	global sacctmgr
+
+	set command "format=name"
+	set values "$name"
+	set exit_code 0
+	array set res_req $res_limits
+
+	if { ![string length $name] } {
+		send_user "\nFAILURE: we need a name to check\n"
+		return 1
+	}
+
+	foreach option [array names res_req] {
+		if { ![string compare $res_req($option) " "] } {
+			set $res_req($option) "''"
+		}
+		set command "$command,$option"
+		set values "$values.$res_req($option)"
+	}
+
+	log_user 0
+	set match 0
+	spawn $sacctmgr -p -n list res $name $command
+	expect {
+		-re "$values" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+
+	}
+	log_user 1
+
+	if {$match == 0} {
+		set exit_code 1
+	}
+
+	return $exit_code
+
+}
+
+###############################################################
+#
+# Proc: mod_res
+#
+# Purpose: Modify existing reservation limits
+#
+# Returns: 0 if successful, 1 otherwise
+#
+#
+###############################################################
+proc mod_res {name mod_limits} {
+
+	global sacctmgr
+	set commands ""
+	set exit_code 0
+	array set res_mod_req $mod_limits
+
+	if { ![string length $name] } {
+		send_user "\nFAILURE: we need a name to check\n"
+		return 1
+	}
+
+	foreach option [array names res_mod_req] {
+		if { ![string compare $res_mod_req($option) " "] } {
+			set $res_mod_req($option) "''"
+		}
+		set commands "$commands$option=$res_mod_req($option) "
+	}
+
+	log_user 0
+	set match 0
+	spawn $sacctmgr -i mod res where name=$name set $commands
+	expect {
+		-re "Modified server resources ..." {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$match == 1} {
+		set exit_code 1
+	}
+
+	return $exit_code
 }

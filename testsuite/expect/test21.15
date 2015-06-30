@@ -179,7 +179,7 @@ if {$matches != 9} {
 # From here we test all the limits associated with the user
 #
 
-incr exit_code [add_qos "$dqos1"]
+incr exit_code [add_qos "$dqos1" ""]
 if { $exit_code } {
 	remove_qos "$dqos1"
 	exit $exit_code

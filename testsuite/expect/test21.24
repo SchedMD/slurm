@@ -289,7 +289,7 @@ if {$access_err != 0} {
 }
 
 #add qos
-incr exit_code [add_qos "$qs2"]
+incr exit_code [add_qos "$qs2" ""]
 if { $exit_code } {
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
