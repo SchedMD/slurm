@@ -139,9 +139,9 @@ typedef struct sensor_status {
 	uint32_t last_update_watt;
 	acct_gather_energy_t energy;
 } sensor_status_t;
-static sensor_status_t *sensors;
-static uint16_t           sensors_len;
-static uint64_t *start_current_energies;
+static sensor_status_t *sensors = NULL;
+static uint16_t sensors_len = 0;
+static uint64_t *start_current_energies = NULL;
 
 /* array of struct describing the configuration of the sensors */
 typedef struct description {
