@@ -461,8 +461,7 @@ static int _find_power_sensor(void)
 	if (rc != SLURM_SUCCESS)
 		info("Power sensor not found.");
 	else if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("Power sensor found: %d",
-		     slurm_ipmi_conf.power_sensor_num);
+		info("Power sensor found: %d", sensors_len);
 
 	return rc;
 }
@@ -793,8 +792,7 @@ static int _get_joules_task(uint16_t delta)
 	static bool first = true;
 	uint64_t adjustment = 0;
 	uint16_t i;
-	acct_gather_energy_t *new;
-	acct_gather_energy_t *old;
+	acct_gather_energy_t *new, *old;
 
 	/* sensors list */
 	acct_gather_energy_t *energies;
@@ -804,11 +802,20 @@ static int _get_joules_task(uint16_t delta)
 		error("_get_joules_task: can't get info from slurmd");
 		return SLURM_ERROR;
 	}
+	if (first) {
+		sensors_len = sensor_cnt;
+		sensors = xmalloc(sizeof(sensor_status_t) * sensors_len);
+		start_current_energies =
+			xmalloc(sizeof(uint64_t) * sensors_len);
+	}
+
 	if (sensor_cnt != sensors_len) {
 		error("_get_joules_task: received %u sensors, %u expected",
 		      sensor_cnt, sensors_len);
+		acct_gather_energy_destroy(energies);
 		return SLURM_ERROR;
 	}
+
 
 	for (i = 0; i < sensor_cnt; ++i) {
 		new = &energies[i];
@@ -832,26 +839,23 @@ static int _get_joules_task(uint16_t delta)
 			start_current_energies[i] =
 				new->consumed_energy + adjustment;
 			new->base_consumed_energy = 0;
-			//first = false;
 		}
 
 		new->consumed_energy = new->previous_consumed_energy
 			+ new->base_consumed_energy;
 		memcpy(old, new, sizeof(acct_gather_energy_t));
-	}
 
-	xfree(energies);
-
-	first = false;
-
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		for (i = 0; i < sensors_len; ++i)
+		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("_get_joules_task: consumed %"PRIu64" Joules "
 			     "(received %"PRIu64"(%u watts) from slurmd)",
-			     sensors[i].energy.consumed_energy,
-			     sensors[i].energy.base_consumed_energy,
-			     sensors[i].energy.current_watts);
+			     new->consumed_energy,
+			     new->base_consumed_energy,
+			     new->current_watts);
 	}
+
+	acct_gather_energy_destroy(energies);
+
+	first = false;
 
 	return SLURM_SUCCESS;
 }
