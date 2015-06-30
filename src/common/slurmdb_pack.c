@@ -1632,7 +1632,9 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t rpc_version,
 extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 					  Buf buffer)
 {
-	uint32_t uint32_tmp;
+	uint32_t uint32_tmp, count;
+	int i;
+	void *tmp_info;
 	slurmdb_reservation_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_reservation_rec_t));
 
@@ -1654,6 +1656,18 @@ extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 		safe_unpack_time(&object_ptr->time_start_prev, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->tres_list =
+				list_create(slurmdb_destroy_tres_rec);
+			for (i=0; i<count; i++) {
+				if (slurmdb_unpack_tres_rec(
+					    &tmp_info, rpc_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->tres_list, tmp_info);
+			}
+		}
 	} else if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		uint64_t tmp64;
 		safe_unpack64(&tmp64, buffer); /* not needed (alloc_secs) */
