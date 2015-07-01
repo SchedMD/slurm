@@ -252,6 +252,9 @@ int srun(int ac, char **av)
 		tcgetattr(fd, &term);
 		/* Set raw mode on local tty */
 		cfmakeraw(&term);
+		/* Re-enable output processing such that debug() and
+		 * and error() work properly. */
+		term.c_oflag |= OPOST;
 		tcsetattr(fd, TCSANOW, &term);
 		atexit(&_pty_restore);
 
