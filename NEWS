@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     report.
  -- Display job in sacct when single step's cpus are different from the job
     allocation.
+ -- Add association usage information to "scontrol show cache" command output.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

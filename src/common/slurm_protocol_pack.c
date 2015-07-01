@@ -13446,6 +13446,7 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 	slurm_cache_assoc_info_t *captr;
 	uint64_t uasize, aasize;
 	uint32_t zz;
+	uint8_t  usage_flag = 0;
 	int      i;
 
 	xassert(msg != NULL);
@@ -13502,7 +13503,7 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 			safe_unpack16(&captr->is_def, buffer);
 			safe_unpack32(&captr->lft, buffer);
 			safe_unpack64(&captr->max_cpu_mins_pj, buffer);
-			safe_unpack64(&captr->max_cpu_run_mins,buffer);
+			safe_unpack64(&captr->max_cpu_run_mins, buffer);
 			safe_unpack32(&captr->max_cpus_pj, buffer);
 			safe_unpack32(&captr->max_jobs, buffer);
 			safe_unpack32(&captr->max_nodes_pj, buffer);
@@ -13515,6 +13516,17 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 			safe_unpack32(&captr->shares_raw, buffer);
 			safe_unpack32(&captr->uid, buffer);
 			safe_unpackstr_xmalloc(&captr->user, &zz, buffer);
+
+			/* Association usage */
+			safe_unpack8(&usage_flag, buffer);
+			if (!usage_flag)
+				continue;
+			safe_unpack64(&captr->grp_used_cpu_run_secs, buffer);
+			safe_unpack32(&captr->grp_used_cpus, buffer);
+			safe_unpack32(&captr->grp_used_mem, buffer);
+			safe_unpack32(&captr->grp_used_nodes, buffer);
+			safe_unpack64(&captr->grp_used_wall, buffer);
+			safe_unpack64(&captr->usage_raw, buffer);
 		}
 
 	} else {

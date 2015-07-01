@@ -99,10 +99,9 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 		for (cc = 0; cc < msg->num_users; cc++) {
 			if (name && strcmp(msg->cache_user_array[cc].name, name))
 				continue;
-			printf("UserName=%s%sUID=%u DefAccount=%s OldName=%s "
+			printf("UserName=%s UID=%u DefAccount=%s OldName=%s "
 			       "DefWckey=%s\n",
 			       msg->cache_user_array[cc].name,
-			       one_liner ? " " : "\n    ",
 			       msg->cache_user_array[cc].uid,
 			       msg->cache_user_array[cc].default_acct,
 			       msg->cache_user_array[cc].old_name,
@@ -110,6 +109,7 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 			if (name)
 				break;
 		}
+		printf("\n");
 	}
 
 	if (!msg->num_assocs) {
@@ -127,14 +127,28 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 					continue;
 			}
 			printf("ClusterName=%s Account=%s ParentAccount=%s "
-			       "UserName=%s UID=%u Partition=%s%s Share=%u "
-			       "GrpJobs=%u GrpNodes=%u GrpCPUs=%u GrpMem=%u "
-			       "GrpSubmit=%u GrpWall=%u GrpCPUMins=%"PRIu64" "
-			       "MaxJobs=%u MaxNodes=%u MaxCPUs=%u MaxSubmit=%u "
-			       "MaxWall=%u MaxCPUMins=%"PRIu64" QOS=%u "
-			       "GrpCPURunMins=%"PRIu64" "
-			       "MaxCPURunMins=%"PRIu64" ID=%u "
-			       "DefAssoc=%u Lft=%u ParentID=%u Rgt=%u\n",
+			       "UserName=%s UID=%u Partition=%s%s"
+
+			       "Share=%u GrpJobs=%u GrpNodes=%u GrpCPUs=%u "
+			       "GrpMem=%u%s"
+
+			       "GrpSubmit=%u GrpWall=%u GrpCpuMins=%"PRIu64" "
+			       "MaxJobs=%u%s"
+
+			       "MaxNodes=%u MaxCPUs=%u MaxSubmit=%u "
+			       "MaxWall=%u%s"
+
+			       "MaxCpuMins=%"PRIu64" QOS=%u "
+			       "GrpCpuRunMins=%"PRIu64" "
+			       "MaxCpuRunMins=%"PRIu64"%s"
+
+			       "ID=%u DefAssoc=%u Lft=%u ParentID=%u Rgt=%u%s"
+
+			       "GrpUsedCpuRunSecs=%"PRIu64" GrpUsedCPUs=%u "
+			       "GrpUsedMem=%u GrpUsedNode=%u%s"
+
+			       "GrpUsedWall=%"PRIu64" UsageRaw=%"PRIu64"\n",
+
 			       msg->cache_assoc_array[cc].cluster,
 			       msg->cache_assoc_array[cc].acct,
 			       msg->cache_assoc_array[cc].parent_acct,
@@ -142,28 +156,47 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 			       msg->cache_assoc_array[cc].uid,
 			       msg->cache_assoc_array[cc].partition,
 			       one_liner ? " " : "\n    " ,
+
 			       msg->cache_assoc_array[cc].shares_raw,
 			       msg->cache_assoc_array[cc].grp_jobs,
 			       msg->cache_assoc_array[cc].grp_nodes,
 			       msg->cache_assoc_array[cc].grp_cpus,
 			       msg->cache_assoc_array[cc].grp_mem,
+			       one_liner ? " " : "\n    " ,
+
 			       msg->cache_assoc_array[cc].grp_submit_jobs,
 			       msg->cache_assoc_array[cc].grp_wall,
 			       msg->cache_assoc_array[cc].grp_cpu_mins,
 			       msg->cache_assoc_array[cc].max_jobs,
+			       one_liner ? " " : "\n    " ,
+
 			       msg->cache_assoc_array[cc].max_nodes_pj,
 			       msg->cache_assoc_array[cc].max_cpus_pj,
 			       msg->cache_assoc_array[cc].max_submit_jobs,
 			       msg->cache_assoc_array[cc].max_wall_pj,
+			       one_liner ? " " : "\n    " ,
+
 			       msg->cache_assoc_array[cc].max_cpu_mins_pj,
 			       msg->cache_assoc_array[cc].def_qos_id,
 			       msg->cache_assoc_array[cc].grp_cpu_run_mins,
 			       msg->cache_assoc_array[cc].max_cpu_run_mins,
+			       one_liner ? " " : "\n    " ,
+
 			       msg->cache_assoc_array[cc].id,
 			       msg->cache_assoc_array[cc].is_def,
 			       msg->cache_assoc_array[cc].lft,
 			       msg->cache_assoc_array[cc].parent_id,
-			       msg->cache_assoc_array[cc].rgt);
+			       msg->cache_assoc_array[cc].rgt,
+			       one_liner ? " " : "\n    " ,
+
+			       msg->cache_assoc_array[cc].grp_used_cpu_run_secs,
+			       msg->cache_assoc_array[cc].grp_used_cpus,
+			       msg->cache_assoc_array[cc].grp_used_mem,
+			       msg->cache_assoc_array[cc].grp_used_nodes,
+			       one_liner ? " " : "\n    " ,
+
+			       msg->cache_assoc_array[cc].grp_used_wall,
+			       msg->cache_assoc_array[cc].usage_raw);
 		}
 	}
 }

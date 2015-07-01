@@ -2839,6 +2839,13 @@ typedef struct slurm_cache_assoc_info {
 	uint32_t uid;
 	char *   user;
 
+	/* Usage information */
+	uint64_t grp_used_cpu_run_secs;
+	uint32_t grp_used_cpus;
+	uint32_t grp_used_mem;
+	uint32_t grp_used_nodes;
+	uint64_t grp_used_wall;
+	uint64_t usage_raw;
 } slurm_cache_assoc_info_t;
 
 /* Cache information array as returned by the controller (currently just users).

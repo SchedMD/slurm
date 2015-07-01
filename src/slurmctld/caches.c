@@ -149,8 +149,8 @@ _pack_cache(slurmdb_user_rec_t *cache, Buf buffer, uint16_t protocol_version)
 		packstr(cache->old_name, buffer);
 		pack32 (cache->uid, buffer);
 	} else {
-		error("\
-%s: protocol_version %hu not supported", __func__, protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -187,8 +187,21 @@ _pack_assoc(slurmdb_assoc_rec_t *assoc, Buf buffer,
 		pack32 (assoc->shares_raw, buffer);
 		pack32 (assoc->uid, buffer);
 		packstr(assoc->user, buffer);
+
+		if (assoc->usage) {
+			pack8  ((uint8_t) 1, buffer);
+			pack64 ((uint64_t) assoc->usage->grp_used_cpu_run_secs,
+				buffer);
+			pack32 (assoc->usage->grp_used_cpus, buffer);
+			pack32 (assoc->usage->grp_used_mem, buffer);
+			pack32 (assoc->usage->grp_used_nodes, buffer);
+			pack64 ((uint64_t) assoc->usage->grp_used_wall, buffer);
+			pack64 (assoc->usage->usage_raw, buffer);
+		} else {
+			pack8  ((uint8_t) 0, buffer);
+		}
 	} else {
-		error("\
-%s: protocol_version %hu not supported", __func__, protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
