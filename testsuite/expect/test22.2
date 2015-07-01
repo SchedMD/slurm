@@ -117,7 +117,7 @@ proc sreport_opt { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "Cluster|Account|0-49 cpus|50-249 cpus|250-499 cpus|500-999 cpus|1000 cpus|of cluster" {
+		-re "Cluster|Account|0-49 CPUs|50-249 CPUs|250-499 CPUs|500-999 CPUs|1000 CPUs|of cluster" {
 			if {$debug} {send_user "\nmatch4\n"}
 			incr matches
 			exp_continue
@@ -150,12 +150,12 @@ proc sreport_opt { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "Cluster\\|Account\\|0-49 cpus\\|50-249 cpus\\|250-499 cpus\\|" {
+		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
 			if {$debug} {send_user "\nmatch5\n"}
 			incr matches
 			exp_continue
 		}
-		-re "500-999 cpus\\|>= 1000 cpus\\|% of cluster\\|" {
+		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster\\|" {
 			if {$debug} {send_user "\nmatch6\n"}
 			incr matches
 			exp_continue
@@ -184,12 +184,12 @@ proc sreport_opt { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "Cluster\\|Account\\|0-49 cpus\\|50-249 cpus\\|250-499 cpus\\|" {
+		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
 			if {$debug} {send_user "\nmatch7\n"}
 			incr matches
 			exp_continue
 		}
-		-re "500-999 cpus\\|>= 1000 cpus\\|% of cluster" {
+		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster" {
 			if {$debug} {send_user "\nmatch8\n"}
 			incr matches
 			exp_continue

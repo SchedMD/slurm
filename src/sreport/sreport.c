@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  sreport.c - report generating tool for slurm accounting.
  *****************************************************************************
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -54,6 +55,8 @@ int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+char *tres_str = NULL;	/* --tres= value */
+List tres_list;		/* TRES to report, built from --tres= value */
 int all_clusters_flag = 0;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
 char *time_format_string = "Minutes";
@@ -61,17 +64,18 @@ void *db_conn = NULL;
 uint32_t my_uid = 0;
 slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 
-static void	_job_rep (int argc, char *argv[]);
-static void	_user_rep (int argc, char *argv[]);
-static void	_resv_rep (int argc, char *argv[]);
-static void	_cluster_rep (int argc, char *argv[]);
 static void	_assoc_rep (int argc, char *argv[]);
+static List	_build_tres_list(char *tres_str);
+static void	_cluster_rep (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
+static void	_job_rep (int argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static int      _set_time_format(char *format);
+static void	_resv_rep (int argc, char *argv[]);
 static int      _set_sort(char *format);
-static void	_usage ();
+static int      _set_time_format(char *format);
+static void	_usage ( void );
+static void	_user_rep (int argc, char *argv[]);
 
 int
 main (int argc, char *argv[])
@@ -90,6 +94,7 @@ main (int argc, char *argv[])
 		{"parsable2",0, 0, 'P'},
 		{"quiet",    0, 0, 'Q'},
 		{"sort",     0, 0, 's'},
+		{"tres",     1, 0, 'T'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -118,7 +123,11 @@ main (int argc, char *argv[])
 	}
 	xfree(temp);
 
-	while((opt_char = getopt_long(argc, argv, "ahnpPQs:t:vV",
+	temp = getenv("SREPORT_TRES");
+	if (temp)
+		tres_str = xstrdup(temp);
+
+	while ((opt_char = getopt_long(argc, argv, "ahnpPQs:t:T:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -138,11 +147,11 @@ main (int argc, char *argv[])
 			break;
 		case (int)'p':
 			print_fields_parsable_print =
-			PRINT_FIELDS_PARSABLE_ENDING;
+				PRINT_FIELDS_PARSABLE_ENDING;
 			break;
 		case (int)'P':
 			print_fields_parsable_print =
-			PRINT_FIELDS_PARSABLE_NO_ENDING;
+				PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case (int)'Q':
 			quiet_flag = 1;
@@ -152,6 +161,10 @@ main (int argc, char *argv[])
 			break;
 		case (int)'t':
 			_set_time_format(optarg);
+			break;
+		case (int)'T':
+			xfree(tres_str);
+			tres_str = xstrdup(optarg);
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -179,13 +192,13 @@ main (int argc, char *argv[])
 		}
 	}
 
+	my_uid = getuid();
 	db_conn = slurmdb_connection_get();
-
 	if (errno) {
-		error("Problem talking to the database: %m");
+		fatal("Problem connecting to the database: %m");
 		exit(1);
 	}
-	my_uid = getuid();
+	tres_list = _build_tres_list(tres_str);
 
 	if (input_field_count)
 		exit_flag = 1;
@@ -203,6 +216,47 @@ main (int argc, char *argv[])
 	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);
+}
+
+static List _build_tres_list(char *tres_str)
+{
+	List tres_list = NULL;
+	ListIterator iter;
+	slurmdb_tres_rec_t *tres;
+	slurmdb_tres_cond_t cond;
+	char *tres_tmp = NULL, *tres_tmp2 = NULL, *save_ptr = NULL, *tok;
+
+	memset(&cond, 0, sizeof(slurmdb_tres_cond_t));
+	tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
+	if (!tres_list) {
+		fatal("Problem getting TRES data: %m");
+		exit(1);
+	}
+
+	iter = list_iterator_create(tres_list);
+	while ((tres = list_next(iter))) {
+		if (tres_str) {
+			tres_tmp = xstrdup(tres_str);
+			xstrfmtcat(tres_tmp2, "%s%s%s",
+				   tres->type,
+				   tres->name ? "/" : "",
+				   tres->name ? tres->name : "");
+			tok = strtok_r(tres_tmp, ",", &save_ptr);
+			while (tok) {
+				if (!strcasecmp(tres_tmp2, tok))
+					break;
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			if (!tok) /* Not found */
+				tres->id = NO_VAL;	/* Skip this TRES */
+			xfree(tres_tmp2);
+			xfree(tres_tmp);
+		} else if (tres->id != TRES_CPU) {
+			tres->id = NO_VAL;		/* Skip this TRES */
+		}
+	}
+	list_iterator_destroy(iter);
+	return tres_list;
 }
 
 #if !HAVE_READLINE
@@ -803,12 +857,12 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
        Cluster                                                             \n\
        - AccountUtilizationByUser                                          \n\
        - UserUtilizationByAccount                                          \n\
-             - Accounts, Cluster, CPUCount, Login, Proper, Used            \n\
+             - Accounts, Cluster, Count, Login, Proper, Used               \n\
        - UserUtilizationByWckey                                            \n\
        - WCKeyUtilizationByUser                                            \n\
-             - Cluster, CPUCount, Login, Proper, Used, Wckey               \n\
+             - Cluster, Count, Login, Proper, Used, Wckey                  \n\
        - Utilization                                                       \n\
-             - Allocated, Cluster, CPUCount, Down, Idle, Overcommited,     \n\
+             - Allocated, Cluster, Count, Down, Idle, Overcommited,        \n\
                PlannedDown, Reported, Reserved                             \n\
                                                                            \n\
        Job                                                                 \n\
@@ -817,7 +871,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
        Reservation                                                         \n\
        - Utilization                                                       \n\
-             - Allocated, Associations, Cluster, CPUCount, CPUTime,        \n\
+             - Allocated, Associations, Cluster, Count, CPUTime,           \n\
                End, Flags, Idle, Name, Nodes, ReservationId, Start, TotalTime \n\
                                                                            \n\
        User                                                                \n\

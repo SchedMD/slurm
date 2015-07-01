@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "June 2015" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -37,6 +37,12 @@ Specify the output time format. Time format options are case
 insensitive and may be abbreviated. The default format is Minutes.
 Supported time format options are listed in the \fBtime\fP command
 section below.
+.TP
+\fB\-T,  \-\-tres <tres_names>\fR
+Trackable resource (TRES) to report values for.
+By default CPU resource use is reported.
+Multiple TRES names may be separated using a comma separated list for all
+reports except the job reports, which can only support a single TRES name.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print detailed event logging.
@@ -360,19 +366,19 @@ AccountUtilizationByUser:
 .br
 UserUtilizationByAccount:
 .in 14
-Accounts, Cluster, CPUCount, Login, Proper, Used
+Accounts, Cluster, Login, Proper, TresCount, Used
 
 .in 10
 UserUtilizationByWckey:
 .br
 WCKeyUtilizationByUser:
 .in 14
-Cluster, CPUCount, Login, Proper, Used, Wckey
+Cluster, Login, Proper, TresCount, Used, Wckey
 
 .in 10
 Utilization:
 .in 14
-Allocated, Cluster, CPUCount, Down, Idle, Overcommited, PlannedDown, Reported, Reserved
+Allocated, Cluster, Down, Idle, Overcommited, PlannedDown, Reported, Reserved, TresCount, TresName
 
 .TP
 \fBFORMAT OPTIONS FOR JOB REPORTS\fP
@@ -391,7 +397,7 @@ Wckey, Cluster
 .in 10
 Utilization:
 .in 14
-Allocated, Associations, Cluster, CPUCount, CPUTime, End, Flags, Idle, Name, Nodes, ReservationId, Start, TotalTime
+Allocated, Associations, Cluster, End, Flags, Idle, Name, Nodes, ReservationId, Start, TotalTime, TresCount, TresName, TresTime
 
 .TP
 \fBFORMAT OPTIONS FOR USER REPORTS\fP
@@ -408,7 +414,10 @@ All commands and options are case-insensitive.
 Some \fBsreport\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
-.TP 20
+.TP 14
+\fBSREPORT_TRES\fR
+Same as \fB\-t, \-\-tres\fR
+.TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
 
@@ -424,7 +433,7 @@ The location of the Slurm configuration file.
 \fBsreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount\fP
 Report number of jobs by user gore1 within the environ account
 .TP
-\fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,CPUCount,Login,Proper,Used\fP
+\fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used\fP
 Report cluster account utilization with the specified fields during
 the specified 24 hour day of February 23, 2009, by user gore1
 .TP
@@ -439,7 +448,7 @@ Report top usage in percent of the lc account during the specified week
 Copyright (C) 2009\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2015 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

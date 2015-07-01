@@ -170,6 +170,8 @@ COMMAND CHANGES (see man pages for details)
  -- Add scontrol options to view and modify layouts tables.
  -- Add srun --accel-bind option to control how tasks are bound to GPUs and NIC
     Generic RESources (GRES).
+ -- Add sreport -T/--tres option to identify Trackable RESources (TRES) to
+    report.
 
 OTHER CHANGES
 =============

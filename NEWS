@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     format.
  -- Add partition information to sshare output if the --partition option
     is specified on the sshare command line.
+ -- Add sreport -T/--tres option to identify Trackable RESources (TRES) to
+    report.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

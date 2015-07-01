@@ -3031,8 +3031,7 @@ extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	while (tmp_str) {
 		if (id == atoi(tmp_str)) {
 			if (!(tmp_str = strchr(tmp_str, '='))) {
-				error("slurmdb_tres_list_from_string: "
-				      "no value found");
+				error("%s: no value found", __func__);
 				break;
 			}
 			tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));

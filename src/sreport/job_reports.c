@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  job_reports.c - functions for generating job reports
- *                     from accounting infrastructure.
+ *                  from accounting infrastructure.
  *****************************************************************************
- *
+ *  Copyright (C) 2010-2015 SchedMD LLC.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -45,10 +45,10 @@ enum {
 	PRINT_JOB_ACCOUNT,
 	PRINT_JOB_CLUSTER,
 	PRINT_JOB_COUNT,
-	PRINT_JOB_CPUS,
 	PRINT_JOB_DUR,
 	PRINT_JOB_NODES,
 	PRINT_JOB_SIZE,
+	PRINT_JOB_TRES_COUNT,
 	PRINT_JOB_USER,
 	PRINT_JOB_WCKEY
 };
@@ -162,7 +162,7 @@ static char *_string_to_uid( char *name )
 /* returns number of objects added to list */
 static int _addto_uid_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
+	int i = 0, start = 0;
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
 	char quote_c = '\0';
@@ -182,7 +182,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 			i++;
 		}
 		start = i;
-		while(names[i]) {
+		while (names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
 			if (quote && names[i] == quote_c)
 				break;
@@ -195,7 +195,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 					//info("got %s %d", name, i-start);
 					name = _string_to_uid( name );
 
-					while((tmp_char = list_next(itr))) {
+					while ((tmp_char = list_next(itr))) {
 						if (!strcasecmp(tmp_char, name))
 							break;
 					}
@@ -223,7 +223,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 			memcpy(name, names+start, (i-start));
 			name = _string_to_uid( name );
 
-			while((tmp_char = list_next(itr))) {
+			while ((tmp_char = list_next(itr))) {
 				if (!strcasecmp(tmp_char, name))
 					break;
 			}
@@ -253,12 +253,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 	if (!job_cond->cluster_list)
 		job_cond->cluster_list = list_create(slurm_destroy_char);
 
-	for (i=(*start); i<argc; i++) {
+	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
-			command_len=strlen(argv[i]);
+			command_len = strlen(argv[i]);
 		else
-			command_len=end-1;
+			command_len = end-1;
 
 		if (!end && !strncasecmp(argv[i], "all_clusters",
 					       MAX(command_len, 1))) {
@@ -390,7 +390,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					      argv[i]+end);
 			set = 1;
 		} else {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				"Use keyword set to modify value\n", argv[i]);
 		}
@@ -424,7 +424,7 @@ static int _setup_print_fields_list(List format_list)
 	char *object = NULL;
 
 	if (!format_list || !list_count(format_list)) {
-		exit_code=1;
+		exit_code = 1;
 		fprintf(stderr,
 			" We need a format list to set up the print.\n");
 		return SLURM_ERROR;
@@ -434,7 +434,7 @@ static int _setup_print_fields_list(List format_list)
 		print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
-	while((object = list_next(itr))) {
+	while ((object = list_next(itr))) {
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
@@ -459,12 +459,6 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("CpuCount", object,
-				       MAX(command_len, 2))) {
-			field->type = PRINT_JOB_CPUS;
-			field->name = xstrdup("CPU Count");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
 		} else if (!strncasecmp("Duration", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_DUR;
@@ -483,6 +477,15 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
+		} else if (!strncasecmp("TresCount", object,
+					MAX(command_len, 5)) ||
+			   !strncasecmp("CpuCount", object,
+					MAX(command_len, 2)) ||
+			   !strncasecmp("count", object, MAX(command_len, 2))) {
+			field->type = PRINT_JOB_TRES_COUNT;
+			field->name = xstrdup("TRES Count");
+			field->len = 10;
+			field->print_routine = print_fields_uint;
 		} else if (!strncasecmp("User", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_USER;
@@ -496,7 +499,7 @@ static int _setup_print_fields_list(List format_list)
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else {
-			exit_code=1;
+			exit_code = 1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
@@ -520,12 +523,17 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	char *last_object = NULL;
 	uint32_t last_size = 0;
 	uint32_t size = 0;
-	char *tmp_char = NULL;
+	char *tmp_char = NULL, *tres_type;
+
+	if (!tres_str || !strcasecmp(tres_str, "cpu"))
+		tres_type = "CPUs";
+	else
+		tres_type = "TRES";
 
 	if (!grouping_list || !list_count(grouping_list)) {
-		exit_code=1;
-		fprintf(stderr, " We need a grouping list to "
-			"set up the print.\n");
+		exit_code = 1;
+		fprintf(stderr,
+			" We need a grouping list to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
@@ -541,10 +549,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 		if (individual_grouping)
-			field->name = xstrdup_printf("%u cpus", size);
+			field->name = xstrdup_printf("%u %s", size, tres_type);
 		else
-			field->name = xstrdup_printf("%u-%u cpus",
-						     last_size, size-1);
+			field->name = xstrdup_printf("%u-%u %s", last_size,
+						     size-1, tres_type);
 		if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
@@ -559,7 +567,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		last_size = size;
 		last_object = object;
 		if ((tmp_char = strstr(object, "\%"))) {
-			int newlen = atoi(tmp_char+1);
+			int newlen = atoi(tmp_char + 1);
 			if (newlen)
 				field->len = newlen;
 		}
@@ -574,7 +582,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->type = PRINT_JOB_SIZE;
 
-		field->name = xstrdup_printf(">= %u cpus", last_size);
+		field->name = xstrdup_printf(">= %u %s", last_size, tres_type);
 		if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
@@ -600,37 +608,29 @@ static int _run_report(int type, int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
-
-	int i=0;
-
+	uint32_t tres_id = TRES_CPU;
+	int i = 0, tres_cnt = 0;
+	slurmdb_tres_rec_t *tres;
 	uint64_t count1, count2;
-
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	ListIterator cluster_itr = NULL;
 	ListIterator local_itr = NULL;
 	ListIterator acct_itr = NULL;
-
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
 	slurmdb_report_job_grouping_t *job_group = NULL;
-
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	slurmdb_report_time_format_t temp_format;
-
 	List slurmdb_report_cluster_grouping_list = NULL;
 	List assoc_list = NULL;
-
 	List format_list = list_create(slurm_destroy_char);
 	List grouping_list = list_create(slurm_destroy_char);
-
 	List header_list = NULL;
-
 	char *object_str = "";
 
-//	slurmdb_report_time_format_t temp_time_format = time_format;
-
+	memset(&total_field, 0, sizeof(print_field_t));
 	print_fields_list = list_create(destroy_print_field);
 
 	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
@@ -676,18 +676,33 @@ static int _run_report(int type, int argc, char *argv[])
 		break;
 	}
 
+	itr2 = list_iterator_create(tres_list);
+	while ((tres = list_next(itr2))) {
+		if (tres->id == NO_VAL)
+			continue;
+		tres_id = tres->id;
+		tres_cnt++;
+	}
+	list_iterator_destroy(itr2);
+	if (tres_cnt > 1) {
+		fprintf(stderr,
+		        " Job report only support a single --tres type.\n"
+			" Generate a separate report for each TRES type.\n");
+		exit_code = 1;
+		goto end_it;
+	}
+
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	if (_setup_grouping_print_fields_list(grouping_list) != SLURM_SUCCESS) {
+	if (_setup_grouping_print_fields_list(grouping_list) != SLURM_SUCCESS)
 		goto end_it;
-	}
 
 	if (print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_start = job_cond->usage_start;
-		time_t my_end = job_cond->usage_end-1;
+		time_t my_end = job_cond->usage_end - 1;
 
 		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
@@ -696,6 +711,8 @@ static int _run_report(int type, int argc, char *argv[])
 		printf("Job Sizes %s%s - %s (%d secs)\n",
 		       object_str, start_char, end_char,
 		       (int)(job_cond->usage_end - job_cond->usage_start));
+		if (tres_str)
+			printf("TRES type is %s\n", tres_str);
 		if (print_job_count)
 			printf("Units are in number of jobs ran\n");
 		else
@@ -708,7 +725,6 @@ static int _run_report(int type, int argc, char *argv[])
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
 
-	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
@@ -727,29 +743,28 @@ static int _run_report(int type, int argc, char *argv[])
 	cluster_itr = list_iterator_create(
 		slurmdb_report_cluster_grouping_list);
 	while ((cluster_group = list_next(cluster_itr))) {
-		uint32_t tres_id = TRES_CPU;
 		slurmdb_tres_rec_t *tres_rec;
-		uint64_t cluster_cpu_alloc_secs = 0;
+		uint64_t cluster_tres_alloc_secs = 0;
 
 		if (cluster_group->tres_list &&
 		    (tres_rec = list_find_first(
 			    cluster_group->tres_list,
 			    slurmdb_find_tres_in_list,
 			    &tres_id)))
-			cluster_cpu_alloc_secs = tres_rec->alloc_secs;
+			cluster_tres_alloc_secs = tres_rec->alloc_secs;
 
 		list_sort(cluster_group->acct_list,
 		          (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while ((acct_group = list_next(acct_itr))) {
-			uint64_t acct_cpu_alloc_secs = 0;
+			uint64_t acct_tres_alloc_secs = 0;
 
 			if (acct_group->tres_list &&
 			    (tres_rec = list_find_first(
 				    acct_group->tres_list,
 				    slurmdb_find_tres_in_list,
 				    &tres_id)))
-				acct_cpu_alloc_secs = tres_rec->alloc_secs;
+				acct_tres_alloc_secs = tres_rec->alloc_secs;
 
 			while ((field = list_next(itr))) {
 				switch (field->type) {
@@ -785,12 +800,12 @@ static int _run_report(int type, int argc, char *argv[])
 						tres_rec->alloc_secs;
 
 				field = list_next(itr2);
-				switch(field->type) {
+				switch (field->type) {
 				case PRINT_JOB_SIZE:
 					field->print_routine(
 						field,
 						job_cpu_alloc_secs,
-						acct_cpu_alloc_secs,
+						acct_tres_alloc_secs,
 						0);
 					break;
 				case PRINT_JOB_COUNT:
@@ -812,8 +827,8 @@ static int _run_report(int type, int argc, char *argv[])
 			temp_format = time_format;
 			time_format = SLURMDB_REPORT_TIME_PERCENT;
 			if (!print_job_count) {
-				count1 = acct_cpu_alloc_secs;
-				count2 = cluster_cpu_alloc_secs;
+				count1 = acct_tres_alloc_secs;
+				count2 = cluster_tres_alloc_secs;
 			} else {
 				count1 = acct_group->count;
 				count2 = cluster_group->count;
@@ -839,30 +854,11 @@ end_it:
 
 	slurmdb_destroy_job_cond(job_cond);
 
-	if (grouping_list) {
-		list_destroy(grouping_list);
-		grouping_list = NULL;
-	}
-
-	if (assoc_list) {
-		list_destroy(assoc_list);
-		assoc_list = NULL;
-	}
-
-	if (slurmdb_report_cluster_grouping_list) {
-		list_destroy(slurmdb_report_cluster_grouping_list);
-		slurmdb_report_cluster_grouping_list = NULL;
-	}
-
-	if (print_fields_list) {
-		list_destroy(print_fields_list);
-		print_fields_list = NULL;
-	}
-
-	if (grouping_print_fields_list) {
-		list_destroy(grouping_print_fields_list);
-		grouping_print_fields_list = NULL;
-	}
+	FREE_NULL_LIST(grouping_list);
+	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(slurmdb_report_cluster_grouping_list);
+	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(grouping_print_fields_list);
 
 	return rc;
 }
