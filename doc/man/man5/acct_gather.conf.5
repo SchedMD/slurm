@@ -50,12 +50,22 @@ accumulated, only the first and last adjustments are used to calculated the
 consumption. The default is "no".
 
 .TP
-\fBEnergyIPMIPowerSensor\fR=<number>
-This parameter is optional.  If the parameter is included, the plugin searches
-the node for a "watt" sensor with the number specified by <number>. If a
-matching sensor is found, that sensor is used for power data. If no matching
-sensor is found, a value of zero is returned for power data. If the parameter
-is omitted, the plugin will use the first "watt" sensor it finds.
+\fBEnergyIPMIPowerSensors\fI<key=values>\fR
+Optionally specify the ids of the sensors to used.
+Multiple <key=values> can be set with ";" separators.
+The key "Node" is mandatory and is used to know the consumed energy for nodes
+(scontrol show node) and jobs (sacct).
+Other keys are optional and are named by administrator.
+These keys are useful only when profile is activated for energy to store power
+(in watt) of each key.
+<values> are integers, multiple values can be set with "," separators.
+The sum of the listed sensors is used for each key.
+EnergyIPMIPowerSensors is optional, default value is "Node=number" where
+"number" is the id of the first power sensor returned by ipmi-sensors.
+i.e.
+EnergyIPMIPowerSensors=Node=16,19,23,26;Socket0=16,23;Socket1=19,26;SSUP=23,26;KNC=16,19
+EnergyIPMIPowerSensors=Node=29,32;SSUP0=29;SSUP1=32
+EnergyIPMIPowerSensors=Node=1280
 
 .LP
 The following acct_gather.conf parameters are defined to control the
