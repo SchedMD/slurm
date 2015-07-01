@@ -77,16 +77,25 @@ if {[test_cpu_affinity_or_cgroup] == 0} {
 proc sub_job { freq } {
 
 	global srun sacct node threads job_id number wait_for_job float timeout exit_code
-	global alpha_numeric_under file_id
+	global alpha_numeric_under file_id avail_governors
 
 	set timeout 120
 	array set this_freq $freq
 
 	foreach option [array names this_freq] {
-		send_user "\n======= TEST FREQUENCY $option =======\n"
+		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
 		set job_id 0
 		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node $file_id]
 		expect {
+			-re "not allowed" {
+				if {[string first $option $avail_governors] == -1} {
+					send_user "\nThis error is expected, no worries\n"
+				} else {
+					send_user "\nFAILURE: This CPU frequency should be valid\n"
+					set exit_code 1
+				}
+				exp_continue	
+			}
 			-re "SLURM_JOB_ID=($number)" {
 				set job_id $expect_out(1,string)
 				exp_continue
@@ -133,7 +142,7 @@ proc sub_job { freq } {
 	return [array get this_freq]
 }
 
-make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID"
+make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 10"
 make_bash_script $file_in "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
 
 # Identify a node that we can use and available governors
@@ -219,6 +228,23 @@ expect {
 
 cancel_job $job_id
 
+#
+# Test various CPU governor values
+#
+set avail_governors get_cpu_governors
+send_user "\nCpuFreqGovernors = $avail_governors\n"
+
+array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
+
+if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
+    ($freq_lvl_2(performance) == 0)  || ($freq_lvl_2(powersave) == 0)} {
+	send_user "\nFAILURE: CPU frequency values are invalid\n"
+	set exit_code 1
+}
+
+#
+# Test various CPU frequency values
+#
 array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
 
 send_user "\n======= Reported frequencies =======\n"
@@ -231,14 +257,6 @@ if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
 	send_user "\nFAILURE: CPU frequency values are not valid\n"
 	exit 1
-}
-
-array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
-
-if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0)
-     || ($freq_lvl_2(performance) == 0) || ($freq_lvl_2(powersave) == 0)} {
-	send_user "\nFAILURE: CPU frequency values are invalid\n"
-	set exit_code 1
 }
 
 if {$exit_code == 0} {

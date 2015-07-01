@@ -1035,6 +1035,35 @@ proc get_affinity_types { } {
 
 ################################################################
 #
+# Proc: get_cpu_governors
+#
+# Purpose: get the CpuFreqGovernor configuration parameter
+#
+# Returns Returns comma separated list of available CPU governor's
+#
+################################################################
+proc get_cpu_governors { } {
+	global scontrol alpha_numeric_comma
+
+	log_user 0
+	set governors ""
+	spawn $scontrol show config
+	expect {
+		-re "CpuFreqGovernors *= ($alpha_numeric_comma)" {
+			set governors $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $governors
+}
+
+################################################################
+#
 # Proc: test_cpu_affinity
 #
 # Purpose: Determine if system is using the task/affinity plugin

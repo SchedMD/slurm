@@ -1543,7 +1543,7 @@ clean:
 	if (*cpu_freq_gov != NO_VAL) {
 		if (((*cpu_freq_gov & cpu_freq_govs)
 		    & ~CPU_FREQ_RANGE_FLAG) == 0) {
-			error("governor on %s is not allowed in slurm.conf",
+			error("governor of %s is not allowed in slurm.conf",
 			      arg);
 			*cpu_freq_gov = NO_VAL;
 			rc = -1;
