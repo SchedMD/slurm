@@ -203,6 +203,7 @@ enum {
 	SORTID_TIME_START,
 	SORTID_TIME_SUBMIT,
 	SORTID_TIME_SUSPEND,
+	SORTID_TRES,
 	SORTID_SMALL_BLOCK,
 	SORTID_UPDATED,
 	SORTID_USER_ID,
@@ -431,6 +432,8 @@ static display_data_t display_data_job[] = {
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_SMALL_BLOCK, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_TRES, "TRES", FALSE,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -1772,6 +1775,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_PARTITION),
 				   job_ptr->partition);
 
+	if (job_ptr->preempt_time) {
+		slurm_make_time_str((time_t *)&job_ptr->preempt_time, tmp_char,
+				    sizeof(tmp_char));
+	} else
+		sprintf(tmp_char, "N/A");
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_PREEMPT_TIME),
+				   tmp_char);
+
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -1915,16 +1928,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_TIMELIMIT),
 				   tmp_char);
 
-	if (job_ptr->preempt_time) {
-		slurm_make_time_str((time_t *)&job_ptr->preempt_time, tmp_char,
-				    sizeof(tmp_char));
-	} else
-		sprintf(tmp_char, "N/A");
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_job,
-						 SORTID_PREEMPT_TIME),
-				   tmp_char);
-
 	if (job_ptr->resize_time) {
 		slurm_make_time_str((time_t *)&job_ptr->resize_time, tmp_char,
 				    sizeof(tmp_char));
@@ -1957,6 +1960,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_TIME_SUSPEND),
 				   tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES),
+				   job_ptr->tres_alloc_str);
 
 	uname = uid_to_string_cached((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter,
@@ -2386,6 +2394,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_TIME_SUSPEND, tmp_time_sus,
 				   SORTID_TIMELIMIT,    tmp_time_limit,
 				   SORTID_TMP_DISK,     tmp_disk,
+				   SORTID_TRES,         job_ptr->tres_alloc_str,
 				   SORTID_UPDATED,      1,
 				   SORTID_USER_ID,      tmp_uname,
 				   SORTID_WCKEY,        job_ptr->wckey,
@@ -2651,6 +2660,11 @@ static void _layout_step_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_TASKS),
 				   tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_TRES),
+				   step_ptr->tres_alloc_str);
 }
 
 static void _update_step_record(job_step_info_t *step_ptr,
@@ -2746,6 +2760,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_TIME_RUNNING, tmp_time_run,
 			   SORTID_TIME_START,   tmp_time_start,
 			   SORTID_TIMELIMIT,    tmp_time_limit,
+			   SORTID_TRES,         step_ptr->tres_alloc_str,
 			   SORTID_UPDATED,      1,
 			   SORTID_USER_ID,      tmp_uname,
 			   -1);

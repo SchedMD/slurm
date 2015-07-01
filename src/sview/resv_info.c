@@ -69,6 +69,7 @@ enum {
 	SORTID_PARTITION,
 	SORTID_TIME_END,
 	SORTID_TIME_START,
+	SORTID_TRES,
 	SORTID_UPDATED,
 	SORTID_USERS,
 	SORTID_WATTS,
@@ -139,6 +140,8 @@ static display_data_t display_data_resv[] = {
 	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
+	{G_TYPE_STRING, SORTID_TRES,   "TRES", FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
 	 refresh_resv, create_model_resv, admin_edit_resv},
@@ -596,6 +599,11 @@ static void _layout_resv_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
+						 SORTID_TRES),
+				   resv_ptr->tres_str);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_resv,
 						 SORTID_USERS),
 				   resv_ptr->users);
 
@@ -675,6 +683,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 			   SORTID_PARTITION,  resv_ptr->partition,
 			   SORTID_TIME_START, tmp_start,
 			   SORTID_TIME_END,   tmp_end,
+			   SORTID_TRES,       resv_ptr->tres_str,
 			   SORTID_UPDATED,    1,
 			   SORTID_USERS,      resv_ptr->users,
 			   SORTID_WATTS,      power_buf,
