@@ -5069,10 +5069,6 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		ListIterator iter = list_iterator_create(part_ptr_list);
 
 		while ((part_ptr_tmp = (struct part_record *)list_next(iter))) {
-			/* FIXME: When dealing with multiple partitions we
-			 * currently can't deal with partition based
-			 * associations.
-			 */
 			memset(&assoc_rec, 0,
 			       sizeof(slurmdb_assoc_rec_t));
 			if (assoc_ptr) {
@@ -5080,16 +5076,17 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 				assoc_rec.partition = part_ptr_tmp->name;
 				assoc_rec.uid       = job_desc->user_id;
 
-				assoc_mgr_fill_in_assoc(
-					acct_db_conn, &assoc_rec,
-					accounting_enforce, NULL, false);
-			}
-
-			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
-				info("%s: can't check multiple "
-				     "partitions with partition based "
-				     "associations", __func__);
-				rc = SLURM_ERROR;
+				if (assoc_mgr_fill_in_assoc(acct_db_conn,
+					&assoc_rec, accounting_enforce,
+					NULL, false)) {
+					info("%s: invalid account or partition "
+					     "for user %u, account '%s', "
+					     "and partition '%s'",
+					     __func__, job_desc->user_id,
+					     assoc_rec.acct,
+					     assoc_rec.partition);
+					rc = SLURM_ERROR;
+				}
 			} else
 				rc = _part_access_check(part_ptr_tmp, job_desc,
 							req_bitmap, submit_uid,
