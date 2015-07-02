@@ -247,6 +247,19 @@ EXTRA_DIST = \
 	test7.16			\
 	test7.17			\
 	test7.17.prog.c			\
+	test7.17_configs/test7.17.1/gres.conf	\
+	test7.17_configs/test7.17.1/slurm.conf	\
+	test7.17_configs/test7.17.2/gres.conf	\
+	test7.17_configs/test7.17.2/slurm.conf	\
+	test7.17_configs/test7.17.3/gres.conf	\
+	test7.17_configs/test7.17.3/slurm.conf	\
+	test7.17_configs/test7.17.4/gres.conf	\
+	test7.17_configs/test7.17.4/slurm.conf	\
+	test7.17_configs/test7.17.5/slurm.conf	\
+	test7.17_configs/test7.17.6/gres.conf	\
+	test7.17_configs/test7.17.6/slurm.conf	\
+	test7.17_configs/test7.17.7/gres.conf	\
+	test7.17_configs/test7.17.7/slurm.conf	\
 	test8.1				\
 	test8.2				\
 	test8.3				\

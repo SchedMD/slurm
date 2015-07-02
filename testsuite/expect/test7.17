@@ -32,6 +32,7 @@ source ./globals
 set test_id     "7.17"
 set exit_code   0
 set test_prog   "test$test_id.prog"
+set cfgdir      [pwd]
 
 print_header $test_id
 
@@ -52,15 +53,150 @@ if {[test_aix]} {
 }
 exec $bin_chmod 700 $test_prog
 
-spawn ./$test_prog
+send_user "\n====test7.17.1====\n"
+set cpu_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
 	-re "FAILURE" {
 		set exit_code 1
 		exp_continue
 	}
+	-re "cpu_alloc=8" {
+		set cpu_match 1
+		exp_continue
+	}
 	eof {
 		wait
 	}
+}
+if {$cpu_match != 1} {
+	send_user "\nFAILURE: number of cpu is incorrect\n"
+	set exit_code 1
+}
+
+send_user "\n====test7.17.2====\n"
+set cpu_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.2" 16
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	-re "cpu_alloc=16" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$cpu_match != 1} {
+	send_user "\nFAILURE: number of cpu is incorrect\n"
+	set exit_code 1
+}
+
+send_user "\n====test7.17.3====\n"
+set cpu_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.3" 16
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	-re "cpu_alloc=16" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$cpu_match != 1} {
+	send_user "\nFAILURE: number of cpu is incorrect should be 16\n"
+	set exit_code 1
+}
+
+send_user "\n====test7.17.4====\n"
+set cpu_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.4" 16
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	-re "cpu_alloc=ALL" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$cpu_match != 1} {
+	send_user "\nFAILURE: number of cpu is incorrect, should be ALL\n"
+	set exit_code 1
+}
+
+#######################################
+# Bad tests
+#######################################
+
+# Run a job with invalid job allocation
+send_user "\n====test7.17.5====\n"
+set fail_match 0
+spawn ./$test_prog "craynetworks:100" "$cfgdir" "/test7.17.5" 16
+expect {
+	-re "FAILURE" {
+		send_user "This error is expected\n"
+		set fail_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if {$fail_match != 1} {
+	send_user "\nFAILURE: This test should have failed but did not\n"
+	set exit_code 1
+}
+
+# Run with no gres.conf file
+send_user "\n====test7.17.6====\n"
+set fail_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.6" 0
+expect {
+	-re "FAILURE" {
+		send_user "This error is expected\n"
+		set fail_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$fail_match != 1} {
+	send_user "\nFAILURE: This test should have failed but did not\n"
+	set exit_code 1
+}
+
+# Test with invalid job allocation
+send_user "\n====test7.17.7====\n"
+set fail_match 0
+spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.7" 8
+expect {
+	-re "fatal" {
+		send_user "This error is expected\n"
+		set fail_match 1
+		#exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$fail_match != 1} {
+	send_user "\nFAILURE: This test should have failed but did not\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
