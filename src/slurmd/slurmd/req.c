@@ -220,7 +220,7 @@ static bool _step_is_starting(uint32_t job_id, uint32_t step_id);
 
 static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
-static int  _compare_job_running_prolog(void *s0, void *s1);
+static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
 
 /*
@@ -5766,7 +5766,7 @@ static void _remove_job_running_prolog(uint32_t job_id)
 	slurm_mutex_unlock(&conf->prolog_running_lock);
 }
 
-static int _compare_job_running_prolog(void *listentry, void *key)
+static int _match_jobid(void *listentry, void *key)
 {
 	uint32_t *job0 = (uint32_t *)listentry;
 	uint32_t *job1 = (uint32_t *)key;
@@ -5778,7 +5778,7 @@ static int _prolog_is_running (uint32_t jobid)
 {
 	int rc = 0;
 	if (list_find_first (conf->prolog_running_jobs,
-	                     (ListFindF) _find_uint32, &jobid))
+	                     (ListFindF) _match_jobid, &jobid))
 		rc = 1;
 	return (rc);
 }
