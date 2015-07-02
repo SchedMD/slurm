@@ -2634,6 +2634,15 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 	uid_t uid;
 	uint16_t protocol_version;
 
+	/*  There will be no stepd if the prolog is still running
+	 *   Return failure so caller can retry.
+	 */
+	if (_prolog_is_running (jobid)) {
+		info ("signal %d req for %u.%u while prolog is running."
+		      " Returning failure.", signal, jobid, stepid);
+		return SLURM_FAILURE;
+	}
+
 	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid,
 			   &protocol_version);
 	if (fd == -1) {
