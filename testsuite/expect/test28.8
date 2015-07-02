@@ -38,7 +38,7 @@ source ./globals
 set test_id        "28.8"
 set array_size     4
 set exit_code      0
-set file_script    "test$test_id.sh"
+set file_script    "test$test_id.bash"
 set job_id         0
 set not_supported  0
 
@@ -169,7 +169,7 @@ if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
 sleep 5
 suspend_job $job_id suspend
 if {$not_supported == 1} {
-	exec $bin_rm -f file_script
+	exec $bin_rm -f $file_script
 	cancel_job $job_id
 	exit 0
 }
@@ -190,7 +190,7 @@ if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
 cancel_job $job_id
 
 if {$exit_code == 0} {
-	exec $bin_rm -f file_script
+	exec $bin_rm -f $file_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
