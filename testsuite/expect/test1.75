@@ -186,6 +186,7 @@ if {[wait_for_file $file_out] == 0} {
 }
 if {$userspace_governor == 0} {
 	send_user "\nWARNING: Node configuration prevents directly control over CPU frequency\n"
+	exec $bin_rm -f $file_id $file_in $file_out
 	exit 0
 }
 
