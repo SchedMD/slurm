@@ -1238,6 +1238,7 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 			     int dest, char *msg, int msglen)
 {
 	slurm_step_layout_t *sl = st->job->step_layout;
+	int i;
 	char *host;
 	char *msgstr;
 	char time_stamp[256];
@@ -1254,6 +1255,16 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 		 */
 		if (msg [msglen - 1] == '\n')
 			msg [msglen - 1] = '\0';
+
+		/*
+		 *  Replace internal newlines with periods.  We want
+		 *  the full message to be written as a single line
+		 *  to the syslog.
+		 */
+		for (i = 0; i < msglen; i++) {
+			if (msg [i] == '\n')
+				msg [i] = '.';
+		}
 
 		msgstr = msg;
 	}
