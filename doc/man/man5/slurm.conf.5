@@ -2121,8 +2121,8 @@ This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill scheduler will not reserve resources for pending jobs until they
-have been runnable for at least the specified number of seconds.
-In addition jobs waiting for less than the specified number of seconds will
+have been pending and runnable for at least the specified number of seconds.
+In addition, jobs waiting for less than the specified number of seconds will
 not prevent a newly submitted job from starting immediately, even if the newly
 submitted job has a lower priority.
 This can be valuable if jobs lack time limits or all time limits have the same
