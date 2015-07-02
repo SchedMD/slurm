@@ -144,10 +144,10 @@ static void _print_cache_info(const char *name, cache_info_msg_t *msg)
 
 			       "ID=%u DefAssoc=%u Lft=%u ParentID=%u Rgt=%u%s"
 
-			       "GrpUsedCpuRunSecs=%"PRIu64" GrpUsedCPUs=%u "
+			       "GrpUsedCpuRunSecs=%f GrpUsedCPUs=%u "
 			       "GrpUsedMem=%u GrpUsedNode=%u%s"
 
-			       "GrpUsedWall=%"PRIu64" UsageRaw=%"PRIu64"\n",
+			       "GrpUsedWall=%f UsageRaw=%"PRIu64"\n",
 
 			       msg->cache_assoc_array[cc].cluster,
 			       msg->cache_assoc_array[cc].acct,

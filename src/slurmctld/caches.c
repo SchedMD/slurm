@@ -190,12 +190,12 @@ _pack_assoc(slurmdb_assoc_rec_t *assoc, Buf buffer,
 
 		if (assoc->usage) {
 			pack8  ((uint8_t) 1, buffer);
-			pack64 ((uint64_t) assoc->usage->grp_used_cpu_run_secs,
-				buffer);
+			packdouble (assoc->usage->grp_used_cpu_run_secs,
+				    buffer);
 			pack32 (assoc->usage->grp_used_cpus, buffer);
 			pack32 (assoc->usage->grp_used_mem, buffer);
 			pack32 (assoc->usage->grp_used_nodes, buffer);
-			pack64 ((uint64_t) assoc->usage->grp_used_wall, buffer);
+			packdouble (assoc->usage->grp_used_wall, buffer);
 			pack64 (assoc->usage->usage_raw, buffer);
 		} else {
 			pack8  ((uint8_t) 0, buffer);

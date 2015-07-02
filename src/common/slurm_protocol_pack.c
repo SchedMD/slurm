@@ -13521,11 +13521,11 @@ _unpack_cache_info_msg(cache_info_msg_t **msg,
 			safe_unpack8(&usage_flag, buffer);
 			if (!usage_flag)
 				continue;
-			safe_unpack64(&captr->grp_used_cpu_run_secs, buffer);
+			safe_unpackdouble(&captr->grp_used_cpu_run_secs,buffer);
 			safe_unpack32(&captr->grp_used_cpus, buffer);
 			safe_unpack32(&captr->grp_used_mem, buffer);
 			safe_unpack32(&captr->grp_used_nodes, buffer);
-			safe_unpack64(&captr->grp_used_wall, buffer);
+			safe_unpackdouble(&captr->grp_used_wall, buffer);
 			safe_unpack64(&captr->usage_raw, buffer);
 		}
 
