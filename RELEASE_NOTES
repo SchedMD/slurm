@@ -90,6 +90,7 @@ HIGHLIGHTS
     structures are changed to make it easier to add new profile types,
     particularly energy sensors. This has introduced an operational issue. See
     OTHER CHANGES.
+ -- MPI/MVAPICH plugin now requires Munge for authentication.
 
 RPMBUILD CHANGES
 ================

@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Display job in sacct when single step's cpus are different from the job
     allocation.
  -- Add association usage information to "scontrol show cache" command output.
+ -- MPI/MVAPICH plugin now requires Munge for authentication.
 
 * Changes in Slurm 15.08.0pre5
 ==============================
