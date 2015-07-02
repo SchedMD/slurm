@@ -130,6 +130,7 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			resv_cond->time_end = parse_time(argv[i]+end, 1);
+			resv_cond->time_end = sanity_check_endtime(resv_cond->time_end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Flags",
 					 MAX(command_len, 2))) {

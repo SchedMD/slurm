@@ -137,6 +137,18 @@ extern int parse_option_end(char *option)
 	return end;
 }
 
+
+/* Do not allow the endtime request for sreport to exceed 'now'. */
+extern time_t sanity_check_endtime(time_t endtime)
+{
+	time_t now = time(NULL);
+
+	if (endtime > now)
+		endtime = now;
+
+	return endtime;
+}
+
 /* you need to xfree whatever is sent from here */
 extern char *strip_quotes(char *option, int *increased)
 {

@@ -131,6 +131,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			wckey_cond->usage_end = parse_time(argv[i]+end, 1);
+			wckey_cond->usage_end = sanity_check_endtime(wckey_cond->usage_end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
@@ -239,6 +240,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
+			assoc_cond->usage_end = sanity_check_endtime(assoc_cond->usage_end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
@@ -318,6 +320,7 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			cluster_cond->usage_end = parse_time(argv[i]+end, 1);
+			cluster_cond->usage_end = sanity_check_endtime(cluster_cond->usage_end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
