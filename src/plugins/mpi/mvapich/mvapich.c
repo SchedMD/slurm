@@ -1526,33 +1526,6 @@ static int mpirun_id_create(const mpi_plugin_client_info_t *job)
 	return (int) ((job->jobid << 16) | (job->stepid & 0xffff));
 }
 
-/* allocate a formatted string */
-static char * pmgr_strdupf(const char *format, ...)
-{
-        /* check that we have a format string */
-        if (format == NULL) {
-                return NULL;
-        }
-
-        /* compute the size of the string we need to allocate */
-        va_list args;
-        va_start (args, format);
-        int size = vsnprintf (NULL, 0, format, args) + 1;
-        va_end (args);
-
-        /* allocate and print the string */
-        char *str = NULL;
-        if (size > 0) {
-                str = (char *) xmalloc ((size_t) size);
-
-                va_start (args, format);
-                vsnprintf (str, (size_t) size, format, args);
-                va_end (args);
-        }
-
-        return str;
-}
-
 /* constructs a string for given socket which includes IP address and port
  * of remote and local ends, returns name in newly allocated string,
  * which looks like "IP:port --> IP:port", returns NULL on failure */
@@ -1566,8 +1539,8 @@ static char * pmgr_conn_name(int fd, int local_first)
         memset (&sin, 0, sizeof(sin));
         len = sizeof (sin);
         if (getsockname (fd, (struct sockaddr *) &sin, &len) != 0) {
-                fatal ("Extracting local IP and port (getsockname() errno=%d %s)",
-                        errno, strerror (errno)
+                fatal ("Extracting local IP and port (getsockname() errno=%d %m)",
+                        errno
                 );
                 return NULL;
         }
@@ -1580,8 +1553,8 @@ static char * pmgr_conn_name(int fd, int local_first)
         memset (&sin, 0, sizeof(sin));
         len = sizeof(sin);
         if (getpeername (fd, (struct sockaddr *) &sin, &len) != 0) {
-                fatal ("Extracting remote IP and port (getpeername() errno=%d %s)",
-                        errno, strerror (errno)
+                fatal ("Extracting remote IP and port (getpeername() errno=%d %m)",
+                        errno
                 );
                 return NULL;
         }
@@ -1592,16 +1565,16 @@ static char * pmgr_conn_name(int fd, int local_first)
 
         /* convert addresses to strings in IP:port format,
          * we're careful to copy inet_ntoa output before calling it again */
-        char *addr_local  = pmgr_strdupf ("%s:%hu", inet_ntoa(ip_local),  port_local);
-        char *addr_remote = pmgr_strdupf ("%s:%hu", inet_ntoa(ip_remote), port_remote);
+        char *addr_local  = xstrdup_printf ("%s:%hu", inet_ntoa(ip_local),  port_local);
+        char *addr_remote = xstrdup_printf ("%s:%hu", inet_ntoa(ip_remote), port_remote);
 
         /* construct our connection string, list local info first,
          * then remote */
         char *str;
         if (local_first) {
-                str = pmgr_strdupf ("%s --> %s", addr_local,  addr_remote);
+                str = xstrdup_printf ("%s --> %s", addr_local,  addr_remote);
         } else {
-                str = pmgr_strdupf ("%s --> %s", addr_remote, addr_local);
+                str = xstrdup_printf ("%s --> %s", addr_remote, addr_local);
         }
 
         /* free local string */
@@ -1625,7 +1598,7 @@ static void pmgr_munge_failure(const mvapich_state_t* st, int fd, const char *er
         /* TODO: are the types correct for jobid/stepid? */
 
         /* include the SLURM_JOBID if we have one */
-        char *msg = pmgr_strdupf ("JOBID=%d STEPID=%d (remote) %s (local) ERROR: %s",
+        char *msg = xstrdup_printf ("JOBID=%d STEPID=%d (remote) %s (local) ERROR: %s",
                 (int) st->job->jobid, (int) st->job->stepid, name, err
         );
 
@@ -1667,14 +1640,14 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
         /* check that incoming credential is not too big */
         if (mvi->mungelen > mungelen_max) {
                 pmgr_munge_failure (st, fd, "Remote side sent a credential size that is too large");
-                fatal ("Remote side sent a credential size that is too large");
+                error ("Remote side sent a credential size that is too large");
                 return -1;
         }
 
         /* check that credential length is positive */
         if (mvi->mungelen == 0) {
                 /* consider a zero-length credential to be a failure */
-                fatal ("Remote side sent a zero-length credential");
+                error ("Remote side sent a zero-length credential");
                 return -1;
         }
 
@@ -1686,7 +1659,7 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
         /* receive incoming credential */
         int rc = mvapich_read_item (mvi, mvi->munge, (size_t) mvi->mungelen);
         if (rc != 0) {
-                fatal ("Failed to read credential");
+                error ("Failed to read credential");
                 return rc;
         }
 
@@ -1712,7 +1685,7 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
          * MPIRUN_ID string the same here as we set the
          * variable for the process */
         int jobid = mpirun_id_create(st->job);
-        char *payload = pmgr_strdupf ("%s :: %d", name, jobid);
+        char *payload = xstrdup_printf ("%s :: %d", name, jobid);
 
         /* get length of payload, munge_decode tacks on trailing NUL
          * to payload_remote string, but it doesn't count it in the
@@ -1731,30 +1704,30 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
                 gid_t gid = getgid ();
                 if (uid != uid_remote || gid != gid_remote) {
                         pmgr_munge_failure (st, fd, "Got credential with bad uid or gid");
-                        fatal ("Got credential with bad uid or gid");
+                        error ("Got credential with bad uid or gid");
                         failed = 1;
                 }
 
                 /* check that received payload is the right size */
                 if (!failed && payload_len != payload_len_remote) {
                         pmgr_munge_failure (st, fd, "Got credential with bad payload length");
-                        fatal ("Got credential with bad payload length");
+                        error ("Got credential with bad payload length");
                         failed = 1;
                 }
 
                 /* check that the payload is valid */
                 if (!failed && strcmp (payload, payload_remote) != 0) {
                         pmgr_munge_failure (st, fd, "Got credential with bad payload");
-                        fatal ("Got credential with bad payload");
+                        error ("Got credential with bad payload");
                         failed = 1;
                 }
         } else {
                 /* the decode failed */
-                char *tmp = pmgr_strdupf ("Failed to decode munge credential: %s", munge_strerror (err));
+                char *tmp = xstrdup_printf ("Failed to decode munge credential: %s", munge_strerror (err));
                 pmgr_munge_failure (st, fd, tmp);
                 xfree (tmp);
 
-                fatal ("Failed to decode munge credential: %s", munge_strerror (err));
+                error ("Failed to decode munge credential: %s", munge_strerror (err));
                 failed = 1;
         }
 
@@ -1770,7 +1743,15 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
         /* free the connection name string */
         xfree (name);
 
-        /* free memory holding credential received from remote side */
+        /* free memory holding credential received from remote side,
+         * we no longer need it at this point and we free it here to
+         * avoid accumulating memory while handling all processes,
+         * it's attached as a field of the info object (rather
+         * than allocated as a local variable) because we may exit
+         * this function early after having received only part of
+         * the munge message, when more data comes in on the
+         * socket, this function is called again until it reads the
+         * whole message */
         xfree (mvi->munge);
         mvi->munge = NULL;
         mvi->mungelen = 0;
