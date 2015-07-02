@@ -53,6 +53,13 @@
 #include <sys/poll.h>
 #include <sys/time.h>
 
+#include <arpa/inet.h>
+#include <errno.h>
+
+/* include munge and syslog to log authentication faiulres */
+#include <munge.h>
+#include <syslog.h>
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -112,6 +119,8 @@ enum mv_init_state
 	MV_READ_ADDRS,
 	MV_READ_PIDLEN,
 	MV_READ_PID,
+	MV_READ_MUNGELEN,
+	MV_READ_MUNGE,
 	MV_INIT_DONE,
 };
 
@@ -144,6 +153,8 @@ struct mvapich_info
 	                     *  and the hostid is tacked onto the end
 	                     *  of the array (for protocol version 3)
 	                     */
+        uint32_t mungelen;  /* Length of munge packet (v9+ only) */
+        char* munge;        /* Buffer to hold munge packet */
 };
 
 /*  Globals for the mvapich thread.
@@ -254,7 +265,7 @@ static int startup_timeout (mvapich_state_t *st)
 		return (0);
 }
 
-char * vmsg (const char *msg, va_list ap)
+static char * vmsg (const char *msg, va_list ap)
 {
 	int n = -1;
 	int size = BUFSIZ;
@@ -360,12 +371,15 @@ static struct mvapich_info * mvapich_info_create (void)
 	mvi->rank = -1;
 	mvi->state = MV_READ_VERSION;
 	mvi->nread = 0;
+        mvi->mungelen = 0;
+        mvi->munge = NULL;
 
 	return (mvi);
 }
 
 static void mvapich_info_destroy (struct mvapich_info *mvi)
 {
+        /* don't free mvi->munge here because it's freed elsewhere */
 	xfree (mvi->addr);
 	xfree (mvi->pid);
 	xfree (mvi);
@@ -1475,9 +1489,11 @@ static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
 	nleft = size - mvi->nread;
 
 	if ((n = read (mvi->fd, p, nleft)) < 0) {
-		if (errno == EAGAIN)
-			return (EAGAIN);
-		else {
+		if (errno == EAGAIN) {
+                        /* we return 0 on EAGAIN, outer layers will
+                         * call mvapich_read_item again */
+			return (0);
+		} else {
 			error ("mvapich: %d: nread=%d, read (%d, %zx, "
 			       "size=%zd, nleft=%zd): %m",
 			       mvi->rank, mvi->nread,
@@ -1486,6 +1502,8 @@ static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
 		}
 	}
 
+        /* add number of bytes read to our running count,
+         * advance the state if we've read all that we should */
 	mvi->nread += n;
 	if (mvi->nread == size) {
 		mvi->nread = 0;
@@ -1493,6 +1511,273 @@ static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
 	}
 
 	return (0);
+}
+
+/*
+ *  Create a unique MPIRUN_ID for jobid/stepid pairs.
+ *   Combine the least significant bits of the jobid and stepid
+ *
+ *  The MPIRUN_ID is used by MVAPICH to create shmem files in /tmp,
+ *   so we have to make sure multiple jobs and job steps on the
+ *   same node have different MPIRUN_IDs.
+ */
+static int mpirun_id_create(const mpi_plugin_client_info_t *job)
+{
+	return (int) ((job->jobid << 16) | (job->stepid & 0xffff));
+}
+
+/* allocate a formatted string */
+static char * pmgr_strdupf(const char *format, ...)
+{
+        /* check that we have a format string */
+        if (format == NULL) {
+                return NULL;
+        }
+
+        /* compute the size of the string we need to allocate */
+        va_list args;
+        va_start (args, format);
+        int size = vsnprintf (NULL, 0, format, args) + 1;
+        va_end (args);
+
+        /* allocate and print the string */
+        char *str = NULL;
+        if (size > 0) {
+                str = (char *) xmalloc ((size_t) size);
+
+                va_start (args, format);
+                vsnprintf (str, (size_t) size, format, args);
+                va_end (args);
+        }
+
+        return str;
+}
+
+/* constructs a string for given socket which includes IP address and port
+ * of remote and local ends, returns name in newly allocated string,
+ * which looks like "IP:port --> IP:port", returns NULL on failure */
+static char * pmgr_conn_name(int fd, int local_first)
+{
+        /* variable to hold socket info */
+        struct sockaddr_in sin;
+        socklen_t len;
+
+        /* lookup info for local end */
+        memset (&sin, 0, sizeof(sin));
+        len = sizeof (sin);
+        if (getsockname (fd, (struct sockaddr *) &sin, &len) != 0) {
+                fatal ("Extracting local IP and port (getsockname() errno=%d %s)",
+                        errno, strerror (errno)
+                );
+                return NULL;
+        }
+
+        /* extract local IP and port */
+        struct in_addr ip_local = sin.sin_addr;
+        unsigned short port_local = (unsigned short) ntohs (sin.sin_port);
+
+        /* lookup info for remote end */
+        memset (&sin, 0, sizeof(sin));
+        len = sizeof(sin);
+        if (getpeername (fd, (struct sockaddr *) &sin, &len) != 0) {
+                fatal ("Extracting remote IP and port (getpeername() errno=%d %s)",
+                        errno, strerror (errno)
+                );
+                return NULL;
+        }
+
+        /* extract remote IP and port */
+        struct in_addr ip_remote = sin.sin_addr;
+        unsigned short port_remote = (unsigned short) ntohs (sin.sin_port);
+
+        /* convert addresses to strings in IP:port format,
+         * we're careful to copy inet_ntoa output before calling it again */
+        char *addr_local  = pmgr_strdupf ("%s:%hu", inet_ntoa(ip_local),  port_local);
+        char *addr_remote = pmgr_strdupf ("%s:%hu", inet_ntoa(ip_remote), port_remote);
+
+        /* construct our connection string, list local info first,
+         * then remote */
+        char *str;
+        if (local_first) {
+                str = pmgr_strdupf ("%s --> %s", addr_local,  addr_remote);
+        } else {
+                str = pmgr_strdupf ("%s --> %s", addr_remote, addr_local);
+        }
+
+        /* free local string */
+        xfree (addr_local);
+
+        /* free remote string */
+        xfree (addr_remote);
+
+        /* return connection string */
+        return str;
+}
+
+/* log an authentication failure to syslog if we receive a
+ * munge packet that doesn't check out */
+static void pmgr_munge_failure(const mvapich_state_t* st, int fd, const char *err)
+{
+        /* get our connection name (with remote IP:port first) */
+        int local_first = 0;
+        char *name = pmgr_conn_name (fd, local_first);
+
+        /* TODO: are the types correct for jobid/stepid? */
+
+        /* include the SLURM_JOBID if we have one */
+        char *msg = pmgr_strdupf ("JOBID=%d STEPID=%d (remote) %s (local) ERROR: %s",
+                (int) st->job->jobid, (int) st->job->stepid, name, err
+        );
+
+        /* write message to syslog */
+        openlog ("srunmvapich", LOG_CONS | LOG_PID, LOG_USER);
+        syslog (LOG_AUTHPRIV | LOG_ERR, "%s", msg);
+        closelog ();
+
+        /* free the message */
+        xfree (msg);
+
+        /* free the connection name string */
+        xfree (name);
+
+        return;
+}
+
+/* reads munge packet from process and verifies its authentication,
+ * checks user and group ids as well as payload, where the payload
+ * contains the IP:port of the remote and local ends of the socket
+ * followed by the jobid passed to the process in MPIRUN_ID */
+static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *mvi)
+{
+        /* we encode the connection name (IP:port of both ends)
+         * and check that so that it can only be used for this socket,
+         * we also encode the jobid, which should be unique within the
+         * munge credential TTL so that an app does not reuse the
+         * same value within the time limit */
+
+        /* get file descriptor */
+        int fd = mvi->fd;
+
+        /* define maximum length of credential that we're willing
+         * to accept, this is so we don't blow up allocating memory
+         * if remote end sends us a really large (fake) credential
+         * size */
+        uint32_t mungelen_max = 4096;
+
+        /* check that incoming credential is not too big */
+        if (mvi->mungelen > mungelen_max) {
+                pmgr_munge_failure (st, fd, "Remote side sent a credential size that is too large");
+                fatal ("Remote side sent a credential size that is too large");
+                return -1;
+        }
+
+        /* check that credential length is positive */
+        if (mvi->mungelen == 0) {
+                /* consider a zero-length credential to be a failure */
+                fatal ("Remote side sent a zero-length credential");
+                return -1;
+        }
+
+        /* allocate memory to hold munge packet if we haven't already */
+        if (mvi->munge == NULL) {
+                mvi->munge = (char *) xmalloc ((size_t) mvi->mungelen);
+        }
+
+        /* receive incoming credential */
+        int rc = mvapich_read_item (mvi, mvi->munge, (size_t) mvi->mungelen);
+        if (rc != 0) {
+                fatal ("Failed to read credential");
+                return rc;
+        }
+
+        /* when we read the whole munge packet, our state will change,
+         * so if we're still in the READ_MUNGE state, we have more to
+         * read */
+        if (mvi->state == MV_READ_MUNGE) {
+                return 0;
+        }
+
+        /* if we get to here, we have the whole munge packet,
+         * assume that it authenticates successfully */
+        int failed = 0;
+
+        /* get our connection name (with remote IP:port first,
+         * followed by local IP:port) */
+        int local_first = 0;
+        char *name = pmgr_conn_name (fd, local_first);
+
+        /* create expected payload in following format:
+         * remote IP:port --> local IP:port :: MPIRUN_ID,
+         * note that we need to be sure to generate the
+         * MPIRUN_ID string the same here as we set the
+         * variable for the process */
+        int jobid = mpirun_id_create(st->job);
+        char *payload = pmgr_strdupf ("%s :: %d", name, jobid);
+
+        /* get length of payload, munge_decode tacks on trailing NUL
+         * to payload_remote string, but it doesn't count it in the
+         * length, so we don't count the trailing NUL here either */
+        int payload_len = (int) strlen (payload);
+
+        /* decode the munge packet and authenticate */
+        char *payload_remote = NULL;
+        int payload_len_remote;
+        uid_t uid_remote;
+        gid_t gid_remote;
+        munge_err_t err = munge_decode (mvi->munge, NULL, (void**)&payload_remote, &payload_len_remote, &uid_remote, &gid_remote);
+        if (err == EMUNGE_SUCCESS) {
+                /* we decoded sucecssfully, check that user and group id match */
+                uid_t uid = getuid ();
+                gid_t gid = getgid ();
+                if (uid != uid_remote || gid != gid_remote) {
+                        pmgr_munge_failure (st, fd, "Got credential with bad uid or gid");
+                        fatal ("Got credential with bad uid or gid");
+                        failed = 1;
+                }
+
+                /* check that received payload is the right size */
+                if (!failed && payload_len != payload_len_remote) {
+                        pmgr_munge_failure (st, fd, "Got credential with bad payload length");
+                        fatal ("Got credential with bad payload length");
+                        failed = 1;
+                }
+
+                /* check that the payload is valid */
+                if (!failed && strcmp (payload, payload_remote) != 0) {
+                        pmgr_munge_failure (st, fd, "Got credential with bad payload");
+                        fatal ("Got credential with bad payload");
+                        failed = 1;
+                }
+        } else {
+                /* the decode failed */
+                char *tmp = pmgr_strdupf ("Failed to decode munge credential: %s", munge_strerror (err));
+                pmgr_munge_failure (st, fd, tmp);
+                xfree (tmp);
+
+                fatal ("Failed to decode munge credential: %s", munge_strerror (err));
+                failed = 1;
+        }
+
+        /* free the remote payload */
+        if (payload_remote != NULL) {
+                free (payload_remote);
+                payload_remote = NULL;
+        }
+
+        /* free the payload */
+        xfree (payload);
+
+        /* free the connection name string */
+        xfree (name);
+
+        /* free memory holding credential received from remote side */
+        xfree (mvi->munge);
+        mvi->munge = NULL;
+        mvi->mungelen = 0;
+
+        /* return -1 if we failed to authenticate, 0 otherwise */
+        rc = failed ? -1 : 0;
+        return rc;
 }
 
 /*
@@ -1508,6 +1793,9 @@ static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
  *
  *  State processing is considered complete when state == MV_INIT_DONE.
  *
+ *  Protocol info:
+ *  v8: version, rank
+ *  v9: version, rank, munge
  */
 static int mvapich_info_process_init (mvapich_state_t *st,
 		                              struct mvapich_info *mvi)
@@ -1540,7 +1828,13 @@ again:
 			goto again;
 		}
 
-		if (mvi->version >= 8 || mvi->state != MV_READ_HOSTIDLEN)
+                /* after the rank, protocol 9 reads a munge packet */
+                if (mvi->version == 9 && mvi->state == MV_READ_HOSTIDLEN) {
+                        mvi->state = MV_READ_MUNGELEN;
+                        goto again;
+                }
+
+		if (mvi->version == 8 || mvi->state != MV_READ_HOSTIDLEN)
 			break;
 
 	case MV_READ_HOSTIDLEN:
@@ -1601,6 +1895,33 @@ again:
 		rc = mvapich_read_item (mvi, mvi->pid, mvi->pidlen);
 
 		break;
+
+        case MV_READ_MUNGELEN:
+                /* only protocols v9 and higer process a munge packet,
+                 * so if we make it to this state in another version,
+                 * we're done */
+		if (mvi->version < 9) {
+                        mvi->state = MV_INIT_DONE;
+                        break;
+                }
+
+		mvapich_debug2 ("rank %d: read munge packet length. version = %d",
+				mvi->rank, mvi->version);
+                
+                /* read the length of the incoming munge packet */
+                rc = mvapich_read_item (mvi, &mvi->mungelen, sizeof (mvi->mungelen));
+
+                if (mvi->state != MV_READ_MUNGE)
+                        break;
+
+        case MV_READ_MUNGE:
+		mvapich_debug2 ("rank %d: read munge packet. version = %d",
+				mvi->rank, mvi->version);
+                
+		rc = mvapich_authenticate_munge (st, mvi);
+
+                if (mvi->state != MV_INIT_DONE)
+                        break;
 
 	case MV_INIT_DONE:
 		break;
@@ -1981,7 +2302,7 @@ static void *mvapich_thr(void *arg)
 	/*
 	 *  Process subsequent phases of various protocol versions.
 	 */
-	if (st->protocol_version == 8) {
+	if (st->protocol_version >= 8) {
 		if (mvapich_processops (st) < 0)
 			mvapich_terminate_job (st, "mvapich_processops failed.");
 	}
@@ -2078,19 +2399,6 @@ static void mvapich_state_destroy(mvapich_state_t *st)
 	pthread_cond_destroy(&st->shutdown_cond);
 
 	xfree(st);
-}
-
-/*
- *  Create a unique MPIRUN_ID for jobid/stepid pairs.
- *   Combine the least significant bits of the jobid and stepid
- *
- *  The MPIRUN_ID is used by MVAPICH to create shmem files in /tmp,
- *   so we have to make sure multiple jobs and job steps on the
- *   same node have different MPIRUN_IDs.
- */
-int mpirun_id_create(const mpi_plugin_client_info_t *job)
-{
-	return (int) ((job->jobid << 16) | (job->stepid & 0xffff));
 }
 
 /*
