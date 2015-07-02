@@ -160,6 +160,7 @@ static void _launch_complete_rm(uint32_t job_id);
 static void _launch_complete_wait(uint32_t job_id);
 static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
 static void _note_batch_job_finished(uint32_t job_id);
+static int  _prolog_is_running (uint32_t jobid);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
@@ -5747,16 +5748,22 @@ static int _compare_job_running_prolog(void *listentry, void *key)
 	return (*job0 == *job1);
 }
 
+static int _prolog_is_running (uint32_t jobid)
+{
+	int rc = 0;
+	if (list_find_first (conf->prolog_running_jobs,
+	                     (ListFindF) _find_uint32, &jobid))
+		rc = 1;
+	return (rc);
+}
+
 /* Wait for the job's prolog to complete */
 static void _wait_for_job_running_prolog(uint32_t job_id)
 {
 	debug( "Waiting for job %d's prolog to complete", job_id);
 	slurm_mutex_lock(&conf->prolog_running_lock);
 
-	while (list_find_first( conf->prolog_running_jobs,
-				&_compare_job_running_prolog,
-				&job_id )) {
-
+	while (_prolog_is_running (job_id)) {
 		pthread_cond_wait(&conf->prolog_running_cond,
 				  &conf->prolog_running_lock);
 	}
