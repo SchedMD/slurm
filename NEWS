@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
     seconds) is now interpretted as a maximum run time for the backfill
     scheduler. Once reached, the scheduler will build a new job queue and
     start over, even if not all jobs have been tested.
+ -- Backfill scheduler now considers OverTimeLimit and KillWait configuration
+    parameters to estimate when running jobs will exit.
 
 * Changes in Slurm 14.11.7
 ==========================
