@@ -267,7 +267,6 @@ proc update_res { res_name res_params failure_expected } {
 	return $ret_code
 }
 
-
 #
 # Procedure to delete a reservation
 #
@@ -335,7 +334,7 @@ expect {
 		wait
 	}
 }
-spawn $sinfo -h -o "=%N=" -p $def_partition
+spawn $sinfo -h -o "=%N=" -tIDLE -p $def_partition
 expect {
 	-re "=(.+)=" {
 		set def_node $expect_out(1,string)
@@ -350,7 +349,7 @@ if {[string compare $def_node ""] == 0} {
 	exit 1
 }
 
-spawn $sinfo -h -o "=%N=" -p $def_partition
+spawn $sinfo -h -o "=%N=" -tIDLE -p $def_partition
 expect {
 	-re "=($alpha_numeric).($number)-($number).=" {
 		set def_node_name $expect_out(1,string)
