@@ -2072,8 +2072,11 @@ considered for backfill scheduling.
 \fBbf_interval=#\fR
 The number of seconds between iterations.
 Higher values result in less overhead and better responsiveness.
-The default value is 30 seconds.
+The backfill scheduler will start over after reaching this time limit
+(including time spent sleeping), even if the maximum job counts have not
+been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+The default value is 30 seconds.
 .TP
 \fBbf_max_job_array_resv=#\fR
 The maximum number of tasks from a job array for which to reserve resources in

@@ -735,7 +735,7 @@ static int _attempt_backfill(void)
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
-	time_t orig_start_time = (time_t) 0;
+	time_t orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	int rc = 0;
@@ -779,7 +779,7 @@ static int _attempt_backfill(void)
 		info("backfill: beginning");
 	else
 		debug("backfill: beginning");
-	sched_start = now = time(NULL);
+	sched_start = orig_sched_start = now = time(NULL);
 	gettimeofday(&start_tv, NULL);
 
 	if (slurm_get_root_filter())
@@ -848,7 +848,8 @@ static int _attempt_backfill(void)
 				info("backfill: reached end of job queue");
 			break;
 		}
-		if (slurmctld_config.shutdown_time) {
+		if (slurmctld_config.shutdown_time ||
+		    (difftime(time(NULL),orig_sched_start)>=backfill_interval)){
 			xfree(job_queue_rec);
 			break;
 		}
@@ -1059,7 +1060,8 @@ next_task:
 		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:
-		if (slurmctld_config.shutdown_time)
+		if (slurmctld_config.shutdown_time ||
+		    (difftime(time(NULL), orig_sched_start)>=backfill_interval))
 			break;
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||

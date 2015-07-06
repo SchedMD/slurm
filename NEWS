@@ -50,6 +50,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmdbd core dump if the daemon does not have connection with
     the database.
  -- Display error message when attempting to modify priority of a held job.
+ -- Backfill scheduler: The configured backfill_interval value (default 30
+    seconds) is now interpretted as a maximum run time for the backfill
+    scheduler. Once reached, the scheduler will build a new job queue and
+    start over, even if not all jobs have been tested.
 
 * Changes in Slurm 14.11.7
 ==========================
