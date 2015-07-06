@@ -3340,3 +3340,41 @@ proc get_srun_ports { } {
 
 	return $ports
 }
+
+#####################################################################
+#
+# Proc: available_nodes_hostnames
+#
+# Purpose: Get all idle nodes in the system
+#
+# Returns: idle nodes
+#
+#####################################################################
+
+proc available_nodes_hostnames { partition } {
+
+	global sinfo alpha_numeric_nodelist exit_code
+
+	log_user 0
+	set idle_nodelist ""
+	if {[string compare $partition ""] == 0} {
+		spawn $sinfo -tidle -h -o%N
+	} else {
+		spawn $sinfo -tidle -h -o%N -p$partition
+	}
+	expect {
+		-re "($alpha_numeric_nodelist)" {
+			set idle_nodelist $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $idle_nodelist
+}
