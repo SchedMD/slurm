@@ -2583,7 +2583,9 @@ _initgroups(stepd_step_rec_t *job)
 	if (primary_gid != job->gid) {
 		int ngroups_max = sysconf(_SC_NGROUPS_MAX);
 		gid_t grps[ngroups_max];
-		int size;
+		int size, max;
+
+		max = ngroups_max;
 
 		size = getgrouplist(job->user_name,
 				    job->gid,
@@ -2593,7 +2595,7 @@ _initgroups(stepd_step_rec_t *job)
 			error("%s: getgrouplist() failed: %m", __func__);
 			return -1;
 		}
-		if (size > ngroups_max - 1) {
+		if (size > max - 1) {
 			error("%s: too many groups %d for user %s\n",
 			      __func__, size, job->user_name);
 		}
