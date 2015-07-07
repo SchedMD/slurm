@@ -89,6 +89,9 @@ proc suspend_job { job_id operation } {
 			set not_supported 1
 			exp_continue
 		}
+		-re "No error" {
+			exp_continue
+		}
 		-re "error" {
 			send_user "\nFAILURE: scontrol error\n"
 			set exit_code 1
