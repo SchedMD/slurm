@@ -7,9 +7,8 @@
 Washington DC, USA<br>
 Host: <a href="http://www.gwu.edu/">The George Washington University</a></p>
 <!-- <p>More information to come soon.</p>-->
-<a href="slurm_ug_cfp.html">Call for Abstracts: Due 1 June 2015</a><br>
-<!-- <a href="slurm_ug_agenda.html#agenda">Meeting agenda</a><br> -->
-<!-- <a href="slurm_ug_agenda.html#registration">Meeting registration</a><br> -->
+<!-- <a href="slurm_ug_cfp.html">Call for Abstracts: Due 1 June 2015</a><br> -->
+<a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a><br>
 <!-- <a href="slurm_ug_agenda.html#hotels">Meeting hotels</a><br> -->
 
 <br>
@@ -40,6 +39,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 20 March 2015</p>
+<p style="text-align:center;">Last modified 7 July 2015</p>
 
 <!--#include virtual="footer.txt"-->
