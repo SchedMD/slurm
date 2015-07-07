@@ -640,23 +640,23 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveEvents");
-	key_pair->value = xstrdup_printf(
-		"%u",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
+	key_pair->value = xstrdup(
+		SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_event) ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveJobs");
-	key_pair->value = xstrdup_printf(
-		"%u",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	key_pair->value = xstrdup(
+		SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_job) ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveResvs");
-	key_pair->value = xstrdup_printf(
-		"%u",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv) ? 1 : 0);
+	key_pair->value = xstrdup(
+		SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_resv) ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -666,16 +666,16 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSteps");
-	key_pair->value = xstrdup_printf(
-		"%u",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
+	key_pair->value = xstrdup(
+		SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_step) ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSuspend");
-	key_pair->value = xstrdup_printf(
-		"%u", SLURMDB_PURGE_ARCHIVE_SET(
-			slurmdbd_conf->purge_suspend) ? 1 : 0);
+	key_pair->value = xstrdup(
+		SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_suspend) ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -696,7 +696,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CommitDelay");
-	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->commit_delay);
+	key_pair->value = xstrdup(slurmdbd_conf->commit_delay ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -726,8 +726,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugLevel");
-	key_pair->value = xstrdup_printf("%s",
-		 log_num2string(slurmdbd_conf->debug_level));
+	key_pair->value = xstrdup(log_num2string(slurmdbd_conf->debug_level));
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -868,7 +867,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackSlurmctldDown");
-	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->track_ctld);
+	key_pair->value = xstrdup(slurmdbd_conf->track_ctld ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	return my_list;
