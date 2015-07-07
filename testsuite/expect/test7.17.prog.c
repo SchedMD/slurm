@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 	setenv("SLURM_CONF", slurm_conf, 1);
 	rc = gres_plugin_init();
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_init");
+		slurm_perror("failure: gres_plugin_init");
 		exit(1);
 	}
 
@@ -93,14 +93,14 @@ int main(int argc, char *argv[])
 	node_name = "test_node";
 	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_node_config_load");
+		slurm_perror("failure: gres_plugin_node_config_load");
 		exit(1);
 	}
 
 	buffer = init_buf(1024);
 	rc = gres_plugin_node_config_pack(buffer);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_node_config_pack");
+		slurm_perror("failure: gres_plugin_node_config_pack");
 		exit(1);
 	}
 
@@ -111,14 +111,14 @@ int main(int argc, char *argv[])
 	rc = gres_plugin_init_node_config(node_name, orig_config,
 					  &node_gres_list);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_init_node_config");
+		slurm_perror("failure: gres_plugin_init_node_config");
 		exit(1);
 	}
 
 	set_buf_offset(buffer, 0);
 	rc = gres_plugin_node_config_unpack(buffer, node_name);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_node_config_unpack");
+		slurm_perror("failure: gres_plugin_node_config_unpack");
 		exit(1);
 	}
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 					      &new_config, &node_gres_list,
 					      0, &reason_down);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_node_config_validate");
+		slurm_perror("failure: gres_plugin_node_config_validate");
 		exit(1);
 	}
 
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
 	rc = gres_plugin_job_state_validate(job_config, &job_gres_list);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_job_state_validate");
+		slurm_perror("failure: gres_plugin_job_state_validate");
 		exit(1);
 	}
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 
 	rc = gres_plugin_fini();
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_fini");
+		slurm_perror("failure: gres_plugin_fini");
 		exit(1);
 	}
 

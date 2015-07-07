@@ -57,7 +57,8 @@ send_user "\n====test7.17.1====\n"
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
-	-re "FAILURE" {
+	-re "failure" {
+		send_user "\nFAILURE: running test7.17.1\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -70,7 +71,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of cpu is incorrect\n"
+	send_user "\nFAILURE: number of CPUs is incorrect\n"
 	set exit_code 1
 }
 
@@ -78,7 +79,8 @@ send_user "\n====test7.17.2====\n"
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.2" 16
 expect {
-	-re "FAILURE" {
+	-re "failure" {
+		send_user "\nFAILURE: running test7.17.2\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -99,7 +101,8 @@ send_user "\n====test7.17.3====\n"
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.3" 16
 expect {
-	-re "FAILURE" {
+	-re "failure" {
+		send_user "\nFAILURE: running test7.17.3\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -120,7 +123,8 @@ send_user "\n====test7.17.4====\n"
 set cpu_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.4" 16
 expect {
-	-re "FAILURE" {
+	-re "failure" {
+		send_user "\nFAILURE: running test7.17.4\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -146,7 +150,7 @@ send_user "\n====test7.17.5====\n"
 set fail_match 0
 spawn ./$test_prog "craynetworks:100" "$cfgdir" "/test7.17.5" 16
 expect {
-	-re "FAILURE" {
+	-re "failure" {
 		send_user "This error is expected\n"
 		set fail_match 1
 		exp_continue
@@ -166,7 +170,7 @@ send_user "\n====test7.17.6====\n"
 set fail_match 0
 spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.6" 0
 expect {
-	-re "FAILURE" {
+	-re "failure" {
 		send_user "This error is expected\n"
 		set fail_match 1
 		exp_continue
