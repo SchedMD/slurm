@@ -882,6 +882,8 @@ EXTRA_DIST = \
 	inc21.30.14			\
 	inc21.30.15			\
 	inc21.30.16			\
+	inc21.34.1			\
+	inc21.34.2			\
 	inc21.34_test			\
 	test22.1			\
 	inc22.1.1                       \
