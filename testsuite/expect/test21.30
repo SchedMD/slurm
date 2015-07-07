@@ -94,6 +94,9 @@ set maxjobsub   MaxSubmitJobs
 set maxjobsub_num 2
 set time_spacing 1
 
+# cr_core = 1 / cr_cpu = 0
+set selectparam  0
+
 # mod qos
 array set mod_qos_vals {
 	GrpNodes        -1
@@ -168,6 +171,11 @@ proc check_state { job } {
 		set exit_code 1
 	}
 
+}
+
+# Determine what the selecttype param is
+if {![string compare [test_select_type_params] "CR_CORE"]} {
+	set selectparam 1
 }
 
 set got_node 0
@@ -603,6 +611,12 @@ set mod_qos_vals(MaxWall) "-1"
 #
 # Test Max CPUs Per User
 #
+
+# If CR_CORE set maxcpuspu a multiple number of threads
+if {$selectparam} {
+	set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+}
+
 set mod_qos_vals(MaxCpusPerUser) $maxcpuspu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing

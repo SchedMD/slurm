@@ -150,7 +150,7 @@ proc cleanup { } {
 	}
 
 	#delete account
-	spawn $sacctmgr -i  delete account $acct
+	spawn $sacctmgr -i delete account $acct
 	expect {
 		-re "Deleting accounts" {
 			exp_continue
@@ -179,7 +179,7 @@ proc cleanup { } {
 		}
 	}
 
-	if {[string compare $def_part ""]} {
+	if {[string length $def_part]} {
 		spawn $scontrol update partitionname=$def_part default=yes
 		expect {
 			timeout {
@@ -251,23 +251,9 @@ if {$tmpc == 0 || $tmpn == 0} {
 }
 
 # Determine what the selecttype param is
-spawn $bin_bash -c "$scontrol show config | grep SelectTypeParameters"
-expect {
-	-re "SelectTypeParameters *= ($alpha_numeric_under)" {
-		if {[string compare $expect_out(1,string) "CR_CORE"] == 0} {
-			set selectparam 1
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+if {![string compare [test_select_type_params] "CR_CORE"]} {
+	set selectparam 1
 }
-
 
 set got_node 0
 spawn $srun -N1 printenv SLURM_NODELIST
@@ -324,21 +310,7 @@ if {$totcpus == 0} {
 }
 
 # Get the number of nodes in the default partition
-set num_nodes 0
-spawn $scontrol show partition [default_partition]
-expect {
-	-re "TotalNodes=($number)" {
-		set num_nodes [expr $expect_out(1,string) - 1]
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set num_nodes [available_nodes [default_partition] "idle"]
 
 if {$num_nodes == 0} {
 	send_user "\nFAILURE: no cpus where found\n"

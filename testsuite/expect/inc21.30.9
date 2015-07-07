@@ -39,7 +39,6 @@ proc inc21_30_9 { } {
 
 	set job_id1 0
 	set job_id2 0
-	set task_cnt 2
 	set timeout [expr $grpcpumin_num * 120]
 	set timelimit [expr $grpcpumin_num / $nthreads]
 	# Since GrpCpuMins is a decayed variable lets reset it to make sure
@@ -73,7 +72,7 @@ proc inc21_30_9 { } {
 
 	reset_qos_usage "" $qostest
 
-	spawn $salloc --account=$acct -w$test_node --qos=$qostest -n$task_cnt -t[expr $timelimit + 1] $srun $bin_sleep 1
+	spawn $salloc --account=$acct -w$test_node --qos=$qostest -n$nthreads -t[expr $timelimit + 1] $srun $bin_sleep 1
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
