@@ -3084,7 +3084,9 @@ used for a hierarchical network as described in a \fItopology.conf\fR file
 .TP
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload
-Characterization Key.  Must be set to track wckey usage.
+Characterization Key.  Must be set to track correct wckey usage.
+NOTE: You must also set TrackWCKey in your slurmdbd.conf file to create
+historical usage reports.
 
 .TP
 \fBTreeWidth\fR
