@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
     allocation.
  -- Add association usage information to "scontrol show cache" command output.
  -- MPI/MVAPICH plugin now requires Munge for authentication.
+ -- job_submit/lua: Add default_qos field.
 
 * Changes in Slurm 15.08.0pre5
 ==============================

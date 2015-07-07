@@ -236,6 +236,43 @@ static char *_get_default_account(uint32_t user_id)
 	}
 }
 
+/* Get the default QOS for an association (or NULL if not present) */
+static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
+{
+	slurmdb_assoc_rec_t assoc;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	slurmdb_qos_rec_t qos;
+	uint32_t qos_id;
+
+	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc.uid = user_id;
+	assoc.partition = partition;
+	if (account) {
+		assoc.acct = account;
+	} else {
+		assoc.acct = _get_default_account(user_id);
+	}
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, 0,
+				    &assoc_ptr, false) != SLURM_ERROR) {
+		qos_id = assoc_ptr->def_qos_id;
+	} else {
+		return NULL;
+	}
+
+	if (!qos_id) {
+		return NULL;
+	}
+
+	memset(&qos, 0, sizeof(slurmdb_qos_rec_t));
+	qos.id = qos_id;
+	if (assoc_mgr_fill_in_qos(acct_db_conn,
+				  &qos, 0, NULL, false) != SLURM_ERROR) {
+		return qos.name;
+	} else {
+		return NULL;
+	}
+}
+
 /* Get fields in an existing slurmctld job record.
  *
  * This is an incomplete list of job record fields. Add more as needed and
@@ -611,6 +648,10 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->cpus_per_task);
 	} else if (!strcmp(name, "default_account")) {
 		lua_pushstring (L, _get_default_account(job_desc->user_id));
+	} else if (!strcmp(name, "default_qos")) {
+		lua_pushstring (L, _get_default_qos(job_desc->user_id,
+						    job_desc->account,
+						    job_desc->partition));
 	} else if (!strcmp(name, "dependency")) {
 		lua_pushstring (L, job_desc->dependency);
 	} else if (!strcmp(name, "end_time")) {
