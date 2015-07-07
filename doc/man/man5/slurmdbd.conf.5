@@ -447,7 +447,10 @@ with to store the job accounting data.
 .TP
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload
-Characterization Key. Must be set to track wckey usage.
+Characterization Key. Must be set to track wckey usage.  This must be set to
+generate rolled up usage tables from WCKeys.
+NOTE: If TrackWCKey is set here and not in your various slurm.conf files all
+jobs will be attributed to their default WCKey.
 
 .TP
 \fBTrackSlurmctldDown\fR
