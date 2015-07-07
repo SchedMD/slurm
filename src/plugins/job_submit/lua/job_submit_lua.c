@@ -1038,6 +1038,8 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushstring (L, part_ptr->nodes);
 	} else if (!strcmp(name, "priority")) {
 		lua_pushnumber (L, part_ptr->priority);
+	} else if (!strcmp(name, "qos")) {
+		lua_pushstring (L, part_ptr->qos_char);
 	} else if (!strcmp(name, "state_up")) {
 		lua_pushnumber (L, part_ptr->state_up);
 	} else {
