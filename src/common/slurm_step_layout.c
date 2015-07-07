@@ -68,7 +68,8 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     uint32_t task_dist, uint16_t plane_size);
 
 static int _task_layout_block(slurm_step_layout_t *step_layout,
-			      uint16_t *cpus, uint32_t task_dist);
+			      uint16_t *cpus, uint32_t task_dist,
+			      uint16_t cpus_per_task);
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus);
 static int _task_layout_plane(slurm_step_layout_t *step_layout,
@@ -513,7 +514,8 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
         else if ((task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
                 return _task_layout_plane(step_layout, cpus);
 	else
-		return _task_layout_block(step_layout, cpus, task_dist);
+		return _task_layout_block(step_layout, cpus, task_dist,
+					  cpus_per_task);
 }
 
 /* use specific set run tasks on each host listed in hostfile
@@ -598,7 +600,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 }
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
-			      uint32_t task_dist)
+			      uint32_t task_dist, uint16_t cpus_per_task)
 {
 	static uint16_t select_params = (uint16_t) NO_VAL;
 	int i, j, task_id = 0;
@@ -619,7 +621,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
 		/* Pass 1: Put one task on each node */
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
-			if (step_layout->tasks[i] < cpus[i]) {
+			if ((step_layout->tasks[i] * cpus_per_task) < cpus[i]) {
 				step_layout->tasks[i]++;
 				task_id++;
 			}
@@ -628,7 +630,8 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
 		/* Pass 2: Fill remaining CPUs on a node-by-node basis */
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
-			while ((step_layout->tasks[i] < cpus[i]) &&
+			while (((step_layout->tasks[i] * cpus_per_task) <
+			        cpus[i]) &&
 			       (task_id < step_layout->task_cnt)) {
 				step_layout->tasks[i]++;
 				task_id++;
