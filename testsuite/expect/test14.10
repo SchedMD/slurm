@@ -35,6 +35,9 @@ set file_in1   "test$test_id.in1"
 set file_in2   "test$test_id.in2"
 set exit_code  0
 set job_id     0
+set hostlist   ""
+set node1      ""
+set node2      ""
 
 print_header $test_id
 
@@ -46,46 +49,83 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
+spawn $bin_bash -c "exec $sinfo -tidle -h -o%n | head -n2 |tr \'\n\' ' ' "
+expect {
+	-re "($alpha_numeric_under) ($alpha_numeric_under)" {
+		set node1 $expect_out(1,string)
+		set node2 $expect_out(2,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {![string compare $node1 ""] || ![string compare $node2 ""]} {
+	send_user "\nFAILURE: did not get usable hostlist\n"
+	exit 1
+}
+
+set hostlist "$node1,$node2"
+
 make_bash_script $file_in1 "
-$srun $bin_rm -f /tmp/test$test_id\_file
+$srun $bin_rm -f /tmp/$node1/test$test_id\_file
+$srun $bin_rm -fr /tmp/$node1
+$srun $bin_rm -f /tmp/$node2/test$test_id\_file
+$srun $bin_rm -fr /tmp/$node2
+
+$srun -w$node1 mkdir /tmp/$node1
+$srun -w$node2 mkdir /tmp/$node2
+
 $srun -N1 -n1 -r1 ./$file_in2
 
 echo -n \"Checking node 1: \"
-$srun -N1 -n1 -r1 ls /tmp/test$test_id\_file
+$srun -N1 -n1 -w$node2 ls /tmp/$node2/test$test_id\_file
 
 echo -n \"Checking node 0: \"
-$srun -N1 -n1 -r0 ls /tmp/test$test_id\_file
+$srun -N1 -n1 -w$node1 ls /tmp/$node1/test$test_id\_file
 
-
-$srun $bin_rm -f /tmp/test$test_id\_file
+$srun $bin_rm -f /tmp/$node1/test$test_id\_file
+$srun $bin_rm -fr /tmp/$node1
+$srun $bin_rm -f /tmp/$node2/test$test_id\_file
+$srun $bin_rm -fr /tmp/$node2
 "
 
 make_bash_script $file_in2 "
-$sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/test$test_id\_file
+$sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/\$SLURMD_NODENAME/test$test_id\_file
 "
 
 # Make allocations
 set matches 0
-spawn $salloc -N2 -t1 ./$file_in1
+spawn $salloc -N2 -w$hostlist -t1 ./$file_in1
 expect {
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
 		send_user "\nWARNING: can't run this test\n"
 		exec $bin_rm -rf $file_in1 $file_in2
 		exit 0
 	}
+	-re "cannot create directory" {
+		send_user "\nThis error is expected when nodes share the "
+		send_user "same tmp directory\n"
+		exp_continue
+	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Checking node 1: */tmp/test$test_id\_file" {
+	-re "Checking node 1: */tmp/$node2/test$test_id\_file" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 0: */tmp/test$test_id\_file" {
+	-re "Checking node 0: */tmp/$node1/test$test_id\_file" {
 		set matches -999
 		exp_continue
 	}
 	-re "Checking node 0: .*No such" {
+		send_user "\nThis error is expected\n"
 		incr matches
 		exp_continue
 	}
