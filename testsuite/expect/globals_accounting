@@ -1632,7 +1632,7 @@ proc check_wckey_tracking { } {
 	set wckey 0
 	spawn $sacctmgr show config
 	expect {
-		-re "TrackWCKey *= 1" {
+		-re "TrackWCKey *= Yes" {
 			set wckey 1
 			exp_continue
 		}

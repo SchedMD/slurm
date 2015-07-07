@@ -1155,8 +1155,8 @@ proc test_track_wckey { } {
 	set track_wckey 0
 	spawn $scontrol show config
 	expect {
-		-re "TrackWCKey *= ($number)" {
-			set track_wckey $expect_out(1,string)
+		-re "TrackWCKey *= Yes" {
+			set track_wckey 1
 			exp_continue
 		}
 		eof {
