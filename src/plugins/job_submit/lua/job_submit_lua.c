@@ -329,6 +329,14 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->partition);
 	} else if (!strcmp(name, "priority")) {
 		lua_pushnumber (L, job_ptr->priority);
+	} else if (!strcmp(name, "qos")) {
+		if (job_ptr->qos_ptr) {
+			slurmdb_qos_rec_t *qos_ptr =
+				(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+			lua_pushstring (L, qos_ptr->name);
+		} else {
+			lua_pushnil (L);
+		}
 	} else if (!strcmp(name, "req_switch")) {
 		lua_pushnumber (L, job_ptr->req_switch);
 	} else if (!strcmp(name, "time_limit")) {
@@ -1003,6 +1011,8 @@ static int _part_rec_field(const struct part_record *part_ptr,
 	if (part_ptr == NULL) {
 		error("_get_part_field: part_ptr is NULL");
 		lua_pushnil (L);
+	} else if (!strcmp(name, "allow_qos")) {
+		lua_pushstring (L, part_ptr->allow_qos);
 	} else if (!strcmp(name, "default_time")) {
 		lua_pushnumber (L, part_ptr->default_time);
 	} else if (!strcmp(name, "flag_default")) {
