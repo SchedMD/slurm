@@ -189,7 +189,7 @@ if {[add_child "root" $acct -1 -1]} {
 }
 
 # Now run test using MaxNode limits of the qos
-if {[add_qos $qos]} {
+if {[add_qos $qos ""]} {
 	send_user "\nFAILURE: qos was not added\n"
 	cleanup
 	exit 1

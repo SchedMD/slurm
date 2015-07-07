@@ -285,6 +285,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.9
+==========================
+
 * Changes in Slurm 14.11.8
 ==========================
  -- Eliminate need for user to set user_id on job_update calls.
