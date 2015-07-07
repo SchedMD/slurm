@@ -1,0 +1,468 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that partition and job qos limits are enforced when using
+#          the PartitionQos flag for the job's qos
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+source  ./inc21.34_tests
+
+set test_id          21.34
+set exit_code        0
+set test_node        ""
+# Total cpus in test node
+set totcpus          0
+set nthreads         0
+set acct             test_acct
+set user_name        ""
+set test_part        "test$test_id\_part"
+set part_qos         "test$test_id\_part_qos"
+set job_qos          "test$test_id\_job_qos"
+set qostest          ""
+set grn              GrpNodes
+set grn_num          0
+set grcpu            GrpCpus
+set grcpu_num        0
+set grpcpumin        GrpCPUMins
+set grpcpumin_num    0
+# Set grpcpurunmin_num to multiple of CPUs per core to work with most configurations
+# Also make sure that it is at least 4 so we can add and subtract from it
+set grpcpurunmin     GrpCPURunMins
+set grpcpurunmin_num 40
+set grjobs           GrpJobs
+set grjobs_num       2
+set grpmem           GrpMem
+set grpmem_num       100
+set grsub            GrpSubmit
+set grsub_num        2
+set grpwall          GrpWall
+set grpwall_num      1
+set maxcpu           MaxCpus
+set maxcpu_num       0
+# Set maxcpumin_num to multiple of CPUs per core to work with most configurations
+set maxcpumin        MaxCPUMins
+set maxcpumin_num    0
+set maxwall          MaxWall
+set maxwall_num      2
+set maxcpuspu        MaxCPUSPerUser
+set maxcpuspu_num    2
+set maxnodes         MaxNodes
+set maxnode_num      0
+set maxnodespu       MaxNodesPerUser
+set maxnodespu_num   0
+set maxjobs          MaxJobs
+set maxjobs_num      2
+set maxjobsub        MaxSubmitJobs
+set maxjobsub_num    2
+set time_spacing     1
+
+# cr_core = 1 / cr_cpu = 0
+set selectparam      0
+set def_part         [default_partition]
+
+# mod qos
+array set mod_job_qos {
+	GrpNodes        -1
+	GrpCpus         -1
+	GrpJob          -1
+	GrpSubmit       -1
+	GrpCpuMin       -1
+	GrpCpuRunMin    -1
+	GrpMem          -1
+	GrpWall         -1
+	MaxCpus         -1
+	MaxNode         -1
+	MaxJobs         -1
+	MaxSubmitJobs   -1
+	MaxCpuMin       -1
+	MaxWall         -1
+	MaxCpusPerUser  -1
+	MaxNode         -1
+}
+
+array set mod_part_qos {
+	GrpNodes        -1
+	GrpCpus         -1
+	GrpJob          -1
+	GrpSubmit       -1
+	GrpCpuMin       -1
+	GrpCpuRunMin    -1
+	GrpMem          -1
+	GrpWall         -1
+	MaxCpus         -1
+	MaxNode         -1
+	MaxJobs         -1
+	MaxSubmitJobs   -1
+	MaxCpuMin       -1
+	MaxWall         -1
+	MaxCpusPerUser  -1
+	MaxNode         -1
+}
+
+print_header $test_id
+
+proc cleanup { } {
+
+	global acct job_qos part_qos scontrol sacctmgr test_part def_part
+	global exit_code
+
+	# Delete the test qos
+	set match 0
+	spawn $sacctmgr -i delete qos $job_qos,$part_qos
+	expect {
+		-re "Deleting" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	#delete account
+	spawn $sacctmgr -i  delete account $acct
+	expect {
+		-re "Deleting accounts" {
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: account was not deleted\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol delete partitionname=$test_part
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {[string compare $def_part ""]} {
+		spawn $scontrol update partitionname=$def_part default=yes
+		expect {
+			timeout {
+				send_user "\nFAILURE: scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+	}
+}
+
+# Checks the state of the job
+proc check_state { job } {
+
+	global scontrol job_id exit_code
+
+	set state_match 0
+	spawn $scontrol show job $job
+	expect {
+		"JobState=PENDING" {
+			incr state_match
+		}
+		timeout {
+			send_user "\nFAILURE scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$state_match != 1} {
+		send_user "\nFAILURE job should be pending, but is not\n"
+		set exit_code 1
+	}
+
+}
+
+# Remove any vestigial data
+cleanup
+
+# Check to see that there are enough resources in the default partition
+set tmpc 0
+set tmpn 0
+spawn $scontrol show part [default_partition]
+expect {
+	-re "TotalCPUs=($number)" {
+		set tmpc [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	-re "TotalNodes=($number)" {
+		set tmpn [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$tmpc == 0 || $tmpn == 0} {
+	send_user "\nWARNING: not enough Nodes and/or CPUs\n"
+	exit 0
+}
+
+# Determine what the selecttype param is
+spawn $bin_bash -c "$scontrol show config | grep SelectTypeParameters"
+expect {
+	-re "SelectTypeParameters *= ($alpha_numeric_under)" {
+		if {[string compare $expect_out(1,string) "CR_CORE"] == 0} {
+			set selectparam 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+
+set got_node 0
+spawn $srun -N1 printenv SLURM_NODELIST
+expect {
+	-re "($alpha_numeric_under)" {
+		set test_node $expect_out(1,string)
+		set got_node 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$got_node != 1} {
+	send_user "\nFAILURE: did not get node for testing\n"
+	exit 0
+}
+
+# Get the number of cpus on a node
+
+spawn $scontrol show node $test_node
+expect {
+	-re "CPUTot=($number)" {
+		set totcpus $expect_out(1,string)
+		exp_continue
+	}
+	-re "ThreadsPerCore=($number)" {
+		set nthreads $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$totcpus == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set QoS CPU values
+	set grcpu_num [expr $totcpus - $nthreads]
+	set grpcpumin_num $totcpus
+	set maxcpu_num [expr $totcpus - $nthreads]
+	set maxcpumin_num $totcpus
+}
+
+# Get the number of nodes in the default partition
+set num_nodes 0
+spawn $scontrol show partition [default_partition]
+expect {
+	-re "TotalNodes=($number)" {
+		set num_nodes [expr $expect_out(1,string) - 1]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$num_nodes == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set QoS node values
+	set grn_num     $num_nodes
+	set maxnode_num $num_nodes
+	set maxnodespu_num $num_nodes
+}
+
+
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
+	exit 0
+}
+if { [test_limits_enforced] == 0 } {
+	send_user "\nWARNING: This test can't be run without enforcing limits\n"
+	exit 0
+}
+if {[test_super_user] == 0} {
+	send_user "\nWARNING Test can only be ran as SlurmUser\n"
+	exit 0
+}
+
+# Create 2 test qos
+add_qos $part_qos ""
+add_qos $job_qos ""
+
+# create a tmp partition to use for testing
+spawn $scontrol create partitionname=$test_part qos=$part_qos default=yes \
+    nodes=[available_nodes_hostnames $def_part]
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code
+	}
+	eof {
+		wait
+	}
+}
+
+# Gets user
+spawn $bin_id -u -n
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+# Add account with qos
+set acctmatch 0
+spawn $sacctmgr -i add account $acct qos=$job_qos
+expect {
+	-re "Adding Account" {
+		incr acctmatch
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+
+	}
+}
+if {$acctmatch != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
+	cleanup
+	exit 1
+}
+
+# Add user to account
+spawn $sacctmgr -i create user name=$user_name account=$acct
+expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr not responding\n"
+	}
+	eof {
+		wait
+	}
+}
+
+
+send_user "\n========== Run limit test on partition's qos limits ==========\n\n"
+part_test
+
+#
+# Set partitionqos flag on job's qos
+#
+set changed 0
+spawn $sacctmgr -i mod qos $job_qos set flag=partitionqos
+expect {
+	-re "Modified qos" {
+		set changed 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not resonding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+
+send_user "\n========== Run limit test on job's qos limits ==========\n\n"
+qos_test
+
+cleanup
+
+if {$exit_code == 0} {
+	print_success $test_id
+} else {
+	send_user "\nFAILURE: test $test_id\n"
+}
+
+exit $exit_code

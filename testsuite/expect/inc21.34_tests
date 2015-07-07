@@ -1,0 +1,610 @@
+############################################################################
+# Purpose: Test of SLURM functionality
+#          to be called from test21.34
+#          Tests partition and job qos limits
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./inc21.30.1
+source ./inc21.30.2
+source ./inc21.30.3
+source ./inc21.30.4
+source ./inc21.30.5
+source ./inc21.30.6
+source ./inc21.30.7
+source ./inc21.30.8
+source ./inc21.34.1
+source ./inc21.30.10
+source ./inc21.30.11
+source ./inc21.34.2
+source ./inc21.30.13
+source ./inc21.30.14
+source ./inc21.30.15
+source ./inc21.30.16
+
+##########################################################
+#
+# Test that partition qos limits are enforeced
+#
+##########################################################
+proc part_test { } {
+
+	global grn_num grcpu_num grjobs_num grsub_num grsub_num maxcpu_num
+	global maxnode_num maxjobs_num maxjobsub_num grpcpumin_num
+	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
+	global maxwall_num maxcpuspu_num maxnodespu_num
+	global exit_code part_qos mod_job_qos time_spacing selectparam
+	global nthreads job_qos mod_part_qos
+
+	# We will set qostest with the qos that we will test since the some of
+	# the 21.30 inc test require the qostest variable
+	set qostest $part_qos
+
+	#
+	# Test GrpNode limit
+	#
+	set mod_job_qos(GrpNodes) 1
+	set mod_part_qos(GrpNodes) $grn_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_1
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	# Reset the value to 0
+	set mod_job_qos(GrpNodes) "-1"
+	set mod_part_qos(GrpNodes) "-1"
+
+	#
+	# Test GrpCpus
+	#
+	set mod_job_qos(GrpCpus) 1
+	set mod_part_qos(GrpCpus) $grcpu_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_2
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpus) "-1"
+	set mod_part_qos(GrpCpus) "-1"
+
+	#
+	# test GrpJob limits
+	#
+	set mod_job_qos(GrpJobs) 1
+	set mod_part_qos(GrpJobs) $grjobs_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_3
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpJobs) "-1"
+	set mod_part_qos(GrpJobs) "-1"
+
+	#
+	# test GrpSubmit
+	#
+	set mod_job_qos(GrpSubmit) 1
+	set mod_part_qos(GrpSubmit) $grsub_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_4
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpSubmit) "-1"
+	set mod_part_qos(GrpSubmit) "-1"
+
+	#
+	# Test MaxCpus limits
+	#
+	set mod_job_qos(MaxCpus) 1
+	set mod_part_qos(MaxCpus) $maxcpu_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_5
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxCpus) "-1"
+	set mod_part_qos(MaxCpus) "-1"
+
+	#
+	# Test MaxNode limit
+	#
+	set mod_job_qos(MaxNodes) 1
+	set mod_part_qos(MaxNodes) $maxnode_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_6
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxNodes) "-1"
+	set mod_part_qos(MaxNodes) "-1"
+
+	#
+	# Test MaxJobs limit
+	#
+	set mod_job_qos(MaxJobs) 1
+	set mod_part_qos(MaxJobs) $maxjobs_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_7
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxJobs) "-1"
+	set mod_part_qos(MaxJobs) "-1"
+
+	#
+	# Test MaxJobsSubmits limit
+	#
+	set mod_job_qos(MaxSubmitJobs) 1
+	set mod_part_qos(MaxSubmitJobs) $maxjobsub_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_8
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxSubmitJobs) "-1"
+	set mod_part_qos(MaxSubmitJobs) "-1"
+
+	#
+	# Test GroupCPUMins
+	#
+	set mod_job_qos(GrpCpuMin) 1
+	set mod_part_qos(GrpCpuMin) $grpcpumin_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_34_1 $part_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpuMin) "-1"
+	set mod_part_qos(GrpCpuMin) "-1"
+
+	#
+	# Test GroupCPURunMins
+	#
+	set mod_job_qos(GrpCpuRunMin) 1
+	set mod_part_qos(GrpCpuRunMin) $grpcpurunmin_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_10
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpuRunMin) "-1"
+	set mod_part_qos(GrpCpuRunMin) "-1"
+
+	#
+	# Test Group Memory
+	#
+	set mod_job_qos(GrpMem) 1
+	set mod_part_qos(GrpMem) $grpmem_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_11
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpMem) "-1"
+	set mod_part_qos(GrpMem) "-1"
+
+	#
+	# Test Group wall
+	#
+	set mod_job_qos(GrpWall) 1
+	set mod_part_qos(GrpWall) $grpwall_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_34_2 $part_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpWall) "-1"
+	set mod_part_qos(GrpWall) "-1"
+
+	#
+	# Test Max Cpu Mins
+	#
+	set mod_job_qos(MaxCpuMin) 1
+	set mod_part_qos(MaxCpuMin) $maxcpumin_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_13
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxCpuMin) "-1"
+	set mod_part_qos(MaxCpuMin) "-1"
+
+	#
+	# Test Max Wall
+	#
+	set mod_job_qos(MaxWall) 1
+	set mod_part_qos(MaxWall) $maxwall_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_14
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxWall) "-1"
+	set mod_part_qos(MaxWall) "-1"
+
+	#
+	# Test Max CPUs Per User
+	#
+
+	# If CR_CORE set maxcpuspu a multiple number of threads
+	if {$selectparam} {
+		set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+	}
+	set mod_job_qos(MaxCpusPerUser) 1
+	set mod_part_qos(MaxCpusPerUser) $maxcpuspu_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_15
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+
+	}
+	set mod_job_qos(MaxCpusPerUser) "-1"
+	set mod_part_qos(MaxCpusPerUser) "-1"
+
+	#
+	# Test MaxNodesPerUser
+	#
+	set mod_job_qos(MaxNodesPerUser) 1
+	set mod_part_qos(MaxNodesPerUser) $maxnodespu_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_16
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxNodesPerUser) "-1"
+	set mod_part_qos(MaxNodesPerUser) "-1"
+}
+
+##########################################################
+#
+# Test that jobs qos limits are enforeced after
+# PartitionQos flag is set on the job's qos
+#
+##########################################################
+
+proc qos_test { } {
+
+	global grn_num grcpu_num grjobs_num grsub_num grsub_num maxcpu_num
+	global maxnode_num maxjobs_num maxjobsub_num grpcpumin_num
+	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
+	global maxwall_num maxcpuspu_num maxnodespu_num
+	global exit_code job_qos mod_job_qos time_spacing selectparam
+	global nthreads part_qos mod_part_qos
+
+	# We will set qostest with the qos that we will test since the some of
+	# the 21.30 inc test require the qostest variable
+	set qostest $job_qos
+
+	#
+	# Test GrpNode limit
+	#
+	set mod_job_qos(GrpNodes) $grn_num
+	set mod_part_qos(GrpNodes) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_1
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	# Reset the value to 0
+	set mod_job_qos(GrpNodes) "-1"
+	set mod_part_qos(GrpNodes) "-1"
+
+	#
+	# Test GrpCpus
+	#
+	set mod_job_qos(GrpCpus) $grcpu_num
+	set mod_part_qos(GrpCpus) $grcpu_num
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_2
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpus) "-1"
+	set mod_part_qos(GrpCpus) "-1"
+
+	#
+	# test GrpJob limits
+	#
+	set mod_job_qos(GrpJobs) $grjobs_num
+	set mod_part_qos(GrpJobs) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_3
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpJobs) "-1"
+	set mod_part_qos(GrpJobs) "-1"
+
+	#
+	# test GrpSubmit
+	#
+	set mod_job_qos(GrpSubmit) $grsub_num
+	set mod_part_qos(GrpSubmit) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_4
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpSubmit) "-1"
+	set mod_part_qos(GrpSubmit) "-1"
+
+	#
+	# Test MaxCpus limits
+	#
+	set mod_job_qos(MaxCpus) $maxcpu_num
+	set mod_part_qos(MaxCpus) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_5
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxCpus) "-1"
+	set mod_part_qos(MaxCpus) "-1"
+
+	#
+	# Test MaxNode limit
+	#
+	set mod_job_qos(MaxNodes) $maxnode_num
+	set mod_part_qos(MaxNodes) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_6
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxNodes) "-1"
+	set mod_part_qos(MaxNodes) "-1"
+
+	#
+	# Test MaxJobs limit
+	#
+	set mod_job_qos(MaxJobs) $maxjobs_num
+	set mod_part_qos(MaxJobs) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_7
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxJobs) "-1"
+	set mod_part_qos(MaxJobs) "-1"
+
+	#
+	# Test MaxJobsSubmits limit
+	#
+	set mod_job_qos(MaxSubmitJobs) $maxjobsub_num
+	set mod_part_qos(MaxSubmitJobs) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_8
+	if {$exit_code != 0} {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxSubmitJobs) "-1"
+	set mod_part_qos(MaxSubmitJobs) "-1"
+
+	#
+	# Test GroupCPUMins
+	#
+	set mod_job_qos(GrpCpuMin) $grpcpumin_num
+	set mod_part_qos(GrpCpuMin) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_34_1 $job_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpuMin) "-1"
+	set mod_part_qos(GrpCpuMin) "-1"
+
+	#
+	# Test GroupCPURunMins
+	#
+	set mod_job_qos(GrpCpuRunMin) $grpcpurunmin_num
+	set mod_part_qos(GrpCpuRunMin) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_10
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpCpuRunMin) "-1"
+	set mod_part_qos(GrpCpuRunMin) "-1"
+
+	#
+	# Test Group Memory
+	#
+	set mod_job_qos(GrpMem) $grpmem_num
+	set mod_part_qos(GrpMem) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_11
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpMem) "-1"
+	set mod_part_qos(GrpMem) "-1"
+
+	#
+	# Test Group wall
+	#
+	set mod_job_qos(GrpWall) $grpwall_num
+	set mod_part_qos(GrpWall) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_34_2 $job_qos
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(GrpWall) "-1"
+	set mod_part_qos(GrpWall) "-1"
+
+	#
+	# Test Max Cpu Mins
+	#
+	set mod_job_qos(MaxCpuMin) $maxcpumin_num
+	set mod_part_qos(MaxCpuMin) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_13
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxCpuMin) "-1"
+	set mod_part_qos(MaxCpuMin) "-1"
+
+	#
+	# Test Max Wall
+	#
+	set mod_job_qos(MaxWall) $maxwall_num
+	set mod_part_qos(MaxWall) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_14
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxWall) "-1"
+	set mod_part_qos(MaxWall) "-1"
+
+	#
+	# Test Max CPUs Per User
+	#
+
+	# If CR_CORE set maxcpuspu a multiple number of threads
+	if {$selectparam} {
+		set maxcpuspu_num [expr $maxcpuspu_num * $nthreads]
+	}
+
+	set mod_job_qos(MaxCpusPerUser) $maxcpuspu_num
+	set mod_part_qos(MaxCpusPerUser) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_15
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+
+	}
+	set mod_job_qos(MaxCpusPerUser) "-1"
+	set mod_part_qos(MaxCpusPerUser) "-1"
+
+	#
+	# Test MaxNodesPerUser
+	#
+	set mod_job_qos(MaxNodesPerUser) $maxnodespu_num
+	set mod_part_qos(MaxNodesPerUser) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_16
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxNodesPerUser) "-1"
+	set mod_part_qos(MaxNodesPerUser) "-1"
+
+}
