@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     parameters to estimate when running jobs will exit.
  -- Correct task layout with CR_Pack_Node option and more than 1 CPU per task.
  -- Fix the scontrol man page describing the release argument.
+ -- When job QOS is modified, do so before attempting to change partition in
+    order to validate the partition's Allow/DenyQOS parameter.
 
 * Changes in Slurm 14.11.7
 ==========================
