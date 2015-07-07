@@ -8926,6 +8926,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     job_ptr->wait4switch, job_ptr->job_id);
 	}
 
+	/* NOTE: Update QOS before updating partition in order to enforce
+	 * AllowQOS and DenyQOS partition configuration options */
 	if (job_specs->qos) {
 		if (!authorized && !IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -8959,8 +8961,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						job_ptr->limit_set_qos = 0;
 					update_accounting = true;
 				} else {
-					debug("sched: update_job: new QOS identical to old QOS %u",
-					      job_ptr->job_id);
+					debug("sched: %s: new QOS identical to old QOS %u",
+					      __func__, job_ptr->job_id);
 				}
 			}
 		}
