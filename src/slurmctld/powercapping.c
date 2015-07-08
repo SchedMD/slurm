@@ -430,6 +430,12 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 
 	if (!_powercap_enabled())
 		return 0;
+	if((cpu_freq_min == NO_VAL) && (cpu_freq_max == NO_VAL)){
+		allowed_freqs = xmalloc(sizeof(int)*2);
+		allowed_freqs[0]=0;
+		
+		return allowed_freqs;
+	}
 
 	for(i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	    i++, node_ptr++){
@@ -437,14 +443,22 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 			layouts_entity_pullget_kv(l_name, node_ptr->name, 
 					L_NUM_FREQ, &num_freq, L_T_UINT16);
 			allowed_freqs = xmalloc(sizeof(int)*((int)num_freq+2));
-			allowed_freqs[-1] = num_freq;
+			allowed_freqs[-1] = (int) num_freq;
 			for(p=num_freq; p>0; p--){
 				sprintf(ename, "Cpufreq%d", p);
 				layouts_entity_pullget_kv(l_name, 
 					  	  node_ptr->name, ename, 
 						  &cpufreq, L_T_UINT32);
-				if((cpu_freq_min <= cpufreq) && 
-				   (cpufreq <= cpu_freq_max)){
+
+		/*In case a job is submitted with flags Low,High, etc on 
+		 *--cpu-freq parameter then we consider the whole range
+		 *of available frequencies on nodes
+		 */
+
+				if(((cpu_freq_min <= cpufreq) && 
+				   (cpufreq <= cpu_freq_max)) || 
+				   ((cpu_freq_min & CPU_FREQ_RANGE_FLAG) ||
+				   (cpu_freq_max & CPU_FREQ_RANGE_FLAG))){
 					new_num_freq++;
 					allowed_freqs[new_num_freq] = p;
 				}
@@ -452,8 +466,8 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 			break;
 		}
 	}
-
-	allowed_freqs[0] = (int)new_num_freq;
+                
+	allowed_freqs[0] = new_num_freq;
 	return allowed_freqs;
 }
 
