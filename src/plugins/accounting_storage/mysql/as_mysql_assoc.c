@@ -672,19 +672,6 @@ static int _set_assoc_limits_for_add(
 	char *parent = NULL;
 	char *qos_delta = NULL;
 
-	enum {
-		ASSOC_REQ_PARENT_ID,
-		ASSOC_REQ_MJ,
-		ASSOC_REQ_MSJ,
-		ASSOC_REQ_MCPJ,
-		ASSOC_REQ_MNPJ,
-		ASSOC_REQ_MWPJ,
-		ASSOC_REQ_MCMPJ,
-		ASSOC_REQ_MCRM,
-		ASSOC_REQ_QOS,
-		ASSOC_REQ_DELTA_QOS,
-	};
-
 	xassert(assoc);
 
 	if (assoc->parent_acct)
