@@ -840,11 +840,11 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				      job_ptr->job_id);
 			}
 		}
-		if(powercap_get_cluster_current_cap() != 0)
-			if(which_power_layout() == 2)
-				adapt_layouts(job, 
-					  job_ptr->details->cpu_freq_max, n, 
-					  node_ptr->name, true);
+		if ((powercap_get_cluster_current_cap() != 0) &&
+		    (which_power_layout() == 2)) {
+			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
+				      node_ptr->name, true);
+		}
 	}
 	
 
@@ -1196,11 +1196,11 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				node_usage[i].alloc_memory -=
 					job->memory_allocated[n];
 		}
-		if(powercap_get_cluster_current_cap() != 0)
-			if(which_power_layout() == 2)
-				adapt_layouts(job, 
-					   job_ptr->details->cpu_freq_max, n, 
-					   node_ptr->name, false);
+		if ((powercap_get_cluster_current_cap() != 0) &&
+		    (which_power_layout() == 2)) {
+			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
+				      node_ptr->name, false);
+		}
 	}
 
 	/* subtract cores */

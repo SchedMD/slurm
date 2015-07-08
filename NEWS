@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.0pre7
 ==============================
+ -- Added power_cpufreq layout.
 
 * Changes in Slurm 15.08.0pre6
 ==============================

@@ -103,6 +103,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/port_mgr.h"
+#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -664,6 +665,7 @@ int main(int argc, char *argv[])
 	slurm_sched_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
+	powercap_fini();
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();

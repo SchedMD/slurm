@@ -42,14 +42,14 @@
 #include "src/slurmctld/slurmctld.h"
 
 /**
- * powercap_get_cluster_max_watts 
+ * powercap_get_cluster_max_watts
  * return the max power consumption of the cluster
  * RET uint32_t - the max consumption in watts
  */
 uint32_t powercap_get_cluster_max_watts(void);
 
 /**
- * powercap_get_cluster_min_watts 
+ * powercap_get_cluster_min_watts
  * return the min power consumption of the cluster
  * RET uint32_t - the min consumption in watts
  */
@@ -72,7 +72,7 @@ int powercap_set_cluster_cap(uint32_t new_cap);
 
 /**
  * powercap_get_cluster_adjusted_max_watts
- * return max power consumption of the cluster, 
+ * return max power consumption of the cluster,
  * taking into consideration the nodes which are POWERED DOWN
  * RET uint32_t - the max consumption in watts
  */
@@ -80,7 +80,7 @@ uint32_t powercap_get_cluster_adjusted_max_watts(void);
 
 /**
  * powercap_get_cluster_current_max_watts
- * return current max power consumption of the cluster, 
+ * return current max power consumption of the cluster,
  * taking into consideration the nodes which are POWERED DOWN
  * and the nodes which are idle
  * RET uint32_t - the max consumption in watts
@@ -88,8 +88,8 @@ uint32_t powercap_get_cluster_adjusted_max_watts(void);
 uint32_t powercap_get_cluster_current_max_watts(void);
 
 /**
- * powercap_get_node_bitmap_maxwatt 
- * return current max consumption value of the cluster, 
+ * powercap_get_node_bitmap_maxwatt
+ * return current max consumption value of the cluster,
  * taking into consideration the nodes which are POWERED DOWN
  * and the nodes which are idle using the input bitmap to identify
  * them.
@@ -135,15 +135,15 @@ int which_power_layout(void);
  * IN uint32_t cpu_freq_min for the job as given in the command
  * IN uint32_t cpu_freq_max for the job as given in the command
  * RET int* - an array of allowed frequency positions 
- *            and in 0 the number of total allowed frequencies 
+ *            and in 0 the number of total allowed frequencies
  */
-int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap, 
-			   uint32_t cpu_freq_min, uint32_t cpu_freq_max);
+int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
+			uint32_t cpu_freq_min, uint32_t cpu_freq_max);
 
 /**
  * powercap_get_node_bitmap_maxwatts_dvfs
- * similar with powercap_get_node_bitmap_maxwatt with the difference that 
- * there is a return on the max_watts_dvfs array of possible max_watts in case 
+ * similar with powercap_get_node_bitmap_maxwatt with the difference that
+ * there is a return on the max_watts_dvfs array of possible max_watts in case
  * the cores get different allowed cpu frequencies
  * IN bitstr_t* idle_bitmap 
  * IN bitstr_t* select_bitmap
@@ -152,14 +152,14 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
  * IN uint32_t num_cpus par job par node 
  * RET uint32_t - the max consumption in watts
  */
-uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap, 
-			   bitstr_t *select_bitmap, uint32_t *max_watts_dvfs, 
-			   int* allowed_freqs, uint32_t num_cpus);
+uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
+			bitstr_t *select_bitmap, uint32_t *max_watts_dvfs,
+			int* allowed_freqs, uint32_t num_cpus);
 /**
  * powercap_get_job_optimal_cpufreq
- * return the position upon the allowed_freqs array that gives us the optimal 
- * cpu frequency for the job to be run based on the power budget available 
- * and the usage of the already executing jobs 
+ * return the position upon the allowed_freqs array that gives us the optimal
+ * cpu frequency for the job to be run based on the power budget available
+ * and the usage of the already executing jobs
  * IN uint32_t powercap 
  * IN int* allowed_freqs
  * RET int - the position on the allowed_freqs array for the optimal cpufreq
@@ -173,7 +173,12 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int* allowed_freqs);
  * IN int k
  * RET uint32_t - the cpu frequency
  */
-uint32_t powercap_get_cpufreq(bitstr_t *select_bitmap,int k);
+uint32_t powercap_get_cpufreq(bitstr_t *select_bitmap, int k);
 
+/**
+ * powercap_fini
+ * release all allocated memory
+ */
+void powercap_fini(void);
 
 #endif /* !_POWERCAPPING_H */

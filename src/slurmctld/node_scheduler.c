@@ -1046,19 +1046,20 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
 		debug3("powercapping: checking job %u : skipped, capping "
 		       "disabled", job_ptr->job_id);
-	} else if ((layout_power = which_power_layout()) == 0){
+	} else if ((layout_power = which_power_layout()) == 0) {
 		debug3("powercapping: only one power or power_cpufreq layouts"
-		"can be activated, capping disabled %d", which_power_layout());
+		       "can be activated, capping disabled %d",
+		       which_power_layout());
 	} else if (!power_layout_ready()){
 		debug3("powercapping:checking job %u : skipped, problems with"
 		       "layouts, capping disabled", job_ptr->job_id);
 	} else {
-		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq;
-		uint32_t cur_max_watts, tmp_max_watts, *tmp_max_watts_dvfs;
-		uint32_t cpus_per_node;
+		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq = 0;
+		uint32_t cur_max_watts, tmp_max_watts = 0;
+		uint32_t cpus_per_node, *tmp_max_watts_dvfs = NULL;
 		bitstr_t *tmp_bitmap;
-		int k=1,*allowed_freqs;
-		float ratio=0;
+		int k = 1, *allowed_freqs;
+		float ratio = 0;
 
 		/*
 		 * get current powercapping logic state (min,cur,max)
@@ -1080,25 +1081,26 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bit_not(*select_bitmap);
 		bit_and(tmp_bitmap, *select_bitmap);
 		bit_not(*select_bitmap);
-		if(layout_power == 1)
+		if (layout_power == 1)
 			tmp_max_watts = 
 				 powercap_get_node_bitmap_maxwatts(tmp_bitmap);
-		else if (layout_power == 2){
+		else if (layout_power == 2) {
 			allowed_freqs = 
 				 powercap_get_job_nodes_numfreq(*select_bitmap,
-					  job_ptr->details->cpu_freq_min, 
+					  job_ptr->details->cpu_freq_min,
 					  job_ptr->details->cpu_freq_max);
-                	if(allowed_freqs[0] != 0)
-				tmp_max_watts_dvfs = 
-			      xmalloc(sizeof(uint32_t)*(allowed_freqs[0]+1));
-                	else
-                       		tmp_max_watts_dvfs = NULL;
-			cpus_per_node = job_ptr->details->min_cpus / 
-			 job_ptr->details->min_nodes;
-                	tmp_max_watts = 
-			 powercap_get_node_bitmap_maxwatts_dvfs(tmp_bitmap, 
-			 *select_bitmap, tmp_max_watts_dvfs, allowed_freqs, 
-			 cpus_per_node);
+			if (allowed_freqs[0] != 0) {
+				tmp_max_watts_dvfs =
+					xmalloc(sizeof(uint32_t) *
+						(allowed_freqs[0]+1));
+			}
+			cpus_per_node = job_ptr->details->min_cpus /
+					job_ptr->details->min_nodes;
+			tmp_max_watts =
+				powercap_get_node_bitmap_maxwatts_dvfs(
+					tmp_bitmap, *select_bitmap,
+					tmp_max_watts_dvfs, allowed_freqs,
+					cpus_per_node);
 		}			
 		bit_free(tmp_bitmap);
 
@@ -1109,21 +1111,20 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * reservations on the failure */
 		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
 		
-		if((layout_power == 1) || 
-		   ((layout_power == 2) && (allowed_freqs[0] == 0))){
+		if ((layout_power == 1) ||
+		    ((layout_power == 2) && (allowed_freqs[0] == 0))) {
 			if (tmp_max_watts > job_cap) {
 				FREE_NULL_BITMAP(*select_bitmap);
-				if ((job_cap < powercap) && 
+				if ((job_cap < powercap) &&
 			    		 (tmp_max_watts <= powercap))
 					error_code = ESLURM_POWER_RESERVED;
 				else
 					error_code = ESLURM_POWER_NOT_AVAIL;
 			}
-		} else if (layout_power == 2){
-
+		} else if (layout_power == 2) {
 			if (((tmp_max_watts > job_cap) ||
 			    (job_cap < powercap) ||
-			    (powercap < max_watts)) && (allowed_freqs[0] > 0)){
+			    (powercap < max_watts)) && (tmp_max_watts_dvfs)) {
 		
 			/* Calculation of the CPU Frequency to set for the job:
 		 	 * The optimal CPU Frequency is the maximum allowed 
@@ -1132,32 +1133,31 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 	 * the powercap value.since the number of Idle nodes 
 		 	 * may change in every schedule the optimal CPU 
 		 	 * Frequency may also change from one job to another.*/
-
-				k=powercap_get_job_optimal_cpufreq(job_cap, 
+				k = powercap_get_job_optimal_cpufreq(job_cap, 
 							  allowed_freqs);
 				while ((tmp_max_watts_dvfs[k] > job_cap) && 
-				    (k < allowed_freqs[0] +1)) {
+				       (k < allowed_freqs[0] + 1)) {
 					k++;
 				}
-				if (k == allowed_freqs[0] +1) {
+				if (k == allowed_freqs[0] + 1) {
 					if ((job_cap < powercap) &&
-					  (tmp_max_watts_dvfs[k] <= powercap)){
-						error_code = 
-						  ESLURM_POWER_RESERVED;
+					    (tmp_max_watts_dvfs[k] <= powercap)){
+						error_code =
+							ESLURM_POWER_RESERVED;
 					} else {
-						error_code = 
-						  ESLURM_POWER_NOT_AVAIL;
+						error_code =
+							ESLURM_POWER_NOT_AVAIL;
 					}
 				} else {
 					tmp_max_watts = tmp_max_watts_dvfs[k];
-					tmp_pcap_cpu_freq = 
-					  powercap_get_cpufreq(*select_bitmap,
-							    allowed_freqs[k]);
+					tmp_pcap_cpu_freq =
+						powercap_get_cpufreq(
+							*select_bitmap,
+							allowed_freqs[k]);
 				}
 	
-				job_ptr->details->cpu_freq_min = 
-				  job_ptr->details->cpu_freq_max = 
-				  tmp_pcap_cpu_freq;
+				job_ptr->details->cpu_freq_min = tmp_pcap_cpu_freq;
+				job_ptr->details->cpu_freq_max = tmp_pcap_cpu_freq;
 				job_ptr->details->cpu_freq_gov = 0x10;
 
 			/* Since we alter the DVFS of jobs we need to deal with
@@ -1169,23 +1169,23 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			 * This has to be done to allow backfilling */
 
 				ratio = (1 + (float)allowed_freqs[k] /
-					    (float)allowed_freqs[-1]);
-				if ((job_ptr->time_limit != INFINITE) && 
+					     (float)allowed_freqs[-1]);
+				if ((job_ptr->time_limit != INFINITE) &&
 				    (job_ptr->time_limit != NO_VAL))
-					job_ptr->time_limit = (ratio * 
+					job_ptr->time_limit = (ratio *
 						  job_ptr->time_limit);
-				if ((job_ptr->time_min != INFINITE) && 
+				if ((job_ptr->time_min != INFINITE) &&
 				    (job_ptr->time_min != NO_VAL))
-					job_ptr->time_min = (ratio * 
+					job_ptr->time_min = (ratio *
 						  job_ptr->time_min);
 			}
-			xfree(tmp_max_watts_dvfs);
 		}
+		xfree(tmp_max_watts_dvfs);
 
 		debug2("powercapping: checking job %u : min=%u cur=%u "
 		       "[new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
 		       job_ptr->job_id, min_watts, cur_max_watts,
-		       tmp_max_watts, job_cap, powercap, max_watts, 
+		       tmp_max_watts, job_cap, powercap, max_watts,
 		       slurm_strerror(error_code));
 	}
 

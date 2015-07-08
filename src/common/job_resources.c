@@ -43,12 +43,12 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/job_resources.h"
+#include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/layouts_mgr.h"
 
 
 /* Create an empty job_resources data structure */
@@ -1386,29 +1386,29 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 			 uint32_t node_id, char* node_name, bool new_value)
 {
-	int i, k=0, bit_inx = 0, core_cnt = 0;
-	uint32_t max_watts,zero=0,der;
-	uint32_t core_num,val=0;
+	int i, k = 0, bit_inx = 0, core_cnt = 0;
+	uint32_t max_watts, zero = 0, der;
+	uint32_t core_num,val = 0;
 	uint16_t num_freq;
-	char temp[128],ename[128],keyname[128];
-	uint32_t data[2],vals[2];
-	int num_counts=0,activate=0;
+	char temp[128], ename[128], keyname[128];
+	uint32_t data[2], vals[2];
+	int num_counts = 0, activate = 0;
 	int *desalloc_cores;
 
 	xassert(job_resrcs_ptr);
 
-	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
+	for (i = 0; i < job_resrcs_ptr->nhosts; i++) {
 		if (job_resrcs_ptr->sock_core_rep_count[i] <= node_id) {
 			bit_inx += job_resrcs_ptr->sockets_per_node[i] *
-				job_resrcs_ptr->cores_per_socket[i] *
-				job_resrcs_ptr->sock_core_rep_count[i];
+				   job_resrcs_ptr->cores_per_socket[i] *
+				   job_resrcs_ptr->sock_core_rep_count[i];
 			node_id -= job_resrcs_ptr->sock_core_rep_count[i];
 		} else {
 			bit_inx += job_resrcs_ptr->sockets_per_node[i] *
-				job_resrcs_ptr->cores_per_socket[i] *
-				node_id;
+				   job_resrcs_ptr->cores_per_socket[i] *
+				   node_id;
 			core_cnt = job_resrcs_ptr->sockets_per_node[i] *
-				job_resrcs_ptr->cores_per_socket[i];
+				   job_resrcs_ptr->cores_per_socket[i];
 			break;
 		}
 	}
@@ -1425,88 +1425,89 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 	}
 
 	layouts_entity_get_kv("power_cpufreq", node_name, "NumFreqChoices",
-			     &num_freq, L_T_UINT16);
-        layouts_entity_get_mkv("power_cpufreq", node_name, 
-			      "CoresCount,LastCore", data, 
-			      (sizeof(uint32_t)*2),L_T_UINT32);
-	if(cpu_freq_max != 0){
-		for (i=1; i<num_freq + 1; i++) {
+			      &num_freq, L_T_UINT16);
+	layouts_entity_get_mkv("power_cpufreq", node_name,
+			       "CoresCount,LastCore", data,
+			       (sizeof(uint32_t)*2),L_T_UINT32);
+	if (cpu_freq_max != 0) {
+		for (i = 1; i < num_freq + 1; i++) {
 			sprintf(temp, "Cpufreq%d", i);
-			layouts_entity_pullget_kv("power_cpufreq", node_name, 
+			layouts_entity_pullget_kv("power_cpufreq", node_name,
 						  temp, &val, L_T_UINT32);
-			if(val == cpu_freq_max){
-				k=i;
+			if (val == cpu_freq_max) {
+				k = i;
 				break;
 			}
 		}
 	}
 
 	desalloc_cores = xmalloc ( sizeof (int) * (core_cnt));	
-	for (i=0; i<core_cnt; i++) {
+	for (i = 0; i < core_cnt; i++) {
 		/*core_num=LastCore+1-CoresCount*/
-		core_num=data[1]+1-data[0]+i;
+		core_num = data[1] + 1 - data[0] + i;
 		sprintf(ename, "virtualcore%u", core_num);
-		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx++)){
-			if (new_value){
-				if(cpu_freq_max != 0 && k != 0){
+		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx++)) {
+			if (new_value) {
+				if (cpu_freq_max != 0 && k != 0) {
 					sprintf(keyname, 
 						"Cpufreq%dWatts", k);
 					layouts_entity_get_kv("power_cpufreq",
 							ename, keyname,
 							&max_watts, L_T_UINT32);
-				}else
-					layouts_entity_get_kv("power_cpufreq", 
-							ename, "MaxCoreWatts", 
+				} else {
+					layouts_entity_get_kv("power_cpufreq",
+							ename, "MaxCoreWatts",
 							&max_watts, L_T_UINT32);
-				layouts_entity_setpush_kv("power_cpufreq", 
-						    ename, "CurrentCorePower", 
+				}
+				layouts_entity_setpush_kv("power_cpufreq",
+						    ename, "CurrentCorePower",
 						    &max_watts, L_T_UINT32);
 			} else {
-				layouts_entity_setpush_kv("power_cpufreq", 
-						    ename, "CurrentCorePower", 
+				layouts_entity_setpush_kv("power_cpufreq",
+						    ename, "CurrentCorePower",
 						    &zero, L_T_UINT32);
-				desalloc_cores[num_counts]=i;
+				desalloc_cores[num_counts] = i;
 				num_counts++;
 			}
 		} else {
-			layouts_entity_get_mkv("power_cpufreq", ename, 
-					  "CurrentCorePower,IdleCoreWatts", 
+			layouts_entity_get_mkv("power_cpufreq", ename,
+					  "CurrentCorePower,IdleCoreWatts",
 					  vals, 
-					  (sizeof(uint32_t)*2),L_T_UINT32);
-			if (new_value){
-				if(vals[0] == 0)
+					  (sizeof(uint32_t)*2) ,L_T_UINT32);
+			if (new_value) {
+				if (vals[0] == 0) {
 					layouts_entity_setpush_kv(
-							  "power_cpufreq", 
-							  ename, 
-							  "CurrentCorePower", 
-							  &vals[1], 
+							  "power_cpufreq",
+							  ename,
+							  "CurrentCorePower",
+							  &vals[1],
 							  L_T_UINT32);
-					
+				}
 			} else {
-				if(vals[1] != vals[0]){
+				if (vals[1] != vals[0]) {
 					activate = 1;
 				} else {
-					desalloc_cores[num_counts]=i;
+					desalloc_cores[num_counts] = i;
 					num_counts++;
 					layouts_entity_setpush_kv(
-							  "power_cpufreq", 
-							  ename, 
-							  "CurrentCorePower", 
+							  "power_cpufreq",
+							  ename,
+							  "CurrentCorePower",
 							  &zero, L_T_UINT32);		
-					layouts_entity_get_kv("power_cpufreq", 
-							  ename, 
-							  "CurrentCorePower", 
+					layouts_entity_get_kv("power_cpufreq",
+							  ename,
+							  "CurrentCorePower",
 							  &der, L_T_UINT32);
 				}	
 			}
 		}
 	}
 
-	if(activate == 1){
-		for (i=0; i<num_counts; i++) {
-			core_num=data[1]+1-data[0]+desalloc_cores[i];
+	if (activate == 1) {
+		for (i = 0; i < num_counts; i++) {
+			core_num = data[1] + 1- data[0] + desalloc_cores[i];
 			sprintf(ename, "virtualcore%u", core_num);
-			layouts_entity_setpush_kv("power_cpufreq", ename, 
+			layouts_entity_setpush_kv("power_cpufreq", ename,
 						  "CurrentCorePower", &vals[1],
 						  L_T_UINT32);	
 		}
@@ -1514,4 +1515,3 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 
 	return 1;
 }
-

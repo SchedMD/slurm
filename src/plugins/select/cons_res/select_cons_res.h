@@ -55,14 +55,14 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_resource_info.h"
-#include "src/common/slurm_topology.h"
+#include "src/slurmctld/powercapping.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/powercapping.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
