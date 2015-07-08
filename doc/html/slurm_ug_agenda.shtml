@@ -109,7 +109,7 @@ are shown below.</p>
 <h2>15 September 2015</h2>
 
 <h3>Keynote: TBD</h3>
-<p>William Putnam (NASA Center for Climate Simulation, NCCS)</p>
+<p>William Putman (NASA Center for Climate Simulation, NCCS)</p>
 
 <h3>Overview of Slurm Version 15.08</h3>
 <p>Morris Jette and Danny Auble (SchedMD)<br>Yiannis Georgiou (Bull)</p>
@@ -372,5 +372,7 @@ experiences performed in the SC3UIS platforms, mainly in GUANE-1 supercomputing 
 <h3>The George Washington University Site Report</h3>
 <p>Tim Wickberg (The George Washington University)</p>
 <p>The George Washington University is proud to host the 2015 user group meeting in Washington DC. We present a brief overview of our user of Slurm on Colonial One, our University-wide shared HPC cluster. We present both a detailed overview of our use and configuration of the "fairshare" priority model to assign resources across disparate participating schools, colleges, and research centers, as well as some novel uses of the scheduler for non-traditional tasks such as file system backups.</p>
+
+<p style="text-align:center;">Last modified 8 July 2015</p>
 
 <!--#include virtual="footer.txt"-->
