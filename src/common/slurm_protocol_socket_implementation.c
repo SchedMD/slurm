@@ -776,6 +776,12 @@ extern void slurm_print_slurm_addr ( slurm_addr_t * address, char *buf,
 				     size_t n )
 {
 	char addrbuf[INET_ADDRSTRLEN];
+
+	if (!address) {
+		snprintf(buf, n, "NULL");
+		return;
+	}
+
 	inet_ntop(AF_INET, &address->sin_addr, addrbuf, INET_ADDRSTRLEN);
 	/* warning: silently truncates */
 	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
