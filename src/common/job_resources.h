@@ -297,5 +297,13 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
 					     int node_inx);
+/*
+ * adapt the power_cpufreq layout and set the CurrentCoreWatts value of the cores
+ * based on the selection of the resources and the choice of CPU Frequency 
+ * CurrentCoreWatts are set to IdleWatts when one or more jobs occupy other 
+ * resources of the node and set to 0 when the node is liberated
+ */
+extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
+                         uint32_t node_id, char* node_name, bool new_value);
 
 #endif /* !_JOB_RESOURCES_H */

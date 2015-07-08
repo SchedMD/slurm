@@ -62,6 +62,7 @@
 #include "src/common/slurm_topology.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/powercapping.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
