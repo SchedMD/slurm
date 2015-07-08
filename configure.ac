@@ -477,8 +477,9 @@ AC_CONFIG_FILES([Makefile
 		 src/common/Makefile
 		 src/db_api/Makefile
 		 src/layouts/Makefile
-		 src/layouts/unit/Makefile
 		 src/layouts/power/Makefile
+		 src/layouts/power_cpufreq/Makefile
+		 src/layouts/unit/Makefile
 		 src/database/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile

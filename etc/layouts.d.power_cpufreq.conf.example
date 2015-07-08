@@ -1,0 +1,15 @@
+Priority=10
+Root=Cluster
+
+Entity=Cluster Type=Center CurrentSumPower=0 IdleSumWatts=0 MaxSumWatts=0 Enclosed=virtual[0-3]
+
+Entity=virtual0 Type=Node CurrentPower=0 IdleWatts=0 MaxWatts=0 DownWatts=2 PowerSaveWatts=6 CoresCount=0 LastCore=15 Cpufreq1=1200000 Cpufreq2=1400000 Cpufreq3=1600000 Cpufreq4=1800000 Cpufreq5=2000000 Cpufreq6=2200000 Cpufreq7=2400000 Cpufreq8=2600000 NumFreqChoices=8 Enclosed=virtualcore[0-15] 
+
+Entity=virtual1 Type=Node CurrentPower=0 IdleWatts=0 MaxWatts=0 DownWatts=2 PowerSaveWatts=6 CoresCount=0 LastCore=15 Cpufreq1=1200000 Cpufreq2=1400000 Cpufreq3=1600000 Cpufreq4=1800000 Cpufreq5=2000000 Cpufreq6=2200000 Cpufreq7=2400000 Cpufreq8=2600000 NumFreqChoices=8 Enclosed=virtualcore[16-31]
+
+Entity=virtual2 Type=Node CurrentPower=0 IdleWatts=0 MaxWatts=0 DownWatts=2 PowerSaveWatts=6 CoresCount=0 LastCore=15 Cpufreq1=1200000 Cpufreq2=1400000 Cpufreq3=1600000 Cpufreq4=1800000 Cpufreq5=2000000 Cpufreq6=2200000 Cpufreq7=2400000 Cpufreq8=2600000 NumFreqChoices=8 Enclosed=virtualcore[32-47]
+
+Entity=virtual3 Type=Node CurrentPower=0 IdleWatts=0 MaxWatts=0 DownWatts=2 PowerSaveWatts=6 CoresCount=0 LastCore=15 Cpufreq1=1200000 Cpufreq2=1400000 Cpufreq3=1600000 Cpufreq4=1800000 Cpufreq5=2000000 Cpufreq6=2200000 Cpufreq7=2400000 Cpufreq8=2600000 NumFreqChoices=8 Enclosed=virtualcore[48-63]
+
+Entity=virtualcore[0-63] Type=Core CurrentCorePower=0 IdleCoreWatts=7 MaxCoreWatts=20 CurrentCoreFreq=0 Cpufreq1Watts=8 Cpufreq2Watts=10 Cpufreq3Watts=12 Cpufreq4Watts=14 Cpufreq5Watts=15 Cpufreq6Watts=16 Cpufreq7Watts=17 Cpufreq8Watts=19 
+

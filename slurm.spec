@@ -483,6 +483,7 @@ install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdi
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_memory
 install -D -m644 etc/layouts.d.power.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d.power.conf.example
+install -D -m644 etc/layouts.d.power_cpufreq.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/layouts.d.power_cpufreq.conf.example
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
 install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
@@ -803,6 +804,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/cgroup/release_cpuset
 %config %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/layouts.d.power.conf.example
+%config %{_sysconfdir}/layouts.d.power_cpufreq.conf.example
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
@@ -919,6 +921,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_script.so
+%{_libdir}/slurm/layouts_power_cpufreq_default.so
 %{_libdir}/slurm/layouts_power_default.so
 %{_libdir}/slurm/layouts_unit_default.so
 %if ! %{slurm_with bluegene}
