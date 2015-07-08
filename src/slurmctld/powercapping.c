@@ -285,8 +285,12 @@ uint32_t powercap_get_cluster_current_max_watts(void)
 		return 0;
 	if (!power_layout_ready())
 		return 0;
-
-	cur_max_watts = powercap_get_node_bitmap_maxwatts(NULL);
+	
+	if (which_power_layout() == 1)
+		cur_max_watts = powercap_get_node_bitmap_maxwatts(NULL);
+	else
+		cur_max_watts = powercap_get_node_bitmap_maxwatts_dvfs(NULL,NULL,NULL,0,0);
+	
 	return cur_max_watts;
 }
 
@@ -432,7 +436,7 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 		if (bit_test(select_bitmap, i)) {
 			layouts_entity_pullget_kv(l_name, node_ptr->name, 
 					L_NUM_FREQ, &num_freq, L_T_UINT16);
-			allowed_freqs = xmalloc ( sizeof (int) * ((int)num_freq+2));
+			allowed_freqs = xmalloc(sizeof(int)*((int)num_freq+2));
 			allowed_freqs[-1] = num_freq;
 			for(p=num_freq; p>0; p--){
 				sprintf(ename, "Cpufreq%d", p);
@@ -463,12 +467,12 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 	int i,p;
 	char ename[128], keyname[128];
 	bitstr_t *tmp_bitmap = NULL;
-	uint32_t data[4],core_data[3];
+	uint32_t data[5],core_data[4];
 
 	if (!_powercap_enabled())
 		return 0;
 
-	if (tmp_max_watts_dvfs != NULL)
+	if (max_watts_dvfs != NULL)
 		tmp_max_watts_dvfs = 
 			  xmalloc(sizeof(uint32_t)*(allowed_freqs[0]+1));
 
@@ -480,7 +484,7 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 		idle_bitmap = tmp_bitmap;
 		select_bitmap = tmp_bitmap;
 	}
-
+	
 	for(i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	    i++, node_ptr++){
 		if (bit_test(idle_bitmap, i)) {
@@ -499,26 +503,53 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 		} else if (bit_test(select_bitmap, i)) {
 			
 			layouts_entity_get_mkv(l_name, node_ptr->name, 
-				   "IdleWatts,MaxWatts,CoresCount,LastCore", 
-				   data, (sizeof(uint32_t) * 4), L_T_UINT32);
+			 "IdleWatts,MaxWatts,CoresCount,LastCore,CurrentPower",
+			 data, (sizeof(uint32_t) * 5), L_T_UINT32);
 
 			/* tmp_max_watts = IdleWatts - cpus*IdleCoreWatts 
 			   + cpus*MaxCoreWatts */
 			sprintf(ename, "virtualcore%u", data[3]);
-			for(p=1; p<allowed_freqs[0] + 1; p++){
-				sprintf(keyname, 
-				  "IdleCoreWatts,MaxCoreWatts,Cpufreq%dWatts", 
-				  allowed_freqs[p]);
-				layouts_entity_get_mkv(l_name, ename, keyname,
-					  core_data, (sizeof(uint32_t) * 3), 
-					  L_T_UINT32);
-                        	tmp_max_watts_dvfs[p] += num_cpus*core_data[2];
-				if(num_cpus == data[2])
-					tmp_max_watts += data[1];
-				else
-					tmp_max_watts = data[0] - 
-					  num_cpus*core_data[0] + 
+			if (num_cpus == 0)
+				num_cpus = data[2];
+			layouts_entity_get_mkv(l_name, ename, 
+						 "IdleCoreWatts,MaxCoreWatts",
+						 core_data, 
+						 (sizeof(uint32_t) * 2),
+						 L_T_UINT32);
+			if (data[4] == 0)
+				tmp_max_watts += data[0] -
+					  num_cpus*core_data[0] +
 					  num_cpus*core_data[1];
+			else if (data[4] > 0)
+				tmp_max_watts += data[4] -
+					  num_cpus*core_data[0] +
+					  num_cpus*core_data[1];
+			else if (num_cpus == data[2])
+				tmp_max_watts += data[1];
+
+			for (p=1; p<allowed_freqs[0] + 1; p++){
+				sprintf(keyname, 
+				 "IdleCoreWatts,MaxCoreWatts,Cpufreq%dWatts,"
+				 "CurrentCorePower", allowed_freqs[p]);
+				layouts_entity_get_mkv(l_name, ename, keyname,
+					  core_data, (sizeof(uint32_t) * 4), 
+					  L_T_UINT32);
+				if (num_cpus == data[2])
+					tmp_max_watts_dvfs[p] += 
+						  num_cpus*core_data[2];
+				else {
+					if(data[4] == 0){
+						tmp_max_watts_dvfs[p] +=
+						  data[0] -
+						  num_cpus*core_data[0] +
+						  num_cpus*core_data[2];
+					} else {
+						tmp_max_watts_dvfs[p] +=
+						  data[4] -
+						  num_cpus*core_data[0] +
+						  num_cpus*core_data[2];
+					}
+				}
 			}
 		} else {
 			/* non idle nodes, 2 cases : down or not */

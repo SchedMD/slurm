@@ -1055,6 +1055,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	} else {
 		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq;
 		uint32_t cur_max_watts, tmp_max_watts, *tmp_max_watts_dvfs;
+		uint32_t cpus_per_node;
 		bitstr_t *tmp_bitmap;
 		int k=1,*allowed_freqs;
 		float ratio=0;
@@ -1092,10 +1093,12 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			      xmalloc(sizeof(uint32_t)*(allowed_freqs[0]+1));
                 	else
                        		tmp_max_watts_dvfs = NULL;
+			cpus_per_node = job_ptr->details->min_cpus / 
+			 job_ptr->details->min_nodes;
                 	tmp_max_watts = 
 			 powercap_get_node_bitmap_maxwatts_dvfs(tmp_bitmap, 
 			 *select_bitmap, tmp_max_watts_dvfs, allowed_freqs, 
-			 job_ptr->details->min_cpus);
+			 cpus_per_node);
 		}			
 		bit_free(tmp_bitmap);
 
@@ -1106,7 +1109,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * reservations on the failure */
 		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
 		
-		if(layout_power == 1){
+		if((layout_power == 1) || 
+		   ((layout_power == 2) && (allowed_freqs[0] == 0))){
 			if (tmp_max_watts > job_cap) {
 				FREE_NULL_BITMAP(*select_bitmap);
 				if ((job_cap < powercap) && 
@@ -1116,61 +1120,64 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					error_code = ESLURM_POWER_NOT_AVAIL;
 			}
 		} else if (layout_power == 2){
-		
-			if ((tmp_max_watts > job_cap) || 
-			    (job_cap < powercap) || 
-			    (powercap < max_watts)) {
 
-				/* Calculation of the CPU Frequency to set for the job:
-			 	 * The optimal CPU Frequency is the maximum allowed 
-			 	 * CPU Frequency that all idle nodes could run so that 
-			 	 * the total power consumption of the cluster is below 
-			 	 * the powercap value.since the number of Idle nodes 
-			 	 * may change in every schedule the optimal CPU 
-			 	 * Frequency may also change from one job to another.*/
+			if (((tmp_max_watts > job_cap) ||
+			    (job_cap < powercap) ||
+			    (powercap < max_watts)) && (allowed_freqs[0] > 0)){
+		
+			/* Calculation of the CPU Frequency to set for the job:
+		 	 * The optimal CPU Frequency is the maximum allowed 
+		 	 * CPU Frequency that all idle nodes could run so that 
+		 	 * the total power consumption of the cluster is below 
+		 	 * the powercap value.since the number of Idle nodes 
+		 	 * may change in every schedule the optimal CPU 
+		 	 * Frequency may also change from one job to another.*/
 
 				k=powercap_get_job_optimal_cpufreq(job_cap, 
-								  allowed_freqs);
+							  allowed_freqs);
 				while ((tmp_max_watts_dvfs[k] > job_cap) && 
 				    (k < allowed_freqs[0] +1)) {
 					k++;
 				}
 				if (k == allowed_freqs[0] +1) {
 					if ((job_cap < powercap) &&
-					   (tmp_max_watts_dvfs[k] <= powercap)){
-						error_code = ESLURM_POWER_RESERVED;
+					  (tmp_max_watts_dvfs[k] <= powercap)){
+						error_code = 
+						  ESLURM_POWER_RESERVED;
 					} else {
-						error_code = ESLURM_POWER_NOT_AVAIL;
+						error_code = 
+						  ESLURM_POWER_NOT_AVAIL;
 					}
 				} else {
 					tmp_max_watts = tmp_max_watts_dvfs[k];
 					tmp_pcap_cpu_freq = 
-						powercap_get_cpufreq( *select_bitmap,
-								   allowed_freqs[k]);
+					  powercap_get_cpufreq(*select_bitmap,
+							    allowed_freqs[k]);
 				}
 	
 				job_ptr->details->cpu_freq_min = 
-				  job_ptr->details->cpu_freq_max = tmp_pcap_cpu_freq;
+				  job_ptr->details->cpu_freq_max = 
+				  tmp_pcap_cpu_freq;
 				job_ptr->details->cpu_freq_gov = 0x10;
 
-				/* Since we alter the DVFS of jobs we need to deal with
-				 * their time_limit to calculate the extra time needed 
-				 * for them to complete the execution without getting 
-				 * killed there should be a parameter to declare the 
-				 * effect of cpu frequency on execution time for the 
-				 * moment we use time_limit and time_min
-				 * This has to be done to allow backfilling */
+			/* Since we alter the DVFS of jobs we need to deal with
+			 * their time_limit to calculate the extra time needed 
+			 * for them to complete the execution without getting 
+			 * killed there should be a parameter to declare the 
+			 * effect of cpu frequency on execution time for the 
+			 * moment we use time_limit and time_min
+			 * This has to be done to allow backfilling */
 
-				ratio = (1 + 
-				  (float)allowed_freqs[k]/(float)allowed_freqs[-1]);
+				ratio = (1 + (float)allowed_freqs[k] /
+					    (float)allowed_freqs[-1]);
 				if ((job_ptr->time_limit != INFINITE) && 
 				    (job_ptr->time_limit != NO_VAL))
-					job_ptr->time_limit = 
-							 (ratio * job_ptr->time_limit);
+					job_ptr->time_limit = (ratio * 
+						  job_ptr->time_limit);
 				if ((job_ptr->time_min != INFINITE) && 
 				    (job_ptr->time_min != NO_VAL))
-					job_ptr->time_min = 
-							 (ratio * job_ptr->time_min);
+					job_ptr->time_min = (ratio * 
+						  job_ptr->time_min);
 			}
 			xfree(tmp_max_watts_dvfs);
 		}

@@ -1430,7 +1430,7 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 			      "CoresCount,LastCore", data, 
 			      (sizeof(uint32_t)*2),L_T_UINT32);
 	if(cpu_freq_max != 0){
-		for (i=1; i<num_freq; i++) {
+		for (i=1; i<num_freq + 1; i++) {
 			sprintf(temp, "Cpufreq%d", i);
 			layouts_entity_pullget_kv("power_cpufreq", node_name, 
 						  temp, &val, L_T_UINT32);
