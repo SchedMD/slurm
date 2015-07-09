@@ -622,7 +622,7 @@ send_registration_msg(uint32_t status, bool startup)
 		req->msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req->data     = msg;
 
-		msg_aggr_add_msg(req, 1);
+		msg_aggr_add_msg(req, 1, NULL);
 	} else {
 		slurm_msg_t req;
 		slurm_msg_t_init(&req);

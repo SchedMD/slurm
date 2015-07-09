@@ -458,7 +458,7 @@ slurmd_req(slurm_msg_t *msg)
 	case MESSAGE_COMPOSITE:
 		error("Processing RPC: MESSAGE_COMPOSITE: "
 		      "This should never happen");
-		msg_aggr_add_msg(msg, 0);
+		msg_aggr_add_msg(msg, 0, NULL);
 		break;
 	case RESPONSE_MESSAGE_COMPOSITE:
 		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
@@ -3897,7 +3897,7 @@ _epilog_complete(uint32_t jobid, int rc)
 		/* we need to copy this symbol */
 		req->node_name   = xstrdup(conf->node_name);
 
-		msg_aggr_add_msg(msg, 0);
+		msg_aggr_add_msg(msg, 0, NULL);
 	} else {
 		slurm_msg_t msg;
 		epilog_complete_msg_t req;

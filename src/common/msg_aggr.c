@@ -76,6 +76,7 @@ typedef struct {
 
 typedef struct {
 	uint16_t msg_index;
+	void (*resp_callback) (slurm_msg_t *msg);
 	pthread_cond_t wait_cond;
 } msg_aggr_t;
 
@@ -342,7 +343,8 @@ extern void msg_aggr_sender_fini(void)
 	slurm_mutex_destroy(&msg_collection.mutex);
 }
 
-extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
+extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait,
+			     void (*resp_callback) (slurm_msg_t *msg))
 {
 	int count;
 	static uint16_t msg_index = 1;
@@ -381,7 +383,7 @@ extern void msg_aggr_add_msg(slurm_msg_t *msg, bool wait)
 		struct timespec timeout;
 
 		msg_aggr->msg_index = msg->msg_index;
-
+		msg_aggr->resp_callback = resp_callback;
 		pthread_cond_init(&msg_aggr->wait_cond, NULL);
 
 		slurm_mutex_lock(&msg_collection.aggr_mutex);
@@ -422,7 +424,7 @@ extern void msg_aggr_add_comp(Buf buffer, void *auth_cred, header_t *header)
 	msg->data = buffer;
 	msg->data_size = remaining_buf(buffer);
 
-	msg_aggr_add_msg(msg, 0);
+	msg_aggr_add_msg(msg, 0, NULL);
 }
 
 extern void msg_aggr_resp(slurm_msg_t *msg)
@@ -438,11 +440,12 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 		info("msg_aggr_resp: processing composite msg_list...");
 	while ((next_msg = list_next(itr))) {
 		switch (next_msg->msg_type) {
+		case REQUEST_BATCH_JOB_LAUNCH:
 		case RESPONSE_SLURM_RC:
 			/* signal sending thread that slurmctld received this
-			 * epilog complete msg */
+			 * msg */
 			if (msg_collection.debug_flags & DEBUG_FLAG_ROUTE)
-				info("msg_aggr_resp: rc message found for "
+				info("msg_aggr_resp: response found for "
 				     "index %u signaling sending thread",
 				     next_msg->msg_index);
 			slurm_mutex_lock(&msg_collection.aggr_mutex);
@@ -454,6 +457,9 @@ extern void msg_aggr_resp(slurm_msg_t *msg)
 				slurm_mutex_unlock(&msg_collection.aggr_mutex);
 				continue;
 			}
+			if (msg_aggr->resp_callback &&
+			    (next_msg->msg_type != RESPONSE_SLURM_RC))
+				(*(msg_aggr->resp_callback))(next_msg);
 			pthread_cond_signal(&msg_aggr->wait_cond);
 			slurm_mutex_unlock(&msg_collection.aggr_mutex);
 			break;
