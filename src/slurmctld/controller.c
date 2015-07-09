@@ -214,7 +214,6 @@ static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static void         _become_slurm_user(void);
 static void         _default_sigaction(int sig);
-inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -514,9 +513,7 @@ int main(int argc, char *argv[])
 		/*
 		 * create attached thread to process RPCs
 		 */
-		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-		slurmctld_config.server_thread_count++;
-		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+		server_thread_incr();
 		slurm_attr_init(&thread_attr);
 		while (pthread_create(&slurmctld_config.thread_id_rpc,
 				      &thread_attr, _slurmctld_rpc_mgr,
@@ -965,7 +962,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		if (select(max_fd+1, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn select: %m");
-			_free_server_thread();
+			server_thread_decr();
 			continue;
 		}
 		/* find one to process */
@@ -986,7 +983,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		    SLURM_SOCKET_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
-			_free_server_thread();
+			server_thread_decr();
 			continue;
 		}
 		fd_set_close_on_exec(newsockfd);
@@ -1025,7 +1022,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	for (i=0; i<nports; i++)
 		(void) slurm_shutdown_msg_engine(sockfd[i]);
 	xfree(sockfd);
-	_free_server_thread();
+	server_thread_decr();
 	pthread_exit((void *) 0);
 	return NULL;
 }
@@ -1076,7 +1073,7 @@ static void *_service_connection(void *arg)
 cleanup:
 	slurm_free_msg(msg);
 	xfree(arg);
-	_free_server_thread();
+	server_thread_decr();
 	return return_code;
 }
 
@@ -1123,7 +1120,8 @@ static bool _wait_for_server_thread(void)
 	return rc;
 }
 
-static void _free_server_thread(void)
+/* Decrement slurmctld thread count (as applies to thread limit) */
+extern void server_thread_decr(void)
 {
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if (slurmctld_config.server_thread_count > 0)
@@ -1134,7 +1132,15 @@ static void _free_server_thread(void)
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 }
 
-static int _accounting_cluster_ready()
+/* Increment slurmctld thread count (as applies to thread limit) */
+extern void server_thread_incr(void)
+{
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+	slurmctld_config.server_thread_count++;
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+}
+
+static int _accounting_cluster_ready(void)
 {
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);

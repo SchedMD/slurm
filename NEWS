@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.9
 ==========================
+ -- Do not count slurmctld threads waiting in a "throttle" lock against the
+    daemon's thread limit as they are not contending for resources.
 
 * Changes in Slurm 14.11.8
 ==========================
