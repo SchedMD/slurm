@@ -2593,21 +2593,18 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	bool do_unlock = false;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_ALLOCATION_INFO from uid=%d", uid);
 
 	/* do RPC call */
-	do_unlock = true;
 	lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(uid, job_info_msg->job_id, &job_ptr);
 	END_TIMER2("_slurm_rpc_job_alloc_info");
 
 	/* return result */
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
-		if (do_unlock)
-			unlock_slurmctld(job_read_lock);
+		unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_job_alloc_info: JobId=%u, uid=%u: %s",
 		       job_info_msg->job_id, uid,
 		       slurm_strerror(error_code));
@@ -2673,22 +2670,19 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	bool do_unlock = false;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_ALLOCATION_INFO_LITE from uid=%d",
 	       uid);
 
 	/* do RPC call */
-	do_unlock = true;
 	lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(uid, job_info_msg->job_id, &job_ptr);
 	END_TIMER2("_slurm_rpc_job_alloc_info_lite");
 
 	/* return result */
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
-		if (do_unlock)
-			unlock_slurmctld(job_read_lock);
+		unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_job_alloc_info_lite: JobId=%u, uid=%u: %s",
 		       job_info_msg->job_id, uid, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
