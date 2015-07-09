@@ -1157,8 +1157,14 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		}
 		if (job_ptr->resv_name)
 			alloc_msg.resv_name = xstrdup(job_ptr->resv_name);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+
+		/* This check really isn't needed, but just doing it
+		 * to be more complete.
+		 */
+		if (do_unlock) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
@@ -1724,7 +1730,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 		return;
 	}
 
-	job_ptr = find_job_record(epilog_msg->job_id);
 	/* Only throttle on none composite messages, the lock should
 	 * already be set earlier. */
 	if (!running_composite) {
@@ -1748,6 +1753,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
 		*run_scheduler = true;
+
+	job_ptr = find_job_record(epilog_msg->job_id);
 
 	if (!running_composite) {
 		unlock_slurmctld(job_write_lock);
