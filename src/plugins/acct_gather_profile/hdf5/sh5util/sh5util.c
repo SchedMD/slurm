@@ -847,14 +847,15 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
 {
 	hsize_t nrecords;
 	size_t i, j;
-	uint8_t data[type_size];
+	uint8_t *data;
 
 	/* allocate space for aggregate values: 4 values (min, max,
 	 * sum, avg) on 8 bytes (uint64_t/double) for each field */
-	uint64_t agg_i[nb_fields * 4];
+	uint64_t *agg_i;
 	double *agg_d = (double *)agg_i;
 
-	memset(agg_i, 0, nb_fields * 4 * sizeof(uint64_t));
+	data = xmalloc(type_size);
+	agg_i = xmalloc(nb_fields * 4 * sizeof(uint64_t));
 	H5PTget_num_packets(table_id, &nrecords);
 
 	/* compute min/max/sum */
@@ -918,6 +919,8 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
 		}
 	}
 	fputc('\n', output);
+	xfree(agg_i);
+	xfree(data);
 }
 
 /**
@@ -1169,16 +1172,15 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 	size_t   min_idx;
 	uint64_t max_val;
 	size_t   max_idx;
-	uint64_t sum, sum_max;
-	double   avg, avg_max;
+	uint64_t sum, sum_max = 0;
+	double   avg, avg_max = 0;
 	size_t   nb_series_in_smp;
 	uint64_t v;
 	uint64_t values[nb_tables];
-	uint8_t  buffer[buf_size];
-	uint64_t et, et_max;
+	uint8_t  *buffer;
+	uint64_t et, et_max = 0;
 
-	sum_max = 0;
-
+	buffer = xmalloc(buf_size);
 	for (;;) {
 		min_val = UINT64_MAX;
 		max_val = 0;
@@ -1197,11 +1199,11 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 			values[i] = v;
 			/* compute the sum, min and max */
 			sum += v;
-			if (v < min_val) {
+			if ((i == 0) || (v < min_val)) {
 				min_val = v;
 				min_idx = i;
 			}
-			if (v > max_val) {
+			if ((i == 0) || (v > max_val)) {
 				max_val = v;
 				max_idx = i;
 			}
@@ -1248,6 +1250,7 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 		}
 		fputc('\n', output_file);
 	}
+	xfree(buffer);
 
 	printf("    Step %s Maximum accumulated %s Value (%"PRIu64") occurred "
 	       "at Time=%"PRIu64", Ave Node %lf\n",
@@ -1268,16 +1271,15 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 	size_t   min_idx;
 	double   max_val;
 	size_t   max_idx;
-	double   sum, sum_max;
-	double   avg, avg_max;
+	double   sum, sum_max = 0;
+	double   avg, avg_max = 0;
 	size_t   nb_series_in_smp;
 	double   v;
 	double   values[nb_tables];
-	uint8_t  buffer[buf_size];
-	uint64_t et, et_max;
+	uint8_t  *buffer;
+	uint64_t et, et_max = 0;
 
-	sum_max = 0;
-
+	buffer = xmalloc(buf_size);
 	for (;;) {
 		min_val = UINT64_MAX;
 		max_val = 0;
@@ -1296,11 +1298,11 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 			values[i] = v;
 			/* compute the sum, min and max */
 			sum += v;
-			if (v < min_val) {
+			if ((i == 0) || (v < min_val)) {
 				min_val = v;
 				min_idx = i;
 			}
-			if (v > max_val) {
+			if ((i == 0) || (v > max_val)) {
 				max_val = v;
 				max_idx = i;
 			}
@@ -1335,6 +1337,7 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 		}
 		fputc('\n', output_file);
 	}
+	xfree(buffer);
 
 	printf("    Step %s Maximum accumulated %s Value (%lf) occurred "
 	       "at Time=%"PRIu64", Ave Node %lf\n",

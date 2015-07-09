@@ -800,7 +800,6 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		       "----------------------------------------\n");
 	}
 
-	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
 	list_sort(slurmdb_report_cluster_list, (ListCmpF)sort_cluster_dec);
@@ -1007,7 +1006,6 @@ extern int cluster_user_by_account(int argc, char *argv[])
 		       "----------------------------------------\n");
 	}
 
-	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
 	cluster_itr = list_iterator_create(slurmdb_report_cluster_list);

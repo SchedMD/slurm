@@ -695,7 +695,6 @@ static void _record_profile(struct jobacctinfo *jobacct)
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
-		et = 0;
 		data[FIELD_CPUTIME].u64 = 0;
 		data[FIELD_CPUUTIL].d = 0.0;
 		data[FIELD_READ].d = 0.0;
