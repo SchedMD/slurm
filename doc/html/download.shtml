@@ -400,8 +400,15 @@ make install</li>
 make -j</li>
 </ol>
 
+<li><b>Slurm-web</b><br>
+Slurm-web is a free software, distributed under the GPL version 2 license,
+that provides both a HTTP REST API (based on JSON format) and a web GUI
+with dashboards and graphical views of the current state of your
+Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
+<a href="http://edf-hpc.github.io/slurm-web">http://edf-hpc.github.io/slurm-web</a></li>
+
 </ul>
 
-<p style="text-align:center;">Last modified 24 June 2015</p>
+<p style="text-align:center;">Last modified 10 July 2015</p>
 
 <!--#include virtual="footer.txt"-->

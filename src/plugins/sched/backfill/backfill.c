@@ -575,9 +575,8 @@ extern void backfill_reconfig(void)
 }
 
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
-			   int yield_sleep)
+			   int yield_sleep_usecs)
 {
-	uint32_t yield_sleep_usecs = yield_sleep * 1000000;
 	uint32_t delta_t, real_time;
 
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;

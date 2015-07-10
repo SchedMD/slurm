@@ -1935,12 +1935,18 @@ extern void set_cluster_tres(void);
 /* sends all jobs in eligible state to accounting.  Only needed at
  * first registration
  */
-extern int send_jobs_to_accounting();
+extern int send_jobs_to_accounting(void);
 
 /* send all nodes in a down like state to accounting.  Only needed at
  * first registration
  */
 extern int send_nodes_to_accounting(time_t event_time);
+
+/* Decrement slurmctld thread count (as applies to thread limit) */
+extern void server_thread_decr(void);
+
+/* Increment slurmctld thread count (as applies to thread limit) */
+extern void server_thread_incr(void);
 
 /* Set a job's alias_list string */
 extern void set_job_alias_list(struct job_record *job_ptr);
