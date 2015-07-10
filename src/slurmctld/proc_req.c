@@ -565,13 +565,7 @@ static void _throttle_start(int *active_rpc_cnt)
 			(*active_rpc_cnt)++;
 			break;
 		}
-
-		/* While an RPC is being throttled due to a running RPC of the
-		 * same type, do not count that thread against the daemon's
-		 * thread limit */
-		server_thread_decr();
 		pthread_cond_wait(&throttle_cond, &throttle_mutex);
-		server_thread_incr();
 	}
 	slurm_mutex_unlock(&throttle_mutex);
 	if (LOTS_OF_AGENTS)
