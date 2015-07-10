@@ -5,6 +5,9 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Do not count slurmctld threads waiting in a "throttle" lock against the
     daemon's thread limit as they are not contending for resources.
+ -- Correct "sdiag" backfill cycle time calculation if it yields locks. A
+    microsecond value was being treated as a second value resulting in an
+    overflow in the calcuation.
 
 * Changes in Slurm 14.11.8
 ==========================
