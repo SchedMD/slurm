@@ -6,6 +6,10 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Added power_cpufreq layout.
  -- Make complete_batch_script RPC work with message aggregation.
+ -- Modify slurmctld outgoing RPC logic to support more parallel tasks (up to
+    85 RPCs and 256 pthreads; the old logic supported up to 21 RPCs and 256
+    threads). This change can dramatically improve performance for RPCs
+    operating on small node counts.
 
 * Changes in Slurm 15.08.0pre6
 ==============================

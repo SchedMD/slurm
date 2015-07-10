@@ -86,6 +86,7 @@
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
 /* Maximum parallel threads to service incoming RPCs.
+ * Also maximum parallel threads to service outgoing RPCs (separate counter).
  * Since some systems schedule pthread on a First-In-Last-Out basis,
  * increasing this value is strongly discouraged. */
 #ifndef MAX_SERVER_THREADS

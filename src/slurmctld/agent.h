@@ -46,11 +46,7 @@
 
 #define AGENT_THREAD_COUNT	10	/* maximum active threads per agent */
 #define COMMAND_TIMEOUT 	30	/* command requeue or error, seconds */
-#define MAX_AGENT_CNT		(MAX_SERVER_THREADS / (AGENT_THREAD_COUNT + 2))
-					/* maximum simultaneous agents, note
-					 *   total thread count is product of
-					 *   MAX_AGENT_CNT and
-					 *   (AGENT_THREAD_COUNT + 2) */
+
 #define LOTS_OF_AGENTS_CNT 50
 #define LOTS_OF_AGENTS ((get_agent_count() <= LOTS_OF_AGENTS_CNT) ? 0 : 1)
 
