@@ -4567,15 +4567,15 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	slurm_msg_t	resp_msg;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	complete_batch_script_msg_t *req = msg->data;
-	static int	running_static = -1;
+	static int	running_serial = -1;
 	uint16_t msg_type;
 
-	if (running_static == -1) {
+	if (running_serial == -1) {
 		char *select_type = slurm_get_select_type();
 		if (!strcmp(select_type, "select/serial"))
-			running_static = 1;
+			running_serial = 1;
 		else
-			running_static = 0;
+			running_serial = 0;
 		xfree(select_type);
 	}
 
@@ -4586,10 +4586,10 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-
+	info("got batch finish");
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-	if (running_static) {
+	if (running_serial) {
 		_rpc_terminate_batch_job(
 			req->job_id, req->user_id, req->node_name);
 		msg_type = REQUEST_COMPLETE_BATCH_JOB;
@@ -4615,6 +4615,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			req_msg.data	 = msg->data;
 			msg_rc = slurm_send_recv_controller_msg(
 				&req_msg, &resp_msg);
+
 			if (msg_rc == SLURM_SUCCESS)
 				break;
 		}
