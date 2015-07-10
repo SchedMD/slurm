@@ -2280,9 +2280,13 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	char *		select_type;
 	bool		msg_to_ctld;
 
-	select_type = slurm_get_select_type();
-	msg_to_ctld = strcmp(select_type, "select/serial");
-	xfree(select_type);
+	if (conf->msg_aggr_window_msgs > 1)
+		msg_to_ctld = 0;
+	else {
+		select_type = slurm_get_select_type();
+		msg_to_ctld = strcmp(select_type, "select/serial");
+		xfree(select_type);
+	}
 
 	req.job_id	= job->jobid;
 	req.job_rc      = status;

@@ -559,7 +559,7 @@ static void _do_diag_stats(long delta_t)
  * fini_job_ptr IN - Pointer to job that just completed and needs replacement
  * RET true if there are pending jobs that might use the resources
  */
-extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
+extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 {
 	static int select_serial = -1;
 	/* Locks: Read config, write job, write node, read partition */
@@ -587,13 +587,15 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 
 	now = time(NULL);
 	min_age = now - slurmctld_conf.min_job_age;
-	lock_slurmctld(job_write_lock);
+	if (!locked)
+		lock_slurmctld(job_write_lock);
 	if (!fini_job_ptr->job_resrcs ||
 	    !fini_job_ptr->job_resrcs->node_bitmap) {
 		/* This should never happen, but if it does, avoid using
 		 * a bad pointer below. */
 		error("job_resrcs empty for job %u", fini_job_ptr->job_id);
-		unlock_slurmctld(job_write_lock);
+		if (!locked)
+			unlock_slurmctld(job_write_lock);
 		goto send_reply;
 	}
 	job_iterator = list_iterator_create(job_list);
@@ -771,7 +773,8 @@ next_part:		part_ptr = (struct part_record *)
 		}
 		break;
 	}
-	unlock_slurmctld(job_write_lock);
+	if (!locked)
+		unlock_slurmctld(job_write_lock);
 	if (job_iterator)
 		list_iterator_destroy(job_iterator);
 	if (part_iterator)
@@ -779,15 +782,33 @@ next_part:		part_ptr = (struct part_record *)
 
 send_reply:
 	if (launch_msg) {
-		slurm_msg_t response_msg;
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
-		response_msg.data = launch_msg;
-		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		slurmctld_free_batch_job_launch_msg(launch_msg);
+		if (msg->msg_index && msg->ret_list) {
+			slurm_msg_t *resp_msg = xmalloc_nz(sizeof(slurm_msg_t));
+			slurm_msg_t_init(resp_msg);
+
+			resp_msg->msg_index = msg->msg_index;
+			resp_msg->ret_list = NULL;
+			/* The return list here is the list we are sending to
+			   the node, so after we attach this message to it set
+			   it to NULL to remove it.
+			*/
+			resp_msg->flags = msg->flags;
+			resp_msg->protocol_version = msg->protocol_version;
+			resp_msg->address = msg->address;
+			resp_msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+			resp_msg->data = launch_msg;
+			list_append(msg->ret_list, resp_msg);
+		} else {
+			slurm_msg_t response_msg;
+			slurm_msg_t_init(&response_msg);
+			response_msg.flags = msg->flags;
+			response_msg.protocol_version = msg->protocol_version;
+			response_msg.address = msg->address;
+			response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
+			response_msg.data = launch_msg;
+			slurm_send_node_msg(msg->conn_fd, &response_msg);
+			slurmctld_free_batch_job_launch_msg(launch_msg);
+		}
 		return false;
 	}
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);

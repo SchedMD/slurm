@@ -258,6 +258,7 @@ static uint32_t active_job_id[JOB_STATE_CNT];
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -4485,6 +4486,23 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 	_waiter_complete(job_id);
 }
 
+static void _handle_old_batch_job_launch(slurm_msg_t *msg)
+{
+	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
+		error("_handle_batch_job_launch: "
+		      "Invalid response msg_type (%u)", msg->msg_type);
+		return;
+	}
+
+	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
+	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
+	last_slurmctld_msg = time(NULL);
+	_rpc_batch_job(msg, false);
+	slurm_free_job_launch_msg(msg->data);
+	msg->data = NULL;
+
+}
+
 /* This complete batch RPC came from slurmstepd because we have select/serial
  * configured. Terminate the job here. Forward the batch completion RPC to
  * slurmctld and possible get a new batch launch RPC in response. */
@@ -4492,9 +4510,20 @@ static void
 _rpc_complete_batch(slurm_msg_t *msg)
 {
 	int		i, rc, msg_rc;
-	slurm_msg_t	req_msg, resp_msg;
+	slurm_msg_t	resp_msg;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	complete_batch_script_msg_t *req = msg->data;
+	static int	running_static = -1;
+	uint16_t msg_type;
+
+	if (running_static == -1) {
+		char *select_type = slurm_get_select_type();
+		if (!strcmp(select_type, "select/serial"))
+			running_static = 1;
+		else
+			running_static = 0;
+		xfree(select_type);
+	}
 
 	if (!_slurm_authorized_user(uid)) {
 		error("Security violation: complete_batch(%u) from uid %d",
@@ -4505,15 +4534,36 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	}
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	_rpc_terminate_batch_job(req->job_id, req->user_id, req->node_name);
 
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;
-	req_msg.data	= msg->data;
+	if (running_static) {
+		_rpc_terminate_batch_job(
+			req->job_id, req->user_id, req->node_name);
+		msg_type = REQUEST_COMPLETE_BATCH_JOB;
+	} else
+		msg_type = msg->msg_type;
+
 	for (i = 0; i <= MAX_RETRY; i++) {
-		msg_rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
-		if (msg_rc == SLURM_SUCCESS)
-			break;
+		if (conf->msg_aggr_window_msgs > 1) {
+			slurm_msg_t *req_msg =
+				xmalloc_nz(sizeof(slurm_msg_t));
+			slurm_msg_t_init(req_msg);
+			req_msg->msg_type = msg_type;
+			req_msg->data = msg->data;
+			msg->data = NULL;
+
+			msg_aggr_add_msg(req_msg, 1,
+					 _handle_old_batch_job_launch);
+			return;
+		} else {
+			slurm_msg_t req_msg;
+			slurm_msg_t_init(&req_msg);
+			req_msg.msg_type = msg_type;
+			req_msg.data	 = msg->data;
+			msg_rc = slurm_send_recv_controller_msg(
+				&req_msg, &resp_msg);
+			if (msg_rc == SLURM_SUCCESS)
+				break;
+		}
 		info("Retrying job complete RPC for job %u", req->job_id);
 		sleep(RETRY_DELAY);
 	}
@@ -4533,17 +4583,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 		return;
 	}
 
-	if (resp_msg.msg_type != REQUEST_BATCH_JOB_LAUNCH) {
-		error("Invalid response msg_type (%u) to complete_batch RPC "
-		      "for job %u", resp_msg.msg_type, req->job_id);
-		return;
-	}
-
-	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
-	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
-	last_slurmctld_msg = time(NULL);
-	_rpc_batch_job(&resp_msg, false);
-	slurm_free_job_launch_msg(resp_msg.data);
+	_handle_old_batch_job_launch(&resp_msg);
 }
 
 static void

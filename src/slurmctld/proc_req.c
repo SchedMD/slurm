@@ -132,7 +132,8 @@ inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_job_allocation(slurm_msg_t * msg);
-inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
+inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg,
+						     bool locked);
 inline static void  _slurm_rpc_complete_prolog(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_front_end(slurm_msg_t * msg);
@@ -340,7 +341,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_slurm_rpc_complete_batch_script(msg);
+		_slurm_rpc_complete_batch_script(msg, 0);
 		slurm_free_complete_batch_script_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
@@ -1998,7 +1999,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 
 /* _slurm_rpc_complete_batch - process RPC from slurmstepd to note the
  *	completion of a batch script */
-static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
+static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg, bool locked)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, i;
@@ -2033,8 +2034,11 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		return;
 	}
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
+	if (!locked) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
+
 	job_ptr = find_job_record(comp_msg->job_id);
 
 	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
@@ -2048,8 +2052,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		      "Was the job requeued due to node failure?",
 		      comp_msg->job_id,
 		      comp_msg->node_name, job_ptr->batch_host);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!locked) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
@@ -2172,9 +2178,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	i = job_complete(comp_msg->job_id, uid, job_requeue, false,
 			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
-
+	if (!locked) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 #ifdef HAVE_BG
 	if (block_desc.bg_block_id) {
 		block_desc.reason = slurm_strerror(comp_msg->slurm_rc);
@@ -2200,7 +2207,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		       comp_msg->job_id, TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
-		if (replace_batch_job(msg, job_ptr))
+		if (replace_batch_job(msg, job_ptr, locked))
 			run_sched = true;
 	}
 
@@ -5527,6 +5534,23 @@ static int _delta_tv(struct timeval *tv)
 	return delta_t;
 }
 
+/* The batch messages when made for the comp_msg need to be freed
+ * differently than the normal free, so do that here.
+ */
+static void _slurmctld_free_comp_msg_list(void *x)
+{
+	slurm_msg_t *msg = (slurm_msg_t*)x;
+	if (msg) {
+		if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+			slurmctld_free_batch_job_launch_msg(msg->data);
+			msg->data = NULL;
+		}
+
+		slurm_free_comp_msg_list(msg);
+	}
+}
+
+
 static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 {
 	static time_t config_update = 0;
@@ -5541,7 +5565,7 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	memset(&comp_resp_msg, 0, sizeof(composite_msg_t));
-	comp_resp_msg.msg_list = list_create(slurm_free_comp_msg_list);
+	comp_resp_msg.msg_list = list_create(_slurmctld_free_comp_msg_list);
 
 	comp_msg = (composite_msg_t *) msg->data;
 
@@ -5656,7 +5680,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 		case MESSAGE_COMPOSITE:
 			comp_resp_msg = xmalloc(sizeof(composite_msg_t));
 			comp_resp_msg->msg_list =
-				list_create(slurm_free_comp_msg_list);
+				list_create(_slurmctld_free_comp_msg_list);
 
 			ncomp_msg = (composite_msg_t *) next_msg->data;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
@@ -5691,6 +5715,10 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				list_append(msg_list_in, resp_msg);
 			} else
 				slurm_free_composite_msg(comp_resp_msg);
+			break;
+		case REQUEST_COMPLETE_BATCH_SCRIPT:
+		case REQUEST_COMPLETE_BATCH_JOB:
+			_slurm_rpc_complete_batch_script(next_msg, 1);
 			break;
 		case MESSAGE_EPILOG_COMPLETE:
 			_slurm_rpc_epilog_complete(next_msg, run_scheduler, 1);
