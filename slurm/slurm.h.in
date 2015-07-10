@@ -2694,7 +2694,7 @@ typedef struct stats_info_response_msg {
 	uint32_t bf_backfilled_jobs;
 	uint32_t bf_last_backfilled_jobs;
 	uint32_t bf_cycle_counter;
-	uint32_t bf_cycle_sum;
+	uint64_t bf_cycle_sum;
 	uint32_t bf_cycle_last;
 	uint32_t bf_cycle_max;
 	uint32_t bf_last_depth;

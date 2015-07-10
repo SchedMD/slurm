@@ -156,7 +156,7 @@ static int _print_stats(void)
 	printf("\tLast cycle: %u\n", buf->bf_cycle_last);
 	printf("\tMax cycle:  %u\n", buf->bf_cycle_max);
 	if (buf->bf_cycle_counter > 0) {
-		printf("\tMean cycle: %u\n",
+		printf("\tMean cycle: %"PRIu64"\n",
 		       buf->bf_cycle_sum / buf->bf_cycle_counter);
 	}
 	printf("\tLast depth cycle: %u\n", buf->bf_last_depth);

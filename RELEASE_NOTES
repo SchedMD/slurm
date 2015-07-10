@@ -194,19 +194,20 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
- -- Changed the following fields to struct struct job_descriptor
+ -- Changed the following fields in struct struct job_descriptor
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields to struct job_info
+ -- Changed the following fields in struct job_info
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields to struct slurm_step_ctx_params_t
+ -- Changed the following fields in struct slurm_step_ctx_params_t
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields to struct slurm_step_launch_params_t
+ -- Changed the following fields in struct slurm_step_launch_params_t
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields to struct job_step_info_t
+ -- Changed the following fields in struct job_step_info_t
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields to struct resource_allocation_response_msg_t
+ -- Changed the following fields in struct resource_allocation_response_msg_t
     cpu_freq renamed cpu_freq_max.
-
+ -- Changed the following fields in struct stats_info_response_msg
+    bf_cycle_sum changed from 32 to 64 bits.
 
 Added the following struct definitions
 ======================================

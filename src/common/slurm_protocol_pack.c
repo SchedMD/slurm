@@ -697,15 +697,15 @@ static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
 				    Buf buffer, uint16_t protocol_version);
 
 static void _pack_license_info_request_msg(license_info_request_msg_t *msg,
-                                           Buf buffer,
-                                           uint16_t protocol_version);
+					   Buf buffer,
+					   uint16_t protocol_version);
 static int _unpack_license_info_request_msg(license_info_request_msg_t **msg,
-                                            Buf buffer,
-                                            uint16_t protocol_version);
+					    Buf buffer,
+					    uint16_t protocol_version);
 static inline void _pack_license_info_msg(slurm_msg_t *msg, Buf buffer);
 static int _unpack_license_info_msg(license_info_msg_t **msg,
-                                    Buf buffer,
-                                    uint16_t protocol_version);
+				    Buf buffer,
+				    uint16_t protocol_version);
 
 static void _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf,
 				  uint16_t protocol_version);
@@ -1153,8 +1153,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_UPDATE_LAYOUT:
 		_pack_update_layout_msg((update_layout_msg_t *) msg->data,
-				        buffer,
-				        msg->protocol_version);
+					buffer,
+					msg->protocol_version);
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
@@ -1446,8 +1446,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 
 	case REQUEST_JOB_REQUEUE:
 		_pack_job_requeue_msg((requeue_msg_t *)msg->data,
-		                      buffer,
-		                      msg->protocol_version);
+				      buffer,
+				      msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_USER_INFO:
@@ -1592,9 +1592,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_LICENSE_INFO:
 		 _pack_license_info_request_msg((license_info_request_msg_t *)
-		                                msg->data,
-		                                buffer,
-		                                msg->protocol_version);
+						msg->data,
+						buffer,
+						msg->protocol_version);
 			break;
 	case RESPONSE_LICENSE_INFO:
 		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
@@ -2123,14 +2123,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
-		                           & msg->data, buffer,
-		                           msg->protocol_version);
+					   & msg->data, buffer,
+					   msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_requeue_msg((requeue_msg_t **)&msg->data,
-		                             buffer,
-		                             msg->protocol_version);
+					     buffer,
+					     msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_USER_INFO:
@@ -2294,14 +2294,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case RESPONSE_LICENSE_INFO:
 		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
-		                              buffer,
-		                              msg->protocol_version);
+					      buffer,
+					      msg->protocol_version);
 		break;
 	case REQUEST_LICENSE_INFO:
 		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
-		                                      &(msg->data),
-		                                      buffer,
-		                                      msg->protocol_version);
+						      &(msg->data),
+						      buffer,
+						      msg->protocol_version);
 		break;
 	case MESSAGE_COMPOSITE:
 	case RESPONSE_MESSAGE_COMPOSITE:
@@ -3164,7 +3164,7 @@ unpack_error:
 
 static void
 _pack_update_layout_msg(update_layout_msg_t * msg, Buf buffer,
-		        uint16_t protocol_version)
+			uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
@@ -12982,9 +12982,9 @@ static void _pack_topo_info_msg(topo_info_response_msg_t *msg, Buf buffer,
 	for (i=0; i<msg->record_count; i++) {
 		pack16(msg->topo_array[i].level,      buffer);
 		pack32(msg->topo_array[i].link_speed, buffer);
-  		packstr(msg->topo_array[i].name,      buffer);
-  		packstr(msg->topo_array[i].nodes,     buffer);
-  		packstr(msg->topo_array[i].switches,  buffer);
+		packstr(msg->topo_array[i].name,      buffer);
+		packstr(msg->topo_array[i].nodes,     buffer);
+		packstr(msg->topo_array[i].switches,  buffer);
 	}
 }
 
@@ -13154,7 +13154,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 	msg = xmalloc ( sizeof (stats_info_response_msg_t) );
 	*msg_ptr = msg ;
 
-	if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->parts_packed,	buffer);
 		if (msg->parts_packed) {
 			safe_unpack_time(&msg->req_time,	buffer);
@@ -13177,7 +13177,55 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_backfilled_jobs,	buffer);
 			safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
 			safe_unpack32(&msg->bf_cycle_counter,	buffer);
-			safe_unpack32(&msg->bf_cycle_sum,	buffer);
+			safe_unpack64(&msg->bf_cycle_sum,	buffer);
+			safe_unpack32(&msg->bf_cycle_last,	buffer);
+			safe_unpack32(&msg->bf_last_depth,	buffer);
+			safe_unpack32(&msg->bf_last_depth_try,	buffer);
+
+			safe_unpack32(&msg->bf_queue_len,	buffer);
+			safe_unpack32(&msg->bf_cycle_max,	buffer);
+			safe_unpack_time(&msg->bf_when_last_cycle, buffer);
+			safe_unpack32(&msg->bf_depth_sum,	buffer);
+			safe_unpack32(&msg->bf_depth_try_sum,	buffer);
+			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
+			safe_unpack32(&msg->bf_active,		buffer);
+		}
+
+		safe_unpack32(&msg->rpc_type_size,		buffer);
+		safe_unpack16_array(&msg->rpc_type_id,   &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_type_cnt,  &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_type_time, &uint32_tmp, buffer);
+
+		safe_unpack32(&msg->rpc_user_size,		buffer);
+		safe_unpack32_array(&msg->rpc_user_id,   &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_user_cnt,  &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->parts_packed,	buffer);
+
+		if (msg->parts_packed) {
+			safe_unpack_time(&msg->req_time,	buffer);
+			safe_unpack_time(&msg->req_time_start,	buffer);
+			safe_unpack32(&msg->server_thread_count,buffer);
+			safe_unpack32(&msg->agent_queue_size,	buffer);
+			safe_unpack32(&msg->jobs_submitted,	buffer);
+			safe_unpack32(&msg->jobs_started,	buffer);
+			safe_unpack32(&msg->jobs_completed,	buffer);
+			safe_unpack32(&msg->jobs_canceled,	buffer);
+			safe_unpack32(&msg->jobs_failed,	buffer);
+
+			safe_unpack32(&msg->schedule_cycle_max,	buffer);
+			safe_unpack32(&msg->schedule_cycle_last,buffer);
+			safe_unpack32(&msg->schedule_cycle_sum, buffer);
+			safe_unpack32(&msg->schedule_cycle_counter, buffer);
+			safe_unpack32(&msg->schedule_cycle_depth, buffer);
+			safe_unpack32(&msg->schedule_queue_len,	buffer);
+
+			safe_unpack32(&msg->bf_backfilled_jobs,	buffer);
+			safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
+			safe_unpack32(&msg->bf_cycle_counter,	buffer);
+			safe_unpack32(&uint32_tmp,       	buffer);
+			msg->bf_cycle_sum = (uint64_t)uint32_tmp;
 			safe_unpack32(&msg->bf_cycle_last,	buffer);
 			safe_unpack32(&msg->bf_last_depth,	buffer);
 			safe_unpack32(&msg->bf_last_depth_try,	buffer);
@@ -13215,7 +13263,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 
 			safe_unpack32(&msg->schedule_cycle_max,	buffer);
 			safe_unpack32(&msg->schedule_cycle_last,buffer);
-			safe_unpack32(&msg->schedule_cycle_sum,	buffer);
+			safe_unpack32(&msg->schedule_cycle_sum, buffer);
 			safe_unpack32(&msg->schedule_cycle_counter, buffer);
 			safe_unpack32(&msg->schedule_cycle_depth, buffer);
 			safe_unpack32(&msg->schedule_queue_len,	buffer);
@@ -13223,7 +13271,8 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_backfilled_jobs,	buffer);
 			safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
 			safe_unpack32(&msg->bf_cycle_counter,	buffer);
-			safe_unpack32(&msg->bf_cycle_sum,	buffer);
+			safe_unpack32(&uint32_tmp,       	buffer);
+			msg->bf_cycle_sum = (uint64_t)uint32_tmp;
 			safe_unpack32(&msg->bf_cycle_last,	buffer);
 			safe_unpack32(&msg->bf_last_depth,	buffer);
 			safe_unpack32(&msg->bf_last_depth_try,	buffer);
@@ -13255,8 +13304,8 @@ unpack_error:
  */
 static void
 _pack_license_info_request_msg(license_info_request_msg_t *msg,
-                               Buf buffer,
-                               uint16_t protocol_version)
+			       Buf buffer,
+			       uint16_t protocol_version)
 {
 	pack_time(msg->last_update, buffer);
 	pack16((uint16_t)msg->show_flags, buffer);
@@ -13266,8 +13315,8 @@ _pack_license_info_request_msg(license_info_request_msg_t *msg,
  */
 static int
 _unpack_license_info_request_msg(license_info_request_msg_t **msg,
-                                 Buf buffer,
-                                 uint16_t protocol_version)
+				 Buf buffer,
+				 uint16_t protocol_version)
 {
 	*msg = xmalloc(sizeof(license_info_msg_t));
 
@@ -13299,8 +13348,8 @@ _pack_license_info_msg(slurm_msg_t *msg, Buf buffer)
  */
 static int
 _unpack_license_info_msg(license_info_msg_t **msg,
-                         Buf buffer,
-                         uint16_t protocol_version)
+			 Buf buffer,
+			 uint16_t protocol_version)
 {
 	int i;
 	uint32_t zz;
@@ -13316,7 +13365,7 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 		safe_unpack_time(&((*msg)->last_update), buffer);
 
 		(*msg)->lic_array = xmalloc(sizeof(slurm_license_info_t)
-		                            * (*msg)->num_lic);
+					    * (*msg)->num_lic);
 
 		/* Decode individual license data.
 		 */
@@ -13364,7 +13413,7 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, Buf buffer,
 	pack32(msg->job_array_count, buffer);
 	for (i = 0; i < msg->job_array_count; i++) {
 		pack32(msg->error_code[i], buffer);
-  		packstr(msg->job_array_id[i], buffer);
+		packstr(msg->job_array_id[i], buffer);
 	}
 }
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, Buf buffer,
@@ -13396,8 +13445,8 @@ unpack_error:
  */
 static void
 _pack_cache_info_request_msg(cache_info_request_msg_t *msg,
-                               Buf buffer,
-                               uint16_t protocol_version)
+			       Buf buffer,
+			       uint16_t protocol_version)
 {
 	pack_time(msg->last_update, buffer);
 	pack16((uint16_t)msg->show_flags, buffer);
@@ -13407,8 +13456,8 @@ _pack_cache_info_request_msg(cache_info_request_msg_t *msg,
  */
 static int
 _unpack_cache_info_request_msg(cache_info_request_msg_t **msg,
-                                 Buf buffer,
-                                 uint16_t protocol_version)
+				 Buf buffer,
+				 uint16_t protocol_version)
 {
 	*msg = xmalloc(sizeof(cache_info_msg_t));
 
@@ -13440,8 +13489,8 @@ _pack_cache_info_msg(slurm_msg_t *msg, Buf buffer)
  */
 static int
 _unpack_cache_info_msg(cache_info_msg_t **msg,
-                         Buf buffer,
-                         uint16_t protocol_version)
+			 Buf buffer,
+			 uint16_t protocol_version)
 {
 	slurm_cache_user_info_t  *cuptr;
 	slurm_cache_assoc_info_t *captr;
