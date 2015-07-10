@@ -228,8 +228,7 @@ extern int sacctmgr_modify_job(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	notice_thread_fini();
 

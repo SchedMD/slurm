@@ -932,7 +932,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 
 update_color:
@@ -1788,7 +1788,7 @@ display_it:
 
 	_update_info_node(send_info_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
-	list_destroy(send_info_list);
+	FREE_NULL_LIST(send_info_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;

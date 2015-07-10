@@ -259,8 +259,7 @@ void *_forward_thread(void *arg)
 			mark_as_failed_forward(&fwd_struct->ret_list, name,
 					       errno);
 			free(name);
-			if (ret_list)
-				list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			if (hostlist_count(hl) > 0) {
 				free_buf(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
@@ -330,7 +329,7 @@ void *_forward_thread(void *arg)
 			debug3("got response from %s",
 			       ret_data_info->node_name);
 		}
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 	free(name);
 cleanup:
@@ -428,7 +427,7 @@ void *_fwd_tree_thread(void *arg)
 			list_transfer(fwd_tree->ret_list, ret_list);
 			pthread_cond_signal(fwd_tree->notify);
 			slurm_mutex_unlock(fwd_tree->tree_mutex);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			/* try next node */
 			if (ret_cnt <= send_msg.forward.cnt) {
 				free(name);

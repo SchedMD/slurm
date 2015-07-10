@@ -302,13 +302,10 @@ int main(int argc, char **argv)
 	list_iterator_destroy(itr);
 
 	xfree(params.opt_field_list);
-	if (params.opt_job_list)
-		list_destroy(params.opt_job_list);
-
+	FREE_NULL_LIST(params.opt_job_list);
 	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
-	if (print_fields_list)
-		list_destroy(print_fields_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return 0;
 }

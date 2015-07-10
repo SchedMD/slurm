@@ -136,10 +136,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
 static void _destroy_bg_config(bg_config_t *bg_conf)
 {
 	if (bg_conf) {
-		if (bg_conf->blrts_list) {
-			list_destroy(bg_conf->blrts_list);
-			bg_conf->blrts_list = NULL;
-		}
+		FREE_NULL_LIST(bg_conf->blrts_list);
 
 		xfree(bg_conf->bridge_api_file);
 
@@ -147,22 +144,9 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 		xfree(bg_conf->default_linuximage);
 		xfree(bg_conf->default_mloaderimage);
 		xfree(bg_conf->default_ramdiskimage);
-
-		if (bg_conf->linux_list) {
-			list_destroy(bg_conf->linux_list);
-			bg_conf->linux_list = NULL;
-		}
-
-		if (bg_conf->mloader_list) {
-			list_destroy(bg_conf->mloader_list);
-			bg_conf->mloader_list = NULL;
-		}
-
-		if (bg_conf->ramdisk_list) {
-			list_destroy(bg_conf->ramdisk_list);
-			bg_conf->ramdisk_list = NULL;
-		}
-
+		FREE_NULL_LIST(bg_conf->linux_list);
+		FREE_NULL_LIST(bg_conf->mloader_list);
+		FREE_NULL_LIST(bg_conf->ramdisk_list);
 		FREE_NULL_BITMAP(bg_conf->reboot_qos_bitmap);
 		xfree(bg_conf->slurm_user_name);
 		xfree(bg_conf->slurm_node_prefix);
@@ -173,38 +157,17 @@ static void _destroy_bg_config(bg_config_t *bg_conf)
 static void _destroy_bg_lists(bg_lists_t *bg_lists)
 {
 	if (bg_lists) {
-		if (bg_lists->booted) {
-			list_destroy(bg_lists->booted);
-			bg_lists->booted = NULL;
-		}
+		FREE_NULL_LIST(bg_lists->booted);
 
 		if (bg_lists->job_running) {
-			list_destroy(bg_lists->job_running);
-			bg_lists->job_running = NULL;
+			FREE_NULL_LIST(bg_lists->job_running);
 			num_unused_cpus = 0;
 		}
-
-		if (bg_lists->main) {
-			list_destroy(bg_lists->main);
-			bg_lists->main = NULL;
-		}
-
-		if (bg_lists->valid_small32) {
-			list_destroy(bg_lists->valid_small32);
-			bg_lists->valid_small32 = NULL;
-		}
-		if (bg_lists->valid_small64) {
-			list_destroy(bg_lists->valid_small64);
-			bg_lists->valid_small64 = NULL;
-		}
-		if (bg_lists->valid_small128) {
-			list_destroy(bg_lists->valid_small128);
-			bg_lists->valid_small128 = NULL;
-		}
-		if (bg_lists->valid_small256) {
-			list_destroy(bg_lists->valid_small256);
-			bg_lists->valid_small256 = NULL;
-		}
+		FREE_NULL_LIST(bg_lists->main);
+		FREE_NULL_LIST(bg_lists->valid_small32);
+		FREE_NULL_LIST(bg_lists->valid_small64);
+		FREE_NULL_LIST(bg_lists->valid_small128);
+		FREE_NULL_LIST(bg_lists->valid_small256);
 
 		xfree(bg_lists);
 	}
@@ -317,7 +280,7 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	free_block_list(NO_VAL, destroy_list, 1, 0);
-	list_destroy(destroy_list);
+	FREE_NULL_LIST(destroy_list);
 
 	return SLURM_SUCCESS;
 }
@@ -329,16 +292,13 @@ static void _set_bg_lists()
 
 	slurm_mutex_lock(&block_state_mutex);
 
-	if (bg_lists->booted)
-		list_destroy(bg_lists->booted);
+	FREE_NULL_LIST(bg_lists->booted);
 	bg_lists->booted = list_create(NULL);
 
-	if (bg_lists->job_running)
-		list_destroy(bg_lists->job_running);
+	FREE_NULL_LIST(bg_lists->job_running);
 	bg_lists->job_running = list_create(NULL);
 
-	if (bg_lists->main)
-		list_destroy(bg_lists->main);
+	FREE_NULL_LIST(bg_lists->main);
 	bg_lists->main = list_create(destroy_bg_record);
 
 	slurm_mutex_unlock(&block_state_mutex);
@@ -750,7 +710,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 			error("block %s(%s) can't be made in the current "
 			      "system, but was around in the previous one.",
 			      bg_record->bg_block_id, bg_record->mp_str);
-			list_destroy(results);
+			FREE_NULL_LIST(results);
 			destroy_bg_record(bg_record);
 			continue;
 		}
@@ -802,7 +762,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 			if (!name) {
 				error("I was unable to make the "
 				      "requested block.");
-				list_destroy(results);
+				FREE_NULL_LIST(results);
 				destroy_bg_record(bg_record);
 				bg_record = NULL;
 				continue;
@@ -820,15 +780,14 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 				      "YOU MUST COLDSTART",
 				      bg_record->mp_str, temp);
 			}
-			if (bg_record->ba_mp_list)
-				list_destroy(bg_record->ba_mp_list);
+			FREE_NULL_LIST(bg_record->ba_mp_list);
 #ifdef HAVE_BGQ
 			bg_record->ba_mp_list =	results;
 			results = NULL;
 #else
 			bg_record->ba_mp_list =	list_create(destroy_ba_mp);
 			copy_node_path(results, &bg_record->ba_mp_list);
-			list_destroy(results);
+			FREE_NULL_LIST(results);
 #endif
 		}
 
@@ -1266,17 +1225,13 @@ extern int init(void)
 		bg_conf->slurm_debug_level = slurmctld_conf.slurmctld_debug;
 		slurm_conf_unlock();
 
-		if (bg_conf->blrts_list)
-			list_destroy(bg_conf->blrts_list);
+		FREE_NULL_LIST(bg_conf->blrts_list);
 		bg_conf->blrts_list = list_create(destroy_image);
-		if (bg_conf->linux_list)
-			list_destroy(bg_conf->linux_list);
+		FREE_NULL_LIST(bg_conf->linux_list);
 		bg_conf->linux_list = list_create(destroy_image);
-		if (bg_conf->mloader_list)
-			list_destroy(bg_conf->mloader_list);
+		FREE_NULL_LIST(bg_conf->mloader_list);
 		bg_conf->mloader_list = list_create(destroy_image);
-		if (bg_conf->ramdisk_list)
-			list_destroy(bg_conf->ramdisk_list);
+		FREE_NULL_LIST(bg_conf->ramdisk_list);
 		bg_conf->ramdisk_list = list_create(destroy_image);
 		bg_conf->reboot_qos_bitmap = NULL;
 
@@ -1454,10 +1409,8 @@ extern int select_p_state_restore(char *dir_name)
 		}
 	}
 
-	list_destroy(curr_block_list);
-	curr_block_list = NULL;
-	list_destroy(found_block_list);
-	found_block_list = NULL;
+	FREE_NULL_LIST(curr_block_list);
+	FREE_NULL_LIST(found_block_list);
 
 	slurm_mutex_lock(&block_state_mutex);
 	last_bg_update = time(NULL);
@@ -2400,8 +2353,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	if (kill_job_list) {
 		slurm_mutex_unlock(&block_state_mutex);
 		bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
-		list_destroy(kill_job_list);
-		kill_job_list = NULL;
+		FREE_NULL_LIST(kill_job_list);
 		slurm_mutex_lock(&block_state_mutex);
 		if (!block_ptr_exist_in_list(bg_lists->main, bg_record)) {
 			slurm_mutex_unlock(&block_state_mutex);
@@ -2477,7 +2429,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			delete_it = 1;
 		free_block_list(NO_VAL, delete_list, delete_it, 0);
-		list_destroy(delete_list);
+		FREE_NULL_LIST(delete_list);
 		put_block_in_error_state(bg_record, reason);
 	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
 		/* Resume the block first and then free the block */
@@ -2609,7 +2561,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 
 		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, 1, 0);
-		list_destroy(delete_list);
+		FREE_NULL_LIST(delete_list);
 	} else if (block_desc_ptr->state == BG_BLOCK_BOOTING) {
 		/* This means recreate the block, remove it and then
 		   recreate it.

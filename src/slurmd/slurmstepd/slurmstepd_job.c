@@ -622,7 +622,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 
 	for (i = 0; i < job->node_tasks; i++)
 		_task_info_destroy(job->task[i], job->multi_prog);
-	list_destroy(job->sruns);
+	FREE_NULL_LIST(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
 	mpmd_free(job);

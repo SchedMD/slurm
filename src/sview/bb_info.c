@@ -481,7 +481,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 	return info_list;
 }
@@ -849,7 +849,7 @@ display_it:
 
 	_update_info_bb(send_bb_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
-	list_destroy(send_bb_list);
+	FREE_NULL_LIST(send_bb_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;

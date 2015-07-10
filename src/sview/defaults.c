@@ -1150,10 +1150,7 @@ extern int configure_defaults(void)
 				/*force fresh grid and
 				 * node state check
 				 * */
-				if (grid_button_list) {
-					list_destroy(grid_button_list);
-					grid_button_list = NULL;
-				}
+				FREE_NULL_LIST(grid_button_list);
 				slurm_free_node_info_msg(g_node_info_ptr);
 				g_node_info_ptr = NULL;
 			}

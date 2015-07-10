@@ -211,22 +211,15 @@ static void _destroy_sacctmgr_file_opts(void *object)
 	sacctmgr_file_opts_t *file_opts = (sacctmgr_file_opts_t *)object;
 
 	if (file_opts) {
-		if (file_opts->coord_list)
-			list_destroy(file_opts->coord_list);
+		FREE_NULL_LIST(file_opts->coord_list);
 		xfree(file_opts->def_acct);
 		xfree(file_opts->def_wckey);
 		xfree(file_opts->desc);
 		xfree(file_opts->name);
 		xfree(file_opts->org);
 		xfree(file_opts->part);
-		if (file_opts->qos_list) {
-			list_destroy(file_opts->qos_list);
-			file_opts->qos_list = NULL;
-		}
-		if (file_opts->wckey_list) {
-			list_destroy(file_opts->wckey_list);
-			file_opts->wckey_list = NULL;
-		}
+		FREE_NULL_LIST(file_opts->qos_list);
+		FREE_NULL_LIST(file_opts->wckey_list);
 		xfree(file_opts);
 	}
 }
@@ -561,7 +554,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	print_fields_header(print_fields_list);
 
@@ -681,7 +674,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(print_fields_list);
 	if (add)
 		rc = acct_storage_g_add_assocs(db_conn,
 						     my_uid, assoc_list);
@@ -937,8 +930,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			xfree(new_qos);
 			changed = 1;
 		} else {
-			list_destroy(mod_assoc.qos_list);
-			mod_assoc.qos_list = NULL;
+			FREE_NULL_LIST(mod_assoc.qos_list);
 		}
 	} else if (file_opts->qos_list && list_count(file_opts->qos_list)) {
 		char *new_qos = get_qos_complete_str(g_qos_list,
@@ -983,15 +975,12 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			&mod_assoc);
 		notice_thread_fini();
 
-		if (mod_assoc.qos_list)
-			list_destroy(mod_assoc.qos_list);
+		FREE_NULL_LIST(mod_assoc.qos_list);
 
-		list_destroy(assoc_cond.cluster_list);
-		list_destroy(assoc_cond.acct_list);
-		if (assoc_cond.user_list)
-			list_destroy(assoc_cond.user_list);
-		if (assoc_cond.partition_list)
-			list_destroy(assoc_cond.partition_list);
+		FREE_NULL_LIST(assoc_cond.cluster_list);
+		FREE_NULL_LIST(assoc_cond.acct_list);
+		FREE_NULL_LIST(assoc_cond.user_list);
+		FREE_NULL_LIST(assoc_cond.partition_list);
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -1005,7 +994,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 		if (ret_list) {
 			printf("%s", my_info);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 		} else
 			changed = 0;
 		xfree(my_info);
@@ -1050,7 +1039,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 							  &mod_cluster);
 		notice_thread_fini();
 
-		list_destroy(cluster_cond.cluster_list);
+		FREE_NULL_LIST(cluster_cond.cluster_list);
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -1064,7 +1053,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 
 		if (ret_list) {
 			printf("%s", my_info);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 		} else
 			changed = 0;
 		xfree(my_info);
@@ -1138,7 +1127,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 							  &mod_acct);
 		notice_thread_fini();
 
-		list_destroy(assoc_cond.acct_list);
+		FREE_NULL_LIST(assoc_cond.acct_list);
 
 /* 		if (ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -1152,7 +1141,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 
 		if (ret_list) {
 			printf("%s", my_info);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 		} else
 			changed = 0;
 		xfree(my_info);
@@ -1250,7 +1239,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 		if (ret_list) {
 			printf("%s", my_info);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			set = 1;
 		}
 		xfree(my_info);
@@ -1331,7 +1320,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			notice_thread_fini();
 			set = 1;
 		}
-		list_destroy(add_list);
+		FREE_NULL_LIST(add_list);
 	}
 
 	if ((!user->wckey_list || !list_count(user->wckey_list))
@@ -1408,10 +1397,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			set = 1;
 		}
 		list_transfer(user->wckey_list, add_list);
-		list_destroy(add_list);
+		FREE_NULL_LIST(add_list);
 	}
 
-	list_destroy(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	return set;
 }
@@ -1454,7 +1443,7 @@ static slurmdb_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 					 file_opts->coord_list,
 					 &user_cond);
 		notice_thread_fini();
-		list_destroy(assoc_cond.user_list);
+		FREE_NULL_LIST(assoc_cond.user_list);
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
 		coord_itr = list_iterator_create(file_opts->coord_list);
 		while ((temp_char = list_next(coord_itr))) {
@@ -2046,8 +2035,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				fprintf(stderr, " Your uid (%u) is not in the "
 					"accounting system, can't load file.\n",
 					my_uid);
-				if (curr_user_list)
-					list_destroy(curr_user_list);
+				FREE_NULL_LIST(curr_user_list);
 				return;
 
 			} else {
@@ -2060,8 +2048,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						" Your user does not have "
 						"sufficient "
 						"privileges to load files.\n");
-					if (curr_user_list)
-						list_destroy(curr_user_list);
+					FREE_NULL_LIST(curr_user_list);
 					return;
 				}
 			}
@@ -2089,7 +2076,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				ret_list = acct_storage_g_remove_clusters(
 					db_conn, my_uid, &cluster_cond);
 				notice_thread_fini();
-				list_destroy(cluster_cond.cluster_list);
+				FREE_NULL_LIST(cluster_cond.cluster_list);
 
 				if (!ret_list) {
 					exit_code=1;
@@ -2135,13 +2122,13 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					    cluster->root_assoc);
 
 				(void) _print_out_assoc(temp_assoc_list, 0, 0);
-				list_destroy(temp_assoc_list);
+				FREE_NULL_LIST(temp_assoc_list);
 				notice_thread_init();
 
 				rc = acct_storage_g_add_clusters(
 					db_conn, my_uid, cluster_list);
 				notice_thread_fini();
-				list_destroy(cluster_list);
+				FREE_NULL_LIST(cluster_list);
 
 				if (rc != SLURM_SUCCESS) {
 					exit_code=1;
@@ -2166,7 +2153,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			/* assoc_cond if set up above */
 			curr_assoc_list = acct_storage_g_get_assocs(
 				db_conn, my_uid, &assoc_cond);
-			list_destroy(assoc_cond.cluster_list);
+			FREE_NULL_LIST(assoc_cond.cluster_list);
 
 			if (!curr_assoc_list) {
 				exit_code=1;
@@ -2470,7 +2457,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(itr2);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
 		printf("-----------------------------"
 		       "----------------------\n\n");
@@ -2537,7 +2524,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(itr2);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 
 		rc = acct_storage_g_add_users(db_conn, my_uid, user_list);
 		printf("---------------------------"
@@ -2572,20 +2559,16 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			slurm_strerror(rc));
 	}
 
-	list_destroy(format_list);
-	list_destroy(mod_acct_list);
-	list_destroy(acct_list);
-	list_destroy(slurmdb_assoc_list);
-	list_destroy(mod_user_list);
-	list_destroy(user_list);
-	list_destroy(user_assoc_list);
-	list_destroy(mod_assoc_list);
-	if (curr_acct_list)
-		list_destroy(curr_acct_list);
-	if (curr_assoc_list)
-		list_destroy(curr_assoc_list);
-	if (curr_cluster_list)
-		list_destroy(curr_cluster_list);
-	if (curr_user_list)
-		list_destroy(curr_user_list);
+	FREE_NULL_LIST(format_list);
+	FREE_NULL_LIST(mod_acct_list);
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_LIST(slurmdb_assoc_list);
+	FREE_NULL_LIST(mod_user_list);
+	FREE_NULL_LIST(user_list);
+	FREE_NULL_LIST(user_assoc_list);
+	FREE_NULL_LIST(mod_assoc_list);
+	FREE_NULL_LIST(curr_acct_list);
+	FREE_NULL_LIST(curr_assoc_list);
+	FREE_NULL_LIST(curr_cluster_list);
+	FREE_NULL_LIST(curr_user_list);
 }

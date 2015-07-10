@@ -1090,8 +1090,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_assoc_list)
-		list_destroy(assoc_mgr_assoc_list);
+	FREE_NULL_LIST(assoc_mgr_assoc_list);
 
 	memset(&assoc_q, 0, sizeof(slurmdb_assoc_cond_t));
 	if (assoc_mgr_cluster_name) {
@@ -1108,8 +1107,7 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
 //	END_TIMER2("get_assocs");
 
-	if (assoc_q.cluster_list)
-		list_destroy(assoc_q.cluster_list);
+	FREE_NULL_LIST(assoc_q.cluster_list);
 
 	if (!assoc_mgr_assoc_list) {
 		/* create list so we don't keep calling this if there
@@ -1143,8 +1141,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_res_list)
-		list_destroy(assoc_mgr_res_list);
+	FREE_NULL_LIST(assoc_mgr_res_list);
 
 	slurmdb_init_res_cond(&res_q, 0);
 	if (assoc_mgr_cluster_name) {
@@ -1159,8 +1156,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 
 	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, uid, &res_q);
 
-	if (res_q.cluster_list)
-		list_destroy(res_q.cluster_list);
+	FREE_NULL_LIST(res_q.cluster_list);
 
 	if (!assoc_mgr_res_list) {
 		assoc_mgr_unlock(&locks);
@@ -1221,8 +1217,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 	user_q.with_coords = 1;
 
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_user_list)
-		list_destroy(assoc_mgr_user_list);
+	FREE_NULL_LIST(assoc_mgr_user_list);
 	assoc_mgr_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if (!assoc_mgr_user_list) {
@@ -1252,8 +1247,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 
 //	DEF_TIMERS;
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_wckey_list)
-		list_destroy(assoc_mgr_wckey_list);
+	FREE_NULL_LIST(assoc_mgr_wckey_list);
 
 	memset(&wckey_q, 0, sizeof(slurmdb_wckey_cond_t));
 	if (assoc_mgr_cluster_name) {
@@ -1270,8 +1264,7 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 		acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
 //	END_TIMER2("get_wckeys");
 
-	if (wckey_q.cluster_list)
-		list_destroy(wckey_q.cluster_list);
+	FREE_NULL_LIST(wckey_q.cluster_list);
 
 	if (!assoc_mgr_wckey_list) {
 		/* create list so we don't keep calling this if there
@@ -1319,8 +1312,7 @@ static int _refresh_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 	assoc_mgr_lock(&locks);
 
-	if (assoc_mgr_tres_list)
-		list_destroy(assoc_mgr_tres_list);
+	FREE_NULL_LIST(assoc_mgr_tres_list);
 
 	assoc_mgr_tres_list = current_tres;
 
@@ -1360,8 +1352,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
 //	END_TIMER2("get_assocs");
 
-	if (assoc_q.cluster_list)
-		list_destroy(assoc_q.cluster_list);
+	FREE_NULL_LIST(assoc_q.cluster_list);
 
 	if (!assoc_mgr_assoc_list) {
 		assoc_mgr_assoc_list = current_assocs;
@@ -1406,8 +1397,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 
 	assoc_mgr_unlock(&locks);
 
-	if (current_assocs)
-		list_destroy(current_assocs);
+	FREE_NULL_LIST(current_assocs);
 
 	return SLURM_SUCCESS;
 }
@@ -1436,8 +1426,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 
 	current_res = acct_storage_g_get_res(db_conn, uid, &res_q);
 
-	if (res_q.cluster_list)
-		list_destroy(res_q.cluster_list);
+	FREE_NULL_LIST(res_q.cluster_list);
 
 	if (!current_res) {
 		error("_refresh_assoc_mgr_res_list: "
@@ -1479,8 +1468,7 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 	assoc_mgr_lock(&locks);
 
-	if (assoc_mgr_qos_list)
-		list_destroy(assoc_mgr_qos_list);
+	FREE_NULL_LIST(assoc_mgr_qos_list);
 
 	assoc_mgr_qos_list = current_qos;
 
@@ -1514,8 +1502,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	assoc_mgr_lock(&locks);
 
-	if (assoc_mgr_user_list)
-		list_destroy(assoc_mgr_user_list);
+	FREE_NULL_LIST(assoc_mgr_user_list);
 
 	assoc_mgr_user_list = current_users;
 
@@ -1547,8 +1534,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 
 	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
 
-	if (wckey_q.cluster_list)
-		list_destroy(wckey_q.cluster_list);
+	FREE_NULL_LIST(wckey_q.cluster_list);
 
 	if (!current_wckeys) {
 		error("_refresh_assoc_wckey_list: "
@@ -1559,8 +1545,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	_post_wckey_list(current_wckeys);
 
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_wckey_list)
-		list_destroy(assoc_mgr_wckey_list);
+	FREE_NULL_LIST(assoc_mgr_wckey_list);
 
 	assoc_mgr_wckey_list = current_wckeys;
 	assoc_mgr_unlock(&locks);
@@ -3294,7 +3279,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		while ((rec = list_next(itr)))
 			init_setup.remove_assoc_notify(rec);
 		list_iterator_destroy(itr);
-		list_destroy(remove_list);
+		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
@@ -3302,7 +3287,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		while ((rec = list_next(itr)))
 			init_setup.update_assoc_notify(rec);
 		list_iterator_destroy(itr);
-		list_destroy(update_list);
+		FREE_NULL_LIST(update_list);
 	}
 
 	if (run_update_resvs && init_setup.update_resvs)
@@ -3856,7 +3841,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 		while ((rec = list_next(itr)))
 			init_setup.remove_qos_notify(rec);
 		list_iterator_destroy(itr);
-		list_destroy(remove_list);
+		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
@@ -3864,7 +3849,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 		while ((rec = list_next(itr)))
 			init_setup.update_qos_notify(rec);
 		list_iterator_destroy(itr);
-		list_destroy(update_list);
+		FREE_NULL_LIST(update_list);
 	}
 
 	return rc;

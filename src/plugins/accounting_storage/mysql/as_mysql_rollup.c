@@ -117,8 +117,7 @@ static void _destroy_local_resv_usage(void *object)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
 	if (r_usage) {
-		if (r_usage->local_assocs)
-			list_destroy(r_usage->local_assocs);
+		FREE_NULL_LIST(r_usage->local_assocs);
 		xfree(r_usage);
 	}
 }
@@ -392,7 +391,7 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 
 	arch_cond.job_cond = &job_cond;
 	rc = as_mysql_jobacct_process_archive(mysql_conn, &arch_cond);
-	list_destroy(job_cond.cluster_list);
+	FREE_NULL_LIST(job_cond.cluster_list);
 
 	return rc;
 }

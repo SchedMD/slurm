@@ -262,8 +262,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	_gtk_print_key_pairs(ret_list, tmp_str, 1, treestore, &iter);
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->acct_gather_conf,
 			     "Account Gather", 0, treestore, &iter);
@@ -420,8 +419,7 @@ extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 
 	gtk_widget_show_all(popup);
 
-	if (dbd_config_list)
-		list_destroy(dbd_config_list);
+	FREE_NULL_LIST(dbd_config_list);
 
 	return;
 }
@@ -1037,7 +1035,7 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 			 * here and it will be remade in get_system_stats(). */
 			if ((width > working_sview_config.grid_x_width)
 			    && grid_button_list) {
-				list_destroy(grid_button_list);
+				FREE_NULL_LIST(grid_button_list);
 				grid_button_list = NULL;
 				refresh = 1;
 			}

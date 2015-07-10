@@ -274,7 +274,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	list_iterator_destroy(itr);
 
 	if (requeue_job) {
-		list_destroy(delete_list);
+		FREE_NULL_LIST(delete_list);
 
 		bg_reset_block(bg_record, bg_action_ptr->job_ptr);
 
@@ -289,7 +289,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		delete_it = 1;
 	free_block_list(req_job_id, delete_list, delete_it, 1);
-	list_destroy(delete_list);
+	FREE_NULL_LIST(delete_list);
 
 	while (1) {
 		slurm_mutex_lock(&block_state_mutex);
@@ -928,7 +928,7 @@ extern int sync_jobs(List job_list)
 		 * the unlock of block_state_mutex.
 		 */
 		bg_status_process_kill_job_list(kill_list, JOB_BOOT_FAIL, 1);
-		list_destroy(kill_list);
+		FREE_NULL_LIST(kill_list);
 	}
 
 	/* Insure that all other blocks are free of users */
@@ -940,7 +940,7 @@ extern int sync_jobs(List job_list)
 			term_jobs_on_block(bg_record->bg_block_id);
 		}
 		list_iterator_destroy(itr);
-		list_destroy(block_list);
+		FREE_NULL_LIST(block_list);
 	} else {
 		/* this should never happen,
 		 * vestigial logic */

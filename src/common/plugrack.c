@@ -259,7 +259,7 @@ plugrack_destroy( plugrack_t rack )
 	}
 	list_iterator_destroy( it );
 
-	list_destroy( rack->entries );
+	FREE_NULL_LIST( rack->entries );
 	xfree( rack->major_type );
 	xfree( rack );
 	return SLURM_SUCCESS;

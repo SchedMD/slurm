@@ -386,7 +386,7 @@ extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(user_name);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify accounts");
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		errno = SLURM_ERROR;
 		ret_list = NULL;
 	}
@@ -518,8 +518,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* We need to remove these accounts from the coord's that have it */
 	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, ret_list, NULL);
-	if (coord_list)
-		list_destroy(coord_list);
+	FREE_NULL_LIST(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
 
@@ -540,7 +539,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(name_char);
 	xfree(assoc_char);
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -707,8 +706,7 @@ empty:
 		   this list in the acct->name so we don't
 		   free it here
 		*/
-		if (acct_cond->assoc_cond->acct_list)
-			list_destroy(acct_cond->assoc_cond->acct_list);
+		FREE_NULL_LIST(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
 		acct_cond->assoc_cond->with_deleted = acct_cond->with_deleted;
 	}
@@ -771,7 +769,7 @@ empty:
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
 
-		list_destroy(assoc_list);
+		FREE_NULL_LIST(assoc_list);
 	}
 
 	return acct_list;

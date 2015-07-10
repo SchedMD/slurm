@@ -327,7 +327,7 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	xfree(assoc_char);
 
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return SLURM_ERROR;
 	}
 
@@ -481,7 +481,7 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 				   wckey_cond->usage_start,
 				   wckey_cond->usage_end);
 	list_transfer(sent_list, wckey_list);
-	list_destroy(wckey_list);
+	FREE_NULL_LIST(wckey_list);
 	return SLURM_SUCCESS;
 }
 
@@ -630,8 +630,7 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 end_it:
 	if (rc == SLURM_SUCCESS)
 		_make_sure_users_have_default(mysql_conn, added_user_list);
-	if (added_user_list)
-		list_destroy(added_user_list);
+	FREE_NULL_LIST(added_user_list);
 
 	return rc;
 }
@@ -715,7 +714,7 @@ is_same_user:
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
 	}
 
@@ -776,7 +775,7 @@ empty:
 		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -850,7 +849,7 @@ empty:
 		if (_cluster_get_wckeys(mysql_conn, wckey_cond, tmp, extra,
 					cluster_name, wckey_list)
 		    != SLURM_SUCCESS) {
-			list_destroy(wckey_list);
+			FREE_NULL_LIST(wckey_list);
 			wckey_list = NULL;
 			break;
 		}

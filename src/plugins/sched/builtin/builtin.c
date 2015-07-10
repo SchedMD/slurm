@@ -242,7 +242,7 @@ static void _compute_start_times(void)
 			break;
 		}
 	}
-	list_destroy(job_queue);
+	FREE_NULL_LIST(job_queue);
 	FREE_NULL_BITMAP(alloc_bitmap);
 }
 

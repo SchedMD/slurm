@@ -289,8 +289,7 @@ static int _isdefault_old(List acct_list)
 		rc = 1;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	return rc;
 }
@@ -391,8 +390,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		return SLURM_ERROR;
 
 	if (!name_list || !list_count(name_list)) {
-		list_destroy(name_list);
-		list_destroy(cluster_list);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
 		exit_code=1;
@@ -414,8 +413,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Problem getting accounts from database.  "
 			"Contact your admin.\n");
-		list_destroy(name_list);
-		list_destroy(cluster_list);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
 		return SLURM_ERROR;
@@ -433,11 +432,11 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			fprintf(stderr,
 				" Problem getting clusters from database.  "
 				"Contact your admin.\n");
-			list_destroy(name_list);
-			list_destroy(cluster_list);
+			FREE_NULL_LIST(name_list);
+			FREE_NULL_LIST(cluster_list);
 			slurmdb_destroy_assoc_rec(start_assoc);
 			slurmdb_destroy_account_rec(start_acct);
-			list_destroy(local_account_list);
+			FREE_NULL_LIST(local_account_list);
 			return SLURM_ERROR;
 		}
 
@@ -447,11 +446,11 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				"  Can't add accounts, no cluster "
 				"defined yet.\n"
 				" Please contact your administrator.\n");
-			list_destroy(name_list);
-			list_destroy(cluster_list);
+			FREE_NULL_LIST(name_list);
+			FREE_NULL_LIST(cluster_list);
 			slurmdb_destroy_assoc_rec(start_assoc);
 			slurmdb_destroy_account_rec(start_acct);
-			list_destroy(local_account_list);
+			FREE_NULL_LIST(local_account_list);
 			return SLURM_ERROR;
 		}
 		if (!cluster_list)
@@ -464,12 +463,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			list_append(cluster_list, xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
-		list_destroy(tmp_list);
+		FREE_NULL_LIST(tmp_list);
 	} else if (sacctmgr_validate_cluster_list(cluster_list)
 		   != SLURM_SUCCESS) {
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
-		list_destroy(local_account_list);
+		FREE_NULL_LIST(local_account_list);
 
 		return SLURM_ERROR;
 	}
@@ -490,16 +489,16 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	assoc_cond.cluster_list = cluster_list;
 	local_assoc_list = acct_storage_g_get_assocs(
 		db_conn, my_uid, &assoc_cond);
-	list_destroy(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.acct_list);
 	if (!local_assoc_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem getting associations from database.  "
 			"Contact your admin.\n");
-		list_destroy(name_list);
-		list_destroy(cluster_list);
+		FREE_NULL_LIST(name_list);
+		FREE_NULL_LIST(cluster_list);
 		slurmdb_destroy_assoc_rec(start_assoc);
 		slurmdb_destroy_account_rec(start_acct);
-		list_destroy(local_account_list);
+		FREE_NULL_LIST(local_account_list);
 		return SLURM_ERROR;
 	}
 
@@ -598,8 +597,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		list_iterator_destroy(itr_c);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(local_account_list);
-	list_destroy(local_assoc_list);
+	FREE_NULL_LIST(local_account_list);
+	FREE_NULL_LIST(local_assoc_list);
 
 
 	if (!list_count(acct_list) && !list_count(assoc_list)) {
@@ -676,10 +675,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 end_it:
-	list_destroy(name_list);
-	list_destroy(cluster_list);
-	list_destroy(acct_list);
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(name_list);
+	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_LIST(assoc_list);
 
 	slurmdb_destroy_assoc_rec(start_assoc);
 	slurmdb_destroy_account_rec(start_acct);
@@ -718,7 +717,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_account_cond(acct_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Acc,Des,O");
@@ -739,18 +738,18 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			list_destroy(format_list);
+			FREE_NULL_LIST(format_list);
 			slurmdb_destroy_account_cond(acct_cond);
 			return SLURM_SUCCESS;
 		}
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_account_cond(acct_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -760,7 +759,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	if (!acct_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -868,8 +867,8 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(acct_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }
@@ -975,8 +974,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 			rc = SLURM_ERROR;
 		}
 
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 assoc_start:
@@ -1038,8 +1036,7 @@ assoc_start:
 			rc = SLURM_ERROR;
 		}
 
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 assoc_end:
@@ -1200,10 +1197,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 
 end_it:
 
-	if (ret_list)
-		list_destroy(ret_list);
-	if (local_assoc_list)
-		list_destroy(local_assoc_list);
+	FREE_NULL_LIST(ret_list);
+	FREE_NULL_LIST(local_assoc_list);
 
 	return rc;
 }

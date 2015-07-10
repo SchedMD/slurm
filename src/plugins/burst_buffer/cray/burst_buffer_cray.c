@@ -1311,7 +1311,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		}
 		list_iterator_destroy(preempt_iter);
 	}
-	list_destroy(preempt_list);
+	FREE_NULL_LIST(preempt_list);
 	_free_needed_gres_struct(needed_gres_ptr, bb_spec->gres_cnt);
 
 	return 2;
@@ -2130,7 +2130,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	}
 	list_iterator_destroy(job_iter);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
-	list_destroy(job_candidates);
+	FREE_NULL_LIST(job_candidates);
 
 	return SLURM_SUCCESS;
 }

@@ -133,11 +133,8 @@ void eio_handle_destroy(eio_handle_t *eio)
 	xassert(eio->magic == EIO_MAGIC);
 	close(eio->fds[0]);
 	close(eio->fds[1]);
-	if (eio->obj_list)
-		list_destroy(eio->obj_list);
-
-	if (eio->new_objs)
-		list_destroy(eio->new_objs);
+	FREE_NULL_LIST(eio->obj_list);
+	FREE_NULL_LIST(eio->new_objs);
 
 	xassert(eio->magic = ~EIO_MAGIC);
 	xfree(eio);

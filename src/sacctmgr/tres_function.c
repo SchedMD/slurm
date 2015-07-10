@@ -64,7 +64,7 @@ sacctmgr_list_tres(int argc, char **argv)
 	slurm_addto_char_list(format_list, "NAME,ID,TYPE");
 
 	if (exit_code) {
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
 
@@ -72,7 +72,7 @@ sacctmgr_list_tres(int argc, char **argv)
 	 * print field_t structures
 	 */
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	/* Call slurmdbd to get all tres with not
 	 * condition
@@ -117,8 +117,8 @@ sacctmgr_list_tres(int argc, char **argv)
         }
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
-	list_destroy(tres_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(tres_list);
+	FREE_NULL_LIST(print_fields_list);
 
         return 0;
 }

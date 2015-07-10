@@ -156,8 +156,7 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int)'a':
 			opt_a_set = true;
 			xfree(params.partition);
-			if (params.partition)
-				list_destroy(params.part_list);
+			FREE_NULL_LIST(params.part_list);
 			params.all_flag = true;
 			break;
 		case (int)'b':
@@ -193,8 +192,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.long_output = true;
 			break;
 		case (int) 'M':
-			if (params.clusters)
-				list_destroy(params.clusters);
+			FREE_NULL_LIST(params.clusters);
 			if (!(params.clusters =
 			      slurmdb_get_info_cluster(optarg))) {
 				print_db_notok(optarg, 0);
@@ -232,8 +230,7 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) 'p':
 			opt_p_set = true;
 			xfree(params.partition);
-			if (params.partition)
-				list_destroy(params.part_list);
+			FREE_NULL_LIST(params.part_list);
 			params.partition = xstrdup(optarg);
 			params.part_list = _build_part_list(optarg);
 			params.all_flag = true;

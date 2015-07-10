@@ -234,7 +234,7 @@ int run_script(const char *name, const char *pattern, uint32_t job_id,
 
 	}
 	list_iterator_destroy (i);
-	list_destroy (l);
+	FREE_NULL_LIST (l);
 
 	return rc;
 }

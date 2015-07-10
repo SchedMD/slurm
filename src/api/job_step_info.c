@@ -482,7 +482,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 		}
 	}
 	list_iterator_destroy(itr);
-	list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	if (resp_out->stats_list)
 		list_sort(resp_out->stats_list, (ListCmpF)_sort_stats_by_name);
@@ -590,7 +590,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
                 }
         }
         list_iterator_destroy(itr);
-        list_destroy(ret_list);
+        FREE_NULL_LIST(ret_list);
 
  	if (resp_out->pid_list)
 		list_sort(resp_out->pid_list, (ListCmpF)_sort_pids_by_name);
@@ -615,8 +615,7 @@ extern void slurm_job_step_pids_response_msg_free(void *object)
 	job_step_pids_response_msg_t *step_pids_msg =
 		(job_step_pids_response_msg_t *) object;
 	if (step_pids_msg) {
-		if (step_pids_msg->pid_list)
-			list_destroy(step_pids_msg->pid_list);
+		FREE_NULL_LIST(step_pids_msg->pid_list);
 		xfree(step_pids_msg);
 	}
 }
@@ -631,8 +630,7 @@ extern void slurm_job_step_stat_response_msg_free(void *object)
 	job_step_stat_response_msg_t *step_stat_msg =
 		(job_step_stat_response_msg_t *) object;
 	if (step_stat_msg) {
-		if (step_stat_msg->stats_list)
-			list_destroy(step_stat_msg->stats_list);
+		FREE_NULL_LIST(step_stat_msg->stats_list);
 		xfree(step_stat_msg);
 	}
 }

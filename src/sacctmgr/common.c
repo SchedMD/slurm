@@ -744,7 +744,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond)
 				cluster_rec->control_port,
 				cluster_rec->rpc_version);
 		}
-		list_destroy(update_list);
+		FREE_NULL_LIST(update_list);
 	}
 end_it:
 	list_iterator_destroy(itr);
@@ -752,8 +752,8 @@ end_it:
 	if (itr3)
 		list_iterator_destroy(itr3);
 
-	list_destroy(local_assoc_list);
-	list_destroy(local_cluster_list);
+	FREE_NULL_LIST(local_assoc_list);
+	FREE_NULL_LIST(local_cluster_list);
 
 	return rc;
 }
@@ -881,14 +881,14 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 	assoc_list = acct_storage_g_get_assocs(db_conn, my_uid,
 						     &assoc_cond);
 
-	list_destroy(assoc_cond.acct_list);
-	list_destroy(assoc_cond.cluster_list);
-	list_destroy(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.cluster_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	if (assoc_list)
 		assoc = list_pop(assoc_list);
 
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	return assoc;
 }
@@ -917,12 +917,12 @@ extern slurmdb_user_rec_t *sacctmgr_find_user(char *name)
 	user_list = acct_storage_g_get_users(db_conn, my_uid,
 					     &user_cond);
 
-	list_destroy(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	if (user_list)
 		user = list_pop(user_list);
 
-	list_destroy(user_list);
+	FREE_NULL_LIST(user_list);
 
 	return user;
 }
@@ -946,12 +946,12 @@ extern slurmdb_account_rec_t *sacctmgr_find_account(char *name)
 	account_list = acct_storage_g_get_accounts(db_conn, my_uid,
 						   &account_cond);
 
-	list_destroy(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.acct_list);
 
 	if (account_list)
 		account = list_pop(account_list);
 
-	list_destroy(account_list);
+	FREE_NULL_LIST(account_list);
 
 	return account;
 }
@@ -972,12 +972,12 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
 						   &cluster_cond);
 
-	list_destroy(cluster_cond.cluster_list);
+	FREE_NULL_LIST(cluster_cond.cluster_list);
 
 	if (cluster_list)
 		cluster = list_pop(cluster_list);
 
-	list_destroy(cluster_list);
+	FREE_NULL_LIST(cluster_list);
 
 	return cluster;
 }
@@ -1799,7 +1799,7 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr_c);
-	list_destroy(temp_list);
+	FREE_NULL_LIST(temp_list);
 
 	if (!list_count(cluster_list))
 		rc = SLURM_ERROR;

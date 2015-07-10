@@ -370,7 +370,7 @@ extern void get_bg_part(void)
 			}
 			list_iterator_destroy(itr);
 		}
-		list_destroy(nodelist);
+		FREE_NULL_LIST(nodelist);
 	}
 
 	/* Report the BG Blocks */
@@ -810,12 +810,8 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->mp_str);
 		xfree(block_ptr->ionode_str);
-		if (block_ptr->nodelist)
-			list_destroy(block_ptr->nodelist);
-		if (block_ptr->job_list) {
-			list_destroy(block_ptr->job_list);
-			block_ptr->job_list = NULL;
-		}
+		FREE_NULL_LIST(block_ptr->nodelist);
+		FREE_NULL_LIST(block_ptr->job_list);
 		xfree(block_ptr);
 
 	}

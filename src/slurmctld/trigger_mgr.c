@@ -1734,10 +1734,7 @@ extern void trigger_process(void)
 /* Free all allocated memory */
 extern void trigger_fini(void)
 {
-	if (trigger_list != NULL) {
-		list_destroy(trigger_list);
-		trigger_list = NULL;
-	}
+	FREE_NULL_LIST(trigger_list);
 	FREE_NULL_BITMAP(trigger_down_front_end_bitmap);
 	FREE_NULL_BITMAP(trigger_up_front_end_bitmap);
 	FREE_NULL_BITMAP(trigger_down_nodes_bitmap);

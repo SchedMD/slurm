@@ -136,7 +136,7 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 
 	/* Print the jobs of interest */
 	list_for_each (l, (ListForF) print_job_from_format, (void *) format);
-	list_destroy (l);
+	FREE_NULL_LIST (l);
 
 	return SLURM_SUCCESS;
 }
@@ -169,7 +169,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 			print_step_from_format(step_ptr, format);
 		}
 		list_iterator_destroy(step_iterator);
-		list_destroy(step_list);
+		FREE_NULL_LIST(step_list);
 	}
 
 	return SLURM_SUCCESS;

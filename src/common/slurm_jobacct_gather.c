@@ -341,9 +341,7 @@ extern int jobacct_gather_endpoll(void)
 
 	jobacct_shutdown = true;
 	slurm_mutex_lock(&task_list_lock);
-	if (task_list)
-		list_destroy(task_list);
-	task_list = NULL;
+	FREE_NULL_LIST(task_list);
 
 	retval = (*(ops.endpoll))();
 

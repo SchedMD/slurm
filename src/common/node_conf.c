@@ -944,12 +944,9 @@ extern void node_fini2 (void)
 	struct node_record *node_ptr;
 
 	if (config_list) {
-		list_destroy(config_list);
-		config_list = NULL;
-		list_destroy(feature_list);
-		feature_list = NULL;
-		list_destroy(front_end_list);
-		front_end_list = NULL;
+		FREE_NULL_LIST(config_list);
+		FREE_NULL_LIST(feature_list);
+		FREE_NULL_LIST(front_end_list);
 	}
 
 	xhash_free(node_hash_table);
@@ -1061,8 +1058,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->features);
 	xfree(node_ptr->gres);
-	if (node_ptr->gres_list)
-		list_destroy(node_ptr->gres_list);
+	FREE_NULL_LIST(node_ptr->gres_list);
 	xfree(node_ptr->name);
 	xfree(node_ptr->node_hostname);
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);

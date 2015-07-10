@@ -658,7 +658,7 @@ static void _cluster_account_by_user_tres_report(slurmdb_tres_rec_t *tres,
 				print_acct = slurmdb_tree_name_get(local_acct,
 								   parent_acct,
 								   tree_list);
-				list_destroy(tree_list);
+				FREE_NULL_LIST(tree_list);
 				xfree(local_acct);
 			} else {
 				print_acct = slurmdb_report_assoc->acct;
@@ -765,7 +765,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (!(slurmdb_report_cluster_list =
 	     slurmdb_report_cluster_account_by_user(db_conn, assoc_cond))) {
@@ -971,7 +971,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (!(slurmdb_report_cluster_list =
 	     slurmdb_report_cluster_user_by_account(db_conn, assoc_cond))) {
@@ -1174,7 +1174,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (!(slurmdb_report_cluster_list =
 	     slurmdb_report_cluster_user_by_wckey(db_conn, wckey_cond))) {
@@ -1377,7 +1377,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	print_fields_header(print_fields_list);
 
@@ -1540,7 +1540,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (!(slurmdb_report_cluster_list =
 	     slurmdb_report_cluster_wckey_by_user(db_conn, wckey_cond))) {

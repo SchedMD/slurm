@@ -246,10 +246,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				      name_list, &start_assoc, &class);
 	}
 	if (exit_code) {
-		list_destroy(name_list);
+		FREE_NULL_LIST(name_list);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
-		list_destroy(name_list);
+		FREE_NULL_LIST(name_list);
 		exit_code=1;
 		fprintf(stderr, " Need name of cluster to add.\n");
 		return SLURM_ERROR;
@@ -289,9 +289,9 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(itr_c);
-		list_destroy(temp_list);
+		FREE_NULL_LIST(temp_list);
 		if (!list_count(name_list)) {
-			list_destroy(name_list);
+			FREE_NULL_LIST(name_list);
 			return SLURM_ERROR;
 		}
 	}
@@ -345,13 +345,12 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			copy_char_list(start_assoc.qos_list);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(name_list);
+	FREE_NULL_LIST(name_list);
 
 	if (limit_set) {
 		printf(" Default Limits\n");
 		sacctmgr_print_assoc_limits(&start_assoc);
-		if (start_assoc.qos_list)
-			list_destroy(start_assoc.qos_list);
+		FREE_NULL_LIST(start_assoc.qos_list);
 	}
 
 	if (!list_count(cluster_list)) {
@@ -384,7 +383,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	}
 
 end_it:
-	list_destroy(cluster_list);
+	FREE_NULL_LIST(cluster_list);
 
 	return rc;
 }
@@ -420,7 +419,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_cluster_cond(cluster_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
 
@@ -436,11 +435,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	cluster_cond->with_deleted = with_deleted;
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_cluster_cond(cluster_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -451,7 +450,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	if (!cluster_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -660,8 +659,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(cluster_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }
@@ -744,8 +743,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		/* we are only looking for the clusters returned from
 		   this query, so we free the cluster_list and replace
 		   it */
-		if (assoc_cond->cluster_list)
-			list_destroy(assoc_cond->cluster_list);
+		FREE_NULL_LIST(assoc_cond->cluster_list);
 		assoc_cond->cluster_list = temp_list;
 	}
 
@@ -782,8 +780,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	if (class_rec) {
 		slurmdb_cluster_rec_t cluster_rec;
@@ -815,8 +812,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			rc = SLURM_ERROR;
 		}
 
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 	notice_thread_fini();
@@ -897,7 +893,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 			while((object = list_next(itr))) {
 				fprintf(stderr,"  %s\n", object);
 			}
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			acct_storage_g_commit(db_conn, 0);
 			return rc;
 		}
@@ -922,8 +918,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	return rc;
 }

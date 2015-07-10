@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 	if (wait_full)
 		_check_status();
 
-	list_destroy(block_list);
+	FREE_NULL_LIST(block_list);
 	info("done");
 	return 0;
 }

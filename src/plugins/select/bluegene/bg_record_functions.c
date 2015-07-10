@@ -98,20 +98,12 @@ extern void destroy_bg_record(void *object)
 
 	if (bg_record) {
 		bg_record->magic = 0;
-		if (bg_record->ba_mp_list) {
-			list_destroy(bg_record->ba_mp_list);
-			bg_record->ba_mp_list = NULL;
-		}
+		FREE_NULL_LIST(bg_record->ba_mp_list);
 		xfree(bg_record->bg_block_id);
 		xfree(bg_record->blrtsimage);
 		xfree(bg_record->ionode_str);
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
-
-		if (bg_record->job_list) {
-			list_destroy(bg_record->job_list);
-			bg_record->job_list = NULL;
-		}
-
+		FREE_NULL_LIST(bg_record->job_list);
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
 		xfree(bg_record->mp_str);
@@ -336,8 +328,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->action = fir_record->action;
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
 
-	if (sec_record->ba_mp_list)
-		list_destroy(sec_record->ba_mp_list);
+	FREE_NULL_LIST(sec_record->ba_mp_list);
 	sec_record->ba_mp_list = list_create(destroy_ba_mp);
 	if (fir_record->ba_mp_list) {
 		itr = list_iterator_create(fir_record->ba_mp_list);
@@ -400,10 +391,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		sec_record->ionode_bitmap = NULL;
 	}
 
-	if (sec_record->job_list) {
-		list_destroy(sec_record->job_list);
-		sec_record->job_list = NULL;
-	}
+	FREE_NULL_LIST(sec_record->job_list);
 
 	if (fir_record->job_list) {
 		struct job_record *job_ptr;
@@ -707,7 +695,7 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 
 	if (kill_job_list) {
 		bg_status_process_kill_job_list(kill_job_list, JOB_FAILED, 0);
-		list_destroy(kill_job_list);
+		FREE_NULL_LIST(kill_job_list);
 	}
 
 	if (rc)
@@ -851,8 +839,7 @@ extern int add_bg_record(List records, List *used_nodes,
 			debug4("add_bg_record: "
 			       "we didn't get a request list so we are "
 			       "destroying this mp list");
-			list_destroy(bg_record->ba_mp_list);
-			bg_record->ba_mp_list = NULL;
+			FREE_NULL_LIST(bg_record->ba_mp_list);
 		} else
 			setup_subblock_structs(bg_record);
 	} else {
@@ -964,7 +951,7 @@ extern int add_bg_record(List records, List *used_nodes,
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-		list_destroy(ba_mp_list);
+		FREE_NULL_LIST(ba_mp_list);
 	}
 
 	return SLURM_SUCCESS;
@@ -1227,10 +1214,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
 		/* This should never happen, but just in case... */
-		if (delete_list) {
-			list_destroy(delete_list);
-			delete_list = NULL;
-		}
+		FREE_NULL_LIST(delete_list);
 		/* If we found a block that is smaller or equal to a
 		   midplane we will just mark it in an error state as
 		   opposed to draining the node.
@@ -1274,8 +1258,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			cnt_set++;
 		}
 		list_iterator_destroy(itr);
-		list_destroy(delete_list);
-		delete_list = NULL;
+		FREE_NULL_LIST(delete_list);
 
 		if (!cnt_set) {
 			FREE_NULL_BITMAP(iobitmap);
@@ -1474,7 +1457,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			error_bg_record = bg_record;
 		}
 	}
-	list_destroy(requests);
+	FREE_NULL_LIST(requests);
 
 	sort_bg_record_inc_size(bg_lists->main);
 	last_bg_update = time(NULL);
@@ -1483,7 +1466,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 cleanup:
 	if (kill_list) {
 		bg_status_process_kill_job_list(kill_list, JOB_NODE_FAIL, 1);
-		list_destroy(kill_list);
+		FREE_NULL_LIST(kill_list);
 	}
 
 	if (!slurmctld_locked)
@@ -1511,8 +1494,7 @@ cleanup:
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			delete_it = 1;
 		free_block_list(NO_VAL, delete_list, delete_it, 0);
-		list_destroy(delete_list);
-		delete_list = NULL;
+		FREE_NULL_LIST(delete_list);
 	}
 
 	return rc;
@@ -1844,10 +1826,7 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 			*/
 			if (!bit_test(bg_conf->reboot_qos_bitmap,
 				      qos_ptr->id)) {
-				if (kill_list) {
-					list_destroy(kill_list);
-					kill_list = NULL;
-				}
+				FREE_NULL_LIST(kill_list);
 				break;
 			}
 			if (!kill_list)
@@ -1862,7 +1841,7 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 			*ret_kill_list = kill_list;
 		} else {
 			list_transfer(*ret_kill_list, kill_list);
-			list_destroy(kill_list);
+			FREE_NULL_LIST(kill_list);
 		}
 		kill_list = NULL;
 	}
@@ -1910,7 +1889,7 @@ extern void bg_record_post_hw_failure(
 			       JOB_NODE_FAIL, 1);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(*kill_list);
+	FREE_NULL_LIST(*kill_list);
 	*kill_list = NULL;
 	if (!slurmctld_locked)
 		unlock_slurmctld(job_write_lock);

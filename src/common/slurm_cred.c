@@ -353,7 +353,7 @@ static int _slurm_crypto_fini(void)
 		return SLURM_SUCCESS;
 
 	init_run = false;
-	list_destroy(sbcast_cache_list);
+	FREE_NULL_LIST(sbcast_cache_list);
 	sbcast_cache_list = NULL;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
@@ -442,10 +442,8 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 		(*(ops.crypto_destroy_key))(ctx->exkey);
 	if (ctx->key)
 		(*(ops.crypto_destroy_key))(ctx->key);
-	if (ctx->job_list)
-		list_destroy(ctx->job_list);
-	if (ctx->state_list)
-		list_destroy(ctx->state_list);
+	FREE_NULL_LIST(ctx->job_list);
+	FREE_NULL_LIST(ctx->state_list);
 
 	xassert(ctx->magic = ~CRED_CTX_MAGIC);
 

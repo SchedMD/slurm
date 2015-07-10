@@ -194,8 +194,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
-		if (job_info_list)
-			list_destroy(job_info_list);
+		FREE_NULL_LIST(job_info_list);
 		jobid = 0;
 		partition = NULL;
 		job_info_list = list_create(_destroy_filetxt_jobcomp_info);
@@ -268,8 +267,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			list_append(job_list, job);
 	}
 
-	if (job_info_list)
-		list_destroy(job_info_list);
+	FREE_NULL_LIST(job_info_list);
 
 	if (ferror(fd)) {
 		perror(filein);

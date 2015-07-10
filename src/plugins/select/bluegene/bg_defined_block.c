@@ -164,7 +164,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						error("I was unable to "
 						      "make the "
 						      "requested block.");
-						list_destroy(results);
+						FREE_NULL_LIST(results);
 						rc = SLURM_ERROR;
 						break;
 					}
@@ -182,9 +182,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						      bg_record->mp_str,
 						      temp);
 					}
-					if (bg_record->ba_mp_list)
-						list_destroy(
-							bg_record->ba_mp_list);
+					FREE_NULL_LIST(bg_record->ba_mp_list);
 #ifdef HAVE_BGQ
 					bg_record->ba_mp_list = results;
 					results = NULL;
@@ -196,7 +194,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						list_create(destroy_ba_mp);
 					copy_node_path(results,
 						       &bg_record->ba_mp_list);
-					list_destroy(results);
+					FREE_NULL_LIST(results);
 #endif
 				}
 			}
@@ -435,21 +433,20 @@ extern int create_full_system_block(List bg_found_block_list)
 
 	if (!name) {
 		error("I was unable to make the full system block.");
-		list_destroy(results);
+		FREE_NULL_LIST(results);
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
 	xfree(name);
-	if (bg_record->ba_mp_list)
-		list_destroy(bg_record->ba_mp_list);
+	FREE_NULL_LIST(bg_record->ba_mp_list);
 #ifdef HAVE_BGQ
 	bg_record->ba_mp_list = results;
 	results = NULL;
 #else
 	bg_record->ba_mp_list = list_create(destroy_ba_mp);
 	copy_node_path(results, &bg_record->ba_mp_list);
-	list_destroy(results);
+	FREE_NULL_LIST(results);
 #endif
 	if ((rc = bridge_block_create(bg_record)) == SLURM_ERROR) {
 		error("create_full_system_block: "
@@ -463,8 +460,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	list_append(bg_lists->main, bg_record);
 
 no_total:
-	if (records)
-		list_destroy(records);
+	FREE_NULL_LIST(records);
 	slurm_mutex_unlock(&block_state_mutex);
 	return rc;
 }

@@ -656,8 +656,7 @@ extern int fini ( void )
 	xfree(script);
 	if (rc == SLURM_SUCCESS) {
 		pthread_mutex_lock(&comp_list_mutex);
-		list_destroy(comp_list);
-		comp_list = NULL;
+		FREE_NULL_LIST(comp_list);
 		pthread_mutex_unlock(&comp_list_mutex);
 	}
 

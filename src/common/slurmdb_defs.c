@@ -64,14 +64,12 @@ strong_alias(get_qos_complete_str_bitstr, slurmdb_get_qos_complete_str_bitstr);
 static void _free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 {
 	if (assoc) {
-		if (assoc->accounting_list)
-			list_destroy(assoc->accounting_list);
+		FREE_NULL_LIST(assoc->accounting_list);
 		xfree(assoc->acct);
 		xfree(assoc->cluster);
 		xfree(assoc->parent_acct);
 		xfree(assoc->partition);
-		if (assoc->qos_list)
-			list_destroy(assoc->qos_list);
+		FREE_NULL_LIST(assoc->qos_list);
 		xfree(assoc->user);
 
 		destroy_assoc_mgr_assoc_usage(assoc->usage);
@@ -104,8 +102,7 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->description);
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
-		if (qos->preempt_list)
-			list_destroy(qos->preempt_list);
+		FREE_NULL_LIST(qos->preempt_list);
 		destroy_assoc_mgr_qos_usage(qos->usage);
 	}
 }
@@ -113,8 +110,7 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
-		if (wckey->accounting_list)
-			list_destroy(wckey->accounting_list);
+		FREE_NULL_LIST(wckey->accounting_list);
 		xfree(wckey->cluster);
 		xfree(wckey->name);
 		xfree(wckey->user);
@@ -124,8 +120,7 @@ static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 {
 	if (cluster_cond) {
-		if (cluster_cond->cluster_list)
-			list_destroy(cluster_cond->cluster_list);
+		FREE_NULL_LIST(cluster_cond->cluster_list);
 	}
 }
 
@@ -538,16 +533,13 @@ extern void slurmdb_destroy_user_rec(void *object)
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;
 
 	if (slurmdb_user) {
-		if (slurmdb_user->assoc_list)
-			list_destroy(slurmdb_user->assoc_list);
-		if (slurmdb_user->coord_accts)
-			list_destroy(slurmdb_user->coord_accts);
+		FREE_NULL_LIST(slurmdb_user->assoc_list);
+		FREE_NULL_LIST(slurmdb_user->coord_accts);
 		xfree(slurmdb_user->default_acct);
 		xfree(slurmdb_user->default_wckey);
 		xfree(slurmdb_user->name);
 		xfree(slurmdb_user->old_name);
-		if (slurmdb_user->wckey_list)
-			list_destroy(slurmdb_user->wckey_list);
+		FREE_NULL_LIST(slurmdb_user->wckey_list);
 		xfree(slurmdb_user);
 	}
 }
@@ -558,10 +550,8 @@ extern void slurmdb_destroy_account_rec(void *object)
 		(slurmdb_account_rec_t *)object;
 
 	if (slurmdb_account) {
-		if (slurmdb_account->assoc_list)
-			list_destroy(slurmdb_account->assoc_list);
-		if (slurmdb_account->coordinators)
-			list_destroy(slurmdb_account->coordinators);
+		FREE_NULL_LIST(slurmdb_account->assoc_list);
+		FREE_NULL_LIST(slurmdb_account->coordinators);
 		xfree(slurmdb_account->description);
 		xfree(slurmdb_account->name);
 		xfree(slurmdb_account->organization);
@@ -668,10 +658,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->req_gres);
 		xfree(job->resv_name);
-		if (job->steps) {
-			list_destroy(job->steps);
-			job->steps = NULL;
-		}
+		FREE_NULL_LIST(job->steps);
 		xfree(job->tres_alloc_str);
 		xfree(job->user);
 		xfree(job->wckey);
@@ -829,10 +816,8 @@ extern void slurmdb_destroy_user_cond(void *object)
 
 	if (slurmdb_user) {
 		slurmdb_destroy_assoc_cond(slurmdb_user->assoc_cond);
-		if (slurmdb_user->def_acct_list)
-			list_destroy(slurmdb_user->def_acct_list);
-		if (slurmdb_user->def_wckey_list)
-			list_destroy(slurmdb_user->def_wckey_list);
+		FREE_NULL_LIST(slurmdb_user->def_acct_list);
+		FREE_NULL_LIST(slurmdb_user->def_wckey_list);
 		xfree(slurmdb_user);
 	}
 }
@@ -844,10 +829,8 @@ extern void slurmdb_destroy_account_cond(void *object)
 
 	if (slurmdb_account) {
 		slurmdb_destroy_assoc_cond(slurmdb_account->assoc_cond);
-		if (slurmdb_account->description_list)
-			list_destroy(slurmdb_account->description_list);
-		if (slurmdb_account->organization_list)
-			list_destroy(slurmdb_account->organization_list);
+		FREE_NULL_LIST(slurmdb_account->description_list);
+		FREE_NULL_LIST(slurmdb_account->organization_list);
 		xfree(slurmdb_account);
 	}
 }
@@ -880,63 +863,30 @@ extern void slurmdb_destroy_assoc_cond(void *object)
 		(slurmdb_assoc_cond_t *)object;
 
 	if (slurmdb_assoc) {
-		if (slurmdb_assoc->acct_list)
-			list_destroy(slurmdb_assoc->acct_list);
-		if (slurmdb_assoc->cluster_list)
-			list_destroy(slurmdb_assoc->cluster_list);
-		if (slurmdb_assoc->def_qos_id_list)
-			list_destroy(slurmdb_assoc->def_qos_id_list);
-
-		if (slurmdb_assoc->fairshare_list)
-			list_destroy(slurmdb_assoc->fairshare_list);
-
-		if (slurmdb_assoc->grp_cpu_mins_list)
-			list_destroy(slurmdb_assoc->grp_cpu_mins_list);
-		if (slurmdb_assoc->grp_cpu_run_mins_list)
-			list_destroy(slurmdb_assoc->
-				     grp_cpu_run_mins_list);
-		if (slurmdb_assoc->grp_cpus_list)
-			list_destroy(slurmdb_assoc->grp_cpus_list);
-		if (slurmdb_assoc->grp_jobs_list)
-			list_destroy(slurmdb_assoc->grp_jobs_list);
-		if (slurmdb_assoc->grp_mem_list)
-			list_destroy(slurmdb_assoc->grp_mem_list);
-		if (slurmdb_assoc->grp_nodes_list)
-			list_destroy(slurmdb_assoc->grp_nodes_list);
-		if (slurmdb_assoc->grp_submit_jobs_list)
-			list_destroy(slurmdb_assoc->grp_submit_jobs_list);
-		if (slurmdb_assoc->grp_wall_list)
-			list_destroy(slurmdb_assoc->grp_wall_list);
-
-		if (slurmdb_assoc->id_list)
-			list_destroy(slurmdb_assoc->id_list);
-
-		if (slurmdb_assoc->max_cpu_mins_pj_list)
-			list_destroy(slurmdb_assoc->max_cpu_mins_pj_list);
-		if (slurmdb_assoc->max_cpu_run_mins_list)
-			list_destroy(slurmdb_assoc->
-				     max_cpu_run_mins_list);
-		if (slurmdb_assoc->max_cpus_pj_list)
-			list_destroy(slurmdb_assoc->max_cpus_pj_list);
-		if (slurmdb_assoc->max_jobs_list)
-			list_destroy(slurmdb_assoc->max_jobs_list);
-		if (slurmdb_assoc->max_nodes_pj_list)
-			list_destroy(slurmdb_assoc->max_nodes_pj_list);
-		if (slurmdb_assoc->max_submit_jobs_list)
-			list_destroy(slurmdb_assoc->max_submit_jobs_list);
-		if (slurmdb_assoc->max_wall_pj_list)
-			list_destroy(slurmdb_assoc->max_wall_pj_list);
-
-		if (slurmdb_assoc->partition_list)
-			list_destroy(slurmdb_assoc->partition_list);
-
-		if (slurmdb_assoc->parent_acct_list)
-			list_destroy(slurmdb_assoc->parent_acct_list);
-
-		if (slurmdb_assoc->qos_list)
-			list_destroy(slurmdb_assoc->qos_list);
-		if (slurmdb_assoc->user_list)
-			list_destroy(slurmdb_assoc->user_list);
+		FREE_NULL_LIST(slurmdb_assoc->acct_list);
+		FREE_NULL_LIST(slurmdb_assoc->cluster_list);
+		FREE_NULL_LIST(slurmdb_assoc->def_qos_id_list);
+		FREE_NULL_LIST(slurmdb_assoc->fairshare_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_cpu_mins_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_cpu_run_mins_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_cpus_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_jobs_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_mem_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_nodes_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_submit_jobs_list);
+		FREE_NULL_LIST(slurmdb_assoc->grp_wall_list);
+		FREE_NULL_LIST(slurmdb_assoc->id_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_cpu_mins_pj_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_cpu_run_mins_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_cpus_pj_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_jobs_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_nodes_pj_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_submit_jobs_list);
+		FREE_NULL_LIST(slurmdb_assoc->max_wall_pj_list);
+		FREE_NULL_LIST(slurmdb_assoc->partition_list);
+		FREE_NULL_LIST(slurmdb_assoc->parent_acct_list);
+		FREE_NULL_LIST(slurmdb_assoc->qos_list);
+		FREE_NULL_LIST(slurmdb_assoc->user_list);
 		xfree(slurmdb_assoc);
 	}
 }
@@ -947,16 +897,11 @@ extern void slurmdb_destroy_event_cond(void *object)
 		(slurmdb_event_cond_t *)object;
 
 	if (slurmdb_event) {
-		if (slurmdb_event->cluster_list)
-			list_destroy(slurmdb_event->cluster_list);
-		if (slurmdb_event->node_list)
-			list_destroy(slurmdb_event->node_list);
-		if (slurmdb_event->reason_list)
-			list_destroy(slurmdb_event->reason_list);
-		if (slurmdb_event->reason_uid_list)
-			list_destroy(slurmdb_event->reason_uid_list);
-		if (slurmdb_event->state_list)
-			list_destroy(slurmdb_event->state_list);
+		FREE_NULL_LIST(slurmdb_event->cluster_list);
+		FREE_NULL_LIST(slurmdb_event->node_list);
+		FREE_NULL_LIST(slurmdb_event->reason_list);
+		FREE_NULL_LIST(slurmdb_event->reason_uid_list);
+		FREE_NULL_LIST(slurmdb_event->state_list);
 		xfree(slurmdb_event);
 	}
 }
@@ -967,33 +912,20 @@ extern void slurmdb_destroy_job_cond(void *object)
 		(slurmdb_job_cond_t *)object;
 
 	if (job_cond) {
-		if (job_cond->acct_list)
-			list_destroy(job_cond->acct_list);
-		if (job_cond->associd_list)
-			list_destroy(job_cond->associd_list);
-		if (job_cond->cluster_list)
-			list_destroy(job_cond->cluster_list);
-		if (job_cond->groupid_list)
-			list_destroy(job_cond->groupid_list);
-		if (job_cond->jobname_list)
-			list_destroy(job_cond->jobname_list);
-		if (job_cond->partition_list)
-			list_destroy(job_cond->partition_list);
-		if (job_cond->qos_list)
-			list_destroy(job_cond->qos_list);
-		if (job_cond->resv_list)
-			list_destroy(job_cond->resv_list);
-		if (job_cond->resvid_list)
-			list_destroy(job_cond->resvid_list);
-		if (job_cond->step_list)
-			list_destroy(job_cond->step_list);
-		if (job_cond->state_list)
-			list_destroy(job_cond->state_list);
+		FREE_NULL_LIST(job_cond->acct_list);
+		FREE_NULL_LIST(job_cond->associd_list);
+		FREE_NULL_LIST(job_cond->cluster_list);
+		FREE_NULL_LIST(job_cond->groupid_list);
+		FREE_NULL_LIST(job_cond->jobname_list);
+		FREE_NULL_LIST(job_cond->partition_list);
+		FREE_NULL_LIST(job_cond->qos_list);
+		FREE_NULL_LIST(job_cond->resv_list);
+		FREE_NULL_LIST(job_cond->resvid_list);
+		FREE_NULL_LIST(job_cond->step_list);
+		FREE_NULL_LIST(job_cond->state_list);
 		xfree(job_cond->used_nodes);
-		if (job_cond->userid_list)
-			list_destroy(job_cond->userid_list);
-		if (job_cond->wckey_list)
-			list_destroy(job_cond->wckey_list);
+		FREE_NULL_LIST(job_cond->userid_list);
+		FREE_NULL_LIST(job_cond->wckey_list);
 		xfree(job_cond);
 	}
 }
@@ -1013,10 +945,8 @@ extern void slurmdb_destroy_qos_cond(void *object)
 {
 	slurmdb_qos_cond_t *slurmdb_qos = (slurmdb_qos_cond_t *)object;
 	if (slurmdb_qos) {
-		if (slurmdb_qos->id_list)
-			list_destroy(slurmdb_qos->id_list);
-		if (slurmdb_qos->name_list)
-			list_destroy(slurmdb_qos->name_list);
+		FREE_NULL_LIST(slurmdb_qos->id_list);
+		FREE_NULL_LIST(slurmdb_qos->name_list);
 		xfree(slurmdb_qos);
 	}
 }
@@ -1036,12 +966,9 @@ extern void slurmdb_destroy_reservation_cond(void *object)
 	slurmdb_reservation_cond_t *slurmdb_resv =
 		(slurmdb_reservation_cond_t *)object;
 	if (slurmdb_resv) {
-		if (slurmdb_resv->cluster_list)
-			list_destroy(slurmdb_resv->cluster_list);
-		if (slurmdb_resv->id_list)
-			list_destroy(slurmdb_resv->id_list);
-		if (slurmdb_resv->name_list)
-			list_destroy(slurmdb_resv->name_list);
+		FREE_NULL_LIST(slurmdb_resv->cluster_list);
+		FREE_NULL_LIST(slurmdb_resv->id_list);
+		FREE_NULL_LIST(slurmdb_resv->name_list);
 		xfree(slurmdb_resv->nodes);
 		xfree(slurmdb_resv);
 	}
@@ -1051,22 +978,14 @@ extern void slurmdb_destroy_txn_cond(void *object)
 {
 	slurmdb_txn_cond_t *slurmdb_txn = (slurmdb_txn_cond_t *)object;
 	if (slurmdb_txn) {
-		if (slurmdb_txn->acct_list)
-			list_destroy(slurmdb_txn->acct_list);
-		if (slurmdb_txn->action_list)
-			list_destroy(slurmdb_txn->action_list);
-		if (slurmdb_txn->actor_list)
-			list_destroy(slurmdb_txn->actor_list);
-		if (slurmdb_txn->cluster_list)
-			list_destroy(slurmdb_txn->cluster_list);
-		if (slurmdb_txn->id_list)
-			list_destroy(slurmdb_txn->id_list);
-		if (slurmdb_txn->info_list)
-			list_destroy(slurmdb_txn->info_list);
-		if (slurmdb_txn->name_list)
-			list_destroy(slurmdb_txn->name_list);
-		if (slurmdb_txn->user_list)
-			list_destroy(slurmdb_txn->user_list);
+		FREE_NULL_LIST(slurmdb_txn->acct_list);
+		FREE_NULL_LIST(slurmdb_txn->action_list);
+		FREE_NULL_LIST(slurmdb_txn->actor_list);
+		FREE_NULL_LIST(slurmdb_txn->cluster_list);
+		FREE_NULL_LIST(slurmdb_txn->id_list);
+		FREE_NULL_LIST(slurmdb_txn->info_list);
+		FREE_NULL_LIST(slurmdb_txn->name_list);
+		FREE_NULL_LIST(slurmdb_txn->user_list);
 		xfree(slurmdb_txn);
 	}
 }
@@ -1076,14 +995,10 @@ extern void slurmdb_destroy_wckey_cond(void *object)
 	slurmdb_wckey_cond_t *wckey = (slurmdb_wckey_cond_t *)object;
 
 	if (wckey) {
-		if (wckey->cluster_list)
-			list_destroy(wckey->cluster_list);
-		if (wckey->id_list)
-			list_destroy(wckey->id_list);
-		if (wckey->name_list)
-			list_destroy(wckey->name_list);
-		if (wckey->user_list)
-			list_destroy(wckey->user_list);
+		FREE_NULL_LIST(wckey->cluster_list);
+		FREE_NULL_LIST(wckey->id_list);
+		FREE_NULL_LIST(wckey->name_list);
+		FREE_NULL_LIST(wckey->user_list);
 		xfree(wckey);
 	}
 }
@@ -1107,9 +1022,7 @@ extern void slurmdb_destroy_update_object(void *object)
 		(slurmdb_update_object_t *) object;
 
 	if (slurmdb_update) {
-		if (slurmdb_update->objects)
-			list_destroy(slurmdb_update->objects);
-
+		FREE_NULL_LIST(slurmdb_update->objects);
 		xfree(slurmdb_update);
 	}
 }
@@ -1150,9 +1063,7 @@ extern void slurmdb_destroy_hierarchical_rec(void *object)
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec =
 		(slurmdb_hierarchical_rec_t *)object;
 	if (slurmdb_hierarchical_rec) {
-		if (slurmdb_hierarchical_rec->children) {
-			list_destroy(slurmdb_hierarchical_rec->children);
-		}
+		FREE_NULL_LIST(slurmdb_hierarchical_rec->children);
 		xfree(slurmdb_hierarchical_rec);
 	}
 }
@@ -1259,13 +1170,11 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	list_iterator_destroy(itr);
 
 end_it:
-	if (cluster_cond.cluster_list)
-		list_destroy(cluster_cond.cluster_list);
+	FREE_NULL_LIST(cluster_cond.cluster_list);
 	acct_storage_g_close_connection(&db_conn);
 
 	if (temp_list && !list_count(temp_list)) {
-		list_destroy(temp_list);
-		temp_list = NULL;
+		FREE_NULL_LIST(temp_list);
 	}
 
 	return temp_list;
@@ -1682,7 +1591,7 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list)
 
 	_append_hierarchical_children_ret_list(ret_list,
 					       slurmdb_hierarchical_rec_list);
-	list_destroy(slurmdb_hierarchical_rec_list);
+	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
 
 	return ret_list;
 }
@@ -1700,7 +1609,7 @@ extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list)
 
 	_append_hierarchical_children_ret_list(assoc_list,
 					       slurmdb_hierarchical_rec_list);
-	list_destroy(slurmdb_hierarchical_rec_list);
+	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
 }
 
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
@@ -1785,7 +1694,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 
-	list_destroy(total_assoc_list);
+	FREE_NULL_LIST(total_assoc_list);
 //	info("got %d", list_count(arch_rec_list));
 	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
 
@@ -1932,7 +1841,7 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 			print_this = xstrdup(temp_char);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(temp_list);
+	FREE_NULL_LIST(temp_list);
 
 	if (!print_this)
 		return xstrdup("");
@@ -1980,7 +1889,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 			print_this = xstrdup(temp_char);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(temp_list);
+	FREE_NULL_LIST(temp_list);
 
 	if (!print_this)
 		return xstrdup("");
@@ -2790,10 +2699,8 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	}
 	list_iterator_destroy(itr);
 end_it:
-	if (ret_list)
-		list_destroy(ret_list);
-	if (cluster_list)
-		list_destroy(cluster_list);
+	FREE_NULL_LIST(ret_list);
+	FREE_NULL_LIST(cluster_list);
 
 	return rc;
 }

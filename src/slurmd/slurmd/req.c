@@ -268,14 +268,10 @@ slurmd_req(slurm_msg_t *msg)
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
-		if (waiters) {
-			list_destroy(waiters);
-			waiters = NULL;
-		}
+		FREE_NULL_LIST(waiters);
 		slurm_mutex_lock(&job_limits_mutex);
 		if (job_limits_list) {
-			list_destroy(job_limits_list);
-			job_limits_list = NULL;
+			FREE_NULL_LIST(job_limits_list);
 			job_limits_loaded = false;
 		}
 		slurm_mutex_unlock(&job_limits_mutex);
@@ -2025,7 +2021,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 no_job:
 	if (step_cnt == 0) {
@@ -2251,7 +2247,7 @@ _load_job_limits(void)
 		close(fd);
 	}
 	list_iterator_destroy(step_iter);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 }
 
 static void
@@ -2400,7 +2396,7 @@ _enforce_job_mem_limit(void)
 		close(fd);
 	}
 	list_iterator_destroy(step_iter);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	for (i=0; i<job_cnt; i++) {
 		if (job_mem_info_ptr[i].mem_used == 0) {
@@ -2945,7 +2941,7 @@ _get_step_list(void)
 		}
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	if (step_list == NULL)
 		xstrcat(step_list, "NONE");
@@ -3334,7 +3330,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	if (found) {
 		debug3("_rpc_pid2jid: pid(%u) found in %u",
@@ -3711,7 +3707,7 @@ static uid_t _get_job_uid(uint32_t jobid)
 		break;
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	return uid;
 }
@@ -3764,7 +3760,7 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 	if (step_cnt == 0)
 		debug2("No steps in jobid %u to send signal %d", jobid, sig);
 	return step_cnt;
@@ -3816,7 +3812,7 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 	if (step_cnt == 0)
 		debug2("No steps in job %u to terminate", jobid);
 	return step_cnt;
@@ -3851,7 +3847,7 @@ _job_still_running(uint32_t job_id)
 		}
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	return retval;
 }
@@ -3911,7 +3907,7 @@ _steps_completed_now(uint32_t jobid)
 		}
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	return rc;
 }
@@ -4048,7 +4044,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 no_job:
 	if (step_cnt == 0) {
@@ -4132,7 +4128,7 @@ extern void record_launched_jobs(void)
 		_launch_complete_add(stepd->jobid);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 }
 
 /*
@@ -4314,7 +4310,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 			break;
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	if ((req->op == RESUME_JOB) && (req->indf_susp))
 		switch_g_job_resume(req->switch_info, 5);

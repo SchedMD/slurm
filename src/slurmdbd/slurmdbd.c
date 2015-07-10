@@ -554,7 +554,7 @@ static void _request_registrations(void *db_conn)
 			clusteracct_storage_g_fini_ctld(db_conn, cluster_rec);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(cluster_list);
+	FREE_NULL_LIST(cluster_list);
 }
 
 static void _rollup_handler_cancel()

@@ -338,10 +338,7 @@ static void _build_parts(void)
 	struct gs_part *gs_part_ptr;
 	int num_parts;
 
-	if (gs_part_list) {
-		list_destroy(gs_part_list);
-		gs_part_list = NULL;
-	}
+	FREE_NULL_LIST(gs_part_list);
 
 	/* reset the sorted list, since it's currently
 	 * pointing to partitions we just destroyed */
@@ -1223,10 +1220,10 @@ extern int gs_fini(void)
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 
-	list_destroy(preempt_job_list);
+	FREE_NULL_LIST(preempt_job_list);
 
 	pthread_mutex_lock(&data_mutex);
-	list_destroy(gs_part_list);
+	FREE_NULL_LIST(gs_part_list);
 	gs_part_list = NULL;
 	xfree(gs_bits_per_node);
 	pthread_mutex_unlock(&data_mutex);
@@ -1457,7 +1454,7 @@ extern int gs_reconfig(void)
 	 * are tracking all jobs */
 	_scan_slurm_job_list();
 
-	list_destroy(old_part_list);
+	FREE_NULL_LIST(old_part_list);
 	pthread_mutex_unlock(&data_mutex);
 
 	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */

@@ -433,7 +433,7 @@ static bg_record_t *_find_matching_block(List block_list,
 							&block_state_mutex);
 						free_block_list(NO_VAL,
 								tmp_list, 0, 0);
-						list_destroy(tmp_list);
+						FREE_NULL_LIST(tmp_list);
 					}
 				} else if (found_record->err_ratio &&
 					   (found_record->err_ratio
@@ -1021,10 +1021,10 @@ static int _check_for_booted_overlapping_blocks(
 						bg_status_process_kill_job_list(
 							kill_job_list,
 							JOB_FAILED, 1);
-						list_destroy(kill_job_list);
+						FREE_NULL_LIST(kill_job_list);
 					}
 					free_block_list(NO_VAL, tmp_list, 1, 0);
-					list_destroy(tmp_list);
+					FREE_NULL_LIST(tmp_list);
 				}
 				rc = 1;
 
@@ -1144,7 +1144,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 					(*blocks_added) = 1;
 				}
 			}
-			list_destroy(new_blocks);
+			FREE_NULL_LIST(new_blocks);
 			if (!*blocks_added) {
 				rc = SLURM_ERROR;
 				continue;
@@ -1161,12 +1161,9 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	}
 	list_iterator_destroy(itr);
 
-	if (list_of_lists)
-		list_destroy(list_of_lists);
-	if (job_list)
-		list_destroy(job_list);
-	if (booted_list)
-		list_destroy(booted_list);
+	FREE_NULL_LIST(list_of_lists);
+	FREE_NULL_LIST(job_list);
+	FREE_NULL_LIST(booted_list);
 
 	return rc;
 }
@@ -1360,8 +1357,7 @@ static int _find_best_block_match(List block_list,
 			list_iterator_destroy(itr);
 		}
 
-		if (overlapped_list)
-			list_destroy(overlapped_list);
+		FREE_NULL_LIST(overlapped_list);
 
 		/* set the bitmap and do other allocation activities */
 		if (bg_record) {
@@ -1573,7 +1569,7 @@ static int _find_best_block_match(List block_list,
 				 */
 				(*found_bg_record) = list_pop(new_blocks);
 				if (!(*found_bg_record)) {
-					list_destroy(new_blocks);
+					FREE_NULL_LIST(new_blocks);
 					if (!bg_record) {
 						/* This should never happen */
 						error("got an empty list back");
@@ -1616,11 +1612,11 @@ static int _find_best_block_match(List block_list,
 							= bg_record->job_ptr;
 					}
 				}
-				list_destroy(new_blocks);
+				FREE_NULL_LIST(new_blocks);
 				break;
 			}
 
-			list_destroy(job_list);
+			FREE_NULL_LIST(job_list);
 
 			goto end_it;
 		} else {
@@ -1777,10 +1773,7 @@ static List _get_preemptables(uint16_t query_mode, bg_record_t *bg_record,
 			      found_record->job_ptr->job_id,
 			      found_record->bg_block_id,
 			      bg_record->bg_block_id);
-			if (preempt) {
-				list_destroy(preempt);
-				preempt = NULL;
-			}
+			FREE_NULL_LIST(preempt);
 			break;
 		}
 	}
@@ -2206,8 +2199,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		}
 		/* set up the preempted job list */
 		if (SELECT_IS_PREEMPT_SET(local_mode)) {
-			if (*preemptee_job_list)
-				list_destroy(*preemptee_job_list);
+			FREE_NULL_LIST(*preemptee_job_list);
 			*preemptee_job_list = _get_preemptables(
 				local_mode, bg_record, job_ptr,
 				preemptee_candidates);
@@ -2239,6 +2231,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		slurm_mutex_unlock(&create_dynamic_mutex);
 	}
 
-	list_destroy(block_list);
+	FREE_NULL_LIST(block_list);
 	return rc;
 }

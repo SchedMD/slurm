@@ -208,10 +208,8 @@ static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
 
 static void spank_stack_destroy (struct spank_stack *stack)
 {
-	if (stack->plugin_list)
-		list_destroy (stack->plugin_list);
-	if (stack->option_cache)
-		list_destroy (stack->option_cache);
+	FREE_NULL_LIST (stack->plugin_list);
+	FREE_NULL_LIST (stack->option_cache);
 	xfree (stack->plugin_path);
 	xfree (stack);
 }

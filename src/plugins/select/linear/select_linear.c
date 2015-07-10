@@ -2844,8 +2844,7 @@ static void _free_cr(struct cr_record *cr_ptr)
 			xfree(part_cr_ptr1);
 			part_cr_ptr1 = part_cr_ptr2;
 		}
-		if (cr_ptr->nodes[i].gres_list)
-			list_destroy(cr_ptr->nodes[i].gres_list);
+		FREE_NULL_LIST(cr_ptr->nodes[i].gres_list);
 	}
 	xfree(cr_ptr->nodes);
 	xfree(cr_ptr->run_job_ids);
@@ -3438,7 +3437,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy(preemptee_iterator);
 	}
 
-	list_destroy(cr_job_list);
+	FREE_NULL_LIST(cr_job_list);
 	_free_cr(exp_cr);
 	FREE_NULL_BITMAP(orig_map);
 	return rc;

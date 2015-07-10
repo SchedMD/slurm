@@ -754,7 +754,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		error("we have %d records not added "
 		      "to the association list",
 		      list_count(usage_list));
-	list_destroy(usage_list);
+	FREE_NULL_LIST(usage_list);
 
 	return rc;
 }

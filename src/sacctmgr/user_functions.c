@@ -316,7 +316,7 @@ static int _check_and_set_cluster_list(List cluster_list)
 		cluster_rec->name = NULL;
 	}
 	list_iterator_destroy(itr_c);
-	list_destroy(tmp_list);
+	FREE_NULL_LIST(tmp_list);
 
 	if (!list_count(cluster_list)) {
 		exit_code=1;
@@ -357,7 +357,7 @@ static int _check_default_assocs(char *def_acct,
 	list_append(assoc_cond.acct_list, def_acct);
 	local_assoc_list = acct_storage_g_get_assocs(
 		db_conn, my_uid, &assoc_cond);
-	list_destroy(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.acct_list);
 
 	itr = list_iterator_create(user_list);
 	itr_c = list_iterator_create(cluster_list);
@@ -394,7 +394,7 @@ static int _check_default_assocs(char *def_acct,
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr_c);
-	list_destroy(local_assoc_list);
+	FREE_NULL_LIST(local_assoc_list);
 
 	if (regret_list) {
 		itr = list_iterator_create(regret_list);
@@ -409,7 +409,7 @@ static int _check_default_assocs(char *def_acct,
 		list_iterator_destroy(itr);
 		exit_code=1;
 		rc = SLURM_ERROR;
-		list_destroy(regret_list);
+		FREE_NULL_LIST(regret_list);
 	}
 
 	return rc;
@@ -443,7 +443,7 @@ static int _check_default_wckeys(char *def_wckey,
 	list_append(wckey_cond.name_list, def_wckey);
 	local_wckey_list = acct_storage_g_get_wckeys(
 		db_conn, my_uid, &wckey_cond);
-	list_destroy(wckey_cond.name_list);
+	FREE_NULL_LIST(wckey_cond.name_list);
 
 	itr = list_iterator_create(user_list);
 	itr_c = list_iterator_create(cluster_list);
@@ -480,7 +480,7 @@ static int _check_default_wckeys(char *def_wckey,
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr_c);
-	list_destroy(local_wckey_list);
+	FREE_NULL_LIST(local_wckey_list);
 
 	if (regret_list) {
 		itr = list_iterator_create(regret_list);
@@ -495,7 +495,7 @@ static int _check_default_wckeys(char *def_wckey,
 		list_iterator_destroy(itr);
 		exit_code=1;
 		rc = SLURM_ERROR;
-		list_destroy(regret_list);
+		FREE_NULL_LIST(regret_list);
 	}
 
 	return rc;
@@ -578,8 +578,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 		exit_code=1;
 		fprintf(stderr, " Problem getting users from database.  "
 			"Contact your admin.\n");
-		if (local_acct_list)
-			list_destroy(local_acct_list);
+		FREE_NULL_LIST(local_acct_list);
 		return SLURM_ERROR;
 	}
 
@@ -608,10 +607,8 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 		list_iterator_destroy(itr2);
 	}
 
-	if (local_acct_list)
-		list_destroy(local_acct_list);
-	if (local_user_list)
-		list_destroy(local_user_list);
+	FREE_NULL_LIST(local_acct_list);
+	FREE_NULL_LIST(local_user_list);
 
 	return rc;
 }
@@ -805,18 +802,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		    != SLURM_SUCCESS) {
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
-			list_destroy(local_user_list);
-			if (local_acct_list)
-				list_destroy(local_acct_list);
+			FREE_NULL_LIST(local_user_list);
+			FREE_NULL_LIST(local_acct_list);
 			return SLURM_ERROR;
 		}
 	} else if (sacctmgr_validate_cluster_list(assoc_cond->cluster_list)
 		   != SLURM_SUCCESS) {
 		slurmdb_destroy_wckey_cond(wckey_cond);
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		list_destroy(local_user_list);
-		if (local_acct_list)
-			list_destroy(local_acct_list);
+		FREE_NULL_LIST(local_user_list);
+		FREE_NULL_LIST(local_acct_list);
 		return SLURM_ERROR;
 	}
 
@@ -843,7 +838,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			exit_code=1;
 			fprintf(stderr, " Problem getting accounts "
 				"from database.  Contact your admin.\n");
-			list_destroy(local_user_list);
+			FREE_NULL_LIST(local_user_list);
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
 			return SLURM_ERROR;
@@ -860,8 +855,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			exit_code=1;
 			fprintf(stderr, " Problem getting assocs "
 				"from database.  Contact your admin.\n");
-			list_destroy(local_user_list);
-			list_destroy(local_acct_list);
+			FREE_NULL_LIST(local_user_list);
+			FREE_NULL_LIST(local_acct_list);
 			slurmdb_destroy_wckey_cond(wckey_cond);
 			slurmdb_destroy_assoc_cond(assoc_cond);
 			return SLURM_ERROR;
@@ -1229,13 +1224,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 no_default:
 	list_iterator_destroy(itr);
-	list_destroy(local_user_list);
-	if (local_acct_list)
-		list_destroy(local_acct_list);
-	if (local_assoc_list)
-		list_destroy(local_assoc_list);
-	if (local_wckey_list)
-		list_destroy(local_wckey_list);
+	FREE_NULL_LIST(local_user_list);
+	FREE_NULL_LIST(local_acct_list);
+	FREE_NULL_LIST(local_assoc_list);
+	FREE_NULL_LIST(local_wckey_list);
 	slurmdb_destroy_wckey_cond(wckey_cond);
 	slurmdb_destroy_assoc_cond(assoc_cond);
 
@@ -1276,8 +1268,7 @@ no_default:
 	if (limit_set) {
 		printf(" Non Default Settings\n");
 		sacctmgr_print_assoc_limits(&start_assoc);
-		if (start_assoc.qos_list)
-			list_destroy(start_assoc.qos_list);
+		FREE_NULL_LIST(start_assoc.qos_list);
 	}
 
 	notice_thread_init();
@@ -1321,9 +1312,9 @@ no_default:
 	}
 
 end_it:
-	list_destroy(user_list);
-	list_destroy(assoc_list);
-	list_destroy(wckey_list);
+	FREE_NULL_LIST(user_list);
+	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(wckey_list);
 	xfree(default_acct);
 	xfree(default_wckey);
 
@@ -1437,7 +1428,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_user_cond(user_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
 
@@ -1468,18 +1459,18 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			list_destroy(format_list);
+			FREE_NULL_LIST(format_list);
 			slurmdb_destroy_user_cond(user_cond);
 			return SLURM_SUCCESS;
 		}
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_user_cond(user_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -1489,7 +1480,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	if (!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -1674,8 +1665,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(user_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(user_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }
@@ -1835,8 +1826,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			rc = SLURM_ERROR;
 		}
 
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 assoc_start:
@@ -1885,8 +1875,7 @@ assoc_start:
 			rc = SLURM_ERROR;
 		}
 
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 assoc_end:
 
@@ -1972,7 +1961,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 				fprintf(stderr,"  %s\n", object);
 			}
 			list_iterator_destroy(itr);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			acct_storage_g_commit(db_conn, 0);
 			return rc;
 		}
@@ -2017,7 +2006,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 			del_user_cond.assoc_cond = &del_user_assoc_cond;
 			user_list = acct_storage_g_get_users(
 				db_conn, my_uid, &del_user_cond);
-			list_destroy(del_user_list);
+			FREE_NULL_LIST(del_user_list);
 			del_user_list = NULL;
 
 			if (user_list) {
@@ -2041,7 +2030,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 							      user->name);
 				}
 				list_iterator_destroy(itr);
-				list_destroy(user_list);
+				FREE_NULL_LIST(user_list);
 			}
 
 			if (del_user_list) {
@@ -2057,9 +2046,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 
 				del_user_ret_list = acct_storage_g_remove_users(
 					db_conn, my_uid, &del_user_cond);
-				if (del_user_ret_list)
-					list_destroy(del_user_ret_list);
-				list_destroy(del_user_list);
+				FREE_NULL_LIST(del_user_ret_list);
+				FREE_NULL_LIST(del_user_list);
 			}
 		}
 
@@ -2079,8 +2067,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	return rc;
 }
@@ -2186,8 +2173,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 	notice_thread_fini();
 	if (set) {
 		if (commit_check("Would you like to commit changes?"))

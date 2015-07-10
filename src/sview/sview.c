@@ -387,10 +387,7 @@ static void _set_hidden(GtkToggleAction *action)
 		tmp = g_strdup_printf(
 			"Hidden partitions and their jobs are now visible");
 	if (apply_hidden_change) {
-		if (grid_button_list) {
-			list_destroy(grid_button_list);
-			grid_button_list = NULL;
-		}
+		FREE_NULL_LIST(grid_button_list);
 		get_system_stats(main_grid_table);
 	}
 	apply_hidden_change = TRUE;
@@ -638,16 +635,11 @@ static gboolean _delete(GtkWidget *widget,
 	select_g_ba_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
-	if (popup_list)
-		list_destroy(popup_list);
-	if (grid_button_list)
-		list_destroy(grid_button_list);
-	if (multi_button_list)
-		list_destroy(multi_button_list);
-	if (signal_params_list)
-		list_destroy(signal_params_list);
-	if (cluster_list)
-		list_destroy(cluster_list);
+	FREE_NULL_LIST(popup_list);
+	FREE_NULL_LIST(grid_button_list);
+	FREE_NULL_LIST(multi_button_list);
+	FREE_NULL_LIST(signal_params_list);
+	FREE_NULL_LIST(cluster_list);
 	xfree(orig_cluster_name);
 	uid_cache_clear();
 #endif
@@ -1220,8 +1212,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 
 	/* destroy old stuff */
 	if (grid_button_list) {
-		list_destroy(grid_button_list);
-		grid_button_list = NULL;
+		FREE_NULL_LIST(grid_button_list);
 		got_grid = 1;
 	}
 
@@ -1301,10 +1292,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 			/* I know we just did this before, but it
 			   needs to be done again here.
 			*/
-			if (grid_button_list) {
-				list_destroy(grid_button_list);
-				grid_button_list = NULL;
-			}
+			FREE_NULL_LIST(grid_button_list);
 			get_system_stats(main_grid_table);
 		}
 
@@ -1332,8 +1320,7 @@ static GtkWidget *_create_cluster_combo(void)
 
 	cluster_list = slurmdb_get_info_cluster(NULL);
 	if (!cluster_list || !list_count(cluster_list)) {
-		if (cluster_list)
-			list_destroy(cluster_list);
+		FREE_NULL_LIST(cluster_list);
 		return NULL;
 	}
 

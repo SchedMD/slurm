@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 /* 		       alpha_num[request->geometry[1]], */
 /* 		       alpha_num[request->geometry[2]]); */
 /* 	} */
-/* 	list_destroy(results); */
+/* 	FREE_NULL_LIST(results); */
 
 /* 	/\* [001x801] *\/ */
 /* 	results = list_create(NULL); */
@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 /* 		       request->geometry[1], */
 /* 		       request->geometry[2]); */
 /* 	} */
-/* 	list_destroy(results); */
+/* 	FREE_NULL_LIST(results); */
 
 	/* [001x801] */
 	results = list_create(NULL);
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
 		       request->geometry[1],
 		       request->geometry[2]);
 	}
-	list_destroy(results);
+	FREE_NULL_LIST(results);
 
 
 	int dim,j;
@@ -244,7 +244,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	/* list_destroy(results); */
+	/* FREE_NULL_LIST(results); */
 
 /* 	ba_fini(); */
 

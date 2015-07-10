@@ -326,17 +326,14 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = ESLURM_NODES_BUSY;
 		} else {
 			preemptee_candidates =
-					slurm_find_preemptable_jobs(job_ptr);
+				slurm_find_preemptable_jobs(job_ptr);
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       high_cnt, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       &preemptee_job_list,
 					       exc_core_bitmap);
-			if (preemptee_job_list) {
-				list_destroy(preemptee_job_list);
-				preemptee_job_list = NULL;
-			}
+			FREE_NULL_LIST(preemptee_job_list);
 		}
 
 		/* Restore the feature counts */
@@ -371,10 +368,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 				       preemptee_candidates,
 				       &preemptee_job_list,
 				       exc_core_bitmap);
-		if (preemptee_job_list) {
-			list_destroy(preemptee_job_list);
-			preemptee_job_list = NULL;
-		}
+		FREE_NULL_LIST(preemptee_job_list);
 
 		job_ptr->details->share_res = orig_shared;
 
@@ -388,16 +382,12 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 					       preemptee_candidates,
 					       &preemptee_job_list,
 					       exc_core_bitmap);
-			if (preemptee_job_list) {
-				list_destroy(preemptee_job_list);
-				preemptee_job_list = NULL;
-			}
+			FREE_NULL_LIST(preemptee_job_list);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
 
-	if (preemptee_candidates)
-		list_destroy(preemptee_candidates);
+	FREE_NULL_LIST(preemptee_candidates);
 	return rc;
 
 }
@@ -797,7 +787,7 @@ static int _attempt_backfill(void)
 			info("backfill: no jobs to backfill");
 		else
 			debug("backfill: no jobs to backfill");
-		list_destroy(job_queue);
+		FREE_NULL_LIST(job_queue);
 		return 0;
 	} else {
 		debug("backfill: %u jobs to backfill", job_test_count);
@@ -1456,7 +1446,7 @@ next_task:
 			break;
 	}
 	xfree(node_space);
-	list_destroy(job_queue);
+	FREE_NULL_LIST(job_queue);
 	gettimeofday(&bf_time2, NULL);
 	_do_diag_stats(&bf_time1, &bf_time2, yield_sleep);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {

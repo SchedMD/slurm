@@ -255,7 +255,7 @@ static void * _msg_aggregation_sender(void *arg)
 			error("_msg_aggregation_engine: Unable to send "
 			      "composite msg: %m");
 		}
-		list_destroy(cmp.msg_list);
+		FREE_NULL_LIST(cmp.msg_list);
 
 		/* Resume message collection */
 		pthread_cond_broadcast(&msg_collection.cond);

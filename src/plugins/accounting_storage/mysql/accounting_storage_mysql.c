@@ -844,7 +844,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 				xfree(query);
 			}
 			list_iterator_destroy(itr);
-			list_destroy(char_list);
+			FREE_NULL_LIST(char_list);
 		} else {
 			query = xstrdup_printf(
 				"insert into %s "
@@ -2206,14 +2206,8 @@ extern int init ( void )
 extern int fini ( void )
 {
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	if (as_mysql_cluster_list) {
-		list_destroy(as_mysql_cluster_list);
-		as_mysql_cluster_list = NULL;
-	}
-	if (as_mysql_total_cluster_list) {
-		list_destroy(as_mysql_total_cluster_list);
-		as_mysql_total_cluster_list = NULL;
-	}
+	FREE_NULL_LIST(as_mysql_cluster_list);
+	FREE_NULL_LIST(as_mysql_total_cluster_list);
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 	slurm_mutex_destroy(&as_mysql_cluster_list_lock);
 	destroy_mysql_db_info(mysql_db_info);

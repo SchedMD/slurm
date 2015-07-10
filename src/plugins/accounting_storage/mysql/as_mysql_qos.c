@@ -804,7 +804,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		xfree(name_char);
 		xfree(query);
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
 		errno = ESLURM_QOS_PREEMPTION_LOOP;
 		return ret_list;
@@ -830,7 +830,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(vals);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify qos");
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
 	}
 
@@ -980,7 +980,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		reset_mysql_conn(mysql_conn);
 		xfree(assoc_char);
 		xfree(name_char);
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -1002,7 +1002,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(name_char);
 	xfree(user_name);
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 

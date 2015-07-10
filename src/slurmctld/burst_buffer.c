@@ -428,7 +428,7 @@ extern int bb_g_job_try_stage_in(void)
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	list_destroy(job_queue);
+	FREE_NULL_LIST(job_queue);
 	END_TIMER2(__func__);
 
 	return rc;

@@ -397,7 +397,7 @@ extern int user_top(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (!(slurmdb_report_cluster_list =
 	     slurmdb_report_user_top_usage(db_conn, user_cond, group_accts))) {

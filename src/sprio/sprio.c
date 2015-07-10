@@ -202,7 +202,7 @@ int main (int argc, char *argv[])
 #if 0
 	/* Free storage here if we want to verify that logic.
 	 * Since we exit next, this is not important */
- 	list_destroy(params.format_list);
+	FREE_NULL_LIST(params.format_list);
 	slurm_free_priority_factors_response_msg(resp_msg);
 #endif
 

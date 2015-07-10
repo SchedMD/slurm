@@ -417,7 +417,7 @@ static List _create_front_end_info_list(
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 
 update_color:
@@ -875,7 +875,7 @@ display_it:
 
 	_update_info_front_end(send_resv_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
-	list_destroy(send_resv_list);
+	FREE_NULL_LIST(send_resv_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;

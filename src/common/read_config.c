@@ -2272,8 +2272,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->accounting_storage_tres);
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
-	if (ctl_conf_ptr->acct_gather_conf)
-		list_destroy((List)ctl_conf_ptr->acct_gather_conf);
+	FREE_NULL_LIST(ctl_conf_ptr->acct_gather_conf);
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
 	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
@@ -2292,8 +2291,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
-	if (ctl_conf_ptr->ext_sensors_conf)
-		list_destroy((List)ctl_conf_ptr->ext_sensors_conf);
+	FREE_NULL_LIST(ctl_conf_ptr->ext_sensors_conf);
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
@@ -2344,8 +2342,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
-	if (ctl_conf_ptr->select_conf_key_pairs)
-		list_destroy((List)ctl_conf_ptr->select_conf_key_pairs);
+	FREE_NULL_LIST(ctl_conf_ptr->select_conf_key_pairs);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
@@ -2609,7 +2606,7 @@ static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
 	while ((pair = list_next(iter)) != NULL)
 		s_p_parse_pair(hashtbl, pair->name, pair->value);
 	list_iterator_destroy(iter);
-	list_destroy(config);
+	FREE_NULL_LIST(config);
 	rc = 0; /* done */
 
 end:

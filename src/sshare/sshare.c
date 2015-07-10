@@ -125,8 +125,7 @@ main (int argc, char *argv[])
 			long_flag = 1;
 			break;
 		case 'M':
-			if (clusters)
-				list_destroy(clusters);
+			FREE_NULL_LIST(clusters);
 			if (!(clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				print_db_notok(optarg, 0);
@@ -191,8 +190,7 @@ main (int argc, char *argv[])
 	if (all_users) {
 		if (req_msg.user_list
 		   && list_count(req_msg.user_list)) {
-			list_destroy(req_msg.user_list);
-			req_msg.user_list = NULL;
+			FREE_NULL_LIST(req_msg.user_list);
 		}
 		if (verbosity)
 			fprintf(stderr, "Users requested:\n\t: all\n");
@@ -226,8 +224,7 @@ main (int argc, char *argv[])
 	} else {
 		if (req_msg.acct_list
 		   && list_count(req_msg.acct_list)) {
-			list_destroy(req_msg.acct_list);
-			req_msg.acct_list = NULL;
+			FREE_NULL_LIST(req_msg.acct_list);
 		}
 		if (verbosity)
 			fprintf(stderr, "Accounts requested:\n\t: all\n");
@@ -236,10 +233,8 @@ main (int argc, char *argv[])
 
 	error_code = _get_info(&req_msg, &resp_msg);
 
-	if (req_msg.acct_list)
-		list_destroy(req_msg.acct_list);
-	if (req_msg.user_list)
-		list_destroy(req_msg.user_list);
+	FREE_NULL_LIST(req_msg.acct_list);
+	FREE_NULL_LIST(req_msg.user_list);
 
 	if (error_code) {
 		slurm_perror("Couldn't get shares from controller");

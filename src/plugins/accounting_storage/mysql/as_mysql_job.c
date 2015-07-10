@@ -225,7 +225,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 						ACCOUNTING_ENFORCE_WCKEYS,
 						NULL);
 
-			list_destroy(wckey_list);
+			FREE_NULL_LIST(wckey_list);
 		}
 		xfree(user);
 		/* info("got wckeyid of %d", wckey_rec.id); */
@@ -776,7 +776,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(vals);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify job");
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
 	}
 

@@ -489,7 +489,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 		}
 		list_iterator_destroy(preempt_iter);
 	}
-	list_destroy(preempt_list);
+	FREE_NULL_LIST(preempt_list);
 
 	return 2;
 }
@@ -1117,7 +1117,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	}
 	list_iterator_destroy(job_iter);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
-	list_destroy(job_candidates);
+	FREE_NULL_LIST(job_candidates);
 
 	return SLURM_SUCCESS;
 }

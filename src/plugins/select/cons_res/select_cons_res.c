@@ -468,9 +468,7 @@ static void _destroy_node_data(struct node_use_record *node_usage,
 	xfree(node_data);
 	if (node_usage) {
 		for (i = 0; i < select_node_cnt; i++) {
-			if (node_usage[i].gres_list) {
-				list_destroy(node_usage[i].gres_list);
-			}
+			FREE_NULL_LIST(node_usage[i].gres_list);
 		}
 		xfree(node_usage);
 	}
@@ -1672,8 +1670,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			}
 			list_iterator_destroy(preemptee_iterator);
 			if (!remove_some_jobs) {
-				list_destroy(*preemptee_job_list);
-				*preemptee_job_list = NULL;
+				FREE_NULL_LIST(*preemptee_job_list);
 			}
 		}
 
@@ -1867,7 +1864,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy(preemptee_iterator);
 	}
 
-	list_destroy(cr_job_list);
+	FREE_NULL_LIST(cr_job_list);
 	_destroy_part_data(future_part);
 	_destroy_node_data(future_usage, NULL);
 	FREE_NULL_BITMAP(orig_map);

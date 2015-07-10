@@ -147,7 +147,7 @@ int main(int argc, char** argv)
 	} else
 		info("got back mps %s\n", request->save_name);
 
-	list_destroy(results);
+	FREE_NULL_LIST(results);
 
 /* 	/\* [001x801] *\/ */
 /* 	results = list_create(NULL); */
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 /* 		       request->geometry[1], */
 /* 		       request->geometry[2]); */
 /* 	} */
-/* 	list_destroy(results); */
+/* 	FREE_NULL_LIST(results); */
 
 	/* [001x801] */
 	results = list_create(NULL);
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 		       request->geometry[3]);
 	} else
 		info("got back mps %s\n", request->save_name);
-	list_destroy(results);
+	FREE_NULL_LIST(results);
 
 	int dim;
 	int a,b,c,d;
@@ -235,7 +235,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	/* list_destroy(results); */
+	/* FREE_NULL_LIST(results); */
 
 /* 	ba_fini(); */
 

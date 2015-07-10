@@ -694,7 +694,7 @@ static int _run_report(int type, int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (_setup_grouping_print_fields_list(grouping_list) != SLURM_SUCCESS)
 		goto end_it;
@@ -733,7 +733,7 @@ static int _run_report(int type, int argc, char *argv[])
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
-	list_destroy(header_list);
+	FREE_NULL_LIST(header_list);
 
 //	time_format = SLURMDB_REPORT_TIME_PERCENT;
 

@@ -180,7 +180,7 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_wckey_cond(wckey_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
 
@@ -240,11 +240,11 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_wckey_cond(wckey_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -255,7 +255,7 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -309,8 +309,8 @@ extern int sacctmgr_list_wckey(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(wckey_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(wckey_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }

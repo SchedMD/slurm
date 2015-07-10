@@ -1130,15 +1130,15 @@ static int _extract_series(void)
 		}
 	}
 
-	list_destroy(tables);
-	list_destroy(fields);
+	FREE_NULL_LIST(tables);
+	FREE_NULL_LIST(fields);
 	H5Fclose(fid_job);
 	fclose(output);
 	return SLURM_SUCCESS;
 
 error:
-	if (fields) list_destroy(fields);
-	if (tables) list_destroy(tables);
+	FREE_NULL_LIST(fields);
+	FREE_NULL_LIST(tables);
 	if (output) fclose(output);
 	if (fid_job >= 0) H5Fclose(fid_job);
 	return rc;
@@ -1385,7 +1385,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	if (err < 0) {
 		debug("1 Failed to iterate through group /"GRP_STEPS"/%s",
 		      nodes_path);
-		list_destroy(tables);
+		FREE_NULL_LIST(tables);
 		return -1;
 	}
 
@@ -1505,7 +1505,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	for (i = 0; i < nb_tables; ++i) {
 		H5PTclose(tables_id[i]);
 	}
-	list_destroy(tables);
+	FREE_NULL_LIST(tables);
 
 	return 0;
 
@@ -1515,7 +1515,7 @@ error:
 	if (n_tid >= 0) H5Tclose(n_tid);
 	if (m_tid >= 0) H5Tclose(m_tid);
 	if (nm_tid >= 0) H5Tclose(nm_tid);
-	if (tables) list_destroy(tables);
+	FREE_NULL_LIST(tables);
 	for (i = 0; i < nb_tables; ++i) {
 		if (tables_id[i] >= 0)
 			H5PTclose(tables_id[i]);
@@ -1654,7 +1654,7 @@ static int _list_items(void)
 	if ((rc = _tables_list(fid_job, tables)) != SLURM_SUCCESS) {
 		debug("Failed to list tables %s", params.series);
 		H5Fclose(fid_job);
-		list_destroy(tables);
+		FREE_NULL_LIST(tables);
 		return rc;
 	}
 
@@ -1663,8 +1663,8 @@ static int _list_items(void)
 	    != SLURM_SUCCESS) {
 		error("Failed to intersect fields");
 		H5Fclose(fid_job);
-		list_destroy(tables);
-		list_destroy(fields);
+		FREE_NULL_LIST(tables);
+		FREE_NULL_LIST(fields);
 		return rc;
 	}
 
@@ -1674,8 +1674,8 @@ static int _list_items(void)
 	}
 	list_iterator_destroy(it);
 
-	list_destroy(tables);
-	list_destroy(fields);
+	FREE_NULL_LIST(tables);
+	FREE_NULL_LIST(fields);
 
 	H5Fclose(fid_job);
 

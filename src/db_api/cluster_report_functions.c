@@ -360,29 +360,11 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	list_iterator_destroy(itr);
 
 end_it:
-
-	if (type_list) {
-		list_destroy(type_list);
-		type_list = NULL;
-	}
-
-	if (first_list) {
-		list_destroy(first_list);
-		first_list = NULL;
-	}
-
-	if (cluster_list) {
-		list_destroy(cluster_list);
-		cluster_list = NULL;
-	}
-
-	if (exit_code) {
-		if (ret_list) {
-			list_destroy(ret_list);
-			ret_list = NULL;
-		}
-	}
-
+	FREE_NULL_LIST(type_list);
+	FREE_NULL_LIST(first_list);
+	FREE_NULL_LIST(cluster_list);
+	if (exit_code)
+		FREE_NULL_LIST(ret_list);
 	return ret_list;
 }
 

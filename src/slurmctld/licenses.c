@@ -86,7 +86,7 @@ static inline void _licenses_print(char *header, List licenses, int job_id)
 	list_iterator_destroy(iter);
 }
 
-/* Free a license_t record (for use by list_destroy) */
+/* Free a license_t record (for use by FREE_NULL_LIST) */
 extern void license_free_rec(void *x)
 {
 	licenses_t *license_entry = (licenses_t *) x;
@@ -185,8 +185,7 @@ static List _build_license_list(char *licenses, bool *valid)
 	xfree(tmp_str);
 
 	if (*valid == false) {
-		list_destroy(lic_list);
-		lic_list = NULL;
+		FREE_NULL_LIST(lic_list);
 	}
 	return lic_list;
 }
@@ -328,7 +327,7 @@ extern int license_update(char *licenses)
         }
         list_iterator_destroy(iter);
 
-        list_destroy(license_list);
+        FREE_NULL_LIST(license_list);
         license_list = new_list;
         _licenses_print("update_license", license_list, 0);
         slurm_mutex_unlock(&license_mutex);
@@ -568,8 +567,7 @@ extern List license_validate(char *licenses, bool *valid)
 	slurm_mutex_unlock(&license_mutex);
 
 	if (!(*valid)) {
-		list_destroy(job_license_list);
-		job_license_list = NULL;
+		FREE_NULL_LIST(job_license_list);
 	}
 	return job_license_list;
 }

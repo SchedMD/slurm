@@ -109,7 +109,7 @@ static void _destroy_allocated_block(void *object)
 			_set_nodes(allocated_block->nodes, 0, '.');
 			bg_configure_remove_block(
 				allocated_block->nodes, is_small);
-			list_destroy(allocated_block->nodes);
+			FREE_NULL_LIST(allocated_block->nodes);
 		}
 		destroy_select_ba_request(allocated_block->request);
 		xfree(allocated_block);
@@ -148,8 +148,7 @@ static allocated_block_t *_make_request(select_ba_request_t *request)
 		results = NULL;
 	}
 
-	if (results)
-		list_destroy(results);
+	FREE_NULL_LIST(results);
 	return allocated_block;
 
 }
@@ -1482,8 +1481,7 @@ void get_command(void)
 
 		if (!strcmp(com, "exit")) {
 			endwin();
-			if (allocated_blocks)
-				list_destroy(allocated_blocks);
+			FREE_NULL_LIST(allocated_blocks);
 			bg_configure_ba_fini();
 			exit(0);
 		}
@@ -1544,8 +1542,7 @@ void get_command(void)
 			exit(1);
 		}
 	}
-	if (allocated_blocks)
-		list_destroy(allocated_blocks);
+	FREE_NULL_LIST(allocated_blocks);
 	params.display = 0;
 	noecho();
 

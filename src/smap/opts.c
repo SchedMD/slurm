@@ -134,10 +134,9 @@ extern void parse_command_line(int argc, char *argv[])
 			}
 			break;
 		case 'M':
-			if (params.clusters)
-				list_destroy(params.clusters);
+			FREE_NULL_LIST(params.clusters);
 			if (!(params.clusters =
-			     slurmdb_get_info_cluster(optarg))) {
+			      slurmdb_get_info_cluster(optarg))) {
 				print_db_notok(optarg, 0);
 				exit(1);
 			}

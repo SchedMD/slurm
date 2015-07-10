@@ -546,7 +546,7 @@ static bool _isdefault(List qos_list)
 
 	ret_list = acct_storage_g_get_assocs(
 		db_conn, my_uid, &assoc_cond);
-	list_destroy(assoc_cond.def_qos_id_list);
+	FREE_NULL_LIST(assoc_cond.def_qos_id_list);
 
 	if (!ret_list || !list_count(ret_list))
 		goto end_it;
@@ -578,8 +578,7 @@ static bool _isdefault(List qos_list)
 	list_iterator_destroy(itr);
 	rc = 1;
 end_it:
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	return rc;
 }
@@ -610,11 +609,11 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	}
 
 	if (exit_code) {
-		list_destroy(name_list);
+		FREE_NULL_LIST(name_list);
 		xfree(description);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
-		list_destroy(name_list);
+		FREE_NULL_LIST(name_list);
 		slurmdb_destroy_qos_rec(start_qos);
 		exit_code=1;
 		fprintf(stderr, " Need name of qos to add.\n");
@@ -629,7 +628,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			fprintf(stderr, " Problem getting qos's "
 				"from database.  "
 				"Contact your admin.\n");
-			list_destroy(name_list);
+			FREE_NULL_LIST(name_list);
 			xfree(description);
 			return SLURM_ERROR;
 		}
@@ -688,12 +687,9 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		}
 	}
 	list_iterator_destroy(itr);
-	list_destroy(name_list);
+	FREE_NULL_LIST(name_list);
 
-	if (g_qos_list) {
-		list_destroy(g_qos_list);
-		g_qos_list = NULL;
-	}
+	FREE_NULL_LIST(g_qos_list);
 
 	if (!list_count(qos_list)) {
 		printf(" Nothing new added.\n");
@@ -737,7 +733,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	}
 
 end_it:
-	list_destroy(qos_list);
+	FREE_NULL_LIST(qos_list);
 	xfree(description);
 
 	return rc;
@@ -769,7 +765,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_qos_cond(qos_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
@@ -784,10 +780,10 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 	qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);
@@ -796,7 +792,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	if (!qos_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 	itr = list_iterator_create(qos_list);
@@ -986,8 +982,8 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(qos_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(qos_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }
@@ -1072,8 +1068,7 @@ extern int sacctmgr_modify_qos(int argc, char *argv[])
 		rc = SLURM_ERROR;
 	}
 
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	notice_thread_fini();
 
@@ -1173,8 +1168,7 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 	}
 
 end_it:
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	return rc;
 }

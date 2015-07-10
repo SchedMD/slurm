@@ -916,10 +916,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			req_nodes = feat_ptr->count;
 			job_ptr->details->min_nodes = feat_ptr->count;
 			job_ptr->details->min_cpus = feat_ptr->count;
-			if (*preemptee_job_list) {
-				list_destroy(*preemptee_job_list);
-				*preemptee_job_list = NULL;
-			}
+			FREE_NULL_LIST(*preemptee_job_list);
 			error_code = _pick_best_nodes(tmp_node_set_ptr,
 					tmp_node_set_size, &feature_bitmap,
 					job_ptr, part_ptr, min_nodes,
@@ -1011,10 +1008,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #endif
 	xfree(tmp_node_set_ptr);
 	if (error_code == SLURM_SUCCESS) {
-		if (*preemptee_job_list) {
-			list_destroy(*preemptee_job_list);
-			*preemptee_job_list = NULL;
-		}
+		FREE_NULL_LIST(*preemptee_job_list);
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				select_bitmap, job_ptr, part_ptr, min_nodes,
 				max_nodes, req_nodes, test_only,
@@ -1189,8 +1183,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		       slurm_strerror(error_code));
 	}
 
-	if (preemptee_candidates)
-		list_destroy(preemptee_candidates);
+	FREE_NULL_LIST(preemptee_candidates);
 
 	/* restore job's initial required node bitmap */
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
@@ -1511,10 +1504,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
 			backup_bitmap = bit_copy(avail_bitmap);
-			if (*preemptee_job_list) {
-				list_destroy(*preemptee_job_list);
-				*preemptee_job_list = NULL;
-			}
+			FREE_NULL_LIST(*preemptee_job_list);
 			if (job_ptr->details->req_node_bitmap == NULL)
 				bit_and(avail_bitmap, avail_node_bitmap);
 			/* Only preempt jobs when all possible nodes are being
@@ -1570,10 +1560,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_bitmap))) {
-			if (*preemptee_job_list) {
-				list_destroy(*preemptee_job_list);
-				*preemptee_job_list = NULL;
-			}
+			FREE_NULL_LIST(*preemptee_job_list);
 			pick_code = select_g_job_test(job_ptr, avail_bitmap,
 						      min_nodes, max_nodes,
 						      req_nodes,
@@ -2183,8 +2170,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	    !IS_JOB_STARTED(job_ptr)) {
 		job_ptr->array_task_id = NO_VAL;
 	}
-	if (preemptee_job_list)
-		list_destroy(preemptee_job_list);
+	FREE_NULL_LIST(preemptee_job_list);
 	if (select_node_bitmap)
 		*select_node_bitmap = select_bitmap;
 	else

@@ -1431,8 +1431,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	response_msg.msg_type = RESPONSE_SHARE_INFO;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	if (resp_msg.assoc_shares_list)
-		list_destroy(resp_msg.assoc_shares_list);
+	FREE_NULL_LIST(resp_msg.assoc_shares_list);
 	END_TIMER2("_slurm_rpc_get_share");
 	debug2("_slurm_rpc_get_shares %s", TIME_STR);
 }
@@ -1458,8 +1457,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	if (resp_msg.priority_factors_list)
-		list_destroy(resp_msg.priority_factors_list);
+	FREE_NULL_LIST(resp_msg.priority_factors_list);
 	END_TIMER2("_slurm_rpc_get_priority_factors");
 	debug2("_slurm_rpc_get_priority_factors %s", TIME_STR);
 }

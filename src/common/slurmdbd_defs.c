@@ -2208,7 +2208,7 @@ static void *_agent(void *x)
 			*/
 			if (list_msg.my_list) {
 				if (list_msg.my_list != agent_list)
-					list_destroy(list_msg.my_list);
+					FREE_NULL_LIST(list_msg.my_list);
 				list_msg.my_list = NULL;
 			} else
 				buffer = (Buf) list_dequeue(agent_list);
@@ -2221,7 +2221,7 @@ static void *_agent(void *x)
 			*/
 			if (list_msg.my_list) {
 				if (list_msg.my_list != agent_list)
-					list_destroy(list_msg.my_list);
+					FREE_NULL_LIST(list_msg.my_list);
 				list_msg.my_list = NULL;
 				free_buf(buffer);
 			}
@@ -2244,10 +2244,7 @@ static void *_agent(void *x)
 
 	slurm_mutex_lock(&agent_lock);
 	_save_dbd_state();
-	if (agent_list) {
-		list_destroy(agent_list);
-		agent_list = NULL;
-	}
+	FREE_NULL_LIST(agent_list);
 	slurm_mutex_unlock(&agent_lock);
 	return NULL;
 }
@@ -2527,10 +2524,7 @@ static int _purge_job_start_req(void)
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
 {
 	if (msg) {
-		if (msg->acct_list) {
-			list_destroy(msg->acct_list);
-			msg->acct_list = NULL;
-		}
+		FREE_NULL_LIST(msg->acct_list);
 		slurmdb_destroy_user_cond(msg->cond);
 		xfree(msg);
 	}
@@ -2687,8 +2681,7 @@ extern void slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
 extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg)
 {
 	if (msg) {
-		if (msg->my_list)
-			list_destroy(msg->my_list);
+		FREE_NULL_LIST(msg->my_list);
 		xfree(msg);
 	}
 }

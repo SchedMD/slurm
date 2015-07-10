@@ -210,7 +210,7 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 		}
 	}
 	list_iterator_destroy(itr);
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	if (!no_access_list)
 		return true;
@@ -224,7 +224,7 @@ extern bool sacctmgr_check_default_qos(uint32_t qos_id,
 	while ((object = list_next(itr)))
 		fprintf(stderr, "%s\n", object);
 	list_iterator_destroy(itr);
-	list_destroy(no_access_list);
+	FREE_NULL_LIST(no_access_list);
 
 	return 0;
 }
@@ -726,7 +726,7 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
@@ -738,11 +738,11 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 					      "MaxCPUMins,QOS,DefaultQOS,GrpCPURunMins");
 	}
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -754,7 +754,7 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -787,13 +787,12 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 		printf("\n");
 	}
 
-	if (tree_list)
-		list_destroy(tree_list);
+	FREE_NULL_LIST(tree_list);
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(assoc_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(print_fields_list);
 	tree_display = 0;
 	return rc;
 }

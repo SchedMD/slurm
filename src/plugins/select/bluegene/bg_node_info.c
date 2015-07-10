@@ -255,8 +255,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 		xfree(nodeinfo->extra_info);
 		xfree(nodeinfo->failed_cnodes);
 		xfree(nodeinfo->rack_mp);
-		if (nodeinfo->subgrp_list)
-			list_destroy(nodeinfo->subgrp_list);
+		FREE_NULL_LIST(nodeinfo->subgrp_list);
 		xfree(nodeinfo);
 	}
 	return SLURM_SUCCESS;

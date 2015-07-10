@@ -2877,7 +2877,7 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		error("%s: we received more than one message back use "
 		      "slurm_receive_msgs instead", __func__);
 		header.ret_cnt = 0;
-		list_destroy(header.ret_list);
+		FREE_NULL_LIST(header.ret_list);
 		header.ret_list = NULL;
 	}
 
@@ -3254,7 +3254,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		error("we received more than one message back use "
 		      "slurm_receive_msgs instead");
 		header.ret_cnt = 0;
-		list_destroy(header.ret_list);
+		FREE_NULL_LIST(header.ret_list);
 		header.ret_list = NULL;
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
@@ -3262,7 +3262,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 /* 		while ((ret_data_info = list_pop(header.ret_list))) */
 /* 			list_push(msg->ret_list, ret_data_info); */
 /* 		header.ret_cnt = 0; */
-/* 		list_destroy(header.ret_list); */
+/* 		FREE_NULL_LIST(header.ret_list); */
 /* 		header.ret_list = NULL; */
 /* 	} */
 	/*
@@ -4258,10 +4258,7 @@ extern void slurm_free_msg(slurm_msg_t * msg)
 		if (msg->auth_cred) {
 			(void) g_slurm_auth_destroy(msg->auth_cred);
 		}
-		if (msg->ret_list) {
-			list_destroy(msg->ret_list);
-			msg->ret_list = NULL;
-		}
+		FREE_NULL_LIST(msg->ret_list);
 		xfree(msg);
 	}
 }

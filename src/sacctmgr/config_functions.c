@@ -86,8 +86,7 @@ static void _free_dbd_config(void)
 	if (!dbd_config_list)
 		return;
 
-	list_destroy(dbd_config_list);
-	dbd_config_list = NULL;
+	FREE_NULL_LIST(dbd_config_list);
 }
 
 static void _load_slurm_config(void)

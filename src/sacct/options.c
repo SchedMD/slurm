@@ -864,8 +864,7 @@ void parse_command_line(int argc, char **argv)
 	if (all_clusters) {
 		if (job_cond->cluster_list
 		   && list_count(job_cond->cluster_list)) {
-			list_destroy(job_cond->cluster_list);
-			job_cond->cluster_list = NULL;
+			FREE_NULL_LIST(job_cond->cluster_list);
 		}
 		debug2("Clusters requested:\tall");
 	} else if (job_cond->cluster_list
@@ -898,9 +897,9 @@ void parse_command_line(int argc, char **argv)
 		all_users = 1;
 
 	if (all_users) {
-		if (job_cond->userid_list && list_count(job_cond->userid_list)) {
-			list_destroy(job_cond->userid_list);
-			job_cond->userid_list = NULL;
+		if (job_cond->userid_list &&
+		    list_count(job_cond->userid_list)) {
+			FREE_NULL_LIST(job_cond->userid_list);
 		}
 		debug2("Userids requested:\tall");
 	} else if (job_cond->userid_list && list_count(job_cond->userid_list)) {
@@ -1182,14 +1181,10 @@ void sacct_fini()
 {
 	if (print_fields_itr)
 		list_iterator_destroy(print_fields_itr);
-	if (print_fields_list)
-		list_destroy(print_fields_list);
-	if (jobs)
-		list_destroy(jobs);
-	if (g_qos_list)
-		list_destroy(g_qos_list);
-	if (g_tres_list)
-		list_destroy(g_tres_list);
+	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(jobs);
+	FREE_NULL_LIST(g_qos_list);
+	FREE_NULL_LIST(g_tres_list);
 
 	if (params.opt_completion)
 		g_slurm_jobcomp_fini();

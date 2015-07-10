@@ -525,7 +525,7 @@ extern int resv_utilization(int argc, char *argv[])
 	}
 
 	_setup_print_fields_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	/* we will just use the pointers returned from the
 	 * get_resv_list here, so don't remove them */

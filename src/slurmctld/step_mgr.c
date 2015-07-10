@@ -289,7 +289,7 @@ extern void step_list_purge(struct job_record *job_ptr)
 		_free_step_rec(step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
-	list_destroy(job_ptr->step_list);
+	FREE_NULL_LIST(job_ptr->step_list);
 }
 
 /* _free_step_rec - delete a step record's data structures */
@@ -319,8 +319,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_dir);
 	xfree(step_ptr->gres);
-	if (step_ptr->gres_list)
-		list_destroy(step_ptr->gres_list);
+	FREE_NULL_LIST(step_ptr->gres_list);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
@@ -2285,8 +2284,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					    job_ptr->gres_list, job_ptr->job_id,
 					    NO_VAL);
 	if (i != SLURM_SUCCESS) {
-		if (step_gres_list)
-			list_destroy(step_gres_list);
+		FREE_NULL_LIST(step_gres_list);
 		return i;
 	}
 
@@ -2299,8 +2297,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 				   cpus_per_task, node_count, select_jobinfo,
 				   &ret_code);
 	if (nodeset == NULL) {
-		if (step_gres_list)
-			list_destroy(step_gres_list);
+		FREE_NULL_LIST(step_gres_list);
 		select_g_select_jobinfo_free(select_jobinfo);
 		if ((ret_code == ESLURM_NODES_BUSY) ||
 		    (ret_code == ESLURM_PORTS_BUSY) ||
@@ -2335,8 +2332,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
 		      step_specs->num_tasks, max_tasks);
-		if (step_gres_list)
-			list_destroy(step_gres_list);
+		FREE_NULL_LIST(step_gres_list);
 		FREE_NULL_BITMAP(nodeset);
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ESLURM_BAD_TASK_COUNT;
@@ -2344,8 +2340,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 #endif
 	step_ptr = _create_step_record(job_ptr);
 	if (step_ptr == NULL) {
-		if (step_gres_list)
-			list_destroy(step_gres_list);
+		FREE_NULL_LIST(step_gres_list);
 		FREE_NULL_BITMAP(nodeset);
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ESLURMD_TOOMANYSTEPS;
@@ -3930,8 +3925,7 @@ unpack_error:
 	xfree(network);
 	xfree(ckpt_dir);
 	xfree(gres);
-	if (gres_list)
-		list_destroy(gres_list);
+	FREE_NULL_LIST(gres_list);
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)

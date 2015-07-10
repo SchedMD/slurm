@@ -617,8 +617,7 @@ static void *_wdog(void *args)
 	}
 
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if (thread_ptr[i].ret_list)
-			list_destroy(thread_ptr[i].ret_list);
+		FREE_NULL_LIST(thread_ptr[i].ret_list);
 		xfree(thread_ptr[i].nodelist);
 	}
 
@@ -1412,14 +1411,12 @@ void agent_purge(void)
 {
 	if (retry_list) {
 		slurm_mutex_lock(&retry_mutex);
-		list_destroy(retry_list);
-		retry_list = NULL;
+		FREE_NULL_LIST(retry_list);
 		slurm_mutex_unlock(&retry_mutex);
 	}
 	if (mail_list) {
 		slurm_mutex_lock(&mail_mutex);
-		list_destroy(mail_list);
-		mail_list = NULL;
+		FREE_NULL_LIST(mail_list);
 		slurm_mutex_unlock(&mail_mutex);
 	}
 }

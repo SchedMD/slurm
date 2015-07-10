@@ -265,10 +265,7 @@ extern uid_t *get_group_members(char *group_name)
 extern void clear_group_cache(void)
 {
 	pthread_mutex_lock(&group_cache_mutex);
-	if (group_cache_list) {
-		list_destroy(group_cache_list);
-		group_cache_list = NULL;
-	}
+	FREE_NULL_LIST(group_cache_list);
 	pthread_mutex_unlock(&group_cache_mutex);
 }
 

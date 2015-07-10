@@ -615,7 +615,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				if (!(result2 = mysql_db_query_ret(
 					      mysql_conn,
 					      query, 0))) {
-					list_destroy(job_list);
+					FREE_NULL_LIST(job_list);
 					job_list = NULL;
 					break;
 				}
@@ -942,13 +942,12 @@ end_it:
 	if (itr2)
 		list_iterator_destroy(itr2);
 
-	if (local_cluster_list)
-		list_destroy(local_cluster_list);
+	FREE_NULL_LIST(local_cluster_list);
 
 	if (rc == SLURM_SUCCESS)
 		list_transfer(sent_list, job_list);
 
-	list_destroy(job_list);
+	FREE_NULL_LIST(job_list);
 	return rc;
 }
 
@@ -1073,7 +1072,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if (!list_count(local_cluster_list)) {
-		list_destroy(local_cluster_list);
+		FREE_NULL_LIST(local_cluster_list);
 		local_cluster_list = NULL;
 		goto no_hosts;
 	}

@@ -1549,8 +1549,7 @@ static void _part_info_free(sview_part_info_t *sview_part_info)
 		xfree(sview_part_info->part_name);
 		memset(&sview_part_info->sub_part_total, 0,
 		       sizeof(sview_part_sub_t));
-		if (sview_part_info->sub_list)
-			list_destroy(sview_part_info->sub_list);
+		FREE_NULL_LIST(sview_part_info->sub_list);
 	}
 }
 
@@ -1573,8 +1572,7 @@ static void _destroy_part_sub(void *object)
 		xfree(sview_part_sub->reason);
 		if (sview_part_sub->hl)
 			hostlist_destroy(sview_part_sub->hl);
-		if (sview_part_sub->node_ptr_list)
-			list_destroy(sview_part_sub->node_ptr_list);
+		FREE_NULL_LIST(sview_part_sub->node_ptr_list);
 		xfree(sview_part_sub);
 	}
 }
@@ -1899,7 +1897,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 
 	return info_list;
@@ -2804,7 +2802,7 @@ display_it:
 
 	_update_info_part(send_info_list,
 			  GTK_TREE_VIEW(spec_info->display_widget));
-	list_destroy(send_info_list);
+	FREE_NULL_LIST(send_info_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;

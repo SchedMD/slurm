@@ -917,8 +917,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		/* handle failure */
 		if (!name)
 			_reset_altered_mps(main_mps, 0);
-		list_destroy(main_mps);
-		main_mps = NULL;
+		FREE_NULL_LIST(main_mps);
 	}
 	slurm_mutex_unlock(&ba_system_mutex);
 

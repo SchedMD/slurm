@@ -420,7 +420,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	}
 
 	_handle_response_msg_list(nodes_resp, tasks_started);
-	list_destroy(nodes_resp);
+	FREE_NULL_LIST(nodes_resp);
 
 	return SLURM_SUCCESS;
 }

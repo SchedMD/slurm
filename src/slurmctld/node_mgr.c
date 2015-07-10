@@ -627,10 +627,7 @@ extern int load_all_node_state ( bool state_only )
 
 		xfree(features);
 		xfree(gres);
-		if (gres_list) {
-			list_destroy(gres_list);
-			gres_list = NULL;
-		}
+		FREE_NULL_LIST(gres_list);
 		xfree (comm_name);
 		xfree (node_hostname);
 		xfree (node_name);
@@ -652,10 +649,7 @@ unpack_error:
 	error_code = EFAULT;
 	xfree(features);
 	xfree(gres);
-	if (gres_list) {
-		list_destroy(gres_list);
-		gres_list = NULL;
-	}
+	FREE_NULL_LIST(gres_list);
 	xfree(comm_name);
 	xfree(node_hostname);
 	xfree(node_name);

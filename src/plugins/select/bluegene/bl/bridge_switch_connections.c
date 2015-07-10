@@ -243,7 +243,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 	} else {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_WIRES)
 			info("we got a switch with no connections");
-		list_destroy(conn_list);
+		FREE_NULL_LIST(conn_list);
                 return SLURM_ERROR;
 	}
 
@@ -259,7 +259,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				      "(RM_SwitchFirstConnection): "
 				      "%s",
 				      bg_err_str(rc));
-				list_destroy(conn_list);
+				FREE_NULL_LIST(conn_list);
 				return SLURM_ERROR;
 			}
 			firstconnect=0;
@@ -272,13 +272,13 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				fatal("bridge_set_data"
 				      "(RM_SwitchNextConnection): %s",
 				      bg_err_str(rc));
-				list_destroy(conn_list);
+				FREE_NULL_LIST(conn_list);
 				return SLURM_ERROR;
 			}
 		}
 	}
 
-	list_destroy(conn_list);
+	FREE_NULL_LIST(conn_list);
 
 	return SLURM_SUCCESS;
 }

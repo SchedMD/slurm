@@ -610,8 +610,7 @@ empty:
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		if (local_cluster_list)
-			list_destroy(local_cluster_list);
+		FREE_NULL_LIST(local_cluster_list);
 		return NULL;
 	}
 	xfree(query);
@@ -644,8 +643,7 @@ empty:
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 	}
 
-	if (local_cluster_list)
-		list_destroy(local_cluster_list);
+	FREE_NULL_LIST(local_cluster_list);
 
 	if (with_usage && resv_list && list_count(resv_list)) {
 		List job_list = as_mysql_jobacct_process_get_jobs(
@@ -696,14 +694,10 @@ empty:
 		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
 	no_jobs:
-		if (job_list)
-			list_destroy(job_list);
+		FREE_NULL_LIST(job_list);
 	}
 
-	if (job_cond.resvid_list) {
-		list_destroy(job_cond.resvid_list);
-		job_cond.resvid_list = NULL;
-	}
+	FREE_NULL_LIST(job_cond.resvid_list);
 
 	/* free result after we use the list with resv id's in it. */
 	mysql_free_result(result);

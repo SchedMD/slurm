@@ -926,10 +926,7 @@ static int _block_get_and_set_mps(bg_record_t *bg_record)
 	}
 	return SLURM_SUCCESS;
 end_it:
-	if (bg_record->ba_mp_list) {
-		list_destroy(bg_record->ba_mp_list);
-		bg_record->ba_mp_list = NULL;
-	}
+	FREE_NULL_LIST(bg_record->ba_mp_list);
 	return SLURM_ERROR;
 }
 

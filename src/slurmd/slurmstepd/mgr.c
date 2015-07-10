@@ -1647,7 +1647,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 *   added to the list so far, so everything else
 			 *   can be discarded.
 			 */
-			list_destroy (exec_wait_list);
+			FREE_NULL_LIST (exec_wait_list);
 
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
@@ -1790,7 +1790,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
 	list_for_each (exec_wait_list, (ListForF) exec_wait_signal, job);
-	list_destroy (exec_wait_list);
+	FREE_NULL_LIST (exec_wait_list);
 
 	for (i = 0; i < job->node_tasks; i++) {
 		/*
@@ -1812,8 +1812,7 @@ fail4:
 	}
 fail3:
 	_reclaim_privileges (&sprivs);
-	if (exec_wait_list)
-		list_destroy (exec_wait_list);
+	FREE_NULL_LIST (exec_wait_list);
 fail2:
 	io_close_task_fds(job);
 fail1:

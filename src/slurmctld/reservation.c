@@ -363,8 +363,7 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->licenses = src_resv->licenses;
 	src_resv->licenses = NULL;
 
-	if (dest_resv->license_list)
-		list_destroy(dest_resv->license_list);
+	FREE_NULL_LIST(dest_resv->license_list);
 	dest_resv->license_list = src_resv->license_list;
 	src_resv->license_list = NULL;
 
@@ -430,8 +429,7 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->burst_buffer);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		xfree(resv_ptr->features);
-		if (resv_ptr->license_list)
-			list_destroy(resv_ptr->license_list);
+		FREE_NULL_LIST(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
 		xfree(resv_ptr->name);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
@@ -755,8 +753,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	debug("assoc_list:%s", resv_ptr->assoc_list);
 
 end_it:
-	list_destroy(assoc_list_allow);
-	list_destroy(assoc_list_deny);
+	FREE_NULL_LIST(assoc_list_allow);
+	FREE_NULL_LIST(assoc_list_deny);
 	assoc_mgr_unlock(&locks);
 
 	return rc;
@@ -2253,8 +2251,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	for (i = 0; i < account_cnt; i++)
 		xfree(account_list[i]);
 	xfree(account_list);
-	if (license_list)
-		list_destroy(license_list);
+	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(node_bitmap);
 	FREE_NULL_BITMAP(core_bitmap);
 	xfree(user_list);
@@ -2264,10 +2261,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 /* Purge all reservation data structures */
 extern void resv_fini(void)
 {
-	if (resv_list) {
-		list_destroy(resv_list);
-		resv_list = (List) NULL;
-	}
+	FREE_NULL_LIST(resv_list);
 }
 
 /* Update an exiting resource reservation */
@@ -2412,8 +2406,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		xfree(resv_desc_ptr->licenses);	/* clear licenses */
 		xfree(resv_ptr->licenses);
-		if (resv_ptr->license_list)
-			list_destroy(resv_ptr->license_list);
+		FREE_NULL_LIST(resv_ptr->license_list);
 	}
 
 	if (resv_desc_ptr->licenses) {
@@ -2429,8 +2422,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_ptr->licenses);
 		resv_ptr->licenses	= resv_desc_ptr->licenses;
 		resv_desc_ptr->licenses = NULL; /* Nothing left to free */
-		if (resv_ptr->license_list)
-			list_destroy(resv_ptr->license_list);
+		FREE_NULL_LIST(resv_ptr->license_list);
 		resv_ptr->license_list  = license_list;
 	}
 	if (resv_desc_ptr->features && (resv_desc_ptr->features[0] == '\0')) {
@@ -2987,8 +2979,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 	if (resv_ptr->licenses) {
 		bool valid = true;
-		if (resv_ptr->license_list)
-			list_destroy(resv_ptr->license_list);
+		FREE_NULL_LIST(resv_ptr->license_list);
 		resv_ptr->license_list = license_validate(resv_ptr->licenses,
 							  &valid);
 		if (!valid) {
@@ -4402,7 +4393,7 @@ static void _init_constraint_planning(constraint_planning_t* sched)
 
 static void _free_constraint_planning(constraint_planning_t* sched)
 {
-	list_destroy(sched->slot_list);
+	FREE_NULL_LIST(sched->slot_list);
 }
 
 /*

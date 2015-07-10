@@ -1085,8 +1085,7 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_ACCOUNTS);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1129,9 +1128,7 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_TRES);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1174,9 +1171,7 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_ASSOCS);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1220,9 +1215,7 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_CLUSTERS);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1274,8 +1267,7 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_CONFIG, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 	xfree(config_name);
 
 	return SLURM_SUCCESS;
@@ -1320,9 +1312,7 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_EVENTS);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1365,8 +1355,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(cond_msg, DBD_GET_JOBS_COND);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1410,9 +1399,7 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_PROBS);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1458,8 +1445,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(cond_msg, DBD_GET_QOS);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1502,9 +1488,7 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_RES);
-
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 	return rc;
 }
 
@@ -1546,8 +1530,7 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(cond_msg, DBD_GET_TXN);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1670,8 +1653,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_USERS);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1729,8 +1711,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_WCKEYS);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -1774,8 +1755,7 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_RESVS);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2112,8 +2092,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2177,8 +2156,7 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2236,8 +2214,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2295,8 +2272,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2357,8 +2333,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2416,8 +2391,7 @@ static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 	return rc;
 }
 
@@ -2538,8 +2512,7 @@ is_same_user:
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2597,8 +2570,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -2906,11 +2878,8 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 		rc = SLURM_ERROR;
 	}
 
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
-
-
-	list_destroy(cluster_q.cluster_list);
+	FREE_NULL_LIST(list_msg.my_list);
+	FREE_NULL_LIST(cluster_q.cluster_list);
 	/*
 	 * Outgoing message header must have flag set:
 	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
@@ -3006,8 +2975,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3073,8 +3041,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3136,8 +3103,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 
@@ -3196,8 +3162,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3255,8 +3220,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3371,8 +3335,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3430,8 +3393,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_LIST, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
 }
@@ -3559,8 +3521,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_MULT_JOB_START, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_MULT_JOB_START, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return SLURM_SUCCESS;
 }
@@ -3619,8 +3580,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_MULT_MSG, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
 			       DBD_GOT_MULT_MSG, *out_buffer);
-	if (list_msg.my_list)
-		list_destroy(list_msg.my_list);
+	FREE_NULL_LIST(list_msg.my_list);
 
 	return SLURM_SUCCESS;
 }

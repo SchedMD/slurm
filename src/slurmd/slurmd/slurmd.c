@@ -753,7 +753,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		n++;
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	if (!msg->energy)
 		msg->energy = acct_gather_energy_alloc(1);
@@ -1076,7 +1076,7 @@ _reconfigure(void)
 		close(fd);
 	}
 	list_iterator_destroy(i);
-	list_destroy(steps);
+	FREE_NULL_LIST(steps);
 
 	gres_plugin_reconfig(&did_change);
 	(void) switch_g_reconfig();
@@ -1247,10 +1247,10 @@ _destroy_conf(void)
 		xfree(conf->task_epilog);
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
-		list_destroy(conf->starting_steps);
+		FREE_NULL_LIST(conf->starting_steps);
 		slurm_mutex_destroy(&conf->starting_steps_lock);
 		pthread_cond_destroy(&conf->starting_steps_cond);
-		list_destroy(conf->prolog_running_jobs);
+		FREE_NULL_LIST(conf->prolog_running_jobs);
 		slurm_mutex_destroy(&conf->prolog_running_lock);
 		pthread_cond_destroy(&conf->prolog_running_cond);
 		slurm_cred_ctx_destroy(conf->vctx);

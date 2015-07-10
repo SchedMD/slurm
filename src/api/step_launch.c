@@ -812,7 +812,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 		}
 	}
 	list_iterator_destroy(itr);
-	list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 nothing_left:
 	debug2("All tasks have been signalled");
 
@@ -1665,7 +1665,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		}
 	}
 	list_iterator_destroy(ret_itr);
-	list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 
 	if (tot_rc != SLURM_SUCCESS)
 		return tot_rc;

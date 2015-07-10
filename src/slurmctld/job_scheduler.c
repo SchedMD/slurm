@@ -140,7 +140,7 @@ extern diag_stats_t slurmctld_diag_stats;
  * IN  user_id - user id
  * IN  job_name - job name constraint
  * RET the job queue
- * NOTE: the caller must call list_destroy() on RET value to free memory
+ * NOTE: the caller must call FREE_NULL_LIST() on RET value to free memory
  */
 static List _build_user_job_list(uint32_t user_id, char* job_name)
 {
@@ -310,7 +310,7 @@ static int _delta_tv(struct timeval *tv)
  *		    true when called from sched/backfill or sched/builtin
  * IN backfill - true if running backfill scheduler, enforce min time limit
  * RET the job queue
- * NOTE: the caller must call list_destroy() on RET value to free memory
+ * NOTE: the caller must call FREE_NULL_LIST() on RET value to free memory
  */
 extern List build_job_queue(bool clear_start, bool backfill)
 {
@@ -2229,7 +2229,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
  				}
  			}
 			list_iterator_destroy(job_iterator);
-			list_destroy(job_queue);
+			FREE_NULL_LIST(job_queue);
 			/* job can run now, delete dependency */
  			if (run_now)
  				list_delete_item(depend_iter);
@@ -2394,10 +2394,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	if ((new_depend == NULL) || (new_depend[0] == '\0') ||
 	    ((new_depend[0] == '0') && (new_depend[1] == '\0'))) {
 		xfree(job_ptr->details->dependency);
-		if (job_ptr->details->depend_list) {
-			list_destroy(job_ptr->details->depend_list);
-			job_ptr->details->depend_list = NULL;
-		}
+		FREE_NULL_LIST(job_ptr->details->depend_list);
 		return rc;
 
 	}
@@ -2558,8 +2555,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				 * the job being expanded */
 				xfree(job_ptr->gres);
 				job_ptr->gres = xstrdup(dep_job_ptr->gres);
-				if (job_ptr->gres_list)
-					list_destroy(job_ptr->gres_list);
+				FREE_NULL_LIST(job_ptr->gres_list);
 				gres_plugin_job_state_validate(job_ptr->gres,
 						&job_ptr->gres_list);
 			}
@@ -2598,15 +2594,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	if (rc == SLURM_SUCCESS) {
-		if (job_ptr->details->depend_list)
-			list_destroy(job_ptr->details->depend_list);
+		FREE_NULL_LIST(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = new_depend_list;
 		_depend_list2str(job_ptr, or_flag);
 #if _DEBUG
 		print_job_dependency(job_ptr);
 #endif
 	} else {
-		list_destroy(new_depend_list);
+		FREE_NULL_LIST(new_depend_list);
 	}
 	return rc;
 }
@@ -2876,10 +2871,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
-	if (preemptee_candidates)
-		list_destroy(preemptee_candidates);
-	if (preemptee_job_list)
-		list_destroy(preemptee_job_list);
+	FREE_NULL_LIST(preemptee_candidates);
+	FREE_NULL_LIST(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);
 	return rc;
 }

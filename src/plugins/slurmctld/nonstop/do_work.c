@@ -470,10 +470,7 @@ extern void init_job_db(void)
 extern void term_job_db(void)
 {
 	pthread_mutex_lock(&job_fail_mutex);
-	if (job_fail_list) {
-		list_destroy(job_fail_list);
-		job_fail_list = NULL;
-	}
+	FREE_NULL_LIST(job_fail_list);
 	pthread_mutex_unlock(&job_fail_mutex);
 }
 

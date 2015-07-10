@@ -497,8 +497,7 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->argv);
 	xfree(job_entry->details->ckpt_dir);
 	xfree(job_entry->details->cpu_bind);
-	if (job_entry->details->depend_list)
-		list_destroy(job_entry->details->depend_list);
+	FREE_NULL_LIST(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
 	xfree(job_entry->details->orig_dependency);
 	for (i=0; i<job_entry->details->env_cnt; i++)
@@ -507,8 +506,7 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->std_err);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
 	xfree(job_entry->details->exc_nodes);
-	if (job_entry->details->feature_list)
-		list_destroy(job_entry->details->feature_list);
+	FREE_NULL_LIST(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
@@ -10442,8 +10440,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				info("sched: update_job: invalid features"
 				     "(%s) for job_id %u",
 				     job_specs->features, job_ptr->job_id);
-				if (detail_ptr->feature_list)
-					list_destroy(detail_ptr->feature_list);
+				FREE_NULL_LIST(detail_ptr->feature_list);
 				detail_ptr->features = old_features;
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
@@ -10452,18 +10449,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     "%s for job_id %u",
 				     job_specs->features, job_ptr->job_id);
 				xfree(old_features);
-				if (old_list)
-					list_destroy(old_list);
+				FREE_NULL_LIST(old_list);
 				job_specs->features = NULL;
 			}
 		} else {
 			info("sched: update_job: cleared features for job %u",
 			     job_ptr->job_id);
 			xfree(detail_ptr->features);
-			if (detail_ptr->feature_list) {
-				list_destroy(detail_ptr->feature_list);
-				detail_ptr->feature_list = NULL;
-			}
+			FREE_NULL_LIST(detail_ptr->feature_list);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -11805,7 +11798,7 @@ int sync_job_files(void)
 	_get_batch_job_dir_ids(batch_dirs);
 	_validate_job_files(batch_dirs);
 	_remove_defunct_batch_dirs(batch_dirs);
-	list_destroy(batch_dirs);
+	FREE_NULL_LIST(batch_dirs);
 	return SLURM_SUCCESS;
 }
 
@@ -12186,10 +12179,7 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 /* job_fini - free all memory associated with job records */
 void job_fini (void)
 {
-	if (job_list) {
-		list_destroy(job_list);
-		job_list = NULL;
-	}
+	FREE_NULL_LIST(job_list);
 	xfree(job_hash);
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);

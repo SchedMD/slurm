@@ -987,10 +987,10 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 					     start_list,
 					     ba_request->geometry,
 					     ba_request->conn_type[0])) {
-				list_destroy(start_list);
+				FREE_NULL_LIST(start_list);
 				goto end_it;
 			}
-			list_destroy(start_list);
+			FREE_NULL_LIST(start_list);
 		}
 	} else {
 		goto end_it;
@@ -1001,8 +1001,7 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 				   ba_request->conn_type[0]);
 end_it:
 	if (!send_results && results) {
-		list_destroy(results);
-		results = NULL;
+		FREE_NULL_LIST(results);
 	}
 	if (name!=NULL) {
 		debug2("name = %s", name);
@@ -1800,14 +1799,8 @@ extern void ba_destroy_system(void)
 {
 	int x, y;
 
-	if (path) {
-		list_destroy(path);
-		path = NULL;
-	}
-	if (best_path) {
-		list_destroy(best_path);
-		best_path = NULL;
-	}
+	FREE_NULL_LIST(path);
+	FREE_NULL_LIST(best_path);
 
 #ifdef HAVE_BG_FILES
 	if (bg)

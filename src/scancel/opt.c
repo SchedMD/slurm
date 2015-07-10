@@ -411,8 +411,7 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'M':
 			opt.ctld = true;
-			if (opt.clusters)
-				list_destroy(opt.clusters);
+			FREE_NULL_LIST(opt.clusters);
 			opt.clusters = slurmdb_get_info_cluster(optarg);
 			if (!opt.clusters) {
 				print_db_notok(optarg, 0);

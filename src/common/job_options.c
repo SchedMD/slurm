@@ -132,8 +132,7 @@ void job_options_destroy (job_options_t opts)
 	xassert (opts != NULL);
 	xassert (opts->magic == JOB_OPTIONS_MAGIC);
 
-	if (opts->options)
-		list_destroy (opts->options);
+	FREE_NULL_LIST (opts->options);
 
 	xassert (opts->magic = ~JOB_OPTIONS_MAGIC);
 	xfree (opts);

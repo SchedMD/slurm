@@ -261,8 +261,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 			       min_nodes, max_nodes, req_nodes,
 			       SELECT_MODE_WILL_RUN,
 			       preemptee_candidates, NULL, exc_core_bitmap);
-	if (preemptee_candidates)
-		list_destroy(preemptee_candidates);
+	FREE_NULL_LIST(preemptee_candidates);
 
 	if (rc == SLURM_SUCCESS) {
 		char tmp_str[128];
@@ -557,8 +556,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 			       req_nodes, SELECT_MODE_WILL_RUN,
 			       preemptee_candidates, &preempted_jobs,
 			       exc_core_bitmap);
-	if (preemptee_candidates)
-		list_destroy(preemptee_candidates);
+	FREE_NULL_LIST(preemptee_candidates);
 
 	if (rc == SLURM_SUCCESS) {
 		char *hostlist, *sep, tmp_str[128];
@@ -589,7 +587,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 					 sep, pre_ptr->job_id);
 				xstrcat(reply_msg, tmp_str);
 			}
-			list_destroy(preempted_jobs);
+			FREE_NULL_LIST(preempted_jobs);
 		}
 	} else {
 		xstrcat(reply_msg, "Jobs not runable on selected nodes");

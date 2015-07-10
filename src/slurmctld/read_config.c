@@ -1377,8 +1377,7 @@ static int _restore_node_state(int recover,
 
 		node_ptr->sus_job_cnt   = old_node_ptr->sus_job_cnt;
 
-		if (node_ptr->gres_list)
-			list_destroy(node_ptr->gres_list);
+		FREE_NULL_LIST(node_ptr->gres_list);
 		node_ptr->gres_list = old_node_ptr->gres_list;
 		old_node_ptr->gres_list = NULL;
 
@@ -1757,7 +1756,7 @@ static void _purge_old_part_state(List old_part_list, char *old_def_part_name)
 
 	if (!old_part_list)
 		return;
-	list_destroy(old_part_list);
+	FREE_NULL_LIST(old_part_list);
 }
 
 /*

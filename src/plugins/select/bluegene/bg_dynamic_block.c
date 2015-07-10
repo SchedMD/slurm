@@ -295,8 +295,7 @@ try_small_again:
 
 		/* Re-sort the list back to the original order. */
 		list_sort(block_list, (ListCmpF)bg_record_sort_aval_inc);
-		list_destroy(new_blocks);
-		new_blocks = NULL;
+		FREE_NULL_LIST(new_blocks);
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 			info("small block not able to be placed inside others");
 	}
@@ -465,10 +464,7 @@ finished:
 
 	xfree(request->save_name);
 
-	if (results) {
-		list_destroy(results);
-		results = NULL;
-	}
+	FREE_NULL_LIST(results);
 
 	errno = rc;
 

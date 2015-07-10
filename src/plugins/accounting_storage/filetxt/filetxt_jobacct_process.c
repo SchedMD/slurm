@@ -224,8 +224,7 @@ static void _destroy_filetxt_job_rec(void *object)
 {
 	filetxt_job_rec_t *job = (filetxt_job_rec_t *)object;
 	if (job) {
-		if (job->steps)
-			list_destroy(job->steps);
+		FREE_NULL_LIST(job->steps);
 		_free_filetxt_header(&job->header);
 		xfree(job->jobname);
 		xfree(job->account);
@@ -1128,7 +1127,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		list_iterator_destroy(itr2);
 
 	list_iterator_destroy(itr);
-	list_destroy(job_list);
+	FREE_NULL_LIST(job_list);
 
 	xfree(filein);
 
@@ -1451,9 +1450,9 @@ finished:
 	xfree(filein);
 
 	fclose(fd);
-	list_destroy(exp_list);
-	list_destroy(keep_list);
-	list_destroy(other_list);
+	FREE_NULL_LIST(exp_list);
+	FREE_NULL_LIST(keep_list);
+	FREE_NULL_LIST(other_list);
 	xfree(old_logfile_name);
 	xfree(logfile_name);
 

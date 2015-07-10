@@ -942,7 +942,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			    || !list_count(assoc->qos_list))
 				modified = 1;
 			else {
-				list_destroy(mod_assoc->qos_list);
+				FREE_NULL_LIST(mod_assoc->qos_list);
 				mod_assoc->qos_list = NULL;
 			}
 		}
@@ -1854,7 +1854,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		list_append(local_assoc_cond.cluster_list, cluster_name);
 		local_assoc_list = as_mysql_get_assocs(
 			mysql_conn, user->uid, &local_assoc_cond);
-		list_destroy(local_assoc_cond.cluster_list);
+		FREE_NULL_LIST(local_assoc_cond.cluster_list);
 		if (!local_assoc_list)
 			goto end_it;
 		/* NOTE: you can not use list_pop, or list_push
@@ -1873,7 +1873,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				list_remove(local_itr);
 		}
 		list_iterator_destroy(local_itr);
-		list_destroy(local_assoc_list);
+		FREE_NULL_LIST(local_assoc_list);
 	}
 
 	if (reset_query) {
@@ -2436,7 +2436,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	list_destroy(delta_qos_list);
+	FREE_NULL_LIST(delta_qos_list);
 
 	xfree(parent_delta_qos);
 	xfree(parent_qos);
@@ -2448,7 +2448,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				   assoc_cond->usage_end);
 
 	list_transfer(sent_list, assoc_list);
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 	return SLURM_SUCCESS;
 }
 
@@ -3113,7 +3113,7 @@ end_it:
 			assoc_cond.cluster_list = local_cluster_list;
 			if (!(assoc_list =
 			      as_mysql_get_assocs(mysql_conn, uid, NULL))) {
-				list_destroy(local_cluster_list);
+				FREE_NULL_LIST(local_cluster_list);
 				return rc;
 			}
 			/* NOTE: you can not use list_pop, or list_push
@@ -3132,14 +3132,14 @@ end_it:
 					list_remove(itr);
 			}
 			list_iterator_destroy(itr);
-			list_destroy(assoc_list);
+			FREE_NULL_LIST(assoc_list);
 		}
 	} else {
 		FREE_NULL_LIST(added_user_list);
 		xfree(txn_query);
 		reset_mysql_conn(mysql_conn);
 	}
-	list_destroy(local_cluster_list);
+	FREE_NULL_LIST(local_cluster_list);
 	return rc;
 }
 
@@ -3266,7 +3266,7 @@ is_same_user:
 			xfree(query);
 			if (mysql_errno(mysql_conn->db_conn)
 			    != ER_NO_SUCH_TABLE) {
-				list_destroy(ret_list);
+				FREE_NULL_LIST(ret_list);
 				ret_list = NULL;
 			}
 			break;
@@ -3282,7 +3282,7 @@ is_same_user:
 		    || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
 			continue;
 		} else if (rc != SLURM_SUCCESS) {
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			ret_list = NULL;
 			break;
 		}
@@ -3381,7 +3381,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(query);
 			if (mysql_errno(mysql_conn->db_conn)
 			    != ER_NO_SUCH_TABLE) {
-				list_destroy(ret_list);
+				FREE_NULL_LIST(ret_list);
 				ret_list = NULL;
 			}
 			break;
@@ -3415,7 +3415,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      mysql_conn, query, 0))) {
 			xfree(query);
 			xfree(name_char);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			ret_list = NULL;
 			break;
 		}
@@ -3429,7 +3429,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_free_result(result);
 
 		if (rc != SLURM_SUCCESS) {
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			ret_list = NULL;
 			break;
 		}
@@ -3526,7 +3526,7 @@ empty:
 					      cluster_name, tmp, extra,
 					      is_admin, assoc_list))
 		    != SLURM_SUCCESS) {
-			list_destroy(assoc_list);
+			FREE_NULL_LIST(assoc_list);
 			assoc_list = NULL;
 			break;
 		}

@@ -302,7 +302,7 @@ end_it:
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	if (!added)
 		reset_mysql_conn(mysql_conn);
@@ -460,7 +460,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(user_name);
 		if (rc == SLURM_ERROR) {
 			error("Couldn't modify cluster 1");
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			ret_list = NULL;
 			goto end_it;
 		}
@@ -571,7 +571,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(assoc_char);
 
 	if (rc != SLURM_SUCCESS) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 	if (!jobs_running) {
@@ -581,7 +581,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			return NULL;
 		}
 
@@ -589,8 +589,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 		wckey_cond.cluster_list = ret_list;
 		tmp_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
-		if (tmp_list)
-			list_destroy(tmp_list);
+		FREE_NULL_LIST(tmp_list);
 
 		itr = list_iterator_create(ret_list);
 		while ((object = list_next(itr))) {
@@ -607,7 +606,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (rc != SLURM_SUCCESS) {
 			reset_mysql_conn(mysql_conn);
-			list_destroy(ret_list);
+			FREE_NULL_LIST(ret_list);
 			errno = rc;
 			return NULL;
 		}
@@ -754,7 +753,7 @@ empty:
 	mysql_free_result(result);
 
 	if (!list_count(assoc_cond.cluster_list)) {
-		list_destroy(assoc_cond.cluster_list);
+		FREE_NULL_LIST(assoc_cond.cluster_list);
 		return cluster_list;
 	}
 
@@ -765,9 +764,9 @@ empty:
 	list_append(assoc_cond.user_list, "");
 
 	assoc_list = as_mysql_get_assocs(mysql_conn, uid, &assoc_cond);
-	list_destroy(assoc_cond.cluster_list);
-	list_destroy(assoc_cond.acct_list);
-	list_destroy(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.cluster_list);
+	FREE_NULL_LIST(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	if (!assoc_list)
 		return cluster_list;
@@ -794,7 +793,7 @@ empty:
 	if (list_count(assoc_list))
 		error("I have %d left over associations",
 		      list_count(assoc_list));
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	return cluster_list;
 }
@@ -1001,7 +1000,7 @@ empty:
 			xfree(query);
 			if (mysql_errno(mysql_conn->db_conn)
 			    != ER_NO_SUCH_TABLE) {
-				list_destroy(ret_list);
+				FREE_NULL_LIST(ret_list);
 				ret_list = NULL;
 			}
 			break;

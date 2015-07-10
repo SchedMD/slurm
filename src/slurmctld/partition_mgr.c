@@ -1845,10 +1845,7 @@ static int _uid_list_size(uid_t * uid_list_ptr)
 /* part_fini - free all memory associated with partition records */
 void part_fini (void)
 {
-	if (part_list) {
-		list_destroy(part_list);
-		part_list = NULL;
-	}
+	FREE_NULL_LIST(part_list);
 	xfree(default_part_name);
 	xfree(default_part.name);
 	default_part_loc = (struct part_record *) NULL;

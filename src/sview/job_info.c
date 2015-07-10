@@ -3288,7 +3288,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 
 update_color:
@@ -4249,7 +4249,7 @@ display_it:
 	_update_info_job(send_info_list,
 			 GTK_TREE_VIEW(spec_info->display_widget));
 
-	list_destroy(send_info_list);
+	FREE_NULL_LIST(send_info_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;
@@ -4759,7 +4759,7 @@ static void _edit_jobs(GtkTreeModel *model, GtkTreeIter *iter,
 		selected_foreach_build_list(model, NULL, iter, NULL);
 	/* determine what to do with them/it */
 	_edit_each_job(model, iter, &job_foreach_common); /*go do them*/
-	list_destroy(foreach_list);
+	FREE_NULL_LIST(foreach_list);
 
 	return;
 
@@ -4900,7 +4900,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 			selected_foreach_build_list(model, NULL, iter, NULL);
 		/* determine what to do with them/it */
 		process_foreach_list(&job_foreach_common); /*go do them*/
-		list_destroy(foreach_list);
+		FREE_NULL_LIST(foreach_list);
 	}/*response OK ^^*/
 	/* switch back to standard cursor*/
 

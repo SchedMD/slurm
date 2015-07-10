@@ -1157,9 +1157,8 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 
 		xfree(fullpath);
 	}
-  done:
-	if (l)
-		list_destroy(l);
+done:
+	FREE_NULL_LIST(l);
 	return fullpath;
 }
 

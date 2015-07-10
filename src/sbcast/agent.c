@@ -108,8 +108,7 @@ static void *_agent_thread(void *args)
 
 	thread_ptr->rc = rc;
 	list_iterator_destroy(itr);
-	if (ret_list)
-		list_destroy(ret_list);
+	FREE_NULL_LIST(ret_list);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	agent_cnt--;
 	pthread_cond_broadcast(&agent_cnt_cond);

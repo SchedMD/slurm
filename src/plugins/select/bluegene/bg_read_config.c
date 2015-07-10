@@ -126,10 +126,7 @@ extern void destroy_image(void *ptr)
 	image_t *n = (image_t *)ptr;
 	if (n) {
 		xfree(n->name);
-		if (n->groups) {
-			list_destroy(n->groups);
-			n->groups = NULL;
-		}
+		FREE_NULL_LIST(n->groups);
 		xfree(n);
 	}
 }

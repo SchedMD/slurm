@@ -992,8 +992,7 @@ unpack_header(header_t * header, Buf buffer)
 unpack_error:
 	error("unpacking header");
 	destroy_forward(&header->forward);
-	if (header->ret_list)
-		list_destroy(header->ret_list);
+	FREE_NULL_LIST(header->ret_list);
 	return SLURM_ERROR;
 }
 
@@ -11247,7 +11246,7 @@ unpack_error:
 		error("_unpack_ret_list: message type %u, record %d of %u",
 		      ret_data_info->type, i, size_val);
 	}
-	list_destroy(*ret_list);
+	FREE_NULL_LIST(*ret_list);
 	*ret_list = NULL;
 	return SLURM_ERROR;
 }

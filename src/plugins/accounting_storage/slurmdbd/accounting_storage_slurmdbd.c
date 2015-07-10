@@ -344,7 +344,7 @@ static void *_set_db_inx_thread(void *no_data)
 			req.data = &send_msg;
 			rc = slurm_send_recv_slurmdbd_msg(
 				SLURM_PROTOCOL_VERSION, &req, &resp);
-			list_destroy(local_job_list);
+			FREE_NULL_LIST(local_job_list);
 			if (rc != SLURM_SUCCESS) {
 				error("slurmdbd: DBD_SEND_MULT_JOB_START "
 				      "failure: %m");

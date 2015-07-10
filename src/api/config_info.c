@@ -157,7 +157,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	if (ret_list) {
 		_write_key_pairs(fp, ret_list);
-		list_destroy((List)ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 	_write_group_header (fp, "NODES");
@@ -310,7 +310,7 @@ void slurm_print_ctl_conf ( FILE* out,
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
 	if (ret_list) {
 		slurm_print_key_pairs(out, ret_list, tmp_str);
-		list_destroy((List)ret_list);
+		FREE_NULL_LIST(ret_list);
 	}
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
@@ -1892,84 +1892,84 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)control_list);
+	FREE_NULL_LIST(control_list);
 
 	_write_group_header (out, "LOGGING & OTHER PATHS");
 	iter = list_iterator_create(logging_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)logging_list);
+	FREE_NULL_LIST(logging_list);
 
 	_write_group_header (out, "ACCOUNTING");
 	iter = list_iterator_create(accounting_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)accounting_list);
+	FREE_NULL_LIST(accounting_list);
 
 	_write_group_header (out, "SCHEDULING & ALLOCATION");
 	iter = list_iterator_create(sched_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)sched_list);
+	FREE_NULL_LIST(sched_list);
 
 	_write_group_header (out, "TOPOLOGY");
 	iter = list_iterator_create(topology_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)topology_list);
+	FREE_NULL_LIST(topology_list);
 
 	_write_group_header (out, "TIMERS");
 	iter = list_iterator_create(timers_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)timers_list);
+	FREE_NULL_LIST(timers_list);
 
 	_write_group_header (out, "POWER");
 	iter = list_iterator_create(power_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)power_list);
+	FREE_NULL_LIST(power_list);
 
 	_write_group_header (out, "DEBUG");
 	iter = list_iterator_create(debug_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)debug_list);
+	FREE_NULL_LIST(debug_list);
 
 	_write_group_header (out, "EPILOG & PROLOG");
 	iter = list_iterator_create(proepilog_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)proepilog_list);
+	FREE_NULL_LIST(proepilog_list);
 
 	_write_group_header (out, "PROCESS TRACKING");
 	iter = list_iterator_create(proctrac_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)proctrac_list);
+	FREE_NULL_LIST(proctrac_list);
 
 	_write_group_header (out, "RESOURCE CONFINEMENT");
 	iter = list_iterator_create(resconf_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)resconf_list);
+	FREE_NULL_LIST(resconf_list);
 
 	_write_group_header (out, "OTHER");
 	iter = list_iterator_create(other_list);
 	while ((temp = list_next(iter)))
 		fprintf(out, "%s\n", temp);
 	list_iterator_destroy(iter);
-	list_destroy((List)other_list);
+	FREE_NULL_LIST(other_list);
 
 }
 

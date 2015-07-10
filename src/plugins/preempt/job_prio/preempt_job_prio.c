@@ -557,8 +557,7 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 	}
 	list_iterator_destroy(it);
 
-	if (acct_usage_list)
-		list_destroy(acct_usage_list);
+	FREE_NULL_LIST(acct_usage_list);
 }
 
 /* Test if preemptor request will overallocate the account */

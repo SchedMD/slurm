@@ -229,10 +229,10 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -383,11 +383,9 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		printf("\n");
 	}
 
-	if (tree_list)
-		list_destroy(tree_list);
-
+	FREE_NULL_LIST(tree_list);
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(print_fields_list);
 	return rc;
 }

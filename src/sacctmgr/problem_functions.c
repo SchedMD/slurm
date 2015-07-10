@@ -153,17 +153,17 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	} else if (!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,Acct,User,Problem");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
 		slurmdb_destroy_assoc_cond(assoc_cond);
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -174,7 +174,7 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -228,13 +228,12 @@ extern int sacctmgr_list_problem(int argc, char *argv[])
 		printf("\n");
 	}
 
-	if (tree_list)
-		list_destroy(tree_list);
+	FREE_NULL_LIST(tree_list);
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(assoc_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(print_fields_list);
 	tree_display = 0;
 	return rc;
 }

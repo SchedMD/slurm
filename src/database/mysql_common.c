@@ -323,7 +323,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 
 	list_iterator_destroy(itr);
-	list_destroy(columns);
+	FREE_NULL_LIST(columns);
 
 	if ((temp = strstr(ending, "primary key ("))) {
 		int open = 0, close =0;
@@ -439,7 +439,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	}
 	list_iterator_destroy(itr);
 
-	list_destroy(keys_list);
+	FREE_NULL_LIST(keys_list);
 
 	query[strlen(query)-1] = ';';
 	correct_query[strlen(correct_query)-1] = ';';
@@ -597,7 +597,7 @@ extern int destroy_mysql_conn(mysql_conn_t *mysql_conn)
 		xfree(mysql_conn->pre_commit_query);
 		xfree(mysql_conn->cluster_name);
 		slurm_mutex_destroy(&mysql_conn->lock);
-		list_destroy(mysql_conn->update_list);
+		FREE_NULL_LIST(mysql_conn->update_list);
 		xfree(mysql_conn);
 	}
 

@@ -158,8 +158,7 @@ main (int argc, char *argv[])
 			break;
 		case (int)'M':
 			if (clusters) {
-				list_destroy(clusters);
-				clusters = NULL;
+				FREE_NULL_LIST(clusters);
 				working_cluster_rec = NULL;
 			}
 			if (!(clusters = slurmdb_get_info_cluster(optarg))) {
@@ -226,8 +225,7 @@ main (int argc, char *argv[])
 			break;
 		}
 	}
-	if (clusters)
-		list_destroy(clusters);
+	FREE_NULL_LIST(clusters);
 	exit(exit_code);
 }
 
@@ -716,8 +714,7 @@ _process_command (int argc, char *argv[])
 	}
 	else if (strncasecmp (tag, "cluster", MAX(tag_len, 2)) == 0) {
 		if (clusters) {
-			list_destroy(clusters);
-			clusters = NULL;
+			FREE_NULL_LIST(clusters);
 			working_cluster_rec = NULL;
 		}
 		if (argc >= 2) {

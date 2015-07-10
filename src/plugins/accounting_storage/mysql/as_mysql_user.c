@@ -116,8 +116,7 @@ static List _get_other_user_names_to_mod(mysql_conn_t *mysql_conn, uint32_t uid,
 			slurm_addto_char_list(ret_list, object->user);
 		}
 		list_iterator_destroy(itr);
-		list_destroy(tmp_list);
-		tmp_list = NULL;
+		FREE_NULL_LIST(tmp_list);
 	}
 
 no_assocs:
@@ -145,8 +144,7 @@ no_assocs:
 			slurm_addto_char_list(ret_list, object->user);
 		}
 		list_iterator_destroy(itr);
-		list_destroy(tmp_list);
-		tmp_list = NULL;
+		FREE_NULL_LIST(tmp_list);
 	}
 
 no_wckeys:
@@ -431,14 +429,14 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		     != SLURM_SUCCESS)
 			error("Problem adding user associations");
 	}
-	list_destroy(assoc_list);
+	FREE_NULL_LIST(assoc_list);
 
 	if (rc == SLURM_SUCCESS && list_count(wckey_list)) {
 		if ((rc = as_mysql_add_wckeys(mysql_conn, uid, wckey_list))
 		    != SLURM_SUCCESS)
 			error("Problem adding user wckeys");
 	}
-	list_destroy(wckey_list);
+	FREE_NULL_LIST(wckey_list);
 	return rc;
 }
 
@@ -645,8 +643,7 @@ extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -695,8 +692,7 @@ no_user_table:
 		errno = ESLURM_ONE_CHANGE;
 		xfree(vals);
 		xfree(query);
-		if (ret_list)
-			list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -715,8 +711,7 @@ no_user_table:
 	xfree(vals);
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify users");
-		list_destroy(ret_list);
-		ret_list = NULL;
+		FREE_NULL_LIST(ret_list);
 	}
 
 	if (user->default_acct) {
@@ -736,11 +731,10 @@ no_user_table:
 				user_cond->assoc_cond->cluster_list;
 		tmp_list = as_mysql_modify_assocs(mysql_conn, uid,
 						  &assoc_cond, &assoc);
-		list_destroy(assoc_cond.acct_list);
+		FREE_NULL_LIST(assoc_cond.acct_list);
 
 		if (!tmp_list) {
-			list_destroy(ret_list);
-			ret_list = NULL;
+			FREE_NULL_LIST(ret_list);
 			goto end_it;
 		}
 		/* char *names = NULL; */
@@ -749,7 +743,7 @@ no_user_table:
 		/* 	info("%s", names); */
 		/* } */
 		/* list_iterator_destroy(itr); */
-		list_destroy(tmp_list);
+		FREE_NULL_LIST(tmp_list);
 	}
 
 	if (user->default_wckey) {
@@ -769,11 +763,10 @@ no_user_table:
 				user_cond->assoc_cond->cluster_list;
 		tmp_list = as_mysql_modify_wckeys(mysql_conn, uid,
 						  &wckey_cond, &wckey);
-		list_destroy(wckey_cond.name_list);
+		FREE_NULL_LIST(wckey_cond.name_list);
 
 		if (!tmp_list) {
-			list_destroy(ret_list);
-			ret_list = NULL;
+			FREE_NULL_LIST(ret_list);
 			goto end_it;
 		}
 		/* char *names = NULL; */
@@ -782,7 +775,7 @@ no_user_table:
 		/* 	info("%s", names); */
 		/* } */
 		/* list_iterator_destroy(itr); */
-		list_destroy(tmp_list);
+		FREE_NULL_LIST(tmp_list);
 	}
 end_it:
 	return ret_list;
@@ -917,17 +910,15 @@ no_user_table:
 	/* We need to remove these accounts from the coord's that have it */
 	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, NULL, &user_coord_cond);
-	if (coord_list)
-		list_destroy(coord_list);
+	FREE_NULL_LIST(coord_list);
 
 	/* We need to remove these users from the wckey table */
 	memset(&wckey_cond, 0, sizeof(slurmdb_wckey_cond_t));
 	wckey_cond.user_list = assoc_cond.user_list;
 	coord_list = as_mysql_remove_wckeys(mysql_conn, uid, &wckey_cond);
-	if (coord_list)
-		list_destroy(coord_list);
+	FREE_NULL_LIST(coord_list);
 
-	list_destroy(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
@@ -946,7 +937,7 @@ no_user_table:
 	xfree(user_name);
 	xfree(name_char);
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		xfree(assoc_char);
 		return NULL;
 	}
@@ -960,7 +951,7 @@ no_user_table:
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
 		error("Couldn't remove user coordinators");
-		list_destroy(ret_list);
+		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
 
@@ -1081,8 +1072,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				// happen
 				error("We are here with no coord accts");
 				errno = ESLURM_ACCESS_DENIED;
-				list_destroy(ret_list);
-				list_destroy(user_list);
+				FREE_NULL_LIST(ret_list);
+				FREE_NULL_LIST(user_list);
 				xfree(extra);
 				mysql_free_result(result);
 				return NULL;
@@ -1099,8 +1090,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				      "ability to change this account (%s)",
 				      user.name, user.uid, row[1]);
 				errno = ESLURM_ACCESS_DENIED;
-				list_destroy(ret_list);
-				list_destroy(user_list);
+				FREE_NULL_LIST(ret_list);
+				FREE_NULL_LIST(user_list);
 				xfree(extra);
 				mysql_free_result(result);
 				return NULL;
@@ -1122,8 +1113,8 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {
-		list_destroy(ret_list);
-		list_destroy(user_list);
+		FREE_NULL_LIST(ret_list);
+		FREE_NULL_LIST(user_list);
 		errno = SLURM_ERROR;
 		return NULL;
 	}
@@ -1140,7 +1131,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			slurmdb_destroy_user_rec(user_rec);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(user_list);
+	FREE_NULL_LIST(user_list);
 
 	return ret_list;
 }
@@ -1214,7 +1205,7 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		else {
 			list_transfer(user_cond->assoc_cond->user_list,
 				      user_list);
-			list_destroy(user_list);
+			FREE_NULL_LIST(user_list);
 		}
 		user_list = NULL;
 	} else if ((user_cond->def_acct_list
@@ -1349,7 +1340,7 @@ empty:
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
-		list_destroy(assoc_list);
+		FREE_NULL_LIST(assoc_list);
 	}
 
 get_wckeys:
@@ -1423,7 +1414,7 @@ get_wckeys:
 		list_iterator_destroy(itr);
 		list_iterator_destroy(wckey_itr);
 
-		list_destroy(wckey_list);
+		FREE_NULL_LIST(wckey_list);
 	}
 
 	return user_list;

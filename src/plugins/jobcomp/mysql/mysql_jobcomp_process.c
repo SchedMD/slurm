@@ -123,7 +123,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	if (!(result =
 	     mysql_db_query_ret(jobcomp_mysql_conn, query, 0))) {
 		xfree(query);
-		list_destroy(job_list);
+		FREE_NULL_LIST(job_list);
 		return NULL;
 	}
 	xfree(query);

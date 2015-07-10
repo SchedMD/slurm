@@ -251,8 +251,7 @@ static List _process_grouped_report(
 		/* don't limit associations to having the partition_list */
 		//assoc_cond.partition_list = job_cond->partition_list;
 		if (!job_cond->acct_list || !list_count(job_cond->acct_list)) {
-			if (job_cond->acct_list)
-				list_destroy(job_cond->acct_list);
+			FREE_NULL_LIST(job_cond->acct_list);
 			job_cond->acct_list = list_create(NULL);
 			list_append(job_cond->acct_list, "root");
 		}
@@ -514,23 +513,18 @@ no_objects:
 	list_iterator_destroy(cluster_itr);
 
 end_it:
-	if (object_list)
-		list_destroy(object_list);
+	FREE_NULL_LIST(object_list);
 
-	if (object2_list)
-		list_destroy(object2_list);
+	FREE_NULL_LIST(object2_list);
 
 	if (destroy_job_cond)
 		slurmdb_destroy_job_cond(job_cond);
 
-	if (destroy_grouping_list && grouping_list)
-		list_destroy(grouping_list);
+	if (destroy_grouping_list)
+		FREE_NULL_LIST(grouping_list);
 
 	if (exit_code) {
-		if (cluster_list) {
-			list_destroy(cluster_list);
-			cluster_list = NULL;
-		}
+		FREE_NULL_LIST(cluster_list);
 	}
 
 	return cluster_list;

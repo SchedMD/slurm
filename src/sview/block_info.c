@@ -236,10 +236,7 @@ static void _block_info_free(sview_block_info_t *block_ptr)
 		xfree(block_ptr->imagemloader);
 		xfree(block_ptr->imageramdisk);
 
-		if (block_ptr->job_list) {
-			list_destroy(block_ptr->job_list);
-			block_ptr->job_list = NULL;
-		}
+		FREE_NULL_LIST(block_ptr->job_list);
 
 		/* don't xfree(block_ptr->mp_inx);
 		   it isn't copied like the chars and is freed in the api
@@ -705,7 +702,7 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 	if (last_list) {
 		list_iterator_destroy(last_list_itr);
-		list_destroy(last_list);
+		FREE_NULL_LIST(last_list);
 	}
 
 	return block_list;
@@ -1400,7 +1397,7 @@ display_it:
 
 	_update_info_block(send_block_list,
 			   GTK_TREE_VIEW(spec_info->display_widget));
-	list_destroy(send_block_list);
+	FREE_NULL_LIST(send_block_list);
 end_it:
 	popup_win->toggled = 0;
 	popup_win->force_refresh = 0;

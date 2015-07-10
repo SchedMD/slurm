@@ -1601,8 +1601,7 @@ extern int get_system_stats(GtkTable *table)
 		rc = update_grid_table(main_grid_table, grid_button_list,
 				       node_list);
 		if (rc == RESET_GRID) {
-			list_destroy(grid_button_list);
-			grid_button_list = NULL;
+			FREE_NULL_LIST(grid_button_list);
 			grid_button_list = list_create(destroy_grid_button);
 			setup_grid_table(main_grid_table, grid_button_list,
 					 node_list);

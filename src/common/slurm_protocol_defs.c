@@ -1397,8 +1397,7 @@ extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
         if (msg) {
                 xfree(msg->node_list);
-		if (msg->preemptee_job_id)
-			list_destroy(msg->preemptee_job_id);
+		FREE_NULL_LIST(msg->preemptee_job_id);
                 xfree(msg);
         }
 }
@@ -3128,10 +3127,8 @@ extern void slurm_destroy_assoc_shares_object(void *object)
 extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 {
 	if (msg) {
-		if (msg->acct_list)
-			list_destroy(msg->acct_list);
-		if (msg->user_list)
-			list_destroy(msg->user_list);
+		FREE_NULL_LIST(msg->acct_list);
+		FREE_NULL_LIST(msg->user_list);
 		xfree(msg);
 	}
 }
@@ -3139,8 +3136,7 @@ extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
 	if (msg) {
-		if (msg->assoc_shares_list)
-			list_destroy(msg->assoc_shares_list);
+		FREE_NULL_LIST(msg->assoc_shares_list);
 		xfree(msg);
 	}
 }
@@ -3163,10 +3159,8 @@ extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
 	if (msg) {
-		if (msg->job_id_list)
-			list_destroy(msg->job_id_list);
-		if (msg->uid_list)
-			list_destroy(msg->uid_list);
+		FREE_NULL_LIST(msg->job_id_list);
+		FREE_NULL_LIST(msg->uid_list);
 		xfree(msg);
 	}
 }
@@ -3175,8 +3169,7 @@ extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
 	if (msg) {
-		if (msg->priority_factors_list)
-			list_destroy(msg->priority_factors_list);
+		FREE_NULL_LIST(msg->priority_factors_list);
 		xfree(msg);
 	}
 }
@@ -3185,8 +3178,7 @@ extern void slurm_free_priority_factors_response_msg(
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
 	if (msg) {
-		if (msg->update_list)
-			list_destroy(msg->update_list);
+		FREE_NULL_LIST(msg->update_list);
 		xfree(msg);
 	}
 }

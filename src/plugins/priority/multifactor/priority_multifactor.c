@@ -1630,8 +1630,7 @@ extern List priority_p_get_priority_factors_list(
 		}
 		list_iterator_destroy(itr);
 		if (!list_count(ret_list)) {
-			list_destroy(ret_list);
-			ret_list = NULL;
+			FREE_NULL_LIST(ret_list);
 		}
 	}
 	unlock_slurmctld(job_read_lock);

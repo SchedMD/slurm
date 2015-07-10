@@ -342,7 +342,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				}
 			}
 			list_iterator_destroy(itr);
-			list_destroy(tmp_list);
+			FREE_NULL_LIST(tmp_list);
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if (!event_cond->cluster_list)
@@ -498,7 +498,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 
 	if (exit_code) {
 		slurmdb_destroy_event_cond(event_cond);
-		list_destroy(format_list);
+		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
 
@@ -623,10 +623,10 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
-	list_destroy(format_list);
+	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 
@@ -637,7 +637,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
-		list_destroy(print_fields_list);
+		FREE_NULL_LIST(print_fields_list);
 		return SLURM_ERROR;
 	}
 	itr = list_iterator_create(event_list);
@@ -776,7 +776,7 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(event_list);
-	list_destroy(print_fields_list);
+	FREE_NULL_LIST(event_list);
+	FREE_NULL_LIST(print_fields_list);
 	return rc;
 }
