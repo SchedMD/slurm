@@ -359,7 +359,7 @@ easy and elegantly manner.
 <li><a href="mslurm/mslurm_overview.pdf">Overview</a></li>
 <li><a href="mslurm/mslurm_install_instructions.pdf">Installation Instructions</a></li>
 <li><a href="mslurm/mslurm.tgz">Code</a></li>
-</ul>
+</ul><br>
 
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 2 license,
