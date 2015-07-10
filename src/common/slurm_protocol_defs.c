@@ -663,12 +663,17 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->ckpt_dir);
 		xfree(msg->restart_dir);
 
-		for (i = 0; i < msg->argc; i++)
-			xfree(msg->argv[i]);
-		xfree(msg->argv);
-		for (i = 0; i < msg->spank_job_env_size; i++)
-			xfree(msg->spank_job_env[i]);
-		xfree(msg->spank_job_env);
+		if (msg->argv) {
+			for (i = 0; i < msg->argc; i++)
+				xfree(msg->argv[i]);
+			xfree(msg->argv);
+		}
+
+		if (msg->spank_job_env) {
+			for (i = 0; i < msg->spank_job_env_size; i++)
+				xfree(msg->spank_job_env[i]);
+			xfree(msg->spank_job_env);
+		}
 
 		if (msg->environment) {
 			for (i = 0; i < msg->envc; i++)
@@ -3195,6 +3200,7 @@ extern void slurm_free_comp_msg_list(void *x)
 			msg->data = NULL;
 		} else
 			slurm_free_msg_data(msg->msg_type, msg->data);
+
 		slurm_free_msg(msg);
 	}
 }
