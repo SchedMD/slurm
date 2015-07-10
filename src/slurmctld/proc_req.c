@@ -183,7 +183,7 @@ inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
 							     msg);
-inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_step_complete(slurm_msg_t * msg, bool locked);
 inline static void  _slurm_rpc_step_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_step_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
@@ -491,7 +491,7 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		/* No body to free */
 		break;
 	case REQUEST_STEP_COMPLETE:
-		_slurm_rpc_step_complete(msg);
+		_slurm_rpc_step_complete(msg, 0);
 		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_STEP_LAYOUT:
@@ -3089,7 +3089,7 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
  *      completion of a job step on at least some nodes.
  *	If the job step is complete, it may
  *	represent the termination of an entire job */
-static void _slurm_rpc_step_complete(slurm_msg_t *msg)
+static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool locked)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, rc, rem;
@@ -3110,14 +3110,19 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		     req->job_id, req->job_step_id, req->range_first,
 		     req->range_last, req->step_rc, uid);
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
+	if (!locked) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
+
 	rc = step_partial_comp(req, uid, &rem, &step_rc);
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!locked) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		slurm_send_rc_msg(msg, rc);
 		if (!rc)	/* partition completion */
 			schedule_job_save();	/* Has own locking */
@@ -3128,8 +3133,10 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		/* FIXME: test for error, possibly cause batch job requeue */
 		error_code = job_complete(req->job_id, uid, false,
 					  false, step_rc);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!locked) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		END_TIMER2("_slurm_rpc_step_complete");
 
 		/* return result */
@@ -3148,8 +3155,10 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	} else {
 		error_code = job_step_complete(req->job_id, req->job_step_id,
 					       uid, false, step_rc);
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!locked) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		END_TIMER2("_slurm_rpc_step_complete");
 
 		/* return result */
@@ -5719,6 +5728,9 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 		case REQUEST_COMPLETE_BATCH_SCRIPT:
 		case REQUEST_COMPLETE_BATCH_JOB:
 			_slurm_rpc_complete_batch_script(next_msg, 1);
+			break;
+		case REQUEST_STEP_COMPLETE:
+			_slurm_rpc_step_complete(next_msg, 1);
 			break;
 		case MESSAGE_EPILOG_COMPLETE:
 			_slurm_rpc_epilog_complete(next_msg, run_scheduler, 1);

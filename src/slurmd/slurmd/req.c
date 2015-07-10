@@ -188,6 +188,7 @@ static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
 static int  _rpc_acct_gather_energy(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
+static int  _rpc_step_complete_aggr(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
@@ -429,6 +430,10 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_STEP_COMPLETE:
 		(void) _rpc_step_complete(msg);
+		slurm_free_step_complete_msg(msg->data);
+		break;
+	case REQUEST_STEP_COMPLETE_AGGR:
+		(void) _rpc_step_complete_aggr(msg);
 		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_STAT:
@@ -2847,6 +2852,55 @@ done:
 	slurm_send_rc_msg(msg, rc);
 
 	return rc;
+}
+
+static void _setup_step_complete_msg(slurm_msg_t *msg, void *data)
+{
+	slurm_msg_t_init(msg);
+	msg->msg_type = REQUEST_STEP_COMPLETE;
+	msg->data = data;
+}
+
+/* This step_complete RPC came from slurmstepd because we are using
+ * message aggregation configured and we are at the head of the tree.
+ * This just adds the message to the list and goes on it's merry way. */
+static int
+_rpc_step_complete_aggr(slurm_msg_t *msg)
+{
+	int rc;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: step_complete_aggr from uid %d",
+		      uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return SLURM_ERROR;
+	}
+
+	if (conf->msg_aggr_window_msgs > 1) {
+		slurm_msg_t *req = xmalloc_nz(sizeof(slurm_msg_t));
+		_setup_step_complete_msg(req, msg->data);
+		msg->data = NULL;
+
+		msg_aggr_add_msg(req, 1, NULL);
+	} else {
+		slurm_msg_t req;
+		_setup_step_complete_msg(&req, msg->data);
+
+		while (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
+			error("Unable to send step complete, "
+			      "trying again in a minute: %m");
+		}
+	}
+
+	/* Finish communication with the stepd, we have to wait for
+	 * the message back from the slurmctld or we will cause a race
+	 * condition with srun.
+	 */
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+	return SLURM_SUCCESS;
 }
 
 /* Get list of active jobs and steps, xfree returned value */

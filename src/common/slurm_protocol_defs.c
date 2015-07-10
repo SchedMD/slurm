@@ -3361,6 +3361,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_block_info_request_msg(data);
 		break;
 	case REQUEST_STEP_COMPLETE:
+	case REQUEST_STEP_COMPLETE_AGGR:
 		slurm_free_step_complete_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
@@ -3813,6 +3814,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_SUSPEND";
 	case REQUEST_STEP_COMPLETE:
 		return "REQUEST_STEP_COMPLETE";
+	case REQUEST_STEP_COMPLETE_AGGR:
+		return "REQUEST_STEP_COMPLETE_AGGR";
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		return "REQUEST_COMPLETE_JOB_ALLOCATION";
 	case REQUEST_COMPLETE_BATCH_SCRIPT:

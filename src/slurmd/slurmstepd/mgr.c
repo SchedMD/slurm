@@ -850,7 +850,27 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 		/* on error AGAIN, send to the slurmctld instead */
 		debug3("Rank %d sending complete to slurmctld instead, range "
 		       "%d to %d", step_complete.rank, first, last);
-	} else {
+	} else if (conf->msg_aggr_window_msgs > 1) {
+		/* this is the base of the tree, its parent is slurmctld */
+		debug3("Rank %d sending complete to slurmd for message aggr, "
+		       "range %d to %d",
+		       step_complete.rank, first, last);
+		/* this is the base of the tree, but we are doing
+		 * message aggr so send it to the slurmd to handle */
+		req.msg_type = REQUEST_STEP_COMPLETE_AGGR;
+		slurm_set_addr_char(&req.address, conf->port, "localhost");
+		for (i = 0; i <= REVERSE_TREE_PARENT_RETRY; i++) {
+			if (i)
+				sleep(1);
+			retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 0);
+			if ((retcode == 0) && (rc == 0))
+				goto finished;
+		}
+		req.msg_type = REQUEST_STEP_COMPLETE;
+		/* this is the base of the tree, its parent is slurmctld */
+		debug3("Rank %d sending complete to slurmctld instead, range "
+		       "%d to %d", step_complete.rank, first, last);
+	}  else {
 		/* this is the base of the tree, its parent is slurmctld */
 		debug3("Rank %d sending complete to slurmctld, range %d to %d",
 		       step_complete.rank, first, last);
