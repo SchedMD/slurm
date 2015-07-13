@@ -3415,11 +3415,12 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		char *node_names = NULL;
 		if (switches_node_cnt[i])
 			node_names = bitmap2node_name(switches_bitmap[i]);
-		debug("switch=%s nodes=%u:%s required:%u speed=%u",
-		      switch_record_table[i].name,
-		      switches_node_cnt[i], node_names,
-		      switches_required[i],
-		      switch_record_table[i].link_speed);
+		info("switch=%s level=%d nodes=%u:%s required:%u speed=%u",
+		     switch_record_table[i].name,
+		     switch_record_table[i].level,
+		     switches_node_cnt[i], node_names,
+		     switches_required[i],
+		     switch_record_table[i].link_speed);
 		xfree(node_names);
 	}
 #endif
