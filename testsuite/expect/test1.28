@@ -41,7 +41,7 @@ set matches          0
 
 print_header $test_id
 
-make_bash_script $file_in "env"
+make_bash_script $file_in "env | grep TEST; exit 0"
 
 #
 # Spawn a job via srun to print environment variables
