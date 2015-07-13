@@ -7498,7 +7498,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 
-	if (!(IS_JOB_FINISHED(job_ptr)))
+	if (!(IS_JOB_COMPLETED(job_ptr)))
 		return 0;	/* Job still active */
 
 	if (job_ptr->step_list && list_count(job_ptr->step_list)) {
@@ -11193,7 +11193,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			else
 				i_last = -2;
 			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(array_bitmap, i))
+				if (!bit_test(tmp_bitmap, i))
 					continue;
 				job_ptr->array_task_id = i;
 				new_job_ptr = job_array_split(job_ptr);

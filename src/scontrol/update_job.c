@@ -1457,7 +1457,8 @@ static uint32_t _get_job_time(const char *job_id_str)
 				       resp->job_array[i].array_bitmap;
 			if ((task_id == NO_VAL) ||
 			    (resp->job_array[i].array_task_id == task_id) ||
-			    ((task_id < bit_size(array_bitmap)) &&
+			    (array_bitmap &&
+			     (task_id < bit_size(array_bitmap)) &&
 			     bit_test(array_bitmap, task_id))) {
 				/* Array job with task_id match */
 				time_limit = resp->job_array[i].time_limit;
