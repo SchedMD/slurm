@@ -10579,7 +10579,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			else
 				i_last = -2;
 			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(array_bitmap, i))
+				if (!bit_test(tmp_bitmap, i))
 					continue;
 				job_ptr->array_task_id = i;
 				new_job_ptr = _job_rec_copy(job_ptr);
