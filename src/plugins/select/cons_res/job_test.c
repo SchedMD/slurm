@@ -1773,11 +1773,12 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				node_names = bitmap2node_name(
 						switches_bitmap[i]);
 			}
-			debug("switch=%s nodes=%u:%s required:%u speed:%u",
-			      switch_record_table[i].name,
-			      switches_node_cnt[i], node_names,
-			      switches_required[i],
-			      switch_record_table[i].link_speed);
+			info("switch=%s level=%d nodes=%u:%s required:%u speed:%u",
+			     switch_record_table[i].name,
+			     switch_record_table[i].level,
+			     switches_node_cnt[i], node_names,
+			     switches_required[i],
+			     switch_record_table[i].link_speed);
 			xfree(node_names);
 		}
 	}
