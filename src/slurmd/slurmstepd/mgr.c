@@ -2574,7 +2574,7 @@ static int
 _initgroups(stepd_step_rec_t *job)
 {
 	int rc;
-	gid_t primary_gid;
+	gid_t primary_gid = 0;
 
 	if (job->ngids > 0) {
 		xassert(job->gids);
@@ -2622,10 +2622,12 @@ _initgroups(stepd_step_rec_t *job)
 			error("%s: too many groups %d for user %s\n",
 			      __func__, size, job->user_name);
 		}
-		++size;
-		grps[size - 1] = primary_gid;
+		grps[size++] = primary_gid;
 
-		setgroups(size, grps);
+		if (setgroups(size, grps)) {
+			error("%s: setgroups() failed: %m", __func__);
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -2635,19 +2637,19 @@ _initgroups(stepd_step_rec_t *job)
 static int
 _get_primary_group(const char *user, gid_t *gid)
 {
-    struct passwd pwd;
-    struct passwd *pwd0;
-    char buf[256];
-    int cc;
+	struct passwd pwd;
+	struct passwd *pwd0 = NULL;
+	char buf[256];
+	int cc;
 
-    cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
-    if (cc != 0) {
-	    error("%s: getpwnam_r() failed: %m", __func__);
-        return -1;
-    }
+	cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
+	if (cc != 0) {
+		error("%s: getpwnam_r() failed: %m", __func__);
+		return -1;
+	}
 
-    *gid = pwd0->pw_gid;
-    return 0;
+	*gid = pwd0->pw_gid;
+	return 0;
 }
 
 
