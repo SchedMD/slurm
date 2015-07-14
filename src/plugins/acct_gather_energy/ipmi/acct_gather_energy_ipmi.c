@@ -1039,10 +1039,8 @@ static int _parse_sensor_descriptions(void)
 	description_t *d;
 	bool found;
 
-	if (slurm_ipmi_conf.power_sensors == NULL
-	    || xstrcmp(slurm_ipmi_conf.power_sensors, "") == 0) {
-		return SLURM_ERROR;
-	}
+	if (!slurm_ipmi_conf.power_sensors || !slurm_ipmi_conf.power_sensors[0])
+		return SLURM_SUCCESS;
 
 	/* count the number of descriptions */
 	str_desc_list = xstrdup(slurm_ipmi_conf.power_sensors);
