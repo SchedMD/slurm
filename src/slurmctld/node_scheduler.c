@@ -1794,6 +1794,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		} else if ((job_ptr->state_reason == WAIT_BLOCK_MAX_ERR) ||
 			   (job_ptr->state_reason == WAIT_BLOCK_D_ACTION)) {
 			/* state_reason was already setup */
+		} else if ((job_ptr->state_reason == WAIT_HELD) &&
+			   (job_ptr->priority == 0)) {
+			/* Held by select plugin due to some failure */
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
