@@ -8773,10 +8773,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    && !xstrcmp(job_specs->account, job_ptr->account)) {
 		debug("sched: update_job: new account identical to "
 		      "old account %u", job_ptr->job_id);
-		xfree(job_specs->account);
-	}
-
-	if (job_specs->account) {
+	} else if (job_specs->account) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
@@ -8809,13 +8806,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			if (exc_bitmap) {
 				xfree(detail_ptr->exc_nodes);
 				detail_ptr->exc_nodes =
-					job_specs->exc_nodes;
+					xstrdup(job_specs->exc_nodes);
 				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 				detail_ptr->exc_node_bitmap = exc_bitmap;
 				info("sched: update_job: setting exc_nodes to "
 				     "%s for job_id %u", job_specs->exc_nodes,
 				     job_ptr->job_id);
-				job_specs->exc_nodes = NULL;
 			}
 		}
 	}
@@ -8860,8 +8856,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			update_accounting = true;
 		}
 		FREE_NULL_BITMAP(req_bitmap);
-		xfree(job_specs->req_nodes);
-	}
+	} else	/* NOTE: continues to "if" logic below */
 #endif
 
 	if (job_specs->req_nodes) {
@@ -8882,14 +8877,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			if (req_bitmap) {
 				xfree(detail_ptr->req_nodes);
 				detail_ptr->req_nodes =
-					job_specs->req_nodes;
+					xstrdup(job_specs->req_nodes);
 				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 				xfree(detail_ptr->req_node_layout);
 				detail_ptr->req_node_bitmap = req_bitmap;
 				info("sched: update_job: setting req_nodes to "
 				     "%s for job_id %u", job_specs->req_nodes,
 				     job_ptr->job_id);
-				job_specs->req_nodes = NULL;
 			}
 		}
 	}
@@ -8974,12 +8968,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    && !xstrcmp(job_specs->partition, job_ptr->partition)) {
 		debug("sched: update_job: new partition identical to "
 		      "old partition %u", job_ptr->job_id);
-		xfree(job_specs->partition);
-	}
-
-	if (job_specs->partition) {
+	} else if (job_specs->partition) {
 		List part_ptr_list = NULL;
-		bool old_res = false;
+		bool resv_reset = false;
+		char *resv_orig = NULL;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -9015,10 +9007,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_specs->time_limit = job_ptr->time_limit;
 		if (!job_specs->reservation
 		    || job_specs->reservation[0] == '\0') {
-			/* just incase the reservation is '\0' */
-			xfree(job_specs->reservation);
+			resv_reset = true;
+			resv_orig = job_specs->reservation;
 			job_specs->reservation = job_ptr->resv_name;
-			old_res = true;
 		}
 
 		error_code = _get_job_parts(job_specs,
@@ -9073,8 +9064,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		FREE_NULL_LIST(part_ptr_list);	/* error clean-up */
 
-		if (old_res)
-			job_specs->reservation = NULL;
+		if (resv_reset)
+			job_specs->reservation = resv_orig;
 
 		if (error_code != SLURM_SUCCESS)
 			goto fini;
@@ -9088,8 +9079,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		error_code = ESLURM_ACCESS_DENIED;
 	} else if (job_specs->comment) {
 		xfree(job_ptr->comment);
-		job_ptr->comment = job_specs->comment;
-		job_specs->comment = NULL;	/* Nothing left to free */
+		job_ptr->comment = xstrdup(job_specs->comment);
 		info("update_job: setting comment to %s for job_id %u",
 		     job_ptr->comment, job_ptr->job_id);
 
@@ -9274,7 +9264,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		}else {
+		} else {
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
 			info("update_job: setting pn_min_cpus to %u for "
 			     "job_id %u", job_specs->pn_min_cpus,
@@ -9497,15 +9487,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	/* this needs to be after partition and QOS checks */
 	if (job_specs->reservation
 	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
 		debug("sched: update_job: new reservation identical to "
 		      "old reservation %u", job_ptr->job_id);
-		xfree(job_specs->reservation);
-	}
-
-	/* this needs to be after partition and qos checks */
-	if (job_specs->reservation) {
+	} else if (job_specs->reservation) {
 		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 		} else {
@@ -9513,13 +9500,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			char *save_resv_name = job_ptr->resv_name;
 			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
 
-			job_ptr->resv_name = job_specs->reservation;
-			job_specs->reservation = NULL;	/* Nothing to free */
+			job_ptr->resv_name = xstrdup(job_specs->reservation);
 			rc = validate_job_resv(job_ptr);
-			/* Make sure this job isn't using a partition
-			   or qos that requires it to be in a
-			   reservation.
-			*/
+			/* Make sure this job isn't using a partition or QOS
+			 * that requires it to be in a reservation. */
 			if (rc == SLURM_SUCCESS && !job_ptr->resv_name) {
 				struct part_record *part_ptr =
 					job_ptr->part_ptr;
@@ -9543,7 +9527,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				update_accounting = true;
 			} else {
 				/* Restore reservation info */
-				job_specs->reservation = job_ptr->resv_name;
 				job_ptr->resv_name = save_resv_name;
 				job_ptr->resv_ptr = save_resv_ptr;
 				error_code = rc;
@@ -9814,7 +9797,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (job_specs->features[0] != '\0') {
 			char *old_features = detail_ptr->features;
 			List old_list = detail_ptr->feature_list;
-			detail_ptr->features = job_specs->features;
+			detail_ptr->features = xstrdup(job_specs->features);
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr)) {
 				info("sched: update_job: invalid features"
@@ -9832,7 +9815,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				xfree(old_features);
 				if (old_list)
 					list_destroy(old_list);
-				job_specs->features = NULL;
 			}
 		} else {
 			info("sched: update_job: cleared features for job %u",
@@ -9868,8 +9850,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     "%s for job_id %u",
 			     job_specs->gres, job_ptr->job_id);
 			xfree(job_ptr->gres);
-			job_ptr->gres = job_specs->gres;
-			job_specs->gres = NULL;
+			job_ptr->gres = xstrdup(job_specs->gres);
 			FREE_NULL_LIST(job_ptr->gres_list);
 			job_ptr->gres_list = tmp_gres_list;
 		}
@@ -9881,17 +9862,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    && !xstrcmp(job_specs->name, job_ptr->name)) {
 		debug("sched: update_job: new name identical to "
 		      "old name %u", job_ptr->job_id);
-		xfree(job_specs->name);
-	}
-
-	if (job_specs->name) {
+	} if (job_specs->name) {
 		if (IS_JOB_FINISHED(job_ptr)) {
 			error_code = ESLURM_JOB_FINISHED;
 			goto fini;
 		} else {
 			xfree(job_ptr->name);
-			job_ptr->name = job_specs->name;
-			job_specs->name = NULL;
+			job_ptr->name = xstrdup(job_specs->name);
 
 			info("sched: update_job: setting name to %s for "
 			     "job_id %u", job_ptr->name, job_ptr->job_id);
@@ -9904,8 +9881,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_out);
-			detail_ptr->std_out = job_specs->std_out;
-			job_specs->std_out = NULL;
+			detail_ptr->std_out = xstrdup(job_specs->std_out);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -9915,10 +9891,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    && !xstrcmp(job_specs->wckey, job_ptr->wckey)) {
 		debug("sched: update_job: new wckey identical to "
 		      "old wckey %u", job_ptr->job_id);
-		xfree(job_specs->wckey);
-	}
-
-	if (job_specs->wckey) {
+	} else if (job_specs->wckey) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
@@ -10119,8 +10092,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->licenses, job_specs->licenses,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
-			job_ptr->licenses = job_specs->licenses;
-			job_specs->licenses = NULL; /* nothing to free */
+			job_ptr->licenses = xstrdup(job_specs->licenses);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
@@ -10133,8 +10105,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->licenses, job_specs->licenses,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
-			job_ptr->licenses = job_specs->licenses;
-			job_specs->licenses = NULL; /* nothing to free */
+			job_ptr->licenses = xstrdup(job_specs->licenses);
 			license_job_get(job_ptr);
 		} else {
 			/* licenses are valid, but job state or user not
@@ -10380,7 +10351,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		    || !strcmp(job_specs->network, "none")) {
 			info("sched: update_job: clearing Network option "
 			     "for jobid %u", job_ptr->job_id);
-
 		} else {
 			job_ptr->network = xstrdup(job_specs->network);
 			info("sched: update_job: setting Network to %s "
