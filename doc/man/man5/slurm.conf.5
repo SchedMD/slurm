@@ -3320,9 +3320,10 @@ The default value is "/tmp".
 
 .TP
 \fBTopologyParam\fR
-Identifies network topology options.
+Comma separated options identifing network topology options.
 The value of "dragonfly" is valid when TopologyPlugin=topology/tree.
-No other options are currently available.
+The value of "NoInAddrAny" is used to directly bind to the address of what
+the node resolves to instead of binding messages to any address on the node.
 
 .TP
 \fBTopologyPlugin\fR

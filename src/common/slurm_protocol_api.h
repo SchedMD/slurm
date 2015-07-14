@@ -1050,13 +1050,6 @@ extern size_t slurm_read_stream_timeout(slurm_fd_t open_fd,
 extern void slurm_set_addr(slurm_addr_t * slurm_address,
 			   uint16_t port, char *host);
 
-/* slurm_set_addr_any
- * initialized the slurm_address with the supplied port on INADDR_ANY
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- */
-extern void slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port);
-
 /* slurm_get_ip_str
  * given a slurm_address it returns its port and ip address string
  * IN slurm_address	- slurm_addr_t to be queried
@@ -1242,5 +1235,16 @@ extern int slurm_job_step_create (
  */
 extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
 			      char *data);
+
+/*
+ * slurm_setup_sockaddr - setup a sockaddr_in struct to be used for
+ *                        communication. If TopologyParameters has
+ *                        NoInAddrAny set it will work of the
+ *                        interface given from getaddrinfo from the
+ *                        hostname of the node.
+ * OUT sin - uninitialized sockaddr_in
+ * IN  port - port to used, we will call htons on it
+ */
+extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port);
 
 #endif

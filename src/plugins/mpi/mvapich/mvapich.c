@@ -2424,10 +2424,7 @@ static short _sock_bind_wild(int sockfd)
 	socklen_t len;
 	struct sockaddr_in sin;
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(0);    /* bind ephemeral port */
+	slurm_setup_sockaddr(&sin, 0); /* bind ephemeral port */
 
 	if (bind(sockfd, (struct sockaddr *) &sin, sizeof(sin)) < 0)
 		return (-1);

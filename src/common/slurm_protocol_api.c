@@ -78,6 +78,7 @@
 #include "src/common/msg_aggr.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_strcasestr.h"
 
 /* EXTERNAL VARIABLES */
 
@@ -97,6 +98,7 @@ static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
 static bool  _is_port_ok(int, uint16_t);
+static void _slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port);
 
 #if _DEBUG
 static void _print_data(char *data, int len);
@@ -2559,7 +2561,7 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
 
 	cnt = 0;
 eagain:
-	slurm_set_addr_any(&addr, port);
+	_slurm_set_addr_any(&addr, port);
 	cc = slurm_init_msg_engine(&addr);
 	if (cc < 0 && port == 0) {
 		++cnt;
@@ -2617,15 +2619,26 @@ slurm_init_msg_engine_ports(uint16_t *ports)
 slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
 	slurm_addr_t addr;
+	static uint32_t bind_addr = NO_VAL;
 
+	if (bind_addr == NO_VAL) {
 #ifdef BIND_SPECIFIC_ADDR
-	if (addr_name != NULL)
+		bind_addr = 1;
+#else
+		char *topology_params = slurm_get_topology_param();
+		if (topology_params &&
+		    slurm_strcasestr(topology_params, "NoInAddrAny"))
+			bind_addr = 1;
+		else
+			bind_addr = 0;
+		xfree(topology_params);
+#endif
+	}
+
+	if (addr_name)
 		slurm_set_addr(&addr, port, addr_name);
 	else
-		slurm_set_addr_any(&addr, port);
-#else
-	slurm_set_addr_any(&addr, port);
-#endif
+		_slurm_set_addr_any(&addr, port);
 
 	return slurm_init_msg_engine(&addr);
 }
@@ -3567,7 +3580,7 @@ size_t slurm_read_stream_timeout(slurm_fd_t open_fd, char *buffer,
  * OUT slurm_address	- slurm_addr_t to be filled in
  * IN port		- port in host order
  */
-void slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port)
+static void _slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port)
 {
 	slurm_set_addr_uint(slurm_address, port, SLURM_INADDR_ANY);
 }
@@ -4403,6 +4416,48 @@ slurm_forward_data(char *nodelist, char *address, uint32_t len, char *data)
 	return rc;
 }
 
+extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
+{
+	static uint32_t s_addr = NO_VAL;
+
+	memset(sin, 0, sizeof(struct sockaddr_in));
+	sin->sin_family = AF_INET;
+	sin->sin_port = htons(port);
+
+	if (s_addr == NO_VAL) {
+		/* On systems with multiple interfaces we might not
+		 * want to get just any address.  This is the case on
+		 * a Cray system with RSIP.
+		 */
+		char *topology_params = slurm_get_topology_param();
+		if (topology_params &&
+		    slurm_strcasestr(topology_params, "NoInAddrAny")) {
+			struct addrinfo s_ainfo;
+			struct addrinfo *p_ainfo;
+			char host[MAXHOSTNAMELEN];
+
+			s_ainfo.ai_flags = 0;
+			s_ainfo.ai_family = AF_INET;
+			s_ainfo.ai_socktype = SOCK_STREAM;
+			s_ainfo.ai_protocol = IPPROTO_TCP;
+
+			if (!gethostname(host, MAXHOSTNAMELEN) &&
+			    !getaddrinfo(host, NULL, &s_ainfo, &p_ainfo)) {
+				struct sockaddr_in *p_sin =
+					(struct sockaddr_in *)p_ainfo->ai_addr;
+				s_addr = p_sin->sin_addr.s_addr;
+			} else
+				fatal("slurm_setup_sockaddr: "
+				      "Can't get hostname or addr: %m");
+		} else
+			s_addr = htonl(INADDR_ANY);
+
+		xfree(topology_params);
+	}
+
+	sin->sin_addr.s_addr = s_addr;
+}
+
 /* sock_bind_range()
  */
 int
@@ -4448,10 +4503,7 @@ _is_port_ok(int s, uint16_t port)
 {
 	struct sockaddr_in sin;
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(port);
+	slurm_setup_sockaddr(&sin, port);
 
 	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		debug("%s: bind() failed port %d sock %d %m",

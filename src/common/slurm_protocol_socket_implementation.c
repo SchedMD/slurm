@@ -140,10 +140,7 @@ static void _sock_bind_wild(int sockfd)
 		srand48((long int) (time(NULL) + getpid()));
 	}
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(RANDOM_USER_PORT);
+	slurm_setup_sockaddr(&sin, RANDOM_USER_PORT);
 
 	for (retry=0; retry < PORT_RETRIES ; retry++) {
 		rc = bind(sockfd, (struct sockaddr *) &sin, sizeof(sin));
