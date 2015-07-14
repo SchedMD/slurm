@@ -445,8 +445,6 @@ static int _find_power_sensor(void)
 			descriptions[0].sensor_idxs = xmalloc(sizeof(uint16_t));
 			descriptions[0].sensor_idxs[0] = 0;
 
-			start_current_energies = xmalloc(sizeof(uint64_t));
-
 			previous_update_time = last_update_time;
 			last_update_time = time(NULL);
 		} else {
@@ -1113,8 +1111,6 @@ static int _parse_sensor_descriptions(void)
 			}
 		}
 	}
-
-	start_current_energies = xmalloc(sensors_len * sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 
