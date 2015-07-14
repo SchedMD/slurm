@@ -904,8 +904,9 @@ next_task:
 		slurmctld_diag_stats.bf_last_depth++;
 		already_counted = false;
 
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;	/* started in another partition */
+		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other part*/
+		    (job_ptr->priority == 0))	/* Job has been held */
+			continue;
 		if (job_ptr->preempt_in_progress)
 			continue; 	/* scheduled in another partition */
 		if (!avail_front_end(job_ptr))
@@ -1098,7 +1099,8 @@ next_task:
 			if ((job_ptr->magic  != JOB_MAGIC) ||
 			    (job_ptr->job_id != save_job_id))
 				continue;
-			if (!IS_JOB_PENDING(job_ptr))
+			if (!IS_JOB_PENDING(job_ptr) ||	/* Already started */
+			    (job_ptr->priority == 0))	/* Job has been held */
 				continue;
 			if (!avail_front_end(job_ptr))
 				continue;	/* No available frontend */
