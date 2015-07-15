@@ -672,7 +672,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
  * virtual CPUs (hyperthreads)
  */
 static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
-				     const uint16_t cr_type)
+				     const uint16_t cr_type, bool preempt_mode)
 {
 	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
@@ -841,15 +841,19 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 					cpus -= vpus;
 				sock_start[s]++;
 			}
-			if (prev_cpus == cpus) {
+			if (prev_cpus != cpus)
+				 continue;
+			if (!preempt_mode) {
 				/* we're stuck! */
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
-				error("cons_res: sync loop not progressing, "
-				      "holding job %u", job_ptr->job_id);
-				error_code = SLURM_ERROR;
-				goto fini;
+				error("%s: sync loop not progressing on node %s, holding job %u",
+				      __func__,
+				      select_node_record[n].node_ptr->name,
+				      job_ptr->job_id);
 			}
+			error_code = SLURM_ERROR;
+			goto fini;
 		}
 
 		/* clear the rest of the cores in each socket
@@ -916,8 +920,13 @@ fini:	xfree(sock_avoid);
  * - "cyclic" removes cores "evenly", starting from the last socket,
  * - "block" removes cores from the "last" socket(s)
  * - "plane" removes cores "in chunks"
+ *
+ * IN job_ptr - job to be allocated resources
+ * IN cr_type - allocation type (sockets, cores, etc.)
+ * IN preempt_mode - true if testing with simulated preempted jobs
  */
-extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
+extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
+		   bool preempt_mode)
 {
 	int error_code, cr_cpu = 1;
 
@@ -1002,7 +1011,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	case SLURM_DIST_BLOCK_CFULL:
 	case SLURM_DIST_CYCLIC_CFULL:
 	case SLURM_DIST_UNKNOWN:
-		error_code = _cyclic_sync_core_bitmap(job_ptr, cr_type);
+		error_code = _cyclic_sync_core_bitmap(job_ptr, cr_type,
+						      preempt_mode);
 		break;
 	default:
 		error("select/cons_res: invalid task_dist entry");

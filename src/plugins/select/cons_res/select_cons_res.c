@@ -1473,7 +1473,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, NULL);
+			 select_node_usage, NULL, false);
 	return rc;
 }
 
@@ -1511,6 +1511,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	uint16_t pass_count = 0;
 	uint16_t mode;
 	uint16_t tmp_cr_type = cr_type;
+	bool preempt_mode = false;
 
 	save_bitmap = bit_copy(bitmap);
 top:	orig_map = bit_copy(save_bitmap);
@@ -1530,11 +1531,13 @@ top:	orig_map = bit_copy(save_bitmap);
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap);
+			 select_node_usage, exc_core_bitmap, preempt_mode);
 
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
+	    (job_ptr->priority != 0)) {	/* Job can be held by bad allocate */
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
+		preempt_mode = true;
 		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_map);
@@ -1570,7 +1573,7 @@ top:	orig_map = bit_copy(save_bitmap);
 					 tmp_cr_type, job_node_req,
 					 select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap);
+					 exc_core_bitmap, preempt_mode);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
 				continue;
@@ -1719,7 +1722,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
 			 SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
-			 select_node_usage, exc_core_bitmap);
+			 select_node_usage, exc_core_bitmap, false);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
 		job_ptr->start_time = now;
@@ -1775,7 +1778,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
 				 req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 				 job_node_req, select_node_cnt, future_part,
-				 future_usage, exc_core_bitmap);
+				 future_usage, exc_core_bitmap, true);
 		if (rc == SLURM_SUCCESS) {
 			/* Actual start time will actually be later than "now",
 			 * but return "now" for backfill scheduler to
@@ -1804,7 +1807,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					 SELECT_MODE_WILL_RUN, tmp_cr_type,
 					 job_node_req, select_node_cnt,
 					 future_part, future_usage,
-					 exc_core_bitmap);
+					 exc_core_bitmap, true);
 			if (rc == SLURM_SUCCESS) {
 				if (tmp_job_ptr->end_time <= now) {
 					job_ptr->start_time =
