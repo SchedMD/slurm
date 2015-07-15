@@ -387,7 +387,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	int cpu_cnt = 0, cpu_inx = 0, i;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-/* 	char *name = NULL; */
+/*	char *name = NULL; */
 	uint16_t cpus[step_layout->node_cnt];
 
 	if (step_layout->node_cnt == 0)
@@ -422,14 +422,14 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	}
 
 	for (i=0; i<step_layout->node_cnt; i++) {
-/* 		name = hostlist_shift(hl); */
-/* 		if (!name) { */
-/* 			error("hostlist incomplete for this job request"); */
-/* 			hostlist_destroy(hl); */
-/* 			return SLURM_ERROR; */
-/* 		} */
-/* 		debug2("host %d = %s", i, name); */
-/* 		free(name); */
+/*		name = hostlist_shift(hl); */
+/*		if (!name) { */
+/*			error("hostlist incomplete for this job request"); */
+/*			hostlist_destroy(hl); */
+/*			return SLURM_ERROR; */
+/*		} */
+/*		debug2("host %d = %s", i, name); */
+/*		free(name); */
 		cpus[i] = (cpus_per_node[cpu_inx] / cpus_per_task);
 		if (cpus[i] == 0) {
 			/* this can be a result of a heterogeneous allocation
@@ -457,16 +457,16 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		}
 	}
 
-        if ((task_dist == SLURM_DIST_CYCLIC) ||
-            (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
-            (task_dist == SLURM_DIST_CYCLIC_CFULL) ||
-            (task_dist == SLURM_DIST_CYCLIC_BLOCK))
+	if ((task_dist == SLURM_DIST_CYCLIC) ||
+	    (task_dist == SLURM_DIST_CYCLIC_CYCLIC) ||
+	    (task_dist == SLURM_DIST_CYCLIC_CFULL) ||
+	    (task_dist == SLURM_DIST_CYCLIC_BLOCK))
 		return _task_layout_cyclic(step_layout, cpus);
 	else if (task_dist == SLURM_DIST_ARBITRARY
 		&& !(cluster_flags & CLUSTER_FLAG_FE))
 		return _task_layout_hostfile(step_layout, arbitrary_nodes);
-        else if (task_dist == SLURM_DIST_PLANE)
-                return _task_layout_plane(step_layout, cpus);
+	else if (task_dist == SLURM_DIST_PLANE)
+		return _task_layout_plane(step_layout, cpus);
 	else
 		return _task_layout_block(step_layout, cpus, cpus_per_task);
 }
@@ -575,7 +575,7 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus,
 		for (i = 0; ((i < step_layout->node_cnt) &&
 			     (task_id < step_layout->task_cnt)); i++) {
 			while (((step_layout->tasks[i] * cpus_per_task) <
-			        cpus[i]) &&
+				cpus[i]) &&
 			       (task_id < step_layout->task_cnt)) {
 				step_layout->tasks[i]++;
 				task_id++;
@@ -696,7 +696,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	       step_layout->node_cnt, step_layout->task_cnt);
 
 	if (step_layout->plane_size <= 0)
-	        return SLURM_ERROR;
+		return SLURM_ERROR;
 
 	if (step_layout->tasks == NULL)
 		return SLURM_ERROR;
@@ -738,9 +738,9 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	/* now distribute the tasks */
 	taskid = 0;
 	for (i=0; i < step_layout->node_cnt; i++) {
-	    step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-				           * step_layout->tasks[i]);
-	    cur_task[i] = 0;
+		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
+					       * step_layout->tasks[i]);
+		cur_task[i] = 0;
 	}
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		for (i=0; ((i<step_layout->node_cnt)
