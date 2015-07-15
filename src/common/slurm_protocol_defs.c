@@ -1563,12 +1563,15 @@ extern char *job_state_string(uint16_t inx)
 		return "CONFIGURING";
 	if (inx & JOB_RESIZING)
 		return "RESIZING";
-	if (inx & JOB_SPECIAL_EXIT)
-		return "SPECIAL_EXIT";
 	if (inx & JOB_REQUEUE)
 		return "REQUEUED";
+	if (inx & JOB_REQUEUE_HOLD)
+		return "REQUEUE_HOLD";
+	if (inx & JOB_SPECIAL_EXIT)
+		return "SPECIAL_EXIT";
 	if (inx & JOB_STOPPED)
 		return "STOPPED";
+
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -1606,10 +1609,12 @@ extern char *job_state_string_compact(uint16_t inx)
 		return "CF";
 	if (inx & JOB_RESIZING)
 		return "RS";
-	if (inx & JOB_SPECIAL_EXIT)
-		return "SE";
 	if (inx & JOB_REQUEUE)
 		return "RQ";
+	if (inx & JOB_REQUEUE_HOLD)
+		return "RH";
+	if (inx & JOB_SPECIAL_EXIT)
+		return "SE";
 	if (inx & JOB_STOPPED)
 		return "ST";
 

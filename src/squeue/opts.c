@@ -1779,6 +1779,15 @@ _build_state_list( char* str )
 
 }
 
+static void _append_state_list(List my_list, uint16_t state_id)
+{
+	uint16_t *state_rec;
+
+	state_rec = xmalloc(sizeof(uint16_t));
+	*state_rec = state_id;
+	list_append(my_list, state_rec);
+}
+
 /*
  * _build_all_states_list - build a list containing all possible job states
  * RET List of uint16_t values
@@ -1787,21 +1796,16 @@ static List
 _build_all_states_list( void )
 {
 	List my_list;
-	int i;
-	uint16_t * state_id;
+	uint16_t i;
 
 	my_list = list_create( NULL );
-	for (i = 0; i<JOB_END; i++) {
-		state_id = xmalloc( sizeof(uint16_t) );
-		*state_id = (uint16_t) i;
-		list_append( my_list, state_id );
-	}
-	state_id = xmalloc( sizeof(uint16_t) );
-	*state_id = (uint16_t) JOB_COMPLETING;
-	list_append( my_list, state_id );
-	state_id = xmalloc( sizeof(uint16_t) );
-	*state_id = (uint16_t) JOB_CONFIGURING;
-	list_append( my_list, state_id );
+	for (i = 0; i < JOB_END; i++)
+		_append_state_list(my_list, i);
+
+	_append_state_list(my_list, JOB_COMPLETING);
+	_append_state_list(my_list, JOB_CONFIGURING);
+	_append_state_list(my_list, JOB_SPECIAL_EXIT);
+
 	return my_list;
 
 }
