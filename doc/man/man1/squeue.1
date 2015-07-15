@@ -1125,16 +1125,16 @@ Job terminated due to preemption.
 \fBR   RUNNING\fR
 Job currently has an allocation.
 .TP
+\fBSE  SPECIAL_EXIT\fR
+The job was requeued in a special state. This state can be set by
+users, typically in EpilogSlurmctld, if the job has terminated with
+a particular exit value.
+.TP
 \fBS   SUSPENDED\fR
 Job has an allocation, but execution has been suspended.
 .TP
 \fBTO  TIMEOUT\fR
 Job terminated upon reaching its time limit.
-.TP
-\fBSE SPECIAL_EXIT\fR
-The job was requeued in a special state. This state can be set by
-users, typically in EpilogSlurmctld, if the job has terminated with
-a particular exit value.
 
 
 .SH "ENVIRONMENT VARIABLES"
