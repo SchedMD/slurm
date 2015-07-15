@@ -689,6 +689,7 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	int i, j, k, taskid = 0;
 	bool over_subscribe = false;
 	uint32_t cur_task[step_layout->node_cnt];
+	int plane_start = 0;
 
 	debug3("_task_layout_plane plane_size %u node_cnt %u task_cnt %u",
 	       step_layout->plane_size,
@@ -703,13 +704,31 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	/* figure out how many tasks go to each node */
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		bool space_remaining = false;
-		for (i=0; ((i<step_layout->node_cnt)
-			   && (taskid<step_layout->task_cnt)); i++) {
-			if ((j<cpus[i]) || over_subscribe) {
+		/* place one task on each node first */
+		if (j == 0) {
+			for (i = 0; ((i < step_layout->node_cnt) &&
+				     (taskid < step_layout->task_cnt)); i++) {
 				taskid++;
 				step_layout->tasks[i]++;
-				if ((j+1) < cpus[i])
-					space_remaining = true;
+			}
+		}
+		for (i = 0; ((i < step_layout->node_cnt) &&
+			     (taskid < step_layout->task_cnt)); i++) {
+			/* handle placing first task on each node */
+			if (j == 0)
+				plane_start = 1;
+			else
+				plane_start = 0;
+			for (k = plane_start; (k < step_layout->plane_size) &&
+				     (taskid < step_layout->task_cnt); k++) {
+				if ((cpus[i] - step_layout->tasks[i]) ||
+				    over_subscribe) {
+					taskid++;
+					step_layout->tasks[i]++;
+					if (cpus[i] - (step_layout->tasks[i]
+						       + 1) >= 0)
+						space_remaining = true;
+				}
 			}
 		}
 		if (!space_remaining)

@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix of job array update, previous logic could fail to update some tasks
     of a job array for some fields.
  -- CRAY - Fix seg fault if a blade is replaced and slurmctld is restarted.
+ -- Fix plane distribution to allocate in blocks rather than cyclically.
 
 * Changes in Slurm 14.11.8
 ==========================
