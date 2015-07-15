@@ -50,6 +50,12 @@
 
 #include "select_cons_res.h"
 
-int cr_dist(struct job_record *job_ptr,const uint16_t cr_type);
+/* Distribute tasks over CPUs
+ * IN job_ptr - job to be allocated resources
+ * IN cr_type - allocation type (sockets, cores, etc.)
+ * IN preempt_mode - true if testing with simulated preempted jobs
+ */
+extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
+		   bool preeempt_mode);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

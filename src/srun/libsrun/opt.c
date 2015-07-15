@@ -1725,32 +1725,6 @@ static void _opt_args(int argc, char **argv)
 		}
 	}
 
-        /* Check to see if user has specified enough resources to
-	 * satisfy the plane distribution with the specified
-	 * plane_size.
-	 * if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
-	 * problem Simple check will not catch all the problem/invalid
-	 * cases.
-	 * The limitations of the plane distribution in the cons_res
-	 * environment are more extensive and are documented in the
-	 * SLURM reference guide.  */
-	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
-	    opt.plane_size) {
-		if ((opt.ntasks/opt.plane_size) < opt.min_nodes) {
-			if (((opt.min_nodes-1)*opt.plane_size) >= opt.ntasks) {
-#if (0)
-				info("Too few processes ((n/plane_size) %d < N %d) "
-				     "and ((N-1)*(plane_size) %d >= n %d)) ",
-				     opt.ntasks/opt.plane_size, opt.min_nodes,
-				     (opt.min_nodes-1)*opt.plane_size, opt.ntasks);
-#endif
-				error("Too few processes for the requested "
-				      "{plane,node} distribution");
-				exit(error_exit);
-			}
-		}
-	}
-
 	if (opt.pty) {
 		char *launch_type = slurm_get_launch_type();
 		if (strcmp(launch_type, "launch/slurm")) {

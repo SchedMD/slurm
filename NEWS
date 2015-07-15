@@ -312,6 +312,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix to job array update logic that can result in a task ID of 4294967294.
  -- Fix of job array update, previous logic could fail to update some tasks
     of a job array for some fields.
+ -- CRAY - Fix seg fault if a blade is replaced and slurmctld is restarted.
+ -- Fix plane distribution to allocate in blocks rather than cyclically.
+ -- squeue - Remove newline from job array ID value printed.
 
 * Changes in Slurm 14.11.8
 ==========================

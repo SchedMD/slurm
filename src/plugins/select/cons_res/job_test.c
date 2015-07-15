@@ -2815,7 +2815,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			struct part_res_record *cr_part_ptr,
 			struct node_use_record *node_usage,
 			bitstr_t *exc_core_bitmap, bool prefer_alloc_nodes,
-			bool qos_preemptor)
+			bool qos_preemptor, bool preempt_mode)
 {
 	static int gang_mode = -1;
 	int error_code = SLURM_SUCCESS, ll; /* ll = layout array index */
@@ -3399,7 +3399,7 @@ alloc_job:
 
 	/* distribute the tasks and clear any unused cores */
 	job_ptr->job_resrcs = job_res;
-	error_code = cr_dist(job_ptr, cr_type);
+	error_code = cr_dist(job_ptr, cr_type, preempt_mode);
 	if (error_code != SLURM_SUCCESS) {
 		free_job_resources(&job_ptr->job_resrcs);
 		return error_code;

@@ -1399,7 +1399,16 @@ extern int select_p_state_restore(char *dir_name)
 
 		if (_unpack_blade(&blade_info, buffer, protocol_version))
 			goto unpack_error;
-		if (blade_info.id == blade_array[i].id) {
+		if (!blade_info.node_bitmap) {
+			error("Blade %"PRIu64"(%d %d %d) doesn't have "
+			      "any nodes from the state file!  "
+			      "Unexpected results could "
+			      "happen if jobs are running!",
+			      blade_info.id,
+			      GET_BLADE_X(blade_info.id),
+			      GET_BLADE_Y(blade_info.id),
+			      GET_BLADE_Z(blade_info.id));
+		} else if (blade_info.id == blade_array[i].id) {
 			//blade_array[i].job_cnt = blade_info.job_cnt;
 			if (!bit_equal(blade_array[i].node_bitmap,
 				       blade_info.node_bitmap))
