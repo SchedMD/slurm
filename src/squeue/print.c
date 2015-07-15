@@ -480,7 +480,7 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 		if (getenv("SLURM_BITSTR_LEN")) {
 			len = strlen(job->array_task_str) + 64;
 			buf = xmalloc(len);
-			sprintf(buf, "%u_[%s]\n", job->array_job_id,
+			sprintf(buf, "%u_[%s]", job->array_job_id,
 				job->array_task_str);
 			_print_str(buf, width, right, false);
 			xfree(buf);
