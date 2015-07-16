@@ -2900,6 +2900,87 @@ extern char *slurmdb_make_tres_string_from_simple(
 	return tres_str;
 }
 
+extern char *slurmdb_format_tres_str(
+	char *tres_in, List full_tres_list, bool simple)
+{
+	char *tres_str = NULL;
+	char *tmp_str = tres_in;
+	uint64_t count;
+	slurmdb_tres_rec_t *tres_rec;
+
+	if (!full_tres_list || !tmp_str || !tmp_str[0])
+		return tres_str;
+
+	while (tmp_str) {
+		if (tmp_str[0] >= '0' && tmp_str[0] <= '9') {
+			int id = atoi(tmp_str);
+			if (id <= 0) {
+				error("slurmdb_format_tres_str: "
+				      "no id found at %s instead", tmp_str);
+				goto get_next;
+			}
+			if (!(tres_rec = list_find_first(
+				      full_tres_list, slurmdb_find_tres_in_list,
+				      &id))) {
+				debug("slurmdb_format_tres_str: "
+				      "No tres known by id %d", id);
+				goto get_next;
+			}
+		} else {
+			int end = 0;
+			char *tres_name;
+
+			while (tmp_str[end]) {
+				if (tmp_str[end] == '=')
+					break;
+				end++;
+			}
+			if (!tmp_str[end]) {
+				error("slurmdb_format_tres_str: "
+				      "no id found at %s instead", tmp_str);
+				goto get_next;
+			}
+			tres_name = xstrndup(tmp_str, end);
+			if (!(tres_rec = list_find_first(
+				      full_tres_list,
+				      slurmdb_find_tres_in_list_by_type,
+				      tres_name))) {
+				debug("slurmdb_format_tres_str: "
+				      "No tres known by type %s", tres_name);
+				xfree(tres_name);
+				goto get_next;
+			}
+			xfree(tres_name);
+		}
+
+		if (!(tmp_str = strchr(tmp_str, '='))) {
+			error("slurmdb_format_tres_str: "
+			      "no value found");
+			break;
+		}
+		count = slurm_atoull(++tmp_str);
+
+		if (tres_str)
+			xstrcat(tres_str, ",");
+		if (simple || !tres_rec->type)
+			xstrfmtcat(tres_str, "%u=%"PRIu64"",
+				   tres_rec->id, count);
+
+		else
+			xstrfmtcat(tres_str, "%s%s%s=%"PRIu64"",
+				   tres_rec->type,
+				   tres_rec->name ? "/" : "",
+				   tres_rec->name ? tres_rec->name : "",
+				   count);
+	get_next:
+		if (!(tmp_str = strchr(tmp_str, ',')))
+			break;
+		tmp_str++;
+	}
+
+	return tres_str;
+}
+
 /* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, char *tres, bool replace)
@@ -3036,6 +3117,31 @@ extern int slurmdb_find_tres_in_list(void *x, void *key)
 
 	if (tres_rec->id == tres_id)
 		return 1;
+
+	return 0;
+}
+
+extern int slurmdb_find_tres_in_list_by_type(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
+	char *type = (char *)key;
+	int end = 0;
+	bool found = false;
+
+	while (type[end]) {
+		if (type[end] == ':') {
+			found = true;
+			break;
+		}
+		end++;
+	}
+
+	if (!xstrncmp(tres_rec->type, type, end)) {
+		if ((!found && !tres_rec->name) ||
+		    (found && !xstrcmp(tres_rec->name, type + end + 1))) {
+			return 1;
+		}
+	}
 
 	return 0;
 }

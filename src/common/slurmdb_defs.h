@@ -134,6 +134,8 @@ extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
 extern char *slurmdb_make_tres_string(List tres, bool simple);
+extern char *slurmdb_format_tres_str(
+	char *tres_in, List full_tres_list, bool simple);
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, char *tres, bool replace);
 extern char *slurmdb_make_tres_string_from_simple(
@@ -151,6 +153,7 @@ extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);
 extern int slurmdb_find_tres_in_list(void *x, void *key);
+extern int slurmdb_find_tres_in_list_by_type(void *x, void *key);
 extern int slurmdb_find_cluster_accting_tres_in_list(void *x, void *key);
 extern int slurmdb_add_cluster_accounting_to_tres_list(
 	slurmdb_cluster_accounting_rec_t *accting,
