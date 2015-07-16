@@ -429,8 +429,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 }
 
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
-					char *type, char *value,
-					int command_len, int option)
+				  char *type, char *value,
+				  int command_len, int option)
 {
 	int set = 0;
 	uint32_t mins = NO_VAL;
