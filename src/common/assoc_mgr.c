@@ -2145,9 +2145,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->cluster)
 		assoc->cluster = ret_assoc->cluster;
 
-	assoc->grp_cpu_mins    = ret_assoc->grp_cpu_mins;
-	assoc->grp_cpu_run_mins= ret_assoc->grp_cpu_run_mins;
-	assoc->grp_cpus        = ret_assoc->grp_cpus;
+	if (!assoc->grp_tres_mins)
+		assoc->grp_tres_mins    = ret_assoc->grp_tres_mins;
+	if (!assoc->grp_tres_run_mins)
+		assoc->grp_tres_run_mins= ret_assoc->grp_tres_run_mins;
+	if (!assoc->grp_tres)
+		assoc->grp_tres        = ret_assoc->grp_tres;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
 	assoc->grp_mem         = ret_assoc->grp_mem;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
@@ -2158,9 +2161,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->lft             = ret_assoc->lft;
 
-	assoc->max_cpu_mins_pj = ret_assoc->max_cpu_mins_pj;
-	assoc->max_cpu_run_mins= ret_assoc->max_cpu_run_mins;
-	assoc->max_cpus_pj     = ret_assoc->max_cpus_pj;
+	if (!assoc->max_tres_mins_pj)
+		assoc->max_tres_mins_pj = ret_assoc->max_tres_mins_pj;
+	if (!assoc->max_tres_run_mins)
+		assoc->max_tres_run_mins = ret_assoc->max_tres_run_mins;
+	if (!assoc->max_tres_pj)
+		assoc->max_tres_pj     = ret_assoc->max_tres_pj;
 	assoc->max_jobs        = ret_assoc->max_jobs;
 	assoc->max_nodes_pj    = ret_assoc->max_nodes_pj;
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
@@ -2795,7 +2801,9 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->shares_norm = assoc->usage->shares_norm;
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
-		share->grp_cpu_mins = assoc->grp_cpu_mins;
+		/* FIXME: This only works for CPUS now */
+		share->grp_cpu_mins = slurmdb_find_tres_count_in_string(
+			assoc->grp_tres_mins, TRES_CPU);
 		share->cpu_run_mins = assoc->usage->grp_used_cpu_run_secs / 60;
 		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
@@ -2976,15 +2984,23 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 			}
 
-			if (object->grp_cpu_mins != (uint64_t)NO_VAL)
-				rec->grp_cpu_mins = object->grp_cpu_mins;
-			if (object->grp_cpu_run_mins != (uint64_t)NO_VAL)
-				rec->grp_cpu_run_mins =
-					object->grp_cpu_run_mins;
-			if (object->grp_cpus != NO_VAL) {
-				update_jobs = true;
-				rec->grp_cpus = object->grp_cpus;
+			if (object->grp_tres_mins) {
+				rec->grp_tres_mins = object->grp_tres_mins;
+				object->grp_tres_mins = NULL;
 			}
+
+			if (object->grp_tres_run_mins) {
+				rec->grp_tres_run_mins =
+					object->grp_tres_run_mins;
+				object->grp_tres_run_mins = NULL;
+			}
+
+			if (object->grp_tres) {
+				update_jobs = true;
+				rec->grp_tres = object->grp_tres;
+				object->grp_tres = NULL;
+			}
+
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
 			if (object->grp_mem != NO_VAL) {
@@ -3007,15 +3023,24 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				resort = 1;
 			}
 
-			if (object->max_cpu_mins_pj != (uint64_t)NO_VAL)
-				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
-			if (object->max_cpu_run_mins != (uint64_t)NO_VAL)
-				rec->max_cpu_run_mins =
-					object->max_cpu_run_mins;
-			if (object->max_cpus_pj != NO_VAL) {
-				update_jobs = true;
-				rec->max_cpus_pj = object->max_cpus_pj;
+			if (object->max_tres_mins_pj) {
+				rec->max_tres_mins_pj =
+					object->max_tres_mins_pj;
+				object->max_tres_mins_pj = NULL;
 			}
+
+			if (object->max_tres_run_mins) {
+				rec->max_tres_run_mins =
+					object->max_tres_run_mins;
+				object->max_tres_run_mins = NULL;
+			}
+
+			if (object->max_tres_pj) {
+				update_jobs = true;
+				rec->max_tres_pj = object->max_tres_pj;
+				object->max_tres_pj = NULL;
+			}
+
 			if (object->max_jobs != NO_VAL)
 				rec->max_jobs = object->max_jobs;
 			if (object->max_nodes_pj != NO_VAL) {

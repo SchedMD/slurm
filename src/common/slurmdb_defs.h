@@ -123,16 +123,30 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 extern char *slurmdb_get_selected_step_id(
 	char *job_id_str, int len,
 	slurmdb_selected_step_t *selected_step);
-
+/* OUT: out - copy grp/max/qos limits from in
+ * IN:  in  - what to copy from
+ */
+extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
+					  slurmdb_assoc_rec_t *in);
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
 extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
 extern char *slurmdb_make_tres_string(List tres, bool simple);
-extern List slurmdb_tres_list_from_string(char *tres);
+extern void slurmdb_tres_list_from_string(
+	List *tres_list, char *tres, bool replace);
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list);
+/* Used to combine 2 different TRES strings together
+ *
+ * IN/OUT: tres_str_old - original simple tres string
+ * IN    : tres_str_new - string you want added
+ * IN    : replace - whether or not to replace old values
+ * RET   : new tres_str_old - the new string (also sent out)
+ */
+extern char *slurmdb_combine_tres_strings(
+	char **tres_str_old, char *tres_str_new, bool replace);
 extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);

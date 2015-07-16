@@ -434,8 +434,8 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 			ListIterator itr;
 			uint32_t *job_id_ptr;
 			char *job_list = NULL, *sep = "";
-			local_cluster->preempt_cnt =
-				slurm_list_count(will_run_resp->preemptee_job_id);
+			local_cluster->preempt_cnt = slurm_list_count(
+				will_run_resp->preemptee_job_id);
 			itr = list_iterator_create(will_run_resp->
 						   preemptee_job_id);
 			while ((job_id_ptr = list_next(itr))) {
@@ -607,6 +607,12 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		FREE_NULL_LIST(assoc->accounting_list);
 		xfree(assoc->acct);
 		xfree(assoc->cluster);
+		xfree(assoc->grp_tres);
+		xfree(assoc->grp_tres_mins);
+		xfree(assoc->grp_tres_run_mins);
+		xfree(assoc->max_tres_mins_pj);
+		xfree(assoc->max_tres_run_mins);
+		xfree(assoc->max_tres_pj);
 		xfree(assoc->parent_acct);
 		xfree(assoc->partition);
 		FREE_NULL_LIST(assoc->qos_list);
@@ -1193,9 +1199,9 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	assoc->def_qos_id = NO_VAL;
 	assoc->is_def = (uint16_t)NO_VAL;
 
-	assoc->grp_cpu_mins = (uint64_t)NO_VAL;
-	assoc->grp_cpu_run_mins = (uint64_t)NO_VAL;
-	assoc->grp_cpus = NO_VAL;
+	/* assoc->grp_tres_mins = NULL; */
+	/* assoc->grp_tres_run_mins = NULL; */
+	/* assoc->grp_tres = NULL; */
 	assoc->grp_jobs = NO_VAL;
 	assoc->grp_mem = NO_VAL;
 	assoc->grp_nodes = NO_VAL;
@@ -1206,9 +1212,9 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	assoc->rgt = NO_VAL;
 	/* assoc->level_shares = NO_VAL; */
 
-	assoc->max_cpu_mins_pj = (uint64_t)NO_VAL;
-	assoc->max_cpu_run_mins = (uint64_t)NO_VAL;
-	assoc->max_cpus_pj = NO_VAL;
+	/* assoc->max_tres_mins_pj = NULL; */
+	/* assoc->max_tres_run_mins = NULL; */
+	/* assoc->max_tres_pj = NULL; */
 	assoc->max_jobs = NO_VAL;
 	assoc->max_nodes_pj = NO_VAL;
 	assoc->max_submit_jobs = NO_VAL;
@@ -2019,22 +2025,15 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	else
 		debug2("  Default QOS      : NONE");
 
-	if (assoc_ptr->grp_cpu_mins == INFINITE)
-		debug2("  GrpCPUMins       : NONE");
-	else if (assoc_ptr->grp_cpu_mins != NO_VAL)
-		debug2("  GrpCPUMins       : %"PRIu64"",
-		       assoc_ptr->grp_cpu_mins);
-
-	if (assoc_ptr->grp_cpu_run_mins == INFINITE)
-		debug2("  GrpCPURunMins    : NONE");
-	else if (assoc_ptr->grp_cpu_run_mins != NO_VAL)
-		debug2("  GrpCPURunMins    : %"PRIu64"",
-		       assoc_ptr->grp_cpu_run_mins);
-
-	if (assoc_ptr->grp_cpus == INFINITE)
-		debug2("  GrpCPUs          : NONE");
-	else if (assoc_ptr->grp_cpus != NO_VAL)
-		debug2("  GrpCPUs          : %u", assoc_ptr->grp_cpus);
+	debug2("  GrpTRESMins      : %s",
+	       assoc_ptr->grp_tres_mins ?
+	       assoc_ptr->grp_tres_mins : "NONE");
+	debug2("  GrpTRESRunMins   : %s",
+	       assoc_ptr->grp_tres_run_mins ?
+	       assoc_ptr->grp_tres_run_mins : "NONE");
+	debug2("  GrpTRES          : %s",
+	       assoc_ptr->grp_tres ?
+	       assoc_ptr->grp_tres : "NONE");
 
 	if (assoc_ptr->grp_jobs == INFINITE)
 		debug2("  GrpJobs          : NONE");
@@ -2065,22 +2064,15 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 		debug2("  GrpWall          : %s", time_buf);
 	}
 
-	if (assoc_ptr->max_cpu_mins_pj == INFINITE)
-		debug2("  MaxCPUMins       : NONE");
-	else if (assoc_ptr->max_cpu_mins_pj != NO_VAL)
-		debug2("  MaxCPUMins       : %"PRIu64"",
-		       assoc_ptr->max_cpu_mins_pj);
-
-	if (assoc_ptr->max_cpu_run_mins == INFINITE)
-		debug2("  MaxCPURunMins    : NONE");
-	else if (assoc_ptr->max_cpu_run_mins != NO_VAL)
-		debug2("  MaxCPURunMins    : %"PRIu64"",
-		       assoc_ptr->max_cpu_run_mins);
-
-	if (assoc_ptr->max_cpus_pj == INFINITE)
-		debug2("  MaxCPUs          : NONE");
-	else if (assoc_ptr->max_cpus_pj != NO_VAL)
-		debug2("  MaxCPUs          : %u", assoc_ptr->max_cpus_pj);
+	debug2("  MaxTRESMins      : %s",
+	       assoc_ptr->max_tres_mins_pj ?
+	       assoc_ptr->max_tres_mins_pj : "NONE");
+	debug2("  MaxTRESRunMins   : %s",
+	       assoc_ptr->max_tres_run_mins ?
+	       assoc_ptr->max_tres_run_mins : "NONE");
+	debug2("  MaxTRES          : %s",
+	       assoc_ptr->max_tres_pj ?
+	       assoc_ptr->max_tres_pj : "NONE");
 
 	if (assoc_ptr->max_jobs == INFINITE)
 		debug2("  MaxJobs          : NONE");
@@ -2705,6 +2697,36 @@ end_it:
 	return rc;
 }
 
+extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
+					  slurmdb_assoc_rec_t *in)
+{
+	out->grp_jobs = in->grp_jobs;
+	out->grp_mem = in->grp_mem;
+	out->grp_nodes = in->grp_nodes;
+	out->grp_submit_jobs = in->grp_submit_jobs;
+	xfree(out->grp_tres);
+	out->grp_tres = xstrdup(in->grp_tres);
+	xfree(out->grp_tres_mins);
+	out->grp_tres_mins = xstrdup(in->grp_tres_mins);
+	xfree(out->grp_tres_run_mins);
+	out->grp_tres_run_mins = xstrdup(in->grp_tres_run_mins);
+	out->grp_wall = in->grp_wall;
+
+	out->max_jobs = in->max_jobs;
+	out->max_nodes_pj = in->max_nodes_pj;
+	out->max_submit_jobs = in->max_submit_jobs;
+	xfree(out->max_tres_pj);
+	out->max_tres_pj = xstrdup(in->max_tres_pj);
+	xfree(out->max_tres_mins_pj);
+	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);
+	xfree(out->max_tres_run_mins);
+	out->max_tres_run_mins = xstrdup(in->max_tres_run_mins);
+	out->max_wall_pj = in->max_wall_pj;
+
+	FREE_NULL_LIST(out->qos_list);
+	out->qos_list = slurm_copy_char_list(in->qos_list);
+}
+
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres)
 {
 	slurmdb_tres_rec_t *tres_out = NULL;
@@ -2779,11 +2801,11 @@ extern char *slurmdb_tres_string_combine_lists(
 	while ((tres_rec = list_next(itr))) {
 		if (!(tres_rec_old = list_find_first(tres_list_old,
 						     slurmdb_find_tres_in_list,
-						     &tres_rec->id)))
+						     &tres_rec->id))
+		    || (tres_rec_old->count == (uint64_t)INFINITE))
 			continue;
 		if (tres_str)
 			xstrcat(tres_str, ",");
-
 		xstrfmtcat(tres_str, "%u=%"PRIu64,
 			   tres_rec->id, tres_rec->count);
 	}
@@ -2879,16 +2901,18 @@ extern char *slurmdb_make_tres_string_from_simple(
 }
 
 /* This only works on a simple id=count list, not on a formatted list */
-extern List slurmdb_tres_list_from_string(char *tres)
+extern void slurmdb_tres_list_from_string(
+	List *tres_list, char *tres, bool replace)
 {
-	List tres_list = NULL;
 	char *tmp_str = tres;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 
+	xassert(tres_list);
+
 	if (!tres || !tres[0])
-		return tres_list;
+		return;
 
 	while (tmp_str) {
 		id = atoi(tmp_str);
@@ -2903,27 +2927,52 @@ extern List slurmdb_tres_list_from_string(char *tres)
 		}
 		count = slurm_atoull(++tmp_str);
 
-		if (!tres_list)
-			tres_list = list_create(slurmdb_destroy_tres_rec);
+		if (!*tres_list)
+			*tres_list = list_create(slurmdb_destroy_tres_rec);
 
 		if (!(tres_rec = list_find_first(
-			      tres_list, slurmdb_find_tres_in_list, &id))) {
+			      *tres_list, slurmdb_find_tres_in_list, &id))) {
 			tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
 			tres_rec->id = id;
-			list_append(tres_list, tres_rec);
-		} else
+			tres_rec->count = count;
+			list_append(*tres_list, tres_rec);
+		} else if (replace) {
 			debug("TRES %u was already here with count %"PRIu64", "
 			      "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
-
-		tres_rec->count = count;
+			tres_rec->count = count;
+		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
 		tmp_str++;
 	}
 
-	return tres_list;
+	return;
+}
+
+extern char *slurmdb_combine_tres_strings(
+	char **tres_str_old, char *tres_str_new, bool replace)
+{
+	List tres_list = NULL;
+
+	xassert(tres_str_old);
+
+	if (!tres_str_new || !tres_str_new[0])
+		return *tres_str_old;
+
+	/* add the old string to the list */
+	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, replace);
+
+	/* now add the new one, skipping any duplicate TRES IDs */
+	slurmdb_tres_list_from_string(&tres_list, tres_str_new, replace);
+	xfree(*tres_str_old);
+	/* Make a new string from the combined */
+	*tres_str_old = slurmdb_make_tres_string(tres_list, 1);
+
+	FREE_NULL_LIST(tres_list);
+
+	return *tres_str_old;
 }
 
 extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
@@ -3146,11 +3195,13 @@ extern void slurmdb_transfer_tres_time(
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec = NULL;
-	List job_tres_list;
+	List job_tres_list = NULL;
 
 	xassert(tres_list_out);
 
-	if (!(job_tres_list = slurmdb_tres_list_from_string(tres_str)))
+	slurmdb_tres_list_from_string(&job_tres_list, tres_str, 1);
+
+	if (!job_tres_list)
 		return;
 
 	/* get the amount of time this assoc used

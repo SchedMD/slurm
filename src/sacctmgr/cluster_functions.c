@@ -188,15 +188,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 					set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
-					 MAX(command_len, 7))) {
+					 MAX(command_len, 7)) ||
+			   !strncasecmp(argv[i], "GrpTRESRunMins",
+					MAX(command_len, 8))) {
 			exit_code=1;
-			fprintf(stderr, "GrpCPURunMins is not a valid option "
+			fprintf(stderr, "GrpTRESRunMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
 		} else if (!strncasecmp(argv[i], "GrpCPUMins",
-					 MAX(command_len, 7))) {
+					 MAX(command_len, 7)) ||
+			   !strncasecmp(argv[i], "GrpTRESMins",
+					MAX(command_len, 8))) {
 			exit_code=1;
-			fprintf(stderr, "GrpCPUMins is not a valid option "
+			fprintf(stderr, "GrpTRESMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
 		} else if (!strncasecmp(argv[i], "GrpWall",
@@ -325,24 +329,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster->root_assoc->def_qos_id = start_assoc.def_qos_id;
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 
-		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
-		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
-		cluster->root_assoc->grp_mem = start_assoc.grp_mem;
-		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
-		cluster->root_assoc->grp_submit_jobs =
-			start_assoc.grp_submit_jobs;
-
-		cluster->root_assoc->max_cpu_mins_pj =
-			start_assoc.max_cpu_mins_pj;
-		cluster->root_assoc->max_cpus_pj = start_assoc.max_cpus_pj;
-		cluster->root_assoc->max_jobs = start_assoc.max_jobs;
-		cluster->root_assoc->max_nodes_pj = start_assoc.max_nodes_pj;
-		cluster->root_assoc->max_submit_jobs =
-			start_assoc.max_submit_jobs;
-		cluster->root_assoc->max_wall_pj = start_assoc.max_wall_pj;
-
-		cluster->root_assoc->qos_list =
-			copy_char_list(start_assoc.qos_list);
+		slurmdb_copy_assoc_rec_limits(
+			cluster->root_assoc, &start_assoc);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(name_list);
@@ -538,9 +526,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				xfree(tmp_char);
 				break;
 			}
-			case PRINT_GRPC:
+			case PRINT_GRPT:
 				field->print_routine(field,
-						     assoc->grp_cpus,
+						     assoc->grp_tres,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPJ:
@@ -563,15 +551,21 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     assoc->grp_submit_jobs,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_MAXCM:
+			case PRINT_MAXTM:
 				field->print_routine(
 					field,
-					assoc->max_cpu_mins_pj,
+					assoc->max_tres_mins_pj,
 					(curr_inx == field_count));
 				break;
-			case PRINT_MAXC:
+			case PRINT_MAXTRM:
+				field->print_routine(
+					field,
+					assoc->max_tres_run_mins,
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXT:
 				field->print_routine(field,
-						     assoc->max_cpus_pj,
+						     assoc->max_tres_pj,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXJ:
@@ -1119,7 +1113,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "(root is created by default)...\n"
 		    "# Parent - 'root'\n"
 		    "# Account - 'cs':MaxNodesPerJob=5:MaxJobs=4:"
-		    "MaxCPUMins=20:FairShare=399:"
+		    "MaxTRESMins=cpu=20:FairShare=399:"
 		    "MaxWallDuration=40:Description='Computer Science':"
 		    "Organization='LC'\n"
 		    "# Any of the options after a ':' can be left out and "
@@ -1130,13 +1124,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "fashion...\n"
 		    "# Parent - 'cs'\n"
 		    "# Account - 'test':MaxNodesPerJob=1:MaxJobs=1:"
-		    "MaxCPUMins=1:FairShare=1:"
+		    "MaxTRESMins=cpu=1:FairShare=1:"
 		    "MaxWallDuration=1:"
 		    "Description='Test Account':Organization='Test'\n"
 		    "# To add users to a account add a line like this after a "
 		    "Parent - 'line'\n"
 		    "# User - 'lipari':MaxNodesPerJob=2:MaxJobs=3:"
-		    "MaxCPUMins=4:FairShare=1:"
+		    "MaxTRESMins=cpu=4:FairShare=1:"
 		    "MaxWallDurationPerJob=1\n") < 0) {
 		exit_code = 1;
 		fprintf(stderr, "Can't write to file");

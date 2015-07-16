@@ -831,19 +831,19 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					field, (uint64_t)qos->grace_time,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPCM:
+			case PRINT_GRPTM:
 				field->print_routine(
 					field,
 					qos->grp_cpu_mins,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPCRM:
+			case PRINT_GRPTRM:
 				field->print_routine(
 					field,
 					qos->grp_cpu_run_mins,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPC:
+			case PRINT_GRPT:
 				field->print_routine(field,
 						     qos->grp_cpus,
 						     (curr_inx == field_count));
@@ -879,24 +879,24 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					field, qos->id,
 					(curr_inx == field_count));
 				break;
-			case PRINT_MAXCM:
+			case PRINT_MAXTM:
 				field->print_routine(
 					field,
 					qos->max_cpu_mins_pj,
 					(curr_inx == field_count));
 				break;
-			case PRINT_MAXCRM:
+			case PRINT_MAXTRM:
 				field->print_routine(
 					field,
 					qos->max_cpu_run_mins_pu,
 					(curr_inx == field_count));
 				break;
-			case PRINT_MAXC:
+			case PRINT_MAXT:
 				field->print_routine(field,
 						     qos->max_cpus_pj,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_MAXCU:
+			case PRINT_MAXTU:
 				field->print_routine(field,
 						     qos->max_cpus_pu,
 						     (curr_inx == field_count));

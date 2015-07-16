@@ -300,21 +300,25 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("GraceTime");
 		field->len = 10;
 		field->print_routine = print_fields_time_from_secs;
-	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
-		field->type = PRINT_GRPCM;
-		field->name = xstrdup("GrpCPUMins");
-		field->len = 11;
-		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("GrpCPURunMins", object, MAX(command_len, 7))) {
-		field->type = PRINT_GRPCRM;
-		field->name = xstrdup("GrpCPURunMins");
+	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7)) ||
+		   !strncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPTM;
+		field->name = xstrdup("GrpTRESMins");
 		field->len = 13;
-		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 7))) {
-		field->type = PRINT_GRPC;
-		field->name = xstrdup("GrpCPUs");
-		field->len = 8;
-		field->print_routine = print_fields_uint;
+		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("GrpCPURunMins", object, MAX(command_len, 7)) ||
+		   !strncasecmp("GrpTRESRunMins",
+				object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPTRM;
+		field->name = xstrdup("GrpTRESRunMins");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 7)) ||
+		   !strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPT;
+		field->name = xstrdup("GrpTRES");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("GrpJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPJ;
 		field->name = xstrdup("GrpJobs");
@@ -361,28 +365,35 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 10;
 		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
-				MAX(command_len, 7))) {
-		field->type = PRINT_MAXCM;
-		field->name = xstrdup("MaxCPUMins");
-		field->len = 11;
-		field->print_routine = print_fields_uint64;
+				MAX(command_len, 7)) ||
+		   !strncasecmp("MaxTRESMinsPerJob", object,
+				MAX(command_len, 8))) {
+		field->type = PRINT_MAXTM;
+		field->name = xstrdup("MaxTRESMins");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxCPURunMinsPerUser",
-				object, MAX(command_len, 7))) {
-		field->type = PRINT_MAXCRM;
-		field->name = xstrdup("MaxCPURunMinsPU");
+				object, MAX(command_len, 7)) ||
+		   !strncasecmp("MaxTRESRunMinsPerUser",
+				object, MAX(command_len, 8))) {
+		field->type = PRINT_MAXTRM;
+		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
-		field->print_routine = print_fields_uint64;
-	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7))) {
-		field->type = PRINT_MAXC;
-		field->name = xstrdup("MaxCPUs");
-		field->len = 8;
-		field->print_routine = print_fields_uint;
+		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7)) ||
+		   !strncasecmp("MaxTRESPerJob", object, MAX(command_len, 8))) {
+		field->type = PRINT_MAXT;
+		field->name = xstrdup("MaxTRES");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxCPUsPerUser", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPerUser", object,
 				MAX(command_len, 11))) {
-		field->type = PRINT_MAXCU;
-		field->name = xstrdup("MaxCPUsPU");
-		field->len = 9;
-		field->print_routine = print_fields_uint;
+		field->type = PRINT_MAXTU;
+		field->name = xstrdup("MaxTRESPU");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxJobs", object, MAX(command_len, 4))) {
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
@@ -1472,6 +1483,39 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 	xfree(print_this);
 }
 
+extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
+				int last)
+{
+	int abs_len = abs(field->len);
+	char *print_this;
+
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t tres_cond;
+		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+		tres_cond.with_deleted = 1;
+		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
+	}
+
+	print_this = slurmdb_make_tres_string_from_simple(
+		tres_simple_str, g_tres_list);
+
+	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
+	    && last)
+		printf("%s", print_this);
+	else if (print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if (strlen(print_this) > abs_len)
+			print_this[abs_len-1] = '+';
+
+		if (field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, print_this);
+		else
+			printf("%-*.*s ", abs_len, abs_len, print_this);
+	}
+	xfree(print_this);
+}
+
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 {
 	if (!assoc)
@@ -1481,17 +1525,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  Fairshare     = NONE\n");
 	else if (assoc->shares_raw != NO_VAL)
 		printf("  Fairshare     = %u\n", assoc->shares_raw);
-
-	if (assoc->grp_cpu_mins == INFINITE)
-		printf("  GrpCPUMins    = NONE\n");
-	else if (assoc->grp_cpu_mins != NO_VAL)
-		printf("  GrpCPUMins    = %"PRIu64"\n",
-		       assoc->grp_cpu_mins);
-
-	if (assoc->grp_cpus == INFINITE)
-		printf("  GrpCPUs       = NONE\n");
-	else if (assoc->grp_cpus != NO_VAL)
-		printf("  GrpCPUs       = %u\n", assoc->grp_cpus);
 
 	if (assoc->grp_jobs == INFINITE)
 		printf("  GrpJobs       = NONE\n");
@@ -1514,6 +1547,13 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  GrpSubmitJobs = %u\n",
 		       assoc->grp_submit_jobs);
 
+	printf("  GrpTRES       = %s\n",
+	       assoc->grp_tres ? assoc->grp_tres : "NONE");
+	printf("  GrpTRESMins   = %s\n",
+	       assoc->grp_tres_mins ? assoc->grp_tres_mins : "NONE");
+	printf("  GrpTRESRunMins= %s\n",
+	       assoc->grp_tres_run_mins ? assoc->grp_tres_run_mins : "NONE");
+
 	if (assoc->grp_wall == INFINITE)
 		printf("  GrpWall       = NONE\n");
 	else if (assoc->grp_wall != NO_VAL) {
@@ -1522,17 +1562,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall       = %s\n", time_buf);
 	}
-
-	if (assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
-		printf("  MaxCPUMins    = NONE\n");
-	else if (assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		printf("  MaxCPUMins    = %"PRIu64"\n",
-		       assoc->max_cpu_mins_pj);
-
-	if (assoc->max_cpus_pj == INFINITE)
-		printf("  MaxCPUs       = NONE\n");
-	else if (assoc->max_cpus_pj != NO_VAL)
-		printf("  MaxCPUs       = %u\n", assoc->max_cpus_pj);
 
 	if (assoc->max_jobs == INFINITE)
 		printf("  MaxJobs       = NONE\n");
@@ -1549,6 +1578,13 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->max_submit_jobs != NO_VAL)
 		printf("  MaxSubmitJobs = %u\n",
 		       assoc->max_submit_jobs);
+
+	printf("  MaxTRES       = %s\n",
+	       assoc->max_tres_pj ? assoc->max_tres_pj : "NONE");
+	printf("  MaxTRESMins   = %s\n",
+	       assoc->max_tres_mins_pj ? assoc->max_tres_mins_pj : "NONE");
+	printf("  MaxTRESRUNMins= %s\n", assoc->max_tres_run_mins ?
+	       assoc->max_tres_run_mins : "NONE");
 
 	if (assoc->max_wall_pj == INFINITE)
 		printf("  MaxWall       = NONE\n");

@@ -337,8 +337,8 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 		slurm_addto_char_list(format_list,
 				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "Share,GrpCPUM,GrpCPUR,GrpCPUs,GrpJ,"
-			      "GrpMEM,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
+			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,"
+			      "GrpMEM,GrpN,GrpS,GrpW,MaxTRESM,MaxTRES,"
 			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -373,19 +373,19 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 				field->print_routine(field,
 						     assoc->shares_raw);
 				break;
-			case PRINT_GRPCM:
+			case PRINT_GRPTM:
 				field->print_routine(
 					field,
-					assoc->grp_cpu_mins);
+					assoc->grp_tres_mins);
 				break;
-			case PRINT_GRPCRM:
+			case PRINT_GRPTRM:
 				field->print_routine(
 					field,
-					assoc->grp_cpu_run_mins);
+					assoc->grp_tres_run_mins);
 				break;
-			case PRINT_GRPC:
+			case PRINT_GRPT:
 				field->print_routine(field,
-						     assoc->grp_cpus);
+						     assoc->grp_tres);
 				break;
 			case PRINT_GRPJ:
 				field->print_routine(field,
@@ -408,19 +408,19 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 					field,
 					assoc->grp_wall);
 				break;
-			case PRINT_MAXCM:
+			case PRINT_MAXTM:
 				field->print_routine(
 					field,
-					assoc->max_cpu_mins_pj);
+					assoc->max_tres_mins_pj);
 				break;
-			case PRINT_MAXCRM:
+			case PRINT_MAXTRM:
 				field->print_routine(
 					field,
-					assoc->max_cpu_run_mins);
+					assoc->max_tres_run_mins);
 				break;
-			case PRINT_MAXC:
+			case PRINT_MAXT:
 				field->print_routine(field,
-						     assoc->max_cpus_pj);
+						     assoc->max_tres_pj);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(field,
@@ -525,44 +525,45 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.shares_raw);
 	}
 
-	if ((file_opts->assoc_rec.grp_cpu_mins != NO_VAL)
-	    && (assoc->grp_cpu_mins != file_opts->assoc_rec.grp_cpu_mins)) {
-		mod_assoc.grp_cpu_mins = file_opts->assoc_rec.grp_cpu_mins;
+	if (file_opts->assoc_rec.grp_tres_mins
+	    && xstrcmp(assoc->grp_tres_mins,
+		       file_opts->assoc_rec.grp_tres_mins)) {
+		mod_assoc.grp_tres_mins = file_opts->assoc_rec.grp_tres_mins;
 		changed = 1;
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s "
-			   "%8"PRIu64" -> %"PRIu64"\n",
-			   " Changed GrpCPUMins",
+			   "%8s -> %s\n",
+			   " Changed GrpTRESMins",
 			   type, name,
-			   assoc->grp_cpu_mins,
-			   file_opts->assoc_rec.grp_cpu_mins);
+			   assoc->grp_tres_mins,
+			   file_opts->assoc_rec.grp_tres_mins);
 	}
 
-	if ((file_opts->assoc_rec.grp_cpu_run_mins != NO_VAL)
-	    && (assoc->grp_cpu_run_mins !=
-		file_opts->assoc_rec.grp_cpu_run_mins)) {
-		mod_assoc.grp_cpu_run_mins =
-			file_opts->assoc_rec.grp_cpu_run_mins;
+	if (file_opts->assoc_rec.grp_tres_run_mins
+	    && xstrcmp(assoc->grp_tres_run_mins,
+		file_opts->assoc_rec.grp_tres_run_mins)) {
+		mod_assoc.grp_tres_run_mins =
+			file_opts->assoc_rec.grp_tres_run_mins;
 		changed = 1;
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s "
-			   "%8"PRIu64" -> %"PRIu64"\n",
-			   " Changed GrpCPURunMins",
+			   "%8s -> %s\n",
+			   " Changed GrpTRESRunMins",
 			   type, name,
-			   assoc->grp_cpu_run_mins,
-			   file_opts->assoc_rec.grp_cpu_run_mins);
+			   assoc->grp_tres_run_mins,
+			   file_opts->assoc_rec.grp_tres_run_mins);
 	}
 
-	if ((file_opts->assoc_rec.grp_cpus != NO_VAL)
-	    && (assoc->grp_cpus != file_opts->assoc_rec.grp_cpus)) {
-		mod_assoc.grp_cpus = file_opts->assoc_rec.grp_cpus;
+	if (file_opts->assoc_rec.grp_tres
+	    && xstrcmp(assoc->grp_tres, file_opts->assoc_rec.grp_tres)) {
+		mod_assoc.grp_tres = file_opts->assoc_rec.grp_tres;
 		changed = 1;
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpCpus",
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed GrpTRES",
 			   type, name,
-			   assoc->grp_cpus,
-			   file_opts->assoc_rec.grp_cpus);
+			   assoc->grp_tres,
+			   file_opts->assoc_rec.grp_tres);
 	}
 
 	if ((file_opts->assoc_rec.grp_jobs != NO_VAL)
@@ -627,46 +628,46 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.grp_wall);
 	}
 
-	if ((file_opts->assoc_rec.max_cpu_mins_pj != (uint64_t)NO_VAL)
-	    && (assoc->max_cpu_mins_pj !=
-		file_opts->assoc_rec.max_cpu_mins_pj)) {
-		mod_assoc.max_cpu_mins_pj =
-			file_opts->assoc_rec.max_cpu_mins_pj;
+	if (file_opts->assoc_rec.max_tres_mins_pj
+	    && xstrcmp(assoc->max_tres_mins_pj,
+		       file_opts->assoc_rec.max_tres_mins_pj)) {
+		mod_assoc.max_tres_mins_pj =
+			file_opts->assoc_rec.max_tres_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s "
-			   "%8"PRIu64" -> %"PRIu64"\n",
-			   " Changed MaxCPUMinsPerJob",
+			   "%8s -> %s\n",
+			   " Changed MaxTRESMinsPerJob",
 			   type, name,
-			   assoc->max_cpu_mins_pj,
-			   file_opts->assoc_rec.max_cpu_mins_pj);
+			   assoc->max_tres_mins_pj,
+			   file_opts->assoc_rec.max_tres_mins_pj);
 	}
 
-	if ((file_opts->assoc_rec.max_cpu_run_mins != (uint64_t)NO_VAL)
-	    && (assoc->max_cpu_run_mins !=
-		file_opts->assoc_rec.max_cpu_run_mins)) {
-		mod_assoc.max_cpu_run_mins =
-			file_opts->assoc_rec.max_cpu_run_mins;
+	if (file_opts->assoc_rec.max_tres_run_mins
+	    && xstrcmp(assoc->max_tres_run_mins,
+		       file_opts->assoc_rec.max_tres_run_mins)) {
+		mod_assoc.max_tres_run_mins =
+			file_opts->assoc_rec.max_tres_run_mins;
 		changed = 1;
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s "
-			   "%8"PRIu64" -> %"PRIu64"\n",
-			   " Changed MaxCPURunMins",
+			   "%8s -> %s\n",
+			   " Changed MaxTRESRunMins",
 			   type, name,
-			   assoc->max_cpu_run_mins,
-			   file_opts->assoc_rec.max_cpu_run_mins);
+			   assoc->max_tres_run_mins,
+			   file_opts->assoc_rec.max_tres_run_mins);
 	}
 
-	if ((file_opts->assoc_rec.max_cpus_pj != NO_VAL)
-	    && (assoc->max_cpus_pj != file_opts->assoc_rec.max_cpus_pj)) {
-		mod_assoc.max_cpus_pj = file_opts->assoc_rec.max_cpus_pj;
+	if (file_opts->assoc_rec.max_tres_pj
+	    && xstrcmp(assoc->max_tres_pj, file_opts->assoc_rec.max_tres_pj)) {
+		mod_assoc.max_tres_pj = file_opts->assoc_rec.max_tres_pj;
 		changed = 1;
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCpusPerJob",
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerJob",
 			   type, name,
-			   assoc->max_cpus_pj,
-			   file_opts->assoc_rec.max_cpus_pj);
+			   assoc->max_tres_pj,
+			   file_opts->assoc_rec.max_tres_pj);
 	}
 
 	if ((file_opts->assoc_rec.max_jobs != NO_VAL)
@@ -1387,27 +1388,7 @@ static slurmdb_assoc_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 
 	assoc->def_qos_id = file_opts->assoc_rec.def_qos_id;
 
-	assoc->grp_cpu_mins = file_opts->assoc_rec.grp_cpu_mins;
-	assoc->grp_cpu_run_mins = file_opts->assoc_rec.grp_cpu_run_mins;
-	assoc->grp_cpus = file_opts->assoc_rec.grp_cpus;
-	assoc->grp_jobs = file_opts->assoc_rec.grp_jobs;
-	assoc->grp_mem = file_opts->assoc_rec.grp_mem;
-	assoc->grp_nodes = file_opts->assoc_rec.grp_nodes;
-	assoc->grp_submit_jobs = file_opts->assoc_rec.grp_submit_jobs;
-	assoc->grp_wall = file_opts->assoc_rec.grp_wall;
-
-	assoc->max_cpu_mins_pj = file_opts->assoc_rec.max_cpu_mins_pj;
-	assoc->max_cpu_run_mins = file_opts->assoc_rec.max_cpu_run_mins;
-	assoc->max_cpus_pj = file_opts->assoc_rec.max_cpus_pj;
-	assoc->max_jobs = file_opts->assoc_rec.max_jobs;
-	assoc->max_nodes_pj = file_opts->assoc_rec.max_nodes_pj;
-	assoc->max_submit_jobs = file_opts->assoc_rec.max_submit_jobs;
-	assoc->max_wall_pj = file_opts->assoc_rec.max_wall_pj;
-
-	if (file_opts->assoc_rec.qos_list &&
-	    list_count(file_opts->assoc_rec.qos_list))
-		assoc->qos_list = copy_char_list(file_opts->assoc_rec.qos_list);
-
+	slurmdb_copy_assoc_rec_limits(assoc, &file_opts->assoc_rec);
 
 	return assoc;
 }
@@ -1563,15 +1544,15 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->shares_raw != INFINITE)
 		xstrfmtcat(*line, ":Fairshare=%u", assoc->shares_raw);
 
-	if (assoc->grp_cpu_mins != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":GrpCPUMins=%"PRIu64, assoc->grp_cpu_mins);
+	if (assoc->grp_tres_mins)
+		xstrfmtcat(*line, ":GrpTRESMins=%s", assoc->grp_tres_mins);
 
-	if (assoc->grp_cpu_run_mins != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":GrpCPURunMins=%"PRIu64,
-			   assoc->grp_cpu_run_mins);
+	if (assoc->grp_tres_run_mins)
+		xstrfmtcat(*line, ":GrpTRESRunMins=%s",
+			   assoc->grp_tres_run_mins);
 
-	if (assoc->grp_cpus != INFINITE)
-		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);
+	if (assoc->grp_tres)
+		xstrfmtcat(*line, ":GrpTRES=%s", assoc->grp_tres);
 
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
@@ -1588,16 +1569,16 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->grp_wall != INFINITE)
 		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
 
-	if (assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%"PRIu64,
-			   assoc->max_cpu_mins_pj);
+	if (assoc->max_tres_mins_pj)
+		xstrfmtcat(*line, ":MaxTRESMinsPerJob=%s",
+			   assoc->max_tres_mins_pj);
 
-	if (assoc->max_cpu_run_mins != (uint64_t)INFINITE)
-		xstrfmtcat(*line, ":MaxCPURunMins=%"PRIu64,
-			   assoc->max_cpu_run_mins);
+	if (assoc->max_tres_run_mins)
+		xstrfmtcat(*line, ":MaxTRESRunMins=%s",
+			   assoc->max_tres_run_mins);
 
-	if (assoc->max_cpus_pj != INFINITE)
-		xstrfmtcat(*line, ":MaxCPUsPerJob=%u", assoc->max_cpus_pj);
+	if (assoc->max_tres_pj)
+		xstrfmtcat(*line, ":MaxTRESPerJob=%s", assoc->max_tres_pj);
 
 	if (assoc->max_jobs != INFINITE)
 		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);

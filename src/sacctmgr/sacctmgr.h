@@ -105,18 +105,18 @@ typedef enum {
 
 	/* LIMITS */
 	PRINT_FAIRSHARE = 1000,
-	PRINT_GRPCM,
-	PRINT_GRPCRM,
-	PRINT_GRPC,
+	PRINT_GRPTM,
+	PRINT_GRPTRM,
+	PRINT_GRPT,
 	PRINT_GRPJ,
 	PRINT_GRPMEM,
 	PRINT_GRPN,
 	PRINT_GRPS,
 	PRINT_GRPW,
-	PRINT_MAXCM,
-	PRINT_MAXCRM,
-	PRINT_MAXC,
-	PRINT_MAXCU,
+	PRINT_MAXTM,
+	PRINT_MAXTRM,
+	PRINT_MAXT,
+	PRINT_MAXTU,
 	PRINT_MAXJ,
 	PRINT_MAXN,
 	PRINT_MAXNU,
@@ -283,6 +283,8 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 				      bitstr_t *value, int last);
 
+extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
+				int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);

@@ -447,16 +447,6 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
 
-	uint64_t grp_cpu_mins;     /* max number of cpu minutes the
-				    * underlying group of
-				    * associations can run for */
-	uint64_t grp_cpu_run_mins; /* max number of cpu minutes the
-				    * underlying group of
-				    * assoiciations can
-				    * having running at one time */
-	uint32_t grp_cpus;         /* max number of cpus the
-				    * underlying group of
-				    * associations can allocate at one time */
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
@@ -470,6 +460,16 @@ typedef struct slurmdb_assoc_rec {
 				    * underlying group of
 				    * associations can submit at
 				    * one time */
+	char *grp_tres;            /* max number of cpus the
+				    * underlying group of
+				    * associations can allocate at one time */
+	char *grp_tres_mins;       /* max number of cpu minutes the
+				    * underlying group of
+				    * associations can run for */
+	char *grp_tres_run_mins;   /* max number of cpu minutes the
+				    * underlying group of
+				    * assoiciations can
+				    * having running at one time */
 	uint32_t grp_wall;         /* total time in hours the
 				    * underlying group of
 				    * associations can run for */
@@ -483,19 +483,19 @@ typedef struct slurmdb_assoc_rec {
 				    * associations and jobs as a left
 				    * most container used with rgt */
 
-	uint64_t max_cpu_mins_pj;  /* max number of cpu seconds this
-				    * association can have per job */
-	uint64_t max_cpu_run_mins; /* max number of cpu minutes this
-				    * association can
-				    * having running at one time */
-	uint32_t max_cpus_pj;      /* max number of cpus this
-				    * association can allocate per job */
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
 	uint32_t max_nodes_pj;     /* max number of nodes this
 				    * association can allocate per job */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
+	char *max_tres_mins_pj;    /* max number of cpu seconds this
+				    * association can have per job */
+	char *max_tres_run_mins;   /* max number of cpu minutes this
+				    * association can
+				    * having running at one time */
+	char *max_tres_pj;         /* max number of cpus this
+				    * association can allocate per job */
 	uint32_t max_wall_pj;      /* longest time this
 				    * association can run a job */
 

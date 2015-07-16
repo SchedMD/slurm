@@ -1054,33 +1054,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->shares_raw =
 						start_assoc.shares_raw;
 
-					assoc->grp_cpu_mins =
-						start_assoc.grp_cpu_mins;
-					assoc->grp_cpu_run_mins =
-						start_assoc.grp_cpu_run_mins;
-					assoc->grp_cpus = start_assoc.grp_cpus;
-					assoc->grp_jobs = start_assoc.grp_jobs;
-					assoc->grp_mem = start_assoc.grp_mem;
-					assoc->grp_nodes =
-						start_assoc.grp_nodes;
-					assoc->grp_submit_jobs =
-						start_assoc.grp_submit_jobs;
-					assoc->grp_wall = start_assoc.grp_wall;
-
-					assoc->max_cpu_mins_pj =
-						start_assoc.max_cpu_mins_pj;
-					assoc->max_cpus_pj =
-						start_assoc.max_cpus_pj;
-					assoc->max_jobs = start_assoc.max_jobs;
-					assoc->max_nodes_pj =
-						start_assoc.max_nodes_pj;
-					assoc->max_submit_jobs =
-						start_assoc.max_submit_jobs;
-					assoc->max_wall_pj =
-						start_assoc.max_wall_pj;
-
-					assoc->qos_list = copy_char_list(
-						start_assoc.qos_list);
+					slurmdb_copy_assoc_rec_limits(
+						assoc, &start_assoc);
 
 					if (user)
 						list_append(user->assoc_list,
@@ -1125,29 +1100,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 				assoc->shares_raw = start_assoc.shares_raw;
 
-				assoc->grp_cpu_mins =
-					start_assoc.grp_cpu_mins;
-				assoc->grp_cpu_run_mins =
-					start_assoc.grp_cpu_run_mins;
-				assoc->grp_cpus = start_assoc.grp_cpus;
-				assoc->grp_jobs = start_assoc.grp_jobs;
-				assoc->grp_mem = start_assoc.grp_mem;
-				assoc->grp_nodes = start_assoc.grp_nodes;
-				assoc->grp_submit_jobs =
-					start_assoc.grp_submit_jobs;
-				assoc->grp_wall = start_assoc.grp_wall;
-
-				assoc->max_cpu_mins_pj =
-					start_assoc.max_cpu_mins_pj;
-				assoc->max_cpus_pj = start_assoc.max_cpus_pj;
-				assoc->max_jobs = start_assoc.max_jobs;
-				assoc->max_nodes_pj = start_assoc.max_nodes_pj;
-				assoc->max_submit_jobs =
-					start_assoc.max_submit_jobs;
-				assoc->max_wall_pj = start_assoc.max_wall_pj;
-
-				assoc->qos_list =
-					copy_char_list(start_assoc.qos_list);
+				slurmdb_copy_assoc_rec_limits(
+					assoc, &start_assoc);
 
 				if (user)
 					list_append(user->assoc_list, assoc);

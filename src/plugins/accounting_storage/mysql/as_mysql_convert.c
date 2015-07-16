@@ -90,13 +90,11 @@ static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 	return rc;
 }
 
-
 static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 				      char *cluster_name,
 				      char *count_col_name)
 {
 	/* These tables are the 14_11 defs plus things we added in 15.08 */
-
 	storage_field_t assoc_usage_table_fields_14_11[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -395,6 +393,155 @@ static int _update_old_cluster_tables(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+static int _update2_old_cluster_tables(mysql_conn_t *mysql_conn,
+				       char *cluster_name)
+{
+	/* These tables are the 14_11 defs plus things we added in 15.08 */
+
+	storage_field_t assoc_table_fields_14_11[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0 not null" },
+		{ "is_def", "tinyint default 0 not null" },
+		{ "id_assoc", "int not null auto_increment" },
+		{ "user", "tinytext not null default ''" },
+		{ "acct", "tinytext not null" },
+		{ "partition", "tinytext not null default ''" },
+		{ "parent_acct", "tinytext not null default ''" },
+		{ "lft", "int not null" },
+		{ "rgt", "int not null" },
+		{ "shares", "int default 1 not null" },
+		{ "max_jobs", "int default NULL" },
+		{ "max_submit_jobs", "int default NULL" },
+		{ "max_cpus_pj", "int default NULL" },
+		{ "max_nodes_pj", "int default NULL" },
+		{ "max_wall_pj", "int default NULL" },
+		{ "max_cpu_mins_pj", "bigint default NULL" },
+		{ "max_cpu_run_mins", "bigint default NULL" },
+		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_mins_pj", "text not null default ''" },
+		{ "max_tres_run_mins", "text not null default ''" },
+		{ "grp_jobs", "int default NULL" },
+		{ "grp_submit_jobs", "int default NULL" },
+		{ "grp_cpus", "int default NULL" },
+		{ "grp_mem", "int default NULL" },
+		{ "grp_nodes", "int default NULL" },
+		{ "grp_wall", "int default NULL" },
+		{ "grp_cpu_mins", "bigint default NULL" },
+		{ "grp_cpu_run_mins", "bigint default NULL" },
+		{ "grp_tres", "text not null default ''" },
+		{ "grp_tres_mins", "text not null default ''" },
+		{ "grp_tres_run_mins", "text not null default ''" },
+		{ "def_qos_id", "int default NULL" },
+		{ "qos", "blob not null default ''" },
+		{ "delta_qos", "blob not null default ''" },
+		{ NULL, NULL}
+	};
+
+	char table_name[200];
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, assoc_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  assoc_table_fields_14_11,
+				  ", primary key (id_assoc), "
+				  "unique index (user(20), acct(20), "
+				  "`partition`(20)), "
+				  "key lft (lft), key account (acct(20)))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+/* static int _update2_old_tables(mysql_conn_t *mysql_conn) */
+/* { */
+/* 	/\* These tables are the 14_11 defs plus things we added in 15.08 *\/ */
+/* 	storage_field_t qos_table_fields_14_11[] = { */
+/* 		{ "creation_time", "int unsigned not null" }, */
+/* 		{ "mod_time", "int unsigned default 0 not null" }, */
+/* 		{ "deleted", "tinyint default 0" }, */
+/* 		{ "id", "int not null auto_increment" }, */
+/* 		{ "name", "tinytext not null" }, */
+/* 		{ "description", "text" }, */
+/* 		{ "flags", "int unsigned default 0" }, */
+/* 		{ "grace_time", "int unsigned default NULL" }, */
+/* 		{ "max_jobs_per_user", "int default NULL" }, */
+/* 		{ "max_submit_jobs_per_user", "int default NULL" }, */
+/* 		{ "max_cpus_per_job", "int default NULL" }, */
+/* 		{ "max_cpus_per_user", "int default NULL" }, */
+/* 		{ "max_nodes_per_job", "int default NULL" }, */
+/* 		{ "max_nodes_per_user", "int default NULL" }, */
+/* 		{ "max_wall_duration_per_job", "int default NULL" }, */
+/* 		{ "max_cpu_mins_per_job", "bigint default NULL" }, */
+/* 		{ "max_cpu_run_mins_per_user", "bigint default NULL" }, */
+/* 		{ "grp_jobs", "int default NULL" }, */
+/* 		{ "grp_submit_jobs", "int default NULL" }, */
+/* 		{ "grp_cpus", "int default NULL" }, */
+/* 		{ "grp_mem", "int default NULL" }, */
+/* 		{ "grp_nodes", "int default NULL" }, */
+/* 		{ "grp_wall", "int default NULL" }, */
+/* 		{ "grp_cpu_mins", "bigint default NULL" }, */
+/* 		{ "grp_cpu_run_mins", "bigint default NULL" }, */
+/* 		{ "preempt", "text not null default ''" }, */
+/* 		{ "preempt_mode", "int default 0" }, */
+/* 		{ "priority", "int unsigned default 0" }, */
+/* 		{ "usage_factor", "double default 1.0 not null" }, */
+/* 		{ "usage_thres", "double default NULL" }, */
+/* 		{ "min_cpus_per_job", "int unsigned default 1 not null" }, */
+/* 		{ NULL, NULL} */
+/* 	}; */
+
+/* 	if (mysql_db_create_table(mysql_conn, qos_table, */
+/* 				  qos_table_fields_14_11, */
+/* 				  ", primary key (id), " */
+/* 				  "unique index (name(20)))") */
+/* 	    == SLURM_ERROR) */
+/* 		return SLURM_ERROR; */
+
+/* 	return SLURM_SUCCESS; */
+/* } */
+
+static int _convert_assoc_table(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	char *query = NULL;
+	int rc;
+
+	/* query = xstrdup_printf( */
+	/* 	"update \"%s_%s\" set grp_tres=concat(" */
+	/* 	"if(grp_cpus is not null, concat('%d=', grp_cpus), ''), " */
+	/* 	"if(grp_mem is not null, concat(if(grp_cpus is not null, " */
+	/* 	"',%d=', '%d='), grp_mem), '')), " */
+	/* 	"grp_tres_mins=concat(if(grp_cpu_mins is not null, " */
+	/* 	"concat('%d=', grp_cpu_mins), ''), '')", */
+	/* 	cluster_name, assoc_table, */
+	/* 	TRES_CPU, TRES_MEM, TRES_MEM, TRES_CPU); */
+	query = xstrdup_printf(
+		"update \"%s_%s\" set grp_tres=concat("
+		"if(grp_cpus is not null, concat('%d=', grp_cpus), ''), "
+		"if(grp_mem is not null, concat(if(grp_cpus is not null, "
+		"',%d=', '%d='), grp_mem), '')), "
+		"grp_tres_mins=concat(if(grp_cpu_mins is not null, "
+		"concat('%d=', grp_cpu_mins), ''), ''), "
+		"grp_tres_run_mins=concat(if(grp_cpu_run_mins is not null, "
+		"concat('%d=', grp_cpu_run_mins), ''), ''), "
+		"max_tres_pj=concat(if(max_cpus_pj is not null, "
+		"concat('%d=', max_cpus_pj), ''), ''), "
+		"max_tres_mins_pj=concat(if(max_cpu_mins_pj is not null, "
+		"concat('%d=', max_cpu_mins_pj), ''), ''), "
+		"max_tres_run_mins=concat(if(max_cpu_run_mins is not null, "
+		"concat('%d=', max_cpu_run_mins), ''), '');",
+		cluster_name, assoc_table,
+		TRES_CPU, TRES_MEM, TRES_MEM, TRES_CPU, TRES_CPU,
+		TRES_CPU, TRES_CPU, TRES_CPU);
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+		error("Can't convert assoc_table for %s: %m", cluster_name);
+	xfree(query);
+
+	return rc;
+}
+
 static int _convert_event_table(mysql_conn_t *mysql_conn, char *cluster_name,
 				char *count_col_name)
 {
@@ -540,6 +687,32 @@ static int _convert_job_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
+/* static int _convert_qos_table(mysql_conn_t *mysql_conn) */
+/* { */
+/* 	char *query = NULL; */
+/* 	int rc; */
+
+/* 	query = xstrdup_printf( */
+/* 		"update %s set " */
+/* 		"grp_tres=concat('%d=', grp_tres), " */
+/* 		"grp_tres_mins=concat('%d=', grp_tres_mins), " */
+/* 		"grp_tres_run_mins=concat('%d=', grp_tres_mins), " */
+/* 		"max_tres_per_job=concat('%d=', max_tres_per_job), " */
+/* 		"max_tres_per_user=concat('%d=', max_tres_per_user), " */
+/* 		"max_tres_mins_per_job=concat('%d=', max_tres_mins_per_job), " */
+/* 		"max_tres_run_mins_per_user=concat('%d=', " */
+/* 		"max_tres_run_mins_user_user);", */
+/* 		qos_table, TRES_CPU, TRES_CPU, TRES_CPU, */
+/* 		TRES_CPU, TRES_CPU, TRES_CPU, TRES_CPU); */
+/* 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query); */
+/* 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS) */
+/* 		error("Can't convert %s info: %m", qos_table); */
+/* 	xfree(query); */
+
+/* 	return rc; */
+/* } */
+
+
 static int _convert_step_table(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
@@ -572,6 +745,110 @@ static int _convert_resv_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
+static int _convert2_tables(mysql_conn_t *mysql_conn)
+{
+	char *query;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int i = 0, rc = SLURM_SUCCESS;
+	ListIterator itr;
+	char *cluster_name;
+
+	/* no valid clusters, just return */
+	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
+		return SLURM_SUCCESS;
+
+	/* See if the old table exist first.  If already ran here
+	   default_acct and default_wckey won't exist.
+	*/
+	query = xstrdup_printf("show columns from \"%s_%s\" where "
+			       "Field='grp_cpus';",
+			       cluster_name, assoc_table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	i = mysql_num_rows(result);
+	mysql_free_result(result);
+	result = NULL;
+
+	if (!i)
+		return 2;
+
+	info("Updating database tables, this may take some time, "
+	     "do not stop the process.");
+
+	/* make it up to date */
+	itr = list_iterator_create(as_mysql_total_cluster_list);
+	while ((cluster_name = list_next(itr))) {
+		query = xstrdup_printf("show columns from \"%s_%s\" where "
+				       "Field='grp_cpus';",
+				       cluster_name, assoc_table);
+
+		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			error("QUERY BAD: No count col name for cluster %s, "
+			      "this should never happen", cluster_name);
+			continue;
+		}
+		xfree(query);
+
+		if (!(row = mysql_fetch_row(result))) {
+			error("No grp_cpus col name in assoc_table "
+			      "for cluster %s, this should never happen",
+			      cluster_name);
+			continue;
+		}
+
+		/* make sure old tables are up to date */
+		if ((rc = _update2_old_cluster_tables(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS)) {
+			mysql_free_result(result);
+			break;
+		}
+
+		/* Convert the event table first */
+		info("converting assoc table for %s", cluster_name);
+		if ((rc = _convert_assoc_table(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS)) {
+			mysql_free_result(result);
+			break;
+		}
+		mysql_free_result(result);
+	}
+	list_iterator_destroy(itr);
+
+	query = xstrdup_printf("show columns from %s where Field='grp_cpus';",
+			       qos_table);
+
+	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		error("QUERY BAD: No grp_cpus col name in the qos table, "
+		      "this should never happen.");
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	/* make sure old non-cluster tables are up to date */
+	/* if ((rc = _update2_old_tables(mysql_conn)) != SLURM_SUCCESS) { */
+	/* 	mysql_free_result(result); */
+	/* 	return SLURM_ERROR; */
+	/* } */
+
+	/* if ((rc = _convert_qos_table(mysql_conn, cluster_name, row[0]) */
+	/*      != SLURM_SUCCESS)) { */
+	/* 	mysql_free_result(result); */
+	/* 	break; */
+	/* } */
+
+	return rc;
+}
+
 extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 {
 	char *query;
@@ -583,9 +860,17 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 
 	xassert(as_mysql_total_cluster_list);
 
+	if ((rc = _convert2_tables(mysql_conn)) == 2) {
+		debug2("It appears the table conversions have already "
+		       "taken place, hooray!");
+		return SLURM_SUCCESS;
+	} else if (rc != SLURM_SUCCESS)
+		return rc;
+
 	/* no valid clusters, just return */
 	if (!(cluster_name = list_peek(as_mysql_total_cluster_list)))
 		return SLURM_SUCCESS;
+
 
 	/* See if the old table exist first.  If already ran here
 	   default_acct and default_wckey won't exist.
@@ -605,13 +890,9 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	result = NULL;
 
 	if (!i) {
-		debug2("It appears the table conversions have already "
-		       "taken place, hooray!");
+		info("Conversion done: success!");
 		return SLURM_SUCCESS;
 	}
-
-	info("Updating database tables, this may take some time, "
-	     "do not stop the process.");
 
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
@@ -679,9 +960,8 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 	}
 	list_iterator_destroy(itr);
 
-	if (rc == SLURM_SUCCESS) {
+	if (rc == SLURM_SUCCESS)
 		info("Conversion done: success!");
-	}
 
 	return rc;
 }

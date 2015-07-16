@@ -49,17 +49,17 @@ char *assoc_req_inx[] = {
 	"acct",
 	"`partition`",
 	"shares",
-	"grp_cpu_mins",
-	"grp_cpu_run_mins",
-	"grp_cpus",
+	"grp_tres_mins",
+	"grp_tres_run_mins",
+	"grp_tres",
 	"grp_jobs",
 	"grp_mem",
 	"grp_nodes",
 	"grp_submit_jobs",
 	"grp_wall",
-	"max_cpu_mins_pj",
-	"max_cpu_run_mins",
-	"max_cpus_pj",
+	"max_tres_mins_pj",
+	"max_tres_run_mins",
+	"max_tres_pj",
 	"max_jobs",
 	"max_nodes_pj",
 	"max_submit_jobs",
@@ -78,17 +78,17 @@ enum {
 	ASSOC_REQ_ACCT,
 	ASSOC_REQ_PART,
 	ASSOC_REQ_FS,
-	ASSOC_REQ_GCM,
-	ASSOC_REQ_GCRM,
-	ASSOC_REQ_GC,
+	ASSOC_REQ_GTM,
+	ASSOC_REQ_GTRM,
+	ASSOC_REQ_GT,
 	ASSOC_REQ_GJ,
 	ASSOC_REQ_GMEM,
 	ASSOC_REQ_GN,
 	ASSOC_REQ_GSJ,
 	ASSOC_REQ_GW,
-	ASSOC_REQ_MCMPJ,
-	ASSOC_REQ_MCRM,
-	ASSOC_REQ_MCPJ,
+	ASSOC_REQ_MTMPJ,
+	ASSOC_REQ_MTRM,
+	ASSOC_REQ_MTPJ,
 	ASSOC_REQ_MJ,
 	ASSOC_REQ_MNPJ,
 	ASSOC_REQ_MSJ,
@@ -102,19 +102,19 @@ enum {
 };
 
 static char *get_parent_limits_select =
-	"select @par_id, @mj, @msj, @mcpj, "
-	"@mnpj, @mwpj, @mcmpj, @mcrm, "
+	"select @par_id, @mj, @msj, "
+	"@mnpj, @mwpj, @mtpj, @mtmpj, @mtrm, "
 	"@def_qos_id, @qos, @delta_qos;";
 
 enum {
 	ASSOC2_REQ_PARENT_ID,
 	ASSOC2_REQ_MJ,
 	ASSOC2_REQ_MSJ,
-	ASSOC2_REQ_MCPJ,
 	ASSOC2_REQ_MNPJ,
 	ASSOC2_REQ_MWPJ,
-	ASSOC2_REQ_MCMPJ,
-	ASSOC2_REQ_MCRM,
+	ASSOC2_REQ_MTPJ,
+	ASSOC2_REQ_MTMPJ,
+	ASSOC2_REQ_MTRM,
 	ASSOC2_REQ_DEF_QOS,
 	ASSOC2_REQ_QOS,
 	ASSOC2_REQ_DELTA_QOS,
@@ -701,14 +701,6 @@ static int _set_assoc_limits_for_add(
 	else if (assoc->def_qos_id == INFINITE)
 		assoc->def_qos_id = 0;
 
-	if (row[ASSOC2_REQ_MCMPJ]
-	    && assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
-		assoc->max_cpu_mins_pj = slurm_atoull(row[ASSOC2_REQ_MCMPJ]);
-	if (row[ASSOC2_REQ_MCRM]
-	    && assoc->max_cpu_run_mins == (uint64_t)INFINITE)
-		assoc->max_cpu_run_mins = slurm_atoull(row[ASSOC2_REQ_MCRM]);
-	if (row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == INFINITE)
-		assoc->max_cpus_pj = slurm_atoul(row[ASSOC2_REQ_MCPJ]);
 	if (row[ASSOC2_REQ_MJ] && assoc->max_jobs == INFINITE)
 		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
 	if (row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == INFINITE)
@@ -717,6 +709,18 @@ static int _set_assoc_limits_for_add(
 		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
 	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == INFINITE)
 		assoc->max_wall_pj = slurm_atoul(row[ASSOC2_REQ_MWPJ]);
+
+	/* For the tres limits we just concatted the limits going up
+	 * the heirarchy slurmdb_tres_list_from_string will just skip
+	 * over any reoccuring limit to give us the first one per
+	 * TRES.
+	 */
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_pj, row[ASSOC2_REQ_MTPJ], 0);
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_mins_pj, row[ASSOC2_REQ_MTMPJ], 0);
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM], 0);
 
 	if (assoc->qos_list) {
 		int set = 0;
@@ -785,10 +789,10 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"max_jobs",
 		"max_submit_jobs",
 		"max_nodes_pj",
-		"max_cpus_pj",
+		"max_tres_pj",
 		"max_wall_pj",
-		"max_cpu_mins_pj",
-		"max_cpu_run_mins",
+		"max_tres_mins_pj",
+		"max_tres_run_mins",
 		"def_qos_id",
 		"qos",
 		"delta_qos",
@@ -804,10 +808,10 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_MJ,
 		ASSOC_MSJ,
 		ASSOC_MNPJ,
-		ASSOC_MCPJ,
+		ASSOC_MTPJ,
 		ASSOC_MWPJ,
-		ASSOC_MCMPJ,
-		ASSOC_MCRM,
+		ASSOC_MTMPJ,
+		ASSOC_MTRM,
 		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
@@ -848,6 +852,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_assoc_rec_t *mod_assoc = NULL;
 		int modified = 0;
+		char *tmp_char = NULL;
 
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
@@ -874,26 +879,50 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MCPJ] && assoc->max_cpus_pj != NO_VAL) {
-			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
-			modified = 1;
-		}
-
 		if (!row[ASSOC_MWPJ] && assoc->max_wall_pj != NO_VAL) {
 			mod_assoc->max_wall_pj = assoc->max_wall_pj;
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MCMPJ]
-		    && assoc->max_cpu_mins_pj != (uint64_t)NO_VAL) {
-			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
-			modified = 1;
+		if (assoc->max_tres_pj) {
+			tmp_char = xstrdup(row[ASSOC_MTPJ]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_pj, 0);
+
+			/* see if we changed anything */
+			if (xstrcmp(tmp_char, row[ASSOC_MTPJ])) {
+				mod_assoc->max_tres_pj = tmp_char;
+				tmp_char = NULL;
+				modified = 1;
+			} else
+				xfree(tmp_char);
 		}
 
-		if (!row[ASSOC_MCRM]
-		    && assoc->max_cpu_run_mins != (uint64_t)NO_VAL) {
-			mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
-			modified = 1;
+		if (assoc->max_tres_mins_pj) {
+			tmp_char = xstrdup(row[ASSOC_MTMPJ]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_mins_pj, 0);
+
+			/* see if we changed anything */
+			if (xstrcmp(tmp_char, row[ASSOC_MTMPJ])) {
+				mod_assoc->max_tres_mins_pj = tmp_char;
+				tmp_char = NULL;
+				modified = 1;
+			} else
+				xfree(tmp_char);
+		}
+		if (assoc->max_tres_run_mins) {
+			tmp_char = xstrdup(row[ASSOC_MTRM]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_run_mins, 0);
+
+			/* see if we changed anything */
+			if (xstrcmp(tmp_char, row[ASSOC_MTRM])) {
+				mod_assoc->max_tres_run_mins = tmp_char;
+				tmp_char = NULL;
+				modified = 1;
+			} else
+				xfree(tmp_char);
 		}
 
 		if (!row[ASSOC_QOS][0] && assoc->qos_list) {
@@ -1641,10 +1670,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MSJ])
 					assoc->max_submit_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MSJ]);
-				if ((assoc->max_cpus_pj == INFINITE)
-				    && row2[ASSOC2_REQ_MCPJ])
-					assoc->max_cpus_pj = slurm_atoul(
-						row2[ASSOC2_REQ_MCPJ]);
 				if ((assoc->max_nodes_pj == INFINITE)
 				    && row2[ASSOC2_REQ_MNPJ])
 					assoc->max_nodes_pj = slurm_atoul(
@@ -1653,16 +1678,16 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MWPJ])
 					assoc->max_wall_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
-				if ((assoc->max_cpu_mins_pj ==
-				     (uint64_t)INFINITE)
-				    && row2[ASSOC2_REQ_MCMPJ])
-					assoc->max_cpu_mins_pj = slurm_atoull(
-						row2[ASSOC2_REQ_MCMPJ]);
-				if ((assoc->max_cpu_run_mins ==
-				     (uint64_t)INFINITE)
-				    && row2[ASSOC2_REQ_MCRM])
-					assoc->max_cpu_run_mins = slurm_atoull(
-						row2[ASSOC2_REQ_MCRM]);
+				slurmdb_combine_tres_strings(
+					&assoc->max_tres_pj,
+					row[ASSOC2_REQ_MTPJ], 0);
+				slurmdb_combine_tres_strings(
+					&assoc->max_tres_mins_pj,
+					row[ASSOC2_REQ_MTMPJ], 0);
+				slurmdb_combine_tres_strings(
+					&assoc->max_tres_run_mins,
+					row[ASSOC2_REQ_MTRM], 0);
+
 			}
 			mysql_free_result(result2);
 		}
@@ -1677,18 +1702,20 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
-		mod_assoc->grp_cpus = assoc->grp_cpus;
-		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
-		mod_assoc->grp_cpu_run_mins = assoc->grp_cpu_run_mins;
+		mod_assoc->grp_tres = xstrdup(assoc->grp_tres);
+		mod_assoc->grp_tres_mins = xstrdup(assoc->grp_tres_mins);
+		mod_assoc->grp_tres_run_mins =
+			xstrdup(assoc->grp_tres_run_mins);
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_mem = assoc->grp_mem;
 		mod_assoc->grp_nodes = assoc->grp_nodes;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
-		mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
-		mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
+		mod_assoc->max_tres_pj = xstrdup(assoc->max_tres_pj);
+		mod_assoc->max_tres_mins_pj = xstrdup(assoc->max_tres_mins_pj);
+		mod_assoc->max_tres_run_mins =
+			xstrdup(assoc->max_tres_run_mins);
 		mod_assoc->max_jobs = assoc->max_jobs;
 		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
 		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
@@ -2022,11 +2049,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint32_t parent_def_qos_id = 0;
 	uint32_t parent_mj = INFINITE;
 	uint32_t parent_msj = INFINITE;
-	uint32_t parent_mcpj = INFINITE;
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
-	uint64_t parent_mcmpj = (uint64_t)INFINITE;
-	uint64_t parent_mcrm = (uint64_t)INFINITE;
+	char *parent_mtpj = NULL;
+	char *parent_mtmpj = NULL;
+	char *parent_mtrm = NULL;
 	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
@@ -2162,11 +2189,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->grp_submit_jobs = INFINITE;
 
-		if (row[ASSOC_REQ_GC])
-			assoc->grp_cpus = slurm_atoul(row[ASSOC_REQ_GC]);
-		else
-			assoc->grp_cpus = INFINITE;
-
 		if (row[ASSOC_REQ_GMEM])
 			assoc->grp_mem = slurm_atoul(row[ASSOC_REQ_GMEM]);
 		else
@@ -2181,16 +2203,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->grp_wall = INFINITE;
 
-		if (row[ASSOC_REQ_GCM])
-			assoc->grp_cpu_mins = slurm_atoull(row[ASSOC_REQ_GCM]);
-		else
-			assoc->grp_cpu_mins = INFINITE;
-
-		if (row[ASSOC_REQ_GCRM])
-			assoc->grp_cpu_run_mins =
-				slurm_atoull(row[ASSOC_REQ_GCRM]);
-		else
-			assoc->grp_cpu_run_mins = INFINITE;
+		assoc->grp_tres = xstrdup(row[ASSOC_REQ_GT]);
+		assoc->grp_tres_mins = xstrdup(row[ASSOC_REQ_GTM]);
+		assoc->grp_tres_run_mins = xstrdup(row[ASSOC_REQ_GTRM]);
 
 		parent_acct = row[ASSOC_REQ_ACCT];
 		if (!without_parent_info
@@ -2256,12 +2271,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				else
 					parent_msj = INFINITE;
 
-				if (row2[ASSOC2_REQ_MCPJ])
-					parent_mcpj = slurm_atoul(
-						row2[ASSOC2_REQ_MCPJ]);
-				else
-					parent_mcpj = INFINITE;
-
 				if (row2[ASSOC2_REQ_MNPJ])
 					parent_mnpj = slurm_atoul(
 						row2[ASSOC2_REQ_MNPJ]);
@@ -2274,31 +2283,30 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				else
 					parent_mwpj = INFINITE;
 
-				if (row2[ASSOC2_REQ_MCMPJ])
-					parent_mcmpj = slurm_atoull(
-						row2[ASSOC2_REQ_MCMPJ]);
-				else
-					parent_mcmpj = INFINITE;
+				xfree(parent_mtpj);
+				if (row[ASSOC2_REQ_MTPJ][0])
+					parent_mtpj = xstrdup(
+						row[ASSOC2_REQ_MTPJ]);
 
-				if (row2[ASSOC2_REQ_MCRM])
-					parent_mcrm = slurm_atoull(
-						row2[ASSOC2_REQ_MCRM]);
-				else
-					parent_mcrm = (uint64_t)INFINITE;
+				xfree(parent_mtmpj);
+				if (row[ASSOC2_REQ_MTMPJ][0])
+					parent_mtmpj = xstrdup(
+						row[ASSOC2_REQ_MTMPJ]);
+
+				xfree(parent_mtrm);
+				if (row[ASSOC2_REQ_MTRM][0])
+					parent_mtrm = xstrdup(
+						row[ASSOC2_REQ_MTRM]);
 
 				xfree(parent_qos);
 				if (row2[ASSOC2_REQ_QOS][0])
 					parent_qos =
 						xstrdup(row2[ASSOC2_REQ_QOS]);
-				else
-					parent_qos = NULL;
 
 				xfree(parent_delta_qos);
 				if (row2[ASSOC2_REQ_DELTA_QOS][0])
 					parent_delta_qos = xstrdup(
 						row2[ASSOC2_REQ_DELTA_QOS]);
-				else
-					parent_delta_qos = NULL;
 			}
 			last_acct = parent_acct;
 			last_cluster = cluster_name;
@@ -2322,11 +2330,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->max_submit_jobs = parent_msj;
 
-		if (row[ASSOC_REQ_MCPJ])
-			assoc->max_cpus_pj = slurm_atoul(row[ASSOC_REQ_MCPJ]);
-		else
-			assoc->max_cpus_pj = parent_mcpj;
-
 		if (row[ASSOC_REQ_MNPJ])
 			assoc->max_nodes_pj = slurm_atoul(row[ASSOC_REQ_MNPJ]);
 		else
@@ -2337,17 +2340,26 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->max_wall_pj = parent_mwpj;
 
-		if (row[ASSOC_REQ_MCMPJ])
-			assoc->max_cpu_mins_pj = slurm_atoull(
-				row[ASSOC_REQ_MCMPJ]);
-		else
-			assoc->max_cpu_mins_pj = parent_mcmpj;
+		if (row[ASSOC_REQ_MTPJ])
+			assoc->max_tres_pj = xstrdup(row[ASSOC_REQ_MTPJ]);
 
-		if (row[ASSOC_REQ_MCRM])
-			assoc->max_cpu_run_mins = slurm_atoull(
-				row[ASSOC_REQ_MCRM]);
-		else
-			assoc->max_cpu_run_mins = parent_mcrm;
+		if (row[ASSOC_REQ_MTMPJ])
+			assoc->max_tres_mins_pj = xstrdup(row[ASSOC_REQ_MTMPJ]);
+
+		if (row[ASSOC_REQ_MTRM])
+			assoc->max_tres_run_mins = xstrdup(row[ASSOC_REQ_MTRM]);
+
+		/* For the tres limits we just concatted the limits going up
+		 * the heirarchy slurmdb_tres_list_from_string will just skip
+		 * over any reoccuring limit to give us the first one per
+		 * TRES.
+		 */
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_pj, parent_mtpj, 0);
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_mins_pj, parent_mtmpj, 0);
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_run_mins, parent_mtrm, 0);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
