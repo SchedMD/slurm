@@ -58,7 +58,7 @@ sacctmgr_list_tres(int argc, char **argv)
 	 * we want to print, these are the data structure
 	 * members of the type returned by slurmdbd
 	 */
-	slurm_addto_char_list(format_list, "NAME,ID,TYPE");
+	slurm_addto_char_list(format_list, "Type,Name%15,ID");
 
 	if (exit_code) {
 		FREE_NULL_LIST(format_list);
@@ -88,14 +88,9 @@ sacctmgr_list_tres(int argc, char **argv)
 		while ((field = list_next(itr2))) {
 			switch (field->type) {
 				case PRINT_NAME:
-					if (tres->name)
-						field->print_routine(field,
-								     tres->name,
-								     field_count);
-					else
-						field->print_routine(field,
-								     tres->type,
-								     field_count);
+					field->print_routine(field,
+							     tres->name,
+							     field_count);
 					break;
 				case PRINT_ID:
 					field->print_routine(field,
