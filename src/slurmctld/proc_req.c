@@ -617,13 +617,18 @@ static void _throttle_start(int *active_rpc_cnt)
 			(*active_rpc_cnt)++;
 			break;
 		}
-
+#if 1
+		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+#else
 		/* While an RPC is being throttled due to a running RPC of the
 		 * same type, do not count that thread against the daemon's
-		 * thread limit */
+		 * thread limit. In extreme environments, this logic can result
+		 * in the slurmctld spawning so many pthreads that it exhausts
+		 * system resources and fails. */
 		server_thread_decr();
 		pthread_cond_wait(&throttle_cond, &throttle_mutex);
 		server_thread_incr();
+#endif
 	}
 	slurm_mutex_unlock(&throttle_mutex);
 	if (LOTS_OF_AGENTS)
