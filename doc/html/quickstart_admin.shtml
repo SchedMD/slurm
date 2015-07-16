@@ -730,7 +730,16 @@ Thus version 14.11.x was initially released in November 2014.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major and/or minor release number changes, which typically happens
 about once every nine months or so.
-Slurm's MPI libraries may also change if the major and/or minor release number
+A list of recent major/minor Slurm releases is shown below.</p>
+<ul>
+<li>2.5.x    (Released November 2012)</li>
+<li>2.6.x    (Released June 2013)</li>
+<li>14.03.x  (Released March 2014)</li>
+<li>14.11.x  (Released November 2014)</li>
+<li>15.08.x  (Released August 2015)</li>
+</ul>
+
+<p>Slurm's MPI libraries may also change if the major and/or minor release number
 change, requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
@@ -831,6 +840,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 16 June 2015</p>
 
 <!--#include virtual="footer.txt"-->
