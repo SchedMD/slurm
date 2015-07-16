@@ -188,7 +188,7 @@ static void _destroy_sacctmgr_file_opts(void *object)
 
 static sacctmgr_file_opts_t *_parse_options(char *options)
 {
-	int start=0, i=0, end=0, mins, quote = 0;
+	int start=0, i=0, end=0, quote = 0;
  	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
 	char *option = NULL;
@@ -263,25 +263,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "DefaultAccount",
 					 MAX(command_len, 8))) {
 			file_opts->def_acct = xstrdup(option);
-		} else if (!strncasecmp (sub, "DefaultQOS",
-					 MAX(command_len, 8))) {
-			if (!g_qos_list) {
-				g_qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-			}
-
-			file_opts->assoc_rec.def_qos_id = str_2_slurmdb_qos(
-				g_qos_list, option);
-
-			if (file_opts->assoc_rec.def_qos_id == NO_VAL) {
-				exit_code=1;
-				fprintf(stderr,
-					"You gave a bad qos '%s'.  "
-					"Use 'list qos' to get "
-					"complete list.\n",
-					option);
-				break;
-			}
 		} else if (!strncasecmp (sub, "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			file_opts->def_wckey = xstrdup(option);
@@ -292,177 +273,18 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "Description",
 					 MAX(command_len, 3))) {
 			file_opts->desc = xstrdup(option);
-		} else if (!strncasecmp (sub, "FairShare",
-					 MAX(command_len, 1))
-			   || !strncasecmp (sub, "Shares",
-					    MAX(command_len, 1))) {
-			if (get_uint(option, &file_opts->assoc_rec.shares_raw,
-				     "FairShare") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad FairShare value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpCPUMins",
-					 MAX(command_len, 7))) {
-			if (get_uint64(option,
-				       &file_opts->assoc_rec.grp_cpu_mins,
-				       "GrpCPUMins") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpCPUMins value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpCPUs", MAX(command_len, 7))) {
-			if (get_uint(option, &file_opts->assoc_rec.grp_cpus,
-				     "GrpCPUs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpCPUs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpJobs", MAX(command_len, 4))) {
-			if (get_uint(option, &file_opts->assoc_rec.grp_jobs,
-				     "GrpJobs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpJobs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpMemory",
-					 MAX(command_len, 4))) {
-			if (get_uint(option, &file_opts->assoc_rec.grp_mem,
-				     "GrpMemory") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpMemory value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpNodes",
-					 MAX(command_len, 4))) {
-			if (get_uint(option, &file_opts->assoc_rec.grp_nodes,
-				     "GrpNodes") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpNodes value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpSubmitJobs",
-					 MAX(command_len, 4))) {
-			if (get_uint(option,
-				     &file_opts->assoc_rec.grp_submit_jobs,
-				     "GrpSubmitJobs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpJobs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "GrpWall", MAX(command_len, 4))) {
-			mins = time_str2mins(option);
-			if (mins >= 0) {
-				file_opts->assoc_rec.grp_wall
-					= (uint32_t) mins;
-			} else if (strcmp(option, "-1")) {
-				file_opts->assoc_rec.grp_wall = INFINITE;
-			} else {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad GrpWall time format: %s\n",
-					option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxCPUMinsPerJob",
-					 MAX(command_len, 7))
-			   || !strncasecmp (sub, "MaxProcSecPerJob",
-					    MAX(command_len, 4))) {
-			if (get_uint64(option,
-				       &file_opts->assoc_rec.max_cpu_mins_pj,
-				       "MaxCPUMins") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxCPUMins value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxCPUsPerJob",
-					 MAX(command_len, 7))) {
-			if (get_uint(option, &file_opts->assoc_rec.max_cpus_pj,
-				     "MaxCPUs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxCPUs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxJobs", MAX(command_len, 4))) {
-			if (get_uint(option, &file_opts->assoc_rec.max_jobs,
-				     "MaxJobs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxJobs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxNodesPerJob",
-					 MAX(command_len, 4))) {
-			if (get_uint(option, &file_opts->assoc_rec.max_nodes_pj,
-				     "MaxNodes") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxNodes value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxSubmitJobs",
-					 MAX(command_len, 4))) {
-			if (get_uint(option,
-				     &file_opts->assoc_rec.max_submit_jobs,
-				     "MaxSubmitJobs") != SLURM_SUCCESS) {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxJobs value: %s\n", option);
-				break;
-			}
-		} else if (!strncasecmp (sub, "MaxWallDurationPerJob",
-					 MAX(command_len, 4))) {
-			mins = time_str2mins(option);
-			if (mins >= 0) {
-				file_opts->assoc_rec.max_wall_pj
-					= (uint32_t) mins;
-			} else if (strcmp(option, "-1")) {
-				file_opts->assoc_rec.max_wall_pj = INFINITE;
-			} else {
-				exit_code=1;
-				fprintf(stderr,
-					" Bad MaxWall time format: %s\n",
-					option);
-				break;
-			}
 		} else if (!strncasecmp (sub, "Organization",
 					 MAX(command_len, 1))) {
 			file_opts->org = xstrdup(option);
-		} else if (!strncasecmp (sub, "Partition",
-					 MAX(command_len, 1))) {
-			file_opts->assoc_rec.partition = xstrdup(option);
-		} else if (!strncasecmp (sub, "QosLevel", MAX(command_len, 1))
-			   || !strncasecmp (sub, "Expedite",
-					    MAX(command_len, 1))) {
-			if (!file_opts->assoc_rec.qos_list) {
-				file_opts->assoc_rec.qos_list =
-					list_create(slurm_destroy_char);
-			}
-
-			if (!g_qos_list) {
-				g_qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-			}
-
-			slurmdb_addto_qos_char_list(
-				file_opts->assoc_rec.qos_list,
-				g_qos_list, option, option2);
 		} else if (!strncasecmp (sub, "WCKeys",
 					 MAX(command_len, 2))) {
 			if (!file_opts->wckey_list)
 				file_opts->wckey_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(file_opts->wckey_list, option);
-		} else {
+		} else if (!sacctmgr_set_assoc_rec(
+				   &file_opts->assoc_rec, sub, option,
+				   command_len, option2)) {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
 			break;
