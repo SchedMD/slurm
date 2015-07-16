@@ -1338,6 +1338,7 @@ extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
+extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);

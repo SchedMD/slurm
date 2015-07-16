@@ -61,21 +61,6 @@ static void _free_res_rec_members(slurmdb_res_rec_t *res);
 
 strong_alias(get_qos_complete_str_bitstr, slurmdb_get_qos_complete_str_bitstr);
 
-static void _free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
-{
-	if (assoc) {
-		FREE_NULL_LIST(assoc->accounting_list);
-		xfree(assoc->acct);
-		xfree(assoc->cluster);
-		xfree(assoc->parent_acct);
-		xfree(assoc->partition);
-		FREE_NULL_LIST(assoc->qos_list);
-		xfree(assoc->user);
-
-		destroy_assoc_mgr_assoc_usage(assoc->usage);
-	}
-}
-
 static void _free_clus_res_rec_members(slurmdb_clus_res_rec_t *clus_res)
 {
 	if (clus_res) {
@@ -616,13 +601,28 @@ extern void slurmdb_destroy_accounting_rec(void *object)
 	}
 }
 
+extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
+{
+	if (assoc) {
+		FREE_NULL_LIST(assoc->accounting_list);
+		xfree(assoc->acct);
+		xfree(assoc->cluster);
+		xfree(assoc->parent_acct);
+		xfree(assoc->partition);
+		FREE_NULL_LIST(assoc->qos_list);
+		xfree(assoc->user);
+
+		destroy_assoc_mgr_assoc_usage(assoc->usage);
+	}
+}
+
 extern void slurmdb_destroy_assoc_rec(void *object)
 {
 	slurmdb_assoc_rec_t *slurmdb_assoc =
 		(slurmdb_assoc_rec_t *)object;
 
 	if (slurmdb_assoc) {
-		_free_assoc_rec_members(slurmdb_assoc);
+		slurmdb_free_assoc_rec_members(slurmdb_assoc);
 		xfree(slurmdb_assoc);
 	}
 }
@@ -1187,7 +1187,7 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		return;
 
 	if (free_it)
-		_free_assoc_rec_members(assoc);
+		slurmdb_free_assoc_rec_members(assoc);
 	memset(assoc, 0, sizeof(slurmdb_assoc_rec_t));
 
 	assoc->def_qos_id = NO_VAL;
