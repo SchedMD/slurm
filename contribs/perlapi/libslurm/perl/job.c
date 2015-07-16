@@ -307,13 +307,6 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, wckey, charp);
 	if(job_info->work_dir)
 		STORE_FIELD(hv, job_info, work_dir, charp);
-	av = newAV();
-	for(j = 0; ; j += 2) {
-		if(job_info->req_node_inx[j] == -1)
-			break;
-		av_store(av, j, newSVuv(job_info->req_node_inx[j]));
-		av_store(av, j+1, newSVuv(job_info->req_node_inx[j+1]));
-	}
 
 	_job_resrcs_to_hv(job_info, hv);
 
