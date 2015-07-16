@@ -276,7 +276,6 @@ extern int get_double(char *in_value, double *out_value, char *type);
 extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			       int option);
 extern int addto_action_char_list(List char_list, char *names);
-extern List copy_char_list(List qos_list);
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last);
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
