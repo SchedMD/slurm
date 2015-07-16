@@ -337,7 +337,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 		slurm_addto_char_list(format_list,
 				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "Share,GrpCPUM,GrpCPUs,GrpJ,"
+			      "Share,GrpCPUM,GrpCPUR,GrpCPUs,GrpJ,"
 			      "GrpMEM,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
 			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
@@ -378,6 +378,11 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 					field,
 					assoc->grp_cpu_mins);
 				break;
+			case PRINT_GRPCRM:
+				field->print_routine(
+					field,
+					assoc->grp_cpu_run_mins);
+				break;
 			case PRINT_GRPC:
 				field->print_routine(field,
 						     assoc->grp_cpus);
@@ -407,6 +412,11 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 				field->print_routine(
 					field,
 					assoc->max_cpu_mins_pj);
+				break;
+			case PRINT_MAXCRM:
+				field->print_routine(
+					field,
+					assoc->max_cpu_run_mins);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(field,
@@ -528,6 +538,21 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.grp_cpu_mins);
 	}
 
+	if ((file_opts->assoc_rec.grp_cpu_run_mins != NO_VAL)
+	    && (assoc->grp_cpu_run_mins !=
+		file_opts->assoc_rec.grp_cpu_run_mins)) {
+		mod_assoc.grp_cpu_run_mins =
+			file_opts->assoc_rec.grp_cpu_run_mins;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8"PRIu64" -> %"PRIu64"\n",
+			   " Changed GrpCPURunMins",
+			   type, name,
+			   assoc->grp_cpu_run_mins,
+			   file_opts->assoc_rec.grp_cpu_run_mins);
+	}
+
 	if ((file_opts->assoc_rec.grp_cpus != NO_VAL)
 	    && (assoc->grp_cpus != file_opts->assoc_rec.grp_cpus)) {
 		mod_assoc.grp_cpus = file_opts->assoc_rec.grp_cpus;
@@ -615,6 +640,21 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->max_cpu_mins_pj,
 			   file_opts->assoc_rec.max_cpu_mins_pj);
+	}
+
+	if ((file_opts->assoc_rec.max_cpu_run_mins != (uint64_t)NO_VAL)
+	    && (assoc->max_cpu_run_mins !=
+		file_opts->assoc_rec.max_cpu_run_mins)) {
+		mod_assoc.max_cpu_run_mins =
+			file_opts->assoc_rec.max_cpu_run_mins;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8"PRIu64" -> %"PRIu64"\n",
+			   " Changed MaxCPURunMins",
+			   type, name,
+			   assoc->max_cpu_run_mins,
+			   file_opts->assoc_rec.max_cpu_run_mins);
 	}
 
 	if ((file_opts->assoc_rec.max_cpus_pj != NO_VAL)
@@ -1348,6 +1388,7 @@ static slurmdb_assoc_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	assoc->def_qos_id = file_opts->assoc_rec.def_qos_id;
 
 	assoc->grp_cpu_mins = file_opts->assoc_rec.grp_cpu_mins;
+	assoc->grp_cpu_run_mins = file_opts->assoc_rec.grp_cpu_run_mins;
 	assoc->grp_cpus = file_opts->assoc_rec.grp_cpus;
 	assoc->grp_jobs = file_opts->assoc_rec.grp_jobs;
 	assoc->grp_mem = file_opts->assoc_rec.grp_mem;
@@ -1356,6 +1397,7 @@ static slurmdb_assoc_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	assoc->grp_wall = file_opts->assoc_rec.grp_wall;
 
 	assoc->max_cpu_mins_pj = file_opts->assoc_rec.max_cpu_mins_pj;
+	assoc->max_cpu_run_mins = file_opts->assoc_rec.max_cpu_run_mins;
 	assoc->max_cpus_pj = file_opts->assoc_rec.max_cpus_pj;
 	assoc->max_jobs = file_opts->assoc_rec.max_jobs;
 	assoc->max_nodes_pj = file_opts->assoc_rec.max_nodes_pj;
@@ -1524,6 +1566,10 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->grp_cpu_mins != (uint64_t)INFINITE)
 		xstrfmtcat(*line, ":GrpCPUMins=%"PRIu64, assoc->grp_cpu_mins);
 
+	if (assoc->grp_cpu_run_mins != (uint64_t)INFINITE)
+		xstrfmtcat(*line, ":GrpCPURunMins=%"PRIu64,
+			   assoc->grp_cpu_run_mins);
+
 	if (assoc->grp_cpus != INFINITE)
 		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);
 
@@ -1545,6 +1591,10 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
 		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%"PRIu64,
 			   assoc->max_cpu_mins_pj);
+
+	if (assoc->max_cpu_run_mins != (uint64_t)INFINITE)
+		xstrfmtcat(*line, ":MaxCPURunMins=%"PRIu64,
+			   assoc->max_cpu_run_mins);
 
 	if (assoc->max_cpus_pj != INFINITE)
 		xstrfmtcat(*line, ":MaxCPUsPerJob=%u", assoc->max_cpus_pj);
