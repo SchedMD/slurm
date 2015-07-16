@@ -2337,10 +2337,13 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.state_list);
 		while ((state_id = list_next(iterator))) {
-			if (((*state_id &  JOB_STATE_BASE) &&
-			     (*state_id == job->job_state)) ||
-			    ((*state_id &  JOB_STATE_FLAGS) &&
-			     (*state_id &  job->job_state))) {
+			bool match = false;
+			if (*state_id &  JOB_STATE_FLAGS) {
+				if (*state_id &  job->job_state)
+					match = true;
+			} else if (*state_id == job->job_state)
+				match = true;
+			if (match) {
 				filter = 0;
 				break;
 			}
