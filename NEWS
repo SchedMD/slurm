@@ -317,6 +317,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix plane distribution to allocate in blocks rather than cyclically.
  -- squeue - Remove newline from job array ID value printed.
  -- squeue - Enable filtering for job state SPECIAL_EXIT.
+ -- Prevent job array task ID being inappropriately set to NO_VAL.
 
 * Changes in Slurm 14.11.8
 ==========================
