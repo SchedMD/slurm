@@ -11461,11 +11461,13 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(struct job_record  *job_ptr)
 {
+	char jbuf[JBUFSIZ];
+
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
 
-	info("requeue batch job %u", job_ptr->job_id);
+	info("Requeuing %s", jobid2str(job_ptr, jbuf));
 
 	/* Clear everything so this appears to be a new job and then restart
 	 * it in accounting. */
@@ -13950,12 +13952,13 @@ trace_job(struct job_record *job_ptr, const char *func, const char *extra)
 	char jbuf[JBUFSIZ];
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRACE_JOBS)
-		info("%s: %s job %s", func, extra, jobid2str(job_ptr, jbuf));
+		info("%s: %s %s", func, extra, jobid2str(job_ptr, jbuf));
 }
 
 /* If this is a job array meta-job, prepare it for being scheduled */
 extern void job_array_pre_sched(struct job_record *job_ptr)
 {
+	char jbuf[JBUFSIZ];
 	int32_t i;
 
 	if (!job_ptr->array_recs || !job_ptr->array_recs->task_id_bitmap)
@@ -13963,7 +13966,8 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 
 	i = bit_ffs(job_ptr->array_recs->task_id_bitmap);
 	if (i < 0) {
-		error("job %u has empty task_id_bitmap", job_ptr->job_id);
+		/* This happens if the final task in a meta-job is requeued */
+		error("%s has empty task_id_bitmap", jobid2str(job_ptr, jbuf));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		return;
 	}
