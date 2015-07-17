@@ -108,9 +108,6 @@ typedef struct bb_entry {
 	uint64_t granularity;
 	uint64_t quantity;
 	uint64_t free;
-	uint64_t gb_granularity;
-	uint64_t gb_quantity;
-	uint64_t gb_free;
 } bb_entry_t;
 
 typedef struct {
@@ -481,8 +478,6 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 
 /*
  * Determine the current actual burst buffer state.
- * Run the program "get_sys_state" and parse stdout for details.
- * job_id IN - specific job to get information about, or 0 for all jobs
  */
 static void _load_state(void)
 {
@@ -505,13 +500,15 @@ first_load = false;
 
 	for (i = 0; i < num_ents; i++) {
 		/* ID: "bytes" */
-		if (strcmp(ents[i].id, "bytes") == 0) {
+//		if (strcmp(ents[i].id, "bytes") == 0) {
+		if (strcmp(ents[i].id, "dwcache") == 0) {
 			bb_state.bb_config.granularity
-				= ents[i].gb_granularity;
+				= ents[i].granularity;
 			bb_state.total_space
-				= ents[i].gb_quantity;
+				= ents[i].quantity * ents[i].granularity;
 			bb_state.used_space
-				= ents[i].gb_quantity - ents[i].gb_free;
+				= (ents[i].quantity - ents[i].free) *
+				  ents[i].granularity;
 			xassert(bb_state.used_space >= 0);
 
 			/* Everything else is a burst buffer
@@ -529,9 +526,9 @@ first_load = false;
 			   bb_state.bb_config.gres_cnt;
 		bb_state.bb_config.gres_cnt++;
 		gres_ptr->avail_cnt = ents[i].quantity;
-		gres_ptr->granularity = ents[i].gb_granularity;
+		gres_ptr->granularity = ents[i].granularity;
 		gres_ptr->name = xstrdup(ents[i].id);
-		gres_ptr->used_cnt = ents[i].gb_quantity - ents[i].gb_free;
+		gres_ptr->used_cnt = ents[i].quantity - ents[i].free;
 	}
 	_bb_free_entry(ents, num_ents);
 }
@@ -2492,22 +2489,10 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_object(jvalue, &ents[i]);
-		/* Convert to GB
+		/* Convert to Bytes to MB
 		 */
 		if (strcmp(ents[i].units, "bytes") == 0) {
-			ents[i].gb_granularity
-				= ents[i].granularity/(1024*1024*1024);
-			ents[i].gb_quantity
-				= ents[i].quantity * ents[i].gb_granularity;
-			ents[i].gb_free
-				= ents[i].free * ents[i].gb_granularity;
-		} else {
-			/* So the caller can use all the entries
-			 * in a loop.
-			 */
-			ents[i].gb_granularity = ents[i].granularity;
-			ents[i].gb_quantity = ents[i].quantity;
-			ents[i].gb_free = ents[i].free;
+			ents[i].granularity /= (1024 * 1024);
 		}
 	}
 
