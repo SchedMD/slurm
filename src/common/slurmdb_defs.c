@@ -3003,7 +3003,8 @@ extern void slurmdb_tres_list_from_string(
 			break;
 		}
 		if (!(tmp_str = strchr(tmp_str, '='))) {
-			error("slurmdb_tres_list_from_string: no value found");
+			error("slurmdb_tres_list_from_string: "
+			      "no value found %s", tres);
 			break;
 		}
 		count = slurm_atoull(++tmp_str);
