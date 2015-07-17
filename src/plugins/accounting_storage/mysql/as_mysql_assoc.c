@@ -194,13 +194,14 @@ enum {
 };
 
 static void _mod_tres_str(char **out, char *mod, char *cur,
-			  char *cur_par, char *name, char **vals)
+			  char *cur_par, char *name, char **vals,
+			  uint32_t id)
 {
-	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE | TRES_STR_FLAG_SORT_ID;
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE;
 
 	xassert(out);
 	xassert(name);
-	xassert(vals);
 
 	if (!mod)
 		return;
@@ -211,13 +212,28 @@ static void _mod_tres_str(char **out, char *mod, char *cur,
 	 * the database.
 	 */
 	*out = xstrdup(mod);
-	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
+	slurmdb_combine_tres_strings(out, cur,
+				     tres_str_flags);
 	/* let the slurmctld know we removed limits,
 	 * "" means blank NULL means no change */
 	if (!*out)
 		*out = xstrdup("");
+
 	if (xstrcmp(*out, cur)) {
-		xstrfmtcat(*vals, ", %s='%s'", name, *out);
+		/* We always want the first char a comma in the
+		 * database so make it that way if we have something
+		 * to add.
+		 */
+		if (vals) {
+			xstrfmtcat(*vals, ", %s = if (id_assoc=%u, '%s%s', %s)",
+				   name, id,
+				   *out[0] ? "," : "",
+				   *out, name);
+			/* xstrfmtcat(*vals, ", %s='%s%s')", */
+			/* 	   name, */
+			/* 	   *out[0] ? "," : "", */
+			/* 	   *out); */
+		}
 		if (cur_par)
 			slurmdb_combine_tres_strings(
 				out, cur_par, tres_str_flags);
@@ -1764,13 +1780,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		_mod_tres_str(&mod_assoc->grp_tres,
 			      assoc->grp_tres, row[MASSOC_GT],
-			      NULL, "grp_tres", &vals);
+			      NULL, "grp_tres", &vals, mod_assoc->id);
 		_mod_tres_str(&mod_assoc->grp_tres_mins,
 			      assoc->grp_tres_mins, row[MASSOC_GTM],
-			      NULL, "grp_tres_mins", &vals);
+			      NULL, "grp_tres_mins", &vals, mod_assoc->id);
 		_mod_tres_str(&mod_assoc->grp_tres_run_mins,
 			      assoc->grp_tres_run_mins, row[MASSOC_GTRM],
-			      NULL, "grp_tres_run_mins", &vals);
+			      NULL, "grp_tres_run_mins", &vals, mod_assoc->id);
 
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_mem = assoc->grp_mem;
@@ -1780,13 +1796,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		_mod_tres_str(&mod_assoc->max_tres_pj,
 			      assoc->max_tres_pj, row[MASSOC_MTPJ],
-			      NULL, "max_tres_pj", &vals);
+			      NULL, "max_tres_pj", &vals, mod_assoc->id);
 		_mod_tres_str(&mod_assoc->max_tres_mins_pj,
 			      assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
-			      NULL, "max_tres_mins_pj", &vals);
+			      NULL, "max_tres_mins_pj", &vals, mod_assoc->id);
 		_mod_tres_str(&mod_assoc->max_tres_run_mins,
 			      assoc->max_tres_run_mins, row[MASSOC_MTRM],
-			      NULL, "max_tres_run_mins", &vals);
+			      NULL, "max_tres_run_mins", &vals, mod_assoc->id);
 
 		if (result2)
 			mysql_free_result(result2);
@@ -1912,7 +1928,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		if (moved_parent)
+		if (!vals || !vals[0] || moved_parent)
 			slurmdb_destroy_assoc_rec(mod_assoc);
 		else if (addto_update_list(mysql_conn->update_list,
 					   SLURMDB_MODIFY_ASSOC,
@@ -1934,7 +1950,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (vals) {
+	if (vals && vals[0]) {
 		char *user_name = uid_to_string((uid_t) user->uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
 				   user_name, assoc_table, name_char, vals,
@@ -3331,8 +3347,7 @@ is_same_user:
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 
-	if (!extra || (!vals && !assoc->parent_acct
-		       && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
+	if (!extra || (!vals && !assoc->parent_acct)) {
 		xfree(vals);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
