@@ -146,6 +146,12 @@ static char *massoc_req_inx[] = {
 	"lft",
 	"rgt",
 	"qos",
+	"grp_tres_mins",
+	"grp_tres_run_mins",
+	"grp_tres",
+	"max_tres_mins_pj",
+	"max_tres_run_mins",
+	"max_tres_pj",
 };
 
 enum {
@@ -157,6 +163,12 @@ enum {
 	MASSOC_LFT,
 	MASSOC_RGT,
 	MASSOC_QOS,
+	MASSOC_GTM,
+	MASSOC_GTRM,
+	MASSOC_GT,
+	MASSOC_MTMPJ,
+	MASSOC_MTRM,
+	MASSOC_MTPJ,
 	MASSOC_COUNT
 };
 
