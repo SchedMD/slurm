@@ -2438,6 +2438,8 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	}
 	_free_script_argv(script_argv);
 
+	if (bb_state.bb_config.debug_flag)
+		info("%s: pools: %s", __func__, string);
 	_python2json(string);
 	j = json_tokener_parse(string);
 	if (j == NULL) {
