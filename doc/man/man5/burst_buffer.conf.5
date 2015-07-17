@@ -50,8 +50,8 @@ and it's default value is /opt/cray/dw_wlm/default/bin/dw_wlm_cli.
 
 .TP
 \fBGranularity\fR
-Granularity of job space allocations in units of gigabytes.
-The default value is 1 gigabyte.
+Granularity of job space allocations in units of megabytes.
+The default value is 1 megabyte.
 This option is not used by the burst_buffer/cray plugin.
 
 .\ Possible future enhancement
@@ -72,7 +72,7 @@ This option is not used by the burst_buffer/cray plugin.
 Maximum burst buffer allocation size for any single job.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
-Gigabytes is assumed if no suffix is supplied.
+Megabytes is assumed if no suffix is supplied.
 By default there is no job allocation size limit.
 
 .TP
@@ -144,7 +144,7 @@ The size is calculated by adding the burst buffer allocations for all jobs
 plus any persistent buffers belonging to the user.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
-Gigabytes is assumed if no suffix is supplied.
+Megabytes is assumed if no suffix is supplied.
 By default there is no job allocation size limit.
 
 .SH "EXAMPLE"

@@ -620,7 +620,8 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 }
 
 /* Translate a burst buffer size specification in string form to numeric form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
+ * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
+ * are MB. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
 	char *end_ptr = NULL;
@@ -631,13 +632,13 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	if (bb_size_i > 0) {
 		bb_size_u = (uint64_t) bb_size_i;
 		if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-			bb_size_u = (bb_size_u + 1023) / 1024;
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
 			;
-		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
 			bb_size_u *= 1024;
-		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
 			bb_size_u *= (1024 * 1024);
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			bb_size_u *= (1024 * 1024 * 1024);
 		}
 	}
 

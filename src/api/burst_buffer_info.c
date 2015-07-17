@@ -60,7 +60,7 @@
 #include "src/common/xstring.h"
 
 /* Reformat a numeric value with an appropriate suffix.
- * The units are GB */
+ * The units are MB */
 static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 {
 	uint64_t tmp64;
@@ -68,16 +68,16 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 	if ((num == NO_VAL64) || (num == INFINITE64)) {
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
-		snprintf(buf, buf_size, "0GB");
+		snprintf(buf, buf_size, "0MB");
 	} else if ((num % (1024 * 1024)) == 0) {
 		tmp64 = num / (1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"PB", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
 	} else if ((num % 1024) == 0) {
 		tmp64 = num / 1024;
-		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
 	} else {
 		tmp64 = num;
-		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"MB", tmp64);
 	}
 }
 

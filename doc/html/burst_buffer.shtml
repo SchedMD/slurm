@@ -169,7 +169,7 @@ buffer plugins.<br>
 <i>type</i> specifies a Cray generic burst buffer resource, for example "nodes".<br>
 if "type" is not specified, the number is a measure of storage space.<br>
 <i>units</i> may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
-"PB" (petabytes), etc. with the default units being gigabyes for reservations
+"PB" (petabytes), etc. with the default units being megabyes for reservations
 of storage space.<br>
 
 Jobs using this reservation are not restricted to these burst buffer resources,
@@ -186,6 +186,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 25 March 2015</p>
+<p style="text-align:center;">Last modified 17 July 2015</p>
 
 <!--#include virtual="footer.txt"-->
