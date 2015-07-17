@@ -1470,7 +1470,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		*/
 		uint32_t lft = slurm_atoul(row[MASSOC_LFT]);
 		uint32_t rgt = slurm_atoul(row[MASSOC_RGT]);
-		char *account = row[MASSOC_ACCT];
+		char *orig_acct, *account;
+
+		orig_acct = account = row[MASSOC_ACCT];
 
 		/* Here we want to see if the person
 		 * is a coord of the parent account
@@ -1607,7 +1609,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
 		/* Only do this when not dealing with the root association. */
-		if (strcmp(account, "root") || row[MASSOC_USER][0]) {
+		if (strcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
 			MYSQL_RES *result2;
 			MYSQL_ROW row2;
 			/* If there is a variable cleared here we need to make
