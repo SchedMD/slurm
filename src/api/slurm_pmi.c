@@ -181,7 +181,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
 
-	/* Send the RPC to the local srun communcation manager.
+	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
 	 * the same time and refuse some connections, retry as
 	 * needed. Spread out messages by task's rank. Also
@@ -264,7 +264,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
 
-	/* Send the RPC to the local srun communcation manager.
+	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
 	 * the same time and refuse some connections, retry as
 	 * needed. Wait until all key-pairs have been sent by

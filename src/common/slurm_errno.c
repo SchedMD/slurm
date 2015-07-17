@@ -108,7 +108,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR,
 	  "Unable to contact slurm controller (shutdown failure)"},
 
-	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
+	/* _info.c/communication layer RESPONSE_SLURM_RC message codes */
 
 	{ SLURM_NO_CHANGE_IN_DATA,	/* Not really an error */
 	  "Data has not changed since time specified"		},
@@ -388,7 +388,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESCRIPT_CHDIR_FAILED,
 	  "unable to change directory to work directory"	},
 	{ ESCRIPT_OPEN_OUTPUT_FAILED,
-	  "cound not open output file"			        },
+	  "could not open output file"			        },
 	{ ESCRIPT_NON_ZERO_RETURN,
 	  "Script terminated with non-zero exit code"		},
 

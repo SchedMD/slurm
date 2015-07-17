@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  msg.h - Message/communcation manager for Wiki plugin
+ *  msg.h - Message/communication manager for Wiki plugin
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

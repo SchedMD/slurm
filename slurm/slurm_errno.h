@@ -107,7 +107,7 @@ enum {
 	SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR,
 	SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR,
 
-	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
+	/* _info.c/communication layer RESPONSE_SLURM_RC message codes */
 	SLURM_NO_CHANGE_IN_DATA =			1900,
 
 	/* slurmctld error codes */
