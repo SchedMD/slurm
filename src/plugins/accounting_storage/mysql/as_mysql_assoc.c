@@ -193,6 +193,38 @@ enum {
 	RASSOC_COUNT
 };
 
+static void _mod_tres_str(char **out, char *mod, char *cur,
+			  char *cur_par, char *name, char **vals)
+{
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE | TRES_STR_FLAG_SORT_ID;
+
+	xassert(out);
+	xassert(name);
+	xassert(vals);
+
+	if (!mod)
+		return;
+
+	/* We have to add strings in waves or we will not be able to
+	 * get removes to work correctly.  We want the string returned
+	 * after the first slurmdb_combine_tres_strings to be put in
+	 * the database.
+	 */
+	*out = xstrdup(mod);
+	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
+	/* let the slurmctld know we removed limits,
+	 * "" means blank NULL means no change */
+	if (!*out)
+		*out = xstrdup("");
+	if (xstrcmp(*out, cur)) {
+		xstrfmtcat(*vals, ", %s='%s'", name, *out);
+		if (cur_par)
+			slurmdb_combine_tres_strings(
+				out, cur_par, tres_str_flags);
+	} else
+		xfree(*out);
+}
+
 static int _assoc_sort_cluster(void *r1, void *r2)
 {
 	slurmdb_assoc_rec_t *rec_a = *(slurmdb_assoc_rec_t **)r1;
@@ -1730,18 +1762,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
-		mod_assoc->grp_tres = xstrdup(assoc->grp_tres);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->grp_tres, row[MASSOC_GT], 1);
-
-		mod_assoc->grp_tres_mins = xstrdup(assoc->grp_tres_mins);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->grp_tres_mins, row[MASSOC_GTM], 1);
-
-		mod_assoc->grp_tres_run_mins =
-			xstrdup(assoc->grp_tres_run_mins);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->grp_tres_run_mins, row[MASSOC_GTRM], 1);
+		_mod_tres_str(&mod_assoc->grp_tres,
+			      assoc->grp_tres, row[MASSOC_GT],
+			      NULL, "grp_tres", &vals);
+		_mod_tres_str(&mod_assoc->grp_tres_mins,
+			      assoc->grp_tres_mins, row[MASSOC_GTM],
+			      NULL, "grp_tres_mins", &vals);
+		_mod_tres_str(&mod_assoc->grp_tres_run_mins,
+			      assoc->grp_tres_run_mins, row[MASSOC_GTRM],
+			      NULL, "grp_tres_run_mins", &vals);
 
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_mem = assoc->grp_mem;
@@ -1749,30 +1778,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		mod_assoc->max_tres_pj = xstrdup(assoc->max_tres_pj);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_pj,
-			row[MASSOC_MTPJ], 0);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_pj,
-			alt_assoc.max_tres_pj, 1);
-
-		mod_assoc->max_tres_mins_pj = xstrdup(assoc->max_tres_mins_pj);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_mins_pj,
-			row[MASSOC_MTMPJ], 0);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_mins_pj,
-			alt_assoc.max_tres_mins_pj, 0);
-
-		mod_assoc->max_tres_run_mins =
-			xstrdup(assoc->max_tres_run_mins);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_run_mins,
-			row[MASSOC_MTRM], 0);
-		slurmdb_combine_tres_strings(
-			&mod_assoc->max_tres_run_mins,
-			alt_assoc.max_tres_run_mins, 0);
+		_mod_tres_str(&mod_assoc->max_tres_pj,
+			      assoc->max_tres_pj, row[MASSOC_MTPJ],
+			      NULL, "max_tres_pj", &vals);
+		_mod_tres_str(&mod_assoc->max_tres_mins_pj,
+			      assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
+			      NULL, "max_tres_mins_pj", &vals);
+		_mod_tres_str(&mod_assoc->max_tres_run_mins,
+			      assoc->max_tres_run_mins, row[MASSOC_MTRM],
+			      NULL, "max_tres_run_mins", &vals);
 
 		if (result2)
 			mysql_free_result(result2);
