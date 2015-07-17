@@ -1680,13 +1680,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						row2[ASSOC2_REQ_MWPJ]);
 				slurmdb_combine_tres_strings(
 					&assoc->max_tres_pj,
-					row[ASSOC2_REQ_MTPJ], 0);
+					row2[ASSOC2_REQ_MTPJ], 0);
 				slurmdb_combine_tres_strings(
 					&assoc->max_tres_mins_pj,
-					row[ASSOC2_REQ_MTMPJ], 0);
+					row2[ASSOC2_REQ_MTMPJ], 0);
 				slurmdb_combine_tres_strings(
 					&assoc->max_tres_run_mins,
-					row[ASSOC2_REQ_MTRM], 0);
+					row2[ASSOC2_REQ_MTRM], 0);
 
 			}
 			mysql_free_result(result2);
@@ -2286,17 +2286,17 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				xfree(parent_mtpj);
 				if (row[ASSOC2_REQ_MTPJ][0])
 					parent_mtpj = xstrdup(
-						row[ASSOC2_REQ_MTPJ]);
+						row2[ASSOC2_REQ_MTPJ]);
 
 				xfree(parent_mtmpj);
 				if (row[ASSOC2_REQ_MTMPJ][0])
 					parent_mtmpj = xstrdup(
-						row[ASSOC2_REQ_MTMPJ]);
+						row2[ASSOC2_REQ_MTMPJ]);
 
 				xfree(parent_mtrm);
 				if (row[ASSOC2_REQ_MTRM][0])
 					parent_mtrm = xstrdup(
-						row[ASSOC2_REQ_MTRM]);
+						row2[ASSOC2_REQ_MTRM]);
 
 				xfree(parent_qos);
 				if (row2[ASSOC2_REQ_QOS][0])
