@@ -1190,7 +1190,8 @@ static int _accounting_cluster_ready(void)
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
-	cluster_tres_str = slurmdb_make_tres_string(cluster_tres_list, 1);
+	cluster_tres_str = slurmdb_make_tres_string(
+		cluster_tres_list, TRES_STR_FLAG_SIMPLE);
 	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
