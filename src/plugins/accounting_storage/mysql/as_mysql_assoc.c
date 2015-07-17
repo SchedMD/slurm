@@ -1503,6 +1503,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	vals = xstrdup(sent_vals);
 
 	while ((row = mysql_fetch_row(result))) {
+		MYSQL_RES *result2 = NULL;
 		slurmdb_assoc_rec_t *mod_assoc = NULL, alt_assoc;
 		int account_type=0;
 		/* If parent changes these also could change
@@ -1653,7 +1654,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		/* Only do this when not dealing with the root association. */
 		if (strcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
-			MYSQL_RES *result2;
 			MYSQL_ROW row2;
 			/* If there is a variable cleared here we need to make
 			   sure we get the parent's information, if any. */
@@ -1694,20 +1694,19 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MWPJ])
 					alt_assoc.max_wall_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
-				if (row2[ASSOC2_REQ_MTPJ] &&
-				    row2[ASSOC2_REQ_MTPJ][0])
-					alt_assoc.max_tres_pj =	xstrdup(
-						row2[ASSOC2_REQ_MTPJ]);
-				if (row2[ASSOC2_REQ_MTMPJ] &&
-				    row2[ASSOC2_REQ_MTMPJ][0])
-					alt_assoc.max_tres_mins_pj = xstrdup(
-						row2[ASSOC2_REQ_MTMPJ]);
-				if (row2[ASSOC2_REQ_MTRM] &&
-				    row2[ASSOC2_REQ_MTRM][0])
-					alt_assoc.max_tres_run_mins = xstrdup(
-						row2[ASSOC2_REQ_MTRM]);
+
+				/* We don't have to copy these strings
+				 * or check for there existance,
+				 * slurmdb_combine_tres_strings will
+				 * do this for us below.
+				 */
+				alt_assoc.max_tres_pj =
+					row2[ASSOC2_REQ_MTPJ];
+				alt_assoc.max_tres_mins_pj =
+					row2[ASSOC2_REQ_MTMPJ];
+				alt_assoc.max_tres_run_mins =
+					row2[ASSOC2_REQ_MTRM];
 			}
-			mysql_free_result(result2);
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
@@ -1724,24 +1723,51 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->shares_raw = assoc->shares_raw;
 
 		mod_assoc->grp_tres = xstrdup(assoc->grp_tres);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->grp_tres, row[MASSOC_GT], 1);
+
 		mod_assoc->grp_tres_mins = xstrdup(assoc->grp_tres_mins);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->grp_tres_mins, row[MASSOC_GTM], 1);
+
 		mod_assoc->grp_tres_run_mins =
 			xstrdup(assoc->grp_tres_run_mins);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->grp_tres_run_mins, row[MASSOC_GTRM], 1);
+
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_mem = assoc->grp_mem;
 		mod_assoc->grp_nodes = assoc->grp_nodes;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		mod_assoc->max_tres_pj = xstrdup(
-			alt_assoc.max_tres_pj ?
-			alt_assoc.max_tres_pj : assoc->max_tres_pj);
-		mod_assoc->max_tres_mins_pj = xstrdup(
-			alt_assoc.max_tres_mins_pj ?
-			alt_assoc.max_tres_mins_pj : assoc->max_tres_mins_pj);
-		mod_assoc->max_tres_run_mins = xstrdup(
-			alt_assoc.max_tres_run_mins ?
-			alt_assoc.max_tres_run_mins : assoc->max_tres_run_mins);
+		mod_assoc->max_tres_pj = xstrdup(assoc->max_tres_pj);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_pj,
+			row[MASSOC_MTPJ], 0);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_pj,
+			alt_assoc.max_tres_pj, 1);
+
+		mod_assoc->max_tres_mins_pj = xstrdup(assoc->max_tres_mins_pj);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_mins_pj,
+			row[MASSOC_MTMPJ], 0);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_mins_pj,
+			alt_assoc.max_tres_mins_pj, 0);
+
+		mod_assoc->max_tres_run_mins =
+			xstrdup(assoc->max_tres_run_mins);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_run_mins,
+			row[MASSOC_MTRM], 0);
+		slurmdb_combine_tres_strings(
+			&mod_assoc->max_tres_run_mins,
+			alt_assoc.max_tres_run_mins, 0);
+
+		if (result2)
+			mysql_free_result(result2);
 
 		if (alt_assoc.max_jobs != NO_VAL)
 			mod_assoc->max_jobs = alt_assoc.max_jobs;
