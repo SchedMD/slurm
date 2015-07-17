@@ -15,6 +15,9 @@ documents those changes that are of interest to users and administrators.
  -- squeue - Remove newline from job array ID value printed.
  -- squeue - Enable filtering for job state SPECIAL_EXIT.
  -- Prevent job array task ID being inappropriately set to NO_VAL.
+ -- MYSQL - Make it so you don't have to restart the slurmctld
+    to gain the correct limit when a parent account is root and you
+    remove a subaccount's limit which exists on the parent account.
 
 * Changes in Slurm 14.11.8
 ==========================
