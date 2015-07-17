@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Make it so you don't have to restart the slurmctld
     to gain the correct limit when a parent account is root and you
     remove a subaccount's limit which exists on the parent account.
+ -- MYSQL - Close small chance of setting the wrong limit on an association
+    when removing a limit from an association on multiple clusters
+    at the same time.
 
 * Changes in Slurm 14.11.8
 ==========================
