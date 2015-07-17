@@ -1474,7 +1474,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		orig_acct = account = row[MASSOC_ACCT];
 
-		slurmdb_init_association_rec(&alt_assoc, 0);
+		slurmdb_init_assoc_rec(&alt_assoc, 0);
 
 		/* Here we want to see if the person
 		 * is a coord of the parent account
