@@ -1513,9 +1513,9 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 }
 
 extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
-				    char **cols, char **vals,
-				    char **extra, qos_level_t qos_level,
-				    bool for_add)
+			      char **cols, char **vals,
+			      char **extra, qos_level_t qos_level,
+			      bool for_add)
 {
 	if (!assoc)
 		return SLURM_ERROR;
@@ -1682,13 +1682,29 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
 	}
 
-	/* when modifying the qos it happens in the actual function
-	   since we have to wait until we hear about the parent first.
-	   Same thing happens with the TRES limits. */
-	if (qos_level == QOS_LEVEL_MODIFY)
-		goto end_qos;
+	/* When modifying anything below this comment it happens in
+	 * the actual function since we have to wait until we hear
+	 * about the parent first.
+	 * What we do to make it known something needs to be changed
+	 * is we cat "" onto extra which will inform the caller
+	 * something needs changing.
+	 */
+
+	if (assoc->grp_tres) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres");
+		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres);
+		xstrfmtcat(*extra, ", grp_tres='%s'", assoc->grp_tres);
+	}
 
 	if (assoc->grp_tres_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
 		xstrcat(*cols, ", grp_tres_mins");
 		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_mins);
 		xstrfmtcat(*extra, ", grp_tres_mins='%s'",
@@ -1696,20 +1712,31 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 	}
 
 	if (assoc->grp_tres_run_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
 		xstrcat(*cols, ", grp_tres_run_mins");
 		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_run_mins);
 		xstrfmtcat(*extra, ", grp_tres_run_mins='%s'",
 			   assoc->grp_tres_run_mins);
 	}
 
-	if (assoc->grp_tres) {
-		xstrcat(*cols, ", grp_tres");
-		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres);
-		xstrfmtcat(*extra, ", grp_tres='%s'", assoc->grp_tres);
+	if (assoc->max_tres_pj) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pj");
+		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_pj);
+		xstrfmtcat(*extra, ", max_tres_pj='%s'", assoc->max_tres_pj);
 	}
 
-
 	if (assoc->max_tres_mins_pj) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
 		xstrcat(*cols, ", max_tres_mins_pj");
 		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_mins_pj);
 		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
@@ -1717,16 +1744,14 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 	}
 
 	if (assoc->max_tres_run_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
 		xstrcat(*cols, ", max_tres_run_mins");
 		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_run_mins);
 		xstrfmtcat(*extra, ", max_tres_run_mins='%s'",
 			   assoc->max_tres_run_mins);
-	}
-
-	if (assoc->max_tres_pj) {
-		xstrcat(*cols, ", max_tres");
-		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_pj);
-		xstrfmtcat(*extra, ", max_tres='%s'", assoc->max_tres_pj);
 	}
 
 	if (assoc->qos_list && list_count(assoc->qos_list)) {
@@ -1734,9 +1759,14 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
 		int set = 0;
-		ListIterator qos_itr =
-			list_iterator_create(assoc->qos_list);
+		ListIterator qos_itr;
 
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+
+		qos_itr = list_iterator_create(assoc->qos_list);
 		while ((tmp_char = list_next(qos_itr))) {
 			/* we don't want to include blank names */
 			if (!tmp_char[0])
@@ -1764,13 +1794,13 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(assoc->qos_list, default_qos_str);
-	} else {
+	} else if (qos_level != QOS_LEVEL_MODIFY) {
 		/* clear the qos */
 		xstrcat(*cols, ", qos, delta_qos");
 		xstrcat(*vals, ", '', ''");
 		xstrcat(*extra, ", qos='', delta_qos=''");
 	}
-end_qos:
+end_modify:
 
 	return SLURM_SUCCESS;
 
@@ -2174,7 +2204,9 @@ just_update:
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "
-			       "max_cpu_mins_pj=NULL "
+			       "max_tres_pj='' "
+			       "max_tres_mins_pj='' "
+			       "max_tres_run_mins='' "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
