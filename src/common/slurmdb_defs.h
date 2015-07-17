@@ -81,6 +81,8 @@ typedef enum {
 					      * added to the string
 					      */
 #define TRES_STR_FLAG_SORT_ID     0x00000008 /* sort string by ID */
+#define TRES_STR_FLAG_SIMPLE      0x00000010 /* make a simple string */
+#define TRES_STR_FLAG_COMMA1      0x00000020 /* make a first char a comma */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
@@ -157,14 +159,26 @@ extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
-extern char *slurmdb_make_tres_string(List tres, bool simple);
+/* make a tres_string from a given list
+ * IN tres - list of slurmdb_tres_rec_t's
+ * IN flags - see the TRES_STR_FLAGS above
+ *                 Meaningful flags are TRES_STR_FLAG_SIMPLE
+ *                                      TRES_STR_FLAG_COMMA1
+ * RET char * of tres_str
+ */
+extern char *slurmdb_make_tres_string(List tres, uint32_t flags);
 extern char *slurmdb_format_tres_str(
 	char *tres_in, List full_tres_list, bool simple);
-/* Used to turn a tres string into a list containing slurmdb_tres_rec_t's
+/* Used to turn a tres string into a list containing
+ * slurmdb_tres_rec_t's with only id's and counts filled in, no
+ * formatted types or names.
  *
  * IN/OUT: tres_list - list created from the simple tres string
  * IN    : tres - simple string you want convert
  * IN    : flags - see the TRES_STR_FLAGS above
+ *                 Meaningful flags are TRES_STR_FLAG_REPLACE
+ *                                      TRES_STR_FLAG_REMOVE
+ *                                      TRES_STR_FLAG_SORT_ID
  */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, char *tres, uint32_t flags);
@@ -175,6 +189,12 @@ extern char *slurmdb_make_tres_string_from_simple(
  * IN/OUT: tres_str_old - original simple tres string
  * IN    : tres_str_new - string you want added
  * IN    : flags - see the TRES_STR_FLAGS above
+ *                 Meaningful flags are TRES_STR_FLAG_ONLY_CONCAT
+ *                                      TRES_STR_FLAG_REPLACE
+ *                                      TRES_STR_FLAG_REMOVE
+ *                                      TRES_STR_FLAG_SORT_ID
+ *                                      TRES_STR_FLAG_SIMPLE
+ *                                      TRES_STR_FLAG_COMMA1
  * RET   : new tres_str_old - the new string (also sent out)
  */
 extern char *slurmdb_combine_tres_strings(

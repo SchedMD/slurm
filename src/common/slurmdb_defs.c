@@ -2835,7 +2835,7 @@ extern char *slurmdb_tres_string_combine_lists(
 }
 
 /* caller must xfree this char * returned */
-extern char *slurmdb_make_tres_string(List tres, bool simple)
+extern char *slurmdb_make_tres_string(List tres, uint32_t flags)
 {
 	char *tres_str = NULL;
 	ListIterator itr;
@@ -2846,14 +2846,16 @@ extern char *slurmdb_make_tres_string(List tres, bool simple)
 
 	itr = list_iterator_create(tres);
 	while ((tres_rec = list_next(itr))) {
-		if (simple || !tres_rec->type)
+		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-				   tres_str ? "," : "",
+				   (tres_str ||
+				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
 				   tres_rec->id, tres_rec->count);
 
 		else
 			xstrfmtcat(tres_str, "%s%s%s%s=%"PRIu64,
-				   tres_str ? "," : "",
+				   (tres_str ||
+				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "",
@@ -2930,6 +2932,9 @@ extern char *slurmdb_format_tres_str(
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0])
 		return tres_str;
+
+	if (tmp_str[0] == ',')
+		tmp_str++;
 
 	while (tmp_str) {
 		if (tmp_str[0] >= '0' && tmp_str[0] <= '9') {
@@ -3015,6 +3020,9 @@ extern void slurmdb_tres_list_from_string(
 	if (!tres || !tres[0])
 		return;
 
+	if (tmp_str[0] == ',')
+		tmp_str++;
+
 	while (tmp_str) {
 		id = atoi(tmp_str);
 		if (id < 0) {
@@ -3086,7 +3094,9 @@ extern char *slurmdb_combine_tres_strings(
 	 * TRES_STR_FLAG_ONLY_CONCAT.
 	 */
 	if (tres_str_new && tres_str_new[0])
-		xstrfmtcat(*tres_str_old, "%s%s",
+		xstrfmtcat(*tres_str_old, "%s%s%s",
+			   (flags & (TRES_STR_FLAG_COMMA1 |
+				     TRES_STR_FLAG_ONLY_CONCAT)) ? "," : "",
 			   *tres_str_old ? "," : "",
 			   tres_str_new);
 
@@ -3095,8 +3105,12 @@ extern char *slurmdb_combine_tres_strings(
 
 	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, flags);
 	xfree(*tres_str_old);
+
+	/* Always make it a simple string */
+	flags |= TRES_STR_FLAG_SIMPLE;
+
 	/* Make a new string from the combined */
-	*tres_str_old = slurmdb_make_tres_string(tres_list, 1);
+	*tres_str_old = slurmdb_make_tres_string(tres_list, flags);
 
 	FREE_NULL_LIST(tres_list);
 endit:
