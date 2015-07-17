@@ -3032,6 +3032,20 @@ extern void slurmdb_tres_list_from_string(
 		tmp_str++;
 	}
 
+	if (remove_found && (flags & TRES_STR_FLAG_REMOVE)) {
+		/* here we will remove the tres we don't want in the
+		   string */
+		uint64_t inf64 = (uint64_t)-1;
+		int removed;
+
+		if ((removed = list_delete_all(
+			     *tres_list,
+			     slurmdb_find_tres_in_list_by_count,
+			     &inf64)) != remove_found)
+			debug("slurmdb_tres_list_from_string: "
+			      "was expecting to remove %d, but removed %d",
+			      remove_found, removed);
+	}
 	return;
 }
 
@@ -3126,6 +3140,17 @@ extern int slurmdb_find_tres_in_list(void *x, void *key)
 	uint32_t tres_id = *(uint32_t *)key;
 
 	if (tres_rec->id == tres_id)
+		return 1;
+
+	return 0;
+}
+
+extern int slurmdb_find_tres_in_list_by_count(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
+	uint64_t count = *(uint64_t *)key;
+
+	if (tres_rec->count == count)
 		return 1;
 
 	return 0;
