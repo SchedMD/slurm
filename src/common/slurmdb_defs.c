@@ -3040,15 +3040,18 @@ extern char *slurmdb_combine_tres_strings(
 
 	xassert(tres_str_old);
 
-	if (!tres_str_new || !tres_str_new[0])
-		return *tres_str_old;
+	/* If a new string is being added concat it onto the old
+	 * string, then send it to slurmdb_tres_list_from_string which
+	 * will make it a unique list if mode is 1 or 2.
+	 */
+	if (tres_str_new && tres_str_new[0])
+		xstrfmtcat(*tres_str_old, "%s%s",
+			   *tres_str_old ? "," : "",
+			   tres_str_new);
 
 	if (!mode)
 		goto endit;
-	/* add the old string to the list */
-	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, replace);
 
-	/* now add the new one, skipping any duplicate TRES IDs */
 	slurmdb_tres_list_from_string(&tres_list, *tres_str_old,
 				      (mode == 2) ? true : false);
 	xfree(*tres_str_old);
