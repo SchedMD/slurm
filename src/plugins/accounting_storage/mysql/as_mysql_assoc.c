@@ -1503,7 +1503,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	vals = xstrdup(sent_vals);
 
 	while ((row = mysql_fetch_row(result))) {
-		slurmdb_assoc_rec_t *mod_assoc = NULL;
+		slurmdb_assoc_rec_t *mod_assoc = NULL, alt_assoc;
 		int account_type=0;
 		/* If parent changes these also could change
 		   so we need to keep track of the latest
@@ -1514,6 +1514,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		char *orig_acct, *account;
 
 		orig_acct = account = row[MASSOC_ACCT];
+
+		slurmdb_init_assoc_rec(&alt_assoc, 0);
 
 		/* Here we want to see if the person
 		 * is a coord of the parent account
@@ -1673,35 +1675,37 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			if ((row2 = mysql_fetch_row(result2))) {
 				if (assoc->def_qos_id == INFINITE
 				    && row2[ASSOC2_REQ_DEF_QOS])
-					assoc->def_qos_id = slurm_atoul(
+					alt_assoc.def_qos_id = slurm_atoul(
 						row2[ASSOC2_REQ_DEF_QOS]);
 
 				if ((assoc->max_jobs == INFINITE)
 				    && row2[ASSOC2_REQ_MJ])
-					assoc->max_jobs = slurm_atoul(
+					alt_assoc.max_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MJ]);
 				if ((assoc->max_submit_jobs == INFINITE)
 				    && row2[ASSOC2_REQ_MSJ])
-					assoc->max_submit_jobs = slurm_atoul(
+					alt_assoc.max_submit_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MSJ]);
 				if ((assoc->max_nodes_pj == INFINITE)
 				    && row2[ASSOC2_REQ_MNPJ])
-					assoc->max_nodes_pj = slurm_atoul(
+					alt_assoc.max_nodes_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MNPJ]);
 				if ((assoc->max_wall_pj == INFINITE)
 				    && row2[ASSOC2_REQ_MWPJ])
-					assoc->max_wall_pj = slurm_atoul(
+					alt_assoc.max_wall_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
-				slurmdb_combine_tres_strings(
-					&assoc->max_tres_pj,
-					row2[ASSOC2_REQ_MTPJ], 0);
-				slurmdb_combine_tres_strings(
-					&assoc->max_tres_mins_pj,
-					row2[ASSOC2_REQ_MTMPJ], 0);
-				slurmdb_combine_tres_strings(
-					&assoc->max_tres_run_mins,
-					row2[ASSOC2_REQ_MTRM], 0);
-
+				if (row2[ASSOC2_REQ_MTPJ] &&
+				    row2[ASSOC2_REQ_MTPJ][0])
+					alt_assoc.max_tres_pj =	xstrdup(
+						row2[ASSOC2_REQ_MTPJ]);
+				if (row2[ASSOC2_REQ_MTMPJ] &&
+				    row2[ASSOC2_REQ_MTMPJ][0])
+					alt_assoc.max_tres_mins_pj = xstrdup(
+						row2[ASSOC2_REQ_MTMPJ]);
+				if (row2[ASSOC2_REQ_MTRM] &&
+				    row2[ASSOC2_REQ_MTRM][0])
+					alt_assoc.max_tres_run_mins = xstrdup(
+						row2[ASSOC2_REQ_MTRM]);
 			}
 			mysql_free_result(result2);
 		}
@@ -1710,7 +1714,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 
-		mod_assoc->def_qos_id = assoc->def_qos_id;
+		if (alt_assoc.def_qos_id != NO_VAL)
+			mod_assoc->def_qos_id = alt_assoc.def_qos_id;
+		else
+			mod_assoc->def_qos_id = assoc->def_qos_id;
 
 		mod_assoc->is_def = assoc->is_def;
 
@@ -1726,14 +1733,32 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		mod_assoc->max_tres_pj = xstrdup(assoc->max_tres_pj);
-		mod_assoc->max_tres_mins_pj = xstrdup(assoc->max_tres_mins_pj);
-		mod_assoc->max_tres_run_mins =
-			xstrdup(assoc->max_tres_run_mins);
-		mod_assoc->max_jobs = assoc->max_jobs;
-		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
-		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
-		mod_assoc->max_wall_pj = assoc->max_wall_pj;
+		mod_assoc->max_tres_pj = xstrdup(
+			alt_assoc.max_tres_pj ?
+			alt_assoc.max_tres_pj : assoc->max_tres_pj);
+		mod_assoc->max_tres_mins_pj = xstrdup(
+			alt_assoc.max_tres_mins_pj ?
+			alt_assoc.max_tres_mins_pj : assoc->max_tres_mins_pj);
+		mod_assoc->max_tres_run_mins = xstrdup(
+			alt_assoc.max_tres_run_mins ?
+			alt_assoc.max_tres_run_mins : assoc->max_tres_run_mins);
+
+		if (alt_assoc.max_jobs != NO_VAL)
+			mod_assoc->max_jobs = alt_assoc.max_jobs;
+		else
+			mod_assoc->max_jobs = assoc->max_jobs;
+		if (alt_assoc.max_nodes_pj != NO_VAL)
+			mod_assoc->max_nodes_pj = alt_assoc.max_nodes_pj;
+		else
+			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
+		if (alt_assoc.max_submit_jobs != NO_VAL)
+			mod_assoc->max_submit_jobs = alt_assoc.max_submit_jobs;
+		else
+			mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
+		if (alt_assoc.max_wall_pj != NO_VAL)
+			mod_assoc->max_wall_pj = alt_assoc.max_wall_pj;
+		else
+			mod_assoc->max_wall_pj = assoc->max_wall_pj;
 
 		/* no need to get the parent id since if we moved
 		 * parent id's we will get it when we send the total list */
