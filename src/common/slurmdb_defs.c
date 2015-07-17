@@ -191,7 +191,6 @@ static int _sort_children_list(void *v1, void *v2)
  * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
  *
  */
-
 static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 {
 	slurmdb_assoc_rec_t *assoc_a;
@@ -203,6 +202,27 @@ static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 	if (assoc_a->lft == assoc_b->lft)
 		return 0;
 	if (assoc_a->lft > assoc_b->lft)
+		return 1;
+	return -1;
+}
+
+/*
+ * Comparator used for sorting tres by id
+ *
+ * returns: -1 tres_a < tres_b   0: tres_a == tres_b   1: tres_a > tres_b
+ *
+ */
+static int _sort_tres_by_id_asc(void *v1, void *v2)
+{
+	slurmdb_tres_rec_t *tres_a;
+	slurmdb_tres_rec_t *tres_b;
+
+	tres_a = *(slurmdb_tres_rec_t **)v1;
+	tres_b = *(slurmdb_tres_rec_t **)v2;
+
+	if (tres_a->id == tres_b->id)
+		return 0;
+	if (tres_a->id > tres_b->id)
 		return 1;
 	return -1;
 }
@@ -3046,6 +3066,10 @@ extern void slurmdb_tres_list_from_string(
 			      "was expecting to remove %d, but removed %d",
 			      remove_found, removed);
 	}
+
+	if (flags & TRES_STR_FLAG_SORT_ID)
+		list_sort(*tres_list, (ListCmpF)_sort_tres_by_id_asc);
+
 	return;
 }
 
@@ -3076,7 +3100,6 @@ extern char *slurmdb_combine_tres_strings(
 
 	FREE_NULL_LIST(tres_list);
 endit:
-
 	return *tres_str_old;
 }
 
