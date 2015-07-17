@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  msg.c - Message/communcation manager for dynalloc (resource dynamic
+ *  msg.c - Message/communication manager for dynalloc (resource dynamic
  *  allocation) plugin
  *****************************************************************************
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.

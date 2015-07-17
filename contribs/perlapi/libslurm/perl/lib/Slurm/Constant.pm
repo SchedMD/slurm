@@ -944,7 +944,7 @@ head2 SLURM ERRNO
 
 =back
 
-=head3 _info.c/communcation layer RESPONSE_SLURM_RC message codes
+=head3 _info.c/communication layer RESPONSE_SLURM_RC message codes
 
 =over 2
 

@@ -66,7 +66,7 @@ static int pmi_kvs_no_dup_keys = 1;
 struct barrier_resp {
 	uint16_t port;
 	char *hostname;
-};				/* details for barrier task communcations */
+};				/* details for barrier task communications */
 struct barrier_resp *barrier_ptr = NULL;
 uint32_t barrier_resp_cnt = 0;	/* tasks having reached barrier */
 uint32_t barrier_cnt = 0;	/* tasks needing to reach barrier */
