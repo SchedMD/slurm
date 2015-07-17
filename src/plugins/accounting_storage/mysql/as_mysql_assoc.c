@@ -728,11 +728,11 @@ static int _set_assoc_limits_for_add(
 	 * TRES.
 	 */
 	slurmdb_combine_tres_strings(
-		&assoc->max_tres_pj, row[ASSOC2_REQ_MTPJ], 0);
+		&assoc->max_tres_pj, row[ASSOC2_REQ_MTPJ], 1);
 	slurmdb_combine_tres_strings(
-		&assoc->max_tres_mins_pj, row[ASSOC2_REQ_MTMPJ], 0);
+		&assoc->max_tres_mins_pj, row[ASSOC2_REQ_MTMPJ], 1);
 	slurmdb_combine_tres_strings(
-		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM], 0);
+		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM], 1);
 
 	if (assoc->qos_list) {
 		int set = 0;
@@ -899,7 +899,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		if (assoc->max_tres_pj) {
 			tmp_char = xstrdup(row[ASSOC_MTPJ]);
 			slurmdb_combine_tres_strings(
-				&tmp_char, assoc->max_tres_pj, 0);
+				&tmp_char, assoc->max_tres_pj, 1);
 
 			/* see if we changed anything */
 			if (xstrcmp(tmp_char, row[ASSOC_MTPJ])) {
@@ -913,7 +913,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		if (assoc->max_tres_mins_pj) {
 			tmp_char = xstrdup(row[ASSOC_MTMPJ]);
 			slurmdb_combine_tres_strings(
-				&tmp_char, assoc->max_tres_mins_pj, 0);
+				&tmp_char, assoc->max_tres_mins_pj, 1);
 
 			/* see if we changed anything */
 			if (xstrcmp(tmp_char, row[ASSOC_MTMPJ])) {
@@ -926,7 +926,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		if (assoc->max_tres_run_mins) {
 			tmp_char = xstrdup(row[ASSOC_MTRM]);
 			slurmdb_combine_tres_strings(
-				&tmp_char, assoc->max_tres_run_mins, 0);
+				&tmp_char, assoc->max_tres_run_mins, 1);
 
 			/* see if we changed anything */
 			if (xstrcmp(tmp_char, row[ASSOC_MTRM])) {
@@ -2394,11 +2394,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		 * TRES.
 		 */
 		slurmdb_combine_tres_strings(
-			&assoc->max_tres_pj, parent_mtpj, 0);
+			&assoc->max_tres_pj, parent_mtpj, 1);
 		slurmdb_combine_tres_strings(
-			&assoc->max_tres_mins_pj, parent_mtmpj, 0);
+			&assoc->max_tres_mins_pj, parent_mtmpj, 1);
 		slurmdb_combine_tres_strings(
-			&assoc->max_tres_run_mins, parent_mtrm, 0);
+			&assoc->max_tres_run_mins, parent_mtrm, 1);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 

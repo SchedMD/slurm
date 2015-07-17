@@ -144,11 +144,13 @@ extern char *slurmdb_make_tres_string_from_simple(
  *
  * IN/OUT: tres_str_old - original simple tres string
  * IN    : tres_str_new - string you want added
- * IN    : replace - whether or not to replace old values
+ * IN    : mode - 0 - just combine
+ *                1 - make unique not replacing previous values
+ *                2 - make unique replacing previous values
  * RET   : new tres_str_old - the new string (also sent out)
  */
 extern char *slurmdb_combine_tres_strings(
-	char **tres_str_old, char *tres_str_new, bool replace);
+	char **tres_str_old, char *tres_str_new, int mode);
 extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);

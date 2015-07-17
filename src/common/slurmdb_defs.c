@@ -3033,7 +3033,7 @@ extern void slurmdb_tres_list_from_string(
 }
 
 extern char *slurmdb_combine_tres_strings(
-	char **tres_str_old, char *tres_str_new, bool replace)
+	char **tres_str_old, char *tres_str_new, int mode)
 {
 	List tres_list = NULL;
 
@@ -3042,16 +3042,20 @@ extern char *slurmdb_combine_tres_strings(
 	if (!tres_str_new || !tres_str_new[0])
 		return *tres_str_old;
 
+	if (!mode)
+		goto endit;
 	/* add the old string to the list */
 	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, replace);
 
 	/* now add the new one, skipping any duplicate TRES IDs */
-	slurmdb_tres_list_from_string(&tres_list, tres_str_new, replace);
+	slurmdb_tres_list_from_string(&tres_list, *tres_str_old,
+				      (mode == 2) ? true : false);
 	xfree(*tres_str_old);
 	/* Make a new string from the combined */
 	*tres_str_old = slurmdb_make_tres_string(tres_list, 1);
 
 	FREE_NULL_LIST(tres_list);
+endit:
 
 	return *tres_str_old;
 }
