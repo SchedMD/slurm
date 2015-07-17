@@ -480,7 +480,7 @@ static void _opt_default(void)
 
 	opt.pn_min_cpus    = NO_VAL;
 	opt.pn_min_memory  = NO_VAL;
-	opt.mem_per_cpu     = NO_VAL;
+	opt.mem_per_cpu    = NO_VAL;
 	opt.pn_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
@@ -1298,6 +1298,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM:
 			opt.pn_min_memory = (int) str_to_mbytes(optarg);
+			opt.mem_per_cpu = NO_VAL;
 			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1306,6 +1307,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM_PER_CPU:
 			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
+			opt.pn_min_memory = NO_VAL;
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
