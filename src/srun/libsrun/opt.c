@@ -472,7 +472,7 @@ static void _opt_default()
 
 	opt.pn_min_cpus    = NO_VAL;
 	opt.pn_min_memory  = NO_VAL;
-	opt.mem_per_cpu     = NO_VAL;
+	opt.mem_per_cpu    = NO_VAL;
 	opt.pn_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
@@ -904,7 +904,7 @@ static void _set_options(const int argc, char **argv)
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
-		{"launcher-opts",      required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
+		{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
@@ -1269,6 +1269,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM:
 			opt.pn_min_memory = (int) str_to_mbytes(optarg);
+			opt.mem_per_cpu = NO_VAL;
 			if (opt.pn_min_memory < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
@@ -1277,6 +1278,7 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MEM_PER_CPU:
 			opt.mem_per_cpu = (int) str_to_mbytes(optarg);
+			opt.pn_min_memory = NO_VAL;
 			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s",
 				      optarg);
