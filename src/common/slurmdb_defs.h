@@ -58,6 +58,30 @@ typedef enum {
 	TRES_ENERGY,
 } tres_types_t;
 
+/* These #defines are for the tres_str functions below and should be
+ * sent when flags are allowed in the functions.
+ */
+#define TRES_STR_FLAG_NONE        0x00000000 /* No flags, meaning by
+					      * default the string
+					      * will contain -1 and
+					      * be unique honoring
+					      * the first value found
+					      * in an incoming string */
+#define TRES_STR_FLAG_ONLY_CONCAT 0x00000001 /* Only concat the
+					      * string, this will
+					      * most likely trump the
+					      * other flags below. */
+#define TRES_STR_FLAG_REPLACE     0x00000002 /* Replace previous count
+					      * values found, if this
+					      * is not set duplicate
+					      * entries will be skipped. */
+#define TRES_STR_FLAG_REMOVE      0x00000004 /* If -1 entries are
+					      * found remove them, by
+					      * default they will be
+					      * added to the string
+					      */
+#define TRES_STR_FLAG_SORT_ID     0x00000008 /* sort string by ID */
+
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
 	int preempt_cnt;
@@ -136,21 +160,25 @@ extern char *slurmdb_tres_string_combine_lists(
 extern char *slurmdb_make_tres_string(List tres, bool simple);
 extern char *slurmdb_format_tres_str(
 	char *tres_in, List full_tres_list, bool simple);
+/* Used to turn a tres string into a list containing slurmdb_tres_rec_t's
+ *
+ * IN/OUT: tres_list - list created from the simple tres string
+ * IN    : tres - simple string you want convert
+ * IN    : flags - see the TRES_STR_FLAGS above
+ */
 extern void slurmdb_tres_list_from_string(
-	List *tres_list, char *tres, bool replace);
+	List *tres_list, char *tres, uint32_t flags);
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list);
 /* Used to combine 2 different TRES strings together
  *
  * IN/OUT: tres_str_old - original simple tres string
  * IN    : tres_str_new - string you want added
- * IN    : mode - 0 - just combine
- *                1 - make unique not replacing previous values
- *                2 - make unique replacing previous values
+ * IN    : flags - see the TRES_STR_FLAGS above
  * RET   : new tres_str_old - the new string (also sent out)
  */
 extern char *slurmdb_combine_tres_strings(
-	char **tres_str_old, char *tres_str_new, int mode);
+	char **tres_str_old, char *tres_str_new, uint32_t flags);
 extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);

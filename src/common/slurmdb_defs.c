@@ -2983,13 +2983,13 @@ extern char *slurmdb_format_tres_str(
 
 /* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
-	List *tres_list, char *tres, bool replace)
+	List *tres_list, char *tres, uint32_t flags)
 {
 	char *tmp_str = tres;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
-
+	int remove_found = 0;
 	xassert(tres_list);
 
 	if (!tres || !tres[0])
@@ -3018,9 +3018,11 @@ extern void slurmdb_tres_list_from_string(
 			tres_rec->id = id;
 			tres_rec->count = count;
 			list_append(*tres_list, tres_rec);
-		} else if (replace) {
-			debug("TRES %u was already here with count %"PRIu64", "
-			      "replacing with %"PRIu64,
+			if ((int64_t)count == -1)
+				remove_found++;
+		} else if (flags & TRES_STR_FLAG_REPLACE) {
+			debug2("TRES %u was already here with count %"PRIu64", "
+			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
 		}
@@ -3034,7 +3036,7 @@ extern void slurmdb_tres_list_from_string(
 }
 
 extern char *slurmdb_combine_tres_strings(
-	char **tres_str_old, char *tres_str_new, int mode)
+	char **tres_str_old, char *tres_str_new, uint32_t flags)
 {
 	List tres_list = NULL;
 
@@ -3042,18 +3044,18 @@ extern char *slurmdb_combine_tres_strings(
 
 	/* If a new string is being added concat it onto the old
 	 * string, then send it to slurmdb_tres_list_from_string which
-	 * will make it a unique list if mode is 1 or 2.
+	 * will make it a unique list if flags doesn't contain
+	 * TRES_STR_FLAG_ONLY_CONCAT.
 	 */
 	if (tres_str_new && tres_str_new[0])
 		xstrfmtcat(*tres_str_old, "%s%s",
 			   *tres_str_old ? "," : "",
 			   tres_str_new);
 
-	if (!mode)
+	if (flags & TRES_STR_FLAG_ONLY_CONCAT)
 		goto endit;
 
-	slurmdb_tres_list_from_string(&tres_list, *tres_str_old,
-				      (mode == 2) ? true : false);
+	slurmdb_tres_list_from_string(&tres_list, *tres_str_old, flags);
 	xfree(*tres_str_old);
 	/* Make a new string from the combined */
 	*tres_str_old = slurmdb_make_tres_string(tres_list, 1);
@@ -3313,7 +3315,8 @@ extern void slurmdb_transfer_tres_time(
 
 	xassert(tres_list_out);
 
-	slurmdb_tres_list_from_string(&job_tres_list, tres_str, 1);
+	slurmdb_tres_list_from_string(&job_tres_list, tres_str,
+				      TRES_STR_FLAG_NONE);
 
 	if (!job_tres_list)
 		return;
