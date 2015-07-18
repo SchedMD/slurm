@@ -2307,6 +2307,11 @@ consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
 and preserve all of the job's environment variables (i.e. and not over\-write
 them with the job step's allocation information).
 
+For Cray systems, add --gres=craynetwork:0. e.g.:
+.nf
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 --gres=craynetwork:0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
+.fi
+
 .TP
 \fBSchedulerParameters\fR
 The interpretation of this parameter varies by \fBSchedulerType\fR.

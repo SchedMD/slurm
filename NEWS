@@ -328,6 +328,8 @@ documents those changes that are of interest to users and administrators.
     change was made.
  -- srun command line of either --mem or --mem-per-cpu will override both the
     SLURM_MEM_PER_CPU and SLURM_MEM_PER_NODE environment variables.
+ -- Prevent slurmctld abort on update of advanced reservation that contains no
+    nodes.
 
 * Changes in Slurm 14.11.8
 ==========================
