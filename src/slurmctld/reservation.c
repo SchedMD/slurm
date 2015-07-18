@@ -257,7 +257,10 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->flags_set_node = resv_orig_ptr->flags_set_node;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
-	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
+	if (resv_orig_ptr->node_bitmap) {
+		resv_copy_ptr->node_bitmap =
+			bit_copy(resv_orig_ptr->node_bitmap);
+	}
 	resv_copy_ptr->node_cnt = resv_orig_ptr->node_cnt;
 	resv_copy_ptr->node_list = xstrdup(resv_orig_ptr->node_list);
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
