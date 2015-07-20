@@ -225,6 +225,16 @@ static void _mod_tres_str(char **out, char *mod, char *cur,
 		 * to add.
 		 */
 		if (vals) {
+			/* This logic is here because while the change
+			 * we are doing on the limit is the same for
+			 * each limit the other limits on the
+			 * associations might not be.  What this does
+			 * is only change the limit on the association
+			 * given the id.  I'm hoping someone in the
+			 * future comes up with a better way to do
+			 * this since this seems like a hack, but it
+			 * does do the job.
+			 */
 			xstrfmtcat(*vals, ", %s = if (id_assoc=%u, '%s%s', %s)",
 				   name, id,
 				   *out[0] ? "," : "",
