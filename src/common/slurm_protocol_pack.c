@@ -10806,6 +10806,8 @@ static int _unpack_burst_buffer_info_msg(
 		safe_unpack32(&bb_info_ptr->record_count, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->allow_users, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->default_pool,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->deny_users, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,

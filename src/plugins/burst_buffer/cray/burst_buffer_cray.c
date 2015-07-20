@@ -272,6 +272,10 @@ static void _purge_bb_files(struct job_record *job_ptr)
 /* Validate that our configuration is valid for this plugin type */
 static void _test_config(void)
 {
+	if (!bb_state.bb_config.default_pool) {
+		info("%s: DefaultPool is NULL, using \'dwcache\'", __func__);
+		bb_state.bb_config.default_pool = xstrdup("dwcache");
+	}
 	if (!bb_state.bb_config.get_sys_state) {
 		debug("%s: GetSysState is NULL", __func__);
 		bb_state.bb_config.get_sys_state =
@@ -500,8 +504,7 @@ first_load = false;
 
 	for (i = 0; i < num_ents; i++) {
 		/* ID: "bytes" */
-//		if (strcmp(ents[i].id, "bytes") == 0) {
-		if (strcmp(ents[i].id, "dwcache") == 0) {
+		if (strcmp(ents[i].id, bb_state.bb_config.default_pool) == 0) {
 			bb_state.bb_config.granularity
 				= ents[i].granularity;
 			bb_state.total_space
@@ -624,7 +627,7 @@ static int _queue_stage_in(struct job_record *job_ptr)
 		tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
 		if (tok) {
 			tmp64 = strtoll(tok + 11, NULL, 10);
-			xstrfmtcat(capacity, "bytes:%"PRIu64"GB", tmp64);
+			xstrfmtcat(capacity, "bytes:%"PRIu64"", tmp64);
 		} else {
 			tok = strstr(job_ptr->burst_buffer, "SLURM_GRES=");
 			if (tok) {
@@ -1367,9 +1370,9 @@ bb_ptr->seen_time = bb_state.last_load_time;
 static int _parse_bb_opts(struct job_descriptor *job_desc)
 {
 	char *capacity, *end_ptr = NULL, *script, *save_ptr = NULL, *tok;
-	int64_t raw_cnt;
-	uint64_t gb_cnt = 0;
+	uint64_t byte_cnt = 0;
 	uint32_t node_cnt = 0, swap_cnt = 0;
+	int64_t raw_cnt;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->script)
@@ -1394,21 +1397,26 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 				if ((end_ptr[0] == 'n') ||
 				    (end_ptr[0] == 'N')) {
 					node_cnt += raw_cnt;
+				} else if ((end_ptr[0] == 'k') ||
+					   (end_ptr[0] == 'K')) {
+					byte_cnt += raw_cnt * 1024;
 				} else if ((end_ptr[0] == 'm') ||
 					   (end_ptr[0] == 'M')) {
-					raw_cnt = (raw_cnt + 1023) / 1024;
-					gb_cnt += raw_cnt;
+					byte_cnt += raw_cnt * 1024 * 1024;
 				} else if ((end_ptr[0] == 'g') ||
 					   (end_ptr[0] == 'G')) {
-					gb_cnt += raw_cnt;
+					byte_cnt += raw_cnt * 1024 * 1024
+						    * 1024;
 				} else if ((end_ptr[0] == 't') ||
 					   (end_ptr[0] == 'T')) {
-					raw_cnt *= 1024;
-					gb_cnt += raw_cnt;
+					byte_cnt += raw_cnt * 1024 * 1024
+						    * 1024 * 1024;
 				} else if ((end_ptr[0] == 'p') ||
 					   (end_ptr[0] == 'P')) {
-					raw_cnt *= (1024 * 1024);
-					gb_cnt += raw_cnt;
+					byte_cnt += raw_cnt * 1024 * 1024
+						    * 1024 * 1024 * 1024;
+				} else {	/* bytes */
+					byte_cnt += raw_cnt;
 				}
 			} else if (!strncmp(tok, "swap", 4)) {
 				tok += 4;
@@ -1421,7 +1429,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 	}
 	xfree(script);
 
-	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt || swap_cnt)) {
+	if ((rc == SLURM_SUCCESS) && (byte_cnt || node_cnt || swap_cnt)) {
 		xfree(job_desc->burst_buffer);
 		if (swap_cnt) {
 			uint32_t job_nodes;
@@ -1439,13 +1447,13 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 			xstrfmtcat(job_desc->burst_buffer,
 				   "SLURM_SWAP=%uGB(%uNodes)",
 				   swap_cnt, job_nodes);
-			gb_cnt += swap_cnt * job_nodes;
+			byte_cnt += (swap_cnt * 1024 * 1024 * 1024) * job_nodes;
 		}
-		if (gb_cnt) {
+		if (byte_cnt) {
 			if (job_desc->burst_buffer)
 				xstrcat(job_desc->burst_buffer, " ");
 			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_SIZE=%"PRIu64"", gb_cnt);
+				   "SLURM_SIZE=%"PRIu64"", byte_cnt);
 		}
 		if (node_cnt) {
 			if (job_desc->burst_buffer)
@@ -1464,7 +1472,7 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 {
 	char *capacity, *end_ptr = NULL, *tok;
 	int64_t raw_cnt;
-	uint64_t gb_cnt = 0;
+	uint64_t byte_cnt = 0;
 	uint32_t node_cnt = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
@@ -1480,17 +1488,18 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 		}
 		if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
 			node_cnt += raw_cnt;
+		} else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'k')) {
+			byte_cnt += raw_cnt * 1024;
 		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-			raw_cnt = (raw_cnt + 1023) / 1024;
-			gb_cnt += raw_cnt;
+			byte_cnt += raw_cnt * 1024 * 1024;
 		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
-			gb_cnt += raw_cnt;
+			byte_cnt += raw_cnt * 1024 * 1024 * 1024;
 		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
-			raw_cnt *= 1024;
-			gb_cnt += raw_cnt;
+			byte_cnt += raw_cnt * 1024 * 1024 * 1024 * 1024;
 		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
-			raw_cnt *= (1024 * 1024);
-			gb_cnt += raw_cnt;
+			byte_cnt += raw_cnt * 1024 * 1024 * 1024 * 1024* 1024;
+		} else {	/* bytes */
+			byte_cnt += raw_cnt;
 		}
 		tok = capacity + 9;
 	}
@@ -1498,7 +1507,7 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
 		swap_cnt = strtol(tok + 5, &end_ptr, 10);
 
-	if ((rc == SLURM_SUCCESS) && (gb_cnt || node_cnt || swap_cnt)) {
+	if ((rc == SLURM_SUCCESS) && (byte_cnt || node_cnt || swap_cnt)) {
 		if (swap_cnt) {
 			uint32_t job_nodes;
 			if ((job_desc->max_nodes == 0) ||
@@ -1515,11 +1524,11 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 			xstrfmtcat(job_desc->burst_buffer,
 				   " SLURM_SWAP=%uGB(%uNodes)",
 				   swap_cnt, job_nodes);
-			gb_cnt += swap_cnt * job_nodes;
+			byte_cnt += swap_cnt * 1024 * 1024 * job_nodes;
 		}
-		if (gb_cnt) {
+		if (byte_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   " SLURM_SIZE=%"PRIu64"", gb_cnt);
+				   " SLURM_SIZE=%"PRIu64"", byte_cnt);
 		}
 		if (node_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
@@ -1689,6 +1698,7 @@ extern int bb_p_reconfig(void)
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
+	_test_config();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1914,10 +1924,13 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	char *dw_cli_path;
 	int hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
+	bb_job_t *bb_spec;
+	uint64_t bb_space;
 	DEF_TIMERS;
 
 	/* Initialization */
-	if (!_test_bb_spec(job_ptr))
+	bb_spec = _get_bb_spec(job_ptr);
+	if (bb_spec == NULL)
 		return rc;
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
@@ -1985,8 +1998,10 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	script_argv[7] = xstrdup("--user");
 	xstrfmtcat(script_argv[8], "%u", job_ptr->user_id);
 	script_argv[9] = xstrdup("--capacity");
-//FIXME" format should be "<name>:<space>"
-	xstrfmtcat(script_argv[10], "dwcache:2");
+	bb_space = bb_spec->total_size +
+		   (bb_spec->swap_size * 1024 * 1024 * bb_spec->swap_nodes);
+	xstrfmtcat(script_argv[10], "%s:%"PRIu64"", 
+		   bb_state.bb_config.default_pool, bb_space);
 	script_argv[11] = xstrdup("--job");
 	xstrfmtcat(script_argv[12], "%s", script_file);
 	START_TIMER;
@@ -2012,7 +2027,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	_free_script_argv(script_argv);
 
 	/* Clean-up */
-fini:	if (is_job_array)
+fini:	_del_bb_spec(bb_spec);
+	if (is_job_array)
 		_purge_job_files(job_dir);
 //FIXME: How to handle job arrays?
 
@@ -2491,11 +2507,6 @@ _json_parse_array(json_object *jobj, char *key, int *num)
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_object(jvalue, &ents[i]);
-		/* Convert to Bytes to MB
-		 */
-		if (strcmp(ents[i].units, "bytes") == 0) {
-			ents[i].granularity /= (1024 * 1024);
-		}
 	}
 
 	return ents;
