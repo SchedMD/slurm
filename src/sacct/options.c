@@ -48,6 +48,7 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_NAME	   0x100
 #define OPT_LONG_DELIMITER 0x101
+#define OPT_LONG_NOCONVERT 0x102
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -347,13 +348,16 @@ sacct [<OPTION>]                                                            \n \
                    displayed.                                               \n\
      -M, --clusters:                                                        \n\
                    Only send data about these clusters. -1 for all clusters.\n\
+     --noconvert:                                                           \n\
+                   Fields such as MaxRSS, ReqMem and others will not be     \n\
+		   converted from their orignal unit types.                 \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
      -N, --nodelist:                                                        \n\
                    Display jobs that ran on any of these nodes,             \n\
                    can be one or more using a ranged string.                \n\
-         --name:                                                            \n\
+     --name:                                                                \n\
                    Display jobs that have any of these name(s).             \n\
      -o, --format:                                                          \n\
 	           Comma separated list of fields. (use \"--helpformat\"    \n\
@@ -517,6 +521,7 @@ void parse_command_line(int argc, char **argv)
                 {"cluster",        required_argument, 0,    'M'},
                 {"clusters",       required_argument, 0,    'M'},
                 {"nodelist",       required_argument, 0,    'N'},
+                {"noconvert",      no_argument,       0,    OPT_LONG_NOCONVERT},
                 {"noheader",       no_argument,       0,    'n'},
                 {"fields",         required_argument, 0,    'o'},
                 {"format",         required_argument, 0,    'o'},
@@ -658,6 +663,9 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'l':
 			long_output = true;
+			break;
+		case OPT_LONG_NOCONVERT:
+			params.no_convert = true;
 			break;
 		case 'n':
 			print_fields_have_header = 0;

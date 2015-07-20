@@ -105,6 +105,36 @@ static char *_find_qos_name_from_list(
 		return "Unknown";
 }
 
+static void _print_num_unit(double num, char *buf, int buf_size, int orig_type)
+{
+	char *unit = "\0KMGTP?";
+	uint64_t i = (uint64_t)num;
+
+	if ((double)i == num)
+		snprintf(buf, buf_size, "%"PRIu64"%c", i, unit[orig_type]);
+	else
+		snprintf(buf, buf_size, "%.2f%c", num, unit[orig_type]);
+}
+
+static void _local_convert_num_unit(double num, char *buf, int buf_size,
+				    int orig_type)
+{
+	if (params.no_convert) {
+		_print_num_unit(num, buf, buf_size, orig_type);
+	} else
+		convert_num_unit2(num, buf, buf_size, orig_type, 1024, true);
+}
+
+
+static void _local_convert_num_unit2(double num, char *buf, int buf_size,
+				     int orig_type, int divisor, bool exact)
+{
+	if (params.no_convert) {
+		_print_num_unit(num, buf, buf_size, orig_type);
+	} else
+		convert_num_unit2(num, buf, buf_size, orig_type, divisor, exact);
+}
+
 static void _print_small_double(
 	char *outbuf, int buf_size, double dub, int units)
 {
@@ -112,7 +142,7 @@ static void _print_small_double(
 		return;
 
 	if (dub > 1)
-		convert_num_unit((double)dub, outbuf, buf_size, units);
+		_local_convert_num_unit((double)dub, outbuf, buf_size, units);
 	else if (dub > 0)
 		snprintf(outbuf, buf_size, "%.2fM", dub);
 	else
@@ -342,9 +372,10 @@ void print_fields(type_t type, void *object)
 				}
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit2((double)tmp_dub,
-						  outbuf, sizeof(outbuf),
-						  UNIT_KILO, 1000, false);
+				_local_convert_num_unit2((double)tmp_dub,
+							 outbuf, sizeof(outbuf),
+							 UNIT_KILO, 1000,
+							 false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -453,9 +484,9 @@ void print_fields(type_t type, void *object)
 				}
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((double)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_KILO);
+				_local_convert_num_unit((double)tmp_dub, outbuf,
+							sizeof(outbuf),
+							UNIT_KILO);
 
 			field->print_routine(field,
 					     outbuf,
@@ -477,9 +508,9 @@ void print_fields(type_t type, void *object)
 				}
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((double)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_KILO);
+				_local_convert_num_unit((double)tmp_dub, outbuf,
+							sizeof(outbuf),
+							UNIT_KILO);
 
 			field->print_routine(field,
 					     outbuf,
@@ -502,9 +533,9 @@ void print_fields(type_t type, void *object)
 			}
 
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((double)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_KILO);
+				_local_convert_num_unit((double)tmp_dub, outbuf,
+							sizeof(outbuf),
+							UNIT_KILO);
 
 			field->print_routine(field,
 					     outbuf,
@@ -574,9 +605,10 @@ void print_fields(type_t type, void *object)
 				}
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit2((double)tmp_dub,
-						  outbuf, sizeof(outbuf),
-						  UNIT_NONE, 1000, false);
+				_local_convert_num_unit2((double)tmp_dub,
+							 outbuf, sizeof(outbuf),
+							 UNIT_NONE, 1000,
+							 false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -1081,9 +1113,10 @@ void print_fields(type_t type, void *object)
 					break;
 				}
 				if (tmp_uint64 != (uint64_t)NO_VAL)
-					convert_num_unit((double)tmp_uint64,
-							 outbuf, sizeof(outbuf),
-							 UNIT_KILO);
+					_local_convert_num_unit(
+							(double)tmp_uint64,
+							outbuf, sizeof(outbuf),
+							UNIT_KILO);
 			}
 
 			field->print_routine(field,
@@ -1157,9 +1190,10 @@ void print_fields(type_t type, void *object)
 					break;
 				}
 				if (tmp_uint64 != (uint64_t)NO_VAL)
-					convert_num_unit((double)tmp_uint64,
-							 outbuf, sizeof(outbuf),
-							 UNIT_KILO);
+					_local_convert_num_unit(
+							(double)tmp_uint64,
+							outbuf, sizeof(outbuf),
+							UNIT_KILO);
 			}
 
 			field->print_routine(field,
@@ -1235,7 +1269,8 @@ void print_fields(type_t type, void *object)
 				}
 
 				if (tmp_uint64 != (uint64_t)NO_VAL)
-					convert_num_unit((double)tmp_uint64,
+					_local_convert_num_unit(
+							(double)tmp_uint64,
 							 outbuf, sizeof(outbuf),
 							 UNIT_KILO);
 			}
@@ -1413,8 +1448,8 @@ void print_fields(type_t type, void *object)
 				tmp_int = hostlist_count(hl);
 				hostlist_destroy(hl);
 			}
-			convert_num_unit((double)tmp_int,
-					 outbuf, sizeof(outbuf), UNIT_NONE);
+			_local_convert_num_unit((double)tmp_int, outbuf,
+						sizeof(outbuf), UNIT_NONE);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -1639,9 +1674,9 @@ void print_fields(type_t type, void *object)
 					tmp_uint32 &= (~MEM_PER_CPU);
 					per_cpu = true;
 				}
-				convert_num_unit((double)tmp_uint32,
-						 outbuf, sizeof(outbuf),
-						 UNIT_MEGA);
+				_local_convert_num_unit((double)tmp_uint32,
+							outbuf, sizeof(outbuf),
+							UNIT_MEGA);
 				if (per_cpu)
 					sprintf(outbuf+strlen(outbuf), "c");
 				else
