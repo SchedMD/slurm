@@ -82,7 +82,7 @@ are shown below.</p>
 <tr><td nowrap>08:00 - 08:30</td><td>Technical</td><td>Silla</td><td>Increasing cluster throughput with Slurm and rCUDA </td></tr>
 <tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Rajagopal, Glesser</td><td>Towards a multi-constraints resources selection within Slurm</td></tr>
 <tr><td nowrap>09:00 - 09:30</td><td>Technical</td><td>Glesser, Georgiou</td><td>Improving Job Scheduling by using Machine Learning</td></tr>
-<tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Chakraborty</td><td>Enhancing Startup Performance of Parallel Applications in Slurm</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Technical</td><td>Chakraborty, et.al.</td><td>Enhancing Startup Performance of Parallel Applications in Slurm</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:15</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:15 - 10:45</td><td>Technical</td><td>Haymore</td><td>Profile-driven testbed</td></tr>
 <tr><td nowrap>10:45 - 11:15</td><td>Technical</td><td>Benini, Trofinoff </td><td>Workload Simulator</td></tr>
@@ -269,7 +269,7 @@ systems,  the framework  goal is  to ease  the management  of multiple objective
 <p>More and more data are produced within Slurm by monitoring the system and the jobs. The methods studied in the field of big data, including Machine Learning, could be used to improve the scheduling. This talk will investigate the following question: to what extent Machine Learning techniques can be used to improve job scheduling? We will focus on two main approaches. The first one, based on an online supervised learning algorithm, we try to predict the execution time of jobs in order to improve backfilling. In the second approach a particular &rsquo;Learning2Rank&rsquo; algorithm is implemented within Slurm as a priority plugin to sort jobs in order to optimize a given objective.</p>
 
 <h3>Enhancing Startup Performance of Parallel Applications in Slurm</h3>
-<p>Sourav Chakraborty (Ohio State University)</p>
+<p>Sourav Chakraborty, Hari Subramoni, Jonathan Perkins, Adam Moody and Dhabaleswar K. Panda (Ohio State University)</p>
 <p>As system sizes continue to grow, time taken to launch a parallel application on large number of cores becomes an important factor affecting the overall system performance.  Slurm is a popular choice to launch parallel applications written in Message Passing Interface (MPI), Partitioned Global Address Space (PGAS) and other programming models.  Most of the libraries use the Process Management Interface (PMI) to communicate with the process manager and bootstrap themselves. The current PMI protocol suffers from several bottlenecks due to its design and implementation, and adversely affects the performance and scalability of launching parallel applications at large scale.</p>
 <p>In our earlier work, we identified several of these bottlenecks and evaluated different designs to address them. We also showed how the proposed designs can improve performance and scalability of the startup mechanism of MPI and hybrid MPI+PGAS applications. Some of these designs are already available as part of the MVAPICH2 MPI library and pre-release version of Slurm. In this work we present these designs to the Slurm community. We also present some newer designs and how they can accelerate startup of large scale MPI and PGAS applications.</p>
 
@@ -373,6 +373,6 @@ experiences performed in the SC3UIS platforms, mainly in GUANE-1 supercomputing 
 <p>Tim Wickberg (The George Washington University)</p>
 <p>The George Washington University is proud to host the 2015 user group meeting in Washington DC. We present a brief overview of our user of Slurm on Colonial One, our University-wide shared HPC cluster. We present both a detailed overview of our use and configuration of the "fairshare" priority model to assign resources across disparate participating schools, colleges, and research centers, as well as some novel uses of the scheduler for non-traditional tasks such as file system backups.</p>
 
-<p style="text-align:center;">Last modified 8 July 2015</p>
+<p style="text-align:center;">Last modified 20 July 2015</p>
 
 <!--#include virtual="footer.txt"-->
