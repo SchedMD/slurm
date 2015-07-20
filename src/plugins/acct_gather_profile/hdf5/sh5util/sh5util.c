@@ -852,10 +852,11 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
 	/* allocate space for aggregate values: 4 values (min, max,
 	 * sum, avg) on 8 bytes (uint64_t/double) for each field */
 	uint64_t *agg_i;
-	double *agg_d = (double *)agg_i;
+	double *agg_d;
 
 	data = xmalloc(type_size);
 	agg_i = xmalloc(nb_fields * 4 * sizeof(uint64_t));
+	agg_d = (double *)agg_i;
 	H5PTget_num_packets(table_id, &nrecords);
 
 	/* compute min/max/sum */
@@ -1396,8 +1397,10 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	const char *names[nb_tables];
 	const char *nodes[nb_tables];
 
-	for (i = 0; i < nb_tables; ++i)
+	for (i = 0; i < nb_tables; ++i) {
 		tables_id[i] = -1;
+		nb_records[i] = 0;
+	}
 
 	it = list_iterator_create(tables);
 	i = 0;
