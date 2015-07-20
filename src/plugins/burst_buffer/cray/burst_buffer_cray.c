@@ -1958,8 +1958,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xstrfmtcat(script_argv[4], "%s", script_file);
 	script_argv[5] = xstrdup("--token");
 	xstrfmtcat(script_argv[6], "%u", job_ptr->job_id);
-	script_argv[5] = xstrdup("--pathfile");
-	script_argv[6] = xstrdup(path_file);
+	script_argv[7] = xstrdup("--pathfile");
+	script_argv[8] = xstrdup(path_file);
 	START_TIMER;
 	resp_msg = bb_run_script("dws_paths",
 				 bb_state.bb_config.get_sys_state,
