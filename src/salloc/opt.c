@@ -478,7 +478,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		*((char **) e->arg) = xstrdup(val);
 		break;
 	case OPT_INT:
-		if (val != NULL) {
+		if (val[0] != '\0') {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) {
 				error("%s=%s invalid. ignoring...",
@@ -493,7 +493,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		 *  - argument is "yes"
 		 *  - argument is a non-zero number
 		 */
-		if (val == NULL || strcmp(val, "") == 0) {
+		if (val[0] == '\0') {
 			*((bool *)e->arg) = true;
 		} else if (strcasecmp(val, "yes") == 0) {
 			*((bool *)e->arg) = true;
@@ -506,7 +506,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DEBUG:
-		if (val != NULL) {
+		if (val[0] != '\0') {
 			opt.verbose = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0'))
 				error("%s=%s invalid", e->var, val);
@@ -556,7 +556,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		info("WARNING: You are attempting to initiate a second job");
 		break;
 	case OPT_EXCLUSIVE:
-		if (val == NULL) {
+		if (val[0] == '\0') {
 			opt.shared = 0;
 		} else if (!strcasecmp(val, "user")) {
 			opt.shared = 2;

@@ -679,7 +679,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		*((char **) e->arg) = xstrdup(val);
 		break;
 	case OPT_INT:
-		if (val != NULL) {
+		if (val[0] != '\0') {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
 			if (!(end && *end == '\0')) {
 				error("%s=%s invalid. ignoring...",
@@ -744,7 +744,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXCLUSIVE:
-		if (val == NULL) {
+		if (val[0] == '\0') {
 			opt.exclusive = true;
 			opt.shared = 0;
 		} else if (!strcasecmp(val, "user")) {
