@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Added --noconvert sacct option which allows values to be displayed in their
     original unit types.
  -- Fix spelling of node_rescrs to node_resrcs in Perl API.
+ -- Fix node state race condition, UNKNOWN->IDLE without configuration info.
 
 * Changes in Slurm 15.08.0pre6
 ==============================
