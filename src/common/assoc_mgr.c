@@ -3206,21 +3206,34 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 			}
 
+			if (object->grp_tres) {
+				update_jobs = true;
+				/* If we have a blank string that
+				 * means it is cleared.
+				 */
+				xfree(rec->grp_tres);
+				if (object->grp_tres[0]) {
+					rec->grp_tres = object->grp_tres;
+					object->grp_tres = NULL;
+				}
+			}
+
 			if (object->grp_tres_mins) {
-				rec->grp_tres_mins = object->grp_tres_mins;
-				object->grp_tres_mins = NULL;
+				xfree(rec->grp_tres_mins);
+				if (object->grp_tres_mins[0]) {
+					rec->grp_tres_mins =
+						object->grp_tres_mins;
+					object->grp_tres_mins = NULL;
+				}
 			}
 
 			if (object->grp_tres_run_mins) {
-				rec->grp_tres_run_mins =
-					object->grp_tres_run_mins;
-				object->grp_tres_run_mins = NULL;
-			}
-
-			if (object->grp_tres) {
-				update_jobs = true;
-				rec->grp_tres = object->grp_tres;
-				object->grp_tres = NULL;
+				xfree(rec->grp_tres_run_mins);
+				if (object->grp_tres_run_mins[0]) {
+					rec->grp_tres_run_mins =
+						object->grp_tres_run_mins;
+					object->grp_tres_run_mins = NULL;
+				}
 			}
 
 			if (object->grp_jobs != NO_VAL)
@@ -3245,22 +3258,31 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				resort = 1;
 			}
 
+			if (object->max_tres_pj) {
+				update_jobs = true;
+				xfree(rec->max_tres_pj);
+				if (object->max_tres_pj[0]) {
+					rec->max_tres_pj = object->max_tres_pj;
+					object->max_tres_pj = NULL;
+				}
+			}
+
 			if (object->max_tres_mins_pj) {
-				rec->max_tres_mins_pj =
-					object->max_tres_mins_pj;
-				object->max_tres_mins_pj = NULL;
+				xfree(rec->max_tres_mins_pj);
+				if (object->max_tres_mins_pj[0]) {
+					rec->max_tres_mins_pj =
+						object->max_tres_mins_pj;
+					object->max_tres_mins_pj = NULL;
+				}
 			}
 
 			if (object->max_tres_run_mins) {
-				rec->max_tres_run_mins =
-					object->max_tres_run_mins;
-				object->max_tres_run_mins = NULL;
-			}
-
-			if (object->max_tres_pj) {
-				update_jobs = true;
-				rec->max_tres_pj = object->max_tres_pj;
-				object->max_tres_pj = NULL;
+				xfree(rec->max_tres_run_mins);
+				if (object->max_tres_run_mins[0]) {
+					rec->max_tres_run_mins =
+						object->max_tres_run_mins;
+					object->max_tres_run_mins = NULL;
+				}
 			}
 
 			if (object->max_jobs != NO_VAL)
