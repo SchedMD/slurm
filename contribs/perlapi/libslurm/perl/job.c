@@ -168,7 +168,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 	}
 	slurm_hostlist_destroy(hl);
 	slurm_hostlist_destroy(hl_last);
-	hv_store_sv(hv, "node_rescrs", newRV_noinc((SV*)av));
+	hv_store_sv(hv, "node_resrcs", newRV_noinc((SV*)av));
 
 	return 0;
 }
