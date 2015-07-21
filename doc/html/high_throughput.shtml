@@ -64,7 +64,7 @@ site with a very large cluster
 <h2>Munge configuration</h2>
 
 <p>By default the Munge daemon runs with two threads, but a higher thread count
-can improve its throughput. We suggest startint the Munge daemon with ten
+can improve its throughput. We suggest starting the Munge daemon with ten
 threads for high throughput support (e.g. <i>"munged --num-threads 10"</i>).</p>
 
 <h2>User limits</h2>

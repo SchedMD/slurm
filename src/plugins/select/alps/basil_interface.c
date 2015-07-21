@@ -754,13 +754,15 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 	if (cray_conf->sub_alloc) {
 		mppdepth = MAX(1, job_ptr->details->cpus_per_task);
-		if (!job_ptr->details->ntasks_per_node
-		    && job_ptr->details->num_tasks) {
+		if (job_ptr->details->ntasks_per_node) {
+			mppnppn  = job_ptr->details->ntasks_per_node;
+		} else if (job_ptr->details->num_tasks) {
 			mppnppn = (job_ptr->details->num_tasks +
 				   job_ptr->job_resrcs->nhosts - 1) /
 				job_ptr->job_resrcs->nhosts;
-		} else
-			mppnppn  = job_ptr->details->ntasks_per_node;
+		} else {
+			mppnppn = 1;
+		}
 	} else {
 		/* always be 1 */
 		mppdepth = 1;
