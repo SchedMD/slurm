@@ -81,18 +81,33 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 		return thisfreq;
 }
 
-static char *_skipdot (char *str)
+/* Parse /proc/cpuinfo file for CPU frequency.
+ * Store the value in global variable cpunfo_frequency
+ * RET: True if read valid CPU frequency */
+inline static bool _get_freq(char *str)
 {
-	int pntr = 0;
-	while (str[pntr]) {
-		if (str[pntr] == '.') {
-			str[pntr] = '0';
-			break;
-		}
-		pntr++;
-	}
-	str[pntr+3] = '\0';
-	return str;
+	char *sep = NULL;
+	double cpufreq_value;
+	int cpu_mult;
+
+	if (strstr(str, "MHz"))
+		cpu_mult = 1;
+	else if (strstr(str, "GHz"))
+		cpu_mult = 1000;	/* Scale to MHz */
+	else
+		return false;
+
+	sep = strchr(str, ':');
+	if (!sep)
+		return false;
+
+	if (sscanf(sep + 2, "%lf", &cpufreq_value) < 1)
+		return false;
+
+	cpunfo_frequency = cpufreq_value * cpu_mult;
+	debug2("cpunfo_frequency=%d", cpunfo_frequency);
+
+	return true;
 }
 
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
@@ -102,7 +117,6 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	FILE *sys_fp = NULL;
 	char freq_file[80];
 	char cpunfo_line [128];
-	char cpufreq_line [10];
 
 	if (cpunfo_frequency)
 		/* scaling not enabled, static freq obtained */
@@ -124,22 +138,16 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		fclose(sys_fp);
 	} else {
 		/* frequency scaling not enabled */
-		if (!cpunfo_frequency){
+		if (!cpunfo_frequency) {
 			snprintf(freq_file, 14, "/proc/cpuinfo");
 			debug2("_get_sys_interface_freq_line: filename = %s ",
 			       freq_file);
 			if ((sys_fp = fopen(freq_file, "r")) != NULL) {
-				while (fgets(cpunfo_line, sizeof cpunfo_line,
+				while (fgets(cpunfo_line, sizeof(cpunfo_line),
 					     sys_fp) != NULL) {
-					if (strstr(cpunfo_line, "cpu MHz") ||
-					    strstr(cpunfo_line, "cpu GHz")) {
+					if (_get_freq(cpunfo_line))
 						break;
-					}
 				}
-				strncpy(cpufreq_line, cpunfo_line+11, 8);
-				_skipdot(cpufreq_line);
-				sscanf(cpufreq_line, "%d", &cpunfo_frequency);
-				debug2("cpunfo_frequency= %d",cpunfo_frequency);
 				fclose(sys_fp);
 			}
 		}

@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     nodes.
  -- ALPS - Revert commit 2c95e2d22 which also removes commit 2e2de6a4 allowing
     cray with the SubAllocate option to work as it did with 2.5.
+ -- Properly parse CPU frequency data on POWER systems.
 
 * Changes in Slurm 14.11.8
 ==========================
