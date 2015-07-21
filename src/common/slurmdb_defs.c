@@ -88,7 +88,7 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
-		destroy_assoc_mgr_qos_usage(qos->usage);
+		destroy_slurmdb_qos_usage(qos->usage);
 	}
 }
 
@@ -638,7 +638,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		FREE_NULL_LIST(assoc->qos_list);
 		xfree(assoc->user);
 
-		destroy_assoc_mgr_assoc_usage(assoc->usage);
+		destroy_slurmdb_assoc_usage(assoc->usage);
 	}
 }
 

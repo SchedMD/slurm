@@ -260,8 +260,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			uint32_t usage;
 			if (!assoc)
 				continue;
-			assoc->usage = xmalloc(sizeof(
-						assoc_mgr_assoc_usage_t));
+			assoc->usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
 			if (get_uint(argv[i]+end, &usage,
 				     "RawUsage") == SLURM_SUCCESS) {
 				assoc->usage->usage_raw = usage;

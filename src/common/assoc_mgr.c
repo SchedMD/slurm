@@ -710,7 +710,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 	}
 
 	if (!assoc->usage)
-		assoc->usage = create_assoc_mgr_assoc_usage();
+		assoc->usage = create_slurmdb_assoc_usage();
 
 	if (assoc->parent_id) {
 		/* Here we need the direct parent (parent_assoc_ptr)
@@ -737,7 +737,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		if (assoc->usage->fs_assoc_ptr && setup_children) {
 			if (!assoc->usage->fs_assoc_ptr->usage)
 				assoc->usage->fs_assoc_ptr->usage =
-					create_assoc_mgr_assoc_usage();
+					create_slurmdb_assoc_usage();
 			if (!assoc->usage->
 			    fs_assoc_ptr->usage->children_list)
 				assoc->usage->
@@ -825,7 +825,7 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		return;
 
 	if (!qos->usage)
-		qos->usage = create_assoc_mgr_qos_usage();
+		qos->usage = create_slurmdb_qos_usage();
 	qos->usage->norm_priority =
 		(double)qos->priority / (double)g_qos_max_priority;
 }
@@ -986,7 +986,7 @@ static int _post_qos_list(List qos_list)
 			qos->flags = 0;
 
 		if (!qos->usage)
-			qos->usage = create_assoc_mgr_qos_usage();
+			qos->usage = create_slurmdb_qos_usage();
 		/* get the highest qos value to create bitmaps from */
 		if (qos->id > g_qos_count)
 			g_qos_count = qos->id;
@@ -1816,10 +1816,10 @@ extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 		_wr_wrunlock(ASSOC_LOCK);
 }
 
-extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage()
+extern slurmdb_assoc_usage_t *create_slurmdb_assoc_usage()
 {
-	assoc_mgr_assoc_usage_t *usage =
-		xmalloc(sizeof(assoc_mgr_assoc_usage_t));
+	slurmdb_assoc_usage_t *usage =
+		xmalloc(sizeof(slurmdb_assoc_usage_t));
 
 	usage->level_shares = NO_VAL;
 	usage->shares_norm = (double)NO_VAL;
@@ -1832,10 +1832,10 @@ extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage()
 	return usage;
 }
 
-extern void destroy_assoc_mgr_assoc_usage(void *object)
+extern void destroy_slurmdb_assoc_usage(void *object)
 {
-	assoc_mgr_assoc_usage_t *usage =
-		(assoc_mgr_assoc_usage_t *)object;
+	slurmdb_assoc_usage_t *usage =
+		(slurmdb_assoc_usage_t *)object;
 
 	if (usage) {
 		FREE_NULL_LIST(usage->children_list);
@@ -1845,18 +1845,18 @@ extern void destroy_assoc_mgr_assoc_usage(void *object)
 	}
 }
 
-extern assoc_mgr_qos_usage_t *create_assoc_mgr_qos_usage()
+extern slurmdb_qos_usage_t *create_slurmdb_qos_usage()
 {
-	assoc_mgr_qos_usage_t *usage =
-		xmalloc(sizeof(assoc_mgr_qos_usage_t));
+	slurmdb_qos_usage_t *usage =
+		xmalloc(sizeof(slurmdb_qos_usage_t));
 
 	return usage;
 }
 
-extern void destroy_assoc_mgr_qos_usage(void *object)
+extern void destroy_slurmdb_qos_usage(void *object)
 {
-	assoc_mgr_qos_usage_t *usage =
-		(assoc_mgr_qos_usage_t *)object;
+	slurmdb_qos_usage_t *usage =
+		(slurmdb_qos_usage_t *)object;
 
 	if (usage) {
 		FREE_NULL_LIST(usage->job_list);
@@ -2850,6 +2850,228 @@ end_it:
 	return ret_list;
 }
 
+extern void assoc_mgr_info_get_pack_msg(
+	char **buffer_ptr, int *buffer_size,
+	assoc_mgr_info_request_msg_t *msg, uid_t uid,
+	void *db_conn, uint16_t protocol_version)
+{
+	ListIterator itr = NULL;
+	ListIterator user_itr = NULL;
+	ListIterator acct_itr = NULL;
+	slurmdb_assoc_rec_t *assoc_rec = NULL;
+	List ret_list = NULL;
+	char *tmp_char = NULL;
+	slurmdb_user_rec_t user, *user_rec = NULL;
+	int is_admin=1;
+	void *object;
+	uint16_t private_data = slurm_get_private_data();
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   NO_LOCK, READ_LOCK, NO_LOCK };
+	Buf buffer;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
+	user.uid = uid;
+
+	if (msg) {
+		if (msg->user_list && list_count(msg->user_list))
+			user_itr = list_iterator_create(msg->user_list);
+
+		if (msg->acct_list && list_count(msg->acct_list))
+			acct_itr = list_iterator_create(msg->acct_list);
+	}
+
+	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
+		uint32_t slurm_uid = slurm_get_slurm_user_id();
+		is_admin = 0;
+		/* Check permissions of the requesting user.
+		 */
+		if ((uid == slurm_uid || uid == 0)
+		    || assoc_mgr_get_admin_level(db_conn, uid)
+		    >= SLURMDB_ADMIN_OPERATOR)
+			is_admin = 1;
+		else {
+			if (assoc_mgr_fill_in_user(
+				    db_conn, &user,
+				    ACCOUNTING_ENFORCE_ASSOCS, NULL)
+			    == SLURM_ERROR) {
+				debug3("User %d not found", user.uid);
+				goto end_it;
+			}
+		}
+	}
+
+	ret_list = list_create(NULL);
+
+	assoc_mgr_lock(&locks);
+	itr = list_iterator_create(assoc_mgr_assoc_list);
+	while ((assoc_rec = list_next(itr))) {
+		if (user_itr && assoc_rec->user) {
+			while ((tmp_char = list_next(user_itr))) {
+				if (!xstrcasecmp(tmp_char, assoc_rec->user))
+					break;
+			}
+			list_iterator_reset(user_itr);
+			/* not correct user */
+			if (!tmp_char)
+				continue;
+		}
+
+		if (acct_itr) {
+			while ((tmp_char = list_next(acct_itr))) {
+				if (!xstrcasecmp(tmp_char, assoc_rec->acct))
+					break;
+			}
+			list_iterator_reset(acct_itr);
+			/* not correct account */
+			if (!tmp_char)
+				continue;
+		}
+
+		if (private_data & PRIVATE_DATA_USAGE) {
+			if (!is_admin) {
+				ListIterator itr = NULL;
+				slurmdb_coord_rec_t *coord = NULL;
+
+				if (assoc_rec->user &&
+				    !strcmp(assoc_rec->user, user.name))
+					goto is_user;
+
+				if (!user.coord_accts) {
+					debug4("This user isn't a coord.");
+					goto bad_user;
+				}
+
+				if (!assoc_rec->acct) {
+					debug("No account name given "
+					      "in association.");
+					goto bad_user;
+				}
+
+				itr = list_iterator_create(user.coord_accts);
+				while ((coord = list_next(itr))) {
+					if (!strcasecmp(coord->name,
+							assoc_rec->acct))
+						break;
+				}
+				list_iterator_destroy(itr);
+
+				if (coord)
+					goto is_user;
+
+			bad_user:
+				continue;
+			}
+		}
+	is_user:
+
+		list_append(ret_list, assoc_rec);
+	}
+	list_iterator_destroy(itr);
+
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* pack the associations requested/allowed */
+	pack32(list_count(ret_list), buffer);
+	itr = list_iterator_create(ret_list);
+	while ((object = list_next(itr)))
+		slurmdb_pack_assoc_rec(object, protocol_version, buffer);
+	list_iterator_destroy(itr);
+	list_flush(ret_list);
+
+	itr = list_iterator_create(assoc_mgr_user_list);
+	while ((user_rec = list_next(itr))) {
+		if (!is_admin && (private_data & PRIVATE_DATA_USERS) &&
+		    xstrcasecmp(user_rec->name, user.name))
+			continue;
+
+		if (user_itr) {
+			while ((tmp_char = list_next(user_itr)))
+				if (xstrcasecmp(tmp_char, user_rec->name))
+					break;
+			list_iterator_reset(user_itr);
+			/* not correct user */
+			if (!tmp_char)
+				continue;
+		}
+
+		list_append(ret_list, user_rec);
+	}
+
+
+	/* pack the users requested/allowed */
+	pack32(list_count(ret_list), buffer);
+	itr = list_iterator_create(ret_list);
+	while ((object = list_next(itr)))
+		slurmdb_pack_user_rec(object, protocol_version, buffer);
+	list_iterator_destroy(itr);
+	list_flush(ret_list);
+
+	list_iterator_destroy(itr);
+	assoc_mgr_unlock(&locks);
+
+	/* put the real record count in the message body header */
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+
+end_it:
+	if (user_itr)
+		list_iterator_destroy(user_itr);
+	if (acct_itr)
+		list_iterator_destroy(acct_itr);
+
+	return;
+}
+
+extern int assoc_mgr_info_unpack_msg(
+	assoc_mgr_info_msg_t **object, Buf buffer, uint16_t protocol_version)
+{
+	assoc_mgr_info_msg_t *object_ptr =
+		xmalloc(sizeof(assoc_mgr_info_msg_t));
+	slurmdb_assoc_rec_t *assoc_rec = NULL;
+	slurmdb_user_rec_t *user_rec = NULL;
+	uint32_t count;
+	int i;
+
+	*object = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if (count) {
+		object_ptr->assoc_list =
+			list_create(slurmdb_destroy_assoc_rec);
+		for (i=0; i<count; i++) {
+			if (slurmdb_unpack_assoc_rec(
+				    (void *)&assoc_rec, protocol_version,
+				    buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->assoc_list, assoc_rec);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if (count) {
+		object_ptr->user_list =
+			list_create(slurmdb_destroy_user_rec);
+		for (i=0; i<count; i++) {
+			if (slurmdb_unpack_user_rec(
+				    (void *)&user_rec, protocol_version, buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->user_list, user_rec);
+		}
+	}
+
+	return SLURM_SUCCESS;
+unpack_error:
+	slurm_free_assoc_mgr_info_msg(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 /*
  * assoc_mgr_update - update the association manager
  * IN update_list: updates to perform
@@ -3145,7 +3367,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (!object->usage)
 				object->usage =
-					create_assoc_mgr_assoc_usage();
+					create_slurmdb_assoc_usage();
 			/* If is_def is uninitialized the value will
 			   be NO_VAL, so if it isn't 1 make it 0.
 			*/
@@ -3608,7 +3830,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			}
 
 			if (!object->usage)
-				object->usage = create_assoc_mgr_qos_usage();
+				object->usage = create_slurmdb_qos_usage();
 			list_append(assoc_mgr_qos_list, object);
 /* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 				assoc_mgr_qos_list, */

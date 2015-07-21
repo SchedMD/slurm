@@ -1144,18 +1144,15 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 	}
 }
 
-extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
-				    Buf buffer)
+extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
+					    uint16_t rpc_version,
+					    Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
 	char *tmp_info = NULL;
-	slurmdb_assoc_rec_t *object_ptr =
-		xmalloc(sizeof(slurmdb_assoc_rec_t));
 	slurmdb_accounting_rec_t *slurmdb_info = NULL;
-
-	*object = object_ptr;
 
 	slurmdb_init_assoc_rec(object_ptr, 0);
 
@@ -1322,9 +1319,34 @@ extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdb_destroy_assoc_rec(object_ptr);
-	*object = NULL;
+
 	return SLURM_ERROR;
+}
+
+extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
+				    Buf buffer)
+{
+	int rc;
+	slurmdb_assoc_rec_t *object_ptr = xmalloc(sizeof(slurmdb_assoc_rec_t));
+
+	*object = object_ptr;
+
+	slurmdb_init_assoc_rec(object_ptr, 0);
+
+	if ((rc = slurmdb_unpack_assoc_rec_members(
+		     object_ptr, rpc_version, buffer)) != SLURM_SUCCESS) {
+		slurmdb_destroy_assoc_rec(object_ptr);
+		*object = NULL;
+	}
+	return rc;
+}
+
+extern void slurmdb_pack_assoc_rec_with_usage(void *in, uint16_t rpc_version,
+					      Buf buffer)
+{
+	slurmdb_pack_assoc_rec(in, rpc_version, buffer);
+
+
 }
 
 extern void slurmdb_pack_event_rec(void *in, uint16_t rpc_version, Buf buffer)

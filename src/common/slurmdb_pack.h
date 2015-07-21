@@ -80,6 +80,9 @@ extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 extern void slurmdb_pack_assoc_rec(void *in,
 				   uint16_t rpc_version,
 				   Buf buffer);
+extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
+					    uint16_t rpc_version,
+					    Buf buffer);
 extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
 				    Buf buffer);
 extern void slurmdb_pack_event_rec(void *in,

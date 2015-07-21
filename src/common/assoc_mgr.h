@@ -111,86 +111,6 @@ typedef struct {
 	void (*update_resvs) ();
 } assoc_init_args_t;
 
-struct assoc_mgr_assoc_usage {
-	List children_list;     /* list of children associations
-				 * (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of active jobs in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_mem; /* count of active memory in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of active jobs in the group
-				  * (DON'T PACK) */
-	double grp_used_wall;   /* group count of time used in
-				 * running jobs (DON'T PACK) */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK) */
-	double fs_factor;	/* Fairshare factor. Not used by all algorithms
-				 * (DON'T PACK) */
-	uint32_t level_shares;  /* number of shares on this level of
-				 * the tree (DON'T PACK) */
-
-	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
-						      * parent assoc
-						      * set in slurmctld
-						      * (DON'T PACK) */
-
-	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
-						     * assoc if fairshare
-						     * == SLURMDB_FS_USE_PARENT
-						     * set in slurmctld
-						     * (DON'T PACK) */
-
-	double shares_norm;     /* normalized shares (DON'T PACK) */
-
-	long double usage_efctv;/* effective, normalized usage (DON'T PACK) */
-	long double usage_norm;	/* normalized usage (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_submit_jobs; /* count of jobs pending or running
-				    * (DON'T PACK) */
-
-	/* Currently FAIR_TREE systems are defining data on
-	 * this struct but instead we could keep a void pointer to system
-	 * specific data. This would allow subsystems to define whatever data
-	 * they need without having to modify this struct; it would also save
-	 * space.
-	 */
-	unsigned active_seqno;  /* Sequence number for identifying
-				 * active associations (DON'T PACK) */
-
-	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
-				 * compared to the association's siblings (DON'T
-				 * PACK) */
-
-	bitstr_t *valid_qos;    /* qos available for this association
-				 * derived from the qos_list.
-				 * (DON'T PACK) */
-};
-
-struct assoc_mgr_qos_usage {
-	List job_list; /* list of job pointers to submitted/running
-			  jobs (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of cpus in use in this qos
-				 * (DON'T PACK) */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK) */
-	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t grp_used_mem; /* count of memory in use in this qos
-				* (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of nodes in use in this qos
-				  * (DON'T PACK) */
-	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
-					* (DON'T PACK) */
-	double grp_used_wall;   /* group count of time (minutes) used in
-				 * running jobs (DON'T PACK) */
-	double norm_priority;/* normalized priority (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK) */
-};
-
-
 extern List assoc_mgr_tres_list;
 extern List assoc_mgr_assoc_list;
 extern List assoc_mgr_res_list;
@@ -211,10 +131,10 @@ extern int assoc_mgr_fini(char *state_save_location);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
-extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage();
-extern void destroy_assoc_mgr_assoc_usage(void *object);
-extern assoc_mgr_qos_usage_t *create_assoc_mgr_qos_usage();
-extern void destroy_assoc_mgr_qos_usage(void *object);
+extern slurmdb_assoc_usage_t *create_slurmdb_assoc_usage();
+extern void destroy_slurmdb_assoc_usage(void *object);
+extern slurmdb_qos_usage_t *create_slurmdb_qos_usage();
+extern void destroy_slurmdb_qos_usage(void *object);
 
 /*
  * get info from the storage
@@ -354,6 +274,30 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
  */
 extern List assoc_mgr_get_shares(
 	void *db_conn, uid_t uid, List acct_list, List user_list);
+
+/*
+ * get the state of the association manager and pack it up in buffer
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN: msg: request for various states
+ * IN: uid: uid_t of user issuing the request
+ * IN: db_conn: needed if not already connected to the database or DBD
+ * IN: protocol_version: version of Slurm we are sending to.
+ */
+extern void assoc_mgr_info_get_pack_msg(
+	char **buffer_ptr, int *buffer_size,
+	assoc_mgr_info_request_msg_t *msg, uid_t uid,
+	void *db_conn, uint16_t protocol_version);
+
+/*
+ * unpack the packing of the above assoc_mgr_get_pack_state_msg function.
+ * OUT: object - what to unpack into
+ * IN: buffer - buffer to unpack
+ * IN: version of Slurm this is packed in
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else
+ */
+extern int assoc_mgr_info_unpack_msg(
+	assoc_mgr_info_msg_t **object, Buf buffer, uint16_t protocol_version);
 
 /*
  * assoc_mgr_update - update the association manager

@@ -2790,73 +2790,16 @@ typedef struct {
 	uint32_t *error_code;
 } job_array_resp_msg_t;
 
+/* Association manager state running in the slurmctld */
+typedef struct {
+	List assoc_list; /* list of slurmdb_assoc_rec_t with usage packed */
+	List user_list; /* list of slurmdb_user_rec_t */
+} assoc_mgr_info_msg_t;
 
-/* Individual cache item user information (copied & modified from
- * slurmdb_user_rec_t
- */
-typedef struct slurm_cache_user_info {
-	uint16_t admin_level; /* really slurmdb_admin_level_t but for
-				 packing purposes needs to be uint16_t */
-	/*List assoc_list; *//* list of slurmdb_association_rec_t *'s */
-	/*List coord_accts;*/ /* list of slurmdb_coord_rec_t *'s */
-	char *   default_acct;
-	char *   default_wckey;
-	char *   name;
-	char *   old_name;
-	uint32_t uid;
-	/*List wckey_list;*/ /* list of slurmdb_wckey_rec_t *'s */
-} slurm_cache_user_info_t;
-/* Individual cache item association information (copied & modified from
- * slurmdb_association_rec_t
- */
-typedef struct slurm_cache_assoc_info {
-	char *   acct;
-	char *   cluster;
-	uint32_t def_qos_id;
-	uint64_t grp_cpu_mins;
-	uint64_t grp_cpu_run_mins;
-	uint32_t grp_cpus;
-	uint32_t grp_jobs;
-	uint32_t grp_mem;
-	uint32_t grp_nodes;
-	uint32_t grp_submit_jobs;
-	uint32_t grp_wall;
-	uint32_t id;
-	uint16_t is_def;
-	uint32_t lft;
-	uint64_t max_cpu_mins_pj;
-	uint64_t max_cpu_run_mins;
-	uint32_t max_cpus_pj;
-	uint32_t max_jobs;
-	uint32_t max_nodes_pj;
-	uint32_t max_submit_jobs;
-	uint32_t max_wall_pj;
-	char *   parent_acct;
-	uint32_t parent_id;
-	char *   partition;
-	uint32_t rgt;
-	uint32_t shares_raw;
-	uint32_t uid;
-	char *   user;
-
-	/* Usage information */
-	double   grp_used_cpu_run_secs;
-	uint32_t grp_used_cpus;
-	uint32_t grp_used_mem;
-	uint32_t grp_used_nodes;
-	double   grp_used_wall;
-	uint64_t usage_raw;
-} slurm_cache_assoc_info_t;
-
-/* Cache information array as returned by the controller (currently just users).
- */
-typedef struct cache_info_msg {
-	time_t time_stamp;
-	uint32_t num_users;
-	uint32_t num_assocs;
-	slurm_cache_user_info_t  *cache_user_array;
-	slurm_cache_assoc_info_t *cache_assoc_array;
-} cache_info_msg_t;
+typedef struct {
+	List acct_list; /* char * list of account names */
+	List user_list; /* char * list of user names */
+} assoc_mgr_info_request_msg_t;
 
 typedef struct network_callerid_msg {
 	unsigned char ip_src[16];
@@ -3055,8 +2998,17 @@ extern int slurm_load_licenses PARAMS((time_t, license_info_msg_t **,
 				       uint16_t));
 extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
 
-extern int slurm_load_cache PARAMS((cache_info_msg_t **, uint16_t));
-extern void slurm_free_cache_info_msg PARAMS ((cache_info_msg_t *));
+/* get the running assoc_mgr info
+ * IN assoc_mgr_info_request_msg_t: request filtering data returned
+ * OUT assoc_mgr_info_msg_t: returned structure filled in with
+ * assoc_mgr lists, must be freed by slurm_free_assoc_mgr_info_msg
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_load_assoc_mgr_info PARAMS((assoc_mgr_info_request_msg_t *,
+					     assoc_mgr_info_msg_t **));
+extern void slurm_free_assoc_mgr_info_msg PARAMS ((assoc_mgr_info_msg_t *));
+extern void slurm_free_assoc_mgr_info_request_msg PARAMS (
+	(assoc_mgr_info_request_msg_t *));
 
 
 /*****************************************************************************\

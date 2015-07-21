@@ -202,22 +202,6 @@ typedef enum {
 #define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
 					  Combo of CRAY_A | CRAY_N */
 
-/* Define assoc_mgr_assoc_usage_t below to avoid including
- * extraneous slurmdb headers */
-#ifndef __assoc_mgr_assoc_usage_t_defined
-#  define  __assoc_mgr_assoc_usage_t_defined
-/* opaque data type */
-typedef struct assoc_mgr_assoc_usage assoc_mgr_assoc_usage_t;
-#endif
-
-/* Define assoc_mgr_qos_usage_t below to avoid including
- * extraneous slurmdb headers */
-#ifndef __assoc_mgr_qos_usage_t_defined
-#  define  __assoc_mgr_qos_usage_t_defined
-/* opaque data type */
-typedef struct assoc_mgr_qos_usage assoc_mgr_qos_usage_t;
-#endif
-
 /********************************************/
 
 /* Association conditions used for queries of the database */
@@ -430,6 +414,9 @@ typedef struct {
 
 /* slurmdb_assoc_cond_t is defined above alphabetical */
 
+/* This has slurmdb_assoc_rec_t's in it so we define the struct afterwards. */
+typedef struct slurmdb_assoc_usage slurmdb_assoc_usage_t;
+
 typedef struct slurmdb_assoc_rec {
 	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		   /* account/project associated to
@@ -514,9 +501,66 @@ typedef struct slurmdb_assoc_rec {
 				    * association */
 
 	uint32_t uid;		   /* user ID */
-	assoc_mgr_assoc_usage_t *usage;
+	slurmdb_assoc_usage_t *usage;
 	char *user;		   /* user associated to assoc */
 } slurmdb_assoc_rec_t;
+
+struct slurmdb_assoc_usage {
+	List children_list;     /* list of children associations
+				 * (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of active jobs in the group
+				 * (DON'T PACK for state file) */
+	uint32_t grp_used_mem; /* count of active memory in the group
+				 * (DON'T PACK for state file) */
+	uint32_t grp_used_nodes; /* count of active jobs in the group
+				  * (DON'T PACK for state file) */
+	double grp_used_wall;   /* group count of time used in
+				 * running jobs (DON'T PACK for state file) */
+	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
+					 * (DON'T PACK for state file) */
+	double fs_factor;	/* Fairshare factor. Not used by all algorithms
+				 * (DON'T PACK for state file) */
+	uint32_t level_shares;  /* number of shares on this level of
+				 * the tree (DON'T PACK for state file) */
+
+	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
+						      * parent assoc
+						      * set in slurmctld
+						      * (DON'T PACK) */
+
+	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
+						     * assoc if fairshare
+						     * == SLURMDB_FS_USE_PARENT
+						     * set in slurmctld
+						     * (DON'T PACK) */
+
+	double shares_norm;     /* normalized shares (DON'T PACK for state file) */
+
+	long double usage_efctv;/* effective, normalized usage (DON'T PACK for state file) */
+	long double usage_norm;	/* normalized usage (DON'T PACK for state file) */
+	long double usage_raw;	/* measure of resource usage (DON'T PACK for state file) */
+
+	uint32_t used_jobs;	/* count of active jobs (DON'T PACK for state file) */
+	uint32_t used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK for state file) */
+
+	/* Currently FAIR_TREE systems are defining data on
+	 * this struct but instead we could keep a void pointer to system
+	 * specific data. This would allow subsystems to define whatever data
+	 * they need without having to modify this struct; it would also save
+	 * space.
+	 */
+	unsigned active_seqno;  /* Sequence number for identifying
+				 * active associations (DON'T PACK for state file) */
+
+	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
+				 * compared to the association's siblings (DON'T
+				 * PACK) */
+
+	bitstr_t *valid_qos;    /* qos available for this association
+				 * derived from the qos_list.
+				 * (DON'T PACK for state file) */
+};
 
 typedef struct {
 	uint16_t classification; /* how this machine is classified */
@@ -673,6 +717,32 @@ typedef struct {
 } slurmdb_job_rec_t;
 
 typedef struct {
+	List job_list; /* list of job pointers to submitted/running
+			  jobs (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of cpus in use in this qos
+				 * (DON'T PACK for state file) */
+	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
+					 * (DON'T PACK for state file) */
+	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
+				 * for state file) */
+	uint32_t grp_used_mem; /* count of memory in use in this qos
+				* (DON'T PACK for state file) */
+	uint32_t grp_used_nodes; /* count of nodes in use in this qos
+				  * (DON'T PACK for state file) */
+	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
+					* (DON'T PACK for state file) */
+	double grp_used_wall;   /* group count of time (minutes) used in
+				 * running jobs (DON'T PACK for state file) */
+	double norm_priority;/* normalized priority (DON'T PACK for
+			      * state file) */
+	long double usage_raw;	/* measure of resource usage (DON'T
+				 * PACK for state file) */
+
+	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
+			       * for state file) */
+} slurmdb_qos_usage_t;
+
+typedef struct {
 	char *description;
 	uint32_t id;
 	uint32_t flags; /* flags for various things to enforce or
@@ -725,7 +795,7 @@ typedef struct {
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
-	assoc_mgr_qos_usage_t *usage; /* For internal use only, DON'T PACK */
+	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
@@ -1338,6 +1408,7 @@ extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
+extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
