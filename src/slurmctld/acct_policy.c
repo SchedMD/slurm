@@ -1600,22 +1600,29 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->grp_cpu_mins.
 		 */
 
+		/* FIXME: this only works with CPUS and was only done
+		 * this way to get the slurmctld to compile and work
+		 * with the TRES strings.  This should probably be a
+		 * new call to a function that does this for each TRES.
+		 */
+		uint64_t limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->grp_tres, TRES_CPU);
 		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
 		    || (qos_rec.grp_cpus != INFINITE)
-		    || (assoc_ptr->grp_cpus == INFINITE)
+		    || (limit == (uint64_t)INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
 		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
-			   && (job_desc->min_cpus > assoc_ptr->grp_cpus)) {
+			   && (job_desc->min_cpus > (uint32_t)limit)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_CPU;
 			debug2("job submit for user %s(%u): "
 			       "min cpu request %u exceeds "
-			       "group max cpu limit %u for account %s",
+			       "group max cpu limit %"PRIu64" for account %s",
 			       user_name,
 			       job_desc->user_id,
 			       job_desc->min_cpus,
-			       assoc_ptr->grp_cpus,
+			       limit,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -1624,6 +1631,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_jobs.
 		 */
+
 		if (strict_checking && !admin_set_memory_limit
 		    && (qos_rec.grp_mem == INFINITE)
 		    && (assoc_ptr->grp_mem != INFINITE)
@@ -1698,22 +1706,24 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_cpu_mins_pj.
 		 */
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->max_tres_pj, TRES_CPU);
 		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
 		    || (qos_rec.max_cpus_pj != INFINITE)
-		    || (assoc_ptr->max_cpus_pj == INFINITE)
+		    || (limit == (uint64_t)INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
 		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
-			   && (job_desc->min_cpus > assoc_ptr->max_cpus_pj)) {
+			   && (job_desc->min_cpus > (uint32_t)limit)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
 			debug2("job submit for user %s(%u): "
 			       "min cpu limit %u exceeds "
-			       "account max %u",
+			       "account max %"PRIu64,
 			       user_name,
 			       job_desc->user_id,
 			       job_desc->min_cpus,
-			       assoc_ptr->max_cpus_pj);
+			       limit);
 			rc = false;
 			break;
 		}
@@ -2103,9 +2113,17 @@ extern bool acct_policy_job_runnable_post_select(
 		 * If the association has a GrpCPUMins limit set (and there
 		 * is no QOS with GrpCPUMins set) we may hold the job
 		 */
+
+		/* FIXME: this only works with CPUS and was only done
+		 * this way to get the slurmctld to compile and work
+		 * with the TRES strings.  This should probably be a
+		 * new call to a function that does this for each TRES.
+		 */
+		uint64_t limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->grp_tres_mins, TRES_CPU);
 		if ((qos_rec.grp_cpu_mins == (uint64_t)INFINITE)
-		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)) {
-			if (usage_mins >= assoc_ptr->grp_cpu_mins) {
+		    && (limit != (uint64_t)INFINITE)) {
+			if (usage_mins >= limit) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_ASSOC_GRP_CPU_MIN;
 				debug2("job %u being held, "
@@ -2113,15 +2131,14 @@ extern bool acct_policy_job_runnable_post_select(
 				       "group max cpu minutes limit %"PRIu64" "
 				       "with %Lf for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
-				       assoc_ptr->grp_cpu_mins,
+				       limit,
 				       assoc_ptr->usage->usage_raw,
 				       assoc_ptr->acct);
 				rc = false;
 				goto end_it;
 			} else if (safe_limits
 				   && ((job_cpu_time_limit + cpu_run_mins) >
-				       (assoc_ptr->grp_cpu_mins
-					- usage_mins))) {
+				       (limit - usage_mins))) {
 				/*
 				 * If we're using safe limits start
 				 * the job only if there are
@@ -2139,8 +2156,7 @@ extern bool acct_policy_job_runnable_post_select(
 				       "minutes (%u cpus)"
 				       "for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
-				       assoc_ptr->grp_cpu_mins,
-				       assoc_ptr->grp_cpu_mins - usage_mins,
+				       limit, limit - usage_mins,
 				       job_cpu_time_limit + cpu_run_mins,
 				       cpu_cnt,
 				       assoc_ptr->acct);
@@ -2149,35 +2165,37 @@ extern bool acct_policy_job_runnable_post_select(
 			}
 		}
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->grp_tres, TRES_CPU);
 		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
 		    && (qos_rec.grp_cpus == INFINITE)
-		    && (assoc_ptr->grp_cpus != INFINITE)) {
-			if (cpu_cnt > assoc_ptr->grp_cpus) {
+		    && (limit != (uint64_t)INFINITE)) {
+			if (cpu_cnt > (uint32_t)limit) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
 				debug2("job %u being held, "
 				       "min cpu request %u exceeds "
-				       "group max cpu limit %u for "
+				       "group max cpu limit %"PRIu64" for "
 				       "account %s",
 				       job_ptr->job_id,
 				       cpu_cnt,
-				       assoc_ptr->grp_cpus,
+				       limit,
 				       assoc_ptr->acct);
 				rc = false;
 				goto end_it;
 			}
 
 			if ((assoc_ptr->usage->grp_used_cpus + cpu_cnt) >
-			    assoc_ptr->grp_cpus) {
+			    limit) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
 				debug2("job %u being held, "
 				       "assoc %u is at or exceeds "
-				       "group max cpu limit %u "
+				       "group max cpu limit %"PRIu64" "
 				       "with already used %u + requested %u "
 				       "for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
-				       assoc_ptr->grp_cpus,
+				       limit,
 				       assoc_ptr->usage->grp_used_cpus,
 				       cpu_cnt,
 				       assoc_ptr->acct);
@@ -2225,10 +2243,12 @@ extern bool acct_policy_job_runnable_post_select(
 
 		/* we don't need to check grp_jobs here */
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->grp_tres_run_mins, TRES_CPU);
 		if ((qos_rec.grp_cpu_run_mins == INFINITE)
-		    && (assoc_ptr->grp_cpu_run_mins != INFINITE)) {
+		    && (limit != (uint64_t)INFINITE)) {
 			if (cpu_run_mins + job_cpu_time_limit >
-			    assoc_ptr->grp_cpu_run_mins) {
+			    (uint32_t)limit) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_ASSOC_GRP_CPU_RUN_MIN;
@@ -2239,7 +2259,7 @@ extern bool acct_policy_job_runnable_post_select(
 				       "used %"PRIu64" + requested %"PRIu64" "
 				       "for account %s",
 				       job_ptr->job_id, assoc_ptr->id,
-				       assoc_ptr->grp_cpu_run_mins,
+				       limit,
 				       cpu_run_mins,
 				       job_cpu_time_limit,
 				       assoc_ptr->acct);
@@ -2301,9 +2321,11 @@ extern bool acct_policy_job_runnable_post_select(
 			continue;
 		}
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->max_tres_mins_pj, TRES_CPU);
 		if ((qos_rec.max_cpu_mins_pj == INFINITE) &&
-		    (assoc_ptr->max_cpu_mins_pj != INFINITE)) {
-			cpu_time_limit = assoc_ptr->max_cpu_mins_pj;
+		    (limit != (uint64_t)INFINITE)) {
+			cpu_time_limit = limit;
 			if ((job_ptr->time_limit != NO_VAL) &&
 			    (job_cpu_time_limit > cpu_time_limit)) {
 				xfree(job_ptr->state_desc);
@@ -2320,19 +2342,20 @@ extern bool acct_policy_job_runnable_post_select(
 			}
 		}
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc_ptr->max_tres_pj, TRES_CPU);
 		if ((qos_rec.max_cpus_pj == INFINITE) &&
-		    (assoc_ptr->max_cpus_pj != INFINITE)) {
-			if (cpu_cnt >
-			    assoc_ptr->max_cpus_pj) {
+		    (limit != (uint64_t)INFINITE)) {
+			if (cpu_cnt > limit) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_ASSOC_MAX_CPUS_PER_JOB;
 				debug2("job %u being held, "
 				       "min cpu limit %u exceeds "
-				       "account max %u",
+				       "account max %"PRIu64,
 				       job_ptr->job_id,
 				       cpu_cnt,
-				       assoc_ptr->max_cpus_pj);
+				       limit);
 				rc = false;
 				goto end_it;
 			}
@@ -2640,15 +2663,22 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 		usage_mins = (uint64_t)(assoc->usage->usage_raw / 60.0);
 		wall_mins = assoc->usage->grp_used_wall / 60;
 
+		/* FIXME: this only works with CPUS and was only done
+		 * this way to get the slurmctld to compile and work
+		 * with the TRES strings.  This should probably be a
+		 * new call to a function that does this for each TRES.
+		 */
+		uint64_t limit = slurmdb_find_tres_count_in_string(
+			assoc->grp_tres_mins, TRES_CPU);
 		if ((qos_rec.grp_cpu_mins == INFINITE)
-		    && (assoc->grp_cpu_mins != (uint64_t)INFINITE)
-		    && (usage_mins >= assoc->grp_cpu_mins)) {
+		    && (limit != (uint64_t)INFINITE)
+		    && (usage_mins >= limit)) {
 			info("Job %u timed out, "
 			     "assoc %u is at or exceeds "
 			     "group max cpu minutes limit %"PRIu64" "
 			     "with %"PRIu64" for account %s",
 			     job_ptr->job_id, assoc->id,
-			     assoc->grp_cpu_mins,
+			     limit,
 			     usage_mins,
 			     assoc->acct);
 			job_ptr->state_reason = FAIL_TIMEOUT;
@@ -2669,15 +2699,17 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			break;
 		}
 
+		limit = slurmdb_find_tres_count_in_string(
+			assoc->max_tres_mins_pj, TRES_CPU);
 		if ((qos_rec.max_cpu_mins_pj == INFINITE)
-		    && (assoc->max_cpu_mins_pj != (uint64_t)INFINITE)
-		    && (job_cpu_usage_mins >= assoc->max_cpu_mins_pj)) {
+		    && (limit != (uint64_t)INFINITE)
+		    && (job_cpu_usage_mins >= limit)) {
 			info("Job %u timed out, "
 			     "assoc %u is at or exceeds "
 			     "max cpu minutes limit %"PRIu64" "
 			     "with %"PRIu64" for account %s",
 			     job_ptr->job_id, assoc->id,
-			     assoc->max_cpu_mins_pj,
+			     limit,
 			     job_cpu_usage_mins,
 			     assoc->acct);
 			job_ptr->state_reason = FAIL_TIMEOUT;
