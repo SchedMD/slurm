@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     cray with the SubAllocate option to work as it did with 2.5.
  -- Properly parse CPU frequency data on POWER systems.
  -- Correct sacct.a man pages describing -i option.
+ -- Capture salloc/srun information in sdiag statistics.
 
 * Changes in Slurm 14.11.8
 ==========================
