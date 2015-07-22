@@ -1400,8 +1400,8 @@ extern void slurmdb_pack_assoc_rec_with_usage(void *in, uint16_t rpc_version,
 {
 	slurmdb_pack_assoc_rec(in, rpc_version, buffer);
 
-	slurmdb_pack_assoc_rec(((slurmdb_assoc_rec_t *)in)->usage,
-			       rpc_version, buffer);
+	slurmdb_pack_assoc_usage(((slurmdb_assoc_rec_t *)in)->usage,
+				 rpc_version, buffer);
 }
 
 extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
@@ -1417,8 +1417,8 @@ extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
 
 	object_ptr = *object;
 
-	rc = slurmdb_unpack_assoc_rec((void **)&object_ptr->usage,
-				      rpc_version, buffer);
+	rc = slurmdb_unpack_assoc_usage((void **)&object_ptr->usage,
+					rpc_version, buffer);
 
 	return rc;
 }
