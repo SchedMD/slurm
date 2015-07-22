@@ -3201,7 +3201,7 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 	char *tmp_str = tres_str_in;
 
 	if (!tmp_str || !tmp_str[0])
-		return 0;
+		return (uint64_t)INFINITE;
 
 	while (tmp_str) {
 		if (id == atoi(tmp_str)) {
@@ -3218,7 +3218,7 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 		tmp_str++;
 	}
 
-	return 0;
+	return (uint64_t)INFINITE;
 }
 
 extern int slurmdb_find_tres_in_list(void *x, void *key)
