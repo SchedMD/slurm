@@ -308,7 +308,7 @@ void ping_nodes (void)
 		 * counter and gets updated configuration information
 		 * once in a while). We limit these requests since they
 		 * can generate a flood of incoming RPCs. */
-		if (IS_NODE_UNKNOWN(node_ptr) || restart_flag ||
+		if (IS_NODE_UNKNOWN(node_ptr) || (node_ptr->boot_time == 0) ||
 		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
 			if (reg_agent_args->protocol_version >
 			    node_ptr->protocol_version)

@@ -240,6 +240,8 @@
 #define	unpack_time		slurm_unpack_time
 #define	packdouble		slurm_packdouble
 #define	unpackdouble		slurm_unpackdouble
+#define	packlongdouble		slurm_packlongdouble
+#define	unpacklongdouble	slurm_unpacklongdouble
 #define	pack64			slurm_pack64
 #define	unpack64		slurm_unpack64
 #define	pack32			slurm_pack32

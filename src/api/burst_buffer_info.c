@@ -60,7 +60,7 @@
 #include "src/common/xstring.h"
 
 /* Reformat a numeric value with an appropriate suffix.
- * The units are MB */
+ * The units are bytes */
 static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 {
 	uint64_t tmp64;
@@ -68,32 +68,18 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 	if ((num == NO_VAL64) || (num == INFINITE64)) {
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
-		snprintf(buf, buf_size, "0MB");
-	} else if ((num % (1024 * 1024)) == 0) {
-		tmp64 = num / (1024 * 1024);
-		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
-	} else if ((num % 1024) == 0) {
-		tmp64 = num / 1024;
-		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
-	} else {
-		tmp64 = num;
-		snprintf(buf, buf_size, "%"PRIu64"MB", tmp64);
-	}
-}
-
-/* Reformat a numeric value with an appropriate suffix.
- * The base units are NOT scaled (i.e. 1 == 1) */
-static void _get_size_str2(char *buf, size_t buf_size, uint64_t num)
-{
-	uint64_t tmp64;
-
-	if (num == 0) {
 		snprintf(buf, buf_size, "0");
-	} else if ((num % (1024 * 1024 * 1024)) == 0) {
-		tmp64 = num / (1024 * 1024 * 1024);
+	} else if ((num % ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"P", tmp64);
+	} else if ((num % ((uint64_t)1024 * 1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t)1024 * 1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"T", tmp64);
+	} else if ((num % ((uint64_t)1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t)1024 * 1024 * 1024);
 		snprintf(buf, buf_size, "%"PRIu64"G", tmp64);
-	} else if ((num % (1024 * 1024)) == 0) {
-		tmp64 = num / (1024 * 1024);
+	} else if ((num % ((uint64_t)1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t)1024 * 1024);
 		snprintf(buf, buf_size, "%"PRIu64"M", tmp64);
 	} else if ((num % 1024) == 0) {
 		tmp64 = num / 1024;
@@ -211,8 +197,8 @@ static void _print_burst_buffer_resv(FILE *out,
 			xstrcat(out_buf, " Gres=");
 		else
 			xstrcat(out_buf, ",");
-		_get_size_str2(sz_buf, sizeof(sz_buf),
-			       burst_buffer_ptr->gres_ptr[i].used_cnt);
+		_get_size_str(sz_buf, sizeof(sz_buf),
+			      burst_buffer_ptr->gres_ptr[i].used_cnt);
 		snprintf(tmp_line, sizeof(tmp_line), "%s:%s",
 			 burst_buffer_ptr->gres_ptr[i].name, sz_buf);
 		xstrcat(out_buf, tmp_line);
@@ -251,8 +237,9 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Name=%s Granularity=%s TotalSpace=%s UsedSpace=%s",
-		burst_buffer_ptr->name, g_sz_buf, t_sz_buf, u_sz_buf);
+		 "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s UsedSpace=%s",
+		 burst_buffer_ptr->name, burst_buffer_ptr->default_pool,
+		 g_sz_buf, t_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");
@@ -276,10 +263,10 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	/****** Line 3+ (optional) ******/
 	/* Gres includes "nodes" on Cray systems */
 	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
-		_get_size_str2(t_sz_buf, sizeof(t_sz_buf),
-			       burst_buffer_ptr->gres_ptr[i].avail_cnt);
-		_get_size_str2(u_sz_buf, sizeof(u_sz_buf),
-			       burst_buffer_ptr->gres_ptr[i].used_cnt);
+		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
+			      burst_buffer_ptr->gres_ptr[i].avail_cnt);
+		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
+			      burst_buffer_ptr->gres_ptr[i].used_cnt);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "Gres[%d] Name=%s AvailCount=%s UsedCount=%s",
 			 i, burst_buffer_ptr->gres_ptr[i].name,

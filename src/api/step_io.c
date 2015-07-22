@@ -308,8 +308,8 @@ _server_read(eio_obj_t *obj, List objs)
 
 			if (getenv("SLURM_PTY_PORT") == NULL)
 				error("\
-%s: fd %d got error or unexpected eof reading header",
-				      __func__, obj->fd);
+%s: fd %d n %d got error or unexpected eof reading header: %m",
+				      __func__, obj->fd, n);
 
 			if (s->cio->sls)
 				step_launch_notify_io_failure(s->cio->sls,

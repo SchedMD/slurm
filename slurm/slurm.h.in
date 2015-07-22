@@ -4502,7 +4502,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
  *      SLURM BURST BUFFER FUNCTIONS
 \*****************************************************************************/
 
-#define BB_SIZE_IN_NODES	0x10000000
+#define BB_SIZE_IN_NODES	0x1000000000000000
 #define BB_STATE_ALLOCATED	0x0001		/* Cray: bbs_setup started */
 #define BB_STATE_STAGING_IN	0x0002		/* Cray: bbs_data_in started */
 #define BB_STATE_STAGED_IN	0x0003		/* Cray: bbs_data_in complete */
@@ -4537,12 +4537,13 @@ typedef struct {
 
 typedef struct {
 	char *allow_users;
+	char *default_pool;		/* Name of default pool to use */
 	char *deny_users;
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
-	uint64_t job_size_limit;	/* In GB or NO_VAL */
+	uint64_t job_size_limit;	/* In bytes or NO_VAL */
 	char *name;			/* Plugin name */
 	uint16_t private_data;		/* limit access to data */
 	uint32_t prio_boost_alloc;	/* job priority boost after staged in */
@@ -4553,9 +4554,9 @@ typedef struct {
 	char *start_stage_out;
 	char *stop_stage_in;
 	char *stop_stage_out;
-	uint64_t total_space;		/* In GB */
-	uint64_t used_space;		/* In GB */
-	uint64_t user_size_limit;	/* In GB or NO_VAL */
+	uint64_t total_space;		/* In bytes */
+	uint64_t used_space;		/* In bytes */
+	uint64_t user_size_limit;	/* In bytes or NO_VAL */
 
 	uint32_t  record_count;
 	burst_buffer_resv_t *burst_buffer_resv_ptr;

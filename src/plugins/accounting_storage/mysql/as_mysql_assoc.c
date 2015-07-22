@@ -3359,6 +3359,7 @@ is_same_user:
 
 	if (!extra || (!vals && !assoc->parent_acct)) {
 		xfree(vals);
+		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;

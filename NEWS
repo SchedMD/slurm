@@ -19,6 +19,10 @@ documents those changes that are of interest to users and administrators.
     the node which avoid RSIP issues in Cray systems.  This is most likely
     useful in other systems as well.
  -- Fix memory leak in Slurm::load_jobs perl api call.
+ -- Added --noconvert sacct option which allows values to be displayed in their
+    original unit types.
+ -- Fix spelling of node_rescrs to node_resrcs in Perl API.
+ -- Fix node state race condition, UNKNOWN->IDLE without configuration info.
 
 * Changes in Slurm 15.08.0pre6
 ==============================
@@ -321,9 +325,20 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Make it so you don't have to restart the slurmctld
     to gain the correct limit when a parent account is root and you
     remove a subaccount's limit which exists on the parent account.
- -- MYSQL - Close small chance of setting the wrong limit on an association
+ -- MYSQL - Close chance of setting the wrong limit on an association
     when removing a limit from an association on multiple clusters
     at the same time.
+ -- MYSQL - Fix minor memory leak when modifying an association but no
+    change was made.
+ -- srun command line of either --mem or --mem-per-cpu will override both the
+    SLURM_MEM_PER_CPU and SLURM_MEM_PER_NODE environment variables.
+ -- Prevent slurmctld abort on update of advanced reservation that contains no
+    nodes.
+ -- ALPS - Revert commit 2c95e2d22 which also removes commit 2e2de6a4 allowing
+    cray with the SubAllocate option to work as it did with 2.5.
+ -- Properly parse CPU frequency data on POWER systems.
+ -- Correct sacct.a man pages describing -i option.
+ -- Capture salloc/srun information in sdiag statistics.
 
 * Changes in Slurm 14.11.8
 ==========================

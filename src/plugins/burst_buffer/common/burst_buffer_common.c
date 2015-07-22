@@ -178,6 +178,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->allow_users);
 	xfree(config_ptr->allow_users_str);
 	config_ptr->debug_flag = false;
+	xfree(config_ptr->default_pool);
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->get_sys_state);
@@ -422,6 +423,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		state_ptr->bb_config.allow_users = _parse_users(
 					state_ptr->bb_config.allow_users_str);
 	}
+	s_p_get_string(&state_ptr->bb_config.default_pool, "DefaultPool",
+		       bb_hashtbl);
 	if (s_p_get_string(&state_ptr->bb_config.deny_users_str, "DenyUsers",
 			   bb_hashtbl)) {
 		state_ptr->bb_config.deny_users = _parse_users(
@@ -512,7 +515,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		value = _print_users(state_ptr->bb_config.allow_users);
 		info("%s: AllowUsers:%s",  __func__, value);
 		xfree(value);
-
+		info("%s: DefaultPool:%s",  __func__,
+		     state_ptr->bb_config.default_pool);
 		value = _print_users(state_ptr->bb_config.deny_users);
 		info("%s: DenyUsers:%s",  __func__, value);
 		xfree(value);
@@ -595,6 +599,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	int i;
 
 	packstr(config_ptr->allow_users_str, buffer);
+	packstr(config_ptr->default_pool,    buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
 	pack64(config_ptr->granularity,      buffer);
@@ -621,7 +626,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
- * are MB. */
+ * are bytes. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 {
 	char *end_ptr = NULL;
@@ -631,14 +636,17 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	bb_size_i = (int64_t) strtoll(tok, &end_ptr, 10);
 	if (bb_size_i > 0) {
 		bb_size_u = (uint64_t) bb_size_i;
-		if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-			;
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			bb_size_u *= 1024;
+		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
+			bb_size_u *= ((uint64_t)1024 * 1024);
+		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
+			bb_size_u *= ((uint64_t)1024 * 1024 * 1024);
 		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
-			bb_size_u *= (1024 * 1024);
+			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024);
 		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
-			bb_size_u *= (1024 * 1024 * 1024);
+			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024
+				      * 1024);
 		}
 	}
 

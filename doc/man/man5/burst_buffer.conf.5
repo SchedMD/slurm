@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "March 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "July 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -32,7 +32,13 @@ The configuration parameters available include:
 Colon delimited list of user names and/or IDs permitted to use burst buffers.
 The options \fBAllowUsers\fR and \fBDenyUsers\fR can not both be specified.
 By default all users are permitted to use burst buffers.
- 
+
+.TP
+\fBDefaultPool\fR
+Name of the pool used by default for resource allocations.
+The default value is "dwcache".
+This option is only used by the burst_buffer/cray plugin.
+
 .TP
 \fBDenyUsers\fR
 Colon delimited list of user names and/or IDs prevented from using burst buffers.
@@ -50,8 +56,10 @@ and it's default value is /opt/cray/dw_wlm/default/bin/dw_wlm_cli.
 
 .TP
 \fBGranularity\fR
-Granularity of job space allocations in units of megabytes.
-The default value is 1 megabyte.
+Granularity of job space allocations in units of bytes.
+The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
+"t" (terabytes), "p" (petabytes), or "n" (nodes).
+Bytes is assumed if no suffix is supplied.
 This option is not used by the burst_buffer/cray plugin.
 
 .\ Possible future enhancement
@@ -72,7 +80,7 @@ This option is not used by the burst_buffer/cray plugin.
 Maximum burst buffer allocation size for any single job.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
-Megabytes is assumed if no suffix is supplied.
+Bytes is assumed if no suffix is supplied.
 By default there is no job allocation size limit.
 
 .TP
@@ -144,7 +152,7 @@ The size is calculated by adding the burst buffer allocations for all jobs
 plus any persistent buffers belonging to the user.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
-Megabytes is assumed if no suffix is supplied.
+Bytes is assumed if no suffix is supplied.
 By default there is no job allocation size limit.
 
 .SH "EXAMPLE"
@@ -164,11 +172,11 @@ PrivateData=true
 .br
 #
 .br
-Granularity=1GB
+Granularity=1G
 .br
-JobSizeLimit=200GB   # Applies to each job
+JobSizeLimit=200G   # Applies to each job
 .br
-UserSizeLimit=500GB  # Applies to each user
+UserSizeLimit=500G  # Applies to each user
 .br
 #
 .br

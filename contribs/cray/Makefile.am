@@ -1,6 +1,8 @@
-
+#
 # Makefile for cray scripts
 #
+
+SUBDIRS = csm
 
 AUTOMAKE_OPTIONS = foreign
 
