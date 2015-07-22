@@ -1402,7 +1402,8 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
         char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/
-extern void slurmdb_destroy_user_defs(void *object);
+extern void slurmdb_destroy_assoc_usage(void *object);
+extern void slurmdb_destroy_qos_usage(void *object);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);

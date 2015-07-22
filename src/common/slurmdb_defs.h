@@ -90,8 +90,10 @@ typedef struct {
 	time_t start_time;
 } local_cluster_rec_t;
 
-extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
+extern slurmdb_step_rec_t *slurmdb_create_step_rec();
+extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage();
+extern slurmdb_qos_usage_t *slurmdb_create_qos_usage();
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_slurmdb_qos(List qos_list, char *level);

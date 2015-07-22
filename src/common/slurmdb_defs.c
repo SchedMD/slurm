@@ -88,7 +88,7 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
-		destroy_slurmdb_qos_usage(qos->usage);
+		slurmdb_destroy_qos_usage(qos->usage);
 	}
 }
 
@@ -533,6 +533,56 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 	return step;
 }
 
+extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage()
+{
+	slurmdb_assoc_usage_t *usage =
+		xmalloc(sizeof(slurmdb_assoc_usage_t));
+
+	usage->level_shares = NO_VAL;
+	usage->shares_norm = (double)NO_VAL;
+	usage->usage_efctv = 0;
+	usage->usage_norm = (long double)NO_VAL;
+	usage->usage_raw = 0;
+	usage->level_fs = 0;
+	usage->fs_factor = 0;
+
+	return usage;
+}
+
+extern slurmdb_qos_usage_t *slurmdb_create_qos_usage()
+{
+	slurmdb_qos_usage_t *usage =
+		xmalloc(sizeof(slurmdb_qos_usage_t));
+
+	return usage;
+}
+
+extern void slurmdb_destroy_assoc_usage(void *object)
+{
+	slurmdb_assoc_usage_t *usage =
+		(slurmdb_assoc_usage_t *)object;
+
+	if (usage) {
+		FREE_NULL_LIST(usage->children_list);
+		FREE_NULL_BITMAP(usage->valid_qos);
+
+		xfree(usage);
+	}
+}
+
+extern void slurmdb_destroy_qos_usage(void *object)
+{
+	slurmdb_qos_usage_t *usage =
+		(slurmdb_qos_usage_t *)object;
+
+	if (usage) {
+		FREE_NULL_LIST(usage->job_list);
+		FREE_NULL_LIST(usage->user_limit_list);
+		xfree(usage);
+	}
+}
+
+
 extern void slurmdb_destroy_user_rec(void *object)
 {
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;
@@ -638,7 +688,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		FREE_NULL_LIST(assoc->qos_list);
 		xfree(assoc->user);
 
-		destroy_slurmdb_assoc_usage(assoc->usage);
+		slurmdb_destroy_assoc_usage(assoc->usage);
 	}
 }
 

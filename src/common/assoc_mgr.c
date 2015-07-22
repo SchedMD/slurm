@@ -708,7 +708,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 	}
 
 	if (!assoc->usage)
-		assoc->usage = create_slurmdb_assoc_usage();
+		assoc->usage = slurmdb_create_assoc_usage();
 
 	if (assoc->parent_id) {
 		/* Here we need the direct parent (parent_assoc_ptr)
@@ -735,7 +735,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		if (assoc->usage->fs_assoc_ptr && setup_children) {
 			if (!assoc->usage->fs_assoc_ptr->usage)
 				assoc->usage->fs_assoc_ptr->usage =
-					create_slurmdb_assoc_usage();
+					slurmdb_create_assoc_usage();
 			if (!assoc->usage->
 			    fs_assoc_ptr->usage->children_list)
 				assoc->usage->
@@ -823,7 +823,7 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		return;
 
 	if (!qos->usage)
-		qos->usage = create_slurmdb_qos_usage();
+		qos->usage = slurmdb_create_qos_usage();
 	qos->usage->norm_priority =
 		(double)qos->priority / (double)g_qos_max_priority;
 }
@@ -984,7 +984,7 @@ static int _post_qos_list(List qos_list)
 			qos->flags = 0;
 
 		if (!qos->usage)
-			qos->usage = create_slurmdb_qos_usage();
+			qos->usage = slurmdb_create_qos_usage();
 		/* get the highest qos value to create bitmaps from */
 		if (qos->id > g_qos_count)
 			g_qos_count = qos->id;
@@ -1812,55 +1812,6 @@ extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 		_wr_rdunlock(ASSOC_LOCK);
 	else if (locks->assoc == WRITE_LOCK)
 		_wr_wrunlock(ASSOC_LOCK);
-}
-
-extern slurmdb_assoc_usage_t *create_slurmdb_assoc_usage()
-{
-	slurmdb_assoc_usage_t *usage =
-		xmalloc(sizeof(slurmdb_assoc_usage_t));
-
-	usage->level_shares = NO_VAL;
-	usage->shares_norm = (double)NO_VAL;
-	usage->usage_efctv = 0;
-	usage->usage_norm = (long double)NO_VAL;
-	usage->usage_raw = 0;
-	usage->level_fs = 0;
-	usage->fs_factor = 0;
-
-	return usage;
-}
-
-extern void destroy_slurmdb_assoc_usage(void *object)
-{
-	slurmdb_assoc_usage_t *usage =
-		(slurmdb_assoc_usage_t *)object;
-
-	if (usage) {
-		FREE_NULL_LIST(usage->children_list);
-		FREE_NULL_BITMAP(usage->valid_qos);
-
-		xfree(usage);
-	}
-}
-
-extern slurmdb_qos_usage_t *create_slurmdb_qos_usage()
-{
-	slurmdb_qos_usage_t *usage =
-		xmalloc(sizeof(slurmdb_qos_usage_t));
-
-	return usage;
-}
-
-extern void destroy_slurmdb_qos_usage(void *object)
-{
-	slurmdb_qos_usage_t *usage =
-		(slurmdb_qos_usage_t *)object;
-
-	if (usage) {
-		FREE_NULL_LIST(usage->job_list);
-		FREE_NULL_LIST(usage->user_limit_list);
-		xfree(usage);
-	}
 }
 
 /* Since the returned assoc_list is full of pointers from the
@@ -3387,7 +3338,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (!object->usage)
 				object->usage =
-					create_slurmdb_assoc_usage();
+					slurmdb_create_assoc_usage();
 			/* If is_def is uninitialized the value will
 			   be NO_VAL, so if it isn't 1 make it 0.
 			*/
@@ -3850,7 +3801,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			}
 
 			if (!object->usage)
-				object->usage = create_slurmdb_qos_usage();
+				object->usage = slurmdb_create_qos_usage();
 			list_append(assoc_mgr_qos_list, object);
 /* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 				assoc_mgr_qos_list, */
@@ -4798,7 +4749,7 @@ extern int load_assoc_usage(char *state_save_location)
 			usage_raw = (long double)tmp64;
 		}
 		assoc = _find_assoc_rec_id(assoc_id);
-
+		info("got %Lf", usage_raw);
 		/* We want to do this all the way up to and including
 		   root.  This way we can keep track of how much usage
 		   has occured on the entire system and use that to

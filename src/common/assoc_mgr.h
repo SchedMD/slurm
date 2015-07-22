@@ -131,11 +131,6 @@ extern int assoc_mgr_fini(char *state_save_location);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
 
-extern slurmdb_assoc_usage_t *create_slurmdb_assoc_usage();
-extern void destroy_slurmdb_assoc_usage(void *object);
-extern slurmdb_qos_usage_t *create_slurmdb_qos_usage();
-extern void destroy_slurmdb_qos_usage(void *object);
-
 /*
  * get info from the storage
  * IN:  assoc - slurmdb_assoc_rec_t with at least cluster and
