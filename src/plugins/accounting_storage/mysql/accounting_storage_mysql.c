@@ -2204,8 +2204,8 @@ just_update:
 			       "shares=1, max_jobs=NULL, "
 			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "
-			       "max_tres_pj='' "
-			       "max_tres_mins_pj='' "
+			       "max_tres_pj='', "
+			       "max_tres_mins_pj='', "
 			       "max_tres_run_mins='' "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
