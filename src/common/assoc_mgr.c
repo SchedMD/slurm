@@ -2927,7 +2927,8 @@ extern void assoc_mgr_info_get_pack_msg(
 	pack32(list_count(ret_list), buffer);
 	itr = list_iterator_create(ret_list);
 	while ((object = list_next(itr)))
-		slurmdb_pack_assoc_rec(object, protocol_version, buffer);
+		slurmdb_pack_assoc_rec_with_usage(
+			object, protocol_version, buffer);
 	list_iterator_destroy(itr);
 	list_flush(ret_list);
 
