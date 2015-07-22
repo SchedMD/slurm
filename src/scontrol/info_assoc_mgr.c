@@ -45,7 +45,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	slurmdb_assoc_rec_t *assoc_rec;
 	uint64_t usage_mins;
 	uint64_t cpu_run_mins;
-	bool new_line_needed = false;
 	char *new_line_char = one_liner ? " " : "\n    ";
 
 	printf("Current Association Manager state\n");
@@ -55,7 +54,7 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	} else {
 		itr = list_iterator_create(msg->user_list);
 		while ((user_rec = list_next(itr))) {
-			printf("UserName=%s UID=%u DefAccount=%s "
+			printf("UserName=%s(%u) DefAccount=%s "
 			       "DefWckey=%s AdminLevel=%s\n",
 			       user_rec->name,
 			       user_rec->uid,
@@ -80,25 +79,31 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			cpu_run_mins =
 				assoc_rec->usage->grp_used_cpu_run_secs / 60;
 
-			printf("ClusterName=%s Account=%s UserName=%s(%u) "
-			       "Partition=%s ID=%u%s",
+			printf("ClusterName=%s Account=%s ",
 			       assoc_rec->cluster,
-			       assoc_rec->acct,
-			       assoc_rec->user,
-			       assoc_rec->uid,
-			       assoc_rec->partition,
+			       assoc_rec->acct);
+
+			if (assoc_rec->user)
+				printf("UserName=%s(%u) ",
+				       assoc_rec->user,
+				       assoc_rec->uid);
+			else
+				printf("UserName= ");
+
+			printf("Partition=%s ID=%u%s",
+			       assoc_rec->partition ? assoc_rec->partition : "",
 			       assoc_rec->id,
 			       new_line_char);
 
 			printf("SharesRaw/Norm/Level/Factor="
-			       "%u//%.2f//%u//%.2f%s",
+			       "%u/%.2f/%u/%.2f%s",
 			       assoc_rec->shares_raw,
 			       assoc_rec->usage->shares_norm,
 			       assoc_rec->usage->level_shares,
 			       assoc_rec->usage->fs_factor,
 			       new_line_char);
 
-			printf("UsageRaw/Norm/Efctv=%.2Lf//%.2Lf//%.2Lf%s",
+			printf("UsageRaw/Norm/Efctv=%.2Lf/%.2Lf/%.2Lf%s",
 			       assoc_rec->usage->usage_raw,
 			       assoc_rec->usage->usage_norm,
 			       assoc_rec->usage->usage_efctv,
@@ -108,6 +113,8 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				printf("ParentAccount=%s(%u) ",
 				       assoc_rec->parent_acct,
 				       assoc_rec->parent_id);
+			else
+				printf("ParentAccount= ");
 
 			printf("Lft-Rgt=%u-%u DefAssoc=%s%s",
 			       assoc_rec->lft,
@@ -116,111 +123,107 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			       new_line_char);
 
 
-			if (assoc_rec->grp_jobs != INFINITE) {
-				new_line_needed = true;
+			if (assoc_rec->grp_jobs != INFINITE)
 				printf("GrpJobs=%u(%u) ",
 				       assoc_rec->grp_jobs,
 				       assoc_rec->usage->used_jobs);
-			}
-
-			if (assoc_rec->grp_mem != INFINITE) {
-				new_line_needed = true;
+			else
+				printf("GrpJobs= ");
+			if (assoc_rec->grp_mem != INFINITE)
 				printf("GrpMem=%u(%u) ",
 				       assoc_rec->grp_mem,
 				       assoc_rec->usage->grp_used_mem);
-			}
-
-			if (assoc_rec->grp_nodes != INFINITE) {
-				new_line_needed = true;
+			else
+				printf("GrpMem= ");
+			if (assoc_rec->grp_nodes != INFINITE)
 				printf("GrpNodes=%u(%u) ",
 				       assoc_rec->grp_nodes,
 				       assoc_rec->usage->grp_used_nodes);
-			}
+			else
+				printf("GrpNodes= ");
+			/* NEW LINE */
+			printf("%s", new_line_char);
 
-			if (assoc_rec->grp_submit_jobs != INFINITE) {
-				new_line_needed = true;
-				printf("GrpSubmitJob=%u(%u) ",
+			if (assoc_rec->grp_submit_jobs != INFINITE)
+				printf("GrpSubmitJobs=%u(%u) ",
 				       assoc_rec->grp_submit_jobs,
 				       assoc_rec->usage->used_submit_jobs);
-			}
-
-			if (assoc_rec->grp_wall != INFINITE) {
-				new_line_needed = true;
+			else
+				printf("GrpSubmitJobs= ");
+			if (assoc_rec->grp_wall != INFINITE)
 				printf("GrpWall=%u(%.2f)",
 				       assoc_rec->grp_wall,
 				       assoc_rec->usage->grp_used_wall);
-			}
-
+			else
+				printf("GrpWall=");
 			/* NEW LINE */
-			if (new_line_needed) {
-				new_line_needed = false;
-				printf("%s", new_line_char);
-			}
+			printf("%s", new_line_char);
 
-			if (assoc_rec->grp_tres) {
+			if (assoc_rec->grp_tres)
 				printf("GrpTRES=%s(%u)%s",
 				       assoc_rec->grp_tres,
 				       assoc_rec->usage->grp_used_cpus,
 				       new_line_char);
-			}
+			else
+				printf("GrpTRES=%s", new_line_char);
 
-			if (assoc_rec->grp_tres_mins) {
+			if (assoc_rec->grp_tres_mins)
 				printf("GrpTRESMins=%s(%"PRIu64")%s",
 				       assoc_rec->grp_tres_mins,
 				       usage_mins,
 				       new_line_char);
-			}
+			else
+				printf("GrpTRESMins=%s", new_line_char);
 
-			if (assoc_rec->grp_tres_run_mins) {
+			if (assoc_rec->grp_tres_mins)
 				printf("GrpTRESRunMins=%s(%"PRIu64")%s",
 				       assoc_rec->grp_tres_run_mins,
 				       cpu_run_mins,
 				       new_line_char);
-			}
+			else
+				printf("GrpTRESRunMins=%s", new_line_char);
 
-			if (assoc_rec->max_jobs != INFINITE) {
-				new_line_needed = true;
+			if (assoc_rec->max_jobs != INFINITE)
 				printf("MaxJobs=%u(%u) ",
 				       assoc_rec->max_jobs,
 				       assoc_rec->usage->used_jobs);
-			}
+			else
+				printf("MaxJobs= ");
 
-			if (assoc_rec->max_nodes_pj != INFINITE) {
-				new_line_needed = true;
+			if (assoc_rec->max_nodes_pj != INFINITE)
 				printf("MaxNodesPJ=%u ",
 				       assoc_rec->max_nodes_pj);
-			}
+			else
+				printf("MaxNodesPJ= ");
 
-			if (assoc_rec->max_submit_jobs != INFINITE) {
-				new_line_needed = true;
+			if (assoc_rec->max_submit_jobs != INFINITE)
 				printf("MaxSubmitJobs=%u(%u) ",
 				       assoc_rec->max_submit_jobs,
 				       assoc_rec->usage->used_submit_jobs);
-			}
+			else
+				printf("MaxSubmitJobs= ");
 
-			if (assoc_rec->max_wall_pj != INFINITE) {
-				new_line_needed = true;
-				printf("MaxWallPJ=%u ",
+			if (assoc_rec->max_wall_pj != INFINITE)
+				printf("MaxWallPJ=%u",
 				       assoc_rec->max_wall_pj);
-			}
+			else
+				printf("MaxWallPJ=");
 
 			/* NEW LINE */
-			if (new_line_needed) {
-				new_line_needed = false;
-				printf("%s", new_line_char);
-			}
+			printf("%s", new_line_char);
 
-			if (assoc_rec->grp_tres) {
+			if (assoc_rec->max_tres_pj)
 				printf("MaxTRESPJ=%s%s",
-				       assoc_rec->grp_tres,
+				       assoc_rec->max_tres_pj,
 				       new_line_char);
-			}
+			else
+				printf("MaxTRESPJ=%s", new_line_char);
 
-			if (assoc_rec->grp_tres_mins) {
-				printf("MaxTRESMinsPJ=%s%s",
-				       assoc_rec->grp_tres_mins,
-				       new_line_char);
-			}
+			if (assoc_rec->max_tres_mins_pj)
+				printf("MaxTRESMinsPJ=%s\n",
+				       assoc_rec->max_tres_mins_pj);
+			else
+				printf("MaxTRESMinsPJ=\n");
 		}
 	}
 }
