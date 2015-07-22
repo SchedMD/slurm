@@ -2993,7 +2993,7 @@ extern int assoc_mgr_info_unpack_msg(
 		object_ptr->assoc_list =
 			list_create(slurmdb_destroy_assoc_rec);
 		for (i=0; i<count; i++) {
-			if (slurmdb_unpack_assoc_rec(
+			if (slurmdb_unpack_assoc_rec_with_usage(
 				    (void *)&assoc_rec, protocol_version,
 				    buffer)
 			    != SLURM_SUCCESS)
