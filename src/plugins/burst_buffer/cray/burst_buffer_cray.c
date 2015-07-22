@@ -100,7 +100,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bb_state_t 	bb_state;
 static char *		state_save_loc = NULL;
 
-/* Description of each Cray bb instance entry, including persistent buffers
+/* Description of each Cray DW instance entry, including persistent buffers
  */
 typedef struct bb_instances {
 	uint32_t id;
@@ -108,7 +108,7 @@ typedef struct bb_instances {
 	char *label;
 } bb_instances_t;
 
-/* Description of each Cray bb pool entry
+/* Description of each Cray DW pool entry
  */
 typedef struct bb_pools {
 	char *id;
@@ -117,6 +117,13 @@ typedef struct bb_pools {
 	uint64_t quantity;
 	uint64_t free;
 } bb_pools_t;
+
+/* Description of each Cray DW pool entry
+ */
+typedef struct bb_sessions {
+	uint32_t id;
+	uint32_t user_id;
+} bb_sessions_t;
 
 typedef struct {
 	uint32_t job_id;
@@ -136,10 +143,13 @@ static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
 static void	_bb_free_instances(bb_instances_t *ents, int num_ent);
 static void	_bb_free_pools(bb_pools_t *ents, int num_ent);
+static void	_bb_free_sessions(bb_sessions_t *ents, int num_ent);
 static bb_instances_t *
 		_bb_get_instances(int *num_ent, bb_state_t *state_ptr);
 static bb_pools_t *
 		_bb_get_pools(int *num_ent, bb_state_t *state_ptr);
+static bb_sessions_t *
+		_bb_get_sessions(int *num_ent, bb_state_t *state_ptr);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
 static void	_free_script_argv(char **script_argv);
@@ -151,9 +161,14 @@ static bb_instances_t *
 					    int *num);
 static struct bb_pools *
 		_json_parse_pools_array(json_object *jobj, char *key, int *num);
+static struct bb_sessions *
+		_json_parse_sessions_array(json_object *jobj, char *key,
+					   int *num);
 static void	_json_parse_instances_object(json_object *jobj,
 					     bb_instances_t *ent);
 static void	_json_parse_pools_object(json_object *jobj, bb_pools_t *ent);
+static void	_json_parse_sessions_object(json_object *jobj,
+					    bb_sessions_t *ent);
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
@@ -504,8 +519,9 @@ static void _load_state(void)
 	burst_buffer_gres_t *gres_ptr;
 	bb_instances_t *instances;
 	bb_pools_t *pools;
-	int num_instances = 0, num_pools = 0;
-	int i;
+	bb_sessions_t *sessions;
+	int num_instances = 0, num_pools = 0, num_sessions = 0;
+	int i, j;
 static bool first_load = true;
 //FIXME: Need logic to handle resource allocation/free in progress
 if (!first_load) return;
@@ -516,7 +532,7 @@ first_load = false;
 	 */
 	pools = _bb_get_pools(&num_pools, &bb_state);
 	if (pools == NULL) {
-		error("%s: failed to be DataWarp entries, what now?",
+		error("%s: failed to find DataWarp entries, what now?",
 		      __func__);
 		return;
 	}
@@ -558,18 +574,24 @@ first_load = false;
 	 */
 	instances = _bb_get_instances(&num_instances, &bb_state);
 	if (instances == NULL) {
-		error("%s: failed to be DataWarp instances, what now?",
-		      __func__);
+		info("%s: failed to find DataWarp instances", __func__);
 		return;
 	}
+	sessions = _bb_get_sessions(&num_sessions, &bb_state);
 	for (i = 0; i < num_instances; i++) {
-//FIXME: where to get user ID? Not in current JSON
 		bb_alloc_t *cur_alloc;
 		uint32_t user_id = 0;
+		for (j = 0; j < num_sessions; j++) {
+			if (instances[i].id == sessions[j].id) {
+				user_id = sessions[j].user_id;
+				break;
+			}
+		}
 		cur_alloc = bb_alloc_name_rec(&bb_state, instances[i].label,
 					      user_id);
 		cur_alloc->size = instances[i].bytes;
 	}
+	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
 }
 
@@ -2455,8 +2477,8 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
  *
  * Handle the JSON stream with instance info (resource reservations).
  */
-static
-bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
+static bb_instances_t *
+_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 {
 	bb_instances_t *ents = NULL;
 	json_object *j;
@@ -2479,8 +2501,8 @@ bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
 	if (string == NULL) {
-		error("%s: %s returned no instances",
-		      __func__, state_ptr->bb_config.get_sys_state);
+		info("%s: %s returned no instances",
+		     __func__, state_ptr->bb_config.get_sys_state);
 		_free_script_argv(script_argv);
 		return ents;
 	}
@@ -2509,8 +2531,8 @@ bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
  *
  * Handle the JSON stream with resource pool info (available resource type).
  */
-static
-bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
+static bb_pools_t *
+_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 {
 	bb_pools_t *ents = NULL;
 	json_object *j;
@@ -2559,10 +2581,60 @@ bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	return ents;
 }
 
+static bb_sessions_t *
+_bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
+{
+	bb_sessions_t *ents = NULL;
+	json_object *j;
+	json_object_iter iter;
+	int status = 0;
+	DEF_TIMERS;
+	char *string;
+	char **script_argv;
+
+	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("show_sessions");
+
+	START_TIMER;
+	string = bb_run_script("show_sessions",
+			       state_ptr->bb_config.get_sys_state,
+			       script_argv, 3000, &status);
+	END_TIMER;
+	if (bb_state.bb_config.debug_flag)
+		debug("%s: show_sessions ran for %s", __func__, TIME_STR);
+	if (string == NULL) {
+		info("%s: %s returned no sessions",
+		     __func__, state_ptr->bb_config.get_sys_state);
+		_free_script_argv(script_argv);
+		return ents;
+	}
+	_free_script_argv(script_argv);
+
+	if (bb_state.bb_config.debug_flag)
+		info("%s: sessions: %s", __func__, string);
+	_python2json(string);
+	j = json_tokener_parse(string);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, string);
+		xfree(string);
+		return ents;
+	}
+	xfree(string);
+
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_sessions_array(j, iter.key, num_ent);
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	return ents;
+}
+
 /* _bb_free_instances()
  */
-static
-void _bb_free_instances(bb_instances_t *ents, int num_ent)
+static void
+_bb_free_instances(bb_instances_t *ents, int num_ent)
 {
 	int i;
 
@@ -2575,8 +2647,8 @@ void _bb_free_instances(bb_instances_t *ents, int num_ent)
 
 /* _bb_free_pools()
  */
-static
-void _bb_free_pools(bb_pools_t *ents, int num_ent)
+static void
+_bb_free_pools(bb_pools_t *ents, int num_ent)
 {
 	int i;
 
@@ -2585,6 +2657,14 @@ void _bb_free_pools(bb_pools_t *ents, int num_ent)
 		xfree(ents[i].units);
 	}
 
+	xfree(ents);
+}
+
+/* _bb_free_sessions()
+ */
+static void
+_bb_free_sessions(bb_sessions_t *ents, int num_ent)
+{
 	xfree(ents);
 }
 
@@ -2631,6 +2711,30 @@ _json_parse_pools_array(json_object *jobj, char *key, int *num)
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_pools_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+/* _json_parse_sessions_array()
+ */
+static bb_sessions_t *
+_json_parse_sessions_array(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	bb_sessions_t *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(bb_pools_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_sessions_object(jvalue, &ents[i]);
 	}
 
 	return ents;
@@ -2720,6 +2824,32 @@ _json_parse_pools_object(json_object *jobj, bb_pools_t *ent)
 					ent->id = xstrdup(p);
 				} else if (strcmp(iter.key, "units") == 0) {
 					ent->units = xstrdup(p);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+/* _json_parse_session_object()
+ */
+static void
+_json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "id") == 0) {
+					ent->id = x;
+				} else if (strcmp(iter.key, "owner") == 0) {
+					ent->user_id = x;
 				}
 				break;
 			default:
