@@ -44,10 +44,6 @@
 #include "xmalloc.h"
 #include "xstring.h"
 
-extern void slurmdb_pack_user_defs(void *in,
-				   uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_user_defs(void **object,
-				    uint16_t rpc_version, Buf buffer);
 extern void slurmdb_pack_user_rec(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_user_rec(void **object,
@@ -85,6 +81,15 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 					    Buf buffer);
 extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
 				    Buf buffer);
+extern void slurmdb_pack_assoc_usage(void *in, uint16_t rpc_version,
+				     Buf buffer);
+extern int slurmdb_unpack_assoc_usage(void **object, uint16_t rpc_version,
+				      Buf buffer);
+extern void slurmdb_pack_assoc_rec_with_usage(void *in, uint16_t rpc_version,
+					      Buf buffer);
+extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
+					       uint16_t rpc_version,
+					       Buf buffer);
 extern void slurmdb_pack_event_rec(void *in,
 				   uint16_t rpc_version,
 				   Buf buffer);
