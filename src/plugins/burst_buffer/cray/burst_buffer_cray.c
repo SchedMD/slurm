@@ -100,7 +100,15 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bb_state_t 	bb_state;
 static char *		state_save_loc = NULL;
 
-/* Description of each Cray bb entry
+/* Description of each Cray bb instance entry, including persistent buffers
+ */
+typedef struct bb_instances {
+	uint32_t id;
+	uint32_t bytes;
+	char *label;
+} bb_instances_t;
+
+/* Description of each Cray bb pool entry
  */
 typedef struct bb_pools {
 	char *id;
@@ -126,7 +134,10 @@ typedef struct {		/* Used for scheduling */
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
-static void	_bb_free_pools(struct bb_pools *ents, int num_ent);
+static void	_bb_free_instances(bb_instances_t *ents, int num_ent);
+static void	_bb_free_pools(bb_pools_t *ents, int num_ent);
+static bb_instances_t *
+		_bb_get_instances(int *num_ent, bb_state_t *state_ptr);
 static bb_pools_t *
 		_bb_get_pools(int *num_ent, bb_state_t *state_ptr);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
@@ -135,10 +146,14 @@ static void	_free_script_argv(char **script_argv);
 static bb_job_t *
 		_get_bb_spec(struct job_record *job_ptr);
 static void	_job_queue_del(void *x);
+static bb_instances_t *
+		_json_parse_instances_array(json_object *jobj, char *key,
+					    int *num);
 static struct bb_pools *
 		_json_parse_pools_array(json_object *jobj, char *key, int *num);
-static void	_json_parse_pools_object(json_object *jobj,
-					 struct bb_pools *ent);
+static void	_json_parse_instances_object(json_object *jobj,
+					     bb_instances_t *ent);
+static void	_json_parse_pools_object(json_object *jobj, bb_pools_t *ent);
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
@@ -487,37 +502,38 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 static void _load_state(void)
 {
 	burst_buffer_gres_t *gres_ptr;
-	bb_pools_t *ents;
-	int num_ents = 0;
+	bb_instances_t *instances;
+	bb_pools_t *pools;
+	int num_instances = 0, num_pools = 0;
 	int i;
 static bool first_load = true;
 //FIXME: Need logic to handle resource allocation/free in progress
 if (!first_load) return;
 first_load = false;
 
-	bb_state.last_load_time = time(NULL);
-	ents = _bb_get_pools(&num_ents, &bb_state);
-	if (ents == NULL) {
-		error("%s: failed to be burst buffer entries, what now?",
+	/*
+	 * Load the pools information
+	 */
+	pools = _bb_get_pools(&num_pools, &bb_state);
+	if (pools == NULL) {
+		error("%s: failed to be DataWarp entries, what now?",
 		      __func__);
 		return;
 	}
 
-	for (i = 0; i < num_ents; i++) {
+	for (i = 0; i < num_pools; i++) {
 		/* ID: "bytes" */
-		if (strcmp(ents[i].id, bb_state.bb_config.default_pool) == 0) {
+		if (strcmp(pools[i].id, bb_state.bb_config.default_pool) == 0) {
 			bb_state.bb_config.granularity
-				= ents[i].granularity;
+				= pools[i].granularity;
 			bb_state.total_space
-				= ents[i].quantity * ents[i].granularity;
+				= pools[i].quantity * pools[i].granularity;
 			bb_state.used_space
-				= (ents[i].quantity - ents[i].free) *
-				  ents[i].granularity;
+				= (pools[i].quantity - pools[i].free) *
+				  pools[i].granularity;
 			xassert(bb_state.used_space >= 0);
 
-			/* Everything else is a burst buffer
-			 * generic resource (gres)
-			 */
+			/* Everything else is a generic burst buffer resource */
 			bb_state.bb_config.gres_cnt = 0;
 			continue;
 		}
@@ -529,12 +545,32 @@ first_load = false;
 		gres_ptr = bb_state.bb_config.gres_ptr +
 			   bb_state.bb_config.gres_cnt;
 		bb_state.bb_config.gres_cnt++;
-		gres_ptr->avail_cnt = ents[i].quantity;
-		gres_ptr->granularity = ents[i].granularity;
-		gres_ptr->name = xstrdup(ents[i].id);
-		gres_ptr->used_cnt = ents[i].quantity - ents[i].free;
+		gres_ptr->avail_cnt = pools[i].quantity;
+		gres_ptr->granularity = pools[i].granularity;
+		gres_ptr->name = xstrdup(pools[i].id);
+		gres_ptr->used_cnt = pools[i].quantity - pools[i].free;
 	}
-	_bb_free_pools(ents, num_ents);
+	_bb_free_pools(pools, num_pools);
+	bb_state.last_load_time = time(NULL);
+
+	/*
+	 * Load the pools information
+	 */
+	instances = _bb_get_instances(&num_instances, &bb_state);
+	if (instances == NULL) {
+		error("%s: failed to be DataWarp instances, what now?",
+		      __func__);
+		return;
+	}
+	for (i = 0; i < num_instances; i++) {
+//FIXME: where to get user ID? Not in current JSON
+		bb_alloc_t *cur_alloc;
+		uint32_t user_id = 0;
+		cur_alloc = bb_alloc_name_rec(&bb_state, instances[i].label,
+					      user_id);
+		cur_alloc->size = instances[i].bytes;
+	}
+	_bb_free_instances(instances, num_instances);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -2415,14 +2451,63 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* _bb_get_instances()
+ *
+ * Handle the JSON stream with instance info (resource reservations).
+ */
+static
+bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
+{
+	bb_instances_t *ents = NULL;
+	json_object *j;
+	json_object_iter iter;
+	int status = 0;
+	DEF_TIMERS;
+	char *string;
+	char **script_argv;
+
+	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("show_instances");
+
+	START_TIMER;
+	string = bb_run_script("show_instances",
+			       state_ptr->bb_config.get_sys_state,
+			       script_argv, 3000, &status);
+	END_TIMER;
+	if (bb_state.bb_config.debug_flag)
+		debug("%s: show_instances ran for %s", __func__, TIME_STR);
+	if (string == NULL) {
+		error("%s: %s returned no instances",
+		      __func__, state_ptr->bb_config.get_sys_state);
+		_free_script_argv(script_argv);
+		return ents;
+	}
+	_free_script_argv(script_argv);
+
+	if (bb_state.bb_config.debug_flag)
+		info("%s: instances: %s", __func__, string);
+	_python2json(string);
+	j = json_tokener_parse(string);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, string);
+		xfree(string);
+		return ents;
+	}
+	xfree(string);
+
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_instances_array(j, iter.key, num_ent);
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	return ents;
+}
+
 /* _bb_get_pools()
  *
- * This little parser handles the json stream
- * coming from the cray comamnd describing the
- * pools of burst buffers. The json stream is like
- * this { "pools": [ {}, .... {} ] } key pools
- * and an array of objects describing each pool.
- * The objects have only string and int types (for now).
+ * Handle the JSON stream with resource pool info (available resource type).
  */
 static
 bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
@@ -2474,10 +2559,24 @@ bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	return ents;
 }
 
+/* _bb_free_instances()
+ */
+static
+void _bb_free_instances(bb_instances_t *ents, int num_ent)
+{
+	int i;
+
+	for (i = 0; i < num_ent; i++) {
+		xfree(ents[i].label);
+	}
+
+	xfree(ents);
+}
+
 /* _bb_free_pools()
  */
 static
-void _bb_free_pools(struct bb_pools *ents, int num_ent)
+void _bb_free_pools(bb_pools_t *ents, int num_ent)
 {
 	int i;
 
@@ -2489,21 +2588,45 @@ void _bb_free_pools(struct bb_pools *ents, int num_ent)
 	xfree(ents);
 }
 
-/* _json_parse_pools_array()
+/* _json_parse_instances_array()
  */
-static struct bb_pools *
-_json_parse_pools_array(json_object *jobj, char *key, int *num)
+static bb_instances_t *
+_json_parse_instances_array(json_object *jobj, char *key, int *num)
 {
 	json_object *jarray;
 	int i;
 	json_object *jvalue;
-	struct bb_pools *ents;
+	bb_instances_t *ents;
 
 	jarray = jobj;
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(struct bb_pools));
+	ents = xmalloc(*num * sizeof(bb_instances_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_instances_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+/* _json_parse_pools_array()
+ */
+static bb_pools_t *
+_json_parse_pools_array(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	bb_pools_t *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(bb_pools_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
@@ -2513,10 +2636,30 @@ _json_parse_pools_array(json_object *jobj, char *key, int *num)
 	return ents;
 }
 
-/* _json_parse_pools_object()
+static void
+_parse_instance_capacity(json_object *instance, bb_instances_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int x;
+
+	json_object_object_foreachC(instance, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (!strcmp(iter.key, "bytes"))
+					ent->bytes = x;
+				break;
+			default:
+				break;
+		}
+	}
+}
+/* _json_parse_instances_object()
  */
 static void
-_json_parse_pools_object(json_object *jobj, struct bb_pools *ent)
+_json_parse_instances_object(json_object *jobj, bb_instances_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
@@ -2524,15 +2667,43 @@ _json_parse_pools_object(json_object *jobj, struct bb_pools *ent)
 	const char *p;
 
 	json_object_object_foreachC(jobj, iter) {
-
 		type = json_object_get_type(iter.val);
 		switch (type) {
-			case json_type_boolean:
-			case json_type_double:
-			case json_type_null:
 			case json_type_object:
-			case json_type_array:
+				if (strcmp(iter.key, "capacity") == 0)
+					_parse_instance_capacity(iter.val, ent);
 				break;
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "id") == 0) {
+					ent->id = x;
+				}
+				break;
+			case json_type_string:
+				p = json_object_get_string(iter.val);
+				if (strcmp(iter.key, "label") == 0) {
+					ent->label = xstrdup(p);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+/* _json_parse_pools_object()
+ */
+static void
+_json_parse_pools_object(json_object *jobj, bb_pools_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
 			case json_type_int:
 				x = json_object_get_int64(iter.val);
 				if (strcmp(iter.key, "granularity") == 0) {
@@ -2550,6 +2721,8 @@ _json_parse_pools_object(json_object *jobj, struct bb_pools *ent)
 				} else if (strcmp(iter.key, "units") == 0) {
 					ent->units = xstrdup(p);
 				}
+				break;
+			default:
 				break;
 		}
 	}
