@@ -300,6 +300,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("GraceTime");
 		field->len = 10;
 		field->print_routine = print_fields_time_from_secs;
+	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 7)) ||
+		   !strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPT;
+		field->name = xstrdup("GrpTRES");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7)) ||
 		   !strncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPTM;
@@ -311,12 +317,6 @@ static print_field_t *_get_print_field(char *object)
 				object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPTRM;
 		field->name = xstrdup("GrpTRESRunMins");
-		field->len = 13;
-		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 7)) ||
-		   !strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
-		field->type = PRINT_GRPT;
-		field->name = xstrdup("GrpTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("GrpJobs", object, MAX(command_len, 4))) {
@@ -364,6 +364,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ServerType");
 		field->len = 10;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7)) ||
+		   !strncasecmp("MaxTRESPerJob", object, MAX(command_len, 7))) {
+		field->type = PRINT_MAXT;
+		field->name = xstrdup("MaxTRES");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
 				MAX(command_len, 7)) ||
 		   !strncasecmp("MaxTRESMinsPerJob", object,
@@ -379,12 +385,6 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
-		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7)) ||
-		   !strncasecmp("MaxTRESPerJob", object, MAX(command_len, 8))) {
-		field->type = PRINT_MAXT;
-		field->name = xstrdup("MaxTRES");
-		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxCPUsPerUser", object,
 				MAX(command_len, 11)) ||
