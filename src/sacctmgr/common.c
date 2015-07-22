@@ -1499,6 +1499,9 @@ extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 	print_this = slurmdb_make_tres_string_from_simple(
 		tres_simple_str, g_tres_list);
 
+	if (!print_this)
+		print_this = xstrdup("");
+
 	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	    && last)
 		printf("%s", print_this);
