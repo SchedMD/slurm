@@ -1766,12 +1766,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				 * slurmdb_combine_tres_strings will
 				 * do this for us below.
 				 */
-				alt_assoc.max_tres_pj =
-					row2[ASSOC2_REQ_MTPJ];
-				alt_assoc.max_tres_mins_pj =
-					row2[ASSOC2_REQ_MTMPJ];
-				alt_assoc.max_tres_run_mins =
-					row2[ASSOC2_REQ_MTRM];
+				if (row2[ASSOC2_REQ_MTPJ][0])
+					alt_assoc.max_tres_pj =
+						row2[ASSOC2_REQ_MTPJ];
+				if (row2[ASSOC2_REQ_MTMPJ][0])
+					alt_assoc.max_tres_mins_pj =
+						row2[ASSOC2_REQ_MTMPJ];
+				if (row2[ASSOC2_REQ_MTRM][0])
+					alt_assoc.max_tres_run_mins =
+						row2[ASSOC2_REQ_MTRM];
 			}
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -2316,9 +2319,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->grp_wall = INFINITE;
 
-		assoc->grp_tres = xstrdup(row[ASSOC_REQ_GT]);
-		assoc->grp_tres_mins = xstrdup(row[ASSOC_REQ_GTM]);
-		assoc->grp_tres_run_mins = xstrdup(row[ASSOC_REQ_GTRM]);
+		if (row[ASSOC_REQ_GT][0])
+			assoc->grp_tres = xstrdup(row[ASSOC_REQ_GT]);
+		if (row[ASSOC_REQ_GTM][0])
+			assoc->grp_tres_mins = xstrdup(row[ASSOC_REQ_GTM]);
+		if (row[ASSOC_REQ_GTRM][0])
+			assoc->grp_tres_run_mins = xstrdup(row[ASSOC_REQ_GTRM]);
 
 		parent_acct = row[ASSOC_REQ_ACCT];
 		if (!without_parent_info
@@ -2453,13 +2459,13 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->max_wall_pj = parent_mwpj;
 
-		if (row[ASSOC_REQ_MTPJ])
+		if (row[ASSOC_REQ_MTPJ][0])
 			assoc->max_tres_pj = xstrdup(row[ASSOC_REQ_MTPJ]);
 
-		if (row[ASSOC_REQ_MTMPJ])
+		if (row[ASSOC_REQ_MTMPJ][0])
 			assoc->max_tres_mins_pj = xstrdup(row[ASSOC_REQ_MTMPJ]);
 
-		if (row[ASSOC_REQ_MTRM])
+		if (row[ASSOC_REQ_MTRM][0])
 			assoc->max_tres_run_mins = xstrdup(row[ASSOC_REQ_MTRM]);
 
 		/* For the tres limits we just concatted the limits going up
