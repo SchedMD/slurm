@@ -555,10 +555,6 @@ struct slurmdb_assoc_usage {
 	 * they need without having to modify this struct; it would also save
 	 * space.
 	 */
-	unsigned active_seqno;  /* Sequence number for identifying
-				 * active associations
-				 * (DON'T PACK for state file) */
-
 	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
 				 * compared to the association's siblings
 				 * (DON'T PACK for state file) */
