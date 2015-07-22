@@ -102,13 +102,13 @@ static char *		state_save_loc = NULL;
 
 /* Description of each Cray bb entry
  */
-typedef struct bb_entry {
+typedef struct bb_pools {
 	char *id;
 	char *units;
 	uint64_t granularity;
 	uint64_t quantity;
 	uint64_t free;
-} bb_entry_t;
+} bb_pools_t;
 
 typedef struct {
 	uint32_t job_id;
@@ -126,18 +126,19 @@ typedef struct {		/* Used for scheduling */
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
-static bb_entry_t *
-		_bb_entry_get(int *num_ent, bb_state_t *state_ptr);
-static void	_bb_free_entry(struct bb_entry *ents, int num_ent);
+static void	_bb_free_pools(struct bb_pools *ents, int num_ent);
+static bb_pools_t *
+		_bb_get_pools(int *num_ent, bb_state_t *state_ptr);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static void	_del_bb_spec(bb_job_t *bb_spec);
 static void	_free_script_argv(char **script_argv);
 static bb_job_t *
 		_get_bb_spec(struct job_record *job_ptr);
 static void	_job_queue_del(void *x);
-static struct bb_entry *
-		_json_parse_array(json_object *jobj, char *key, int *num);
-static void	_json_parse_object(json_object *jobj, struct bb_entry *ent);
+static struct bb_pools *
+		_json_parse_pools_array(json_object *jobj, char *key, int *num);
+static void	_json_parse_pools_object(json_object *jobj,
+					 struct bb_pools *ent);
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
@@ -486,7 +487,7 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 static void _load_state(void)
 {
 	burst_buffer_gres_t *gres_ptr;
-	bb_entry_t *ents;
+	bb_pools_t *ents;
 	int num_ents = 0;
 	int i;
 static bool first_load = true;
@@ -495,7 +496,7 @@ if (!first_load) return;
 first_load = false;
 
 	bb_state.last_load_time = time(NULL);
-	ents = _bb_entry_get(&num_ents, &bb_state);
+	ents = _bb_get_pools(&num_ents, &bb_state);
 	if (ents == NULL) {
 		error("%s: failed to be burst buffer entries, what now?",
 		      __func__);
@@ -533,7 +534,7 @@ first_load = false;
 		gres_ptr->name = xstrdup(ents[i].id);
 		gres_ptr->used_cnt = ents[i].quantity - ents[i].free;
 	}
-	_bb_free_entry(ents, num_ents);
+	_bb_free_pools(ents, num_ents);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -2414,7 +2415,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* bb_entry_get()
+/* _bb_get_pools()
  *
  * This little parser handles the json stream
  * coming from the cray comamnd describing the
@@ -2424,9 +2425,9 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
  * The objects have only string and int types (for now).
  */
 static
-bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
+bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 {
-	bb_entry_t *ents = NULL;
+	bb_pools_t *ents = NULL;
 	json_object *j;
 	json_object_iter iter;
 	int status = 0;
@@ -2466,17 +2467,17 @@ bb_entry_t *_bb_entry_get(int *num_ent, bb_state_t *state_ptr)
 	xfree(string);
 
 	json_object_object_foreachC(j, iter) {
-		ents = _json_parse_array(j, iter.key, num_ent);
+		ents = _json_parse_pools_array(j, iter.key, num_ent);
 	}
 	json_object_put(j);	/* Frees json memory */
 
 	return ents;
 }
 
-/* bb_free_entry()
+/* _bb_free_pools()
  */
 static
-void _bb_free_entry(struct bb_entry *ents, int num_ent)
+void _bb_free_pools(struct bb_pools *ents, int num_ent)
 {
 	int i;
 
@@ -2488,34 +2489,34 @@ void _bb_free_entry(struct bb_entry *ents, int num_ent)
 	xfree(ents);
 }
 
-/* json_parse_array()
+/* _json_parse_pools_array()
  */
-static struct bb_entry *
-_json_parse_array(json_object *jobj, char *key, int *num)
+static struct bb_pools *
+_json_parse_pools_array(json_object *jobj, char *key, int *num)
 {
 	json_object *jarray;
 	int i;
 	json_object *jvalue;
-	struct bb_entry *ents;
+	struct bb_pools *ents;
 
 	jarray = jobj;
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(struct bb_entry));
+	ents = xmalloc(*num * sizeof(struct bb_pools));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
-		_json_parse_object(jvalue, &ents[i]);
+		_json_parse_pools_object(jvalue, &ents[i]);
 	}
 
 	return ents;
 }
 
-/* json_parse_object()
+/* _json_parse_pools_object()
  */
 static void
-_json_parse_object(json_object *jobj, struct bb_entry *ent)
+_json_parse_pools_object(json_object *jobj, struct bb_pools *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
