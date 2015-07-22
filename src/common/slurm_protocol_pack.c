@@ -13443,8 +13443,8 @@ unpack_error:
  */
 static void
 _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
-				  Buf buffer,
-				  uint16_t protocol_version)
+				 Buf buffer,
+				 uint16_t protocol_version)
 {
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
