@@ -47,8 +47,6 @@
 #include "src/common/slurm_priority.h"
 #include "src/slurmdbd/read_config.h"
 
-#define ASSOC_USAGE_VERSION 1
-
 #define ASSOC_HASH_SIZE 1000
 #define ASSOC_HASH_ID_INX(_assoc_id)	(_assoc_id % ASSOC_HASH_SIZE)
 
@@ -4585,7 +4583,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	buffer = init_buf(high_buffer_size);
 	/* write header: version, time */
-	pack16(ASSOC_USAGE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_assoc_list) {
@@ -4597,10 +4595,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 				continue;
 
 			pack32(assoc->id, buffer);
-			/* we only care about the main part here so
-			   anything under 1 we are dropping
-			*/
-			pack64((uint64_t)assoc->usage->usage_raw, buffer);
+			packlongdouble(assoc->usage->usage_raw, buffer);
 			pack32(assoc->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -4654,7 +4649,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	buffer = init_buf(high_buffer_size);
 	/* write header: version, time */
-	pack16(ASSOC_USAGE_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	if (assoc_mgr_qos_list) {
@@ -4663,10 +4658,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		itr = list_iterator_create(assoc_mgr_qos_list);
 		while ((qos = list_next(itr))) {
 			pack32(qos->id, buffer);
-			/* we only care about the main part here so
-			   anything under 1 we are dropping
-			*/
-			pack64((uint64_t)qos->usage->usage_raw, buffer);
+			packlongdouble(qos->usage->usage_raw, buffer);
 			pack32(qos->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -4772,11 +4764,14 @@ extern int load_assoc_usage(char *state_save_location)
 	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
-	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver != ASSOC_USAGE_VERSION) {
+	debug3("Version in assoc_usage header is %u", ver);
+	/* We used to pack 1 here for the version, so we can't use
+	 * SLURM_MIN_PROTOCOL_VERSION to check until 2 versions after 15.08. */
+	if (ver > SLURM_PROTOCOL_VERSION) {
 		error("***********************************************");
-		error("Can not recover usage_mgr state, incompatible version, "
-		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
+		error("Can not recover assoc_usage state, "
+		      "incompatible version, got %u need > %u <= %u", ver,
+		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);
@@ -4788,12 +4783,20 @@ extern int load_assoc_usage(char *state_save_location)
 	while (remaining_buf(buffer) > 0) {
 		uint32_t assoc_id = 0;
 		uint32_t grp_used_wall = 0;
-		uint64_t usage_raw = 0;
+		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
 
-		safe_unpack32(&assoc_id, buffer);
-		safe_unpack64(&usage_raw, buffer);
-		safe_unpack32(&grp_used_wall, buffer);
+		if (ver == SLURM_15_08_PROTOCOL_VERSION) {
+			safe_unpack32(&assoc_id, buffer);
+			safe_unpacklongdouble(&usage_raw, buffer);
+			safe_unpack32(&grp_used_wall, buffer);
+		} else {
+			uint64_t tmp64;
+			safe_unpack32(&assoc_id, buffer);
+			safe_unpack64(&tmp64, buffer);
+			safe_unpack32(&grp_used_wall, buffer);
+			usage_raw = (long double)tmp64;
+		}
 		assoc = _find_assoc_rec_id(assoc_id);
 
 		/* We want to do this all the way up to and including
@@ -4808,7 +4811,7 @@ extern int load_assoc_usage(char *state_save_location)
 
 		while (assoc) {
 			assoc->usage->grp_used_wall += grp_used_wall;
-			assoc->usage->usage_raw += (long double)usage_raw;
+			assoc->usage->usage_raw += usage_raw;
 
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
@@ -4876,11 +4879,14 @@ extern int load_qos_usage(char *state_save_location)
 	buffer = create_buf(data, data_size);
 
 	safe_unpack16(&ver, buffer);
-	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver != ASSOC_USAGE_VERSION) {
+	debug3("Version in qos_usage header is %u", ver);
+	/* We used to pack 1 here for the version, so we can't use
+	 * SLURM_MIN_PROTOCOL_VERSION to check until 2 versions after 15.08. */
+	if (ver > SLURM_PROTOCOL_VERSION) {
 		error("***********************************************");
-		error("Can not recover usage_mgr state, incompatible version, "
-		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
+		error("Can not recover qos_usage state, "
+		      "incompatible version, got %u need > %u <= %u", ver,
+		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);
@@ -4893,18 +4899,26 @@ extern int load_qos_usage(char *state_save_location)
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
 		uint32_t grp_used_wall = 0;
-		uint64_t usage_raw = 0;
+		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
 
-		safe_unpack32(&qos_id, buffer);
-		safe_unpack64(&usage_raw, buffer);
-		safe_unpack32(&grp_used_wall, buffer);
+		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
+			safe_unpack32(&qos_id, buffer);
+			safe_unpacklongdouble(&usage_raw, buffer);
+			safe_unpack32(&grp_used_wall, buffer);
+		} else {
+			uint64_t tmp64 = 0;
+			safe_unpack32(&qos_id, buffer);
+			safe_unpack64(&tmp64, buffer);
+			safe_unpack32(&grp_used_wall, buffer);
+			usage_raw = (long double)tmp64;
+		}
 		while ((qos = list_next(itr)))
 			if (qos->id == qos_id)
 				break;
 		if (qos) {
 			qos->usage->grp_used_wall = grp_used_wall;
-			qos->usage->usage_raw = (long double)usage_raw;
+			qos->usage->usage_raw = usage_raw;
 		}
 
 		list_iterator_reset(itr);
@@ -4976,11 +4990,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURMDBD_MIN_VERSION) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_MIN_VERSION, SLURM_PROTOCOL_VERSION);
+		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);
