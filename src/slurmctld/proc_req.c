@@ -1962,6 +1962,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 		debug2("%s: %s %s", __func__,
 		       jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 		       TIME_STR);
+		slurmctld_diag_stats.jobs_completed++;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		(void) schedule_job_save();	/* Has own locking */
 		(void) schedule_node_save();	/* Has own locking */
@@ -5530,6 +5531,8 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 		error("%s: job_str_signal() job %s sig %d returned %s",
 		      __func__, kill->sjob_id,
 		      kill->signal, slurm_strerror(cc));
+	} else {
+		slurmctld_diag_stats.jobs_canceled++;
 	}
 
 	slurm_send_rc_msg(msg, cc);
