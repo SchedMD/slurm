@@ -70,6 +70,8 @@ strong_alias(pack_time,		slurm_pack_time);
 strong_alias(unpack_time,	slurm_unpack_time);
 strong_alias(packdouble,	slurm_packdouble);
 strong_alias(unpackdouble,	slurm_unpackdouble);
+strong_alias(packlongdouble,	slurm_packlongdouble);
+strong_alias(unpacklongdouble,	slurm_unpacklongdouble);
 strong_alias(pack64,		slurm_pack64);
 strong_alias(unpack64,		slurm_unpack64);
 strong_alias(pack32,		slurm_pack32);
@@ -208,6 +210,7 @@ int unpack_time(time_t * valp, Buf buffer)
  * Given a double, multiple by FLOAT_MULT and then
  * typecast to a uint64_t in host byte order, convert to network byte order
  * store in buffer, and adjust buffer counters.
+ * NOTE: There is an IEEE standard format for double.
  */
 void 	packdouble(double val, Buf buffer)
 {
@@ -240,6 +243,7 @@ void 	packdouble(double val, Buf buffer)
  * Given a buffer containing a network byte order 64-bit integer,
  * typecast as double, and  divide by FLOAT_MULT
  * store a host double at 'valp', and adjust buffer counters.
+ * NOTE: There is an IEEE standard format for double.
  */
 int	unpackdouble(double *valp, Buf buffer)
 {
@@ -258,6 +262,38 @@ int	unpackdouble(double *valp, Buf buffer)
 	uval.u = NTOH_uint64(nl);
 	*valp = uval.d / FLOAT_MULT;
 
+	return SLURM_SUCCESS;
+}
+
+/*
+ * long double has no standard format, so pass the data as a string
+ */
+void 	packlongdouble(long double val, Buf buffer)
+{
+	char val_str[256];
+
+	snprintf(val_str, sizeof(val_str), "%Lf", val);
+	packstr(val_str, buffer);
+}
+
+/*
+ * long double has no standard format, so pass the data as a string
+ */
+int	unpacklongdouble(long double *valp, Buf buffer)
+{
+	long double nl;
+	char *val_str = NULL;
+	uint32_t size_val_str = 0;
+	int rc;
+
+	rc = unpackmem_ptr(&val_str, &size_val_str, buffer);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	if (sscanf(val_str, "%Lf", &nl) != 1)
+		return SLURM_ERROR;
+
+	*valp = nl;
 	return SLURM_SUCCESS;
 }
 

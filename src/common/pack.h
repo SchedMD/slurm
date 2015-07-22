@@ -96,6 +96,9 @@ int	unpack_time(time_t *valp, Buf buffer);
 void 	packdouble(double val, Buf buffer);
 int	unpackdouble(double *valp, Buf buffer);
 
+void 	packlongdouble(long double val, Buf buffer);
+int	unpacklongdouble(long double *valp, Buf buffer);
+
 void 	pack64(uint64_t val, Buf buffer);
 int	unpack64(uint64_t *valp, Buf buffer);
 
@@ -152,6 +155,19 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	assert(sizeof(*valp) == sizeof(double));        \
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpackdouble(valp,buf))			\
+		goto unpack_error;			\
+} while (0)
+
+#define safe_packlongdouble(val,buf) do {		\
+	assert(sizeof(val) == sizeof(long double));   	\
+	assert(buf->magic == BUF_MAGIC);		\
+	packlongdouble(val,buf);			\
+} while (0)
+
+#define safe_unpacklongdouble(valp,buf) do {		\
+	assert(sizeof(*valp) == sizeof(long double));	\
+	assert(buf->magic == BUF_MAGIC);		\
+        if (unpacklongdouble(valp,buf))			\
 		goto unpack_error;			\
 } while (0)
 
