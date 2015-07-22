@@ -524,23 +524,28 @@ struct slurmdb_assoc_usage {
 				 * the tree (DON'T PACK for state file) */
 
 	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
-						      * parent assoc
-						      * set in slurmctld
-						      * (DON'T PACK) */
+						* parent assoc
+						* set in slurmctld
+						* (DON'T PACK) */
 
 	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
-						     * assoc if fairshare
-						     * == SLURMDB_FS_USE_PARENT
-						     * set in slurmctld
-						     * (DON'T PACK) */
+					       * assoc if fairshare
+					       * == SLURMDB_FS_USE_PARENT
+					       * set in slurmctld
+					       * (DON'T PACK) */
 
-	double shares_norm;     /* normalized shares (DON'T PACK for state file) */
+	double shares_norm;     /* normalized shares
+				 * (DON'T PACK for state file) */
 
-	long double usage_efctv;/* effective, normalized usage (DON'T PACK for state file) */
-	long double usage_norm;	/* normalized usage (DON'T PACK for state file) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK for state file) */
+	long double usage_efctv;/* effective, normalized usage
+				 * (DON'T PACK for state file) */
+	long double usage_norm;	/* normalized usage
+				 * (DON'T PACK for state file) */
+	long double usage_raw;	/* measure of resource usage
+				 * (DON'T PACK for state file) */
 
-	uint32_t used_jobs;	/* count of active jobs (DON'T PACK for state file) */
+	uint32_t used_jobs;	/* count of active jobs
+				 * (DON'T PACK for state file) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK for state file) */
 
@@ -551,11 +556,12 @@ struct slurmdb_assoc_usage {
 	 * space.
 	 */
 	unsigned active_seqno;  /* Sequence number for identifying
-				 * active associations (DON'T PACK for state file) */
+				 * active associations
+				 * (DON'T PACK for state file) */
 
 	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
-				 * compared to the association's siblings (DON'T
-				 * PACK) */
+				 * compared to the association's siblings
+				 * (DON'T PACK for state file) */
 
 	bitstr_t *valid_qos;    /* qos available for this association
 				 * derived from the qos_list.
