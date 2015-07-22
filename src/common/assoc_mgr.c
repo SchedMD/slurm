@@ -4750,7 +4750,7 @@ extern int load_assoc_usage(char *state_save_location)
 			usage_raw = (long double)tmp64;
 		}
 		assoc = _find_assoc_rec_id(assoc_id);
-		info("got %Lf", usage_raw);
+
 		/* We want to do this all the way up to and including
 		   root.  This way we can keep track of how much usage
 		   has occured on the entire system and use that to
