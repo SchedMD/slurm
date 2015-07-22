@@ -221,7 +221,6 @@ static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
  * available.  Otherwise initialize the groups with initgroups().
  */
 static int _initgroups(stepd_step_rec_t *job);
-static int _get_primary_group(const char *, gid_t *);
 
 
 static stepd_step_rec_t *reattach_job;
@@ -2369,6 +2368,15 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 		strncpy (ps->saved_cwd, "/tmp", sizeof (ps->saved_cwd));
 	}
 
+#ifdef HAVE_NATIVE_CRAY
+	/* LDAP on Native Cray is not sufficiently scalable to support the
+	 * getgroups() call */
+	ps->ngids = 1;
+	if (get_list) {
+		ps->gid_list = (gid_t *) xmalloc(sizeof(gid_t));
+		ps->gid_list[0] = job->gid;
+	}
+#else
 	ps->ngids = getgroups(0, NULL);
 	if (get_list) {
 		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
@@ -2380,6 +2388,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 			return -1;
 		}
 	}
+#endif
 
 	/*
 	 * No need to drop privileges if we're not running as root
@@ -2569,12 +2578,35 @@ _become_user(stepd_step_rec_t *job, struct priv_state *ps)
 	return SLURM_SUCCESS;
 }
 
+#ifndef HAVE_NATIVE_CRAY
+/* _get_primary_group()
+ */
+static int
+_get_primary_group(const char *user, gid_t *gid)
+{
+	struct passwd pwd;
+	struct passwd *pwd0 = NULL;
+	char buf[256];
+	int cc;
+
+	cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
+	if (cc != 0) {
+		error("%s: getpwnam_r() failed: %m", __func__);
+		return -1;
+	}
+
+	*gid = pwd0->pw_gid;
+	return 0;
+}
+#endif
 
 static int
 _initgroups(stepd_step_rec_t *job)
 {
-	int rc;
+#ifndef HAVE_NATIVE_CRAY
 	gid_t primary_gid = 0;
+#endif
+	int rc;
 
 	if (job->ngids > 0) {
 		xassert(job->gids);
@@ -2594,6 +2626,9 @@ _initgroups(stepd_step_rec_t *job)
 		return -1;
 	}
 
+#ifndef HAVE_NATIVE_CRAY
+	/* LDAP on Native Cray is not sufficiently scalable to support the
+	 * getpwnam_r() call */
 	rc = _get_primary_group(job->user_name, &primary_gid);
 	if (rc < 0) {
 		error("%s: _get_primary_group() failed", __func__);
@@ -2629,29 +2664,9 @@ _initgroups(stepd_step_rec_t *job)
 			return -1;
 		}
 	}
+#endif
 	return 0;
 }
-
-/* _get_primary_group()
- */
-static int
-_get_primary_group(const char *user, gid_t *gid)
-{
-	struct passwd pwd;
-	struct passwd *pwd0 = NULL;
-	char buf[256];
-	int cc;
-
-	cc = getpwnam_r(user, &pwd, buf, sizeof(buf), &pwd0);
-	if (cc != 0) {
-		error("%s: getpwnam_r() failed: %m", __func__);
-		return -1;
-	}
-
-	*gid = pwd0->pw_gid;
-	return 0;
-}
-
 
 /*
  * Check this user's access rights to a file

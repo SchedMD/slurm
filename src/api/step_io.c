@@ -305,15 +305,16 @@ _server_read(eio_obj_t *obj, List objs)
 
 		n = io_hdr_read_fd(obj->fd, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
-
-			if (getenv("SLURM_PTY_PORT") == NULL)
-				error("\
-%s: fd %d n %d got error or unexpected eof reading header: %m",
-				      __func__, obj->fd, n);
-
-			if (s->cio->sls)
-				step_launch_notify_io_failure(s->cio->sls,
-							      s->node_id);
+			if (n < 0) { /* Error */
+				if (getenv("SLURM_PTY_PORT") == NULL) {
+					error("%s: fd %d error reading header: %m",
+					      __func__, obj->fd);
+				}
+				if (s->cio->sls) {
+					step_launch_notify_io_failure(
+						s->cio->sls, s->node_id);
+				}
+			}
 			close(obj->fd);
 			obj->fd = -1;
 			s->in_eof = true;
