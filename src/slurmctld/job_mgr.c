@@ -7106,7 +7106,8 @@ extern void job_set_tres(struct job_record *job_ptr)
 		   TRES_MEM, tres_count);
 
 	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list,
-					    cluster_tres_list, 1))) {
+					    slurmctld_tres_info.curr_tres_list,
+					    1))) {
 		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
 			   job_ptr->tres_alloc_str ? "," : "",
 			   tmp_tres_str);
