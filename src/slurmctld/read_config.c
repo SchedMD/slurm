@@ -1050,9 +1050,19 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	if (!reconfig)
+	if (!reconfig) {
 		restore_front_end_state(recover);
 
+		/* currently load/dump_state_lite has to run after
+		 * _init_tres and before load_all_job_state.
+		 */
+
+		/* load old config */
+		load_config_state_lite();
+
+		/* store new config */
+		dump_config_state_lite();
+	}
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS)

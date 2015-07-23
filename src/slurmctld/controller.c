@@ -307,12 +307,6 @@ int main(int argc, char *argv[])
 	if (daemonize)
 		_set_work_dir();
 
-	/* load old config */
-	load_config_state_lite();
-
-	/* store new config */
-	dump_config_state_lite();
-
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
 
