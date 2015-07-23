@@ -2958,9 +2958,10 @@ extern void assoc_mgr_info_get_pack_msg(
 	while ((object = list_next(itr)))
 		slurmdb_pack_user_rec(object, protocol_version, buffer);
 	list_iterator_destroy(itr);
-	list_flush(ret_list);
+//	list_flush(ret_list);
 
-	list_iterator_destroy(itr);
+	FREE_NULL_LIST(ret_list);
+
 	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
