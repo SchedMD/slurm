@@ -300,20 +300,32 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("GraceTime");
 		field->len = 10;
 		field->print_routine = print_fields_time_from_secs;
-	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 7)) ||
-		   !strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
+	} else if (!strncasecmp("GrpCPUs", object, MAX(command_len, 6))) {
+		field->type = PRINT_GRPC;
+		field->name = xstrdup("GrpCPUs");
+		field->len = 8;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPCM;
+		field->name = xstrdup("GrpCPUMins");
+		field->len = 11;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("GrpCPURunMins", object, MAX(command_len, 7))) {
+		field->type = PRINT_GRPCRM;
+		field->name = xstrdup("GrpCPURunMins");
+		field->len = 13;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("GrpTRES", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPT;
 		field->name = xstrdup("GrpTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpCPUMins", object, MAX(command_len, 7)) ||
-		   !strncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
+	} else if (!strncasecmp("GrpTRESMins", object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPTM;
 		field->name = xstrdup("GrpTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("GrpCPURunMins", object, MAX(command_len, 7)) ||
-		   !strncasecmp("GrpTRESRunMins",
+	} else if (!strncasecmp("GrpTRESRunMins",
 				object, MAX(command_len, 7))) {
 		field->type = PRINT_GRPTRM;
 		field->name = xstrdup("GrpTRESRunMins");
@@ -364,31 +376,48 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ServerType");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7)) ||
-		   !strncasecmp("MaxTRESPerJob", object, MAX(command_len, 7))) {
+	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
+				MAX(command_len, 7))) {
+		field->type = PRINT_MAXCM;
+		field->name = xstrdup("MaxCPUMins");
+		field->len = 11;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("MaxCPURunMinsPerUser",
+				object, MAX(command_len, 7))) {
+		field->type = PRINT_MAXCRM;
+		field->name = xstrdup("MaxCPURunMinsPU");
+		field->len = 15;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("MaxCPUsPerJob", object, MAX(command_len, 7))) {
+		field->type = PRINT_MAXC;
+		field->name = xstrdup("MaxCPUs");
+		field->len = 8;
+		field->print_routine = print_fields_uint64;
+	} else if (!strncasecmp("MaxCPUsPerUser", object,
+				MAX(command_len, 11))) {
+		field->type = PRINT_MAXCU;
+		field->name = xstrdup("MaxCPUsPU");
+		field->len = 9;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxTRESPerJob",
+				 object, MAX(command_len, 7))) {
 		field->type = PRINT_MAXT;
 		field->name = xstrdup("MaxTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxCPUMinsPerJob", object,
-				MAX(command_len, 7)) ||
-		   !strncasecmp("MaxTRESMinsPerJob", object,
+	} else if (!strncasecmp("MaxTRESMinsPerJob", object,
 				MAX(command_len, 8))) {
 		field->type = PRINT_MAXTM;
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxCPURunMinsPerUser",
-				object, MAX(command_len, 7)) ||
-		   !strncasecmp("MaxTRESRunMinsPerUser",
+	} else if (!strncasecmp("MaxTRESRunMinsPerUser",
 				object, MAX(command_len, 8))) {
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
 		field->print_routine = sacctmgr_print_tres;
-	} else if (!strncasecmp("MaxCPUsPerUser", object,
-				MAX(command_len, 11)) ||
-		   !strncasecmp("MaxTRESPerUser", object,
+	} else if (!strncasecmp("MaxTRESPerUser", object,
 				MAX(command_len, 11))) {
 		field->type = PRINT_MAXTU;
 		field->name = xstrdup("MaxTRESPU");
