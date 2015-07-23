@@ -97,6 +97,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 bool slurmctld_init_db = 1;
+tres_info_t slurmctld_tres_info;
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
@@ -532,6 +533,8 @@ static int _init_tres(void)
 	List char_list;
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
+	int i;
+	ListIterator itr;
 
 	if (!temp_char) {
 		error("No tres defined, this should never happen");
@@ -542,14 +545,19 @@ static int _init_tres(void)
 	slurm_addto_char_list(char_list, temp_char);
 	xfree(temp_char);
 
-	if (!list_count(char_list)) {
+	memset(&slurmctld_tres_info, 0, sizeof(tres_info_t));
+	slurmctld_tres_info.max_size = slurmctld_tres_info.curr_size =
+		list_count(char_list);
+
+	if (!slurmctld_tres_info.curr_size) {
 		FREE_NULL_LIST(char_list);
 		error("TRES list is empty, this should never happen");
 		return SLURM_ERROR;
 	}
 
-	FREE_NULL_LIST(cluster_tres_list);
-	cluster_tres_list = list_create(slurmdb_destroy_tres_rec);
+	FREE_NULL_LIST(slurmctld_tres_info.curr_tres_list);
+	slurmctld_tres_info.curr_tres_list =
+		list_create(slurmdb_destroy_tres_rec);
 	while ((temp_char = list_pop(char_list))) {
 		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
 
@@ -577,8 +585,9 @@ static int _init_tres(void)
 				      "You gave %s",
 				      temp_char);
 		} else {
-			fatal("%s: Unknown tres type '%s', acceptable types are "
-			      "CPU,Gres/,License/,Mem", __func__, temp_char);
+			fatal("%s: Unknown tres type '%s', acceptable "
+			      "types are CPU,Gres/,License/,Mem",
+			      __func__, temp_char);
 			xfree(tres_rec->type);
 			xfree(tres_rec);
 		}
@@ -596,7 +605,8 @@ static int _init_tres(void)
 			     tres_rec->name ? tres_rec->name : "");
 			list_append(add_list, tres_rec);
 		} else
-			list_append(cluster_tres_list, tres_rec);
+			list_append(slurmctld_tres_info.curr_tres_list,
+				    tres_rec);
 	}
 
 	if (add_list) {
@@ -623,11 +633,21 @@ static int _init_tres(void)
 				      tres_rec->name ? "/" : "",
 				      tres_rec->name ? tres_rec->name : "");
 			} else
-				list_append(cluster_tres_list, tres_rec);
+				list_append(slurmctld_tres_info.curr_tres_list,
+					    tres_rec);
 		}
 	}
 
-	list_sort(cluster_tres_list, (ListCmpF)_sort_tres_list);
+	list_sort(slurmctld_tres_info.curr_tres_list,
+		  (ListCmpF)_sort_tres_list);
+
+	i = 0;
+	slurmctld_tres_info.curr_tres_array = xmalloc(
+		sizeof(slurmdb_tres_rec_t) * slurmctld_tres_info.max_size);
+	itr = list_iterator_create(slurmctld_tres_info.curr_tres_list);
+	while ((tres_rec = list_next(itr)))
+		slurmctld_tres_info.curr_tres_array[i++] = tres_rec;
+	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }
@@ -2260,7 +2280,8 @@ extern int dump_config_state_lite(void)
 {
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
+		*tmp_char = NULL;
 	Buf buffer = init_buf(high_buffer_size);
 
 	DEF_TIMERS;
@@ -2270,6 +2291,10 @@ extern int dump_config_state_lite(void)
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	packstr(slurmctld_conf.accounting_storage_type, buffer);
+	tmp_char = slurmdb_make_tres_string(
+		slurmctld_tres_info.curr_tres_list, TRES_STR_FLAG_SIMPLE);
+	packstr(tmp_char, buffer);
+	xfree(tmp_char);
 
 	/* write the buffer to file */
 	reg_file = xstrdup_printf("%s/last_config_lite",
@@ -2329,10 +2354,10 @@ extern int load_config_state_lite(void)
 	uint32_t data_size = 0, uint32_tmp = 0;
 	uint16_t ver = 0;
 	int state_fd;
-	char *data = NULL, *state_file;
+	char *data = NULL, *state_file, *tmp_char;
 	Buf buffer;
 	time_t buf_time;
-	char *last_accounting_storage_type = NULL;
+	char *last_accounting_storage_type = NULL, *last_tres_str = NULL;
 
 	/* Always ignore .old file */
 	state_file = xstrdup_printf("%s/last_config_lite",
@@ -2370,19 +2395,24 @@ extern int load_config_state_lite(void)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in last_conf_lite header is %u", ver);
-	if (ver > SLURM_PROTOCOL_VERSION) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover last_conf_lite, incompatible version, "
-		      "got %u <= %u", ver, SLURM_PROTOCOL_VERSION);
+		      "(%u not between %d and %d)",
+		      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		return EFAULT;
+	} else if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack_time(&buf_time, buffer);
+		safe_unpackstr_xmalloc(&last_accounting_storage_type,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&last_tres_str, &uint32_tmp, buffer);
+	} else {
+		safe_unpack_time(&buf_time, buffer);
+		safe_unpackstr_xmalloc(&last_accounting_storage_type,
+				       &uint32_tmp, buffer);
 	}
-
-	safe_unpack_time(&buf_time, buffer);
-	safe_unpackstr_xmalloc(&last_accounting_storage_type,
-			       &uint32_tmp, buffer);
-
 	xassert(slurmctld_conf.accounting_storage_type);
 
 	if (last_accounting_storage_type
@@ -2390,6 +2420,41 @@ extern int load_config_state_lite(void)
 		        slurmctld_conf.accounting_storage_type))
 		slurmctld_init_db = 0;
 	xfree(last_accounting_storage_type);
+
+	tmp_char = slurmdb_make_tres_string(
+		slurmctld_tres_info.curr_tres_list, TRES_STR_FLAG_SIMPLE);
+
+	if (xstrcmp(tmp_char, last_tres_str)) {
+		List old_tres_list = NULL;
+		ListIterator itr;
+		slurmdb_tres_rec_t *tres_rec;
+		int i;
+
+		slurmdb_tres_list_from_string(&old_tres_list, last_tres_str, 0);
+		if (old_tres_list) {
+			slurmctld_tres_info.max_size = MAX(
+				list_count(old_tres_list),
+				slurmctld_tres_info.max_size);
+
+			xrealloc(slurmctld_tres_info.curr_tres_array,
+				 sizeof(slurmdb_tres_rec_t) *
+				 slurmctld_tres_info.max_size);
+
+			i = 0;
+			slurmctld_tres_info.old_tres_id_array = xmalloc(
+				sizeof(uint32_t) *
+				slurmctld_tres_info.max_size);
+			itr = list_iterator_create(old_tres_list);
+			while ((tres_rec = list_next(itr)))
+				slurmctld_tres_info.old_tres_id_array[i++] =
+					tres_rec->id;
+			list_iterator_destroy(itr);
+			FREE_NULL_LIST(old_tres_list);
+		}
+	}
+
+	xfree(tmp_char);
+	xfree(last_tres_str);
 
 	free_buf(buffer);
 	return SLURM_SUCCESS;

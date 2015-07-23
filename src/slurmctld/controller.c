@@ -184,7 +184,6 @@ slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
 int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
-List    cluster_tres_list = NULL;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -691,6 +690,9 @@ int main(int argc, char *argv[])
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
+	xfree(slurmctld_tres_info.curr_tres_array);
+	FREE_NULL_LIST(slurmctld_tres_info.curr_tres_list);
+	xfree(slurmctld_tres_info.old_tres_id_array);
 	usleep(500000);
 }
 #else
@@ -1185,7 +1187,7 @@ static int _accounting_cluster_ready(void)
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
 	cluster_tres_str = slurmdb_make_tres_string(
-		cluster_tres_list, TRES_STR_FLAG_SIMPLE);
+		slurmctld_tres_info.curr_tres_list, TRES_STR_FLAG_SIMPLE);
 	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
@@ -1897,9 +1899,9 @@ extern void set_cluster_tres(void)
 	ListIterator itr;
 	int i;
 
-	xassert(cluster_tres_list);
+	xassert(slurmctld_tres_info.curr_tres_list);
 
-	itr = list_iterator_create(cluster_tres_list);
+	itr = list_iterator_create(slurmctld_tres_info.curr_tres_list);
 	while ((tres_rec = list_next(itr))) {
 		if (!tres_rec->type) {
 			error("TRES %d doesn't have a type given, "
@@ -1963,7 +1965,8 @@ extern void set_cluster_tres(void)
 		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
 			   TRES_MEM, mem_count);
 
-		list_for_each(cluster_tres_list, _add_node_gres_tres, node_ptr);
+		list_for_each(slurmctld_tres_info.curr_tres_list,
+			      _add_node_gres_tres, node_ptr);
 	}
 
 	/* FIXME: cluster_cpus probably needs to be removed and handled

@@ -205,6 +205,28 @@ typedef struct diag_stats {
 	uint32_t bf_active;
 } diag_stats_t;
 
+typedef struct {
+	slurmdb_tres_rec_t **curr_tres_array; /* array of tres_recs
+						 size of max_size */
+	List curr_tres_list;
+	int curr_size;
+	int max_size; /* max size of old or new tres list */
+	uint32_t *old_tres_id_array; /* array of tres id's in the order
+				      * they existed when last running.
+				      */
+} tres_info_t;
+
+/* This is used to point out constants that exist in the
+ * curr_tres_array in tres_info_t  This should be the same order as
+ * the tres_trypes_t enum that is defined in src/common/slurmdb_defs.h
+ */
+enum {
+	TRES_ARRAY_CPU = 0,
+	TRES_ARRAY_MEM,
+	TRES_ARRAY_ENEGRY,
+	TRES_ARRAY_TOTAL_CNT
+};
+
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
@@ -218,6 +240,7 @@ extern bool  load_2_4_state;
 extern int   batch_sched_delay;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
+extern tres_info_t slurmctld_tres_info;
 extern int   slurmctld_primary;
 
 /* Buffer size use to print the jobid2str()
@@ -364,7 +387,6 @@ extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
-extern List cluster_tres_list;
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures
