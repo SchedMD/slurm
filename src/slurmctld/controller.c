@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
 
 
 		acct_storage_g_add_tres(acct_db_conn,
-					  slurmctld_conf.slurm_user_id, NULL);
+					slurmctld_conf.slurm_user_id, NULL);
 
 		info("Running as primary controller");
 		if ((slurmctld_config.resume_backup == false) &&
@@ -815,6 +815,40 @@ static void _reconfigure_slurm(void)
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */
 	queue_job_scheduler();
+}
+
+extern int find_tres_pos(slurmdb_tres_rec_t *tres_rec)
+{
+	int i;
+	xassert(slurmctld_tres_info.curr_tres_array);
+
+	if (!tres_rec->id && !tres_rec->type)
+		return -1;
+
+	for (i=0; i<slurmctld_tres_info.curr_size; i++) {
+		if (tres_rec->id &&
+		    slurmctld_tres_info.curr_tres_array[i]->id == tres_rec->id)
+			return i;
+		else if (!xstrcmp(
+				 slurmctld_tres_info.curr_tres_array[i]->type,
+				 tres_rec->type) &&
+			 !xstrcmp(
+				 slurmctld_tres_info.curr_tres_array[i]->name,
+				 tres_rec->name))
+			return i;
+	}
+
+	return -1;
+}
+
+extern slurmdb_tres_rec_t *find_tres_rec(slurmdb_tres_rec_t *tres_rec)
+{
+	int pos = find_tres_pos(tres_rec);
+
+	if (pos == -1)
+		return NULL;
+	else
+		return slurmctld_tres_info.curr_tres_array[pos];
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */

@@ -1879,6 +1879,14 @@ void purge_old_job(void);
 /* Convert a comma delimited list of QOS names into a bitmap */
 extern void qos_list_build(char *qos, bitstr_t **qos_bits);
 
+/* Find the position of the given TRES ID or type/name in the
+ * slurmctld_tres_info.curr_tres_array, if the ID isn't found -1 is
+ * returned.
+ */
+extern int find_tres_pos(slurmdb_tres_rec_t *tres_rec);
+/* calls find_tres_pos and returns the pointer in the curr_tres_array */
+extern slurmdb_tres_rec_t *find_tres_rec(slurmdb_tres_rec_t *tres_rec);
+
 /* Request that the job scheduler execute soon (typically within seconds) */
 extern void queue_job_scheduler(void);
 
