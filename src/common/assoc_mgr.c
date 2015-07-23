@@ -1666,6 +1666,13 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		    SLURM_ERROR)
 			return SLURM_ERROR;
 
+	/* get tres before association since it is used there */
+	if ((!assoc_mgr_tres_list)
+	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
+		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
+		    == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	if ((!assoc_mgr_assoc_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if (_get_assoc_mgr_assoc_list(db_conn, init_setup.enforce)
@@ -1692,12 +1699,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_RES))
 		if (_get_assoc_mgr_res_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
-			return SLURM_ERROR;
-
-	if ((!assoc_mgr_tres_list)
-	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
-		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
-		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -5099,6 +5100,13 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
+	/* get tres before association since it is used there */
+	if (cache_level & ASSOC_MGR_CACHE_TRES) {
+		if (_refresh_assoc_mgr_tres_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+	}
+
 	if (cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if (_refresh_assoc_mgr_assoc_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
@@ -5113,12 +5121,6 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		if (_refresh_assoc_mgr_res_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
-	if (cache_level & ASSOC_MGR_CACHE_TRES) {
-		if (_refresh_assoc_mgr_tres_list(
-			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
-	}
 
 	if (!partial_list)
 		running_cache = 0;
