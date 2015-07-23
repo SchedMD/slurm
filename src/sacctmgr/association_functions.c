@@ -754,6 +754,26 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		else
 			field->print_routine(field, assoc->shares_raw, last);
 		break;
+	case PRINT_GRPCM:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->grp_tres_mins, TRES_CPU),
+				     last);
+		break;
+	case PRINT_GRPCRM:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->grp_tres_run_mins,
+					     TRES_CPU),
+				     last);
+		break;
+	case PRINT_GRPC:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->grp_tres,
+					     TRES_CPU),
+				     last);
+		break;
 	case PRINT_GRPTM:
 		field->print_routine(field, assoc->grp_tres_mins, last);
 		break;
@@ -783,6 +803,25 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_LFT:
 		field->print_routine(field, assoc->lft, last);
+		break;
+	case PRINT_MAXCM:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->max_tres_mins_pj, TRES_CPU),
+				     last);
+		break;
+	case PRINT_MAXCRM:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->max_tres_run_mins,
+					     TRES_CPU),
+				     last);
+		break;
+	case PRINT_MAXC:
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->max_tres_pj, TRES_CPU),
+				     last);
 		break;
 	case PRINT_MAXTM:
 		field->print_routine(field, assoc->max_tres_mins_pj, last);
