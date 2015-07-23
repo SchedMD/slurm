@@ -100,6 +100,13 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bb_state_t 	bb_state;
 static char *		state_save_loc = NULL;
 
+/* Description of each Cray DW configuration entry
+ */
+typedef struct bb_configs {
+	uint32_t id;
+	uint32_t instance;
+} bb_configs_t;
+
 /* Description of each Cray DW instance entry, including persistent buffers
  */
 typedef struct bb_instances {
@@ -141,9 +148,12 @@ typedef struct {		/* Used for scheduling */
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec);
 static void *	_bb_agent(void *args);
+static void	_bb_free_configs(bb_configs_t *ents, int num_ent);
 static void	_bb_free_instances(bb_instances_t *ents, int num_ent);
 static void	_bb_free_pools(bb_pools_t *ents, int num_ent);
 static void	_bb_free_sessions(bb_sessions_t *ents, int num_ent);
+static bb_configs_t *
+		_bb_get_configs(int *num_ent, bb_state_t *state_ptr);
 static bb_instances_t *
 		_bb_get_instances(int *num_ent, bb_state_t *state_ptr);
 static bb_pools_t *
@@ -156,6 +166,9 @@ static void	_free_script_argv(char **script_argv);
 static bb_job_t *
 		_get_bb_spec(struct job_record *job_ptr);
 static void	_job_queue_del(void *x);
+static bb_configs_t *
+		_json_parse_configs_array(json_object *jobj, char *key,
+					    int *num);
 static bb_instances_t *
 		_json_parse_instances_array(json_object *jobj, char *key,
 					    int *num);
@@ -164,6 +177,8 @@ static struct bb_pools *
 static struct bb_sessions *
 		_json_parse_sessions_array(json_object *jobj, char *key,
 					   int *num);
+static void	_json_parse_configs_object(json_object *jobj,
+					   bb_configs_t *ent);
 static void	_json_parse_instances_object(json_object *jobj,
 					     bb_instances_t *ent);
 static void	_json_parse_pools_object(json_object *jobj, bb_pools_t *ent);
@@ -173,6 +188,9 @@ static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
 static int	_parse_bb_opts(struct job_descriptor *job_desc);
+static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
+static void	_parse_instance_capacity(json_object *instance,
+					 bb_instances_t *ent);
 static int	_parse_interactive(struct job_descriptor *job_desc);
 static void	_purge_bb_files(struct job_record *job_ptr);
 static void	_python2json(char *buf);
@@ -517,10 +535,11 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 static void _load_state(void)
 {
 	burst_buffer_gres_t *gres_ptr;
+	bb_configs_t *configs;
 	bb_instances_t *instances;
 	bb_pools_t *pools;
 	bb_sessions_t *sessions;
-	int num_instances = 0, num_pools = 0, num_sessions = 0;
+	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
 	int i, j;
 static bool first_load = true;
 //FIXME: Need logic to handle resource allocation/free in progress
@@ -570,7 +589,7 @@ first_load = false;
 	bb_state.last_load_time = time(NULL);
 
 	/*
-	 * Load the pools information
+	 * Load the instances information
 	 */
 	instances = _bb_get_instances(&num_instances, &bb_state);
 	if (instances == NULL) {
@@ -593,6 +612,20 @@ first_load = false;
 	}
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
+
+	/*
+	 * Load the configurations information
+	 */
+	configs = _bb_get_configs(&num_configs, &bb_state);
+	if (configs == NULL) {
+		info("%s: failed to find DataWarp configurations", __func__);
+		return;
+	}
+	for (i = 0; i < num_configs; i++) {
+		info("config[%d]: id=%u instance=%u",
+		     i, configs[i].id, configs[i].instance);
+	}
+	_bb_free_configs(configs, num_sessions);
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -2475,6 +2508,60 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 
 /* _bb_get_instances()
  *
+ * Handle the JSON stream with configuration info (instance use details).
+ */
+static bb_configs_t *
+_bb_get_configs(int *num_ent, bb_state_t *state_ptr)
+{
+	bb_configs_t *ents = NULL;
+	json_object *j;
+	json_object_iter iter;
+	int status = 0;
+	DEF_TIMERS;
+	char *string;
+	char **script_argv;
+
+	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("show_configurations");
+
+	START_TIMER;
+	string = bb_run_script("show_configurations",
+			       state_ptr->bb_config.get_sys_state,
+			       script_argv, 3000, &status);
+	END_TIMER;
+	if (bb_state.bb_config.debug_flag)
+		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
+	if (string == NULL) {
+		info("%s: %s returned no configurations",
+		     __func__, state_ptr->bb_config.get_sys_state);
+		_free_script_argv(script_argv);
+		return ents;
+	}
+	_free_script_argv(script_argv);
+
+	if (bb_state.bb_config.debug_flag)
+		info("%s: configurations: %s", __func__, string);
+	_python2json(string);
+	j = json_tokener_parse(string);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, string);
+		xfree(string);
+		return ents;
+	}
+	xfree(string);
+
+	json_object_object_foreachC(j, iter) {
+		ents = _json_parse_configs_array(j, iter.key, num_ent);
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	return ents;
+}
+
+/* _bb_get_instances()
+ *
  * Handle the JSON stream with instance info (resource reservations).
  */
 static bb_instances_t *
@@ -2631,6 +2718,14 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 	return ents;
 }
 
+/* _bb_free_configs()
+ */
+static void
+_bb_free_configs(bb_configs_t *ents, int num_ent)
+{
+	xfree(ents);
+}
+
 /* _bb_free_instances()
  */
 static void
@@ -2666,6 +2761,30 @@ static void
 _bb_free_sessions(bb_sessions_t *ents, int num_ent)
 {
 	xfree(ents);
+}
+
+/* _json_parse_configs_array()
+ */
+static bb_configs_t *
+_json_parse_configs_array(json_object *jobj, char *key, int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	bb_configs_t *ents;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(bb_configs_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_configs_object(jvalue, &ents[i]);
+	}
+
+	return ents;
 }
 
 /* _json_parse_instances_array()
@@ -2740,6 +2859,57 @@ _json_parse_sessions_array(json_object *jobj, char *key, int *num)
 	return ents;
 }
 
+/* Parse "links" object in the "configuration" object */
+static void
+_parse_config_links(json_object *instance, bb_configs_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int x;
+
+	json_object_object_foreachC(instance, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (!strcmp(iter.key, "instance"))
+					ent->instance = x;
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+/* _json_parse_configs_object()
+ */
+static void
+_json_parse_configs_object(json_object *jobj, bb_configs_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+			case json_type_object:
+				if (strcmp(iter.key, "links") == 0)
+					_parse_config_links(iter.val, ent);
+				break;
+			case json_type_int:
+				x = json_object_get_int64(iter.val);
+				if (strcmp(iter.key, "id") == 0) {
+					ent->id = x;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+/* Parse "capacity" object in the "instance" object */
 static void
 _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 {
@@ -2760,6 +2930,7 @@ _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 		}
 	}
 }
+
 /* _json_parse_instances_object()
  */
 static void
