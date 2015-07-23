@@ -4550,7 +4550,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
  *      SLURM BURST BUFFER FUNCTIONS
 \*****************************************************************************/
 
-#define BB_SIZE_IN_NODES	0x1000000000000000
+#define BB_SIZE_IN_NODES	0x8000000000000000
 #define BB_STATE_ALLOCATED	0x0001		/* Cray: bbs_setup started */
 #define BB_STATE_STAGING_IN	0x0002		/* Cray: bbs_data_in started */
 #define BB_STATE_STAGED_IN	0x0003		/* Cray: bbs_data_in complete */

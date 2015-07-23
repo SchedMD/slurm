@@ -647,6 +647,9 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
 			bb_size_u *= ((uint64_t)1024 * 1024 * 1024 * 1024
 				      * 1024);
+		} else if ((end_ptr[0] == 'n') || (end_ptr[0] == 'N')) {
+			bb_size_u |= BB_SIZE_IN_NODES;
+			granularity = 1;
 		}
 	}
 
