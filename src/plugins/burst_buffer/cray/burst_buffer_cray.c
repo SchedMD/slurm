@@ -161,12 +161,12 @@ static bb_pools_t *
 static bb_sessions_t *
 		_bb_get_sessions(int *num_ent, bb_state_t *state_ptr);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
-static int	_create_persistent(char *bb_name, uint32_t user_id,
-			uint64_t bb_size, char *bb_access, char *bb_type,
-			char **err_msg);
+static int	_create_persistent(char *bb_name, uint32_t job_id,
+			uint32_t user_id, uint64_t bb_size, char *bb_access,
+			char *bb_type, char **err_msg);
 static void	_del_bb_spec(bb_job_t *bb_spec);
-static int	_destroy_persistent(char *bb_name, uint32_t user_id,
-				    char **err_msg);
+static int	_destroy_persistent(char *bb_name, uint32_t job_id,
+				    uint32_t user_id, char **err_msg);
 static void	_free_script_argv(char **script_argv);
 static bb_job_t *
 		_get_bb_spec(struct job_record *job_ptr);
@@ -2154,6 +2154,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 		debug("%s: dws_paths ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: dws_paths for job %u status:%u response:%s",
+		      __func__, job_ptr->job_id, status, resp_msg);
 		if (err_msg) {
 			xfree(*err_msg);
 			xstrfmtcat(*err_msg, "%s: %s", plugin_type, resp_msg);
@@ -2197,6 +2199,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	else if (bb_state.bb_config.debug_flag)
 		debug("%s: dws_setup ran for %s", __func__, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: dws_setup for job %u status:%u response:%s",
+		      __func__, job_ptr->job_id, status, resp_msg);
 		_log_script_argv(script_argv, resp_msg);
 		if (err_msg) {
 			xfree(*err_msg);
@@ -2400,7 +2404,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	int hash_inx, rc = SLURM_SUCCESS, status = 0;
 	bb_alloc_t *bb_ptr;
 	bb_job_t *bb_spec;
-	char jobid_buf[32];
+	char jobid_buf[64];
 	DEF_TIMERS;
 	char *resp_msg = NULL;
 
@@ -2666,13 +2670,13 @@ static int _proc_persist(struct job_record *job_ptr, char **err_msg)
 			goto next_line;
 
 		if (do_create) {
-			rc2 = _create_persistent(bb_name, job_ptr->user_id,
-						 tmp_cnt, bb_access, bb_type,
-						 err_msg);
+			rc2 = _create_persistent(bb_name, job_ptr->job_id,
+						 job_ptr->user_id, tmp_cnt,
+						 bb_access, bb_type, err_msg);
 			byte_add += tmp_cnt;
 		} else {
-			rc2 = _destroy_persistent(bb_name, job_ptr->user_id,
-						  err_msg);
+			rc2 = _destroy_persistent(bb_name, job_ptr->job_id,
+						  job_ptr->user_id, err_msg);
 		}
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;
@@ -2688,6 +2692,7 @@ next_line:	tok = strtok_r(NULL, "\n", &save_ptr);
 
 /* Create a persistent burst buffer based upon user specifications.
  * bb_name IN - name for the buffer, must be set and be unique
+ * job_id IN - job creating the buffer
  * user_id IN - owner of the buffer, must not be 0 (DataWarp limitation)
  * bb_size IN - buffer size
  * bb_access IN - access mode: striped, private, etc.
@@ -2696,8 +2701,9 @@ next_line:	tok = strtok_r(NULL, "\n", &save_ptr);
  * RET 0 on success, else -1
  */
 static int
-_create_persistent(char *bb_name, uint32_t user_id, uint64_t bb_size,
-		   char *bb_access, char *bb_type, char **err_msg)
+_create_persistent(char *bb_name, uint32_t job_id, uint32_t user_id,
+		   uint64_t bb_size, char *bb_access, char *bb_type,
+		   char **err_msg)
 {
 	char **script_argv, *resp_msg;
 	int status = 0;
@@ -2745,13 +2751,16 @@ _create_persistent(char *bb_name, uint32_t user_id, uint64_t bb_size,
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
-
-	if (strstr(resp_msg, "created")) {
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: create_persistent for JobId=%u status:%u response:%s",
+		      __func__, job_id, status, resp_msg);
+		if (err_msg) {
+			*err_msg = NULL;
+			xstrfmtcat(*err_msg, "%s: create_persistent: %s",
+				   plugin_type, resp_msg);
+		}
+	} else if (resp_msg && strstr(resp_msg, "created")) {
 		rc = SLURM_SUCCESS;
-	} else if (err_msg) {
-		*err_msg = NULL;
-		xstrfmtcat(*err_msg, "%s: create_persistent: %s",
-			   plugin_type, resp_msg);
 	}
 	xfree(resp_msg);
 
@@ -2760,12 +2769,14 @@ _create_persistent(char *bb_name, uint32_t user_id, uint64_t bb_size,
 
 /* Destroy a persistent burst buffer
  * bb_name IN - name for the buffer, must be set and be unique
+ * job_id IN - job destroying the buffer
  * user_id IN - owner of the buffer, must not be 0 (DataWarp limitation)
  * err_msg OUT -  Response message
  * RET 0 on success, else -1
  */
 static int
-_destroy_persistent(char *bb_name, uint32_t user_id, char **err_msg)
+_destroy_persistent(char *bb_name, uint32_t job_id, uint32_t user_id,
+		    char **err_msg)
 {
 //FIXME: Code TBD, NOTE: Validate buffer ownership before destroy
 	if (err_msg) {
@@ -2788,7 +2799,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 	json_object_iter iter;
 	int status = 0;
 	DEF_TIMERS;
-	char *string;
+	char *resp_msg;
 	char **script_argv;
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -2797,29 +2808,33 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 	script_argv[2] = xstrdup("show_configurations");
 
 	START_TIMER;
-	string = bb_run_script("show_configurations",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, 3000, &status);
+	resp_msg = bb_run_script("show_configurations",
+				 state_ptr->bb_config.get_sys_state,
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
-	if (string == NULL) {
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: show_configurations status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
 		info("%s: %s returned no configurations",
 		     __func__, state_ptr->bb_config.get_sys_state);
-		_free_script_argv(script_argv);
 		return ents;
 	}
-	_log_script_argv(script_argv, string);
-	_free_script_argv(script_argv);
 
-	_python2json(string);
-	j = json_tokener_parse(string);
+
+	_python2json(resp_msg);
+	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, string);
-		xfree(string);
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
 		return ents;
 	}
-	xfree(string);
+	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_configs_array(j, iter.key, num_ent);
@@ -2841,7 +2856,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 	json_object_iter iter;
 	int status = 0;
 	DEF_TIMERS;
-	char *string;
+	char *resp_msg;
 	char **script_argv;
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -2850,29 +2865,32 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 	script_argv[2] = xstrdup("show_instances");
 
 	START_TIMER;
-	string = bb_run_script("show_instances",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, 3000, &status);
+	resp_msg = bb_run_script("show_instances",
+				 state_ptr->bb_config.get_sys_state,
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
-	_log_script_argv(script_argv, string);
-	if (string == NULL) {
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: show_instances status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
 		info("%s: %s returned no instances",
 		     __func__, state_ptr->bb_config.get_sys_state);
-		_free_script_argv(script_argv);
 		return ents;
 	}
-	_free_script_argv(script_argv);
 
-	_python2json(string);
-	j = json_tokener_parse(string);
+	_python2json(resp_msg);
+	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, string);
-		xfree(string);
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
 		return ents;
 	}
-	xfree(string);
+	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_instances_array(j, iter.key, num_ent);
@@ -2894,7 +2912,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	json_object_iter iter;
 	int status = 0;
 	DEF_TIMERS;
-	char *string;
+	char *resp_msg;
 	char **script_argv;
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -2903,29 +2921,32 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	script_argv[2] = xstrdup("pools");
 
 	START_TIMER;
-	string = bb_run_script("dws_pools",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, 3000, &status);
+	resp_msg = bb_run_script("dws_pools",
+				 state_ptr->bb_config.get_sys_state,
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: dws_pools ran for %s", __func__, TIME_STR);
-	if (string == NULL) {
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: dws_pools status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
 		error("%s: %s returned no pools",
 		      __func__, state_ptr->bb_config.get_sys_state);
-		_free_script_argv(script_argv);
 		return ents;
 	}
-	_log_script_argv(script_argv, string);
-	_free_script_argv(script_argv);
 
-	_python2json(string);
-	j = json_tokener_parse(string);
+	_python2json(resp_msg);
+	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, string);
-		xfree(string);
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
 		return ents;
 	}
-	xfree(string);
+	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_pools_array(j, iter.key, num_ent);
@@ -2943,7 +2964,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 	json_object_iter iter;
 	int status = 0;
 	DEF_TIMERS;
-	char *string;
+	char *resp_msg;
 	char **script_argv;
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -2952,29 +2973,37 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 	script_argv[2] = xstrdup("show_sessions");
 
 	START_TIMER;
-	string = bb_run_script("show_sessions",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, 3000, &status);
+	resp_msg = bb_run_script("show_sessions",
+				 state_ptr->bb_config.get_sys_state,
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);
-	if (string == NULL) {
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: dws_pools status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: show_sessions status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
 		info("%s: %s returned no sessions",
 		     __func__, state_ptr->bb_config.get_sys_state);
 		_free_script_argv(script_argv);
 		return ents;
 	}
-	_log_script_argv(script_argv, string);
-	_free_script_argv(script_argv);
 
-	_python2json(string);
-	j = json_tokener_parse(string);
+	_python2json(resp_msg);
+	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", __func__, string);
-		xfree(string);
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
 		return ents;
 	}
-	xfree(string);
+	xfree(resp_msg);
 
 	json_object_object_foreachC(j, iter) {
 		ents = _json_parse_sessions_array(j, iter.key, num_ent);
