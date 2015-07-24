@@ -2173,10 +2173,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			 * make some assumptions.
 			 * CPU is always 0 and MEM is always 1 */
 			if (job_ptr->total_cpus)
-				job_ptr->tres_req_cnt[0] =
+				job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
 					(uint64_t)job_ptr->total_cpus;
+			else if (job_ptr->details)
+				job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
+					(uint64_t)job_ptr->details->min_cpus;
+
 			if (job_ptr->details && job_ptr->details->pn_min_memory)
-				job_ptr->tres_req_cnt[1] =
+				job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 					(uint64_t)job_ptr->details->
 					pn_min_memory;
 		}
@@ -5614,6 +5618,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	/* cpus can't be checked here as there are max and min values */
 	job_desc->tres_req_cnt = xmalloc(
 		sizeof(uint64_t) * slurmctld_tres_info.curr_size);
+	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
 
 	license_list = license_validate(job_desc->licenses,
