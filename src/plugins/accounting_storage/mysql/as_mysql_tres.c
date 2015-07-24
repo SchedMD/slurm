@@ -57,9 +57,10 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
-	/* means just update the views */
-	if (!tres_list_in)
-		goto update_views;
+	if (!tres_list_in) {
+		error("as_mysql_add_tres: Trying to add a blank list");
+		return SLURM_ERROR;
+	}
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(tres_list_in);
@@ -148,8 +149,6 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
-
-update_views:
 
 	if (list_count(mysql_conn->update_list)) {
 		/* We only want to update the local cache DBD or ctld */

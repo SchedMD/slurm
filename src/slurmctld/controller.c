@@ -499,10 +499,6 @@ int main(int argc, char *argv[])
 			}
 		}
 
-
-		acct_storage_g_add_tres(acct_db_conn,
-					slurmctld_conf.slurm_user_id, NULL);
-
 		info("Running as primary controller");
 		if ((slurmctld_config.resume_backup == false) &&
 		    (slurmctld_primary == 1)) {
