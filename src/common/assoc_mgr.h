@@ -430,4 +430,17 @@ extern int assoc_mgr_set_missing_uids();
  */
 extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc);
 
+/* Find the position of the given TRES ID or type/name in the
+ * assoc_mgr_tres_array, if the ID isn't found -1 is returned.
+ */
+extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
+
+/* calls assoc_mgr_find_tres_pos and returns the pointer in the
+ * assoc_mgr_tres_array.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
+ * function and while using the returned record.
+ */
+extern slurmdb_tres_rec_t *sacct_mgr_find_tres_rec(
+	slurmdb_tres_rec_t *tres_rec);
+
 #endif /* _SLURM_ASSOC_MGR_H */
