@@ -514,8 +514,7 @@ struct slurmdb_assoc_usage {
 				 * (DON'T PACK for state file) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK for state file) */
-	double grp_used_wall;   /* group count of time used in
-				 * running jobs (DON'T PACK for state file) */
+	double grp_used_wall;   /* group count of time used in running jobs */
 	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
 					 * (DON'T PACK for state file) */
 	double fs_factor;	/* Fairshare factor. Not used by all algorithms
