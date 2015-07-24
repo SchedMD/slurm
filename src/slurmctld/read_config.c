@@ -2164,7 +2164,8 @@ static int _restore_job_dependencies(void)
 			}
 		}
 
-		license_list = license_validate(job_ptr->licenses, &valid);
+		license_list = license_validate(job_ptr->licenses,
+						job_ptr->tres_req_cnt, &valid);
 		FREE_NULL_LIST(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;

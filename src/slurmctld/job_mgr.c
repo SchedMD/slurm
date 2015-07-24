@@ -5616,6 +5616,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		sizeof(uint64_t) * slurmctld_tres_info.curr_size);
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
 
+	license_list = license_validate(job_desc->licenses,
+					job_desc->tres_req_cnt, &valid);
+	if (!valid) {
+		info("Job's requested licenses are invalid: %s",
+		     job_desc->licenses);
+		error_code = ESLURM_INVALID_LICENSES;
+		goto cleanup_fail;
+	}
+
 	if (gres_plugin_job_state_validate(job_desc->gres, &gres_list)) {
 		error_code = ESLURM_INVALID_GRES;
 		goto cleanup_fail;
@@ -5749,14 +5758,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		info("_job_create: Job's max_nodes(%u) < min_nodes(%u)",
 		     job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_INVALID_NODE_COUNT;
-		goto cleanup_fail;
-	}
-
-	license_list = license_validate(job_desc->licenses, &valid);
-	if (!valid) {
-		info("Job's requested licenses are invalid: %s",
-		     job_desc->licenses);
-		error_code = ESLURM_INVALID_LICENSES;
 		goto cleanup_fail;
 	}
 
@@ -10812,15 +10813,24 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->licenses) {
+		int i;
 		List license_list;
-		bool valid;
+		bool valid, pending = IS_JOB_PENDING(job_ptr);
+		uint64_t tres_req_cnt[slurmctld_tres_info.curr_size];
 
-		license_list = license_validate(job_specs->licenses, &valid);
+		/* This only needs to be done on pending jobs. */
+		if (pending)
+			for (i=0; i<slurmctld_tres_info.curr_size; i++)
+				tres_req_cnt[i] = (uint64_t)-1;
+
+		license_list = license_validate(job_specs->licenses,
+						pending ? tres_req_cnt : NULL,
+						&valid);
 		if (!valid) {
 			info("sched: update_job: invalid licenses: %s",
 			     job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
-		} else if (IS_JOB_PENDING(job_ptr)) {
+		} else if (pending) {
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
 			info("sched: update_job: changing licenses from '%s' "
@@ -10829,6 +10839,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
+			for (i=0; i<slurmctld_tres_info.curr_size; i++) {
+				if (tres_req_cnt[i] != (uint64_t)-1)
+					job_ptr->tres_req_cnt[i] =
+						tres_req_cnt[i];
+			}
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
