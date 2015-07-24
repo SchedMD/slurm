@@ -54,7 +54,10 @@ slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_qos_count = 0;
 uint32_t g_user_assoc_count = 0;
+uint32_t g_tres_count = 0;
+
 List assoc_mgr_tres_list = NULL;
+slurmdb_tres_rec_t **assoc_mgr_tres_array = NULL;
 List assoc_mgr_assoc_list = NULL;
 List assoc_mgr_res_list = NULL;
 List assoc_mgr_qos_list = NULL;
@@ -1050,21 +1053,162 @@ static int _post_res_list(List res_list)
 	return SLURM_SUCCESS;
 }
 
+/* tres write lock should be locked before calling this */
+static void _post_tres_list(List new_list, int new_cnt)
+{
+	ListIterator itr;
+	slurmdb_tres_rec_t *tres_rec, **new_array;
+	bool changed_size = false, changed_pos = false;
+	int i, new_size, max_cnt = MAX(new_cnt, g_tres_count);
+
+	xassert(new_list);
+
+	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
+	new_array = xmalloc(new_size);
+
+	/* we don't care if it gets smaller */
+	if (new_cnt > g_tres_count)
+		changed_size = true;
+
+	/* Set up the new array to see if we need to update any other
+	   arrays with current values.
+	*/
+	itr = list_iterator_create(new_list);
+	while ((tres_rec = list_next(itr))) {
+
+		new_array[i] = tres_rec;
+
+		/* This should only happen if a new static TRES are added. */
+		if ((i < g_tres_count) &&
+		    (new_array[i]->id != assoc_mgr_tres_array[i]->id))
+			changed_pos = true;
+		i++;
+	}
+	list_iterator_destroy(itr);
+
+	if (changed_size || changed_pos) {
+		if (assoc_mgr_assoc_list) {
+			slurmdb_assoc_rec_t *assoc_rec;
+			uint64_t grp_tres[new_cnt], grp_tres_mins[new_cnt],
+				grp_tres_run_mins[new_cnt], max_tres[new_cnt],
+				max_tres_mins[new_cnt],
+				max_tres_run_mins[new_cnt];
+
+			/* update the associations and such here */
+			itr = list_iterator_create(assoc_mgr_assoc_list);
+			while ((assoc_rec = list_next(itr))) {
+				if (changed_size) {
+					xrealloc(assoc_rec->grp_tres_ctld,
+						 new_size);
+					xrealloc(assoc_rec->grp_tres_mins_ctld,
+						 new_size);
+					xrealloc(assoc_rec->
+						 grp_tres_run_mins_ctld,
+						 new_size);
+					xrealloc(assoc_rec->max_tres_ctld,
+						 new_size);
+					xrealloc(assoc_rec->max_tres_mins_ctld,
+						 new_size);
+					xrealloc(assoc_rec->
+						 grp_tres_run_mins_ctld,
+						 new_size);
+				}
+
+				if (changed_pos) {
+					int pos;
+					int array_size =
+						sizeof(uint64_t) * new_cnt;
+					memset(grp_tres, 0, array_size);
+					memset(grp_tres_mins, 0, array_size);
+					memset(grp_tres_run_mins,
+					       0, array_size);
+					memset(max_tres, 0, array_size);
+					memset(max_tres_mins, 0, array_size);
+					memset(max_tres_run_mins,
+					       0, array_size);
+					for (i=0; i<new_cnt; i++) {
+						if (!new_array[i])
+							break;
+
+						pos = slurmdb_get_new_tres_pos(
+							new_array,
+							assoc_mgr_tres_array,
+							i, max_cnt);
+
+						if (pos == NO_VAL)
+							continue;
+						grp_tres[i] = assoc_rec->
+							grp_tres_ctld[pos];
+						grp_tres_mins[i] = assoc_rec->
+							grp_tres_mins_ctld[pos];
+						grp_tres_run_mins[i] =
+							assoc_rec->
+							grp_tres_run_mins_ctld[
+								pos];
+						max_tres[i] = assoc_rec->
+							max_tres_ctld[pos];
+						max_tres_mins[i] = assoc_rec->
+							max_tres_mins_ctld[pos];
+						max_tres_run_mins[i] =
+							assoc_rec->
+							max_tres_run_mins_ctld[
+								pos];
+					}
+					memcpy(assoc_rec->grp_tres_ctld,
+					       grp_tres, array_size);
+					memcpy(assoc_rec->grp_tres_mins_ctld,
+					       grp_tres_mins, array_size);
+					memcpy(assoc_rec->
+					       grp_tres_run_mins_ctld,
+					       grp_tres_run_mins, array_size);
+					memcpy(assoc_rec->max_tres_ctld,
+					       max_tres, array_size);
+					memcpy(assoc_rec->max_tres_mins_ctld,
+					       max_tres_mins, array_size);
+					memcpy(assoc_rec->
+					       max_tres_run_mins_ctld,
+					       max_tres_run_mins, array_size);
+				}
+			}
+			list_iterator_destroy(itr);
+		}
+
+		/* update jobs here, this might need to be outside of
+		 * the locks this is in */
+		if (init_setup.update_cluster_tres)
+			init_setup.update_cluster_tres(
+				new_array, assoc_mgr_tres_array,
+				new_cnt, max_cnt);
+	}
+	xfree(assoc_mgr_tres_array);
+	assoc_mgr_tres_array = new_array;
+	new_array = NULL;
+
+	FREE_NULL_LIST(assoc_mgr_tres_list);
+	assoc_mgr_tres_list = new_list;
+	new_list = NULL;
+
+	g_tres_count = new_cnt;
+
+	return;
+}
+
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
 	slurmdb_tres_cond_t tres_q;
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+	List new_list = NULL;
+	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	memset(&tres_q, 0, sizeof(slurmdb_tres_cond_t));
 
 	assoc_mgr_lock(&locks);
-	FREE_NULL_LIST(assoc_mgr_tres_list);
-	assoc_mgr_tres_list = acct_storage_g_get_tres(
+
+	new_list = acct_storage_g_get_tres(
 		db_conn, uid, &tres_q);
 
-	if (!assoc_mgr_tres_list) {
+	if (!new_list) {
 		assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_tres_list: "
@@ -1074,6 +1218,8 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 			return SLURM_SUCCESS;
 		}
 	}
+
+	_post_tres_list(new_list, list_count(new_list));
 
 	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;

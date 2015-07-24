@@ -112,6 +112,7 @@ typedef struct {
 } assoc_init_args_t;
 
 extern List assoc_mgr_tres_list;
+extern slurmdb_tres_rec_t **assoc_mgr_tres_array;
 extern List assoc_mgr_assoc_list;
 extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
@@ -123,7 +124,9 @@ extern slurmdb_assoc_rec_t *assoc_mgr_root_assoc;
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
 extern uint32_t g_user_assoc_count; /* Number of assocations which are users */
-
+extern uint32_t g_tres_count; /* Number of TRES from the database
+			       * which also is the number of elements
+			       * in the assoc_mgr_tres_array */
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno);
