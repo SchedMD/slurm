@@ -181,7 +181,7 @@ static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
 static void	_job_state_log(void *gres_data, uint32_t job_id,
 			       char *gres_name);
-static int	_job_state_validate(char *config, void **gres_data,
+static int	_job_state_validate(char *config, gres_job_state_t **gres_data,
 				    slurm_gres_context_t *gres_name);
 static uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
@@ -222,7 +222,8 @@ static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
 static void	_step_state_log(void *gres_data, uint32_t job_id,
 				uint32_t step_id, char *gres_name);
-static int	_step_state_validate(char *config, void **gres_data,
+static int	_step_state_validate(char *config,
+				     gres_step_state_t **gres_data,
 				     slurm_gres_context_t *context_ptr);
 static uint32_t	_step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool ignore_alloc, char *gres_name,
@@ -2676,7 +2677,7 @@ static void _gres_job_list_delete(void *list_element)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static int _job_state_validate(char *config, void **gres_data,
+static int _job_state_validate(char *config, gres_job_state_t **gres_data,
 			       slurm_gres_context_t *context_ptr)
 {
 	gres_job_state_t *gres_ptr;
@@ -2761,7 +2762,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2;
 	gres_state_t *gres_ptr;
-	void *job_gres_data;
+	gres_job_state_t *job_gres_data;
 
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
 		*gres_list = NULL;
@@ -4792,7 +4793,7 @@ static void _gres_step_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
-static int _step_state_validate(char *config, void **gres_data,
+static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 				slurm_gres_context_t *context_ptr)
 {
 	gres_step_state_t *gres_ptr;
@@ -4935,7 +4936,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2, rc3;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
-	void *step_gres_data, *job_gres_data;
+	gres_step_state_t *step_gres_data;
+	gres_job_state_t *job_gres_data;
 	ListIterator job_gres_iter;
 	gres_step_state_t *step_gres_state;
 	gres_job_state_t *job_gres_state;
