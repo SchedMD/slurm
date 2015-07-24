@@ -104,7 +104,7 @@ void set_distribution(task_dist_states_t distribution,
 		      char **dist, char **lllp_dist)
 {
 	if (((int)distribution >= 0)
-	    && ((distribution  & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)) {
+	    && ((distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)) {
 		switch (distribution & SLURM_DIST_STATE_BASE) {
 		case SLURM_DIST_CYCLIC:
 			*dist      = "cyclic";
