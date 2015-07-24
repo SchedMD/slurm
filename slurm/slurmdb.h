@@ -541,8 +541,7 @@ struct slurmdb_assoc_usage {
 				 * (DON'T PACK for state file) */
 	long double usage_norm;	/* normalized usage
 				 * (DON'T PACK for state file) */
-	long double usage_raw;	/* measure of resource usage
-				 * (DON'T PACK for state file) */
+	long double usage_raw;	/* measure of resource usage */
 
 	uint32_t used_jobs;	/* count of active jobs
 				 * (DON'T PACK for state file) */
