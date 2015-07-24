@@ -226,6 +226,10 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
+static void         _update_cluster_tres(slurmdb_tres_rec_t **new_array,
+					 slurmdb_tres_rec_t **old_array,
+					 int cur_cnt, int max_cnt);
+
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
@@ -1350,6 +1354,32 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _update_cluster_tres(slurmdb_tres_rec_t **new_array,
+				 slurmdb_tres_rec_t **old_array,
+				 int cur_cnt, int max_cnt)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list)
+		return;
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		slurmdb_set_new_tres_cnt(&job_ptr->tres_req_cnt,
+					 new_array, old_array,
+					 cur_cnt, max_cnt);
+
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
+}
+
+
 static void _queue_reboot_msg(void)
 {
 	agent_arg_t *reboot_agent_args = NULL;
@@ -1822,6 +1852,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	assoc_init_arg.update_assoc_notify = _update_assoc;
 	assoc_init_arg.update_license_notify = license_update_remote;
 	assoc_init_arg.update_qos_notify = _update_qos;
+	assoc_init_arg.update_cluster_tres = _update_cluster_tres;
 	assoc_init_arg.update_resvs = update_assocs_in_resvs;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |

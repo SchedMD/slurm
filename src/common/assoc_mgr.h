@@ -106,6 +106,9 @@ typedef struct {
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*sync_license_notify) (List clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
+	void (*update_cluster_tres) (slurmdb_tres_rec_t **new_array,
+				     slurmdb_tres_rec_t **old_array,
+				     int cur_cnt, int max_cnt);
 	void (*update_license_notify) (slurmdb_res_rec_t *rec);
 	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
