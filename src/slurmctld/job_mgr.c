@@ -5453,7 +5453,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	struct job_record *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
-	List license_list = NULL;
+	List license_list = NULL, gres_list = NULL;
 	bool is_job_array = false, valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority;
@@ -5615,6 +5615,17 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_desc->tres_req_cnt = xmalloc(
 		sizeof(uint64_t) * slurmctld_tres_info.curr_size);
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
+
+	if (gres_plugin_job_state_validate(job_desc->gres, &gres_list)) {
+		error_code = ESLURM_INVALID_GRES;
+		goto cleanup_fail;
+	}
+
+	gres_set_job_tres_req_cnt(gres_list,
+				  job_desc->min_nodes,
+				  job_desc->tres_req_cnt,
+				  slurmctld_tres_info.curr_tres_array,
+				  slurmctld_tres_info.curr_size);
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
@@ -5822,10 +5833,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	/* NOTE: If this job is being used to expand another job, this job's
 	 * gres_list has already been filled in with a copy of gres_list job
 	 * to be expanded by update_job_dependency() */
-	if ((job_ptr->details->expanding_jobid == 0) &&
-	    gres_plugin_job_state_validate(job_ptr->gres, &job_ptr->gres_list)){
-		error_code = ESLURM_INVALID_GRES;
-		goto cleanup_fail;
+	if (!job_ptr->details->expanding_jobid) {
+		job_ptr->gres_list = gres_list;
+		gres_list = NULL;
 	}
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
@@ -5862,6 +5872,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->best_switch = true;
 
 	FREE_NULL_LIST(license_list);
+	FREE_NULL_LIST(gres_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
@@ -5877,6 +5888,7 @@ cleanup_fail:
 		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
+	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
@@ -10568,6 +10580,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->gres = xstrdup(job_specs->gres);
 			FREE_NULL_LIST(job_ptr->gres_list);
 			job_ptr->gres_list = tmp_gres_list;
+			gres_set_job_tres_req_cnt(job_ptr->gres_list,
+						  job_ptr->details ?
+						  job_ptr->details->min_nodes :
+						  0,
+						  job_ptr->tres_req_cnt,
+						  slurmctld_tres_info.
+						  curr_tres_array,
+						  slurmctld_tres_info.
+						  curr_size);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)

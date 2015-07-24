@@ -2556,8 +2556,17 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				xfree(job_ptr->gres);
 				job_ptr->gres = xstrdup(dep_job_ptr->gres);
 				FREE_NULL_LIST(job_ptr->gres_list);
-				gres_plugin_job_state_validate(job_ptr->gres,
-						&job_ptr->gres_list);
+				gres_plugin_job_state_validate(
+					job_ptr->gres, &job_ptr->gres_list);
+				gres_set_job_tres_req_cnt(job_ptr->gres_list,
+							  job_ptr->details ?
+							  job_ptr->details->
+							  min_nodes : 0,
+							  job_ptr->tres_req_cnt,
+							  slurmctld_tres_info.
+							  curr_tres_array,
+							  slurmctld_tres_info.
+							  curr_size);
 			}
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));

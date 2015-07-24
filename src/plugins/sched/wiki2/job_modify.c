@@ -397,6 +397,15 @@ host_fini:	if (rc) {
 			return ESLURM_INVALID_GRES;
 		}
 		xfree(orig_gres);
+		gres_set_job_tres_req_cnt(job_ptr->gres_list,
+					  job_ptr->details ?
+					  job_ptr->details->
+					  min_nodes : 0,
+					  job_ptr->tres_req_cnt,
+					  slurmctld_tres_info.
+					  curr_tres_array,
+					  slurmctld_tres_info.
+					  curr_size);
 	}
 
 	if (wckey_ptr) {

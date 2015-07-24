@@ -6559,3 +6559,56 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 
 	return tres_str;
 }
+
+extern void gres_set_job_tres_req_cnt(List gres_list,
+				      uint32_t node_cnt,
+				      uint64_t *tres_req_cnt,
+				      slurmdb_tres_rec_t **tres_array,
+				      int tres_array_size)
+{
+	ListIterator itr;
+	gres_state_t *gres_state_ptr;
+	char *name;
+	uint64_t count;
+	int i;
+
+	if (!gres_list || !tres_req_cnt || !tres_array || !tres_array_size ||
+	    !node_cnt || (node_cnt == NO_VAL))
+		return;
+
+	slurm_mutex_lock(&gres_context_lock);
+	itr = list_iterator_create(gres_list);
+	while ((gres_state_ptr = list_next(itr))) {
+		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+			gres_state_ptr->gres_data;
+		name = gres_data_ptr->type_model;
+		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
+
+		if (!name) {
+			for (i=0; i < gres_context_cnt; i++) {
+				if (gres_context[i].plugin_id ==
+				    gres_state_ptr->plugin_id) {
+					name = gres_context[i].gres_name;
+					break;
+				}
+			}
+
+			if (!name) {
+				debug("gres_add_tres: couldn't find name");
+				continue;
+			}
+		}
+
+		for (i=0; i<tres_array_size; i++) {
+			if (!xstrcmp(tres_array[i]->type, "gres") &&
+			    !xstrcmp(tres_array[i]->name, name)) {
+				tres_req_cnt[i] = count;
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
+}
