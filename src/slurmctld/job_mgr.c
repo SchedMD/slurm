@@ -654,6 +654,52 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	return qos_ptr;
 }
 
+static void _update_job_tres(struct job_record *job_ptr)
+{
+	int i, j, pos;
+	uint64_t tres_cnt[slurmctld_tres_info.max_size];
+
+	/* This means we don't have to redo the tres */
+	if (!slurmctld_tres_info.old_tres_id_array || !job_ptr)
+		return;
+
+	for (i=0; i<slurmctld_tres_info.max_size; i++) {
+		/* Done! */
+		if (!slurmctld_tres_info.curr_tres_array[i])
+			break;
+
+		pos = NO_VAL;
+		/* This means the tres didn't change order */
+		if (slurmctld_tres_info.curr_tres_array[i]->id ==
+		    slurmctld_tres_info.old_tres_id_array[i])
+			pos = i;
+		else {
+			/* This means we might of changed the
+			 * location or it wasn't there before
+			 * so break
+			 */
+			for (j=0; j<slurmctld_tres_info.max_size; j++)
+				if (slurmctld_tres_info.
+				    curr_tres_array[i]->id ==
+				    slurmctld_tres_info.old_tres_id_array[j]) {
+					pos = slurmctld_tres_info.
+						old_tres_id_array[j];
+					break;
+				}
+		}
+
+		if (pos != NO_VAL)
+			tres_cnt[i] = job_ptr->tres_req_cnt[pos];
+	}
+	i = sizeof(uint64_t) * slurmctld_tres_info.curr_size;
+	/* get the array the correct size */
+	xrealloc(job_ptr->tres_req_cnt, i);
+	/* copy the data from tres_cnt which should contain
+	 * the new ordered tres values */
+	memcpy(job_ptr->tres_req_cnt, tres_cnt, i);
+}
+
+
 /*
  * dump_all_job_state - save the state of all jobs to file for checkpoint
  *	Changes here should be reflected in load_last_job_id() and
@@ -1225,6 +1271,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->bit_flags, buffer);
 	packstr(dump_job_ptr->tres_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
+	pack32(slurmctld_tres_info.curr_size, buffer);
+	pack64_array(dump_job_ptr->tres_req_cnt,
+		     slurmctld_tres_info.curr_size, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1274,6 +1323,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	bool job_finished = false;
 	char jbuf[JBUFSIZ];
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
+	uint32_t tres_req_size;
+	uint64_t *tres_req_cnt = NULL;
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -1463,6 +1514,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
 				       &name_len, buffer);
+		safe_unpack32(&tres_req_size, buffer);
+		safe_unpack64_array(&tres_req_cnt, &name_len, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1850,6 +1903,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->tres_alloc_str = tres_alloc_str;
 	tres_alloc_str = NULL;
 
+	xfree(job_ptr->tres_req_cnt);
+	job_ptr->tres_req_cnt = tres_req_cnt;
+	tres_req_cnt = NULL;
+
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
 	tres_fmt_alloc_str = NULL;
@@ -2103,6 +2160,28 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		assoc_mgr_unlock(&locks);
 	}
 
+	if (IS_JOB_PENDING(job_ptr)) {
+		if (job_ptr->tres_req_cnt)
+			_update_job_tres(job_ptr);
+		else {
+			if (!job_ptr->tres_req_cnt)
+				job_ptr->tres_req_cnt =
+					xmalloc(sizeof(uint64_t) *
+						slurmctld_tres_info.curr_size);
+
+			/* Since this is only used for PENDING jobs we can
+			 * make some assumptions.
+			 * CPU is always 0 and MEM is always 1 */
+			if (job_ptr->total_cpus)
+				job_ptr->tres_req_cnt[0] =
+					(uint64_t)job_ptr->total_cpus;
+			if (job_ptr->details && job_ptr->details->pn_min_memory)
+				job_ptr->tres_req_cnt[1] =
+					(uint64_t)job_ptr->details->
+					pn_min_memory;
+		}
+	}
+
 	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;
 
@@ -2133,6 +2212,7 @@ unpack_error:
 	xfree(task_id_str);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
+	xfree(tres_req_cnt);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
@@ -3707,6 +3787,11 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		}
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
+
+	i = sizeof(uint64_t) * slurmctld_tres_info.curr_size;
+	job_ptr_pend->tres_req_cnt = xmalloc(i);
+	memcpy(job_ptr_pend->tres_req_cnt, job_ptr->tres_req_cnt, i);
+
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 
 	job_details = job_ptr->details;
@@ -5525,6 +5610,12 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
+	/* set up the tres cnts before the validate takes place */
+	/* cpus can't be checked here as there are max and min values */
+	job_desc->tres_req_cnt = xmalloc(
+		sizeof(uint64_t) * slurmctld_tres_info.curr_size);
+	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
+
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
@@ -6613,6 +6704,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->wckey)
 		job_ptr->wckey = xstrdup(job_desc->wckey);
 
+	/* Since this is only used in the slurmctld copy it now.
+	 */
+	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
+	job_desc->tres_req_cnt = NULL;
+
 	_add_job_hash(job_ptr);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
@@ -7078,6 +7174,8 @@ extern void job_set_tres(struct job_record *job_ptr)
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
+	/* FIXME: should tres_req_cnt be updated here? */
+
 	xfree(job_ptr->tres_alloc_str);
 
 	xstrfmtcat(job_ptr->tres_alloc_str, "%s%u=%"PRIu64,
@@ -7438,6 +7536,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->state_desc);
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_fmt_alloc_str);
+	xfree(job_ptr->tres_req_cnt);
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);

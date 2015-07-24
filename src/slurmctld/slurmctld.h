@@ -738,6 +738,9 @@ struct job_record {
 					 * for accounting */
 	uint32_t total_nodes;		/* number of allocated nodes
 					 * for accounting */
+	uint64_t *tres_req_cnt;         /* array of tres counts requested
+					 * based off g_tres_count in
+					 * assoc_mgr */
 	char *tres_alloc_str;           /* simple tres string for job */
 	char *tres_fmt_alloc_str;       /* formatted tres string for job */
 	uint32_t user_id;		/* user the job runs as */
