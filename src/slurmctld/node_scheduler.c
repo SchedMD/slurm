@@ -2089,6 +2089,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->end_time = 0;
 		job_ptr->node_bitmap = NULL;
 		job_ptr->priority = 0;
+		job_ptr->state_reason = WAIT_HELD;
 		goto cleanup;
 	}
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {

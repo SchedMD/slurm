@@ -111,9 +111,12 @@ typedef struct {
 typedef struct {
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
-	uint32_t   swap_size;	/* swap space required per node */
+	uint32_t   swap_size;	/* swap space required per node in GB */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
-	uint64_t   total_size;	/* Total GB required for this job */
+	uint64_t   total_size;	/* Total bytes required for job (excludes
+				 * persistent buffers) */
+	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
+	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
 } bb_job_t;
 
 typedef struct job_queue_rec {
