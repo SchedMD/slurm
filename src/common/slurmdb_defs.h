@@ -52,6 +52,11 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
+/* This is used to point out constants that exist in the
+ * TRES records.  This should be the same order as
+ * the enum pointing out the order in the array that is defined in
+ * src/slurmctld/slurmctld.h
+ */
 typedef enum {
 	TRES_CPU = 1,
 	TRES_MEM,
