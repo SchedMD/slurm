@@ -3442,3 +3442,69 @@ extern void slurmdb_transfer_tres_time(
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(job_tres_list);
 }
+
+extern int slurmdb_get_new_tres_pos(slurmdb_tres_rec_t **new_array,
+				    slurmdb_tres_rec_t **old_array,
+				    int cur_pos, int max_cnt)
+{
+	int j, pos = NO_VAL;
+
+	/* This means the tres didn't change order */
+	if (new_array[cur_pos]->id == old_array[cur_pos]->id)
+		pos = cur_pos;
+	else {
+		/* This means we might of changed the location or it
+		 * wasn't there before so break
+		 */
+		for (j=0; j<max_cnt; j++)
+			if (new_array[cur_pos]->id == old_array[j]->id) {
+				pos = j;
+				break;
+			}
+	}
+
+	return pos;
+}
+
+extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
+				     slurmdb_tres_rec_t **new_array,
+				     slurmdb_tres_rec_t **old_array,
+				     int cur_cnt, int max_cnt)
+{
+	int i, pos;
+	uint64_t tres_cnt[cur_cnt];
+	bool changed = false;
+
+	/* This means we don't have to redo the tres */
+	if (!old_array || !new_array || !tres_cnt_in || !*tres_cnt_in)
+		return;
+
+	for (i=0; i<cur_cnt; i++) {
+		/* Done! */
+		if (!new_array[i])
+			break;
+
+		pos = slurmdb_get_new_tres_pos(
+			new_array, old_array, i, max_cnt);
+
+		if (pos != i)
+			changed = true;
+
+		if (pos != NO_VAL)
+			tres_cnt[i] = *tres_cnt_in[pos];
+	}
+
+	if (!changed)
+		return;
+
+	/* get the array the correct size */
+	i = sizeof(uint64_t) * cur_cnt;
+	if (cur_cnt != max_cnt)
+		xrealloc(*tres_cnt_in, i);
+
+	/* copy the data from tres_cnt which should contain
+	 * the new ordered tres values */
+	memcpy(*tres_cnt_in, tres_cnt, i);
+
+	return;
+}

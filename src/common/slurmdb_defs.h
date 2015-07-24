@@ -229,4 +229,12 @@ extern void slurmdb_transfer_acct_list_2_tres(
 extern void slurmdb_transfer_tres_time(
 	List *tres_list_out, char *tres_str, int elapsed);
 
+extern int slurmdb_get_new_tres_pos(slurmdb_tres_rec_t **new_array,
+				    slurmdb_tres_rec_t **old_array,
+				    int cur_pos, int max_cnt);
+extern void slurmdb_set_new_tres_cnt(uint64_t **tres_cnt_in,
+				     slurmdb_tres_rec_t **new_array,
+				     slurmdb_tres_rec_t **old_array,
+				     int cur_cnt, int max_cnt);
+
 #endif
