@@ -450,13 +450,27 @@ typedef struct slurmdb_assoc_rec {
 	char *grp_tres;            /* max number of cpus the
 				    * underlying group of
 				    * associations can allocate at one time */
+	uint64_t *grp_tres_ctld;   /* grp_tres broken out in an array
+				    * based off the ordering of the total
+				    * number of TRES in the system
+				    * (DON'T PACK) */
 	char *grp_tres_mins;       /* max number of cpu minutes the
 				    * underlying group of
 				    * associations can run for */
+	uint64_t *grp_tres_mins_ctld; /* grp_tres_mins broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system
+				       * (DON'T PACK) */
 	char *grp_tres_run_mins;   /* max number of cpu minutes the
 				    * underlying group of
 				    * assoiciations can
 				    * having running at one time */
+	uint64_t *grp_tres_run_mins_ctld; /* grp_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
 	uint32_t grp_wall;         /* total time in hours the
 				    * underlying group of
 				    * associations can run for */
@@ -478,11 +492,25 @@ typedef struct slurmdb_assoc_rec {
 				      submitted by association */
 	char *max_tres_mins_pj;    /* max number of cpu seconds this
 				    * association can have per job */
+	uint64_t *max_tres_mins_ctld; /* max_tres_mins broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 	char *max_tres_run_mins;   /* max number of cpu minutes this
 				    * association can
 				    * having running at one time */
+	uint64_t *max_tres_run_mins_ctld; /* max_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
 	char *max_tres_pj;         /* max number of cpus this
 				    * association can allocate per job */
+	uint64_t *max_tres_ctld;   /* max_tres broken out in an array
+				    * based off the ordering of the
+				    * total number of TRES in the system
+				    * (DON'T PACK) */
 	uint32_t max_wall_pj;      /* longest time this
 				    * association can run a job */
 
