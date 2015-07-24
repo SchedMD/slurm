@@ -5426,7 +5426,6 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
-	info("in got %p %p", assoc_mgr_tres_array, assoc_mgr_tres_array[0]);
 
 	xassert(assoc_mgr_tres_array);
 	xassert(g_tres_count);
