@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     improved scalability.
  -- Remove srun "read header error" due to application termination race
     condition.
+ -- Optimize sacct queries with additional db indexes.
 
 * Changes in Slurm 15.08.0pre6
 ==============================
