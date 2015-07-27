@@ -446,4 +446,11 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
 extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
 	slurmdb_tres_rec_t *tres_rec);
 
+/* fills in allocates and sets tres_cnt based off tres_str
+ * OUT tres_cnt - array to be filled in g_tres_cnt in length
+ * IN tres_str - simple format of tres used with id and count set
+ * IN locked - if the assoc_mgr tres read lock is locked or not.
+ */
+extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
+					 bool locked);
 #endif /* _SLURM_ASSOC_MGR_H */

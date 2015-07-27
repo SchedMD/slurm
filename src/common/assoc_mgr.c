@@ -873,61 +873,21 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 	list_iterator_destroy(itr);
 }
 
-static void _set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str)
-{
-	int array_size = sizeof(uint64_t) * g_tres_count;
-
-	xassert(tres_cnt);
-
-	if (!*tres_cnt)
-		*tres_cnt = xmalloc(array_size);
-	else
-		/* When doing the cnt the string is always the
-		 * complete string, so always set everything to 0 to
-		 * catch anything that was removed.
-		 */
-		memset(*tres_cnt, 0, array_size);
-
-	if (tres_str) {
-		List tmp_list = NULL;
-		slurmdb_tres_list_from_string(
-			&tmp_list, tres_str, TRES_STR_FLAG_NONE);
-		if (tmp_list) {
-			slurmdb_tres_rec_t *tres_rec;
-			ListIterator itr = list_iterator_create(tmp_list);
-			while ((tres_rec = list_next(itr))) {
-				int pos = assoc_mgr_find_tres_pos(tres_rec, 1);
-				if (pos == NO_VAL) {
-					error("_set_assoc_tres_cnt: no tres "
-					      "of id %u found in the array",
-					      tres_rec->id);
-				}
-				/* set the index to the count */
-				(*tres_cnt)[pos] = tres_rec->count;
-				/* info("%d pos %d has count of %"PRIu64, */
-				/*      tres_rec->id, */
-				/*      pos, tres_rec->count); */
-			}
-			list_iterator_destroy(itr);
-			FREE_NULL_LIST(tmp_list);
-		}
-	}
-	return;
-}
-
 static void _set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(assoc_mgr_tres_array);
 
-	_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres);
-	_set_tres_cnt_array(&assoc->grp_tres_mins_ctld, assoc->grp_tres_mins);
-	_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
-			    assoc->grp_tres_run_mins);
-	_set_tres_cnt_array(&assoc->max_tres_ctld, assoc->max_tres_pj);
-	_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
-			    assoc->max_tres_mins_pj);
-	_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
-			    assoc->max_tres_run_mins);
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_mins_ctld,
+				     assoc->grp_tres_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
+				     assoc->grp_tres_run_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
+				     assoc->max_tres_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
+				     assoc->max_tres_mins_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
+				     assoc->max_tres_run_mins, 1);
 }
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
@@ -5460,4 +5420,51 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(slurmdb_tres_rec_t *tres_rec)
 		return NULL;
 	else
 		return assoc_mgr_tres_array[pos];
+}
+
+extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
+					 bool locked)
+{
+	int array_size = sizeof(uint64_t) * g_tres_count;
+
+	xassert(tres_cnt);
+
+	if (!*tres_cnt)
+		*tres_cnt = xmalloc(array_size);
+	else {
+		xrealloc_nz(*tres_cnt, array_size);
+		/* When doing the cnt the string is always the
+		 * complete string, so always set everything to 0 to
+		 * catch anything that was removed.
+		 */
+		memset(*tres_cnt, 0, array_size);
+	}
+
+	if (tres_str) {
+		List tmp_list = NULL;
+		slurmdb_tres_list_from_string(
+			&tmp_list, tres_str, TRES_STR_FLAG_NONE);
+		if (tmp_list) {
+			slurmdb_tres_rec_t *tres_rec;
+			ListIterator itr = list_iterator_create(tmp_list);
+			while ((tres_rec = list_next(itr))) {
+				int pos = assoc_mgr_find_tres_pos(
+					tres_rec, locked);
+				if (pos == NO_VAL) {
+					error("assoc_mgr_set_tres_cnt_array: "
+					      "no tres "
+					      "of id %u found in the array",
+					      tres_rec->id);
+				}
+				/* set the index to the count */
+				(*tres_cnt)[pos] = tres_rec->count;
+				/* info("%d pos %d has count of %"PRIu64, */
+				/*      tres_rec->id, */
+				/*      pos, tres_rec->count); */
+			}
+			list_iterator_destroy(itr);
+			FREE_NULL_LIST(tmp_list);
+		}
+	}
+	return;
 }
