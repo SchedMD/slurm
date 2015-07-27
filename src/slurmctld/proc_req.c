@@ -3637,10 +3637,14 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_DELETE_RESERVTION from uid=%d", uid);
+	debug2("Processing RPC: REQUEST_DELETE_RESERVATION from uid=%d", uid);
 	if (!validate_operator(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, DELETE_RESERVTION RPC from uid=%d",
+		error("Security violation, DELETE_RESERVATION RPC from uid=%d",
+		      uid);
+	} else if (!resv_desc_ptr->name) {
+		error_code = ESLURM_INVALID_PARTITION_NAME;
+		error("Invalid DELETE_RESERVATION RPC from uid=%d, name is null",
 		      uid);
 	}
 

@@ -2039,7 +2039,7 @@ typedef struct reserve_info_msg {
 
 typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
-	uint32_t duration;	/* duration of reservation in seconds */
+	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint32_t flags;		/* see RESERVE_FLAG_* above */
