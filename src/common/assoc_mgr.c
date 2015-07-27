@@ -5468,3 +5468,32 @@ extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	}
 	return;
 }
+
+extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
+{
+	int i;
+	char *tres_str = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	if (!tres_cnt)
+		return NULL;
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	for (i=0; i<g_tres_count; i++) {
+		if (!assoc_mgr_tres_array[i] || !(tres_cnt+i))
+			continue;
+		xstrfmtcat(tres_str, "%s%u=%"PRIu64, tres_str ? "," : "",
+			   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
+	}
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+	info("made string of %s", tres_str);
+	return tres_str;
+}
