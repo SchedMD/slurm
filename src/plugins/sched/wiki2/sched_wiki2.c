@@ -44,16 +44,6 @@
 #include "src/common/slurm_priority.h"
 #include "./msg.h"
 
-/* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-tres_info_t slurmctld_tres_info __attribute__((weak_import));
-#else
-tres_info_t slurmctld_tres_info;
-#endif
-
 const char		plugin_name[]	= "Wiki (Maui and Moab) Scheduler plugin";
 const char		plugin_type[]	= "sched/wiki2";
 const uint32_t		plugin_version	= SLURM_VERSION_NUMBER;

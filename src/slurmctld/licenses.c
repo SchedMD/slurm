@@ -524,8 +524,8 @@ extern List license_validate(char *licenses,
 	ListIterator iter;
 	licenses_t *license_entry, *match;
 	List job_license_list;
-	slurmdb_tres_rec_t tres_req;
 	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_req;
 	int tres_pos;
 
 	job_license_list = _build_license_list(licenses, valid);
@@ -564,7 +564,8 @@ extern List license_validate(char *licenses,
 
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
-			if ((tres_pos = find_tres_pos(&tres_req)) != -1)
+			if ((tres_pos = assoc_mgr_find_tres_pos(
+				     &tres_req, false)) != -1)
 				tres_req_cnt[tres_pos] =
 					(uint64_t)license_entry->total;
 		}
@@ -855,12 +856,13 @@ extern uint32_t get_total_license_cnt(char *name)
 extern char *licenses_2_tres_str(List license_list)
 {
 	ListIterator itr;
-	slurmdb_tres_rec_t *tres_rec, tres_req;
+	slurmdb_tres_rec_t *tres_rec;
 	licenses_t *license_entry;
 	char *tres_str = NULL;
 	static bool first_run = 1;
-
-	xassert(slurmctld_tres_info.curr_tres_list); /* global */
+	static slurmdb_tres_rec_t tres_req;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!license_list)
 		return NULL;
@@ -872,10 +874,11 @@ extern char *licenses_2_tres_str(List license_list)
 		tres_req.type = "license";
 	}
 
+	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(license_list);
 	while ((license_entry = list_next(itr))) {
 		tres_req.name = license_entry->name;
-		if (!(tres_rec = find_tres_rec(&tres_req)))
+		if (!(tres_rec = assoc_mgr_find_tres_rec(&tres_req)))
 			continue; /* not tracked */
 
 		if (slurmdb_find_tres_count_in_string(
@@ -888,6 +891,7 @@ extern char *licenses_2_tres_str(List license_list)
 			   tres_rec->id, (uint64_t)license_entry->total);
 	}
 	list_iterator_destroy(itr);
+	assoc_mgr_unlock(&locks);
 
 	return tres_str;
 }

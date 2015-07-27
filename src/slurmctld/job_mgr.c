@@ -654,52 +654,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	return qos_ptr;
 }
 
-static void _update_job_tres(struct job_record *job_ptr)
-{
-	int i, j, pos;
-	uint64_t tres_cnt[slurmctld_tres_info.max_size];
-
-	/* This means we don't have to redo the tres */
-	if (!slurmctld_tres_info.old_tres_id_array || !job_ptr)
-		return;
-
-	for (i=0; i<slurmctld_tres_info.max_size; i++) {
-		/* Done! */
-		if (!slurmctld_tres_info.curr_tres_array[i])
-			break;
-
-		pos = NO_VAL;
-		/* This means the tres didn't change order */
-		if (slurmctld_tres_info.curr_tres_array[i]->id ==
-		    slurmctld_tres_info.old_tres_id_array[i])
-			pos = i;
-		else {
-			/* This means we might of changed the
-			 * location or it wasn't there before
-			 * so break
-			 */
-			for (j=0; j<slurmctld_tres_info.max_size; j++)
-				if (slurmctld_tres_info.
-				    curr_tres_array[i]->id ==
-				    slurmctld_tres_info.old_tres_id_array[j]) {
-					pos = slurmctld_tres_info.
-						old_tres_id_array[j];
-					break;
-				}
-		}
-
-		if (pos != NO_VAL)
-			tres_cnt[i] = job_ptr->tres_req_cnt[pos];
-	}
-	i = sizeof(uint64_t) * slurmctld_tres_info.curr_size;
-	/* get the array the correct size */
-	xrealloc(job_ptr->tres_req_cnt, i);
-	/* copy the data from tres_cnt which should contain
-	 * the new ordered tres values */
-	memcpy(job_ptr->tres_req_cnt, tres_cnt, i);
-}
-
-
 /*
  * dump_all_job_state - save the state of all jobs to file for checkpoint
  *	Changes here should be reflected in load_last_job_id() and
@@ -1271,9 +1225,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->bit_flags, buffer);
 	packstr(dump_job_ptr->tres_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
-	pack32(slurmctld_tres_info.curr_size, buffer);
-	pack64_array(dump_job_ptr->tres_req_cnt,
-		     slurmctld_tres_info.curr_size, buffer);
+	packstr(dump_job_ptr->tres_req_str, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1322,9 +1274,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 	char jbuf[JBUFSIZ];
-	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
-	uint32_t tres_req_size;
-	uint64_t *tres_req_cnt = NULL;
+	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL,
+		*tres_req_str = NULL;
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -1514,8 +1465,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
 				       &name_len, buffer);
-		safe_unpack32(&tres_req_size, buffer);
-		safe_unpack64_array(&tres_req_cnt, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1903,9 +1853,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->tres_alloc_str = tres_alloc_str;
 	tres_alloc_str = NULL;
 
-	xfree(job_ptr->tres_req_cnt);
-	job_ptr->tres_req_cnt = tres_req_cnt;
-	tres_req_cnt = NULL;
+	xfree(job_ptr->tres_req_str);
+	job_ptr->tres_req_str = tres_req_str;
+	tres_req_str = NULL;
 
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
@@ -2161,29 +2111,28 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	}
 
 	if (IS_JOB_PENDING(job_ptr)) {
-		if (job_ptr->tres_req_cnt)
-			_update_job_tres(job_ptr);
-		else {
-			if (!job_ptr->tres_req_cnt)
-				job_ptr->tres_req_cnt =
-					xmalloc(sizeof(uint64_t) *
-						slurmctld_tres_info.curr_size);
+		if (!job_ptr->tres_req_str) {
+			uint32_t cpu_cnt = 0, mem_cnt = 0;
 
-			/* Since this is only used for PENDING jobs we can
-			 * make some assumptions.
-			 * CPU is always 0 and MEM is always 1 */
+			if (job_ptr->details) {
+				cpu_cnt = job_ptr->details->min_cpus;
+				if (job_ptr->details->pn_min_memory)
+					mem_cnt =
+						job_ptr->details->pn_min_memory;
+			}
+
+			/* if this is set just override */
 			if (job_ptr->total_cpus)
-				job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
-					(uint64_t)job_ptr->total_cpus;
-			else if (job_ptr->details)
-				job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
-					(uint64_t)job_ptr->details->min_cpus;
+				cpu_cnt = job_ptr->total_cpus;
 
-			if (job_ptr->details && job_ptr->details->pn_min_memory)
-				job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
-					(uint64_t)job_ptr->details->
-					pn_min_memory;
+			job_ptr->tres_req_str = xstrdup_printf(
+				"%d=%u,%d=%u",
+				TRES_CPU, cpu_cnt,
+				TRES_MEM, mem_cnt);
 		}
+
+		assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
+					     job_ptr->tres_req_str, false);
 	}
 
 	build_node_details(job_ptr, false);	/* set node_addr */
@@ -2216,7 +2165,7 @@ unpack_error:
 	xfree(task_id_str);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
-	xfree(tres_req_cnt);
+	xfree(tres_req_str);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
 	checkpoint_free_jobinfo(check_job);
@@ -3792,9 +3741,10 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
 
-	i = sizeof(uint64_t) * slurmctld_tres_info.curr_size;
+	i = sizeof(uint64_t) * g_tres_count;
 	job_ptr_pend->tres_req_cnt = xmalloc(i);
 	memcpy(job_ptr_pend->tres_req_cnt, job_ptr->tres_req_cnt, i);
+	job_ptr_pend->tres_req_str = xstrdup(job_ptr->tres_req_str);
 
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 
@@ -5617,7 +5567,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	/* set up the tres cnts before the validate takes place */
 	/* cpus can't be checked here as there are max and min values */
 	job_desc->tres_req_cnt = xmalloc(
-		sizeof(uint64_t) * slurmctld_tres_info.curr_size);
+		sizeof(uint64_t) * slurmctld_tres_info.tracked_cnt);
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
 
@@ -5638,8 +5588,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	gres_set_job_tres_req_cnt(gres_list,
 				  job_desc->min_nodes,
 				  job_desc->tres_req_cnt,
-				  slurmctld_tres_info.curr_tres_array,
-				  slurmctld_tres_info.curr_size);
+				  false);
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
@@ -6726,6 +6675,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	 */
 	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
 	job_desc->tres_req_cnt = NULL;
+	job_ptr->tres_req_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, false);
 
 	_add_job_hash(job_ptr);
 
@@ -7221,9 +7172,9 @@ extern void job_set_tres(struct job_record *job_ptr)
 		   job_ptr->tres_alloc_str ? "," : "",
 		   TRES_MEM, tres_count);
 
-	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list,
-					    slurmctld_tres_info.curr_tres_list,
-					    1))) {
+	assoc_mgr_lock(&locks);
+
+	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list, true, true))) {
 		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
 			   job_ptr->tres_alloc_str ? "," : "",
 			   tmp_tres_str);
@@ -7238,7 +7189,6 @@ extern void job_set_tres(struct job_record *job_ptr)
 	}
 
 	xfree(job_ptr->tres_fmt_alloc_str);
-	assoc_mgr_lock(&locks);
 	job_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
 		job_ptr->tres_alloc_str, assoc_mgr_tres_list);
 	assoc_mgr_unlock(&locks);
@@ -7555,6 +7505,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_fmt_alloc_str);
 	xfree(job_ptr->tres_req_cnt);
+	xfree(job_ptr->tres_req_str);
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
@@ -9938,6 +9889,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else {
 			save_min_cpus = detail_ptr->min_cpus;
 			detail_ptr->min_cpus = job_specs->min_cpus;
+			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
+				(uint64_t)detail_ptr->min_cpus;
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					false);
+
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -9954,12 +9913,22 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (save_min_cpus) {
 			detail_ptr->min_cpus = save_min_cpus;
 			save_min_cpus = 0;
+			/* revert it */
+			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] =
+				(uint64_t)detail_ptr->min_cpus;
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					false);
+
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
 			save_max_cpus = 0;
 		}
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
@@ -10411,6 +10380,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set_pn_min_memory =
 				acct_policy_limit_set.pn_min_memory;
+			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
+				(uint64_t)detail_ptr->pn_min_memory;
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10579,6 +10555,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_INVALID_GRES;
 			FREE_NULL_LIST(tmp_gres_list);
 		} else {
+			assoc_mgr_lock_t locks = {
+				NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				READ_LOCK, NO_LOCK, NO_LOCK };
+
 			info("sched: update_job: setting gres to "
 			     "%s for job_id %u",
 			     job_specs->gres, job_ptr->job_id);
@@ -10586,15 +10566,20 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->gres = xstrdup(job_specs->gres);
 			FREE_NULL_LIST(job_ptr->gres_list);
 			job_ptr->gres_list = tmp_gres_list;
+
+			assoc_mgr_lock(&locks);
 			gres_set_job_tres_req_cnt(job_ptr->gres_list,
 						  job_ptr->details ?
 						  job_ptr->details->min_nodes :
 						  0,
 						  job_ptr->tres_req_cnt,
-						  slurmctld_tres_info.
-						  curr_tres_array,
-						  slurmctld_tres_info.
-						  curr_size);
+						  true);
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					true);
+			assoc_mgr_unlock(&locks);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10821,11 +10806,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		int i;
 		List license_list;
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
-		uint64_t tres_req_cnt[slurmctld_tres_info.curr_size];
+		uint64_t tres_req_cnt[g_tres_count];
 
 		/* This only needs to be done on pending jobs. */
 		if (pending)
-			for (i=0; i<slurmctld_tres_info.curr_size; i++)
+			for (i=0; i<g_tres_count; i++)
 				tres_req_cnt[i] = (uint64_t)-1;
 
 		license_list = license_validate(job_specs->licenses,
@@ -10844,11 +10829,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-			for (i=0; i<slurmctld_tres_info.curr_size; i++) {
+			for (i=0; i<g_tres_count; i++) {
 				if (tres_req_cnt[i] != (uint64_t)-1)
 					job_ptr->tres_req_cnt[i] =
 						tres_req_cnt[i];
 			}
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					false);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of

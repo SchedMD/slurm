@@ -87,6 +87,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/assoc_mgr.h"
 
 #define GRES_MAGIC 0x438a34d4
 #define MAX_GRES_BITMAP 1024
@@ -248,21 +249,6 @@ static uint32_t	_build_id(char *gres_name)
 	}
 
 	return id;
-}
-
-/* Find a slurmdb_tres_rec that is a gres of a certain name */
-static int _gres_find_tres(void *x, void *key)
-{
-	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
-
-	if (!tres_rec->type || strcmp(tres_rec->type, "gres"))
-		return 0;
-
-	if (key && tres_rec->name && !strcmp(tres_rec->name, (char *)key))
-		return 1;
-
-	return 0;
-
 }
 
 static int _gres_find_id(void *x, void *key)
@@ -6497,8 +6483,7 @@ extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
 	return (gres_job_state_t *)gres_state_ptr->gres_data;
 }
 
-extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
-			     bool is_job)
+extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec;
@@ -6506,9 +6491,24 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 	char *name;
 	uint64_t count;
 	char *tres_str = NULL;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_req;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
+		tres_req.type = "gres";
+	}
 
 	if (!gres_list)
 		return NULL;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
 
 	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
@@ -6543,8 +6543,7 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 			}
 		}
 
-		if (!(tres_rec = list_find_first(
-			      total_tres_list, _gres_find_tres, name)))
+		if (!(tres_rec = assoc_mgr_find_tres_rec(&tres_req)))
 			continue; /* not tracked */
 
 		if (slurmdb_find_tres_count_in_string(
@@ -6559,58 +6558,73 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
 
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
 	return tres_str;
 }
 
 extern void gres_set_job_tres_req_cnt(List gres_list,
 				      uint32_t node_cnt,
 				      uint64_t *tres_req_cnt,
-				      slurmdb_tres_rec_t **tres_array,
-				      int tres_array_size)
+				      bool locked)
 {
 	ListIterator itr;
 	gres_state_t *gres_state_ptr;
-	char *name;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_req;
 	uint64_t count;
-	int i;
+	int i, tres_pos;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!gres_list || !tres_req_cnt || !tres_array || !tres_array_size ||
-	    !node_cnt || (node_cnt == NO_VAL))
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
+		tres_req.type = "gres";
+	}
+
+	if (!gres_list || !tres_req_cnt || !node_cnt || (node_cnt == NO_VAL))
 		return;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
 
 	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
 		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 			gres_state_ptr->gres_data;
-		name = gres_data_ptr->type_model;
+		tres_req.name = gres_data_ptr->type_model;
 		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
 
-		if (!name) {
+		if (!tres_req.name) {
 			for (i=0; i < gres_context_cnt; i++) {
 				if (gres_context[i].plugin_id ==
 				    gres_state_ptr->plugin_id) {
-					name = gres_context[i].gres_name;
+					tres_req.name =
+						gres_context[i].gres_name;
 					break;
 				}
 			}
 
-			if (!name) {
+			if (!tres_req.name) {
 				debug("gres_add_tres: couldn't find name");
 				continue;
 			}
 		}
 
-		for (i=0; i<tres_array_size; i++) {
-			if (!xstrcmp(tres_array[i]->type, "gres") &&
-			    !xstrcmp(tres_array[i]->name, name)) {
-				tres_req_cnt[i] = count;
-				break;
-			}
-		}
+		if ((tres_pos = assoc_mgr_find_tres_pos(
+			     &tres_req, false)) != -1)
+			tres_req_cnt[tres_pos] = count;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 
 	return;
 }

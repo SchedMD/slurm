@@ -690,9 +690,8 @@ int main(int argc, char *argv[])
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
-	xfree(slurmctld_tres_info.curr_tres_array);
-	FREE_NULL_LIST(slurmctld_tres_info.curr_tres_list);
-	xfree(slurmctld_tres_info.old_tres_id_array);
+	xfree(slurmctld_tres_info.tracked_tres_array);
+	FREE_NULL_LIST(slurmctld_tres_info.tracked_tres_list);
 	usleep(500000);
 }
 #else
@@ -815,40 +814,6 @@ static void _reconfigure_slurm(void)
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */
 	queue_job_scheduler();
-}
-
-extern int find_tres_pos(slurmdb_tres_rec_t *tres_rec)
-{
-	int i;
-	xassert(slurmctld_tres_info.curr_tres_array);
-
-	if (!tres_rec->id && !tres_rec->type)
-		return -1;
-
-	for (i=0; i<slurmctld_tres_info.curr_size; i++) {
-		if (tres_rec->id &&
-		    slurmctld_tres_info.curr_tres_array[i]->id == tres_rec->id)
-			return i;
-		else if (!xstrcmp(
-				 slurmctld_tres_info.curr_tres_array[i]->type,
-				 tres_rec->type) &&
-			 !xstrcmp(
-				 slurmctld_tres_info.curr_tres_array[i]->name,
-				 tres_rec->name))
-			return i;
-	}
-
-	return -1;
-}
-
-extern slurmdb_tres_rec_t *find_tres_rec(slurmdb_tres_rec_t *tres_rec)
-{
-	int pos = find_tres_pos(tres_rec);
-
-	if (pos == -1)
-		return NULL;
-	else
-		return slurmctld_tres_info.curr_tres_array[pos];
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */
@@ -1221,7 +1186,7 @@ static int _accounting_cluster_ready(void)
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
 	cluster_tres_str = slurmdb_make_tres_string(
-		slurmctld_tres_info.curr_tres_list, TRES_STR_FLAG_SIMPLE);
+		slurmctld_tres_info.tracked_tres_list, TRES_STR_FLAG_SIMPLE);
 	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
@@ -1960,9 +1925,9 @@ extern void set_cluster_tres(void)
 	ListIterator itr;
 	int i;
 
-	xassert(slurmctld_tres_info.curr_tres_list);
+	xassert(slurmctld_tres_info.tracked_tres_list);
 
-	itr = list_iterator_create(slurmctld_tres_info.curr_tres_list);
+	itr = list_iterator_create(slurmctld_tres_info.tracked_tres_list);
 	while ((tres_rec = list_next(itr))) {
 		if (!tres_rec->type) {
 			error("TRES %d doesn't have a type given, "
@@ -2026,7 +1991,7 @@ extern void set_cluster_tres(void)
 		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
 			   TRES_MEM, mem_count);
 
-		list_for_each(slurmctld_tres_info.curr_tres_list,
+		list_for_each(slurmctld_tres_info.tracked_tres_list,
 			      _add_node_gres_tres, node_ptr);
 	}
 

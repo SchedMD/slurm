@@ -206,14 +206,10 @@ typedef struct diag_stats {
 } diag_stats_t;
 
 typedef struct {
-	slurmdb_tres_rec_t **curr_tres_array; /* array of tres_recs
-						 size of max_size */
-	List curr_tres_list;
-	int curr_size;
-	int max_size; /* max size of old or new tres list */
-	uint32_t *old_tres_id_array; /* array of tres id's in the order
-				      * they existed when last running.
-				      */
+	slurmdb_tres_rec_t **tracked_tres_array; /* array of tres_recs
+						    size of max_size */
+	List tracked_tres_list;
+	int tracked_cnt;
 } tres_info_t;
 
 /* This is used to point out constants that exist in the
@@ -741,6 +737,9 @@ struct job_record {
 	uint64_t *tres_req_cnt;         /* array of tres counts requested
 					 * based off g_tres_count in
 					 * assoc_mgr */
+	char *tres_req_str;             /* string format of
+					 * tres_req_cnt primarily
+					 * used for state */
 	char *tres_alloc_str;           /* simple tres string for job */
 	char *tres_fmt_alloc_str;       /* formatted tres string for job */
 	uint32_t user_id;		/* user the job runs as */
@@ -1881,14 +1880,6 @@ void purge_old_job(void);
 
 /* Convert a comma delimited list of QOS names into a bitmap */
 extern void qos_list_build(char *qos, bitstr_t **qos_bits);
-
-/* Find the position of the given TRES ID or type/name in the
- * slurmctld_tres_info.curr_tres_array, if the ID isn't found -1 is
- * returned.
- */
-extern int find_tres_pos(slurmdb_tres_rec_t *tres_rec);
-/* calls find_tres_pos and returns the pointer in the curr_tres_array */
-extern slurmdb_tres_rec_t *find_tres_rec(slurmdb_tres_rec_t *tres_rec);
 
 /* Request that the job scheduler execute soon (typically within seconds) */
 extern void queue_job_scheduler(void);

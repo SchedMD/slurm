@@ -2541,9 +2541,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		   step_ptr->tres_alloc_str ? "," : "",
 		   TRES_MEM, tres_count);
 
-	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list,
-					    slurmctld_tres_info.curr_tres_list,
-					    0))) {
+	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
 		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",
 			   step_ptr->tres_alloc_str ? "," : "",
 			   tmp_tres_str);

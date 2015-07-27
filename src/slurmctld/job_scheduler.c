@@ -2550,6 +2550,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			}
 			if (depend_type == SLURM_DEPEND_EXPAND) {
+				assoc_mgr_lock_t locks = {
+					NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					READ_LOCK, NO_LOCK, NO_LOCK };
+
 				job_ptr->details->expanding_jobid = job_id;
 				/* GRES configuration of this job must match
 				 * the job being expanded */
@@ -2558,15 +2562,19 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				FREE_NULL_LIST(job_ptr->gres_list);
 				gres_plugin_job_state_validate(
 					job_ptr->gres, &job_ptr->gres_list);
+				assoc_mgr_lock(&locks);
 				gres_set_job_tres_req_cnt(job_ptr->gres_list,
 							  job_ptr->details ?
 							  job_ptr->details->
 							  min_nodes : 0,
 							  job_ptr->tres_req_cnt,
-							  slurmctld_tres_info.
-							  curr_tres_array,
-							  slurmctld_tres_info.
-							  curr_size);
+							  true);
+				xfree(job_ptr->tres_req_str);
+				job_ptr->tres_req_str =
+					assoc_mgr_make_tres_str_from_array(
+						job_ptr->tres_req_cnt,
+						true);
+				assoc_mgr_unlock(&locks);
 			}
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
