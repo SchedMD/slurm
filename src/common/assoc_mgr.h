@@ -443,7 +443,7 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
  * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
  * function and while using the returned record.
  */
-extern slurmdb_tres_rec_t *sacct_mgr_find_tres_rec(
+extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
 	slurmdb_tres_rec_t *tres_rec);
 
 #endif /* _SLURM_ASSOC_MGR_H */
