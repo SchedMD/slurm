@@ -1539,7 +1539,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (task_g_pre_setuid(job)) {
-		error("Failed task affinity setup");
+		error("Failed to invoke task plugins: one of task_p_pre_setuid functions returned error");
 		return SLURM_ERROR;
 	}
 
