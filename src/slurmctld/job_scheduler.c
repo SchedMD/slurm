@@ -301,6 +301,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	int reason;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
+	int job_part_pairs = 0;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
@@ -308,9 +309,9 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if (((tested_jobs % 100) == 0) &&
 		    (_delta_tv(&start_tv) >= build_queue_timeout)) {
 			info("build_job_queue has been running for %d usec, "
-			     "exiting with %d of %d jobs tested",
+			     "exiting with %d of %d jobs tested, %d job-partition pairs added",
 			     build_queue_timeout, tested_jobs,
-			     list_count(job_list));
+			     list_count(job_list), job_part_pairs);
 			break;
 		}
 		tested_jobs++;
@@ -337,6 +338,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				inx++;
 				if (reason != WAIT_NO_REASON)
 					continue;
+				job_part_pairs++;
 				if (job_ptr->priority_array) {
 					_job_queue_append(job_queue, job_ptr,
 							  part_ptr,
@@ -365,6 +367,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			}
 			if (!_job_runnable_test2(job_ptr, backfill))
 				continue;
+			job_part_pairs++;
 			_job_queue_append(job_queue, job_ptr,
 					  job_ptr->part_ptr, job_ptr->priority);
 		}
