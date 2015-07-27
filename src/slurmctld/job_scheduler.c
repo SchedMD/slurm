@@ -294,6 +294,7 @@ static int _delta_tv(struct timeval *tv)
  */
 extern List build_job_queue(bool clear_start, bool backfill)
 {
+	static time_t last_log_time = 0;
 	List job_queue;
 	ListIterator job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL;
@@ -308,10 +309,15 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (((tested_jobs % 100) == 0) &&
 		    (_delta_tv(&start_tv) >= build_queue_timeout)) {
-			info("build_job_queue has been running for %d usec, "
-			     "exiting with %d of %d jobs tested, %d job-partition pairs added",
-			     build_queue_timeout, tested_jobs,
-			     list_count(job_list), job_part_pairs);
+			time_t now = time(NULL);
+			if (difftime(now, last_log_time) > 600) {
+				/* Log at most once every 10 minutes */
+				info(
+"%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition pairs added",
+				     __func__, build_queue_timeout, tested_jobs,
+				     list_count(job_list), job_part_pairs);
+				last_log_time = now;
+			}
 			break;
 		}
 		tested_jobs++;
