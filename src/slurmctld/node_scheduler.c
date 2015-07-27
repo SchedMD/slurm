@@ -66,6 +66,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_priority.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1484,8 +1485,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				avail_bitmap = bit_copy(node_set_ptr[i].
 							my_bitmap);
 			}
-			avail_nodes = bit_set_count(avail_bitmap);
+
 			tried_sched = false;	/* need to test these nodes */
+			if ((switch_record_cnt > 1) &&
+			    ((i+1) < node_set_size)) {
+				/* Keep accumulating to optimize topology */
+				continue;
+			}
+
 			if ((shared || preempt_flag)	&&
 			    ((i+1) < node_set_size)	&&
 			    (node_set_ptr[i].weight ==
@@ -1495,6 +1502,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			}
 
+			avail_nodes = bit_set_count(avail_bitmap);
 			if ((avail_nodes  < min_nodes)	||
 			    ((avail_nodes >= min_nodes)	&&
 			     (avail_nodes < req_nodes)	&&
