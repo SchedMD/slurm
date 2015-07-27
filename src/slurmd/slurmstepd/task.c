@@ -443,7 +443,7 @@ exec_task(stepd_step_rec_t *job, int i)
 
 	/* task plugin hook */
 	if (task_g_pre_launch(job)) {
-		error("Failed task affinity setup");
+		error("Failed to invoke task plugins: one of task_p_pre_launch functions returned error");
 		exit(1);
 	}
 	if (!job->batch && job->accel_bind_type) {
@@ -459,7 +459,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	}
 
 	if (spank_user_task (job, i) < 0) {
-		error ("Failed to invoke task plugin stack");
+		error ("Failed to invoke spank plugin stack");
 		exit (1);
 	}
 
