@@ -1228,3 +1228,19 @@ int _print_version(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 
 }
+
+int _print_alloc_mem(sinfo_data_t * sinfo_data, int width,
+		     bool right_justify, char *suffix)
+{
+	char tmp_line[32];
+	if (sinfo_data) {
+		sprintf(tmp_line, "%u", sinfo_data->alloc_memory);
+		_print_str(tmp_line, width, right_justify, true);
+	} else {
+		_print_str("ALLOCMEM", width, right_justify, true);
+	}
+	if (suffix) {
+		printf ("%s", suffix);
+	}
+	return SLURM_SUCCESS;
+}
