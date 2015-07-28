@@ -5374,9 +5374,12 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc)
 
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 {
-	int i;
+	int i, tres_pos = -1;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!tres_rec->id && !tres_rec->type)
+		return tres_pos;
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -5385,23 +5388,24 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 	xassert(g_tres_count);
 	xassert(assoc_mgr_tres_array[g_tres_count - 1]);
 
-	if (!tres_rec->id && !tres_rec->type)
-		return -1;
-
 	for (i=0; i<g_tres_count; i++) {
-		if (tres_rec->id && assoc_mgr_tres_array[i]->id == tres_rec->id)
-			return i;
-		else if (!xstrcmp(assoc_mgr_tres_array[i]->type,
+		if (tres_rec->id &&
+		    assoc_mgr_tres_array[i]->id == tres_rec->id) {
+			tres_pos = i;
+			break;
+		} else if (!xstrcmp(assoc_mgr_tres_array[i]->type,
 				  tres_rec->type) &&
 			 !xstrcmp(assoc_mgr_tres_array[i]->name,
-				  tres_rec->name))
-			return i;
+				  tres_rec->name)) {
+			tres_pos = i;
+			break;
+		}
 	}
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
-	return -1;
+	return tres_pos;
 }
 
 /* The assoc_mgr tres read lock needs to be locked before calling this
