@@ -3,8 +3,8 @@
 <h1> CPU Management User and Administrator Guide</h1>
 <a name="Overview"></a>
 <h2>Overview</h2>
-<p>The purpose of this guide is to assist Slurm users and administrators in selecting configuration options 
-and composing command lines to manage the use of CPU resources by jobs, steps and tasks. The document 
+<p>The purpose of this guide is to assist Slurm users and administrators in selecting configuration options
+and composing command lines to manage the use of CPU resources by jobs, steps and tasks. The document
 is divided into the following sections:</p>
 <ul>
 <li><a href="#Overview">Overview</a></li>
@@ -15,18 +15,18 @@ is divided into the following sections:</p>
 </ul>
 
 <p>CPU Management through user commands is constrained by the configuration parameters
-chosen by the Slurm administrator. The interactions between different CPU management options are complex 
-and often difficult to predict. Some experimentation may be required to discover the exact combination 
-of options  needed to produce a desired outcome. Users and administrators should refer to the man pages 
+chosen by the Slurm administrator. The interactions between different CPU management options are complex
+and often difficult to predict. Some experimentation may be required to discover the exact combination
+of options  needed to produce a desired outcome. Users and administrators should refer to the man pages
 for <a href="slurm.conf.html">slurm.conf</a>, <a href="cgroup.conf.html">cgroup.conf</a>,
-<a href="salloc.html">salloc</a>, 
-<a href="sbatch.html">sbatch</a> and <a href="srun.html">srun</a> for detailed explanations of each 
+<a href="salloc.html">salloc</a>,
+<a href="sbatch.html">sbatch</a> and <a href="srun.html">srun</a> for detailed explanations of each
 option. The following html documents may also be useful:</p>
 
 <p>
 <a href="cons_res.html">Consumable Resources in Slurm</a><br>
 <a href="cons_res_share.html">Sharing Consumable Resources</a><br>
-<a href="mc_support.html">Support for Multi-core/Multi-thread 
+<a href="mc_support.html">Support for Multi-core/Multi-thread
 Architectures</a><br>
 <a href="dist_plane.html">Plane distribution</a></p>
 
@@ -39,19 +39,19 @@ information on Cray and IBM BlueGene systems, please refer to the appropriate do
 <li><a href="#Step1">Step 1: Selection of Nodes</a>
 </li><li><a href="#Step2">Step 2: Allocation of CPUs from the selected Nodes</a>
 </li><li><a href="#Step3">Step 3: Distribution of Tasks to the selected Nodes</a>
-</li><li><a href="#Step4">Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node 
+</li><li><a href="#Step4">Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node
 </a>
 </li></ul>
 <a name="Step1"></a>
 <h3>Step 1: Selection of Nodes</h3>
-<p>In Step 1, Slurm selects the set of nodes from which CPU resources are to be allocated to a job or 
+<p>In Step 1, Slurm selects the set of nodes from which CPU resources are to be allocated to a job or
 job step.  Node selection is therefore influenced by many of the configuration and command line options
 that control the allocation of CPUs (Step 2 below).
 If <font face="Courier New, monospace">
 SelectType=select/linear</font> is configured, all resources on the selected nodes will be allocated
-to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured, 
-individual sockets, cores and threads may be allocated from the selected nodes as 
-<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by 
+to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured,
+individual sockets, cores and threads may be allocated from the selected nodes as
+<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
 <br>
 <br>
@@ -59,7 +59,7 @@ Step 1 is performed by slurmctld and the select plugin.
 <br>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>slurm.conf options that control Step 1</b></caption>
+		<caption style="font-size: 8pt"><b>slurm.conf options that control Step 1</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
@@ -126,7 +126,7 @@ Step 1 is performed by slurmctld and the select plugin.
 			</td>
 			<td height="18" width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-                               <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
+			       <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -151,26 +151,26 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 		</tr>
 	</tbody></table>
-</center> 
+</center>
 <br>
 <center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 1</b></caption>
+		<caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 1</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
 		</colgroup><tbody><tr>
 			<td bgcolor="#e0e0e0" height="17" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Command
+		    <b style="font-family: Arial, Helvetica, sans-serif">Command
 				line option</b></font></p>
 			</td>
 			<td bgcolor="#e0e0e0" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
 			</td><td bgcolor="#e0e0e0" width="60%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
 			</td>
 		</tr>
 		<tr>
@@ -275,7 +275,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">compute_bound |
-                                memory_bound | [no]multithread</font></font></p>
+				memory_bound | [no]multithread</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font face="Arial, sans-serif"><font style="font-size: 8pt" size="1">Additional
@@ -448,7 +448,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-                                &lt;host1,host2,... or filename&gt;</font></p>
+				&lt;host1,host2,... or filename&gt;</font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font face="Arial, sans-serif"><font style="font-size: 8pt" size="1">List
@@ -474,21 +474,21 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 <br>
 <a name="Step2"></a>
 <h3>Step 2: Allocation of CPUs from the selected Nodes</h3>
-<p>In Step 2, Slurm allocates CPU resources to a job/step from the set of nodes selected 
+<p>In Step 2, Slurm allocates CPU resources to a job/step from the set of nodes selected
 in Step 1. CPU allocation is therefore influenced by the configuration and command line options
 that relate to node selection.
 If <font face="Courier New, monospace">
 SelectType=select/linear</font> is configured, all resources on the selected nodes will be allocated
-to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured, 
-individual sockets, cores and threads may be allocated from the selected nodes as 
-<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by 
+to the job/step. If <font face="Courier New, monospace">SelectType=select/cons_res</font> is configured,
+individual sockets, cores and threads may be allocated from the selected nodes as
+<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
 <br>
-</p><p>When using <font face="Courier New, monospace">SelectType=select/cons_res</font>, 
-the default allocation method across nodes is block allocation (allocate all available CPUs in 
-a node before using another node). The default allocation method within a node is cyclic 
-allocation (allocate available CPUs in a round-robin fashion across the sockets within a node). 
-Users may override the default behavior using the appropriate command 
+</p><p>When using <font face="Courier New, monospace">SelectType=select/cons_res</font>,
+the default allocation method across nodes is block allocation (allocate all available CPUs in
+a node before using another node). The default allocation method within a node is cyclic
+allocation (allocate available CPUs in a round-robin fashion across the sockets within a node).
+Users may override the default behavior using the appropriate command
 line options described below.  The choice of allocation methods may influence which specific
 CPUs are allocated to the job/step.
 <br><br>
@@ -496,7 +496,7 @@ Step 2 is performed by slurmctld and the select plugin.
 <br>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>slurm.conf options that control Step 2</b></caption>
+		<caption style="font-size: 8pt"><b>slurm.conf options that control Step 2</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
@@ -563,7 +563,7 @@ Step 2 is performed by slurmctld and the select plugin.
 			</td>
 			<td height="18" width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-                               <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
+			       <font face="Courier New, monospace">select/linear | select/cons_res</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -588,26 +588,26 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 		</tr>
 	</tbody></table>
-</center> 
+</center>
 <br>
 <center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 2</b></caption>
+		<caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 2</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
 		</colgroup><tbody><tr>
 			<td bgcolor="#e0e0e0" height="17" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Command
+		    <b style="font-family: Arial, Helvetica, sans-serif">Command
 				line option</b></font></p>
 			</td>
 			<td bgcolor="#e0e0e0" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
 			</td><td bgcolor="#e0e0e0" width="60%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
 			</td>
 		</tr>
 		<tr>
@@ -726,7 +726,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">compute_bound |
-                                memory_bound | [no]multithread</font></font></p>
+				memory_bound | [no]multithread</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font face="Arial, sans-serif"><font style="font-size: 8pt" size="1">Additional
@@ -899,7 +899,7 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 			</td>
 			<td width="20%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-                                &lt;host1,host2,... or filename&gt;</font></p>
+				&lt;host1,host2,... or filename&gt;</font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font face="Arial, sans-serif"><font style="font-size: 8pt" size="1">List
@@ -925,19 +925,19 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 <br>
 <a name="Step3"></a>
 <h3>Step 3: Distribution of Tasks to the selected Nodes</h3>
-<p>In Step 3, Slurm distributes tasks to the nodes that were selected for 
-the job/step in Step 1. Each task is distributed to only one node, but more than one 
+<p>In Step 3, Slurm distributes tasks to the nodes that were selected for
+the job/step in Step 1. Each task is distributed to only one node, but more than one
 task may be distributed to each node.  Unless overcommitment of CPUs to tasks is
 specified for the job, the number of tasks distributed to a node is
 constrained by the number of CPUs allocated on the node and the number of CPUs per
-task. If consumable resources is configured, or resource sharing is allowed, tasks from 
-more than one job/step may run on the same node concurrently.  
+task. If consumable resources is configured, or resource sharing is allowed, tasks from
+more than one job/step may run on the same node concurrently.
 <br><br>
 Step 3 is performed by slurmctld.
 <br>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>slurm.conf options that control Step 3</b></caption>
+		<caption style="font-size: 8pt"><b>slurm.conf options that control Step 3</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
@@ -972,22 +972,22 @@ Step 3 is performed by slurmctld.
 <br>
 <center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 3</b></caption>
+		<caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 3</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
 		</colgroup><tbody><tr>
 			<td bgcolor="#e0e0e0" height="17" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Command
+		    <b style="font-family: Arial, Helvetica, sans-serif">Command
 				line option</b></font></p>
 			</td>
 			<td bgcolor="#e0e0e0" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
 			</td><td bgcolor="#e0e0e0" width="60%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
 			</td>
 		</tr>
 		<tr>
@@ -1001,8 +1001,8 @@ Step 3 is performed by slurmctld.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">The first specified distribution (before the ":")
-				controls the sequence in which tasks are distributed to each of the selected nodes. Note that 
-				this option does not affect the number of tasks distributed to each node, but only the sequence of 
+				controls the sequence in which tasks are distributed to each of the selected nodes. Note that
+				this option does not affect the number of tasks distributed to each node, but only the sequence of
 				distribution.</font></p>
 			</td>
 		</tr>
@@ -1064,16 +1064,16 @@ Step 3 is performed by slurmctld.
 <br>
 <a name="Step4"></a>
 <h3>Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node</h3>
-<p>In optional Step 4, Slurm distributes and binds each task to a specified subset of 
-the allocated CPUs on the node to which the task was distributed in Step 3. Different 
-tasks distributed to the same node may be bound to the same subset of CPUs or to 
+<p>In optional Step 4, Slurm distributes and binds each task to a specified subset of
+the allocated CPUs on the node to which the task was distributed in Step 3. Different
+tasks distributed to the same node may be bound to the same subset of CPUs or to
 different subsets. This step is known as task affinity or task/CPU binding.
 <br><br>
 Step 4 is performed by slurmd and the task plugin.
 <br>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>slurm.conf options that control Step 4</b></caption>
+		<caption style="font-size: 8pt"><b>slurm.conf options that control Step 4</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
@@ -1114,15 +1114,15 @@ Step 4 is performed by slurmd and the task plugin.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				For task/affinity, controls the binding unit (sockets, cores or threads) and the 
-                                binding method (sched or cpusets)</font></p>
+				For task/affinity, controls the binding unit (sockets, cores or threads) and the
+				binding method (sched or cpusets)</font></p>
 			</td>
 		</tr>
 	</tbody></table>
 </center>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>cgroup.conf options that control Step 4 (task/cgroup plugin only)</b></caption>
+		<caption style="font-size: 8pt"><b>cgroup.conf options that control Step 4 (task/cgroup plugin only)</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
@@ -1172,22 +1172,22 @@ Step 4 is performed by slurmd and the task plugin.
 <br>
 <center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
-                <caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 4</b></caption>
+		<caption style="font-size: 8pt"><b>srun/salloc/sbatch command line options that control Step 4</b></caption>
 		<colgroup><col width="20%">
 		<col width="20%">
 		<col width="60%">
 		</colgroup><tbody><tr>
 			<td bgcolor="#e0e0e0" height="17" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Command
+		    <b style="font-family: Arial, Helvetica, sans-serif">Command
 				line option</b></font></p>
 			</td>
 			<td bgcolor="#e0e0e0" width="20%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Possible values</b></font></p>
 			</td><td bgcolor="#e0e0e0" width="60%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-                    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
+		    <b style="font-family: Arial, Helvetica, sans-serif">Description</b></font></p>
 			</td>
 		</tr>
 		<tr>
@@ -1228,7 +1228,7 @@ Step 4 is performed by slurmd and the task plugin.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font face="Arial, sans-serif"><font style="font-size: 8pt" size="1">
-				The second specified distribution (after the ":") controls the sequence in which tasks are 
+				The second specified distribution (after the ":") controls the sequence in which tasks are
 				distributed to allocated CPUs within a node for binding of tasks to CPUs</font></font></p>
 			</td>
 		</tr>
@@ -1237,24 +1237,24 @@ Step 4 is performed by slurmd and the task plugin.
 </center>
 <br><br>
 <h2>Additional Notes on CPU Management Steps</h2>
-<p>For consumable resources, it is important for users to understand the difference between 
-cpu allocation (Step 2) and task affinity/binding (Step 4).  Exclusive (unshared) allocation 
-of CPUs as consumable resources limits the number of jobs/steps/tasks that 
-can use a node concurrently.  But it does not limit the set of CPUs on the node that each 
-task distributed to the node can use.  Unless some form of CPU/task binding is used 
-(e.g., a task or spank plugin), all tasks distributed to a node can use all of 
-the CPUs on the node, including CPUs not allocated to their job/step.  This may have 
-unexpected adverse effects on performance, since it allows one job to use CPUs allocated 
-exclusively to another job.  For this reason, it may not be advisable to configure 
-consumable resources without also configuring task affinity.  Note that task affinity 
-can also be useful when select/linear (whole node allocation) is configured, to improve 
-performance by restricting each task to a particular socket or other subset of CPU 
+<p>For consumable resources, it is important for users to understand the difference between
+cpu allocation (Step 2) and task affinity/binding (Step 4).  Exclusive (unshared) allocation
+of CPUs as consumable resources limits the number of jobs/steps/tasks that
+can use a node concurrently.  But it does not limit the set of CPUs on the node that each
+task distributed to the node can use.  Unless some form of CPU/task binding is used
+(e.g., a task or spank plugin), all tasks distributed to a node can use all of
+the CPUs on the node, including CPUs not allocated to their job/step.  This may have
+unexpected adverse effects on performance, since it allows one job to use CPUs allocated
+exclusively to another job.  For this reason, it may not be advisable to configure
+consumable resources without also configuring task affinity.  Note that task affinity
+can also be useful when select/linear (whole node allocation) is configured, to improve
+performance by restricting each task to a particular socket or other subset of CPU
 resources on a node.</p>
 <br><br>
 <a name="Section2"></a>
 <h2>Getting Information about CPU usage by Jobs/Steps/Tasks</h2>
-<p>There is no easy way to generate a comprehensive set of CPU management information 
-for a job/step (allocation, distribution and binding). However, several 
+<p>There is no easy way to generate a comprehensive set of CPU management information
+for a job/step (allocation, distribution and binding). However, several
 commands/options provide limited information about CPU usage.
 </p>
 <center>
@@ -1270,13 +1270,13 @@ commands/options provide limited information about CPU usage.
 		<tr>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-scontrol show job option: 
+scontrol show job option:
 <font face="Courier New, monospace">--details</font></font></p>
 			</td>
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-This option provides a list of the nodes selected for the job and the CPU ids allocated to the job on each 
-node. Note that the CPU ids reported by this command are Slurm abstract CPU ids, not Linux/hardware CPU ids 
+This option provides a list of the nodes selected for the job and the CPU ids allocated to the job on each
+node. Note that the CPU ids reported by this command are Slurm abstract CPU ids, not Linux/hardware CPU ids
 (as reported by, for example, /proc/cpuinfo).
 </font></p>
 			</td>
@@ -1314,13 +1314,13 @@ SLURMD_NODENAME<br>
 		<tr>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-srun/salloc/sbatch option: 
+srun/salloc/sbatch option:
 <font face="Courier New, monospace">--cpu_bind=verbose</font></font></p>
 			</td>
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-This option provides a list of the CPU masks used by task affinity to bind tasks to CPUs. 
-Note that the CPU ids represented by these masks are Linux/hardware CPU ids, not Slurm 
+This option provides a list of the CPU masks used by task affinity to bind tasks to CPUs.
+Note that the CPU ids represented by these masks are Linux/hardware CPU ids, not Slurm
 abstract CPU ids as reported by scontrol, etc.
 </font></p>
 			</td>
@@ -1328,13 +1328,13 @@ abstract CPU ids as reported by scontrol, etc.
 		<tr>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-srun/salloc/sbatch option: 
+srun/salloc/sbatch option:
 <font face="Courier New, monospace">-l</font></font></p>
 			</td>
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-This option adds the task id as a prefix to each line of output from a task sent to stdout/stderr. 
-This can be useful for distinguishing node-related and CPU-related information by task id 
+This option adds the task id as a prefix to each line of output from a task sent to stdout/stderr.
+This can be useful for distinguishing node-related and CPU-related information by task id
 for multi-task jobs/steps.
 </font></p>
 			</td>
@@ -1342,13 +1342,13 @@ for multi-task jobs/steps.
 		<tr>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-Linux command:<br> 
+Linux command:<br>
 <font face="Courier New, monospace">cat /proc/&lt;pid&gt;/status | grep Cpus_allowed_list</font></font></p>
 			</td>
 			<td width="70%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">
-Given a task's pid (or "self" if the command is executed by the task itself), this command 
-produces a list of the CPU ids bound to the task. This is the same information that is 
+Given a task's pid (or "self" if the command is executed by the task itself), this command
+produces a list of the CPU ids bound to the task. This is the same information that is
 provided by <font face="Courier New, monospace">--cpu_bind=verbose</font>, but in a more readable format.
 </font></p>
 			</td>
@@ -1372,7 +1372,7 @@ usage at the level of users, groups and clusters. For details, see the sacctmgr 
 <p>The following examples illustrate some scenarios for managing CPU
 resources using Slurm. Many additional scenarios are possible. In
 each example, it is assumed that all CPUs on each node are available
-for allocation.</p> 
+for allocation.</p>
 <ul>
 <li><a href="#Example">Example Node and Partition Configuration</a><br>
 </li><li><a href="#Example1">Example 1: Allocation of whole nodes</a><br>
@@ -1389,7 +1389,7 @@ for allocation.</p>
 </li><li><a href="#Example12">Example 12: Consumable resources with task affinity and socket binding, Case 2</a>
 </li><li><a href="#Example13">Example 13: Consumable resources with task affinity and socket binding, Case 3</a>
 </li><li><a href="#Example14">Example 14: Consumable resources with task affinity and customized allocation and distribution</a>
-</li><li><a href="#Example15">Example 15: Consumable resources with task affinity to optimize the performance of a multi-task, 
+</li><li><a href="#Example15">Example 15: Consumable resources with task affinity to optimize the performance of a multi-task,
 multi-thread job</a>
 </li><li><a href="#Example16">Example 16: Consumable resources with task cgroup and core binding</a>
 </li></ul><br>
@@ -1559,7 +1559,7 @@ multi-thread job</a>
 Nodename=n1 NodeAddr=node1 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 Procs=8 State=IDLE
 Nodename=n2 NodeAddr=node2 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 Procs=8 State=IDLE
 Nodename=n3 NodeAddr=node3 Sockets=2 CoresPerSocket=4 ThreadsPerCore=2 Procs=16 State=IDLE
-PartitionName=regnodes Nodes=n0,n1,n2 Shared=YES Default=YES State=UP 
+PartitionName=regnodes Nodes=n0,n1,n2 Shared=YES Default=YES State=UP
 PartitionName=hypernode Nodes=n3 State=UP
 </pre>
 <br>
@@ -1580,7 +1580,7 @@ Slurm to allocate at least 2 nodes to the job.<p></p>
 <br>
 <a name="Example2"></a>
 <h3>Example 2: Simple allocation of cores as consumable resources</h3>
-<p>A job requires 6 CPUs (2 tasks and 3 CPUs per task with no overcommitment). Allocate the 6 CPUs as consumable resources 
+<p>A job requires 6 CPUs (2 tasks and 3 CPUs per task with no overcommitment). Allocate the 6 CPUs as consumable resources
 from a single node in the default partition.</p>
 <p>slurm.conf options:</p>
 <pre>SelectType=select/cons_res
@@ -1590,7 +1590,7 @@ SelectTypeParameters=CR_Core
 <pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 ...
 </pre>
 <p>Comments:</p>
-<p>The <font face="Courier New, monospace">SelectType</font> configuration options define cores as consumable resources. 
+<p>The <font face="Courier New, monospace">SelectType</font> configuration options define cores as consumable resources.
 The <font face="Courier New, monospace">--nodes=1-1</font> srun option
  restricts the job to a single node. The following table shows a possible pattern of allocation
   for this job.
@@ -1650,7 +1650,7 @@ The <font face="Courier New, monospace">--nodes=1-1</font> srun option
 <br>
 <a name="Example3"></a>
 <h3>Example 3: Consumable resources with balanced allocation across nodes</h3>
-<p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment). 
+<p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment).
 Allocate 3 CPUs from each of the 3 nodes in the default partition.
 </p>
 <p>slurm.conf options:</p>
@@ -1721,8 +1721,8 @@ SelectTypeParameters=CR_Core
 <br>
 <a name="Example4"></a>
 <h3>Example 4: Consumable resources with minimization of resource fragmentation</h3>
-<p>A job requires 12 CPUs (12 tasks and 1 CPU per task with no overcommitment). Allocate 
-CPUs using the minimum number of nodes and the minimum number of sockets required for 
+<p>A job requires 12 CPUs (12 tasks and 1 CPU per task with no overcommitment). Allocate
+CPUs using the minimum number of nodes and the minimum number of sockets required for
 the job in order to minimize fragmentation of allocated/unallocated CPUs in the cluster.
 </p>
 <p>slurm.conf options:</p>
@@ -1734,11 +1734,11 @@ SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 </pre>
 <p>Comments:</p>
 <p>The default allocation method across nodes is block. This minimizes the number of nodes
- used for the job. The configuration option <font face="Courier New, monospace"> 
- CR_CORE_DEFAULT_DIST_BLOCK</font> sets the default allocation method within a 
- node to block. This minimizes the number of sockets used for the job within a node. 
- The combination of these two methods causes Slurm to allocate the 12 CPUs using the 
- minimum required number of nodes (2 nodes) and sockets (3 sockets).The following 
+ used for the job. The configuration option <font face="Courier New, monospace">
+ CR_CORE_DEFAULT_DIST_BLOCK</font> sets the default allocation method within a
+ node to block. This minimizes the number of sockets used for the job within a node.
+ The combination of these two methods causes Slurm to allocate the 12 CPUs using the
+ minimum required number of nodes (2 nodes) and sockets (3 sockets).The following
  table shows a possible pattern of allocation for this job.
 </p>
 <center>
@@ -1831,7 +1831,7 @@ SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 <br>
 <a name="Example5"></a>
 <h3>Example 5: Consumable resources with cyclic distribution of tasks to nodes</h3>
-<p>A job requires 12 CPUs (6 tasks and 2 CPUs per task with no overcommitment). Allocate 
+<p>A job requires 12 CPUs (6 tasks and 2 CPUs per task with no overcommitment). Allocate
 6 CPUs each from 2 nodes in the default partition. Distribute tasks to nodes cyclically.
 </p>
 <p>slurm.conf options:</p>
@@ -1843,11 +1843,11 @@ SelectTypeParameters=CR_Core
 --ntasks=6 --cpus-per-task=2 ...
 </pre>
 <p>Comments:</p>
-<p>The options specify the following conditions for the job: 6 tasks, 2 unique CPUs per task, 
-using exactly 2 nodes, and with 3 tasks per node. To satisfy these conditions, Slurm 
+<p>The options specify the following conditions for the job: 6 tasks, 2 unique CPUs per task,
+using exactly 2 nodes, and with 3 tasks per node. To satisfy these conditions, Slurm
 must allocate 6 CPUs from each of the 2 nodes. The <font face="Courier New, monospace">
---distribution=cyclic</font> option causes the tasks to be distributed to the nodes in a 
-round-robin fashion. The following table shows a possible pattern of allocation and 
+--distribution=cyclic</font> option causes the tasks to be distributed to the nodes in a
+round-robin fashion. The following table shows a possible pattern of allocation and
 distribution for this job.
 </p>
 <center>
@@ -1920,7 +1920,7 @@ distribution for this job.
 <br>
 <a name="Example6"></a>
 <h3>Example 6: Consumable resources with default allocation and plane distribution of tasks to nodes</h3>
-<p>A job requires 16 CPUs (8 tasks and 2 CPUs per task with no overcommitment). 
+<p>A job requires 16 CPUs (8 tasks and 2 CPUs per task with no overcommitment).
 Use all 3 nodes in the default partition. Distribute tasks to each node in blocks of two in a round-robin fashion.
 </p>
 <p>slurm.conf options:</p>
@@ -1931,15 +1931,15 @@ SelectTypeParameters=CR_Core
 <pre>srun --nodes=3-3 --distribution=plane=2 --ntasks=8 --cpus-per-task=2 ...
 </pre>
 <p>Comments:</p>
-<p>The options specify the following conditions for the job: 8 tasks, 2 unique CPUs 
-per task, using all 3 nodes in the partition. To satisfy these conditions using 
-the default allocation method across nodes (block), Slurm allocates 8 CPUs from 
-the first node, 6 CPUs from the second node and 2 CPUs from the third node. 
-The <font face="Courier New, monospace">--distribution=plane=2</font> option causes Slurm 
+<p>The options specify the following conditions for the job: 8 tasks, 2 unique CPUs
+per task, using all 3 nodes in the partition. To satisfy these conditions using
+the default allocation method across nodes (block), Slurm allocates 8 CPUs from
+the first node, 6 CPUs from the second node and 2 CPUs from the third node.
+The <font face="Courier New, monospace">--distribution=plane=2</font> option causes Slurm
 to distribute tasks in blocks of two to each of the nodes in a round-robin fashion,
 subject to the number of CPUs allocated on each node.  So, for example, only 1 task
 is distributed to the third node because only 2 CPUs were allocated on that node and
-each task requires 2 CPUs. The following table shows a possible pattern of allocation 
+each task requires 2 CPUs. The following table shows a possible pattern of allocation
 and distribution for this job.
 </p>
 <center>
@@ -2006,7 +2006,7 @@ and distribution for this job.
 				 3<br>7</font></p>
 			</td>
 			<td width="19">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">4<br> 
+				<p align="CENTER"><font style="font-size: 8pt" size="1">4<br>
 				</font></p>
 			</td>
 		</tr>
@@ -2025,8 +2025,8 @@ SelectTypeParameters=CR_Core
 <pre>srun --nodes=1-1 --ntasks=20 --overcommit ...
 </pre>
 <p>Comments:</p>
-<p>The 
-<font face="Courier New, monospace">--overcommit</font> option allows the job to 
+<p>The
+<font face="Courier New, monospace">--overcommit</font> option allows the job to
 run in only one node by overcommitting CPUs to tasks.The following table shows
  a possible pattern of allocation and distribution for this job.
 </p>
@@ -2102,7 +2102,7 @@ run in only one node by overcommitting CPUs to tasks.The following table shows
 <br>
 <a name="Example8"></a>
 <h3>Example 8: Consumable resources with resource sharing between jobs</h3>
-<p>2 jobs each require 6 CPUs (6 tasks per job with no overcommitment). 
+<p>2 jobs each require 6 CPUs (6 tasks per job with no overcommitment).
 Run both jobs simultaneously in a single node.
 </p>
 <p>slurm.conf options:</p>
@@ -2114,15 +2114,15 @@ SelectTypeParameters=CR_Core
 srun --nodes=1-1 --nodelist=n0 --ntasks=6 --share ...
 </pre>
 <p>Comments:</p>
-<p>The <font face="Courier New, monospace">--nodes=1-1</font> and <font face="Courier New, monospace">--nodelist=n0</font> 
-srun options together restrict both jobs to node n0. The 
-<font face="Courier New, monospace">Shared=YES</font> option in the partition definition plus 
-the <font face="Courier New, monospace">--share</font> srun option allows the two 
+<p>The <font face="Courier New, monospace">--nodes=1-1</font> and <font face="Courier New, monospace">--nodelist=n0</font>
+srun options together restrict both jobs to node n0. The
+<font face="Courier New, monospace">Shared=YES</font> option in the partition definition plus
+the <font face="Courier New, monospace">--share</font> srun option allows the two
 jobs to share CPUs on the node.
 </p><br>
 <a name="Example9"></a>
 <h3>Example 9: Consumable resources on multithreaded node, allocating only one thread per core</h3>
-<p>A job requires 8 CPUs (8 tasks with no overcommitment). Run the job on node n3, 
+<p>A job requires 8 CPUs (8 tasks with no overcommitment). Run the job on node n3,
 allocating only one thread per core.
 </p>
 <p>slurm.conf options:</p>
@@ -2133,11 +2133,11 @@ SelectTypeParameters=CR_CPU
 <pre>srun --partition=hypernode --ntasks=8 --hint=nomultithread ...
 </pre>
 <p>Comments:</p>
-<p>The <font face="Courier New, monospace">CR_CPU</font> configuration 
-option enables the allocation of only one thread per core. 
-The <font face="Courier New, monospace">--hint=nomultithread</font> 
-srun option causes Slurm to allocate only one thread from each core to 
-this job. The following table shows a possible pattern of allocation 
+<p>The <font face="Courier New, monospace">CR_CPU</font> configuration
+option enables the allocation of only one thread per core.
+The <font face="Courier New, monospace">--hint=nomultithread</font>
+srun option causes Slurm to allocate only one thread from each core to
+this job. The following table shows a possible pattern of allocation
 for this job.
 </p>
  <center>
@@ -2291,7 +2291,7 @@ for this job.
 <br>
 <a name="Example10"></a>
 <h3>Example 10: Consumable resources with task affinity and core binding</h3>
-<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a 
+<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a
 single node in the default partition. Apply core binding to each task.
 </p>
 <p>slurm.conf options:</p>
@@ -2304,11 +2304,11 @@ TaskPluginParam=sched
 <pre>srun --nodes=1-1 --ntasks=6 --cpu_bind=cores ...
 </pre>
 <p>Comments:</p>
-<p>Using the default allocation method within nodes (cyclic), Slurm allocates 
-3 CPUs on each socket of 1 node. Using the default distribution method 
-within nodes (cyclic), Slurm distributes and binds each task to an allocated 
-core in a round-robin fashion across the sockets. The following table shows 
-a possible pattern of allocation, distribution and binding for this job. 
+<p>Using the default allocation method within nodes (cyclic), Slurm allocates
+3 CPUs on each socket of 1 node. Using the default distribution method
+within nodes (cyclic), Slurm distributes and binds each task to an allocated
+core in a round-robin fashion across the sockets. The following table shows
+a possible pattern of allocation, distribution and binding for this job.
 For example, task id 2 is bound to CPU id 1.
 </p><p>
 </p><center>
@@ -2433,7 +2433,7 @@ For example, task id 2 is bound to CPU id 1.
 <br>
 </a><a name="Example11"></a>
 <h3>Example 11: Consumable resources with task affinity and socket binding, Case 1</h3>
-<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in 
+<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in
 a single node in the default partition. Apply socket binding to each task.
 </p>
 <p>slurm.conf options:</p>
@@ -2446,11 +2446,11 @@ TaskPluginParam=sched
 <pre>srun --nodes=1-1 --ntasks=6 --cpu_bind=sockets ...
 </pre>
 <p>Comments:</p>
-<p>Using the default allocation method within nodes (cyclic), Slurm allocates 3 
-CPUs on each socket of 1 node. Using the default distribution method within nodes 
-(cyclic), Slurm distributes and binds each task to all of the allocated CPUs in 
-one socket in a round-robin fashion across the sockets. The following table shows 
-a possible pattern of allocation, distribution and binding for this job. For 
+<p>Using the default allocation method within nodes (cyclic), Slurm allocates 3
+CPUs on each socket of 1 node. Using the default distribution method within nodes
+(cyclic), Slurm distributes and binds each task to all of the allocated CPUs in
+one socket in a round-robin fashion across the sockets. The following table shows
+a possible pattern of allocation, distribution and binding for this job. For
 example, task ids 1, 3 and 5 are all bound to CPU ids 4, 5 and 6.
 </p>
 <center>
@@ -2565,7 +2565,7 @@ example, task ids 1, 3 and 5 are all bound to CPU ids 4, 5 and 6.
 <br>
 <a name="Example12"></a>
 <h3>Example 12: Consumable resources with task affinity and socket binding, Case 2</h3>
-<p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in 
+<p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in
 a single node in the default partition. Allocate cores using the block allocation method.
 Distribute cores using the block distribution method. Apply socket binding to each task.
 </p>
@@ -2580,14 +2580,14 @@ TaskPluginParam=sched
 --distribution=block:block ...
 </pre>
 <p>Comments:</p>
-<p>Using the block allocation method, Slurm allocates 4 
-CPUs on one socket and 2 CPUs on the other socket of one node. Using the block distribution method within  
+<p>Using the block allocation method, Slurm allocates 4
+CPUs on one socket and 2 CPUs on the other socket of one node. Using the block distribution method within
 nodes, Slurm distributes 3 CPUs to each task.  Applying socket binding, Slurm binds each task to all
-allocated CPUs in all sockets in which the task has a distributed CPU. The following table shows 
+allocated CPUs in all sockets in which the task has a distributed CPU. The following table shows
 a possible pattern of allocation, distribution and binding for this job. In this example, using the
-block allocation method CPU ids 0-3 are allocated on socket id 0 and CPU ids 4-5 are allocated on 
-socket id 1.  Using the block distribution method, CPU ids 0-2 were distributed to task id 0, and CPU ids 
-3-5 were distributed to task id 1.  Applying socket binding, task id 0 is therefore bound to the allocated 
+block allocation method CPU ids 0-3 are allocated on socket id 0 and CPU ids 4-5 are allocated on
+socket id 1.  Using the block distribution method, CPU ids 0-2 were distributed to task id 0, and CPU ids
+3-5 were distributed to task id 1.  Applying socket binding, task id 0 is therefore bound to the allocated
 CPUs on socket 0, and task id 1 is bound to the allocated CPUs on both sockets.
 </p>
 <center>
@@ -2697,7 +2697,7 @@ CPUs on socket 0, and task id 1 is bound to the allocated CPUs on both sockets.
 <br>
 <a name="Example13"></a>
 <h3>Example 13: Consumable resources with task affinity and socket binding, Case 3</h3>
-<p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in 
+<p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in
 a single node in the default partition. Allocate cores using the block allocation method.
 Distribute cores using the cyclic distribution method. Apply socket binding to each task.
 </p>
@@ -2712,14 +2712,14 @@ TaskPluginParam=sched
 --distribution=block:cyclic ...
 </pre>
 <p>Comments:</p>
-<p>Using the block allocation method, Slurm allocates 4 
-CPUs on one socket and 2 CPUs on the other socket of one node. Using the cyclic distribution method within  
+<p>Using the block allocation method, Slurm allocates 4
+CPUs on one socket and 2 CPUs on the other socket of one node. Using the cyclic distribution method within
 nodes, Slurm distributes 3 CPUs to each task.  Applying socket binding, Slurm binds each task to all
-allocated CPUs in all sockets in which the task has a distributed CPU. The following table shows 
+allocated CPUs in all sockets in which the task has a distributed CPU. The following table shows
 a possible pattern of allocation, distribution and binding for this job. In this example, using the
-block allocation method CPU ids 0-3 are allocated on socket id 0 and CPU ids 4-5 are allocated on 
-socket id 1.  Using the cyclic distribution method, CPU ids 0, 1 and 4 were distributed to task id 0, and CPU ids 
-2, 3 and 5 were distributed to task id 1.  Applying socket binding, both tasks are therefore bound to the 
+block allocation method CPU ids 0-3 are allocated on socket id 0 and CPU ids 4-5 are allocated on
+socket id 1.  Using the cyclic distribution method, CPU ids 0, 1 and 4 were distributed to task id 0, and CPU ids
+2, 3 and 5 were distributed to task id 1.  Applying socket binding, both tasks are therefore bound to the
 allocated CPUs on both sockets.
 </p>
 <center>
@@ -2829,9 +2829,9 @@ allocated CPUs on both sockets.
 <br>
 <a name="Example14"></a>
 <h3>Example 14: Consumable resources with task affinity and customized allocation and distribution</h3>
-<p>A job requires 18 CPUs (18 tasks with no overcommitment). Run the job in the 
-default partition. Allocate 6 CPUs on each node using block allocation within 
-nodes. Use cyclic distribution of tasks to nodes and block distribution of 
+<p>A job requires 18 CPUs (18 tasks with no overcommitment). Run the job in the
+default partition. Allocate 6 CPUs on each node using block allocation within
+nodes. Use cyclic distribution of tasks to nodes and block distribution of
 tasks for CPU binding.
 </p>
 <p>slurm.conf options:</p>
@@ -2845,17 +2845,17 @@ TaskPluginParam=sched
 --distribution=cyclic:block --cpu_bind=cores ...
 </pre>
 <p>Comments:</p>
-<p>This example shows the use of task affinity with customized allocation of CPUs and 
-distribution of tasks across nodes and within nodes for binding. The srun options 
-specify the following conditions for the job: 18 tasks, 1 unique CPU per task, using 
-all 3 nodes in the partition, with 6 tasks per node. 
-The <font face="Courier New, monospace">CR_CORE_DEFAULT_DIST_BLOCK</font> 
-configuration option specifies block allocation within nodes. To satisfy these 
-conditions, Slurm allocates 6 CPUs on each node, with 4 CPUs allocated on one socket 
+<p>This example shows the use of task affinity with customized allocation of CPUs and
+distribution of tasks across nodes and within nodes for binding. The srun options
+specify the following conditions for the job: 18 tasks, 1 unique CPU per task, using
+all 3 nodes in the partition, with 6 tasks per node.
+The <font face="Courier New, monospace">CR_CORE_DEFAULT_DIST_BLOCK</font>
+configuration option specifies block allocation within nodes. To satisfy these
+conditions, Slurm allocates 6 CPUs on each node, with 4 CPUs allocated on one socket
 and 2 CPUs on the other socket. The <font face="Courier New, monospace">
---distribution=cyclic:block</font> option specifies cyclic distribution of 
-tasks to nodes and block distribution of tasks to CPUs within nodes for binding. 
-The following table shows a possible pattern of allocation, distribution and binding 
+--distribution=cyclic:block</font> option specifies cyclic distribution of
+tasks to nodes and block distribution of tasks to CPUs within nodes for binding.
+The following table shows a possible pattern of allocation, distribution and binding
 for this job. For example, task id 10 is bound to CPU id 3 on node n1.
 </p>
 <center>
@@ -2958,30 +2958,30 @@ for this job. For example, task id 10 is bound to CPU id 3 on node n1.
 			</td>
 			<td colspan="8" width="24%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">0<br>
-                        3<br>
-                        6<br>
-                        9<br>
-                        12<br>
-                        15
-                        </font></p>
+			3<br>
+			6<br>
+			9<br>
+			12<br>
+			15
+			</font></p>
 			</td>
 			<td colspan="8" width="24%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">1<br>
-                        4<br>
-                        7<br>
-                        10<br>
-                        13<br>
-                        16
-                        </font></p>
+			4<br>
+			7<br>
+			10<br>
+			13<br>
+			16
+			</font></p>
 			</td>
 			<td colspan="8" width="24%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">2<br>
-                        5<br>
-                        8<br>
-                        11<br>
-                        14<br>
-                        17
-                         </font></p>
+			5<br>
+			8<br>
+			11<br>
+			14<br>
+			17
+			 </font></p>
 			</td>
 		</tr>
 		<tr>
@@ -3146,10 +3146,10 @@ for this job. For example, task id 10 is bound to CPU id 3 on node n1.
 </center>
 <br>
 <a name="Example15"></a>
-<h3>Example 15: Consumable resources with task affinity to optimize the performance of a multi-task, 
+<h3>Example 15: Consumable resources with task affinity to optimize the performance of a multi-task,
 multi-thread job</h3>
-<p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment). Run 
-the job in the default partition, managing the CPUs to optimize the performance 
+<p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment). Run
+the job in the default partition, managing the CPUs to optimize the performance
 of the job.</p>
 <p>slurm.conf options:</p>
 <pre>SelectType=select/cons_res
@@ -3161,18 +3161,18 @@ TaskPluginParam=sched
 <pre>srun --ntasks=3 --cpus-per-task=3 --ntasks-per-node=1 --cpu_bind=cores ...
 </pre>
 <p>Comments:</p>
-<p>To optimize the performance of this job, the user wishes to allocate 3 CPUs from each of 
-3 sockets and bind each task to the 3 CPUs in a single socket. The 
-<font face="Courier New, monospace">SelectTypeParameters</font> configuration option specifies 
-a consumable resource type of cores and block allocation within nodes. The 
-<font face="Courier New, monospace">TaskPlugin</font> 
-<font face="Courier New, monospace">and TaskPluginParam</font> 
-configuration options enable task affinity. The srun options specify the following 
-conditions for the job: 3 tasks, with 3 unique CPUs per task, with 1 task per node. To satisfy 
-these conditions, Slurm allocates 3 CPUs from one socket in each of the 3 nodes in the default partition. The 
-<font face="Courier New, monospace">--cpu_bind=cores</font> option causes Slurm to bind 
-each task to the 3 allocated CPUs on the node to which it is distributed. The 
-following table shows a possible pattern of allocation, distribution and binding 
+<p>To optimize the performance of this job, the user wishes to allocate 3 CPUs from each of
+3 sockets and bind each task to the 3 CPUs in a single socket. The
+<font face="Courier New, monospace">SelectTypeParameters</font> configuration option specifies
+a consumable resource type of cores and block allocation within nodes. The
+<font face="Courier New, monospace">TaskPlugin</font>
+<font face="Courier New, monospace">and TaskPluginParam</font>
+configuration options enable task affinity. The srun options specify the following
+conditions for the job: 3 tasks, with 3 unique CPUs per task, with 1 task per node. To satisfy
+these conditions, Slurm allocates 3 CPUs from one socket in each of the 3 nodes in the default partition. The
+<font face="Courier New, monospace">--cpu_bind=cores</font> option causes Slurm to bind
+each task to the 3 allocated CPUs on the node to which it is distributed. The
+following table shows a possible pattern of allocation, distribution and binding
 for this job. For example, task id 2 is bound to CPU ids 0, 1 and 2 on socket id 0 of node n2.
 </p>
 
@@ -3393,7 +3393,7 @@ for this job. For example, task id 2 is bound to CPU ids 0, 1 and 2 on socket id
 <br>
 <a name="Example16"></a>
 <h3>Example 16: Consumable resources with task cgroup and core binding</h3>
-<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a 
+<p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a
 single node in the default partition. Apply core binding to each task using the task/cgroup plugin.
 </p>
 <p>slurm.conf options:</p>
@@ -3411,7 +3411,7 @@ TaskAffinity=yes
 <p>Comments:</p>
 <p>The task/cgroup plugin currently supports only the block method for
 allocating cores within nodes and distributing tasks to CPUs for binding.
-The following table shows a possible pattern of allocation, distribution 
+The following table shows a possible pattern of allocation, distribution
 and binding for this job. For example, task id 2 is bound to CPU id 2.
 </p><p>
 </p><center>
