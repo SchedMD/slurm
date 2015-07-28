@@ -7136,7 +7136,52 @@ void job_time_limit(void)
 	fini_job_resv_check();
 }
 
-extern void job_set_tres(struct job_record *job_ptr)
+/* job write lock must be locked before calling this */
+extern void job_set_req_tres(
+	struct job_record *job_ptr, bool assoc_mgr_locked)
+{
+	uint32_t cpu_cnt = 0, mem_cnt = 0;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	xfree(job_ptr->tres_req_str);
+	xfree(job_ptr->tres_req_cnt);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+	job_ptr->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
+
+	if (job_ptr->details) {
+		cpu_cnt = job_ptr->details->min_cpus;
+		if (job_ptr->details->pn_min_memory)
+			mem_cnt = job_ptr->details->pn_min_memory;
+	}
+
+	/* if this is set just override */
+	if (job_ptr->total_cpus)
+		cpu_cnt = job_ptr->total_cpus;
+
+	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)mem_cnt;
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)cpu_cnt;
+
+	license_set_job_tres_req_cnt(job_ptr->license_list,
+				     job_ptr->tres_req_cnt,
+				     true);
+
+	gres_set_job_tres_req_cnt(job_ptr->gres_list,
+				  job_ptr->details ?
+				  job_ptr->details->min_nodes : 0,
+				  job_ptr->tres_req_cnt,
+				  assoc_mgr_locked);
+
+	/* now that the array is filled lets make the string from it */
+	job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, true);
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
+}
+
 extern void job_set_alloc_tres(struct job_record *job_ptr,
 			       bool assoc_mgr_locked)
 {

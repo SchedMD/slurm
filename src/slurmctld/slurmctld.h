@@ -1480,6 +1480,11 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 extern void job_time_limit (void);
 
+/* Builds the tres_req_cnt and tres_req_str of a job.
+ * Only set when job is pending.
+ * NOTE: job write lock must be locked before calling this */
+extern void job_set_req_tres(struct job_record *job_ptr, bool assoc_mgr_locked);
+
 /*
  * job_set_tres - set the tres up when allocating the job.
  * Only set when job is running.
