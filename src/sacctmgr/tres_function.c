@@ -38,44 +38,143 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
+static int _set_cond(int *start, int argc, char *argv[],
+		     slurmdb_tres_cond_t *tres_cond,
+		     List format_list)
+{
+	int i;
+	int set = 0;
+	int end = 0;
+	int command_len = 0;
+
+	if (!tres_cond) {
+		exit_code=1;
+		fprintf(stderr, "No tres_cond given");
+		return -1;
+	}
+
+	for (i=(*start); i<argc; i++) {
+		end = parse_option_end(argv[i]);
+		if (!end)
+			command_len=strlen(argv[i]);
+		else {
+			command_len=end-1;
+			if (argv[i][end] == '=') {
+				end++;
+			}
+		}
+
+		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+			i--;
+			break;
+		} else if (!end &&
+			   !strncasecmp(argv[i], "WithDeleted",
+					 MAX(command_len, 5))) {
+			tres_cond->with_deleted = 1;
+		} else if (!end && !strncasecmp(argv[i], "where",
+					       MAX(command_len, 5))) {
+			continue;
+		} else if (!end
+			  || !strncasecmp(argv[i], "Type",
+					   MAX(command_len, 2))) {
+			if (!tres_cond->type_list) {
+				tres_cond->type_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(
+				   tres_cond->type_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp(argv[i], "Names",
+					 MAX(command_len, 1))) {
+			if (!tres_cond->name_list) {
+				tres_cond->name_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(tres_cond->name_list,
+						  argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp(argv[i], "Format",
+					 MAX(command_len, 1))) {
+			if (format_list)
+				slurm_addto_char_list(format_list, argv[i]+end);
+		} else if (!strncasecmp(argv[i], "Ids",
+					 MAX(command_len, 1))) {
+			if (!tres_cond->id_list) {
+				tres_cond->id_list =
+					list_create(slurm_destroy_char);
+			}
+			if (slurm_addto_char_list(tres_cond->id_list,
+						 argv[i]+end))
+				set = 1;
+		} else {
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
+				" Use keyword 'set' to modify value\n",
+				argv[i]);
+		}
+	}
+
+	(*start) = i;
+
+	if (set)
+		return 1;
+
+	return 0;
+}
+
 /* sacctmgr_list_tres()
  */
-int
-sacctmgr_list_tres(int argc, char **argv)
+int sacctmgr_list_tres(int argc, char **argv)
 {
         List tres_list;
         ListIterator itr;
 	ListIterator itr2;
-	List format_list;
+	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list;
-        slurmdb_tres_cond_t cond;
+        slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));
         slurmdb_tres_rec_t *tres;
-	int field_count;
+	int field_count, i;
 	print_field_t *field;
 
-	format_list = list_create(slurm_destroy_char);
-	/* Append to the format list the fields
-	 * we want to print, these are the data structure
-	 * members of the type returned by slurmdbd
-	 */
-	slurm_addto_char_list(format_list, "Type,Name%15,ID");
+    	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+			i++;
+		_set_cond(&i, argc, argv, tres_cond, format_list);
+	}
 
 	if (exit_code) {
+		slurmdb_destroy_tres_cond(tres_cond);
 		FREE_NULL_LIST(format_list);
 		return SLURM_ERROR;
 	}
+
+	if (!list_count(format_list)) {
+		/* Append to the format list the fields
+		 * we want to print, these are the data structure
+		 * members of the type returned by slurmdbd
+		 */
+		slurm_addto_char_list(format_list, "Type,Name%15,ID");
+	}
+
+        tres_list = acct_storage_g_get_tres(db_conn, my_uid, tres_cond);
+	slurmdb_destroy_tres_cond(tres_cond);
+
+	if (!tres_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		FREE_NULL_LIST(format_list);
+		return SLURM_ERROR;
+	}
+
 
 	/* Process the format list creating a list of
 	 * print field_t structures
 	 */
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
-
-	/* Call slurmdbd to get all tres with not
-	 * condition
-	 */
-        memset(&cond, 0, sizeof(slurmdb_tres_cond_t));
-        tres_list = acct_storage_g_get_tres(db_conn, my_uid, &cond);
 
         itr = list_iterator_create(tres_list);
 	itr2 = list_iterator_create(print_fields_list);

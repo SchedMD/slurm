@@ -227,9 +227,22 @@ extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(tres_cond->type_list);
 		while ((object = list_next(itr))) {
+			char *slash;
 			if (set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "type='%s'", object);
+			if (!(slash = strchr(object, '/')))
+				xstrfmtcat(extra, "type='%s'", object);
+			else {
+				/* This means we have the name
+				 * attached, so split the string and
+				 * handle it this way, only on this type.
+				 */
+				char *name = slash;
+				*slash = '\0';
+				name++;
+				xstrfmtcat(extra, "(type='%s' && name='%s')",
+					   object, name);
+			}
 			set = 1;
 		}
 		list_iterator_destroy(itr);
