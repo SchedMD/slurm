@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't set distribution when srun requests 0 memory.
  -- Read in correct number of nodes from SLURM_HOSTFILE when specifying nodes
     and --distribution=arbitrary.
+ -- Fix segfault in Bluegene setups where RebootQOSList is defined in
+    bluegene.conf and accounting is not setup.
 
 * Changes in Slurm 14.11.8
 ==========================
