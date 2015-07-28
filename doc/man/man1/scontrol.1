@@ -1622,6 +1622,11 @@ For other years it returns a date month and year without a time (e.g.
 A valid strftime() format can also be specified. For example, a value of
 "%a %T" will report the day of the week and a time stamp (e.g. "Mon 12:34:56").
 
+.TP
+\fBSLURM_TOPO_LEN\fR
+Specify the maximum size of the line when printing Topology. If not set, the
+default value "512" will be used.
+
 .SH "AUTHORIZATION"
 
 When using the Slurm db, users who have AdminLevel's defined (Operator
