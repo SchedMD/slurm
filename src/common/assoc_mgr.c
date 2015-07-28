@@ -1070,8 +1070,9 @@ static int _post_res_list(List res_list)
 	return SLURM_SUCCESS;
 }
 
-/* tres write lock should be locked before calling this */
-static void _post_tres_list(List new_list, int new_cnt)
+/* tres write lock should be locked before calling this return 1 if
+ * callback is needed */
+static int _post_tres_list(List new_list, int new_cnt)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
@@ -1083,6 +1084,8 @@ static void _post_tres_list(List new_list, int new_cnt)
 	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
 	new_array = xmalloc(new_size);
 
+	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
+
 	/* we don't care if it gets smaller */
 	if (new_cnt > g_tres_count)
 		changed_size = true;
@@ -1090,6 +1093,7 @@ static void _post_tres_list(List new_list, int new_cnt)
 	/* Set up the new array to see if we need to update any other
 	   arrays with current values.
 	*/
+	i = 0;
 	itr = list_iterator_create(new_list);
 	while ((tres_rec = list_next(itr))) {
 
@@ -1215,6 +1219,8 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 	slurmdb_tres_cond_t tres_q;
 	uid_t uid = getuid();
 	List new_list = NULL;
+	char *tres_req_str;
+	int changed;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1222,8 +1228,16 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 	assoc_mgr_lock(&locks);
 
+	/* If this exists we only want/care about tracking/caching these TRES */
+	if ((tres_req_str = slurm_get_accounting_storage_tres())) {
+		tres_q.type_list = list_create(slurm_destroy_char);
+		slurm_addto_char_list(tres_q.type_list, tres_req_str);
+		xfree(tres_req_str);
+	}
 	new_list = acct_storage_g_get_tres(
 		db_conn, uid, &tres_q);
+
+	FREE_NULL_LIST(tres_q.type_list);
 
 	if (!new_list) {
 		assoc_mgr_unlock(&locks);
