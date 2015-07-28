@@ -1907,7 +1907,7 @@ static int _add_node_gres_tres(void *x, void *arg)
 
 	xassert(tres_rec_in);
 
-	if (strcmp(tres_rec_in->type, "gres"))
+	if (xstrcmp(tres_rec_in->type, "gres"))
 		return 0;
 
 	xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
