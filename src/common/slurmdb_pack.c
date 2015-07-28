@@ -2375,6 +2375,8 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	safe_pack16(object->with_deleted, buffer);
 }
 
 extern int slurmdb_unpack_tres_cond(void **object, uint16_t rpc_version,
@@ -2428,6 +2430,8 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t rpc_version,
 				    tmp_info);
 		}
 	}
+
+	safe_unpack16(&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;
 
