@@ -1961,7 +1961,7 @@ extern void send_all_to_accounting(time_t event_time);
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_tres(void);
+extern void set_cluster_tres(bool assoc_mgr_locked);
 
 /* sends all jobs in eligible state to accounting.  Only needed at
  * first registration

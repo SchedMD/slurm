@@ -1973,7 +1973,7 @@ static int _sync_nodes_to_comp_job(void)
 			   plugin and this happens before it is
 			   normally set up so do it now.
 			*/
-			set_cluster_tres();
+			set_cluster_tres(false);
 
 			info("%s: Job %u in completing state",
 			     __func__, job_ptr->job_id);

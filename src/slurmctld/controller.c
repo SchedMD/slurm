@@ -1171,11 +1171,10 @@ static int _accounting_cluster_ready(void)
 	char *cluster_nodes = NULL, *cluster_tres_str;
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(node_read_lock);
-
-	set_cluster_tres();
-
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
 	*/
@@ -1183,8 +1182,13 @@ static int _accounting_cluster_ready(void)
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
+
+	assoc_mgr_lock(&locks);
+	set_cluster_tres(true);
 	cluster_tres_str = slurmdb_make_tres_string(
 		slurmctld_tres_info.tracked_tres_list, TRES_STR_FLAG_SIMPLE);
+	assoc_mgr_unlock(&locks);
+
 	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
@@ -1919,12 +1923,16 @@ static int _add_node_gres_tres(void *x, void *arg)
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_tres(void)
+extern void set_cluster_tres(bool assoc_mgr_locked)
 {
 	struct node_record *node_ptr;
 	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
-	ListIterator itr;
 	int i;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
 
 	xassert(slurmctld_tres_info.tracked_tres_list);
 
@@ -2001,6 +2009,9 @@ extern void set_cluster_tres(void)
 	 */
 	if (cpu_tres)
 		cpu_tres->count = cluster_cpus;
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 }
 
 /*
