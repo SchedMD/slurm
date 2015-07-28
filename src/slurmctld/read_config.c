@@ -632,7 +632,8 @@ static int _init_tres(void)
 				      tres_rec->name ? "/" : "",
 				      tres_rec->name ? tres_rec->name : "");
 			} else
-				list_append(slurmctld_tres_info.tracked_tres_list,
+				list_append(slurmctld_tres_info.
+					    tracked_tres_list,
 					    tres_rec);
 		}
 	}
