@@ -958,6 +958,7 @@ static void _set_options(const int argc, char **argv)
 		"o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 	bool ntasks_set_opt = false;
+	bool nodes_set_opt = false;
 
 #ifdef HAVE_PTY_H
 	char *tmp_str;
@@ -1108,6 +1109,7 @@ static void _set_options(const int argc, char **argv)
 				_get_int(optarg, "number of tasks", true);
 			break;
 		case (int)'N':
+			nodes_set_opt = true;
 			opt.nodes_set_opt =
 				get_resource_arg_range( optarg,
 							"requested node count",
@@ -1650,9 +1652,13 @@ static void _set_options(const int argc, char **argv)
 	/* This means --ntasks was read from the environment.  We will override
 	 * it with what the user specified in the hostlist. POE launched
 	 * jobs excluded (they have the SLURM_STARTED_STEP env var set). */
-	if (!ntasks_set_opt && (opt.distribution == SLURM_DIST_ARBITRARY) &&
-	    !getenv("SLURM_STARTED_STEP"))
-		opt.ntasks_set = false;
+	if (opt.distribution == SLURM_DIST_ARBITRARY &&
+	    !getenv("SLURM_STARTED_STEP")) {
+		if (!ntasks_set_opt)
+			opt.ntasks_set = false;
+		if (!nodes_set_opt)
+			opt.nodes_set = false;
+	}
 
 	spank_option_table_destroy (optz);
 }
