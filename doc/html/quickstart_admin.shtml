@@ -826,12 +826,12 @@ See the RELEASE_NOTES file for details.</p>
 <p>FreeBSD administrators can install the latest stable Slurm as a binary
 package using:</p>
 <pre>
-pkg install slurm-hpc
+pkg install slurm-wlm
 </pre>
 
 <p>Or, it can be built and installed from source using:</p>
 <pre>
-cd /usr/ports/sysutils/slurm-hpc && make install
+cd /usr/ports/sysutils/slurm-wlm && make install
 </pre>
 
 <p>The binary package installs a minimal Slurm configuration suitable for
