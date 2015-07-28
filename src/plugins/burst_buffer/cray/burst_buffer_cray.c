@@ -194,11 +194,13 @@ static void	_json_parse_sessions_object(json_object *jobj,
 static void	_log_bb_spec(bb_job_t *bb_spec);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
-static int	_parse_bb_opts(struct job_descriptor *job_desc);
+static int	_parse_bb_opts(struct job_descriptor *job_desc,
+			       uint64_t *bb_size);
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
-static int	_parse_interactive(struct job_descriptor *job_desc);
+static int	_parse_interactive(struct job_descriptor *job_desc,
+				   uint64_t *bb_size);
 static int	_proc_persist(struct job_record *job_ptr, char **err_msg,
 			      bb_job_t *bb_job);
 static void	_purge_bb_files(struct job_record *job_ptr);
@@ -508,9 +510,7 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
  * RETURN true if job contains a burst buffer specification. */
 static bool _test_bb_spec(struct job_record *job_ptr)
 {
-	char *end_ptr = NULL, *sep, *tok, *tmp;
-	bool have_bb = false;
-	int val;
+	char *tok;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -521,41 +521,18 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 		return true;
 
 	tok = strstr(job_ptr->burst_buffer, "SLURM_SIZE=");
-	if (tok) {	/* Format: "SLURM_SIZE=%u" */
-		tok += 11;
-		val = strtol(tok, &end_ptr, 10);
-		if (val)
-			return true;
-	}
+	if (tok)	/* Format: "SLURM_SIZE=%u" */
+		return true;
 
 	tok = strstr(job_ptr->burst_buffer, "SLURM_SWAP=");
-	if (tok) {	/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
-		tok += 11;
-		val = strtol(tok, &end_ptr, 10);
-		if (val)
-			return true;
-	}
+	if (tok)	/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
+		return true;
 
 	tok = strstr(job_ptr->burst_buffer, "SLURM_GRES=");
-	if (tok) {	/* Format: "SLURM_GRES=nodes:%u" */
-		tmp = xstrdup(tok + 11);
-		tok = strtok_r(tmp, ",", &end_ptr);
-		while (tok && !have_bb) {
-			sep = strchr(tok, ':');
-			if (sep) {
-				sep[0] = '\0';
-				val = strtol(sep + 1, NULL, 10);
-				if (val)
-					have_bb = true;
-			} else {
-				have_bb = true;
-			}
-			tok = strtok_r(NULL, ",", &end_ptr);
-		}
-		xfree(tmp);
-	}
+	if (tok)	/* Format: "SLURM_GRES=nodes:%u" */
+		return true;
 
-	return have_bb;
+	return false;
 }
 
 /*
@@ -570,10 +547,10 @@ static void _load_state(void)
 	bb_sessions_t *sessions;
 	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
 	int i, j;
-static bool first_load = true;
-//FIXME: Need logic to handle resource allocation/free in progress
+	static bool first_load = true;
+
+//FIXME: Need logic to handle resource allocation/free in progress once formats defined
 if (!first_load) return;
-first_load = false;
 
 	/*
 	 * Load the pools information
@@ -628,7 +605,6 @@ first_load = false;
 	instances = _bb_get_instances(&num_instances, &bb_state);
 	if (instances == NULL) {
 		info("%s: failed to find DataWarp instances", __func__);
-		return;
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state);
 	for (i = 0; i < num_instances; i++) {
@@ -640,9 +616,11 @@ first_load = false;
 				break;
 			}
 		}
+//FIXME: Modify as needed for job-based buffers once format is known
 		cur_alloc = bb_alloc_name_rec(&bb_state, instances[i].label,
 					      user_id);
 		cur_alloc->size = instances[i].bytes;
+		bb_add_user_load(cur_alloc, &bb_state);	/* for user limits */
 	}
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
@@ -653,10 +631,12 @@ first_load = false;
 	configs = _bb_get_configs(&num_configs, &bb_state);
 	if (configs == NULL) {
 		info("%s: failed to find DataWarp configurations", __func__);
-		return;
 	}
-//FIXME: Currently unused
+//FIXME: Currently unused job buffers
 	_bb_free_configs(configs, num_sessions);
+
+	first_load = false;
+	return;
 }
 
 /* Write an string representing the NIDs of a job's nodes to an arbitrary
@@ -856,22 +836,22 @@ static void *_start_stage_in(void *x)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
-	op = "dws_setup";
+	op = "setup";
 	START_TIMER;
-	resp_msg = bb_run_script("dws_setup",
+	resp_msg = bb_run_script("setup",
 				 bb_state.bb_config.get_sys_state,
 				 setup_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: dws_setup for job %u ran for %s",
+		info("%s: setup for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: dws_setup for job %u ran for %s",
+		debug("%s: setup for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 	_log_script_argv(setup_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_setup for job %u status:%u response:%s",
+		error("%s: setup for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
@@ -1174,6 +1154,9 @@ static void *_start_teardown(void *x)
 	int status = 0, timeout;
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_ptr = NULL;
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 
 	teardown_args = (stage_args_t *) x;
@@ -1199,6 +1182,7 @@ static void *_start_teardown(void *x)
 		      __func__, teardown_args->job_id, status, resp_msg);
 	}
 
+	lock_slurmctld(job_write_lock);
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if ((job_ptr = find_job_record(teardown_args->job_id))) {
 		_purge_bb_files(job_ptr);
@@ -1215,6 +1199,7 @@ static void *_start_teardown(void *x)
 		      __func__, teardown_args->job_id);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+	unlock_slurmctld(job_write_lock);
 
 	xfree(resp_msg);
 	_free_script_argv(teardown_argv);
@@ -1539,7 +1524,7 @@ bb_ptr->seen_time = bb_state.last_load_time;
 
 /* Translate a batch script or interactive burst_buffer options into in
  * appropriate burst_buffer argument */
-static int _parse_bb_opts(struct job_descriptor *job_desc)
+static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 {
 	char *end_ptr = NULL, *script, *save_ptr = NULL;
 	char *bb_access = NULL, *bb_name = NULL, *bb_type = NULL, *capacity;
@@ -1549,8 +1534,10 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 	int rc = SLURM_SUCCESS;
 	bool hurry;
 
+	xassert(bb_size);
+	*bb_size = 0;
 	if (!job_desc->script)
-		return _parse_interactive(job_desc);
+		return _parse_interactive(job_desc, bb_size);
 
 	script = xstrdup(job_desc->script);
 	tok = strtok_r(script, "\n", &save_ptr);
@@ -1569,17 +1556,19 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
+				if ((sub_tok = strstr(tok, "name="))) {
+					bb_name = xstrdup(sub_tok + 5);
+					if ((sub_tok = strchr(bb_name, ' ')))
+						sub_tok[0] = '\0';
+				} else {
+					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					break;
+				}
 				if ((sub_tok = strstr(tok, "access="))) {
 					bb_access = xstrdup(sub_tok + 7);
 					if ((sub_tok = strchr(bb_access, ' ')))
 						sub_tok[0] = '\0';
 				}
-				if ((sub_tok = strstr(tok, "name="))) {
-					bb_name = xstrdup(sub_tok + 5);
-					if ((sub_tok = strchr(bb_name, ' ')))
-						sub_tok[0] = '\0';
-				} else
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				if ((sub_tok = strstr(tok, "type="))) {
 					bb_type = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_type, ' ')))
@@ -1600,6 +1589,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 				xfree(bb_access),
 				xfree(bb_name);
 				xfree(bb_type);
+				*bb_size += tmp_cnt;
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
@@ -1625,6 +1615,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 			   (tok[1] != 'D') || (tok[2] != 'W')) {
 			;
 		} else {
+			/* We just capture the size requirement and leave other
+			 * parsing to Cray's tools */
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
@@ -1641,10 +1633,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 						   (~BB_SIZE_IN_NODES);
 				} else
 					byte_cnt += tmp_cnt;
-			} else if (!strncmp(tok, "swap", 4)) {
-				tok += 4;
-				if (isspace(tok[0]))
-					tok++;
+			} else if (!strncmp(tok, "swap=", 5)) {
+				tok += 5;
 				swap_cnt += strtol(tok, &end_ptr, 10);
 			}
 		}
@@ -1668,17 +1658,18 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 			} else {
 				job_nodes = job_desc->max_nodes;
 			}
-//FIXME: Should this be "GB"?
 			xstrfmtcat(job_desc->burst_buffer,
 				   "SLURM_SWAP=%uGB(%uNodes)",
 				   swap_cnt, job_nodes);
 			byte_cnt += (swap_cnt * 1024 * 1024 * 1024) * job_nodes;
 		}
 		if (byte_cnt) {
+			/* Include cache plus swap space */
 			if (job_desc->burst_buffer)
 				xstrcat(job_desc->burst_buffer, " ");
 			xstrfmtcat(job_desc->burst_buffer,
 				   "SLURM_SIZE=%"PRIu64"", byte_cnt);
+			*bb_size += byte_cnt;
 		}
 		if (node_cnt) {
 			if (job_desc->burst_buffer)
@@ -1699,7 +1690,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc)
 
 /* Parse interactive burst_buffer options into an appropriate burst_buffer
  * argument */
-static int _parse_interactive(struct job_descriptor *job_desc)
+static int _parse_interactive(struct job_descriptor *job_desc,
+			      uint64_t *bb_size)
 {
 	char *capacity, *end_ptr = NULL, *tok;
 	int64_t tmp_cnt;
@@ -1751,6 +1743,7 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 		if (byte_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
 				   " SLURM_SIZE=%"PRIu64"", byte_cnt);
+			*bb_size += byte_cnt;
 		}
 		if (node_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
@@ -1761,7 +1754,8 @@ static int _parse_interactive(struct job_descriptor *job_desc)
 	return rc;
 }
 
-
+/* For interactive jobs, build a script containing the relevant DataWarp
+ * commands, as needed by the Cray API */
 static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 {
 	char *in_buf, *out_buf = NULL;
@@ -1773,36 +1767,8 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 	if ((tok = strstr(job_ptr->burst_buffer, "swap="))) {
 		tok += 5;
 		i = strtol(tok, NULL, 10);
-		xstrfmtcat(out_buf, "#DW swap %dGiB\n", i);
+		xstrfmtcat(out_buf, "#DW swap=%dGiB\n", i);
 	}
-
-	in_buf = xstrdup(job_ptr->burst_buffer);
-	tmp = in_buf;
-	while ((tok = strstr(tmp, "persistentdw="))) {
-		tok += 13;
-		sep = NULL;
-		if ((tok[0] == '\'') || (tok[0] == '\"')) {
-			sep = strchr(tok + 1, tok[0]);
-			if (sep) {
-				tok++;
-				sep[0] = '\0';
-				tmp = sep + 1;
-			}
-		}
-		if (!sep) {
-			sep = tok;
-			while ((sep[0] != ' ') && (sep[0] != '\0'))
-				sep++;
-			if (sep[0] == '\0') {
-				tmp = sep;
-			} else {
-				sep[0] = '\0';
-				tmp = sep + 1;
-			}
-		}
-		xstrfmtcat(out_buf, "#DW persistentdw %s\n", tok);
-	}
-	xfree(in_buf);
 
 	in_buf = xstrdup(job_ptr->burst_buffer);
 	tmp = in_buf;
@@ -1840,7 +1806,7 @@ extern int init(void)
 	pthread_attr_t attr;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_load_config(&bb_state, (char *)plugin_type); /* Remove "const" */
+	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
@@ -1978,11 +1944,11 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
 	bool have_gres = false, have_swap = false;
-	int64_t bb_size = 0;
+	uint64_t bb_size = 0;
 	char *key;
 	int i, rc;
 
-	if ((rc = _parse_bb_opts(job_desc)) != SLURM_SUCCESS)
+	if ((rc = _parse_bb_opts(job_desc, &bb_size)) != SLURM_SUCCESS)
 		return rc;
 
 	if (bb_state.bb_config.debug_flag) {
@@ -2005,8 +1971,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	}
 	if ((bb_size == 0) && (have_gres == false) && (have_swap == false))
 		return SLURM_SUCCESS;
-	if (bb_size < 0)
-		return ESLURM_BURST_BUFFER_LIMIT;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
@@ -2170,7 +2134,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-	/* Run dws_paths */
 	hash_inx = job_ptr->job_id % 10;
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	(void) mkdir(hash_dir, 0700);
@@ -2180,6 +2143,35 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xstrfmtcat(path_file, "%s/pathfile", job_dir);
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
+
+	/* Run job_process */
+	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv[0] = xstrdup("dw_wlm_cli");
+	script_argv[1] = xstrdup("--function");
+	script_argv[2] = xstrdup("job_process");
+	script_argv[3] = xstrdup("--job");
+	xstrfmtcat(script_argv[4], "%s", script_file);
+	START_TIMER;
+	resp_msg = bb_run_script("job_process",
+				 bb_state.bb_config.get_sys_state,
+				 script_argv, 2000, &status);
+	END_TIMER;
+	if (DELTA_TIMER > 200000)	/* 0.2 secs */
+		info("%s: job_process ran for %s", __func__, TIME_STR);
+	else if (bb_state.bb_config.debug_flag)
+		debug("%s: job_process ran for %s", __func__, TIME_STR);
+	_log_script_argv(script_argv, resp_msg);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: job_process for job %u status:%u response:%s",
+		      __func__, job_ptr->job_id, status, resp_msg);
+		if (err_msg) {
+			xfree(*err_msg);
+			xstrfmtcat(*err_msg, "%s: %s", plugin_type, resp_msg);
+		}
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
+
+	/* Run paths */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
@@ -2191,17 +2183,17 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	script_argv[7] = xstrdup("--pathfile");
 	script_argv[8] = xstrdup(path_file);
 	START_TIMER;
-	resp_msg = bb_run_script("dws_paths",
+	resp_msg = bb_run_script("paths",
 				 bb_state.bb_config.get_sys_state,
 				 script_argv, 2000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
-		info("%s: dws_paths ran for %s", __func__, TIME_STR);
+		info("%s: paths ran for %s", __func__, TIME_STR);
 	else if (bb_state.bb_config.debug_flag)
-		debug("%s: dws_paths ran for %s", __func__, TIME_STR);
+		debug("%s: paths ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_paths for job %u status:%u response:%s",
+		error("%s: paths for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
 		if (err_msg) {
 			xfree(*err_msg);
@@ -2218,7 +2210,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	    ((bb_spec->total_size + bb_spec->swap_size) == 0))
 		goto fini;
 
-	/* Run dws_setup */
+	/* Run setup */
 	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
@@ -2237,16 +2229,16 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	script_argv[11] = xstrdup("--job");
 	xstrfmtcat(script_argv[12], "%s", script_file);
 	START_TIMER;
-	resp_msg = bb_run_script("dws_setup",
+	resp_msg = bb_run_script("setup",
 				 bb_state.bb_config.get_sys_state,
 				 script_argv, 2000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
-		info("%s: dws_setup ran for %s", __func__, TIME_STR);
+		info("%s: setup ran for %s", __func__, TIME_STR);
 	else if (bb_state.bb_config.debug_flag)
-		debug("%s: dws_setup ran for %s", __func__, TIME_STR);
+		debug("%s: setup ran for %s", __func__, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_setup for job %u status:%u response:%s",
+		error("%s: setup for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
 		_log_script_argv(script_argv, resp_msg);
 		if (err_msg) {
