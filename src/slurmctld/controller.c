@@ -226,9 +226,7 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
-static void         _update_cluster_tres(slurmdb_tres_rec_t **new_array,
-					 slurmdb_tres_rec_t **old_array,
-					 int cur_cnt, int max_cnt);
+static void         _update_cluster_tres(void);
 
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
@@ -1319,20 +1317,22 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
-static void _update_cluster_tres(slurmdb_tres_rec_t **new_array,
-				 slurmdb_tres_rec_t **old_array,
-				 int cur_cnt, int max_cnt)
+/* any association manager locks should be unlocked before hand */
+static void _update_cluster_tres(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!job_list)
 		return;
 
 	lock_slurmctld(job_write_lock);
+	assoc_mgr_lock(&locks);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		slurmdb_set_new_tres_cnt(&job_ptr->tres_req_cnt,
@@ -1341,6 +1341,7 @@ static void _update_cluster_tres(slurmdb_tres_rec_t **new_array,
 
 	}
 	list_iterator_destroy(job_iterator);
+	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(job_write_lock);
 }
 

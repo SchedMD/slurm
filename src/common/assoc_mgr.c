@@ -1194,12 +1194,6 @@ static int _post_tres_list(List new_list, int new_cnt)
 			list_iterator_destroy(itr);
 		}
 
-		/* update jobs here, this might need to be outside of
-		 * the locks this is in */
-		if (init_setup.update_cluster_tres)
-			init_setup.update_cluster_tres(
-				new_array, assoc_mgr_tres_array,
-				new_cnt, max_cnt);
 	}
 	xfree(assoc_mgr_tres_array);
 	assoc_mgr_tres_array = new_array;
@@ -1211,7 +1205,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 
 	g_tres_count = new_cnt;
 
-	return;
+	return (changed_size || changed_pos) ? 1 : 0;
 }
 
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
@@ -1250,9 +1244,16 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 		}
 	}
 
-	_post_tres_list(new_list, list_count(new_list));
+	changed = _post_tres_list(new_list, list_count(new_list));
 
 	assoc_mgr_unlock(&locks);
+
+	if (changed && init_setup.update_cluster_tres) {
+		/* update jobs here, this needs to be outside of the
+		 * assoc_mgr locks */
+		init_setup.update_cluster_tres();
+	}
+
 	return SLURM_SUCCESS;
 }
 
