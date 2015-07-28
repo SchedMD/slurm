@@ -150,4 +150,13 @@ extern uint32_t get_total_license_cnt(char *name);
  */
 extern char *licenses_2_tres_str(List license_list);
 
+
+/* node_read should be locked before coming in here
+ * fills in tres_res_cnt of the license_list.
+ * locked if assoc_mgr tres read lock is locked or not.
+ */
+extern void license_set_job_tres_req_cnt(List license_list,
+					 uint64_t *tres_req_cnt,
+					 bool locked);
+
 #endif /* !_LICENSES_H */
