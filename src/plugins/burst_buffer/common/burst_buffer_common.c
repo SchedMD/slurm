@@ -232,6 +232,41 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 	return bb_ptr;
 }
 
+/* Find a burst buffer record by name
+ * bb_name IN - Buffer's name
+ * user_id IN - Possible user ID, advisory use only
+ * bb_hash IN - Buffer hash table
+ * RET the buffer or NULL if not found */
+extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
+				   bb_alloc_t **bb_hash)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	char jobid_buf[32];
+	int i, hash_inx = user_id % BB_HASH_SIZE;
+
+	/* Try this user ID first */
+	bb_ptr = bb_hash[hash_inx];
+	while (bb_ptr) {
+		if (!xstrcmp(bb_ptr->name, bb_name))
+			return bb_ptr;
+		bb_ptr = bb_ptr->next;
+	}
+
+	/* Now search all other records */
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		if (i == hash_inx)
+			continue;
+		bb_ptr = bb_hash[i];
+		while (bb_ptr) {
+			if (!xstrcmp(bb_ptr->name, bb_name))
+				return bb_ptr;
+			bb_ptr = bb_ptr->next;
+		}
+	}
+
+	return bb_ptr;
+}
+
 /* Add a burst buffer allocation to a user's load */
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
 {

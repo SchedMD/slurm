@@ -187,6 +187,14 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini);
 extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 				   bb_alloc_t **bb_hash);
 
+/* Find a burst buffer record by name
+ * bb_name IN - Buffer's name
+ * user_id IN - Possible user ID, advisory use only
+ * bb_hash IN - Buffer hash table
+ * RET the buffer or NULL if not found */
+extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
+				   bb_alloc_t **bb_hash);
+
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
 

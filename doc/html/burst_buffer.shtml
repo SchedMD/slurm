@@ -147,6 +147,7 @@ are shown below.</p>
 <pre>
 #BB create_persistent  name=... capacity=# access=... type=...
 #BB destroy_persistent name=...
+#BB destroy_persistent name=... hurry
 </pre>
 
 <h2>Status Commands</h2>
@@ -201,6 +202,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 24 July 2015</p>
+<p style="text-align:center;">Last modified 28 July 2015</p>
 
 <!--#include virtual="footer.txt"-->
