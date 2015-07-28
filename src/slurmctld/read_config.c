@@ -2081,6 +2081,9 @@ static int _restore_job_dependencies(void)
 	char *new_depend;
 	bool valid = true;
 	List license_list;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock(&locks);
 
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
@@ -2114,6 +2117,18 @@ static int _restore_job_dependencies(void)
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			license_job_get(job_ptr);
 
+		/* tres_req_cnt is only for pending jobs */
+		if (IS_JOB_PENDING(job_ptr)) {
+			/* If this returns 1 it means the positions were
+			   altered so just rebuild it.
+			*/
+			if (assoc_mgr_set_tres_cnt_array(
+				    &job_ptr->tres_req_cnt,
+				    job_ptr->tres_req_str, true))
+				job_set_req_tres(job_ptr, true);
+		} else if (job_ptr->total_cpus && !job_ptr->tres_alloc_str)
+			job_set_alloc_tres(job_ptr, true);
+
 		if ((job_ptr->details == NULL) ||
 		    (job_ptr->details->dependency == NULL))
 			continue;
@@ -2128,6 +2143,9 @@ static int _restore_job_dependencies(void)
 		xfree(new_depend);
 	}
 	list_iterator_destroy(job_iterator);
+
+	assoc_mgr_unlock(&locks);
+
 	return error_code;
 }
 

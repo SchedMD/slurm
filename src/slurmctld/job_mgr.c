@@ -2094,47 +2094,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->qos_id = qos_rec.id;
 	}
 
-	if (job_ptr->total_cpus && !job_ptr->tres_alloc_str &&
-	    !IS_JOB_PENDING(job_ptr))
-		job_ptr->tres_alloc_str = xstrdup_printf(
-			"%d=%u", TRES_CPU, job_ptr->total_cpus);
-
-	if (job_ptr->tres_alloc_str && !job_ptr->tres_fmt_alloc_str) {
-		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-					   READ_LOCK, NO_LOCK, NO_LOCK };
-		assoc_mgr_lock(&locks);
-		job_ptr->tres_fmt_alloc_str =
-			slurmdb_make_tres_string_from_simple(
-				job_ptr->tres_alloc_str,
-				assoc_mgr_tres_list);
-		assoc_mgr_unlock(&locks);
-	}
-
-	if (IS_JOB_PENDING(job_ptr)) {
-		if (!job_ptr->tres_req_str) {
-			uint32_t cpu_cnt = 0, mem_cnt = 0;
-
-			if (job_ptr->details) {
-				cpu_cnt = job_ptr->details->min_cpus;
-				if (job_ptr->details->pn_min_memory)
-					mem_cnt =
-						job_ptr->details->pn_min_memory;
-			}
-
-			/* if this is set just override */
-			if (job_ptr->total_cpus)
-				cpu_cnt = job_ptr->total_cpus;
-
-			job_ptr->tres_req_str = xstrdup_printf(
-				"%d=%u,%d=%u",
-				TRES_CPU, cpu_cnt,
-				TRES_MEM, mem_cnt);
-		}
-
-		assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
-					     job_ptr->tres_req_str, false);
-	}
-
 	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;
 
