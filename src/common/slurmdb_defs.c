@@ -206,27 +206,6 @@ static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 	return -1;
 }
 
-/*
- * Comparator used for sorting tres by id
- *
- * returns: -1 tres_a < tres_b   0: tres_a == tres_b   1: tres_a > tres_b
- *
- */
-static int _sort_tres_by_id_asc(void *v1, void *v2)
-{
-	slurmdb_tres_rec_t *tres_a;
-	slurmdb_tres_rec_t *tres_b;
-
-	tres_a = *(slurmdb_tres_rec_t **)v1;
-	tres_b = *(slurmdb_tres_rec_t **)v2;
-
-	if (tres_a->id == tres_b->id)
-		return 0;
-	if (tres_a->id > tres_b->id)
-		return 1;
-	return -1;
-}
-
 static int _sort_slurmdb_hierarchical_rec_list(
 	List slurmdb_hierarchical_rec_list)
 {
@@ -3056,6 +3035,25 @@ extern char *slurmdb_format_tres_str(
 	return tres_str;
 }
 
+/*
+ * Comparator used for sorting tres by id
+ *
+ * returns: -1 tres_a < tres_b   0: tres_a == tres_b   1: tres_a > tres_b
+ *
+ */
+extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
+{
+	slurmdb_tres_rec_t *tres_a = *(slurmdb_tres_rec_t **)v1;
+	slurmdb_tres_rec_t *tres_b = *(slurmdb_tres_rec_t **)v2;
+
+	if (tres_a->id < tres_b->id)
+		return -1;
+	else if (tres_a->id > tres_b->id)
+		return 1;
+
+	return 0;
+}
+
 /* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, char *tres, uint32_t flags)
@@ -3126,7 +3124,7 @@ extern void slurmdb_tres_list_from_string(
 	}
 
 	if (flags & TRES_STR_FLAG_SORT_ID)
-		list_sort(*tres_list, (ListCmpF)_sort_tres_by_id_asc);
+		list_sort(*tres_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
 	return;
 }

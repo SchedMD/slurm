@@ -176,6 +176,14 @@ extern char *slurmdb_tres_string_combine_lists(
 extern char *slurmdb_make_tres_string(List tres, uint32_t flags);
 extern char *slurmdb_format_tres_str(
 	char *tres_in, List full_tres_list, bool simple);
+/*
+ * Comparator used for sorting tres by id
+ *
+ * returns: -1 tres_a < tres_b   0: tres_a == tres_b   1: tres_a > tres_b
+ *
+ */
+extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
+
 /* Used to turn a tres string into a list containing
  * slurmdb_tres_rec_t's with only id's and counts filled in, no
  * formatted types or names.
