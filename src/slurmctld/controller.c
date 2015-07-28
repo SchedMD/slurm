@@ -1337,10 +1337,12 @@ static void _update_cluster_tres(void)
 	assoc_mgr_lock(&locks);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		slurmdb_set_new_tres_cnt(&job_ptr->tres_req_cnt,
-					 new_array, old_array,
-					 cur_cnt, max_cnt);
-
+		/* If this returns 1 it means the positions were
+		   altered so just rebuild it.
+		*/
+		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
+						 job_ptr->tres_req_str, true))
+			job_set_req_tres(job_ptr, true);
 	}
 	list_iterator_destroy(job_iterator);
 	assoc_mgr_unlock(&locks);
