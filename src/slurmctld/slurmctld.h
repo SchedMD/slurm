@@ -230,6 +230,7 @@ extern int   batch_sched_delay;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
+extern int   slurmctld_tres_cnt;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.

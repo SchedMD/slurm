@@ -3700,7 +3700,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
 
-	i = sizeof(uint64_t) * g_tres_count;
+	i = sizeof(uint64_t) * slurmctld_tres_cnt;
 	job_ptr_pend->tres_req_cnt = xmalloc(i);
 	memcpy(job_ptr_pend->tres_req_cnt, job_ptr->tres_req_cnt, i);
 	job_ptr_pend->tres_req_str = xstrdup(job_ptr->tres_req_str);
@@ -5525,10 +5525,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	/* set up the tres cnts before the validate takes place */
-	assoc_mgr_lock(&locks);
-	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
-	assoc_mgr_unlock(&locks);
+	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
 
@@ -10814,11 +10811,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		int i;
 		List license_list;
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
-		uint64_t tres_req_cnt[g_tres_count];
+		uint64_t tres_req_cnt[slurmctld_tres_cnt];
 
 		/* This only needs to be done on pending jobs. */
 		if (pending)
-			for (i=0; i<g_tres_count; i++)
+			for (i=0; i<slurmctld_tres_cnt; i++)
 				tres_req_cnt[i] = (uint64_t)-1;
 
 		license_list = license_validate(job_specs->licenses,
@@ -10837,7 +10834,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-			for (i=0; i<g_tres_count; i++) {
+			for (i=0; i<slurmctld_tres_cnt; i++) {
 				if (tres_req_cnt[i] != (uint64_t)-1)
 					job_ptr->tres_req_cnt[i] =
 						tres_req_cnt[i];

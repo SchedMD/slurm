@@ -184,6 +184,7 @@ slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
 int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
+int   slurmctld_tres_cnt = 0;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -1183,6 +1184,9 @@ static int _accounting_cluster_ready(void)
 
 	assoc_mgr_lock(&locks);
 	set_cluster_tres(true);
+
+	slurmctld_tres_cnt = g_tres_count;
+
 	cluster_tres_str = slurmdb_make_tres_string(
 		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
 	assoc_mgr_unlock(&locks);
@@ -1345,6 +1349,14 @@ static void _update_cluster_tres(void)
 			job_set_req_tres(job_ptr, true);
 	}
 	list_iterator_destroy(job_iterator);
+
+	/* Set up the slurmctld_tres_cnt here so we don't have to
+	 * worry about locking the assoc_mgr if we just need the
+	 * count.  This would be used for Jobs so slurmctld_tres_cnt
+	 * should be protected by the job lock.
+	*/
+	slurmctld_tres_cnt = g_tres_count;
+
 	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(job_write_lock);
 }
@@ -1934,7 +1946,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	xassert(assoc_mgr_tres_list);
+	xassert(assoc_mgr_tres_array);
 
 	for (i=0; i < g_tres_count; i++) {
 		tres_rec = assoc_mgr_tres_array[i];
