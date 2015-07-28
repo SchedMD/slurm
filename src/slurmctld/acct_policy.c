@@ -1595,7 +1595,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			job_memory = (job_desc->pn_min_memory & (~MEM_PER_CPU))
 				* job_desc->min_cpus;
 			admin_set_memory_limit =
-				(acct_policy_limit_set->pn_min_memory
+				(acct_policy_limit_set->max_tres[TRES_ARRAY_MEM]
 				 == ADMIN_SET_LIMIT)
 				|| (acct_policy_limit_set->max_cpus
 				    == ADMIN_SET_LIMIT);
@@ -1605,7 +1605,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			job_memory = (job_desc->pn_min_memory)
 				* job_desc->min_nodes;
 			admin_set_memory_limit =
-				(acct_policy_limit_set->pn_min_memory
+				(acct_policy_limit_set->max_tres[TRES_ARRAY_MEM]
 				 == ADMIN_SET_LIMIT)
 				|| (acct_policy_limit_set->max_nodes
 				    == ADMIN_SET_LIMIT);
@@ -2145,7 +2145,7 @@ extern bool acct_policy_job_runnable_post_select(
 		char *memory_type = NULL;
 
 		admin_set_memory_limit =
-			(job_ptr->limit_set.pn_min_memory == ADMIN_SET_LIMIT)
+			(job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] == ADMIN_SET_LIMIT)
 			|| (job_ptr->limit_set.min_cpus == ADMIN_SET_LIMIT);
 
 		if (pn_min_memory & MEM_PER_CPU) {
@@ -2615,11 +2615,11 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 
 	job_desc.pn_min_memory = details_ptr->pn_min_memory;
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set.pn_min_memory == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.pn_min_memory =
-			job_ptr->limit_set.pn_min_memory;
+	if (job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] == ADMIN_SET_LIMIT)
+		acct_policy_limit_set.max_tres[TRES_ARRAY_MEM] =
+			job_ptr->limit_set.max_tres[TRES_ARRAY_MEM];
 	else if ((details_ptr->pn_min_memory != NO_VAL)
-		 && !job_ptr->limit_set.pn_min_memory)
+		 && !job_ptr->limit_set.max_tres[TRES_ARRAY_MEM])
 		job_desc.pn_min_memory = details_ptr->pn_min_memory;
 	else
 		job_desc.pn_min_memory = 0;

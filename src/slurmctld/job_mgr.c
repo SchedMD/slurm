@@ -1073,7 +1073,6 @@ static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
 	pack16(limit_set->min_cpus, buffer);
 	pack16(limit_set->min_nodes, buffer);
 	pack16_array(limit_set->min_tres, slurmctld_tres_cnt, buffer);
-	pack16(limit_set->pn_min_memory, buffer);
 	pack16(limit_set->qos, buffer);
 	pack16(limit_set->time, buffer);
 }
@@ -1090,7 +1089,6 @@ static int _unpack_acct_policy_limit_members(
 	safe_unpack16(&limit_set->min_nodes, buffer);
 	xfree(limit_set->min_tres);
 	safe_unpack16_array(&limit_set->min_tres, &tmp32, buffer);
-	safe_unpack16(&limit_set->pn_min_memory, buffer);
 	safe_unpack16(&limit_set->qos, buffer);
 	safe_unpack16(&limit_set->time, buffer);
 
@@ -1278,7 +1276,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t array_task_id = NO_VAL;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
-	uint16_t job_state, details, batch_flag, step_flag;
+	uint16_t job_state, details, batch_flag, step_flag, tmp16;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, ckpt_interval;
@@ -1575,7 +1573,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&limit_set.max_nodes, buffer);
 		safe_unpack16(&limit_set.min_cpus, buffer);
 		safe_unpack16(&limit_set.min_nodes, buffer);
-		safe_unpack16(&limit_set.pn_min_memory, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
 		safe_unpack16(&limit_set.qos, buffer);
 
@@ -1748,7 +1747,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&limit_set.max_nodes, buffer);
 		safe_unpack16(&limit_set.min_cpus, buffer);
 		safe_unpack16(&limit_set.min_nodes, buffer);
-		safe_unpack16(&limit_set.pn_min_memory, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
 		safe_unpack16(&limit_set.qos, buffer);
 
@@ -9931,7 +9931,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.min_cpus = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.pn_min_memory = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
 	}
@@ -10450,8 +10449,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set.pn_min_memory =
-				acct_policy_limit_set.pn_min_memory;
+			job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] =
+				acct_policy_limit_set.max_tres[TRES_ARRAY_MEM];
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 				(uint64_t)detail_ptr->pn_min_memory;
 			xfree(job_ptr->tres_req_str);
