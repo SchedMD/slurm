@@ -33,7 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct sacct.a man pages describing -i option.
  -- Capture salloc/srun information in sdiag statistics.
  -- Fix bug in node selection with topology optimization.
- -- Set block distribution when srun requests 0 memory.
+ -- Don't set distribution when srun requests 0 memory.
 
 * Changes in Slurm 14.11.8
 ==========================
