@@ -1414,6 +1414,60 @@ end_it:
 }
 
 /*
+ * _validate_tres_limits - validate the tres requested against limits
+ * of an association as well as qos skipping any limit an admin set
+ *
+ * OUT - tres_pos - if false is returned position in array of failed limit
+ * IN - job_tres_array - count of various tres in use
+ * IN - assoc_tres_array - limits on the association
+ * IN - qos_tres_array - limits on the qos
+ * IN - acct_policy_limit_set_array - limits that have been overridden
+ *                                    by an admin
+ * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN update_call - If this is an update or a create call
+ *
+ * RET - True if no limit is violated, false otherwise with tres_pos
+ * being set to the position of the failed limit.
+ */
+static bool _validate_tres_limits(int *tres_pos,
+				  uint64_t *job_tres_array,
+				  uint64_t *assoc_tres_array,
+				  uint64_t *qos_tres_array,
+				  uint16_t *acct_policy_limit_set_array,
+				  bool strict_checking,
+				  bool update_call)
+{
+	if (!strict_checking)
+		return true;
+
+	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count;
+	     (*tres_pos)++) {
+		if (!acct_policy_limit_set_array[*tres_pos] &&
+		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
+		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
+		    ((job_tres_array[*tres_pos] != NO_VAL) || !update_call) &&
+		    (job_tres_array[*tres_pos] > assoc_tres_array[*tres_pos]))
+			return false;
+		/* should be the same as below */
+
+		/* if ((acct_policy_limit_set_array[*tres_pos] == */
+		/*      (uint64_t)ADMIN_SET_LIMIT) */
+		/*     || (qos_tres_array[*tres_pos] != (uint64_t)INFINITE) */
+		/*     || (assoc_tres_array[*tres_pos] == (uint64_t)INFINITE) */
+		/*     || (update_call && */
+		/* 	(job_tres_array[*tres_pos] == NO_VAL))) { */
+		/* 	/\* no need to check/set *\/ */
+		/* } else if ((job_tres_array[*tres_pos] != NO_VAL) */
+		/* 	   && (job_tres_array[*tres_pos] > */
+		/* 	       assoc_tres_array[*tres_pos])) { */
+		/* 	return false; */
+		/* } */
+	}
+
+	return true;
+}
+
+/*
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
  */
@@ -1523,7 +1577,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	bool admin_set_memory_limit = false;
 	struct job_record job_rec;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 	bool strict_checking;
 
 	xassert(acct_policy_limit_set);
@@ -1596,15 +1650,44 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 
 	while (assoc_ptr) {
+		int tres_pos = 0;
+		uint64_t qos_tres_ctld[g_tres_count];
+
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_cpu_mins.
 		 */
 
-		/* FIXME: this only works with CPUS and was only done
-		 * this way to get the slurmctld to compile and work
-		 * with the TRES strings.  This should probably be a
-		 * new call to a function that does this for each TRES.
+		/* FIXME: This needs to work with qos limits, and we
+		 * are fudging them now.
 		 */
+		memset(qos_tres_ctld, 0, sizeof(qos_tres_ctld));
+		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.grp_cpus;
+		qos_tres_ctld[TRES_ARRAY_MEM] = job_memory;
+
+		if (!_validate_tres_limits(&tres_pos, job_desc->tres_req_cnt,
+					   assoc_ptr->grp_tres_ctld,
+					   qos_tres_ctld,
+					   acct_policy_limit_set->max_tres,
+					   strict_checking, update_call)) {
+			if (reason)
+				*reason = WAIT_ASSOC_GRP_CPU;
+			debug2("job submit for user %s(%u): "
+			       "min tres(%s%s%s) request %"PRIu64" exceeds "
+			       "group max tres limit %"PRIu64" for account %s",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       job_desc->tres_req_cnt[tres_pos],
+			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       assoc_ptr->acct);
+			rc = false;
+			break;
+		}
+
+
 		uint64_t limit = slurmdb_find_tres_count_in_string(
 			assoc_ptr->grp_tres, TRES_CPU);
 		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
