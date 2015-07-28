@@ -39,20 +39,6 @@
 #ifndef _HAVE_ACCT_POLICY_H
 #define _HAVE_ACCT_POLICY_H
 
-#define ADMIN_SET_LIMIT 0xffff
-
-typedef struct {
-	uint16_t max_cpus;
-	uint16_t max_nodes;
-	uint16_t *max_tres;
-	uint16_t min_cpus;
-	uint16_t min_nodes;
-	uint16_t *min_tres;
-	uint16_t pn_min_memory;
-	uint16_t qos;
-	uint16_t time;
-} acct_policy_limit_set_t;
-
 /*
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.

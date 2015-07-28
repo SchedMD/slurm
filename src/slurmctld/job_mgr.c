@@ -1064,6 +1064,45 @@ unpack_error:
 	return SLURM_FAILURE;
 }
 
+static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
+				    Buf buffer)
+{
+	pack16(limit_set->max_cpus, buffer);
+	pack16(limit_set->max_nodes, buffer);
+	pack16_array(limit_set->max_tres, slurmctld_tres_cnt, buffer);
+	pack16(limit_set->min_cpus, buffer);
+	pack16(limit_set->min_nodes, buffer);
+	pack16_array(limit_set->min_tres, slurmctld_tres_cnt, buffer);
+	pack16(limit_set->pn_min_memory, buffer);
+	pack16(limit_set->qos, buffer);
+	pack16(limit_set->time, buffer);
+}
+
+static int _unpack_acct_policy_limit_members(
+	acct_policy_limit_set_t *limit_set, Buf buffer)
+{
+	uint32_t tmp32;
+	safe_unpack16(&limit_set->max_cpus, buffer);
+	safe_unpack16(&limit_set->max_nodes, buffer);
+	xfree(limit_set->max_tres);
+	safe_unpack16_array(&limit_set->max_tres, &tmp32, buffer);
+	safe_unpack16(&limit_set->min_cpus, buffer);
+	safe_unpack16(&limit_set->min_nodes, buffer);
+	xfree(limit_set->min_tres);
+	safe_unpack16_array(&limit_set->min_tres, &tmp32, buffer);
+	safe_unpack16(&limit_set->pn_min_memory, buffer);
+	safe_unpack16(&limit_set->qos, buffer);
+	safe_unpack16(&limit_set->time, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(limit_set->max_tres);
+	xfree(limit_set->min_tres);
+
+	return SLURM_ERROR;
+}
+
 /*
  * _dump_job_state - dump the state of a specific job, its details, and
  *	steps to a buffer
@@ -1145,13 +1184,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->warn_flags, buffer);
 	pack16(dump_job_ptr->warn_signal, buffer);
 	pack16(dump_job_ptr->warn_time, buffer);
-	pack16(dump_job_ptr->limit_set_max_cpus, buffer);
-	pack16(dump_job_ptr->limit_set_max_nodes, buffer);
-	pack16(dump_job_ptr->limit_set_min_cpus, buffer);
-	pack16(dump_job_ptr->limit_set_min_nodes, buffer);
-	pack16(dump_job_ptr->limit_set_pn_min_memory, buffer);
-	pack16(dump_job_ptr->limit_set_time, buffer);
-	pack16(dump_job_ptr->limit_set_qos, buffer);
+
+	_pack_acct_policy_limit(&dump_job_ptr->limit_set, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -1249,10 +1283,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, ckpt_interval;
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
-	uint16_t limit_set_max_cpus = 0, limit_set_max_nodes = 0;
-	uint16_t limit_set_min_cpus = 0, limit_set_min_nodes = 0;
-	uint16_t limit_set_pn_min_memory = 0;
-	uint16_t limit_set_time = 0, limit_set_qos = 0;
+	acct_policy_limit_set_t limit_set;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -1276,6 +1307,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char jbuf[JBUFSIZ];
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL,
 		*tres_req_str = NULL;
+
+	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -1357,13 +1390,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
-		safe_unpack16(&limit_set_max_cpus, buffer);
-		safe_unpack16(&limit_set_max_nodes, buffer);
-		safe_unpack16(&limit_set_min_cpus, buffer);
-		safe_unpack16(&limit_set_min_nodes, buffer);
-		safe_unpack16(&limit_set_pn_min_memory, buffer);
-		safe_unpack16(&limit_set_time, buffer);
-		safe_unpack16(&limit_set_qos, buffer);
+
+		_unpack_acct_policy_limit_members(&limit_set, buffer);
 
 		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -1543,13 +1571,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
-		safe_unpack16(&limit_set_max_cpus, buffer);
-		safe_unpack16(&limit_set_max_nodes, buffer);
-		safe_unpack16(&limit_set_min_cpus, buffer);
-		safe_unpack16(&limit_set_min_nodes, buffer);
-		safe_unpack16(&limit_set_pn_min_memory, buffer);
-		safe_unpack16(&limit_set_time, buffer);
-		safe_unpack16(&limit_set_qos, buffer);
+		safe_unpack16(&limit_set.max_cpus, buffer);
+		safe_unpack16(&limit_set.max_nodes, buffer);
+		safe_unpack16(&limit_set.min_cpus, buffer);
+		safe_unpack16(&limit_set.min_nodes, buffer);
+		safe_unpack16(&limit_set.pn_min_memory, buffer);
+		safe_unpack16(&limit_set.time, buffer);
+		safe_unpack16(&limit_set.qos, buffer);
+
 
 		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -1715,13 +1744,13 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
-		safe_unpack16(&limit_set_max_cpus, buffer);
-		safe_unpack16(&limit_set_max_nodes, buffer);
-		safe_unpack16(&limit_set_min_cpus, buffer);
-		safe_unpack16(&limit_set_min_nodes, buffer);
-		safe_unpack16(&limit_set_pn_min_memory, buffer);
-		safe_unpack16(&limit_set_time, buffer);
-		safe_unpack16(&limit_set_qos, buffer);
+		safe_unpack16(&limit_set.max_cpus, buffer);
+		safe_unpack16(&limit_set.max_nodes, buffer);
+		safe_unpack16(&limit_set.min_cpus, buffer);
+		safe_unpack16(&limit_set.min_nodes, buffer);
+		safe_unpack16(&limit_set.pn_min_memory, buffer);
+		safe_unpack16(&limit_set.time, buffer);
+		safe_unpack16(&limit_set.qos, buffer);
 
 		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -2004,13 +2033,20 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->warn_flags   = warn_flags;
 	job_ptr->warn_signal  = warn_signal;
 	job_ptr->warn_time    = warn_time;
-	job_ptr->limit_set_max_cpus  = limit_set_max_cpus;
-	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
-	job_ptr->limit_set_min_cpus  = limit_set_min_cpus;
-	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
-	job_ptr->limit_set_pn_min_memory = limit_set_pn_min_memory;
-	job_ptr->limit_set_time      = limit_set_time;
-	job_ptr->limit_set_qos       = limit_set_qos;
+
+	if (!limit_set.max_tres)
+		limit_set.max_tres = xmalloc(
+			sizeof(uint16_t) * slurmctld_tres_cnt);
+
+	if (!limit_set.min_tres)
+		limit_set.min_tres = xmalloc(
+			sizeof(uint16_t) * slurmctld_tres_cnt);
+
+	memcpy(&job_ptr->limit_set, &limit_set,
+	       sizeof(acct_policy_limit_set_t));
+	limit_set.max_tres = NULL;
+	limit_set.min_tres = NULL;
+
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
 	job_ptr->profile         = profile;
@@ -2083,9 +2119,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->resv_name, job_ptr->assoc_ptr,
-			job_ptr->limit_set_qos, &qos_rec,
+			job_ptr->limit_set.qos, &qos_rec,
 			&qos_error);
-		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set_qos) {
+		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
 			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = FAIL_QOS;
@@ -2110,6 +2146,8 @@ unpack_error:
 	xfree(gres_used);
 	xfree(resp_host);
 	xfree(licenses);
+	xfree(limit_set.max_tres);
+	xfree(limit_set.min_tres);
 	xfree(mail_user);
 	xfree(name);
 	xfree(nodes);
@@ -5373,8 +5411,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -5401,6 +5437,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	acct_policy_limit_set.max_tres =
+		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+	acct_policy_limit_set.min_tres =
+		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	*job_pptr = (struct job_record *) NULL;
 	/*
@@ -5693,13 +5733,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
-	job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
-	job_ptr->limit_set_min_cpus = acct_policy_limit_set.min_cpus;
-	job_ptr->limit_set_min_nodes = acct_policy_limit_set.min_nodes;
-	job_ptr->limit_set_pn_min_memory = acct_policy_limit_set.pn_min_memory;
-	job_ptr->limit_set_time = acct_policy_limit_set.time;
-	job_ptr->limit_set_qos = acct_policy_limit_set.qos;
+	memcpy(&job_ptr->limit_set, &acct_policy_limit_set,
+	       sizeof(acct_policy_limit_set_t));
+	acct_policy_limit_set.max_tres = NULL;
+	acct_policy_limit_set.min_tres = NULL;
 
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
@@ -5801,6 +5838,8 @@ cleanup_fail:
 		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
+	xfree(acct_policy_limit_set.max_tres);
+	xfree(acct_policy_limit_set.min_tres);
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_BITMAP(req_bitmap);
@@ -7488,6 +7527,8 @@ static void _list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);
 	FREE_NULL_LIST(job_ptr->license_list);
+	xfree(job_ptr->limit_set.max_tres);
+	xfree(job_ptr->limit_set.min_tres);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
@@ -9372,7 +9413,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
 	acct_policy_limit_set_t acct_policy_limit_set;
+	uint16_t min_tres[slurmctld_tres_cnt], max_tres[slurmctld_tres_cnt];
 	bool acct_limit_already_set;
+	int tres_pos;
 
 #ifdef HAVE_BG
 	uint16_t conn_type[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
@@ -9390,6 +9433,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					&cpus_per_node);
 #endif
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	memset(min_tres, 0, sizeof(min_tres));
+	memset(max_tres, 0, sizeof(max_tres));
+	acct_policy_limit_set.min_tres = min_tres;
+	acct_policy_limit_set.max_tres = max_tres;
 
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
@@ -9419,8 +9466,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set, 1)) {
-			debug("\
-%s: exceeded association's cpu, node, memory or time limit for user %u",
+			debug("%s: exceeded association's cpu, node, "
+			      "memory or time limit for user %u",
 			      __func__, job_specs->user_id);
 			acct_limit_already_set = true;
 		}
@@ -9638,10 +9685,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr->qos_id = qos_rec.id;
 					job_ptr->qos_ptr = new_qos_ptr;
 					if (authorized)
-						job_ptr->limit_set_qos =
+						job_ptr->limit_set.qos =
 							ADMIN_SET_LIMIT;
 					else
-						job_ptr->limit_set_qos = 0;
+						job_ptr->limit_set.qos = 0;
 					update_accounting = true;
 				} else {
 					debug("sched: %s: new QOS identical to old QOS %u",
@@ -9805,10 +9852,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						job_ptr->qos_id = qos_rec.id;
 						job_ptr->qos_ptr = new_qos_ptr;
 						if (authorized)
-							job_ptr->limit_set_qos =
+							job_ptr->limit_set.qos =
 								ADMIN_SET_LIMIT;
 						else
-							job_ptr->limit_set_qos
+							job_ptr->limit_set.qos
 								= 0;
 						update_accounting = true;
 					} else
@@ -9839,27 +9886,47 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		/* Perhaps the limit was removed, so we will remove it
 		   since it was imposed previously.
 		*/
-		if (!acct_policy_limit_set.max_cpus
-		    && (job_ptr->limit_set_max_cpus == 1))
+
+		/* FIXME: this probably has to work with all TRES some how */
+		if (!acct_policy_limit_set.max_tres[TRES_ARRAY_CPU]
+		    && (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == 1))
 			job_ptr->details->max_cpus = NO_VAL;
 
+		/* for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) { */
+		/* 	if (!acct_policy_limit_set.max_cpus */
+		/* 	    && (job_ptr->limit_set.max_cpus == 1)) */
+		/* 		job_ptr->details->max_cpus = NO_VAL; */
+
+		/* } */
+
 		if (!acct_policy_limit_set.max_nodes
-		    && (job_ptr->limit_set_max_nodes == 1))
+		    && (job_ptr->limit_set.max_nodes == 1))
 			job_ptr->details->max_nodes = NO_VAL;
 
 		if (!acct_policy_limit_set.time
-		    && (job_ptr->limit_set_time == 1))
+		    && (job_ptr->limit_set.time == 1))
 			job_ptr->time_limit = NO_VAL;
 
-		if (job_ptr->limit_set_max_cpus != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_max_cpus =
-				acct_policy_limit_set.max_cpus;
-		if (job_ptr->limit_set_max_nodes != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_max_nodes =
+		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
+			if (job_ptr->limit_set.max_tres[tres_pos] !=
+			    ADMIN_SET_LIMIT)
+				job_ptr->limit_set.max_tres[tres_pos] =
+					acct_policy_limit_set.
+					max_tres[tres_pos];
+		}
+
+		if (job_ptr->limit_set.max_nodes != ADMIN_SET_LIMIT)
+			job_ptr->limit_set.max_nodes =
 				acct_policy_limit_set.max_nodes;
-		if (job_ptr->limit_set_time != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_time = acct_policy_limit_set.time;
+		if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
+			job_ptr->limit_set.time = acct_policy_limit_set.time;
 	} else if (authorized) {
+		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
+			acct_policy_limit_set.max_tres[tres_pos] =
+				ADMIN_SET_LIMIT;
+			acct_policy_limit_set.min_tres[tres_pos] =
+				ADMIN_SET_LIMIT;
+		}
 		acct_policy_limit_set.max_cpus = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.min_cpus = ADMIN_SET_LIMIT;
@@ -9955,7 +10022,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
-		job_ptr->limit_set_min_cpus = acct_policy_limit_set.min_cpus;
+		job_ptr->limit_set.min_cpus = acct_policy_limit_set.min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
@@ -9964,7 +10031,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_max_cpus, detail_ptr->max_cpus, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
+		job_ptr->limit_set.max_cpus = acct_policy_limit_set.max_cpus;
 		update_accounting = true;
 	}
 
@@ -10019,9 +10086,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					 * acct_policy_limit_set.*
 					 * since if set by a
 					 * super user it be set correctly */
-					job_ptr->limit_set_min_cpus =
+					job_ptr->limit_set.min_cpus =
 						acct_policy_limit_set.min_cpus;
-					job_ptr->limit_set_max_cpus =
+					job_ptr->limit_set.max_cpus =
 						acct_policy_limit_set.max_cpus;
 				}
 			}
@@ -10076,7 +10143,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
 		     save_min_nodes, detail_ptr->min_nodes, job_ptr->job_id);
-		job_ptr->limit_set_min_nodes = acct_policy_limit_set.min_nodes;
+		job_ptr->limit_set.min_nodes = acct_policy_limit_set.min_nodes;
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -10085,7 +10152,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_max_nodes, detail_ptr->max_nodes, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
+		job_ptr->limit_set.max_nodes = acct_policy_limit_set.max_nodes;
 		update_accounting = true;
 	}
 
@@ -10130,7 +10197,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set_time = acct_policy_limit_set.time;
+			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr &&
 			   (job_ptr->part_ptr->max_time >=
@@ -10141,7 +10208,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set_time = acct_policy_limit_set.time;
+			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to increase time limit for job %u",
@@ -10185,7 +10252,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set_time = acct_policy_limit_set.time;
+			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to extend end time for job %u",
@@ -10383,7 +10450,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set_pn_min_memory =
+			job_ptr->limit_set.pn_min_memory =
 				acct_policy_limit_set.pn_min_memory;
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 				(uint64_t)detail_ptr->pn_min_memory;

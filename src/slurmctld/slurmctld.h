@@ -550,6 +550,20 @@ typedef struct job_array_struct {
 	uint32_t tot_comp_tasks;	/* Completed task count */
 } job_array_struct_t;
 
+#define ADMIN_SET_LIMIT 0xffff
+
+typedef struct {
+	uint16_t max_cpus;
+	uint16_t max_nodes;
+	uint16_t *max_tres;
+	uint16_t min_cpus;
+	uint16_t min_nodes;
+	uint16_t *min_tres;
+	uint16_t pn_min_memory;
+	uint16_t qos;
+	uint16_t time;
+} acct_policy_limit_set_t;
+
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with _rec_job_copy.
@@ -627,20 +641,11 @@ struct job_record {
 					 * node failure */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
-	uint16_t limit_set_max_cpus;	/* if max_cpus was set from
-					 * a limit false if user set */
-	uint16_t limit_set_max_nodes;	/* if max_nodes was set from
-					 * a limit false if user set */
-	uint16_t limit_set_min_cpus;	/* if max_cpus was set from
-					 * a limit false if user set */
-	uint16_t limit_set_min_nodes;	/* if max_nodes was set from
-					 * a limit false if user set */
-	uint16_t limit_set_pn_min_memory; /* if pn_min_memory was set from
-					 * a limit false if user set */
-	uint16_t limit_set_time;    	/* if time_limit was set from
-					 * a limit false if user set */
-	uint16_t limit_set_qos;	   	/* if qos_limit was set from
-					 * a limit false if user set */
+	acct_policy_limit_set_t limit_set; /* flags if indicate an
+					    * associated limit was set from
+					    * a limit instead of from
+					    * the request, or if the
+					    * limit was set from admin */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */

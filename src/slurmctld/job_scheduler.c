@@ -679,7 +679,7 @@ next_part:		part_ptr = (struct part_record *)
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&
-			    !job_ptr->limit_set_qos) {
+			    !job_ptr->limit_set.qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -1452,7 +1452,7 @@ next_task:
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 			    && !bit_test(assoc_ptr->usage->valid_qos,
 					 job_ptr->qos_id)
-			    && !job_ptr->limit_set_qos) {
+			    && !job_ptr->limit_set.qos) {
 				debug("sched: JobId=%u has invalid QOS",
 				      job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -2828,7 +2828,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			max_nodes = MIN(job_ptr->details->max_nodes,
 					part_ptr->max_nodes);
 		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (!job_ptr->limit_set_max_nodes &&
+		if (!job_ptr->limit_set.max_nodes &&
 		    job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
 		else

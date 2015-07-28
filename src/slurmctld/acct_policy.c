@@ -863,7 +863,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	/* if the qos limits have changed since job
 	 * submission and job can not run, then kill it */
-	if ((job_ptr->limit_set_time != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_wall_pj == INFINITE)
 	    && (qos_ptr->max_wall_pj != INFINITE)) {
 
@@ -990,7 +990,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	 * cpu requirement has exceeded the limit for all CPUs
 	 * usable by the QOS
 	 */
-	if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->grp_cpus == INFINITE)
 	    && (qos_ptr->grp_cpus != INFINITE)) {
 
@@ -1098,7 +1098,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set_min_nodes != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->grp_nodes == INFINITE)
 	    && (qos_ptr->grp_nodes != INFINITE)) {
 
@@ -1165,7 +1165,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_cpus_pj == INFINITE)
 	    && (qos_ptr->max_cpus_pj != INFINITE)) {
 
@@ -1186,7 +1186,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->min_cpus_pj == INFINITE)
 	    && (qos_ptr->min_cpus_pj != INFINITE)) {
 
@@ -1206,7 +1206,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_cpus_pu == INFINITE)
 	    && (qos_ptr->max_cpus_pu != INFINITE)) {
 
@@ -1252,7 +1252,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 
 	/* We do not need to check max_jobs_pu here */
 
-	if ((job_ptr->limit_set_min_nodes != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_nodes_pj == INFINITE)
 	    && (qos_ptr->max_nodes_pj != INFINITE)) {
 
@@ -1272,7 +1272,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set_min_nodes != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_nodes_pu == INFINITE)
 	    && (qos_ptr->max_nodes_pu != INFINITE)) {
 
@@ -1433,7 +1433,7 @@ static bool _validate_tres_limits(int *tres_pos,
 				  uint64_t *job_tres_array,
 				  uint64_t *assoc_tres_array,
 				  uint64_t *qos_tres_array,
-				  uint16_t *acct_policy_limit_set_array,
+				  uint16_t *admin_set_limit_tres_array,
 				  bool strict_checking,
 				  bool update_call)
 {
@@ -1442,7 +1442,8 @@ static bool _validate_tres_limits(int *tres_pos,
 
 	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count;
 	     (*tres_pos)++) {
-		if (!acct_policy_limit_set_array[*tres_pos] &&
+		if ((admin_set_limit_tres_array[*tres_pos] !=
+		     ADMIN_SET_LIMIT) &&
 		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
 		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
 		    ((job_tres_array[*tres_pos] != NO_VAL) || !update_call) &&
@@ -1450,7 +1451,7 @@ static bool _validate_tres_limits(int *tres_pos,
 			return false;
 		/* should be the same as below */
 
-		/* if ((acct_policy_limit_set_array[*tres_pos] == */
+		/* if ((admin_set_limit_tres_array[*tres_pos] == */
 		/*      (uint64_t)ADMIN_SET_LIMIT) */
 		/*     || (qos_tres_array[*tres_pos] != (uint64_t)INFINITE) */
 		/*     || (assoc_tres_array[*tres_pos] == (uint64_t)INFINITE) */
@@ -2059,7 +2060,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 		/* if the association limits have changed since job
 		 * submission and job can not run, then kill it */
-		if ((job_ptr->limit_set_time != ADMIN_SET_LIMIT)
+		if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 		    && (qos_rec.max_wall_pj == INFINITE)
 		    && (assoc_ptr->max_wall_pj != INFINITE)) {
 			time_limit = assoc_ptr->max_wall_pj;
@@ -2144,8 +2145,8 @@ extern bool acct_policy_job_runnable_post_select(
 		char *memory_type = NULL;
 
 		admin_set_memory_limit =
-			(job_ptr->limit_set_pn_min_memory == ADMIN_SET_LIMIT)
-			|| (job_ptr->limit_set_min_cpus == ADMIN_SET_LIMIT);
+			(job_ptr->limit_set.pn_min_memory == ADMIN_SET_LIMIT)
+			|| (job_ptr->limit_set.min_cpus == ADMIN_SET_LIMIT);
 
 		if (pn_min_memory & MEM_PER_CPU) {
 			memory_type = "MPC";
@@ -2250,7 +2251,7 @@ extern bool acct_policy_job_runnable_post_select(
 
 		limit = slurmdb_find_tres_count_in_string(
 			assoc_ptr->grp_tres, TRES_CPU);
-		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)
+		if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
 		    && (qos_rec.grp_cpus == INFINITE)
 		    && (limit != (uint64_t)INFINITE)) {
 			if (cpu_cnt > (uint32_t)limit) {
@@ -2351,7 +2352,7 @@ extern bool acct_policy_job_runnable_post_select(
 			}
 		}
 
-		if ((job_ptr->limit_set_min_nodes != ADMIN_SET_LIMIT)
+		if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
 		    && (qos_rec.grp_nodes == INFINITE)
 		    && (assoc_ptr->grp_nodes != INFINITE)) {
 			if (node_cnt >
@@ -2596,37 +2597,37 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 
 	job_desc.min_cpus = details_ptr->min_cpus;
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set_max_cpus == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_cpus = job_ptr->limit_set_max_cpus;
+	if (job_ptr->limit_set.max_cpus == ADMIN_SET_LIMIT)
+		acct_policy_limit_set.max_cpus = job_ptr->limit_set.max_cpus;
 	else if ((details_ptr->max_cpus != NO_VAL)
-		 && !job_ptr->limit_set_max_cpus)
+		 && !job_ptr->limit_set.max_cpus)
 		job_desc.max_cpus = details_ptr->max_cpus;
 
 	job_desc.min_nodes = details_ptr->min_nodes;
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set_max_nodes == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_nodes = job_ptr->limit_set_max_nodes;
+	if (job_ptr->limit_set.max_nodes == ADMIN_SET_LIMIT)
+		acct_policy_limit_set.max_nodes = job_ptr->limit_set.max_nodes;
 	else if ((details_ptr->max_nodes != NO_VAL)
-		 && !job_ptr->limit_set_max_nodes)
+		 && !job_ptr->limit_set.max_nodes)
 		job_desc.max_nodes = details_ptr->max_nodes;
 	else
 		job_desc.max_nodes = 0;
 
 	job_desc.pn_min_memory = details_ptr->pn_min_memory;
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set_pn_min_memory == ADMIN_SET_LIMIT)
+	if (job_ptr->limit_set.pn_min_memory == ADMIN_SET_LIMIT)
 		acct_policy_limit_set.pn_min_memory =
-			job_ptr->limit_set_pn_min_memory;
+			job_ptr->limit_set.pn_min_memory;
 	else if ((details_ptr->pn_min_memory != NO_VAL)
-		 && !job_ptr->limit_set_pn_min_memory)
+		 && !job_ptr->limit_set.pn_min_memory)
 		job_desc.pn_min_memory = details_ptr->pn_min_memory;
 	else
 		job_desc.pn_min_memory = 0;
 
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set_time == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.time = job_ptr->limit_set_time;
-	else if ((job_ptr->time_limit != NO_VAL) && !job_ptr->limit_set_time)
+	if (job_ptr->limit_set.time == ADMIN_SET_LIMIT)
+		acct_policy_limit_set.time = job_ptr->limit_set.time;
+	else if ((job_ptr->time_limit != NO_VAL) && !job_ptr->limit_set.time)
 		job_desc.time_limit = job_ptr->time_limit;
 
 	if (!acct_policy_validate(&job_desc, job_ptr->part_ptr,
@@ -2641,41 +2642,41 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 
 	/* If it isn't an admin set limit replace it. */
 	if (!acct_policy_limit_set.max_cpus
-	    && (job_ptr->limit_set_max_cpus == 1)) {
+	    && (job_ptr->limit_set.max_cpus == 1)) {
 		details_ptr->max_cpus = NO_VAL;
-		job_ptr->limit_set_max_cpus = 0;
+		job_ptr->limit_set.max_cpus = 0;
 		update_accounting = true;
 	} else if (acct_policy_limit_set.max_cpus != ADMIN_SET_LIMIT) {
 		if (details_ptr->max_cpus != job_desc.max_cpus) {
 			details_ptr->max_cpus = job_desc.max_cpus;
 			update_accounting = true;
 		}
-		job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
+		job_ptr->limit_set.max_cpus = acct_policy_limit_set.max_cpus;
 	}
 
 	if (!acct_policy_limit_set.max_nodes
-	    && (job_ptr->limit_set_max_nodes == 1)) {
+	    && (job_ptr->limit_set.max_nodes == 1)) {
 		details_ptr->max_nodes = 0;
-		job_ptr->limit_set_max_nodes = 0;
+		job_ptr->limit_set.max_nodes = 0;
 		update_accounting = true;
 	} else if (acct_policy_limit_set.max_nodes != ADMIN_SET_LIMIT) {
 		if (details_ptr->max_nodes != job_desc.max_nodes) {
 			details_ptr->max_nodes = job_desc.max_nodes;
 			update_accounting = true;
 		}
-		job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
+		job_ptr->limit_set.max_nodes = acct_policy_limit_set.max_nodes;
 	}
 
-	if (!acct_policy_limit_set.time && (job_ptr->limit_set_time == 1)) {
+	if (!acct_policy_limit_set.time && (job_ptr->limit_set.time == 1)) {
 		job_ptr->time_limit = NO_VAL;
-		job_ptr->limit_set_time = 0;
+		job_ptr->limit_set.time = 0;
 		update_accounting = true;
 	} else if (acct_policy_limit_set.time != ADMIN_SET_LIMIT) {
 		if (job_ptr->time_limit != job_desc.time_limit) {
 			job_ptr->time_limit = job_desc.time_limit;
 			update_accounting = true;
 		}
-		job_ptr->limit_set_time = acct_policy_limit_set.time;
+		job_ptr->limit_set.time = acct_policy_limit_set.time;
 	}
 
 	if (update_accounting) {
