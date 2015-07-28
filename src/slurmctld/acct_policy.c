@@ -445,7 +445,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	qos_out_max_cpus_limit =
 		MIN(qos_out_ptr->grp_cpus, qos_out_ptr->max_cpus_pu);
 
-	if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
+	if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] == ADMIN_SET_LIMIT)
 	    || (qos_out_max_cpus_limit != INFINITE)
 	    || (qos_max_cpus_limit == INFINITE)
 	    || (update_call && (job_desc->max_cpus == NO_VAL))) {
@@ -606,7 +606,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		qos_time_limit = qos_ptr->max_cpu_mins_pj / cpu_cnt;
 	}
 
-	if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
+	if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] == ADMIN_SET_LIMIT)
 	    || (qos_out_ptr->max_cpus_pj |= INFINITE)
 	    || (qos_ptr->max_cpus_pj == INFINITE)
 	    || (update_call && (job_desc->max_cpus == NO_VAL))) {
@@ -1597,7 +1597,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			admin_set_memory_limit =
 				(acct_policy_limit_set->max_tres[TRES_ARRAY_MEM]
 				 == ADMIN_SET_LIMIT)
-				|| (acct_policy_limit_set->max_cpus
+				|| (acct_policy_limit_set->max_tres[TRES_ARRAY_CPU]
 				    == ADMIN_SET_LIMIT);
 			debug3("acct_policy_validate: MPC: "
 			       "job_memory set to %u", job_memory);
@@ -1691,7 +1691,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 		uint64_t limit = slurmdb_find_tres_count_in_string(
 			assoc_ptr->grp_tres, TRES_CPU);
-		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
+		if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] ==
+		     ADMIN_SET_LIMIT)
 		    || (qos_rec.grp_cpus != INFINITE)
 		    || (limit == (uint64_t)INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
@@ -1792,7 +1793,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 		limit = slurmdb_find_tres_count_in_string(
 			assoc_ptr->max_tres_pj, TRES_CPU);
-		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
+		if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] ==
+		     ADMIN_SET_LIMIT)
 		    || (qos_rec.max_cpus_pj != INFINITE)
 		    || (limit == (uint64_t)INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
@@ -2145,7 +2147,8 @@ extern bool acct_policy_job_runnable_post_select(
 		char *memory_type = NULL;
 
 		admin_set_memory_limit =
-			(job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] == ADMIN_SET_LIMIT)
+			(job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] ==
+			 ADMIN_SET_LIMIT)
 			|| (job_ptr->limit_set.min_cpus == ADMIN_SET_LIMIT);
 
 		if (pn_min_memory & MEM_PER_CPU) {
@@ -2597,10 +2600,11 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 
 	job_desc.min_cpus = details_ptr->min_cpus;
 	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set.max_cpus == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_cpus = job_ptr->limit_set.max_cpus;
+	if (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == ADMIN_SET_LIMIT)
+		acct_policy_limit_set.max_tres[TRES_ARRAY_CPU] =
+			job_ptr->limit_set.max_tres[TRES_ARRAY_CPU];
 	else if ((details_ptr->max_cpus != NO_VAL)
-		 && !job_ptr->limit_set.max_cpus)
+		 && !job_ptr->limit_set.max_tres[TRES_ARRAY_CPU])
 		job_desc.max_cpus = details_ptr->max_cpus;
 
 	job_desc.min_nodes = details_ptr->min_nodes;
@@ -2641,17 +2645,19 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 	}
 
 	/* If it isn't an admin set limit replace it. */
-	if (!acct_policy_limit_set.max_cpus
-	    && (job_ptr->limit_set.max_cpus == 1)) {
+	if (!acct_policy_limit_set.max_tres[TRES_ARRAY_CPU]
+	    && (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == 1)) {
 		details_ptr->max_cpus = NO_VAL;
-		job_ptr->limit_set.max_cpus = 0;
+		job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] = 0;
 		update_accounting = true;
-	} else if (acct_policy_limit_set.max_cpus != ADMIN_SET_LIMIT) {
+	} else if (acct_policy_limit_set.max_tres[TRES_ARRAY_CPU] !=
+		   ADMIN_SET_LIMIT) {
 		if (details_ptr->max_cpus != job_desc.max_cpus) {
 			details_ptr->max_cpus = job_desc.max_cpus;
 			update_accounting = true;
 		}
-		job_ptr->limit_set.max_cpus = acct_policy_limit_set.max_cpus;
+		job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] =
+			acct_policy_limit_set.max_tres[TRES_ARRAY_CPU];
 	}
 
 	if (!acct_policy_limit_set.max_nodes
