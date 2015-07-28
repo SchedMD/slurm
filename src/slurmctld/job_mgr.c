@@ -5414,6 +5414,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
 	acct_policy_limit_set_t acct_policy_limit_set;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -5565,9 +5567,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	/* set up the tres cnts before the validate takes place */
-	/* cpus can't be checked here as there are max and min values */
-	job_desc->tres_req_cnt = xmalloc(
-		sizeof(uint64_t) * slurmctld_tres_info.tracked_cnt);
+	assoc_mgr_lock(&locks);
+	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
+	assoc_mgr_unlock(&locks);
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
 

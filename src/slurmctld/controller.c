@@ -688,8 +688,6 @@ int main(int argc, char *argv[])
 	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
-	xfree(slurmctld_tres_info.tracked_tres_array);
-	FREE_NULL_LIST(slurmctld_tres_info.tracked_tres_list);
 	usleep(500000);
 }
 #else
@@ -1186,7 +1184,7 @@ static int _accounting_cluster_ready(void)
 	assoc_mgr_lock(&locks);
 	set_cluster_tres(true);
 	cluster_tres_str = slurmdb_make_tres_string(
-		slurmctld_tres_info.tracked_tres_list, TRES_STR_FLAG_SIMPLE);
+		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
 	assoc_mgr_unlock(&locks);
 
 	unlock_slurmctld(node_read_lock);
@@ -1934,10 +1932,11 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	xassert(slurmctld_tres_info.tracked_tres_list);
+	xassert(assoc_mgr_tres_list);
 
-	itr = list_iterator_create(slurmctld_tres_info.tracked_tres_list);
-	while ((tres_rec = list_next(itr))) {
+	for (i=0; i < g_tres_count; i++) {
+		tres_rec = assoc_mgr_tres_array[i];
+
 		if (!tres_rec->type) {
 			error("TRES %d doesn't have a type given, "
 			      "this should never happen",
@@ -1962,7 +1961,6 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		}
 		/* FIXME: set up the other tres here that aren't specific */
 	}
-	list_iterator_destroy(itr);
 
 	cluster_cpus = 0;
 
@@ -2000,7 +1998,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
 			   TRES_MEM, mem_count);
 
-		list_for_each(slurmctld_tres_info.tracked_tres_list,
+		list_for_each(assoc_mgr_tres_list,
 			      _add_node_gres_tres, node_ptr);
 	}
 

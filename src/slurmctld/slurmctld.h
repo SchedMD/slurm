@@ -205,13 +205,6 @@ typedef struct diag_stats {
 	uint32_t bf_active;
 } diag_stats_t;
 
-typedef struct {
-	slurmdb_tres_rec_t **tracked_tres_array; /* array of tres_recs
-						    size of max_size */
-	List tracked_tres_list;
-	int tracked_cnt;
-} tres_info_t;
-
 /* This is used to point out constants that exist in the
  * curr_tres_array in tres_info_t  This should be the same order as
  * the tres_trypes_t enum that is defined in src/common/slurmdb_defs.h
@@ -236,7 +229,6 @@ extern bool  load_2_4_state;
 extern int   batch_sched_delay;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
-extern tres_info_t slurmctld_tres_info;
 extern int   slurmctld_primary;
 
 /* Buffer size use to print the jobid2str()

@@ -97,7 +97,6 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 bool slurmctld_init_db = 1;
-tres_info_t slurmctld_tres_info;
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
@@ -514,27 +513,12 @@ static int _build_all_nodeline_info(void)
 	return rc;
 }
 
-static int _sort_tres_list(void *v1, void *v2)
-{
-	slurmdb_tres_rec_t *tres_rec_a  = *(slurmdb_tres_rec_t **)v1;
-	slurmdb_tres_rec_t *tres_rec_b  = *(slurmdb_tres_rec_t **)v2;
-
-	if (tres_rec_a->id < tres_rec_b->id)
-		return -1;
-	else if (tres_rec_a->id > tres_rec_b->id)
-		return 1;
-
-	return 0;
-}
-
 static int _init_tres(void)
 {
 	char *temp_char = slurm_get_accounting_storage_tres();
 	List char_list;
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
-	int i;
-	ListIterator itr;
 
 	if (!temp_char) {
 		error("No tres defined, this should never happen");
@@ -545,18 +529,6 @@ static int _init_tres(void)
 	slurm_addto_char_list(char_list, temp_char);
 	xfree(temp_char);
 
-	memset(&slurmctld_tres_info, 0, sizeof(tres_info_t));
-	slurmctld_tres_info.tracked_cnt = list_count(char_list);
-
-	if (!slurmctld_tres_info.tracked_cnt) {
-		FREE_NULL_LIST(char_list);
-		error("TRES list is empty, this should never happen");
-		return SLURM_ERROR;
-	}
-
-	FREE_NULL_LIST(slurmctld_tres_info.tracked_tres_list);
-	slurmctld_tres_info.tracked_tres_list =
-		list_create(slurmdb_destroy_tres_rec);
 	while ((temp_char = list_pop(char_list))) {
 		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
 
@@ -604,8 +576,7 @@ static int _init_tres(void)
 			     tres_rec->name ? tres_rec->name : "");
 			list_append(add_list, tres_rec);
 		} else
-			list_append(slurmctld_tres_info.tracked_tres_list,
-				    tres_rec);
+			slurmdb_destroy_tres_rec(tres_rec);
 	}
 
 	if (add_list) {
@@ -617,37 +588,8 @@ static int _init_tres(void)
 		/* refresh list here since the updates are not
 		   sent dynamically */
 		assoc_mgr_refresh_lists(acct_db_conn, ASSOC_MGR_CACHE_TRES);
-
-		while ((tres_rec = list_pop(add_list))) {
-			if (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
-						   ACCOUNTING_ENFORCE_TRES,
-						   NULL, 0)
-			    != SLURM_SUCCESS) {
-				fatal("Unknown tres %s%s%s after adding.  "
-				      "It appears "
-				      "there may be a problem with the "
-				      "slurmdbd communicating with the "
-				      "slurmctld.",
-				      tres_rec->type,
-				      tres_rec->name ? "/" : "",
-				      tres_rec->name ? tres_rec->name : "");
-			} else
-				list_append(slurmctld_tres_info.
-					    tracked_tres_list,
-					    tres_rec);
-		}
+		FREE_NULL_LIST(add_list);
 	}
-
-	list_sort(slurmctld_tres_info.tracked_tres_list,
-		  (ListCmpF)_sort_tres_list);
-
-	i = 0;
-	slurmctld_tres_info.tracked_tres_array = xmalloc(
-		sizeof(slurmdb_tres_rec_t) * slurmctld_tres_info.tracked_cnt);
-	itr = list_iterator_create(slurmctld_tres_info.tracked_tres_list);
-	while ((tres_rec = list_next(itr)))
-		slurmctld_tres_info.tracked_tres_array[i++] = tres_rec;
-	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }
