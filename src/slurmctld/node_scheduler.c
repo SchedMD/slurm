@@ -2149,7 +2149,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      THIS_FILE, __LINE__, job_ptr->job_id,
 		      job_ptr->gres, job_ptr->gres_alloc);
 
-	job_set_tres(job_ptr);
+	job_set_alloc_tres(job_ptr, false);
 
 	/* If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already

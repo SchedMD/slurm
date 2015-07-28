@@ -7137,13 +7137,13 @@ void job_time_limit(void)
 }
 
 extern void job_set_tres(struct job_record *job_ptr)
+extern void job_set_alloc_tres(struct job_record *job_ptr,
+			       bool assoc_mgr_locked)
 {
 	uint64_t tres_count;
 	char *tmp_tres_str = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
-
-	/* FIXME: should tres_req_cnt be updated here? */
 
 	xfree(job_ptr->tres_alloc_str);
 
@@ -7172,7 +7172,8 @@ extern void job_set_tres(struct job_record *job_ptr)
 		   job_ptr->tres_alloc_str ? "," : "",
 		   TRES_MEM, tres_count);
 
-	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
 
 	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list, true, true))) {
 		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
@@ -7191,7 +7192,8 @@ extern void job_set_tres(struct job_record *job_ptr)
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
 		job_ptr->tres_alloc_str, assoc_mgr_tres_list);
-	assoc_mgr_unlock(&locks);
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 
 	return;
 }
@@ -7248,7 +7250,7 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 		} else
 			job_ptr->total_cpus -= cpu_cnt;
 
-		job_set_tres(job_ptr);
+		job_set_alloc_tres(job_ptr, false);
 	}
 	return rc;
 }

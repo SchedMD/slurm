@@ -1482,8 +1482,10 @@ extern void job_time_limit (void);
 
 /*
  * job_set_tres - set the tres up when allocating the job.
- */
-extern void job_set_tres(struct job_record *job_ptr);
+ * Only set when job is running.
+ * NOTE: job write lock must be locked before calling this */
+extern void job_set_alloc_tres(
+	struct job_record *job_ptr, bool assoc_mgr_locked);
 
 /*
  * job_update_tres_cnt - when job is completing remove allocated tres
