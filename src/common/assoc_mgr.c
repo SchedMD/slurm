@@ -1470,29 +1470,8 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
  */
 static int _refresh_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
-	List current_tres = NULL;
-	slurmdb_tres_cond_t tres_q;
-	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-	slurmdb_init_tres_cond(&tres_q, 0);
-
-	current_tres = acct_storage_g_get_tres(db_conn, uid, &tres_q);
-
-	if (!current_tres) {
-		error("_refresh_assoc_mgr_tres_list: "
-		      "no new list given back keeping cached one.");
-		return SLURM_ERROR;
-	}
-
-	assoc_mgr_lock(&locks);
-
-	FREE_NULL_LIST(assoc_mgr_tres_list);
-
-	assoc_mgr_tres_list = current_tres;
-
-	assoc_mgr_unlock(&locks);
+	/* this function does both get and refresh */
+	_get_assoc_mgr_tres_list(db_conn, enforce);
 
 	return SLURM_SUCCESS;
 }
