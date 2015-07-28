@@ -1069,7 +1069,6 @@ static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
 {
 	pack16(limit_set->max_nodes, buffer);
 	pack16_array(limit_set->max_tres, slurmctld_tres_cnt, buffer);
-	pack16(limit_set->min_cpus, buffer);
 	pack16(limit_set->min_nodes, buffer);
 	pack16_array(limit_set->min_tres, slurmctld_tres_cnt, buffer);
 	pack16(limit_set->qos, buffer);
@@ -1083,7 +1082,6 @@ static int _unpack_acct_policy_limit_members(
 	safe_unpack16(&limit_set->max_nodes, buffer);
 	xfree(limit_set->max_tres);
 	safe_unpack16_array(&limit_set->max_tres, &tmp32, buffer);
-	safe_unpack16(&limit_set->min_cpus, buffer);
 	safe_unpack16(&limit_set->min_nodes, buffer);
 	xfree(limit_set->min_tres);
 	safe_unpack16_array(&limit_set->min_tres, &tmp32, buffer);
@@ -1570,7 +1568,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&tmp16, buffer);
 		limit_set.max_tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.max_nodes, buffer);
-		safe_unpack16(&limit_set.min_cpus, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.min_tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.min_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
 		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
@@ -1745,7 +1744,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&tmp16, buffer);
 		limit_set.max_tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.max_nodes, buffer);
-		safe_unpack16(&limit_set.min_cpus, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.min_tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.min_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
 		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
@@ -9928,7 +9928,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				ADMIN_SET_LIMIT;
 		}
 		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.min_cpus = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
@@ -10020,7 +10019,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
-		job_ptr->limit_set.min_cpus = acct_policy_limit_set.min_cpus;
+		job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] =
+			acct_policy_limit_set.min_tres[TRES_ARRAY_CPU];
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
@@ -10085,8 +10085,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					 * acct_policy_limit_set.*
 					 * since if set by a
 					 * super user it be set correctly */
-					job_ptr->limit_set.min_cpus =
-						acct_policy_limit_set.min_cpus;
+					job_ptr->limit_set.
+						min_tres[TRES_ARRAY_CPU] =
+						acct_policy_limit_set.
+						min_tres[TRES_ARRAY_CPU];
 					job_ptr->limit_set.
 						max_tres[TRES_ARRAY_CPU] =
 						acct_policy_limit_set.

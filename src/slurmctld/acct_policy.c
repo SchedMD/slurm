@@ -990,7 +990,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	 * cpu requirement has exceeded the limit for all CPUs
 	 * usable by the QOS
 	 */
-	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->grp_cpus == INFINITE)
 	    && (qos_ptr->grp_cpus != INFINITE)) {
 
@@ -1165,7 +1165,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_cpus_pj == INFINITE)
 	    && (qos_ptr->max_cpus_pj != INFINITE)) {
 
@@ -1186,7 +1186,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->min_cpus_pj == INFINITE)
 	    && (qos_ptr->min_cpus_pj != INFINITE)) {
 
@@ -1206,7 +1206,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		}
 	}
 
-	if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
+	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_cpus_pu == INFINITE)
 	    && (qos_ptr->max_cpus_pu != INFINITE)) {
 
@@ -2149,7 +2149,8 @@ extern bool acct_policy_job_runnable_post_select(
 		admin_set_memory_limit =
 			(job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] ==
 			 ADMIN_SET_LIMIT)
-			|| (job_ptr->limit_set.min_cpus == ADMIN_SET_LIMIT);
+			|| (job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] ==
+			    ADMIN_SET_LIMIT);
 
 		if (pn_min_memory & MEM_PER_CPU) {
 			memory_type = "MPC";
@@ -2254,7 +2255,8 @@ extern bool acct_policy_job_runnable_post_select(
 
 		limit = slurmdb_find_tres_count_in_string(
 			assoc_ptr->grp_tres, TRES_CPU);
-		if ((job_ptr->limit_set.min_cpus != ADMIN_SET_LIMIT)
+		if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] !=
+		     ADMIN_SET_LIMIT)
 		    && (qos_rec.grp_cpus == INFINITE)
 		    && (limit != (uint64_t)INFINITE)) {
 			if (cpu_cnt > (uint32_t)limit) {
