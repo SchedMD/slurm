@@ -2128,6 +2128,13 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
+	/* Set to block in the case that mem is 0. srun leaves the dist
+	 * set to unknown if mem is 0.
+	 * ex. SallocDefaultCommand=srun -n1 -N1 --mem=0 ... */
+	if ((step_specs->task_dist == SLURM_DIST_UNKNOWN) &&
+	    (!(step_specs->pn_min_memory &(~MEM_PER_CPU))))
+		step_specs->task_dist = SLURM_DIST_BLOCK;
+
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
 	    (step_specs->task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
