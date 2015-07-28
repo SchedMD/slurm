@@ -448,9 +448,10 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
  * OUT tres_cnt - array to be filled in g_tres_cnt in length
  * IN tres_str - simple format of tres used with id and count set
  * IN locked - if the assoc_mgr tres read lock is locked or not.
+ * RET if positions changed in array from string 1 if nothing changed 0
  */
-extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
-					 bool locked);
+extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
+					bool locked);
 
 /* Make a simple tres string from a tres count array.
  * IN tres_cnt - counts of each tres used

@@ -5420,10 +5420,11 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(slurmdb_tres_rec_t *tres_rec)
 		return assoc_mgr_tres_array[pos];
 }
 
-extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
-					 bool locked)
+extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
+					bool locked)
 {
 	int array_size = sizeof(uint64_t) * g_tres_count;
+	int diff_cnt = 0;
 
 	xassert(tres_cnt);
 
@@ -5440,6 +5441,7 @@ extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 
 	if (tres_str) {
 		List tmp_list = NULL;
+		/* info("got %s", tres_str); */
 		slurmdb_tres_list_from_string(
 			&tmp_list, tres_str, TRES_STR_FLAG_NONE);
 		if (tmp_list) {
@@ -5448,11 +5450,12 @@ extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 			while ((tres_rec = list_next(itr))) {
 				int pos = assoc_mgr_find_tres_pos(
 					tres_rec, locked);
-				if (pos == NO_VAL) {
-					error("assoc_mgr_set_tres_cnt_array: "
-					      "no tres "
-					      "of id %u found in the array",
-					      tres_rec->id);
+				if (pos == -1) {
+					debug2("assoc_mgr_set_tres_cnt_array: "
+					       "no tres "
+					       "of id %u found in the array",
+					       tres_rec->id);
+					continue;
 				}
 				/* set the index to the count */
 				(*tres_cnt)[pos] = tres_rec->count;
@@ -5461,10 +5464,12 @@ extern void assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 				/*      pos, tres_rec->count); */
 			}
 			list_iterator_destroy(itr);
+			if (g_tres_count != list_count(tmp_list))
+				diff_cnt = 1;
 			FREE_NULL_LIST(tmp_list);
 		}
 	}
-	return;
+	return diff_cnt;
 }
 
 extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
