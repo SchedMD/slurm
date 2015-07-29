@@ -7169,7 +7169,7 @@ extern void job_set_req_tres(
 				  job_ptr->details ?
 				  job_ptr->details->min_nodes : 0,
 				  job_ptr->tres_req_cnt,
-				  assoc_mgr_locked);
+				  true);
 
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
