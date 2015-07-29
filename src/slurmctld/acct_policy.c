@@ -424,8 +424,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				char *user_name,
 				uint32_t job_memory,
 				int job_cnt,
-				bool strict_checking,
-				bool admin_set_memory_limit)
+				bool strict_checking)
 {
 	uint32_t qos_max_cpus_limit = INFINITE;
 	uint32_t qos_max_nodes_limit = INFINITE;
@@ -453,7 +452,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		/* no need to check/set */
 
 	} else if (strict_checking &&
-		   (job_desc->tres_req_cnt[TRES_ARRAY_CPU] != (uint64_t)NO_VAL)) {
+		   (job_desc->tres_req_cnt[TRES_ARRAY_CPU]
+		    != (uint64_t)NO_VAL)) {
 
 		if (qos_out_ptr->max_cpus_pu == INFINITE)
 			qos_out_ptr->max_cpus_pu = qos_ptr->max_cpus_pu;
@@ -496,7 +496,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	/* for validation we don't need to look at
 	 * qos_ptr->grp_jobs.
 	 */
-	if (!admin_set_memory_limit && strict_checking
+	if (!acct_policy_limit_set->max_tres[TRES_ARRAY_MEM] && strict_checking
 	    && (qos_out_ptr->grp_mem == INFINITE)
 	    && (qos_ptr->grp_mem != INFINITE)) {
 
@@ -1581,8 +1581,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	int parent = 0, job_cnt = 1;
 	char *user_name = NULL;
 	bool rc = true;
-	uint32_t job_memory = 0;
-	bool admin_set_memory_limit = false;
 	struct job_record job_rec;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -1595,33 +1593,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		return false;
 	}
 	user_name = assoc_ptr->user;
-
-	if (job_desc->pn_min_memory != NO_VAL) {
-		if ((job_desc->pn_min_memory & MEM_PER_CPU)
-		    && (job_desc->tres_req_cnt[TRES_ARRAY_CPU] !=
-			(uint64_t)NO_VAL)) {
-			job_memory = (job_desc->pn_min_memory & (~MEM_PER_CPU))
-				* job_desc->tres_req_cnt[TRES_ARRAY_CPU];
-			admin_set_memory_limit =
-				(acct_policy_limit_set->max_tres[TRES_ARRAY_MEM]
-				 == ADMIN_SET_LIMIT)
-				|| (acct_policy_limit_set->
-				    max_tres[TRES_ARRAY_CPU]
-				    == ADMIN_SET_LIMIT);
-			debug3("acct_policy_validate: MPC: "
-			       "job_memory set to %u", job_memory);
-		} else if (job_desc->min_nodes != NO_VAL) {
-			job_memory = (job_desc->pn_min_memory)
-				* job_desc->min_nodes;
-			admin_set_memory_limit =
-				(acct_policy_limit_set->max_tres[TRES_ARRAY_MEM]
-				 == ADMIN_SET_LIMIT)
-				|| (acct_policy_limit_set->max_nodes
-				    == ADMIN_SET_LIMIT);
-			debug3("acct_policy_validate: MPN: "
-			       "job_memory set to %u", job_memory);
-		}
-	}
 
 	if (job_desc->array_bitmap)
 		job_cnt = bit_set_count(job_desc->array_bitmap);
@@ -1645,14 +1616,14 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		if (!(rc = _qos_policy_validate(
 			      job_desc, part_ptr, qos_ptr_1, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_memory, job_cnt, strict_checking,
-			      admin_set_memory_limit)))
+			      user_name, job_desc->tres_req_cnt[TRES_ARRAY_MEM],
+			      job_cnt, strict_checking)))
 			goto end_it;
 		if (!(rc = _qos_policy_validate(
 			      job_desc, part_ptr, qos_ptr_2, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_memory, job_cnt, strict_checking,
-			      admin_set_memory_limit)))
+			      user_name, job_desc->tres_req_cnt[TRES_ARRAY_MEM],
+			      job_cnt, strict_checking)))
 			goto end_it;
 
 	} else
@@ -1672,7 +1643,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 */
 		memset(qos_tres_ctld, 0, sizeof(qos_tres_ctld));
 		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.grp_cpus;
-		qos_tres_ctld[TRES_ARRAY_MEM] = job_memory;
+		qos_tres_ctld[TRES_ARRAY_MEM] = qos_rec.grp_mem;
 
 		if (!_validate_tres_limits(&tres_pos, job_desc->tres_req_cnt,
 					   assoc_ptr->grp_tres_ctld,
@@ -1729,24 +1700,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_jobs.
 		 */
-
-		if (strict_checking && !admin_set_memory_limit
-		    && (qos_rec.grp_mem == INFINITE)
-		    && (assoc_ptr->grp_mem != INFINITE)
-		    && (job_memory > assoc_ptr->grp_mem)) {
-			if (reason)
-				*reason = WAIT_ASSOC_GRP_MEMORY;
-			debug2("job submit for user %s(%u): "
-			       "min memory request %u exceeds "
-			       "group max memory limit %u for account %s",
-			       user_name,
-			       job_desc->user_id,
-			       job_memory,
-			       assoc_ptr->grp_mem,
-			       assoc_ptr->acct);
-			rc = false;
-			break;
-		}
 
 		if ((acct_policy_limit_set->max_nodes == ADMIN_SET_LIMIT)
 		    || (qos_rec.grp_nodes != INFINITE)

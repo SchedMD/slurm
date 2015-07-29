@@ -246,6 +246,9 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
+static uint64_t _get_tres_mem_from_job_desc(uint32_t pn_min_memory,
+					    uint32_t cpu_cnt,
+					    uint32_t node_cnt);
 
 /*
  * Functions used to manage job array responses with a separate return code
@@ -5567,7 +5570,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM] = job_desc->pn_min_memory;
+	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =  _get_tres_mem_from_job_desc(
+		job_desc->pn_min_memory,
+		job_desc->tres_req_cnt[TRES_ARRAY_CPU],
+		job_desc->min_nodes);
 
 	license_list = license_validate(job_desc->licenses,
 					job_desc->tres_req_cnt, &valid);
@@ -9492,23 +9498,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->min_cpus != NO_VAL)
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] = job_specs->min_cpus;
 
-	if (job_specs->pn_min_memory != NO_VAL) {
-		uint64_t count = 0;
-
-		job_specs->tres_req_cnt[TRES_ARRAY_MEM] =
-			(uint64_t)job_specs->pn_min_memory;
-		if (job_specs->tres_req_cnt[TRES_ARRAY_MEM] & MEM_PER_CPU) {
-			if (job_specs->tres_req_cnt[TRES_ARRAY_CPU])
-				count = job_specs->tres_req_cnt[TRES_ARRAY_CPU];
-			else
-				count = job_ptr->tres_req_cnt[TRES_ARRAY_CPU];
-			job_specs->tres_req_cnt[TRES_ARRAY_MEM] &= ~MEM_PER_CPU;
-		} else if (job_specs->min_nodes != NO_VAL)
-			count = (uint64_t)job_specs->min_nodes;
-		else if (detail_ptr->min_nodes != NO_VAL)
-			count = (uint64_t)detail_ptr->min_nodes;
-		job_specs->tres_req_cnt[TRES_ARRAY_MEM] *= count;
-	}
+	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = _get_tres_mem_from_job_desc(
+		job_specs->pn_min_memory,
+		job_specs->tres_req_cnt[TRES_ARRAY_CPU] ?
+		job_specs->tres_req_cnt[TRES_ARRAY_CPU] :
+		job_ptr->tres_req_cnt[TRES_ARRAY_CPU],
+		job_specs->min_nodes != NO_VAL ?
+		job_specs->min_nodes :
+		detail_ptr->min_nodes);
 
 	if (job_specs->gres) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
@@ -12164,6 +12161,25 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
+static uint64_t _get_tres_mem_from_job_desc(uint32_t pn_min_memory,
+					    uint32_t cpu_cnt,
+					    uint32_t node_cnt)
+{
+	uint64_t count = 0;
+
+	if (pn_min_memory == NO_VAL)
+		return count;
+
+	if (pn_min_memory & MEM_PER_CPU) {
+		if (cpu_cnt != NO_VAL) {
+			count = (uint64_t)(pn_min_memory & (~MEM_PER_CPU));
+			count *= cpu_cnt;
+		}
+	} else if (node_cnt != NO_VAL)
+		count = (uint64_t)(pn_min_memory * node_cnt);
+
+	return count;
+}
 
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
