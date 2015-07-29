@@ -9461,6 +9461,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	/* Check to see if the requested job_specs exceeds any
+	 * existing limit.  If it passes cool, we will check the new
+	 * association/qos later in the code.  This will prevent the
+	 * update returning an error code that is confusing since many
+	 * things could successfully update and we are now just
+	 * violating a limit.  The job won't be allowed to run, but it
+	 * will allow the update to happen which is most likely what
+	 * was desired.
+	 *
+	 * FIXME: Should we really be looking at the potentially old
+	 * part, assoc, and qos pointer?
+	 */
 	acct_limit_already_set = false;
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
@@ -10439,12 +10451,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (job_specs->pn_min_tmp_disk != NO_VAL) {
-
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else {
 			detail_ptr->pn_min_tmp_disk =
 				job_specs->pn_min_tmp_disk;
+
 			info("sched: update_job: setting job_min_tmp_disk to "
 			     "%u for job_id %u", job_specs->pn_min_tmp_disk,
 			     job_ptr->job_id);
