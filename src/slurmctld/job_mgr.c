@@ -9416,6 +9416,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	uint16_t min_tres[slurmctld_tres_cnt], max_tres[slurmctld_tres_cnt];
 	bool acct_limit_already_set;
 	int tres_pos;
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+	List gres_list = NULL;
+	List license_list = NULL;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 #ifdef HAVE_BG
 	uint16_t conn_type[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
@@ -9477,6 +9482,72 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	detail_ptr = job_ptr->details;
+	if (detail_ptr)
+		mc_ptr = detail_ptr->mc_ptr;
+	last_job_update = now;
+
+	memset(tres_req_cnt, 0, sizeof(tres_req_cnt));
+	job_specs->tres_req_cnt = tres_req_cnt;
+	if (job_specs->min_cpus != NO_VAL)
+		job_specs->tres_req_cnt[TRES_ARRAY_CPU] = job_specs->min_cpus;
+
+	if (job_specs->pn_min_memory != NO_VAL) {
+		uint64_t count = 0;
+
+		job_specs->tres_req_cnt[TRES_ARRAY_MEM] =
+			(uint64_t)job_specs->pn_min_memory;
+		if (job_specs->tres_req_cnt[TRES_ARRAY_MEM] & MEM_PER_CPU) {
+			if (job_specs->tres_req_cnt[TRES_ARRAY_CPU])
+				count = job_specs->tres_req_cnt[TRES_ARRAY_CPU];
+			else
+				count = job_ptr->tres_req_cnt[TRES_ARRAY_CPU];
+			job_specs->tres_req_cnt[TRES_ARRAY_MEM] &= ~MEM_PER_CPU;
+		} else if (job_specs->min_nodes != NO_VAL)
+			count = (uint64_t)job_specs->min_nodes;
+		else if (detail_ptr->min_nodes != NO_VAL)
+			count = (uint64_t)detail_ptr->min_nodes;
+		job_specs->tres_req_cnt[TRES_ARRAY_MEM] *= count;
+	}
+
+	if (job_specs->gres) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
+		    (detail_ptr->expanding_jobid != 0)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (gres_plugin_job_state_validate(job_specs->gres,
+							  &gres_list)) {
+			info("sched: update_job: invalid gres %s for job %u",
+			     job_specs->gres, job_ptr->job_id);
+			error_code = ESLURM_INVALID_GRES;
+		} else {
+			gres_set_job_tres_req_cnt(gres_list,
+						  detail_ptr->min_nodes,
+						  job_specs->tres_req_cnt,
+						  false);
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->licenses) {
+		bool valid, pending = IS_JOB_PENDING(job_ptr);
+		license_list = license_validate(job_specs->licenses,
+						pending ?
+						tres_req_cnt : NULL,
+						&valid);
+
+		if (!valid) {
+			info("sched: update_job: invalid licenses: %s",
+			     job_specs->licenses);
+			error_code = ESLURM_INVALID_LICENSES;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+
 	/* Check to see if the requested job_specs exceeds any
 	 * existing limit.  If it passes cool, we will check the new
 	 * association/qos later in the code.  This will prevent the
@@ -9490,6 +9561,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 * part, assoc, and qos pointer?  This patch is from bug 1381
 	 * for future reference.
 	 */
+
 	acct_limit_already_set = false;
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
@@ -9513,10 +9585,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(sched_type);
 		wiki_sched_test = true;
 	}
-	detail_ptr = job_ptr->details;
-	if (detail_ptr)
-		mc_ptr = detail_ptr->mc_ptr;
-	last_job_update = now;
 
 	if (job_specs->account
 	    && !xstrcmp(job_specs->account, job_ptr->account)) {
@@ -10597,52 +10665,30 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->gres) {
-		List tmp_gres_list = NULL;
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
-		    (detail_ptr->expanding_jobid != 0)) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (job_specs->gres[0] == '\0') {
-			info("sched: update_job: cleared gres for job %u",
-			     job_ptr->job_id);
-			xfree(job_ptr->gres);
-			FREE_NULL_LIST(job_ptr->gres_list);
-		} else if (gres_plugin_job_state_validate(job_specs->gres,
-							  &tmp_gres_list)) {
-			info("sched: update_job: invalid gres %s for job %u",
-			     job_specs->gres, job_ptr->job_id);
-			error_code = ESLURM_INVALID_GRES;
-			FREE_NULL_LIST(tmp_gres_list);
-		} else {
-			assoc_mgr_lock_t locks = {
-				NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				READ_LOCK, NO_LOCK, NO_LOCK };
+	if (gres_list) {
+		info("sched: update_job: setting gres to %s for job_id %u",
+		     job_specs->gres, job_ptr->job_id);
 
-			info("sched: update_job: setting gres to "
-			     "%s for job_id %u",
-			     job_specs->gres, job_ptr->job_id);
-			xfree(job_ptr->gres);
-			job_ptr->gres = xstrdup(job_specs->gres);
-			FREE_NULL_LIST(job_ptr->gres_list);
-			job_ptr->gres_list = tmp_gres_list;
+		xfree(job_ptr->gres);
+		job_ptr->gres = job_specs->gres;
+		job_specs->gres = NULL;
 
-			assoc_mgr_lock(&locks);
-			gres_set_job_tres_req_cnt(job_ptr->gres_list,
-						  job_ptr->details ?
-						  job_ptr->details->min_nodes :
-						  0,
-						  job_ptr->tres_req_cnt,
-						  true);
-			xfree(job_ptr->tres_req_str);
-			job_ptr->tres_req_str =
-				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt,
-					true);
-			assoc_mgr_unlock(&locks);
-		}
+		FREE_NULL_LIST(job_ptr->gres_list);
+		job_ptr->gres_list = gres_list;
+		gres_list = NULL;
+
+		assoc_mgr_lock(&locks);
+		gres_set_job_tres_req_cnt(job_ptr->gres_list,
+					  job_ptr->details ?
+					  job_ptr->details->min_nodes :
+					  0,
+					  job_ptr->tres_req_cnt,
+					  true);
+		xfree(job_ptr->tres_req_str);
+		job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
+			job_ptr->tres_req_cnt, true);
+		assoc_mgr_unlock(&locks);
 	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
 
 	if (job_specs->name
 	    && !xstrcmp(job_specs->name, job_ptr->name)) {
@@ -10862,42 +10908,25 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	if (job_specs->licenses) {
-		int i;
-		List license_list;
-		bool valid, pending = IS_JOB_PENDING(job_ptr);
-		uint64_t tres_req_cnt[slurmctld_tres_cnt];
-
-		/* This only needs to be done on pending jobs. */
-		if (pending)
-			for (i=0; i<slurmctld_tres_cnt; i++)
-				tres_req_cnt[i] = (uint64_t)-1;
-
-		license_list = license_validate(job_specs->licenses,
-						pending ? tres_req_cnt : NULL,
-						&valid);
-		if (!valid) {
-			info("sched: update_job: invalid licenses: %s",
-			     job_specs->licenses);
-			error_code = ESLURM_INVALID_LICENSES;
-		} else if (pending) {
+		if (IS_JOB_PENDING(job_ptr)) {
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
+			license_list = NULL;
 			info("sched: update_job: changing licenses from '%s' "
 			     "to '%s' for pending job %u",
 			     job_ptr->licenses, job_specs->licenses,
 			     job_ptr->job_id);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
-			for (i=0; i<slurmctld_tres_cnt; i++) {
-				if (tres_req_cnt[i] != (uint64_t)-1)
-					job_ptr->tres_req_cnt[i] =
-						tres_req_cnt[i];
-			}
+			assoc_mgr_lock(&locks);
+			license_set_job_tres_req_cnt(job_ptr->license_list,
+						     job_ptr->tres_req_cnt,
+						     true);
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt,
-					false);
+					job_ptr->tres_req_cnt, true);
+			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
 			/* NOTE: This can result in oversubscription of
@@ -11170,6 +11199,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 fini:
+	FREE_NULL_LIST(gres_list);
+	FREE_NULL_LIST(license_list);
 	if (update_accounting) {
 		info("updating accounting");
 		/* Update job record in accounting to reflect changes */
