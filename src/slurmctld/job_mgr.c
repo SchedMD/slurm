@@ -9432,11 +9432,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
-	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
-	memset(min_tres, 0, sizeof(min_tres));
-	memset(max_tres, 0, sizeof(max_tres));
-	acct_policy_limit_set.min_tres = min_tres;
-	acct_policy_limit_set.max_tres = max_tres;
 
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
@@ -9453,8 +9448,29 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		return error_code;
 
 	admin = validate_operator(uid);
-	authorized = admin || assoc_mgr_is_user_acct_coord(
-		acct_db_conn, uid, job_ptr->account);
+
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	acct_policy_limit_set.min_tres = min_tres;
+	acct_policy_limit_set.max_tres = max_tres;
+
+	if ((authorized = admin || assoc_mgr_is_user_acct_coord(
+		     acct_db_conn, uid, job_ptr->account))) {
+		/* set up the acct_policy if we are authorized */
+		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
+			acct_policy_limit_set.max_tres[tres_pos] =
+				ADMIN_SET_LIMIT;
+			acct_policy_limit_set.min_tres[tres_pos] =
+				ADMIN_SET_LIMIT;
+		}
+		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
+	} else {
+		memset(min_tres, 0, sizeof(min_tres));
+		memset(max_tres, 0, sizeof(max_tres));
+	}
+
 	if ((job_ptr->user_id != uid) && !authorized) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
 		      uid);
@@ -9696,14 +9712,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				if (job_ptr->qos_id != qos_rec.id) {
 					job_ptr->qos_id = qos_rec.id;
 					job_ptr->qos_ptr = new_qos_ptr;
-					if (authorized)
-						job_ptr->limit_set.qos =
-							ADMIN_SET_LIMIT;
-					else
-						job_ptr->limit_set.qos = 0;
+					job_ptr->limit_set.qos =
+						acct_policy_limit_set.qos;
 					update_accounting = true;
 				} else {
-					debug("sched: %s: new QOS identical to old QOS %u",
+					debug("sched: %s: new QOS identical "
+					      "to old QOS %u",
 					      __func__, job_ptr->job_id);
 				}
 			}
@@ -9863,12 +9877,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					if (job_ptr->qos_id != qos_rec.id) {
 						job_ptr->qos_id = qos_rec.id;
 						job_ptr->qos_ptr = new_qos_ptr;
-						if (authorized)
-							job_ptr->limit_set.qos =
-								ADMIN_SET_LIMIT;
-						else
-							job_ptr->limit_set.qos
-								= 0;
+						job_ptr->limit_set.qos =
+							acct_policy_limit_set.
+							qos;
 						update_accounting = true;
 					} else
 						debug("sched: update_job: "
@@ -9903,17 +9914,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 */
 		if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
-	} else if (authorized) {
-		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-			acct_policy_limit_set.max_tres[tres_pos] =
-				ADMIN_SET_LIMIT;
-			acct_policy_limit_set.min_tres[tres_pos] =
-				ADMIN_SET_LIMIT;
-		}
-		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
 	}
 
 
