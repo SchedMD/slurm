@@ -9884,40 +9884,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 
 		/* Perhaps the limit was removed, so we will remove it
-		   since it was imposed previously.
-		*/
-
-		/* FIXME: this probably has to work with all TRES some how */
-		if (!acct_policy_limit_set.max_tres[TRES_ARRAY_CPU]
-		    && (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == 1))
-			job_ptr->details->max_cpus = NO_VAL;
-
-		/* for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) { */
-		/* 	if (!acct_policy_limit_set.max_tres[TRES_ARRAY_CPU] */
-		/* 	    && (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == 1)) */
-		/* 		job_ptr->details->max_cpus = NO_VAL; */
-
-		/* } */
-
-		if (!acct_policy_limit_set.max_nodes
-		    && (job_ptr->limit_set.max_nodes == 1))
-			job_ptr->details->max_nodes = NO_VAL;
-
-		if (!acct_policy_limit_set.time
-		    && (job_ptr->limit_set.time == 1))
-			job_ptr->time_limit = NO_VAL;
-
-		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-			if (job_ptr->limit_set.max_tres[tres_pos] !=
-			    ADMIN_SET_LIMIT)
-				job_ptr->limit_set.max_tres[tres_pos] =
-					acct_policy_limit_set.
-					max_tres[tres_pos];
-		}
-
-		if (job_ptr->limit_set.max_nodes != ADMIN_SET_LIMIT)
-			job_ptr->limit_set.max_nodes =
-				acct_policy_limit_set.max_nodes;
+		 * since it was imposed previously.
+		 *
+		 * acct_policy_validate will only set the time limit
+		 * so don't worry about any of the others
+		 */
 		if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 	} else if (authorized) {

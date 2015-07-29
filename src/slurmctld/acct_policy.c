@@ -2664,35 +2664,12 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
+	/* The only variable in acct_policy_limit_set that is changed
+	 * in acct_policy_validate is the time limit so only worry
+	 * about that one.
+	 */
+
 	/* If it isn't an admin set limit replace it. */
-	if (!acct_policy_limit_set.max_tres[TRES_ARRAY_CPU]
-	    && (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == 1)) {
-		details_ptr->max_cpus = NO_VAL;
-		job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] = 0;
-		update_accounting = true;
-	} else if (acct_policy_limit_set.max_tres[TRES_ARRAY_CPU] !=
-		   ADMIN_SET_LIMIT) {
-		if (details_ptr->max_cpus != job_desc.max_cpus) {
-			details_ptr->max_cpus = job_desc.max_cpus;
-			update_accounting = true;
-		}
-		job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] =
-			acct_policy_limit_set.max_tres[TRES_ARRAY_CPU];
-	}
-
-	if (!acct_policy_limit_set.max_nodes
-	    && (job_ptr->limit_set.max_nodes == 1)) {
-		details_ptr->max_nodes = 0;
-		job_ptr->limit_set.max_nodes = 0;
-		update_accounting = true;
-	} else if (acct_policy_limit_set.max_nodes != ADMIN_SET_LIMIT) {
-		if (details_ptr->max_nodes != job_desc.max_nodes) {
-			details_ptr->max_nodes = job_desc.max_nodes;
-			update_accounting = true;
-		}
-		job_ptr->limit_set.max_nodes = acct_policy_limit_set.max_nodes;
-	}
-
 	if (!acct_policy_limit_set.time && (job_ptr->limit_set.time == 1)) {
 		job_ptr->time_limit = NO_VAL;
 		job_ptr->limit_set.time = 0;
