@@ -1453,7 +1453,7 @@ static bool _validate_tres_limits(int *tres_pos,
 		     ADMIN_SET_LIMIT) &&
 		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
 		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
-		    ((job_tres_array[*tres_pos] != (uint64_t)NO_VAL) || !update_call) &&
+		    (job_tres_array[*tres_pos] || !update_call) &&
 		    (job_tres_array[*tres_pos] > assoc_tres_array[*tres_pos]))
 			return false;
 		/* should be the same as below */
@@ -1582,6 +1582,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	char *user_name = NULL;
 	bool rc = true;
 	struct job_record job_rec;
+	uint64_t qos_tres_ctld[g_tres_count];
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	bool strict_checking;
@@ -1629,19 +1630,18 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	} else
 		strict_checking = reason ? true : false;
 
+	/* FIXME: This needs to work with qos limits, and we
+	 * are fudging them now.
+	 */
+	memset(qos_tres_ctld, 0, sizeof(qos_tres_ctld));
 
 	while (assoc_ptr) {
 		int tres_pos = 0;
-		uint64_t qos_tres_ctld[g_tres_count];
 
 		/* for validation we don't need to look at
 		 * assoc_ptr->grp_cpu_mins.
 		 */
 
-		/* FIXME: This needs to work with qos limits, and we
-		 * are fudging them now.
-		 */
-		memset(qos_tres_ctld, 0, sizeof(qos_tres_ctld));
 		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.grp_cpus;
 		qos_tres_ctld[TRES_ARRAY_MEM] = qos_rec.grp_mem;
 
@@ -1650,6 +1650,9 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 					   qos_tres_ctld,
 					   acct_policy_limit_set->max_tres,
 					   strict_checking, update_call)) {
+			/* FIXME: This is most likely not the reason
+			   we want to send back.
+			*/
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_CPU;
 			debug2("job submit for user %s(%u): "
@@ -1663,35 +1666,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_mgr_tres_array[tres_pos]->name : "",
 			       job_desc->tres_req_cnt[tres_pos],
 			       assoc_ptr->grp_tres_ctld[tres_pos],
-			       assoc_ptr->acct);
-			rc = false;
-			break;
-		}
-
-
-		uint64_t limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->grp_tres, TRES_CPU);
-		if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] ==
-		     ADMIN_SET_LIMIT)
-		    || (qos_rec.grp_cpus != INFINITE)
-		    || (limit == (uint64_t)INFINITE)
-		    || (update_call &&
-			(job_desc->tres_req_cnt[TRES_ARRAY_CPU] ==
-			 (uint64_t)NO_VAL))) {
-			/* no need to check/set */
-		} else if (strict_checking &&
-			   (job_desc->tres_req_cnt[TRES_ARRAY_CPU] !=
-			    (uint64_t)NO_VAL)
-			   && (job_desc->tres_req_cnt[TRES_ARRAY_CPU] >limit)) {
-			if (reason)
-				*reason = WAIT_ASSOC_GRP_CPU;
-			debug2("job submit for user %s(%u): "
-			       "min cpu request %"PRIu64" exceeds "
-			       "group max cpu limit %"PRIu64" for account %s",
-			       user_name,
-			       job_desc->user_id,
-			       job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-			       limit,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -1757,30 +1731,31 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_cpu_mins_pj.
 		 */
 
-		limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->max_tres_pj, TRES_CPU);
-		if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] ==
-		     ADMIN_SET_LIMIT)
-		    || (qos_rec.max_cpus_pj != INFINITE)
-		    || (limit == (uint64_t)INFINITE)
-		    || (update_call &&
-			(job_desc->tres_req_cnt[TRES_ARRAY_CPU] ==
-			 (uint64_t)NO_VAL))) {
-			/* no need to check/set */
-		} else if (strict_checking &&
-			   (job_desc->tres_req_cnt[TRES_ARRAY_CPU] !=
-			    (uint64_t)NO_VAL)
-			   && (job_desc->tres_req_cnt[TRES_ARRAY_CPU] >
-			       limit)) {
+		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.max_cpus_pj;
+		qos_tres_ctld[TRES_ARRAY_MEM] = (uint64_t)INFINITE;
+		tres_pos = 0;
+		if (!_validate_tres_limits(&tres_pos, job_desc->tres_req_cnt,
+					   assoc_ptr->max_tres_ctld,
+					   qos_tres_ctld,
+					   acct_policy_limit_set->max_tres,
+					   strict_checking, update_call)) {
+			/* FIXME: This is most likely not the reason
+			   we want to send back.
+			*/
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
 			debug2("job submit for user %s(%u): "
-			       "min cpu limit %"PRIu64" exceeds "
-			       "account max %"PRIu64,
+			       "min tres(%s%s%s) request %"PRIu64" exceeds "
+			       "max tres limit %"PRIu64" for account %s",
 			       user_name,
 			       job_desc->user_id,
-			       job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-			       limit);
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       job_desc->tres_req_cnt[tres_pos],
+			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       assoc_ptr->acct);
 			rc = false;
 			break;
 		}
