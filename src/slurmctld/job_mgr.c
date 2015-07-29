@@ -9487,7 +9487,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 * was desired.
 	 *
 	 * FIXME: Should we really be looking at the potentially old
-	 * part, assoc, and qos pointer?
+	 * part, assoc, and qos pointer?  This patch is from bug 1381
+	 * for future reference.
 	 */
 	acct_limit_already_set = false;
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
