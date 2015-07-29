@@ -1453,7 +1453,7 @@ static bool _validate_tres_limits(int *tres_pos,
 		     ADMIN_SET_LIMIT) &&
 		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
 		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
-		    ((job_tres_array[*tres_pos] != NO_VAL) || !update_call) &&
+		    ((job_tres_array[*tres_pos] != (uint64_t)NO_VAL) || !update_call) &&
 		    (job_tres_array[*tres_pos] > assoc_tres_array[*tres_pos]))
 			return false;
 		/* should be the same as below */
@@ -1463,9 +1463,9 @@ static bool _validate_tres_limits(int *tres_pos,
 		/*     || (qos_tres_array[*tres_pos] != (uint64_t)INFINITE) */
 		/*     || (assoc_tres_array[*tres_pos] == (uint64_t)INFINITE) */
 		/*     || (update_call && */
-		/* 	(job_tres_array[*tres_pos] == NO_VAL))) { */
+		/* 	(job_tres_array[*tres_pos] == (uint64_t)NO_VAL))) { */
 		/* 	/\* no need to check/set *\/ */
-		/* } else if ((job_tres_array[*tres_pos] != NO_VAL) */
+		/* } else if ((job_tres_array[*tres_pos] != (uint64_t)NO_VAL) */
 		/* 	   && (job_tres_array[*tres_pos] > */
 		/* 	       assoc_tres_array[*tres_pos])) { */
 		/* 	return false; */
