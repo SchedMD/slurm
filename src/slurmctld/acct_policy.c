@@ -2616,37 +2616,18 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 	 */
 	slurm_init_job_desc_msg(&job_desc);
 
-	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	/* copy the limits set from the job the only one that
+	 * acct_policy_validate changes is the time limit so we
+	 * should be ok with the memcpy here */
+	memcpy(&acct_policy_limit_set, &job_ptr->limit_set,
+	       sizeof(acct_policy_limit_set_t));
 
-	job_desc.min_cpus = details_ptr->min_cpus;
-	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_tres[TRES_ARRAY_CPU] =
-			job_ptr->limit_set.max_tres[TRES_ARRAY_CPU];
-	else if ((details_ptr->max_cpus != NO_VAL)
-		 && !job_ptr->limit_set.max_tres[TRES_ARRAY_CPU])
-		job_desc.max_cpus = details_ptr->max_cpus;
-
+	/* set the min nodes */
 	job_desc.min_nodes = details_ptr->min_nodes;
-	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set.max_nodes == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_nodes = job_ptr->limit_set.max_nodes;
-	else if ((details_ptr->max_nodes != NO_VAL)
-		 && !job_ptr->limit_set.max_nodes)
-		job_desc.max_nodes = details_ptr->max_nodes;
-	else
-		job_desc.max_nodes = 0;
 
-	job_desc.pn_min_memory = details_ptr->pn_min_memory;
-	/* Only set this value if not set from a limit */
-	if (job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] == ADMIN_SET_LIMIT)
-		acct_policy_limit_set.max_tres[TRES_ARRAY_MEM] =
-			job_ptr->limit_set.max_tres[TRES_ARRAY_MEM];
-	else if ((details_ptr->pn_min_memory != NO_VAL)
-		 && !job_ptr->limit_set.max_tres[TRES_ARRAY_MEM])
-		job_desc.pn_min_memory = details_ptr->pn_min_memory;
-	else
-		job_desc.pn_min_memory = 0;
+	/* copy all the tres requests over */
+	memcpy(&job_desc.tres_req_cnt, &job_ptr->tres_req_cnt,
+	       sizeof(uint64_t) * slurmctld_tres_cnt);
 
 	/* Only set this value if not set from a limit */
 	if (job_ptr->limit_set.time == ADMIN_SET_LIMIT)
