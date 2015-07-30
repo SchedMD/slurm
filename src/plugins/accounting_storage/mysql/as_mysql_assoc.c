@@ -193,64 +193,6 @@ enum {
 	RASSOC_COUNT
 };
 
-static void _mod_tres_str(char **out, char *mod, char *cur,
-			  char *cur_par, char *name, char **vals,
-			  uint32_t id)
-{
-	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
-		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE;
-
-	xassert(out);
-	xassert(name);
-
-	if (!mod)
-		return;
-
-	/* We have to add strings in waves or we will not be able to
-	 * get removes to work correctly.  We want the string returned
-	 * after the first slurmdb_combine_tres_strings to be put in
-	 * the database.
-	 */
-	*out = xstrdup(mod);
-	slurmdb_combine_tres_strings(out, cur,
-				     tres_str_flags);
-	/* let the slurmctld know we removed limits,
-	 * "" means blank NULL means no change */
-	if (!*out)
-		*out = xstrdup("");
-
-	if (xstrcmp(*out, cur)) {
-		/* We always want the first char a comma in the
-		 * database so make it that way if we have something
-		 * to add.
-		 */
-		if (vals) {
-			/* This logic is here because while the change
-			 * we are doing on the limit is the same for
-			 * each limit the other limits on the
-			 * associations might not be.  What this does
-			 * is only change the limit on the association
-			 * given the id.  I'm hoping someone in the
-			 * future comes up with a better way to do
-			 * this since this seems like a hack, but it
-			 * does do the job.
-			 */
-			xstrfmtcat(*vals, ", %s = if (id_assoc=%u, '%s%s', %s)",
-				   name, id,
-				   *out[0] ? "," : "",
-				   *out, name);
-			/* xstrfmtcat(*vals, ", %s='%s%s')", */
-			/* 	   name, */
-			/* 	   *out[0] ? "," : "", */
-			/* 	   *out); */
-		}
-		if (cur_par)
-			slurmdb_combine_tres_strings(
-				out, cur_par, tres_str_flags);
-	} else
-		xfree(*out);
-}
-
 static int _assoc_sort_cluster(void *r1, void *r2)
 {
 	slurmdb_assoc_rec_t *rec_a = *(slurmdb_assoc_rec_t **)r1;
@@ -1791,15 +1733,16 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
-		_mod_tres_str(&mod_assoc->grp_tres,
-			      assoc->grp_tres, row[MASSOC_GT],
-			      NULL, "grp_tres", &vals, mod_assoc->id);
-		_mod_tres_str(&mod_assoc->grp_tres_mins,
+		mod_tres_str(&mod_assoc->grp_tres,
+			     assoc->grp_tres, row[MASSOC_GT],
+			     NULL, "grp_tres", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->grp_tres_mins,
 			      assoc->grp_tres_mins, row[MASSOC_GTM],
-			      NULL, "grp_tres_mins", &vals, mod_assoc->id);
-		_mod_tres_str(&mod_assoc->grp_tres_run_mins,
-			      assoc->grp_tres_run_mins, row[MASSOC_GTRM],
-			      NULL, "grp_tres_run_mins", &vals, mod_assoc->id);
+			     NULL, "grp_tres_mins", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->grp_tres_run_mins,
+			     assoc->grp_tres_run_mins, row[MASSOC_GTRM],
+			     NULL, "grp_tres_run_mins", &vals,
+			     mod_assoc->id, 1);
 
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_mem = assoc->grp_mem;
@@ -1807,15 +1750,16 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		_mod_tres_str(&mod_assoc->max_tres_pj,
-			      assoc->max_tres_pj, row[MASSOC_MTPJ],
-			      NULL, "max_tres_pj", &vals, mod_assoc->id);
-		_mod_tres_str(&mod_assoc->max_tres_mins_pj,
-			      assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
-			      NULL, "max_tres_mins_pj", &vals, mod_assoc->id);
-		_mod_tres_str(&mod_assoc->max_tres_run_mins,
-			      assoc->max_tres_run_mins, row[MASSOC_MTRM],
-			      NULL, "max_tres_run_mins", &vals, mod_assoc->id);
+		mod_tres_str(&mod_assoc->max_tres_pj,
+			     assoc->max_tres_pj, row[MASSOC_MTPJ],
+			     NULL, "max_tres_pj", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->max_tres_mins_pj,
+			     assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
+			     NULL, "max_tres_mins_pj", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->max_tres_run_mins,
+			     assoc->max_tres_run_mins, row[MASSOC_MTRM],
+			     NULL, "max_tres_run_mins", &vals,
+			     mod_assoc->id, 1);
 
 		if (result2)
 			mysql_free_result(result2);

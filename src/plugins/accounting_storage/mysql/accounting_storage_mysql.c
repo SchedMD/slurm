@@ -2234,6 +2234,65 @@ just_update:
 	return rc;
 }
 
+extern void mod_tres_str(char **out, char *mod, char *cur,
+			 char *cur_par, char *name, char **vals,
+			 uint32_t id, bool assoc)
+{
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE;
+
+	xassert(out);
+	xassert(name);
+
+	if (!mod)
+		return;
+
+	/* We have to add strings in waves or we will not be able to
+	 * get removes to work correctly.  We want the string returned
+	 * after the first slurmdb_combine_tres_strings to be put in
+	 * the database.
+	 */
+	*out = xstrdup(mod);
+	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
+	/* let the slurmctld know we removed limits,
+	 * "" means blank NULL means no change */
+	if (!*out)
+		*out = xstrdup("");
+
+	if (xstrcmp(*out, cur)) {
+		/* We always want the first char a comma in the
+		 * database so make it that way if we have something
+		 * to add.
+		 * FIXME: perhaps we should just use TRES_STR_FLAG_COMMA1?
+		 */
+		if (vals) {
+			/* This logic is here because while the change
+			 * we are doing on the limit is the same for
+			 * each limit the other limits on the
+			 * associations might not be.  What this does
+			 * is only change the limit on the association
+			 * given the id.  I'm hoping someone in the
+			 * future comes up with a better way to do
+			 * this since this seems like a hack, but it
+			 * does do the job.
+			 */
+			xstrfmtcat(*vals, ", %s = "
+				   "if (%s=%u, '%s%s', %s)",
+				   name, assoc ? "id_assoc" : "id", id,
+				   *out[0] ? "," : "",
+				   *out, name);
+			/* xstrfmtcat(*vals, ", %s='%s%s')", */
+			/* 	   name, */
+			/* 	   *out[0] ? "," : "", */
+			/* 	   *out); */
+		}
+		if (cur_par)
+			slurmdb_combine_tres_strings(
+				out, cur_par, tres_str_flags);
+	} else
+		xfree(*out);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
