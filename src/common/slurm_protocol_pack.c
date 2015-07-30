@@ -10834,6 +10834,7 @@ static int _unpack_burst_buffer_info_msg(
 		safe_unpackstr_xmalloc(&bb_info_ptr->stop_stage_out,
 				       &uint32_tmp, buffer);
 		safe_unpack64(&bb_info_ptr->job_size_limit, buffer);
+		safe_unpack64(&bb_info_ptr->persist_resv_sz, buffer);
 		safe_unpack32(&bb_info_ptr->prio_boost_alloc, buffer);
 		safe_unpack32(&bb_info_ptr->prio_boost_use, buffer);
 		safe_unpack32(&bb_info_ptr->stage_in_timeout, buffer);

@@ -339,12 +339,23 @@ static void _test_config(void)
 	}
 }
 
+/* Allocate resources to a job and begin stage-in */
 static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_spec)
 {
 	bb_alloc_t *bb_ptr;
 	char jobid_buf[32];
-	int rc;
+	int rc = SLURM_SUCCESS;
 
+	if (bb_spec->persist_add) {
+		bb_pend_persist_t bb_persist;
+		bb_persist.job_id = job_ptr->job_id;
+		bb_persist.persist_add = bb_spec->persist_add;
+		bb_add_persist(&bb_state, &bb_persist);
+	}
+	if (bb_spec->total_size == 0) {
+		/* Persistent buffers only, nothing to stage-in */
+		return rc;
+	}
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: start stage-in %s", __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -1157,6 +1168,7 @@ static void *_start_teardown(void *x)
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	bool token_not_found = false;
 	DEF_TIMERS;
 
 	teardown_args = (stage_args_t *) x;
@@ -1167,6 +1179,7 @@ static void *_start_teardown(void *x)
 		timeout = teardown_args->timeout * 1000;
 	else
 		timeout = 5000;
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	resp_msg = bb_run_script("teardown",
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
@@ -1177,10 +1190,12 @@ static void *_start_teardown(void *x)
 		     __func__, teardown_args->job_id, TIME_STR);
 	}
 	_log_script_argv(teardown_argv, resp_msg);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
 		error("%s: teardown for job %u status:%u response:%s",
 		      __func__, teardown_args->job_id, status, resp_msg);
 	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	lock_slurmctld(job_write_lock);
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -1195,7 +1210,7 @@ static void *_start_teardown(void *x)
 		bb_ptr->state_time = time(NULL);
 		bb_remove_user_load(bb_ptr, &bb_state);
 	} else {
-		error("%s: unable to find bb record for job %u",
+		debug("%s: unable to find bb record for job %u",
 		      __func__, teardown_args->job_id);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -1504,7 +1519,7 @@ bb_ptr->seen_time = bb_state.last_load_time;
 				}
 				bb_remove_user_load(bb_ptr, &bb_state);
 				*bb_pptr = bb_ptr->next;
-				xfree(bb_ptr);
+				bb_free_rec(bb_ptr);
 				break;
 			}
 			if (bb_ptr->state == BB_STATE_COMPLETE) {
@@ -2130,6 +2145,19 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+
+//FIXME: How to handle job arrays?
+	if (job_ptr->array_recs) {
+		if (err_msg) {
+			xfree(*err_msg);
+			xstrfmtcat(*err_msg,
+				   "%s: Burst buffers not currently supported for job arrays",
+				   plugin_type);
+		}
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+		goto fini;
+	}
+
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -2144,7 +2172,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
 
-	/* Run job_process */
+	/* Run job_process, validates user script */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
@@ -2255,7 +2283,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 fini:	_del_bb_spec(bb_spec);
 	if (is_job_array)
 		_purge_job_files(job_dir);
-//FIXME: How to handle job arrays?
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -2282,6 +2309,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
+//FIXME: Modify for job arrays
 	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 		return est_start;
 	if ((bb_spec = _get_bb_spec(job_ptr)) == NULL)
@@ -2401,17 +2429,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		return -1;
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
-	if (!bb_ptr) {
-		info("%s: %s bb_rec not found",
-		      __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-		rc = -1;
-		if ((test_only == false) &&
-		    (_test_size_limit(job_ptr, bb_spec) == 0) &&
-		    (_alloc_job_bb(job_ptr, bb_spec) == SLURM_SUCCESS)) {
-			rc = 0;
-		}
-	} else {
+	if (bb_ptr) {
 		if (bb_ptr->state < BB_STATE_STAGED_IN) {
 			rc = 0;
 		} else if (bb_ptr->state == BB_STATE_STAGED_IN) {
@@ -2421,6 +2439,23 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			      bb_ptr->state);
 			rc = -1;
+		}
+	} else if ((bb_spec->total_size == 0) &&
+		   ((bb_spec->persist_add == 0) ||
+		    bb_test_persist(&bb_state, job_ptr->job_id))) {
+		/* Persistent buffers only, nothing to stage-in and the
+		 * space is reserved for those persistent buffers */
+		rc = 1;
+	} else {
+		/* Job buffer not allocated, create now if space available */
+		rc = -1;
+		if ((test_only == false) &&
+		    (_test_size_limit(job_ptr, bb_spec) == 0) &&
+		    (_alloc_job_bb(job_ptr, bb_spec) == SLURM_SUCCESS)) {
+			if (bb_spec->total_size == 0)
+				rc = 1;	/* Persistent only, space available */
+			else
+				rc = 0;	/* Stage-in job buffer now */
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -2474,16 +2509,15 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
+	if (bb_spec && ((bb_spec->total_size + bb_spec->swap_size) == 0)) {
+		/* Only persistent burst buffer operations */
+		return rc;
+	}
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		error("%s: %s lacks burst buffer allocation", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return SLURM_ERROR;
-	}
-
-	if (bb_spec && ((bb_spec->total_size + bb_spec->swap_size) == 0)) {
-		/* Only persistent burst buffer operations */
-		return rc;
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -2573,18 +2607,18 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	bb_spec = _get_bb_spec(job_ptr);
-	if (!bb_ptr) {
-		error("%s: %s bb_rec not found", __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-	} else if (bb_spec && ((bb_spec->total_size + bb_spec->swap_size) == 0)){
-		/* Only persistent burst buffer operations */
-		bb_ptr->state = BB_STATE_COMPLETE;
-	} else {
+	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	if (bb_ptr) {
 		bb_ptr->state = BB_STATE_STAGING_OUT;
 		bb_ptr->state_time = time(NULL);
 		_queue_stage_out(job_ptr);
+	} else if (bb_spec &&
+		   ((bb_spec->total_size + bb_spec->swap_size) == 0)) {
+		/* Only persistent burst buffer operations */
+	} else {
+		error("%s: %s bb_rec not found", __func__,
+		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2656,6 +2690,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 
 //FIXME: Check all lock use throughout
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	bb_rm_persist(&bb_state, job_ptr->job_id);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (bb_ptr) {
 		bb_ptr->state = BB_STATE_TEARDOWN;
@@ -2740,13 +2775,15 @@ _proc_persist(struct job_record *job_ptr, char **err_msg, bb_job_t *bb_job)
 			xfree(job_script);
 		}
 		if (rc2 != SLURM_SUCCESS) {
+			/* Note: We keep processing remaining requests,
+			 * in spite of the error */
 			rc = rc2;
-			break;
 		}
 
 next_line:	tok = strtok_r(NULL, " ", &save_ptr);
 	}
 	xfree(bb_specs);
+	bb_rm_persist(&bb_state, job_ptr->job_id);
 
 	return rc;
 }
@@ -2889,9 +2926,9 @@ _destroy_persistent(char *bb_name, uint32_t job_id, uint32_t user_id,
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("teardown");	/* "destroy_persistent" to be added to Cray API later */
-	script_argv[3] = xstrdup("-t");		/* name */
+	script_argv[3] = xstrdup("--token");	/* name */
 	script_argv[4] = xstrdup(bb_name);
-	script_argv[5] = xstrdup("-j");		/* name */
+	script_argv[5] = xstrdup("--job");	/* script */
 	script_argv[6] = xstrdup(job_script);
 	if (hurry)
 		script_argv[7] = xstrdup("--hurry");
@@ -2916,9 +2953,10 @@ _destroy_persistent(char *bb_name, uint32_t job_id, uint32_t user_id,
 		bb_job->persist_rem += bb_alloc->size;
 		/* Modify internal buffer record for purging */
 		bb_alloc->state = BB_STATE_COMPLETE;
-		bb_alloc->job_id = 0;
+		bb_alloc->job_id = job_id;
 		bb_alloc->state_time = time(NULL);
 		bb_remove_user_load(bb_alloc, &bb_state);
+		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		rc = SLURM_SUCCESS;
 	}
 	xfree(resp_msg);
@@ -2955,7 +2993,9 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//FIXME: Cray API returning error if no configurations
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+if (0) {
 		error("%s: show_configurations status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -3012,7 +3052,9 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//FIXME: Cray API returning error if no instances
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+if (0) {
 		error("%s: show_instances status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -3120,11 +3162,9 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_sessions status:%u response:%s",
-		      __func__, status, resp_msg);
-	}
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//FIXME: Cray API returning error if no sessions
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+if (0) {
 		error("%s: show_sessions status:%u response:%s",
 		      __func__, status, resp_msg);
 	}

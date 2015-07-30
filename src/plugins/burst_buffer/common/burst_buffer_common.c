@@ -165,6 +165,7 @@ extern void bb_clear_cache(bb_state_t *state_ptr)
 	}
 
 	xfree(state_ptr->name);
+	FREE_NULL_LIST(state_ptr->persist_resv_rec);
 }
 
 /* Clear configuration parameters, free memory
@@ -649,6 +650,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	packstr(config_ptr->stop_stage_in,   buffer);
 	packstr(config_ptr->stop_stage_out,  buffer);
 	pack64(config_ptr->job_size_limit,   buffer);
+	pack64(state_ptr->persist_resv_sz,   buffer);
 	pack32(config_ptr->prio_boost_alloc, buffer);
 	pack32(config_ptr->prio_boost_use,   buffer);
 	pack32(config_ptr->stage_in_timeout, buffer);
@@ -813,7 +815,7 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 
 /* Allocate a named burst buffer record for a specific user.
  * Return a pointer to that record.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_name_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id)
 {
@@ -836,7 +838,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 
 /* Allocate a per-job burst buffer record for a specific job.
  * Return a pointer to that record.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_alloc_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
 				    bb_job_t *bb_spec)
@@ -873,7 +875,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_alloc_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_spec)
 {
@@ -915,6 +917,33 @@ extern void bb_free_rec(bb_alloc_t *bb_ptr)
 		xfree(bb_ptr->name);
 		xfree(bb_ptr);
 	}
+}
+
+
+/* Remove a specific bb_alloc_t from global records.
+ * RET true if found, false otherwise */
+extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr)
+{
+	bb_alloc_t *bb_link, **bb_plink;
+	int i;
+
+	xassert(state_ptr);
+	xassert(state_ptr->bb_hash);
+	xassert(bb_ptr);
+
+	i = bb_ptr->user_id % BB_HASH_SIZE;
+	bb_plink = &state_ptr->bb_hash[i];
+	bb_link = state_ptr->bb_hash[i];
+	while (bb_link) {
+		if (bb_link == bb_ptr) {
+			*bb_plink = bb_ptr->next;
+			bb_free_rec(bb_ptr);
+			return true;
+		}
+		bb_plink = &bb_link->next;
+		bb_link = bb_link->next;
+	}
+	return false;
 }
 
 /* Execute a script, wait for termination and return its stdout.
@@ -1051,3 +1080,78 @@ char *bb_run_script(char *script_type, char *script_path,
 	return resp;
 }
 
+static void _persist_purge(void *x)
+{
+	xfree(x);
+}
+
+static int _persist_match(void *x, void *key)
+{
+	bb_pend_persist_t *bb_pers_exist = (bb_pend_persist_t *) x;
+	bb_pend_persist_t *bb_pers_test  = (bb_pend_persist_t *) key;
+	if (bb_pers_exist->job_id == bb_pers_test->job_id)
+		return 1;
+	return 0;
+}
+
+/* Add persistent burst buffer reservation for this job, tests for duplicate */
+extern void bb_add_persist(bb_state_t *state_ptr,
+			   bb_pend_persist_t *bb_persist)
+{
+	bb_pend_persist_t *bb_pers_match;
+
+	xassert(state_ptr);
+	if (!state_ptr->persist_resv_rec) {
+		state_ptr->persist_resv_rec = list_create(_persist_purge);
+	} else {
+		bb_pers_match = list_find_first(state_ptr->persist_resv_rec,
+						_persist_match, bb_persist);
+		if (bb_pers_match)
+			return;
+	}
+
+	bb_pers_match = xmalloc(sizeof(bb_pend_persist_t));
+	bb_pers_match->job_id = bb_persist->job_id;
+	bb_pers_match->persist_add = bb_persist->persist_add;
+	list_append(state_ptr->persist_resv_rec, bb_pers_match);
+	state_ptr->persist_resv_sz += bb_persist->persist_add;
+}
+
+/* Remove persistent burst buffer reservation for this job.
+ * Call when job starts running or removed from pending state. */
+extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id)
+{
+	bb_pend_persist_t  bb_persist;
+	bb_pend_persist_t *bb_pers_match;
+
+	xassert(state_ptr);
+	if (!state_ptr->persist_resv_rec)
+		return;
+	bb_persist.job_id = job_id;
+	bb_pers_match = list_find_first(state_ptr->persist_resv_rec,
+					_persist_match, &bb_persist);
+	if (!bb_pers_match)
+		return;
+	if (state_ptr->persist_resv_sz >= bb_pers_match->persist_add) {
+		state_ptr->persist_resv_sz -= bb_pers_match->persist_add;
+	} else {
+		state_ptr->persist_resv_sz = 0;
+		error("%s: Reserved persistent storage size underflow",
+		      __func__);
+	}
+}
+
+/* Return true of the identified job has burst buffer space already reserved */
+extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id)
+{
+	bb_pend_persist_t bb_pers_match;
+
+	xassert(state_ptr);
+	if (!state_ptr->persist_resv_rec)
+		return false;
+	bb_pers_match.job_id = job_id;
+	if (list_find_first(state_ptr->persist_resv_rec, _persist_match,
+			    &bb_pers_match))
+		return true;
+	return false;
+}
