@@ -1168,7 +1168,6 @@ static void *_start_teardown(void *x)
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	bool token_not_found = false;
 	DEF_TIMERS;
 
 	teardown_args = (stage_args_t *) x;
