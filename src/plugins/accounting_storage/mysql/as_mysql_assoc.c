@@ -1737,7 +1737,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			     assoc->grp_tres, row[MASSOC_GT],
 			     NULL, "grp_tres", &vals, mod_assoc->id, 1);
 		mod_tres_str(&mod_assoc->grp_tres_mins,
-			      assoc->grp_tres_mins, row[MASSOC_GTM],
+			     assoc->grp_tres_mins, row[MASSOC_GTM],
 			     NULL, "grp_tres_mins", &vals, mod_assoc->id, 1);
 		mod_tres_str(&mod_assoc->grp_tres_run_mins,
 			     assoc->grp_tres_run_mins, row[MASSOC_GTRM],
