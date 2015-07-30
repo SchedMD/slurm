@@ -129,11 +129,12 @@ extern void slurm_print_topo_info_msg(
 static int _print_topo_record(const char *print, const char* record,
 			       const int size, char **out_buf)
 {
-	char tmp_line[size];
 	int len = 0;
+
 	if (size <= 0)
 		return 0;
 	if (print && print[0]) {
+		char tmp_line[size];
 		snprintf(tmp_line, size, "%s=%s ", record, print);
 		len = size - strlen(tmp_line);
 		xstrcat(*out_buf, tmp_line);
@@ -176,7 +177,7 @@ extern void slurm_print_topo_record(FILE * out, topo_info_t *topo_ptr,
 	len = max_len - strlen(tmp_line);
 
 	len = _print_topo_record(topo_ptr->nodes, "Nodes", len, &out_buf);
-	len = _print_topo_record(topo_ptr->switches, "Switches", len, &out_buf);
+	(void)_print_topo_record(topo_ptr->switches, "Switches", len, &out_buf);
 
 	xstrcat(out_buf, "\n");
 	fprintf(out, "%s", out_buf);
