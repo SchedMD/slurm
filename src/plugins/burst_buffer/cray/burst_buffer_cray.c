@@ -204,6 +204,7 @@ static int	_parse_interactive(struct job_descriptor *job_desc,
 static int	_proc_persist(struct job_record *job_ptr, char **err_msg,
 			      bb_job_t *bb_job);
 static void	_purge_bb_files(struct job_record *job_ptr);
+static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
 static int	_queue_stage_in(struct job_record *job_ptr, bb_alloc_t *bb_ptr);
 static int	_queue_stage_out(struct job_record *job_ptr);
@@ -508,6 +509,11 @@ static bb_job_t *_get_bb_spec(struct job_record *job_ptr)
 		bb_spec->persist_rem++;
 	}
 
+	tok = strstr(job_ptr->burst_buffer, "SLURM_PERSISTENT_USE");
+	if (tok) {  /* Format: SLURM_PERSISTENT_USE" */
+		have_bb = true;
+	}
+
 	if (!have_bb)
 		xfree(bb_spec);
 
@@ -560,9 +566,6 @@ static void _load_state(void)
 	int i, j;
 	static bool first_load = true;
 
-//FIXME: Need logic to handle resource allocation/free in progress once formats defined
-if (!first_load) return;
-
 	/*
 	 * Load the pools information
 	 */
@@ -609,6 +612,8 @@ if (!first_load) return;
 	}
 	_bb_free_pools(pools, num_pools);
 	bb_state.last_load_time = time(NULL);
+	if (!first_load)
+		return;
 
 	/*
 	 * Load the instances information
@@ -643,7 +648,7 @@ if (!first_load) return;
 	if (configs == NULL) {
 		info("%s: failed to find DataWarp configurations", __func__);
 	}
-//FIXME: Currently unused job buffers
+//FIXME: Currently unused data
 	_bb_free_configs(configs, num_sessions);
 
 	first_load = false;
@@ -1297,6 +1302,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_spec)
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
 	}
+//FIXME: Add TRES limit check here
 
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
@@ -1632,7 +1638,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 			/* We just capture the size requirement and leave other
 			 * parsing to Cray's tools */
 			tok += 3;
-			while (isspace(tok[0]))
+			while (isspace(tok[0]) && (tok[0] != '\0'))
 				tok++;
 			if (!strncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
@@ -1647,9 +1653,13 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 						   (~BB_SIZE_IN_NODES);
 				} else
 					byte_cnt += tmp_cnt;
-			} else if (!strncmp(tok, "swap=", 5)) {
-				tok += 5;
+			} else if (!strncmp(tok, "swap", 4)) {
+				tok += 4;
+				while (isspace(tok) && (tok[0] != '\0'))
+					tok++;
 				swap_cnt += strtol(tok, &end_ptr, 10);
+			} else if (!strncmp(tok, "persistentdw", 12)) {
+				xstrcat(persistent, "SLURM_PERSISTENT_USE ");
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
@@ -1813,7 +1823,8 @@ static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 
 /*
  * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
+ * are called.  Read and validate configuration file here. Spawn thread to
+ * periodically read Datawarp state.
  */
 extern int init(void)
 {
@@ -1833,18 +1844,17 @@ extern int init(void)
 		}
 		usleep(100000);
 	}
+	slurm_attr_destroy(&attr);
 	if (!state_save_loc)
 		state_save_loc = slurm_get_state_save_location();
-
-//FIXME: Set up BBS for running jobs
-//FIXME: Call teardown for stray BBS
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
 
 /*
- * fini() is called when the plugin is unloaded. Free all memory.
+ * fini() is called when the plugin is unloaded. Free all memory and shutdown
+ * threads.
  */
 extern int fini(void)
 {
@@ -1869,6 +1879,27 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+/* Identify and purge any vestigial buffers (i.e. we have a job buffer, but
+ * the matching job is either gone or completed) */
+static void _purge_vestigial_bufs(void)
+{
+	bb_alloc_t *bb_ptr = NULL;
+	int i;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = bb_state.bb_hash[i];
+		while (bb_ptr) {
+			if (bb_ptr->job_id &&
+			    !find_job_record(bb_ptr->job_id)) {
+				info("%s: Purging vestigial buffer for job %u",
+				     plugin_type, bb_ptr->job_id);
+				_queue_teardown(bb_ptr->job_id, false);
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
+}
+
 /*
  * Load the current burst buffer state (e.g. how much space is available now).
  * Run at the beginning of each scheduling cycle in order to recognize external
@@ -1884,6 +1915,8 @@ extern int bb_p_load_state(bool init_config)
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: %s", plugin_type,  __func__);
 	_load_state();
+	if (init_config)
+		_purge_vestigial_bufs();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
@@ -1957,7 +1990,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
-	bool have_gres = false, have_swap = false;
+	bool have_gres = false, have_persist = false, have_swap = false;
 	uint64_t bb_size = 0;
 	char *key;
 	int i, rc;
@@ -1980,21 +2013,26 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 		if (strstr(job_desc->burst_buffer, "SLURM_GRES="))
 			have_gres = true;
+		key = strstr(job_desc->burst_buffer,"SLURM_PERSISTENT_CREATE=");
+		if (key) {
+			have_persist = true;
+			key = strstr(key, "SIZE=");
+			if (key) {
+				bb_size += bb_get_size_num(key + 5,
+						bb_state.bb_config.granularity);
+			}
+		}
+		if (strstr(job_desc->burst_buffer, "SLURM_PERSISTENT_DESTROY="))
+			have_persist = true;
+		if (strstr(job_desc->burst_buffer, "SLURM_PERSISTENT_USE"))
+			have_persist = true;
 		if (strstr(job_desc->burst_buffer, "SLURM_SWAP="))
 			have_swap = true;
 	}
-	if ((bb_size == 0) && (have_gres == false) && (have_swap == false))
+	if ((bb_size == 0) && !have_gres && !have_persist && !have_swap)
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
-	     (bb_size > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
-	     (bb_size > bb_state.bb_config.user_size_limit))) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-		return ESLURM_BURST_BUFFER_LIMIT;
-	}
-
 	if (bb_state.bb_config.allow_users) {
 		for (i = 0; bb_state.bb_config.allow_users[i]; i++) {
 			if (job_desc->user_id ==
@@ -2002,8 +2040,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 				break;
 		}
 		if (bb_state.bb_config.allow_users[i] == 0) {
-			pthread_mutex_unlock(&bb_state.bb_mutex);
-			return ESLURM_BURST_BUFFER_PERMISSION;
+			rc = ESLURM_BURST_BUFFER_PERMISSION;
+			goto fini;
 		}
 	}
 
@@ -2014,8 +2052,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 				break;
 		}
 		if (bb_state.bb_config.deny_users[i] != 0) {
-			pthread_mutex_unlock(&bb_state.bb_mutex);
-			return ESLURM_BURST_BUFFER_PERMISSION;
+			rc = ESLURM_BURST_BUFFER_PERMISSION;
+			goto fini;
 		}
 	}
 
@@ -2023,12 +2061,24 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		info("Job from user %u requested burst buffer size of "
 		     "%"PRIu64", but total space is only %"PRIu64"",
 		     job_desc->user_id, bb_size, bb_state.total_space);
+		rc = ESLURM_BURST_BUFFER_LIMIT;
+		goto fini;
 	}
+
+	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
+	     (bb_size > bb_state.bb_config.job_size_limit)) ||
+	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
+	     (bb_size > bb_state.bb_config.user_size_limit))) {
+		rc = ESLURM_BURST_BUFFER_LIMIT;
+		goto fini;
+	}
+
+//FIXME: Add TRES limit check here
+
+fini:	job_desc->shared = 0;	/* Compute nodes can not be shared */
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
-	job_desc->shared = 0;	/* Compute nodes can not be shared */
-
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static void _purge_job_file(char *job_dir, char *file_name)
@@ -2140,10 +2190,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	bb_spec = _get_bb_spec(job_ptr);
 	if (bb_spec == NULL)
 		return rc;
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: %s", plugin_type, __func__,
-		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-	}
 
 //FIXME: How to handle job arrays?
 	if (job_ptr->array_recs) {
@@ -2158,6 +2204,10 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2171,7 +2221,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	if (job_ptr->batch_flag == 0)
 		rc = _build_bb_script(job_ptr, script_file);
 
-	/* Run job_process, validates user script */
+	/* Run "job_process" function, validates user script */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
@@ -2198,7 +2248,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
 
-	/* Run paths */
+	/* Run "paths" function, get DataWarp environment variables */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
@@ -2302,19 +2352,24 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	char jobid_buf[32];
 	int rc;
 
-	if (bb_state.bb_config.debug_flag) {
-		info("%s: %s: %s",
-		     plugin_type, __func__,
-		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-	}
-
-//FIXME: Modify for job arrays
 	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 		return est_start;
 	if ((bb_spec = _get_bb_spec(job_ptr)) == NULL)
 		return est_start;
 
+	if ((bb_spec->persist_add == 0) && (bb_spec->swap_size == 0) &&
+	    (bb_spec->total_size == 0)) {
+		/* Only deleting or using persistent buffers */
+		_del_bb_spec(bb_spec);
+		return est_start;
+	}
+
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: %s",
+		     plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (!bb_ptr) {
 		rc = _test_size_limit(job_ptr, bb_spec);
@@ -2348,9 +2403,6 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	bb_job_t *bb_spec;
 	int rc;
 
-	if (bb_state.bb_config.debug_flag)
-		info("%s: %s", plugin_type,  __func__);
-
 	/* Identify candidates to be allocated burst buffers */
 	job_candidates = list_create(_job_queue_del);
 	job_iter = list_iterator_create(job_queue);
@@ -2376,6 +2428,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	list_sort(job_candidates, bb_job_queue_sort);
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.debug_flag)
+		info("%s: %s", plugin_type,  __func__);
 	bb_set_use_time(&bb_state);
 	job_iter = list_iterator_create(job_candidates);
 	while ((job_rec = list_next(job_iter))) {
@@ -2679,16 +2733,16 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	bb_alloc_t *bb_ptr;
 	char jobid_buf[32];
 
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 
-	if (!_test_bb_spec(job_ptr))
+	if (!_test_bb_spec(job_ptr)) {
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_SUCCESS;
-
-//FIXME: Check all lock use throughout
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	}
 	bb_rm_persist(&bb_state, job_ptr->job_id);
 	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
 	if (bb_ptr) {

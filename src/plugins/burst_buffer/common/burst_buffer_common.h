@@ -80,6 +80,7 @@ typedef struct bb_config {
 	uint64_t user_size_limit;
 } bb_config_t;
 
+/* Current burst buffer allocations (instances) */
 typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
@@ -98,17 +99,21 @@ typedef struct bb_alloc {
 	uint32_t user_id;
 } bb_alloc_t;
 
+/* User storage use, needed to enforce per-user limits */
 typedef struct bb_user {
 	struct bb_user *next;
 	uint64_t size;
 	uint32_t user_id;
 } bb_user_t;
 
+/* Generic burst buffer resources */
 typedef struct {
 	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
 	uint64_t count;		/* Count of required resources */
 } bb_gres_t;
 
+/* Burst buffer resources required for a job, based upon a job record's
+ * burst_buffer string field */
 typedef struct {
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
@@ -120,17 +125,20 @@ typedef struct {
 	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
 } bb_job_t;
 
+/* Persistent buffer requests which are pending */
 typedef struct {
 	uint32_t   job_id;
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 } bb_pend_persist_t;
 
+/* Used for building queue of jobs records for various purposes */
 typedef struct job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_spec;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
 } job_queue_rec_t;
 
+/* Used for building queue of job preemption candidates */
 struct preempt_bb_recs {
 	bb_alloc_t *bb_ptr;
 	uint32_t job_id;
@@ -139,6 +147,7 @@ struct preempt_bb_recs {
 	uint32_t user_id;
 };
 
+/* Current plugin state information */
 typedef struct bb_state {
 	bb_config_t	bb_config;
 	bb_alloc_t **	bb_hash;	/* Hash by job_id */
