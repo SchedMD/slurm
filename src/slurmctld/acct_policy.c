@@ -414,6 +414,62 @@ static void _qos_alter_job(struct job_record *job_ptr,
 	       new_used_cpu_run_secs);
 }
 
+/*
+ * _validate_tres_limits_for_assoc - validate the tres requested against limits
+ * of an association as well as qos skipping any limit an admin set
+ *
+ * OUT - tres_pos - if false is returned position in array of failed limit
+ * IN - job_tres_array - count of various tres in use
+ * IN - assoc_tres_array - limits on the association
+ * IN - qos_tres_array - limits on the qos
+ * IN - acct_policy_limit_set_array - limits that have been overridden
+ *                                    by an admin
+ * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN update_call - If this is an update or a create call
+ *
+ * RET - True if no limit is violated, false otherwise with tres_pos
+ * being set to the position of the failed limit.
+ */
+static bool _validate_tres_limits_for_assoc(
+	int *tres_pos,
+	uint64_t *job_tres_array,
+	uint64_t *assoc_tres_array,
+	uint64_t *qos_tres_array,
+	uint16_t *admin_set_limit_tres_array,
+	bool strict_checking,
+	bool update_call)
+{
+	if (!strict_checking)
+		return true;
+
+	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count;
+	     (*tres_pos)++) {
+		if ((admin_set_limit_tres_array[*tres_pos] !=
+		     ADMIN_SET_LIMIT) &&
+		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
+		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
+		    (job_tres_array[*tres_pos] || !update_call) &&
+		    (job_tres_array[*tres_pos] > assoc_tres_array[*tres_pos]))
+			return false;
+		/* should be the same as below */
+
+		/* if ((admin_set_limit_tres_array[*tres_pos] == */
+		/*      (uint64_t)ADMIN_SET_LIMIT) */
+		/*     || (qos_tres_array[*tres_pos] != (uint64_t)INFINITE) */
+		/*     || (assoc_tres_array[*tres_pos] == (uint64_t)INFINITE) */
+		/*     || (update_call && */
+		/* 	(job_tres_array[*tres_pos] == (uint64_t)NO_VAL))) { */
+		/* 	/\* no need to check/set *\/ */
+		/* } else if ((job_tres_array[*tres_pos] != (uint64_t)NO_VAL) */
+		/* 	   && (job_tres_array[*tres_pos] > */
+		/* 	       assoc_tres_array[*tres_pos])) { */
+		/* 	return false; */
+		/* } */
+	}
+
+	return true;
+}
+
 static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				struct part_record *part_ptr,
 				slurmdb_qos_rec_t *qos_ptr,
@@ -1418,62 +1474,6 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 
 end_it:
 	return rc;
-}
-
-/*
- * _validate_tres_limits - validate the tres requested against limits
- * of an association as well as qos skipping any limit an admin set
- *
- * OUT - tres_pos - if false is returned position in array of failed limit
- * IN - job_tres_array - count of various tres in use
- * IN - assoc_tres_array - limits on the association
- * IN - qos_tres_array - limits on the qos
- * IN - acct_policy_limit_set_array - limits that have been overridden
- *                                    by an admin
- * IN strick_checking - If a limit needs to be enforced now or not.
- * IN update_call - If this is an update or a create call
- *
- * RET - True if no limit is violated, false otherwise with tres_pos
- * being set to the position of the failed limit.
- */
-static bool _validate_tres_limits_for_assoc(
-	int *tres_pos,
-	uint64_t *job_tres_array,
-	uint64_t *assoc_tres_array,
-	uint64_t *qos_tres_array,
-	uint16_t *admin_set_limit_tres_array,
-	bool strict_checking,
-	bool update_call)
-{
-	if (!strict_checking)
-		return true;
-
-	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count;
-	     (*tres_pos)++) {
-		if ((admin_set_limit_tres_array[*tres_pos] !=
-		     ADMIN_SET_LIMIT) &&
-		    (qos_tres_array[*tres_pos] == (uint64_t)INFINITE) &&
-		    (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE) &&
-		    (job_tres_array[*tres_pos] || !update_call) &&
-		    (job_tres_array[*tres_pos] > assoc_tres_array[*tres_pos]))
-			return false;
-		/* should be the same as below */
-
-		/* if ((admin_set_limit_tres_array[*tres_pos] == */
-		/*      (uint64_t)ADMIN_SET_LIMIT) */
-		/*     || (qos_tres_array[*tres_pos] != (uint64_t)INFINITE) */
-		/*     || (assoc_tres_array[*tres_pos] == (uint64_t)INFINITE) */
-		/*     || (update_call && */
-		/* 	(job_tres_array[*tres_pos] == (uint64_t)NO_VAL))) { */
-		/* 	/\* no need to check/set *\/ */
-		/* } else if ((job_tres_array[*tres_pos] != (uint64_t)NO_VAL) */
-		/* 	   && (job_tres_array[*tres_pos] > */
-		/* 	       assoc_tres_array[*tres_pos])) { */
-		/* 	return false; */
-		/* } */
-	}
-
-	return true;
 }
 
 /*
