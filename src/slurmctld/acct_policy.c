@@ -1436,13 +1436,14 @@ end_it:
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static bool _validate_tres_limits(int *tres_pos,
-				  uint64_t *job_tres_array,
-				  uint64_t *assoc_tres_array,
-				  uint64_t *qos_tres_array,
-				  uint16_t *admin_set_limit_tres_array,
-				  bool strict_checking,
-				  bool update_call)
+static bool _validate_tres_limits_for_assoc(
+	int *tres_pos,
+	uint64_t *job_tres_array,
+	uint64_t *assoc_tres_array,
+	uint64_t *qos_tres_array,
+	uint16_t *admin_set_limit_tres_array,
+	bool strict_checking,
+	bool update_call)
 {
 	if (!strict_checking)
 		return true;
@@ -1645,11 +1646,12 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.grp_cpus;
 		qos_tres_ctld[TRES_ARRAY_MEM] = qos_rec.grp_mem;
 
-		if (!_validate_tres_limits(&tres_pos, job_desc->tres_req_cnt,
-					   assoc_ptr->grp_tres_ctld,
-					   qos_tres_ctld,
-					   acct_policy_limit_set->max_tres,
-					   strict_checking, update_call)) {
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, job_desc->tres_req_cnt,
+			    assoc_ptr->grp_tres_ctld,
+			    qos_tres_ctld,
+			    acct_policy_limit_set->max_tres,
+			    strict_checking, update_call)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
 			*/
@@ -1734,11 +1736,12 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.max_cpus_pj;
 		qos_tres_ctld[TRES_ARRAY_MEM] = (uint64_t)INFINITE;
 		tres_pos = 0;
-		if (!_validate_tres_limits(&tres_pos, job_desc->tres_req_cnt,
-					   assoc_ptr->max_tres_ctld,
-					   qos_tres_ctld,
-					   acct_policy_limit_set->max_tres,
-					   strict_checking, update_call)) {
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, job_desc->tres_req_cnt,
+			    assoc_ptr->max_tres_ctld,
+			    qos_tres_ctld,
+			    acct_policy_limit_set->max_tres,
+			    strict_checking, update_call)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
 			*/
