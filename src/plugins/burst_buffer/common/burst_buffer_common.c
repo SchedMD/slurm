@@ -241,7 +241,6 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 				   bb_alloc_t **bb_hash)
 {
 	bb_alloc_t *bb_ptr = NULL;
-	char jobid_buf[32];
 	int i, hash_inx = user_id % BB_HASH_SIZE;
 
 	/* Try this user ID first */
