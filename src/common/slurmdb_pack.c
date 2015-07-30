@@ -1539,8 +1539,98 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
+	uint64_t tmp64;
 
-	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			pack32(0, buffer);
+
+			pack32(QOS_FLAG_NOTSET, buffer);
+
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+
+			packnull(buffer);
+
+			pack_bit_str_hex(NULL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack16(0, buffer);
+			pack32(0, buffer);
+
+			packdouble((double)NO_VAL, buffer);
+			packdouble((double)NO_VAL, buffer);
+			return;
+		}
+		packstr(object->description, buffer);
+		pack32(object->id, buffer);
+
+		pack32(object->flags, buffer);
+
+		pack32(object->grace_time, buffer);
+		packstr(object->grp_tres_mins, buffer);
+		packstr(object->grp_tres_run_mins, buffer);
+		packstr(object->grp_tres, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_mem, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
+		packstr(object->max_tres_mins_pj, buffer);
+		packstr(object->max_tres_run_mins_pu, buffer);
+		packstr(object->max_tres_pj, buffer);
+		packstr(object->max_tres_pu, buffer);
+		pack32(object->max_jobs_pu, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_submit_jobs_pu, buffer);
+		pack32(object->max_wall_pj, buffer);
+		packstr(object->min_tres_pj, buffer);
+
+		packstr(object->name, buffer);
+
+		pack_bit_str_hex(object->preempt_bitstr, buffer);
+
+		if (object->preempt_list)
+			count = list_count(object->preempt_list);
+
+		pack32(count, buffer);
+
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(object->preempt_list);
+			while ((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+
+		pack16(object->preempt_mode, buffer);
+		pack32(object->priority, buffer);
+
+		packdouble(object->usage_factor, buffer);
+		packdouble(object->usage_thres, buffer);
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
@@ -1586,25 +1676,41 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->flags, buffer);
 
 		pack32(object->grace_time, buffer);
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->grp_cpu_run_mins, buffer);
-		pack32(object->grp_cpus, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres_mins, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres_run_mins, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_jobs, buffer);
 		pack32(object->grp_mem, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack64(object->max_cpu_run_mins_pu, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_cpus_pu, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_mins_pj, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_run_mins_pu, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_pj, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_pu, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->max_jobs_pu, buffer);
 		pack32(object->max_nodes_pj, buffer);
 		pack32(object->max_nodes_pu, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
-		pack32(object->min_cpus_pj, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->min_tres_pj, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
 
 		packstr(object->name, buffer);
 
@@ -1673,19 +1779,33 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->flags, buffer);
 
 		pack32(object->grace_time, buffer);
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->grp_cpu_run_mins, buffer);
-		pack32(object->grp_cpus, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres_mins, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres_run_mins, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_jobs, buffer);
 		pack32(object->grp_mem, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack64(object->max_cpu_mins_pj, buffer);
-		pack64(object->max_cpu_run_mins_pu, buffer);
-		pack32(object->max_cpus_pj, buffer);
-		pack32(object->max_cpus_pu, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_mins_pj, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_run_mins_pu, TRES_CPU);
+		pack64(tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_pj, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->max_tres_pu, TRES_CPU);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->max_jobs_pu, buffer);
 		pack32(object->max_nodes_pj, buffer);
 		pack32(object->max_nodes_pu, buffer);
@@ -1730,7 +1850,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 	slurmdb_init_qos_rec(object_ptr, 0, NO_VAL);
 
-	if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
@@ -1738,25 +1858,90 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_run_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_mem, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack64(&object_ptr->max_cpu_run_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-		safe_unpack32(&object_ptr->min_cpus_pj, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->min_tres_pj,
+				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		unpack_bit_str_hex(&object_ptr->preempt_bitstr, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->preempt_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->preempt_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->preempt_mode, buffer);
+		safe_unpack32(&object_ptr->priority, buffer);
+
+		safe_unpackdouble(&object_ptr->usage_factor, buffer);
+		safe_unpackdouble(&object_ptr->usage_thres, buffer);
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->description,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpack32(&object_ptr->flags, buffer);
+
+		safe_unpack32(&object_ptr->grace_time, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_run_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_mem, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->min_tres_pj,
+				       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
@@ -1787,19 +1972,26 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->grp_cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres_run_mins,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_mem, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
-		safe_unpack64(&object_ptr->max_cpu_run_mins_pu, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
-		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pu, buffer);

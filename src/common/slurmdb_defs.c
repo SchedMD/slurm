@@ -85,6 +85,14 @@ static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
 {
 	if (qos) {
 		xfree(qos->description);
+		xfree(qos->grp_tres);
+		xfree(qos->grp_tres_mins);
+		xfree(qos->grp_tres_run_mins);
+		xfree(qos->max_tres_mins_pj);
+		xfree(qos->max_tres_run_mins_pu);
+		xfree(qos->max_tres_pj);
+		xfree(qos->max_tres_pu);
+		xfree(qos->min_tres_pj);
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
@@ -1317,26 +1325,26 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	qos->preempt_mode = (uint16_t)init_val;
 	qos->priority = init_val;
 
-	qos->grp_cpu_mins = (uint64_t)init_val;
-	qos->grp_cpu_run_mins = (uint64_t)init_val;
-	qos->grp_cpus = init_val;
+	/* qos->grp_tres_mins = NULL; */
+	/* qos->grp_tres_run_mins = NULL; */
+	/* qos->grp_tres = NULL; */
 	qos->grp_jobs = init_val;
 	qos->grp_mem = init_val;
 	qos->grp_nodes = init_val;
 	qos->grp_submit_jobs = init_val;
 	qos->grp_wall = init_val;
 
-	qos->max_cpu_mins_pj = (uint64_t)init_val;
-	qos->max_cpu_run_mins_pu = (uint64_t)init_val;
-	qos->max_cpus_pj = init_val;
-	qos->max_cpus_pu = init_val;
+	/* qos->max_tres_mins_pj = NULL; */
+	/* qos->max_tres_run_mins_pu = NULL; */
+	/* qos->max_tres_pj = NULL; */
+	/* qos->max_tres_pu = NULL; */
 	qos->max_jobs_pu = init_val;
 	qos->max_nodes_pj = init_val;
 	qos->max_nodes_pu = init_val;
 	qos->max_submit_jobs_pu = init_val;
 	qos->max_wall_pj = init_val;
 
-	qos->min_cpus_pj = init_val;
+	/* qos->min_tres_pj = NULL; */
 
 	qos->usage_factor = (double)init_val;
 	qos->usage_thres = (double)init_val;

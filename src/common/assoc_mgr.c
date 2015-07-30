@@ -2471,26 +2471,34 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->id = found_qos->id;
 
 	qos->grace_time      = found_qos->grace_time;
-	qos->grp_cpu_mins    = found_qos->grp_cpu_mins;
-	qos->grp_cpu_run_mins= found_qos->grp_cpu_run_mins;
-	qos->grp_cpus        = found_qos->grp_cpus;
+	if (!qos->grp_tres_mins)
+		qos->grp_tres_mins    = found_qos->grp_tres_mins;
+	if (!qos->grp_tres_run_mins)
+		qos->grp_tres_run_mins= found_qos->grp_tres_run_mins;
+	if (!qos->grp_tres)
+		qos->grp_tres        = found_qos->grp_tres;
 	qos->grp_jobs        = found_qos->grp_jobs;
 	qos->grp_mem         = found_qos->grp_mem;
 	qos->grp_nodes       = found_qos->grp_nodes;
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
 
-	qos->max_cpu_mins_pj = found_qos->max_cpu_mins_pj;
-	qos->max_cpu_run_mins_pu = found_qos->max_cpu_run_mins_pu;
-	qos->max_cpus_pj     = found_qos->max_cpus_pj;
-	qos->max_cpus_pu     = found_qos->max_cpus_pu;
+	if (!qos->max_tres_mins_pj)
+		qos->max_tres_mins_pj = found_qos->max_tres_mins_pj;
+	if (!qos->max_tres_run_mins_pu)
+		qos->max_tres_run_mins_pu = found_qos->max_tres_run_mins_pu;
+	if (!qos->max_tres_pj)
+		qos->max_tres_pj     = found_qos->max_tres_pj;
+	if (!qos->max_tres_pu)
+		qos->max_tres_pu     = found_qos->max_tres_pu;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
 	qos->max_nodes_pj    = found_qos->max_nodes_pj;
 	qos->max_nodes_pu    = found_qos->max_nodes_pu;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
-	qos->min_cpus_pj     = found_qos->min_cpus_pj;
+	if (!qos->min_tres_pj)
+		qos->min_tres_pj     = found_qos->min_tres_pj;
 
 	if (!qos->name)
 		qos->name = found_qos->name;
@@ -4007,15 +4015,37 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grace_time != NO_VAL)
 				rec->grace_time = object->grace_time;
-			if (object->grp_cpu_mins != (uint64_t)NO_VAL)
-				rec->grp_cpu_mins = object->grp_cpu_mins;
-			if (object->grp_cpu_run_mins != (uint64_t)NO_VAL)
-				rec->grp_cpu_run_mins =
-					object->grp_cpu_run_mins;
-			if (object->grp_cpus != NO_VAL) {
+
+			if (object->grp_tres) {
 				update_jobs = true;
-				rec->grp_cpus = object->grp_cpus;
+				/* If we have a blank string that
+				 * means it is cleared.
+				 */
+				xfree(rec->grp_tres);
+				if (object->grp_tres[0]) {
+					rec->grp_tres = object->grp_tres;
+					object->grp_tres = NULL;
+				}
 			}
+
+			if (object->grp_tres_mins) {
+				xfree(rec->grp_tres_mins);
+				if (object->grp_tres_mins[0]) {
+					rec->grp_tres_mins =
+						object->grp_tres_mins;
+					object->grp_tres_mins = NULL;
+				}
+			}
+
+			if (object->grp_tres_run_mins) {
+				xfree(rec->grp_tres_run_mins);
+				if (object->grp_tres_run_mins[0]) {
+					rec->grp_tres_run_mins =
+						object->grp_tres_run_mins;
+					object->grp_tres_run_mins = NULL;
+				}
+			}
+
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
 			if (object->grp_mem != NO_VAL) {
@@ -4033,19 +4063,42 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				rec->grp_wall = object->grp_wall;
 			}
 
-			if (object->max_cpu_mins_pj != (uint64_t)NO_VAL)
-				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
-			if (object->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
-				rec->max_cpu_run_mins_pu =
-					object->max_cpu_run_mins_pu;
-			if (object->max_cpus_pj != NO_VAL) {
+			if (object->max_tres_pj) {
 				update_jobs = true;
-				rec->max_cpus_pj = object->max_cpus_pj;
+				xfree(rec->max_tres_pj);
+				if (object->max_tres_pj[0]) {
+					rec->max_tres_pj = object->max_tres_pj;
+					object->max_tres_pj = NULL;
+				}
 			}
-			if (object->max_cpus_pu != NO_VAL) {
+
+			if (object->max_tres_pu) {
 				update_jobs = true;
-				rec->max_cpus_pu = object->max_cpus_pu;
+				xfree(rec->max_tres_pu);
+				if (object->max_tres_pu[0]) {
+					rec->max_tres_pu = object->max_tres_pu;
+					object->max_tres_pu = NULL;
+				}
 			}
+
+			if (object->max_tres_mins_pj) {
+				xfree(rec->max_tres_mins_pj);
+				if (object->max_tres_mins_pj[0]) {
+					rec->max_tres_mins_pj =
+						object->max_tres_mins_pj;
+					object->max_tres_mins_pj = NULL;
+				}
+			}
+
+			if (object->max_tres_run_mins_pu) {
+				xfree(rec->max_tres_run_mins_pu);
+				if (object->max_tres_run_mins_pu[0]) {
+					rec->max_tres_run_mins_pu =
+						object->max_tres_run_mins_pu;
+					object->max_tres_run_mins_pu = NULL;
+				}
+			}
+
 			if (object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
 			if (object->max_nodes_pj != NO_VAL) {
@@ -4064,8 +4117,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				rec->max_wall_pj = object->max_wall_pj;
 			}
 
-			if (object->min_cpus_pj != NO_VAL)
-				rec->min_cpus_pj = object->min_cpus_pj;
+			if (object->min_tres_pj) {
+				xfree(rec->min_tres_pj);
+				if (object->min_tres_pj[0]) {
+					rec->min_tres_pj = object->min_tres_pj;
+					object->min_tres_pj = NULL;
+				}
+			}
 
 			if (object->preempt_bitstr) {
 				if (rec->preempt_bitstr)

@@ -776,13 +776,6 @@ typedef struct {
 	uint32_t flags; /* flags for various things to enforce or
 			   override other limits */
 	uint32_t grace_time; /* preemption grace time */
-	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
-				* running under this qos can run for */
-	uint64_t grp_cpu_run_mins; /* max number of cpu minutes all jobs
-				    * running under this qos can
-				    * having running at one time */
-	uint32_t grp_cpus; /* max number of cpus this qos
-			      can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
 	uint32_t grp_mem; /* max amount of memory this qos
@@ -791,17 +784,55 @@ typedef struct {
 			       can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
 				   * one time */
+	char *grp_tres;            /* max number of tres ths qos can
+				    * allocate at one time */
+	uint64_t *grp_tres_ctld;   /* grp_tres broken out in an array
+				    * based off the ordering of the total
+				    * number of TRES in the system
+				    * (DON'T PACK) */
+	char *grp_tres_mins;       /* max number of tres minutes this
+				    * qos can run for */
+	uint64_t *grp_tres_mins_ctld; /* grp_tres_mins broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system
+				       * (DON'T PACK) */
+	char *grp_tres_run_mins;   /* max number of tres minutes this
+				    * qos can have running at one time */
+	uint64_t *grp_tres_run_mins_ctld; /* grp_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	uint64_t max_cpu_mins_pj; /* max number of cpu mins a job can
-				   * use with this qos */
-	uint64_t max_cpu_run_mins_pu; /* max number of cpu mins a user can
-				       * allocate at a given time when
-				       * using this qos (Not yet valid option) */
-	uint32_t max_cpus_pj; /* max number of cpus a job can
-			       * allocate with this qos */
-	uint32_t max_cpus_pu; /* max number of cpus a user can
-			       * allocate with this qos at one time */
+	char *max_tres_mins_pj;    /* max number of cpu seconds this
+				    * qos can have per job */
+	uint64_t *max_tres_mins_ctld; /* max_tres_mins broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_run_mins_pu;   /* max number of cpu minutes this
+				       * qos can
+				       * having running at one time */
+	uint64_t *max_tres_run_mins_pu_ctld; /* max_tres_run_mins_pu
+					      * broken out in an array
+					      * based off the ordering
+					      * of the total number of TRES in
+					      * the system
+					      * (DON'T PACK) */
+	char *max_tres_pj;         /* max number of cpus this
+				    * qos can allocate per job */
+	uint64_t *max_tres_pj_ctld;   /* max_tres_pj broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_pu;         /* max number of tres this
+				    * QOS can allocate per user */
+	uint64_t *max_tres_pu_ctld;   /* max_tres broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
 	uint32_t max_nodes_pj; /* max number of nodes a job can
@@ -812,8 +843,12 @@ typedef struct {
 					submit with this qos at once */
 	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
-	uint32_t min_cpus_pj; /* min number of cpus a job can
-			       * allocate with this qos */
+	char *min_tres_pj; /* min number of tres a job can
+			    * allocate with this qos */
+	uint64_t *min_tres_pj_ctld;   /* min_tres_pj broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 
 	char *name;
 	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */

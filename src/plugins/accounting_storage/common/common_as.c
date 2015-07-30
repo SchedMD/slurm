@@ -219,12 +219,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		/* We are going to send these to the slurmctld's so
 		   lets set up the correct limits to INFINITE instead
 		   of NO_VAL */
-		if (qos->grp_cpu_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpus == NO_VAL)
-			qos->grp_cpus = INFINITE;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
 		if (qos->grp_mem == NO_VAL)
@@ -236,14 +230,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		if (qos->grp_wall == NO_VAL)
 			qos->grp_wall = INFINITE;
 
-		if (qos->max_cpu_mins_pj == (uint64_t)NO_VAL)
-			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (qos->max_cpu_run_mins_pu == (uint64_t)NO_VAL)
-			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
-		if (qos->max_cpus_pj == NO_VAL)
-			qos->max_cpus_pj = INFINITE;
-		if (qos->max_cpus_pu == NO_VAL)
-			qos->max_cpus_pu = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
 		if (qos->max_nodes_pj == NO_VAL)

@@ -551,27 +551,27 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grace_time", "int unsigned default NULL" },
 		{ "max_jobs_per_user", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
-		{ "max_cpus_per_job", "int default NULL" },
-		{ "max_cpus_per_user", "int default NULL" },
+		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_pu", "text not null default ''" },
+		{ "max_tres_mins_pj", "text not null default ''" },
+		{ "max_tres_run_mins_pu", "text not null default ''" },
+		{ "min_tres_pj", "text not null default ''" },
 		{ "max_nodes_per_job", "int default NULL" },
 		{ "max_nodes_per_user", "int default NULL" },
 		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_mins_per_job", "bigint default NULL" },
-		{ "max_cpu_run_mins_per_user", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
-		{ "grp_cpus", "int default NULL" },
+		{ "grp_tres", "text not null default ''" },
+		{ "grp_tres_mins", "text not null default ''" },
+		{ "grp_tres_run_mins", "text not null default ''" },
 		{ "grp_mem", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
-		{ "grp_cpu_mins", "bigint default NULL" },
-		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "preempt", "text not null default ''" },
 		{ "preempt_mode", "int default 0" },
 		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
-		{ "min_cpus_per_job", "int unsigned default 1 not null" },
 		{ NULL, NULL}
 	};
 
@@ -2252,6 +2252,7 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 	 * after the first slurmdb_combine_tres_strings to be put in
 	 * the database.
 	 */
+	xfree(*out); /* just to make sure */
 	*out = xstrdup(mod);
 	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
 	/* let the slurmctld know we removed limits,
