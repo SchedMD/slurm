@@ -637,56 +637,52 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		return rc;
 
 	/* for validation we don't need to look at
-	 * qos_ptr->grp_cpu_mins.
+	 * qos_ptr->grp_tres_mins.
 	 */
-	qos_max_cpus_limit =
-		MIN(qos_ptr->grp_cpus, qos_ptr->max_cpus_pu);
-	qos_out_max_cpus_limit =
-		MIN(qos_out_ptr->grp_cpus, qos_out_ptr->max_cpus_pu);
 
-	if ((acct_policy_limit_set->max_tres[TRES_ARRAY_CPU] == ADMIN_SET_LIMIT)
-	    || (qos_out_max_cpus_limit != INFINITE)
-	    || (qos_max_cpus_limit == INFINITE)
-	    || (update_call &&
-		(job_desc->tres_req_cnt[TRES_ARRAY_CPU] == (uint64_t)NO_VAL))) {
-		/* no need to check/set */
-
-	} else if (strict_checking &&
-		   (job_desc->tres_req_cnt[TRES_ARRAY_CPU]
-		    != (uint64_t)NO_VAL)) {
-
-		if (qos_out_ptr->max_cpus_pu == INFINITE)
-			qos_out_ptr->max_cpus_pu = qos_ptr->max_cpus_pu;
-		if (qos_out_ptr->grp_cpus == INFINITE)
-			qos_out_ptr->grp_cpus = qos_ptr->grp_cpus;
-
-		if (job_desc->tres_req_cnt[TRES_ARRAY_CPU] >
-		    qos_ptr->max_cpus_pu) {
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   job_desc->tres_req_cnt,
+					   qos_ptr->grp_tres_ctld,
+					   qos_ptr->max_tres_pu_ctld,
+					   qos_out_ptr->grp_tres_ctld,
+					   qos_out_ptr->max_tres_pu_ctld,
+					   acct_policy_limit_set->max_tres,
+					   strict_checking, 1)) {
+		if (job_desc->tres_req_cnt[tres_pos] >
+		    qos_ptr->max_tres_pu_ctld[tres_pos]) {
 			if (reason)
 				*reason = WAIT_QOS_MAX_CPU_PER_USER;
 
 			debug2("job submit for user %s(%u): "
-			       "min cpu request %"PRIu64" exceeds "
-			       "per-user max cpu limit %u for qos '%s'",
+			       "min tres(%s%s%s) request %"PRIu64" exceeds "
+			       "per-user max tres limit %"PRIu64" for qos '%s'",
 			       user_name,
 			       job_desc->user_id,
-			       job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-			       qos_ptr->max_cpus_pu,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       job_desc->tres_req_cnt[tres_pos],
+			       qos_ptr->max_tres_pu_ctld[tres_pos],
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
-		} else if (job_desc->tres_req_cnt[TRES_ARRAY_CPU] >
-			   qos_ptr->grp_cpus) {
+		} else if (job_desc->tres_req_cnt[tres_pos] >
+			   qos_ptr->grp_tres_ctld[tres_pos]) {
 			if (reason)
 				*reason = WAIT_QOS_GRP_CPU;
 
 			debug2("job submit for user %s(%u): "
-			       "min cpu request %"PRIu64" exceeds "
-			       "group max cpu limit %u for qos '%s'",
+			       "min tres(%s%s%s) request %"PRIu64" exceeds "
+			       "group max tres limit %"PRIu64" for qos '%s'",
 			       user_name,
 			       job_desc->user_id,
-			       job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-			       qos_ptr->grp_cpus,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       job_desc->tres_req_cnt[tres_pos],
+			       qos_ptr->grp_tres_ctld[tres_pos],
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
