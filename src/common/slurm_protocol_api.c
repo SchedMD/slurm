@@ -4238,7 +4238,27 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 
 extern void convert_num_unit(double num, char *buf, int buf_size, int orig_type)
 {
-	convert_num_unit2(num, buf, buf_size, orig_type, 1024, true);
+        int unit;
+
+        switch (orig_type) {
+                case UNIT_NONE:
+                case UNIT_KILO:
+                case UNIT_UNKNOWN:
+                        unit = 1024;
+                        break;
+                case UNIT_MEGA:
+                        unit = 1024 * 1024;
+                        break;
+                case UNIT_GIGA:
+                case UNIT_TERA:
+                case UNIT_PETA:
+                        /* For TERA e PETA an int is not enough
+                         */
+                        unit = 1024 * 1024 * 1024;
+                        break;
+        }
+
+	convert_num_unit2(num, buf, buf_size, orig_type, unit, true);
 }
 
 extern int revert_num_unit(const char *buf)

@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     and --distribution=arbitrary.
  -- Fix segfault in Bluegene setups where RebootQOSList is defined in
     bluegene.conf and accounting is not setup.
+ -- Fix a bug in the unit conversion routine, specify the correct
+    divisor based on the selected unit, KILO, MEGA or GIGA.
 
 * Changes in Slurm 14.11.8
 ==========================
