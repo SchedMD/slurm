@@ -942,25 +942,31 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		}
 	}
 
-	if (strict_checking && (qos_out_ptr->min_cpus_pj == INFINITE)
-	    && (qos_ptr->min_cpus_pj != INFINITE)) {
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   job_desc->tres_req_cnt,
+					   NULL,
+					   qos_ptr->min_tres_pj_ctld,
+					   NULL,
+					   qos_out_ptr->min_tres_pj_ctld,
+					   acct_policy_limit_set->max_tres,
+					   strict_checking, 0)) {
+		if (reason)
+			*reason = WAIT_QOS_MIN_CPUS;
 
-		qos_out_ptr->min_cpus_pj = qos_ptr->min_cpus_pj;
-
-		if (job_desc->tres_req_cnt[TRES_ARRAY_CPU] <
-		    qos_ptr->min_cpus_pj) {
-			if (reason)
-				*reason = WAIT_QOS_MIN_CPUS;
-			debug2("job submit for user %s(%u): "
-			       "min cpus %"PRIu64" below "
-			       "qos min %u",
-			       user_name,
-			       job_desc->user_id,
-			       job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-			       qos_ptr->min_cpus_pj);
-			rc = false;
-			goto end_it;
-		}
+		debug2("job submit for user %s(%u): "
+		       "min tres(%s%s%s) request %"PRIu64" exceeds "
+		       "per-job max tres limit %"PRIu64" for qos '%s'",
+		       user_name,
+		       job_desc->user_id,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+		       job_desc->tres_req_cnt[tres_pos],
+		       qos_ptr->min_tres_pj_ctld[tres_pos],
+		       qos_ptr->name);
+		rc = false;
+		goto end_it;
 	}
 
 end_it:
