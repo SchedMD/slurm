@@ -484,6 +484,137 @@ static bool _validate_tres_limits_for_assoc(
 	return true;
 }
 
+/*
+ * _validate_tres_limits_for_qos - validate the tres requested against limits
+ * of an association as well as qos skipping any limit an admin set
+ *
+ * OUT - tres_pos - if false is returned position in array of failed limit
+ * IN - job_tres_array - count of various tres in use
+ * IN - assoc_tres_array - limits on the association
+ * IN - qos_tres_array - limits on the qos
+ * IN - acct_policy_limit_set_array - limits that have been overridden
+ *                                    by an admin
+ * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN update_call - If this is an update or a create call
+ *
+ * RET - True if no limit is violated, false otherwise with tres_pos
+ * being set to the position of the failed limit.
+ */
+static bool _validate_tres_limits_for_qos(
+	int *tres_pos,
+	uint64_t *job_tres_array,
+	uint64_t *grp_tres_array,
+	uint64_t *max_tres_array,
+	uint64_t *out_grp_tres_array,
+	uint64_t *out_max_tres_array,
+	uint16_t *admin_set_limit_tres_array,
+	bool strict_checking, bool max_limit)
+{
+	uint64_t max_tres_limit, out_max_tres_limit;
+	int i;
+
+	if (!strict_checking)
+		return true;
+
+	for (i = 0; i < g_tres_count; i++) {
+		(*tres_pos) = i;
+		if (grp_tres_array) {
+			max_tres_limit = MIN(grp_tres_array[i],
+					     max_tres_array[i]);
+			out_max_tres_limit = MIN(out_grp_tres_array[i],
+						 out_max_tres_array[i]);
+		} else {
+			max_tres_limit = max_tres_array[i];
+			out_max_tres_limit = out_max_tres_array[i];
+		}
+
+		/* we don't need to look at this limit */
+		if ((admin_set_limit_tres_array[i] == (uint64_t)ADMIN_SET_LIMIT)
+		    || (out_max_tres_limit != (uint64_t)INFINITE)
+		    || (max_tres_limit == (uint64_t)INFINITE)
+		    || (job_tres_array[i] == (uint64_t)NO_VAL))
+			continue;
+
+		out_max_tres_array[i] = max_tres_array[i];
+
+		if (out_grp_tres_array) {
+			if (out_grp_tres_array[i] == (uint64_t)INFINITE)
+				out_grp_tres_array[i] = grp_tres_array[i];
+
+			if (max_limit) {
+				if (job_tres_array[i] > grp_tres_array[i])
+					return false;
+			}  else if (job_tres_array[i] < grp_tres_array[i])
+				return false;
+		}
+
+		if (max_limit) {
+			if (job_tres_array[i] > max_tres_array[i])
+				return false;
+		} else if (job_tres_array[i] < max_tres_array[i])
+			return false;
+	}
+
+	return true;
+}
+
+/*
+ * _validate_tres_time_limits_for_qos - validate the tres requested
+ * against limits of an association as well as qos skipping any limit
+ * an admin set
+ *
+ * OUT - tres_pos - if false is returned position in array of failed limit
+ * IN - job_tres_array - count of various tres in use
+ * IN - assoc_tres_array - limits on the association
+ * IN - qos_tres_array - limits on the qos
+ * IN - acct_policy_limit_set_array - limits that have been overridden
+ *                                    by an admin
+ * IN strick_checking - If a limit needs to be enforced now or not.
+ * IN update_call - If this is an update or a create call
+ *
+ * RET - True if no limit is violated, false otherwise with tres_pos
+ * being set to the position of the failed limit.
+ */
+static bool _validate_tres_time_limits_for_qos(
+	int *tres_pos,
+	uint32_t *time_limit_in,
+	uint32_t part_max_time,
+	uint64_t *job_tres_array,
+	uint64_t *max_tres_array,
+	uint64_t *out_max_tres_array,
+	uint16_t *limit_set_time,
+	bool strict_checking)
+{
+	int i;
+	uint32_t max_time_limit;
+
+	if (!strict_checking || (*limit_set_time) == ADMIN_SET_LIMIT)
+		return true;
+
+	for (i = 0; i < g_tres_count; i++) {
+		(*tres_pos) = i;
+
+		if ((out_max_tres_array[i] != (uint64_t)INFINITE) ||
+		    (max_tres_array[i] == (uint64_t)INFINITE) ||
+		    (job_tres_array[i] == (uint64_t)NO_VAL))
+			continue;
+
+		max_time_limit = (uint32_t)(max_tres_array[i] /
+					    job_tres_array[i]);
+
+		_set_time_limit(time_limit_in,
+				part_max_time, max_time_limit,
+				limit_set_time);
+
+		out_max_tres_array[i] = max_tres_array[i];
+
+		if ((*time_limit_in) > max_time_limit)
+			return false;
+	}
+
+	return true;
+}
+
 static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				struct part_record *part_ptr,
 				slurmdb_qos_rec_t *qos_ptr,
