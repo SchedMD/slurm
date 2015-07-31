@@ -627,11 +627,10 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				int job_cnt,
 				bool strict_checking)
 {
-	uint32_t qos_max_cpus_limit = INFINITE;
 	uint32_t qos_max_nodes_limit = INFINITE;
-	uint32_t qos_out_max_cpus_limit = INFINITE;
 	uint32_t qos_out_max_nodes_limit = INFINITE;
 	int rc = true;
+	int tres_pos = 0;
 
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
