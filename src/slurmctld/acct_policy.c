@@ -1545,7 +1545,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call)
 {
-	uint32_t time_limit;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr = assoc_in;
@@ -1796,7 +1795,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (update_call && (job_desc->time_limit == NO_VAL))) {
 			/* no need to check/set */
 		} else {
-			time_limit = assoc_ptr->max_wall_pj;
+			uint32_t time_limit = assoc_ptr->max_wall_pj;
 			if (job_desc->time_limit == NO_VAL) {
 				if (part_ptr->max_time == INFINITE)
 					job_desc->time_limit = time_limit;
