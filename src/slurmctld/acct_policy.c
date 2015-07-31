@@ -393,6 +393,20 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	assoc_mgr_unlock(&locks);
 }
 
+static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
+			    uint32_t limit_max_time, uint16_t *limit_set_time)
+{
+	if ((*time_limit) == NO_VAL) {
+		if (part_max_time == INFINITE)
+			(*time_limit) = limit_max_time;
+		else
+			(*time_limit) = MIN(limit_max_time, part_max_time);
+
+		(*limit_set_time) = 1;
+	} else if ((*limit_set_time) && ((*time_limit) > limit_max_time))
+		(*time_limit) = limit_max_time;
+}
+
 static void _qos_alter_job(struct job_record *job_ptr,
 			   slurmdb_qos_rec_t *qos_ptr,
 			   uint64_t used_cpu_run_secs,
@@ -429,7 +443,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 {
 	uint32_t qos_max_cpus_limit = INFINITE;
 	uint32_t qos_max_nodes_limit = INFINITE;
-	uint32_t qos_time_limit = INFINITE;
 	uint32_t qos_out_max_cpus_limit = INFINITE;
 	uint32_t qos_out_max_nodes_limit = INFINITE;
 	int rc = true;
@@ -582,28 +595,88 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		}
 	}
 
-
-	/* for validation we don't need to look at
-	 * qos_ptr->grp_wall. It is checked while the job is running.
+	/* If DenyOnLimit is set we do need to check
+	 * qos_ptr->max_cpu_mins_pj as well as
+	 * qos_ptr->max_wall_pj and qos_ptr->grp_wall (at
+	 * least make sure it isn't above the grp limit)
+	 * otherwise you end up in PENDING on a QOSLimit.
 	 */
+	if (strict_checking &&
+	    (acct_policy_limit_set->time != ADMIN_SET_LIMIT)) {
+		if ((job_desc->min_cpus != NO_VAL) &&
+		    (qos_out_ptr->max_cpu_mins_pj == (uint64_t)INFINITE) &&
+		    (qos_ptr->max_cpu_mins_pj != (uint64_t)INFINITE)) {
+			uint32_t qos_time_limit =
+				(uint32_t)(qos_ptr->max_cpu_mins_pj /
+					   (uint64_t)job_desc->min_cpus);
 
+			_set_time_limit(&job_desc->time_limit,
+					part_ptr->max_time, qos_time_limit,
+					&acct_policy_limit_set->time);
 
-	/* we do need to check qos_ptr->max_cpu_mins_pj.
-	 * if you can end up in PENDING QOSJobLimit, you need
-	 * to validate it if DenyOnLimit is set
-	 */
-	if (((job_desc->min_cpus  != NO_VAL) ||
-	     (job_desc->min_nodes != NO_VAL)) &&
-	    (qos_out_ptr->max_cpu_mins_pj == INFINITE) &&
-	    (qos_ptr->max_cpu_mins_pj != INFINITE)) {
-		uint32_t cpu_cnt = job_desc->min_nodes;
+			qos_out_ptr->max_cpu_mins_pj = qos_ptr->max_cpu_mins_pj;
 
-		qos_out_ptr->max_cpu_mins_pj = qos_ptr->max_cpu_mins_pj;
+			if (job_desc->time_limit > qos_time_limit) {
+				if (reason)
+					*reason = WAIT_QOS_MAX_CPU_MINS_PER_JOB;
+				debug2("job submit for user %s(%u): "
+				       "cpu time limit %"PRIu64" "
+				       "exceeds qos max per-job "
+				       "%"PRIu64"",
+				       user_name, job_desc->user_id,
+				       (uint64_t)(job_desc->time_limit *
+						  job_desc->min_cpus),
+				       qos_ptr->max_cpu_mins_pj);
+				rc = false;
+				goto end_it;
+			}
+		}
 
-		if ((job_desc->min_nodes == NO_VAL) ||
-		    (job_desc->min_cpus > job_desc->min_nodes))
-			cpu_cnt = job_desc->min_cpus;
-		qos_time_limit = qos_ptr->max_cpu_mins_pj / cpu_cnt;
+		if ((qos_out_ptr->max_wall_pj == INFINITE) &&
+		    (qos_ptr->max_wall_pj != INFINITE)) {
+			_set_time_limit(&job_desc->time_limit,
+					part_ptr->max_time,
+					qos_ptr->max_wall_pj,
+					&acct_policy_limit_set->time);
+
+			qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
+
+			if (job_desc->time_limit > qos_ptr->max_wall_pj) {
+				if (reason)
+					*reason = WAIT_QOS_MAX_WALL_PER_JOB;
+				debug2("job submit for user %s(%u): "
+				       "time limit %u exceeds qos max %u",
+				       user_name,
+				       job_desc->user_id,
+				       job_desc->time_limit,
+				       qos_ptr->max_wall_pj);
+				rc = false;
+				goto end_it;
+			}
+		}
+
+		if ((qos_out_ptr->grp_wall == INFINITE) &&
+		    (qos_ptr->grp_wall != INFINITE)) {
+			_set_time_limit(&job_desc->time_limit,
+					part_ptr->max_time,
+					qos_ptr->grp_wall,
+					&acct_policy_limit_set->time);
+
+			qos_out_ptr->grp_wall = qos_ptr->grp_wall;
+
+			if (job_desc->time_limit > qos_ptr->grp_wall) {
+				if (reason)
+					*reason = WAIT_ASSOC_GRP_WALL;
+				debug2("job submit for user %s(%u): "
+				       "time limit %u exceeds qos grp max %u",
+				       user_name,
+				       job_desc->user_id,
+				       job_desc->time_limit,
+				       qos_ptr->grp_wall);
+				rc = false;
+				goto end_it;
+			}
+		}
 	}
 
 	if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
@@ -677,46 +750,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			       user_name,
 			       job_desc->user_id,
 			       qos_ptr->max_submit_jobs_pu);
-			rc = false;
-			goto end_it;
-		}
-	}
-
-	if ((acct_policy_limit_set->time == ADMIN_SET_LIMIT)
-	    || (qos_out_ptr->max_wall_pj != INFINITE)
-	    || (qos_ptr->max_wall_pj == INFINITE)
-	    || (update_call && (job_desc->time_limit == NO_VAL))) {
-		/* no need to check/set */
-	} else {
-
-		qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
-
-		if (qos_time_limit > qos_ptr->max_wall_pj)
-			qos_time_limit = qos_ptr->max_wall_pj;
-	}
-
-	if (qos_time_limit != INFINITE) {
-		if (job_desc->time_limit == NO_VAL) {
-			if (part_ptr->max_time == INFINITE)
-				job_desc->time_limit = qos_time_limit;
-			else {
-				job_desc->time_limit =
-					MIN(qos_time_limit,
-					    part_ptr->max_time);
-			}
-			acct_policy_limit_set->time = 1;
-		} else if (acct_policy_limit_set->time &&
-			   job_desc->time_limit > qos_time_limit) {
-			job_desc->time_limit = qos_time_limit;
-		} else if (strict_checking
-			   && job_desc->time_limit > qos_time_limit) {
-			if (reason)
-				*reason = WAIT_QOS_MAX_WALL_PER_JOB;
-			debug2("job submit for user %s(%u): "
-			       "time limit %u exceeds qos max %u",
-			       user_name,
-			       job_desc->user_id,
-			       job_desc->time_limit, qos_time_limit);
 			rc = false;
 			goto end_it;
 		}
