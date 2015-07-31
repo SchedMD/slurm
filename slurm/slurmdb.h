@@ -808,10 +808,10 @@ typedef struct {
 
 	char *max_tres_mins_pj;    /* max number of cpu seconds this
 				    * qos can have per job */
-	uint64_t *max_tres_mins_ctld; /* max_tres_mins broken out in an array
-				       * based off the ordering of the
-				       * total number of TRES in the system
-				       * (DON'T PACK) */
+	uint64_t *max_tres_mins_pj_ctld; /* max_tres_mins broken out in an array
+					  * based off the ordering of the
+					  * total number of TRES in the system
+					  * (DON'T PACK) */
 	char *max_tres_run_mins_pu;   /* max number of cpu minutes this
 				       * qos can
 				       * having running at one time */
