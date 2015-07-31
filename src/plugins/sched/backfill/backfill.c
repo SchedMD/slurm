@@ -1061,8 +1061,11 @@ next_task:
 		later_start = now;
  TRY_LATER:
 		if (slurmctld_config.shutdown_time ||
-		    (difftime(time(NULL), orig_sched_start)>=backfill_interval))
+		    (difftime(time(NULL), orig_sched_start) >=
+		     backfill_interval)) {
+			job_ptr->time_limit = orig_time_limit;
 			break;
+		}
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    (_delta_tv(&start_tv) >= sched_timeout)) {
@@ -1300,6 +1303,7 @@ next_task:
 					job_ptr->start_time = orig_start_time;
 				} else
 					job_ptr->start_time = 0;
+				job_ptr->time_limit = orig_time_limit;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
