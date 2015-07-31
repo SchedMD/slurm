@@ -790,35 +790,30 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	 */
 	if (strict_checking &&
 	    (acct_policy_limit_set->time != ADMIN_SET_LIMIT)) {
-		if ((job_desc->tres_req_cnt[TRES_ARRAY_CPU] !=
-		     (uint64_t)NO_VAL) &&
-		    (qos_out_ptr->max_cpu_mins_pj == (uint64_t)INFINITE) &&
-		    (qos_ptr->max_cpu_mins_pj != (uint64_t)INFINITE)) {
-			uint32_t qos_time_limit =
-				(uint32_t)(qos_ptr->max_cpu_mins_pj /
-					   job_desc->tres_req_cnt[
-						   TRES_ARRAY_CPU]);
+		if (!_validate_tres_time_limits_for_qos(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    qos_ptr->max_tres_mins_pj_ctld,
+			    qos_out_ptr->max_tres_mins_pj_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			debug2("job submit for user %s(%u): "
+			       "tres(%s%s%s) time limit request %"PRIu64" "
+			       "exceeds max per-job limit %"PRIu64" "
+			       "for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       qos_ptr->max_tres_mins_pj_ctld[tres_pos],
+			       qos_ptr->name);
 
-			_set_time_limit(&job_desc->time_limit,
-					part_ptr->max_time, qos_time_limit,
-					&acct_policy_limit_set->time);
-
-			qos_out_ptr->max_cpu_mins_pj = qos_ptr->max_cpu_mins_pj;
-
-			if (job_desc->time_limit > qos_time_limit) {
-				if (reason)
-					*reason = WAIT_QOS_MAX_CPU_MINS_PER_JOB;
-				debug2("job submit for user %s(%u): "
-				       "cpu time limit %"PRIu64" "
-				       "exceeds qos max per-job "
-				       "%"PRIu64"",
-				       user_name, job_desc->user_id,
-				       ((uint64_t)job_desc->time_limit *
-					job_desc->tres_req_cnt[TRES_ARRAY_CPU]),
-				       qos_ptr->max_cpu_mins_pj);
-				rc = false;
-				goto end_it;
-			}
 		}
 
 		if ((qos_out_ptr->max_wall_pj == INFINITE) &&
