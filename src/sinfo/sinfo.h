@@ -102,6 +102,7 @@ typedef struct {
 	uint32_t max_cpu_load;
 
 	uint32_t max_cpus_per_node;
+	uint32_t alloc_memory;
 
 	char *version;
 	char *features;
@@ -124,6 +125,7 @@ typedef struct {
 /* Identify what fields must match for a node's information to be
  * combined into a single sinfo_data entry based upon output format */
 struct sinfo_match_flags {
+	bool alloc_mem_flag;
 	bool avail_flag;
 	bool cpus_flag;
 	bool sockets_flag;

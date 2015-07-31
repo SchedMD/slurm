@@ -1013,10 +1013,8 @@ static void *_thread_per_group_rpc(void *args)
 			/* Not indicative of a real error */
 		case ESLURMD_JOB_NOTRUNNING:
 			/* Not indicative of a real error */
-			debug2("agent processed RPC to node %s: %s",
-			       ret_data_info->node_name,
-			       slurm_strerror(rc));
-
+			debug2("RPC to node %s failed, job not running",
+			       ret_data_info->node_name);
 			thread_state = DSH_DONE;
 			break;
 		default:

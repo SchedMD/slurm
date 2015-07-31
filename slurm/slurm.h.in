@@ -345,9 +345,6 @@ enum job_state_reason {
 	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
 	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
 	WAIT_QOS_TIME_LIMIT,	/* QOS time limit reached */
-	WAIT_POWER_NOT_AVAIL,   /* not enough power available */
-	WAIT_POWER_RESERVED,    /* job is waiting for available power 
-				   because of power reservations */	
 	WAIT_BLOCK_MAX_ERR,     /* BLUEGENE Block has too many cnodes
 				 * in error state to allow more jobs. */
 	WAIT_BLOCK_D_ACTION,    /* BLUEGENE Block is being freed,
@@ -396,7 +393,11 @@ enum job_state_reason {
 	WAIT_MAX_REQUEUE,            /* MAX_BATCH_REQUEUE reached */
 	WAIT_ARRAY_TASK_LIMIT,       /* job array running task limit */
 	WAIT_BURST_BUFFER_RESOURCE,  /* Burst buffer resources */
-	WAIT_BURST_BUFFER_STAGING    /* Burst buffer file stage-in */
+	WAIT_BURST_BUFFER_STAGING,   /* Burst buffer file stage-in */
+	FAIL_BURST_BUFFER_OP,	     /* Burst buffer operation failure */
+	WAIT_POWER_NOT_AVAIL,        /* not enough power available */
+	WAIT_POWER_RESERVED,         /* job is waiting for available power
+				      * because of power reservations */
 };
 
 enum job_acct_types {
@@ -2235,7 +2236,7 @@ typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	uint32_t *core_cnt;	/* Count of cores required */
-	uint32_t duration;	/* duration of reservation in seconds */
+	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint32_t flags;		/* see RESERVE_FLAG_* above */
@@ -4504,7 +4505,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
  *      SLURM BURST BUFFER FUNCTIONS
 \*****************************************************************************/
 
-#define BB_SIZE_IN_NODES	0x1000000000000000
+#define BB_SIZE_IN_NODES	0x8000000000000000
 #define BB_STATE_ALLOCATED	0x0001		/* Cray: bbs_setup started */
 #define BB_STATE_STAGING_IN	0x0002		/* Cray: bbs_data_in started */
 #define BB_STATE_STAGED_IN	0x0003		/* Cray: bbs_data_in complete */
@@ -4547,6 +4548,7 @@ typedef struct {
 	burst_buffer_gres_t *gres_ptr;
 	uint64_t job_size_limit;	/* In bytes or NO_VAL */
 	char *name;			/* Plugin name */
+	uint64_t persist_resv_sz;	/* Space reserved for persistent buffers */
 	uint16_t private_data;		/* limit access to data */
 	uint32_t prio_boost_alloc;	/* job priority boost after staged in */
 	uint32_t prio_boost_use;	/* job priority boost on use */

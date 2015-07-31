@@ -1397,6 +1397,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "BurstBufferResources";
 	case WAIT_BURST_BUFFER_STAGING:
 		return "BurstBufferStageIn";
+	case FAIL_BURST_BUFFER_OP:
+		return "BurstBufferOperation";
 	case WAIT_POWER_NOT_AVAIL:
 		return "PowerNotAvail";
 	case WAIT_POWER_RESERVED:

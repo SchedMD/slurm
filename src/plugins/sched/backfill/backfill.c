@@ -243,6 +243,15 @@ static bool _job_is_completing(void)
 	return completing;
 }
 
+static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
+{
+	job_ptr->time_limit = new_limit;
+	/* reset flag if we have a NO_VAL time_limit */
+	if (job_ptr->time_limit == NO_VAL)
+		job_ptr->limit_set_time = 0;
+
+}
+
 /*
  * _many_pending_rpcs - Determine if slurmctld is busy with many active RPCs
  * RET - True if slurmctld currently has more than SLURMCTLD_THREAD_LIMIT
@@ -1042,6 +1051,7 @@ next_task:
 			part_time_limit = part_ptr->max_time;
 		if (job_ptr->time_limit == NO_VAL) {
 			time_limit = part_time_limit;
+			job_ptr->limit_set_time = 1;
 		} else {
 			if (part_ptr->max_time == INFINITE)
 				time_limit = job_ptr->time_limit;
@@ -1061,14 +1071,17 @@ next_task:
 		later_start = now;
  TRY_LATER:
 		if (slurmctld_config.shutdown_time ||
-		    (difftime(time(NULL), orig_sched_start)>=backfill_interval))
+		    (difftime(time(NULL), orig_sched_start) >=
+		     backfill_interval)) {
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			break;
+		}
 		if (((defer_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
 		    (_delta_tv(&start_tv) >= sched_timeout)) {
 			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: completed yielding locks "
@@ -1123,7 +1136,7 @@ next_task:
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u reservation defer",
 				     job_ptr->job_id);
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
 		}
 		if (start_res > now)
@@ -1177,7 +1190,7 @@ next_task:
 			}
 
 			/* Job can not start until too far in the future */
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			job_ptr->start_time = sched_start + backfill_window;
 			if ((orig_start_time != 0) &&
 			    (orig_start_time < job_ptr->start_time)) {
@@ -1208,7 +1221,7 @@ next_task:
 
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (orig_start_time != 0)  /* Can start in other part */
 				job_ptr->start_time = orig_start_time;
 			else
@@ -1238,7 +1251,7 @@ next_task:
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority);
 			last_job_update = now;
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			later_start = 0;
 		} else if (job_ptr->start_time <= now) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
@@ -1250,10 +1263,12 @@ next_task:
 					acct_policy_alter_job(
 						job_ptr, comp_time_limit);
 					job_ptr->time_limit = comp_time_limit;
+					job_ptr->limit_set_time = 1;
 				} else {
 					acct_policy_alter_job(
 						job_ptr, orig_time_limit);
-					job_ptr->time_limit = orig_time_limit;
+					_set_job_time_limit(job_ptr,
+							    orig_time_limit);
 				}
 			} else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
@@ -1263,10 +1278,10 @@ next_task:
 			} else if (orig_time_limit == NO_VAL) {
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
+				job_ptr->limit_set_time = 1;
 			} else {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
-				job_ptr->time_limit = orig_time_limit;
-
+				_set_job_time_limit(job_ptr, orig_time_limit);
 			}
 			/* Only set end_time if start_time is set,
 			 * or else end_time will be small (ie. 1969). */
@@ -1300,6 +1315,7 @@ next_task:
 					job_ptr->start_time = orig_start_time;
 				} else
 					job_ptr->start_time = 0;
+				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -1310,7 +1326,7 @@ next_task:
 				/* Drop through and reserve these resources.
 				 * Likely due to state changes during sleep.
 				 * Make best-effort based upon original state */
-				job_ptr->time_limit = orig_time_limit;
+				_set_job_time_limit(job_ptr, orig_time_limit);
 				later_start = 0;
 			} else {
 				/* Started this job, move to next one */
@@ -1342,7 +1358,7 @@ next_task:
 				continue;
 			}
 		} else {
-			job_ptr->time_limit = orig_time_limit;
+			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
 		start_time  = job_ptr->start_time;

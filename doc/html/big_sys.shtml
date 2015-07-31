@@ -102,6 +102,12 @@ will both make for easier administration and better performance.</p>
 
 <h2>Timers</h2>
 
+<p>The <i>EioTimeout</i> configuration parameter controls how long the srun
+command will wait for the slurmstepd to close the TCP/IP connection used to
+relay data between the user application and srun when the user application
+terminates. The default value is 60 seconds. Larger systems and/or slower
+networks may need a higher value.</p>
+
 <p>If a high throughput of jobs is anticipated (i.e. large numbers of jobs
 with brief execution times) then configure <i>MinJobAge</i> to the smallest
 interval practical for your environment. <i>MinJobAge</i> specifies the
@@ -159,6 +165,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 13 November 2013</p>
+<p style="text-align:center;">Last modified 22 July 2015</p>
 
 <!--#include virtual="footer.txt"-->

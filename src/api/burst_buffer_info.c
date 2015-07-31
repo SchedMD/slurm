@@ -251,9 +251,11 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		      burst_buffer_ptr->job_size_limit);
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->user_size_limit);
+	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
+		      burst_buffer_ptr->persist_resv_sz);
 	snprintf(tmp_line, sizeof(tmp_line),
-		"JobSizeLimit=%s UserSizeLimit=%s",
-		j_sz_buf, u_sz_buf);
+		"JobSizeLimit=%s UserSizeLimit=%s PersistResvSize=%s",
+		j_sz_buf, u_sz_buf, t_sz_buf);
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");

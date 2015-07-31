@@ -674,7 +674,7 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 	if (got_alloc) {
 		cleanup_allocation();
 
-		/* send the controller we were cancelled */
+		/* Tell slurmctld that we were cancelled */
 		if (job->state >= SRUN_JOB_CANCELLED)
 			slurm_complete_job(job->jobid, NO_VAL);
 		else

@@ -253,6 +253,160 @@ size of field
 .RE
 
 .TP
+\fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+Specify the information to be displayed.
+Also see the \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+option described below (which supports greater flexibility in formatting, but
+does not support access to all fields because we ran out of letters).
+Requests a comma separated list of job information to be displayed.
+
+.IP
+The format of each field is "type[:[.]size]"
+.RS
+.TP 8
+\fIsize\fR
+is the minimum field size.
+If no size is specified, 20 characters will be allocated to print the information.
+.TP
+\fI .\fR
+indicates the output should be right justified and size must be specified.
+By default, output is left justified.
+.RE
+
+.IP
+Valid \fItype\fR specifications include:
+.RS
+.TP 6
+\fBall\fR
+Print all fields available in the \-o format for this data type with a
+vertical bar separating each field.
+.TP
+\fBallocmem\fR
+Prints the amount of allocated memory on a node.
+.TP
+\fBallocnodes\fR
+Allowed allocating nodes.
+.TP
+\fBavailable\fR
+State/availability of a partition.
+.TP
+\fBcpus\fR
+Number of CPUs per node.
+.TP
+\fBcpusload\fR
+CPU load of a node.
+.TP
+\fBcpusstate\fR
+Number of CPUs by state in the format
+"allocated/idle/other/total". Do not use this with a node
+state option ("%t" or "%T") or the different node states will
+be placed on separate lines.
+.TP
+\fBcores\fR
+Number of cores per socket.
+.TP
+\fBdefaulttime\fR
+Default time for any job in the format "days\-hours:minutes:seconds".
+\fBdisk\fR
+Size of temporary disk space per node in megabytes.
+.TP
+\fBfeatures\fR
+Features associated with the nodes.
+.TP
+\fBgroups\fR
+Groups which may use the nodes.
+.TP
+\fBgres\fR
+Generic resources (gres) associated with the nodes.
+.TP
+\fBmaxcpuspernode\fR
+The max number of CPUs per node available to jobs in the partition.
+.TP
+\fBmemory\fR
+Size of memory per node in megabytes.
+.TP
+\fBnodes\fR
+Number of nodes.
+.TP
+\fBnodeaddr\fR
+List of node communication addresses.
+.TP
+\fBnodeai\fR
+Number of nodes by state in the format "allocated/idle".
+Do not use this with a node state option ("%t" or "%T") or
+the different node states will be placed on separate lines.
+.TP
+\fBnodeaiot\fR
+Number of nodes by state in the format
+"allocated/idle/other/total".  Do not use this with a node
+state option ("%t" or "%T") or the different node states will
+be placed on separate lines.
+.TP
+\fBnodehost\fR
+List of node hostnames.
+.TP
+\fBnodelist\fR
+List of node names.
+.TP
+\fBpartition\fR
+Partition name followed by "*" for the default partition, also see \fB%R\fR.
+.TP
+\fBpartitionname\fR
+Partition name, also see \fB%P\fR.
+.TP
+\fBpreemptmode\fR
+PreemptionMode.
+.TP
+\fBpriority\fR
+Partition scheduling priority.
+.TP
+\fBreason\fR
+The reason a node is unavailable (down, drained, or draining states).
+.TP
+\fBroot\fR
+Only user root may initiate jobs, "yes" or "no".
+.TP
+\fBshare\fR
+Jobs may share nodes, "yes", "no", or "force".
+.TP
+\fBsize\fR
+Maximum job size in nodes.
+.TP
+\fBstatecompact\fR
+State of nodes, compact form.
+.TP
+\fBstatelong\fR
+State of nodes, extended form.
+.TP
+\fBsockets\fR
+Number of sockets per node.
+.TP
+\fBsocketcorethread\fR
+Extended processor information: number of sockets, cores, threads (S:C:T) per node.
+.TP
+\fBtime\fR
+Maximum time for any job in the format "days\-hours:minutes:seconds".
+.TP
+\fBtimestamp\fR
+Print the timestamp of the reason a node is unavailable.
+.TP
+\fBthreads\fR
+Number of threads per core.
+.TP
+\fBuser\fR
+Print the user name of who set the reason a node is unavailable.
+.TP
+\fBuserlong\fR
+Print the user name and uid of who set the reason a node is unavailable.
+.TP
+\fBversion\fR
+Print the version of the running slurmd daemon.
+.TP
+\fBweight\fR
+Scheduling weight of the nodes.
+.RE
+
+.TP
 \fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
 Print information only about the specified partition(s). Multiple partitions
 are separated by commas.

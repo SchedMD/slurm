@@ -734,6 +734,8 @@ static void _sort_hostlist(List sinfo_list)
 
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
+	uint32_t tmp = 0;
+
 	if (params.match_flags.hostnames_flag ||
 	    params.match_flags.node_addr_flag)
 		return false;
@@ -771,6 +773,14 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		if (xstrcmp(state1, state2))
 			return false;
 	}
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_MEM_ALLOC,
+				     NODE_STATE_ALLOCATED,
+				     &tmp);
+	if (params.match_flags.alloc_mem_flag &&
+	    (tmp != sinfo_ptr->alloc_memory))
+		return false;
 
 	/* If no need to exactly match sizes, just return here
 	 * otherwise check cpus, disk, memory and weigth individually */
@@ -894,14 +904,14 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			  uint32_t node_scaling)
 {
-	uint32_t base_state;
+	uint32_t base_state, alloc_mem = 0;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
 	/* since node_scaling could be less here, we need to use the
 	 * global node scaling which should never change. */
 	int single_node_cpus = (node_ptr->cpus / g_node_scaling);
 
- 	base_state = node_ptr->node_state & NODE_STATE_BASE;
+	base_state = node_ptr->node_state & NODE_STATE_BASE;
 
 	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
@@ -992,6 +1002,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ERROR,
 				     &error_cpus);
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_MEM_ALLOC,
+				     NODE_STATE_ALLOCATED,
+				     &alloc_mem);
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG) {
 		if (!params.match_flags.state_flag &&
@@ -1045,10 +1059,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 	sinfo_ptr->nodes_total += total_nodes;
 
-
 	sinfo_ptr->cpus_alloc += used_cpus;
 	sinfo_ptr->cpus_total += total_cpus;
 	total_cpus -= used_cpus + error_cpus;
+	sinfo_ptr->alloc_memory = alloc_mem;
 
 	if (error_cpus) {
 		sinfo_ptr->cpus_idle += total_cpus;

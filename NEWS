@@ -23,6 +23,12 @@ documents those changes that are of interest to users and administrators.
     original unit types.
  -- Fix spelling of node_rescrs to node_resrcs in Perl API.
  -- Fix node state race condition, UNKNOWN->IDLE without configuration info.
+ -- Cray: Disable LDAP references from slurmstepd on job launch due for
+    improved scalability.
+ -- Remove srun "read header error" due to application termination race
+    condition.
+ -- Optimize sacct queries with additional db indexes.
+ -- Add SLURM_TOPO_LEN env variable for scontrol show topology
 
 * Changes in Slurm 15.08.0pre6
 ==============================
@@ -339,6 +345,7 @@ documents those changes that are of interest to users and administrators.
  -- Properly parse CPU frequency data on POWER systems.
  -- Correct sacct.a man pages describing -i option.
  -- Capture salloc/srun information in sdiag statistics.
+ -- Fix bug in node selection with topology optimization.
 
 * Changes in Slurm 14.11.8
 ==========================

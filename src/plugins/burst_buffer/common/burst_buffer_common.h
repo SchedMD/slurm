@@ -43,6 +43,7 @@
 #ifndef __BURST_BUFFER_COMMON_H__
 #define __BURST_BUFFER_COMMON_H__
 
+#include "src/common/list.h"
 #include "src/common/pack.h"
 #include "slurm/slurm.h"
 
@@ -79,6 +80,7 @@ typedef struct bb_config {
 	uint64_t user_size_limit;
 } bb_config_t;
 
+/* Current burst buffer allocations (instances) */
 typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
@@ -97,31 +99,46 @@ typedef struct bb_alloc {
 	uint32_t user_id;
 } bb_alloc_t;
 
+/* User storage use, needed to enforce per-user limits */
 typedef struct bb_user {
 	struct bb_user *next;
 	uint64_t size;
 	uint32_t user_id;
 } bb_user_t;
 
+/* Generic burst buffer resources */
 typedef struct {
 	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
 	uint64_t count;		/* Count of required resources */
 } bb_gres_t;
 
+/* Burst buffer resources required for a job, based upon a job record's
+ * burst_buffer string field */
 typedef struct {
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
-	uint32_t   swap_size;	/* swap space required per node */
+	uint32_t   swap_size;	/* swap space required per node in GB */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
-	uint64_t   total_size;	/* Total GB required for this job */
+	uint64_t   total_size;	/* Total bytes required for job (excludes
+				 * persistent buffers) */
+	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
+	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
 } bb_job_t;
 
+/* Persistent buffer requests which are pending */
+typedef struct {
+	uint32_t   job_id;
+	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
+} bb_pend_persist_t;
+
+/* Used for building queue of jobs records for various purposes */
 typedef struct job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_spec;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
 } job_queue_rec_t;
 
+/* Used for building queue of job preemption candidates */
 struct preempt_bb_recs {
 	bb_alloc_t *bb_ptr;
 	uint32_t job_id;
@@ -130,6 +147,7 @@ struct preempt_bb_recs {
 	uint32_t user_id;
 };
 
+/* Current plugin state information */
 typedef struct bb_state {
 	bb_config_t	bb_config;
 	bb_alloc_t **	bb_hash;	/* Hash by job_id */
@@ -139,12 +157,18 @@ typedef struct bb_state {
 	time_t		last_load_time;
 	char *		name;		/* Plugin name */
 	time_t		next_end_time;
+	uint64_t	persist_resv_sz; /* Space reserved for persistent buffers */
+	List		persist_resv_rec;/* List of bb_pend_persist_t records */
 	pthread_cond_t	term_cond;
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;
-	uint64_t	total_space;	/* units are GB */
-	uint64_t	used_space;	/* units are GB */
+	uint64_t	total_space;	/* units are bytes */
+	uint64_t	used_space;	/* units are bytes */
 } bb_state_t;
+
+/* Add persistent burst buffer reservation for this job, tests for duplicate */
+extern void bb_add_persist(bb_state_t *state_ptr,
+			   bb_pend_persist_t *bb_persist);
 
 /* Add a burst buffer allocation to a user's load */
 extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
@@ -184,8 +208,20 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini);
 extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 				   bb_alloc_t **bb_hash);
 
+/* Find a burst buffer record by name
+ * bb_name IN - Buffer's name
+ * user_id IN - Possible user ID, advisory use only
+ * bb_hash IN - Buffer hash table
+ * RET the buffer or NULL if not found */
+extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
+				   bb_alloc_t **bb_hash);
+
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
+
+/* Remove a specific bb_alloc_t from global records.
+ * RET true if found, false otherwise */
+extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr);
 
 /* Free memory associated with allocated bb record */
 extern void bb_free_rec(bb_alloc_t *bb_ptr);
@@ -219,12 +255,19 @@ extern int bb_preempt_queue_sort(void *x, void *y);
 /* Remove a burst buffer allocation from a user's load */
 extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
 
+/* Remove persistent burst buffer reservation for this job.
+ * Call when job starts running or removed from pending state. */
+extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id);
+
 /* For each burst buffer record, set the use_time to the time at which its
  * use is expected to begin (i.e. each job's expected start time) */
 extern void bb_set_use_time(bb_state_t *state_ptr);
 
 /* Sleep function, also handles termination signal */
 extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
+
+/* Return true of the identified job has burst buffer space already reserved */
+extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id);
 
 /* Execute a script, wait for termination and return its stdout.
  * script_type IN - Type of program being run (e.g. "StartStageIn")
