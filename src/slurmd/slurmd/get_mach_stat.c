@@ -352,6 +352,25 @@ extern int get_cpu_load(uint32_t *cpu_load)
 	return 0;
 }
 
+extern int get_free_mem(uint32_t *free_mem)
+{
+#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+	/* Not sure how to get CPU load on above systems.
+	 * Perhaps some method below works. */
+	*free_mem = 0;
+#else
+	struct sysinfo info;
+
+	if (sysinfo(&info) < 0) {
+		*free_mem = 0;
+		return errno;
+	}
+
+	*free_mem = (((uint64_t )info.freeram)*info.mem_unit)/(1024*1024);
+#endif
+	return 0;
+}
+
 #ifdef USE_CPU_SPEED
 /* _chk_cpuinfo_str
  *	check a line of cpuinfo data (buffer) for a keyword.  If it

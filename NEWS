@@ -28,7 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove srun "read header error" due to application termination race
     condition.
  -- Optimize sacct queries with additional db indexes.
- -- Add SLURM_TOPO_LEN env variable for scontrol show topology
+ -- Add SLURM_TOPO_LEN env variable for scontrol show topology.
+ -- Add free_mem to node information.
 
 * Changes in Slurm 15.08.0pre6
 ==============================

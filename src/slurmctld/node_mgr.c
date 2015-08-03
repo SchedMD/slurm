@@ -924,6 +924,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr(dump_node_ptr->cpu_spec_list, buffer);
 
 		pack32(dump_node_ptr->cpu_load, buffer);
+		pack32(dump_node_ptr->free_mem, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
 
@@ -2222,6 +2223,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	if (node_ptr->cpu_load != reg_msg->cpu_load) {
 		node_ptr->cpu_load = reg_msg->cpu_load;
 		node_ptr->cpu_load_time = now;
+		last_node_update = now;
+	}
+	if (node_ptr->free_mem != reg_msg->free_mem) {
+		node_ptr->free_mem = reg_msg->free_mem;
+		node_ptr->free_mem_time = now;
 		last_node_update = now;
 	}
 
@@ -3523,6 +3529,26 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 		node_ptr->cpu_load_time = now;
 		last_node_update = now;
 	} else
-		error("is_node_resp unable to find node %s", node_name);
+		error("reset_node_load unable to find node %s", node_name);
 #endif
 }
+
+/* Reset a node's free memory value */
+extern void reset_node_free_mem(char *node_name, uint32_t free_mem)
+{
+#ifdef HAVE_FRONT_END
+	return;
+#else
+	struct node_record *node_ptr;
+
+	node_ptr = find_node_record(node_name);
+	if (node_ptr) {
+		time_t now = time(NULL);
+		node_ptr->free_mem = free_mem;
+		node_ptr->free_mem_time = now;
+		last_node_update = now;
+	} else
+		error("reset_node_free_mem unable to find node %s", node_name);
+#endif
+}
+

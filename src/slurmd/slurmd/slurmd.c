@@ -671,6 +671,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val    = slurm_get_hash_val();
 	get_cpu_load(&msg->cpu_load);
+	get_free_mem(&msg->free_mem);
 
 	gres_info = init_buf(1024);
 	if (gres_plugin_node_config_pack(gres_info) != SLURM_SUCCESS)

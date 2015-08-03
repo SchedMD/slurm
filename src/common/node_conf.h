@@ -168,6 +168,8 @@ struct node_record {
 						 * to access contents */
 	uint32_t cpu_load;		/* CPU load * 100 */
 	time_t cpu_load_time;		/* Time when cpu_load last set */
+	uint32_t free_mem;		/* Free memory in MiB */
+	time_t free_mem_time;		/* Time when free_mem last set */
 	uint16_t protocol_version;	/* Slurm version number */
 	char *version;			/* Slurm version */
 	bitstr_t *node_spec_bitmap;	/* node cpu specialization bitmap */
