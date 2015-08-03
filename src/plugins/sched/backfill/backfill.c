@@ -894,8 +894,8 @@ static int _attempt_backfill(void)
 			xfree(job_queue_rec);
 			continue;
 		}
-		if ((job_ptr->array_task_id != array_task_id) &&
-		    (array_task_id == NO_VAL)) {
+		if ((job_ptr->array_task_id != job_queue_rec->array_task_id) &&
+		    (job_queue_rec->array_task_id == NO_VAL)) {
 			/* Job array element started in other partition,
 			 * reset pointer to "master" job array record */
 			job_ptr = find_job_record(job_ptr->array_job_id);
