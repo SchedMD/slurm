@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
     bluegene.conf and accounting is not setup.
  -- Fix a bug in the unit conversion routine, specify the correct
     divisor based on the selected unit, KILO, MEGA or GIGA.
+ -- MYSQL - Update mod_time when updating a start job record or adding one.
 
 * Changes in Slurm 14.11.8
 ==========================
