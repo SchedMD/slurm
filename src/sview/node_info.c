@@ -49,6 +49,7 @@ enum {
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
+	SORTID_FREE_MEM,
 	SORTID_CONSUMED_ENERGY,
 	SORTID_CORES,
 	SORTID_CURRENT_WATTS,
@@ -139,6 +140,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_FREE_MEM, "Free Memory", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ARCH, "Arch", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -273,6 +276,17 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CPU_LOAD),
+				   tmp_cnt);
+
+	if (node_ptr->free_mem == NO_VAL) {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
+	} else {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%uM",
+		         node_ptr->free_mem);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_FREE_MEM),
 				   tmp_cnt);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -468,7 +482,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
-	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_owner[32];
+	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_free_mem[20], tmp_owner[32];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
 	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
@@ -502,6 +516,13 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	} else {
 		snprintf(tmp_cpu_load, sizeof(tmp_cpu_load),
 			 "%.2f", (node_ptr->cpu_load / 100.0));
+	}
+
+	if (node_ptr->free_mem == NO_VAL) {
+		strcpy(tmp_free_mem, "N/A");
+	} else {
+		snprintf(tmp_free_mem, sizeof(tmp_free_mem),
+		         "%uM", node_ptr->free_mem);
 	}
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cpus,
@@ -594,6 +615,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_CURRENT_WATTS, tmp_current_watts,
 			   SORTID_CPU_LOAD,  tmp_cpu_load,
+			   SORTID_FREE_MEM,  tmp_free_mem,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
 			   SORTID_IDLE_CPUS, tmp_idle_cpus,
