@@ -2474,12 +2474,25 @@ extern void build_array_str(struct job_record *job_ptr)
 		return;
 
 	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
-	/* Here we set the db_index to 0 so we resend the start of the
+
+	/* While it is efficient to set the db_index to 0 here
+	 * to get the database to update the record for
+	 * pending tasks it also creates a window in which if
+	 * the association id is changed (different account or
+	 * partition) instead of returning the previous
+	 * db_index (expected) it would create a new one
+	 * leaving the other orphaned.  Setting the job_state
+	 * sets things up so the db_index isn't lost but the
+	 * start message is still sent to get the desired behavior. */
+
+	/* Here we set the JOB_UPDATE_DB flag so we resend the start of the
 	 * job updating the array task string and count of pending
 	 * jobs.  This is faster than sending the start again since
-	 * this could happen many times instead of just ever so often.
+	 * this could happen many times (like lots of array elements
+	 * starting at once) instead of just ever so often.
 	 */
-	job_ptr->db_index = 0;
+
+	job_ptr->job_state |= JOB_UPDATE_DB;
 }
 
 /* Return true if ALL tasks of specific array job ID are complete */
@@ -13995,9 +14008,17 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      job_ptr->array_job_id, job_ptr->array_task_id);
 		}
 		xfree(job_ptr->array_recs->task_id_str);
-		/* Most efficient way to update new task_id_str to accounting
-		 * for pending tasks. */
-		job_ptr->db_index = 0;
+
+		/* While it is efficient to set the db_index to 0 here
+		 * to get the database to update the record for
+		 * pending tasks it also creates a window in which if
+		 * the association id is changed (different account or
+		 * partition) instead of returning the previous
+		 * db_index (expected) it would create a new one
+		 * leaving the other orphaned.  Setting the job_state
+		 * sets things up so the db_index isn't lost but the
+		 * start message is still sent to get the desired behavior. */
+		job_ptr->job_state |= JOB_UPDATE_DB;
 
 		/* If job is requeued, it will already be in the hash table */
 		if (!find_job_array_rec(job_ptr->array_job_id,
@@ -14009,8 +14030,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 		if (new_job_ptr) {
 			new_job_ptr->job_state = JOB_PENDING;
 			new_job_ptr->start_time = (time_t) 0;
-			/* Do NOT clear db_index here, it is handled when
-			 * task_id_str is created elsewhere */
+			/* Do NOT set the JOB_UPDATE_DB flag here, it
+			 * is handled when task_id_str is created elsewhere */
 		}
 	}
 }

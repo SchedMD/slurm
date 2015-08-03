@@ -290,31 +290,35 @@ static void *_set_db_inx_thread(void *no_data)
 		while ((job_ptr = list_next(itr))) {
 			dbd_job_start_msg_t *req;
 
-			if (job_ptr->db_index || job_ptr->resize_time)
-				continue;
+			if (!IS_JOB_UPDATE_DB(job_ptr)) {
+				if (job_ptr->db_index || job_ptr->resize_time)
+					continue;
+
+				/* We set the db_index to NO_VAL here
+				 * to avoid a potential race condition
+				 * where at this moment in time the
+				 * job is only eligible to run and
+				 * before this call to the DBD returns,
+				 * the job starts and needs to send
+				 * the start message as well, but
+				 * won't if the db_index is 0
+				 * resulting in lost information about
+				 * the allocation.  Setting
+				 * it to NO_VAL will inform the DBD of
+				 * this situation and it will handle
+				 * it accordingly.
+				 */
+				job_ptr->db_index = NO_VAL;
+			}
 
 			req = xmalloc(sizeof(dbd_job_start_msg_t));
 			if (_setup_job_start_msg(req, job_ptr)
 			    != SLURM_SUCCESS) {
 				_partial_destroy_dbd_job_start(req);
+				if (job_ptr->db_index == NO_VAL)
+					job_ptr->db_index = 0;
 				continue;
 			}
-
-			/* We set the db_index to NO_VAL here
-			 * to avoid a potential race condition
-			 * where at this moment in time the
-			 * job is only eligible to run and
-			 * before this call to the DBD returns,
-			 * the job starts and needs to send
-			 * the start message as well, but
-			 * won't if the db_index is 0
-			 * resulting in lost information about
-			 * the allocation.  Setting
-			 * it to NO_VAL will inform the DBD of
-			 * this situation and it will handle
-			 * it accordingly.
-			 */
-			job_ptr->db_index = NO_VAL;
 
 			/* we only want to destory the pointer
 			   here not the contents (except
@@ -389,6 +393,8 @@ static void *_set_db_inx_thread(void *no_data)
 						 * the start needs to be sent
 						 * again. */
 						job_ptr->db_index = id_ptr->id;
+						job_ptr->job_state &=
+							(~JOB_UPDATE_DB);
 					}
 				}
 				list_iterator_destroy(itr);
