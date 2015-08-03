@@ -782,7 +782,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	}
 
 	/* If DenyOnLimit is set we do need to check
-	 * qos_ptr->max_cpu_mins_pj as well as
+	 * qos_ptr->max_tres_mins_pj as well as
 	 * qos_ptr->max_wall_pj and qos_ptr->grp_wall (at
 	 * least make sure it isn't above the grp limit)
 	 * otherwise you end up in PENDING on a QOSLimit.
@@ -821,7 +821,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					part_ptr->max_time,
 					qos_ptr->max_wall_pj,
 					&acct_policy_limit_set->time);
-
 			qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
 
 			if (job_desc->time_limit > qos_ptr->max_wall_pj) {
@@ -1001,9 +1000,9 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		free_used_limits = true;
 	}
 
-	/* we don't need to check grp_cpu_mins here */
+	/* we don't need to check grp_tres_mins here */
 
-	/* we don't need to check grp_cpus here */
+	/* we don't need to check grp_tres here */
 
 	/* we don't need to check grp_mem here */
 	if ((qos_out_ptr->grp_jobs == INFINITE) &&
@@ -1026,7 +1025,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		}
 	}
 
-	/* we don't need to check grp_cpu_run_mins here */
+	/* we don't need to check grp_tres_run_mins here */
 
 	/* we don't need to check grp_nodes here */
 
@@ -1052,13 +1051,13 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		}
 	}
 
-	/* we don't need to check max_cpu_mins_pj here */
+	/* we don't need to check max_tres_mins_pj here */
 
-	/* we don't need to check max_cpus_pj here */
+	/* we don't need to check max_tres_pj here */
 
-	/* we don't need to check min_cpus_pj here */
+	/* we don't need to check min_tres_pj here */
 
-	/* we don't need to check max_cpus_pu here */
+	/* we don't need to check max_tres_pu here */
 
 	if ((qos_out_ptr->max_jobs_pu == INFINITE)
 	    && (qos_ptr->max_jobs_pu != INFINITE)) {
