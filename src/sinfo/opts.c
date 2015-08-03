@@ -715,6 +715,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'e') {
+			params.match_flags.free_mem_flag = true;
+			format_add_free_mem( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'p') {
 			params.match_flags.priority_flag = true;
 			format_add_priority( params.format_list,
@@ -880,6 +886,12 @@ static int _parse_long_format (char* format_long)
 		} else if (!strcasecmp(token, "cpusload")) {
 			params.match_flags.cpu_load_flag = true;
 			format_add_cpu_load( params.format_list,
+					     field_size,
+					     right_justify,
+					     suffix );
+		} else if (!strcasecmp(token, "freemem")) {
+			params.match_flags.free_mem_flag = true;
+			format_add_free_mem( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );

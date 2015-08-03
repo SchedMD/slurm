@@ -1190,7 +1190,7 @@ _sinfo()
 	       %E(reason) %f(features) %F(nodes_usage) %g(group) %G(Gres)\
 	       %h(shared) %H(timestamp) %l(time_limit) %L(default_time) %m(mem)\
 	       %M(preemt_mode) %n(hostnames) %N(node_names) %o(node_addr)\
-	       %O(cpu_load) %p(partition_prio) %P(partition) %r(root_jobs)\
+	       %O(cpu_load) %e(free_mem) %p(partition_prio) %P(partition) %r(root_jobs)\
 	       %R(reason) %s(max_job_size) %S(allowed_allocating_nodes)\
 	       %t(state) %T(state) %u(user) %U(uID) %w(weight)\
 	       %X(sockets_per_node) %Y(cores_per_socket)\
