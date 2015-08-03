@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
     portion of a job array is pending after it's initial start in the
     database it could create another row for the remain array instead
     of using the already existing row.
+ -- Fix scheduling anomaly with job arrays submitted to multiple partitions,
+    jobs could be started out of priority order.
 
 * Changes in Slurm 14.11.8
 ==========================

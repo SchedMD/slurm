@@ -894,6 +894,15 @@ static int _attempt_backfill(void)
 			xfree(job_queue_rec);
 			continue;
 		}
+		if ((job_ptr->array_task_id != array_task_id) &&
+		    (array_task_id == NO_VAL)) {
+			/* Job array element started in other partition,
+			 * reset pointer to "master" job array record */
+			job_ptr = find_job_record(job_ptr->array_job_id);
+			if (!job_ptr)	/* All task array elements started */
+				continue;
+		}
+
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
@@ -904,7 +913,7 @@ next_task:
 		slurmctld_diag_stats.bf_last_depth++;
 		already_counted = false;
 
-		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other part*/
+		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other partition */
 		    (job_ptr->priority == 0))	/* Job has been held */
 			continue;
 		if (job_ptr->preempt_in_progress)
