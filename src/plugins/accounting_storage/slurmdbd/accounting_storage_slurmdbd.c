@@ -288,46 +288,48 @@ static void *_set_db_inx_thread(void *no_data)
 		}
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			if (!job_ptr->db_index && !job_ptr->resize_time) {
-				dbd_job_start_msg_t *req =
-					xmalloc(sizeof(dbd_job_start_msg_t));
-				if (_setup_job_start_msg(req, job_ptr)
-				    != SLURM_SUCCESS) {
-					_partial_destroy_dbd_job_start(req);
-					continue;
-				}
+			dbd_job_start_msg_t *req;
 
-				/* We set the db_index to NO_VAL here
-				 * to avoid a potential race condition
-				 * where at this moment in time the
-				 * job is only eligible to run and
-				 * before this call to the DBD returns,
-				 * the job starts and needs to send
-				 * the start message as well, but
-				 * won't if the db_index is 0
-				 * resulting in lost information about
-				 * the allocation.  Setting
-				 * it to NO_VAL will inform the DBD of
-				 * this situation and it will handle
-				 * it accordingly.
-				 */
-				job_ptr->db_index = NO_VAL;
+			if (job_ptr->db_index || job_ptr->resize_time)
+				continue;
 
-				/* we only want to destory the pointer
-				   here not the contents (except
-				   block_id) so call special function
-				   _partial_destroy_dbd_job_start.
-				*/
-				if (!local_job_list)
-					local_job_list = list_create(
-						_partial_destroy_dbd_job_start);
-				list_append(local_job_list, req);
-				/* Just so we don't have a crazy
-				   amount of messages at once.
-				*/
-				if (list_count(local_job_list) > 1000)
-					break;
+			req = xmalloc(sizeof(dbd_job_start_msg_t));
+			if (_setup_job_start_msg(req, job_ptr)
+			    != SLURM_SUCCESS) {
+				_partial_destroy_dbd_job_start(req);
+				continue;
 			}
+
+			/* We set the db_index to NO_VAL here
+			 * to avoid a potential race condition
+			 * where at this moment in time the
+			 * job is only eligible to run and
+			 * before this call to the DBD returns,
+			 * the job starts and needs to send
+			 * the start message as well, but
+			 * won't if the db_index is 0
+			 * resulting in lost information about
+			 * the allocation.  Setting
+			 * it to NO_VAL will inform the DBD of
+			 * this situation and it will handle
+			 * it accordingly.
+			 */
+			job_ptr->db_index = NO_VAL;
+
+			/* we only want to destory the pointer
+			   here not the contents (except
+			   block_id) so call special function
+			   _partial_destroy_dbd_job_start.
+			*/
+			if (!local_job_list)
+				local_job_list = list_create(
+					_partial_destroy_dbd_job_start);
+			list_append(local_job_list, req);
+			/* Just so we don't have a crazy
+			   amount of messages at once.
+			*/
+			if (list_count(local_job_list) > 1000)
+				break;
 		}
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_read_lock);
