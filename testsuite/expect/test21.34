@@ -251,7 +251,7 @@ if {$tmpc == 0 || $tmpn == 0} {
 }
 
 # Determine what the selecttype param is
-if {![string compare [test_select_type_params] "CR_CORE"]} {
+if {[string first "CR_CORE" [test_select_type_params]] != -1} {
 	set selectparam 1
 }
 

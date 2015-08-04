@@ -85,7 +85,7 @@ array set acct_mod_assoc_test_vals {
 print_header    $test_id
 
 # Determine what the selecttype param is
-if {![string compare [test_select_type_params] "CR_CORE"]} {
+if {[string first "CR_CORE" [test_select_type_params]] != -1} {
 	set selectparam 1
 }
 
