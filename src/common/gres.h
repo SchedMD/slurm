@@ -750,16 +750,16 @@ extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
  */
 extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked);
 
-/* Fill in the tres_req_cnt based off the gres_list and node_cnt
+/* Fill in the tres_cnt based off the gres_list and node_cnt
  * IN gres_list - filled in with gres_job_state_t's
  * IN node_cnt - number of nodes in the job
- * OUT tres_req_cnt - gres spots filled in with total number of TRES
- *                    requested for job that are requested in gres_list
+ * OUT tres_cnt - gres spots filled in with total number of TRES
+ *                requested for job that are requested in gres_list
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void gres_set_job_tres_req_cnt(List gres_list,
-				      uint32_t node_cnt,
-				      uint64_t *tres_req_cnt,
-				      bool locked);
+extern void gres_set_job_tres_cnt(List gres_list,
+				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
+				  bool locked);
 
 #endif /* !_GRES_H */

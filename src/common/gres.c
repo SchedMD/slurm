@@ -6564,15 +6564,15 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	return tres_str;
 }
 
-extern void gres_set_job_tres_req_cnt(List gres_list,
-				      uint32_t node_cnt,
-				      uint64_t *tres_req_cnt,
-				      bool locked)
+extern void gres_set_job_tres_cnt(List gres_list,
+				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
+				  bool locked)
 {
 	ListIterator itr;
 	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
-	static slurmdb_tres_rec_t tres_req;
+	static slurmdb_tres_rec_t tres_rec;
 	uint64_t count;
 	int i, tres_pos;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
@@ -6581,11 +6581,11 @@ extern void gres_set_job_tres_req_cnt(List gres_list,
 	/* we only need to init this once */
 	if (first_run) {
 		first_run = 0;
-		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
-		tres_req.type = "gres";
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "gres";
 	}
 
-	if (!gres_list || !tres_req_cnt || !node_cnt || (node_cnt == NO_VAL))
+	if (!gres_list || !tres_cnt || !node_cnt || (node_cnt == NO_VAL))
 		return;
 
 	/* must be locked first before gres_contrex_lock!!! */
@@ -6597,28 +6597,28 @@ extern void gres_set_job_tres_req_cnt(List gres_list,
 	while ((gres_state_ptr = list_next(itr))) {
 		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 			gres_state_ptr->gres_data;
-		tres_req.name = gres_data_ptr->type_model;
+		tres_rec.name = gres_data_ptr->type_model;
 		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
 
-		if (!tres_req.name) {
+		if (!tres_rec.name) {
 			for (i=0; i < gres_context_cnt; i++) {
 				if (gres_context[i].plugin_id ==
 				    gres_state_ptr->plugin_id) {
-					tres_req.name =
+					tres_rec.name =
 						gres_context[i].gres_name;
 					break;
 				}
 			}
 
-			if (!tres_req.name) {
+			if (!tres_rec.name) {
 				debug("gres_add_tres: couldn't find name");
 				continue;
 			}
 		}
 
 		if ((tres_pos = assoc_mgr_find_tres_pos(
-			     &tres_req, false)) != -1)
-			tres_req_cnt[tres_pos] = count;
+			     &tres_rec, false)) != -1)
+			tres_cnt[tres_pos] = count;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
