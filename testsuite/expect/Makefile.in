@@ -850,10 +850,7 @@ EXTRA_DIST = \
 	test21.19			\
 	test21.20			\
 	test21.21			\
-	inc21.21.1                      \
-	inc21.21.2                      \
-	inc21.21.3                      \
-	inc21.21.4                      \
+	inc21.21_tests                  \
 	test21.22			\
 	test21.23			\
 	test21.24			\
