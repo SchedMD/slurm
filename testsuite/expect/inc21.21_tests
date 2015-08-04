@@ -435,7 +435,6 @@ proc inc21_21_grpwall { test_type limit } {
 	global number bin_id ta srun bin_sleep bin_rm file_in
 	set exit_code 0
 	set job_id 0
-	set tmp_test "inc21_21_grpwall.in"
 	set timeout 120
 
 	send_user "\n====== Test $test_type"
@@ -448,7 +447,7 @@ proc inc21_21_grpwall { test_type limit } {
 	set matches 0
 	send_user "Sleeping for a bit...hang tight\n"
 	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
-	    -I $tmp_test
+	    -I $file_in
 	expect {
 		-re "launching ($number)" {
 			set job_id $expect_out(1,string)
