@@ -97,8 +97,8 @@ typedef struct {
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec();
 extern slurmdb_step_rec_t *slurmdb_create_step_rec();
-extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage();
-extern slurmdb_qos_usage_t *slurmdb_create_qos_usage();
+extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
+extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_slurmdb_qos(List qos_list, char *level);
