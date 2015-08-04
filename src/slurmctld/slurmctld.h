@@ -1228,6 +1228,11 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
 
+/* Convert a pn_min_memory into total memory for the job either cpu or
+ * node based. */
+extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
+				 uint32_t cpu_cnt, uint32_t node_cnt);
+
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
  *	given job

@@ -246,9 +246,6 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
-static uint64_t _get_tres_mem_from_job_desc(uint32_t pn_min_memory,
-					    uint32_t cpu_cnt,
-					    uint32_t node_cnt);
 
 /*
  * Functions used to manage job array responses with a separate return code
@@ -5570,7 +5567,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =  _get_tres_mem_from_job_desc(
+	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =  job_get_tres_mem(
 		job_desc->pn_min_memory,
 		job_desc->tres_req_cnt[TRES_ARRAY_CPU],
 		job_desc->min_nodes);
@@ -9498,7 +9495,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->min_cpus != NO_VAL)
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] = job_specs->min_cpus;
 
-	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = _get_tres_mem_from_job_desc(
+	job_specs->tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
 		job_specs->pn_min_memory,
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] ?
 		job_specs->tres_req_cnt[TRES_ARRAY_CPU] :
@@ -12161,9 +12158,8 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
-static uint64_t _get_tres_mem_from_job_desc(uint32_t pn_min_memory,
-					    uint32_t cpu_cnt,
-					    uint32_t node_cnt)
+extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
+				 uint32_t cpu_cnt, uint32_t node_cnt)
 {
 	uint64_t count = 0;
 
