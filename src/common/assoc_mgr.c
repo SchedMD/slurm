@@ -386,9 +386,15 @@ static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 
 static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 {
+	int i;
+
 	if (!assoc || !assoc->usage)
 		return SLURM_ERROR;
 
+	for (i=0; i<assoc->usage->tres_cnt; i++) {
+		assoc->usage->grp_used_tres[i] = 0;
+		assoc->usage->grp_used_tres_run_secs[i] = 0;
+	}
 	assoc->usage->grp_used_cpus = 0;
 	assoc->usage->grp_used_mem = 0;
 	assoc->usage->grp_used_nodes = 0;
@@ -433,13 +439,17 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 
 static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 {
+	int i;
+
 	if (!qos || !qos->usage)
 		return SLURM_ERROR;
 
-	qos->usage->grp_used_cpus = 0;
+	for (i=0; i<qos->usage->tres_cnt; i++) {
+		qos->usage->grp_used_tres[i] = 0;
+		qos->usage->grp_used_tres_run_secs[i] = 0;
+	}
 	qos->usage->grp_used_mem = 0;
 	qos->usage->grp_used_nodes = 0;
-	qos->usage->grp_used_cpu_run_secs = 0;
 
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
@@ -711,7 +721,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 	}
 
 	if (!assoc->usage)
-		assoc->usage = slurmdb_create_assoc_usage();
+		assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 
 	if (assoc->parent_id) {
 		/* Here we need the direct parent (parent_assoc_ptr)
@@ -738,7 +748,8 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		if (assoc->usage->fs_assoc_ptr && setup_children) {
 			if (!assoc->usage->fs_assoc_ptr->usage)
 				assoc->usage->fs_assoc_ptr->usage =
-					slurmdb_create_assoc_usage();
+					slurmdb_create_assoc_usage(
+						g_tres_count);
 			if (!assoc->usage->
 			    fs_assoc_ptr->usage->children_list)
 				assoc->usage->
@@ -826,7 +837,7 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		return;
 
 	if (!qos->usage)
-		qos->usage = slurmdb_create_qos_usage();
+		qos->usage = slurmdb_create_qos_usage(g_tres_count);
 	qos->usage->norm_priority =
 		(double)qos->priority / (double)g_qos_max_priority;
 }
@@ -1025,7 +1036,7 @@ static int _post_qos_list(List qos_list)
 			qos->flags = 0;
 
 		if (!qos->usage)
-			qos->usage = slurmdb_create_qos_usage();
+			qos->usage = slurmdb_create_qos_usage(g_tres_count);
 		/* get the highest qos value to create bitmaps from */
 		if (qos->id > g_qos_count)
 			g_qos_count = qos->id;
@@ -3529,7 +3540,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (!object->usage)
 				object->usage =
-					slurmdb_create_assoc_usage();
+					slurmdb_create_assoc_usage(
+						g_tres_count);
 			/* If is_def is uninitialized the value will
 			   be NO_VAL, so if it isn't 1 make it 0.
 			*/
@@ -3992,7 +4004,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			}
 
 			if (!object->usage)
-				object->usage = slurmdb_create_qos_usage();
+				object->usage = slurmdb_create_qos_usage(
+					g_tres_count);
 			list_append(assoc_mgr_qos_list, object);
 /* 			char *tmp = get_qos_complete_str_bitstr( */
 /* 				assoc_mgr_qos_list, */
@@ -4643,6 +4656,8 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 
 extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
 {
+	int i;
+
 	xassert(qos);
 	xassert(qos->usage);
 
@@ -4650,8 +4665,11 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
 
 	qos->usage->usage_raw = 0;
 	qos->usage->grp_used_wall = 0;
-	if (!qos->usage->grp_used_cpus)
-		qos->usage->grp_used_cpu_run_secs = 0;
+
+	for (i=0; i<qos->usage->tres_cnt; i++) {
+		if (!qos->usage->grp_used_tres[i])
+			qos->usage->grp_used_tres_run_secs[i] = 0;
+	}
 }
 
 extern int dump_assoc_mgr_state(char *state_save_location)

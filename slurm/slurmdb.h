@@ -542,6 +542,10 @@ struct slurmdb_assoc_usage {
 				 * (DON'T PACK for state file) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK for state file) */
+	uint64_t *grp_used_tres; /* array of active tres counts */
+	uint64_t *grp_used_tres_run_secs; /* array of running tres secs
+					   * (DON'T PACK for state file) */
+
 	double grp_used_wall;   /* group count of time used in running jobs */
 	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
 					 * (DON'T PACK for state file) */
@@ -564,6 +568,8 @@ struct slurmdb_assoc_usage {
 	double shares_norm;     /* normalized shares
 				 * (DON'T PACK for state file) */
 
+	uint32_t tres_cnt; /* size of the tres arrays,
+			    * (DON'T PACK for state file) */
 	long double usage_efctv;/* effective, normalized usage
 				 * (DON'T PACK for state file) */
 	long double usage_norm;	/* normalized usage
@@ -759,10 +765,16 @@ typedef struct {
 				  * (DON'T PACK for state file) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
 					* (DON'T PACK for state file) */
+	uint64_t *grp_used_tres; /* count of tres in use in this qos
+				 * (DON'T PACK for state file) */
+	uint64_t *grp_used_tres_run_secs; /* count of running tres secs
+					 * (DON'T PACK for state file) */
 	double grp_used_wall;   /* group count of time (minutes) used in
 				 * running jobs (DON'T PACK for state file) */
 	double norm_priority;/* normalized priority (DON'T PACK for
 			      * state file) */
+	uint32_t tres_cnt; /* size of the tres arrays,
+			    * (DON'T PACK for state file) */
 	long double usage_raw;	/* measure of resource usage (DON'T
 				 * PACK for state file) */
 

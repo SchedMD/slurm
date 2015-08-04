@@ -1348,6 +1348,8 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(usage->grp_used_cpus, buffer);
 	pack32(usage->grp_used_mem, buffer);
 	pack32(usage->grp_used_nodes, buffer);
+	pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
+	pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt, buffer);
 	packdouble(usage->grp_used_wall, buffer);
 	pack64(usage->grp_used_cpu_run_secs, buffer);
 	packdouble(usage->fs_factor, buffer);
@@ -1367,12 +1369,16 @@ extern int slurmdb_unpack_assoc_usage(void **object, uint16_t rpc_version,
 {
 	slurmdb_assoc_usage_t *object_ptr =
 		xmalloc(sizeof(slurmdb_assoc_usage_t));
-
+	uint32_t tmp32;
 	*object = object_ptr;
 
 	safe_unpack32(&object_ptr->grp_used_cpus, buffer);
 	safe_unpack32(&object_ptr->grp_used_mem, buffer);
 	safe_unpack32(&object_ptr->grp_used_nodes, buffer);
+	safe_unpack64_array(&object_ptr->grp_used_tres, &tmp32, buffer);
+	object_ptr->tres_cnt = tmp32;
+	safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
+			    &tmp32, buffer);
 	safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
 	safe_unpack64(&object_ptr->grp_used_cpu_run_secs, buffer);
 	safe_unpackdouble(&object_ptr->fs_factor, buffer);

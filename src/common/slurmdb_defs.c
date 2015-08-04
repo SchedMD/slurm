@@ -520,7 +520,7 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 	return step;
 }
 
-extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage()
+extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 {
 	slurmdb_assoc_usage_t *usage =
 		xmalloc(sizeof(slurmdb_assoc_usage_t));
@@ -533,13 +533,27 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage()
 	usage->level_fs = 0;
 	usage->fs_factor = 0;
 
+	if (tres_cnt) {
+		int alloc_size = sizeof(uint64_t) * tres_cnt;
+		usage->tres_cnt = tres_cnt;
+		usage->grp_used_tres_run_secs = xmalloc(alloc_size);
+		usage->grp_used_tres = xmalloc(alloc_size);
+	}
+
 	return usage;
 }
 
-extern slurmdb_qos_usage_t *slurmdb_create_qos_usage()
+extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt)
 {
 	slurmdb_qos_usage_t *usage =
 		xmalloc(sizeof(slurmdb_qos_usage_t));
+
+	if (tres_cnt) {
+		int alloc_size = sizeof(uint64_t) * tres_cnt;
+		usage->tres_cnt = tres_cnt;
+		usage->grp_used_tres_run_secs = xmalloc(alloc_size);
+		usage->grp_used_tres = xmalloc(alloc_size);
+	}
 
 	return usage;
 }
@@ -552,7 +566,8 @@ extern void slurmdb_destroy_assoc_usage(void *object)
 	if (usage) {
 		FREE_NULL_LIST(usage->children_list);
 		FREE_NULL_BITMAP(usage->valid_qos);
-
+		xfree(usage->grp_used_tres_run_secs);
+		xfree(usage->grp_used_tres);
 		xfree(usage);
 	}
 }
@@ -565,6 +580,8 @@ extern void slurmdb_destroy_qos_usage(void *object)
 	if (usage) {
 		FREE_NULL_LIST(usage->job_list);
 		FREE_NULL_LIST(usage->user_limit_list);
+		xfree(usage->grp_used_tres_run_secs);
+		xfree(usage->grp_used_tres);
 		xfree(usage);
 	}
 }
