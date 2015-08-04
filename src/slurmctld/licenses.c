@@ -896,14 +896,14 @@ extern char *licenses_2_tres_str(List license_list)
 	return tres_str;
 }
 
-extern void license_set_job_tres_req_cnt(List license_list,
-					 uint64_t *tres_req_cnt,
-					 bool locked)
+extern void license_set_job_tres_cnt(List license_list,
+				     uint64_t *tres_cnt,
+				     bool locked)
 {
 	ListIterator itr;
 	licenses_t *license_entry;
 	static bool first_run = 1;
-	static slurmdb_tres_rec_t tres_req;
+	static slurmdb_tres_rec_t tres_rec;
 	int tres_pos;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -911,11 +911,11 @@ extern void license_set_job_tres_req_cnt(List license_list,
 	/* we only need to init this once */
 	if (first_run) {
 		first_run = 0;
-		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
-		tres_req.type = "license";
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "license";
 	}
 
-	if (!license_list || !tres_req_cnt)
+	if (!license_list || !tres_cnt)
 		return;
 
 	if (!locked)
@@ -923,10 +923,10 @@ extern void license_set_job_tres_req_cnt(List license_list,
 
 	itr = list_iterator_create(license_list);
 	while ((license_entry = list_next(itr))) {
-		tres_req.name = license_entry->name;
+		tres_rec.name = license_entry->name;
 		if ((tres_pos = assoc_mgr_find_tres_pos(
-			     &tres_req, locked)) != -1)
-			tres_req_cnt[tres_pos] = (uint64_t)license_entry->total;
+			     &tres_rec, locked)) != -1)
+			tres_cnt[tres_pos] = (uint64_t)license_entry->total;
 	}
 	list_iterator_destroy(itr);
 

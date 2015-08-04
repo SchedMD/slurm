@@ -7164,9 +7164,9 @@ extern void job_set_req_tres(
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)mem_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)cpu_cnt;
 
-	license_set_job_tres_req_cnt(job_ptr->license_list,
-				     job_ptr->tres_req_cnt,
-				     true);
+	license_set_job_tres_cnt(job_ptr->license_list,
+				 job_ptr->tres_req_cnt,
+				 true);
 
 	gres_set_job_tres_req_cnt(job_ptr->gres_list,
 				  job_ptr->details ?
