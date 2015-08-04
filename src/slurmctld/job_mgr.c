@@ -7161,8 +7161,8 @@ extern void job_set_req_tres(
 	if (job_ptr->total_cpus)
 		cpu_cnt = job_ptr->total_cpus;
 
-	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)mem_cnt;
-	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)cpu_cnt;
+	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)mem_cnt;
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_req_cnt,
