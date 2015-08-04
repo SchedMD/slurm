@@ -991,6 +991,27 @@ static int _post_wckey_list(List wckey_list)
 	return SLURM_SUCCESS;
 }
 
+static void _set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
+{
+	xassert(assoc_mgr_tres_array);
+
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_ctld, qos->grp_tres, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_mins_ctld,
+				     qos->grp_tres_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_run_mins_ctld,
+				     qos->grp_tres_run_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
+				     qos->max_tres_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pu_ctld,
+				     qos->max_tres_pu, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,
+				     qos->max_tres_mins_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pu_ctld,
+				     qos->max_tres_run_mins_pu, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
+				     qos->max_tres_pj, 1);
+}
+
 static int _post_qos_list(List qos_list)
 {
 	slurmdb_qos_rec_t *qos = NULL;
@@ -1011,6 +1032,8 @@ static int _post_qos_list(List qos_list)
 
 		if (qos->priority > g_qos_max_priority)
 			g_qos_max_priority = qos->priority;
+
+		_set_qos_tres_cnt(qos);
 	}
 	/* Since in the database id's don't start at 1
 	   instead of 0 we need to ignore the 0 bit and start
