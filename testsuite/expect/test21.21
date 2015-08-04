@@ -33,171 +33,198 @@
 ############################################################################
 source ./globals
 source ./globals_accounting
-source ./inc21.21.1
-source ./inc21.21.2
-source ./inc21.21.3
-source ./inc21.21.4
+source ./inc21.21_tests
 
 set test_id     "21.21"
 set exit_code   0
 set file_in     "test.$test_id.input"
 set ta		"test$test_id-account.1"
+set maxcpu      MaxCpus
+set maxcpu_num  0
+set grcpu       GrpCpus
+set grcpu_num   0
 set timeout     60
+set test_node   " "
+# cr_core = 1 / cr_cpu = 0
+set selectparam  0
+
+# test maxjob maxnode maxsubmit maxwall
+array set acct_mod_desc {}
+array set acct_mod_acct_vals {}
+array set acct_mod_assoc_vals {
+	grpnode           "-N 1"
+	grpwall           "-t 1"
+	grpcpus           ""
+	grpcpumins        ""
+	grpjobsub         "2 4"
+	grpcpurunmins     ""
+	maxnode           "-N 1"
+	maxwall           "-t 10"
+	maxcpus           ""
+	maxcpumins        ""
+	maxjobsub         "2 4"
+}
+
+array set acct_mod_assoc_test_vals {
+	grpnode      -1
+	grpwall      -1
+	grpcpus      -1
+	grpcpumins   -1
+	grpjob       -1
+	grpsubmit    -1
+	maxnode      -1
+	maxwall      -1
+	maxcpus      -1
+	maxcpumins   -1
+	maxjob       -1
+	maxsubmit    -1
+}
+
+
 
 print_header    $test_id
 
-proc _test_limits { } {
-	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta
-	# test maxjob maxnode maxsubmit maxwall
-	array set acct_mod_desc {}
-	array set acct_mod_acct_vals {}
-	array set acct_mod_assoc_vals {
-		maxjob     2
-		maxnode    1
-		maxsubmit  4
-		maxwall    10
+# Determine what the selecttype param is
+if {![string compare [test_select_type_params] "CR_CORE"]} {
+	set selectparam 1
+}
+
+set got_node 0
+spawn $srun -N1 printenv SLURM_NODELIST
+expect {
+	-re "($alpha_numeric_under)" {
+		set test_node $expect_out(1,string)
+		set got_node 1
+		exp_continue
 	}
-
-	incr exit_code [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]]
-	if { $exit_code } {
-		return $exit_code
-	}
-
-	#
-	# Start sub-test: test for maxnode
-	#
-	inc21_21_1 $acct_mod_assoc_vals(maxnode)
-
-	#
-	# Start sub-test: test for maxnode+1
-	#
-	inc21_21_2 $acct_mod_assoc_vals(maxnode)
-
-	#
-	# Start sub-test: testing maxwall
-	#
-	inc21_21_3 $acct_mod_assoc_vals(maxwall)
-
-	#
-	# Start sub-test: testing maxwall+1
-	#
-	inc21_21_4 $acct_mod_assoc_vals(maxwall)
-
-	# This should overwrite the old file_in which has already been used,
-	# so no big deal.
-	make_bash_script $file_in "
-	$bin_sleep 5
-	"
-	
-	# test job max cnt and submit
-	for {set inx 0} {$inx < $acct_mod_assoc_vals(maxsubmit)} {incr inx} {
-		set job_id($inx) 0
-		set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in]
-		expect {
-			-re "Submitted batch job ($number)" {
-				set job_id($inx) $expect_out(1,string)
-				exp_continue
-			}
-			-re "Unable to contact" {
-				send_user "\nFAILURE: slurm appears to be down\n"
-				set exit_code 1
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sbatch not responding\n"
-				slow_kill $mypid
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
-		}
-
-		if { !$job_id($inx) } {
-			send_user "\nFAILURE: sbatch didn't return jobid\n"
-			set exit_code 1
-			exit
-		}
-
-		if { $exit_code } {
-			break
-		}
-	}
-
-	if { $exit_code } {
-		return $exit_code
-	}
-
-	# then submit one more over the limit and it should fail
-	set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in]
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			send_user "\nThis error is expected, not a problem\n"
-			exp_continue
-		}
-		-re "Submitted batch job ($number)" {
-			send_user "\nFAILURE: job should not have run 3.\n"
-			set exit_code 1
-			exp_continue
-		}
-		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
-			slow_kill $mypid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $exit_code } {
-		return $exit_code
-	}
-
-	# sleep the Schedule cycle default is 4
-	sleep 4
-
-	set matches 0
-	set mypid [spawn $squeue -o "\%i \%t \%r"]
-	expect {
-		-re "($job_id(2)|$job_id(3)).PD.AssocMaxJobsLimit" {
-			incr matches
-			exp_continue
-		}
-		-re "($job_id(0)|$job_id(1)).R.None" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: squeue not responding\n"
-			slow_kill $mypid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	spawn $scancel --quiet --account=$ta
-	expect {
-		eof {
-			wait
-		}
-	}
-
-
-	if { $matches != 4 } {
-		send_user "\nFAILURE: jobs are not in the expected state expected ($matches != 4)\n"
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
 		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$got_node != 1} {
+	send_user "\nFAILURE: did not get node for testing\n"
+	exit 0
+}
+
+# Get the number of cpus on a node
+
+spawn $scontrol show node $test_node
+expect {
+	-re "CPUTot=($number)" {
+		set totcpus $expect_out(1,string)
+		exp_continue
+	}
+	-re "ThreadsPerCore=($number)" {
+		set nthreads $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$totcpus == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set assoc CPU values
+	set acct_mod_assoc_vals(grpcpus) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(maxcpus) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(grpcpumins) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(maxcpumins) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(grpcpurunmins) "-n [expr $totcpus - $nthreads]"
+}
+
+
+
+
+proc assoc_setup { limit_type limit_val } {
+
+	global acct_mod_assoc_test_vals
+	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals ta
+
+	set exit_code 0
+	set new_limit [lindex $limit_val 1]
+
+	set acct_mod_assoc_test_vals($limit_type) $new_limit
+
+	set exit_code  [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_test_vals] [array get acct_mod_acct_vals]]
+	if { $exit_code } {
 		return $exit_code
+	}
+
+}
+
+proc _test_limits { } {
+	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta maxjob_lim maxsub_lim
+	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals acct_mod_assoc_test_vals
+
+	set exit_code 0
+
+	# Test jobs within the association limits
+	foreach option [array names acct_mod_assoc_vals] {
+		send_user "\nSetting up association limit $option...\n"
+		if { [string compare $option "maxjobsub"] &&
+		     [string compare $option "grpjobsub"] } {
+			assoc_setup $option $acct_mod_assoc_vals($option)
+
+			if { ![string compare $option "grpwall"] } {
+				if { [inc21_21_grpwall $option \
+					  $acct_mod_assoc_vals($option)] } {
+					set exit_code 1
+					return $exit_code
+				}
+			} elseif { ![string compare -length 3 $option "grp"] } {
+				if { [inc21_21_grp_test $option \
+					  $acct_mod_assoc_vals($option)] } {
+					set exit_code 1
+					return $exit_code
+				}
+
+			} else {
+				#
+				# Test value within the association limit
+				#
+				if { [inc21_21_good $option \
+					  $acct_mod_assoc_vals($option)] } {
+
+					set exit_code 1
+					return $exit_code
+				}
+				#
+				# Test value over the association limit
+				#
+				if { [inc21_21_bad $option \
+					  $acct_mod_assoc_vals($option)] } {
+
+					set exit_code 1
+					return $exit_code
+				}
+			}
+			# Reset the limit
+			set acct_mod_assoc_test_vals($option) "-1"
+
+		} else {
+			if { [inc21_21_submit_test $option] } {
+				set exit_code 1
+				return $exit_code
+			}
+		}
+		# Reset usage
+		reset_account_usage "" $ta
 	}
 
 	return $exit_code
+
 }
 
 set select_type [test_select_type]
@@ -460,7 +487,7 @@ if {$damatches != 1} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+#	exec $bin_rm -f $file_in
 	print_success $test_id
 }
 exit $exit_code
