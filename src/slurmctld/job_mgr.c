@@ -13409,9 +13409,9 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 		job_ptr->job_state |= JOB_COMPLETING;
 	/* If we set the time limit it means the user didn't so reset
 	   it here or we could bust some limit when we try again */
-	if (job_ptr->limit_set_time == 1) {
+	if (job_ptr->limit_set.time == 1) {
 		job_ptr->time_limit = NO_VAL;
-		job_ptr->limit_set_time = 0;
+		job_ptr->limit_set.time = 0;
 	}
 
 reply:
