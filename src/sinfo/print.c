@@ -67,6 +67,9 @@ static int   _build_min_max_32_string(char *buffer, int buf_size,
 static int   _build_cpu_load_min_max_32(char *buffer, int buf_size,
 					uint32_t min, uint32_t max,
 					bool range);
+static int   _build_free_mem_min_max_32(char *buffer, int buf_size,
+					uint32_t min, uint32_t max,
+					bool range);
 static void  _print_reservation(reserve_info_t *resv_ptr, int width);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
@@ -307,6 +310,35 @@ _build_cpu_load_min_max_32(char *buffer, int buf_size,
 		strcpy(tmp_max, "N/A");
 	} else {
 		snprintf(tmp_max, sizeof(tmp_max), "%.2f", (max/100.0));
+	}
+
+	if (max == min)
+		return snprintf(buffer, buf_size, "%s", tmp_max);
+	else if (range)
+		return snprintf(buffer, buf_size, "%s-%s", tmp_min, tmp_max);
+	else
+		return snprintf(buffer, buf_size, "%s+", tmp_min);
+}
+
+static int
+_build_free_mem_min_max_32(char *buffer, int buf_size,
+			    uint32_t min, uint32_t max,
+			    bool range)
+{
+
+	char tmp_min[16];
+	char tmp_max[16];
+
+	if (min == NO_VAL) {
+		strcpy(tmp_min, "N/A");
+	} else {
+		snprintf(tmp_min, sizeof(tmp_min), "%u", min);
+	}
+
+	if (max == NO_VAL) {
+		strcpy(tmp_max, "N/A");
+	} else {
+		snprintf(tmp_max, sizeof(tmp_max), "%u", max);
 	}
 
 	if (max == min)
@@ -1183,6 +1215,26 @@ int _print_cpu_load(sinfo_data_t * sinfo_data, int width,
 		_print_str(id, width, right_justify, true);
 	} else {
 		_print_str("CPU_LOAD", width, right_justify, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_free_mem(sinfo_data_t * sinfo_data, int width,
+		    bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+
+	if (sinfo_data) {
+		_build_free_mem_min_max_32(id, FORMAT_STRING_SIZE,
+					 sinfo_data->min_free_mem,
+					 sinfo_data->max_free_mem,
+					 true);
+		_print_str(id, width, right_justify, true);
+	} else {
+		_print_str("FREE_MEM", width, right_justify, true);
 	}
 
 	if (suffix)

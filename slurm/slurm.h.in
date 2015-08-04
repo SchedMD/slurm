@@ -1816,6 +1816,7 @@ typedef struct node_info {
 	uint16_t cores;         /* number of cores per socket       */
 	uint16_t core_spec_cnt; /* number of specialized cores on node */
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint32_t free_mem;	/* free memory in MiB */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
 	char *cpu_spec_list;	/* node's specialized cpus */

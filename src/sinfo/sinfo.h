@@ -100,6 +100,8 @@ typedef struct {
 	uint32_t max_weight;
 	uint32_t min_cpu_load;
 	uint32_t max_cpu_load;
+	uint32_t min_free_mem;
+	uint32_t max_free_mem;
 
 	uint32_t max_cpus_per_node;
 	uint32_t alloc_memory;
@@ -153,6 +155,7 @@ struct sinfo_match_flags {
 	bool reason_timestamp_flag;
 	bool reason_user_flag;
 	bool cpu_load_flag;
+	bool free_mem_flag;
 	bool max_cpus_per_node_flag;
 	bool version_flag;
 };

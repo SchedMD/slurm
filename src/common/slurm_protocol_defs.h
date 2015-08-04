@@ -1067,6 +1067,7 @@ typedef struct suspend_int_msg {
 
 typedef struct ping_slurmd_resp_msg {
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint32_t free_mem;	/* Free memory in MiB */
 } ping_slurmd_resp_msg_t;
 
 typedef struct license_info_request_msg {
@@ -1082,6 +1083,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
+	uint32_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
 	Buf gres_info;		/* generic resource info */

@@ -42,7 +42,6 @@ int g_node_scaling = 1;
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ARCH,
-	SORTID_BASE_WATTS,
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_CAP_WATTS,
@@ -54,13 +53,15 @@ enum {
 	SORTID_CURRENT_WATTS,
 	SORTID_ERR_CPUS,
 	SORTID_FEATURES,
+	SORTID_FREE_MEM,
 	SORTID_GRES,
 	SORTID_IDLE_CPUS,
+	SORTID_LOWEST_JOULES,
 	SORTID_NAME,
 	SORTID_NODE_ADDR,
 	SORTID_NODE_HOSTNAME,
 	SORTID_OWNER,
-	SORTID_MEMORY,	/* RealMemory */
+	SORTID_REAL_MEMORY,
 	SORTID_REASON,
 	SORTID_RACK_MP,
 	SORTID_SLURMD_START_TIME,
@@ -68,7 +69,7 @@ enum {
 	SORTID_STATE,
 	SORTID_STATE_NUM,
 	SORTID_THREADS,
-	SORTID_DISK,	/* TmpDisk */
+	SORTID_TMP_DISK,
 	SORTID_UPDATED,
 	SORTID_USED_CPUS,
 	SORTID_USED_MEMORY,
@@ -130,12 +131,14 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", FALSE,
+	{G_TYPE_STRING, SORTID_REAL_MEMORY, "Real Memory", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_USED_MEMORY, "Used Memory", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", FALSE, EDIT_NONE, refresh_node,
-	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_FREE_MEM, "Free Memory", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
@@ -152,7 +155,7 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_BASE_WATTS, "Lowest Joules", FALSE,
+	{G_TYPE_STRING, SORTID_LOWEST_JOULES, "Lowest Joules", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -275,6 +278,17 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CPU_LOAD),
 				   tmp_cnt);
 
+	if (node_ptr->free_mem == NO_VAL) {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
+	} else {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%uM",
+		         node_ptr->free_mem);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_FREE_MEM),
+				   tmp_cnt);
+
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_SUBCNT,
 				     NODE_STATE_ALLOCATED,
@@ -357,7 +371,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 			 UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
-						 SORTID_MEMORY),
+						 SORTID_REAL_MEMORY),
 				   tmp_cnt);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -374,7 +388,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 			 UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
-						 SORTID_DISK),
+						 SORTID_TMP_DISK),
 				   tmp_cnt);
 	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", node_ptr->weight);
 	add_display_treestore_line(update, treestore, &iter,
@@ -423,7 +437,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
-						 SORTID_BASE_WATTS),
+						 SORTID_LOWEST_JOULES),
 				   tmp_base_watts);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -468,7 +482,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
-	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_owner[32];
+	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_free_mem[20], tmp_owner[32];
 	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
 	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
@@ -502,6 +516,13 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	} else {
 		snprintf(tmp_cpu_load, sizeof(tmp_cpu_load),
 			 "%.2f", (node_ptr->cpu_load / 100.0));
+	}
+
+	if (node_ptr->free_mem == NO_VAL) {
+		strcpy(tmp_free_mem, "N/A");
+	} else {
+		snprintf(tmp_free_mem, sizeof(tmp_free_mem),
+		         "%uM", node_ptr->free_mem);
 	}
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cpus,
@@ -582,7 +603,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ARCH,      node_ptr->arch,
-			   SORTID_BASE_WATTS,tmp_base_watts,
+			   SORTID_LOWEST_JOULES, tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_CAP_WATTS, tmp_cap_watts,
@@ -594,12 +615,13 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_CURRENT_WATTS, tmp_current_watts,
 			   SORTID_CPU_LOAD,  tmp_cpu_load,
-			   SORTID_DISK,      tmp_disk,
+			   SORTID_FREE_MEM,  tmp_free_mem,
+			   SORTID_TMP_DISK,  tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
 			   SORTID_IDLE_CPUS, tmp_idle_cpus,
 			   SORTID_FEATURES,  node_ptr->features,
 			   SORTID_GRES,      node_ptr->gres,
-			   SORTID_MEMORY,    tmp_mem,
+			   SORTID_REAL_MEMORY, tmp_mem,
 			   SORTID_NAME,      node_ptr->name,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,
 			   SORTID_NODE_HOSTNAME, node_ptr->node_hostname,
