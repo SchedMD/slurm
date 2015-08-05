@@ -5586,10 +5586,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	gres_set_job_tres_req_cnt(gres_list,
-				  job_desc->min_nodes,
-				  job_desc->tres_req_cnt,
-				  false);
+	gres_set_job_tres_cnt(gres_list,
+			      job_desc->min_nodes,
+			      job_desc->tres_req_cnt,
+			      false);
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
@@ -7186,7 +7186,6 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			       bool assoc_mgr_locked)
 {
 	uint64_t tres_count;
-	char *tmp_tres_str = NULL;
 	uint32_t alloc_nodes = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -9514,10 +9513,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_specs->gres, job_ptr->job_id);
 			error_code = ESLURM_INVALID_GRES;
 		} else {
-			gres_set_job_tres_req_cnt(gres_list,
-						  detail_ptr->min_nodes,
-						  job_specs->tres_req_cnt,
-						  false);
+			gres_set_job_tres_cnt(gres_list,
+					      detail_ptr->min_nodes,
+					      job_specs->tres_req_cnt,
+					      false);
 		}
 	}
 
@@ -10672,12 +10671,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		gres_list = NULL;
 
 		assoc_mgr_lock(&locks);
-		gres_set_job_tres_req_cnt(job_ptr->gres_list,
-					  job_ptr->details ?
-					  job_ptr->details->min_nodes :
-					  0,
-					  job_ptr->tres_req_cnt,
-					  true);
+		gres_set_job_tres_cnt(job_ptr->gres_list,
+				      job_ptr->details ?
+				      job_ptr->details->min_nodes : 0,
+				      job_ptr->tres_req_cnt,
+				      true);
 		xfree(job_ptr->tres_req_str);
 		job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
 			job_ptr->tres_req_cnt, true);
@@ -10913,9 +10911,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
 			assoc_mgr_lock(&locks);
-			license_set_job_tres_req_cnt(job_ptr->license_list,
-						     job_ptr->tres_req_cnt,
-						     true);
+			license_set_job_tres_cnt(job_ptr->license_list,
+						 job_ptr->tres_req_cnt,
+						 true);
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(

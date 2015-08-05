@@ -2082,7 +2082,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->time_limit = part_ptr->default_time;
 		else
 			job_ptr->time_limit = part_ptr->max_time;
-		job_ptr->limit_set_time = 1;
+		job_ptr->limit_set.time = 1;
 	}
 
 	job_end_time_reset(job_ptr);
