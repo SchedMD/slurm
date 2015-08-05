@@ -283,46 +283,51 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurmdb_pack_used_limits(void *in, uint16_t rpc_version, Buf buffer)
+extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
+				     uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_used_limits_t *object = (slurmdb_used_limits_t *)in;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!object) {
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			return;
-		}
-
-		pack64(object->cpu_run_mins, buffer);
-		pack32(object->cpus, buffer);
-		pack32(object->jobs, buffer);
-		pack32(object->nodes, buffer);
-		pack32(object->submit_jobs, buffer);
-		pack32(object->uid, buffer);
+	if (!object) {
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack64_array(NULL, 0, buffer);
+		pack64_array(NULL, 0, buffer);
+		pack32(0, buffer);
+		return;
 	}
+
+	pack32(object->jobs, buffer);
+	pack32(object->nodes, buffer);
+	pack32(object->submit_jobs, buffer);
+	pack64_array(object->tres, tres_cnt, buffer);
+	pack64_array(object->tres_run_mins, tres_cnt, buffer);
+	pack32(object->uid, buffer);
 }
 
-extern int slurmdb_unpack_used_limits(void **object,
+extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 				      uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_used_limits_t *object_ptr =
 		xmalloc(sizeof(slurmdb_used_limits_t));
+	uint32_t tmp32;
 
 	*object = (void *)object_ptr;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
-		safe_unpack32(&object_ptr->cpus, buffer);
-		safe_unpack32(&object_ptr->jobs, buffer);
-		safe_unpack32(&object_ptr->nodes, buffer);
-		safe_unpack32(&object_ptr->submit_jobs, buffer);
-		safe_unpack32(&object_ptr->uid, buffer);
-	}
+	safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+	safe_unpack32(&object_ptr->cpus, buffer);
+	safe_unpack32(&object_ptr->jobs, buffer);
+	safe_unpack32(&object_ptr->nodes, buffer);
+	safe_unpack32(&object_ptr->submit_jobs, buffer);
+	safe_unpack64_array(&object_ptr->tres, &tmp32, buffer);
+	if (tmp32 != tres_cnt)
+		goto unpack_error;
+	safe_unpack64_array(&object_ptr->tres_run_mins, &tmp32, buffer);
+	if (tmp32 != tres_cnt)
+		goto unpack_error;
+
+	safe_unpack32(&object_ptr->uid, buffer);
 
 	return SLURM_SUCCESS;
 

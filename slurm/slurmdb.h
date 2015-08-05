@@ -1018,6 +1018,9 @@ typedef struct {
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t nodes;	/* count of nodes allocated */
 	uint32_t submit_jobs; /* count of jobs pending or running */
+	uint64_t *tres; /* array of TRES allocated */
+	uint64_t *tres_run_mins; /* array of how many TRES mins are
+				  * allocated currently */
 	uint32_t uid;
 } slurmdb_used_limits_t;
 

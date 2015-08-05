@@ -1113,6 +1113,8 @@ extern void slurmdb_destroy_used_limits(void *object)
 		(slurmdb_used_limits_t *)object;
 
 	if (slurmdb_used_limits) {
+		xfree(slurmdb_used_limits->tres);
+		xfree(slurmdb_used_limits->tres_run_mins);
 		xfree(slurmdb_used_limits);
 	}
 }

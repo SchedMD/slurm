@@ -414,6 +414,7 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
 	ListIterator itr = NULL;
+	int i;
 
 	if (!qos_ptr->usage->user_limit_list
 	    || !list_count(qos_ptr->usage->user_limit_list))
@@ -421,16 +422,13 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 
 	itr = list_iterator_create(qos_ptr->usage->user_limit_list);
 	while ((used_limits = list_next(itr))) {
-		used_limits->cpu_run_mins = 0; /* Currently isn't used
-						  in the code but put
-						  here for future
-						  reference when/if it
-						  is.
-					       */
-		used_limits->cpus = 0;
 		used_limits->jobs = 0;
 		used_limits->nodes = 0;
 		used_limits->submit_jobs = 0;
+		for (i=0; i<qos_ptr->usage->tres_cnt; i++) {
+			used_limits->tres[i] = 0;
+			used_limits->tres_run_mins[i] = 0;
+		}
 	}
 	list_iterator_destroy(itr);
 

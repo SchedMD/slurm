@@ -195,9 +195,9 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 				       uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 					uint16_t rpc_version, Buf buffer);
-extern void slurmdb_pack_used_limits(void *in,
+extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 				     uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_used_limits(void **object,
+extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 				      uint16_t rpc_version, Buf buffer);
 
 extern void pack_update_shares_used(void *in,
