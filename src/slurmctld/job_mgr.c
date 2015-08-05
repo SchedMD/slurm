@@ -7187,56 +7187,56 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 {
 	uint64_t tres_count;
 	char *tmp_tres_str = NULL;
+	uint32_t alloc_nodes = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xfree(job_ptr->tres_alloc_str);
+	xfree(job_ptr->tres_alloc_cnt);
 
-	xstrfmtcat(job_ptr->tres_alloc_str, "%s%u=%"PRIu64,
-		   job_ptr->tres_alloc_str ? "," : "",
-		   TRES_CPU, (uint64_t)job_ptr->total_cpus);
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+	job_ptr->tres_alloc_cnt = xmalloc(
+		sizeof(uint64_t) * slurmctld_tres_cnt);
+
+	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
 
 	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
+
+#ifdef HAVE_BG
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
+				    &alloc_nodes);
+#else
+	alloc_nodes = job_ptr->node_cnt;
+#endif
+
 	if (tres_count & MEM_PER_CPU) {
 		tres_count &= (~MEM_PER_CPU);
 		tres_count *= job_ptr->total_cpus;
 	} else {
-		uint32_t alloc_nodes = 0;
-#ifdef HAVE_BG
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-					    SELECT_JOBDATA_NODE_CNT,
-					    &alloc_nodes);
-#else
-		alloc_nodes = job_ptr->node_cnt;
-#endif
-
 		tres_count *= (uint64_t)alloc_nodes;
 	}
 
-	xstrfmtcat(job_ptr->tres_alloc_str, "%s%u=%"PRIu64,
-		   job_ptr->tres_alloc_str ? "," : "",
-		   TRES_MEM, tres_count);
+	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = tres_count;
 
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
+	license_set_job_tres_cnt(job_ptr->license_list,
+				 job_ptr->tres_alloc_cnt,
+				 true);
 
-	if ((tmp_tres_str = gres_2_tres_str(job_ptr->gres_list, true, true))) {
-		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
-			   job_ptr->tres_alloc_str ? "," : "",
-			   tmp_tres_str);
-		xfree(tmp_tres_str);
-	}
+	gres_set_job_tres_cnt(job_ptr->gres_list,
+			      alloc_nodes,
+			      job_ptr->tres_alloc_cnt,
+			      true);
 
-	if ((tmp_tres_str = licenses_2_tres_str(job_ptr->license_list))) {
-		xstrfmtcat(job_ptr->tres_alloc_str, "%s%s",
-			   job_ptr->tres_alloc_str ? "," : "",
-			   tmp_tres_str);
-		xfree(tmp_tres_str);
-	}
+	/* now that the array is filled lets make the string from it */
+	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_alloc_cnt, true);
 
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
 		job_ptr->tres_alloc_str, assoc_mgr_tres_list);
+
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 
