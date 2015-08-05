@@ -402,12 +402,11 @@ host_fini:	if (rc) {
 		}
 		xfree(orig_gres);
 		assoc_mgr_lock(&locks);
-		gres_set_job_tres_req_cnt(job_ptr->gres_list,
-					  job_ptr->details ?
-					  job_ptr->details->
-					  min_nodes : 0,
-					  job_ptr->tres_req_cnt,
-					  true);
+		gres_set_job_tres_cnt(job_ptr->gres_list,
+				      job_ptr->details ?
+				      job_ptr->details->min_nodes : 0,
+				      job_ptr->tres_req_cnt,
+				      true);
 		xfree(job_ptr->tres_req_str);
 		job_ptr->tres_req_str =
 			assoc_mgr_make_tres_str_from_array(
