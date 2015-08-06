@@ -984,7 +984,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 		packstr(object->grp_tres_run_mins, buffer);
 		packstr(object->grp_tres, buffer);
 		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_mem, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
@@ -1102,7 +1101,9 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 			object->grp_tres, TRES_CPU);
 		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_mem, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres_mins, TRES_MEM);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
@@ -1271,7 +1272,11 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		if (uint32_tmp != NO_VAL)
 			object_ptr->grp_tres =
 				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
-		safe_unpack32(&object_ptr->grp_mem, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+				   object_ptr->grp_tres ? "," : "",
+				   TRES_MEM, uint32_tmp);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
@@ -1697,7 +1702,9 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			object->grp_tres, TRES_CPU);
 		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_mem, buffer);
+		tmp64 = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_MEM);
+		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
@@ -1852,6 +1859,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 				  Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint64_t tmp64;
 	int i;
 	slurmdb_qos_rec_t *object_ptr = xmalloc(sizeof(slurmdb_qos_rec_t));
 	uint32_t count = NO_VAL;
@@ -1926,26 +1934,43 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres_mins,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres_run_mins,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_mem, buffer);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->grp_tres_mins =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->grp_tres_run_mins =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->grp_tres =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+				   object_ptr->grp_tres ? "," : "",
+				   TRES_MEM, uint32_tmp);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
-				       &uint32_tmp, buffer);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->max_tres_mins_pj =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->max_tres_run_mins_pu =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->max_tres_pj =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->max_tres_pu =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
@@ -1983,26 +2008,44 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres_mins,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres_run_mins,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
-				       &uint32_tmp, buffer);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->grp_tres_mins =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->grp_tres_run_mins =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->grp_tres =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_mem, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+				   object_ptr->grp_tres ? "," : "",
+				   TRES_MEM, uint32_tmp);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
-				       &uint32_tmp, buffer);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->max_tres_mins_pj =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack64(&tmp64, buffer);
+		if (tmp64 != (uint64_t)NO_VAL)
+			object_ptr->max_tres_run_mins_pu =
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->max_tres_pj =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			object_ptr->max_tres_pu =
+				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
@@ -3241,8 +3284,8 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t rpc_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
+		count = NO_VAL;
 		if (object->grp_mem_list)
 			count = list_count(object->grp_mem_list);
 
@@ -3254,8 +3297,8 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t rpc_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
+		count = NO_VAL;
 		if (object->grp_nodes_list)
 			count = list_count(object->grp_nodes_list);
 
