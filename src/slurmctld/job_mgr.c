@@ -7198,7 +7198,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	job_ptr->tres_alloc_cnt = xmalloc(
 		sizeof(uint64_t) * slurmctld_tres_cnt);
 
-	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
 
 	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
 
@@ -7217,7 +7217,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 		tres_count *= (uint64_t)alloc_nodes;
 	}
 
-	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = tres_count;
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_alloc_cnt,
