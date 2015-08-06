@@ -2104,6 +2104,9 @@ static int _restore_job_dependencies(void)
 				acct_policy_add_job_submit(job_ptr);
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
+				/* job_set_alloc_tres has to be done
+				 * before acct_policy_job_begin */
+				job_set_alloc_tres(job_ptr, true);
 				acct_policy_job_begin(job_ptr);
 				job_claim_resv(job_ptr);
 			}

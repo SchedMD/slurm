@@ -11556,6 +11556,9 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 	   code it that way. */
 	xassert(IS_JOB_RESIZING(job_ptr));
 	acct_policy_add_job_submit(job_ptr);
+	/* job_set_alloc_tres has to be done
+	 * before acct_policy_job_begin */
+	job_set_alloc_tres(job_ptr, false);
 	acct_policy_job_begin(job_ptr);
 	job_claim_resv(job_ptr);
 

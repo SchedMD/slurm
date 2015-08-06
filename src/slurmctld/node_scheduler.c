@@ -2146,7 +2146,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
 	slurmctld_diag_stats.jobs_started++;
+
+	/* job_set_alloc_tres has to be done before acct_policy_job_begin */
+	job_set_alloc_tres(job_ptr, false);
 	acct_policy_job_begin(job_ptr);
+
 	job_claim_resv(job_ptr);
 
 	/* Update the job_record's gres and gres_alloc fields with
@@ -2158,8 +2162,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      "job_record->gres_alloc: (%s)",
 		      THIS_FILE, __LINE__, job_ptr->job_id,
 		      job_ptr->gres, job_ptr->gres_alloc);
-
-	job_set_alloc_tres(job_ptr, false);
 
 	/* If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already
