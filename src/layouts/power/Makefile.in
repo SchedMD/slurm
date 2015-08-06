@@ -161,14 +161,22 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-layouts_power_default_la_LIBADD =
-am_layouts_power_default_la_OBJECTS = default.lo
-layouts_power_default_la_OBJECTS =  \
-	$(am_layouts_power_default_la_OBJECTS)
+layouts_power_cpufreq_la_LIBADD =
+am_layouts_power_cpufreq_la_OBJECTS = cpufreq.lo
+layouts_power_cpufreq_la_OBJECTS =  \
+	$(am_layouts_power_cpufreq_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+layouts_power_cpufreq_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(layouts_power_cpufreq_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+layouts_power_default_la_LIBADD =
+am_layouts_power_default_la_OBJECTS = default.lo
+layouts_power_default_la_OBJECTS =  \
+	$(am_layouts_power_default_la_OBJECTS)
 layouts_power_default_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(layouts_power_default_la_LDFLAGS) \
@@ -207,8 +215,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(layouts_power_default_la_SOURCES)
-DIST_SOURCES = $(layouts_power_default_la_SOURCES)
+SOURCES = $(layouts_power_cpufreq_la_SOURCES) \
+	$(layouts_power_default_la_SOURCES)
+DIST_SOURCES = $(layouts_power_cpufreq_la_SOURCES) \
+	$(layouts_power_default_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -485,9 +495,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = layouts_power_default.la
+pkglib_LTLIBRARIES = layouts_power_default.la layouts_power_cpufreq.la
 layouts_power_default_la_SOURCES = default.c
 layouts_power_default_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) 
+layouts_power_cpufreq_la_SOURCES = cpufreq.c
+layouts_power_cpufreq_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -558,6 +570,9 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
+layouts_power_cpufreq.la: $(layouts_power_cpufreq_la_OBJECTS) $(layouts_power_cpufreq_la_DEPENDENCIES) $(EXTRA_layouts_power_cpufreq_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(layouts_power_cpufreq_la_LINK) -rpath $(pkglibdir) $(layouts_power_cpufreq_la_OBJECTS) $(layouts_power_cpufreq_la_LIBADD) $(LIBS)
+
 layouts_power_default.la: $(layouts_power_default_la_OBJECTS) $(layouts_power_default_la_DEPENDENCIES) $(EXTRA_layouts_power_default_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(layouts_power_default_la_LINK) -rpath $(pkglibdir) $(layouts_power_default_la_OBJECTS) $(layouts_power_default_la_LIBADD) $(LIBS)
 
@@ -567,6 +582,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpufreq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/default.Plo@am__quote@
 
 .c.o:
