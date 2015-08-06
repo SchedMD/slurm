@@ -663,11 +663,17 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->acct);
 		xfree(assoc->cluster);
 		xfree(assoc->grp_tres);
+		xfree(assoc->grp_tres_ctld);
 		xfree(assoc->grp_tres_mins);
+		xfree(assoc->grp_tres_mins_ctld);
 		xfree(assoc->grp_tres_run_mins);
+		xfree(assoc->grp_tres_run_mins_ctld);
 		xfree(assoc->max_tres_mins_pj);
+		xfree(assoc->max_tres_mins_ctld);
 		xfree(assoc->max_tres_run_mins);
+		xfree(assoc->max_tres_run_mins_ctld);
 		xfree(assoc->max_tres_pj);
+		xfree(assoc->max_tres_ctld);
 		xfree(assoc->parent_acct);
 		xfree(assoc->partition);
 		FREE_NULL_LIST(assoc->qos_list);
