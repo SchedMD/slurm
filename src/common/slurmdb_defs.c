@@ -517,8 +517,8 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 	if (tres_cnt) {
 		int alloc_size = sizeof(uint64_t) * tres_cnt;
 		usage->tres_cnt = tres_cnt;
-		usage->grp_used_tres_run_secs = xmalloc(alloc_size);
 		usage->grp_used_tres = xmalloc(alloc_size);
+		usage->grp_used_tres_run_secs = xmalloc(alloc_size);
 	}
 
 	return usage;
