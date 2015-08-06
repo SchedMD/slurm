@@ -3266,7 +3266,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	List remove_list = NULL;
 	List update_list = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, WRITE_LOCK, NO_LOCK };
+				   READ_LOCK, WRITE_LOCK, NO_LOCK };
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
