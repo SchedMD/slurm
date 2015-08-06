@@ -395,10 +395,7 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 		assoc->usage->grp_used_tres[i] = 0;
 		assoc->usage->grp_used_tres_run_secs[i] = 0;
 	}
-	assoc->usage->grp_used_cpus = 0;
-	assoc->usage->grp_used_mem = 0;
 	assoc->usage->grp_used_nodes = 0;
-	assoc->usage->grp_used_cpu_run_secs = 0;
 
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
@@ -442,15 +439,14 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	if (!qos || !qos->usage)
 		return SLURM_ERROR;
 
-	for (i=0; i<qos->usage->tres_cnt; i++) {
-		qos->usage->grp_used_tres[i] = 0;
-		qos->usage->grp_used_tres_run_secs[i] = 0;
-	}
-	qos->usage->grp_used_mem = 0;
 	qos->usage->grp_used_nodes = 0;
 
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
+	for (i=0; i<qos->usage->tres_cnt; i++) {
+		qos->usage->grp_used_tres[i] = 0;
+		qos->usage->grp_used_tres_run_secs[i] = 0;
+	}
 	/* do not reset usage_raw or grp_used_wall.
 	 * if you need to reset it do it
 	 * else where since sometimes we call this and do not want
