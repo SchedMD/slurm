@@ -81,6 +81,7 @@ typedef struct bb_config {
 } bb_config_t;
 
 /* Current burst buffer allocations (instances) */
+#define BB_ALLOC_MAGIC		0xDEAD3448
 typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
@@ -89,6 +90,7 @@ typedef struct bb_alloc {
 	uint32_t gres_cnt;	/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
+	uint32_t magic;
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
 	time_t seen_time;	/* Time buffer last seen */
@@ -100,11 +102,24 @@ typedef struct bb_alloc {
 } bb_alloc_t;
 
 /* User storage use, needed to enforce per-user limits */
+#define BB_USER_MAGIC		0xDEAD3493
 typedef struct bb_user {
+	uint32_t magic;
 	struct bb_user *next;
 	uint64_t size;
 	uint32_t user_id;
 } bb_user_t;
+
+/* Burst buffer creation records with state */
+typedef struct {
+	char    *access;	/* Buffer access */
+	bool     destroy;	/* Set if buffer destroy requested */
+	bool     hurry;		/* Fast buffer destroy */
+	char    *name;		/* Buffer name, non-numeric for persistent */
+	uint64_t size;		/* Buffer size in bytes */
+	uint16_t state;		/* Buffer state, see BB_STATE_* in slurm.h.in */
+	char    *type;		/* Buffer type */
+} bb_buf_t;
 
 /* Generic burst buffer resources */
 typedef struct {
@@ -114,15 +129,23 @@ typedef struct {
 
 /* Burst buffer resources required for a job, based upon a job record's
  * burst_buffer string field */
-typedef struct {
+#define BB_JOB_MAGIC		0xDEAD3412
+typedef struct bb_job {
+	uint32_t   buf_cnt;	/* Number of records in buf_ptr */
+	bb_buf_t  *buf_ptr;	/* Buffer creation records */
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
+	uint32_t   job_id;
+	uint32_t   magic;
+	struct bb_job *next;
+	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
+	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
+	int        state;	/* job state with respect to burst buffers,
+				 * See BB_STATE_* in slurm.h.in */
 	uint32_t   swap_size;	/* swap space required per node in GB */
 	uint32_t   swap_nodes;	/* Number of nodes needed */
 	uint64_t   total_size;	/* Total bytes required for job (excludes
 				 * persistent buffers) */
-	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
-	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
 } bb_job_t;
 
 /* Persistent buffer requests which are pending */
@@ -150,8 +173,9 @@ struct preempt_bb_recs {
 /* Current plugin state information */
 typedef struct bb_state {
 	bb_config_t	bb_config;
-	bb_alloc_t **	bb_hash;	/* Hash by job_id */
-	bb_user_t **	bb_uhash;	/* Hash by user_id */
+	bb_alloc_t **	bb_ahash;	/* Allocation buffers, hash by job_id */
+	bb_job_t **	bb_jhash;	/* Job state, hash by job_id */
+	bb_user_t **	bb_uhash;	/* User limit, hash by user_id */
 	pthread_mutex_t	bb_mutex;
 	pthread_t	bb_thread;
 	time_t		last_load_time;
@@ -178,20 +202,20 @@ extern void bb_alloc_cache(bb_state_t *state_ptr);
 
 /* Allocate a per-job burst buffer record for a specific job.
  * Return a pointer to that record.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
 				    bb_job_t *bb_spec);
 
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_spec);
 
 /* Allocate a named burst buffer record for a specific user.
  * Return a pointer to that record.
- * Use bb_free_rec() to purge the returned record. */
+ * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id);
 
@@ -205,8 +229,8 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini);
 
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
-extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
-				   bb_alloc_t **bb_hash);
+extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
+				     struct job_record *job_ptr);
 
 /* Find a burst buffer record by name
  * bb_name IN - Buffer's name
@@ -223,8 +247,9 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
  * RET true if found, false otherwise */
 extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr);
 
-/* Free memory associated with allocated bb record */
-extern void bb_free_rec(bb_alloc_t *bb_ptr);
+/* Free memory associated with allocated bb record, caller is responsible for
+ * maintaining linked list */
+extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc);
 
 /* Translate a burst buffer size specification in string form to numeric form,
  * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
@@ -232,6 +257,23 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity);
 
 /* Round up a number based upon some granularity */
 extern uint64_t bb_granularity(uint64_t start_size, uint64_t granularity);
+
+/* Allocate a bb_job_t record, hashed by job_id, delete with bb_job_del() */
+extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id);
+
+/* Delete a bb_job_t record, hashed by job_id */
+extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id);
+
+/* Delete a bb_job_t record. DOES NOT UNLINK FROM HASH TABLE */
+extern void bb_job_del2(bb_job_t *bb_job);
+//FIXME: DELETE THIS, MAKE STATIC IN COMMON.C
+
+/* Return a pointer to the existing bb_job_t record for a given job_id or
+ * NULL if not found */
+extern bb_job_t *bb_job_find(bb_state_t *state_ptr, uint32_t job_id);
+
+/* Log the contents of a bb_job_t record using "info()" */
+extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job);
 
 extern void bb_job_queue_del(void *x);
 

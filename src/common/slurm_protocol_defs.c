@@ -1908,6 +1908,10 @@ extern char *bb_state_string(uint16_t state)
 {
 	static char buf[16];
 
+	if (state == BB_STATE_PENDING)
+		return "pending";
+	if (state == BB_STATE_ALLOCATING)
+		return "allocating";
 	if (state == BB_STATE_ALLOCATED)
 		return "allocated";
 	if (state == BB_STATE_STAGING_IN)
@@ -1933,6 +1937,10 @@ extern char *bb_state_string(uint16_t state)
 /* Translate a burst buffer state string to its equivalant numeric value */
 extern uint16_t bb_state_num(char *tok)
 {
+	if (!strcasecmp(tok, "pending"))
+		return BB_STATE_PENDING;
+	if (!strcasecmp(tok, "allocating"))
+		return BB_STATE_ALLOCATING;
 	if (!strcasecmp(tok, "allocated"))
 		return BB_STATE_ALLOCATED;
 	if (!strcasecmp(tok, "staging-in"))

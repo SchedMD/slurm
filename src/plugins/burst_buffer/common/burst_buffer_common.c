@@ -129,7 +129,8 @@ static char *_print_users(uid_t *buf)
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr)
 {
-	state_ptr->bb_hash  = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
+	state_ptr->bb_ahash = xmalloc(sizeof(bb_alloc_t *) * BB_HASH_SIZE);
+	state_ptr->bb_jhash = xmalloc(sizeof(bb_job_t *)   * BB_HASH_SIZE);
 	state_ptr->bb_uhash = xmalloc(sizeof(bb_user_t *)  * BB_HASH_SIZE);
 }
 
@@ -137,25 +138,41 @@ extern void bb_alloc_cache(bb_state_t *state_ptr)
 extern void bb_clear_cache(bb_state_t *state_ptr)
 {
 	bb_alloc_t *bb_current,   *bb_next;
+	bb_job_t   *job_current,  *job_next;
 	bb_user_t  *user_current, *user_next;
 	int i;
 
-	if (state_ptr->bb_hash) {
+	if (state_ptr->bb_ahash) {
 		for (i = 0; i < BB_HASH_SIZE; i++) {
-			bb_current = state_ptr->bb_hash[i];
+			bb_current = state_ptr->bb_ahash[i];
 			while (bb_current) {
+				xassert(bb_current->magic == BB_ALLOC_MAGIC);
 				bb_next = bb_current->next;
-				bb_free_rec(bb_current);
+				bb_free_alloc_buf(bb_current);
 				bb_current = bb_next;
 			}
 		}
-		xfree(state_ptr->bb_hash);
+		xfree(state_ptr->bb_ahash);
+	}
+
+	if (state_ptr->bb_jhash) {
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			job_current = state_ptr->bb_jhash[i];
+			while (job_current) {
+				xassert(job_current->magic == BB_JOB_MAGIC);
+				job_next = job_current->next;
+				bb_job_del2(job_current);
+				job_current = job_next;
+			}
+		}
+		xfree(state_ptr->bb_jhash);
 	}
 
 	if (state_ptr->bb_uhash) {
 		for (i = 0; i < BB_HASH_SIZE; i++) {
 			user_current = state_ptr->bb_uhash[i];
 			while (user_current) {
+				xassert(user_current->magic == BB_USER_MAGIC);
 				user_next = user_current->next;
 				xfree(user_current);
 				user_current = user_next;
@@ -207,18 +224,21 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
-extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
-				   bb_alloc_t **bb_hash)
+extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
+				     struct job_record *job_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	char jobid_buf[32];
 
 	xassert(job_ptr);
-	bb_ptr = bb_hash[job_ptr->user_id % BB_HASH_SIZE];
+	xassert(state_ptr);
+	bb_ptr = state_ptr->bb_ahash[job_ptr->user_id % BB_HASH_SIZE];
 	while (bb_ptr) {
 		if (bb_ptr->job_id == job_ptr->job_id) {
-			if (bb_ptr->user_id == job_ptr->user_id)
+			if (bb_ptr->user_id == job_ptr->user_id) {
+				xassert(bb_ptr->magic == BB_USER_MAGIC);
 				return bb_ptr;
+			}
 			error("%s: Slurm state inconsistent with burst "
 			      "buffer. %s has UserID mismatch (%u != %u)",
 			      __func__,
@@ -236,16 +256,16 @@ extern bb_alloc_t *bb_find_job_rec(struct job_record *job_ptr,
 /* Find a burst buffer record by name
  * bb_name IN - Buffer's name
  * user_id IN - Possible user ID, advisory use only
- * bb_hash IN - Buffer hash table
+ * bb_ahash IN - Buffer hash table
  * RET the buffer or NULL if not found */
 extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
-				   bb_alloc_t **bb_hash)
+				   bb_alloc_t **bb_ahash)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	int i, hash_inx = user_id % BB_HASH_SIZE;
 
 	/* Try this user ID first */
-	bb_ptr = bb_hash[hash_inx];
+	bb_ptr = bb_ahash[hash_inx];
 	while (bb_ptr) {
 		if (!xstrcmp(bb_ptr->name, bb_name))
 			return bb_ptr;
@@ -256,10 +276,12 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		if (i == hash_inx)
 			continue;
-		bb_ptr = bb_hash[i];
+		bb_ptr = bb_ahash[i];
 		while (bb_ptr) {
-			if (!xstrcmp(bb_ptr->name, bb_name))
+			if (!xstrcmp(bb_ptr->name, bb_name)) {
+				xassert(bb_ptr->magic = BB_ALLOC_MAGIC);
 				return bb_ptr;
+			}
 			bb_ptr = bb_ptr->next;
 		}
 	}
@@ -303,6 +325,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 		user_ptr = user_ptr->next;
 	}
 	user_ptr = xmalloc(sizeof(bb_user_t));
+	xassert((user_ptr->magic = BB_USER_MAGIC));	/* Sets value */
 	user_ptr->next = bb_uhash[inx];
 	/* user_ptr->size = 0;	initialized by xmalloc */
 	user_ptr->user_id = user_id;
@@ -589,17 +612,17 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 }
 
 /* Pack individual burst buffer records into a  buffer */
-extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_ahash, Buf buffer,
 			uint16_t protocol_version)
 {
 	int i, j, rec_count = 0;
 	struct bb_alloc *bb_next;
 
-	if (!bb_hash)
+	if (!bb_ahash)
 		return rec_count;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_next = bb_hash[i];
+		bb_next = bb_ahash[i];
 		while (bb_next) {
 			if ((uid == 0) || (uid == bb_next->user_id)) {
 				pack32(bb_next->array_job_id,  buffer);
@@ -752,7 +775,7 @@ extern void bb_set_use_time(bb_state_t *state_ptr)
 
 	state_ptr->next_end_time = now + 60 * 60; /* Start estimate now+1hour */
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = state_ptr->bb_hash[i];
+		bb_ptr = state_ptr->bb_ahash[i];
 		while (bb_ptr) {
 			if (bb_ptr->job_id &&
 			    ((bb_ptr->state == BB_STATE_STAGING_IN) ||
@@ -822,11 +845,12 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
 
-	xassert(state_ptr->bb_hash);
+	xassert(state_ptr->bb_ahash);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
-	bb_ptr->next = state_ptr->bb_hash[i];
-	state_ptr->bb_hash[i] = bb_ptr;
+	xassert((bb_ptr->magic = BB_USER_MAGIC));	/* Sets value */
+	bb_ptr->next = state_ptr->bb_ahash[i];
+	state_ptr->bb_ahash[i] = bb_ptr;
 	bb_ptr->name = xstrdup(name);
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->state_time = time(NULL);
@@ -846,7 +870,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
 
-	xassert(state_ptr->bb_hash);
+	xassert(state_ptr->bb_ahash);
 	xassert(job_ptr);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
 	bb_ptr->array_job_id = job_ptr->array_job_id;
@@ -861,9 +885,10 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 		bb_ptr->gres_ptr[i].name = xstrdup(bb_spec->gres_ptr[i].name);
 	}
 	bb_ptr->job_id = job_ptr->job_id;
+	xassert((bb_ptr->magic = BB_JOB_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
-	bb_ptr->next = state_ptr->bb_hash[i];
-	state_ptr->bb_hash[i] = bb_ptr;
+	bb_ptr->next = state_ptr->bb_ahash[i];
+	state_ptr->bb_ahash[i] = bb_ptr;
 	bb_ptr->size = bb_spec->total_size;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->state_time = time(NULL);
@@ -905,17 +930,19 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	return bb_ptr;
 }
 
-/* Free memory associated with allocated bb record */
-extern void bb_free_rec(bb_alloc_t *bb_ptr)
+/* Free memory associated with allocated bb record, caller is responsible for
+ * maintaining linked list */
+extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 {
 	int i;
 
-	if (bb_ptr) {
-		for (i = 0; i < bb_ptr->gres_cnt; i++)
-			xfree(bb_ptr->gres_ptr[i].name);
-		xfree(bb_ptr->gres_ptr);
-		xfree(bb_ptr->name);
-		xfree(bb_ptr);
+	if (bb_alloc) {
+		xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
+		for (i = 0; i < bb_alloc->gres_cnt; i++)
+			xfree(bb_alloc->gres_ptr[i].name);
+		xfree(bb_alloc->gres_ptr);
+		xfree(bb_alloc->name);
+		xfree(bb_alloc);
 	}
 }
 
@@ -928,16 +955,17 @@ extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr)
 	int i;
 
 	xassert(state_ptr);
-	xassert(state_ptr->bb_hash);
+	xassert(state_ptr->bb_ahash);
 	xassert(bb_ptr);
 
 	i = bb_ptr->user_id % BB_HASH_SIZE;
-	bb_plink = &state_ptr->bb_hash[i];
-	bb_link = state_ptr->bb_hash[i];
+	bb_plink = &state_ptr->bb_ahash[i];
+	bb_link = state_ptr->bb_ahash[i];
 	while (bb_link) {
 		if (bb_link == bb_ptr) {
+			xassert(bb_link->magic == BB_ALLOC_MAGIC);
 			*bb_plink = bb_ptr->next;
-			bb_free_rec(bb_ptr);
+			bb_free_alloc_buf(bb_ptr);
 			return true;
 		}
 		bb_plink = &bb_link->next;
@@ -1154,4 +1182,112 @@ extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id)
 			    &bb_pers_match))
 		return true;
 	return false;
+}
+
+/* Allocate a bb_job_t record, hashed by job_id, delete with bb_job_del() */
+extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
+{
+	int inx = job_id % BB_HASH_SIZE;
+	bb_job_t *bb_job = xmalloc(sizeof(bb_job_t));
+
+	xassert(state_ptr);
+	xassert((bb_job->magic = BB_JOB_MAGIC));	/* Sets value */
+	bb_job->next = state_ptr->bb_jhash[inx];
+	state_ptr->bb_jhash[inx] = bb_job;
+
+	return bb_job;
+}
+
+/* Return a pointer to the existing bb_job_t record for a given job_id or
+ * NULL if not found */
+extern bb_job_t *bb_job_find(bb_state_t *state_ptr, uint32_t job_id)
+{
+	bb_job_t *bb_job;
+
+	xassert(state_ptr);
+	bb_job = state_ptr->bb_jhash[job_id % BB_HASH_SIZE];
+	while (bb_job) {
+		if (bb_job->job_id == job_id) {
+			xassert(bb_job->magic == BB_JOB_MAGIC);
+			return bb_job;
+		}
+		bb_job = bb_job->next;
+	}
+
+	return bb_job;
+}
+
+/* Delete a bb_job_t record, hashed by job_id */
+extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id)
+{
+	int inx = job_id % BB_HASH_SIZE;
+	bb_job_t *bb_job, **bb_pjob;
+
+	xassert(state_ptr);
+	bb_pjob = &state_ptr->bb_jhash[inx];
+	bb_job  =  state_ptr->bb_jhash[inx];
+	while (bb_job) {
+		if (bb_job->job_id == job_id) {
+			xassert(bb_job->magic == BB_JOB_MAGIC);
+			*bb_pjob = bb_job->next;
+			bb_job_del2(bb_job);
+			return;
+		}
+		bb_pjob = &bb_job->next;
+		bb_job  =  bb_job->next;
+	}
+}
+
+/* Delete a bb_job_t record. DOES NOT UNLINK FROM HASH TABLE */
+extern void bb_job_del2(bb_job_t *bb_job)
+{
+	int i;
+
+	if (bb_job) {
+		for (i = 0; i < bb_job->buf_cnt; i++) {
+			xfree(bb_job->buf_ptr[i].access);
+			xfree(bb_job->buf_ptr[i].name);
+			xfree(bb_job->buf_ptr[i].type);
+		}
+		xfree(bb_job->buf_ptr);
+		for (i = 0; i < bb_job->gres_cnt; i++)
+			xfree(bb_job->gres_ptr[i].name);
+		xfree(bb_job->gres_ptr);
+		xfree(bb_job);
+	}
+}
+
+/* Log the contents of a bb_job_t record using "info()" */
+extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
+{
+	bb_buf_t *buf_ptr;
+	char *out_buf = NULL;
+	int i;
+
+	if (bb_job) {
+		xstrfmtcat(out_buf, "%s: Job:%u ",
+			   state_ptr->name, bb_job->job_id);
+		for (i = 0; i < bb_job->gres_cnt; i++) {
+			xstrfmtcat(out_buf, "Gres[%d]:%s:%"PRIu64" ",
+				   i, bb_job->gres_ptr[i].name,
+				   bb_job->gres_ptr[i].count);
+		}
+		xstrfmtcat(out_buf, "Swap:%ux%u ", bb_job->swap_size,
+			   bb_job->swap_nodes);
+		xstrfmtcat(out_buf, "TotalSize:%"PRIu64"", bb_job->total_size);
+		info("%s", out_buf);
+		xfree(out_buf);
+		for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
+		     i++, buf_ptr++) {
+			if (buf_ptr->destroy) {
+				info("  Destroy Name:%s Hurry:%d",
+				     buf_ptr->name, (int) buf_ptr->hurry);
+			} else {
+				info("  Create  Name:%s Size:%"PRIu64" Access:%s Type:%s State:%s",
+				     buf_ptr->name, buf_ptr->size,
+				     buf_ptr->access, buf_ptr->type,
+				     bb_state_string(buf_ptr->state));
+			}
+		}
+	}
 }
