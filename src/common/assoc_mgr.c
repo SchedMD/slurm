@@ -2914,7 +2914,8 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		/* FIXME: This only works for CPUS now */
 		share->grp_cpu_mins = slurmdb_find_tres_count_in_string(
 			assoc->grp_tres_mins, TRES_CPU);
-		share->cpu_run_mins = assoc->usage->grp_used_cpu_run_secs / 60;
+		share->cpu_run_mins = assoc->usage->
+			grp_used_tres_run_secs[TRES_ARRAY_CPU] / 60;
 		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
 
