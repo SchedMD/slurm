@@ -1803,6 +1803,13 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	if (db_conn_errno != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	/* get tres before association and qos since it is used there */
+	if ((!assoc_mgr_tres_list)
+	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
+		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
+		    == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	/* get qos before association since it is used there */
 	if ((!assoc_mgr_qos_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_QOS))
@@ -1817,12 +1824,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		    SLURM_ERROR)
 			return SLURM_ERROR;
 
-	/* get tres before association since it is used there */
-	if ((!assoc_mgr_tres_list)
-	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
-		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
-		    == SLURM_ERROR)
-			return SLURM_ERROR;
 
 	if ((!assoc_mgr_assoc_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC))
@@ -5304,6 +5305,13 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		partial_list = 0;
 	}
 
+	/* get tres before association and qos since it is used there */
+	if (cache_level & ASSOC_MGR_CACHE_TRES) {
+		if (_refresh_assoc_mgr_tres_list(
+			    db_conn, init_setup.enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+	}
+
 	/* get qos before association since it is used there */
 	if (cache_level & ASSOC_MGR_CACHE_QOS)
 		if (_refresh_assoc_mgr_qos_list(
@@ -5315,13 +5323,6 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		if (_refresh_assoc_mgr_user_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
-	/* get tres before association since it is used there */
-	if (cache_level & ASSOC_MGR_CACHE_TRES) {
-		if (_refresh_assoc_mgr_tres_list(
-			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
-	}
 
 	if (cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if (_refresh_assoc_mgr_assoc_list(
