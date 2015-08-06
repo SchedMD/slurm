@@ -818,22 +818,21 @@ typedef struct {
 					   * (DON'T PACK) */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	char *max_tres_mins_pj;    /* max number of cpu seconds this
+	uint32_t max_jobs_pu;	/* max number of jobs a user can
+				 * run with this qos at one time */
+	uint32_t max_nodes_pj; /* max number of nodes a job can
+				* allocate with this qos at one time */
+	uint32_t max_nodes_pu; /* max number of nodes a user can
+				* allocate with this qos at one time */
+	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
+					submit with this qos at once */
+	char *max_tres_mins_pj;    /* max number of tres seconds this
 				    * qos can have per job */
 	uint64_t *max_tres_mins_pj_ctld; /* max_tres_mins broken out in an array
 					  * based off the ordering of the
 					  * total number of TRES in the system
 					  * (DON'T PACK) */
-	char *max_tres_run_mins_pu;   /* max number of cpu minutes this
-				       * qos can
-				       * having running at one time */
-	uint64_t *max_tres_run_mins_pu_ctld; /* max_tres_run_mins_pu
-					      * broken out in an array
-					      * based off the ordering
-					      * of the total number of TRES in
-					      * the system
-					      * (DON'T PACK) */
-	char *max_tres_pj;         /* max number of cpus this
+	char *max_tres_pj;         /* max number of tres this
 				    * qos can allocate per job */
 	uint64_t *max_tres_pj_ctld;   /* max_tres_pj broken out in an array
 				       * based off the ordering of the
@@ -845,14 +844,18 @@ typedef struct {
 				       * based off the ordering of the
 				       * total number of TRES in the system
 				       * (DON'T PACK) */
-	uint32_t max_jobs_pu;	/* max number of jobs a user can
-				 * run with this qos at one time */
-	uint32_t max_nodes_pj; /* max number of nodes a job can
-				* allocate with this qos at one time */
-	uint32_t max_nodes_pu; /* max number of nodes a user can
-				* allocate with this qos at one time */
-	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
-					submit with this qos at once */
+	char *max_tres_run_mins_pu;   /* max number of tres minutes this
+				       * qos can having running at one
+				       * time, currently this doesn't
+				       * do anything.
+				       */
+	uint64_t *max_tres_run_mins_pu_ctld; /* max_tres_run_mins_pu
+					      * broken out in an array
+					      * based off the ordering
+					      * of the total number of TRES in
+					      * the system, currently
+					      * this doesn't do anything.
+					      * (DON'T PACK) */
 	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
 	char *min_tres_pj; /* min number of tres a job can
@@ -1020,7 +1023,8 @@ typedef struct {
 	uint32_t submit_jobs; /* count of jobs pending or running */
 	uint64_t *tres; /* array of TRES allocated */
 	uint64_t *tres_run_mins; /* array of how many TRES mins are
-				  * allocated currently */
+				  * allocated currently, currently this doesn't
+				  * do anything and isn't set up. */
 	uint32_t uid;
 } slurmdb_used_limits_t;
 
@@ -1492,6 +1496,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);
+extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos);
 extern void slurmdb_destroy_qos_rec(void *object);
 extern void slurmdb_destroy_reservation_rec(void *object);
 extern void slurmdb_destroy_step_rec(void *object);

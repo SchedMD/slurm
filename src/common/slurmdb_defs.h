@@ -161,6 +161,8 @@ extern char *slurmdb_get_selected_step_id(
  */
 extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 					  slurmdb_assoc_rec_t *in);
+extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
+					slurmdb_qos_rec_t *in);
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
 extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);

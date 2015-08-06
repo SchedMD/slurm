@@ -81,25 +81,6 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 	}
 }
 
-static void _free_qos_rec_members(slurmdb_qos_rec_t *qos)
-{
-	if (qos) {
-		xfree(qos->description);
-		xfree(qos->grp_tres);
-		xfree(qos->grp_tres_mins);
-		xfree(qos->grp_tres_run_mins);
-		xfree(qos->max_tres_mins_pj);
-		xfree(qos->max_tres_run_mins_pu);
-		xfree(qos->max_tres_pj);
-		xfree(qos->max_tres_pu);
-		xfree(qos->min_tres_pj);
-		xfree(qos->name);
-		FREE_NULL_BITMAP(qos->preempt_bitstr);
-		FREE_NULL_LIST(qos->preempt_list);
-		slurmdb_destroy_qos_usage(qos->usage);
-	}
-}
-
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -746,11 +727,38 @@ extern void slurmdb_destroy_job_rec(void *object)
 	}
 }
 
+extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
+{
+	if (qos) {
+		xfree(qos->description);
+		xfree(qos->grp_tres);
+		xfree(qos->grp_tres_ctld);
+		xfree(qos->grp_tres_mins);
+		xfree(qos->grp_tres_mins_ctld);
+		xfree(qos->grp_tres_run_mins);
+		xfree(qos->grp_tres_run_mins_ctld);
+		xfree(qos->max_tres_mins_pj);
+		xfree(qos->max_tres_mins_pj_ctld);
+		xfree(qos->max_tres_run_mins_pu);
+		xfree(qos->max_tres_run_mins_pu_ctld);
+		xfree(qos->max_tres_pj);
+		xfree(qos->max_tres_pj_ctld);
+		xfree(qos->max_tres_pu);
+		xfree(qos->max_tres_pu_ctld);
+		xfree(qos->min_tres_pj);
+		xfree(qos->min_tres_pj_ctld);
+		xfree(qos->name);
+		FREE_NULL_BITMAP(qos->preempt_bitstr);
+		FREE_NULL_LIST(qos->preempt_list);
+		slurmdb_destroy_qos_usage(qos->usage);
+	}
+}
+
 extern void slurmdb_destroy_qos_rec(void *object)
 {
 	slurmdb_qos_rec_t *slurmdb_qos = (slurmdb_qos_rec_t *)object;
 	if (slurmdb_qos) {
-		_free_qos_rec_members(slurmdb_qos);
+		slurmdb_free_qos_rec_members(slurmdb_qos);
 		xfree(slurmdb_qos);
 	}
 }
@@ -1335,7 +1343,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 		return;
 
 	if (free_it)
-		_free_qos_rec_members(qos);
+		slurmdb_free_qos_rec_members(qos);
 	memset(qos, 0, sizeof(slurmdb_qos_rec_t));
 
 	qos->flags = QOS_FLAG_NOTSET;
@@ -2801,6 +2809,50 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);
+}
+
+extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
+					slurmdb_qos_rec_t *in)
+{
+	out->flags = in->flags;
+	out->grace_time = in->grace_time;
+	out->grp_jobs = in->grp_jobs;
+	out->grp_nodes = in->grp_nodes;
+	out->grp_submit_jobs = in->grp_submit_jobs;
+	xfree(out->grp_tres);
+	out->grp_tres = xstrdup(in->grp_tres);
+	xfree(out->grp_tres_mins);
+	out->grp_tres_mins = xstrdup(in->grp_tres_mins);
+	xfree(out->grp_tres_run_mins);
+	out->grp_tres_run_mins = xstrdup(in->grp_tres_run_mins);
+	out->grp_wall = in->grp_wall;
+
+	out->max_jobs_pu = in->max_jobs_pu;
+	out->max_nodes_pj = in->max_nodes_pj;
+	out->max_nodes_pu = in->max_nodes_pu;
+	out->max_submit_jobs_pu = in->max_submit_jobs_pu;
+	xfree(out->max_tres_mins_pj);
+	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);
+	xfree(out->max_tres_pj);
+	out->max_tres_pj = xstrdup(in->max_tres_pj);
+	xfree(out->max_tres_pu);
+	out->max_tres_pu = xstrdup(in->max_tres_pu);
+	xfree(out->max_tres_run_mins_pu);
+	out->max_tres_run_mins_pu = xstrdup(in->max_tres_run_mins_pu);
+	out->max_wall_pj = in->max_wall_pj;
+	xfree(out->min_tres_pj);
+	out->min_tres_pj = xstrdup(in->min_tres_pj);
+
+	FREE_NULL_LIST(out->preempt_list);
+	out->preempt_list = slurm_copy_char_list(in->preempt_list);
+
+	out->preempt_mode = in->preempt_mode;
+
+	out->priority = in->priority;
+
+	out->usage_factor = in->usage_factor;
+	out->usage_thres = in->usage_thres;
+
 }
 
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres)
