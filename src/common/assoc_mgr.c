@@ -5485,20 +5485,18 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					bool locked)
 {
 	int array_size = sizeof(uint64_t) * g_tres_count;
-	int diff_cnt = 0;
+	int diff_cnt = 0, i;
 
 	xassert(tres_cnt);
 
-	if (!*tres_cnt)
-		*tres_cnt = xmalloc(array_size);
-	else {
-		xrealloc_nz(*tres_cnt, array_size);
-		/* When doing the cnt the string is always the
-		 * complete string, so always set everything to 0 to
-		 * catch anything that was removed.
-		 */
-		memset(*tres_cnt, 0, array_size);
-	}
+	/* When doing the cnt the string is always the
+	 * complete string, so always set everything to 0 to
+	 * catch anything that was removed.
+	 */
+	xfree(*tres_cnt);
+	*tres_cnt = xmalloc_nz(array_size);
+	for (i=0; i<g_tres_count; i++)
+		(*tres_cnt)[i] = (uint64_t)INFINITE;
 
 	if (tres_str) {
 		List tmp_list = NULL;
