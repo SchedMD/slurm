@@ -239,6 +239,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	uint64_t tmp64;
+	char *tmp_char = NULL;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -263,18 +265,16 @@ static int _set_rec(int *start, int argc, char *argv[],
 					   MAX(command_len, 1))) {
 			if (name_list)
 				slurm_addto_char_list(name_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Description",
+		} else if (!qos)
+			continue;
+		else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
-			if (!qos)
-				continue;
 			if (!qos->description)
 				qos->description =
 					strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Flags",
 					 MAX(command_len, 2))) {
-			if (!qos)
-				continue;
 			qos->flags = str_2_qos_flags(argv[i]+end, option);
 			if (qos->flags == QOS_FLAG_NOTSET) {
 				char *tmp_char = NULL;
@@ -292,66 +292,49 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GraceTime",
 					 MAX(command_len, 3))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grace_time,
 			             "GraceTime") == SLURM_SUCCESS) {
 				set = 1;
 			}
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint64(argv[i]+end,
 				       &qos->grp_cpu_mins,
 				       "GrpCPUMins") == SLURM_SUCCESS)
 				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "GrpCPURunMins",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint64(argv[i]+end, &qos->grp_cpu_run_mins,
 				       "GrpCPURunMins") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUs",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grp_cpus,
 				     "GrpCPUs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpJobs",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grp_jobs,
 			    "GrpJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpMemory",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grp_mem,
 				     "GrpMemory") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpNodes",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grp_nodes,
 			    "GrpNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->grp_submit_jobs,
 			    "GrpSubmitJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				qos->grp_wall	= (uint32_t) mins;
@@ -364,60 +347,44 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint64(argv[i]+end,
 				       &qos->max_cpu_mins_pj,
 				       "MaxCPUMins") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxCPUsPerJob",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->max_cpus_pj,
 			    "MaxCPUs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxCPUsPerUser",
 					 MAX(command_len, 11))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->max_cpus_pu,
 			    "MaxCPUsPerUser") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobsPerUser",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->max_jobs_pu,
 			    "MaxJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end,
 			    &qos->max_nodes_pj,
 			    "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerUser",
 					 MAX(command_len, 8))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end,
 			    &qos->max_nodes_pu,
 			    "MaxNodesPerUser") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxSubmitJobsPerUser",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->max_submit_jobs_pu,
 			    "MaxSubmitJobs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
-			if (!qos)
-				continue;
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				qos->max_wall_pj = (uint32_t) mins;
@@ -430,15 +397,11 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "MinCPUsPerJob",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
 			if (get_uint(argv[i]+end, &qos->min_cpus_pj,
 			    "MinCPUs") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "PreemptMode",
 					 MAX(command_len, 8))) {
-			if (!qos)
-				continue;
 			qos->preempt_mode = preempt_mode_num(argv[i]+end);
 			if (qos->preempt_mode == (uint16_t)NO_VAL) {
 				fprintf(stderr,
@@ -450,9 +413,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 		/* Preempt needs to follow PreemptMode */
 		} else if (!strncasecmp (argv[i], "Preempt",
 					 MAX(command_len, 7))) {
-			if (!qos)
-				continue;
-
 			if (!qos->preempt_list)
 				qos->preempt_list =
 					list_create(slurm_destroy_char);
@@ -469,17 +429,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 		} else if (!strncasecmp (argv[i], "Priority",
 					 MAX(command_len, 3))) {
-			if (!qos)
-				continue;
-
 			if (get_uint(argv[i]+end, &qos->priority,
 			    "Priority") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "RawUsage",
 					 MAX(command_len, 7))) {
 			uint32_t usage;
-			if (!qos)
-				continue;
 			qos->usage = xmalloc(sizeof(slurmdb_qos_usage_t));
 			if (get_uint(argv[i]+end, &usage,
 				     "RawUsage") == SLURM_SUCCESS) {
@@ -488,16 +443,11 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "UsageFactor",
 					 MAX(command_len, 6))) {
-			if (!qos)
-				continue;
-
 			if (get_double(argv[i]+end, &qos->usage_factor,
 			    "UsageFactor") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "UsageThreshold",
 					 MAX(command_len, 6))) {
-			if (!qos)
-				continue;
 			if (get_double(argv[i]+end, &qos->usage_thres,
 			    "UsageThreshold") == SLURM_SUCCESS)
 				set = 1;
