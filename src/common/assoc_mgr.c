@@ -367,15 +367,19 @@ static void _normalize_assoc_shares_traditional(
 static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 			    slurmdb_assoc_rec_t *assoc2)
 {
+	int i;
+
 	if (!assoc1 || !assoc2)
 		return SLURM_ERROR;
 
-	assoc1->usage->grp_used_cpus += assoc2->usage->grp_used_cpus;
-	assoc1->usage->grp_used_mem += assoc2->usage->grp_used_mem;
 	assoc1->usage->grp_used_nodes += assoc2->usage->grp_used_nodes;
+	for (i=0; i < assoc1->usage->tres_cnt; i++) {
+		assoc1->usage->grp_used_tres[i] +=
+			assoc2->usage->grp_used_tres[i];
+		assoc1->usage->grp_used_tres_run_secs[i] +=
+			assoc2->usage->grp_used_tres_run_secs[i];
+	}
 	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
-	assoc1->usage->grp_used_cpu_run_secs +=
-		assoc2->usage->grp_used_cpu_run_secs;
 
 	assoc1->usage->used_jobs += assoc2->usage->used_jobs;
 	assoc1->usage->used_submit_jobs += assoc2->usage->used_submit_jobs;
