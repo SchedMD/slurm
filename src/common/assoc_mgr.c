@@ -882,23 +882,6 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 	list_iterator_destroy(itr);
 }
 
-static void _set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
-{
-	xassert(assoc_mgr_tres_array);
-
-	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres, 1);
-	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_mins_ctld,
-				     assoc->grp_tres_mins, 1);
-	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
-				     assoc->grp_tres_run_mins, 1);
-	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
-				     assoc->max_tres_pj, 1);
-	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
-				     assoc->max_tres_mins_pj, 1);
-	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
-				     assoc->max_tres_run_mins, 1);
-}
-
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 /* locks should be put in place before calling this function
  * ASSOC_WRITE, USER_WRITE */
@@ -922,7 +905,7 @@ static int _post_assoc_list(void)
 	while ((assoc = list_next(itr))) {
 		_set_assoc_parent_and_user(assoc, reset);
 		_add_assoc_hash(assoc);
-		_set_assoc_tres_cnt(assoc);
+		assoc_mgr_set_assoc_tres_cnt(assoc);
 		reset = 0;
 	}
 
@@ -1000,27 +983,6 @@ static int _post_wckey_list(List wckey_list)
 	return SLURM_SUCCESS;
 }
 
-static void _set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
-{
-	xassert(assoc_mgr_tres_array);
-
-	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_ctld, qos->grp_tres, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_mins_ctld,
-				     qos->grp_tres_mins, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_run_mins_ctld,
-				     qos->grp_tres_run_mins, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
-				     qos->max_tres_pj, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pu_ctld,
-				     qos->max_tres_pu, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,
-				     qos->max_tres_mins_pj, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pu_ctld,
-				     qos->max_tres_run_mins_pu, 1);
-	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
-				     qos->max_tres_pj, 1);
-}
-
 static int _post_qos_list(List qos_list)
 {
 	slurmdb_qos_rec_t *qos = NULL;
@@ -1042,7 +1004,7 @@ static int _post_qos_list(List qos_list)
 		if (qos->priority > g_qos_max_priority)
 			g_qos_max_priority = qos->priority;
 
-		_set_qos_tres_cnt(qos);
+		assoc_mgr_set_qos_tres_cnt(qos);
 	}
 	/* Since in the database id's don't start at 1
 	   instead of 0 we need to ignore the 0 bit and start
@@ -5567,6 +5529,54 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 		}
 	}
 	return diff_cnt;
+}
+
+/* tres read lock needs to be locked before this is called. */
+extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
+{
+	/* This isn't needed on the dbd */
+	if (slurmdbd_conf)
+		return;
+
+	xassert(assoc_mgr_tres_array);
+
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_mins_ctld,
+				     assoc->grp_tres_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
+				     assoc->grp_tres_run_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
+				     assoc->max_tres_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
+				     assoc->max_tres_mins_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
+				     assoc->max_tres_run_mins, 1);
+}
+
+/* tres read lock needs to be locked before this is called. */
+extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
+{
+	/* This isn't needed on the dbd */
+	if (slurmdbd_conf)
+		return;
+
+	xassert(assoc_mgr_tres_array);
+
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_ctld, qos->grp_tres, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_mins_ctld,
+				     qos->grp_tres_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_run_mins_ctld,
+				     qos->grp_tres_run_mins, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
+				     qos->max_tres_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pu_ctld,
+				     qos->max_tres_pu, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,
+				     qos->max_tres_mins_pj, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pu_ctld,
+				     qos->max_tres_run_mins_pu, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
+				     qos->max_tres_pj, 1);
 }
 
 extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)

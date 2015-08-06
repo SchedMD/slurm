@@ -453,6 +453,16 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					bool locked);
 
+/* Creates all the tres arrays for an association.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before this
+ * is called. */
+extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc);
+
+/* Creates all the tres arrays for a QOS.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before this
+ * is called. */
+extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos);
+
 /* Make a simple tres string from a tres count array.
  * IN tres_cnt - counts of each tres used
  * IN locked - if the assoc_mgr tres read lock is locked or not.
