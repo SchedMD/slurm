@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
     jobs could be started out of priority order.
  -- If a host has suspened jobs do not reboot it. Reboot only hosts
     with no jobs in any state.
+ -- ALPS - Fix issue when using --exclusive flag on srun to do the correct
+    thing (-F exclusive) instead of -F share.
 
 * Changes in Slurm 14.11.8
 ==========================
