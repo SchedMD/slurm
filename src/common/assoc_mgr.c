@@ -3602,6 +3602,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				addit = true;
 
 			_set_assoc_parent_and_user(object, reset);
+			assoc_mgr_set_assoc_tres_cnt(object);
 
 			if (addit)
 				_add_assoc_hash(object);
