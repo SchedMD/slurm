@@ -439,6 +439,7 @@ static int _update_node_data(void)
 {
 	int i;
 	char* path;
+	uint32_t tmp32;
 	uint64_t tmp;
 	ext_sensors_data_t *ext_sensors;
 	time_t now = time(NULL);
@@ -492,13 +493,13 @@ static int _update_node_data(void)
 				ext_sensors->temperature = NO_VAL;
 				continue;
 			}
-			tmp = _rrd_get_last_one(path,
-						ext_sensors_cnf->temp_rra_name);
+			tmp32 = _rrd_get_last_one(
+				path, ext_sensors_cnf->temp_rra_name);
 			xfree(path);
-			if (tmp != (uint64_t)NO_VAL &&
-			    tmp > (uint64_t)ext_sensors_cnf->min_temp &&
-			    tmp < (uint64_t)ext_sensors_cnf->max_temp) {
-				ext_sensors->temperature = (uint32_t)tmp;
+			if (tmp32 != NO_VAL &&
+			    tmp32 > ext_sensors_cnf->min_temp &&
+			    tmp32 < ext_sensors_cnf->max_temp) {
+				ext_sensors->temperature = tmp;
 			} else {
 				ext_sensors->temperature = NO_VAL;
 			}
