@@ -829,27 +829,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	/* for validation we don't need to look at
 	 * qos_ptr->grp_jobs.
 	 */
-	if (!acct_policy_limit_set->max_tres[TRES_ARRAY_MEM] && strict_checking
-	    && (qos_out_ptr->grp_mem == INFINITE)
-	    && (qos_ptr->grp_mem != INFINITE)) {
-
-		qos_out_ptr->grp_mem = qos_ptr->grp_mem;
-
-		if (job_memory > qos_ptr->grp_mem) {
-			if (reason)
-				*reason = WAIT_QOS_GRP_MEMORY;
-			debug2("job submit for user %s(%u): "
-			       "min memory request %u exceeds "
-			       "group max memory limit %u for qos '%s'",
-			       user_name,
-			       job_desc->user_id,
-			       job_memory,
-			       qos_ptr->grp_mem,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
-	}
 
 	qos_max_nodes_limit =
 		MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
