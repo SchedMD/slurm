@@ -1548,24 +1548,30 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 	}
 
-	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
-	    && (qos_out_ptr->min_cpus_pj == INFINITE)
-	    && (qos_ptr->min_cpus_pj != INFINITE)) {
-
-		qos_out_ptr->min_cpus_pj = qos_ptr->min_cpus_pj;
-
-		if (cpu_cnt && cpu_cnt < qos_ptr->min_cpus_pj) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_QOS_MIN_CPUS;
-			debug2("%s job %u being held, "
-			       "min cpu limit %u below "
-			       "qos %s per-job min %u",
-			       __func__, job_ptr->job_id,
-			       cpu_cnt, qos_ptr->name,
-			       qos_ptr->min_cpus_pj);
-			rc = false;
-			goto end_it;
-		}
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   tres_req_cnt,
+					   NULL,
+					   qos_ptr->min_tres_pj_ctld,
+					   NULL,
+					   qos_out_ptr->min_tres_pj_ctld,
+					   job_ptr->limit_set.min_tres,
+					   1, 0)) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS_MIN_CPUS;
+		debug2("job %u is being held, "
+		       "QOS %s min tres(%s%s%s) per job "
+		       "request %"PRIu64" exceeds "
+		       "min tres limit %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       tres_req_cnt[tres_pos],
+		       qos_ptr->min_tres_pj_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
 	}
 
 	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
