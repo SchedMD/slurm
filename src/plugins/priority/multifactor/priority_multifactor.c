@@ -770,10 +770,9 @@ static void _remove_tres_run_secs(uint64_t *tres_run_delta,
 
 	_remove_qos_tres_run_secs(tres_run_delta,
 				  job_ptr->job_id, job_ptr->qos_ptr);
-
 	while (assoc) {
 		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
-					    job_ptr->assoc_ptr);
+					    assoc);
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
@@ -968,22 +967,19 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	 * has occured on the entire system
 	 * and use that to normalize against. */
 	while (assoc) {
-		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
-					    job_ptr->assoc_ptr);
-
 		assoc->usage->grp_used_wall += run_decay;
 		assoc->usage->usage_raw += (long double)real_decay;
 		if (priority_debug)
-			info("adding %f new usage to assoc %u (user='%s' "
-			     "acct='%s') raw usage is now %Lf.  Group wall "
-			     "added %f making it %f. GrpCPURunMins is "
-			     "%"PRIu64"",
-			     real_decay, assoc->id,
-			     assoc->user, assoc->acct,
-			     assoc->usage->usage_raw,
-			     run_decay,
-			     assoc->usage->grp_used_wall,
-			     assoc->usage->grp_used_cpu_run_secs/60);
+			info("Adding %f new usage to assoc %u (%s/%s/%s) "
+			     "raw usage is now %Lf.  Group wall "
+			     "added %f making it %f.",
+			     real_decay, assoc->id, assoc->acct,
+			     assoc->user, assoc->partition,
+			     assoc->usage->usage_raw, run_decay,
+			     assoc->usage->grp_used_wall);
+		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
+					    assoc);
+
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 	assoc_mgr_unlock(&locks);
