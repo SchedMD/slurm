@@ -1730,25 +1730,36 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
-	if ((qos_out_ptr->grp_cpu_mins == (uint64_t)INFINITE)
-	    && (qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)) {
-
-		qos_out_ptr->grp_cpu_mins = qos_ptr->grp_cpu_mins;
-
-		if (usage_mins >= qos_ptr->grp_cpu_mins) {
-			last_job_update = now;
-			info("Job %u timed out, "
-			     "the job is at or exceeds QOS %s's "
-			     "group max cpu minutes of %"PRIu64" "
-			     "with %"PRIu64"",
-			     job_ptr->job_id,
-			     qos_ptr->name,
-			     qos_ptr->grp_cpu_mins,
-			     usage_mins);
-			job_ptr->state_reason = FAIL_TIMEOUT;
-			rc = false;
-			goto end_it;
-		}
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos, qos_ptr->grp_tres_mins_ctld,
+		qos_out_ptr->grp_tres_mins_ctld, NULL,
+		NULL, usage_mins, NULL, 0);
+	switch (i) {
+	case 1:
+		last_job_update = now;
+		info("Job %u timed out, "
+		     "the job is at or exceeds QOS %s's "
+		     "group max tres(%s%s%s) minutes of %"PRIu64" "
+		     "with %"PRIu64"",
+		     job_ptr->job_id,
+		     qos_ptr->name,
+		     assoc_mgr_tres_array[tres_pos]->type,
+		     assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		     assoc_mgr_tres_array[tres_pos]->name ?
+		     assoc_mgr_tres_array[tres_pos]->name : "",
+		     qos_ptr->grp_tres_mins_ctld[tres_pos],
+		     usage_mins);
+		job_ptr->state_reason = FAIL_TIMEOUT;
+		rc = false;
+		goto end_it;
+		break;
+	case 2:
+		/* not possible safe_limits is 0 */
+	case 3:
+		/* not possible safe_limits is 0 */
+	default:
+		/* all good */
+		break;
 	}
 
 	if ((qos_out_ptr->grp_wall == INFINITE)
