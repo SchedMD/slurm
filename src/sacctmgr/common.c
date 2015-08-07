@@ -1291,7 +1291,7 @@ extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 	xfree(meat);
 
 	if (num < 0)
-		*out_value = INFINITE;		/* flag to clear */
+		*out_value = INFINITE64; /* flag to clear */
 	else
 		*out_value = (uint64_t) num;
 	return SLURM_SUCCESS;

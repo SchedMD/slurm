@@ -5485,7 +5485,7 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	xfree(*tres_cnt);
 	*tres_cnt = xmalloc_nz(array_size);
 	for (i=0; i<g_tres_count; i++)
-		(*tres_cnt)[i] = (uint64_t)INFINITE;
+		(*tres_cnt)[i] = INFINITE64;
 
 	if (tres_str) {
 		List tmp_list = NULL;

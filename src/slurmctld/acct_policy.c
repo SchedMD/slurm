@@ -486,8 +486,8 @@ static bool _validate_tres_limits_for_assoc(
 
 	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count; (*tres_pos)++) {
 		if ((admin_set_limit_tres_array[*tres_pos] == ADMIN_SET_LIMIT)
-		    || (qos_tres_array[*tres_pos] == (uint64_t)INFINITE)
-		    || (assoc_tres_array[*tres_pos] != (uint64_t)INFINITE)
+		    || (qos_tres_array[*tres_pos] == INFINITE64)
+		    || (assoc_tres_array[*tres_pos] != INFINITE64)
 		    || (!job_tres_array[*tres_pos] && !update_call))
 			continue;
 
@@ -540,8 +540,8 @@ static bool _validate_tres_usage_limits_for_assoc(
 
 		if ((admin_limit_set
 		     && admin_limit_set[i] == ADMIN_SET_LIMIT) ||
-		    (qos_tres_limit_array[i] != (uint64_t)INFINITE) ||
-		    (tres_limit_array[i] == (uint64_t)INFINITE))
+		    (qos_tres_limit_array[i] != INFINITE64) ||
+		    (tres_limit_array[i] == INFINITE64))
 			continue;
 
 		if (curr_usage >= tres_limit_array[i])
@@ -606,17 +606,16 @@ static bool _validate_tres_limits_for_qos(
 		}
 
 		/* we don't need to look at this limit */
-		if ((admin_set_limit_tres_array[i] == (uint64_t)ADMIN_SET_LIMIT)
-		    || (out_max_tres_limit != (uint64_t)INFINITE)
-		    || (max_tres_limit == (uint64_t)INFINITE)
-		    || (job_tres_array[i] &&
-			(job_tres_array[i] == (uint64_t)NO_VAL)))
+		if ((admin_set_limit_tres_array[i] == ADMIN_SET_LIMIT)
+		    || (out_max_tres_limit != INFINITE64)
+		    || (max_tres_limit == INFINITE64)
+		    || (job_tres_array[i] && (job_tres_array[i] == NO_VAL64)))
 			continue;
 
 		out_max_tres_array[i] = max_tres_array[i];
 
 		if (out_grp_tres_array) {
-			if (out_grp_tres_array[i] == (uint64_t)INFINITE)
+			if (out_grp_tres_array[i] == INFINITE64)
 				out_grp_tres_array[i] = grp_tres_array[i];
 
 			if (max_limit) {
@@ -672,9 +671,9 @@ static bool _validate_tres_time_limits_for_qos(
 	for (i = 0; i < g_tres_count; i++) {
 		(*tres_pos) = i;
 
-		if ((out_max_tres_array[i] != (uint64_t)INFINITE) ||
-		    (max_tres_array[i] == (uint64_t)INFINITE) ||
-		    (job_tres_array[i] == (uint64_t)NO_VAL))
+		if ((out_max_tres_array[i] != INFINITE64) ||
+		    (max_tres_array[i] == INFINITE64) ||
+		    (job_tres_array[i] == NO_VAL64))
 			continue;
 
 		max_time_limit = (uint32_t)(max_tres_array[i] /
@@ -730,8 +729,8 @@ static int _validate_tres_usage_limits_for_qos(
 
 		if ((admin_limit_set
 		     && admin_limit_set[i] == ADMIN_SET_LIMIT) ||
-		    (out_tres_limit_array[i] != (uint64_t)INFINITE) ||
-		    (tres_limit_array[i] == (uint64_t)INFINITE))
+		    (out_tres_limit_array[i] != INFINITE64) ||
+		    (tres_limit_array[i] == INFINITE64))
 			continue;
 
 		out_tres_limit_array[i] = tres_limit_array[i];

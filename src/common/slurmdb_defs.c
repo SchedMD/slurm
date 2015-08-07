@@ -507,7 +507,7 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 		xmalloc(sizeof(slurmdb_assoc_usage_t));
 
 	usage->level_shares = NO_VAL;
-	usage->shares_norm = (double)NO_VAL;
+	usage->shares_norm = NO_VAL64;
 	usage->usage_efctv = 0;
 	usage->usage_norm = (long double)NO_VAL;
 	usage->usage_raw = 0;
@@ -1309,7 +1309,7 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
 
-	/* assoc->shares_norm = (double)NO_VAL; */
+	/* assoc->shares_norm = NO_VAL64; */
 	assoc->shares_raw = NO_VAL;
 
 	/* assoc->usage_efctv = 0; */
@@ -2928,7 +2928,7 @@ extern char *slurmdb_tres_string_combine_lists(
 		if (!(tres_rec_old = list_find_first(tres_list_old,
 						     slurmdb_find_tres_in_list,
 						     &tres_rec->id))
-		    || (tres_rec_old->count == (uint64_t)INFINITE))
+		    || (tres_rec_old->count == INFINITE64))
 			continue;
 		if (tres_str)
 			xstrcat(tres_str, ",");
@@ -3171,7 +3171,7 @@ extern void slurmdb_tres_list_from_string(
 			tres_rec->id = id;
 			tres_rec->count = count;
 			list_append(*tres_list, tres_rec);
-			if ((int64_t)count == -1)
+			if (count == INFINITE64)
 				remove_found++;
 		} else if (flags & TRES_STR_FLAG_REPLACE) {
 			debug2("TRES %u was already here with count %"PRIu64", "
@@ -3188,7 +3188,7 @@ extern void slurmdb_tres_list_from_string(
 	if (remove_found && (flags & TRES_STR_FLAG_REMOVE)) {
 		/* here we will remove the tres we don't want in the
 		   string */
-		uint64_t inf64 = (uint64_t)-1;
+		uint64_t inf64 = INFINITE64;
 		int removed;
 
 		if ((removed = list_delete_all(
@@ -3276,7 +3276,7 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 	char *tmp_str = tres_str_in;
 
 	if (!tmp_str || !tmp_str[0])
-		return (uint64_t)INFINITE;
+		return INFINITE64;
 
 	while (tmp_str) {
 		if (id == atoi(tmp_str)) {
@@ -3293,7 +3293,7 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 		tmp_str++;
 	}
 
-	return (uint64_t)INFINITE;
+	return INFINITE64;
 }
 
 extern int slurmdb_find_tres_in_list(void *x, void *key)

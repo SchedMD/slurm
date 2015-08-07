@@ -1260,11 +1260,11 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_run_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1285,11 +1285,11 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpack32(&object_ptr->lft, buffer);
 
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_mins_pj =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_run_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1587,8 +1587,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble((double)NO_VAL, buffer);
-			packdouble((double)NO_VAL, buffer);
+			packdouble(NO_VAL64, buffer);
+			packdouble(NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1674,8 +1674,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble((double)NO_VAL, buffer);
-			packdouble((double)NO_VAL, buffer);
+			packdouble(NO_VAL64, buffer);
+			packdouble(NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1779,8 +1779,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble((double)NO_VAL, buffer);
-			packdouble((double)NO_VAL, buffer);
+			packdouble(NO_VAL64, buffer);
+			packdouble(NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1925,11 +1925,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_run_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1946,11 +1946,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_mins_pj =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_run_mins_pu =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1999,11 +1999,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->grp_tres_run_mins =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -2021,11 +2021,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_mins_pj =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != (uint64_t)NO_VAL)
+		if (tmp64 != NO_VAL64)
 			object_ptr->max_tres_run_mins_pu =
 				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
 		safe_unpack32(&uint32_tmp, buffer);

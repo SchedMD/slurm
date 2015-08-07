@@ -106,7 +106,7 @@ static bool init_run = false;
 static int freq = 0;
 static bool pgid_plugin = false;
 static List task_list = NULL;
-static uint64_t cont_id = (uint64_t)NO_VAL;
+static uint64_t cont_id = NO_VAL64;
 static pthread_mutex_t task_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool jobacct_shutdown = true;
@@ -484,7 +484,7 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 	if (!plugin_polling || pgid_plugin)
 		return SLURM_SUCCESS;
 
-	if (cont_id != (uint64_t)NO_VAL)
+	if (cont_id != NO_VAL64)
 		info("Warning: jobacct: set_proctrack_container_id: cont_id "
 		     "is already set to %"PRIu64" you are setting it to "
 		     "%"PRIu64"", cont_id, id);
@@ -1158,7 +1158,7 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_ave = (double)jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
 	if (jobacct->energy.consumed_energy == NO_VAL)
-		stats->consumed_energy = (double)NO_VAL;
+		stats->consumed_energy = NO_VAL64;
 	else
 		stats->consumed_energy =
 			(double)jobacct->energy.consumed_energy;
