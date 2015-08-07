@@ -473,16 +473,12 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint64(value, &tmp64,
 			       "GrpCPUMins") == SLURM_SUCCESS) {
 			set = 1;
-			if (tmp64 == (uint64_t)INFINITE)
-				tmp_char = xstrdup_printf("%d=-1", TRES_CPU);
-			else
-				tmp_char = xstrdup_printf(
-					"%d=%"PRIu64, TRES_CPU, tmp64);
+			tmp_char = xstrdup_printf(
+				"%d=%"PRIu64, TRES_CPU, tmp64);
 
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_mins, tmp_char,
 				TRES_STR_FLAG_REPLACE);
-			info("sending '%s' '%s'", tmp_char, assoc->grp_tres_mins);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCPURunMins", MAX(command_len, 7))) {
