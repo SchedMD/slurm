@@ -235,10 +235,9 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 /* Find a burst buffer record by name
  * bb_name IN - Buffer's name
  * user_id IN - Possible user ID, advisory use only
- * bb_hash IN - Buffer hash table
  * RET the buffer or NULL if not found */
 extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
-				   bb_alloc_t **bb_hash);
+				    bb_state_t *state_ptr);
 
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
@@ -252,8 +251,13 @@ extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr);
 extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc);
 
 /* Translate a burst buffer size specification in string form to numeric form,
- * recognizing various sufficies (MB, GB, TB, PB, and Nodes). */
+ * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
+ * are bytes. */
 extern uint64_t bb_get_size_num(char *tok, uint64_t granularity);
+
+/* Translate a burst buffer size specification in numeric form to string form,
+ * recognizing various sufficies (KB, MB, GB, TB, PB, and Nodes). */
+extern char *bb_get_size_str(uint64_t size);
 
 /* Round up a number based upon some granularity */
 extern uint64_t bb_granularity(uint64_t start_size, uint64_t granularity);
@@ -321,5 +325,20 @@ extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id);
  * Return stdout+stderr of spawned program, value must be xfreed. */
 extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
+
+/* Determine if a request of a given size can run
+ * RET: -1  Can never run
+ *       0  Can run later
+ *       1  Can run now */
+extern int bb_limit_test(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr);
+
+/* Make claim against resource limit for a user */
+extern void bb_limit_add(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr);
+
+/* Release claim against resource limit for a user */
+extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */

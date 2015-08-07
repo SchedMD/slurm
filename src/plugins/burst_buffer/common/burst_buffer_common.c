@@ -256,16 +256,15 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 /* Find a burst buffer record by name
  * bb_name IN - Buffer's name
  * user_id IN - Possible user ID, advisory use only
- * bb_ahash IN - Buffer hash table
  * RET the buffer or NULL if not found */
 extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
-				   bb_alloc_t **bb_ahash)
+				    bb_state_t *state_ptr)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	int i, hash_inx = user_id % BB_HASH_SIZE;
 
 	/* Try this user ID first */
-	bb_ptr = bb_ahash[hash_inx];
+	bb_ptr = state_ptr->bb_ahash[hash_inx];
 	while (bb_ptr) {
 		if (!xstrcmp(bb_ptr->name, bb_name))
 			return bb_ptr;
@@ -276,7 +275,7 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		if (i == hash_inx)
 			continue;
-		bb_ptr = bb_ahash[i];
+		bb_ptr = state_ptr->bb_ahash[i];
 		while (bb_ptr) {
 			if (!xstrcmp(bb_ptr->name, bb_name)) {
 				xassert(bb_ptr->magic = BB_ALLOC_MAGIC);
@@ -718,6 +717,40 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	}
 
 	return bb_size_u;
+}
+
+/* Translate a burst buffer size specification in numeric form to string form,
+ * recognizing various sufficies (MB, GB, TB, PB, and Nodes). Default units
+ * are bytes. */
+extern char *bb_get_size_str(uint64_t size)
+{
+	static char size_str[64];
+
+	if (size == 0) {
+		snprintf(size_str, sizeof(size_str), "%"PRIu64, size);
+	} else if (size & BB_SIZE_IN_NODES) {
+		size &= (~BB_SIZE_IN_NODES);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"N", size);
+	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
+		size /= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"PB", size);
+	} else if ((size % ((uint64_t)1024 * 1024 * 1024 * 1024)) == 0) {
+		size /= ((uint64_t)1024 * 1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"TB", size);
+	} else if ((size % ((uint64_t)1024 * 1024 * 1024)) == 0) {
+		size /= ((uint64_t)1024 * 1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"GB", size);
+	} else if ((size % ((uint64_t)1024 * 1024)) == 0) {
+		size /= ((uint64_t)1024 * 1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"MB", size);
+	} else if ((size % ((uint64_t)1024)) == 0) {
+		size /= ((uint64_t)1024);
+		snprintf(size_str, sizeof(size_str), "%"PRIu64"KB", size);
+	} else {
+		snprintf(size_str, sizeof(size_str), "%"PRIu64, size);
+	}
+
+	return size_str;
 }
 
 /* Round up a number based upon some granularity */
@@ -1193,6 +1226,7 @@ extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
 	xassert(state_ptr);
 	xassert((bb_job->magic = BB_JOB_MAGIC));	/* Sets value */
 	bb_job->next = state_ptr->bb_jhash[inx];
+	bb_job->job_id = job_id;
 	state_ptr->bb_jhash[inx] = bb_job;
 
 	return bb_job;
@@ -1290,4 +1324,67 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 			}
 		}
 	}
+}
+
+/* Determine if a request of a given size can run
+ * RET: -1  Can never run
+ *       0  Can run later
+ *       1  Can run now */
+extern int bb_limit_test(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr)
+{
+	bb_user_t *bb_user;
+
+	xassert(state_ptr);
+
+	/* Test against global limits */
+	if (((state_ptr->bb_config.job_size_limit  != NO_VAL64) &&
+	     (bb_size > state_ptr->bb_config.job_size_limit)) ||
+	    ((state_ptr->bb_config.user_size_limit != NO_VAL64) &&
+	     (bb_size > state_ptr->bb_config.user_size_limit))) {
+		return -1;
+	}
+
+	/* Now test this user's limit, considering current usage */
+	if (state_ptr->bb_config.user_size_limit != NO_VAL64) {
+		bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+		xassert(bb_user);
+		if ((bb_user->size + bb_size) >
+		    state_ptr->bb_config.user_size_limit)
+			return 0;
+	}
+
+//FIXME: Need TRES limit check here
+	return 1;
+}
+
+/* Make claim against resource limit for a user */
+extern void bb_limit_add(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr)
+{
+	bb_user_t *bb_user;
+
+	bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+	xassert(bb_user);
+	bb_user->size += bb_size;
+
+//FIXME: Need TRES limit add here
+}
+
+/* Release claim against resource limit for a user */
+extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size,
+			 bb_state_t *state_ptr)
+{
+	bb_user_t *bb_user;
+
+	bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+	xassert(bb_user);
+	if (bb_user->size >= bb_size)
+		bb_user->size -= bb_size;
+	else {
+		bb_user->size = 0;
+		error("%s: user limit underflow for uid %u", __func__, user_id);
+	}
+
+//FIXME: Need TRES limit remove here
 }

@@ -4556,6 +4556,8 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */
 #define BB_STATE_ALLOCATING	0x0001		/* Cray: bbs_setup started */
 #define BB_STATE_ALLOCATED	0x0002		/* Cray: bbs_setup started */
+#define BB_STATE_DELETING	0x0005		/* Cray: bbs_setup started */
+#define BB_STATE_DELETED	0x0006		/* Cray: bbs_setup started */
 #define BB_STATE_STAGING_IN	0x0011		/* Cray: bbs_data_in started */
 #define BB_STATE_STAGED_IN	0x0012		/* Cray: bbs_data_in complete */
 #define BB_STATE_RUNNING	0x0021		/* Job is running */
