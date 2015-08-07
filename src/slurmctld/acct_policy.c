@@ -1401,30 +1401,54 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 
 	/* we don't need to check grp_jobs here */
 
-	if ((qos_out_ptr->grp_cpu_run_mins == INFINITE)
-	    && (qos_ptr->grp_cpu_run_mins != INFINITE)) {
-
-		qos_out_ptr->grp_cpu_run_mins = qos_ptr->grp_cpu_run_mins;
-
-		if (cpu_run_mins + job_cpu_time_limit >
-		    qos_ptr->grp_cpu_run_mins) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =
-				WAIT_QOS_GRP_CPU_RUN_MIN;
-			debug2("job %u being held, "
-			       "qos %s is at or exceeds "
-			       "group max running cpu minutes "
-			       "limit %"PRIu64" with already "
-			       "used %"PRIu64" + requested %"PRIu64" "
-			       "for qos '%s'",
-			       job_ptr->job_id, qos_ptr->name,
-			       qos_ptr->grp_cpu_run_mins,
-			       cpu_run_mins,
-			       job_cpu_time_limit,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos,
+		qos_ptr->grp_tres_run_mins_ctld,
+		qos_out_ptr->grp_tres_run_mins_ctld,
+		job_tres_time_limit, tres_run_mins, 0, NULL, 1);
+	switch (i) {
+	case 1:
+		/* not possible because the curr_usage sent in is 0 */
+		break;
+	case 2:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason =	WAIT_QOS_GRP_CPU_RUN_MIN;
+		debug2("job %u is being held, "
+		       "QOS %s group max running tres(%s%s%s) minutes "
+		       "limit %"PRIu64" is already full with %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_run_mins_ctld[tres_pos],
+		       tres_run_mins[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case 3:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason =	WAIT_QOS_GRP_CPU_RUN_MIN;
+		debug2("job %u being held, "
+		       "if allowed the job request will exceed "
+		       "QOS %s group max running tres(%s%s%s) minutes "
+		       "limit %"PRIu64" with already "
+		       "used %"PRIu64" + requested %"PRIu64,
+		       job_ptr->job_id, qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_run_mins_ctld[tres_pos],
+		       tres_run_mins[tres_pos],
+		       job_tres_time_limit[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	default:
+		/* all good */
+		break;
 	}
 
 	if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
