@@ -2539,81 +2539,59 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		}
 
-		limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->grp_tres, TRES_CPU);
-		if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] !=
-		     ADMIN_SET_LIMIT)
-		    && (qos_rec.grp_cpus == INFINITE)
-		    && (limit != (uint64_t)INFINITE)) {
-			if (cpu_cnt > (uint32_t)limit) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
-				debug2("job %u being held, "
-				       "min cpu request %u exceeds "
-				       "group max cpu limit %"PRIu64" for "
-				       "account %s",
-				       job_ptr->job_id,
-				       cpu_cnt,
-				       limit,
-				       assoc_ptr->acct);
-				rc = false;
-				goto end_it;
-			}
 
-			if ((assoc_ptr->usage->grp_used_cpus + cpu_cnt) >
-			    limit) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
-				debug2("job %u being held, "
-				       "assoc %u is at or exceeds "
-				       "group max cpu limit %"PRIu64" "
-				       "with already used %u + requested %u "
-				       "for account %s",
-				       job_ptr->job_id, assoc_ptr->id,
-				       limit,
-				       assoc_ptr->usage->grp_used_cpus,
-				       cpu_cnt,
-				       assoc_ptr->acct);
-				rc = false;
-				goto end_it;
-			}
-		}
-
-		if (!admin_set_memory_limit
-		    && (qos_rec.grp_mem == INFINITE)
-		    && (assoc_ptr->grp_mem != INFINITE)) {
-			if (job_memory > assoc_ptr->grp_mem) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_ASSOC_GRP_MEMORY;
-				info("job %u being held, "
-				     "memory request %u exceeds "
-				     "group memory limit %u for "
-				     "account %s",
-				     job_ptr->job_id,
-				     job_memory,
-				     assoc_ptr->grp_mem,
-				     assoc_ptr->acct);
-				rc = false;
-				goto end_it;
-			}
-
-			if ((assoc_ptr->usage->grp_used_mem + job_memory) >
-			    assoc_ptr->grp_mem) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = WAIT_ASSOC_GRP_MEMORY;
-				debug2("job %u being held, "
-				       "assoc %u is at or exceeds "
-				       "group memory limit %u "
-				       "with already used %u + requested %u "
-				       "for account %s",
-				       job_ptr->job_id, assoc_ptr->id,
-				       assoc_ptr->grp_mem,
-				       assoc_ptr->usage->grp_used_mem,
-				       job_memory,
-				       assoc_ptr->acct);
-				rc = false;
-				goto end_it;
-			}
+		i = _validate_tres_usage_limits_for_assoc(
+			&tres_pos,
+			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
+			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
+			0, job_ptr->limit_set.min_tres, 1);
+		switch (i) {
+		case 1:
+			/* not possible because the curr_usage sent in is 0 */
+			break;
+		case 2:
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
+			debug2("job %u is being held, "
+			       "assoc %u(%s/%s/%s) min tres(%s%s%s) "
+			       "request %"PRIu64" exceeds "
+			       "group max tres limit %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       tres_req_cnt[tres_pos],
+			       assoc_ptr->grp_tres_ctld[tres_pos]);
+			rc = false;
+			goto end_it;
+			break;
+		case 3:
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason =	WAIT_QOS_GRP_CPU;
+			debug2("job %u being held, "
+			       "if allowed the job request will exceed "
+			       "assoc %u(%s/%s/%s) group max "
+			       "tres(%s%s%s) limit "
+			       "%"PRIu64" with already used %"PRIu64" + "
+			       "requested %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       assoc_ptr->usage->grp_used_tres[tres_pos],
+			       tres_req_cnt[tres_pos]);
+			rc = false;
+			goto end_it;
+		default:
+			/* all good */
+			break;
 		}
 
 		/* we don't need to check grp_jobs here */
