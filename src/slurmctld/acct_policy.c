@@ -2596,29 +2596,59 @@ extern bool acct_policy_job_runnable_post_select(
 
 		/* we don't need to check grp_jobs here */
 
-		limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->grp_tres_run_mins, TRES_CPU);
-		if ((qos_rec.grp_cpu_run_mins == INFINITE)
-		    && (limit != (uint64_t)INFINITE)) {
-			if (cpu_run_mins + job_cpu_time_limit >
-			    (uint32_t)limit) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason =
-					WAIT_ASSOC_GRP_CPU_RUN_MIN;
-				debug2("job %u being held, "
-				       "assoc %u is at or exceeds "
-				       "group max running cpu minutes "
-				       "limit %"PRIu64" with already "
-				       "used %"PRIu64" + requested %"PRIu64" "
-				       "for account %s",
-				       job_ptr->job_id, assoc_ptr->id,
-				       limit,
-				       cpu_run_mins,
-				       job_cpu_time_limit,
-				       assoc_ptr->acct);
-				rc = false;
-				goto end_it;
-			}
+		i = _validate_tres_usage_limits_for_assoc(
+			&tres_pos,
+			assoc_ptr->grp_tres_run_mins_ctld,
+			qos_rec.grp_tres_run_mins_ctld,
+			job_tres_time_limit, tres_run_mins, 0, NULL, 1);
+		switch (i) {
+		case 1:
+			/* not possible because the curr_usage sent in is 0 */
+			break;
+		case 2:
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU_RUN_MIN;
+			debug2("job %u is being held, "
+			       "assoc %u(%s/%s/%s) group max running "
+			       "tres(%s%s%s) minutes limit %"PRIu64
+			       " is already full with %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       assoc_ptr->grp_tres_run_mins_ctld[tres_pos],
+			       tres_run_mins[tres_pos]);
+			rc = false;
+			goto end_it;
+			break;
+		case 3:
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU_RUN_MIN;
+			debug2("job %u being held, "
+			       "if allowed the job request will exceed "
+			       "assoc %u(%s/%s/%s) group max running "
+			       "tres(%s%s%s) minutes limit %"PRIu64
+			       " with already used %"PRIu64
+			       " + requested %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       assoc_ptr->grp_tres_run_mins_ctld[tres_pos],
+			       tres_run_mins[tres_pos],
+			       job_tres_time_limit[tres_pos]);
+			rc = false;
+			goto end_it;
+			break;
+		default:
+			/* all good */
+			break;
 		}
 
 		if ((job_ptr->limit_set.min_nodes != ADMIN_SET_LIMIT)
