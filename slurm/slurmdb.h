@@ -437,9 +437,6 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
-	uint32_t grp_mem;          /* max amount of memory the
-				    * underlying group of
-				    * associations can allocate at once */
 	uint32_t grp_nodes;        /* max number of nodes the
 				    * underlying group of
 				    * associations can allocate at once */
@@ -536,10 +533,6 @@ typedef struct slurmdb_assoc_rec {
 struct slurmdb_assoc_usage {
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of active jobs in the group
-				 * (DON'T PACK for state file) */
-	uint32_t grp_used_mem; /* count of active memory in the group
-				 * (DON'T PACK for state file) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK for state file) */
 	uint64_t *grp_used_tres; /* array of active tres counts */
@@ -547,8 +540,6 @@ struct slurmdb_assoc_usage {
 					   * (DON'T PACK for state file) */
 
 	double grp_used_wall;   /* group count of time used in running jobs */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK for state file) */
 	double fs_factor;	/* Fairshare factor. Not used by all algorithms
 				 * (DON'T PACK for state file) */
 	uint32_t level_shares;  /* number of shares on this level of
@@ -753,14 +744,8 @@ typedef struct {
 typedef struct {
 	List job_list; /* list of job pointers to submitted/running
 			  jobs (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of cpus in use in this qos
-				 * (DON'T PACK for state file) */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK for state file) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
 				 * for state file) */
-	uint32_t grp_used_mem; /* count of memory in use in this qos
-				* (DON'T PACK for state file) */
 	uint32_t grp_used_nodes; /* count of nodes in use in this qos
 				  * (DON'T PACK for state file) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
@@ -790,8 +775,6 @@ typedef struct {
 	uint32_t grace_time; /* preemption grace time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
-	uint32_t grp_mem; /* max amount of memory this qos
-			     can allocate at one time */
 	uint32_t grp_nodes; /* max number of nodes this qos
 			       can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at

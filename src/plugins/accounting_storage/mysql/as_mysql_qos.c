@@ -126,8 +126,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->grace_time = 0;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_mem == NO_VAL)
-			qos->grp_mem = INFINITE;
 		if (qos->grp_nodes == NO_VAL)
 			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
@@ -202,17 +200,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", qos->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", qos->grp_jobs);
-	}
-
-	if (qos->grp_mem == INFINITE) {
-		xstrcat(*cols, ", grp_mem");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_mem=NULL");
-	} else if ((qos->grp_mem != NO_VAL)
-		   && ((int32_t)qos->grp_mem >= 0)) {
-		xstrcat(*cols, ", grp_mem");
-		xstrfmtcat(*vals, ", %u", qos->grp_mem);
-		xstrfmtcat(*extra, ", grp_mem=%u", qos->grp_mem);
 	}
 
 	if (qos->grp_nodes == INFINITE) {
@@ -762,7 +749,6 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     qos_rec->id, 0);
 
 		qos_rec->grp_jobs = qos->grp_jobs;
-		qos_rec->grp_mem = qos->grp_mem;
 		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
@@ -1074,7 +1060,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"grp_tres_run_mins",
 		"grp_tres",
 		"grp_jobs",
-		"grp_mem",
 		"grp_nodes",
 		"grp_submit_jobs",
 		"grp_wall",
@@ -1104,7 +1089,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_GTRM,
 		QOS_REQ_GT,
 		QOS_REQ_GJ,
-		QOS_REQ_GMEM,
 		QOS_REQ_GN,
 		QOS_REQ_GSJ,
 		QOS_REQ_GW,
@@ -1236,10 +1220,6 @@ empty:
 			qos->grp_jobs = slurm_atoul(row[QOS_REQ_GJ]);
 		else
 			qos->grp_jobs = INFINITE;
-		if (row[QOS_REQ_GMEM])
-			qos->grp_mem = slurm_atoul(row[QOS_REQ_GMEM]);
-		else
-			qos->grp_mem = INFINITE;
 		if (row[QOS_REQ_GN])
 			qos->grp_nodes = slurm_atoul(row[QOS_REQ_GN]);
 		else

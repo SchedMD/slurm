@@ -192,8 +192,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		   of NO_VAL */
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_mem == NO_VAL)
-			assoc->grp_mem = INFINITE;
 		if (assoc->grp_nodes == NO_VAL)
 			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
@@ -221,8 +219,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		   of NO_VAL */
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_mem == NO_VAL)
-			qos->grp_mem = INFINITE;
 		if (qos->grp_nodes == NO_VAL)
 			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)

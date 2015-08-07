@@ -1824,7 +1824,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		    SLURM_ERROR)
 			return SLURM_ERROR;
 
-
 	if ((!assoc_mgr_assoc_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if (_get_assoc_mgr_assoc_list(db_conn, init_setup.enforce)
@@ -2254,7 +2253,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->grp_tres)
 		assoc->grp_tres        = ret_assoc->grp_tres;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
-	assoc->grp_mem         = ret_assoc->grp_mem;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
@@ -2300,9 +2298,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	/* if (!assoc->usage->children_list) */
 	/* 	assoc->usage->children_list = ret_assoc->usage->children_list; */
-	/* assoc->usage->grp_used_cpus   = ret_assoc->usage->grp_used_cpus; */
-	/* assoc->usage->grp_used_cpu_run_mins  = */
-	/* 	ret_assoc->usage->grp_used_cpu_run_mins; */
+	/* assoc->usage->grp_used_tres   = ret_assoc->usage->grp_used_tres; */
+	/* assoc->usage->grp_used_tres_run_mins  = */
+	/* 	ret_assoc->usage->grp_used_tres_run_mins; */
 	/* assoc->usage->grp_used_nodes  = ret_assoc->usage->grp_used_nodes; */
 	/* assoc->usage->grp_used_wall   = ret_assoc->usage->grp_used_wall; */
 
@@ -2473,7 +2471,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	if (!qos->grp_tres)
 		qos->grp_tres        = found_qos->grp_tres;
 	qos->grp_jobs        = found_qos->grp_jobs;
-	qos->grp_mem         = found_qos->grp_mem;
 	qos->grp_nodes       = found_qos->grp_nodes;
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
@@ -2511,9 +2508,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	   is really in existance here, if they really want it they can
 	   use the pointer that is returned. */
 
-	/* qos->usage->grp_used_cpus   = found_qos->usage->grp_used_cpus; */
-	/* qos->usage->grp_used_cpu_run_mins  = */
-	/* 	found_qos->usage->grp_used_cpu_run_mins; */
+	/* qos->usage->grp_used_tres   = found_qos->usage->grp_used_tres; */
+	/* qos->usage->grp_used_tres_run_mins  = */
+	/* 	found_qos->usage->grp_used_tres_run_mins; */
 	/* qos->usage->grp_used_jobs   = found_qos->usage->grp_used_jobs; */
 	/* qos->usage->grp_used_nodes  = found_qos->usage->grp_used_nodes; */
 	/* qos->usage->grp_used_submit_jobs = */
@@ -3351,10 +3348,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if (object->grp_mem != NO_VAL) {
-				update_jobs = true;
-				rec->grp_mem = object->grp_mem;
-			}
 			if (object->grp_nodes != NO_VAL) {
 				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;
@@ -3606,7 +3599,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (addit)
 				_add_assoc_hash(object);
-
 			reset = 0;
 		}
 		/* Now that we have set up the parents correctly we
@@ -4047,10 +4039,6 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if (object->grp_mem != NO_VAL) {
-				update_jobs = true;
-				rec->grp_mem = object->grp_mem;
-			}
 			if (object->grp_nodes != NO_VAL) {
 				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;

@@ -564,7 +564,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grp_tres", "text not null default ''" },
 		{ "grp_tres_mins", "text not null default ''" },
 		{ "grp_tres_run_mins", "text not null default ''" },
-		{ "grp_mem", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
 		{ "preempt", "text not null default ''" },
@@ -1095,7 +1094,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_wall_pj", "int default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
-		{ "grp_mem", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_tres", "text not null default ''" },
 		{ "grp_tres_mins", "text not null default ''" },
@@ -1534,8 +1532,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->shares_raw = INFINITE;
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_mem == NO_VAL)
-			assoc->grp_mem = INFINITE;
 		if (assoc->grp_nodes == NO_VAL)
 			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
@@ -1575,17 +1571,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	}
-
-	if (assoc->grp_mem == INFINITE) {
-		xstrcat(*cols, ", grp_mem");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_mem=NULL");
-	} else if ((assoc->grp_mem != NO_VAL)
-		   && ((int32_t)assoc->grp_mem >= 0)) {
-		xstrcat(*cols, ", grp_mem");
-		xstrfmtcat(*vals, ", %u", assoc->grp_mem);
-		xstrfmtcat(*extra, ", grp_mem=%u", assoc->grp_mem);
 	}
 
 	if (assoc->grp_nodes == INFINITE) {

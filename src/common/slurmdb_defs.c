@@ -1293,7 +1293,6 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	/* assoc->grp_tres_run_mins = NULL; */
 	/* assoc->grp_tres = NULL; */
 	assoc->grp_jobs = NO_VAL;
-	assoc->grp_mem = NO_VAL;
 	assoc->grp_nodes = NO_VAL;
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
@@ -1362,7 +1361,6 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	/* qos->grp_tres_run_mins = NULL; */
 	/* qos->grp_tres = NULL; */
 	qos->grp_jobs = init_val;
-	qos->grp_mem = init_val;
 	qos->grp_nodes = init_val;
 	qos->grp_submit_jobs = init_val;
 	qos->grp_wall = init_val;
@@ -2130,11 +2128,6 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	else if (assoc_ptr->grp_jobs != NO_VAL)
 		debug2("  GrpJobs          : %u", assoc_ptr->grp_jobs);
 
-	if (assoc_ptr->grp_mem == INFINITE)
-		debug2("  GrpMemory        : NONE");
-	else if (assoc_ptr->grp_mem != NO_VAL)
-		debug2("  GrpMemory        : %u", assoc_ptr->grp_mem);
-
 	if (assoc_ptr->grp_nodes == INFINITE)
 		debug2("  GrpNodes         : NONE");
 	else if (assoc_ptr->grp_nodes != NO_VAL)
@@ -2791,7 +2784,6 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 					  slurmdb_assoc_rec_t *in)
 {
 	out->grp_jobs = in->grp_jobs;
-	out->grp_mem = in->grp_mem;
 	out->grp_nodes = in->grp_nodes;
 	out->grp_submit_jobs = in->grp_submit_jobs;
 	xfree(out->grp_tres);

@@ -1193,7 +1193,6 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_mem, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
@@ -1355,13 +1354,10 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t rpc_version, Buf buffer)
 {
 	slurmdb_assoc_usage_t *usage = (slurmdb_assoc_usage_t *)in;
 
-	pack32(usage->grp_used_cpus, buffer);
-	pack32(usage->grp_used_mem, buffer);
 	pack32(usage->grp_used_nodes, buffer);
 	pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
 	pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt, buffer);
 	packdouble(usage->grp_used_wall, buffer);
-	pack64(usage->grp_used_cpu_run_secs, buffer);
 	packdouble(usage->fs_factor, buffer);
 	pack32(usage->level_shares, buffer);
 	packdouble(usage->shares_norm, buffer);
@@ -1382,15 +1378,12 @@ extern int slurmdb_unpack_assoc_usage(void **object, uint16_t rpc_version,
 	uint32_t tmp32;
 	*object = object_ptr;
 
-	safe_unpack32(&object_ptr->grp_used_cpus, buffer);
-	safe_unpack32(&object_ptr->grp_used_mem, buffer);
 	safe_unpack32(&object_ptr->grp_used_nodes, buffer);
 	safe_unpack64_array(&object_ptr->grp_used_tres, &tmp32, buffer);
 	object_ptr->tres_cnt = tmp32;
 	safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
 			    &tmp32, buffer);
 	safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
-	safe_unpack64(&object_ptr->grp_used_cpu_run_secs, buffer);
 	safe_unpackdouble(&object_ptr->fs_factor, buffer);
 	safe_unpack32(&object_ptr->level_shares, buffer);
 	safe_unpackdouble(&object_ptr->shares_norm, buffer);
@@ -1608,7 +1601,6 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->grp_tres_run_mins, buffer);
 		packstr(object->grp_tres, buffer);
 		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_mem, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
@@ -1807,7 +1799,6 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			object->grp_tres, TRES_CPU);
 		pack32((uint32_t)tmp64, buffer);
 		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_mem, buffer);
 		pack32(object->grp_nodes, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
@@ -1884,7 +1875,6 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->grp_tres,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_mem, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
