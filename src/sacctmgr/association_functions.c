@@ -473,11 +473,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint64(value, &tmp64,
 			       "GrpCPUMins") == SLURM_SUCCESS) {
 			set = 1;
-			tmp_char = xstrdup_printf(
-				"%d=%"PRIu64, TRES_CPU, tmp64);
+			if (tmp64 == (uint64_t)INFINITE)
+				tmp_char = xstrdup_printf("%d=-1", TRES_CPU);
+			else
+				tmp_char = xstrdup_printf(
+					"%d=%"PRIu64, TRES_CPU, tmp64);
+
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_mins, tmp_char,
 				TRES_STR_FLAG_REPLACE);
+			info("sending '%s' '%s'", tmp_char, assoc->grp_tres_mins);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCPURunMins", MAX(command_len, 7))) {
@@ -507,9 +512,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "GrpJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "GrpMemory", MAX(command_len, 4))) {
-		if (get_uint(value, &assoc->grp_mem,
-			     "GrpMemory") == SLURM_SUCCESS)
+		if (get_uint64(value, &tmp64,
+			       "GrpMemory") == SLURM_SUCCESS) {
 			set = 1;
+			tmp_char = xstrdup_printf(
+				"%d=%"PRIu64, TRES_MEM, tmp64);
+			slurmdb_combine_tres_strings(
+				&assoc->grp_tres, tmp_char,
+				TRES_STR_FLAG_REPLACE);
+			xfree(tmp_char);
+		}
 	} else if (!strncasecmp(type, "GrpNodes", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->grp_nodes,
 			     "GrpNodes") == SLURM_SUCCESS)
@@ -787,7 +799,10 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		field->print_routine(field, assoc->grp_jobs, last);
 		break;
 	case PRINT_GRPMEM:
-		field->print_routine(field, assoc->grp_mem, last);
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->grp_tres, TRES_MEM),
+				     last);
 		break;
 	case PRINT_GRPN:
 		field->print_routine(field, assoc->grp_nodes, last);

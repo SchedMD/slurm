@@ -537,9 +537,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPMEM:
-				field->print_routine(field,
-						     assoc->grp_mem,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						assoc->grp_tres, TRES_MEM),
+					(curr_inx == field_count));
 				break;
 			case PRINT_GRPN:
 				field->print_routine(field,

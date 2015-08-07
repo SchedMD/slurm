@@ -1563,11 +1563,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->grp_jobs != NO_VAL)
 		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
 
-	if (assoc->grp_mem == INFINITE)
-		printf("  GrpMemory     = NONE\n");
-	else if (assoc->grp_mem != NO_VAL)
-		printf("  GrpMemory     = %u\n", assoc->grp_mem);
-
 	if (assoc->grp_nodes == INFINITE)
 		printf("  GrpNodes      = NONE\n");
 	else if (assoc->grp_nodes != NO_VAL)
@@ -1659,26 +1654,10 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	else if (qos->grace_time != NO_VAL)
 		printf("  GraceTime      = %d\n", qos->grace_time);
 
-	if (qos->grp_cpu_mins == INFINITE)
-		printf("  GrpCPUMins     = NONE\n");
-	else if (qos->grp_cpu_mins != NO_VAL)
-		printf("  GrpCPUMins     = %"PRIu64"\n",
-		       qos->grp_cpu_mins);
-
-	if (qos->grp_cpus == INFINITE)
-		printf("  GrpCPUs        = NONE\n");
-	else if (qos->grp_cpus != NO_VAL)
-		printf("  GrpCPUs        = %u\n", qos->grp_cpus);
-
 	if (qos->grp_jobs == INFINITE)
 		printf("  GrpJobs        = NONE\n");
 	else if (qos->grp_jobs != NO_VAL)
 		printf("  GrpJobs        = %u\n", qos->grp_jobs);
-
-	if (qos->grp_mem == INFINITE)
-		printf("  GrpMemory      = NONE\n");
-	else if (qos->grp_mem != NO_VAL)
-		printf("  GrpMemory      = %u\n", qos->grp_mem);
 
 	if (qos->grp_nodes == INFINITE)
 		printf("  GrpNodes       = NONE\n");
@@ -1691,6 +1670,13 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpSubmitJobs  = %u\n",
 		       qos->grp_submit_jobs);
 
+	printf("  GrpTRES       = %s\n",
+	       qos->grp_tres ? qos->grp_tres : "NONE");
+	printf("  GrpTRESMins   = %s\n",
+	       qos->grp_tres_mins ? qos->grp_tres_mins : "NONE");
+	printf("  GrpTRESRunMins= %s\n",
+	       qos->grp_tres_run_mins ? qos->grp_tres_run_mins : "NONE");
+
 	if (qos->grp_wall == INFINITE)
 		printf("  GrpWall        = NONE\n");
 	else if (qos->grp_wall != NO_VAL) {
@@ -1699,27 +1685,6 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall        = %s\n", time_buf);
 	}
-
-	if (qos->max_cpu_mins_pj == (uint64_t)INFINITE)
-		printf("  MaxCPUMins     = NONE\n");
-	else if (qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		printf("  MaxCPUMins     = %"PRIu64"\n",
-		       qos->max_cpu_mins_pj);
-
-	if (qos->max_cpus_pj == INFINITE)
-		printf("  MaxCPUs        = NONE\n");
-	else if (qos->max_cpus_pj != NO_VAL)
-		printf("  MaxCPUs        = %u\n", qos->max_cpus_pj);
-
-	if (qos->max_cpus_pu == INFINITE)
-		printf("  MaxCPUsPerUser        = NONE\n");
-	else if (qos->max_cpus_pu != NO_VAL)
-		printf("  MaxCPUsPerUser        = %u\n", qos->max_cpus_pu);
-
-	if (qos->max_jobs_pu == INFINITE)
-		printf("  MaxJobs        = NONE\n");
-	else if (qos->max_jobs_pu != NO_VAL)
-		printf("  MaxJobs        = %u\n", qos->max_jobs_pu);
 
 	if (qos->max_nodes_pj == INFINITE)
 		printf("  MaxNodes       = NONE\n");
@@ -1737,6 +1702,15 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  MaxSubmitJobs  = %u\n",
 		       qos->max_submit_jobs_pu);
 
+	printf("  MaxTRESPerJob = %s\n",
+	       qos->max_tres_pj ? qos->max_tres_pj : "NONE");
+	printf("  MaxTRESPerUser= %s\n",
+	       qos->max_tres_pu ? qos->max_tres_pu : "NONE");
+	printf("  MaxTRESMins   = %s\n",
+	       qos->max_tres_mins_pj ? qos->max_tres_mins_pj : "NONE");
+	printf("  MaxTRESRUNMins= %s\n", qos->max_tres_run_mins_pu ?
+	       qos->max_tres_run_mins_pu : "NONE");
+
 	if (qos->max_wall_pj == INFINITE)
 		printf("  MaxWall        = NONE\n");
 	else if (qos->max_wall_pj != NO_VAL) {
@@ -1745,11 +1719,6 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall        = %s\n", time_buf);
 	}
-
-	if (qos->min_cpus_pj == INFINITE)
-		printf("  MinCPUs        = NONE\n");
-	else if (qos->min_cpus_pj != NO_VAL)
-		printf("  MinCPUs        = %u\n", qos->min_cpus_pj);
 
 	if (qos->preempt_list) {
 		char *temp_char = get_qos_complete_str(g_qos_list,

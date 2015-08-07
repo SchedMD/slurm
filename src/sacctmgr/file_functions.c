@@ -392,8 +392,10 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 						     assoc->grp_jobs);
 				break;
 			case PRINT_GRPMEM:
-				field->print_routine(field,
-						     assoc->grp_mem);
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						assoc->grp_tres, TRES_MEM));
 				break;
 			case PRINT_GRPN:
 				field->print_routine(field,
@@ -576,18 +578,6 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->grp_jobs,
 			   file_opts->assoc_rec.grp_jobs);
-	}
-
-	if ((file_opts->assoc_rec.grp_mem != NO_VAL)
-	   && (assoc->grp_mem != file_opts->assoc_rec.grp_mem)) {
-		mod_assoc.grp_mem = file_opts->assoc_rec.grp_mem;
-		changed = 1;
-		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpMemory",
-			   type, name,
-			   assoc->grp_mem,
-			   file_opts->assoc_rec.grp_mem);
 	}
 
 	if ((file_opts->assoc_rec.grp_nodes != NO_VAL)
@@ -1556,9 +1546,6 @@ extern int print_file_add_limits_to_line(char **line,
 
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
-
-	if (assoc->grp_mem != INFINITE)
-		xstrfmtcat(*line, ":GrpMemory=%u", assoc->grp_mem);
 
 	if (assoc->grp_nodes != INFINITE)
 		xstrfmtcat(*line, ":GrpNodes=%u", assoc->grp_nodes);
