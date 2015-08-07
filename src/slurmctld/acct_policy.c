@@ -1349,84 +1349,54 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	 * cpu requirement has exceeded the limit for all CPUs
 	 * usable by the QOS
 	 */
-	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
-	    && (qos_out_ptr->grp_cpus == INFINITE)
-	    && (qos_ptr->grp_cpus != INFINITE)) {
-
-		qos_out_ptr->grp_cpus = qos_ptr->grp_cpus;
-
-		if (cpu_cnt > qos_ptr->grp_cpus) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS_GRP_CPU;
-			debug2("job %u is being held, "
-			       "min cpu request %u exceeds "
-			       "group max cpu limit %u for "
-			       "qos '%s'",
-			       job_ptr->job_id,
-			       cpu_cnt,
-			       qos_ptr->grp_cpus,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
-
-		if ((qos_ptr->usage->grp_used_cpus +
-		     cpu_cnt) > qos_ptr->grp_cpus) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_QOS_GRP_CPU;
-			debug2("job %u being held, "
-			       "the job is at or exceeds "
-			       "group max cpu limit %u "
-			       "with already used %u + requested %u "
-			       "for qos %s",
-			       job_ptr->job_id,
-			       qos_ptr->grp_cpus,
-			       qos_ptr->usage->grp_used_cpus,
-			       cpu_cnt,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
-	}
-
-	if (!admin_set_memory_limit
-	    && (qos_out_ptr->grp_mem == INFINITE)
-	    && (qos_ptr->grp_mem != INFINITE)) {
-
-		qos_out_ptr->grp_mem = qos_ptr->grp_mem;
-
-		if (job_memory > qos_ptr->grp_mem) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS_GRP_MEMORY;
-			info("job %u is being held, "
-			     "memory request %u exceeds "
-			     "group max memory limit %u for "
-			     "qos '%s'",
-			     job_ptr->job_id,
-			     job_memory,
-			     qos_ptr->grp_mem,
-			     qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
-
-		if ((qos_ptr->usage->grp_used_mem +
-		     job_memory) > qos_ptr->grp_mem) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_QOS_GRP_MEMORY;
-			debug2("job %u being held, "
-			       "the job is at or exceeds "
-			       "group memory limit %u "
-			       "with already used %u + requested %u "
-			       "for qos %s",
-			       job_ptr->job_id,
-			       qos_ptr->grp_mem,
-			       qos_ptr->usage->grp_used_mem,
-			       job_memory,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos,
+		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
+		tres_req_cnt, qos_ptr->usage->grp_used_tres,
+		0, job_ptr->limit_set.min_tres, 1);
+	switch (i) {
+	case 1:
+		/* not possible because the curr_usage sent in is 0 */
+		break;
+	case 2:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS_GRP_CPU;
+		debug2("job %u is being held, "
+		       "QOS %s min tres(%s%s%s) request %"PRIu64" exceeds "
+		       "group max tres limit %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       tres_req_cnt[tres_pos],
+		       qos_ptr->grp_tres_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case 3:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason =	WAIT_QOS_GRP_CPU;
+		debug2("job %u being held, "
+		       "if allowed the job request will exceed "
+		       "QOS %s group max tres(%s%s%s) limit "
+		       "%"PRIu64" with already used %"PRIu64" + "
+		       "requested %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_ctld[tres_pos],
+		       qos_ptr->usage->grp_used_tres[tres_pos],
+		       tres_req_cnt[tres_pos]);
+		rc = false;
+		goto end_it;
+	default:
+		/* all good */
+		break;
 	}
 
 	/* we don't need to check grp_jobs here */
