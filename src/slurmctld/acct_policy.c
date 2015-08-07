@@ -1574,48 +1574,61 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 	}
 
-	if ((job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] != ADMIN_SET_LIMIT)
-	    && (qos_out_ptr->max_cpus_pu == INFINITE)
-	    && (qos_ptr->max_cpus_pu != INFINITE)) {
-
-		qos_out_ptr->max_cpus_pu = qos_ptr->max_cpus_pu;
-
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos,
+		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
+		tres_req_cnt, used_limits->tres,
+		0, job_ptr->limit_set.min_tres, 1);
+	switch (i) {
+	case 1:
+		/* not possible because the curr_usage sent in is 0 */
+		break;
+	case 2:
 		/* Hold the job if it exceeds the per-user
-		 * CPU limit for the given QOS
+		 * TRES limit for the given QOS
 		 */
-		if (cpu_cnt > qos_ptr->max_cpus_pu) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =
-				WAIT_QOS_MAX_CPU_PER_USER;
-			debug2("job %u being held, "
-			       "min cpu limit %u exceeds "
-			       "qos %s per-user max %u",
-			       job_ptr->job_id,
-			       cpu_cnt, qos_ptr->name,
-			       qos_ptr->max_cpus_pu);
-			rc = false;
-			goto end_it;
-		}
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason =	WAIT_QOS_MAX_CPU_PER_USER;
+		debug2("job %u is being held, "
+		       "QOS %s min tres(%s%s%s) "
+		       "request %"PRIu64" exceeds "
+		       "max tres per user limit %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       tres_req_cnt[tres_pos],
+		       qos_ptr->max_tres_pu_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case 3:
 		/* Hold the job if the user has exceeded
-		 * the QOS per-user CPU limit with their
+		 * the QOS per-user TRES limit with their
 		 * current usage */
-		if ((used_limits->cpus + cpu_cnt)
-		    > qos_ptr->max_cpus_pu) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =
-				WAIT_QOS_MAX_CPU_PER_USER;
-			debug2("job %u being held, "
-			       "the user is at or would exceed "
-			       "max cpus per-user limit "
-			       "%u with %u(+%u) for QOS %s",
-			       job_ptr->job_id,
-			       qos_ptr->max_cpus_pu,
-			       used_limits->cpus,
-			       cpu_cnt,
-			       qos_ptr->name);
-			rc = false;
-			goto end_it;
-		}
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason =	WAIT_QOS_MAX_CPU_PER_USER;
+		debug2("job %u being held, "
+		       "if allowed the job request will exceed "
+		       "QOS %s max tres(%s%s%s) per user limit "
+		       "%"PRIu64" with already used %"PRIu64" + "
+		       "requested %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->max_tres_pu_ctld[tres_pos],
+		       used_limits->tres[tres_pos],
+		       tres_req_cnt[tres_pos]);
+		rc = false;
+		goto end_it;
+	default:
+		/* all good */
+		break;
 	}
 
 	/* We do not need to check max_jobs_pu here */
@@ -1683,6 +1696,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 			goto end_it;
 		}
 	}
+
 end_it:
 	/* we don't need to check submit_jobs_pu here */
 
