@@ -1711,11 +1711,11 @@ end_it:
 static int _qos_job_time_out(struct job_record *job_ptr,
 			     slurmdb_qos_rec_t *qos_ptr,
 			     slurmdb_qos_rec_t *qos_out_ptr,
-			     uint64_t job_cpu_usage_mins)
+			     uint64_t *job_tres_usage_mins)
 {
 	uint64_t usage_mins;
 	uint32_t wall_mins;
-	int rc = true;
+	int rc = true, tres_pos = 0, i;
 	time_t now = time(NULL);
 
 	if (!qos_ptr || !qos_out_ptr)
@@ -2941,15 +2941,17 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
  */
 extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 {
-	uint64_t job_cpu_usage_mins = 0;
+	uint64_t job_tres_usage_mins[slurmctld_tres_cnt];
+	uint64_t time_delta;
 	uint64_t usage_mins;
 	uint32_t wall_mins;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
+	int i, tres_pos;
 
 	/* Now see if we are enforcing limits.  If Safe is set then
 	 * return false as well since we are being safe if the limit
@@ -2962,29 +2964,34 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 	assoc_mgr_lock(&locks);
 
+	assoc_mgr_set_qos_tres_cnt(&qos_rec);
+
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	assoc =	(slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
 	now = time(NULL);
 
+	time_delta = (uint64_t)(((now - job_ptr->start_time) -
+				 job_ptr->tot_sus_time) / 60);
 	/* find out how many cpu minutes this job has been
-	 * running for. */
-	job_cpu_usage_mins = (uint64_t)
-		((((now - job_ptr->start_time)
-		   - job_ptr->tot_sus_time) / 60)
-		 * job_ptr->total_cpus);
+	 * running for. We add 1 here to make it so we can check for
+	 * just > instead of >= in our checks */
+	for (i=0; i<slurmctld_tres_cnt; i++)
+		if (job_ptr->tres_alloc_cnt[i])
+			job_tres_usage_mins[i] =
+				(time_delta * job_ptr->tres_alloc_cnt[i]) + 1;
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 && !_qos_job_time_out(job_ptr, qos_ptr_1,
-					    &qos_rec, job_cpu_usage_mins))
+					    &qos_rec, job_tres_usage_mins))
 		goto job_failed;
 
 	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
 	   the limit.
 	*/
 	if (qos_ptr_2 && !_qos_job_time_out(job_ptr, qos_ptr_2,
-					    &qos_rec, job_cpu_usage_mins))
+					    &qos_rec, job_tres_usage_mins))
 		goto job_failed;
 
 	/* handle any association stuff here */
