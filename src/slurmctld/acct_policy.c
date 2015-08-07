@@ -3108,20 +3108,35 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			break;
 		}
 
-		limit = slurmdb_find_tres_count_in_string(
-			assoc->max_tres_mins_pj, TRES_CPU);
-		if ((qos_rec.max_cpu_mins_pj == INFINITE)
-		    && (limit != (uint64_t)INFINITE)
-		    && (job_cpu_usage_mins >= limit)) {
+		i = _validate_tres_usage_limits_for_assoc(
+			&tres_pos, assoc->max_tres_mins_ctld,
+			qos_rec.max_tres_mins_pj_ctld, job_tres_usage_mins,
+			NULL, 0, NULL, 1);
+		switch (i) {
+		case 1:
+			/* not possible curr_usage is 0 */
+			break;
+		case 2:
+			last_job_update = now;
 			info("Job %u timed out, "
-			     "assoc %u is at or exceeds "
-			     "max cpu minutes limit %"PRIu64" "
-			     "with %"PRIu64" for account %s",
-			     job_ptr->job_id, assoc->id,
-			     limit,
-			     job_cpu_usage_mins,
-			     assoc->acct);
+			     "the job is at or exceeds assoc %u(%s/%s/%s) "
+			     "max tres(%s%s%s) minutes of %"PRIu64
+			     " with %"PRIu64,
+			     job_ptr->job_id,
+			     assoc->id, assoc->acct,
+			     assoc->user, assoc->partition,
+			     assoc_mgr_tres_array[tres_pos]->type,
+			     assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			     assoc_mgr_tres_array[tres_pos]->name ?
+			     assoc_mgr_tres_array[tres_pos]->name : "",
+			     assoc->max_tres_mins_ctld[tres_pos],
+			     job_tres_usage_mins[tres_pos]);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			goto job_failed;
+		case 3:
+			/* not possible tres_usage is NULL */
+		default:
+			/* all good */
 			break;
 		}
 
