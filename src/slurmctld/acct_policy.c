@@ -1269,55 +1269,79 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		free_used_limits = true;
 	}
 
-	/* If the QOS has a GrpCPUMins limit set we may hold the job */
-	if ((qos_out_ptr->grp_cpu_mins == (uint64_t)INFINITE)
-	    && (qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)) {
-
-		qos_out_ptr->grp_cpu_mins = qos_ptr->grp_cpu_mins;
-
-		if (usage_mins >= qos_ptr->grp_cpu_mins) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
-			debug2("Job %u being held, "
-			       "the job is at or exceeds QOS %s's "
-			       "group max cpu minutes of %"PRIu64" "
-			       "with %"PRIu64"",
-			       job_ptr->job_id,
-			       qos_ptr->name,
-			       qos_ptr->grp_cpu_mins,
-			       usage_mins);
-			rc = false;
-			goto end_it;
-		} else if (safe_limits
-			   && ((job_cpu_time_limit + cpu_run_mins) >
-			       (qos_ptr->grp_cpu_mins - usage_mins))) {
-			/*
-			 * If we're using safe limits start
-			 * the job only if there are
-			 * sufficient cpu-mins left such that
-			 * it will run to completion without
-			 * being killed
-			 */
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
-			debug2("Job %u being held, "
-			       "the job is at or exceeds QOS %s's "
-			       "group max cpu minutes of %"PRIu64" "
-			       "of which %"PRIu64" are still available "
-			       "but request is for %"PRIu64" "
-			       "(%"PRIu64" already used) cpu "
-			       "minutes (%u cpus)",
-			       job_ptr->job_id,
-			       qos_ptr->name,
-			       qos_ptr->grp_cpu_mins,
-			       qos_ptr->grp_cpu_mins - usage_mins,
-			       job_cpu_time_limit + cpu_run_mins,
-			       cpu_run_mins,
-			       cpu_cnt);
-
-			rc = false;
-			goto end_it;
-		}
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos, qos_ptr->grp_tres_mins_ctld,
+		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
+		tres_run_mins, usage_mins, job_ptr->limit_set.min_tres,
+		safe_limits);
+	switch (i) {
+	case 1:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		debug2("Job %u being held, "
+		       "QOS %s group max tres(%s%s%s) minutes limit "
+		       "of %"PRIu64" is already at or exceeded with %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_mins_ctld[tres_pos],
+		       usage_mins);
+		rc = false;
+		goto end_it;
+		break;
+	case 2:
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		debug2("Job %u being held, "
+		       "the job is requesting more than allowed with QOS %s's "
+		       "group max tres(%s%s%s) minutes of %"PRIu64" "
+		       "with %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_mins_ctld[tres_pos],
+		       job_tres_time_limit[tres_pos]);
+		break;
+	case 3:
+		/*
+		 * If we're using safe limits start
+		 * the job only if there are
+		 * sufficient cpu-mins left such that
+		 * it will run to completion without
+		 * being killed
+		 */
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		debug2("Job %u being held, "
+		       "the job is at or exceeds QOS %s's "
+		       "group max tres(%s%s%s) minutes of %"PRIu64" "
+		       "of which %"PRIu64" are still available "
+		       "but request is for %"PRIu64" "
+		       "(%"PRIu64" already used) tres "
+		       "minutes (%"PRIu64" tres count)",
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_array[tres_pos]->type,
+		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+		       assoc_mgr_tres_array[tres_pos]->name ?
+		       assoc_mgr_tres_array[tres_pos]->name : "",
+		       qos_ptr->grp_tres_mins_ctld[tres_pos],
+		       qos_ptr->grp_tres_mins_ctld[tres_pos] - usage_mins,
+		       job_tres_time_limit[tres_pos] + tres_run_mins[tres_pos],
+		       tres_run_mins[tres_pos],
+		       tres_req_cnt[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	default:
+		/* all good */
+		break;
 	}
 
 	/* If the JOB's cpu limit wasn't administratively set and the
