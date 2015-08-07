@@ -141,10 +141,10 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 				    slurmdb_qos_rec_t *qos_ptr,
 				    uint32_t node_cnt,
-				    uint64_t used_cpu_run_secs,
-				    uint32_t job_memory)
+				    uint64_t *used_tres_run_secs)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
+	int i;
 
 	if (!qos_ptr)
 		return;
@@ -188,13 +188,28 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 		break;
 	case ACCT_POLICY_JOB_BEGIN:
 		qos_ptr->usage->grp_used_jobs++;
-		qos_ptr->usage->grp_used_cpus += job_ptr->total_cpus;
-		qos_ptr->usage->grp_used_mem += job_memory;
 		qos_ptr->usage->grp_used_nodes += node_cnt;
-		qos_ptr->usage->grp_used_cpu_run_secs +=
-			used_cpu_run_secs;
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			used_limits->tres[i] += job_ptr->tres_alloc_cnt[i];
+
+			qos_ptr->usage->grp_used_tres[i] +=
+				job_ptr->tres_alloc_cnt[i];
+			qos_ptr->usage->grp_used_tres_run_secs[i] +=
+				used_tres_run_secs[i];
+			debug2("acct_policy_job_begin: after "
+			       "adding job %u, qos %s "
+			       "grp_used_tres_run_secs(%s%s%s) "
+			       "is %"PRIu64,
+			       job_ptr->job_id,
+			       qos_ptr->name,
+			       assoc_mgr_tres_array[i]->type,
+			       assoc_mgr_tres_array[i]->name ? "/" : "",
+			       assoc_mgr_tres_array[i]->name ?
+			       assoc_mgr_tres_array[i]->name : "",
+			       qos_ptr->usage->grp_used_tres_run_secs[i]);
+		}
+
 		used_limits->jobs++;
-		used_limits->cpus += job_ptr->total_cpus;
 		used_limits->nodes += node_cnt;
 		break;
 	case ACCT_POLICY_JOB_FINI:
@@ -205,20 +220,6 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			       "underflow for qos %s", qos_ptr->name);
 		}
 
-		qos_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-		if ((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
-			qos_ptr->usage->grp_used_cpus = 0;
-			debug2("acct_policy_job_fini: grp_used_cpus "
-			       "underflow for qos %s", qos_ptr->name);
-		}
-
-		qos_ptr->usage->grp_used_mem -= job_memory;
-		if ((int32_t)qos_ptr->usage->grp_used_mem < 0) {
-			qos_ptr->usage->grp_used_mem = 0;
-			debug2("acct_policy_job_fini: grp_used_mem "
-			       "underflow for qos %s", qos_ptr->name);
-		}
-
 		qos_ptr->usage->grp_used_nodes -= node_cnt;
 		if ((int32_t)qos_ptr->usage->grp_used_nodes < 0) {
 			qos_ptr->usage->grp_used_nodes = 0;
@@ -226,13 +227,35 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			       "underflow for qos %s", qos_ptr->name);
 		}
 
-		used_limits->cpus -= job_ptr->total_cpus;
-		if ((int32_t)used_limits->cpus < 0) {
-			used_limits->cpus = 0;
-			debug2("acct_policy_job_fini: "
-			       "used_limits->cpus "
-			       "underflow for qos %s user %d",
-			       qos_ptr->name, used_limits->uid);
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (job_ptr->tres_alloc_cnt[i] >
+			    qos_ptr->usage->grp_used_tres[i]) {
+				qos_ptr->usage->grp_used_tres[i] = 0;
+				debug2("acct_policy_job_fini: "
+				       "grp_used_tres(%s%s%s) "
+				       "underflow for QOS %s",
+				       assoc_mgr_tres_array[i]->type,
+				       assoc_mgr_tres_array[i]->name ? "/" : "",
+				       assoc_mgr_tres_array[i]->name ?
+				       assoc_mgr_tres_array[i]->name : "",
+				       qos_ptr->name);
+			} else
+				qos_ptr->usage->grp_used_tres[i] -=
+					job_ptr->tres_alloc_cnt[i];
+
+			if (job_ptr->tres_alloc_cnt[i] > used_limits->tres[i]) {
+				used_limits->tres[i] = 0;
+				debug2("acct_policy_job_fini: "
+				       "used_limits->tres(%s%s%s) "
+				       "underflow for qos %s user %u",
+				       assoc_mgr_tres_array[i]->type,
+				       assoc_mgr_tres_array[i]->name ? "/" : "",
+				       assoc_mgr_tres_array[i]->name ?
+				       assoc_mgr_tres_array[i]->name : "",
+				       qos_ptr->name, used_limits->uid);
+			} else
+				qos_ptr->usage->grp_used_tres[i] -=
+					job_ptr->tres_alloc_cnt[i];
 		}
 
 		used_limits->jobs--;
@@ -265,10 +288,10 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-	uint64_t used_cpu_run_secs = 0;
-	uint32_t job_memory = 0;
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	uint32_t node_cnt;
+	int i;
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
@@ -288,25 +311,11 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 
 	if (type == ACCT_POLICY_JOB_FINI)
 		priority_g_job_end(job_ptr);
-	else if (type == ACCT_POLICY_JOB_BEGIN)
-		used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
-			* (uint64_t)job_ptr->time_limit * 60;
-
-	if (job_ptr->details && job_ptr->details->pn_min_memory) {
-		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
-			job_memory = (job_ptr->details->pn_min_memory
-				      & (~MEM_PER_CPU))
-				* job_ptr->total_cpus;
-			debug2("_adjust_limit_usage: job %u: MPC: "
-			       "job_memory set to %u", job_ptr->job_id,
-			       job_memory);
-		} else {
-			job_memory = (job_ptr->details->pn_min_memory)
-				* node_cnt;
-			debug2("_adjust_limit_usage: job %u: MPN: "
-			       "job_memory set to %u", job_ptr->job_id,
-			       job_memory);
-		}
+	else if (type == ACCT_POLICY_JOB_BEGIN) {
+		uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			used_tres_run_secs[i] =
+				job_ptr->tres_alloc_cnt[i] * time_limit_secs;
 	}
 
 	assoc_mgr_lock(&locks);
@@ -314,9 +323,9 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_1,
-				node_cnt, used_cpu_run_secs, job_memory);
+				node_cnt, used_tres_run_secs);
 	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
-				node_cnt, used_cpu_run_secs, job_memory);
+				node_cnt, used_tres_run_secs);
 
 	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
@@ -335,15 +344,26 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
-			assoc_ptr->usage->grp_used_cpus += job_ptr->total_cpus;
-			assoc_ptr->usage->grp_used_mem += job_memory;
 			assoc_ptr->usage->grp_used_nodes += node_cnt;
-			assoc_ptr->usage->grp_used_cpu_run_secs +=
-				used_cpu_run_secs;
-			debug4("acct_policy_job_begin: after adding job %i, "
-			       "assoc %s grp_used_cpu_run_secs is %"PRIu64"",
-			       job_ptr->job_id, assoc_ptr->acct,
-			       assoc_ptr->usage->grp_used_cpu_run_secs);
+			for (i=0; i<slurmctld_tres_cnt; i++) {
+				assoc_ptr->usage->grp_used_tres[i] +=
+					job_ptr->tres_alloc_cnt[i];
+				assoc_ptr->usage->grp_used_tres_run_secs[i] +=
+					used_tres_run_secs[i];
+				debug2("acct_policy_job_begin: after "
+				       "adding job %u, assoc %u(%s/%s/%s) "
+				       "grp_used_tres_run_secs(%s%s%s) "
+				       "is %"PRIu64,
+				       job_ptr->job_id,
+				       assoc_ptr->id, assoc_ptr->acct,
+				       assoc_ptr->user, assoc_ptr->partition,
+				       assoc_mgr_tres_array[i]->type,
+				       assoc_mgr_tres_array[i]->name ? "/" : "",
+				       assoc_mgr_tres_array[i]->name ?
+				       assoc_mgr_tres_array[i]->name : "",
+				       assoc_ptr->usage->
+				       grp_used_tres_run_secs[i]);
+			}
 			break;
 		case ACCT_POLICY_JOB_FINI:
 			if (assoc_ptr->usage->used_jobs)
@@ -353,28 +373,34 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       "underflow for account %s",
 				       assoc_ptr->acct);
 
-			assoc_ptr->usage->grp_used_cpus -= job_ptr->total_cpus;
-			if ((int32_t)assoc_ptr->usage->grp_used_cpus < 0) {
-				assoc_ptr->usage->grp_used_cpus = 0;
-				debug2("acct_policy_job_fini: grp_used_cpus "
-				       "underflow for account %s",
-				       assoc_ptr->acct);
-			}
-
-			assoc_ptr->usage->grp_used_mem -= job_memory;
-			if ((int32_t)assoc_ptr->usage->grp_used_mem < 0) {
-				assoc_ptr->usage->grp_used_mem = 0;
-				debug2("acct_policy_job_fini: grp_used_mem "
-				       "underflow for account %s",
-				       assoc_ptr->acct);
-			}
-
 			assoc_ptr->usage->grp_used_nodes -= node_cnt;
 			if ((int32_t)assoc_ptr->usage->grp_used_nodes < 0) {
 				assoc_ptr->usage->grp_used_nodes = 0;
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
+			}
+
+			for (i=0; i<slurmctld_tres_cnt; i++) {
+				if (job_ptr->tres_alloc_cnt[i] >
+				    assoc_ptr->usage->grp_used_tres[i]) {
+					assoc_ptr->usage->grp_used_tres[i] = 0;
+					debug2("acct_policy_job_fini: "
+					       "grp_used_tres(%s%s%s) "
+					       "underflow for assoc "
+					       "%u(%s/%s/%s)",
+					       assoc_mgr_tres_array[i]->type,
+					       assoc_mgr_tres_array[i]->
+					       name ? "/" : "",
+					       assoc_mgr_tres_array[i]->name ?
+					       assoc_mgr_tres_array[i]->
+					       name : "",
+					       assoc_ptr->id, assoc_ptr->acct,
+					       assoc_ptr->user,
+					       assoc_ptr->partition);
+				} else
+					assoc_ptr->usage->grp_used_tres[i] -=
+						job_ptr->tres_alloc_cnt[i];
 			}
 
 			break;
@@ -404,23 +430,30 @@ static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
 
 static void _qos_alter_job(struct job_record *job_ptr,
 			   slurmdb_qos_rec_t *qos_ptr,
-			   uint64_t used_cpu_run_secs,
-			   uint64_t new_used_cpu_run_secs)
+			   uint64_t *used_tres_run_secs,
+			   uint64_t *new_used_tres_run_secs)
 {
+	int i;
+
 	if (!qos_ptr || !job_ptr)
 		return;
 
-	qos_ptr->usage->grp_used_cpu_run_secs -=
-		used_cpu_run_secs;
-	qos_ptr->usage->grp_used_cpu_run_secs +=
-		new_used_cpu_run_secs;
-	debug2("altering %u QOS %s got %"PRIu64" "
-	       "just removed %"PRIu64" and added %"PRIu64"",
-	       job_ptr->job_id,
-	       qos_ptr->name,
-	       qos_ptr->usage->grp_used_cpu_run_secs,
-	       used_cpu_run_secs,
-	       new_used_cpu_run_secs);
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
+			continue;
+		qos_ptr->usage->grp_used_tres_run_secs[i] -=
+			used_tres_run_secs[i];
+		qos_ptr->usage->grp_used_tres_run_secs +=
+			new_used_tres_run_secs[i];
+		debug2("altering job %u QOS %s "
+		       "got %"PRIu64" just removed %"PRIu64
+		       " and added %"PRIu64"",
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       qos_ptr->usage->grp_used_tres_run_secs[i],
+		       used_tres_run_secs[i],
+		       new_used_tres_run_secs[i]);
+	}
 }
 
 /*
@@ -1864,8 +1897,11 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-	uint64_t used_cpu_run_secs, new_used_cpu_run_secs;
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
+	uint64_t new_used_tres_run_secs[slurmctld_tres_cnt];
+	uint64_t time_limit_secs, new_time_limit_secs;
+	int i;
 
 	if (!IS_JOB_RUNNING(job_ptr) || (job_ptr->time_limit == new_time_limit))
 		return;
@@ -1874,33 +1910,45 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
-	used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
-		* (uint64_t)job_ptr->time_limit * 60;
-	new_used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
-		* (uint64_t)new_time_limit * 60;
+	time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
+	new_time_limit_secs = (uint64_t)new_time_limit * 60;
+
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		used_tres_run_secs[i] =
+			job_ptr->tres_alloc_cnt[i] * time_limit_secs;
+		new_used_tres_run_secs[i] =
+			job_ptr->tres_alloc_cnt[i] * new_time_limit_secs;
+	}
 
 	assoc_mgr_lock(&locks);
 
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	_qos_alter_job(job_ptr, qos_ptr_1,
-		       used_cpu_run_secs, new_used_cpu_run_secs);
+		       used_tres_run_secs, new_used_tres_run_secs);
 	_qos_alter_job(job_ptr, qos_ptr_2,
-		       used_cpu_run_secs, new_used_cpu_run_secs);
+		       used_tres_run_secs, new_used_tres_run_secs);
 
 	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
-		assoc_ptr->usage->grp_used_cpu_run_secs -=
-			used_cpu_run_secs;
-		assoc_ptr->usage->grp_used_cpu_run_secs +=
-			new_used_cpu_run_secs;
-		debug2("altering %u acct %s got %"PRIu64" "
-		       "just removed %"PRIu64" and added %"PRIu64"",
-		       job_ptr->job_id,
-		       assoc_ptr->acct,
-		       assoc_ptr->usage->grp_used_cpu_run_secs,
-		       used_cpu_run_secs,
-		       new_used_cpu_run_secs);
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
+				continue;
+			assoc_ptr->usage->grp_used_tres_run_secs[i] -=
+				used_tres_run_secs[i];
+			assoc_ptr->usage->grp_used_tres_run_secs[i] +=
+				new_used_tres_run_secs[i];
+			debug2("altering job %u assoc %u(%s/%s/%s) "
+			       "got %"PRIu64" just removed %"PRIu64
+			       " and added %"PRIu64"",
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_ptr->usage->grp_used_tres_run_secs[i],
+			       used_tres_run_secs[i],
+			       new_used_tres_run_secs[i]);
+		}
+
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
