@@ -2287,6 +2287,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 	assoc_mgr_lock(&locks);
 
+	assoc_mgr_set_qos_tres_cnt(&qos_rec);
+
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	/* check the first QOS setting it's values in the qos_rec */
@@ -2414,6 +2416,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	}
 end_it:
 	assoc_mgr_unlock(&locks);
+	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;
 }
@@ -2816,6 +2819,7 @@ extern bool acct_policy_job_runnable_post_select(
 	}
 end_it:
 	assoc_mgr_unlock(&locks);
+	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;
 }
