@@ -44,8 +44,8 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	slurmdb_user_rec_t *user_rec;
 	slurmdb_assoc_rec_t *assoc_rec;
 	uint64_t usage_mins;
-	uint64_t cpu_run_mins;
 	char *new_line_char = one_liner ? " " : "\n    ";
+	int i;
 
 	printf("Current Association Manager state\n");
 
@@ -76,8 +76,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 
 			usage_mins =
 				(uint64_t)(assoc_rec->usage->usage_raw / 60.0);
-			cpu_run_mins =
-				assoc_rec->usage->grp_used_cpu_run_secs / 60;
 
 			printf("ClusterName=%s Account=%s ",
 			       assoc_rec->cluster,
@@ -129,12 +127,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->usage->used_jobs);
 			else
 				printf("GrpJobs= ");
-			if (assoc_rec->grp_mem != INFINITE)
-				printf("GrpMem=%u(%u) ",
-				       assoc_rec->grp_mem,
-				       assoc_rec->usage->grp_used_mem);
-			else
-				printf("GrpMem= ");
 			if (assoc_rec->grp_nodes != INFINITE)
 				printf("GrpNodes=%u(%u) ",
 				       assoc_rec->grp_nodes,
@@ -159,12 +151,21 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			if (assoc_rec->grp_tres)
-				printf("GrpTRES=%s(%u)%s",
-				       assoc_rec->grp_tres,
-				       assoc_rec->usage->grp_used_cpus,
-				       new_line_char);
-			else
+			if (assoc_rec->grp_tres) {
+				printf("GrpTRES=%s", assoc_rec->grp_tres);
+				if (assoc_rec->usage->tres_cnt &&
+				    assoc_rec->usage->grp_used_tres) {
+					printf("(");
+					for (i=0; i<assoc_rec->usage->tres_cnt;
+					     i++)
+						printf("%s%"PRIu64,
+						       i ? "," : "",
+						       assoc_rec->usage->
+						       grp_used_tres[i]);
+					printf(")");
+				}
+				printf("%s", new_line_char);
+			} else
 				printf("GrpTRES=%s", new_line_char);
 
 			if (assoc_rec->grp_tres_mins)
@@ -175,12 +176,23 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			else
 				printf("GrpTRESMins=%s", new_line_char);
 
-			if (assoc_rec->grp_tres_mins)
-				printf("GrpTRESRunMins=%s(%"PRIu64")%s",
-				       assoc_rec->grp_tres_run_mins,
-				       cpu_run_mins,
-				       new_line_char);
-			else
+			if (assoc_rec->grp_tres_mins) {
+				printf("GrpTRESRunMins=%s",
+				       assoc_rec->grp_tres_run_mins);
+				if (assoc_rec->usage->tres_cnt &&
+				    assoc_rec->usage->grp_used_tres_run_secs) {
+					printf("(");
+					for (i=0; i<assoc_rec->usage->tres_cnt;
+					     i++)
+						printf("%s%"PRIu64,
+						       i ? "," : "",
+						       assoc_rec->usage->
+						       grp_used_tres_run_secs[i]
+						       / 60);
+					printf(")");
+				}
+				printf("%s", new_line_char);
+			} else
 				printf("GrpTRESRunMins=%s", new_line_char);
 
 			if (assoc_rec->max_jobs != INFINITE)
