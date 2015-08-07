@@ -3150,7 +3150,8 @@ extern void slurmdb_tres_list_from_string(
 
 	while (tmp_str) {
 		id = atoi(tmp_str);
-		if (id < 0) {
+		/* 0 isn't a valid tres id */
+		if (id <= 0) {
 			error("slurmdb_tres_list_from_string: no id "
 			      "found at %s instead", tmp_str);
 			break;
@@ -3222,7 +3223,7 @@ extern char *slurmdb_combine_tres_strings(
 		xstrfmtcat(*tres_str_old, "%s%s%s",
 			   (flags & (TRES_STR_FLAG_COMMA1 |
 				     TRES_STR_FLAG_ONLY_CONCAT)) ? "," : "",
-			   *tres_str_old ? "," : "",
+			   (*tres_str_old && tres_str_new[0] != ',') ? "," : "",
 			   tres_str_new);
 
 	if (flags & TRES_STR_FLAG_ONLY_CONCAT)
