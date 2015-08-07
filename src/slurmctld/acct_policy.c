@@ -1120,18 +1120,17 @@ end_it:
 static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					 slurmdb_qos_rec_t *qos_ptr,
 					 slurmdb_qos_rec_t *qos_out_ptr,
-					 uint32_t node_cnt, uint32_t cpu_cnt,
-					 uint32_t job_memory,
-					 uint64_t job_cpu_time_limit,
-					 bool admin_set_memory_limit)
+					 uint32_t node_cnt,
+					 uint64_t *tres_req_cnt,
+					 uint64_t *job_tres_time_limit)
 {
 	uint64_t usage_mins;
-	uint64_t cpu_time_limit;
-	uint64_t cpu_run_mins;
+	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
 	bool safe_limits = false;
 	int rc = true;
+	int i, tres_pos = 0;
 
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
@@ -1143,7 +1142,9 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		safe_limits = true;
 
 	usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
-	cpu_run_mins = qos_ptr->usage->grp_used_cpu_run_secs / 60;
+	for (i=0; i<slurmctld_tres_cnt; i++)
+		tres_run_mins[i] =
+			qos_ptr->usage->grp_used_tres_run_secs[i] / 60;
 
 	/*
 	 * Try to get the used limits for the user or initialize a local
@@ -2204,25 +2205,25 @@ end_it:
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
 extern bool acct_policy_job_runnable_post_select(
-	struct job_record *job_ptr, uint32_t node_cnt,
-	uint32_t cpu_cnt, uint32_t pn_min_memory)
+	struct job_record *job_ptr, uint32_t node_cnt, uint64_t *tres_req_cnt)
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	uint64_t cpu_time_limit;
-	uint64_t job_cpu_time_limit;
-	uint64_t cpu_run_mins;
+	uint64_t tres_run_mins[slurmctld_tres_cnt];
+	uint64_t job_tres_time_limit[slurmctld_tres_cnt];
 	bool rc = true;
 	uint64_t usage_mins;
-	uint32_t job_memory = 0;
-	bool admin_set_memory_limit = false;
 	bool safe_limits = false;
+	int i, tres_pos;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	xassert(job_ptr);
+	xassert(job_ptr->tres_req_cnt);
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -2250,41 +2251,25 @@ extern bool acct_policy_job_runnable_post_select(
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
-	job_cpu_time_limit = (uint64_t)job_ptr->time_limit * (uint64_t)cpu_cnt;
-
-	if (pn_min_memory) {
-		char *memory_type = NULL;
-
-		admin_set_memory_limit =
-			(job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] ==
-			 ADMIN_SET_LIMIT)
-			|| (job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] ==
-			    ADMIN_SET_LIMIT);
-
-		if (pn_min_memory & MEM_PER_CPU) {
-			memory_type = "MPC";
-			job_memory = (pn_min_memory & (~MEM_PER_CPU)) * cpu_cnt;
-		} else {
-			memory_type = "MPN";
-			job_memory = (pn_min_memory) * node_cnt;
-		}
-		debug3("acct_policy_job_runnable_post_select: job %u: %s: "
-		       "job_memory set to %u",
-		       job_ptr->job_id, memory_type, job_memory);
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		job_tres_time_limit[i] = (uint64_t)job_ptr->time_limit *
+			tres_req_cnt[i];
 	}
 
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
 	assoc_mgr_lock(&locks);
 
+	assoc_mgr_set_qos_tres_cnt(&qos_rec);
+
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 &&
 	    !(rc = _qos_job_runnable_post_select(job_ptr, qos_ptr_1,
-						 &qos_rec, node_cnt, cpu_cnt,
-						 job_memory, job_cpu_time_limit,
-						 admin_set_memory_limit)))
+						 &qos_rec, node_cnt,
+						 tres_req_cnt,
+						 job_tres_time_limit)))
 		goto end_it;
 
 	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
@@ -2292,15 +2277,18 @@ extern bool acct_policy_job_runnable_post_select(
 	*/
 	if (qos_ptr_2 &&
 	    !(rc = _qos_job_runnable_post_select(job_ptr, qos_ptr_2,
-						 &qos_rec, node_cnt, cpu_cnt,
-						 job_memory, job_cpu_time_limit,
-						 admin_set_memory_limit)))
+						 &qos_rec, node_cnt,
+						 tres_req_cnt,
+						 job_tres_time_limit)))
 		goto end_it;
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		usage_mins = (uint64_t)(assoc_ptr->usage->usage_raw / 60.0);
-		cpu_run_mins = assoc_ptr->usage->grp_used_cpu_run_secs / 60;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			tres_run_mins[i] =
+				assoc_ptr->usage->grp_used_tres_run_secs[i] /
+				60;
 
 #if _DEBUG
 		info("acct_job_limits: %u of %u",

@@ -97,8 +97,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr);
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
 extern bool acct_policy_job_runnable_post_select(
-	struct job_record *job_ptr, uint32_t cpu_cnt,
-	uint32_t node_cnt, uint32_t pn_min_memory);
+	struct job_record *job_ptr, uint32_t node_cnt, uint64_t *tres_req_cnt);
 
 /*
  * Determine of the specified job can execute right now or is currently
