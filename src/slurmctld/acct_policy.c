@@ -1911,7 +1911,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	char *user_name = NULL;
 	bool rc = true;
 	struct job_record job_rec;
-	uint64_t qos_tres_ctld[g_tres_count];
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	bool strict_checking;
@@ -1930,6 +1929,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
 	assoc_mgr_lock(&locks);
+
+	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
 	job_rec.qos_ptr = qos_ptr;
 	job_rec.part_ptr = part_ptr;
@@ -1959,11 +1960,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	} else
 		strict_checking = reason ? true : false;
 
-	/* FIXME: This needs to work with qos limits, and we
-	 * are fudging them now.
-	 */
-	memset(qos_tres_ctld, 0, sizeof(qos_tres_ctld));
-
 	while (assoc_ptr) {
 		int tres_pos = 0;
 
@@ -1971,15 +1967,12 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->grp_cpu_mins.
 		 */
 
-		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.grp_cpus;
-		qos_tres_ctld[TRES_ARRAY_MEM] = qos_rec.grp_mem;
-
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, job_desc->tres_req_cnt,
 			    assoc_ptr->grp_tres_ctld,
-			    qos_tres_ctld,
+			    qos_rec.grp_tres_ctld,
 			    acct_policy_limit_set->max_tres,
-			    strict_checking, update_call)) {
+			    strict_checking, update_call, 1)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
 			*/
@@ -2061,15 +2054,13 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_cpu_mins_pj.
 		 */
 
-		qos_tres_ctld[TRES_ARRAY_CPU] = qos_rec.max_cpus_pj;
-		qos_tres_ctld[TRES_ARRAY_MEM] = (uint64_t)INFINITE;
 		tres_pos = 0;
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, job_desc->tres_req_cnt,
 			    assoc_ptr->max_tres_ctld,
-			    qos_tres_ctld,
+			    qos_rec.max_tres_pj_ctld,
 			    acct_policy_limit_set->max_tres,
-			    strict_checking, update_call)) {
+			    strict_checking, update_call, 1)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
 			*/
@@ -2167,6 +2158,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	}
 end_it:
 	assoc_mgr_unlock(&locks);
+	slurmdb_free_qos_rec_members(&qos_rec);
 
 	return rc;
 }
