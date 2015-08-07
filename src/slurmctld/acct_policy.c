@@ -2704,44 +2704,29 @@ extern bool acct_policy_job_runnable_post_select(
 			continue;
 		}
 
-		limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->max_tres_mins_pj, TRES_CPU);
-		if ((qos_rec.max_cpu_mins_pj == INFINITE) &&
-		    (limit != (uint64_t)INFINITE)) {
-			cpu_time_limit = limit;
-			if ((job_ptr->time_limit != NO_VAL) &&
-			    (job_cpu_time_limit > cpu_time_limit)) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason =
-					WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
-				debug2("job %u being held, "
-				       "cpu time limit %"PRIu64" exceeds "
-				       "assoc max per job %"PRIu64"",
-				       job_ptr->job_id,
-				       job_cpu_time_limit,
-				       cpu_time_limit);
-				rc = false;
-				goto end_it;
-			}
-		}
-
-		limit = slurmdb_find_tres_count_in_string(
-			assoc_ptr->max_tres_pj, TRES_CPU);
-		if ((qos_rec.max_cpus_pj == INFINITE) &&
-		    (limit != (uint64_t)INFINITE)) {
-			if (cpu_cnt > limit) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason =
-					WAIT_ASSOC_MAX_CPUS_PER_JOB;
-				debug2("job %u being held, "
-				       "min cpu limit %u exceeds "
-				       "account max %"PRIu64,
-				       job_ptr->job_id,
-				       cpu_cnt,
-				       limit);
-				rc = false;
-				goto end_it;
-			}
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, job_tres_time_limit,
+			    assoc_ptr->max_tres_mins_ctld,
+			    qos_rec.max_tres_mins_pj_ctld,
+			    job_ptr->limit_set.min_tres,
+			    1, 0, 1)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
+			debug2("Job %u being held, "
+			       "the job is requesting more than allowed "
+			       "with assoc %u(%s/%s/%s) max tres(%s%s%s) "
+			       "minutes of %"PRIu64" with %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       assoc_ptr->max_tres_mins_ctld[tres_pos],
+			       job_tres_time_limit[tres_pos]);
+			rc = false;
+			goto end_it;
 		}
 
 		/* we do not need to check max_jobs here */
