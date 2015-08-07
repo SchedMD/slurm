@@ -3062,25 +3062,35 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 		usage_mins = (uint64_t)(assoc->usage->usage_raw / 60.0);
 		wall_mins = assoc->usage->grp_used_wall / 60;
 
-		/* FIXME: this only works with CPUS and was only done
-		 * this way to get the slurmctld to compile and work
-		 * with the TRES strings.  This should probably be a
-		 * new call to a function that does this for each TRES.
-		 */
-		uint64_t limit = slurmdb_find_tres_count_in_string(
-			assoc->grp_tres_mins, TRES_CPU);
-		if ((qos_rec.grp_cpu_mins == INFINITE)
-		    && (limit != (uint64_t)INFINITE)
-		    && (usage_mins >= limit)) {
+		i = _validate_tres_usage_limits_for_assoc(
+			&tres_pos, assoc->grp_tres_mins_ctld,
+			qos_rec.grp_tres_mins_ctld, NULL,
+			NULL, usage_mins, NULL, 0);
+		switch (i) {
+		case 1:
+			last_job_update = now;
 			info("Job %u timed out, "
-			     "assoc %u is at or exceeds "
-			     "group max cpu minutes limit %"PRIu64" "
-			     "with %"PRIu64" for account %s",
-			     job_ptr->job_id, assoc->id,
-			     limit,
-			     usage_mins,
-			     assoc->acct);
+			     "the job is at or exceeds assoc %u(%s/%s/%s) "
+			     "group max tres(%s%s%s) minutes of %"PRIu64
+			     " with %"PRIu64"",
+			     job_ptr->job_id,
+			     assoc->id, assoc->acct,
+			     assoc->user, assoc->partition,
+			     assoc_mgr_tres_array[tres_pos]->type,
+			     assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			     assoc_mgr_tres_array[tres_pos]->name ?
+			     assoc_mgr_tres_array[tres_pos]->name : "",
+			     assoc->grp_tres_mins_ctld[tres_pos],
+			     usage_mins);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			goto job_failed;
+			break;
+		case 2:
+			/* not possible safe_limits is 0 */
+		case 3:
+			/* not possible safe_limits is 0 */
+		default:
+			/* all good */
 			break;
 		}
 
