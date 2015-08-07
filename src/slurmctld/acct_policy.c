@@ -3147,6 +3147,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	}
 job_failed:
 	assoc_mgr_unlock(&locks);
+	slurmdb_free_qos_rec_members(&qos_rec);
 
 	if (job_ptr->state_reason == FAIL_TIMEOUT)
 		return true;
