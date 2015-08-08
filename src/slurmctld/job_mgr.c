@@ -7170,6 +7170,8 @@ extern void job_set_req_tres(
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
+
+	xfree(job_ptr->tres_req_cnt);
 	job_ptr->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
 
 	if (job_ptr->details) {
@@ -7220,6 +7222,8 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
+	xfree(job_ptr->tres_alloc_cnt);
+
 	job_ptr->tres_alloc_cnt = xmalloc(
 		sizeof(uint64_t) * slurmctld_tres_cnt);
 
@@ -7575,6 +7579,7 @@ static void _list_delete_job(void *job_entry)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
+	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_fmt_alloc_str);
 	xfree(job_ptr->tres_req_cnt);
