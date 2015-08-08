@@ -2323,17 +2323,17 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					parent_mwpj = INFINITE;
 
 				xfree(parent_mtpj);
-				if (row[ASSOC2_REQ_MTPJ][0])
+				if (row2[ASSOC2_REQ_MTPJ][0])
 					parent_mtpj = xstrdup(
 						row2[ASSOC2_REQ_MTPJ]);
 
 				xfree(parent_mtmpj);
-				if (row[ASSOC2_REQ_MTMPJ][0])
+				if (row2[ASSOC2_REQ_MTMPJ][0])
 					parent_mtmpj = xstrdup(
 						row2[ASSOC2_REQ_MTMPJ]);
 
 				xfree(parent_mtrm);
-				if (row[ASSOC2_REQ_MTRM][0])
+				if (row2[ASSOC2_REQ_MTRM][0])
 					parent_mtrm = xstrdup(
 						row2[ASSOC2_REQ_MTRM]);
 
