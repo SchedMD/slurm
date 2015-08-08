@@ -2609,7 +2609,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 3:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_QOS_GRP_CPU;
+			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU;
 			debug2("job %u being held, "
 			       "if allowed the job request will exceed "
 			       "assoc %u(%s/%s/%s) group max "
