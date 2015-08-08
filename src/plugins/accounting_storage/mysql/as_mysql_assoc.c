@@ -904,14 +904,12 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_pj,
 				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
 
-			/* see if we changed anything */
-			if (xstrcmp(tmp_char, row[ASSOC_MTPJ])) {
-				mod_assoc->max_tres_pj = tmp_char;
-				tmp_char = NULL;
-				modified = 1;
-			} else
-				xfree(tmp_char);
+			mod_assoc->max_tres_pj = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
 		}
 
 		if (assoc->max_tres_mins_pj) {
@@ -919,30 +917,26 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_mins_pj,
 				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
 
-			/* see if we changed anything */
-			if (xstrcmp(tmp_char, row[ASSOC_MTMPJ])) {
-				mod_assoc->max_tres_mins_pj = tmp_char;
-				tmp_char = NULL;
-				modified = 1;
-			} else
-				xfree(tmp_char);
+			mod_assoc->max_tres_mins_pj = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
 		}
+
 		if (assoc->max_tres_run_mins) {
 			tmp_char = xstrdup(row[ASSOC_MTRM]);
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_run_mins,
 				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
 
-			/* see if we changed anything */
-			if (xstrcmp(tmp_char, row[ASSOC_MTRM])) {
-				mod_assoc->max_tres_run_mins = tmp_char;
-				tmp_char = NULL;
-				modified = 1;
-			} else
-				xfree(tmp_char);
+			mod_assoc->max_tres_run_mins = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
 		}
-
 		if (!row[ASSOC_QOS][0] && assoc->qos_list) {
 			List delta_qos_list = NULL;
 			char *qos_char = NULL, *delta_char = NULL;
@@ -1733,14 +1727,16 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		mod_tres_str(&mod_assoc->max_tres_pj,
 			     assoc->max_tres_pj, row[MASSOC_MTPJ],
-			     NULL, "max_tres_pj", &vals, mod_assoc->id, 1);
+			     alt_assoc.max_tres_pj, "max_tres_pj",
+			     &vals, mod_assoc->id, 1);
 		mod_tres_str(&mod_assoc->max_tres_mins_pj,
 			     assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
-			     NULL, "max_tres_mins_pj", &vals, mod_assoc->id, 1);
+			     alt_assoc.max_tres_mins_pj, "max_tres_mins_pj",
+			     &vals, mod_assoc->id, 1);
 		mod_tres_str(&mod_assoc->max_tres_run_mins,
 			     assoc->max_tres_run_mins, row[MASSOC_MTRM],
-			     NULL, "max_tres_run_mins", &vals,
-			     mod_assoc->id, 1);
+			     alt_assoc.max_tres_run_mins, "max_tres_run_mins",
+			     &vals, mod_assoc->id, 1);
 
 		if (result2)
 			mysql_free_result(result2);
