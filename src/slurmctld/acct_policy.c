@@ -2421,7 +2421,7 @@ extern bool acct_policy_job_runnable_post_select(
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(job_ptr);
-	xassert(job_ptr->tres_req_cnt);
+	xassert(tres_req_cnt);
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -2569,7 +2569,7 @@ extern bool acct_policy_job_runnable_post_select(
 			       job_tres_time_limit[tres_pos] +
 			       tres_run_mins[tres_pos],
 			       tres_run_mins[tres_pos],
-			       job_ptr->tres_req_cnt[tres_pos]);
+			       tres_req_cnt[tres_pos]);
 			rc = false;
 			goto end_it;
 			break;
