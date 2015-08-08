@@ -1345,8 +1345,13 @@ static void _update_cluster_tres(void)
 		   altered so just rebuild it.
 		*/
 		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
-						 job_ptr->tres_req_str, true))
+						 job_ptr->tres_req_str,
+						 0, true))
 			job_set_req_tres(job_ptr, true);
+		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
+						 job_ptr->tres_alloc_str,
+						 0, true))
+			job_set_alloc_tres(job_ptr, true);
 	}
 	list_iterator_destroy(job_iterator);
 

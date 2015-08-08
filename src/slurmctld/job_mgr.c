@@ -169,7 +169,7 @@ static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code);
+	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
@@ -591,7 +591,8 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code)
+	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code,
+	bool locked)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -622,7 +623,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	}
 
 	if (assoc_mgr_fill_in_qos(acct_db_conn, qos_rec, accounting_enforce,
-				  &qos_ptr, 0) != SLURM_SUCCESS) {
+				  &qos_ptr, locked) != SLURM_SUCCESS) {
 		error("Invalid qos (%s)", qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
@@ -905,6 +906,8 @@ extern int load_all_job_state(void)
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* read the file */
 	lock_state_files();
@@ -962,12 +965,14 @@ extern int load_all_job_state(void)
 		job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
 
+	assoc_mgr_lock(&locks);
 	while (remaining_buf(buffer) > 0) {
 		error_code = _load_job_state(buffer, protocol_version);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
 		job_cnt++;
 	}
+	assoc_mgr_unlock(&locks);
 	debug3("Set job_id_sequence to %u", job_id_sequence);
 
 	free_buf(buffer);
@@ -975,6 +980,7 @@ extern int load_all_job_state(void)
 	return error_code;
 
 unpack_error:
+	assoc_mgr_unlock(&locks);
 	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
@@ -1257,6 +1263,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 }
 
 /* Unpack a job's state information from a buffer */
+/* NOTE: assoc_mgr tres and assoc read lock must be locked before calling */
 static int _load_job_state(Buf buffer, uint16_t protocol_version)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
@@ -1885,10 +1892,23 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->tres_req_str);
 	job_ptr->tres_req_str = tres_req_str;
 	tres_req_str = NULL;
+	if (job_ptr->tres_req_str)
+		assoc_mgr_set_tres_cnt_array(
+			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true);
+	else
+		job_set_req_tres(job_ptr, true);
 
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
 	tres_fmt_alloc_str = NULL;
+	/* do this after the format string just incase for some
+	 * reason the tres_alloc_str is NULL but not the fmt_str */
+	if (job_ptr->tres_alloc_str)
+		assoc_mgr_set_tres_cnt_array(
+			&job_ptr->tres_alloc_cnt, job_ptr->tres_alloc_str,
+			0, true);
+	else
+		job_set_alloc_tres(job_ptr, true);
 
 	xfree(job_ptr->account);
 	job_ptr->account = account;
@@ -2079,7 +2099,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_assoc_rec_t **)
-				    &job_ptr->assoc_ptr, false) &&
+				    &job_ptr->assoc_ptr, true) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Holding job %u with invalid association", job_id);
@@ -2120,7 +2140,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->resv_name, job_ptr->assoc_ptr,
 			job_ptr->limit_set.qos, &qos_rec,
-			&qos_error);
+			&qos_error, true);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
 			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
@@ -5546,7 +5566,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	qos_ptr = _determine_and_validate_qos(
-		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error);
+		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
+		false);
 
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
@@ -9767,7 +9788,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 			new_qos_ptr = _determine_and_validate_qos(
 				resv_name, job_ptr->assoc_ptr,
-				authorized, &qos_rec, &error_code);
+				authorized, &qos_rec, &error_code, false);
 			if (error_code == SLURM_SUCCESS) {
 				info("%s: setting QOS to %s for job_id %u",
 				     __func__, job_specs->qos, job_ptr->job_id);
@@ -9931,7 +9952,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 				new_qos_ptr = _determine_and_validate_qos(
 					resv_name, job_ptr->assoc_ptr,
-					authorized, &qos_rec, &error_code);
+					authorized, &qos_rec, &error_code,
+					false);
 				if (error_code == SLURM_SUCCESS) {
 					info("update_job: setting qos to %s "
 					     "for job_id %u",

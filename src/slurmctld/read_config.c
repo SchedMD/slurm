@@ -2104,9 +2104,6 @@ static int _restore_job_dependencies(void)
 				acct_policy_add_job_submit(job_ptr);
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
-				/* job_set_alloc_tres has to be done
-				 * before acct_policy_job_begin */
-				job_set_alloc_tres(job_ptr, true);
 				acct_policy_job_begin(job_ptr);
 				job_claim_resv(job_ptr);
 			}
@@ -2119,18 +2116,6 @@ static int _restore_job_dependencies(void)
 			job_ptr->license_list = license_list;
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			license_job_get(job_ptr);
-
-		/* tres_req_cnt is only for pending jobs */
-		if (IS_JOB_PENDING(job_ptr)) {
-			/* If this returns 1 it means the positions were
-			   altered so just rebuild it.
-			*/
-			if (assoc_mgr_set_tres_cnt_array(
-				    &job_ptr->tres_req_cnt,
-				    job_ptr->tres_req_str, true))
-				job_set_req_tres(job_ptr, true);
-		} else if (job_ptr->total_cpus && !job_ptr->tres_alloc_str)
-			job_set_alloc_tres(job_ptr, true);
 
 		if ((job_ptr->details == NULL) ||
 		    (job_ptr->details->dependency == NULL))
