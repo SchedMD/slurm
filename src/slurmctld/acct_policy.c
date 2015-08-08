@@ -760,7 +760,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				acct_policy_limit_set_t *acct_policy_limit_set,
 				bool update_call,
 				char *user_name,
-				uint32_t job_memory,
 				int job_cnt,
 				bool strict_checking)
 {
@@ -1984,14 +1983,12 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		if (!(rc = _qos_policy_validate(
 			      job_desc, part_ptr, qos_ptr_1, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_desc->tres_req_cnt[TRES_ARRAY_MEM],
-			      job_cnt, strict_checking)))
+			      user_name, job_cnt, strict_checking)))
 			goto end_it;
 		if (!(rc = _qos_policy_validate(
 			      job_desc, part_ptr, qos_ptr_2, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
-			      user_name, job_desc->tres_req_cnt[TRES_ARRAY_MEM],
-			      job_cnt, strict_checking)))
+			      user_name, job_cnt, strict_checking)))
 			goto end_it;
 
 	} else
