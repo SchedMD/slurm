@@ -2284,6 +2284,11 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		/* This only trips when the grp_used_wall is divisible
+		 * by 60, i.e if a limit is 1 min and you have only
+		 * accumulated 59 seconds you will still be able to
+		 * get another job in as 59/60 = 0 int wise.
+		 */
 		wall_mins = assoc_ptr->usage->grp_used_wall / 60;
 
 #if _DEBUG
