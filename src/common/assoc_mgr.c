@@ -5644,6 +5644,6 @@ extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
-	info("made string of %s", tres_str);
+
 	return tres_str;
 }
