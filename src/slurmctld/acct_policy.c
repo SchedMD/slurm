@@ -490,8 +490,8 @@ static bool _validate_tres_limits_for_assoc(
 		(*tres_pos) = i;
 
 		if ((admin_set_limit_tres_array[i] == ADMIN_SET_LIMIT)
-		    || (qos_tres_array[i] == INFINITE64)
-		    || (assoc_tres_array[i] != INFINITE64)
+		    || (qos_tres_array[i] != INFINITE64)
+		    || (assoc_tres_array[i] == INFINITE64)
 		    || (!job_tres_array[i] && !update_call))
 			continue;
 
