@@ -7214,6 +7214,10 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_alloc_cnt);
 
+	/* We only need to do this on non-pending jobs */
+	if (IS_JOB_PENDING(job_ptr))
+		return;
+
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 	job_ptr->tres_alloc_cnt = xmalloc(
