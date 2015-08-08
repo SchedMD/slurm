@@ -5636,7 +5636,7 @@ extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
 		assoc_mgr_lock(&locks);
 
 	for (i=0; i<g_tres_count; i++) {
-		if (!assoc_mgr_tres_array[i] || !(tres_cnt+i))
+		if (!assoc_mgr_tres_array[i] || !tres_cnt[i])
 			continue;
 		xstrfmtcat(tres_str, "%s%u=%"PRIu64, tres_str ? "," : "",
 			   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
