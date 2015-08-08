@@ -481,22 +481,24 @@ static bool _validate_tres_limits_for_assoc(
 	bool strict_checking,
 	bool update_call, bool max_limit)
 {
+	int i;
+
 	if (!strict_checking)
 		return true;
 
-	for ((*tres_pos) = 0; (*tres_pos) < g_tres_count; (*tres_pos)++) {
-		if ((admin_set_limit_tres_array[*tres_pos] == ADMIN_SET_LIMIT)
-		    || (qos_tres_array[*tres_pos] == INFINITE64)
-		    || (assoc_tres_array[*tres_pos] != INFINITE64)
-		    || (!job_tres_array[*tres_pos] && !update_call))
+	for (i = 0; i < g_tres_count; i++) {
+		(*tres_pos) = i;
+
+		if ((admin_set_limit_tres_array[i] == ADMIN_SET_LIMIT)
+		    || (qos_tres_array[i] == INFINITE64)
+		    || (assoc_tres_array[i] != INFINITE64)
+		    || (!job_tres_array[i] && !update_call))
 			continue;
 
 		if (max_limit) {
-			if (job_tres_array[*tres_pos] >
-			    assoc_tres_array[*tres_pos])
+			if (job_tres_array[i] > assoc_tres_array[i])
 				return false;
-		} else if (job_tres_array[*tres_pos] <
-			   assoc_tres_array[*tres_pos])
+		} else if (job_tres_array[i] < assoc_tres_array[i])
 				return false;
 	}
 
