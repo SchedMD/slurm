@@ -2768,6 +2768,30 @@ extern bool acct_policy_job_runnable_post_select(
 			goto end_it;
 		}
 
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, tres_req_cnt,
+			    assoc_ptr->max_tres_ctld,
+			    qos_rec.max_tres_pj_ctld,
+			    job_ptr->limit_set.min_tres,
+			    1, 0, 1)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
+			debug("job %u is being held, "
+			       "the job is requesting more than allowed "
+			       "with assoc %u(%s/%s/%s) max tres(%s%s%s) "
+			       "minutes of %"PRIu64" with %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_array[tres_pos]->type,
+			       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
+			       assoc_mgr_tres_array[tres_pos]->name ?
+			       assoc_mgr_tres_array[tres_pos]->name : "",
+			       assoc_ptr->max_tres_mins_ctld[tres_pos],
+			       tres_req_cnt[tres_pos]);
+			rc = false;
+			break;
+		}
 		/* we do not need to check max_jobs here */
 
 		if ((qos_rec.max_nodes_pj == INFINITE)
