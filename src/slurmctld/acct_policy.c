@@ -522,7 +522,7 @@ static bool _validate_tres_limits_for_assoc(
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static bool _validate_tres_usage_limits_for_assoc(
+static int _validate_tres_usage_limits_for_assoc(
 	int *tres_pos,
 	uint64_t *tres_limit_array,
 	uint64_t *qos_tres_limit_array,
