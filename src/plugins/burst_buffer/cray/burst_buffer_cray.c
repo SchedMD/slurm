@@ -1762,7 +1762,8 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 static int _parse_interactive(struct job_descriptor *job_desc,
 			      uint64_t *bb_size)
 {
-	char *capacity, *end_ptr = NULL, *tok;
+	char *access = NULL, *sep = "", *type = NULL;
+	char *end_ptr = NULL, *tok;
 	int64_t tmp_cnt;
 	uint64_t byte_cnt = 0;
 	uint32_t node_cnt = 0, swap_cnt = 0;
@@ -1771,19 +1772,15 @@ static int _parse_interactive(struct job_descriptor *job_desc,
 	if (!job_desc->burst_buffer)
 		return rc;
 
-	tok = job_desc->burst_buffer;
-	while ((capacity = strstr(tok, "capacity="))) {
-		tmp_cnt = bb_get_size_num(capacity + 9,
+	if ((tok = strstr(job_desc->burst_buffer, "capacity="))) {
+		tmp_cnt = bb_get_size_num(tok + 9,
 					  bb_state.bb_config.granularity);
-		if (tmp_cnt == 0) {
-			rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
-			break;
-		}
+		if (tmp_cnt == 0)
+			return ESLURM_INVALID_BURST_BUFFER_CHANGE;
 		if (tmp_cnt & BB_SIZE_IN_NODES)
 			node_cnt += tmp_cnt & (~BB_SIZE_IN_NODES);
 		else
 			byte_cnt += tmp_cnt;
-		tok = capacity + 9;
 	}
 
 	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
@@ -1805,20 +1802,32 @@ static int _parse_interactive(struct job_descriptor *job_desc,
 				job_nodes = job_desc->max_nodes;
 			}
 			xstrfmtcat(job_desc->burst_buffer,
-				   " SLURM_SWAP=%uGB(%uNodes)",
+				   "SLURM_SWAP=%uGB(%uNodes)",
 				   swap_cnt, job_nodes);
+			sep = " ";
 			byte_cnt += swap_cnt * 1024 * 1024 * job_nodes;
 		}
 		if (byte_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   " SLURM_SIZE=%"PRIu64"", byte_cnt);
+				   "%sSLURM_JOB=SIZE=%"PRIu64"", sep, byte_cnt);
+			sep = " ";
 			*bb_size += byte_cnt;
+			if (access) {
+				xstrfmtcat(job_desc->burst_buffer,
+					   ",ACCESS=%s", access);
+			}
+			if (type) {
+				xstrfmtcat(job_desc->burst_buffer,
+					   ",TYPE=%s", type);
+			}
 		}
 		if (node_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_GRES=nodes:%u", node_cnt);
+				   "%sSLURM_GRES=nodes:%u", sep, node_cnt);
 		}
 	}
+	xfree(access);
+	xfree(type);
 
 	return rc;
 }
