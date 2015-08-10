@@ -377,11 +377,11 @@ extern void print_fields_long_double(
 
 }
 
-extern void print_fields_time(print_field_t *field, uint64_t value, int last)
+extern void print_fields_time(print_field_t *field, uint32_t value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL64) || (value == INFINITE64)) {
+	if ((value == NO_VAL) || (value == INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)

@@ -465,7 +465,7 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TIME:
-			field->print_routine(field, (uint64_t)total_time,
+			field->print_routine(field, (uint32_t)total_time,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_NAME:
