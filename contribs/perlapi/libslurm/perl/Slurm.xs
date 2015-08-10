@@ -84,9 +84,6 @@ slurm_get_errno(slurm_t self)
 
 char *
 slurm_strerror(slurm_t self, int errnum=0)
-	PREINIT:
-		char *tmp_str;
-		int n;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -95,10 +92,7 @@ slurm_strerror(slurm_t self, int errnum=0)
 			    */
 		if (errnum == 0)
 			errnum = slurm_get_errno();
-		tmp_str = slurm_strerror(errnum);
-		n = strlen(tmp_str) + 1;
-		New(0, RETVAL, n, char);
-		Copy(tmp_str, RETVAL, n, char);
+		RETVAL = slurm_strerror(errnum);
 	OUTPUT:
 		RETVAL
 
@@ -111,20 +105,13 @@ slurm_strerror(slurm_t self, int errnum=0)
 
 char *
 slurm_preempt_mode_string(slurm_t self, uint16_t preempt_mode);
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_preempt_mode_string(preempt_mode);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_preempt_mode_string(preempt_mode);
 	OUTPUT:
 		RETVAL
 
@@ -141,58 +128,37 @@ slurm_preempt_mode_num(slurm_t self, char *preempt_mode)
 
 char *
 slurm_job_reason_string(slurm_t self, uint32_t inx)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_job_reason_string(inx);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_job_reason_string(inx);
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_job_state_string(slurm_t self, uint16_t inx)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_job_state_string(inx);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_job_state_string(inx);
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_job_state_string_compact(slurm_t self, uint16_t inx)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_job_state_string_compact(inx);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_job_state_string_compact(inx);
 	OUTPUT:
 		RETVAL
 
@@ -228,39 +194,25 @@ slurm_reservation_flags_string(slurm_t self, uint16_t flags)
 
 char *
 slurm_node_state_string(slurm_t self, uint32_t inx)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_node_state_string(inx);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_node_state_string(inx);
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_node_state_string_compact(slurm_t self, uint32_t inx)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_node_state_string_compact(inx);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_node_state_string_compact(inx);
 	OUTPUT:
 		RETVAL
 
@@ -292,58 +244,37 @@ slurm_accounting_enforce_string(slurm_t self, uint16_t enforce)
 
 char *
 slurm_conn_type_string(slurm_t self, uint16_t conn_type)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_conn_type_string((enum connection_type)conn_type);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_conn_type_string((enum connection_type)conn_type);
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_node_use_string(slurm_t self, uint16_t node_use)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_node_use_string((enum node_use_type)node_use);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_node_use_string((enum node_use_type)node_use);
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_bg_block_state_string(slurm_t self, uint16_t state)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_bg_block_state_string(state);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		/* tmp_str is static data */
+		RETVAL = slurm_bg_block_state_string(state);
 	OUTPUT:
 		RETVAL
 
