@@ -670,6 +670,7 @@ static void _load_state(void)
 			}
 		}
 //FIXME: Modify as needed for job-based buffers once format is known
+//FIXME: Save/restort account/qos/partition information for persistent buffer limits
 		cur_alloc = bb_alloc_name_rec(&bb_state, instances[i].label,
 					      user_id);
 		cur_alloc->size = instances[i].bytes;
@@ -2028,7 +2029,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	bb_pack_state(&bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.private_data == 0)
 		uid = 0;	/* User can see all data */
-	rec_count = bb_pack_bufs(uid, bb_state.bb_ahash,buffer,protocol_version);
+	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	if (rec_count != 0) {
 		eof = get_buf_offset(buffer);
 		set_buf_offset(buffer, offset);
@@ -2451,7 +2452,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			continue;
 		job_rec = xmalloc(sizeof(job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
-		job_rec->bb_spec = bb_job;
+		job_rec->bb_job = bb_job;
 		list_push(job_candidates, job_rec);
 	}
 	list_iterator_destroy(job_iter);
@@ -2463,7 +2464,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	job_iter = list_iterator_create(job_candidates);
 	while ((job_rec = list_next(job_iter))) {
 		job_ptr = job_rec->job_ptr;
-		bb_job = job_rec->bb_spec;
+		bb_job = job_rec->bb_job;
 		if (bb_job->state != BB_STATE_PENDING)
 			continue;	/* Job was already allocated a buffer */
 
@@ -2998,6 +2999,12 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				 create_args->name, BB_STATE_PENDING);
 		unlock_slurmctld(job_write_lock);
 	} else if (resp_msg && strstr(resp_msg, "created")) {
+		lock_slurmctld(job_write_lock);
+		job_ptr = find_job_record(create_args->job_id);
+		if (!job_ptr) {
+			error("%s: unable to find job record for job %u",
+			      __func__, create_args->job_id);
+		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id,
 				 create_args->job_id, create_args->name,
@@ -3006,7 +3013,17 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
+		if (job_ptr)
+			bb_alloc->account = xstrdup(job_ptr->account);
+		if (job_ptr && job_ptr->part_ptr)
+			bb_alloc->partition = xstrdup(job_ptr->part_ptr->name);
+		if (job_ptr && job_ptr->qos_ptr) {
+			slurmdb_qos_rec_t *qos_ptr =
+				(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+			bb_alloc->qos = xstrdup(qos_ptr->name);
+		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
+		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
 	_free_create_args(create_args);

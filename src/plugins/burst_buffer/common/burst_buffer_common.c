@@ -612,40 +612,41 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 }
 
 /* Pack individual burst buffer records into a  buffer */
-extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_ahash, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 			uint16_t protocol_version)
 {
 	int i, j, rec_count = 0;
-	struct bb_alloc *bb_next;
+	struct bb_alloc *bb_alloc;
 
-	if (!bb_ahash)
+	xassert(state_ptr);
+	if (!state_ptr->bb_ahash)
 		return rec_count;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_next = bb_ahash[i];
-		while (bb_next) {
-			if ((uid == 0) || (uid == bb_next->user_id)) {
-				packstr(bb_next->account,      buffer);
-				pack32(bb_next->array_job_id,  buffer);
-				pack32(bb_next->array_task_id, buffer);
-				pack32(bb_next->gres_cnt, buffer);
-				for (j = 0; j < bb_next->gres_cnt; j++) {
-					packstr(bb_next->gres_ptr[j].name,
+		bb_alloc = state_ptr->bb_ahash[i];
+		while (bb_alloc) {
+			if ((uid == 0) || (uid == bb_alloc->user_id)) {
+				packstr(bb_alloc->account,      buffer);
+				pack32(bb_alloc->array_job_id,  buffer);
+				pack32(bb_alloc->array_task_id, buffer);
+				pack32(bb_alloc->gres_cnt, buffer);
+				for (j = 0; j < bb_alloc->gres_cnt; j++) {
+					packstr(bb_alloc->gres_ptr[j].name,
 						buffer);
-					pack64(bb_next->gres_ptr[j].used_cnt,
+					pack64(bb_alloc->gres_ptr[j].used_cnt,
 					       buffer);
 				}
-				pack32(bb_next->job_id,        buffer);
-				packstr(bb_next->name,         buffer);
-				packstr(bb_next->partition,    buffer);
-				packstr(bb_next->qos,          buffer);
-				pack64(bb_next->size,          buffer);
-				pack16(bb_next->state,         buffer);
-				pack_time(bb_next->state_time, buffer);
-				pack32(bb_next->user_id,       buffer);
+				pack32(bb_alloc->job_id,        buffer);
+				packstr(bb_alloc->name,         buffer);
+				packstr(bb_alloc->partition,    buffer);
+				packstr(bb_alloc->qos,          buffer);
+				pack64(bb_alloc->size,          buffer);
+				pack16(bb_alloc->state,         buffer);
+				pack_time(bb_alloc->state_time, buffer);
+				pack32(bb_alloc->user_id,       buffer);
 				rec_count++;
 			}
-			bb_next = bb_next->next;
+			bb_alloc = bb_alloc->next;
 		}
 	}
 
@@ -902,7 +903,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
  * Use bb_free_alloc_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
-				    bb_job_t *bb_spec)
+				    bb_job_t *bb_job)
 {
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
@@ -910,23 +911,26 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	xassert(state_ptr->bb_ahash);
 	xassert(job_ptr);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	bb_ptr->account = xstrdup(bb_job->account);
 	bb_ptr->array_job_id = job_ptr->array_job_id;
 	bb_ptr->array_task_id = job_ptr->array_task_id;
-	bb_ptr->gres_cnt = bb_spec->gres_cnt;
+	bb_ptr->gres_cnt = bb_job->gres_cnt;
 	if (bb_ptr->gres_cnt) {
 		bb_ptr->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
 					   bb_ptr->gres_cnt);
 	}
 	for (i = 0; i < bb_ptr->gres_cnt; i++) {
-		bb_ptr->gres_ptr[i].used_cnt = bb_spec->gres_ptr[i].count;
-		bb_ptr->gres_ptr[i].name = xstrdup(bb_spec->gres_ptr[i].name);
+		bb_ptr->gres_ptr[i].used_cnt = bb_job->gres_ptr[i].count;
+		bb_ptr->gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
 	}
 	bb_ptr->job_id = job_ptr->job_id;
 	xassert((bb_ptr->magic = BB_JOB_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
 	bb_ptr->next = state_ptr->bb_ahash[i];
+	bb_ptr->partition = xstrdup(bb_job->partition);
+	bb_ptr->qos = xstrdup(bb_job->qos);
 	state_ptr->bb_ahash[i] = bb_ptr;
-	bb_ptr->size = bb_spec->total_size;
+	bb_ptr->size = bb_job->total_size;
 	bb_ptr->state = BB_STATE_ALLOCATED;
 	bb_ptr->state_time = time(NULL);
 	bb_ptr->seen_time = time(NULL);
@@ -939,7 +943,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
  * if so configured.
  * Use bb_free_alloc_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, bb_job_t *bb_spec)
+				struct job_record *job_ptr, bb_job_t *bb_job)
 {
 	bb_alloc_t *bb_ptr;
 	uint16_t new_nice;
@@ -961,7 +965,7 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 		}
 	}
 
-	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_spec);
+	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
 	bb_add_user_load(bb_ptr, state_ptr);
 
 	return bb_ptr;

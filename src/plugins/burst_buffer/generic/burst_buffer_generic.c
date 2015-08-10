@@ -870,7 +870,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	bb_pack_state(&bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.private_data == 0)
 		uid = 0;	/* User can see all data */
-	rec_count = bb_pack_bufs(uid, bb_state.bb_ahash,buffer,protocol_version);
+	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	if (rec_count != 0) {
 		eof = get_buf_offset(buffer);
 		set_buf_offset(buffer, offset);

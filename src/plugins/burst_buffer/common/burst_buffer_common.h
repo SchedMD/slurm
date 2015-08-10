@@ -163,7 +163,7 @@ typedef struct {
 /* Used for building queue of jobs records for various purposes */
 typedef struct job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
-	bb_job_t *bb_spec;	/* Used by cray plugin only */
+	bb_job_t *bb_job;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
 } job_queue_rec_t;
 
@@ -211,13 +211,13 @@ extern void bb_alloc_cache(bb_state_t *state_ptr);
  * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
-				    bb_job_t *bb_spec);
+				    bb_job_t *bb_job);
 
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured.
  * Use bb_free_alloc_buf() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, bb_job_t *bb_spec);
+				struct job_record *job_ptr, bb_job_t *bb_job);
 
 /* Allocate a named burst buffer record for a specific user.
  * Return a pointer to that record.
@@ -294,7 +294,7 @@ extern int bb_job_queue_sort(void *x, void *y);
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
 /* Pack individual burst buffer records into a  buffer */
-extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_hash, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 			uint16_t protocol_version);
 
 /* Pack state and configuration parameters into a buffer */
