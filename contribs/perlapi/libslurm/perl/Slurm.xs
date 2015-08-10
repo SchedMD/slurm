@@ -11,7 +11,9 @@
 #include "slurm-perl.h"
 #include "bitstr.h"
 
-
+/* Custom typemap that free's memory after copying to perl stack. */
+typedef char char_xfree;
+typedef char char_free;
 
 struct slurm {
 };
@@ -173,22 +175,15 @@ slurm_job_state_num(slurm_t self, char *state_name)
 			      only Slurm::
 			    */
 
-char *
+char_xfree *
 slurm_reservation_flags_string(slurm_t self, uint16_t flags)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		tmp_str = slurm_reservation_flags_string(flags);
-		len = strlen(tmp_str) + 1;
-		New(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		xfree(tmp_str);
+		RETVAL = slurm_reservation_flags_string(flags);
 	OUTPUT:
 		RETVAL
 
@@ -218,27 +213,31 @@ slurm_node_state_string_compact(slurm_t self, uint32_t inx)
 
 char *
 slurm_private_data_string(slurm_t self, uint16_t private_data)
+	PREINIT:
+		char tmp_str[128];
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		New(0, RETVAL, 64, char);
-		slurm_private_data_string(private_data, RETVAL, 64);
+		slurm_private_data_string(private_data, tmp_str, sizeof(tmp_str));
+		RETVAL = tmp_str;
 	OUTPUT:
 		RETVAL
 
 char *
 slurm_accounting_enforce_string(slurm_t self, uint16_t enforce)
+	PREINIT:
+		char tmp_str[128];
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		New(0, RETVAL, 32, char);
-		slurm_accounting_enforce_string(enforce, RETVAL, 32);
+		slurm_accounting_enforce_string(enforce, tmp_str, sizeof(tmp_str));
+		RETVAL = tmp_str;
 	OUTPUT:
 		RETVAL
 
@@ -323,11 +322,10 @@ slurm_print_block_info(slurm_t self, FILE *out, HV *block_info, int one_liner=0)
 	C_ARGS:
 		out, &bi, one_liner
 
-char *
+char_xfree *
 slurm_sprint_block_info(slurm_t self, HV *block_info, int one_liner=0)
 	PREINIT:
 		block_info_t bi;
-		char *tmp_str = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -337,10 +335,7 @@ slurm_sprint_block_info(slurm_t self, HV *block_info, int one_liner=0)
 		if(hv_to_block_info(block_info, &bi) < 0) {
 			XSRETURN_UNDEF;
 		}
-		tmp_str = slurm_sprint_block_info(&bi, one_liner);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
+		RETVAL = slurm_sprint_block_info(&bi, one_liner);
 	OUTPUT:
 		RETVAL
 
@@ -511,23 +506,17 @@ slurm_allocation_lookup_lite(slurm_t self, uint32_t job_id)
 	OUTPUT:
 		RETVAL
 
-char *
+char_free *
 slurm_read_hostfile(slurm_t self, char *filename, int n)
-	PREINIT:
-		char *hostlist;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		hostlist = slurm_read_hostfile(filename, n);
-		if(hostlist == NULL) {
+		RETVAL = slurm_read_hostfile(filename, n);
+		if(RETVAL == NULL) {
 			XSRETURN_UNDEF;
-		} else {
-			New(0, RETVAL, strlen(hostlist) + 1, char);
-			Copy(hostlist, RETVAL, strlen(hostlist) + 1, char);
-			free(hostlist);
 		}
 	OUTPUT:
 		RETVAL
@@ -1383,7 +1372,7 @@ slurm_print_job_info_msg(slurm_t self, FILE *out, HV *job_info_msg, int one_line
 	CLEANUP:
 		xfree(ji_msg.job_array);
 
-char *
+char_xfree *
 slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
 	PREINIT:
 		job_info_t ji;
@@ -1401,9 +1390,7 @@ slurm_sprint_job_info(slurm_t self, HV *job_info, int one_liner=0)
 		xfree(ji.exc_node_inx);
 		xfree(ji.node_inx);
 		xfree(ji.req_node_inx);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
+		RETVAL = tmp_str;
 	OUTPUT:
 		RETVAL
 
@@ -1499,11 +1486,10 @@ slurm_print_job_step_info(slurm_t self, FILE *out, HV *step_info, int one_liner=
 	CLEANUP:
 		xfree(si.node_inx);
 
-char *
+char_xfree *
 slurm_sprint_job_step_info(slurm_t self, HV *step_info, int one_liner=0)
 	PREINIT:
 		job_step_info_t si;
-		char *tmp_str = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -1513,11 +1499,8 @@ slurm_sprint_job_step_info(slurm_t self, HV *step_info, int one_liner=0)
 		if(hv_to_job_step_info(step_info, &si) < 0) {
 			XSRETURN_UNDEF;
 		}
-		tmp_str = slurm_sprint_job_step_info(&si, one_liner);
+		RETVAL = slurm_sprint_job_step_info(&si, one_liner);
 		xfree(si.node_inx);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
 	OUTPUT:
 		RETVAL
 
@@ -1684,11 +1667,10 @@ slurm_print_node_table(slurm_t self, FILE *out, HV *node_info, int node_scaling=
 	C_ARGS:
 		out, &ni, node_scaling, one_liner
 
-char *
+char_xfree *
 slurm_sprint_node_table(slurm_t self, HV *node_info, int node_scaling=1, int one_liner=0)
 	PREINIT:
 		node_info_t ni;
-		char *tmp_str = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -1698,10 +1680,7 @@ slurm_sprint_node_table(slurm_t self, HV *node_info, int node_scaling=1, int one
 		if(hv_to_node_info(node_info, &ni) < 0) {
 			XSRETURN_UNDEF;
 		}
-		tmp_str = slurm_sprint_node_table(&ni, node_scaling, one_liner);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
+		RETVAL = slurm_sprint_node_table(&ni, node_scaling, one_liner);
 	OUTPUT:
 		RETVAL
 
@@ -1993,11 +1972,10 @@ slurm_print_partition_info(slurm_t self, FILE *out, HV *part_info, int one_liner
 	CLEANUP:
 		xfree(pi.node_inx);
 
-char *
+char_xfree *
 slurm_sprint_partition_info(slurm_t self, HV *part_info, int one_liner=0)
 	PREINIT:
 		partition_info_t pi;
-		char *tmp_str = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -2007,11 +1985,8 @@ slurm_sprint_partition_info(slurm_t self, HV *part_info, int one_liner=0)
 		if(hv_to_partition_info(part_info, &pi) < 0) {
 			XSRETURN_UNDEF;
 		}
-		tmp_str = slurm_sprint_partition_info(&pi, one_liner);
+		RETVAL = slurm_sprint_partition_info(&pi, one_liner);
 		xfree(pi.node_inx);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
 	OUTPUT:
 		RETVAL
 
@@ -2094,7 +2069,7 @@ slurm_load_reservations(slurm_t self, time_t update_time=0)
 	OUTPUT:
 		RETVAL
 
-char *
+char_free *
 slurm_create_reservation(slurm_t self, HV *res_info)
 	PREINIT:
 		resv_desc_msg_t resv_msg;
@@ -2191,11 +2166,10 @@ slurm_print_reservation_info(slurm_t self, FILE *out, HV *resv_info, int one_lin
 	CLEANUP:
 		xfree(ri.node_inx);
 
-char *
+char_xfree *
 slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 	PREINIT:
 		reserve_info_t ri;
-		char *tmp_str = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -2205,11 +2179,8 @@ slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 		if(hv_to_reserve_info(resv_info, &ri) < 0) {
 			XSRETURN_UNDEF;
 		}
-		tmp_str = slurm_sprint_reservation_info(&ri, one_liner);
+		RETVAL = slurm_sprint_reservation_info(&ri, one_liner);
 		xfree(ri.node_inx);
-		New(0, RETVAL, strlen(tmp_str) + 1, char);
-		Copy(tmp_str, RETVAL, strlen(tmp_str) + 1, char);
-		xfree(tmp_str);
 	OUTPUT:
 		RETVAL
 
@@ -2539,35 +2510,23 @@ slurm_hostlist_push(hostlist_t hl, char* hosts)
 int
 slurm_hostlist_push_host(hostlist_t hl, char* host)
 
-char*
+char_xfree *
 slurm_hostlist_ranged_string(hostlist_t hl)
-	PREINIT:
-		char *tmp_str;
-		int len;
 	CODE:
-		tmp_str = slurm_hostlist_ranged_string_xmalloc(hl);
-		if (tmp_str == NULL) {
+		RETVAL = slurm_hostlist_ranged_string_xmalloc(hl);
+		if (RETVAL == NULL) {
 			XSRETURN_UNDEF;
 		}
-		len = strlen(tmp_str) + 1;
-		Newz(0, RETVAL, len, char);
-		Copy(tmp_str, RETVAL, len, char);
-		xfree(tmp_str);
 	OUTPUT:
 		RETVAL
 
-char*
+char_free *
 slurm_hostlist_shift(hostlist_t hl = NULL)
-	PREINIT:
-		char *host = NULL;
 	CODE:
-		host = slurm_hostlist_shift(hl);
-		if (host == NULL) {
+		RETVAL = slurm_hostlist_shift(hl);
+		if (RETVAL == NULL) {
 			XSRETURN_UNDEF;
 		}
-		Newz(0, RETVAL, strlen(host) + 1, char);
-		Copy(host, RETVAL, strlen(host) + 1, char);
-		free(host);
 	OUTPUT:
 		RETVAL
 
