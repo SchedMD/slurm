@@ -448,9 +448,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	field_count = list_count(print_fields_list);
 
-	while((cluster = list_next(itr))) {
+	while ((cluster = list_next(itr))) {
 		int curr_inx = 1;
-		slurmdb_assoc_rec_t *assoc = cluster->root_assoc;
+
 		/* set up the working cluster rec so nodecnt's and node names
 		 * are handled correctly */
 		working_cluster_rec = cluster;
@@ -495,26 +495,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				xfree(tmp_char);
 				break;
-			case PRINT_DQOS:
-				if (!g_qos_list) {
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn,
-						my_uid,
-						NULL);
-				}
-				tmp_char = slurmdb_qos_str(g_qos_list,
-							   assoc->def_qos_id);
-				field->print_routine(
-					field,
-					tmp_char,
-					(curr_inx == field_count));
-				break;
-			case PRINT_FAIRSHARE:
-				field->print_routine(
-					field,
-					assoc->shares_raw,
-					(curr_inx == field_count));
-				break;
 			case PRINT_FLAGS:
 			{
 				char *tmp_char = slurmdb_cluster_flags_2_str(
@@ -526,72 +506,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				xfree(tmp_char);
 				break;
 			}
-			case PRINT_GRPT:
-				field->print_routine(field,
-						     assoc->grp_tres,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPJ:
-				field->print_routine(field,
-						     assoc->grp_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPMEM:
-				field->print_routine(
-					field,
-					slurmdb_find_tres_count_in_string(
-						assoc->grp_tres, TRES_MEM),
-					(curr_inx == field_count));
-				break;
-			case PRINT_GRPN:
-				field->print_routine(field,
-						     assoc->grp_nodes,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPS:
-				field->print_routine(field,
-						     assoc->grp_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXTM:
-				field->print_routine(
-					field,
-					assoc->max_tres_mins_pj,
-					(curr_inx == field_count));
-				break;
-			case PRINT_MAXTRM:
-				field->print_routine(
-					field,
-					assoc->max_tres_run_mins,
-					(curr_inx == field_count));
-				break;
-			case PRINT_MAXT:
-				field->print_routine(field,
-						     assoc->max_tres_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXJ:
-				field->print_routine(field,
-						     assoc->max_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXN:
-				field->print_routine(field,
-						     assoc->max_nodes_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXS:
-				field->print_routine(field,
-						     assoc->max_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXW:
-				field->print_routine(
-					field,
-					assoc->max_wall_pj,
-					(curr_inx == field_count));
-				break;
-
 			case PRINT_NODECNT:
 			{
 				hostlist_t hl = hostlist_create(cluster->nodes);
@@ -612,21 +526,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					cluster->nodes,
 					(curr_inx == field_count));
 				break;
-			case PRINT_QOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
-
-				field->print_routine(field,
-						     g_qos_list,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_QOS_RAW:
-				field->print_routine(field,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
 			case PRINT_RPC_VERSION:
 				field->print_routine(
 					field,
@@ -640,9 +539,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			default:
-				field->print_routine(
-					field, NULL,
-					(curr_inx == field_count));
+				sacctmgr_print_assoc_rec(cluster->root_assoc,
+							 field, NULL,
+							 (curr_inx ==
+							  field_count));
 				break;
 			}
 			curr_inx++;
