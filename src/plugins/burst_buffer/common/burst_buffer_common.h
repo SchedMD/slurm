@@ -83,6 +83,7 @@ typedef struct bb_config {
 /* Current burst buffer allocations (instances) */
 #define BB_ALLOC_MAGIC		0xDEAD3448
 typedef struct bb_alloc {
+	char *account;		/* Associated account (for limits) */
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool cancelled;
@@ -93,6 +94,7 @@ typedef struct bb_alloc {
 	uint32_t magic;
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
+	char *qos;		/* Associated QOS (for limits) */
 	time_t seen_time;	/* Time buffer last seen */
 	uint64_t size;
 	uint16_t state;
@@ -131,6 +133,7 @@ typedef struct {
  * burst_buffer string field */
 #define BB_JOB_MAGIC		0xDEAD3412
 typedef struct bb_job {
+	char      *account;	 /* Associated account (for limits) */
 	uint32_t   buf_cnt;	/* Number of records in buf_ptr */
 	bb_buf_t  *buf_ptr;	/* Buffer creation records */
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
@@ -140,6 +143,7 @@ typedef struct bb_job {
 	struct bb_job *next;
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
 	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
+	char      *qos;	 	/* Associated QOS (for limits) */
 	int        state;	/* job state with respect to burst buffers,
 				 * See BB_STATE_* in slurm.h.in */
 	uint32_t   swap_size;	/* swap space required per node in GB */
@@ -330,15 +334,15 @@ extern char *bb_run_script(char *script_type, char *script_path,
  * RET: -1  Can never run
  *       0  Can run later
  *       1  Can run now */
-extern int bb_limit_test(uint32_t user_id, uint64_t bb_size,
-			 bb_state_t *state_ptr);
+extern int bb_limit_test(uint32_t user_id, char *account, char *qos,
+			 uint64_t bb_size, bb_state_t *state_ptr);
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(uint32_t user_id, uint64_t bb_size,
-			 bb_state_t *state_ptr);
+extern void bb_limit_add(uint32_t user_id, char *account, char *qos,
+			 uint64_t bb_size, bb_state_t *state_ptr);
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size,
-			 bb_state_t *state_ptr);
+extern void bb_limit_rem(uint32_t user_id, char *account, char *qos,
+			 uint64_t bb_size, bb_state_t *state_ptr);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */
