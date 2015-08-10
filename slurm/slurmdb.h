@@ -230,26 +230,7 @@ typedef struct {
 
 	List def_qos_id_list;   /* list of char * */
 
-	List fairshare_list;	/* fairshare number */
-
-	List grp_cpu_mins_list; /* list of char * */
-	List grp_cpu_run_mins_list; /* list of char * */
-	List grp_cpus_list; /* list of char * */
-	List grp_jobs_list;	/* list of char * */
-	List grp_mem_list;	/* list of char * */
-	List grp_nodes_list; /* list of char * */
-	List grp_submit_jobs_list; /* list of char * */
-	List grp_wall_list; /* list of char * */
-
 	List id_list;		/* list of char */
-
-	List max_cpu_mins_pj_list; /* list of char * */
-	List max_cpu_run_mins_list; /* list of char * */
-	List max_cpus_pj_list; /* list of char * */
-	List max_jobs_list;	/* list of char * */
-	List max_nodes_pj_list; /* list of char * */
-	List max_submit_jobs_list; /* list of char * */
-	List max_wall_pj_list; /* list of char * */
 
 	uint16_t only_defs;  /* only send back defaults */
 
