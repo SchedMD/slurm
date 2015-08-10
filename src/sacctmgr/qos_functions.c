@@ -438,7 +438,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				tmp_char = xstrdup_printf(
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
-					&qos->max_tres_run_mins_pu, tmp_char,
+					&qos->max_tres_mins_pj, tmp_char,
 					TRES_STR_FLAG_REPLACE);
 				xfree(tmp_char);
 			}
