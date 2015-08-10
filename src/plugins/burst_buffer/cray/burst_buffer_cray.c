@@ -64,6 +64,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /*
@@ -158,6 +159,7 @@ typedef struct create_buf_data {
 } create_buf_data_t;
 
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job);
+static void	_apply_limits(void);
 static void *	_bb_agent(void *args);
 static void	_bb_free_configs(bb_configs_t *ents, int num_ent);
 static void	_bb_free_instances(bb_instances_t *ents, int num_ent);
@@ -200,6 +202,7 @@ static void	_json_parse_sessions_object(json_object *jobj,
 					    bb_sessions_t *ent);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(void);
+static int	_open_part_state_file(char **state_file);
 static int	_parse_bb_opts(struct job_descriptor *job_desc,
 			       uint64_t *bb_size);
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
@@ -210,11 +213,13 @@ static int	_parse_interactive(struct job_descriptor *job_desc,
 static void	_purge_bb_files(struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
+static void	_recover_limit_state(void);
 static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_out(struct job_record *job_ptr);
 static void	_queue_teardown(uint32_t job_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
+static void	_save_limits_state(void);
 static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
@@ -360,6 +365,7 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job)
 	    (_create_bufs(job_ptr, bb_job) > 0))
 		return EAGAIN;
 
+	bb_job->state = BB_STATE_ALLOCATING;
 	rc = _queue_stage_in(job_ptr, bb_job);
 	if (rc != SLURM_SUCCESS) {
 		bb_job->state = BB_STATE_TEARDOWN;
@@ -386,6 +392,8 @@ static void *_bb_agent(void *args)
 		_timeout_bb_rec();
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
+
+		_save_limits_state();	/* Has own locks excluding file write */
 	}
 	return NULL;
 }
@@ -589,6 +597,242 @@ static bool _test_bb_spec(struct job_record *job_ptr)
 	return false;
 }
 
+
+/* For every currently active burst buffer, update that user's limit */
+static void _apply_limits(void)
+{
+	bb_alloc_t *bb_alloc;
+	int i;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+                        bb_add_user_load(bb_alloc, &bb_state);
+                        bb_alloc = bb_alloc->next;
+		}
+	}
+}
+
+/* Write current burst buffer state to a file so that we can preserve account,
+ * partition, and QOS information of persistent burst buffers as there is no
+ * place to store that information within the DataWarp data structures */
+static void _save_limits_state(void)
+{
+	static time_t last_save_time = 0;
+	static int high_buffer_size = 16 * 1024;
+	time_t save_time;
+	bb_alloc_t *bb_alloc;
+	uint32_t rec_count = 0;
+	Buf buffer;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	int i, count_offset, offset, state_fd;
+	int error_code = 0;
+	uint16_t protocol_version = SLURM_15_08_PROTOCOL_VERSION;
+
+	if ((bb_state.persist_create_time < last_save_time) ||
+	    (bb_state.bb_ahash == NULL))
+		return;
+
+	/* Build buffer with name/account/partition/qos information for all
+	 * named burst buffers so we can preserve limits across restarts */
+	buffer = init_buf(high_buffer_size);
+	pack16(protocol_version, buffer);
+	count_offset = get_buf_offset(buffer);
+	pack32(rec_count, buffer);
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			if (bb_alloc->name) {
+				packstr(bb_alloc->account,	buffer);
+				packstr(bb_alloc->name,		buffer);
+				packstr(bb_alloc->partition,	buffer);
+				packstr(bb_alloc->qos,		buffer);
+				pack32(bb_alloc->user_id,	buffer);
+				rec_count++;
+			}
+			bb_alloc = bb_alloc->next;
+		}
+	}
+	save_time = time(NULL);
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+	offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, count_offset);
+	pack32(rec_count, buffer);
+	set_buf_offset(buffer, offset);
+
+	xstrfmtcat(old_file, "%s/%s", slurmctld_conf.state_save_location,
+		   "burst_buffer_cray_state.old");
+	xstrfmtcat(reg_file, "%s/%s", slurmctld_conf.state_save_location,
+		   "burst_buffer_cray_state");
+	xstrfmtcat(new_file, "%s/%s", slurmctld_conf.state_save_location,
+		   "burst_buffer_cray_state.new");
+
+	state_fd = creat(new_file, 0600);
+	if (state_fd < 0) {
+		error("%s: Can't save state, error creating file %s, %m",
+		      __func__, new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(state_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(state_fd, "burst_buffer_cray");
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		last_save_time = save_time;
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		}
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	free_buf(buffer);
+}
+
+/* Open the partition state save file, or backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_part_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(*state_file, "/burst_buffer_cray_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open burst buffer state file %s: %m",
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat burst buffer state file %s: %m",
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 4) {
+		error("Burst buffer state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else 	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup burst buffer state save file. Information may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
+/* Recover saved burst buffer state and use it to preserve account, partition,
+ * and QOS information for persistent burst buffers. */
+static void _recover_limit_state(void)
+{
+	char *state_file = NULL, *data = NULL;
+	int data_allocated, data_read = 0;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
+	uint32_t data_size = 0, rec_count = 0, name_len = 0, user_id = 0;
+	int i, state_fd;
+	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
+	bb_alloc_t *bb_alloc;
+	Buf buffer;
+
+	state_fd = _open_part_state_file(&state_file);
+	if (state_fd < 0) {
+		info("No burst buffer state file (%s) to recover",
+		     state_file);
+		xfree(state_file);
+		return;
+	}
+	data_allocated = BUF_SIZE;
+	data = xmalloc(data_allocated);
+	while (1) {
+		data_read = read(state_fd, &data[data_size], BUF_SIZE);
+		if (data_read < 0) {
+			if  (errno == EINTR)
+				continue;
+			else {
+				error("Read error on %s: %m", state_file);
+				break;
+			}
+		} else if (data_read == 0)     /* eof */
+			break;
+		data_size      += data_read;
+		data_allocated += data_read;
+		xrealloc(data, data_allocated);
+	}
+	close(state_fd);
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+	safe_unpack16(&protocol_version, buffer);
+	if (protocol_version == (uint16_t)NO_VAL) {
+		error("*************************************************************");
+		error("Can not recover burst buffer state, data version incompatible");
+		error("*************************************************************");
+		return;
+	}
+
+	safe_unpack32(&rec_count, buffer);
+	for (i = 0; i < rec_count; i++) {
+		safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
+		safe_unpack32(&user_id, buffer);
+
+		bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
+		if (bb_alloc) {
+			xfree(bb_alloc->account);
+			bb_alloc->account = account;
+			account = NULL;
+			xfree(bb_alloc->partition);
+			bb_alloc->partition = partition;
+			partition = NULL;
+			xfree(bb_alloc->qos);
+			bb_alloc->qos = qos;
+			qos = NULL;		
+		}
+		xfree(account);
+		xfree(name);
+		xfree(partition);
+		xfree(qos);
+	}
+
+	info("Recovered state of %d burst buffers", rec_count);
+	free_buf(buffer);
+	return;
+
+unpack_error:
+	error("Incomplete burst buffer data checkpoint file");
+	xfree(account);
+	xfree(name);
+	xfree(partition);
+	xfree(qos);
+	free_buf(buffer);
+	return;
+}
+
 /*
  * Determine the current actual burst buffer state.
  */
@@ -661,7 +905,7 @@ static void _load_state(void)
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state);
 	for (i = 0; i < num_instances; i++) {
-		bb_alloc_t *cur_alloc;
+		bb_alloc_t *bb_alloc;
 		uint32_t user_id = 0;
 		for (j = 0; j < num_sessions; j++) {
 			if (instances[i].id == sessions[j].id) {
@@ -670,11 +914,10 @@ static void _load_state(void)
 			}
 		}
 //FIXME: Modify as needed for job-based buffers once format is known
-//FIXME: Save/restort account/qos/partition information for persistent buffer limits
-		cur_alloc = bb_alloc_name_rec(&bb_state, instances[i].label,
-					      user_id);
-		cur_alloc->size = instances[i].bytes;
-		bb_add_user_load(cur_alloc, &bb_state);	/* for user limits */
+		bb_alloc = bb_alloc_name_rec(&bb_state,
+					     instances[i].label,
+					     user_id);
+		bb_alloc->size = instances[i].bytes;
 	}
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
@@ -686,8 +929,11 @@ static void _load_state(void)
 	if (configs == NULL) {
 		info("%s: failed to find DataWarp configurations", __func__);
 	}
-//FIXME: Currently unused data
+//FIXME: Currently unused data, is it needed?
 	_bb_free_configs(configs, num_sessions);
+
+	_recover_limit_state();
+	_apply_limits();
 
 	first_load = false;
 	return;
@@ -873,10 +1119,13 @@ static void *_start_stage_in(void *x)
 	stage_args_t *stage_args;
 	char **setup_argv, **data_in_argv, *resp_msg = NULL, *op = NULL;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
+	slurmctld_lock_t job_read_lock =
+		    { NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_write_lock =
 		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
-	bb_alloc_t *bb_ptr;
+	bb_alloc_t *bb_alloc;
+	bb_job_t *bb_job;
 	DEF_TIMERS;
 
 	stage_args = (stage_args_t *) x;
@@ -905,6 +1154,24 @@ static void *_start_stage_in(void *x)
 		error("%s: setup for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
+	} else {
+		lock_slurmctld(job_read_lock);
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		job_ptr = find_job_record(stage_args->job_id);
+		bb_job = bb_job_find(&bb_state, stage_args->job_id);
+		if (!job_ptr) {
+			error("%s: unable to find job record for job %u",
+			      __func__, stage_args->job_id);
+			rc = SLURM_ERROR;
+		} else if (!bb_job) {
+			error("%s: unable to find bb_job record for job %u",
+			      __func__, stage_args->job_id);
+		} else {
+			bb_job->state = BB_STATE_STAGING_IN;
+			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+		}
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+		unlock_slurmctld(job_read_lock);
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -941,19 +1208,22 @@ static void *_start_stage_in(void *x)
 		      __func__, stage_args->job_id);
 	} else if (rc == SLURM_SUCCESS) {
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_ptr) {
-			bb_ptr->state = BB_STATE_STAGED_IN;
-			bb_ptr->state_time = time(NULL);
+		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+		if (bb_alloc) {
+			bb_alloc->state = BB_STATE_STAGED_IN;
+			bb_alloc->state_time = time(NULL);
 			if (bb_state.bb_config.debug_flag) {
 				info("%s: Stage-in complete for job %u",
 				     __func__, stage_args->job_id);
 			}
 			queue_job_scheduler();
 		} else {
-			error("%s: unable to find bb record for job %u",
+			error("%s: unable to find bb_alloc record for job %u",
 			      __func__, stage_args->job_id);
 		}
+		bb_job = bb_job_find(&bb_state, stage_args->job_id);
+		if (bb_job)
+			bb_job->state = BB_STATE_STAGED_IN;
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	} else {
 		xfree(job_ptr->state_desc);
@@ -961,10 +1231,10 @@ static void *_start_stage_in(void *x)
 		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 			   plugin_type, op, resp_msg);
 		job_ptr->priority = 0;	/* Hold job */
-		bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_ptr) {
-			bb_ptr->state = BB_STATE_TEARDOWN;
-			bb_ptr->state_time = time(NULL);
+		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+		if (bb_alloc) {
+			bb_alloc->state = BB_STATE_TEARDOWN;
+			bb_alloc->state_time = time(NULL);
 		}
 		_queue_teardown(job_ptr->job_id, true);
 	}

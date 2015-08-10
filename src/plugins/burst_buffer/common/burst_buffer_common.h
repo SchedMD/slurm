@@ -187,6 +187,7 @@ typedef struct bb_state {
 	time_t		last_load_time;
 	char *		name;		/* Plugin name */
 	time_t		next_end_time;
+	time_t		persist_create_time;
 	uint64_t	persist_resv_sz; /* Space reserved for persistent buffers */
 	List		persist_resv_rec;/* List of bb_pend_persist_t records */
 	pthread_cond_t	term_cond;
@@ -305,7 +306,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 extern int bb_preempt_queue_sort(void *x, void *y);
 
 /* Remove a burst buffer allocation from a user's load */
-extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
+extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 
 /* Remove persistent burst buffer reservation for this job.
  * Call when job starts running or removed from pending state. */

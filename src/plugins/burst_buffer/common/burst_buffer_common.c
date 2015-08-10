@@ -289,22 +289,22 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 }
 
 /* Add a burst buffer allocation to a user's load */
-extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
+extern void bb_add_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
 	int i, j;
 
-	state_ptr->used_space += bb_ptr->size;
+	state_ptr->used_space += bb_alloc->size;
 
-	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
-	user_ptr->size += bb_ptr->size;
-	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr->bb_uhash);
+	user_ptr->size += bb_alloc->size;
+	for (i = 0; i < bb_alloc->gres_cnt; i++) {
 		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
-			if (strcmp(bb_ptr->gres_ptr[i].name,
+			if (strcmp(bb_alloc->gres_ptr[i].name,
 				   state_ptr->bb_config.gres_ptr[j].name))
 				continue;
 			state_ptr->bb_config.gres_ptr[j].used_cnt +=
-				bb_ptr->gres_ptr[i].used_cnt;
+				bb_alloc->gres_ptr[i].used_cnt;
 			break;
 		}
 	}
@@ -333,55 +333,57 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 }
 
 /* Remove a burst buffer allocation from a user's load */
-extern void bb_remove_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr)
+extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
 	int i, j;
 
-	if (state_ptr->used_space >= bb_ptr->size) {
-		state_ptr->used_space -= bb_ptr->size;
+	if (state_ptr->used_space >= bb_alloc->size) {
+		state_ptr->used_space -= bb_alloc->size;
 	} else {
-		error("%s: used space underflow releasing buffer for job %u",
-		      __func__, bb_ptr->job_id);
+		error(
+"%s: used space underflow releasing buffer %s for job %u (%"PRIu64" < %"PRIu64")",
+		      __func__, bb_alloc->name, bb_alloc->job_id,
+		     state_ptr->used_space, bb_alloc->size);
 		state_ptr->used_space = 0;
 	}
 
-	user_ptr = bb_find_user_rec(bb_ptr->user_id, state_ptr->bb_uhash);
-	if (user_ptr->size >= bb_ptr->size) {
-		user_ptr->size -= bb_ptr->size;
+	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr->bb_uhash);
+	if (user_ptr->size >= bb_alloc->size) {
+		user_ptr->size -= bb_alloc->size;
 	} else {
-		error("%s: user %u table underflow",
-		      __func__, user_ptr->user_id);
+		error("%s: user %u table underflow for buffer %s",
+		      __func__, user_ptr->user_id, bb_alloc->name);
 		user_ptr->size = 0;
 	}
-	bb_ptr->size = 0;
+	bb_alloc->size = 0;
 
-	for (i = 0; i < bb_ptr->gres_cnt; i++) {
+	for (i = 0; i < bb_alloc->gres_cnt; i++) {
 		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
-			if (strcmp(bb_ptr->gres_ptr[i].name,
+			if (strcmp(bb_alloc->gres_ptr[i].name,
 				   state_ptr->bb_config.gres_ptr[j].name))
 				continue;
 			if (state_ptr->bb_config.gres_ptr[j].used_cnt >=
-			    bb_ptr->gres_ptr[i].used_cnt) {
+			    bb_alloc->gres_ptr[i].used_cnt) {
 				state_ptr->bb_config.gres_ptr[j].used_cnt -=
-					bb_ptr->gres_ptr[i].used_cnt;
+					bb_alloc->gres_ptr[i].used_cnt;
 			} else {
-				error("%s: gres %s underflow releasing buffer "
-				      "for job %u (%"PRIu64" < %"PRIu64")",
-				      __func__, bb_ptr->gres_ptr[i].name,
-				      bb_ptr->job_id,
+				error(
+"%s: gres %s underflow releasing buffer %s for job %u (%"PRIu64" < %"PRIu64")",
+				      __func__, bb_alloc->gres_ptr[i].name,
+				      bb_alloc->name, bb_alloc->job_id,
 				      state_ptr->bb_config.gres_ptr[j].used_cnt,
-				      bb_ptr->gres_ptr[i].used_cnt);
+				      bb_alloc->gres_ptr[i].used_cnt);
 				state_ptr->bb_config.gres_ptr[j].used_cnt = 0;
 			}
 			break;
 		}
 		if (j >= state_ptr->bb_config.gres_cnt) {
 			error("%s: failed to find gres %s from job %u",
-			      __func__, bb_ptr->gres_ptr[i].name,
-			      bb_ptr->job_id);
+			      __func__, bb_alloc->gres_ptr[i].name,
+			      bb_alloc->job_id);
 		}
-		bb_ptr->gres_ptr[i].used_cnt = 0;
+		bb_alloc->gres_ptr[i].used_cnt = 0;
 	}
 }
 
@@ -884,6 +886,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	int i;
 
 	xassert(state_ptr->bb_ahash);
+	state_ptr->persist_create_time = time(NULL);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
 	xassert((bb_ptr->magic = BB_USER_MAGIC));	/* Sets value */
@@ -910,6 +913,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 
 	xassert(state_ptr->bb_ahash);
 	xassert(job_ptr);
+	state_ptr->persist_create_time = time(NULL);
 	bb_ptr = xmalloc(sizeof(bb_alloc_t));
 	bb_ptr->account = xstrdup(bb_job->account);
 	bb_ptr->array_job_id = job_ptr->array_job_id;
