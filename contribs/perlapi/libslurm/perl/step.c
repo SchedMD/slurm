@@ -68,6 +68,8 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	AV *av;
 	int i, n;
 
+	memset(step_info, 0, sizeof(job_step_info_t));
+
 	FETCH_FIELD(hv, step_info, array_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, ckpt_dir, charp, FALSE);

@@ -86,7 +86,7 @@ hv_to_reserve_info(HV *hv, reserve_info_t *resv_info)
 		/* nothing to do */
 	}
 	FETCH_FIELD(hv, resv_info, node_list, charp, FALSE);
-	FETCH_FIELD(hv, resv_info, partition, charp, TRUE);
+	FETCH_FIELD(hv, resv_info, partition, charp, FALSE);
 	FETCH_FIELD(hv, resv_info, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, resv_info, users, charp, FALSE);
 	return 0;
