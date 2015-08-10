@@ -1319,6 +1319,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       assoc_mgr_tres_array[tres_pos]->name : "",
 		       qos_ptr->grp_tres_mins_ctld[tres_pos],
 		       job_tres_time_limit[tres_pos]);
+		rc = false;
+		goto end_it;
 		break;
 	case 3:
 		/*
@@ -1817,6 +1819,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 		job_ptr->state_reason = FAIL_TIMEOUT;
 		rc = false;
 		goto end_it;
+		break;
 	case 3:
 		/* not possible tres_usage is NULL */
 	default:
@@ -2525,6 +2528,7 @@ extern bool acct_policy_job_runnable_post_select(
 			       assoc_ptr->grp_tres_mins_ctld[tres_pos],
 			       usage_mins);
 			rc = false;
+			goto end_it;
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
@@ -2543,6 +2547,8 @@ extern bool acct_policy_job_runnable_post_select(
 			       assoc_mgr_tres_array[tres_pos]->name : "",
 			       assoc_ptr->grp_tres_mins_ctld[tres_pos],
 			       job_tres_time_limit[tres_pos]);
+			rc = false;
+			goto end_it;
 			break;
 		case 3:
 			/*
@@ -3139,6 +3145,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			     job_tres_usage_mins[tres_pos]);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			goto job_failed;
+			break;
 		case 3:
 			/* not possible tres_usage is NULL */
 		default:
