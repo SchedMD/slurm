@@ -443,7 +443,7 @@ static void _qos_alter_job(struct job_record *job_ptr,
 			continue;
 		qos_ptr->usage->grp_used_tres_run_secs[i] -=
 			used_tres_run_secs[i];
-		qos_ptr->usage->grp_used_tres_run_secs +=
+		qos_ptr->usage->grp_used_tres_run_secs[i] +=
 			new_used_tres_run_secs[i];
 		debug2("altering job %u QOS %s "
 		       "got %"PRIu64" just removed %"PRIu64
