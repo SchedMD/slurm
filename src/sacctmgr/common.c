@@ -468,6 +468,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MinCPUs");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MinTRESPerJob", object, MAX(command_len, 7))) {
+		field->type = PRINT_MINT;
+		field->name = xstrdup("MinTRES");
+		field->len = 13;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("Name", object, MAX(command_len, 2))) {
 		field->type = PRINT_NAME;
 		field->name = xstrdup("Name");
