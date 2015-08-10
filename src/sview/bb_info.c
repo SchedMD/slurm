@@ -54,6 +54,7 @@ enum {
 	SORTID_COLOR_INX,
 	SORTID_GRES,
 	SORTID_NAME,
+	SORTID_PARTITION,
 	SORTID_PLUGIN,
 	SORTID_QOS,
 	SORTID_SIZE,
@@ -88,6 +89,8 @@ static display_data_t display_data_bb[] = {
 	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_QOS, "QOS", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
@@ -229,6 +232,11 @@ static void _layout_bb_record(GtkTreeView *treeview,
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_bb,
+						 SORTID_PARTITION),
+				   bb_ptr->partition);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
 						 SORTID_QOS),
 				   bb_ptr->qos);
 
@@ -357,6 +365,7 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			   SORTID_ACCOUNT,       bb_ptr->account,
 			   SORTID_GRES,          tmp_gres,
 			   SORTID_NAME,          bb_name_id,
+			   SORTID_PARTITION,     bb_ptr->partition,
 			   SORTID_QOS,           bb_ptr->qos,
 			   SORTID_SIZE,          tmp_size,
 			   SORTID_STATE,         tmp_state,

@@ -637,6 +637,7 @@ extern int bb_pack_bufs(uid_t uid, bb_alloc_t **bb_ahash, Buf buffer,
 				}
 				pack32(bb_next->job_id,        buffer);
 				packstr(bb_next->name,         buffer);
+				packstr(bb_next->partition,    buffer);
 				packstr(bb_next->qos,          buffer);
 				pack64(bb_next->size,          buffer);
 				pack16(bb_next->state,         buffer);
@@ -1291,6 +1292,7 @@ extern void bb_job_del2(bb_job_t *bb_job)
 		for (i = 0; i < bb_job->gres_cnt; i++)
 			xfree(bb_job->gres_ptr[i].name);
 		xfree(bb_job->gres_ptr);
+		xfree(bb_job->partition);
 		xfree(bb_job->qos);
 		xfree(bb_job);
 	}
@@ -1335,8 +1337,8 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
  * RET: -1  Can never run
  *       0  Can run later
  *       1  Can run now */
-extern int bb_limit_test(uint32_t user_id, char *account, char *qos,
-			 uint64_t bb_size, bb_state_t *state_ptr)
+extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
+			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
 
@@ -1364,8 +1366,8 @@ extern int bb_limit_test(uint32_t user_id, char *account, char *qos,
 }
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(uint32_t user_id, char *account, char *qos,
-			 uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
+			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
 
@@ -1377,8 +1379,8 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *qos,
 }
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(uint32_t user_id, char *account, char *qos,
-			 uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
+			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
 

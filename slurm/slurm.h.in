@@ -4584,6 +4584,7 @@ typedef struct {
 	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
+	char *partition;	/* Associated partition (for limits) */
 	char *qos;		/* Associated QOS (for limits) */
 	uint64_t size;		/* In bytes by default */
 	uint16_t state;		/* See BB_STATE_* */

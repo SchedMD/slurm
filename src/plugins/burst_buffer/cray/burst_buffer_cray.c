@@ -412,6 +412,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 
 	bb_job = bb_job_alloc(&bb_state, job_ptr->job_id);
 	bb_job->account = xstrdup(job_ptr->account);
+	if (job_ptr->part_ptr)
+		bb_job->partition = xstrdup(job_ptr->part_ptr->name);
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr =
 			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
@@ -1326,8 +1328,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 
 	/* Determine if burst buffer can be allocated now for the job.
 	 * If not, determine how much space must be free. */
-	if (bb_limit_test(job_ptr->user_id, bb_job->account, bb_job->qos,
-			  add_space, &bb_state) < 1) {
+	if (bb_limit_test(job_ptr->user_id, bb_job->account, bb_job->partition,
+			  bb_job->qos, add_space, &bb_state) < 1) {
 		debug("%s: %s requested space above limit", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
@@ -2125,8 +2127,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
-	if (bb_limit_test(job_desc->user_id, job_desc->account, job_desc->qos,
-			  bb_size, &bb_state) < 1) {
+	if (bb_limit_test(job_desc->user_id, job_desc->account,
+			  job_desc->partition, job_desc->qos, bb_size,
+			  &bb_state) < 1) {
 		rc = ESLURM_BURST_BUFFER_LIMIT;
 		goto fini;
 	}
@@ -2813,7 +2816,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job)
 		} else if (!buf_ptr->destroy) {	/* Create the buffer */
 			rc++;
 			bb_limit_add(job_ptr->user_id, bb_job->account,
-				     bb_job->qos, buf_ptr->size, &bb_state);
+				     bb_job->partition, bb_job->qos,
+				     buf_ptr->size, &bb_state);
 			bb_job->state = BB_STATE_ALLOCATING;
 			buf_ptr->state = BB_STATE_ALLOCATING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
@@ -2897,11 +2901,13 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		buf_ptr->state = new_state;
 		if ((old_state == BB_STATE_ALLOCATING) &&
 		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, bb_job->account, bb_job->qos,
-				     buf_ptr->size, &bb_state);
+			bb_limit_rem(user_id, bb_job->account,
+				      bb_job->partition, bb_job->qos,
+				      buf_ptr->size, &bb_state);
 		if ((old_state == BB_STATE_DELETING) &&
 		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, bb_job->account, bb_job->qos,
+			bb_limit_rem(user_id, bb_job->account,
+				     bb_job->partition, bb_job->qos,
 				     buf_ptr->size, &bb_state);
 		break;
 	}

@@ -185,8 +185,9 @@ static void _print_burst_buffer_resv(FILE *out,
 	slurm_make_time_str(&burst_buffer_ptr->state_time, time_buf,
 			    sizeof(time_buf));
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Account=%s QOS=%s Size=%s State=%s StateTime=%s UserID=%s(%u)",
-		 burst_buffer_ptr->account, burst_buffer_ptr->qos, sz_buf,
+		 "Account=%s Partition=%s QOS=%s Size=%s State=%s StateTime=%s UserID=%s(%u)",
+		 burst_buffer_ptr->account, burst_buffer_ptr->partition,
+		 burst_buffer_ptr->qos, sz_buf,
 		 bb_state_string(burst_buffer_ptr->state), time_buf,
 	         uid_to_string(burst_buffer_ptr->user_id),
 	         burst_buffer_ptr->user_id);

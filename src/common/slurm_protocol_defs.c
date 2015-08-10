@@ -2983,6 +2983,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 				xfree(bb_resv_ptr->account);
 				xfree(bb_resv_ptr->gres_ptr);
 				xfree(bb_resv_ptr->name);
+				xfree(bb_resv_ptr->partition);
 				xfree(bb_resv_ptr->qos);
 			}
 			xfree(bb_info_ptr->burst_buffer_resv_ptr);
