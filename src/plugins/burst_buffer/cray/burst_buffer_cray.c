@@ -130,6 +130,8 @@ typedef struct bb_pools {
  */
 typedef struct bb_sessions {
 	uint32_t id;
+	char    *token;
+	bool     used;
 	uint32_t user_id;
 } bb_sessions_t;
 
@@ -909,6 +911,7 @@ static void _load_state(void)
 		uint32_t user_id = 0;
 		for (j = 0; j < num_sessions; j++) {
 			if (instances[i].id == sessions[j].id) {
+				sessions[j].used = true;
 				user_id = sessions[j].user_id;
 				break;
 			}
@@ -918,6 +921,14 @@ static void _load_state(void)
 					     instances[i].label,
 					     user_id);
 		bb_alloc->size = instances[i].bytes;
+	}
+	for (j = 0; j < num_sessions; j++) {
+		if (!sessions[j].used && sessions[j].token &&
+		    (sessions[j].token[0] >='0') &&
+		    (sessions[j].token[0] <='9')) {
+			uint32_t job_id = strtol(sessions[j].token, NULL, 10);
+			_queue_teardown(job_id, false);
+		}
 	}
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
@@ -1309,7 +1320,8 @@ static void *_start_stage_out(void *x)
 	slurmctld_lock_t job_write_lock =
 		    { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	struct job_record *job_ptr;
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
+	bb_job_t *bb_job = NULL;
 	DEF_TIMERS;
 
 	stage_args = (stage_args_t *) x;
@@ -1320,8 +1332,8 @@ static void *_start_stage_out(void *x)
 		timeout = stage_args->timeout * 1000;
 	else
 		timeout = 5000;
-	op = "dws_post_run";
 	START_TIMER;
+	op = "dws_post_run";
 	resp_msg = bb_run_script("dws_post_run",
 				 bb_state.bb_config.get_sys_state,
 				 post_run_argv, timeout, &status);
@@ -1347,6 +1359,7 @@ static void *_start_stage_out(void *x)
 			timeout = 24 * 60 * 60 * 1000;	/* One day */
 		xfree(resp_msg);
 		START_TIMER;
+		op = "dws_data_out";
 		resp_msg = bb_run_script("dws_data_out",
 					 bb_state.bb_config.get_sys_state,
 					 data_out_argv, timeout, &status);
@@ -1379,17 +1392,16 @@ static void *_start_stage_out(void *x)
 				   plugin_type, op, resp_msg);
 		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_ptr) {
+		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+		if (bb_alloc) {
 			if (rc == SLURM_SUCCESS) {
 				if (bb_state.bb_config.debug_flag) {
 					info("%s: Stage-out complete for job %u",
 					     __func__, stage_args->job_id);
 				}
-				/* bb_ptr->state = BB_STATE_STAGED_OUT; */
-				bb_ptr->state = BB_STATE_TEARDOWN;
-				bb_ptr->state_time = time(NULL);
-				_queue_teardown(stage_args->job_id, true);
+				/* bb_alloc->state = BB_STATE_STAGED_OUT; */
+				bb_alloc->state = BB_STATE_TEARDOWN;
+				bb_alloc->state_time = time(NULL);
 			} else if (bb_state.bb_config.debug_flag) {
 				info("%s: Stage-out failed for job %u",
 				     __func__, stage_args->job_id);
@@ -1398,6 +1410,11 @@ static void *_start_stage_out(void *x)
 			error("%s: unable to find bb record for job %u",
 			      __func__, stage_args->job_id);
 		}
+		bb_job = _get_bb_job(job_ptr);
+		if (bb_job)
+			bb_job->state = BB_STATE_TEARDOWN;
+		if (rc == SLURM_SUCCESS)
+			_queue_teardown(stage_args->job_id, false);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
@@ -1474,7 +1491,8 @@ static void *_start_teardown(void *x)
 	char **teardown_argv, *resp_msg = NULL;
 	int status = 0, timeout;
 	struct job_record *job_ptr;
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
+	bb_job_t *bb_job = NULL;
 	/* Locks: write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -1488,7 +1506,6 @@ static void *_start_teardown(void *x)
 		timeout = teardown_args->timeout * 1000;
 	else
 		timeout = 5000;
-	pthread_mutex_lock(&bb_state.bb_mutex);
 	resp_msg = bb_run_script("teardown",
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
@@ -1501,29 +1518,24 @@ static void *_start_teardown(void *x)
 	_log_script_argv(teardown_argv, resp_msg);
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
-		error("%s: teardown for job %u status:%u response:%s",
-		      __func__, teardown_args->job_id, status, resp_msg);
-	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
-
-	lock_slurmctld(job_write_lock);
-	pthread_mutex_lock(&bb_state.bb_mutex);
-	if ((job_ptr = find_job_record(teardown_args->job_id))) {
-		_purge_bb_files(job_ptr);
-		bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-	}
-	if (bb_ptr) {
-		bb_ptr->cancelled = true;
-		bb_ptr->end_time = 0;
-		bb_ptr->state = BB_STATE_COMPLETE;
-		bb_ptr->state_time = time(NULL);
-		bb_remove_user_load(bb_ptr, &bb_state);
+		error("%s: %s: teardown for job %u status:%u response:%s",
+		      plugin_name, __func__, teardown_args->job_id, status,
+		      resp_msg);
 	} else {
-		debug("%s: unable to find bb record for job %u",
-		      __func__, teardown_args->job_id);
+		lock_slurmctld(job_write_lock);
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		if ((job_ptr = find_job_record(teardown_args->job_id))) {
+			_purge_bb_files(job_ptr);
+			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
+				bb_remove_user_load(bb_alloc, &bb_state);
+				bb_free_alloc_rec(&bb_state, bb_alloc);
+			}
+			if ((bb_job = _get_bb_job(job_ptr)))
+				bb_job->state = BB_STATE_COMPLETE;
+		}
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+		unlock_slurmctld(job_write_lock);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
-	unlock_slurmctld(job_write_lock);
 
 	xfree(resp_msg);
 	_free_script_argv(teardown_argv);
@@ -2945,33 +2957,27 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
  */
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
-//FIXME: How to handle various job terminate states (e.g. requeue, failure), user script controlled?
 //FIXME: Test for memory leaks
-	bb_alloc_t *bb_ptr;
 	bb_job_t *bb_job;
 	char jobid_buf[32];
 
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
-
-	if (!_test_bb_spec(job_ptr))
-		return SLURM_SUCCESS;
-
-	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_job = _get_bb_job(job_ptr);
-	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-	if (bb_ptr) {
-		bb_ptr->state = BB_STATE_STAGING_OUT;
-		bb_ptr->state_time = time(NULL);
+	if (!bb_job) {
+		/* No job buffers. Assuming use of persistent buffers only */
+		verbose("%s: %s bb job record not found", __func__,
+			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	} else if (bb_job->state < BB_STATE_STAGING_OUT) {
+		bb_job->state = BB_STATE_STAGING_OUT;
 		_queue_stage_out(job_ptr);
-	} else if (bb_job &&
-		   ((bb_job->total_size + bb_job->swap_size) == 0)) {
-		/* Only persistent burst buffer operations */
-	} else {
-		error("%s: %s bb_rec not found", __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2987,35 +2993,32 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
  */
 extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 {
-	bb_alloc_t *bb_ptr;
+	bb_job_t *bb_job;
 	int rc = -1;
 	char jobid_buf[32];
 
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
-
-	if (!_test_bb_spec(job_ptr))
-		return 1;
-
-	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
-	if (!bb_ptr) {
+	bb_job = _get_bb_job(job_ptr);
+	if (!bb_job) {
 		/* No job buffers. Assuming use of persistent buffers only */
-		debug("%s: %s bb_rec not found", __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+		verbose("%s: %s bb job record not found", __func__,
+			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc =  1;
 	} else {
-		if (bb_ptr->state == BB_STATE_STAGING_OUT) {
-			rc =  0;
-		} else if (bb_ptr->state == BB_STATE_COMPLETE) {
-			rc =  1;
-		} else {
-			error("%s: %s bb_state:%u", __func__,
-			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
-			      bb_ptr->state);
+		if (bb_job->state < BB_STATE_STAGING_OUT) {
 			rc = -1;
+		} else if (bb_job->state == BB_STATE_STAGING_OUT) {
+			rc =  0;
+		} else { /* bb_job->state > BB_STATE_STAGING_OUT) */
+			rc =  1;
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -3652,6 +3655,12 @@ _bb_free_pools(bb_pools_t *ents, int num_ent)
 static void
 _bb_free_sessions(bb_sessions_t *ents, int num_ent)
 {
+	int i;
+
+	for (i = 0; i < num_ent; i++) {
+		xfree(ents[i].token);
+	}
+
 	xfree(ents);
 }
 
@@ -3903,6 +3912,7 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 	enum json_type type;
 	struct json_object_iter iter;
 	int64_t x;
+	const char *p;
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -3915,6 +3925,11 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 					ent->user_id = x;
 				}
 				break;
+			case json_type_string:
+				p = json_object_get_string(iter.val);
+				if (strcmp(iter.key, "token") == 0) {
+					ent->token = xstrdup(p);
+				}
 			default:
 				break;
 		}
