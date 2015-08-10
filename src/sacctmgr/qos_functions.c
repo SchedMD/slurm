@@ -241,6 +241,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int option = 0;
 	uint64_t tmp64;
 	char *tmp_char = NULL;
+	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -306,7 +307,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres_mins, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "GrpCPURunMins",
@@ -318,7 +319,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres_run_mins, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "GrpCPUs",
@@ -330,7 +331,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "GrpJobs",
@@ -347,7 +348,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_MEM, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "GrpNodes",
@@ -375,7 +376,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -394,7 +395,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres_mins, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -413,7 +414,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->grp_tres_run_mins, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -439,7 +440,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_mins_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "MaxCPUsPerJob",
@@ -451,7 +452,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "MaxCPUsPerUser",
@@ -463,7 +464,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_pu, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp (argv[i], "MaxJobsPerUser",
@@ -502,7 +503,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -521,7 +522,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_mins_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -540,7 +541,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->max_tres_run_mins_pu, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}
@@ -565,7 +566,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					"%d=%"PRIu64, TRES_CPU, tmp64);
 				slurmdb_combine_tres_strings(
 					&qos->min_tres_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				xfree(tmp_char);
 			}
 		} else if (!strncasecmp(argv[i], "MinTRESPerJob",
@@ -582,7 +583,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				     argv[i]+end, g_tres_list, 1))) {
 				slurmdb_combine_tres_strings(
 					&qos->min_tres_pj, tmp_char,
-					TRES_STR_FLAG_REPLACE);
+					tres_flags);
 				set = 1;
 				xfree(tmp_char);
 			}

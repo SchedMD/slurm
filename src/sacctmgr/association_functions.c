@@ -436,6 +436,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	uint32_t mins = NO_VAL;
 	uint64_t tmp64;
 	char *tmp_char = NULL;
+	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
 
 	if (!assoc)
 		return set;
@@ -478,7 +479,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCPURunMins", MAX(command_len, 7))) {
@@ -489,7 +490,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_CPU, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_run_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCpus", MAX(command_len, 7))) {
@@ -500,7 +501,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_CPU, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpJobs", MAX(command_len, 4))) {
@@ -515,7 +516,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_MEM, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpNodes", MAX(command_len, 4))) {
@@ -539,7 +540,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
@@ -555,7 +556,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
@@ -571,7 +572,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->grp_tres_run_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
@@ -593,7 +594,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_CPU, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_mins_pj, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxCPURunMins", MAX(command_len, 7))) {
@@ -604,7 +605,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_CPU, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_run_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxCpusPerJob", MAX(command_len, 7))) {
@@ -615,7 +616,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				"%d=%"PRIu64, TRES_CPU, tmp64);
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_pj, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxJobs", MAX(command_len, 4))) {
@@ -641,7 +642,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_pj, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
@@ -658,7 +659,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_mins_pj, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
@@ -674,7 +675,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
 				&assoc->max_tres_run_mins, tmp_char,
-				TRES_STR_FLAG_REPLACE);
+				tres_flags);
 			set = 1;
 			xfree(tmp_char);
 		}
