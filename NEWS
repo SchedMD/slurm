@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     with no jobs in any state.
  -- ALPS - Fix issue when using --exclusive flag on srun to do the correct
     thing (-F exclusive) instead of -F share.
+ -- Fix various memory leaks in the Perl API.
 
 * Changes in Slurm 14.11.8
 ==========================
