@@ -254,7 +254,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 				       assoc_mgr_tres_array[i]->name : "",
 				       qos_ptr->name, used_limits->uid);
 			} else
-				qos_ptr->usage->grp_used_tres[i] -=
+				used_limits->tres[i] -=
 					job_ptr->tres_alloc_cnt[i];
 		}
 
