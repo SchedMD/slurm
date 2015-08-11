@@ -11222,6 +11222,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 fini:
+	/* This was a local variable, so set it back to NULL */
+	job_specs->tres_req_cnt = NULL;
+
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(license_list);
 	if (update_accounting) {
