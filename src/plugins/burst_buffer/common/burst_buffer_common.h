@@ -80,7 +80,8 @@ typedef struct bb_config {
 	uint64_t user_size_limit;
 } bb_config_t;
 
-/* Current burst buffer allocations (instances) */
+/* Current burst buffer allocations (instances). Some of these will be job
+ * specific (job_id != 0) and others persistent */
 #define BB_ALLOC_MAGIC		0xDEAD3448
 typedef struct bb_alloc {
 	char *account;		/* Associated account (for limits) */
@@ -104,7 +105,7 @@ typedef struct bb_alloc {
 	uint32_t user_id;
 } bb_alloc_t;
 
-/* User storage use, needed to enforce per-user limits */
+/* User's storage use, needed to enforce per-user limits without TRES */
 #define BB_USER_MAGIC		0xDEAD3493
 typedef struct bb_user {
 	uint32_t magic;
@@ -124,7 +125,9 @@ typedef struct {
 	char    *type;		/* Buffer type */
 } bb_buf_t;
 
-/* Generic burst buffer resources */
+/* Generic burst buffer resources. Information about this is found in the Cray
+ * documentation, but the logic in Slurm is untested and the functionality may
+ * never be used. */
 typedef struct {
 	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
 	uint64_t count;		/* Count of required resources */
@@ -144,7 +147,6 @@ typedef struct bb_job {
 	struct bb_job *next;
 	char      *partition;	/* Associated partition (for limits) */
 	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
-	uint64_t   persist_rem;	/* Persistent buffer space job releases, bytes */
 	char      *qos;	 	/* Associated QOS (for limits) */
 	int        state;	/* job state with respect to burst buffers,
 				 * See BB_STATE_* in slurm.h.in */

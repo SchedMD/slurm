@@ -9490,17 +9490,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (job_specs->burst_buffer) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else {
-			xfree(job_ptr->burst_buffer);
-			if (job_specs->burst_buffer[0]) {
-				job_ptr->burst_buffer = job_specs->burst_buffer;
-				job_specs->burst_buffer = NULL;
-			}
-			info("Changed job %u burst_buffer=%s",
-			     job_ptr->job_id, job_ptr->burst_buffer);
-		}
+		/* burst_buffer contents are validated at job submit time and
+		 * data is possibly being staged at later times. It can not
+		 * be changed. */
+		error_code = ESLURM_NOT_SUPPORTED;
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;

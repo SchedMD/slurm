@@ -1055,9 +1055,7 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint64_t bb_size)
 }
 
 /*
- * Validate a job submit request with respect to burst buffer options.
- *
- * Returns a SLURM errno.
+ * Attempt to allocate resources and begin file staging for pending jobs.
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {

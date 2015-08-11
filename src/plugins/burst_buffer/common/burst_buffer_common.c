@@ -278,7 +278,7 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 		bb_ptr = state_ptr->bb_ahash[i];
 		while (bb_ptr) {
 			if (!xstrcmp(bb_ptr->name, bb_name)) {
-				xassert(bb_ptr->magic = BB_ALLOC_MAGIC);
+				xassert(bb_ptr->magic == BB_ALLOC_MAGIC);
 				return bb_ptr;
 			}
 			bb_ptr = bb_ptr->next;
@@ -983,6 +983,7 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 
 	if (bb_alloc) {
 		xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
+		bb_alloc->magic = 0;
 		for (i = 0; i < bb_alloc->gres_cnt; i++)
 			xfree(bb_alloc->gres_ptr[i].name);
 		xfree(bb_alloc->gres_ptr);
@@ -994,23 +995,23 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 
 /* Remove a specific bb_alloc_t from global records.
  * RET true if found, false otherwise */
-extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_ptr)
+extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_alloc)
 {
 	bb_alloc_t *bb_link, **bb_plink;
 	int i;
 
 	xassert(state_ptr);
 	xassert(state_ptr->bb_ahash);
-	xassert(bb_ptr);
+	xassert(bb_alloc);
 
-	i = bb_ptr->user_id % BB_HASH_SIZE;
+	i = bb_alloc->user_id % BB_HASH_SIZE;
 	bb_plink = &state_ptr->bb_ahash[i];
 	bb_link = state_ptr->bb_ahash[i];
 	while (bb_link) {
-		if (bb_link == bb_ptr) {
+		if (bb_link == bb_alloc) {
 			xassert(bb_link->magic == BB_ALLOC_MAGIC);
-			*bb_plink = bb_ptr->next;
-			bb_free_alloc_buf(bb_ptr);
+			*bb_plink = bb_alloc->next;
+			bb_free_alloc_buf(bb_alloc);
 			return true;
 		}
 		bb_plink = &bb_link->next;
@@ -1275,6 +1276,7 @@ extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id)
 	while (bb_job) {
 		if (bb_job->job_id == job_id) {
 			xassert(bb_job->magic == BB_JOB_MAGIC);
+			bb_job->magic = 0;
 			*bb_pjob = bb_job->next;
 			bb_job_del2(bb_job);
 			return;
