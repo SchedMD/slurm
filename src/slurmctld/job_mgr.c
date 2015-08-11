@@ -6735,7 +6735,7 @@ void job_time_limit(void)
 	time_t over_run;
 	int resv_status = 0;
 #ifndef HAVE_BG
-        uint8_t prolog;
+	uint8_t prolog;
 #endif
 	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
 		over_run = now - (365 * 24 * 60 * 60);	/* one year */
@@ -6755,12 +6755,12 @@ void job_time_limit(void)
 		 * power_node_bitmap so bit_overlap always returns 0
 		 * and erroneously removes the flag.
 		 */
-                prolog = 0;
-                if (job_ptr->details)
-                        prolog = job_ptr->details->prolog_running;
+		prolog = 0;
+		if (job_ptr->details)
+			prolog = job_ptr->details->prolog_running;
 
 		if (prolog == 0
-                    && IS_JOB_CONFIGURING(job_ptr)) {
+		    && IS_JOB_CONFIGURING(job_ptr)) {
 			if (!IS_JOB_RUNNING(job_ptr) ||
 			    (bit_overlap(job_ptr->node_bitmap,
 					 power_node_bitmap) == 0)) {
