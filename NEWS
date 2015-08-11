@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Fix issue when using --exclusive flag on srun to do the correct
     thing (-F exclusive) instead of -F share.
  -- Fix various memory leaks in the Perl API.
+ -- Fix a bug in the controller which display jobs in CF state as RUNNING.
 
 * Changes in Slurm 14.11.8
 ==========================

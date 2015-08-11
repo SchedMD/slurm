@@ -3151,6 +3151,8 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 	if (job_ptr->details)
 		job_ptr->details->prolog_running++;
 
+        job_ptr->job_state |= JOB_CONFIGURING;
+
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog,
 				    PTHREAD_CREATE_DETACHED);
@@ -3230,6 +3232,7 @@ static void *_run_prolog(void *arg)
 			break;
 		}
 	}
+
 	if (status != 0) {
 		bool kill_job = false;
 		slurmctld_lock_t job_write_lock = {
@@ -3264,6 +3267,7 @@ static void *_run_prolog(void *arg)
 			error("prolog_slurmctld job %u now defunct", job_id);
 	}
 	if (job_ptr) {
+                job_ptr->job_state &= ~JOB_CONFIGURING;
 		if (job_ptr->details)
 			job_ptr->details->prolog_running--;
 		if (job_ptr->batch_flag &&
