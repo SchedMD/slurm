@@ -5211,8 +5211,8 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				break;
 			}
 			FREE_NULL_LIST(assoc_mgr_tres_list);
-			assoc_mgr_tres_list = msg->my_list;
-
+			_post_tres_list(msg->my_list, list_count(msg->my_list));
+			/* assoc_mgr_tres_list gets set in _post_tres_list */
 			debug("Recovered %u tres",
 			      list_count(assoc_mgr_tres_list));
 			msg->my_list = NULL;
