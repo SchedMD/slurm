@@ -1071,21 +1071,23 @@ unpack_error:
 }
 
 static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
-				    Buf buffer)
+				    Buf buffer, uint16_t protocol_version)
 {
-	pack16(limit_set->max_nodes, buffer);
-	pack16(limit_set->min_nodes, buffer);
+	xassert(limit_set);
+
 	pack16(limit_set->qos, buffer);
 	pack16(limit_set->time, buffer);
 	pack16_array(limit_set->tres, slurmctld_tres_cnt, buffer);
 }
 
 static int _unpack_acct_policy_limit_members(
-	acct_policy_limit_set_t *limit_set, Buf buffer)
+	acct_policy_limit_set_t *limit_set,
+	Buf buffer, uint16_t protocol_version)
 {
 	uint32_t tmp32;
-	safe_unpack16(&limit_set->max_nodes, buffer);
-	safe_unpack16(&limit_set->min_nodes, buffer);
+
+	xassert(limit_set);
+
 	safe_unpack16(&limit_set->qos, buffer);
 	safe_unpack16(&limit_set->time, buffer);
 	xfree(limit_set->tres);
@@ -1181,7 +1183,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->warn_signal, buffer);
 	pack16(dump_job_ptr->warn_time, buffer);
 
-	_pack_acct_policy_limit(&dump_job_ptr->limit_set, buffer);
+	_pack_acct_policy_limit(&dump_job_ptr->limit_set, buffer,
+				SLURM_PROTOCOL_VERSION);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -1388,7 +1391,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
 
-		_unpack_acct_policy_limit_members(&limit_set, buffer);
+		_unpack_acct_policy_limit_members(&limit_set, buffer,
+						  protocol_version);
 
 		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -1570,11 +1574,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_time, buffer);
 		safe_unpack16(&tmp16, buffer);
 		limit_set.tres[TRES_ARRAY_CPU] = tmp16;
-		safe_unpack16(&limit_set.max_nodes, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.tres[TRES_ARRAY_NODE] = tmp16;
 		safe_unpack16(&tmp16, buffer);
 		if (!limit_set.tres[TRES_ARRAY_CPU] && tmp16)
 			limit_set.tres[TRES_ARRAY_CPU] = tmp16;
-		safe_unpack16(&limit_set.min_nodes, buffer);
+		safe_unpack16(&tmp16, buffer);
+		if (!limit_set.tres[TRES_ARRAY_NODE] && tmp16)
+			limit_set.tres[TRES_ARRAY_NODE] = tmp16;
 		safe_unpack16(&tmp16, buffer);
 		limit_set.tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
@@ -1745,12 +1752,16 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
+		safe_unpack16(&tmp16, buffer);
 		limit_set.tres[TRES_ARRAY_CPU] = tmp16;
-		safe_unpack16(&limit_set.max_nodes, buffer);
+		safe_unpack16(&tmp16, buffer);
+		limit_set.tres[TRES_ARRAY_NODE] = tmp16;
 		safe_unpack16(&tmp16, buffer);
 		if (!limit_set.tres[TRES_ARRAY_CPU] && tmp16)
 			limit_set.tres[TRES_ARRAY_CPU] = tmp16;
-		safe_unpack16(&limit_set.min_nodes, buffer);
+		safe_unpack16(&tmp16, buffer);
+		if (!limit_set.tres[TRES_ARRAY_NODE] && tmp16)
+			limit_set.tres[TRES_ARRAY_NODE] = tmp16;
 		safe_unpack16(&tmp16, buffer);
 		limit_set.tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
@@ -9489,8 +9500,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		/* set up the acct_policy if we are authorized */
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
 			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
-		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
 	} else
@@ -10206,7 +10215,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
 		     save_min_nodes, detail_ptr->min_nodes, job_ptr->job_id);
-		job_ptr->limit_set.min_nodes = acct_policy_limit_set.min_nodes;
+		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
@@ -10215,7 +10225,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_max_nodes, detail_ptr->max_nodes, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set.max_nodes = acct_policy_limit_set.max_nodes;
+		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
 	}
 

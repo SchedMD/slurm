@@ -554,8 +554,6 @@ typedef struct job_array_struct {
 #define ADMIN_SET_LIMIT 0xffff
 
 typedef struct {
-	uint16_t max_nodes;
-	uint16_t min_nodes;
 	uint16_t qos;
 	uint16_t time;
 	uint16_t *tres;

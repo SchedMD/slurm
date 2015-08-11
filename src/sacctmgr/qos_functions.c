@@ -353,9 +353,16 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "GrpNodes",
 					 MAX(command_len, 4))) {
-			if (get_uint(argv[i]+end, &qos->grp_nodes,
-			    "GrpNodes") == SLURM_SUCCESS)
+			if (get_uint64(argv[i]+end, &tmp64,
+				       "GrpNodes") == SLURM_SUCCESS) {
 				set = 1;
+				tmp_char = xstrdup_printf(
+					"%d=%"PRIu64, TRES_NODE, tmp64);
+				slurmdb_combine_tres_strings(
+					&qos->grp_tres, tmp_char,
+					tres_flags);
+				xfree(tmp_char);
+			}
 		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &qos->grp_submit_jobs,
@@ -474,16 +481,28 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
-			if (get_uint(argv[i]+end,
-			    &qos->max_nodes_pj,
-			    "MaxNodes") == SLURM_SUCCESS)
+			if (get_uint64(argv[i]+end, &tmp64,
+				       "MaxNodesPerJob") == SLURM_SUCCESS) {
 				set = 1;
+				tmp_char = xstrdup_printf(
+					"%d=%"PRIu64, TRES_NODE, tmp64);
+				slurmdb_combine_tres_strings(
+					&qos->max_tres_pj, tmp_char,
+					tres_flags);
+				xfree(tmp_char);
+			}
 		} else if (!strncasecmp (argv[i], "MaxNodesPerUser",
 					 MAX(command_len, 8))) {
-			if (get_uint(argv[i]+end,
-			    &qos->max_nodes_pu,
-			    "MaxNodesPerUser") == SLURM_SUCCESS)
+			if (get_uint64(argv[i]+end, &tmp64,
+				       "MaxNodesPerUser") == SLURM_SUCCESS) {
 				set = 1;
+				tmp_char = xstrdup_printf(
+					"%d=%"PRIu64, TRES_NODE, tmp64);
+				slurmdb_combine_tres_strings(
+					&qos->max_tres_pu, tmp_char,
+					tres_flags);
+				xfree(tmp_char);
+			}
 		} else if (!strncasecmp (argv[i], "MaxSubmitJobsPerUser",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &qos->max_submit_jobs_pu,
@@ -878,10 +897,10 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				      "Name,Prio,GraceT,Preempt,PreemptM,"
 				      "Flags%40,UsageThres,UsageFactor,"
 				      "GrpTRES,GrpTRESMins,GrpTRESRunMins,"
-				      "GrpJ,GrpN,GrpS,GrpW,"
-				      "MaxTRES,MaxTRESMins,MaxN,MaxW,"
+				      "GrpJ,GrpS,GrpW,"
+				      "MaxTRES,MaxTRESMins,MaxW,"
 				      "MaxTRESPerUser,"
-				      "MaxJobsPerUser,MaxNodesPerUser,"
+				      "MaxJobsPerUser,"
 				      "MaxSubmitJobsPerUser,MinTRES");
 	}
 
@@ -987,9 +1006,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPN:
-				field->print_routine(field,
-						     qos->grp_nodes,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						qos->grp_tres, TRES_NODE),
+					(curr_inx == field_count));
 				break;
 			case PRINT_GRPS:
 				field->print_routine(field,
@@ -1063,14 +1084,18 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXN:
-				field->print_routine(field,
-						     qos->max_nodes_pj,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						qos->max_tres_pj, TRES_NODE),
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXNU:
-				field->print_routine(field,
-						     qos->max_nodes_pu,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						qos->max_tres_pu, TRES_NODE),
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXS:
 				field->print_routine(field,

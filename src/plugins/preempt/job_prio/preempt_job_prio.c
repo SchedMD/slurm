@@ -315,7 +315,8 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 	}
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
 
-	if (!job_ptr->limit_set.max_nodes && job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
+	    job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;

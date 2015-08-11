@@ -411,9 +411,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpNodes", MAX(command_len, 4))) {
-		if (get_uint(value, &assoc->grp_nodes,
-			     "GrpNodes") == SLURM_SUCCESS)
+		if (get_uint64(value, &tmp64,
+			       "GrpNodes") == SLURM_SUCCESS) {
 			set = 1;
+			tmp_char = xstrdup_printf(
+				"%d=%"PRIu64, TRES_NODE, tmp64);
+			slurmdb_combine_tres_strings(
+				&assoc->grp_tres, tmp_char,
+				tres_flags);
+			xfree(tmp_char);
+		}
 	} else if (!strncasecmp(type, "GrpSubmitJobs",
 				MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->grp_submit_jobs,
@@ -515,9 +522,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "MaxJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "MaxNodesPerJob", MAX(command_len, 4))) {
-		if (get_uint(value, &assoc->max_nodes_pj,
-			     "MaxNodes") == SLURM_SUCCESS)
+		if (get_uint64(value, &tmp64,
+			       "MaxNodes") == SLURM_SUCCESS) {
 			set = 1;
+			tmp_char = xstrdup_printf(
+				"%d=%"PRIu64, TRES_NODE, tmp64);
+			slurmdb_combine_tres_strings(
+				&assoc->max_tres_pj, tmp_char,
+				tres_flags);
+			xfree(tmp_char);
+		}
 	} else if (!strncasecmp(type, "MaxSubmitJobs", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->max_submit_jobs,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
@@ -693,7 +707,10 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				     last);
 		break;
 	case PRINT_GRPN:
-		field->print_routine(field, assoc->grp_nodes, last);
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->grp_tres, TRES_NODE),
+				     last);
 		break;
 	case PRINT_GRPS:
 		field->print_routine(field, assoc->grp_submit_jobs, last);
@@ -739,7 +756,10 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		field->print_routine(field, assoc->max_jobs, last);
 		break;
 	case PRINT_MAXN:
-		field->print_routine(field, assoc->max_nodes_pj, last);
+		field->print_routine(field,
+				     slurmdb_find_tres_count_in_string(
+					     assoc->max_tres_pj, TRES_NODE),
+				     last);
 		break;
 	case PRINT_MAXS:
 		field->print_routine(field, assoc->max_submit_jobs, last);
@@ -814,9 +834,9 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
 		if (!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "Share,GrpJ,GrpN,GrpTRES,GrpMEM,"
+					      "Share,GrpJ,GrpTRES,"
 					      "GrpS,GrpWall,GrpTRESMins,MaxJ,"
-					      "MaxN,MaxTRES,MaxS,MaxW,"
+					      "MaxTRES,MaxS,MaxW,"
 					      "MaxTRESMins,QOS,DefaultQOS,"
 					      "GrpTRESRunMins");
 	}

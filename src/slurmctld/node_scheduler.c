@@ -1917,7 +1917,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (!job_ptr->limit_set.max_nodes && job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
+	    job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
@@ -1982,8 +1983,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			      false);
 	if (!test_only && (error_code == SLURM_SUCCESS)
 	    && (selected_node_cnt != NO_VAL)
-	    && !acct_policy_job_runnable_post_select(
-		    job_ptr, selected_node_cnt, tres_req_cnt)) {
+	    && !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}

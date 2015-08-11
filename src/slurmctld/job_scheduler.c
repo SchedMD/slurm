@@ -2837,7 +2837,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			max_nodes = MIN(job_ptr->details->max_nodes,
 					part_ptr->max_nodes);
 		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (!job_ptr->limit_set.max_nodes &&
+		if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
 		    job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
 		else
