@@ -192,8 +192,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		   of NO_VAL */
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_nodes == NO_VAL)
-			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
 			assoc->grp_submit_jobs = INFINITE;
 		if (assoc->grp_wall == NO_VAL)
@@ -201,8 +199,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
-		if (assoc->max_nodes_pj == NO_VAL)
-			assoc->max_nodes_pj = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -219,8 +215,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		   of NO_VAL */
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_nodes == NO_VAL)
-			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
@@ -228,10 +222,6 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
-		if (qos->max_nodes_pj == NO_VAL)
-			qos->max_nodes_pj = INFINITE;
-		if (qos->max_nodes_pu == NO_VAL)
-			qos->max_nodes_pu = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)

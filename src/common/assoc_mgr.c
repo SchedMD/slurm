@@ -372,7 +372,6 @@ static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 	if (!assoc1 || !assoc2)
 		return SLURM_ERROR;
 
-	assoc1->usage->grp_used_nodes += assoc2->usage->grp_used_nodes;
 	for (i=0; i < assoc1->usage->tres_cnt; i++) {
 		assoc1->usage->grp_used_tres[i] +=
 			assoc2->usage->grp_used_tres[i];
@@ -399,7 +398,6 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 		assoc->usage->grp_used_tres[i] = 0;
 		assoc->usage->grp_used_tres_run_secs[i] = 0;
 	}
-	assoc->usage->grp_used_nodes = 0;
 
 	assoc->usage->used_jobs  = 0;
 	assoc->usage->used_submit_jobs = 0;
@@ -442,8 +440,6 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 
 	if (!qos || !qos->usage)
 		return SLURM_ERROR;
-
-	qos->usage->grp_used_nodes = 0;
 
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
@@ -2253,7 +2249,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->grp_tres)
 		assoc->grp_tres        = ret_assoc->grp_tres;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
-	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
 
@@ -2268,7 +2263,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->max_tres_pj)
 		assoc->max_tres_pj     = ret_assoc->max_tres_pj;
 	assoc->max_jobs        = ret_assoc->max_jobs;
-	assoc->max_nodes_pj    = ret_assoc->max_nodes_pj;
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
@@ -2301,7 +2295,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	/* assoc->usage->grp_used_tres   = ret_assoc->usage->grp_used_tres; */
 	/* assoc->usage->grp_used_tres_run_mins  = */
 	/* 	ret_assoc->usage->grp_used_tres_run_mins; */
-	/* assoc->usage->grp_used_nodes  = ret_assoc->usage->grp_used_nodes; */
 	/* assoc->usage->grp_used_wall   = ret_assoc->usage->grp_used_wall; */
 
 	/* assoc->usage->level_shares    = ret_assoc->usage->level_shares; */
@@ -2471,7 +2464,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	if (!qos->grp_tres)
 		qos->grp_tres        = found_qos->grp_tres;
 	qos->grp_jobs        = found_qos->grp_jobs;
-	qos->grp_nodes       = found_qos->grp_nodes;
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
 
@@ -2484,8 +2476,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	if (!qos->max_tres_pu)
 		qos->max_tres_pu     = found_qos->max_tres_pu;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
-	qos->max_nodes_pj    = found_qos->max_nodes_pj;
-	qos->max_nodes_pu    = found_qos->max_nodes_pu;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
@@ -2512,7 +2502,6 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* qos->usage->grp_used_tres_run_mins  = */
 	/* 	found_qos->usage->grp_used_tres_run_mins; */
 	/* qos->usage->grp_used_jobs   = found_qos->usage->grp_used_jobs; */
-	/* qos->usage->grp_used_nodes  = found_qos->usage->grp_used_nodes; */
 	/* qos->usage->grp_used_submit_jobs = */
 	/* 	found_qos->usage->grp_used_submit_jobs; */
 	/* qos->usage->grp_used_wall   = found_qos->usage->grp_used_wall; */
@@ -3357,10 +3346,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if (object->grp_nodes != NO_VAL) {
-				update_jobs = true;
-				rec->grp_nodes = object->grp_nodes;
-			}
 			if (object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if (object->grp_wall != NO_VAL) {
@@ -3411,10 +3396,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (object->max_jobs != NO_VAL)
 				rec->max_jobs = object->max_jobs;
-			if (object->max_nodes_pj != NO_VAL) {
-				update_jobs = true;
-				rec->max_nodes_pj = object->max_nodes_pj;
-			}
 			if (object->max_submit_jobs != NO_VAL)
 				rec->max_submit_jobs = object->max_submit_jobs;
 			if (object->max_wall_pj != NO_VAL) {
@@ -4071,10 +4052,6 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
-			if (object->grp_nodes != NO_VAL) {
-				update_jobs = true;
-				rec->grp_nodes = object->grp_nodes;
-			}
 			if (object->grp_submit_jobs != NO_VAL)
 				rec->grp_submit_jobs = object->grp_submit_jobs;
 			if (object->grp_wall != NO_VAL) {
@@ -4133,14 +4110,6 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
-			if (object->max_nodes_pj != NO_VAL) {
-				update_jobs = true;
-				rec->max_nodes_pj = object->max_nodes_pj;
-			}
-			if (object->max_nodes_pu != NO_VAL) {
-				update_jobs = true;
-				rec->max_nodes_pu = object->max_nodes_pu;
-			}
 			if (object->max_submit_jobs_pu != NO_VAL)
 				rec->max_submit_jobs_pu =
 					object->max_submit_jobs_pu;

@@ -418,9 +418,6 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
-	uint32_t grp_nodes;        /* max number of nodes the
-				    * underlying group of
-				    * associations can allocate at once */
 	uint32_t grp_submit_jobs;  /* max number of jobs the
 				    * underlying group of
 				    * associations can submit at
@@ -464,8 +461,6 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
-	uint32_t max_nodes_pj;     /* max number of nodes this
-				    * association can allocate per job */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
 	char *max_tres_mins_pj;    /* max number of cpu seconds this
@@ -514,8 +509,6 @@ typedef struct slurmdb_assoc_rec {
 struct slurmdb_assoc_usage {
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of active jobs in the group
-				  * (DON'T PACK for state file) */
 	uint64_t *grp_used_tres; /* array of active tres counts */
 	uint64_t *grp_used_tres_run_secs; /* array of running tres secs
 					   * (DON'T PACK for state file) */
@@ -727,8 +720,6 @@ typedef struct {
 			  jobs (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
 				 * for state file) */
-	uint32_t grp_used_nodes; /* count of nodes in use in this qos
-				  * (DON'T PACK for state file) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
 					* (DON'T PACK for state file) */
 	uint64_t *grp_used_tres; /* count of tres in use in this qos
@@ -756,8 +747,6 @@ typedef struct {
 	uint32_t grace_time; /* preemption grace time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
-	uint32_t grp_nodes; /* max number of nodes this qos
-			       can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
 				   * one time */
 	char *grp_tres;            /* max number of tres ths qos can
@@ -784,10 +773,6 @@ typedef struct {
 
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
-	uint32_t max_nodes_pj; /* max number of nodes a job can
-				* allocate with this qos at one time */
-	uint32_t max_nodes_pu; /* max number of nodes a user can
-				* allocate with this qos at one time */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
 					submit with this qos at once */
 	char *max_tres_mins_pj;    /* max number of tres seconds this

@@ -617,7 +617,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
 		"set @msj = NULL; "
-		"set @mnpj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mtpj = ''; "
 		"set @mtmpj = ''; "
@@ -629,7 +628,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"if without_limits then "
 		"set @mj = 0; "
 		"set @msj = 0; "
-		"set @mnpj = 0; "
 		"set @mwpj = 0; "
 		"set @def_qos_id = 0; "
 		"set @qos = 1; "
@@ -644,9 +642,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @msj is NULL then set @s = CONCAT("
 		"@s, '@msj := max_submit_jobs, '); "
-		"end if; "
-		"if @mnpj is NULL then set @s = CONCAT("
-		"@s, '@mnpj := max_nodes_pj, ') ;"
 		"end if; "
 		"if @mwpj is NULL then set @s = CONCAT("
 		"@s, '@mwpj := max_wall_pj, '); "
@@ -1534,16 +1529,12 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->shares_raw = INFINITE;
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_nodes == NO_VAL)
-			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
 			assoc->grp_submit_jobs = INFINITE;
 		if (assoc->grp_wall == NO_VAL)
 			assoc->grp_wall = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
-		if (assoc->max_nodes_pj == NO_VAL)
-			assoc->max_nodes_pj = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -1573,17 +1564,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	}
-
-	if (assoc->grp_nodes == INFINITE) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_nodes=NULL");
-	} else if ((assoc->grp_nodes != NO_VAL)
-		   && ((int32_t)assoc->grp_nodes >= 0)) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
 	}
 
 	if (assoc->grp_submit_jobs == INFINITE) {
@@ -1628,17 +1608,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
-	}
-
-	if (assoc->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_pj");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_pj=NULL");
-	} else if ((assoc->max_nodes_pj != NO_VAL)
-		   && ((int32_t)assoc->max_nodes_pj >= 0)) {
-		xstrcat(*cols, ", max_nodes_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_pj=%u", assoc->max_nodes_pj);
 	}
 
 	if (assoc->max_submit_jobs == INFINITE) {
@@ -2195,7 +2164,6 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=NULL, "
 			       "shares=1, max_jobs=NULL, "
-			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "
 			       "max_tres_pj='', "
 			       "max_tres_mins_pj='', "

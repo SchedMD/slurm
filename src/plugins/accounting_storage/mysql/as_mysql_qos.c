@@ -126,18 +126,12 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->grace_time = 0;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_nodes == NO_VAL)
-			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
 			qos->grp_wall = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
-		if (qos->max_nodes_pj == NO_VAL)
-			qos->max_nodes_pj = INFINITE;
-		if (qos->max_nodes_pu == NO_VAL)
-			qos->max_nodes_pu = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
@@ -202,17 +196,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", grp_jobs=%u", qos->grp_jobs);
 	}
 
-	if (qos->grp_nodes == INFINITE) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_nodes=NULL");
-	} else if ((qos->grp_nodes != NO_VAL)
-		   && ((int32_t)qos->grp_nodes >= 0)) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", qos->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", qos->grp_nodes);
-	}
-
 	if (qos->grp_submit_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_submit_jobs");
 		xstrcat(*vals, ", NULL");
@@ -245,30 +228,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrfmtcat(*vals, ", %u", qos->max_jobs_pu);
 		xstrfmtcat(*extra, ", max_jobs_per_user=%u", qos->max_jobs_pu);
-	}
-
-	if (qos->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_job=NULL");
-	} else if ((qos->max_nodes_pj != NO_VAL)
-		   && ((int32_t)qos->max_nodes_pj >= 0)) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrfmtcat(*vals, ", %u", qos->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
-			   qos->max_nodes_pj);
-	}
-
-	if (qos->max_nodes_pu == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_user");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_user=NULL");
-	} else if ((qos->max_nodes_pu != NO_VAL)
-		   && ((int32_t)qos->max_nodes_pu >= 0)) {
-		xstrcat(*cols, ", max_nodes_per_user");
-		xstrfmtcat(*vals, ", %u", qos->max_nodes_pu);
-		xstrfmtcat(*extra, ", max_nodes_per_user=%u",
-			   qos->max_nodes_pu);
 	}
 
 	if (qos->max_submit_jobs_pu == INFINITE) {
@@ -749,7 +708,6 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     qos_rec->id, 0);
 
 		qos_rec->grp_jobs = qos->grp_jobs;
-		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
 
@@ -768,8 +726,6 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			     qos_rec->id, 0);
 
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
-		qos_rec->max_nodes_pj = qos->max_nodes_pj;
-		qos_rec->max_nodes_pu = qos->max_nodes_pu;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
@@ -1060,7 +1016,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"grp_tres_run_mins",
 		"grp_tres",
 		"grp_jobs",
-		"grp_nodes",
 		"grp_submit_jobs",
 		"grp_wall",
 		"max_tres_mins_pj",
@@ -1068,8 +1023,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_tres_pj",
 		"max_tres_pu",
 		"max_jobs_per_user",
-		"max_nodes_per_job",
-		"max_nodes_per_user",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
 		"substr(preempt, 1, length(preempt) - 1)",
@@ -1089,7 +1042,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_GTRM,
 		QOS_REQ_GT,
 		QOS_REQ_GJ,
-		QOS_REQ_GN,
 		QOS_REQ_GSJ,
 		QOS_REQ_GW,
 		QOS_REQ_MTMPJ,
@@ -1097,8 +1049,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MTPJ,
 		QOS_REQ_MTPU,
 		QOS_REQ_MJPU,
-		QOS_REQ_MNPJ,
-		QOS_REQ_MNPU,
 		QOS_REQ_MSJPU,
 		QOS_REQ_MWPJ,
 		QOS_REQ_PREE,
@@ -1220,10 +1170,6 @@ empty:
 			qos->grp_jobs = slurm_atoul(row[QOS_REQ_GJ]);
 		else
 			qos->grp_jobs = INFINITE;
-		if (row[QOS_REQ_GN])
-			qos->grp_nodes = slurm_atoul(row[QOS_REQ_GN]);
-		else
-			qos->grp_nodes = INFINITE;
 		if (row[QOS_REQ_GSJ])
 			qos->grp_submit_jobs = slurm_atoul(row[QOS_REQ_GSJ]);
 		else
@@ -1237,14 +1183,6 @@ empty:
 			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
 			qos->max_jobs_pu = INFINITE;
-		if (row[QOS_REQ_MNPJ])
-			qos->max_nodes_pj = slurm_atoul(row[QOS_REQ_MNPJ]);
-		else
-			qos->max_nodes_pj = INFINITE;
-		if (row[QOS_REQ_MNPU])
-			qos->max_nodes_pu = slurm_atoul(row[QOS_REQ_MNPU]);
-		else
-			qos->max_nodes_pu = INFINITE;
 		if (row[QOS_REQ_MSJPU])
 			qos->max_submit_jobs_pu =
 				slurm_atoul(row[QOS_REQ_MSJPU]);

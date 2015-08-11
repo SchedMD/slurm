@@ -340,13 +340,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       "underflow for account %s",
 				       assoc_ptr->acct);
 
-			if ((int32_t)assoc_ptr->usage->grp_used_nodes < 0) {
-				assoc_ptr->usage->grp_used_nodes = 0;
-				debug2("acct_policy_job_fini: grp_used_nodes "
-				       "underflow for account %s",
-				       assoc_ptr->acct);
-			}
-
 			for (i=0; i<slurmctld_tres_cnt; i++) {
 				if (job_ptr->tres_alloc_cnt[i] >
 				    assoc_ptr->usage->grp_used_tres[i]) {

@@ -1277,7 +1277,6 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	/* assoc->grp_tres_run_mins = NULL; */
 	/* assoc->grp_tres = NULL; */
 	assoc->grp_jobs = NO_VAL;
-	assoc->grp_nodes = NO_VAL;
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
 
@@ -1289,7 +1288,6 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	/* assoc->max_tres_run_mins = NULL; */
 	/* assoc->max_tres_pj = NULL; */
 	assoc->max_jobs = NO_VAL;
-	assoc->max_nodes_pj = NO_VAL;
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
 
@@ -1345,7 +1343,6 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	/* qos->grp_tres_run_mins = NULL; */
 	/* qos->grp_tres = NULL; */
 	qos->grp_jobs = init_val;
-	qos->grp_nodes = init_val;
 	qos->grp_submit_jobs = init_val;
 	qos->grp_wall = init_val;
 
@@ -1354,8 +1351,6 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	/* qos->max_tres_pj = NULL; */
 	/* qos->max_tres_pu = NULL; */
 	qos->max_jobs_pu = init_val;
-	qos->max_nodes_pj = init_val;
-	qos->max_nodes_pu = init_val;
 	qos->max_submit_jobs_pu = init_val;
 	qos->max_wall_pj = init_val;
 
@@ -2112,11 +2107,6 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	else if (assoc_ptr->grp_jobs != NO_VAL)
 		debug2("  GrpJobs          : %u", assoc_ptr->grp_jobs);
 
-	if (assoc_ptr->grp_nodes == INFINITE)
-		debug2("  GrpNodes         : NONE");
-	else if (assoc_ptr->grp_nodes != NO_VAL)
-		debug2("  GrpNodes         : %u", assoc_ptr->grp_nodes);
-
 	if (assoc_ptr->grp_submit_jobs == INFINITE)
 		debug2("  GrpSubmitJobs    : NONE");
 	else if (assoc_ptr->grp_submit_jobs != NO_VAL)
@@ -2145,11 +2135,6 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 		debug2("  MaxJobs          : NONE");
 	else if (assoc_ptr->max_jobs != NO_VAL)
 		debug2("  MaxJobs          : %u", assoc_ptr->max_jobs);
-
-	if (assoc_ptr->max_nodes_pj == INFINITE)
-		debug2("  MaxNodes         : NONE");
-	else if (assoc_ptr->max_nodes_pj != NO_VAL)
-		debug2("  MaxNodes         : %u", assoc_ptr->max_nodes_pj);
 
 	if (assoc_ptr->max_submit_jobs == INFINITE)
 		debug2("  MaxSubmitJobs    : NONE");
@@ -2768,7 +2753,6 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 					  slurmdb_assoc_rec_t *in)
 {
 	out->grp_jobs = in->grp_jobs;
-	out->grp_nodes = in->grp_nodes;
 	out->grp_submit_jobs = in->grp_submit_jobs;
 	xfree(out->grp_tres);
 	out->grp_tres = xstrdup(in->grp_tres);
@@ -2779,7 +2763,6 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	out->grp_wall = in->grp_wall;
 
 	out->max_jobs = in->max_jobs;
-	out->max_nodes_pj = in->max_nodes_pj;
 	out->max_submit_jobs = in->max_submit_jobs;
 	xfree(out->max_tres_pj);
 	out->max_tres_pj = xstrdup(in->max_tres_pj);
@@ -2799,7 +2782,6 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->flags = in->flags;
 	out->grace_time = in->grace_time;
 	out->grp_jobs = in->grp_jobs;
-	out->grp_nodes = in->grp_nodes;
 	out->grp_submit_jobs = in->grp_submit_jobs;
 	xfree(out->grp_tres);
 	out->grp_tres = xstrdup(in->grp_tres);
@@ -2810,8 +2792,6 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->grp_wall = in->grp_wall;
 
 	out->max_jobs_pu = in->max_jobs_pu;
-	out->max_nodes_pj = in->max_nodes_pj;
-	out->max_nodes_pu = in->max_nodes_pu;
 	out->max_submit_jobs_pu = in->max_submit_jobs_pu;
 	xfree(out->max_tres_mins_pj);
 	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);

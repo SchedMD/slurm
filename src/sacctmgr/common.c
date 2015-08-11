@@ -1568,11 +1568,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->grp_jobs != NO_VAL)
 		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
 
-	if (assoc->grp_nodes == INFINITE)
-		printf("  GrpNodes      = NONE\n");
-	else if (assoc->grp_nodes != NO_VAL)
-		printf("  GrpNodes      = %u\n", assoc->grp_nodes);
-
 	if (assoc->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs = NONE\n");
 	else if (assoc->grp_submit_jobs != NO_VAL)
@@ -1599,11 +1594,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  MaxJobs       = NONE\n");
 	else if (assoc->max_jobs != NO_VAL)
 		printf("  MaxJobs       = %u\n", assoc->max_jobs);
-
-	if (assoc->max_nodes_pj == INFINITE)
-		printf("  MaxNodes      = NONE\n");
-	else if (assoc->max_nodes_pj != NO_VAL)
-		printf("  MaxNodes      = %u\n", assoc->max_nodes_pj);
 
 	if (assoc->max_submit_jobs == INFINITE)
 		printf("  MaxSubmitJobs = NONE\n");
@@ -1664,11 +1654,6 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	else if (qos->grp_jobs != NO_VAL)
 		printf("  GrpJobs        = %u\n", qos->grp_jobs);
 
-	if (qos->grp_nodes == INFINITE)
-		printf("  GrpNodes       = NONE\n");
-	else if (qos->grp_nodes != NO_VAL)
-		printf("  GrpNodes       = %u\n", qos->grp_nodes);
-
 	if (qos->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs  = NONE\n");
 	else if (qos->grp_submit_jobs != NO_VAL)
@@ -1690,16 +1675,6 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall        = %s\n", time_buf);
 	}
-
-	if (qos->max_nodes_pj == INFINITE)
-		printf("  MaxNodes       = NONE\n");
-	else if (qos->max_nodes_pj != NO_VAL)
-		printf("  MaxNodes       = %u\n", qos->max_nodes_pj);
-
-	if (qos->max_nodes_pu == INFINITE)
-		printf("  MaxNodesPerUser       = NONE\n");
-	else if (qos->max_nodes_pu != NO_VAL)
-		printf("  MaxNodesPerUser       = %u\n", qos->max_nodes_pu);
 
 	if (qos->max_submit_jobs_pu == INFINITE)
 		printf("  MaxSubmitJobs  = NONE\n");

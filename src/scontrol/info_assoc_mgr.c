@@ -127,12 +127,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->usage->used_jobs);
 			else
 				printf("GrpJobs= ");
-			if (assoc_rec->grp_nodes != INFINITE)
-				printf("GrpNodes=%u(%u) ",
-				       assoc_rec->grp_nodes,
-				       assoc_rec->usage->grp_used_nodes);
-			else
-				printf("GrpNodes= ");
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
@@ -201,12 +195,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->usage->used_jobs);
 			else
 				printf("MaxJobs= ");
-
-			if (assoc_rec->max_nodes_pj != INFINITE)
-				printf("MaxNodesPJ=%u ",
-				       assoc_rec->max_nodes_pj);
-			else
-				printf("MaxNodesPJ= ");
 
 			if (assoc_rec->max_submit_jobs != INFINITE)
 				printf("MaxSubmitJobs=%u(%u) ",

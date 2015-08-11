@@ -398,8 +398,10 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 						assoc->grp_tres, TRES_MEM));
 				break;
 			case PRINT_GRPN:
-				field->print_routine(field,
-						     assoc->grp_nodes);
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						assoc->grp_tres, TRES_NODE));
 				break;
 			case PRINT_GRPS:
 				field->print_routine(field,
@@ -429,8 +431,10 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 						     assoc->max_jobs);
 				break;
 			case PRINT_MAXN:
-				field->print_routine(field,
-						     assoc->max_nodes_pj);
+				field->print_routine(
+					field,
+					slurmdb_find_tres_count_in_string(
+						assoc->max_tres_pj, TRES_NODE));
 				break;
 			case PRINT_MAXS:
 				field->print_routine(field,
@@ -580,18 +584,6 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.grp_jobs);
 	}
 
-	if ((file_opts->assoc_rec.grp_nodes != NO_VAL)
-	    && (assoc->grp_nodes != file_opts->assoc_rec.grp_nodes)) {
-		mod_assoc.grp_nodes = file_opts->assoc_rec.grp_nodes;
-		changed = 1;
-		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed GrpNodes",
-			   type, name,
-			   assoc->grp_nodes,
-			   file_opts->assoc_rec.grp_nodes);
-	}
-
 	if ((file_opts->assoc_rec.grp_submit_jobs != NO_VAL)
 	    && (assoc->grp_submit_jobs !=
 		file_opts->assoc_rec.grp_submit_jobs)) {
@@ -670,18 +662,6 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->max_jobs,
 			   file_opts->assoc_rec.max_jobs);
-	}
-
-	if ((file_opts->assoc_rec.max_nodes_pj != NO_VAL)
-	    && (assoc->max_nodes_pj != file_opts->assoc_rec.max_nodes_pj)) {
-		mod_assoc.max_nodes_pj = file_opts->assoc_rec.max_nodes_pj;
-		changed = 1;
-		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxNodesPerJob",
-			   type, name,
-			   assoc->max_nodes_pj,
-			   file_opts->assoc_rec.max_nodes_pj);
 	}
 
 	if ((file_opts->assoc_rec.max_submit_jobs != NO_VAL)
@@ -1547,9 +1527,6 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
 
-	if (assoc->grp_nodes != INFINITE)
-		xstrfmtcat(*line, ":GrpNodes=%u", assoc->grp_nodes);
-
 	if (assoc->grp_submit_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpSubmitJobs=%u", assoc->grp_submit_jobs);
 
@@ -1569,9 +1546,6 @@ extern int print_file_add_limits_to_line(char **line,
 
 	if (assoc->max_jobs != INFINITE)
 		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);
-
-	if (assoc->max_nodes_pj != INFINITE)
-		xstrfmtcat(*line, ":MaxNodesPerJob=%u", assoc->max_nodes_pj);
 
 	if (assoc->max_submit_jobs != INFINITE)
 		xstrfmtcat(*line, ":MaxSubmitJobs=%u", assoc->max_submit_jobs);
