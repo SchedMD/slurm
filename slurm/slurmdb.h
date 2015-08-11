@@ -964,11 +964,7 @@ typedef struct {
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
  * user_limit_list. */
 typedef struct {
-	uint64_t cpu_run_mins; /* how many cpu mins are allocated
-				* currently */
-	uint32_t cpus; /* count of CPUs allocated */
 	uint32_t jobs;	/* count of active jobs */
-	uint32_t nodes;	/* count of nodes allocated */
 	uint32_t submit_jobs; /* count of jobs pending or running */
 	uint64_t *tres; /* array of TRES allocated */
 	uint64_t *tres_run_mins; /* array of how many TRES mins are

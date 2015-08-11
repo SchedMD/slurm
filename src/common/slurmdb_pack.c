@@ -291,7 +291,6 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 	if (!object) {
 		pack32(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
 		pack64_array(NULL, 0, buffer);
 		pack64_array(NULL, 0, buffer);
 		pack32(0, buffer);
@@ -299,7 +298,6 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 	}
 
 	pack32(object->jobs, buffer);
-	pack32(object->nodes, buffer);
 	pack32(object->submit_jobs, buffer);
 	pack64_array(object->tres, tres_cnt, buffer);
 	pack64_array(object->tres_run_mins, tres_cnt, buffer);
@@ -315,10 +313,7 @@ extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 
 	*object = (void *)object_ptr;
 
-	safe_unpack64(&object_ptr->cpu_run_mins, buffer);
-	safe_unpack32(&object_ptr->cpus, buffer);
 	safe_unpack32(&object_ptr->jobs, buffer);
-	safe_unpack32(&object_ptr->nodes, buffer);
 	safe_unpack32(&object_ptr->submit_jobs, buffer);
 	safe_unpack64_array(&object_ptr->tres, &tmp32, buffer);
 	if (tmp32 != tres_cnt)

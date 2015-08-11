@@ -422,7 +422,6 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 	itr = list_iterator_create(qos_ptr->usage->user_limit_list);
 	while ((used_limits = list_next(itr))) {
 		used_limits->jobs = 0;
-		used_limits->nodes = 0;
 		used_limits->submit_jobs = 0;
 		for (i=0; i<qos_ptr->usage->tres_cnt; i++) {
 			used_limits->tres[i] = 0;
