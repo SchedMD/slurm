@@ -43,6 +43,7 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	ListIterator itr;
 	slurmdb_user_rec_t *user_rec;
 	slurmdb_assoc_rec_t *assoc_rec;
+	slurmdb_qos_rec_t *qos_rec;
 	uint64_t usage_mins;
 	char *new_line_char = one_liner ? " " : "\n    ";
 	int i;
@@ -50,8 +51,10 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	printf("Current Association Manager state\n");
 
 	if (!msg->user_list || !list_count(msg->user_list)) {
-		printf("No users currently cached in Slurm.\n");
+		printf("\nNo users currently cached in Slurm.\n\n");
 	} else {
+		printf("\nUser Records\n\n");
+
 		itr = list_iterator_create(msg->user_list);
 		while ((user_rec = list_next(itr))) {
 			printf("UserName=%s(%u) DefAccount=%s "
@@ -63,12 +66,13 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			       slurmdb_admin_level_str(user_rec->admin_level));
 		}
 		list_iterator_destroy(itr);
-		printf("\n");
 	}
 
 	if (!msg->assoc_list || !list_count(msg->assoc_list)) {
-		printf("No associations currently cached in Slurm.\n");
+		printf("\nNo associations currently cached in Slurm.\n\n");
 	} else {
+		printf("\nAssociation Records\n\n");
+
 		itr = list_iterator_create(msg->assoc_list);
 		while ((assoc_rec = list_next(itr))) {
 			if (!assoc_rec->usage)
@@ -224,6 +228,143 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->max_tres_mins_pj);
 			else
 				printf("MaxTRESMinsPJ=\n");
+		}
+	}
+
+	if (!msg->qos_list || !list_count(msg->qos_list)) {
+		printf("\nNo QOS currently cached in Slurm.\n\n");
+	} else {
+
+		printf("\nQOS Records\n\n");
+
+		itr = list_iterator_create(msg->qos_list);
+		while ((qos_rec = list_next(itr))) {
+			if (!qos_rec->usage)
+				continue;
+
+			usage_mins =
+				(uint64_t)(qos_rec->usage->usage_raw / 60.0);
+
+			printf("QOS=%s(%u)%s", qos_rec->name, qos_rec->id,
+				new_line_char);
+
+			printf("UsageRaw=%Lf%s",
+			       qos_rec->usage->usage_raw,
+			       new_line_char);
+
+			if (qos_rec->grp_jobs != INFINITE)
+				printf("GrpJobs=%u(%u) ",
+				       qos_rec->grp_jobs,
+				       qos_rec->usage->grp_used_jobs);
+			else
+				printf("GrpJobs= ");
+			if (qos_rec->grp_submit_jobs != INFINITE)
+				printf("GrpSubmitJobs=%u(%u) ",
+				       qos_rec->grp_submit_jobs,
+				       qos_rec->usage->grp_used_submit_jobs);
+			else
+				printf("GrpSubmitJobs= ");
+			if (qos_rec->grp_wall != INFINITE)
+				printf("GrpWall=%u(%.2f)",
+				       qos_rec->grp_wall,
+				       qos_rec->usage->grp_used_wall);
+			else
+				printf("GrpWall=");
+			/* NEW LINE */
+			printf("%s", new_line_char);
+
+			if (qos_rec->grp_tres) {
+				printf("GrpTRES=%s", qos_rec->grp_tres);
+				if (qos_rec->usage->tres_cnt &&
+				    qos_rec->usage->grp_used_tres) {
+					printf("(");
+					for (i=0; i<qos_rec->usage->tres_cnt;
+					     i++)
+						printf("%s%"PRIu64,
+						       i ? "," : "",
+						       qos_rec->usage->
+						       grp_used_tres[i]);
+					printf(")");
+				}
+				printf("%s", new_line_char);
+			} else
+				printf("GrpTRES=%s", new_line_char);
+
+			if (qos_rec->grp_tres_mins)
+				printf("GrpTRESMins=%s(%"PRIu64")%s",
+				       qos_rec->grp_tres_mins,
+				       usage_mins,
+				       new_line_char);
+			else
+				printf("GrpTRESMins=%s", new_line_char);
+
+			if (qos_rec->grp_tres_mins) {
+				printf("GrpTRESRunMins=%s",
+				       qos_rec->grp_tres_run_mins);
+				if (qos_rec->usage->tres_cnt &&
+				    qos_rec->usage->grp_used_tres_run_secs) {
+					printf("(");
+					for (i=0; i<qos_rec->usage->tres_cnt;
+					     i++)
+						printf("%s%"PRIu64,
+						       i ? "," : "",
+						       qos_rec->usage->
+						       grp_used_tres_run_secs[i]
+						       / 60);
+					printf(")");
+				}
+				printf("%s", new_line_char);
+			} else
+				printf("GrpTRESRunMins=%s", new_line_char);
+
+			if (qos_rec->max_jobs_pu != INFINITE)
+				printf("MaxJobsPU=%u(%u) ",
+				       qos_rec->max_jobs_pu,
+				       qos_rec->usage->grp_used_jobs);
+			else
+				printf("MaxJobs= ");
+
+			if (qos_rec->max_submit_jobs_pu != INFINITE)
+				printf("MaxSubmitJobs=%u(%u) ",
+				       qos_rec->max_submit_jobs_pu,
+				       qos_rec->usage->grp_used_submit_jobs);
+			else
+				printf("MaxSubmitJobs= ");
+
+			if (qos_rec->max_wall_pj != INFINITE)
+				printf("MaxWallPJ=%u",
+				       qos_rec->max_wall_pj);
+			else
+				printf("MaxWallPJ=");
+
+			/* NEW LINE */
+			printf("%s", new_line_char);
+
+			if (qos_rec->max_tres_pj)
+				printf("MaxTRESPJ=%s%s",
+				       qos_rec->max_tres_pj,
+				       new_line_char);
+			else
+				printf("MaxTRESPJ=%s", new_line_char);
+
+			if (qos_rec->max_tres_pu)
+				printf("MaxTRESPU=%s%s",
+				       qos_rec->max_tres_pu,
+				       new_line_char);
+			else
+				printf("MaxTRESPU=%s", new_line_char);
+
+			if (qos_rec->max_tres_mins_pj)
+				printf("MaxTRESMinsPJ=%s%s",
+				       qos_rec->max_tres_mins_pj,
+					new_line_char);
+			else
+				printf("MaxTRESMinsPJ=%s", new_line_char);
+
+			if (qos_rec->min_tres_pj)
+				printf("MinTRESPJ=%s\n", qos_rec->min_tres_pj);
+			else
+				printf("MinTRESPJ=\n");
 		}
 	}
 }

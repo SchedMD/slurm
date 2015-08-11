@@ -99,6 +99,14 @@ extern void slurmdb_pack_qos_rec(void *in,
 				 uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_qos_rec(void **object,
 				  uint16_t rpc_version, Buf buffer);
+extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
+				    Buf buffer);
+extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t rpc_version,
+					    Buf buffer);
+extern int slurmdb_unpack_qos_rec_with_usage(void **object,
+					     uint16_t rpc_version,
+					     Buf buffer);
 extern void slurmdb_pack_reservation_rec(void *in,
 					 uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,

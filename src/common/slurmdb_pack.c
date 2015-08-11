@@ -2099,6 +2099,107 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer)
+{
+	slurmdb_qos_usage_t *usage = (slurmdb_qos_usage_t *)in;
+	uint32_t count;
+	ListIterator itr;
+	void *used_limits;
+
+	pack32(usage->grp_used_jobs, buffer);
+	pack32(usage->grp_used_submit_jobs, buffer);
+	pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
+	pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt, buffer);
+	packdouble(usage->grp_used_wall, buffer);
+	packdouble(usage->norm_priority, buffer);
+	packlongdouble(usage->usage_raw, buffer);
+
+	if (!usage->user_limit_list ||
+	    !(count = list_count(usage->user_limit_list)))
+		count = NO_VAL;
+
+	pack32(count, buffer);
+	if (count != NO_VAL) {
+		itr = list_iterator_create(usage->user_limit_list);
+		while ((used_limits = list_next(itr)))
+			slurmdb_pack_used_limits(used_limits, usage->tres_cnt,
+						 rpc_version, buffer);
+		list_iterator_destroy(itr);
+	}
+}
+
+extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
+				    Buf buffer)
+{
+	slurmdb_qos_usage_t *object_ptr = xmalloc(sizeof(slurmdb_qos_usage_t));
+
+	uint32_t count;
+	void *used_limits;
+	int i;
+
+	*object = object_ptr;
+
+	safe_unpack32(&object_ptr->grp_used_jobs, buffer);
+	safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
+	safe_unpack64_array(&object_ptr->grp_used_tres,
+			    &object_ptr->tres_cnt, buffer);
+	safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
+			    &object_ptr->tres_cnt, buffer);
+	safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
+	safe_unpackdouble(&object_ptr->norm_priority, buffer);
+	safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		object_ptr->user_limit_list =
+			list_create(slurmdb_destroy_used_limits);
+		for (i = 0; i < count; i++) {
+			if (slurmdb_unpack_used_limits(&used_limits,
+						       object_ptr->tres_cnt,
+						       rpc_version, buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->user_limit_list, used_limits);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_qos_usage(object_ptr);
+	*object = NULL;
+
+	return SLURM_ERROR;
+}
+
+extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t rpc_version,
+					    Buf buffer)
+{
+	slurmdb_pack_qos_rec(in, rpc_version, buffer);
+
+	slurmdb_pack_qos_usage(((slurmdb_qos_rec_t *)in)->usage,
+			       rpc_version, buffer);
+}
+
+extern int slurmdb_unpack_qos_rec_with_usage(void **object,
+					     uint16_t rpc_version,
+					     Buf buffer)
+{
+	int rc;
+	slurmdb_qos_rec_t *object_ptr;
+
+	if ((rc = slurmdb_unpack_qos_rec(object, rpc_version, buffer))
+	    != SLURM_SUCCESS)
+		return rc;
+
+	object_ptr = *object;
+
+	rc = slurmdb_unpack_qos_usage((void **)&object_ptr->usage,
+				      rpc_version, buffer);
+
+	return rc;
+}
+
 extern void slurmdb_pack_reservation_rec(void *in, uint16_t rpc_version,
 					 Buf buffer)
 {

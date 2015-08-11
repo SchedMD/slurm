@@ -2961,7 +2961,7 @@ extern void assoc_mgr_info_get_pack_msg(
 	int is_admin=1;
 	void *object;
 	uint16_t private_data = slurm_get_private_data();
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
 				   NO_LOCK, READ_LOCK, NO_LOCK };
 	Buf buffer;
 
@@ -3067,7 +3067,7 @@ extern void assoc_mgr_info_get_pack_msg(
 	}
 	list_iterator_destroy(itr);
 
-
+	/* This is where we start to pack */
 	buffer = init_buf(BUF_SIZE);
 
 	/* pack the associations requested/allowed */
@@ -3079,6 +3079,15 @@ extern void assoc_mgr_info_get_pack_msg(
 	list_iterator_destroy(itr);
 	list_flush(ret_list);
 
+	/* There isn't much limitation that can be put on QOS */
+	pack32(list_count(assoc_mgr_qos_list), buffer);
+	itr = list_iterator_create(assoc_mgr_qos_list);
+	while ((object = list_next(itr)))
+		slurmdb_pack_qos_rec_with_usage(
+			object, protocol_version, buffer);
+	list_iterator_destroy(itr);
+
+	/* now filter out the users */
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((user_rec = list_next(itr))) {
 		if (!is_admin && (private_data & PRIVATE_DATA_USERS) &&
@@ -3097,7 +3106,6 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		list_append(ret_list, user_rec);
 	}
-
 
 	/* pack the users requested/allowed */
 	pack32(list_count(ret_list), buffer);
@@ -3129,24 +3137,35 @@ extern int assoc_mgr_info_unpack_msg(
 {
 	assoc_mgr_info_msg_t *object_ptr =
 		xmalloc(sizeof(assoc_mgr_info_msg_t));
-	slurmdb_assoc_rec_t *assoc_rec = NULL;
-	slurmdb_user_rec_t *user_rec = NULL;
+	void *list_object = NULL;
 	uint32_t count;
 	int i;
 
 	*object = object_ptr;
-
 	safe_unpack32(&count, buffer);
 	if (count) {
 		object_ptr->assoc_list =
 			list_create(slurmdb_destroy_assoc_rec);
 		for (i=0; i<count; i++) {
 			if (slurmdb_unpack_assoc_rec_with_usage(
-				    (void *)&assoc_rec, protocol_version,
+				    &list_object, protocol_version,
 				    buffer)
 			    != SLURM_SUCCESS)
 				goto unpack_error;
-			list_append(object_ptr->assoc_list, assoc_rec);
+			list_append(object_ptr->assoc_list, list_object);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if (count) {
+		object_ptr->qos_list =
+			list_create(slurmdb_destroy_qos_rec);
+		for (i=0; i<count; i++) {
+			if (slurmdb_unpack_qos_rec_with_usage(
+				    &list_object, protocol_version, buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->qos_list, list_object);
 		}
 	}
 
@@ -3156,10 +3175,10 @@ extern int assoc_mgr_info_unpack_msg(
 			list_create(slurmdb_destroy_user_rec);
 		for (i=0; i<count; i++) {
 			if (slurmdb_unpack_user_rec(
-				    (void *)&user_rec, protocol_version, buffer)
+				    &list_object, protocol_version, buffer)
 			    != SLURM_SUCCESS)
 				goto unpack_error;
-			list_append(object_ptr->user_list, user_rec);
+			list_append(object_ptr->user_list, list_object);
 		}
 	}
 

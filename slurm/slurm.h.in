@@ -2797,7 +2797,8 @@ typedef struct {
 /* Association manager state running in the slurmctld */
 typedef struct {
 	List assoc_list; /* list of slurmdb_assoc_rec_t with usage packed */
-	List user_list; /* list of slurmdb_user_rec_t */
+	List qos_list;   /* list of slurmdb_qos_rec_t with usage packed */
+	List user_list;  /* list of slurmdb_user_rec_t */
 } assoc_mgr_info_msg_t;
 
 typedef struct {
