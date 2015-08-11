@@ -783,7 +783,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   qos_ptr->max_tres_pu_ctld,
 					   qos_out_ptr->grp_tres_ctld,
 					   qos_out_ptr->max_tres_pu_ctld,
-					   acct_policy_limit_set->max_tres,
+					   acct_policy_limit_set->tres,
 					   strict_checking, 1)) {
 		if (job_desc->tres_req_cnt[tres_pos] >
 		    qos_ptr->max_tres_pu_ctld[tres_pos]) {
@@ -984,7 +984,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   qos_ptr->max_tres_pj_ctld,
 					   NULL,
 					   qos_out_ptr->max_tres_pj_ctld,
-					   acct_policy_limit_set->max_tres,
+					   acct_policy_limit_set->tres,
 					   strict_checking, 1)) {
 		if (reason)
 			*reason = WAIT_QOS_MAX_CPUS_PER_JOB;
@@ -1068,7 +1068,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   qos_ptr->min_tres_pj_ctld,
 					   NULL,
 					   qos_out_ptr->min_tres_pj_ctld,
-					   acct_policy_limit_set->max_tres,
+					   acct_policy_limit_set->tres,
 					   strict_checking, 0)) {
 		if (reason)
 			*reason = WAIT_QOS_MIN_CPUS;
@@ -1081,7 +1081,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		       assoc_mgr_tres_array[tres_pos]->type,
 		       assoc_mgr_tres_array[tres_pos]->name ? "/" : "",
 		       assoc_mgr_tres_array[tres_pos]->name ?
-			       assoc_mgr_tres_array[tres_pos]->name : "",
+		       assoc_mgr_tres_array[tres_pos]->name : "",
 		       job_desc->tres_req_cnt[tres_pos],
 		       qos_ptr->min_tres_pj_ctld[tres_pos],
 		       qos_ptr->name);
@@ -1284,7 +1284,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
-		tres_run_mins, usage_mins, job_ptr->limit_set.min_tres,
+		tres_run_mins, usage_mins, job_ptr->limit_set.tres,
 		safe_limits);
 	switch (i) {
 	case 1:
@@ -1367,7 +1367,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
 		tres_req_cnt, qos_ptr->usage->grp_used_tres,
-		0, job_ptr->limit_set.min_tres, 1);
+		0, job_ptr->limit_set.tres, 1);
 	switch (i) {
 	case 1:
 		/* not possible because the curr_usage sent in is 0 */
@@ -1516,7 +1516,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   qos_ptr->max_tres_mins_pj_ctld,
 					   NULL,
 					   qos_out_ptr->max_tres_mins_pj_ctld,
-					   job_ptr->limit_set.min_tres,
+					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_QOS_MAX_CPU_MINS_PER_JOB;
@@ -1542,7 +1542,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   qos_ptr->max_tres_pj_ctld,
 					   NULL,
 					   qos_out_ptr->max_tres_pj_ctld,
-					   job_ptr->limit_set.min_tres,
+					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_QOS_MAX_CPUS_PER_JOB;
@@ -1568,7 +1568,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   qos_ptr->min_tres_pj_ctld,
 					   NULL,
 					   qos_out_ptr->min_tres_pj_ctld,
-					   job_ptr->limit_set.min_tres,
+					   job_ptr->limit_set.tres,
 					   1, 0)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_QOS_MIN_CPUS;
@@ -1592,7 +1592,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
 		tres_req_cnt, used_limits->tres,
-		0, job_ptr->limit_set.min_tres, 1);
+		0, job_ptr->limit_set.tres, 1);
 	switch (i) {
 	case 1:
 		/* not possible because the curr_usage sent in is 0 */
@@ -2010,7 +2010,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    &tres_pos, job_desc->tres_req_cnt,
 			    assoc_ptr->grp_tres_ctld,
 			    qos_rec.grp_tres_ctld,
-			    acct_policy_limit_set->max_tres,
+			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
@@ -2098,7 +2098,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    &tres_pos, job_desc->tres_req_cnt,
 			    assoc_ptr->max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
-			    acct_policy_limit_set->max_tres,
+			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
 			/* FIXME: This is most likely not the reason
 			   we want to send back.
@@ -2508,7 +2508,7 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
 			job_tres_time_limit, tres_run_mins,
-			usage_mins, job_ptr->limit_set.min_tres,
+			usage_mins, job_ptr->limit_set.tres,
 			safe_limits);
 		switch (i) {
 		case 1:
@@ -2594,7 +2594,7 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos,
 			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
 			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
-			0, job_ptr->limit_set.min_tres, 1);
+			0, job_ptr->limit_set.tres, 1);
 		switch (i) {
 		case 1:
 			/* not possible because the curr_usage sent in is 0 */
@@ -2758,7 +2758,7 @@ extern bool acct_policy_job_runnable_post_select(
 			    &tres_pos, job_tres_time_limit,
 			    assoc_ptr->max_tres_mins_ctld,
 			    qos_rec.max_tres_mins_pj_ctld,
-			    job_ptr->limit_set.min_tres,
+			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
@@ -2783,7 +2783,7 @@ extern bool acct_policy_job_runnable_post_select(
 			    &tres_pos, tres_req_cnt,
 			    assoc_ptr->max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
-			    job_ptr->limit_set.min_tres,
+			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;

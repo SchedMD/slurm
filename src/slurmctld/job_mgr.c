@@ -1074,11 +1074,10 @@ static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
 				    Buf buffer)
 {
 	pack16(limit_set->max_nodes, buffer);
-	pack16_array(limit_set->max_tres, slurmctld_tres_cnt, buffer);
 	pack16(limit_set->min_nodes, buffer);
-	pack16_array(limit_set->min_tres, slurmctld_tres_cnt, buffer);
 	pack16(limit_set->qos, buffer);
 	pack16(limit_set->time, buffer);
+	pack16_array(limit_set->tres, slurmctld_tres_cnt, buffer);
 }
 
 static int _unpack_acct_policy_limit_members(
@@ -1086,19 +1085,16 @@ static int _unpack_acct_policy_limit_members(
 {
 	uint32_t tmp32;
 	safe_unpack16(&limit_set->max_nodes, buffer);
-	xfree(limit_set->max_tres);
-	safe_unpack16_array(&limit_set->max_tres, &tmp32, buffer);
 	safe_unpack16(&limit_set->min_nodes, buffer);
-	xfree(limit_set->min_tres);
-	safe_unpack16_array(&limit_set->min_tres, &tmp32, buffer);
 	safe_unpack16(&limit_set->qos, buffer);
 	safe_unpack16(&limit_set->time, buffer);
+	xfree(limit_set->tres);
+	safe_unpack16_array(&limit_set->tres, &tmp32, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(limit_set->max_tres);
-	xfree(limit_set->min_tres);
+	xfree(limit_set->tres);
 
 	return SLURM_ERROR;
 }
@@ -1573,13 +1569,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
 		safe_unpack16(&tmp16, buffer);
-		limit_set.max_tres[TRES_ARRAY_CPU] = tmp16;
+		limit_set.tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.max_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
-		limit_set.min_tres[TRES_ARRAY_CPU] = tmp16;
+		if (!limit_set.tres[TRES_ARRAY_CPU] && tmp16)
+			limit_set.tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.min_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
-		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
+		limit_set.tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
 		safe_unpack16(&limit_set.qos, buffer);
 
@@ -1748,14 +1745,14 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&warn_flags, buffer);
 		safe_unpack16(&warn_signal, buffer);
 		safe_unpack16(&warn_time, buffer);
-		safe_unpack16(&tmp16, buffer);
-		limit_set.max_tres[TRES_ARRAY_CPU] = tmp16;
+		limit_set.tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.max_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
-		limit_set.min_tres[TRES_ARRAY_CPU] = tmp16;
+		if (!limit_set.tres[TRES_ARRAY_CPU] && tmp16)
+			limit_set.tres[TRES_ARRAY_CPU] = tmp16;
 		safe_unpack16(&limit_set.min_nodes, buffer);
 		safe_unpack16(&tmp16, buffer);
-		limit_set.max_tres[TRES_ARRAY_MEM] = tmp16;
+		limit_set.tres[TRES_ARRAY_MEM] = tmp16;
 		safe_unpack16(&limit_set.time, buffer);
 		safe_unpack16(&limit_set.qos, buffer);
 
@@ -2054,18 +2051,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->warn_signal  = warn_signal;
 	job_ptr->warn_time    = warn_time;
 
-	if (!limit_set.max_tres)
-		limit_set.max_tres = xmalloc(
-			sizeof(uint16_t) * slurmctld_tres_cnt);
-
-	if (!limit_set.min_tres)
-		limit_set.min_tres = xmalloc(
-			sizeof(uint16_t) * slurmctld_tres_cnt);
+	if (!limit_set.tres)
+		limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	memcpy(&job_ptr->limit_set, &limit_set,
 	       sizeof(acct_policy_limit_set_t));
-	limit_set.max_tres = NULL;
-	limit_set.min_tres = NULL;
+	limit_set.tres = NULL;
 
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
@@ -2166,8 +2157,7 @@ unpack_error:
 	xfree(gres_used);
 	xfree(resp_host);
 	xfree(licenses);
-	xfree(limit_set.max_tres);
-	xfree(limit_set.min_tres);
+	xfree(limit_set.tres);
 	xfree(mail_user);
 	xfree(name);
 	xfree(nodes);
@@ -5457,9 +5447,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
-	acct_policy_limit_set.max_tres =
-		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
-	acct_policy_limit_set.min_tres =
+	acct_policy_limit_set.tres =
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	*job_pptr = (struct job_record *) NULL;
@@ -5759,8 +5747,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	memcpy(&job_ptr->limit_set, &acct_policy_limit_set,
 	       sizeof(acct_policy_limit_set_t));
-	acct_policy_limit_set.max_tres = NULL;
-	acct_policy_limit_set.min_tres = NULL;
+	acct_policy_limit_set.tres = NULL;
 
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
@@ -5862,8 +5849,7 @@ cleanup_fail:
 		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
-	xfree(acct_policy_limit_set.max_tres);
-	xfree(acct_policy_limit_set.min_tres);
+	xfree(acct_policy_limit_set.tres);
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_BITMAP(req_bitmap);
@@ -7558,8 +7544,7 @@ static void _list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);
 	FREE_NULL_LIST(job_ptr->license_list);
-	xfree(job_ptr->limit_set.max_tres);
-	xfree(job_ptr->limit_set.min_tres);
+	xfree(job_ptr->limit_set.tres);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
@@ -9445,7 +9430,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
 	acct_policy_limit_set_t acct_policy_limit_set;
-	uint16_t min_tres[slurmctld_tres_cnt], max_tres[slurmctld_tres_cnt];
+	uint16_t tres[slurmctld_tres_cnt];
 	bool acct_limit_already_set;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
@@ -9487,26 +9472,19 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	admin = validate_operator(uid);
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
-	acct_policy_limit_set.min_tres = min_tres;
-	acct_policy_limit_set.max_tres = max_tres;
+	acct_policy_limit_set.tres = tres;
 
 	if ((authorized = admin || assoc_mgr_is_user_acct_coord(
 		     acct_db_conn, uid, job_ptr->account))) {
 		/* set up the acct_policy if we are authorized */
-		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-			acct_policy_limit_set.max_tres[tres_pos] =
-				ADMIN_SET_LIMIT;
-			acct_policy_limit_set.min_tres[tres_pos] =
-				ADMIN_SET_LIMIT;
-		}
+		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
+			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
 		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
-	} else {
-		memset(min_tres, 0, sizeof(min_tres));
-		memset(max_tres, 0, sizeof(max_tres));
-	}
+	} else
+		memset(tres, 0, sizeof(tres));
 
 	if ((job_ptr->user_id != uid) && !authorized) {
 		error("Security violation, JOB_UPDATE RPC from uid %d",
@@ -10095,8 +10073,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
 		     save_min_cpus, detail_ptr->min_cpus, job_ptr->job_id);
-		job_ptr->limit_set.min_tres[TRES_ARRAY_CPU] =
-			acct_policy_limit_set.min_tres[TRES_ARRAY_CPU];
+		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
+			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
@@ -10105,8 +10083,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_max_cpus, detail_ptr->max_cpus, job_ptr->job_id);
 		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set.max_tres[TRES_ARRAY_CPU] =
-			acct_policy_limit_set.max_tres[TRES_ARRAY_CPU];
+		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
+			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		update_accounting = true;
 	}
 
@@ -10162,13 +10140,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					 * since if set by a
 					 * super user it be set correctly */
 					job_ptr->limit_set.
-						min_tres[TRES_ARRAY_CPU] =
+						tres[TRES_ARRAY_CPU] =
 						acct_policy_limit_set.
-						min_tres[TRES_ARRAY_CPU];
-					job_ptr->limit_set.
-						max_tres[TRES_ARRAY_CPU] =
-						acct_policy_limit_set.
-						max_tres[TRES_ARRAY_CPU];
+						tres[TRES_ARRAY_CPU];
 				}
 			}
 		}
@@ -10529,8 +10503,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
-			job_ptr->limit_set.max_tres[TRES_ARRAY_MEM] =
-				acct_policy_limit_set.max_tres[TRES_ARRAY_MEM];
+			job_ptr->limit_set.tres[TRES_ARRAY_MEM] =
+				acct_policy_limit_set.tres[TRES_ARRAY_MEM];
 			job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 				(uint64_t)detail_ptr->pn_min_memory;
 			xfree(job_ptr->tres_req_str);

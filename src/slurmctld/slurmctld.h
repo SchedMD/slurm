@@ -554,11 +554,10 @@ typedef struct job_array_struct {
 
 typedef struct {
 	uint16_t max_nodes;
-	uint16_t *max_tres;
 	uint16_t min_nodes;
-	uint16_t *min_tres;
 	uint16_t qos;
 	uint16_t time;
+	uint16_t *tres;
 } acct_policy_limit_set_t;
 
 /*
