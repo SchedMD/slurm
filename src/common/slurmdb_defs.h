@@ -61,6 +61,7 @@ typedef enum {
 	TRES_CPU = 1,
 	TRES_MEM,
 	TRES_ENERGY,
+	TRES_NODE,
 } tres_types_t;
 
 /* These #defines are for the tres_str functions below and should be

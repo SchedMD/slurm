@@ -5575,6 +5575,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
+	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =  job_get_tres_mem(
 		job_desc->pn_min_memory,
@@ -7147,7 +7148,7 @@ void job_time_limit(void)
 extern void job_set_req_tres(
 	struct job_record *job_ptr, bool assoc_mgr_locked)
 {
-	uint32_t cpu_cnt = 0, mem_cnt = 0;
+	uint32_t cpu_cnt = 0, mem_cnt = 0, node_cnt = 0;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -7161,6 +7162,7 @@ extern void job_set_req_tres(
 	job_ptr->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
 
 	if (job_ptr->details) {
+		node_cnt = job_ptr->details->min_nodes;
 		cpu_cnt = job_ptr->details->min_cpus;
 		if (job_ptr->details->pn_min_memory)
 			mem_cnt = job_ptr->details->pn_min_memory;
@@ -7170,6 +7172,16 @@ extern void job_set_req_tres(
 	if (job_ptr->total_cpus)
 		cpu_cnt = job_ptr->total_cpus;
 
+#ifdef HAVE_BG
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NODE_CNT,
+				    &node_cnt);
+#else
+	if (job_ptr->node_cnt)
+		node_cnt = job_ptr->node_cnt;
+#endif
+
+	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] = (uint64_t)mem_cnt;
 
@@ -7178,8 +7190,7 @@ extern void job_set_req_tres(
 				 true);
 
 	gres_set_job_tres_cnt(job_ptr->gres_list,
-			      job_ptr->details ?
-			      job_ptr->details->min_nodes : 0,
+			      node_cnt,
 			      job_ptr->tres_req_cnt,
 			      true);
 
@@ -7215,8 +7226,6 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
 
-	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
-
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
@@ -7224,14 +7233,15 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 #else
 	alloc_nodes = job_ptr->node_cnt;
 #endif
+	job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE] = (uint64_t)alloc_nodes;
 
+	tres_count = (uint64_t)job_ptr->details->pn_min_memory;
 	if (tres_count & MEM_PER_CPU) {
 		tres_count &= (~MEM_PER_CPU);
-		tres_count *= job_ptr->total_cpus;
+		tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
 	} else {
-		tres_count *= (uint64_t)alloc_nodes;
+		tres_count *= job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
 	}
-
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] = tres_count;
 
 	license_set_job_tres_cnt(job_ptr->license_list,

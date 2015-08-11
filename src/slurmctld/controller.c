@@ -2027,6 +2027,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	if (cpu_tres)
 		cpu_tres->count = cluster_cpus;
 
+	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = node_record_count;
+
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }

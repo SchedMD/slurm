@@ -540,6 +540,8 @@ static int _init_tres(void)
 			tres_rec->id = TRES_MEM;
 		else if (!strcasecmp(temp_char, "energy"))
 			tres_rec->id = TRES_ENERGY;
+		else if (!strcasecmp(temp_char, "node"))
+			tres_rec->id = TRES_NODE;
 		else if (!strncasecmp(temp_char, "gres/", 5)) {
 			tres_rec->type[4] = '\0';
 			tres_rec->name = xstrdup(temp_char+5);

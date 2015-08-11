@@ -1974,6 +1974,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->details->pn_min_memory,
 		tres_req_cnt[TRES_ARRAY_CPU],
 		selected_node_cnt);
+	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
+
 	gres_set_job_tres_cnt(job_ptr->gres_list,
 			      selected_node_cnt,
 			      tres_req_cnt,
