@@ -11128,6 +11128,7 @@ extern int
 job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 {
 	struct job_record *job_ptr;
+	uint8_t prolog = 0;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL)
@@ -11140,9 +11141,11 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 		return ESLURM_JOB_PENDING;
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
+	if (job_ptr->details)
+		prolog = job_ptr->details->prolog_running;
 
 	if (job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&
-	    job_ptr->node_bitmap &&
+	    (prolog == 0) && job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		job_ptr->job_state &= (~JOB_CONFIGURING);
 		set_job_alias_list(job_ptr);

@@ -3268,7 +3268,7 @@ static void *_run_prolog(void *arg)
 	}
 	if (job_ptr) {
                 job_ptr->job_state &= ~JOB_CONFIGURING;
-		if (job_ptr->details)
+		if (job_ptr->details && job_ptr->details->prolog_running)
 			job_ptr->details->prolog_running--;
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
