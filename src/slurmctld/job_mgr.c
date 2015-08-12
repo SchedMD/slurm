@@ -3714,6 +3714,11 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->gres_req = NULL;
 	job_ptr_pend->gres_used = NULL;
 
+	job_ptr_pend->limit_set.tres =
+		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+	memcpy(job_ptr_pend->limit_set.tres, job_ptr->limit_set.tres,
+	       sizeof(uint16_t) * slurmctld_tres_cnt);
+
 	_add_job_hash(job_ptr);		/* Sets job_next */
 	_add_job_hash(job_ptr_pend);	/* Sets job_next */
 	_add_job_array_hash(job_ptr);
