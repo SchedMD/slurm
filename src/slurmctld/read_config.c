@@ -134,9 +134,21 @@ static int _compare_hostnames(struct node_record *old_node_table,
 							  struct node_record *node_table,
 							  int node_count);
 
-static bool _is_configured_tres(char *type, char *name);
 
+static bool _is_configured_tres(char *type, char *name)
+{
+	bool valid = false;
+	slurmdb_tres_rec_t tres_rec;
 
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = type;
+	tres_rec.name = name;
+
+	if (assoc_mgr_find_tres_pos(&tres_rec, false) != -1)
+		valid = true;
+
+	return valid;
+}
 
 /* Convert the value of a k=v pair to a double. Inputs are the k=v string and an
  * integer offset representing the start of the value */
@@ -615,28 +627,6 @@ static int _build_all_nodeline_info(void)
 #endif	/* HAVE_BG */
 
 	return rc;
-}
-
-
-static bool _is_configured_tres(char *type, char *name)
-{
-	ListIterator itr = NULL;
-	bool valid = false;
-	slurmdb_tres_rec_t *tres_rec;
-
-	itr = list_iterator_create(cluster_tres_list);
-	while ((tres_rec = list_next(itr))) {
-		if (strcasecmp(type, tres_rec->type))
-		    continue;
-
-		if ((!tres_rec->name) ||  /* cpu, mem, etc. */
-		    (!xstrcmp(name, tres_rec->name))) { /* gres, lic, etc. */
-			valid = true;
-			break;
-		}
-	}
-
-	return valid;
 }
 
 /* Convert a comma delimited list of account names into a NULL terminated

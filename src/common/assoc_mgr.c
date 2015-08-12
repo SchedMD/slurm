@@ -5478,9 +5478,9 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 		    assoc_mgr_tres_array[i]->id == tres_rec->id) {
 			tres_pos = i;
 			break;
-		} else if (!xstrcmp(assoc_mgr_tres_array[i]->type,
+		} else if (!xstrcasecmp(assoc_mgr_tres_array[i]->type,
 				  tres_rec->type) &&
-			 !xstrcmp(assoc_mgr_tres_array[i]->name,
+			 !xstrcasecmp(assoc_mgr_tres_array[i]->name,
 				  tres_rec->name)) {
 			tres_pos = i;
 			break;
