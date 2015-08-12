@@ -637,14 +637,13 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 			return;
 		}
 
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
-		else
+		if (!object->accounting_list ||
+		    !(count = list_count(object->accounting_list)))
 			count = NO_VAL;
 
 		pack32(count, buffer);
 
-		if (count && count != NO_VAL) {
+		if (count != NO_VAL) {
 			itr = list_iterator_create(object->accounting_list);
 			while ((slurmdb_info = list_next(itr))) {
 				slurmdb_pack_cluster_accounting_rec(
@@ -946,12 +945,13 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 			return;
 		}
 
-		if (object->accounting_list)
-			count = list_count(object->accounting_list);
+		if (!object->accounting_list ||
+		    !(count = list_count(object->accounting_list)))
+			count = NO_VAL;
 
 		pack32(count, buffer);
 
-		if (count && count != NO_VAL) {
+		if (count != NO_VAL) {
 			itr = list_iterator_create(object->accounting_list);
 			while ((slurmdb_info = list_next(itr))) {
 				slurmdb_pack_accounting_rec(slurmdb_info,
@@ -960,7 +960,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
+
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
