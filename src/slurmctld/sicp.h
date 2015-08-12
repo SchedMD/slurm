@@ -45,13 +45,13 @@
 
 typedef struct sicp_job {
 	uint32_t job_id;		/* Global job ID */
-	uint16_t job_state;		/* state of the job */
+	uint32_t job_state;		/* state of the job */
 	struct sicp_job *sicp_next;	/* link for hash table */
 	time_t   update_time;		/* Time job last seen */
 } sicp_job_t;
 
 /* For a given inter-cluster job ID, return its state (if found) or NO_VAL */
-extern uint16_t sicp_get_state(uint32_t job_id);
+extern uint32_t sicp_get_state(uint32_t job_id);
 
 /* Start a thread to poll other clusters for inter-cluster job status */
 extern void sicp_init(void);

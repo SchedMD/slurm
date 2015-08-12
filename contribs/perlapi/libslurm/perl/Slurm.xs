@@ -144,7 +144,7 @@ slurm_job_reason_string(slurm_t self, uint32_t inx)
 		RETVAL
 
 char *
-slurm_job_state_string(slurm_t self, uint16_t inx)
+slurm_job_state_string(slurm_t self, uint32_t inx)
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -156,7 +156,7 @@ slurm_job_state_string(slurm_t self, uint16_t inx)
 		RETVAL
 
 char *
-slurm_job_state_string_compact(slurm_t self, uint16_t inx)
+slurm_job_state_string_compact(slurm_t self, uint32_t inx)
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self

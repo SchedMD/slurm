@@ -303,7 +303,7 @@ static int _filter_job_records (void)
 	int filter_cnt = 0;
 	int i;
 	job_info_t *job_ptr = NULL;
-	uint16_t job_base_state;
+	uint32_t job_base_state;
 
 	job_ptr = job_buffer_ptr->job_array;
 	for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
@@ -433,7 +433,7 @@ static char *_build_jobid_str(job_info_t *job_ptr)
 	return result;
 }
 
-static void _cancel_jobid_by_state(uint16_t job_state, int filter_cnt, int *rc)
+static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 {
 	job_cancel_info_t *cancel_info;
 	job_info_t *job_ptr;
@@ -540,7 +540,7 @@ static void _cancel_jobid_by_state(uint16_t job_state, int filter_cnt, int *rc)
 }
 
 static void
-_cancel_jobs_by_state(uint16_t job_state, int filter_cnt, int *rc)
+_cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 {
 	int i, err;
 	job_cancel_info_t *cancel_info;

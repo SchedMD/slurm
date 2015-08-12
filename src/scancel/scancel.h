@@ -58,7 +58,7 @@ typedef struct scancel_options {
 	char *qos;		/* --qos=n, -qn			*/
 	char *reservation;	/* --reservation=n, -Rn		*/
 	uint16_t signal;	/* --signal=n, -sn		*/
-	uint16_t state;		/* --state=n, -tn		*/
+	uint32_t state;		/* --state=n, -tn		*/
 	uid_t user_id;		/* derived from user_name	*/
 	char *user_name;	/* --user=n, -un		*/
 	int verbose;		/* --verbose, -v		*/

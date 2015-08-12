@@ -651,7 +651,7 @@ typedef struct {
 	char *resv_name;
 	uint32_t show_full;
 	time_t start;
-	uint16_t	state;
+	uint32_t state;
 	slurmdb_stats_t stats;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
@@ -792,7 +792,7 @@ typedef struct {
 	uint32_t req_cpufreq_gov;
 	uint32_t requid;
 	time_t start;
-	enum job_states	state;
+	uint32_t state;
 	slurmdb_stats_t stats;
 	uint32_t stepid;	/* job's step number */
 	char *stepname;

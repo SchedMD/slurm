@@ -365,7 +365,7 @@ extern List bg_status_create_kill_job_list(void)
 }
 
 extern void bg_status_process_kill_job_list(List kill_job_list,
-					    uint16_t job_state,
+					    uint32_t job_state,
 					    bool slurmctld_locked)
 {
 	kill_job_struct_t *freeit = NULL;

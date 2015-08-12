@@ -3542,7 +3542,7 @@ extern int slurm_drain_nodes(char *node_list, char *reason, uint32_t reason_uid)
  * NOTE: This is utilzed by plugins and not via RPC and it sets its
  *      own locks.
  */
-extern int slurm_fail_job(uint32_t job_id, uint16_t job_state)
+extern int slurm_fail_job(uint32_t job_id, uint32_t job_state)
 {
 	int error_code;
 	DEF_TIMERS;

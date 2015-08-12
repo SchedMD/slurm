@@ -53,7 +53,7 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	STORE_FIELD(hv, step_info, step_id, uint32_t);
 	STORE_FIELD(hv, step_info, time_limit, uint32_t);
 	STORE_FIELD(hv, step_info, user_id, uint32_t);
-	STORE_FIELD(hv, step_info, state, uint16_t);
+	STORE_FIELD(hv, step_info, state, uint32_t);
 
 	return 0;
 }
@@ -103,7 +103,7 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	FETCH_FIELD(hv, step_info, step_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, time_limit, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, user_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, step_info, state, uint16_t, TRUE);
+	FETCH_FIELD(hv, step_info, state, uint32_t, TRUE);
 
 	return 0;
 }

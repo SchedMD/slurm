@@ -87,7 +87,7 @@ typedef struct {
 	int32_t priority;
 	uint32_t ncpus;
 	uint32_t ntasks;
-	enum job_states	status;
+	uint32_t status; 		/* job state */
 	int32_t	exitcode;
 	uint32_t elapsed;
 	time_t end;
@@ -105,7 +105,7 @@ typedef struct {
 	uint32_t	stepnum;	/* job's step number */
 	char	        *nodes;
 	char	        *stepname;
-	enum job_states	status;
+	uint32_t 	status; 	/* job state */
 	int32_t	        exitcode;
 	uint32_t	ntasks;
 	uint32_t        ncpus;

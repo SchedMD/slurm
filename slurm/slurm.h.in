@@ -276,23 +276,21 @@ enum job_states {
 	JOB_BOOT_FAIL,		/* terminated due to node boot failure */
 	JOB_END			/* not a real state, last entry in table */
 };
-#define	JOB_STATE_BASE	0x00ff	/* Used for job_states above */
-#define	JOB_STATE_FLAGS	0xff00	/* Used for state flags below */
-#define	JOB_COMPLETING	0x8000	/* Waiting for epilog completion */
-#define	JOB_CONFIGURING	0x4000	/* Allocated nodes booting */
-#define	JOB_RESIZING	0x2000	/* Size of job about to change, flag set
-				 * before calling accounting functions
-				 * immediately before job changes size */
-#define JOB_SPECIAL_EXIT 0x1000 /* Requeue an exit job in hold */
-#define JOB_REQUEUE_HOLD 0x0800 /* Requeue any job in hold */
-#define JOB_REQUEUE      0x0400 /* Requeue job in completing state */
-<<<<<<< HEAD
-#define JOB_STOPPED      0x0200	/* Job is stopped state (holding resources,
-				 * but sent SIGSTOP */
-#define JOB_LAUNCH_FAILED 0x0100
-=======
-#define JOB_UPDATE_DB    0x0200 /* Send job start to database again */
->>>>>>> origin/slurm-14.11
+#define	JOB_STATE_BASE	  0x000000ff	/* Used for job_states above */
+#define	JOB_STATE_FLAGS	  0xffffff00	/* Used for state flags below */
+
+#define JOB_LAUNCH_FAILED 0x00000100
+#define JOB_UPDATE_DB     0x00000200 /* Send job start to database again */
+#define JOB_REQUEUE       0x00000400 /* Requeue job in completing state */
+#define JOB_REQUEUE_HOLD  0x00000800 /* Requeue any job in hold */
+#define JOB_SPECIAL_EXIT  0x00001000 /* Requeue an exit job in hold */
+#define	JOB_RESIZING	  0x00002000 /* Size of job about to change, flag set
+					before calling accounting functions
+					immediately before job changes size */
+#define	JOB_CONFIGURING	  0x00004000 /* Allocated nodes booting */
+#define	JOB_COMPLETING	  0x00008000 /* Waiting for epilog completion */
+#define JOB_STOPPED       0x00010000 /* Job is stopped state (holding resources,
+					but sent SIGSTOP */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
@@ -1424,7 +1422,7 @@ typedef struct job_info {
 	uint32_t group_id;	/* group job submitted as */
 	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
-	uint16_t job_state;	/* state of the job, see enum job_states */
+	uint32_t job_state;	/* state of the job, see enum job_states */
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
@@ -1513,7 +1511,7 @@ typedef struct job_info_msg {
 
 typedef struct sicp_info {
 	uint32_t job_id;
-	uint16_t job_state;
+	uint32_t job_state;
 } sicp_info_t;
 
 typedef struct sicp_info_msg {
@@ -1772,7 +1770,7 @@ typedef struct {
 						* slurm_get_select_jobinfo()
 						*/
 	time_t start_time;	/* step start time */
-	uint16_t state;		/* state of the step, see enum job_states */
+	uint32_t state;		/* state of the step, see enum job_states */
 	uint32_t step_id;	/* step ID */
 	uint32_t task_dist;	/* see enum task_dist_state */
 	uint32_t time_limit;	/* step time limit */

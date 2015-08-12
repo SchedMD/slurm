@@ -1237,7 +1237,7 @@ extern int gs_fini(void)
 extern int gs_job_start(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
-	uint16_t job_state;
+	uint16_t job_sig_state;
 	char *part_name;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -1250,9 +1250,9 @@ extern int gs_job_start(struct job_record *job_ptr)
 	pthread_mutex_lock(&data_mutex);
 	p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 	if (p_ptr) {
-		job_state = _add_job_to_part(p_ptr, job_ptr);
+		job_sig_state = _add_job_to_part(p_ptr, job_ptr);
 		/* if this job is running then check for preemption */
-		if (job_state == GS_RESUME)
+		if (job_sig_state == GS_RESUME)
 			_update_all_active_rows();
 	}
 	pthread_mutex_unlock(&data_mutex);

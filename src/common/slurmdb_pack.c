@@ -3916,7 +3916,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->resvid, buffer);
 		pack32(job->show_full, buffer);
 		pack_time(job->start, buffer);
-		pack16((uint16_t)job->state, buffer);
+		pack32(job->state, buffer);
 		_pack_slurmdb_stats(&job->stats, rpc_version, buffer);
 
 		if (job->steps)
@@ -4136,8 +4136,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->resvid, buffer);
 		safe_unpack32(&job_ptr->show_full, buffer);
 		safe_unpack_time(&job_ptr->start, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		job_ptr->state = uint16_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->state = uint32_tmp;
 		if (_unpack_slurmdb_stats(&job_ptr->stats, rpc_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;

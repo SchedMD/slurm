@@ -85,7 +85,7 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "gid", "int unsigned not null" },
 	{ "group_name", "tinytext not null" },
 	{ "name", "tinytext not null" },
-	{ "state", "smallint not null" },
+	{ "state", "int unsigned not null" },
 	{ "partition", "tinytext not null" },
 	{ "timelimit", "tinytext not null" },
 	{ "starttime", "int unsigned default 0 not null" },
@@ -275,7 +275,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
 		*geometry = NULL, *start = NULL,
 		*blockid = NULL;
-	enum job_states job_state;
+	uint32_t job_state;
 	char *query = NULL;
 	uint32_t time_limit, start_time, end_time;
 
@@ -369,7 +369,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		xstrcat(query, ", start");
 	if (blockid)
 		xstrcat(query, ", blockid");
-	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
+	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %u, %u, "
 		   "'%s', '%s', %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, jname,

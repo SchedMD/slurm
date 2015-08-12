@@ -2257,7 +2257,7 @@ static int _filter_job(job_info_t * job)
 	int filter;
 	ListIterator iterator;
 	uint32_t *user;
-	uint16_t *state_id;
+	uint32_t *state_id;
 	char *account, *license, *qos, *name;
 	squeue_job_step_t *job_step_id;
 

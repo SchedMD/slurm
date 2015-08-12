@@ -2011,7 +2011,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_JOB_SUSPEND: ID:%u STATE:%s",
 	       job_suspend_msg->job_id,
-	       job_state_string((enum job_states) job_suspend_msg->job_state));
+	       job_state_string(job_suspend_msg->job_state));
 
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));

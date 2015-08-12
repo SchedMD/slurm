@@ -611,7 +611,7 @@ struct job_record {
 	struct job_record *job_array_next_j; /* job array linked list by job_id */
 	struct job_record *job_array_next_t; /* job array linked list by task_id */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
-	uint16_t job_state;		/* state of the job */
+	uint32_t job_state;		/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
 					 * node failure */
 	char *licenses;			/* licenses required by the job */
@@ -797,7 +797,7 @@ struct 	step_record {
 	time_t start_time;		/* step allocation start time */
 	uint32_t time_limit;	  	/* step allocation time limit */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
-	uint16_t state;			/* state of the step. See job_states */
+	uint32_t state;			/* state of the step. See job_states */
 	uint32_t step_id;		/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
@@ -1238,7 +1238,7 @@ extern void job_fini (void);
  * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_fail(uint32_t job_id, uint16_t job_state);
+extern int job_fail(uint32_t job_id, uint32_t job_state);
 
 
 /* job_hold_requeue()

@@ -331,7 +331,7 @@ static void _load_sicp_state(void)
 	uint32_t ver_str_len;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t job_id = 0;
-	uint16_t job_state = 0;
+	uint32_t job_state = 0;
 	sicp_job_t *sicp_ptr;
 	time_t buf_time, now;
 
@@ -400,7 +400,7 @@ static void _load_sicp_state(void)
 	now = time(NULL);
 	while (remaining_buf(buffer) > 0) {
 		safe_unpack32(&job_id,    buffer);
-		safe_unpack16(&job_state, buffer);
+		safe_unpack32(&job_state, buffer);
 		sicp_ptr = xmalloc(sizeof(sicp_job_t));
 		sicp_ptr->job_id      = job_id;
 		sicp_ptr->job_state   = job_state;
@@ -465,10 +465,10 @@ extern void sicp_fini(void)
 }
 
 /* For a given inter-cluster job ID, return its state (if found) or NO_VAL */
-extern uint16_t sicp_get_state(uint32_t job_id)
+extern uint32_t sicp_get_state(uint32_t job_id)
 {
 	sicp_job_t *sicp_ptr;
-	uint16_t job_state = (uint16_t) NO_VAL;
+	uint32_t job_state = NO_VAL;
 
 	pthread_mutex_lock(&sicp_lock);
 	sicp_ptr = _find_sicp(job_id);

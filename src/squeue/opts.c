@@ -80,7 +80,7 @@ static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
-static int   _parse_state( char* str, uint16_t* states );
+static int   _parse_state( char* str, uint32_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
 static void _parse_long_token( char *token, char *sep, int *field_size,
@@ -468,13 +468,13 @@ parse_command_line( int argc, char* argv[] )
  * RET 0 or error code
  */
 static int
-_parse_state( char* str, uint16_t* states )
+_parse_state( char* str, uint32_t* states )
 {
-	int i;
+	uint32_t i;
 	char *state_names;
 
 	if ((i = job_state_num(str)) >= 0) {
-		*states = (uint16_t) i;
+		*states = i;
 		return SLURM_SUCCESS;
 	}
 
@@ -1566,7 +1566,7 @@ _print_options(void)
 	int i;
 	char *license, *name, *part;
 	uint32_t *user;
-	enum job_states *state_id;
+	uint32_t *state_id;
 	squeue_job_step_t *job_step_id;
 	char hostlist[8192];
 
@@ -1757,7 +1757,7 @@ _build_state_list( char* str )
 {
 	List my_list;
 	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
-	uint16_t *state_id = NULL;
+	uint32_t *state_id = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -1769,7 +1769,7 @@ _build_state_list( char* str )
 	state = strtok_r( my_state_list, ",", &tmp_char );
 	while (state)
 	{
-		state_id = xmalloc( sizeof( uint16_t ) );
+		state_id = xmalloc( sizeof( uint32_t ) );
 		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
 			exit( 1 );
 		list_append( my_list, state_id );
@@ -1779,11 +1779,11 @@ _build_state_list( char* str )
 
 }
 
-static void _append_state_list(List my_list, uint16_t state_id)
+static void _append_state_list(List my_list, uint32_t state_id)
 {
 	uint16_t *state_rec;
 
-	state_rec = xmalloc(sizeof(uint16_t));
+	state_rec = xmalloc(sizeof(uint32_t));
 	*state_rec = state_id;
 	list_append(my_list, state_rec);
 }
@@ -1796,7 +1796,7 @@ static List
 _build_all_states_list( void )
 {
 	List my_list;
-	uint16_t i;
+	uint32_t i;
 
 	my_list = list_create( NULL );
 	for (i = 0; i < JOB_END; i++)

@@ -845,7 +845,7 @@ typedef struct composite_msg {
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t step_id;
-	uint16_t job_state;
+	uint32_t job_state;
 	uint32_t job_uid;
 	time_t   time;		/* slurmctld's time of request */
 	time_t   start_time;	/* time of job start, track job requeue */
@@ -1350,9 +1350,9 @@ extern uint16_t bb_state_num(char *tok);
 extern char *health_check_node_state_str(uint32_t node_state);
 
 extern char *job_reason_string(enum job_state_reason inx);
-extern char *job_state_string(uint16_t inx);
-extern char *job_state_string_compact(uint16_t inx);
-extern int   job_state_num(const char *state_name);
+extern char *job_state_string(uint32_t inx);
+extern char *job_state_string_compact(uint32_t inx);
+extern uint32_t job_state_num(const char *state_name);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);
 

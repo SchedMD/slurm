@@ -1167,7 +1167,7 @@ extern int do_basil_release(struct job_record *job_ptr)
 	 *             stepdmgr, where job_state == NO_VAL is used to
 	 *             distinguish the context from that of slurmctld.
 	 */
-	if (job_ptr->job_state == (uint16_t)NO_VAL &&
+	if (job_ptr->job_state == NO_VAL &&
 	    (get_basil_version() >= BV_4_0)) {
 		int sleeptime = 1;
 

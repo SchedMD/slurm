@@ -261,7 +261,7 @@ typedef struct dbd_job_comp_msg {
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	uint32_t job_id;	/* job ID */
-	uint16_t job_state;	/* job state */
+	uint32_t job_state;	/* job state */
 	char *   nodes;		/* hosts allocated to the job */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* job start time */
@@ -285,7 +285,7 @@ typedef struct dbd_job_start_msg {
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
-	uint16_t job_state;	/* job state */
+	uint32_t job_state;	/* job state */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts
@@ -323,7 +323,7 @@ typedef struct dbd_job_suspend_msg {
 	uint32_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID needed to find job record
 				 * in db */
-	uint16_t job_state;	/* job state */
+	uint32_t job_state;	/* job state */
 	time_t   submit_time;	/* job submit time needed to find job record
 				 * in db */
 	time_t   suspend_time;	/* job suspend or resume time */

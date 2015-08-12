@@ -3213,7 +3213,20 @@ extern void
 slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 			       uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->db_index, buffer);
+		pack32(msg->derived_ec, buffer);
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_state, buffer);
+		packstr(msg->nodes, buffer);
+		pack32(msg->req_uid, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->submit_time, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->db_index, buffer);
@@ -3234,10 +3247,11 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 				 uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
@@ -3245,7 +3259,21 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpack_time(&msg_ptr->end_time, buffer);
 		safe_unpack32(&msg_ptr->exit_code, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpack32(&msg_ptr->job_state, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->submit_time, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->derived_ec, buffer);
+		safe_unpack_time(&msg_ptr->end_time, buffer);
+		safe_unpack32(&msg_ptr->exit_code, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg_ptr->job_state = uint16_tmp;
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
@@ -3283,7 +3311,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		packstr(msg->gres_req, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
-		pack16(msg->job_state, buffer);
+		pack32(msg->job_state, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->node_inx, buffer);
@@ -3372,6 +3400,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 			      uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	uint32_t count = NO_VAL;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
@@ -3400,7 +3429,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
@@ -3442,7 +3471,8 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg_ptr->job_state = uint16_tmp;
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
@@ -3480,7 +3510,8 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
-		safe_unpack16(&msg_ptr->job_state, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg_ptr->job_state = uint16_tmp;
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
@@ -3547,26 +3578,46 @@ extern void
 slurmdbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
 			      uint16_t rpc_version, Buf buffer)
 {
-	pack32(msg->assoc_id, buffer);
-	pack32(msg->db_index, buffer);
-	pack32(msg->job_id, buffer);
-	pack16(msg->job_state, buffer);
-	pack_time(msg->submit_time, buffer);
-	pack_time(msg->suspend_time, buffer);
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_state, buffer);
+		pack_time(msg->submit_time, buffer);
+		pack_time(msg->suspend_time, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack32(msg->job_id, buffer);
+		pack16(msg->job_state, buffer);
+		pack_time(msg->submit_time, buffer);
+		pack_time(msg->suspend_time, buffer);
+	}
 }
 
 extern int
 slurmdbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg,
 				uint16_t rpc_version, Buf buffer)
 {
+	uint16_t uint16_tmp;
 	dbd_job_suspend_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_suspend_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->assoc_id, buffer);
-	safe_unpack32(&msg_ptr->db_index, buffer);
-	safe_unpack32(&msg_ptr->job_id, buffer);
-	safe_unpack16(&msg_ptr->job_state, buffer);
-	safe_unpack_time(&msg_ptr->submit_time, buffer);
-	safe_unpack_time(&msg_ptr->suspend_time, buffer);
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack32(&msg_ptr->job_state, buffer);
+		safe_unpack_time(&msg_ptr->submit_time, buffer);
+		safe_unpack_time(&msg_ptr->suspend_time, buffer);
+	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		msg_ptr->job_state = uint16_tmp;
+		safe_unpack_time(&msg_ptr->submit_time, buffer);
+		safe_unpack_time(&msg_ptr->suspend_time, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

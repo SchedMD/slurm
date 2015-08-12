@@ -186,7 +186,8 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 /* returns number of objects added to list */
 static int _addto_state_char_list(List char_list, char *names)
 {
-	int i=0, start=0, c;
+	int i=0, start=0;
+	uint32_t c;
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
 	char quote_c = '\0';
@@ -217,7 +218,7 @@ static int _addto_state_char_list(List char_list, char *names)
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					c = job_state_num(name);
-					if (c == -1)
+					if (c == NO_VAL)
 						fatal("unrecognized job "
 						      "state value");
 					xfree(name);

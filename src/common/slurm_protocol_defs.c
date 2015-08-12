@@ -1556,7 +1556,7 @@ extern uint16_t log_string2num(char *name)
 	return (uint16_t) NO_VAL;
 }
 
-extern char *job_state_string(uint16_t inx)
+extern char *job_state_string(uint32_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
@@ -1602,7 +1602,7 @@ extern char *job_state_string(uint16_t inx)
 	}
 }
 
-extern char *job_state_string_compact(uint16_t inx)
+extern char *job_state_string_compact(uint32_t inx)
 {
 	/* Process JOB_STATE_FLAGS */
 	if (inx & JOB_COMPLETING)
@@ -1647,7 +1647,7 @@ extern char *job_state_string_compact(uint16_t inx)
 	}
 }
 
-static bool _job_name_test(int state_num, const char *state_name)
+static bool _job_name_test(uint32_t state_num, const char *state_name)
 {
 	if (!strcasecmp(state_name, job_state_string(state_num)) ||
 	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
@@ -1656,9 +1656,9 @@ static bool _job_name_test(int state_num, const char *state_name)
 	return false;
 }
 
-extern int job_state_num(const char *state_name)
+extern uint32_t job_state_num(const char *state_name)
 {
-	int i;
+	uint32_t i;
 
 	for (i=0; i<JOB_END; i++) {
 		if (_job_name_test(i, state_name))
@@ -1674,7 +1674,7 @@ extern int job_state_num(const char *state_name)
 	if (_job_name_test(JOB_SPECIAL_EXIT, state_name))
 		return JOB_SPECIAL_EXIT;
 
-	return -1;
+	return NO_VAL;
 }
 
 extern char *trigger_res_type(uint16_t res_type)

@@ -2830,7 +2830,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		else
 			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
 		pack32(step_ptr->time_limit, buffer);
-		pack16(step_ptr->state, buffer);
+		pack32(step_ptr->state, buffer);
 
 		pack_time(step_ptr->start_time, buffer);
 		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {

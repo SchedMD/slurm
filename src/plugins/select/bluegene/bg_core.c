@@ -322,7 +322,7 @@ extern bool block_mp_passthrough(bg_record_t *bg_record, int mp_bit)
 
 /* block_state_mutex must be unlocked before calling this. */
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
-			   bool slurmctld_locked, uint16_t job_state,
+			   bool slurmctld_locked, uint32_t job_state,
 			   bool preempted)
 {
 	int rc;

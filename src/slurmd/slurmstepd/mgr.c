@@ -351,7 +351,7 @@ static int _call_select_plugin_from_stepd(stepd_step_rec_t *job,
 	int rc;
 
 	fake_job_record.job_id		= job->jobid;
-	fake_job_record.job_state	= (uint16_t)NO_VAL;
+	fake_job_record.job_state	= NO_VAL;
 	fake_job_record.select_jobinfo	= select_g_select_jobinfo_alloc();
 	select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &job->resv_id);

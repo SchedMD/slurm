@@ -246,7 +246,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
 	char select_buf[128], *state_string, *work_dir;
 	size_t offset = 0, tot_size, wrote;
-	enum job_states job_state;
+	uint32_t job_state;
 	uint32_t time_limit;
 
 	if ((log_name == NULL) || (job_comp_fd < 0)) {

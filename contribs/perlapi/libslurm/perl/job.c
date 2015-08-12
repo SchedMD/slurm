@@ -222,7 +222,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, gres, charp);
 	STORE_FIELD(hv, job_info, group_id, uint32_t);
 	STORE_FIELD(hv, job_info, job_id, uint32_t);
-	STORE_FIELD(hv, job_info, job_state, uint16_t);
+	STORE_FIELD(hv, job_info, job_state, uint32_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
 	STORE_FIELD(hv, job_info, max_cpus, uint32_t);
@@ -359,7 +359,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, gres, charp, FALSE);
 	FETCH_FIELD(hv, job_info, group_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, job_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, job_info, job_state, uint16_t, TRUE);
+	FETCH_FIELD(hv, job_info, job_state, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, licenses, charp, FALSE);
 	FETCH_FIELD(hv, job_info, max_cpus, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, max_nodes, uint32_t, TRUE);

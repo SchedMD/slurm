@@ -1236,6 +1236,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
+	uint32_t job_state;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
@@ -1243,7 +1244,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t array_task_id = NO_VAL;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
-	uint16_t job_state, details, batch_flag, step_flag;
+	uint16_t details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, ckpt_interval;
@@ -1253,6 +1254,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t limit_set_pn_min_memory = 0;
 	uint16_t limit_set_time = 0, limit_set_qos = 0;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
+	uint16_t uint16_tmp;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -1344,7 +1346,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&tot_sus_time, buffer);
 
 		safe_unpack16(&direct_set_prio, buffer);
-		safe_unpack16(&job_state, buffer);
+		safe_unpack32(&job_state, buffer);
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
@@ -1529,7 +1531,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&tot_sus_time, buffer);
 
 		safe_unpack16(&direct_set_prio, buffer);
-		safe_unpack16(&job_state, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job_state = uint16_tmp;
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
@@ -1702,7 +1705,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&tot_sus_time, buffer);
 
 		safe_unpack16(&direct_set_prio, buffer);
-		safe_unpack16(&job_state, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job_state = uint16_tmp;
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
@@ -2845,7 +2849,7 @@ extern int kill_job_by_part_name(char *part_name)
 			continue;
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
-			enum job_states suspend_job_state = job_ptr->job_state;
+			uint32_t suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
 			 * accounting stuff.
 			 */
@@ -2924,7 +2928,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 			continue;	/* no match on node name */
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
-			enum job_states suspend_job_state = job_ptr->job_state;
+			uint32_t suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
 			 * accounting stuff.
 			 */
@@ -3152,7 +3156,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if (nonstop_ops.node_fail)
 			(nonstop_ops.node_fail)(job_ptr, node_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr)) {
-			enum job_states suspend_job_state = job_ptr->job_state;
+			uint32_t suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
 			 * accounting stuff.
 			 */
@@ -4099,7 +4103,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
  * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_fail(uint32_t job_id, uint16_t job_state)
+extern int job_fail(uint32_t job_id, uint32_t job_state)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -4114,7 +4118,7 @@ extern int job_fail(uint32_t job_id, uint16_t job_state)
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 	if (IS_JOB_SUSPENDED(job_ptr)) {
-		enum job_states suspend_job_state = job_ptr->job_state;
+		uint32_t suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
@@ -4705,7 +4709,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
-		enum job_states suspend_job_state = job_ptr->job_state;
+		uint32_t suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
@@ -7631,7 +7635,7 @@ extern void pack_all_sicp(char **buffer_ptr, int *buffer_size,
 			continue;
 
 		pack32(job_ptr->job_id,    buffer);
-		pack16(job_ptr->job_state, buffer);
+		pack32(job_ptr->job_state, buffer);
 		jobs_packed++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -7833,7 +7837,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->group_id, buffer);
 		pack32(dump_job_ptr->profile,  buffer);
 
-		pack16(dump_job_ptr->job_state,    buffer);
+		pack32(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);
 		pack16(dump_job_ptr->state_reason, buffer);
 		pack8(dump_job_ptr->power_flags,   buffer);
@@ -13143,7 +13147,7 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
-		enum job_states suspend_job_state = job_ptr->job_state;
+		uint32_t suspend_job_state = job_ptr->job_state;
 		/* we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */

@@ -657,7 +657,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 					  struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
-	uint16_t job_state;
+	uint32_t job_state;
 	int duration;
 	uint32_t exit_code;
 

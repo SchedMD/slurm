@@ -2543,7 +2543,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 	char *uname;
 	char tmp_char[50], tmp_nodes[50], tmp_time[50];
 	GtkTreeIter iter;
-	enum job_states state;
+	uint32_t state;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 
@@ -2676,7 +2676,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	char tmp_step_id[40], tmp_job_id[400];
-	enum job_states state;
+	uint32_t state;
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
@@ -3933,7 +3933,7 @@ display_it:
 		bool *color_set_flag = xmalloc(sizeof(bool) * array_size);
 		itr = list_iterator_create(info_list);
 		while ((sview_job_info_ptr = list_next(itr))) {
-			uint16_t base_state;
+			uint32_t base_state;
 			job_ptr = sview_job_info_ptr->job_ptr;
 			base_state = job_ptr->job_state & JOB_STATE_BASE;
 			if (base_state != JOB_RUNNING)

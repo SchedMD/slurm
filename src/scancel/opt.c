@@ -122,7 +122,7 @@ static bool _opt_verify(void);
 static void _xlate_job_step_ids(char **rest);
 
 /* translate job state name to number */
-static uint16_t _xlate_state_name(const char *state_name, bool env_var);
+static uint32_t _xlate_state_name(const char *state_name, bool env_var);
 
 /* translate name name to number */
 static uint16_t _xlate_signal_name(const char *signal_name);
@@ -188,13 +188,13 @@ extern bool has_job_steps(void)
 	return false;
 }
 
-static uint16_t
+static uint32_t
 _xlate_state_name(const char *state_name, bool env_var)
 {
-	int i = job_state_num(state_name);
+	uint32_t i = job_state_num(state_name);
 
 	if (i >= 0)
-		return (uint16_t) i;
+		return i;
 
 	if (env_var) {
 		fprintf(stderr, "Unrecognized SCANCEL_STATE value: %s\n",

@@ -249,7 +249,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	int reinit = 0;
 	time_t begin_time, check_time, start_time, submit_time;
 	uint32_t wckeyid = 0;
-	int job_state, node_cnt = 0;
+	uint32_t job_state;
+	int node_cnt = 0;
 	uint32_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 
