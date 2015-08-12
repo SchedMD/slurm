@@ -516,23 +516,21 @@ static int _convert_assoc_table(mysql_conn_t *mysql_conn, char *cluster_name)
 	int rc;
 
 	query = xstrdup_printf(
-		"update \"%s_%s\" set grp_tres=concat("
-		"if(grp_cpus is not null, concat('%d=', grp_cpus), ''), "
-		"if(grp_mem is not null, concat(if(grp_cpus is not null, "
-		"',%d=', '%d='), grp_mem), '')), "
-		"grp_tres_mins=concat(if(grp_cpu_mins is not null, "
-		"concat('%d=', grp_cpu_mins), ''), ''), "
-		"grp_tres_run_mins=concat(if(grp_cpu_run_mins is not null, "
-		"concat('%d=', grp_cpu_run_mins), ''), ''), "
-		"max_tres_pj=concat(if(max_cpus_pj is not null, "
-		"concat('%d=', max_cpus_pj), ''), ''), "
-		"max_tres_mins_pj=concat(if(max_cpu_mins_pj is not null, "
-		"concat('%d=', max_cpu_mins_pj), ''), ''), "
-		"max_tres_run_mins=concat(if(max_cpu_run_mins is not null, "
-		"concat('%d=', max_cpu_run_mins), ''), '');",
+		"update \"%s_%s\" set grp_tres=concat_ws(',', "
+		"concat('%d=', grp_cpus), concat('%d=', grp_mem), "
+		"concat('%d=', grp_nodes)), "
+		"grp_tres_mins=concat_ws(',', concat('%d=', grp_cpu_mins)), "
+		"grp_tres_run_mins=concat_ws(',', "
+		"concat('%d=', grp_cpu_run_mins)), "
+		"max_tres_pj=concat_ws(',', concat('%d=', max_cpus_pj), "
+		"concat('%d=', max_nodes_pj)), "
+		"max_tres_mins_pj=concat_ws(',', "
+		"concat('%d=', max_cpu_mins_pj)), "
+		"max_tres_run_mins=concat_ws(',', "
+		"concat('%d=', max_cpu_run_mins)); ",
 		cluster_name, assoc_table,
-		TRES_CPU, TRES_MEM, TRES_MEM, TRES_CPU, TRES_CPU,
-		TRES_CPU, TRES_CPU, TRES_CPU);
+		TRES_CPU, TRES_MEM, TRES_NODE, TRES_CPU, TRES_CPU,
+		TRES_CPU, TRES_NODE, TRES_CPU, TRES_CPU);
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
 		error("Can't convert assoc_table for %s: %m", cluster_name);
@@ -547,28 +545,25 @@ static int _convert_qos_table(mysql_conn_t *mysql_conn)
 	int rc;
 
 	query = xstrdup_printf(
-		"update %s set grp_tres=concat("
-		"if(grp_cpus is not null, concat('%d=', grp_cpus), ''), "
-		"if(grp_mem is not null, concat(if(grp_cpus is not null, "
-		"',%d=', '%d='), grp_mem), '')), "
-		"grp_tres_mins=concat(if(grp_cpu_mins is not null, "
-		"concat('%d=', grp_cpu_mins), ''), ''), "
-		"grp_tres_run_mins=concat(if(grp_cpu_run_mins is not null, "
-		"concat('%d=', grp_cpu_run_mins), ''), ''), "
-		"max_tres_pj=concat(if(max_cpus_per_job is not null, "
-		"concat('%d=', max_cpus_per_job), ''), ''), "
-		"max_tres_pu=concat(if(max_cpus_per_job is not null, "
-		"concat('%d=', max_cpus_per_user), ''), ''), "
-		"min_tres_pj=concat(if(min_cpus_per_job is not null, "
-		"concat('%d=', min_cpus_per_job), ''), ''), "
-		"max_tres_mins_pj=concat(if(max_cpu_mins_per_job is not null, "
-		"concat('%d=', max_cpu_mins_per_job), ''), ''), "
-		"max_tres_run_mins_pu=concat(if(max_cpu_run_mins_per_user "
-		"is not null, "
-		"concat('%d=', max_cpu_run_mins_per_user), ''), '');",
+		"update %s set grp_tres=concat_ws(',', "
+		"concat('%d=', grp_cpus), concat('%d=', grp_mem), "
+		"concat('%d=', grp_nodes)), "
+		"grp_tres_mins=concat_ws(',', concat('%d=', grp_cpu_mins)), "
+		"grp_tres_run_mins=concat_ws(',', "
+		"concat('%d=', grp_cpu_run_mins)), "
+		"max_tres_pj=concat_ws(',', concat('%d=', max_cpus_per_job), "
+		"concat('%d=', max_nodes_per_job)), "
+		"max_tres_pu=concat_ws(',', concat('%d=', max_cpus_per_user), "
+		"concat('%d=', max_nodes_per_user)), "
+		"min_tres_pj=concat_ws(',', concat('%d=', min_cpus_per_job)), "
+		"max_tres_mins_pj=concat_ws(',', "
+		"concat('%d=', max_cpu_mins_per_job)), "
+		"max_tres_run_mins_pu=concat_ws(',', "
+		"concat('%d=', max_cpu_run_mins_per_user)); ",
 		qos_table,
-		TRES_CPU, TRES_MEM, TRES_MEM, TRES_CPU, TRES_CPU,
-		TRES_CPU, TRES_CPU, TRES_CPU, TRES_CPU, TRES_CPU);
+		TRES_CPU, TRES_MEM, TRES_NODE, TRES_CPU, TRES_CPU,
+		TRES_CPU, TRES_NODE, TRES_CPU, TRES_NODE, TRES_CPU,
+		TRES_CPU, TRES_CPU);
 	debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
 		error("Can't convert qos_table: %m");
