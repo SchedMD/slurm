@@ -481,7 +481,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	FREE_NULL_LIST(print_fields_list);
 	if (add)
 		rc = acct_storage_g_add_assocs(db_conn,
-						     my_uid, assoc_list);
+					       my_uid, assoc_list);
 	printf("--------------------------------------------------------------\n\n");
 
 	return rc;

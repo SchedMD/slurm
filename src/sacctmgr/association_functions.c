@@ -617,8 +617,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 }
 
 extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
-					   print_field_t *field, List tree_list,
-					   bool last)
+				     print_field_t *field, List tree_list,
+				     bool last)
 {
 	char *print_acct = NULL;
 	char *tmp_char = NULL;
