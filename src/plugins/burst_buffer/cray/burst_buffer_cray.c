@@ -2288,22 +2288,14 @@ extern int bb_p_reconfig(void)
 extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
-	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
-	offset = get_buf_offset(buffer);
-	pack32(rec_count,        buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.private_data == 0)
-		uid = 0;	/* User can see all data */
+		uid = 0;	/* Any user can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
-	if (rec_count != 0) {
-		eof = get_buf_offset(buffer);
-		set_buf_offset(buffer, offset);
-		pack32(rec_count, buffer);
-		set_buf_offset(buffer, eof);
-	}
+	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.debug_flag) {
 		debug("%s: %s: record_count:%u",
 		      plugin_type,  __func__, rec_count);

@@ -2977,16 +2977,22 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 {
 	int i, j, k;
+	burst_buffer_gres_t *bb_gres_ptr;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
-	burst_buffer_gres_t *bb_gres_ptr;
 
 	if (msg) {
 		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
 		     i < msg->record_count; i++, bb_info_ptr++) {
 			xfree(bb_info_ptr->allow_users);
+			xfree(bb_info_ptr->create_buffer);
 			xfree(bb_info_ptr->deny_users);
+			xfree(bb_info_ptr->destroy_buffer);
 			xfree(bb_info_ptr->get_sys_state);
+			for (k = 0, bb_gres_ptr = bb_info_ptr->gres_ptr;
+			     k < bb_info_ptr->gres_cnt; k++, bb_gres_ptr++) {
+				xfree(bb_info_ptr->name);
+			}
 			xfree(bb_info_ptr->gres_ptr);
 			xfree(bb_info_ptr->name);
 			xfree(bb_info_ptr->start_stage_in);
@@ -2995,7 +3001,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 			xfree(bb_info_ptr->stop_stage_out);
 			for (j = 0,
 			     bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
-			     j < bb_info_ptr->record_count;
+			     j < bb_info_ptr->buffer_count;
 			     j++, bb_resv_ptr++) {
 				for (k = 0, bb_gres_ptr = bb_resv_ptr->gres_ptr;
 				     k < bb_resv_ptr->gres_cnt;
@@ -3009,6 +3015,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 				xfree(bb_resv_ptr->qos);
 			}
 			xfree(bb_info_ptr->burst_buffer_resv_ptr);
+			xfree(bb_info_ptr->burst_buffer_use_ptr);
 		}
 		xfree(msg->burst_buffer_array);
 		xfree(msg);

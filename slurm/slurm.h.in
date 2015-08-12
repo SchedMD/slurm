@@ -4549,10 +4549,18 @@ typedef struct {
 	uint32_t user_id;
 } burst_buffer_resv_t;
 
+
+typedef struct {
+	uint32_t user_id;
+	uint64_t used;
+} burst_buffer_use_t;
+
 typedef struct {
 	char *allow_users;
 	char *default_pool;		/* Name of default pool to use */
+	char *create_buffer;
 	char *deny_users;
+	char *destroy_buffer;
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
@@ -4573,8 +4581,11 @@ typedef struct {
 	uint64_t used_space;		/* In bytes */
 	uint64_t user_size_limit;	/* In bytes or NO_VAL */
 
-	uint32_t  record_count;
+	uint32_t  buffer_count;
 	burst_buffer_resv_t *burst_buffer_resv_ptr;
+
+	uint32_t  use_count;
+	burst_buffer_use_t *burst_buffer_use_ptr;
 } burst_buffer_info_t;
 
 typedef struct {

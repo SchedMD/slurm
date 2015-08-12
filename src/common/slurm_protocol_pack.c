@@ -10942,6 +10942,7 @@ static int _unpack_burst_buffer_info_msg(
 	burst_buffer_info_msg_t *bb_msg_ptr = NULL;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
+	burst_buffer_use_t  *bb_use_ptr;
 	uint32_t uint32_tmp;
 
 	bb_msg_ptr = xmalloc(sizeof(burst_buffer_info_msg_t));
@@ -10951,13 +10952,16 @@ static int _unpack_burst_buffer_info_msg(
 	for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
 	     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 		safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp, buffer);
-		safe_unpack32(&bb_info_ptr->record_count, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->allow_users, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->create_buffer,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->default_pool,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->deny_users, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&bb_info_ptr->destroy_buffer,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
 				       buffer);
 		safe_unpack64(&bb_info_ptr->granularity, buffer);
@@ -10990,11 +10994,13 @@ static int _unpack_burst_buffer_info_msg(
 		safe_unpack64(&bb_info_ptr->total_space, buffer);
 		safe_unpack64(&bb_info_ptr->used_space, buffer);
 		safe_unpack64(&bb_info_ptr->user_size_limit, buffer);
+
+		safe_unpack32(&bb_info_ptr->buffer_count, buffer);
 		bb_info_ptr->burst_buffer_resv_ptr =
 			xmalloc(sizeof(burst_buffer_resv_t) *
-				bb_info_ptr->record_count);
+				bb_info_ptr->buffer_count);
 		for (j = 0, bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
-		     j < bb_info_ptr->record_count; j++, bb_resv_ptr++) {
+		     j < bb_info_ptr->buffer_count; j++, bb_resv_ptr++) {
 			safe_unpackstr_xmalloc(&bb_resv_ptr->account,
 					       &uint32_tmp, buffer);
 			safe_unpack32(&bb_resv_ptr->array_job_id, buffer);
@@ -11020,6 +11026,16 @@ static int _unpack_burst_buffer_info_msg(
 			safe_unpack16(&bb_resv_ptr->state, buffer);
 			safe_unpack_time(&bb_resv_ptr->state_time, buffer);
 			safe_unpack32(&bb_resv_ptr->user_id, buffer);
+		}
+
+		safe_unpack32(&bb_info_ptr->use_count, buffer);
+		bb_info_ptr->burst_buffer_use_ptr =
+			xmalloc(sizeof(burst_buffer_use_t) *
+				bb_info_ptr->use_count);
+		for (j = 0, bb_use_ptr = bb_info_ptr->burst_buffer_use_ptr;
+		     j < bb_info_ptr->use_count; j++, bb_use_ptr++) {
+			safe_unpack64(&bb_use_ptr->used, buffer);
+			safe_unpack32(&bb_use_ptr->user_id, buffer);
 		}
 	}
 	*burst_buffer_info = bb_msg_ptr;
