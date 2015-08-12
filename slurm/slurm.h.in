@@ -1403,6 +1403,7 @@ typedef struct job_info {
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
+	double cpu_equiv;	/* cpu equivalents cache. updated upon resize */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */

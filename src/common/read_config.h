@@ -251,6 +251,7 @@ typedef struct slurm_conf_partition {
 	char *alternate;	/* name of alternate partition */
 	uint16_t cr_type;	/* Custom CR values for partition (supported
 				 * by select/cons_res plugin only) */
+	char *charge_rate;	/* per resource charge rates */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */
@@ -291,6 +292,11 @@ typedef struct {
 	char *name;
 	char *value;
 } config_key_pair_t;
+
+typedef struct {
+	char *name;
+	double value;
+} config_key_double_pair_t;
 
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
 extern void destroy_frontend(void *ptr);
@@ -563,6 +569,12 @@ extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
 				  Buf buffer);
 extern int sort_key_pairs(void *v1, void *v2);
+extern void destroy_config_key_double_pair(void *object);
+extern void pack_config_key_double_pair(void *in, uint16_t rpc_version,
+					Buf buffer);
+extern int unpack_config_key_double_pair(void **object, uint16_t rpc_version,
+					 Buf buffer);
+extern int sort_key_double_pairs(void *v1, void *v2);
 /*
  * Return the pathname of the extra .conf file
  * return value must be xfreed

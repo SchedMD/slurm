@@ -4050,6 +4050,43 @@ Partition name of alternate partition to be used if the state of this partition
 is "DRAIN" or "INACTIVE."
 
 .TP
+\fBChargeRate\fR
+The ChargeRate is used to define a CPU Equivalent that is multiplied by time
+when calculating the usage of a job.  Different charge rates may be specified
+per resource type; the CPU equivalent is the MAX() of the charges.
+
+Charge rates are specified as a comma-separated list of
+\fIResourceType\fR=\fIResourceChargeRate\fR pairs. The job's quantity of
+\fIResourceType\fR is multiplied by the corresponding
+\fIResourceChargeRate\fR (floating point).  For example, when a job
+is allocated 1 CPU core and 8 GB of memory and the partition is configured with
+ChargeRate="CPU=1.0,MemGB=0.25,GRES:gpu=2.0", the CPU equivalent is
+MAX(1*1.0, 8*0.25, 0*2.0) = 2.0
+
+The CPU charge rate defaults to 1.0 and all others to 0.0. Available resource
+types include:
+
+.RS
+.TP 10
+\fBCPU\fP
+Charge per allocated CPU. Charge rates other than 1.0 can be used to charge
+more or less for CPUs in a partition that are considered to be more or less
+capable than those in other partitions.
+.TP
+\fBMemGB\fP
+Charge per allocated GB of memory
+.TP
+\fBNode\fP
+Charge per allocated node
+.TP
+\fBGRES:\fR\fI<type>\fR\fB\fP
+Charge per allocated GRES of type \fI<type>\fR
+.TP
+\fBLicense:\fR\fI<type>\fR\fB\fP
+Charge per allocated license of type \fI<type>\fR
+.RE
+
+.TP
 \fBDefault\fR
 If this keyword is set, jobs submitted without a partition
 specification will utilize this partition.

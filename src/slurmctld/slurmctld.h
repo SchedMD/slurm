@@ -317,6 +317,12 @@ struct part_record {
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
 				 * char *allow_qos but used internally */
 	char *alternate; 	/* name of alternate partition */
+	double charge_cpu;	/* charge per allocated CPU */
+	List charge_gres;	/* list of per allocated GRES charges */
+	List charge_lic;	/* list of per allocated license charges */
+	double charge_mem_gb;	/* charge per allocated memory (GB) */
+	double charge_node;	/* charge per allocated node */
+	char *charge_rate;	/* per resource charge rate string */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
@@ -572,6 +578,11 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing (N/A for bluegene
 					 * systems) */
+	double cpu_equiv;		/* CPU equivalents allocated to the job,
+					 * as defined by the partition's charge
+					 * rate. Recalculated upon job resize.
+					 * Cannot be calculated until the job is
+					 * alloocated resources. */
 	uint16_t cr_enabled;            /* specify if Consumable Resources
 					 * is enabled. Needed since CR deals
 					 * with a finer granularity in its

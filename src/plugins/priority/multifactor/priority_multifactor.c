@@ -76,6 +76,9 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
+#include "src/common/gres.h"
+
+#include "src/slurmctld/licenses.h"
 
 #include "fair_tree.h"
 
@@ -670,6 +673,119 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	return slurm_mktime(&last_tm);
 }
 
+
+/*
+ * Calculate CPU equivalents based on partition's defined ChargeRate. If none is
+ * defined, return total_cpus.  This is cached on job_ptr->cpu_equiv and is
+ * updated if the job was resized since the last iteration.
+ */
+static double _cpu_equivalents(struct job_record *job_ptr, time_t start_time)
+{
+	double equiv = 0.0;
+	double charge_mem_mb = 0.0;
+	struct part_record *part_ptr = job_ptr->part_ptr;
+	uint32_t total_memory = 0;
+	uint32_t gres_alloc_count = 0;
+	uint32_t lic_alloc_count = 0;
+	config_key_double_pair_t *charge_pair;
+	ListIterator itr;
+
+	/* Don't recalculate unless the job is new or resized */
+	if ((!fuzzy_equal(job_ptr->cpu_equiv, NO_VAL)) &&
+	    difftime(job_ptr->resize_time, start_time) < 0.0)
+		return job_ptr->cpu_equiv;
+
+	debug3("ChargeRate: job %d is either new or it was resized",
+		job_ptr->job_id);
+
+	/* No charge rate defined. Return CPU count */
+	if (!part_ptr->charge_rate) {
+		job_ptr->cpu_equiv = job_ptr->total_cpus;
+		return job_ptr->cpu_equiv;
+	}
+
+	debug3("ChargeRate: job %d using ChargeRate=\"%s\" from partition %s",
+		job_ptr->job_id, part_ptr->charge_rate,
+		job_ptr->part_ptr->name);
+
+	/* Calculate total memory since it is stored either per node or cpu */
+	if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
+		total_memory = (job_ptr->details->pn_min_memory ^ MEM_PER_CPU) *
+			       job_ptr->total_cpus;
+	else
+		total_memory = job_ptr->details->pn_min_memory *
+			       job_ptr->total_nodes;
+
+	charge_mem_mb = part_ptr->charge_mem_gb / 1024.0l;
+
+	equiv = (double)job_ptr->total_cpus * part_ptr->charge_cpu;
+	equiv = MAX(equiv,
+		    (double)job_ptr->total_nodes * part_ptr->charge_node);
+	equiv = MAX(equiv, (double)total_memory * charge_mem_mb);
+
+	/*
+	 * Potential performance improvement:
+	 * It would likely be lower overhead to iterate through allocated
+	 * gres and maybe licenses first then compare to charge rates
+	 * rather than iterate through all defined charge rates then compare to
+	 * gres and licenses.  Site-specific differences are likely.
+	 *
+	 * It may be very uncommon for per partition per license charges to
+	 * exist but still have licenses requested per job.  It is much more
+	 * likely to define a gres charge but have many jobs that don't request
+	 * gres.  This means that the license code is probably fine for most
+	 * sites but gres may be better or worse the current way depending
+	 * on a site's configuration and job patterns.
+	 */
+
+	/* Calculate for each gres */
+	if(job_ptr->gres_list && !list_is_empty(job_ptr->gres_list)) {
+		itr = list_iterator_create(part_ptr->charge_gres);
+		while ((charge_pair = list_next(itr))) {
+			gres_alloc_count =
+				gres_get_value_by_type(job_ptr->gres_list,
+					charge_pair->name);
+			if(gres_alloc_count > 0) {
+				debug3("ChargeRate: GRES:%s = %d * %f",
+					charge_pair->name, gres_alloc_count,
+					charge_pair->value);
+				equiv = MAX(equiv, gres_alloc_count *
+						(double)charge_pair->value);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	/* Calculate for each license */
+	if(job_ptr->license_list && !list_is_empty(job_ptr->license_list)) {
+		itr = list_iterator_create(part_ptr->charge_lic);
+		while ((charge_pair = list_next(itr))) {
+			lic_alloc_count = lic_get_value_by_type(
+				job_ptr->license_list,
+				charge_pair->name);
+			if(lic_alloc_count > 0) {
+				debug3("ChargeRate: License:%s = %d * %f",
+					charge_pair->name, lic_alloc_count,
+					charge_pair->value);
+				equiv = MAX(equiv, lic_alloc_count *
+					(double)charge_pair->value);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+
+	debug3("ChargeRate: CPU = %d * %f", job_ptr->total_cpus,
+		part_ptr->charge_cpu);
+	debug3("ChargeRate: Node = %d * %f", job_ptr->total_nodes,
+		part_ptr->charge_node);
+	debug3("ChargeRate: Mem (MB) = %d * (%f/1024)", total_memory,
+		part_ptr->charge_mem_gb);
+	debug3("ChargeRate: job %d MAX(...) = %f", job_ptr->job_id, equiv);
+	job_ptr->cpu_equiv = equiv;
+	return equiv;
+}
+
+
 /*
  * Remove previously used time from qos and assocs grp_used_cpu_run_secs.
  *
@@ -859,7 +975,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
 
-	real_decay = run_decay * (double)job_ptr->total_cpus;
+	real_decay = run_decay * _cpu_equivalents(job_ptr, start_period);
 
 	assoc_mgr_lock(&locks);
 	/* Just to make sure we don't make a
