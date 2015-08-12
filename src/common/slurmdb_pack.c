@@ -921,7 +921,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
 
 			pack32(0, buffer);
 			pack16(0, buffer);
@@ -2692,6 +2691,7 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(NO_VAL, buffer);
 		pack32(NO_VAL, buffer);
 		pack32(NO_VAL, buffer);
+		pack16(0, buffer);
 		return;
 	}
 
