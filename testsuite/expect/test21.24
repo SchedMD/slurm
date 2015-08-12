@@ -83,20 +83,17 @@ set pba		pbatch
 set dw		DefaultWCKey
 set wk		WCKeys
 set fs		Fairshare
-set gm		GrpCPUMins
-set gc		GrpCPUs
+set gm		GrpTRESMins
+set gc		GrpTRES
 set gj		GrpJobs
 set gs		GrpSubmitJobs
-set gn		GrpNodes
 set gw		GrpWall
-set mm		MaxCPUMins
-set mp		MaxCPUMinsPerJob
-set mc		MaxCPUs
-set mu		MaxCPUsPerJob
+set mm		MaxTRESMins
+set mp		MaxTRESMinsPerJob
+set mc		MaxTRES
+set mu		MaxTRESPerJob
 set mj		MaxJobs
 set ms		MaxSubmitJobs
-set mn		MaxNodes
-set mnj		MaxNodesPerJob
 set mw		MaxWall
 set md		MaxWallDurationPerJob
 
@@ -108,14 +105,13 @@ array set acct_req {
 	description    appliedacct
 	organization   organization
 	fairshare      5678
-	grpcpumins     5500
-	grpcpus        50
+	grptresmins    cpu=5500
+	grptres        cpu=50,node=530
 	grpjobs        510
 	grpsubmitjobs  520
-	grpnodes       530
 	grpwall        300
-	maxcpus        540
-	maxcpumins     550000
+	maxtres        cpu=540,node=570
+	maxtresmins    cpu=550000
 	maxjobs        550
 	maxsubmitjobs  560
 	maxnodes       570
@@ -128,16 +124,14 @@ array set acct_req2 {
 	description    theoryacct
 	organization   theoryorg
 	fairshare      4321
-	grpcpumins     4000
-	grpcpus        40
+	grptresmins    cpu=4000
+	grptres        cpu=40,node=430
 	grpjobs        410
-	grpnodes       430
 	grpsubmitjobs  420
 	grpwall        240
-	maxcpumins     420000
-	maxcpus        440
+	maxtresmins    cpu=420000
+	maxtres        cpu=440,node=470
 	maxjobs        450
-	maxnodes       470
 	maxsubmitjobs  460
 	maxwall        280
 }
@@ -149,16 +143,14 @@ array set acct_req3 {
 	description    physicsacct
 	organization   physicsorg
 	fairshare      3240
-	grpcpumins     3300
-	grpcpus        30
+	grptresmins    cpu=3300
+	grptres        cpu=30,node=330
 	grpjobs        310
-	grpnodes       330
 	grpsubmitjobs  320
 	grpwall        180
-	maxcpumins     330000
-	maxcpus        340
+	maxtresmins    cpu=330000
+	maxtres        cpu=340,node=370
 	maxjobs        350
-	maxnodes       370
 	maxsubmitjobs  360
 	maxwall        210
 }
@@ -172,16 +164,14 @@ array set user_req {
 	defaultwckey   hole
 	wckey          latch,stone,turn
 	fairshare      3240
-	grpcpumins     3300
-	grpcpus        30
+	grptresmins    cpu=3300
+	grptres        cpu=30,node=330
 	grpjobs        310
-	grpnodes       330
 	grpsubmitjobs  320
 	grpwall        180
-	maxcpumins     330000
-	maxcpus        340
+	maxtresmins    cpu=330000
+	maxtres        cpu=340,node=370
 	maxjobs        350
-	maxnodes       370
 	maxsubmitjobs  360
 	maxwall        210
 }
@@ -195,16 +185,14 @@ array set user_req2 {
 	defaultwckey   stone
 	wckey          latch,hole,turn
 	fairshare      2375
-	grpcpumins     2000
-	grpcpus        20
+	grptresmins    cpu=2000
+	grptres        cpu=20,node=230
 	grpjobs        210
-	grpnodes       230
 	grpsubmitjobs  220
 	grpwall        120
-	maxcpumins     220000
-	maxcpus        240
+	maxtresmins    cpu=220000
+	maxtres        cpu=240,node=270
 	maxjobs        250
-	maxnodes       270
 	maxsubmitjobs  260
 	maxwall        140
 
@@ -219,16 +207,14 @@ array set user_req3 {
 	defaultwckey   latch
 	wckey          stone,hole,turn
 	fairshare      1000
-	grpcpumins     1100
-	grpcpus        10
+	grptresmins    cpu=1100
+	grptres        cpu=10,node=140
 	grpjobs        120
-	grpnodes       140
 	grpsubmitjobs  130
 	grpwall        60
-	maxcpumins     110000
-	maxcpus        150
+	maxtresmins    cpu=110000
+	maxtres        cpu=150,node=180
 	maxjobs        160
-	maxnodes       180
 	maxsubmitjobs  170
 	maxwall        70
 
@@ -241,15 +227,13 @@ set user_req3(defaultaccount) $ta2
 # Clusters
 array set clus_req {
 	fairshare 6789
-	grpcpus	  60
+	grptres	  cpu=60,node=630
 	grpjob	  610
 	grpsubmit 620
-	grpnodes  630
-	maxcpus   640
-	maxcpumin 660000
+	maxtres   cpu=640,node=670
+	maxtresmin cpu=660000
 	maxjobs   650
 	maxsubmit 660
-	maxnodes  670
 	maxwall   2880
 }
 # I couldn't figure out how to make a variable in an array to = the value of
@@ -416,7 +400,7 @@ while {[gets $tfile line] != -1} {
 	if {![string compare $line "No such file or directory"]} {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code 1
-	} elseif {![string compare $line "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grpcpus):$gj=$clus_req(grpjob):$gn=$clus_req(grpnodes):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxcpumin):$mu=$clus_req(maxcpus):$mj=$clus_req(maxjobs):$mnj=$clus_req(maxnodes):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
+	} elseif {![string compare $line "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
 		send_user "match 1\n"
 		incr matches
 	} elseif {![string compare $line "$par - '$roo'"]} {
@@ -425,32 +409,32 @@ while {[gets $tfile line] != -1} {
 	} elseif {![string compare $line "$usr - '$roo':$dac='$roo':$al='$ala':$fs=1"]} {
 		send_user "match 3\n"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta4':$dsc='$acct_req(description)':$org='$acct_req(organization)':$fs=$acct_req(fairshare):$gm=$acct_req(grpcpumins):$gc=$acct_req(grpcpus):$gj=$acct_req(grpjobs):$gn=$acct_req(grpnodes):$gs=$acct_req(grpsubmitjobs):$gw=$acct_req(grpwall):$mp=$acct_req(maxcpumins):$mu=$acct_req(maxcpus):$mj=$acct_req(maxjobs):$mnj=$acct_req(maxnodes):$ms=$acct_req(maxsubmitjobs):$md=$acct_req(maxwall):$qs='$acct_req(qos)'"]} {
+	} elseif {![string compare $line "$acc - '$ta4':$dsc='$acct_req(description)':$org='$acct_req(organization)':$fs=$acct_req(fairshare):$gm=$acct_req(grptresmins):$gc=$acct_req(grptres):$gj=$acct_req(grpjobs):$gs=$acct_req(grpsubmitjobs):$gw=$acct_req(grpwall):$mp=$acct_req(maxtresmins):$mu=$acct_req(maxtres):$mj=$acct_req(maxjobs):$ms=$acct_req(maxsubmitjobs):$md=$acct_req(maxwall):$qs='$acct_req(qos)'"]} {
 		send_user "match 4\n"
 		incr matches
 	} elseif {![string compare $line "$par - '$ta4'"]} {
 		send_user "match 5\n"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu3':$dac='$user_req(defaultaccount)':$dw='$user_req(defaultwckey)':$al='$user_req(adminlevel)':$wk='$wckey_check':$fs=$user_req(fairshare):$gm=$user_req(grpcpumins):$gc=$user_req(grpcpus):$gj=$user_req(grpjobs):$gn=$user_req(grpnodes):$gs=$user_req(grpsubmitjobs):$gw=$user_req(grpwall):$mp=$user_req(maxcpumins):$mu=$user_req(maxcpus):$mj=$user_req(maxjobs):$mnj=$user_req(maxnodes):$ms=$user_req(maxsubmitjobs):$md=$user_req(maxwall):$qs='$user_req(qos)'"]} {
+	} elseif {![string compare $line "$usr - '$tu3':$dac='$user_req(defaultaccount)':$dw='$user_req(defaultwckey)':$al='$user_req(adminlevel)':$wk='$wckey_check':$fs=$user_req(fairshare):$gm=$user_req(grptresmins):$gc=$user_req(grptres):$gj=$user_req(grpjobs):$gs=$user_req(grpsubmitjobs):$gw=$user_req(grpwall):$mp=$user_req(maxtresmins):$mu=$user_req(maxtres):$mj=$user_req(maxjobs):$ms=$user_req(maxsubmitjobs):$md=$user_req(maxwall):$qs='$user_req(qos)'"]} {
 		# should come through 2 times
 		send_user "match 6\n"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta3':$dsc='$acct_req2(description)':$org='$acct_req2(organization)':$fs=$acct_req2(fairshare):$gm=$acct_req2(grpcpumins):$gc=$acct_req2(grpcpus):$gj=$acct_req2(grpjobs):$gn=$acct_req2(grpnodes):$gs=$acct_req2(grpsubmitjobs):$gw=$acct_req2(grpwall):$mp=$acct_req2(maxcpumins):$mu=$acct_req2(maxcpus):$mj=$acct_req2(maxjobs):$mnj=$acct_req2(maxnodes):$ms=$acct_req2(maxsubmitjobs):$md=$acct_req2(maxwall):$qs='$acct_req2(qos)'"]} {
+	} elseif {![string compare $line "$acc - '$ta3':$dsc='$acct_req2(description)':$org='$acct_req2(organization)':$fs=$acct_req2(fairshare):$gm=$acct_req2(grptresmins):$gc=$acct_req2(grptres):$gj=$acct_req2(grpjobs):$gs=$acct_req2(grpsubmitjobs):$gw=$acct_req2(grpwall):$mp=$acct_req2(maxtresmins):$mu=$acct_req2(maxtres):$mj=$acct_req2(maxjobs):$ms=$acct_req2(maxsubmitjobs):$md=$acct_req2(maxwall):$qs='$acct_req2(qos)'"]} {
 		send_user "match 7\n"
 		incr matches
 	} elseif {![string compare $line "$par - '$ta3'"]} {
 		send_user "match 8\n"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta2':$dsc='$acct_req3(description)':$org='$acct_req3(organization)':$fs=$acct_req3(fairshare):$gm=$acct_req3(grpcpumins):$gc=$acct_req3(grpcpus):$gj=$acct_req3(grpjobs):$gn=$acct_req3(grpnodes):$gs=$acct_req3(grpsubmitjobs):$gw=$acct_req3(grpwall):$mp=$acct_req3(maxcpumins):$mu=$acct_req3(maxcpus):$mj=$acct_req3(maxjobs):$mnj=$acct_req3(maxnodes):$ms=$acct_req3(maxsubmitjobs):$md=$acct_req3(maxwall):$qs='$acct_req3(qos)'"]} {
+	} elseif {![string compare $line "$acc - '$ta2':$dsc='$acct_req3(description)':$org='$acct_req3(organization)':$fs=$acct_req3(fairshare):$gm=$acct_req3(grptresmins):$gc=$acct_req3(grptres):$gj=$acct_req3(grpjobs):$gs=$acct_req3(grpsubmitjobs):$gw=$acct_req3(grpwall):$mp=$acct_req3(maxtresmins):$mu=$acct_req3(maxtres):$mj=$acct_req3(maxjobs):$ms=$acct_req3(maxsubmitjobs):$md=$acct_req3(maxwall):$qs='$acct_req3(qos)'"]} {
 		send_user "match 9\n"
 		incr matches
 	} elseif {![string compare $line "$par - '$ta2'"]} {
 		send_user "match 10\n"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu1':$dac='$user_req3(defaultaccount)':$dw='$user_req3(defaultwckey)':$wk='$wckey_check':$fs=$user_req3(fairshare):$gm=$user_req3(grpcpumins):$gc=$user_req3(grpcpus):$gj=$user_req3(grpjobs):$gn=$user_req3(grpnodes):$gs=$user_req3(grpsubmitjobs):$gw=$user_req3(grpwall):$mp=$user_req3(maxcpumins):$mu=$user_req3(maxcpus):$mj=$user_req3(maxjobs):$mnj=$user_req3(maxnodes):$ms=$user_req3(maxsubmitjobs):$md=$user_req3(maxwall):$qs='$user_req3(qos)'"]} {
+	} elseif {![string compare $line "$usr - '$tu1':$dac='$user_req3(defaultaccount)':$dw='$user_req3(defaultwckey)':$wk='$wckey_check':$fs=$user_req3(fairshare):$gm=$user_req3(grptresmins):$gc=$user_req3(grptres):$gj=$user_req3(grpjobs):$gs=$user_req3(grpsubmitjobs):$gw=$user_req3(grpwall):$mp=$user_req3(maxtresmins):$mu=$user_req3(maxtres):$mj=$user_req3(maxjobs):$ms=$user_req3(maxsubmitjobs):$md=$user_req3(maxwall):$qs='$user_req3(qos)'"]} {
 		send_user "match 11\n"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu2':$dac='$user_req2(defaultaccount)':$dw='$user_req2(defaultwckey)':$al='$user_req2(adminlevel)':$wk='$wckey_check':$fs=$user_req2(fairshare):$gm=$user_req2(grpcpumins):$gc=$user_req2(grpcpus):$gj=$user_req2(grpjobs):$gn=$user_req2(grpnodes):$gs=$user_req2(grpsubmitjobs):$gw=$user_req2(grpwall):$mp=$user_req2(maxcpumins):$mu=$user_req2(maxcpus):$mj=$user_req2(maxjobs):$mnj=$user_req2(maxnodes):$ms=$user_req2(maxsubmitjobs):$md=$user_req2(maxwall):$qs='$user_req2(qos)'"]} {
+	} elseif {![string compare $line "$usr - '$tu2':$dac='$user_req2(defaultaccount)':$dw='$user_req2(defaultwckey)':$al='$user_req2(adminlevel)':$wk='$wckey_check':$fs=$user_req2(fairshare):$gm=$user_req2(grptresmins):$gc=$user_req2(grptres):$gj=$user_req2(grpjobs):$gs=$user_req2(grpsubmitjobs):$gw=$user_req2(grpwall):$mp=$user_req2(maxtresmins):$mu=$user_req2(maxtres):$mj=$user_req2(maxjobs):$ms=$user_req2(maxsubmitjobs):$md=$user_req2(maxwall):$qs='$user_req2(qos)'"]} {
 		# should come through 2 times
 		send_user "match 12\n"
 		incr matches
