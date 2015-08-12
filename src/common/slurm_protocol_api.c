@@ -4466,6 +4466,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 				struct sockaddr_in *p_sin =
 					(struct sockaddr_in *)p_ainfo->ai_addr;
 				s_addr = p_sin->sin_addr.s_addr;
+				freeaddrinfo(p_ainfo);
 			} else
 				fatal("slurm_setup_sockaddr: "
 				      "Can't get hostname or addr: %m");
