@@ -2108,12 +2108,15 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_pj, parent_mtpj,
 			TRES_STR_FLAG_NONE);
+		xfree(parent_mtpj);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_mins_pj, parent_mtmpj,
 			TRES_STR_FLAG_NONE);
+		xfree(parent_mtmpj);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_run_mins, parent_mtrm,
 			TRES_STR_FLAG_NONE);
+		xfree(parent_mtrm);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
