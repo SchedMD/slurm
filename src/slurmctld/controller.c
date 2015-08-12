@@ -227,6 +227,7 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
+static int          _init_tres(void);
 static void         _update_cluster_tres(void);
 
 inline static int   _report_locks_set(void);
@@ -1323,6 +1324,89 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	unlock_slurmctld(job_write_lock);
 }
 
+static int _init_tres(void)
+{
+	char *temp_char = slurm_get_accounting_storage_tres();
+	List char_list;
+	List add_list = NULL;
+	slurmdb_tres_rec_t *tres_rec;
+
+	if (!temp_char) {
+		error("No tres defined, this should never happen");
+		return SLURM_ERROR;
+	}
+
+	char_list = list_create(slurm_destroy_char);
+	slurm_addto_char_list(char_list, temp_char);
+	xfree(temp_char);
+
+	while ((temp_char = list_pop(char_list))) {
+		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+
+		tres_rec->type = temp_char;
+
+		if (!strcasecmp(temp_char, "cpu"))
+			tres_rec->id = TRES_CPU;
+		else if (!strcasecmp(temp_char, "mem"))
+			tres_rec->id = TRES_MEM;
+		else if (!strcasecmp(temp_char, "energy"))
+			tres_rec->id = TRES_ENERGY;
+		else if (!strcasecmp(temp_char, "node"))
+			tres_rec->id = TRES_NODE;
+		else if (!strncasecmp(temp_char, "gres/", 5)) {
+			tres_rec->type[4] = '\0';
+			tres_rec->name = xstrdup(temp_char+5);
+			if (!tres_rec->name)
+				fatal("Gres type tres need to have a name, "
+				      "(i.e. Gres/GPU).  You gave %s",
+				      temp_char);
+		} else if (!strncasecmp(temp_char, "license/", 8)) {
+			tres_rec->type[7] = '\0';
+			tres_rec->name = xstrdup(temp_char+8);
+			if (!tres_rec->name)
+				fatal("License type tres need to "
+				      "have a name, (i.e. License/Foo).  "
+				      "You gave %s",
+				      temp_char);
+		} else {
+			fatal("%s: Unknown tres type '%s', acceptable "
+			      "types are CPU,Gres/,License/,Mem",
+			      __func__, temp_char);
+			xfree(tres_rec->type);
+			xfree(tres_rec);
+		}
+
+		if (!tres_rec->id &&
+		    (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
+					    ACCOUNTING_ENFORCE_TRES, NULL, 0)
+		     != SLURM_SUCCESS)) {
+			if (!add_list)
+				add_list = list_create(
+					slurmdb_destroy_tres_rec);
+			info("Couldn't find tres %s%s%s in the database, "
+			     "creating.",
+			     tres_rec->type, tres_rec->name ? "/" : "",
+			     tres_rec->name ? tres_rec->name : "");
+			list_append(add_list, tres_rec);
+		} else
+			slurmdb_destroy_tres_rec(tres_rec);
+	}
+
+	if (add_list) {
+		if (acct_storage_g_add_tres(acct_db_conn, getuid(), add_list)
+		    != SLURM_SUCCESS)
+			fatal("Problem adding tres to the database, "
+			      "can't continue until database is able to "
+			      "make new tres");
+		/* refresh list here since the updates are not
+		   sent dynamically */
+		assoc_mgr_refresh_lists(acct_db_conn, ASSOC_MGR_CACHE_TRES);
+		FREE_NULL_LIST(add_list);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* any association manager locks should be unlocked before hand */
 static void _update_cluster_tres(void)
 {
@@ -1888,6 +1972,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	if (job_list)
 		num_jobs = list_count(job_list);
 	unlock_slurmctld(job_read_lock);
+
+	_init_tres();
 
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
