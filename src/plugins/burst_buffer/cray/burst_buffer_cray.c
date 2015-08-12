@@ -1487,6 +1487,9 @@ static void *_start_teardown(void *x)
 		     __func__, teardown_args->job_id, TIME_STR);
 	}
 	_log_script_argv(teardown_argv, resp_msg);
+	/* "Teardown" is run at every termination of every job that _might_
+	 * have a burst buffer, so an error of "token not found" should be
+	 * fairly common and not indicative of a problem. */
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
 		error("%s: %s: teardown for job %u status:%u response:%s",
@@ -3134,6 +3137,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 	pthread_t create_tid = 0;
 	create_buf_data_t *create_args;
 	bb_buf_t *buf_ptr;
+	bb_alloc_t *bb_alloc;
 	int i, hash_inx, rc = 0;
 
 	xassert(bb_job);
@@ -3175,7 +3179,33 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			}
 			slurm_attr_destroy(&create_attr);
 		} else if (buf_ptr->destroy && job_ready) { /* Delete the buffer */
+			bb_alloc = bb_find_name_rec(buf_ptr->name,
+						    job_ptr->user_id,
+						    &bb_state);
+			if (!bb_alloc) {
+				/* Ignore request if named buffer not found */
+				info(
+"%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
+				     plugin_type, buf_ptr->name,
+				     job_ptr->job_id);
+				continue;
+			}
 			rc++;
+			if ((bb_alloc->user_id != job_ptr->user_id) &&
+			    !validate_super_user(job_ptr->user_id)) {
+				info(
+"%s: destroy_persistent: Attempt by user %u job %u to destroy buffer %s owned by user %u",
+				     plugin_type, job_ptr->user_id,
+				     job_ptr->job_id, buf_ptr->name,
+				     bb_alloc->user_id);
+				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+				xstrfmtcat(job_ptr->state_desc,
+					   "%s: Delete buffer %s permission denied",
+					   plugin_type, buf_ptr->name);
+				job_ptr->priority = 0;  /* Hold job */
+				continue;
+			}
+
 			bb_job->state = BB_STATE_DELETING;
 			buf_ptr->state = BB_STATE_DELETING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
@@ -3309,7 +3339,7 @@ static void *_create_persistent(void *x)
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: ran for %s", __func__, TIME_STR);
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//FIXME	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 		error("%s: For JobID=%u Name=%s status:%u response:%s",
 		      __func__, create_args->job_id, create_args->name,
@@ -3321,11 +3351,11 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 			      __func__, create_args->job_id);
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+			job_ptr->priority = 0;
 			xfree(job_ptr->state_desc);
-			job_ptr->state_desc = resp_msg;
-			resp_msg = NULL;
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
+			resp_msg = NULL;
 		}
 		_reset_buf_state(create_args->user_id,
 				 create_args->job_id,
@@ -3381,17 +3411,11 @@ static void *_destroy_persistent(void *x)
 		info("%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
-	if ((bb_alloc->user_id != destroy_args->user_id) &&
-	    !validate_super_user(destroy_args->user_id)) {
-		info("%s: destroy_persistent: Attempt by user %u job %u to destroy buffer %s",
-		     plugin_type, destroy_args->user_id, destroy_args->job_id, destroy_args->name);
-//MOVE ERROR HANDLING??
-	}
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
-	script_argv[2] = xstrdup("teardown");	/* "destroy_persistent" to be added to Cray API later */
+	script_argv[2] = xstrdup("teardown");
 	script_argv[3] = xstrdup("--token");	/* name */
 	script_argv[4] = xstrdup(destroy_args->name);
 	script_argv[5] = xstrdup("--job");	/* script */
