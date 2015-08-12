@@ -617,125 +617,6 @@ static int _build_all_nodeline_info(void)
 	return rc;
 }
 
-static int _sort_tres_list(void *v1, void *v2)
-{
-	slurmdb_tres_rec_t *tres_rec_a  = *(slurmdb_tres_rec_t **)v1;
-	slurmdb_tres_rec_t *tres_rec_b  = *(slurmdb_tres_rec_t **)v2;
-
-	if (tres_rec_a->id < tres_rec_b->id)
-		return -1;
-	else if (tres_rec_a->id > tres_rec_b->id)
-		return 1;
-
-	return 0;
-}
-
-static int _init_tres(void)
-{
-	char *temp_char = slurm_get_accounting_storage_tres();
-	List char_list;
-	List add_list = NULL;
-	slurmdb_tres_rec_t *tres_rec;
-
-	if (!temp_char) {
-		error("No tres defined, this should never happen");
-		return SLURM_ERROR;
-	}
-
-	char_list = list_create(slurm_destroy_char);
-	slurm_addto_char_list(char_list, temp_char);
-	xfree(temp_char);
-
-	if (!list_count(char_list)) {
-		FREE_NULL_LIST(char_list);
-		error("TRES list is empty, this should never happen");
-		return SLURM_ERROR;
-	}
-
-	FREE_NULL_LIST(cluster_tres_list);
-	cluster_tres_list = list_create(slurmdb_destroy_tres_rec);
-	while ((temp_char = list_pop(char_list))) {
-		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
-
-		tres_rec->type = temp_char;
-
-		if (!strcasecmp(temp_char, "cpu"))
-			tres_rec->id = TRES_CPU;
-		else if (!strcasecmp(temp_char, "mem"))
-			tres_rec->id = TRES_MEM;
-		else if (!strcasecmp(temp_char, "energy"))
-			tres_rec->id = TRES_ENERGY;
-		else if (!strncasecmp(temp_char, "gres/", 5)) {
-			tres_rec->type[4] = '\0';
-			tres_rec->name = xstrdup(temp_char+5);
-			if (!tres_rec->name)
-				fatal("Gres type tres need to have a name, "
-				      "(i.e. Gres/GPU).  You gave %s",
-				      temp_char);
-		} else if (!strncasecmp(temp_char, "license/", 8)) {
-			tres_rec->type[7] = '\0';
-			tres_rec->name = xstrdup(temp_char+8);
-			if (!tres_rec->name)
-				fatal("License type tres need to "
-				      "have a name, (i.e. License/Foo).  "
-				      "You gave %s",
-				      temp_char);
-		} else {
-			fatal("%s: Unknown tres type '%s', acceptable types are "
-			      "CPU,Gres/,License/,Mem", __func__, temp_char);
-			xfree(tres_rec->type);
-			xfree(tres_rec);
-		}
-
-		if (!tres_rec->id &&
-		    (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
-					    ACCOUNTING_ENFORCE_TRES, NULL, 0)
-		     != SLURM_SUCCESS)) {
-			if (!add_list)
-				add_list = list_create(
-					slurmdb_destroy_tres_rec);
-			info("Couldn't find tres %s%s%s in the database, "
-			     "creating.",
-			     tres_rec->type, tres_rec->name ? "/" : "",
-			     tres_rec->name ? tres_rec->name : "");
-			list_append(add_list, tres_rec);
-		} else
-			list_append(cluster_tres_list, tres_rec);
-	}
-
-	if (add_list) {
-		if (acct_storage_g_add_tres(acct_db_conn, getuid(), add_list)
-		    != SLURM_SUCCESS)
-			fatal("Problem adding tres to the database, "
-			      "can't continue until database is able to "
-			      "make new tres");
-		/* refresh list here since the updates are not
-		   sent dynamically */
-		assoc_mgr_refresh_lists(acct_db_conn, ASSOC_MGR_CACHE_TRES);
-
-		while ((tres_rec = list_pop(add_list))) {
-			if (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
-						   ACCOUNTING_ENFORCE_TRES,
-						   NULL, 0)
-			    != SLURM_SUCCESS) {
-				fatal("Unknown tres %s%s%s after adding.  "
-				      "It appears "
-				      "there may be a problem with the "
-				      "slurmdbd communicating with the "
-				      "slurmctld.",
-				      tres_rec->type,
-				      tres_rec->name ? "/" : "",
-				      tres_rec->name ? tres_rec->name : "");
-			} else
-				list_append(cluster_tres_list, tres_rec);
-		}
-	}
-
-	list_sort(cluster_tres_list, (ListCmpF)_sort_tres_list);
-
-	return SLURM_SUCCESS;
-}
-
 
 static bool _is_configured_tres(char *type, char *name)
 {
@@ -1162,8 +1043,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		return error_code;
 	}
 
-	_init_tres();
-
 	if (layouts_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize the layouts framework");
 
@@ -1182,9 +1061,18 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	if (!reconfig)
+	if (!reconfig) {
 		restore_front_end_state(recover);
 
+		/* currently load/dump_state_lite has to run before
+		 * load_all_job_state. */
+
+		/* load old config */
+		load_config_state_lite();
+
+		/* store new config */
+		dump_config_state_lite();
+	}
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS)
@@ -2075,7 +1963,7 @@ static int _sync_nodes_to_comp_job(void)
 			   plugin and this happens before it is
 			   normally set up so do it now.
 			*/
-			set_cluster_tres();
+			set_cluster_tres(false);
 
 			info("%s: Job %u in completing state",
 			     __func__, job_ptr->job_id);
@@ -2241,6 +2129,9 @@ static int _restore_job_dependencies(void)
 	char *new_depend;
 	bool valid = true;
 	List license_list;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock(&locks);
 
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
@@ -2266,7 +2157,8 @@ static int _restore_job_dependencies(void)
 			}
 		}
 
-		license_list = license_validate(job_ptr->licenses, &valid);
+		license_list = license_validate(job_ptr->licenses,
+						job_ptr->tres_req_cnt, &valid);
 		FREE_NULL_LIST(job_ptr->license_list);
 		if (valid)
 			job_ptr->license_list = license_list;
@@ -2287,6 +2179,9 @@ static int _restore_job_dependencies(void)
 		xfree(new_depend);
 	}
 	list_iterator_destroy(job_iterator);
+
+	assoc_mgr_unlock(&locks);
+
 	return error_code;
 }
 
@@ -2492,19 +2387,19 @@ extern int load_config_state_lite(void)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in last_conf_lite header is %u", ver);
-	if (ver > SLURM_PROTOCOL_VERSION) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURM_MIN_PROTOCOL_VERSION) {
 		error("***********************************************");
 		error("Can not recover last_conf_lite, incompatible version, "
-		      "got %u <= %u", ver, SLURM_PROTOCOL_VERSION);
+		      "(%u not between %d and %d)",
+		      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		return EFAULT;
+	} else {
+		safe_unpack_time(&buf_time, buffer);
+		safe_unpackstr_xmalloc(&last_accounting_storage_type,
+				       &uint32_tmp, buffer);
 	}
-
-	safe_unpack_time(&buf_time, buffer);
-	safe_unpackstr_xmalloc(&last_accounting_storage_type,
-			       &uint32_tmp, buffer);
-
 	xassert(slurmctld_conf.accounting_storage_type);
 
 	if (last_accounting_storage_type

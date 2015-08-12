@@ -184,17 +184,17 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	 * its share. If the account is using more than its share, then this
 	 * job is a candidate. If not, it is NOT a candidate. */
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Preemptor(%u) UsedCPUs:%u Shares: %f Tot_CPU %u "
-		     "TOT: %f",
+		info("%s: Preemptor(%u) UsedCPUs:%"PRIu64
+		     " Shares: %f Tot_CPU %u TOT: %f",
 		     plugin_type, preemptor_job_ptr->job_id,
-		     preemptee_assoc->usage->grp_used_cpus,
+		     preemptee_assoc->usage->grp_used_tres[TRES_ARRAY_CPU],
 		     preemptee_assoc->usage->shares_norm,
 		     preemptor_job_ptr->part_ptr->total_cpus,
 		     (preemptor_job_ptr->part_ptr->total_cpus *
 		      preemptee_assoc->usage->shares_norm));
 	}
 
-	if ((preemptee_assoc->usage->grp_used_cpus >
+	if ((preemptee_assoc->usage->grp_used_tres[TRES_ARRAY_CPU] >
 	     preemptee_assoc->usage->shares_norm *
 	     preemptee_job_ptr->part_ptr->total_cpus) || is_from_same_account) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
@@ -315,7 +315,8 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 	}
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
 
-	if (!job_ptr->limit_set_max_nodes && job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
+	    job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
@@ -409,7 +410,8 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 	preemptor_assoc = (slurmdb_assoc_rec_t *)
 			  preemptor_job_ptr->assoc_ptr;
 	preemptor_temp_fs_ass = _get_job_fs_ass("preemptor", preemptor_job_ptr);
-	preemptor_grp_used_cpu = preemptor_temp_fs_ass->usage->grp_used_cpus;
+	preemptor_grp_used_cpu = preemptor_temp_fs_ass->usage->
+		grp_used_tres[TRES_ARRAY_CPU];
 
 	it = list_iterator_create(preemptee_job_list);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
@@ -423,8 +425,11 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 		preemptee_assoc_id = preemptee_assoc->id;
 		preemptee_temp_fs_ass = _get_job_fs_ass("preemptee",
 							preemptee_job_ptr);
+		/* FIXME: This appears to only work off cpus at the
+		 * moment, probably should work off TRES.
+		 */
 		preemptee_grp_used_cpu = preemptee_temp_fs_ass->usage->
-					 grp_used_cpus;
+					 grp_used_tres[TRES_ARRAY_CPU];
 		preemptee_cpu_cnt = _get_nb_cpus(preemptee_job_ptr);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: Preemptee (%u %s) grp_used_cpu:%u",
@@ -588,12 +593,20 @@ static int _overalloc_test(struct job_record *preemptor,
 
 	shares_preemptee = assoc_preemptee->usage->shares_norm;
 	shares_preemptor = assoc_preemptor->usage->shares_norm;
-	new_usage_preemptee = assoc_preemptee->usage->grp_used_cpus;
-	new_usage_preemptor = assoc_preemptor->usage->grp_used_cpus +
-			      cpu_cnt_preemptor;
 
-	allotment_preemptee = shares_preemptee * preemptee->part_ptr->total_cpus;
-	allotment_preemptor = shares_preemptor * preemptor->part_ptr->total_cpus;
+	/* FIXME: this appears to only work for CPUS at the moment, it
+	 * probably should work for other TRES as well.
+	 */
+	new_usage_preemptee = assoc_preemptee->usage->
+		grp_used_tres[TRES_ARRAY_CPU];
+	new_usage_preemptor = assoc_preemptor->usage->
+		grp_used_tres[TRES_ARRAY_CPU] +
+		cpu_cnt_preemptor;
+
+	allotment_preemptee =
+		shares_preemptee * preemptee->part_ptr->total_cpus;
+	allotment_preemptor =
+		shares_preemptor * preemptor->part_ptr->total_cpus;
 
 	/* Fairshare will be less than 1 if running the job will not overrun
 	 * the share allocation */
@@ -635,11 +648,11 @@ static int _overalloc_test(struct job_record *preemptor,
 		     assoc_preemptor->acct, relation, preemptee->job_id,
 		     preemptee->name, assoc_preemptee->acct,
 		     new_fairshare_preemptor, new_fairshare_preemptor);
-		info("%s:   CPUs Needed: %u and %u  Used CPUS: %u and %u  "
-		     "Shares: %f and %f  CPUsTotal: %u and %u",
+		info("%s:   CPUs Needed: %u and %u  Used CPUS: %"PRIu64
+		     " and %"PRIu64" Shares: %f and %f  CPUsTotal: %u and %u",
 		     plugin_type, cpu_cnt_preemptor, cpu_cnt_preemptee,
-		     assoc_preemptor->usage->grp_used_cpus,
-		     assoc_preemptee->usage->grp_used_cpus,
+		     assoc_preemptor->usage->grp_used_tres[TRES_ARRAY_CPU],
+		     assoc_preemptee->usage->grp_used_tres[TRES_ARRAY_CPU],
 		     shares_preemptor, shares_preemptee,
 		     preemptor->part_ptr->total_cpus,
 		     preemptee->part_ptr->total_cpus);

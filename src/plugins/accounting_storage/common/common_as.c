@@ -188,35 +188,17 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		break;
 	case SLURMDB_ADD_ASSOC:
 		/* We are going to send these to the slurmctld's so
-		   lets set up the correct limits to INIFINITE instead
+		   lets set up the correct limits to INFINITE instead
 		   of NO_VAL */
-		if (assoc->grp_cpu_mins == (uint64_t)NO_VAL)
-			assoc->grp_cpu_mins = (uint64_t)INFINITE;
-		if (assoc->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			assoc->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (assoc->grp_cpus == NO_VAL)
-			assoc->grp_cpus = INFINITE;
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_mem == NO_VAL)
-			assoc->grp_mem = INFINITE;
-		if (assoc->grp_nodes == NO_VAL)
-			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
 			assoc->grp_submit_jobs = INFINITE;
 		if (assoc->grp_wall == NO_VAL)
 			assoc->grp_wall = INFINITE;
 
-		if (assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
-			assoc->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
-			assoc->max_cpu_run_mins = (uint64_t)INFINITE;
-		if (assoc->max_cpus_pj == NO_VAL)
-			assoc->max_cpus_pj = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
-		if (assoc->max_nodes_pj == NO_VAL)
-			assoc->max_nodes_pj = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -229,39 +211,17 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		break;
 	case SLURMDB_ADD_QOS:
 		/* We are going to send these to the slurmctld's so
-		   lets set up the correct limits to INIFINITE instead
+		   lets set up the correct limits to INFINITE instead
 		   of NO_VAL */
-		if (qos->grp_cpu_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpus == NO_VAL)
-			qos->grp_cpus = INFINITE;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_mem == NO_VAL)
-			qos->grp_mem = INFINITE;
-		if (qos->grp_nodes == NO_VAL)
-			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
 			qos->grp_wall = INFINITE;
 
-		if (qos->max_cpu_mins_pj == (uint64_t)NO_VAL)
-			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (qos->max_cpu_run_mins_pu == (uint64_t)NO_VAL)
-			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
-		if (qos->max_cpus_pj == NO_VAL)
-			qos->max_cpus_pj = INFINITE;
-		if (qos->max_cpus_pu == NO_VAL)
-			qos->max_cpus_pu = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
-		if (qos->max_nodes_pj == NO_VAL)
-			qos->max_nodes_pj = INFINITE;
-		if (qos->max_nodes_pu == NO_VAL)
-			qos->max_nodes_pu = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)

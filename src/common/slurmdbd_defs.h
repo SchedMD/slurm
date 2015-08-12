@@ -58,31 +58,6 @@
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
 
-/*
- * SLURMDBD_VERSION in 14.03 this was changed to be the same as
- * SLURM_PROTOCOL_VERSION in 14.03 we can remove all instances of
- * SLURMDBD_*VERSION* SLURMDBD_VERSION was already replaced.
- *
- * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
- *	will accept. Messages being sent to the slurmdbd from commands
- *	or daemons using older versions of the protocol will be
- *	rejected. Increment this value and discard the code processing
- *	that msg_type only after all systems have been upgraded. Don't
- *	remove entries from slurmdbd_msg_type_t or the numbering scheme
- *	will break (the enum value of a msg_type would change).
- *
- * The slurmdbd should be at least as current as any Slurm cluster
- *	communicating with it (e.g. it will not accept messages with a
- *	version higher than SLURM_VERSION).
- *
- * NOTE: These values must be Moved to
- * src/plugins/accounting_storage/mysql/as_mysql_archive.c when we are
- * done here with them since we have to support old version of archive
- * files since they don't update once they are created.
- */
-#define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
-#define SLURMDBD_MIN_VERSION   SLURMDBD_2_6_VERSION
-
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {

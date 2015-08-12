@@ -195,10 +195,12 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xassert(config_ptr);
 	xfree(config_ptr->allow_users);
 	xfree(config_ptr->allow_users_str);
+	xfree(config_ptr->create_buffer);
 	config_ptr->debug_flag = false;
 	xfree(config_ptr->default_pool);
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
+	xfree(config_ptr->destroy_buffer);
 	xfree(config_ptr->get_sys_state);
 	config_ptr->granularity = 1;
 	if (fini) {
@@ -421,8 +423,10 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	int fd, i;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
+		{"CreateBuffer", S_P_STRING},
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
+		{"DestroyBuffer", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
 /*		{"Gres", S_P_STRING},	*/
@@ -483,6 +487,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		state_ptr->bb_config.allow_users = _parse_users(
 					state_ptr->bb_config.allow_users_str);
 	}
+	s_p_get_string(&state_ptr->bb_config.create_buffer, "CreateBuffer",
+		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.default_pool, "DefaultPool",
 		       bb_hashtbl);
 	if (s_p_get_string(&state_ptr->bb_config.deny_users_str, "DenyUsers",
@@ -490,6 +496,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		state_ptr->bb_config.deny_users = _parse_users(
 					state_ptr->bb_config.deny_users_str);
 	}
+	s_p_get_string(&state_ptr->bb_config.destroy_buffer, "DestroyBuffer",
+		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "Granularity", bb_hashtbl)) {
@@ -575,12 +583,15 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		value = _print_users(state_ptr->bb_config.allow_users);
 		info("%s: AllowUsers:%s",  __func__, value);
 		xfree(value);
+		info("%s: CreateBuffer:%s",  __func__,
+		     state_ptr->bb_config.create_buffer);
 		info("%s: DefaultPool:%s",  __func__,
 		     state_ptr->bb_config.default_pool);
 		value = _print_users(state_ptr->bb_config.deny_users);
 		info("%s: DenyUsers:%s",  __func__, value);
 		xfree(value);
-
+		info("%s: DestroyBuffer:%s",  __func__,
+		     state_ptr->bb_config.destroy_buffer);
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
 		info("%s: Granularity:%"PRIu64"",  __func__,
@@ -613,14 +624,17 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 }
 
-/* Pack individual burst buffer records into a  buffer */
+/* Pack individual burst buffer records into a buffer */
 extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 			uint16_t protocol_version)
 {
 	int i, j, rec_count = 0;
 	struct bb_alloc *bb_alloc;
+	int eof, offset;
 
 	xassert(state_ptr);
+	offset = get_buf_offset(buffer);
+	pack32(rec_count,  buffer);
 	if (!state_ptr->bb_ahash)
 		return rec_count;
 
@@ -651,6 +665,12 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 			bb_alloc = bb_alloc->next;
 		}
 	}
+	if (rec_count != 0) {
+		eof = get_buf_offset(buffer);
+		set_buf_offset(buffer, offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, eof);
+	}
 
 	return rec_count;
 }
@@ -663,8 +683,10 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	int i;
 
 	packstr(config_ptr->allow_users_str, buffer);
+	packstr(config_ptr->create_buffer,   buffer);
 	packstr(config_ptr->default_pool,    buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
+	packstr(config_ptr->destroy_buffer,  buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
 	pack64(config_ptr->granularity,      buffer);
 	pack32(config_ptr->gres_cnt,         buffer);
@@ -687,6 +709,42 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	pack64(state_ptr->total_space,       buffer);
 	pack64(state_ptr->used_space,        buffer);
 	pack64(config_ptr->user_size_limit,  buffer);
+}
+
+/* Pack individual burst buffer usage records into a buffer (used for limits) */
+extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+			 uint16_t protocol_version)
+{
+	int i, rec_count = 0;
+	bb_user_t *bb_usage;
+	int eof, offset;
+
+	xassert(state_ptr);
+	offset = get_buf_offset(buffer);
+	pack32(rec_count,  buffer);
+	if (!state_ptr->bb_uhash)
+		return rec_count;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_usage = state_ptr->bb_uhash[i];
+		while (bb_usage) {
+			if (((uid == 0) || (uid == bb_usage->user_id)) &&
+			    (bb_usage->size != 0)) {
+				pack64(bb_usage->size,          buffer);
+				pack32(bb_usage->user_id,       buffer);
+				rec_count++;
+			}
+			bb_usage = bb_usage->next;
+		}
+	}
+	if (rec_count != 0) {
+		eof = get_buf_offset(buffer);
+		set_buf_offset(buffer, offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, eof);
+	}
+
+	return rec_count;
 }
 
 /* Translate a burst buffer size specification in string form to numeric form,

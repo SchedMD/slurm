@@ -199,7 +199,6 @@ inline static void  _slurm_rpc_update_layout(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_powercap(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
-inline static void  _slurm_rpc_dump_cache(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
 static void  _slurm_rpc_composite_msg(slurm_msg_t *msg);
@@ -208,6 +207,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				      List msg_list_in,
 				      struct timeval *start_tv,
 				      int timeout);
+static void  _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -578,9 +578,9 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		_slurm_rpc_composite_msg(msg);
 		slurm_free_composite_msg(msg->data);
 		break;
-	case REQUEST_CACHE_INFO:
-		_slurm_rpc_dump_cache(msg);
-		slurm_free_cache_info_request_msg(msg->data);
+	case REQUEST_ASSOC_MGR_INFO:
+		_slurm_rpc_assoc_mgr_info(msg);
+		slurm_free_assoc_mgr_info_request_msg(msg->data);
 		break;
 	case REQUEST_SICP_INFO:
 		_slurm_rpc_dump_sicp(msg);
@@ -5765,33 +5765,30 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 	/* NOTE: RPC has no response */
 }
 
-/* _slurm_rpc_dump_cache()
+/* _slurm_rpc_assoc_mgr_info()
  *
- * Pack the io buffer and send it back to the library.
+ * Pack the assoc_mgr lists and return it back to the caller.
  */
-inline static void
-_slurm_rpc_dump_cache(slurm_msg_t * msg)
+static void _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg)
 {
 	DEF_TIMERS;
-	char *dump;
-	int dump_size, error_code = SLURM_SUCCESS;
+	char *dump = NULL;
+	int dump_size = 0;
 	slurm_msg_t response_msg;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("%s: Processing RPC: REQUEST_CACHE_INFO uid=%d",
+	debug2("%s: Processing RPC: REQUEST_ASSOC_MGR_INFO uid=%d",
 	       __func__, uid);
-	if ( (!validate_super_user(uid)) ) {
-		error_code = ESLURM_USER_ID_MISSING;
-		/*error("Security violation, SHOW_CACHE from uid=%d", uid);*/
-		slurm_send_rc_msg(msg, error_code);
-		return;
-	}
 
 	/* do RPC call */
-	get_all_cache_info(&dump, &dump_size, uid, msg->protocol_version);
+	/* Security is handled in the assoc_mgr */
+	assoc_mgr_info_get_pack_msg(&dump, &dump_size,
+				     (assoc_mgr_info_request_msg_t *)msg->data,
+				     uid, acct_db_conn,
+				     msg->protocol_version);
 
-	END_TIMER2("_slurm_rpc_dump_cache");
+	END_TIMER2("_slurm_rpc_assoc_mgr_info");
 	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
 
 	/* init response_msg structure
@@ -5801,7 +5798,7 @@ _slurm_rpc_dump_cache(slurm_msg_t * msg)
 	response_msg.flags = msg->flags;
 	response_msg.protocol_version = msg->protocol_version;
 	response_msg.address = msg->address;
-	response_msg.msg_type = RESPONSE_CACHE_INFO;
+	response_msg.msg_type = RESPONSE_ASSOC_MGR_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
 	/* send message

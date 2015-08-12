@@ -1240,14 +1240,6 @@ static int _queue_stage_out(struct job_record *job_ptr)
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
-	post_run_argv[0] = xstrdup("dw_wlm_cli");
-	post_run_argv[1] = xstrdup("--function");
-	post_run_argv[2] = xstrdup("post_run");
-	post_run_argv[3] = xstrdup("--token");
-	xstrfmtcat(post_run_argv[4], "%u", job_ptr->job_id);
-	post_run_argv[5] = xstrdup("--job");
-	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
 
 	data_out_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	data_out_argv[0] = xstrdup("dw_wlm_cli");
@@ -1258,11 +1250,20 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	data_out_argv[5] = xstrdup("--job");
 	xstrfmtcat(data_out_argv[6], "%s/script", job_dir);
 
+	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	post_run_argv[0] = xstrdup("dw_wlm_cli");
+	post_run_argv[1] = xstrdup("--function");
+	post_run_argv[2] = xstrdup("post_run");
+	post_run_argv[3] = xstrdup("--token");
+	xstrfmtcat(post_run_argv[4], "%u", job_ptr->job_id);
+	post_run_argv[5] = xstrdup("--job");
+	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
+
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->job_id  = job_ptr->job_id;
 	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
-	stage_args->args1   = post_run_argv;
-	stage_args->args2   = data_out_argv;
+	stage_args->args1   = data_out_argv;
+	stage_args->args2   = post_run_argv;
 
 	slurm_attr_init(&stage_attr);
 	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
@@ -1296,29 +1297,29 @@ static void *_start_stage_out(void *x)
 	DEF_TIMERS;
 
 	stage_args = (stage_args_t *) x;
-	post_run_argv = stage_args->args1;
-	data_out_argv = stage_args->args2;
+	data_out_argv = stage_args->args1;
+	post_run_argv = stage_args->args2;
 
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 5000;
+		timeout = 24 * 60 * 60 * 1000;	/* One day */
+	op = "dws_data_out";
 	START_TIMER;
-	op = "dws_post_run";
-	resp_msg = bb_run_script("dws_post_run",
+	resp_msg = bb_run_script("dws_data_out",
 				 bb_state.bb_config.get_sys_state,
-				 post_run_argv, timeout, &status);
+				 data_out_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: dws_post_run for job %u ran for %s",
+	if (DELTA_TIMER > 5000000) {	/* 5 secs */
+		info("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: dws_post_run for job %u ran for %s",
+		debug("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
-	_log_script_argv(post_run_argv, resp_msg);
+	_log_script_argv(data_out_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_post_run for job %u status:%u response:%s",
+		error("%s: dws_data_out for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
@@ -1327,27 +1328,27 @@ static void *_start_stage_out(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 24 * 60 * 60 * 1000;	/* One day */
-		xfree(resp_msg);
+			timeout = 5000;
+		op = "dws_post_run";
 		START_TIMER;
-		op = "dws_data_out";
-		resp_msg = bb_run_script("dws_data_out",
+		resp_msg = bb_run_script("dws_post_run",
 					 bb_state.bb_config.get_sys_state,
-					 data_out_argv, timeout, &status);
+					 post_run_argv, timeout, &status);
 		END_TIMER;
-		if (DELTA_TIMER > 5000000) {	/* 5 secs */
-			info("%s: dws_data_out for job %u ran for %s",
+		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+			info("%s: dws_post_run for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		} else if (bb_state.bb_config.debug_flag) {
-			debug("%s: dws_data_out for job %u ran for %s",
+			debug("%s: dws_post_run for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		}
-		_log_script_argv(data_out_argv, resp_msg);
+		_log_script_argv(post_run_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-			error("%s: dws_data_out for job %u status:%u response:%s",
+			error("%s: dws_post_run for job %u status:%u response:%s",
 			      __func__, stage_args->job_id, status, resp_msg);
 			rc = SLURM_ERROR;
 		}
+		xfree(resp_msg);
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -1487,6 +1488,9 @@ static void *_start_teardown(void *x)
 		     __func__, teardown_args->job_id, TIME_STR);
 	}
 	_log_script_argv(teardown_argv, resp_msg);
+	/* "Teardown" is run at every termination of every job that _might_
+	 * have a burst buffer, so an error of "token not found" should be
+	 * fairly common and not indicative of a problem. */
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
 		error("%s: %s: teardown for job %u status:%u response:%s",
@@ -2288,22 +2292,14 @@ extern int bb_p_reconfig(void)
 extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
-	int eof, offset;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
-	offset = get_buf_offset(buffer);
-	pack32(rec_count,        buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.private_data == 0)
-		uid = 0;	/* User can see all data */
+		uid = 0;	/* Any user can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
-	if (rec_count != 0) {
-		eof = get_buf_offset(buffer);
-		set_buf_offset(buffer, offset);
-		pack32(rec_count, buffer);
-		set_buf_offset(buffer, eof);
-	}
+	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.debug_flag) {
 		debug("%s: %s: record_count:%u",
 		      plugin_type,  __func__, rec_count);
@@ -2523,7 +2519,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return rc;
 
-//FIXME: How to handle job arrays?
+//FIXME: Add support for job arrays
 	if (job_ptr->array_recs) {
 		if (err_msg) {
 			xfree(*err_msg);
@@ -2975,7 +2971,8 @@ pthread_mutex_lock(&bb_state.bb_mutex);
 		      jobid_buf, TIME_STR);
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+if (0) { // FIXME: Cray API is always returning an exit code of 1
 		time_t now = time(NULL);
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
@@ -3142,6 +3139,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 	pthread_t create_tid = 0;
 	create_buf_data_t *create_args;
 	bb_buf_t *buf_ptr;
+	bb_alloc_t *bb_alloc;
 	int i, hash_inx, rc = 0;
 
 	xassert(bb_job);
@@ -3183,7 +3181,33 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			}
 			slurm_attr_destroy(&create_attr);
 		} else if (buf_ptr->destroy && job_ready) { /* Delete the buffer */
+			bb_alloc = bb_find_name_rec(buf_ptr->name,
+						    job_ptr->user_id,
+						    &bb_state);
+			if (!bb_alloc) {
+				/* Ignore request if named buffer not found */
+				info(
+"%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
+				     plugin_type, buf_ptr->name,
+				     job_ptr->job_id);
+				continue;
+			}
 			rc++;
+			if ((bb_alloc->user_id != job_ptr->user_id) &&
+			    !validate_super_user(job_ptr->user_id)) {
+				info(
+"%s: destroy_persistent: Attempt by user %u job %u to destroy buffer %s owned by user %u",
+				     plugin_type, job_ptr->user_id,
+				     job_ptr->job_id, buf_ptr->name,
+				     bb_alloc->user_id);
+				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+				xstrfmtcat(job_ptr->state_desc,
+					   "%s: Delete buffer %s permission denied",
+					   plugin_type, buf_ptr->name);
+				job_ptr->priority = 0;  /* Hold job */
+				continue;
+			}
+
 			bb_job->state = BB_STATE_DELETING;
 			buf_ptr->state = BB_STATE_DELETING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
@@ -3329,11 +3353,11 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 			      __func__, create_args->job_id);
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+			job_ptr->priority = 0;
 			xfree(job_ptr->state_desc);
-			job_ptr->state_desc = resp_msg;
-			resp_msg = NULL;
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
+			resp_msg = NULL;
 		}
 		_reset_buf_state(create_args->user_id,
 				 create_args->job_id,
@@ -3389,17 +3413,11 @@ static void *_destroy_persistent(void *x)
 		info("%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
-	if ((bb_alloc->user_id != destroy_args->user_id) &&
-	    !validate_super_user(destroy_args->user_id)) {
-		info("%s: destroy_persistent: Attempt by user %u job %u to destroy buffer %s",
-		     plugin_type, destroy_args->user_id, destroy_args->job_id, destroy_args->name);
-//MOVE ERROR HANDLING??
-	}
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
-	script_argv[2] = xstrdup("teardown");	/* "destroy_persistent" to be added to Cray API later */
+	script_argv[2] = xstrdup("teardown");
 	script_argv[3] = xstrdup("--token");	/* name */
 	script_argv[4] = xstrdup(destroy_args->name);
 	script_argv[5] = xstrdup("--job");	/* script */

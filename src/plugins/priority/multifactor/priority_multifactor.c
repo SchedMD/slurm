@@ -812,6 +812,113 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 }
 
 
+static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
+				      uint32_t job_id,
+				      slurmdb_qos_rec_t *qos)
+{
+	int i;
+
+	if (!qos)
+		return;
+
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (tres_run_delta[i] >
+		    qos->usage->grp_used_tres_run_secs[i]) {
+			error("_remove_qos_tres_run_secs: job %u: "
+			      "QOS %s TRES %s%s%s grp_used_tres_run_secs "
+			      "underflow, tried to remove %"PRIu64" seconds "
+			      "when only %"PRIu64" remained.",
+			      job_id,
+			      qos->name,
+			      assoc_mgr_tres_array[i]->type,
+			      assoc_mgr_tres_array[i]->name ? "/" : "",
+			      assoc_mgr_tres_array[i]->name ?
+			      assoc_mgr_tres_array[i]->name : "",
+			      tres_run_delta[i],
+			      qos->usage->grp_used_tres_run_secs[i]);
+			qos->usage->grp_used_tres_run_secs[i] = 0;
+		} else
+			qos->usage->grp_used_tres_run_secs[i] -=
+				tres_run_delta[i];
+
+		if (priority_debug) {
+			info("_remove_qos_tres_run_secs: job %u: "
+			     "Removed %"PRIu64" unused seconds "
+			     "from QOS %s TRES %s%s%s "
+			     "grp_used_tres_run_secs = %"PRIu64,
+			     job_id,
+			     tres_run_delta[i],
+			     qos->name,
+			     assoc_mgr_tres_array[i]->type,
+			     assoc_mgr_tres_array[i]->name ? "/" : "",
+			     assoc_mgr_tres_array[i]->name ?
+			     assoc_mgr_tres_array[i]->name : "",
+			     qos->usage->grp_used_tres_run_secs[i]);
+		}
+	}
+}
+
+static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
+					uint32_t job_id,
+					slurmdb_assoc_rec_t *assoc)
+{
+	int i;
+
+	if (!assoc)
+		return;
+
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (tres_run_delta[i] >
+		    assoc->usage->grp_used_tres_run_secs[i]) {
+			error("_remove_assoc_tres_run_secs: job %u: "
+			      "assoc %u TRES %s%s%s grp_used_tres_run_secs "
+			      "underflow, tried to remove %"PRIu64" seconds "
+			      "when only %"PRIu64" remained.",
+			      job_id,
+			      assoc->id,
+			      assoc_mgr_tres_array[i]->type,
+			      assoc_mgr_tres_array[i]->name ? "/" : "",
+			      assoc_mgr_tres_array[i]->name ?
+			      assoc_mgr_tres_array[i]->name : "",
+			      tres_run_delta[i],
+			      assoc->usage->grp_used_tres_run_secs[i]);
+			assoc->usage->grp_used_tres_run_secs[i] = 0;
+		} else
+			assoc->usage->grp_used_tres_run_secs[i] -=
+				tres_run_delta[i];
+
+		if (priority_debug) {
+			info("_remove_assoc_tres_run_secs: job %u: "
+			     "Removed %"PRIu64" unused seconds "
+			     "from assoc %d TRES %s%s%s "
+			     "grp_used_tres_run_secs = %"PRIu64,
+			     job_id,
+			     tres_run_delta[i],
+			     assoc->id,
+			     assoc_mgr_tres_array[i]->type,
+			     assoc_mgr_tres_array[i]->name ? "/" : "",
+			     assoc_mgr_tres_array[i]->name ?
+			     assoc_mgr_tres_array[i]->name : "",
+			     assoc->usage->grp_used_tres_run_secs[i]);
+		}
+	}
+}
+
+static void _remove_tres_run_secs(uint64_t *tres_run_delta,
+				  struct job_record *job_ptr)
+{
+
+	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+
+	_remove_qos_tres_run_secs(tres_run_delta,
+				  job_ptr->job_id, job_ptr->qos_ptr);
+	while (assoc) {
+		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
+					    assoc);
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+}
+
 /*
  * Remove previously used time from qos and assocs grp_used_cpu_run_secs.
  *
@@ -828,12 +935,11 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	uint64_t delta;
-	slurmdb_qos_rec_t *qos;
-	slurmdb_assoc_rec_t *assoc;
+	uint64_t tres_run_delta[slurmctld_tres_cnt];
+	int i;
 
 	if (priority_debug)
 		info("Initializing grp_used_cpu_run_secs");
@@ -850,8 +956,6 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	while ((job_ptr = list_next(itr))) {
 		if (priority_debug)
 			debug2("job: %u", job_ptr->job_id);
-		qos = NULL;
-		assoc = NULL;
 
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
@@ -859,51 +963,13 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		if (job_ptr->start_time > last_ran)
 			continue;
 
-		delta = job_ptr->total_cpus * (last_ran - job_ptr->start_time);
-
-		qos = (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
-		assoc = (slurmdb_assoc_rec_t *) job_ptr->assoc_ptr;
-
-		if (qos) {
-			if (priority_debug) {
-				info("Subtracting %"PRIu64" from qos "
-				     "%s grp_used_cpu_run_secs "
-				     "%"PRIu64" = %"PRIu64"",
-				     delta,
-				     qos->name,
-				     qos->usage->grp_used_cpu_run_secs,
-				     qos->usage->grp_used_cpu_run_secs -
-				     delta);
-			}
-			if (qos->usage->grp_used_cpu_run_secs >= delta) {
-				qos->usage->grp_used_cpu_run_secs -= delta;
-			} else {
-				error("qos %s grp_used_cpu_run_secs underflow",
-				      qos->name);
-				qos->usage->grp_used_cpu_run_secs = 0;
-			}
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			tres_run_delta[i] =
+				(uint64_t)(last_ran - job_ptr->start_time) *
+				job_ptr->tres_alloc_cnt[i];
 		}
 
-		while (assoc) {
-			if (priority_debug) {
-				info("Subtracting %"PRIu64" from assoc %u "
-				     "grp_used_cpu_run_secs "
-				     "%"PRIu64" = %"PRIu64"",
-				     delta,
-				     assoc->id,
-				     assoc->usage->grp_used_cpu_run_secs,
-				     assoc->usage->grp_used_cpu_run_secs -
-				     delta);
-			}
-			if (assoc->usage->grp_used_cpu_run_secs >= delta) {
-				assoc->usage->grp_used_cpu_run_secs -= delta;
-			} else {
-				error("assoc %u grp_used_cpu_run_secs "
-				      "underflow", assoc->id);
-				assoc->usage->grp_used_cpu_run_secs = 0;
-			}
-			assoc = assoc->usage->parent_assoc_ptr;
-		}
+		_remove_tres_run_secs(tres_run_delta, job_ptr);
 	}
 	assoc_mgr_unlock(&locks);
 	list_iterator_destroy(itr);
@@ -922,10 +988,12 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	slurmdb_qos_rec_t *qos;
 	slurmdb_assoc_rec_t *assoc;
 	double run_delta = 0.0, run_decay = 0.0, real_decay = 0.0;
-	uint64_t cpu_run_delta = 0;
+	uint64_t tres_run_delta[slurmctld_tres_cnt];
+	uint64_t tres_time_delta = 0;
+	int i;
 	uint64_t job_time_limit_ends = 0;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	/* If end_time_exp is NO_VAL we have already ran the end for
 	 * this job.  We don't want to do it again, so just exit.
@@ -971,33 +1039,44 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		(uint64_t)job_ptr->time_limit * 60;
 
 	if ((uint64_t)start_period >= job_time_limit_ends)
-		cpu_run_delta = 0;
+		tres_time_delta = 0;
 	else if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr)) {
 		/* If a job is being requeued sometimes the state will
 		   be pending + completing so handle that the same as
 		   finished so we don't leave time in the mix.
 		*/
-		cpu_run_delta = job_ptr->total_cpus *
-			(job_time_limit_ends - (uint64_t)start_period);
+		tres_time_delta = (job_time_limit_ends -
+				   (uint64_t)start_period);
 	} else if (end_period > job_ptr->end_time_exp) {
 		int end_exp = difftime(job_ptr->end_time_exp, start_period);
 
-		if (end_exp <= 0)
-			cpu_run_delta = 0;
-		else
-			cpu_run_delta = job_ptr->total_cpus * end_exp;
+		if (end_exp > 0)
+			tres_time_delta = (uint64_t)end_exp;
 	} else
-		cpu_run_delta = job_ptr->total_cpus * run_delta;
+		tres_time_delta = run_delta;
+
+	for (i=0; i<slurmctld_tres_cnt; i++)
+		tres_run_delta[i] = tres_time_delta *
+			job_ptr->tres_alloc_cnt[i];
 
 	/* make sure we only run through this once at the end */
 	if (adjust_for_end)
 		job_ptr->end_time_exp = (time_t)NO_VAL;
 
-	if (priority_debug)
-		info("job %u ran for %g seconds on %u cpus, cpu_delta %"PRIu64,
-		     job_ptr->job_id, run_delta, job_ptr->total_cpus,
-		     cpu_run_delta);
-
+	if (priority_debug) {
+		info("job %u ran for %g seconds with TRES counts of",
+		     job_ptr->job_id, run_delta);
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (!job_ptr->tres_alloc_cnt[i])
+				continue;
+			info("TRES %s%s%s: %"PRIu64,
+			     assoc_mgr_tres_array[i]->type,
+			     assoc_mgr_tres_array[i]->name ? "/" : "",
+			     assoc_mgr_tres_array[i]->name ?
+			     assoc_mgr_tres_array[i]->name : "",
+			     job_ptr->tres_alloc_cnt[i]);
+		}
+	}
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
 
@@ -1020,24 +1099,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		}
 		qos->usage->grp_used_wall += run_decay;
 		qos->usage->usage_raw += (long double)real_decay;
-		if (qos->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
-			if (priority_debug)
-				info("QOS %s has grp_used_cpu_run_secs "
-				     "of %"PRIu64", will subtract %"PRIu64"",
-				     qos->name,
-				     qos->usage->grp_used_cpu_run_secs,
-				     cpu_run_delta);
-			qos->usage->grp_used_cpu_run_secs -= cpu_run_delta;
-		} else {
-			if (priority_debug)
-				info("jobid %u, qos %s: setting "
-				     "grp_used_cpu_run_secs "
-				     "to 0 because %"PRIu64" < %"PRIu64"",
-				     job_ptr->job_id, qos->name,
-				     qos->usage->grp_used_cpu_run_secs,
-				     cpu_run_delta);
-			qos->usage->grp_used_cpu_run_secs = 0;
-		}
+
+		_remove_qos_tres_run_secs(tres_run_delta, job_ptr->job_id, qos);
 	}
 
 	/* We want to do this all the way up
@@ -1046,39 +1109,19 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	 * has occured on the entire system
 	 * and use that to normalize against. */
 	while (assoc) {
-		if (assoc->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
-			if (priority_debug)
-				info("assoc %u (user='%s' "
-				     "acct='%s') has grp_used_cpu_run_secs "
-				     "of %"PRIu64", will subtract %"PRIu64"",
-				     assoc->id, assoc->user, assoc->acct,
-				     assoc->usage->grp_used_cpu_run_secs,
-				     cpu_run_delta);
-			assoc->usage->grp_used_cpu_run_secs -= cpu_run_delta;
-		} else {
-			if (priority_debug)
-				info("jobid %u, assoc %u: setting "
-				     "grp_used_cpu_run_secs "
-				     "to 0 because %"PRIu64" < %"PRIu64"",
-				     job_ptr->job_id, assoc->id,
-				     assoc->usage->grp_used_cpu_run_secs,
-				     cpu_run_delta);
-			assoc->usage->grp_used_cpu_run_secs = 0;
-		}
-
 		assoc->usage->grp_used_wall += run_decay;
 		assoc->usage->usage_raw += (long double)real_decay;
 		if (priority_debug)
-			info("adding %f new usage to assoc %u (user='%s' "
-			     "acct='%s') raw usage is now %Lf.  Group wall "
-			     "added %f making it %f. GrpCPURunMins is "
-			     "%"PRIu64"",
-			     real_decay, assoc->id,
-			     assoc->user, assoc->acct,
-			     assoc->usage->usage_raw,
-			     run_decay,
-			     assoc->usage->grp_used_wall,
-			     assoc->usage->grp_used_cpu_run_secs/60);
+			info("Adding %f new usage to assoc %u (%s/%s/%s) "
+			     "raw usage is now %Lf.  Group wall "
+			     "added %f making it %f.",
+			     real_decay, assoc->id, assoc->acct,
+			     assoc->user, assoc->partition,
+			     assoc->usage->usage_raw, run_decay,
+			     assoc->usage->grp_used_wall);
+		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
+					    assoc);
+
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 	assoc_mgr_unlock(&locks);

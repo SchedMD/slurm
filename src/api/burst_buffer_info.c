@@ -211,6 +211,24 @@ static void _print_burst_buffer_resv(FILE *out,
 	xfree(out_buf);
 }
 
+static void _print_burst_buffer_use(FILE *out,
+				    burst_buffer_use_t* usage_ptr,
+				    int one_liner)
+{
+	char tmp_line[512], sz_buf[32];
+	char *out_buf = NULL;
+
+	_get_size_str(sz_buf, sizeof(sz_buf), usage_ptr->used);
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "    UserID=%s(%u) Used=%s",
+	         uid_to_string(usage_ptr->user_id), usage_ptr->user_id, sz_buf);
+
+	xstrcat(out_buf, tmp_line);
+	xstrcat(out_buf, "\n");
+	fprintf(out, "%s", out_buf);
+	xfree(out_buf);
+}
+
 /*
  * slurm_print_burst_buffer_record - output information about a specific Slurm
  *	burst_buffer record based upon message as loaded using
@@ -228,6 +246,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	char g_sz_buf[32], j_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
 	burst_buffer_resv_t *bb_resv_ptr;
+	burst_buffer_use_t  *bb_use_ptr;
 	bool has_acl = false;
 	int i;
 
@@ -323,6 +342,24 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			xstrcat(out_buf, "\n  ");
 	}
 
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"CreateBuffer=%s", burst_buffer_ptr->create_buffer);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"DestroyBuffer=%s", burst_buffer_ptr->destroy_buffer);
+	xstrcat(out_buf, tmp_line);
+	if (one_liner)
+		xstrcat(out_buf, " ");
+	else
+		xstrcat(out_buf, "\n  ");
+
 	/****** Line 7 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
 		"PrivateData=%u ", burst_buffer_ptr->private_data);
@@ -378,7 +415,12 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	xfree(out_buf);
 
 	for (i = 0, bb_resv_ptr = burst_buffer_ptr->burst_buffer_resv_ptr;
-	     i < burst_buffer_ptr->record_count; i++, bb_resv_ptr++) {
+	     i < burst_buffer_ptr->buffer_count; i++, bb_resv_ptr++) {
 		 _print_burst_buffer_resv(out, bb_resv_ptr, one_liner);
+	}
+
+	for (i = 0, bb_use_ptr = burst_buffer_ptr->burst_buffer_use_ptr;
+	     i < burst_buffer_ptr->use_count; i++, bb_use_ptr++) {
+		 _print_burst_buffer_use(out, bb_use_ptr, one_liner);
 	}
 }

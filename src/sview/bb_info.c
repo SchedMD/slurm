@@ -455,7 +455,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	     i < bb_info_ptr->record_count; i++, bb_ptr++) {
 
 		for (j = 0, bb_resv_ptr = bb_ptr->burst_buffer_resv_ptr;
-		     j < bb_ptr->record_count; j++, bb_resv_ptr++) {
+		     j < bb_ptr->buffer_count; j++, bb_resv_ptr++) {
 
 			/* Find any existing record for this burst buffer */
 			if (last_list) {

@@ -222,8 +222,6 @@ int main(int argc, char *argv[])
 			      slurmdbd_conf->dbd_backup);
 		}
 
-		acct_storage_g_add_tres(db_conn, getuid(), NULL);
-
 		if (!shutdown_time) {
 			/* Create attached thread to process incoming RPCs */
 			slurm_attr_init(&thread_attr);

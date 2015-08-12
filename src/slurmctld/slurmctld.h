@@ -205,6 +205,18 @@ typedef struct diag_stats {
 	uint32_t bf_active;
 } diag_stats_t;
 
+/* This is used to point out constants that exist in the
+ * curr_tres_array in tres_info_t  This should be the same order as
+ * the tres_trypes_t enum that is defined in src/common/slurmdb_defs.h
+ */
+enum {
+	TRES_ARRAY_CPU = 0,
+	TRES_ARRAY_MEM,
+	TRES_ARRAY_ENEGRY,
+	TRES_ARRAY_NODE,
+	TRES_ARRAY_TOTAL_CNT
+};
+
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
@@ -219,6 +231,7 @@ extern int   batch_sched_delay;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;
+extern int   slurmctld_tres_cnt;
 
 /* Buffer size use to print the jobid2str()
  * jobid, taskid and state.
@@ -370,7 +383,6 @@ extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
-extern List cluster_tres_list;
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures
@@ -545,6 +557,14 @@ typedef struct job_array_struct {
 	uint32_t tot_comp_tasks;	/* Completed task count */
 } job_array_struct_t;
 
+#define ADMIN_SET_LIMIT 0xffff
+
+typedef struct {
+	uint16_t qos;
+	uint16_t time;
+	uint16_t *tres;
+} acct_policy_limit_set_t;
+
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with _rec_job_copy.
@@ -627,20 +647,11 @@ struct job_record {
 					 * node failure */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
-	uint16_t limit_set_max_cpus;	/* if max_cpus was set from
-					 * a limit false if user set */
-	uint16_t limit_set_max_nodes;	/* if max_nodes was set from
-					 * a limit false if user set */
-	uint16_t limit_set_min_cpus;	/* if max_cpus was set from
-					 * a limit false if user set */
-	uint16_t limit_set_min_nodes;	/* if max_nodes was set from
-					 * a limit false if user set */
-	uint16_t limit_set_pn_min_memory; /* if pn_min_memory was set from
-					 * a limit false if user set */
-	uint16_t limit_set_time;    	/* if time_limit was set from
-					 * a limit false if user set */
-	uint16_t limit_set_qos;	   	/* if qos_limit was set from
-					 * a limit false if user set */
+	acct_policy_limit_set_t limit_set; /* flags if indicate an
+					    * associated limit was set from
+					    * a limit instead of from
+					    * the request, or if the
+					    * limit was set from admin */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -727,6 +738,15 @@ struct job_record {
 					 * for accounting */
 	uint32_t total_nodes;		/* number of allocated nodes
 					 * for accounting */
+	uint64_t *tres_req_cnt;         /* array of tres counts requested
+					 * based off g_tres_count in
+					 * assoc_mgr */
+	char *tres_req_str;             /* string format of
+					 * tres_req_cnt primarily
+					 * used for state */
+	uint64_t *tres_alloc_cnt;       /* array of tres counts allocated
+					 * based off g_tres_count in
+					 * assoc_mgr */
 	char *tres_alloc_str;           /* simple tres string for job */
 	char *tres_fmt_alloc_str;       /* formatted tres string for job */
 	uint32_t user_id;		/* user the job runs as */
@@ -1220,6 +1240,11 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr, bool requeue);
 
+/* Convert a pn_min_memory into total memory for the job either cpu or
+ * node based. */
+extern uint64_t job_get_tres_mem(uint32_t pn_min_memory,
+				 uint32_t cpu_cnt, uint32_t node_cnt);
+
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
  *	given job
@@ -1467,10 +1492,17 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 extern void job_time_limit (void);
 
+/* Builds the tres_req_cnt and tres_req_str of a job.
+ * Only set when job is pending.
+ * NOTE: job write lock must be locked before calling this */
+extern void job_set_req_tres(struct job_record *job_ptr, bool assoc_mgr_locked);
+
 /*
  * job_set_tres - set the tres up when allocating the job.
- */
-extern void job_set_tres(struct job_record *job_ptr);
+ * Only set when job is running.
+ * NOTE: job write lock must be locked before calling this */
+extern void job_set_alloc_tres(
+	struct job_record *job_ptr, bool assoc_mgr_locked);
 
 /*
  * job_update_tres_cnt - when job is completing remove allocated tres
@@ -1944,7 +1976,7 @@ extern void send_all_to_accounting(time_t event_time);
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_tres(void);
+extern void set_cluster_tres(bool assoc_mgr_locked);
 
 /* sends all jobs in eligible state to accounting.  Only needed at
  * first registration
@@ -2322,12 +2354,6 @@ extern char *jobid2str(struct job_record *job_ptr, char *buf, int buf_size);
  *               the DEBUG_FLAG_TRACE_JOBS is set
  */
 extern void trace_job(struct job_record *, const char *, const char *);
-
-/* get_all_cache_info()
- *
- * Return the associations information in the controller
- */
-extern void  get_all_cache_info(char **, int *, uid_t, uint16_t);
 
 /*
  */

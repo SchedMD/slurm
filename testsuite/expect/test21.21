@@ -285,6 +285,22 @@ expect {
 }
 
 #
+# remove any vestigial account
+#
+set aamatches 0
+set sadd_pid [spawn $sacctmgr -i delete account $ta]
+expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
 # Use sacctmgr to add an account
 #
 set aamatches 0

@@ -484,7 +484,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 {
 	Buf buffer;
 
-	if (rpc_version < SLURMDBD_MIN_VERSION) {
+	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("slurmdbd: Invalid message version=%hu, type:%hu",
 		      rpc_version, req->msg_type);
 		return NULL;
@@ -671,7 +671,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 
 	safe_unpack16(&resp->msg_type, buffer);
 
-	if (rpc_version < SLURMDBD_MIN_VERSION) {
+	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("slurmdbd: Invalid message version=%hu, type:%hu",
 		      rpc_version, resp->msg_type);
 		return SLURM_ERROR;
@@ -2878,7 +2878,7 @@ slurmdbd_pack_cluster_tres_msg(dbd_cluster_tres_msg_t *msg,
 		packstr(msg->cluster_nodes, buffer);
 		pack_time(msg->event_time, buffer);
 		packstr(msg->tres_str, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->cluster_nodes, buffer);
 		count = (uint32_t)slurmdb_find_tres_count_in_string(
 			msg->tres_str, TRES_CPU);
@@ -2904,7 +2904,7 @@ slurmdbd_unpack_cluster_tres_msg(dbd_cluster_tres_msg_t **msg,
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_str,
 				       &uint32_tmp, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
@@ -3226,7 +3226,7 @@ slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack32(msg->req_uid, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->db_index, buffer);
@@ -3264,7 +3264,7 @@ slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
@@ -3362,7 +3362,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->timelimit, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->wckey, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		count = (uint32_t)slurmdb_find_tres_count_in_string(
 			msg->tres_alloc_str, TRES_CPU);
@@ -3492,7 +3492,7 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
 		msg_ptr->tres_alloc_str = xstrdup_printf(
@@ -3547,7 +3547,7 @@ slurmdbd_pack_id_rc_msg(void *in,
 {
 	dbd_id_rc_msg_t *msg = (dbd_id_rc_msg_t *)in;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->id, buffer);
 		pack32(msg->return_code, buffer);
@@ -3561,7 +3561,7 @@ slurmdbd_unpack_id_rc_msg(void **msg,
 	dbd_id_rc_msg_t *msg_ptr = xmalloc(sizeof(dbd_id_rc_msg_t));
 
 	*msg = msg_ptr;
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->id, buffer);
 		safe_unpack32(&msg_ptr->return_code, buffer);
@@ -3585,7 +3585,7 @@ slurmdbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
 		pack32(msg->job_state, buffer);
 		pack_time(msg->submit_time, buffer);
 		pack_time(msg->suspend_time, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack32(msg->db_index, buffer);
 		pack32(msg->job_id, buffer);
@@ -3609,7 +3609,7 @@ slurmdbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg,
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack_time(&msg_ptr->suspend_time, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
@@ -3973,7 +3973,7 @@ slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 		pack16(msg->new_state, buffer);
 		pack_time(msg->event_time, buffer);
 		pack32(msg->state, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		count = (uint32_t)slurmdb_find_tres_count_in_string(
 			msg->tres_str, TRES_CPU);
 		pack32(count, buffer);
@@ -4018,7 +4018,7 @@ slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 		safe_unpack16(&msg_ptr->new_state, buffer);
 		safe_unpack_time(&msg_ptr->event_time, buffer);
 		safe_unpack32(&msg_ptr->state, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		msg_ptr->tres_str = xstrdup_printf("%d=%u", TRES_CPU, count);
 		safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
@@ -4069,7 +4069,7 @@ extern void
 slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 				uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
 		pack32(msg->plugin_id_select, buffer);
@@ -4084,7 +4084,7 @@ slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
 		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->plugin_id_select, buffer);
@@ -4102,7 +4102,7 @@ extern void
 slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg,
 			     uint16_t rpc_version, Buf buffer)
 {
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->archive_data, buffer);
 		pack_time(msg->end, buffer);
 		pack_time(msg->start, buffer);
@@ -4117,7 +4117,7 @@ slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->archive_data, buffer);
 		safe_unpack_time(&msg_ptr->end, buffer);
 		safe_unpack_time(&msg_ptr->start, buffer);
@@ -4234,7 +4234,7 @@ slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, uint16_t rpc_version,
 		pack32(msg->task_dist, buffer);
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t old_task_dist;
 		pack32(msg->assoc_id, buffer);
 		pack32(msg->db_index, buffer);
@@ -4283,7 +4283,7 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
-	} else if (rpc_version >= SLURMDBD_MIN_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t old_task_dist = 0;
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack32(&msg_ptr->db_index, buffer);

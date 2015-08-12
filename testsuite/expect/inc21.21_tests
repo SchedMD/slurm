@@ -441,7 +441,7 @@ proc inc21_21_grpwall { test_type limit } {
 	send_user "(Within: inc21.21_tests function: inc21_21_grpwall) ======\n"
 
 	make_bash_script $file_in "
-	$bin_sleep 60
+	$bin_sleep 61
 	"
 
 	set matches 0

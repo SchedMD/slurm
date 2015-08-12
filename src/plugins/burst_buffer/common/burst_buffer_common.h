@@ -58,10 +58,12 @@
 typedef struct bb_config {
 	uid_t   *allow_users;
 	char    *allow_users_str;
+	char    *create_buffer;
 	bool	debug_flag;
 	char	*default_pool;
 	uid_t   *deny_users;
 	char    *deny_users_str;
+	char    *destroy_buffer;
 	char    *get_sys_state;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
@@ -303,6 +305,10 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 /* Pack state and configuration parameters into a buffer */
 extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 			  uint16_t protocol_version);
+
+/* Pack individual burst buffer usage records into a buffer (used for limits) */
+extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+			 uint16_t protocol_version);
 
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
