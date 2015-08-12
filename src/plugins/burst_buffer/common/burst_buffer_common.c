@@ -70,6 +70,12 @@
 /* For possible future use by burst_buffer/generic */
 #define _SUPPORT_GRES 0
 
+static void	_bb_job_del2(bb_job_t *bb_job);
+static uid_t *	_parse_users(char *buf);
+static int	_persist_match(void *x, void *key);
+static void	_persist_purge(void *x);
+static char *	_print_users(uid_t *buf);
+
 /* Translate comma delimitted list of users into a UID array,
  * Return value must be xfreed */
 static uid_t *_parse_users(char *buf)
@@ -161,7 +167,7 @@ extern void bb_clear_cache(bb_state_t *state_ptr)
 			while (job_current) {
 				xassert(job_current->magic == BB_JOB_MAGIC);
 				job_next = job_current->next;
-				bb_job_del2(job_current);
+				_bb_job_del2(job_current);
 				job_current = job_next;
 			}
 		}
@@ -1086,8 +1092,8 @@ extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_alloc)
  *		 -1 for no limit (asynchronous)
  * status OUT - Job exit code
  * Return stdout+stderr of spawned program, value must be xfreed. */
-char *bb_run_script(char *script_type, char *script_path,
-		    char **script_argv, int max_wait, int *status)
+extern char *bb_run_script(char *script_type, char *script_path,
+			   char **script_argv, int max_wait, int *status)
 {
 	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
@@ -1336,7 +1342,7 @@ extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id)
 			xassert(bb_job->magic == BB_JOB_MAGIC);
 			bb_job->magic = 0;
 			*bb_pjob = bb_job->next;
-			bb_job_del2(bb_job);
+			_bb_job_del2(bb_job);
 			return;
 		}
 		bb_pjob = &bb_job->next;
@@ -1345,7 +1351,7 @@ extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id)
 }
 
 /* Delete a bb_job_t record. DOES NOT UNLINK FROM HASH TABLE */
-extern void bb_job_del2(bb_job_t *bb_job)
+static void _bb_job_del2(bb_job_t *bb_job)
 {
 	int i;
 

@@ -279,10 +279,6 @@ extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id);
 /* Delete a bb_job_t record, hashed by job_id */
 extern void bb_job_del(bb_state_t *state_ptr, uint32_t job_id);
 
-/* Delete a bb_job_t record. DOES NOT UNLINK FROM HASH TABLE */
-extern void bb_job_del2(bb_job_t *bb_job);
-//FIXME: DELETE THIS, MAKE STATIC IN COMMON.C
-
 /* Return a pointer to the existing bb_job_t record for a given job_id or
  * NULL if not found */
 extern bb_job_t *bb_job_find(bb_state_t *state_ptr, uint32_t job_id);
