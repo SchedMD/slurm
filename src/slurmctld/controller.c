@@ -184,7 +184,7 @@ slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
 int	slurmctld_primary = 1;
 bool	want_nodes_reboot = true;
-List    cluster_tres_list = NULL;
+int   slurmctld_tres_cnt = 0;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
@@ -227,6 +227,9 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
+static int          _init_tres(void);
+static void         _update_cluster_tres(void);
+
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
@@ -306,12 +309,6 @@ int main(int argc, char *argv[])
 	_become_slurm_user();
 	if (daemonize)
 		_set_work_dir();
-
-	/* load old config */
-	load_config_state_lite();
-
-	/* store new config */
-	dump_config_state_lite();
 
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
@@ -505,10 +502,6 @@ int main(int argc, char *argv[])
 				      "slurmctld start time");
 			}
 		}
-
-
-		acct_storage_g_add_tres(acct_db_conn,
-					  slurmctld_conf.slurm_user_id, NULL);
 
 		info("Running as primary controller");
 		if ((slurmctld_config.resume_backup == false) &&
@@ -1178,11 +1171,10 @@ static int _accounting_cluster_ready(void)
 	char *cluster_nodes = NULL, *cluster_tres_str;
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(node_read_lock);
-
-	set_cluster_tres();
-
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
 	*/
@@ -1190,7 +1182,16 @@ static int _accounting_cluster_ready(void)
 	bit_nset(total_node_bitmap, 0, node_record_count-1);
 	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
 	FREE_NULL_BITMAP(total_node_bitmap);
-	cluster_tres_str = slurmdb_make_tres_string(cluster_tres_list, 1);
+
+	assoc_mgr_lock(&locks);
+	set_cluster_tres(true);
+
+	slurmctld_tres_cnt = g_tres_count;
+
+	cluster_tres_str = slurmdb_make_tres_string(
+		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
+	assoc_mgr_unlock(&locks);
+
 	unlock_slurmctld(node_read_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
@@ -1322,6 +1323,133 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
 }
+
+static int _init_tres(void)
+{
+	char *temp_char = slurm_get_accounting_storage_tres();
+	List char_list;
+	List add_list = NULL;
+	slurmdb_tres_rec_t *tres_rec;
+
+	if (!temp_char) {
+		error("No tres defined, this should never happen");
+		return SLURM_ERROR;
+	}
+
+	char_list = list_create(slurm_destroy_char);
+	slurm_addto_char_list(char_list, temp_char);
+	xfree(temp_char);
+
+	while ((temp_char = list_pop(char_list))) {
+		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+
+		tres_rec->type = temp_char;
+
+		if (!strcasecmp(temp_char, "cpu"))
+			tres_rec->id = TRES_CPU;
+		else if (!strcasecmp(temp_char, "mem"))
+			tres_rec->id = TRES_MEM;
+		else if (!strcasecmp(temp_char, "energy"))
+			tres_rec->id = TRES_ENERGY;
+		else if (!strcasecmp(temp_char, "node"))
+			tres_rec->id = TRES_NODE;
+		else if (!strncasecmp(temp_char, "gres/", 5)) {
+			tres_rec->type[4] = '\0';
+			tres_rec->name = xstrdup(temp_char+5);
+			if (!tres_rec->name)
+				fatal("Gres type tres need to have a name, "
+				      "(i.e. Gres/GPU).  You gave %s",
+				      temp_char);
+		} else if (!strncasecmp(temp_char, "license/", 8)) {
+			tres_rec->type[7] = '\0';
+			tres_rec->name = xstrdup(temp_char+8);
+			if (!tres_rec->name)
+				fatal("License type tres need to "
+				      "have a name, (i.e. License/Foo).  "
+				      "You gave %s",
+				      temp_char);
+		} else {
+			fatal("%s: Unknown tres type '%s', acceptable "
+			      "types are CPU,Gres/,License/,Mem",
+			      __func__, temp_char);
+			xfree(tres_rec->type);
+			xfree(tres_rec);
+		}
+
+		if (!tres_rec->id &&
+		    (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
+					    ACCOUNTING_ENFORCE_TRES, NULL, 0)
+		     != SLURM_SUCCESS)) {
+			if (!add_list)
+				add_list = list_create(
+					slurmdb_destroy_tres_rec);
+			info("Couldn't find tres %s%s%s in the database, "
+			     "creating.",
+			     tres_rec->type, tres_rec->name ? "/" : "",
+			     tres_rec->name ? tres_rec->name : "");
+			list_append(add_list, tres_rec);
+		} else
+			slurmdb_destroy_tres_rec(tres_rec);
+	}
+
+	if (add_list) {
+		if (acct_storage_g_add_tres(acct_db_conn, getuid(), add_list)
+		    != SLURM_SUCCESS)
+			fatal("Problem adding tres to the database, "
+			      "can't continue until database is able to "
+			      "make new tres");
+		/* refresh list here since the updates are not
+		   sent dynamically */
+		assoc_mgr_refresh_lists(acct_db_conn, ASSOC_MGR_CACHE_TRES);
+		FREE_NULL_LIST(add_list);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* any association manager locks should be unlocked before hand */
+static void _update_cluster_tres(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock =
+		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	if (!job_list)
+		return;
+
+	lock_slurmctld(job_write_lock);
+	assoc_mgr_lock(&locks);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		/* If this returns 1 it means the positions were
+		   altered so just rebuild it.
+		*/
+		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
+						 job_ptr->tres_req_str,
+						 0, true))
+			job_set_req_tres(job_ptr, true);
+		if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
+						 job_ptr->tres_alloc_str,
+						 0, true))
+			job_set_alloc_tres(job_ptr, true);
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Set up the slurmctld_tres_cnt here so we don't have to
+	 * worry about locking the assoc_mgr if we just need the
+	 * count.  This would be used for Jobs so slurmctld_tres_cnt
+	 * should be protected by the job lock.
+	*/
+	slurmctld_tres_cnt = g_tres_count;
+
+	assoc_mgr_unlock(&locks);
+	unlock_slurmctld(job_write_lock);
+}
+
 
 static void _queue_reboot_msg(void)
 {
@@ -1801,6 +1929,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 	assoc_init_arg.update_assoc_notify = _update_assoc;
 	assoc_init_arg.update_license_notify = license_update_remote;
 	assoc_init_arg.update_qos_notify = _update_qos;
+	assoc_init_arg.update_cluster_tres = _update_cluster_tres;
 	assoc_init_arg.update_resvs = update_assocs_in_resvs;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
@@ -1850,6 +1979,8 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 		num_jobs = list_count(job_list);
 	unlock_slurmctld(job_read_lock);
 
+	_init_tres();
+
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
@@ -1887,7 +2018,7 @@ static int _add_node_gres_tres(void *x, void *arg)
 
 	xassert(tres_rec_in);
 
-	if (strcmp(tres_rec_in->type, "gres"))
+	if (xstrcmp(tres_rec_in->type, "gres"))
 		return 0;
 
 	xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
@@ -1901,17 +2032,22 @@ static int _add_node_gres_tres(void *x, void *arg)
 
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
-extern void set_cluster_tres(void)
+extern void set_cluster_tres(bool assoc_mgr_locked)
 {
 	struct node_record *node_ptr;
 	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
-	ListIterator itr;
 	int i;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	xassert(cluster_tres_list);
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
 
-	itr = list_iterator_create(cluster_tres_list);
-	while ((tres_rec = list_next(itr))) {
+	xassert(assoc_mgr_tres_array);
+
+	for (i=0; i < g_tres_count; i++) {
+		tres_rec = assoc_mgr_tres_array[i];
+
 		if (!tres_rec->type) {
 			error("TRES %d doesn't have a type given, "
 			      "this should never happen",
@@ -1936,7 +2072,6 @@ extern void set_cluster_tres(void)
 		}
 		/* FIXME: set up the other tres here that aren't specific */
 	}
-	list_iterator_destroy(itr);
 
 	cluster_cpus = 0;
 
@@ -1974,7 +2109,8 @@ extern void set_cluster_tres(void)
 		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
 			   TRES_MEM, mem_count);
 
-		list_for_each(cluster_tres_list, _add_node_gres_tres, node_ptr);
+		list_for_each(assoc_mgr_tres_list,
+			      _add_node_gres_tres, node_ptr);
 	}
 
 	/* FIXME: cluster_cpus probably needs to be removed and handled
@@ -1982,6 +2118,11 @@ extern void set_cluster_tres(void)
 	 */
 	if (cpu_tres)
 		cpu_tres->count = cluster_cpus;
+
+	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = node_record_count;
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 }
 
 /*

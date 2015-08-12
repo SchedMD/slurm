@@ -108,6 +108,9 @@ typedef enum {
 	PRINT_GRPCM,
 	PRINT_GRPCRM,
 	PRINT_GRPC,
+	PRINT_GRPTM,
+	PRINT_GRPTRM,
+	PRINT_GRPT,
 	PRINT_GRPJ,
 	PRINT_GRPMEM,
 	PRINT_GRPN,
@@ -117,12 +120,17 @@ typedef enum {
 	PRINT_MAXCRM,
 	PRINT_MAXC,
 	PRINT_MAXCU,
+	PRINT_MAXTM,
+	PRINT_MAXTRM,
+	PRINT_MAXT,
+	PRINT_MAXTU,
 	PRINT_MAXJ,
 	PRINT_MAXN,
 	PRINT_MAXNU,
 	PRINT_MAXS,
 	PRINT_MAXW,
 	PRINT_MINC,
+	PRINT_MINT,
 
 	/* ASSOCIATION */
 	PRINT_DQOS = 2000,
@@ -276,7 +284,6 @@ extern int get_double(char *in_value, double *out_value, char *type);
 extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			       int option);
 extern int addto_action_char_list(List char_list, char *names);
-extern List copy_char_list(List qos_list);
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last);
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
@@ -284,6 +291,8 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 				      bitstr_t *value, int last);
 
+extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
+				int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);

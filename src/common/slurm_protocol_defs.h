@@ -246,8 +246,8 @@ typedef enum {
 	REQUEST_NODE_INFO_SINGLE,  /* 2040 */
 	REQUEST_POWERCAP_INFO,
 	RESPONSE_POWERCAP_INFO,
-	REQUEST_CACHE_INFO,
-	RESPONSE_CACHE_INFO,
+	REQUEST_ASSOC_MGR_INFO,
+	RESPONSE_ASSOC_MGR_INFO,
 	REQUEST_SICP_INFO,
 	RESPONSE_SICP_INFO,
 	REQUEST_LAYOUT_INFO,
@@ -1077,11 +1077,6 @@ typedef struct license_info_request_msg {
 	uint16_t show_flags;
 } license_info_request_msg_t;
 
-typedef struct cache_info_request_msg {
-	time_t last_update;
-	uint16_t show_flags;
-} cache_info_request_msg_t;
-
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1164,6 +1159,7 @@ extern void slurm_destroy_char(void *object);
 extern void slurm_destroy_uint32_ptr(void *object);
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str);
+extern List slurm_copy_char_list(List char_list);
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_addto_step_list(List step_list, char *names);
 extern int slurm_sort_char_list_asc(void *, void *);
@@ -1327,7 +1323,6 @@ extern void slurm_free_requeue_msg(requeue_msg_t *);
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
-extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
 

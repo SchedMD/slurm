@@ -87,6 +87,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/assoc_mgr.h"
 
 #define GRES_MAGIC 0x438a34d4
 #define MAX_GRES_BITMAP 1024
@@ -181,7 +182,7 @@ static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
 static void	_job_state_log(void *gres_data, uint32_t job_id,
 			       char *gres_name);
-static int	_job_state_validate(char *config, void **gres_data,
+static int	_job_state_validate(char *config, gres_job_state_t **gres_data,
 				    slurm_gres_context_t *gres_name);
 static uint32_t	_job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
@@ -222,7 +223,8 @@ static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
 static void	_step_state_log(void *gres_data, uint32_t job_id,
 				uint32_t step_id, char *gres_name);
-static int	_step_state_validate(char *config, void **gres_data,
+static int	_step_state_validate(char *config,
+				     gres_step_state_t **gres_data,
 				     slurm_gres_context_t *context_ptr);
 static uint32_t	_step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool ignore_alloc, char *gres_name,
@@ -247,21 +249,6 @@ static uint32_t	_build_id(char *gres_name)
 	}
 
 	return id;
-}
-
-/* Find a slurmdb_tres_rec that is a gres of a certain name */
-static int _gres_find_tres(void *x, void *key)
-{
-	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
-
-	if (!tres_rec->type || strcmp(tres_rec->type, "gres"))
-		return 0;
-
-	if (key && tres_rec->name && !strcmp(tres_rec->name, (char *)key))
-		return 1;
-
-	return 0;
-
 }
 
 static int _gres_find_id(void *x, void *key)
@@ -2676,7 +2663,7 @@ static void _gres_job_list_delete(void *list_element)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static int _job_state_validate(char *config, void **gres_data,
+static int _job_state_validate(char *config, gres_job_state_t **gres_data,
 			       slurm_gres_context_t *context_ptr)
 {
 	gres_job_state_t *gres_ptr;
@@ -2761,7 +2748,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2;
 	gres_state_t *gres_ptr;
-	void *job_gres_data;
+	gres_job_state_t *job_gres_data;
 
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
 		*gres_list = NULL;
@@ -4792,7 +4779,7 @@ static void _gres_step_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
-static int _step_state_validate(char *config, void **gres_data,
+static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 				slurm_gres_context_t *context_ptr)
 {
 	gres_step_state_t *gres_ptr;
@@ -4935,7 +4922,8 @@ extern int gres_plugin_step_state_validate(char *req_config,
 	char *tmp_str, *tok, *last = NULL;
 	int i, rc, rc2, rc3;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
-	void *step_gres_data, *job_gres_data;
+	gres_step_state_t *step_gres_data;
+	gres_job_state_t *job_gres_data;
 	ListIterator job_gres_iter;
 	gres_step_state_t *step_gres_state;
 	gres_job_state_t *job_gres_state;
@@ -6495,8 +6483,7 @@ extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
 	return (gres_job_state_t *)gres_state_ptr->gres_data;
 }
 
-extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
-			     bool is_job)
+extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec;
@@ -6504,9 +6491,24 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 	char *name;
 	uint64_t count;
 	char *tres_str = NULL;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_req;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
+		tres_req.type = "gres";
+	}
 
 	if (!gres_list)
 		return NULL;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
 
 	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
@@ -6541,8 +6543,7 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 			}
 		}
 
-		if (!(tres_rec = list_find_first(
-			      total_tres_list, _gres_find_tres, name)))
+		if (!(tres_rec = assoc_mgr_find_tres_rec(&tres_req)))
 			continue; /* not tracked */
 
 		if (slurmdb_find_tres_count_in_string(
@@ -6557,5 +6558,73 @@ extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
 
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
 	return tres_str;
+}
+
+extern void gres_set_job_tres_cnt(List gres_list,
+				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
+				  bool locked)
+{
+	ListIterator itr;
+	gres_state_t *gres_state_ptr;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_rec;
+	uint64_t count;
+	int i, tres_pos;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "gres";
+	}
+
+	if (!gres_list || !tres_cnt || !node_cnt || (node_cnt == NO_VAL))
+		return;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	slurm_mutex_lock(&gres_context_lock);
+	itr = list_iterator_create(gres_list);
+	while ((gres_state_ptr = list_next(itr))) {
+		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+			gres_state_ptr->gres_data;
+		tres_rec.name = gres_data_ptr->type_model;
+		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
+
+		if (!tres_rec.name) {
+			for (i=0; i < gres_context_cnt; i++) {
+				if (gres_context[i].plugin_id ==
+				    gres_state_ptr->plugin_id) {
+					tres_rec.name =
+						gres_context[i].gres_name;
+					break;
+				}
+			}
+
+			if (!tres_rec.name) {
+				debug("gres_add_tres: couldn't find name");
+				continue;
+			}
+		}
+
+		if ((tres_pos = assoc_mgr_find_tres_pos(
+			     &tres_rec, false)) != -1)
+			tres_cnt[tres_pos] = count;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return;
 }

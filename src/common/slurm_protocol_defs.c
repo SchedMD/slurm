@@ -168,6 +168,27 @@ extern char *slurm_add_slash_to_quotes(char *str)
 	return copy;
 }
 
+extern List slurm_copy_char_list(List char_list)
+{
+	List ret_list = NULL;
+	char *tmp_char = NULL;
+	ListIterator itr = NULL;
+
+	if (!char_list || !list_count(char_list))
+		return NULL;
+
+	itr = list_iterator_create(char_list);
+	ret_list = list_create(slurm_destroy_char);
+
+	while ((tmp_char = list_next(itr)))
+		list_append(ret_list, xstrdup(tmp_char));
+
+	list_iterator_destroy(itr);
+
+	return ret_list;
+}
+
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
@@ -607,6 +628,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		for (i = 0; i < msg->spank_job_env_size; i++)
 			xfree(msg->spank_job_env[i]);
 		xfree(msg->spank_job_env);
+		xfree(msg->tres_req_cnt);
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg);
@@ -3954,39 +3976,22 @@ rpc_num2string(uint16_t opcode)
 	}
 }
 
-/* slurm_free_cache_info()
- *
- * Free the cache info returned previously
- * from the controller.
- */
 extern void
-slurm_free_cache_info_msg(cache_info_msg_t *msg)
+slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 {
-	int cc;
-
-	if (msg == NULL)
+	if (!msg)
 		return;
 
-	for (cc = 0; cc < msg->num_users; cc++) {
-		xfree(msg->cache_user_array[cc].name);
-		xfree(msg->cache_user_array[cc].old_name);
-		xfree(msg->cache_user_array[cc].default_acct);
-		xfree(msg->cache_user_array[cc].default_wckey);
-	}
-	for (cc = 0; cc < msg->num_assocs; cc++) {
-		xfree(msg->cache_assoc_array[cc].acct);
-		xfree(msg->cache_assoc_array[cc].cluster);
-		xfree(msg->cache_assoc_array[cc].parent_acct);
-		xfree(msg->cache_assoc_array[cc].partition);
-		xfree(msg->cache_assoc_array[cc].user);
-	}
-	xfree(msg->cache_user_array);
-	xfree(msg->cache_assoc_array);
+	FREE_NULL_LIST(msg->assoc_list);
+	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }
 
-extern void slurm_free_cache_info_request_msg(cache_info_request_msg_t *msg)
+extern void slurm_free_assoc_mgr_info_request_msg(
+	assoc_mgr_info_request_msg_t *msg)
 {
+	FREE_NULL_LIST(msg->acct_list);
+	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }
 

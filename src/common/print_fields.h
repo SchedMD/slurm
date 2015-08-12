@@ -105,7 +105,7 @@ extern void print_fields_uint64(
 extern void print_fields_hex064(
 	print_field_t *field, uint64_t value, int last);
 extern void print_fields_time_from_mins(print_field_t *field,
-					uint64_t value, int last);
+					uint32_t value, int last);
 extern void print_fields_time_from_secs(print_field_t *field,
 					uint64_t value, int last);
 extern void print_fields_char_list(print_field_t *field, List value, int last);

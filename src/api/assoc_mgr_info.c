@@ -1,9 +1,8 @@
 /*****************************************************************************\
- *  cache_info.c - get the current slurmctld cache information
+ *  assoc_mgr_info.c - get the current slurmctld assoc_mgr information
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Copyright (C) 2014 CSCS
+ *  Copyright (C) 2015 SchedMD LLC.
  *  Produced at CSCS
  *  Written by Stephen Trofinoff
  *  CODE-OCEC-09-009. All rights reserved.
@@ -51,34 +50,32 @@
 
 #include "src/common/slurm_protocol_api.h"
 
-/* slurm_load_cache()
+/* slurm_load_assoc_mgr_info()
  *
- * Load requested controller cache information.
+ * Load requested controller assoc_mgr state.
  *
  */
 extern int
-slurm_load_cache(cache_info_msg_t **cache_info, uint16_t show_flags)
+slurm_load_assoc_mgr_info(assoc_mgr_info_request_msg_t *req,
+			  assoc_mgr_info_msg_t **resp)
 {
 	int cc;
 	slurm_msg_t msg_request;
 	slurm_msg_t msg_reply;
-	struct cache_info_request_msg req;
 
-	memset(&req, 0, sizeof(struct cache_info_request_msg));
 	slurm_msg_t_init(&msg_request);
 	slurm_msg_t_init(&msg_reply);
 
-	msg_request.msg_type = REQUEST_CACHE_INFO;
-	req.show_flags   = show_flags;
-	msg_request.data = &req;
+	msg_request.msg_type = REQUEST_ASSOC_MGR_INFO;
+	msg_request.data = req;
 
 	cc = slurm_send_recv_controller_msg(&msg_request, &msg_reply);
 	if (cc < 0)
 		return SLURM_ERROR;
 
 	switch (msg_reply.msg_type) {
-		case RESPONSE_CACHE_INFO:
-			*cache_info = msg_reply.data;
+		case RESPONSE_ASSOC_MGR_INFO:
+			*resp = msg_reply.data;
 			break;
 		case RESPONSE_SLURM_RC:
 			cc = ((return_code_msg_t *)msg_reply.data)->return_code;

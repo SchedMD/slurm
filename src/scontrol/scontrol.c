@@ -1506,8 +1506,9 @@ _show_it (int argc, char *argv[])
 		scontrol_print_block (val);
 	} else if (strncasecmp (tag, "burstbuffer", MAX(tag_len, 2)) == 0) {
 		scontrol_print_burst_buffer ();
-	} else if (strncasecmp(tag, "cache", MAX(tag_len, 2)) == 0) {
-		scontrol_print_cache(val);
+	} else if (!strncasecmp(tag, "assoc_mgr", MAX(tag_len, 2)) ||
+		   !strncasecmp(tag, "cache", MAX(tag_len, 2))) {
+		scontrol_print_assoc_mgr_info(val);
 	} else if (strncasecmp (tag, "config", MAX(tag_len, 1)) == 0) {
 		_print_config (val);
 	} else if (strncasecmp (tag, "daemons", MAX(tag_len, 1)) == 0) {
@@ -1969,8 +1970,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      are booted and usable                        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
-  <ENTITY> may be \"aliases\", \"burstBuffer\", \"config\", \"daemons\",   \n\
-       \"frontend\", \"hostlist\", \"hostlistsorted\", \"hostnames\",      \n\
+  <ENTITY> may be \"aliases\", \"assoc_mgr\" \"burstBuffer\",              \n\
+       \"config\", \"daemons\", \"frontend\",                              \n\
+       \"hostlist\", \"hostlistsorted\", \"hostnames\",                    \n\
        \"job\", \"layouts\", \"node\", \"partition\", \"reservation\",     \n\
        \"slurmd\", \"step\", or \"topology\"                               \n\
        (also for BlueGene only: \"block\" or \"submp\").                   \n\

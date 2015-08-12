@@ -858,15 +858,15 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithDeleted, WithCoordinators, WithRawQOS,     \n\
                             and WOPLimits                                  \n\
        add account        - Clusters=, DefaultQOS=, Description=, Fairshare=,\n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpMemory=,   \n\
-                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=,\n\
-                            MaxCPUs=, MaxJobs=, MaxNodes=, MaxSubmitJobs=, \n\
+                            GrpTRESMins=, GrpTRES=, GrpJobs=, GrpMemory=,   \n\
+                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxTRESMins=,\n\
+                            MaxTRES=, MaxJobs=, MaxNodes=, MaxSubmitJobs=, \n\
                             MaxWall=, Names=, Organization=, Parent=,      \n\
                             and QosLevel=                                  \n\
        modify account     - (set options) DefaultQOS=, Description=,       \n\
-                            Fairshare=, GrpCPUMins=, GrpCPURunMins=,       \n\
-                            GrpCPUs=, GrpJobs=, GrpMemory=, GrpNodes=,     \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
+                            Fairshare=, GrpTRESMins=, GrpTRESRunMins=,       \n\
+                            GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,     \n\
+                            GrpSubmitJob=, GrpWall=, MaxTRESMins=, MaxTRES=,\n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Organization=, Parent=, and QosLevel=  \n\
                             RawUsage= (with admin privileges only)         \n\
@@ -883,14 +883,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list cluster       - Classification=, DefaultQOS=, Flags=, Format=, \n\
                             Names=, RPC=, and WOLimits                     \n\
-       add cluster        - DefaultQOS=, Fairshare=, GrpCPUs=, GrpJobs=,   \n\
-                            GrpMemory=, GrpNodes=, GrpSubmitJob=, MaxCPUMins=,\n\
-                            MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
-                            Name=, and QosLevel=                           \n\
-       modify cluster     - (set options) DefaultQOS=, Fairshare=, GrpCPUs=,\n\
-                            GrpJobs=, GrpMemory=, GrpNodes=, GrpSubmitJob=, \n\
-                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,\n\
-                            MaxWall=, and QosLevel=                        \n\
+       add cluster        - DefaultQOS=, Fairshare=, GrpTRES=, GrpJobs=,   \n\
+                            GrpMemory=, GrpNodes=, GrpSubmitJob=,          \n\
+                            MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
+                            MaxSubmitJobs=, MaxWall=, Name=, and QosLevel= \n\
+       modify cluster     - (set options) DefaultQOS=, Fairshare=, GrpTRES=,\n\
+                            GrpJobs=, GrpMemory=, GrpNodes=, GrpSubmitJob=,\n\
+                            MaxTRESMins=, MaxJobs=, MaxNodes=,             \n\
+                            MaxSubmitJobs=, MaxWall=, and QosLevel=        \n\
                             (where options) Classification=, Flags=,       \n\
                             and Names=                                     \n\
        delete cluster     - Classification=, DefaultQOS=, Flags=, and Names=\n\
@@ -947,12 +947,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithDeleted, WithRawQOS, and WOPLimits         \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, DefaultQOS=, DefaultWCKey=,   \n\
-                            Fairshare=, MaxCPUMins=, MaxCPUs=,             \n\
+                            Fairshare=, MaxTRESMins=, MaxTRES=,            \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Partitions=, and QosLevel=             \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
                             DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
-                            MaxCPUMins=, MaxCPUs=, MaxJobs=, MaxNodes=,    \n\
+                            MaxTRESMins=, MaxTRES=, MaxJobs=, MaxNodes=,    \n\
                             MaxSubmitJobs=, MaxWall=, and QosLevel=,       \n\
                             RawUsage= (with admin privileges only)         \n\
                             (where options) Accounts=, AdminLevel=,        \n\
@@ -979,23 +979,23 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Account            - Account, Coordinators, Description, Organization\n\
                                                                            \n\
        Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
-                            GrpCPUMins, GrpCPURunMins, GrpCPUs, GrpJobs,   \n\
+                            GrpTRESMins, GrpTRESRunMins, GrpTRES, GrpJobs, \n\
                             GrpMemory, GrpNodes, GrpSubmitJob, GrpWall,    \n\
-                            ID, LFT, MaxCPUMins, MaxCPUs,                  \n\
+                            ID, LFT, MaxTRESMins, MaxTRES,                  \n\
                             MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall, QOS,\n\
                             ParentID, ParentName, Partition, RawQOS, RGT,  \n\
                             User                                           \n\
                                                                            \n\
-       Cluster            - TRES, Classification, Cluster, ClusterNodes, \n\
+       Cluster            - Classification, Cluster, ClusterNodes,         \n\
                             ControlHost, ControlPort, DefaultQOS,          \n\
-                            Fairshare, Flags, GrpCPUMins, GrpCPUs, GrpJobs,\n\
-                            GrpMemory, GrpNodes, GrpSubmitJob, MaxCPUMins, \n\
-                            MaxCPUs, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
-                            MaxWall, NodeCount, PluginIDSelect, RPC        \n\
+                            Fairshare, Flags, GrpTRESMins, GrpTRES GrpJobs,\n\
+                            GrpMemory, GrpNodes, GrpSubmitJob, MaxTRESMins, \n\
+                            MaxTRES, MaxJobs, MaxNodes, MaxSubmitJobs,     \n\
+                            MaxWall, NodeCount, PluginIDSelect, RPC, TRES  \n\
                                                                            \n\
-       Event              - Cluster, ClusterNodes, CPUs, Duration, End,    \n\
+       Event              - Cluster, ClusterNodes, Duration, End,          \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\
-                            State, StateRaw, User                          \n\
+                            State, StateRaw, TRES, User                    \n\
                                                                            \n\
        QOS                - Description, Flags, GraceTime, GrpCPUMins,     \n\
                             GrpCPURunMins, GrpCPUs, GrpJobs, GrpMemory,    \n\

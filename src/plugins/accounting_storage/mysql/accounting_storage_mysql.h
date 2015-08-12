@@ -146,6 +146,11 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 List ret_list,
 			 bool *jobs_running);
 
+extern void mod_tres_str(char **out, char *mod, char *cur,
+			 char *cur_par, char *name, char **vals,
+			 uint32_t id, bool assoc);
+
+
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 

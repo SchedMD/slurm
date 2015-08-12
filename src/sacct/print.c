@@ -296,9 +296,13 @@ void print_fields(type_t type, void *object)
 	while((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
-		double tmp_dub = (double)NO_VAL;
-		uint32_t tmp_uint32 = (uint32_t)NO_VAL;
-		uint64_t tmp_uint64 = (uint64_t)NO_VAL;
+		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
+						    unless we can
+						    confirm the values
+						    coming in are
+						    NO_VAL64 */
+		uint32_t tmp_uint32 = NO_VAL;
+		uint64_t tmp_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {

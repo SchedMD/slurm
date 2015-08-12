@@ -806,7 +806,7 @@ extern void jag_common_poll_data(
 
 	xassert(callbacks);
 
-	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
+	if (!pgid_plugin && (cont_id == NO_VAL64)) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
 	}

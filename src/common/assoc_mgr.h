@@ -106,92 +106,14 @@ typedef struct {
 	void (*remove_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*sync_license_notify) (List clus_res_list);
 	void (*update_assoc_notify) (slurmdb_assoc_rec_t *rec);
+	void (*update_cluster_tres) (void);
 	void (*update_license_notify) (slurmdb_res_rec_t *rec);
 	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
 	void (*update_resvs) ();
 } assoc_init_args_t;
 
-struct assoc_mgr_assoc_usage {
-	List children_list;     /* list of children associations
-				 * (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of active jobs in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_mem; /* count of active memory in the group
-				 * (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of active jobs in the group
-				  * (DON'T PACK) */
-	double grp_used_wall;   /* group count of time used in
-				 * running jobs (DON'T PACK) */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK) */
-	double fs_factor;	/* Fairshare factor. Not used by all algorithms
-				 * (DON'T PACK) */
-	uint32_t level_shares;  /* number of shares on this level of
-				 * the tree (DON'T PACK) */
-
-	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
-						      * parent assoc
-						      * set in slurmctld
-						      * (DON'T PACK) */
-
-	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
-						     * assoc if fairshare
-						     * == SLURMDB_FS_USE_PARENT
-						     * set in slurmctld
-						     * (DON'T PACK) */
-
-	double shares_norm;     /* normalized shares (DON'T PACK) */
-
-	long double usage_efctv;/* effective, normalized usage (DON'T PACK) */
-	long double usage_norm;	/* normalized usage (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_submit_jobs; /* count of jobs pending or running
-				    * (DON'T PACK) */
-
-	/* Currently FAIR_TREE systems are defining data on
-	 * this struct but instead we could keep a void pointer to system
-	 * specific data. This would allow subsystems to define whatever data
-	 * they need without having to modify this struct; it would also save
-	 * space.
-	 */
-	unsigned active_seqno;  /* Sequence number for identifying
-				 * active associations (DON'T PACK) */
-
-	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
-				 * compared to the association's siblings (DON'T
-				 * PACK) */
-
-	bitstr_t *valid_qos;    /* qos available for this association
-				 * derived from the qos_list.
-				 * (DON'T PACK) */
-};
-
-struct assoc_mgr_qos_usage {
-	List job_list; /* list of job pointers to submitted/running
-			  jobs (DON'T PACK) */
-	uint32_t grp_used_cpus; /* count of cpus in use in this qos
-				 * (DON'T PACK) */
-	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
-					 * (DON'T PACK) */
-	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t grp_used_mem; /* count of memory in use in this qos
-				* (DON'T PACK) */
-	uint32_t grp_used_nodes; /* count of nodes in use in this qos
-				  * (DON'T PACK) */
-	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
-					* (DON'T PACK) */
-	double grp_used_wall;   /* group count of time (minutes) used in
-				 * running jobs (DON'T PACK) */
-	double norm_priority;/* normalized priority (DON'T PACK) */
-	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
-
-	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK) */
-};
-
-
 extern List assoc_mgr_tres_list;
+extern slurmdb_tres_rec_t **assoc_mgr_tres_array;
 extern List assoc_mgr_assoc_list;
 extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
@@ -203,18 +125,15 @@ extern slurmdb_assoc_rec_t *assoc_mgr_root_assoc;
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
 extern uint32_t g_user_assoc_count; /* Number of assocations which are users */
-
+extern uint32_t g_tres_count; /* Number of TRES from the database
+			       * which also is the number of elements
+			       * in the assoc_mgr_tres_array */
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno);
 extern int assoc_mgr_fini(char *state_save_location);
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks);
 extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks);
-
-extern assoc_mgr_assoc_usage_t *create_assoc_mgr_assoc_usage();
-extern void destroy_assoc_mgr_assoc_usage(void *object);
-extern assoc_mgr_qos_usage_t *create_assoc_mgr_qos_usage();
-extern void destroy_assoc_mgr_qos_usage(void *object);
 
 /*
  * get info from the storage
@@ -356,6 +275,30 @@ extern List assoc_mgr_get_shares(
 	void *db_conn, uid_t uid, List acct_list, List user_list);
 
 /*
+ * get the state of the association manager and pack it up in buffer
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN: msg: request for various states
+ * IN: uid: uid_t of user issuing the request
+ * IN: db_conn: needed if not already connected to the database or DBD
+ * IN: protocol_version: version of Slurm we are sending to.
+ */
+extern void assoc_mgr_info_get_pack_msg(
+	char **buffer_ptr, int *buffer_size,
+	assoc_mgr_info_request_msg_t *msg, uid_t uid,
+	void *db_conn, uint16_t protocol_version);
+
+/*
+ * unpack the packing of the above assoc_mgr_get_pack_state_msg function.
+ * OUT: object - what to unpack into
+ * IN: buffer - buffer to unpack
+ * IN: version of Slurm this is packed in
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else
+ */
+extern int assoc_mgr_info_unpack_msg(
+	assoc_mgr_info_msg_t **object, Buf buffer, uint16_t protocol_version);
+
+/*
  * assoc_mgr_update - update the association manager
  * IN update_list: updates to perform
  * IN locked: if appropriate write locks are locked before calling or not
@@ -487,5 +430,46 @@ extern int assoc_mgr_set_missing_uids();
  * can call it if needed.
  */
 extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc);
+
+/* Find the position of the given TRES ID or type/name in the
+ * assoc_mgr_tres_array, if the ID isn't found -1 is returned.
+ */
+extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
+
+/* calls assoc_mgr_find_tres_pos and returns the pointer in the
+ * assoc_mgr_tres_array.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
+ * function and while using the returned record.
+ */
+extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
+	slurmdb_tres_rec_t *tres_rec);
+
+/* fills in allocates and sets tres_cnt based off tres_str
+ * OUT tres_cnt - array to be filled in g_tres_cnt in length
+ * IN tres_str - simple format of tres used with id and count set
+ * IN init_val - what the initial value is going to be set to
+ * IN locked - if the assoc_mgr tres read lock is locked or not.
+ * RET if positions changed in array from string 1 if nothing changed 0
+ */
+extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
+					uint64_t init_val, bool locked);
+
+/* Creates all the tres arrays for an association.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before this
+ * is called. */
+extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc);
+
+/* Creates all the tres arrays for a QOS.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before this
+ * is called. */
+extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos);
+
+/* Make a simple tres string from a tres count array.
+ * IN tres_cnt - counts of each tres used
+ * IN locked - if the assoc_mgr tres read lock is locked or not.
+ * RET char * of simple tres string
+ */
+extern char *assoc_mgr_make_tres_str_from_array(
+	uint64_t *tres_cnt, bool locked);
 
 #endif /* _SLURM_ASSOC_MGR_H */

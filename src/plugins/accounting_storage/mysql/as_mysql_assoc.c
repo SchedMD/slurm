@@ -49,19 +49,16 @@ char *assoc_req_inx[] = {
 	"acct",
 	"`partition`",
 	"shares",
-	"grp_cpu_mins",
-	"grp_cpu_run_mins",
-	"grp_cpus",
+	"grp_tres_mins",
+	"grp_tres_run_mins",
+	"grp_tres",
 	"grp_jobs",
-	"grp_mem",
-	"grp_nodes",
 	"grp_submit_jobs",
 	"grp_wall",
-	"max_cpu_mins_pj",
-	"max_cpu_run_mins",
-	"max_cpus_pj",
+	"max_tres_mins_pj",
+	"max_tres_run_mins",
+	"max_tres_pj",
 	"max_jobs",
-	"max_nodes_pj",
 	"max_submit_jobs",
 	"max_wall_pj",
 	"parent_acct",
@@ -78,19 +75,16 @@ enum {
 	ASSOC_REQ_ACCT,
 	ASSOC_REQ_PART,
 	ASSOC_REQ_FS,
-	ASSOC_REQ_GCM,
-	ASSOC_REQ_GCRM,
-	ASSOC_REQ_GC,
+	ASSOC_REQ_GTM,
+	ASSOC_REQ_GTRM,
+	ASSOC_REQ_GT,
 	ASSOC_REQ_GJ,
-	ASSOC_REQ_GMEM,
-	ASSOC_REQ_GN,
 	ASSOC_REQ_GSJ,
 	ASSOC_REQ_GW,
-	ASSOC_REQ_MCMPJ,
-	ASSOC_REQ_MCRM,
-	ASSOC_REQ_MCPJ,
+	ASSOC_REQ_MTMPJ,
+	ASSOC_REQ_MTRM,
+	ASSOC_REQ_MTPJ,
 	ASSOC_REQ_MJ,
-	ASSOC_REQ_MNPJ,
 	ASSOC_REQ_MSJ,
 	ASSOC_REQ_MWPJ,
 	ASSOC_REQ_PARENT,
@@ -102,19 +96,18 @@ enum {
 };
 
 static char *get_parent_limits_select =
-	"select @par_id, @mj, @msj, @mcpj, "
-	"@mnpj, @mwpj, @mcmpj, @mcrm, "
+	"select @par_id, @mj, @msj, "
+	"@mwpj, @mtpj, @mtmpj, @mtrm, "
 	"@def_qos_id, @qos, @delta_qos;";
 
 enum {
 	ASSOC2_REQ_PARENT_ID,
 	ASSOC2_REQ_MJ,
 	ASSOC2_REQ_MSJ,
-	ASSOC2_REQ_MCPJ,
-	ASSOC2_REQ_MNPJ,
 	ASSOC2_REQ_MWPJ,
-	ASSOC2_REQ_MCMPJ,
-	ASSOC2_REQ_MCRM,
+	ASSOC2_REQ_MTPJ,
+	ASSOC2_REQ_MTMPJ,
+	ASSOC2_REQ_MTRM,
 	ASSOC2_REQ_DEF_QOS,
 	ASSOC2_REQ_QOS,
 	ASSOC2_REQ_DELTA_QOS,
@@ -146,6 +139,12 @@ static char *massoc_req_inx[] = {
 	"lft",
 	"rgt",
 	"qos",
+	"grp_tres_mins",
+	"grp_tres_run_mins",
+	"grp_tres",
+	"max_tres_mins_pj",
+	"max_tres_run_mins",
+	"max_tres_pj",
 };
 
 enum {
@@ -157,6 +156,12 @@ enum {
 	MASSOC_LFT,
 	MASSOC_RGT,
 	MASSOC_QOS,
+	MASSOC_GTM,
+	MASSOC_GTRM,
+	MASSOC_GT,
+	MASSOC_MTMPJ,
+	MASSOC_MTRM,
+	MASSOC_MTPJ,
 	MASSOC_COUNT
 };
 
@@ -671,6 +676,7 @@ static int _set_assoc_limits_for_add(
 	char *query = NULL;
 	char *parent = NULL;
 	char *qos_delta = NULL;
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE;
 
 	xassert(assoc);
 
@@ -701,22 +707,27 @@ static int _set_assoc_limits_for_add(
 	else if (assoc->def_qos_id == INFINITE)
 		assoc->def_qos_id = 0;
 
-	if (row[ASSOC2_REQ_MCMPJ]
-	    && assoc->max_cpu_mins_pj == (uint64_t)INFINITE)
-		assoc->max_cpu_mins_pj = slurm_atoull(row[ASSOC2_REQ_MCMPJ]);
-	if (row[ASSOC2_REQ_MCRM]
-	    && assoc->max_cpu_run_mins == (uint64_t)INFINITE)
-		assoc->max_cpu_run_mins = slurm_atoull(row[ASSOC2_REQ_MCRM]);
-	if (row[ASSOC2_REQ_MCPJ] && assoc->max_cpus_pj == INFINITE)
-		assoc->max_cpus_pj = slurm_atoul(row[ASSOC2_REQ_MCPJ]);
 	if (row[ASSOC2_REQ_MJ] && assoc->max_jobs == INFINITE)
 		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
-	if (row[ASSOC2_REQ_MNPJ] && assoc->max_nodes_pj == INFINITE)
-		assoc->max_nodes_pj = slurm_atoul(row[ASSOC2_REQ_MNPJ]);
 	if (row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == INFINITE)
 		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
 	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == INFINITE)
 		assoc->max_wall_pj = slurm_atoul(row[ASSOC2_REQ_MWPJ]);
+
+	/* For the tres limits we just concatted the limits going up
+	 * the heirarchy slurmdb_tres_list_from_string will just skip
+	 * over any reoccuring limit to give us the first one per
+	 * TRES.
+	 */
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_pj, row[ASSOC2_REQ_MTPJ],
+		tres_str_flags);
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_mins_pj, row[ASSOC2_REQ_MTMPJ],
+		tres_str_flags);
+	slurmdb_combine_tres_strings(
+		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM],
+		tres_str_flags);
 
 	if (assoc->qos_list) {
 		int set = 0;
@@ -776,6 +787,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	char *query = NULL, *object = NULL;
 	int i;
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE;
 
 	char *assoc_inx[] = {
 		"id_assoc",
@@ -784,11 +796,10 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"`partition`",
 		"max_jobs",
 		"max_submit_jobs",
-		"max_nodes_pj",
-		"max_cpus_pj",
+		"max_tres_pj",
 		"max_wall_pj",
-		"max_cpu_mins_pj",
-		"max_cpu_run_mins",
+		"max_tres_mins_pj",
+		"max_tres_run_mins",
 		"def_qos_id",
 		"qos",
 		"delta_qos",
@@ -803,11 +814,10 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_PART,
 		ASSOC_MJ,
 		ASSOC_MSJ,
-		ASSOC_MNPJ,
-		ASSOC_MCPJ,
+		ASSOC_MTPJ,
 		ASSOC_MWPJ,
-		ASSOC_MCMPJ,
-		ASSOC_MCRM,
+		ASSOC_MTMPJ,
+		ASSOC_MTRM,
 		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
@@ -848,6 +858,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_assoc_rec_t *mod_assoc = NULL;
 		int modified = 0;
+		char *tmp_char = NULL;
 
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
@@ -869,33 +880,49 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MNPJ] && assoc->max_nodes_pj != NO_VAL) {
-			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
-			modified = 1;
-		}
-
-		if (!row[ASSOC_MCPJ] && assoc->max_cpus_pj != NO_VAL) {
-			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
-			modified = 1;
-		}
-
 		if (!row[ASSOC_MWPJ] && assoc->max_wall_pj != NO_VAL) {
 			mod_assoc->max_wall_pj = assoc->max_wall_pj;
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MCMPJ]
-		    && assoc->max_cpu_mins_pj != (uint64_t)NO_VAL) {
-			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
+		if (assoc->max_tres_pj) {
+			tmp_char = xstrdup(row[ASSOC_MTPJ]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_pj,
+				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
+
+			mod_assoc->max_tres_pj = tmp_char;
+			tmp_char = NULL;
 			modified = 1;
 		}
 
-		if (!row[ASSOC_MCRM]
-		    && assoc->max_cpu_run_mins != (uint64_t)NO_VAL) {
-			mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
+		if (assoc->max_tres_mins_pj) {
+			tmp_char = xstrdup(row[ASSOC_MTMPJ]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_mins_pj,
+				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
+
+			mod_assoc->max_tres_mins_pj = tmp_char;
+			tmp_char = NULL;
 			modified = 1;
 		}
 
+		if (assoc->max_tres_run_mins) {
+			tmp_char = xstrdup(row[ASSOC_MTRM]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_run_mins,
+				tres_str_flags);
+			if (!tmp_char)
+				tmp_char = xstrdup("");
+
+			mod_assoc->max_tres_run_mins = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
+		}
 		if (!row[ASSOC_QOS][0] && assoc->qos_list) {
 			List delta_qos_list = NULL;
 			char *qos_char = NULL, *delta_char = NULL;
@@ -1109,267 +1136,6 @@ static int _setup_assoc_cond_limits(
 		xstrcat(*extra, ")");
 	}
 
-	if (assoc_cond->fairshare_list
-	    && list_count(assoc_cond->fairshare_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->fairshare_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			if (!strncasecmp(object, "parent", 6))
-				xstrfmtcat(*extra, "%s.shares='%u'",
-					   prefix, SLURMDB_FS_USE_PARENT);
-			else
-				xstrfmtcat(*extra, "%s.shares='%s'",
-					   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_cpu_mins_list
-	    && list_count(assoc_cond->grp_cpu_mins_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_cpu_mins_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_cpu_mins='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_cpu_run_mins_list
-	    && list_count(assoc_cond->grp_cpu_run_mins_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_cpu_run_mins_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_cpu_run_mins='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_cpus_list
-	    && list_count(assoc_cond->grp_cpus_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_cpus_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_cpus='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_jobs_list
-	    && list_count(assoc_cond->grp_jobs_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_jobs_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_jobs='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_mem_list
-	    && list_count(assoc_cond->grp_mem_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_mem_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_mem='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_nodes_list
-	    && list_count(assoc_cond->grp_nodes_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_nodes_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_nodes='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_submit_jobs_list
-	    && list_count(assoc_cond->grp_submit_jobs_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_submit_jobs_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_submit_jobs='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->grp_wall_list
-	    && list_count(assoc_cond->grp_wall_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_wall_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.grp_wall='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_cpu_mins_pj_list
-	    && list_count(assoc_cond->max_cpu_mins_pj_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_cpu_mins_pj_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpu_mins_pj='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_cpu_run_mins_list
-	    && list_count(assoc_cond->max_cpu_run_mins_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_cpu_run_mins_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpu_run_mins='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_cpus_pj_list
-	    && list_count(assoc_cond->max_cpus_pj_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_cpus_pj_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_cpus_pj='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_jobs_list
-	    && list_count(assoc_cond->max_jobs_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_jobs_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_jobs='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_nodes_pj_list
-	    && list_count(assoc_cond->max_nodes_pj_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_nodes_pj_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_nodes_pj='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_submit_jobs_list
-	    && list_count(assoc_cond->max_submit_jobs_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_submit_jobs_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.max_submit_jobs='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
-	if (assoc_cond->max_wall_pj_list
-	    && list_count(assoc_cond->max_wall_pj_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->max_wall_pj_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra,
-				   "%s.max_wall_pj='%s'",
-				   prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
 	if (assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
@@ -1462,6 +1228,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	vals = xstrdup(sent_vals);
 
 	while ((row = mysql_fetch_row(result))) {
+		MYSQL_RES *result2 = NULL;
 		slurmdb_assoc_rec_t *mod_assoc = NULL, alt_assoc;
 		int account_type=0;
 		/* If parent changes these also could change
@@ -1612,7 +1379,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		/* Only do this when not dealing with the root association. */
 		if (strcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
-			MYSQL_RES *result2;
 			MYSQL_ROW row2;
 			/* If there is a variable cleared here we need to make
 			   sure we get the parent's information, if any. */
@@ -1645,32 +1411,26 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MSJ])
 					alt_assoc.max_submit_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MSJ]);
-				if ((assoc->max_cpus_pj == INFINITE)
-				    && row2[ASSOC2_REQ_MCPJ])
-					alt_assoc.max_cpus_pj = slurm_atoul(
-						row2[ASSOC2_REQ_MCPJ]);
-				if ((assoc->max_nodes_pj == INFINITE)
-				    && row2[ASSOC2_REQ_MNPJ])
-					alt_assoc.max_nodes_pj = slurm_atoul(
-						row2[ASSOC2_REQ_MNPJ]);
 				if ((assoc->max_wall_pj == INFINITE)
 				    && row2[ASSOC2_REQ_MWPJ])
 					alt_assoc.max_wall_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
-				if ((assoc->max_cpu_mins_pj ==
-				     (uint64_t)INFINITE)
-				    && row2[ASSOC2_REQ_MCMPJ])
-					alt_assoc.max_cpu_mins_pj =
-						slurm_atoull(
-							row2[ASSOC2_REQ_MCMPJ]);
-				if ((assoc->max_cpu_run_mins ==
-				     (uint64_t)INFINITE)
-				    && row2[ASSOC2_REQ_MCRM])
-					alt_assoc.max_cpu_run_mins =
-						slurm_atoull(
-							row2[ASSOC2_REQ_MCRM]);
+
+				/* We don't have to copy these strings
+				 * or check for there existance,
+				 * slurmdb_combine_tres_strings will
+				 * do this for us below.
+				 */
+				if (row2[ASSOC2_REQ_MTPJ][0])
+					alt_assoc.max_tres_pj =
+						row2[ASSOC2_REQ_MTPJ];
+				if (row2[ASSOC2_REQ_MTMPJ][0])
+					alt_assoc.max_tres_mins_pj =
+						row2[ASSOC2_REQ_MTMPJ];
+				if (row2[ASSOC2_REQ_MTRM][0])
+					alt_assoc.max_tres_run_mins =
+						row2[ASSOC2_REQ_MTRM];
 			}
-			mysql_free_result(result2);
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
 		slurmdb_init_assoc_rec(mod_assoc, 0);
@@ -1686,36 +1446,41 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		mod_assoc->shares_raw = assoc->shares_raw;
 
-		mod_assoc->grp_cpus = assoc->grp_cpus;
-		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
-		mod_assoc->grp_cpu_run_mins = assoc->grp_cpu_run_mins;
+		mod_tres_str(&mod_assoc->grp_tres,
+			     assoc->grp_tres, row[MASSOC_GT],
+			     NULL, "grp_tres", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->grp_tres_mins,
+			     assoc->grp_tres_mins, row[MASSOC_GTM],
+			     NULL, "grp_tres_mins", &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->grp_tres_run_mins,
+			     assoc->grp_tres_run_mins, row[MASSOC_GTRM],
+			     NULL, "grp_tres_run_mins", &vals,
+			     mod_assoc->id, 1);
+
 		mod_assoc->grp_jobs = assoc->grp_jobs;
-		mod_assoc->grp_mem = assoc->grp_mem;
-		mod_assoc->grp_nodes = assoc->grp_nodes;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
 
-		if (alt_assoc.max_cpus_pj != NO_VAL)
-			mod_assoc->max_cpus_pj = alt_assoc.max_cpus_pj;
-		else
-			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
-		if (alt_assoc.max_cpu_mins_pj != (uint64_t)NO_VAL)
-			mod_assoc->max_cpu_mins_pj = alt_assoc.max_cpu_mins_pj;
-		else
-			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
-		if (alt_assoc.max_cpu_run_mins != (uint64_t)NO_VAL)
-			mod_assoc->max_cpu_run_mins =
-				alt_assoc.max_cpu_run_mins;
-		else
-			mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
+		mod_tres_str(&mod_assoc->max_tres_pj,
+			     assoc->max_tres_pj, row[MASSOC_MTPJ],
+			     alt_assoc.max_tres_pj, "max_tres_pj",
+			     &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->max_tres_mins_pj,
+			     assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
+			     alt_assoc.max_tres_mins_pj, "max_tres_mins_pj",
+			     &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->max_tres_run_mins,
+			     assoc->max_tres_run_mins, row[MASSOC_MTRM],
+			     alt_assoc.max_tres_run_mins, "max_tres_run_mins",
+			     &vals, mod_assoc->id, 1);
+
+		if (result2)
+			mysql_free_result(result2);
+
 		if (alt_assoc.max_jobs != NO_VAL)
 			mod_assoc->max_jobs = alt_assoc.max_jobs;
 		else
 			mod_assoc->max_jobs = assoc->max_jobs;
-		if (alt_assoc.max_nodes_pj != NO_VAL)
-			mod_assoc->max_nodes_pj = alt_assoc.max_nodes_pj;
-		else
-			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
 		if (alt_assoc.max_submit_jobs != NO_VAL)
 			mod_assoc->max_submit_jobs = alt_assoc.max_submit_jobs;
 		else
@@ -1829,7 +1594,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		if (moved_parent)
+		if (!vals || !vals[0] || moved_parent)
 			slurmdb_destroy_assoc_rec(mod_assoc);
 		else if (addto_update_list(mysql_conn->update_list,
 					   SLURMDB_MODIFY_ASSOC,
@@ -1851,7 +1616,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (vals) {
+	if (vals && vals[0]) {
 		char *user_name = uid_to_string((uid_t) user->uid);
 		rc = modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
 				   user_name, assoc_table, name_char, vals,
@@ -2053,11 +1818,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint32_t parent_def_qos_id = 0;
 	uint32_t parent_mj = INFINITE;
 	uint32_t parent_msj = INFINITE;
-	uint32_t parent_mcpj = INFINITE;
-	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
-	uint64_t parent_mcmpj = (uint64_t)INFINITE;
-	uint64_t parent_mcrm = (uint64_t)INFINITE;
+	char *parent_mtpj = NULL;
+	char *parent_mtmpj = NULL;
+	char *parent_mtrm = NULL;
 	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
@@ -2193,35 +1957,17 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->grp_submit_jobs = INFINITE;
 
-		if (row[ASSOC_REQ_GC])
-			assoc->grp_cpus = slurm_atoul(row[ASSOC_REQ_GC]);
-		else
-			assoc->grp_cpus = INFINITE;
-
-		if (row[ASSOC_REQ_GMEM])
-			assoc->grp_mem = slurm_atoul(row[ASSOC_REQ_GMEM]);
-		else
-			assoc->grp_mem = INFINITE;
-
-		if (row[ASSOC_REQ_GN])
-			assoc->grp_nodes = slurm_atoul(row[ASSOC_REQ_GN]);
-		else
-			assoc->grp_nodes = INFINITE;
 		if (row[ASSOC_REQ_GW])
 			assoc->grp_wall = slurm_atoul(row[ASSOC_REQ_GW]);
 		else
 			assoc->grp_wall = INFINITE;
 
-		if (row[ASSOC_REQ_GCM])
-			assoc->grp_cpu_mins = slurm_atoull(row[ASSOC_REQ_GCM]);
-		else
-			assoc->grp_cpu_mins = INFINITE;
-
-		if (row[ASSOC_REQ_GCRM])
-			assoc->grp_cpu_run_mins =
-				slurm_atoull(row[ASSOC_REQ_GCRM]);
-		else
-			assoc->grp_cpu_run_mins = INFINITE;
+		if (row[ASSOC_REQ_GT][0])
+			assoc->grp_tres = xstrdup(row[ASSOC_REQ_GT]);
+		if (row[ASSOC_REQ_GTM][0])
+			assoc->grp_tres_mins = xstrdup(row[ASSOC_REQ_GTM]);
+		if (row[ASSOC_REQ_GTRM][0])
+			assoc->grp_tres_run_mins = xstrdup(row[ASSOC_REQ_GTRM]);
 
 		parent_acct = row[ASSOC_REQ_ACCT];
 		if (!without_parent_info
@@ -2287,49 +2033,36 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				else
 					parent_msj = INFINITE;
 
-				if (row2[ASSOC2_REQ_MCPJ])
-					parent_mcpj = slurm_atoul(
-						row2[ASSOC2_REQ_MCPJ]);
-				else
-					parent_mcpj = INFINITE;
-
-				if (row2[ASSOC2_REQ_MNPJ])
-					parent_mnpj = slurm_atoul(
-						row2[ASSOC2_REQ_MNPJ]);
-				else
-					parent_mnpj = INFINITE;
-
 				if (row2[ASSOC2_REQ_MWPJ])
 					parent_mwpj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
 				else
 					parent_mwpj = INFINITE;
 
-				if (row2[ASSOC2_REQ_MCMPJ])
-					parent_mcmpj = slurm_atoull(
-						row2[ASSOC2_REQ_MCMPJ]);
-				else
-					parent_mcmpj = INFINITE;
+				xfree(parent_mtpj);
+				if (row2[ASSOC2_REQ_MTPJ][0])
+					parent_mtpj = xstrdup(
+						row2[ASSOC2_REQ_MTPJ]);
 
-				if (row2[ASSOC2_REQ_MCRM])
-					parent_mcrm = slurm_atoull(
-						row2[ASSOC2_REQ_MCRM]);
-				else
-					parent_mcrm = (uint64_t)INFINITE;
+				xfree(parent_mtmpj);
+				if (row2[ASSOC2_REQ_MTMPJ][0])
+					parent_mtmpj = xstrdup(
+						row2[ASSOC2_REQ_MTMPJ]);
+
+				xfree(parent_mtrm);
+				if (row2[ASSOC2_REQ_MTRM][0])
+					parent_mtrm = xstrdup(
+						row2[ASSOC2_REQ_MTRM]);
 
 				xfree(parent_qos);
 				if (row2[ASSOC2_REQ_QOS][0])
 					parent_qos =
 						xstrdup(row2[ASSOC2_REQ_QOS]);
-				else
-					parent_qos = NULL;
 
 				xfree(parent_delta_qos);
 				if (row2[ASSOC2_REQ_DELTA_QOS][0])
 					parent_delta_qos = xstrdup(
 						row2[ASSOC2_REQ_DELTA_QOS]);
-				else
-					parent_delta_qos = NULL;
 			}
 			last_acct = parent_acct;
 			last_cluster = cluster_name;
@@ -2353,32 +2086,37 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->max_submit_jobs = parent_msj;
 
-		if (row[ASSOC_REQ_MCPJ])
-			assoc->max_cpus_pj = slurm_atoul(row[ASSOC_REQ_MCPJ]);
-		else
-			assoc->max_cpus_pj = parent_mcpj;
-
-		if (row[ASSOC_REQ_MNPJ])
-			assoc->max_nodes_pj = slurm_atoul(row[ASSOC_REQ_MNPJ]);
-		else
-			assoc->max_nodes_pj = parent_mnpj;
-
 		if (row[ASSOC_REQ_MWPJ])
 			assoc->max_wall_pj = slurm_atoul(row[ASSOC_REQ_MWPJ]);
 		else
 			assoc->max_wall_pj = parent_mwpj;
 
-		if (row[ASSOC_REQ_MCMPJ])
-			assoc->max_cpu_mins_pj = slurm_atoull(
-				row[ASSOC_REQ_MCMPJ]);
-		else
-			assoc->max_cpu_mins_pj = parent_mcmpj;
+		if (row[ASSOC_REQ_MTPJ][0])
+			assoc->max_tres_pj = xstrdup(row[ASSOC_REQ_MTPJ]);
 
-		if (row[ASSOC_REQ_MCRM])
-			assoc->max_cpu_run_mins = slurm_atoull(
-				row[ASSOC_REQ_MCRM]);
-		else
-			assoc->max_cpu_run_mins = parent_mcrm;
+		if (row[ASSOC_REQ_MTMPJ][0])
+			assoc->max_tres_mins_pj = xstrdup(row[ASSOC_REQ_MTMPJ]);
+
+		if (row[ASSOC_REQ_MTRM][0])
+			assoc->max_tres_run_mins = xstrdup(row[ASSOC_REQ_MTRM]);
+
+		/* For the tres limits we just concatted the limits going up
+		 * the heirarchy slurmdb_tres_list_from_string will just skip
+		 * over any reoccuring limit to give us the first one per
+		 * TRES.
+		 */
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_pj, parent_mtpj,
+			TRES_STR_FLAG_NONE);
+		xfree(parent_mtpj);
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_mins_pj, parent_mtmpj,
+			TRES_STR_FLAG_NONE);
+		xfree(parent_mtmpj);
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_run_mins, parent_mtrm,
+			TRES_STR_FLAG_NONE);
+		xfree(parent_mtrm);
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
@@ -3260,8 +2998,7 @@ is_same_user:
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 
-	if (!extra || (!vals && !assoc->parent_acct
-		       && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
+	if (!extra || (!vals && !assoc->parent_acct)) {
 		xfree(vals);
 		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;

@@ -57,9 +57,10 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
-	/* means just update the views */
-	if (!tres_list_in)
-		goto update_views;
+	if (!tres_list_in) {
+		error("as_mysql_add_tres: Trying to add a blank list");
+		return SLURM_ERROR;
+	}
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(tres_list_in);
@@ -149,8 +150,6 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-update_views:
-
 	if (list_count(mysql_conn->update_list)) {
 		/* We only want to update the local cache DBD or ctld */
 		assoc_mgr_update(mysql_conn->update_list, 0);
@@ -228,9 +227,22 @@ extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(tres_cond->type_list);
 		while ((object = list_next(itr))) {
+			char *slash;
 			if (set)
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "type='%s'", object);
+			if (!(slash = strchr(object, '/')))
+				xstrfmtcat(extra, "type='%s'", object);
+			else {
+				/* This means we have the name
+				 * attached, so split the string and
+				 * handle it this way, only on this type.
+				 */
+				char *name = slash;
+				*slash = '\0';
+				name++;
+				xstrfmtcat(extra, "(type='%s' && name='%s')",
+					   object, name);
+			}
 			set = 1;
 		}
 		list_iterator_destroy(itr);

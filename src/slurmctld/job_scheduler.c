@@ -689,7 +689,7 @@ next_part:		part_ptr = (struct part_record *)
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
 				      job_ptr->qos_id) &&
-			    !job_ptr->limit_set_qos) {
+			    !job_ptr->limit_set.qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -1469,7 +1469,7 @@ next_task:
 			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
 			    && !bit_test(assoc_ptr->usage->valid_qos,
 					 job_ptr->qos_id)
-			    && !job_ptr->limit_set_qos) {
+			    && !job_ptr->limit_set.qos) {
 				debug("sched: JobId=%u has invalid QOS",
 				      job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -2567,14 +2567,31 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			}
 			if (depend_type == SLURM_DEPEND_EXPAND) {
+				assoc_mgr_lock_t locks = {
+					NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					READ_LOCK, NO_LOCK, NO_LOCK };
+
 				job_ptr->details->expanding_jobid = job_id;
 				/* GRES configuration of this job must match
 				 * the job being expanded */
 				xfree(job_ptr->gres);
 				job_ptr->gres = xstrdup(dep_job_ptr->gres);
 				FREE_NULL_LIST(job_ptr->gres_list);
-				gres_plugin_job_state_validate(job_ptr->gres,
-						&job_ptr->gres_list);
+				gres_plugin_job_state_validate(
+					job_ptr->gres, &job_ptr->gres_list);
+				assoc_mgr_lock(&locks);
+				gres_set_job_tres_cnt(job_ptr->gres_list,
+						      job_ptr->details ?
+						      job_ptr->details->
+						      min_nodes : 0,
+						      job_ptr->tres_req_cnt,
+						      true);
+				xfree(job_ptr->tres_req_str);
+				job_ptr->tres_req_str =
+					assoc_mgr_make_tres_str_from_array(
+						job_ptr->tres_req_cnt,
+						true);
+				assoc_mgr_unlock(&locks);
 			}
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
@@ -2828,7 +2845,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			max_nodes = MIN(job_ptr->details->max_nodes,
 					part_ptr->max_nodes);
 		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (!job_ptr->limit_set_max_nodes &&
+		if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
 		    job_ptr->details->max_nodes)
 			req_nodes = max_nodes;
 		else

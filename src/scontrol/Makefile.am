@@ -10,7 +10,7 @@ scontrol_SOURCES =	\
 	create_res.c	\
 	info_block.c	\
 	info_burst_buffer.c \
-	info_cache.c    \
+	info_assoc_mgr.c \
 	info_job.c	\
 	info_layout.c	\
 	info_lics.c	\
@@ -24,7 +24,7 @@ scontrol_SOURCES =	\
 	update_node.c	\
 	update_part.c	\
 	update_step.c   \
-	update_powercap.c 
+	update_powercap.c
 
 convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 

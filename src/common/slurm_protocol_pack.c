@@ -48,6 +48,7 @@
 #include <string.h>
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
@@ -83,6 +84,7 @@
 #define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_sicp_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_layout_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
+#define _pack_assoc_mgr_info_msg(msg,buf)      _pack_buffer_msg(msg,buf)
 
 static void _pack_assoc_shares_object(void *in, Buf buffer,
 				      uint16_t protocol_version);
@@ -726,19 +728,14 @@ _unpack_burst_buffer_info_msg(burst_buffer_info_msg_t **burst_buffer_info,
 			      Buf buffer,
 			      uint16_t protocol_version);
 static void
-_pack_cache_info_request_msg(cache_info_request_msg_t *,
+_pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *,
 			     Buf,
 			     uint16_t);
 static int
-_unpack_cache_info_request_msg(cache_info_request_msg_t **,
+_unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **,
 			       Buf,
 			       uint16_t);
-static inline void
-_pack_cache_info_msg(slurm_msg_t *msg, Buf buffer);
-static int
-_unpack_cache_info_msg(cache_info_msg_t **,
-		       Buf,
-		       uint16_t protocol_version);
+
 static void
 _pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
 				uint16_t protocol_version);
@@ -1608,14 +1605,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
-	case REQUEST_CACHE_INFO:
-		_pack_cache_info_request_msg((cache_info_request_msg_t *)
-					     msg->data,
-					     buffer,
-					     msg->protocol_version);
+	case REQUEST_ASSOC_MGR_INFO:
+		_pack_assoc_mgr_info_request_msg(
+			(assoc_mgr_info_request_msg_t *)msg->data,
+			buffer, msg->protocol_version);
 		break;
-	case RESPONSE_CACHE_INFO:
-		_pack_cache_info_msg((slurm_msg_t *) msg, buffer);
+	case RESPONSE_ASSOC_MGR_INFO:
+		_pack_assoc_mgr_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		_pack_network_callerid_msg((network_callerid_msg_t *)
@@ -2313,16 +2309,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						&(msg->data), buffer,
 						msg->protocol_version);
 		break;
-	case RESPONSE_CACHE_INFO:
-		rc = _unpack_cache_info_msg((cache_info_msg_t **)&(msg->data),
-					    buffer,
-					    msg->protocol_version);
+	case REQUEST_ASSOC_MGR_INFO:
+		rc = _unpack_assoc_mgr_info_request_msg(
+			(assoc_mgr_info_request_msg_t **)&(msg->data),
+			buffer, msg->protocol_version);
 		break;
-	case REQUEST_CACHE_INFO:
-		rc = _unpack_cache_info_request_msg((cache_info_request_msg_t **)
-						    &(msg->data),
-						    buffer,
-						    msg->protocol_version);
+	case RESPONSE_ASSOC_MGR_INFO:
+		rc = assoc_mgr_info_unpack_msg((assoc_mgr_info_msg_t **)
+					       &(msg->data),
+					       buffer,
+					       msg->protocol_version);
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		rc = _unpack_network_callerid_msg((network_callerid_msg_t **)
@@ -2606,7 +2602,7 @@ _pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
  */
 static int
 _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
-				uint16_t protocol_version)
+			     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	char *charptr_tmp;
@@ -13613,154 +13609,83 @@ unpack_error:
 }
 
 
-/* _pack_cache_info_request_msg()
+/* _pack_assoc_mgr_info_request_msg()
  */
 static void
-_pack_cache_info_request_msg(cache_info_request_msg_t *msg,
-			       Buf buffer,
-			       uint16_t protocol_version)
-{
-	pack_time(msg->last_update, buffer);
-	pack16((uint16_t)msg->show_flags, buffer);
-}
-
-/* _unpack_cache_info_request_msg()
- */
-static int
-_unpack_cache_info_request_msg(cache_info_request_msg_t **msg,
+_pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 				 Buf buffer,
 				 uint16_t protocol_version)
 {
-	*msg = xmalloc(sizeof(cache_info_msg_t));
-
-	safe_unpack_time(&(*msg)->last_update, buffer);
-	safe_unpack16(&(*msg)->show_flags, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_cache_info_request_msg(*msg);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-/* _pack_cache_info_msg()
- */
-static inline void
-_pack_cache_info_msg(slurm_msg_t *msg, Buf buffer)
-{
-	_pack_buffer_msg(msg, buffer);
-}
-
-/* _unpack_cache_info_msg()
- *
- * Decode the array of cache as it comes from the
- * controller and build the API cache structures
- * as defined in slurm.h
- *
- */
-static int
-_unpack_cache_info_msg(cache_info_msg_t **msg,
-			 Buf buffer,
-			 uint16_t protocol_version)
-{
-	slurm_cache_user_info_t  *cuptr;
-	slurm_cache_assoc_info_t *captr;
-	uint64_t uasize, aasize;
-	uint32_t zz;
-	uint8_t  usage_flag = 0;
-	int      i;
+	uint32_t count = NO_VAL;
+	char *tmp_info = NULL;
+	ListIterator itr = NULL;
 
 	xassert(msg != NULL);
-	*msg = xmalloc(sizeof(cache_info_msg_t));
 
-	/* load buffer's header (data structure version and time)
-	 */
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
-
-		safe_unpack32(&((*msg)->num_users), buffer);
-		safe_unpack32(&((*msg)->num_assocs), buffer);
-		safe_unpack_time(&((*msg)->time_stamp), buffer);
-
-		uasize = sizeof(slurm_cache_user_info_t)
-			* (*msg)->num_users;
-		aasize = sizeof(slurm_cache_assoc_info_t)
-			* (*msg)->num_assocs;
-
-		(*msg)->cache_user_array  = xmalloc(uasize);
-		(*msg)->cache_assoc_array = xmalloc(aasize);
-
-		/* Decode individual cache item data.
-		 */
-		for (i = 0; i < (*msg)->num_users; i++) {
-
-			cuptr = &((*msg)->cache_user_array[i]);
-
-			safe_unpack16(&cuptr->admin_level, buffer);
-			safe_unpackstr_xmalloc(&cuptr->default_acct,
-					       &zz,
-					       buffer);
-			safe_unpackstr_xmalloc(&cuptr->default_wckey,&zz,buffer);
-			safe_unpackstr_xmalloc(&cuptr->name, &zz, buffer);
-			safe_unpackstr_xmalloc(&cuptr->old_name, &zz, buffer);
-			safe_unpack32(&cuptr->uid, buffer);
+	if (msg->acct_list)
+		count = list_count(msg->acct_list);
+	pack32(count, buffer);
+	if (count && count != NO_VAL) {
+		itr = list_iterator_create(msg->acct_list);
+		while ((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
 		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
 
-		for (i = 0; i < (*msg)->num_assocs; i++) {
 
-			captr = &((*msg)->cache_assoc_array[i]);
-
-			safe_unpackstr_xmalloc(&captr->acct, &zz, buffer);
-			safe_unpackstr_xmalloc(&captr->cluster, &zz, buffer);
-			safe_unpack32(&captr->def_qos_id, buffer);
-			safe_unpack64(&captr->grp_cpu_mins, buffer);
-			safe_unpack64(&captr->grp_cpu_run_mins,buffer);
-			safe_unpack32(&captr->grp_cpus, buffer);
-			safe_unpack32(&captr->grp_jobs, buffer);
-			safe_unpack32(&captr->grp_mem, buffer);
-			safe_unpack32(&captr->grp_nodes, buffer);
-			safe_unpack32(&captr->grp_submit_jobs, buffer);
-			safe_unpack32(&captr->grp_wall, buffer);
-			safe_unpack32(&captr->id, buffer);
-			safe_unpack16(&captr->is_def, buffer);
-			safe_unpack32(&captr->lft, buffer);
-			safe_unpack64(&captr->max_cpu_mins_pj, buffer);
-			safe_unpack64(&captr->max_cpu_run_mins, buffer);
-			safe_unpack32(&captr->max_cpus_pj, buffer);
-			safe_unpack32(&captr->max_jobs, buffer);
-			safe_unpack32(&captr->max_nodes_pj, buffer);
-			safe_unpack32(&captr->max_submit_jobs, buffer);
-			safe_unpack32(&captr->max_wall_pj, buffer);
-			safe_unpackstr_xmalloc(&captr->parent_acct, &zz,buffer);
-			safe_unpack32(&captr->parent_id, buffer);
-			safe_unpackstr_xmalloc(&captr->partition, &zz, buffer);
-			safe_unpack32(&captr->rgt, buffer);
-			safe_unpack32(&captr->shares_raw, buffer);
-			safe_unpack32(&captr->uid, buffer);
-			safe_unpackstr_xmalloc(&captr->user, &zz, buffer);
-
-			/* Association usage */
-			safe_unpack8(&usage_flag, buffer);
-			if (!usage_flag)
-				continue;
-			safe_unpackdouble(&captr->grp_used_cpu_run_secs,buffer);
-			safe_unpack32(&captr->grp_used_cpus, buffer);
-			safe_unpack32(&captr->grp_used_mem, buffer);
-			safe_unpack32(&captr->grp_used_nodes, buffer);
-			safe_unpackdouble(&captr->grp_used_wall, buffer);
-			safe_unpack64(&captr->usage_raw, buffer);
+	if (msg->user_list)
+		count = list_count(msg->user_list);
+	pack32(count, buffer);
+	if (count && count != NO_VAL) {
+		itr = list_iterator_create(msg->user_list);
+		while ((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
 		}
+		list_iterator_destroy(itr);
+	}
+}
 
-	} else {
-		error("_unpack_cache_info_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
+static int
+_unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
+				    Buf buffer,
+				    uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	uint32_t count = NO_VAL;
+	int i;
+	char *tmp_info = NULL;
+	assoc_mgr_info_request_msg_t *object_ptr = NULL;
+
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(shares_request_msg_t));
+	*msg = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		object_ptr->acct_list = list_create(slurm_destroy_char);
+		for (i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->acct_list, tmp_info);
+		}
 	}
 
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		object_ptr->user_list = list_create(slurm_destroy_char);
+		for (i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->user_list, tmp_info);
+		}
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_cache_info_msg(*msg);
+	slurm_free_assoc_mgr_info_request_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

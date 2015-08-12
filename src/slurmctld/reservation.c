@@ -1811,7 +1811,7 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
 
-	license_list = license_validate(resv_desc_ptr->licenses, valid);
+	license_list = license_validate(resv_desc_ptr->licenses, NULL, valid);
 	if (!valid || (resv_desc_ptr->licenses == NULL))
 		return license_list;
 
@@ -1829,7 +1829,7 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 		xstrcat(merged_licenses, resv_ptr->licenses);
 	}
 	list_iterator_destroy(iter);
-	merged_list = license_validate(merged_licenses, valid);
+	merged_list = license_validate(merged_licenses, NULL, valid);
 	xfree(merged_licenses);
 	FREE_NULL_LIST(merged_list);
 	return license_list;
@@ -2981,7 +2981,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		bool valid = true;
 		FREE_NULL_LIST(resv_ptr->license_list);
 		resv_ptr->license_list = license_validate(resv_ptr->licenses,
-							  &valid);
+							  NULL, &valid);
 		if (!valid) {
 			error("Reservation %s has invalid licenses (%s)",
 			      resv_ptr->name, resv_ptr->licenses);

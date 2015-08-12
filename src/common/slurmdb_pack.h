@@ -44,10 +44,6 @@
 #include "xmalloc.h"
 #include "xstring.h"
 
-extern void slurmdb_pack_user_defs(void *in,
-				   uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_user_defs(void **object,
-				    uint16_t rpc_version, Buf buffer);
 extern void slurmdb_pack_user_rec(void *in,
 				  uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_user_rec(void **object,
@@ -80,8 +76,20 @@ extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 extern void slurmdb_pack_assoc_rec(void *in,
 				   uint16_t rpc_version,
 				   Buf buffer);
+extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
+					    uint16_t rpc_version,
+					    Buf buffer);
 extern int slurmdb_unpack_assoc_rec(void **object, uint16_t rpc_version,
 				    Buf buffer);
+extern void slurmdb_pack_assoc_usage(void *in, uint16_t rpc_version,
+				     Buf buffer);
+extern int slurmdb_unpack_assoc_usage(void **object, uint16_t rpc_version,
+				      Buf buffer);
+extern void slurmdb_pack_assoc_rec_with_usage(void *in, uint16_t rpc_version,
+					      Buf buffer);
+extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
+					       uint16_t rpc_version,
+					       Buf buffer);
 extern void slurmdb_pack_event_rec(void *in,
 				   uint16_t rpc_version,
 				   Buf buffer);
@@ -91,6 +99,14 @@ extern void slurmdb_pack_qos_rec(void *in,
 				 uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_qos_rec(void **object,
 				  uint16_t rpc_version, Buf buffer);
+extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer);
+extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
+				    Buf buffer);
+extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t rpc_version,
+					    Buf buffer);
+extern int slurmdb_unpack_qos_rec_with_usage(void **object,
+					     uint16_t rpc_version,
+					     Buf buffer);
 extern void slurmdb_pack_reservation_rec(void *in,
 					 uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
@@ -187,9 +203,9 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 				       uint16_t rpc_version, Buf buffer);
 extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 					uint16_t rpc_version, Buf buffer);
-extern void slurmdb_pack_used_limits(void *in,
+extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 				     uint16_t rpc_version, Buf buffer);
-extern int slurmdb_unpack_used_limits(void **object,
+extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
 				      uint16_t rpc_version, Buf buffer);
 
 extern void pack_update_shares_used(void *in,

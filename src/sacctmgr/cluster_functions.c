@@ -188,15 +188,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 					set = 1;
 			}
 		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
-					 MAX(command_len, 7))) {
+					 MAX(command_len, 7)) ||
+			   !strncasecmp(argv[i], "GrpTRESRunMins",
+					MAX(command_len, 8))) {
 			exit_code=1;
-			fprintf(stderr, "GrpCPURunMins is not a valid option "
+			fprintf(stderr, "GrpTRESRunMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
 		} else if (!strncasecmp(argv[i], "GrpCPUMins",
-					 MAX(command_len, 7))) {
+					 MAX(command_len, 7)) ||
+			   !strncasecmp(argv[i], "GrpTRESMins",
+					MAX(command_len, 8))) {
 			exit_code=1;
-			fprintf(stderr, "GrpCPUMins is not a valid option "
+			fprintf(stderr, "GrpTRESMins is not a valid option "
 				"for the root association of a cluster.\n");
 			break;
 		} else if (!strncasecmp(argv[i], "GrpWall",
@@ -325,24 +329,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster->root_assoc->def_qos_id = start_assoc.def_qos_id;
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 
-		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
-		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
-		cluster->root_assoc->grp_mem = start_assoc.grp_mem;
-		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
-		cluster->root_assoc->grp_submit_jobs =
-			start_assoc.grp_submit_jobs;
-
-		cluster->root_assoc->max_cpu_mins_pj =
-			start_assoc.max_cpu_mins_pj;
-		cluster->root_assoc->max_cpus_pj = start_assoc.max_cpus_pj;
-		cluster->root_assoc->max_jobs = start_assoc.max_jobs;
-		cluster->root_assoc->max_nodes_pj = start_assoc.max_nodes_pj;
-		cluster->root_assoc->max_submit_jobs =
-			start_assoc.max_submit_jobs;
-		cluster->root_assoc->max_wall_pj = start_assoc.max_wall_pj;
-
-		cluster->root_assoc->qos_list =
-			copy_char_list(start_assoc.qos_list);
+		slurmdb_copy_assoc_rec_limits(
+			cluster->root_assoc, &start_assoc);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(name_list);
@@ -460,9 +448,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	field_count = list_count(print_fields_list);
 
-	while((cluster = list_next(itr))) {
+	while ((cluster = list_next(itr))) {
 		int curr_inx = 1;
-		slurmdb_assoc_rec_t *assoc = cluster->root_assoc;
+
 		/* set up the working cluster rec so nodecnt's and node names
 		 * are handled correctly */
 		working_cluster_rec = cluster;
@@ -507,26 +495,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     (curr_inx == field_count));
 				xfree(tmp_char);
 				break;
-			case PRINT_DQOS:
-				if (!g_qos_list) {
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn,
-						my_uid,
-						NULL);
-				}
-				tmp_char = slurmdb_qos_str(g_qos_list,
-							   assoc->def_qos_id);
-				field->print_routine(
-					field,
-					tmp_char,
-					(curr_inx == field_count));
-				break;
-			case PRINT_FAIRSHARE:
-				field->print_routine(
-					field,
-					assoc->shares_raw,
-					(curr_inx == field_count));
-				break;
 			case PRINT_FLAGS:
 			{
 				char *tmp_char = slurmdb_cluster_flags_2_str(
@@ -538,64 +506,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				xfree(tmp_char);
 				break;
 			}
-			case PRINT_GRPC:
-				field->print_routine(field,
-						     assoc->grp_cpus,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPJ:
-				field->print_routine(field,
-						     assoc->grp_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPMEM:
-				field->print_routine(field,
-						     assoc->grp_mem,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPN:
-				field->print_routine(field,
-						     assoc->grp_nodes,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPS:
-				field->print_routine(field,
-						     assoc->grp_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXCM:
-				field->print_routine(
-					field,
-					assoc->max_cpu_mins_pj,
-					(curr_inx == field_count));
-				break;
-			case PRINT_MAXC:
-				field->print_routine(field,
-						     assoc->max_cpus_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXJ:
-				field->print_routine(field,
-						     assoc->max_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXN:
-				field->print_routine(field,
-						     assoc->max_nodes_pj,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXS:
-				field->print_routine(field,
-						     assoc->max_submit_jobs,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_MAXW:
-				field->print_routine(
-					field,
-					assoc->max_wall_pj,
-					(curr_inx == field_count));
-				break;
-
 			case PRINT_NODECNT:
 			{
 				hostlist_t hl = hostlist_create(cluster->nodes);
@@ -616,21 +526,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					cluster->nodes,
 					(curr_inx == field_count));
 				break;
-			case PRINT_QOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
-
-				field->print_routine(field,
-						     g_qos_list,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_QOS_RAW:
-				field->print_routine(field,
-						     assoc->qos_list,
-						     (curr_inx == field_count));
-				break;
 			case PRINT_RPC_VERSION:
 				field->print_routine(
 					field,
@@ -644,9 +539,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			default:
-				field->print_routine(
-					field, NULL,
-					(curr_inx == field_count));
+				sacctmgr_print_assoc_rec(cluster->root_assoc,
+							 field, NULL,
+							 (curr_inx ==
+							  field_count));
 				break;
 			}
 			curr_inx++;
@@ -1119,7 +1015,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "(root is created by default)...\n"
 		    "# Parent - 'root'\n"
 		    "# Account - 'cs':MaxNodesPerJob=5:MaxJobs=4:"
-		    "MaxCPUMins=20:FairShare=399:"
+		    "MaxTRESMins=cpu=20:FairShare=399:"
 		    "MaxWallDuration=40:Description='Computer Science':"
 		    "Organization='LC'\n"
 		    "# Any of the options after a ':' can be left out and "
@@ -1130,13 +1026,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		    "fashion...\n"
 		    "# Parent - 'cs'\n"
 		    "# Account - 'test':MaxNodesPerJob=1:MaxJobs=1:"
-		    "MaxCPUMins=1:FairShare=1:"
+		    "MaxTRESMins=cpu=1:FairShare=1:"
 		    "MaxWallDuration=1:"
 		    "Description='Test Account':Organization='Test'\n"
 		    "# To add users to a account add a line like this after a "
 		    "Parent - 'line'\n"
 		    "# User - 'lipari':MaxNodesPerJob=2:MaxJobs=3:"
-		    "MaxCPUMins=4:FairShare=1:"
+		    "MaxTRESMins=cpu=4:FairShare=1:"
 		    "MaxWallDurationPerJob=1\n") < 0) {
 		exit_code = 1;
 		fprintf(stderr, "Can't write to file");

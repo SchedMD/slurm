@@ -248,7 +248,7 @@ static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
 	job_ptr->time_limit = new_limit;
 	/* reset flag if we have a NO_VAL time_limit */
 	if (job_ptr->time_limit == NO_VAL)
-		job_ptr->limit_set_time = 0;
+		job_ptr->limit_set.time = 0;
 
 }
 
@@ -1060,7 +1060,7 @@ next_task:
 			part_time_limit = part_ptr->max_time;
 		if (job_ptr->time_limit == NO_VAL) {
 			time_limit = part_time_limit;
-			job_ptr->limit_set_time = 1;
+			job_ptr->limit_set.time = 1;
 		} else {
 			if (part_ptr->max_time == INFINITE)
 				time_limit = job_ptr->time_limit;
@@ -1272,7 +1272,7 @@ next_task:
 					acct_policy_alter_job(
 						job_ptr, comp_time_limit);
 					job_ptr->time_limit = comp_time_limit;
-					job_ptr->limit_set_time = 1;
+					job_ptr->limit_set.time = 1;
 				} else {
 					acct_policy_alter_job(
 						job_ptr, orig_time_limit);
@@ -1287,7 +1287,7 @@ next_task:
 			} else if (orig_time_limit == NO_VAL) {
 				acct_policy_alter_job(job_ptr, comp_time_limit);
 				job_ptr->time_limit = comp_time_limit;
-				job_ptr->limit_set_time = 1;
+				job_ptr->limit_set.time = 1;
 			} else {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				_set_job_time_limit(job_ptr, orig_time_limit);

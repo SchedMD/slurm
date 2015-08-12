@@ -1807,6 +1807,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	uint32_t selected_node_cnt = NO_VAL;
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1914,7 +1915,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (!job_ptr->limit_set_max_nodes && job_ptr->details->max_nodes)
+	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
+	    job_ptr->details->max_nodes)
 		req_nodes = max_nodes;
 	else
 		req_nodes = min_nodes;
@@ -1963,13 +1965,23 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->node_cnt_wag = selected_node_cnt;
 	}
 
+	memset(tres_req_cnt, 0, sizeof(tres_req_cnt));
+	tres_req_cnt[TRES_ARRAY_CPU] =
+		(uint64_t)(job_ptr->total_cpus ?
+			   job_ptr->total_cpus : job_ptr->details->min_cpus);
+	tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
+		job_ptr->details->pn_min_memory,
+		tres_req_cnt[TRES_ARRAY_CPU],
+		selected_node_cnt);
+	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
+
+	gres_set_job_tres_cnt(job_ptr->gres_list,
+			      selected_node_cnt,
+			      tres_req_cnt,
+			      false);
 	if (!test_only && (error_code == SLURM_SUCCESS)
 	    && (selected_node_cnt != NO_VAL)
-	    && !acct_policy_job_runnable_post_select(
-		    job_ptr, selected_node_cnt,
-		    job_ptr->total_cpus ? job_ptr->total_cpus
-		    : job_ptr->details->min_cpus,
-		    job_ptr->details->pn_min_memory)) {
+	    && !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}
@@ -2080,7 +2092,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->time_limit = part_ptr->default_time;
 		else
 			job_ptr->time_limit = part_ptr->max_time;
-		job_ptr->limit_set_time = 1;
+		job_ptr->limit_set.time = 1;
 	}
 
 	job_end_time_reset(job_ptr);
@@ -2144,7 +2156,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
 	slurmctld_diag_stats.jobs_started++;
+
+	/* job_set_alloc_tres has to be done before acct_policy_job_begin */
+	job_set_alloc_tres(job_ptr, false);
 	acct_policy_job_begin(job_ptr);
+
 	job_claim_resv(job_ptr);
 
 	/* Update the job_record's gres and gres_alloc fields with
@@ -2156,8 +2172,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      "job_record->gres_alloc: (%s)",
 		      THIS_FILE, __LINE__, job_ptr->job_id,
 		      job_ptr->gres, job_ptr->gres_alloc);
-
-	job_set_tres(job_ptr);
 
 	/* If ran with slurmdbd this is handled out of band in the
 	 * job if happening right away.  If the job has already

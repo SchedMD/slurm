@@ -39,6 +39,36 @@
 
 #include "as_mysql_qos.h"
 
+static char *mqos_req_inx[] = {
+	"id",
+	"name",
+	"preempt",
+	"grp_tres_mins",
+	"grp_tres_run_mins",
+	"grp_tres",
+	"max_tres_mins_pj",
+	"max_tres_run_mins_pu",
+	"max_tres_pj",
+	"max_tres_pu",
+	"min_tres_pj",
+};
+
+enum {
+	MQOS_ID,
+	MQOS_NAME,
+	MQOS_PREEMPT,
+	MQOS_GTM,
+	MQOS_GTRM,
+	MQOS_GT,
+	MQOS_MTMPJ,
+	MQOS_MTRM,
+	MQOS_MTPJ,
+	MQOS_MTPU,
+	MQOS_MITPJ,
+	MQOS_COUNT
+};
+
+
 static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 			    bitstr_t *preempt_bitstr)
 {
@@ -94,42 +124,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->flags = 0;
 		if (qos->grace_time == NO_VAL)
 			qos->grace_time = 0;
-		if (qos->grp_cpu_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (qos->grp_cpus == NO_VAL)
-			qos->grp_cpus = INFINITE;
 		if (qos->grp_jobs == NO_VAL)
 			qos->grp_jobs = INFINITE;
-		if (qos->grp_mem == NO_VAL)
-			qos->grp_mem = INFINITE;
-		if (qos->grp_nodes == NO_VAL)
-			qos->grp_nodes = INFINITE;
 		if (qos->grp_submit_jobs == NO_VAL)
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
 			qos->grp_wall = INFINITE;
-		if (qos->max_cpu_mins_pj == (uint64_t)NO_VAL)
-			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (qos->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (qos->max_cpus_pj == NO_VAL)
-			qos->max_cpus_pj = INFINITE;
-		if (qos->max_cpus_pu == NO_VAL)
-			qos->max_cpus_pu = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
-		if (qos->max_nodes_pj == NO_VAL)
-			qos->max_nodes_pj = INFINITE;
-		if (qos->max_nodes_pu == NO_VAL)
-			qos->max_nodes_pu = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
-		if (qos->min_cpus_pj == NO_VAL)
-			qos->min_cpus_pj = 1;
 		if (qos->preempt_mode == (uint16_t)NO_VAL)
 			qos->preempt_mode = 0;
 		if (qos->priority == NO_VAL)
@@ -179,43 +185,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", grace_time=%u", qos->grace_time);
 	}
 
-	if (qos->grp_cpu_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_mins=NULL");
-	} else if ((qos->grp_cpu_mins != (uint64_t)NO_VAL)
-		   && ((int64_t)qos->grp_cpu_mins >= 0)) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   qos->grp_cpu_mins);
-		xstrfmtcat(*extra, ", grp_cpu_mins=%"PRIu64"",
-			   qos->grp_cpu_mins);
-	}
-
-	if (qos->grp_cpu_run_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_run_mins=NULL");
-	} else if ((qos->grp_cpu_run_mins != (uint64_t)NO_VAL)
-		   && (int64_t)qos->grp_cpu_run_mins >= 0) {
-		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   qos->grp_cpu_run_mins);
-		xstrfmtcat(*extra, ", grp_cpu_run_mins=%"PRIu64"",
-			   qos->grp_cpu_run_mins);
-	}
-
-	if (qos->grp_cpus == INFINITE) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpus=NULL");
-	} else if ((qos->grp_cpus != NO_VAL)
-		   && ((int32_t)qos->grp_cpus >= 0)) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrfmtcat(*vals, ", %u", qos->grp_cpus);
-		xstrfmtcat(*extra, ", grp_cpus=%u", qos->grp_cpus);
-	}
-
 	if (qos->grp_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_jobs");
 		xstrcat(*vals, ", NULL");
@@ -225,28 +194,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", qos->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", qos->grp_jobs);
-	}
-
-	if (qos->grp_mem == INFINITE) {
-		xstrcat(*cols, ", grp_mem");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_mem=NULL");
-	} else if ((qos->grp_mem != NO_VAL)
-		   && ((int32_t)qos->grp_mem >= 0)) {
-		xstrcat(*cols, ", grp_mem");
-		xstrfmtcat(*vals, ", %u", qos->grp_mem);
-		xstrfmtcat(*extra, ", grp_mem=%u", qos->grp_mem);
-	}
-
-	if (qos->grp_nodes == INFINITE) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_nodes=NULL");
-	} else if ((qos->grp_nodes != NO_VAL)
-		   && ((int32_t)qos->grp_nodes >= 0)) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", qos->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", qos->grp_nodes);
 	}
 
 	if (qos->grp_submit_jobs == INFINITE) {
@@ -272,54 +219,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", grp_wall=%u", qos->grp_wall);
 	}
 
-	if (qos->max_cpu_mins_pj == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
-	} else if ((qos->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		   && ((int64_t)qos->max_cpu_mins_pj >= 0)) {
-		xstrcat(*cols, ", max_cpu_mins_per_job");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   qos->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%"PRIu64"",
-			   qos->max_cpu_mins_pj);
-	}
-
-	if (qos->max_cpu_run_mins_pu == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_run_mins_per_user");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_run_mins_per_user=NULL");
-	} else if ((qos->max_cpu_run_mins_pu != (uint64_t)NO_VAL)
-		   && ((int64_t)qos->max_cpu_run_mins_pu >= 0)) {
-		xstrcat(*cols, ", max_cpu_run_mins_per_user");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   qos->max_cpu_run_mins_pu);
-		xstrfmtcat(*extra, ", max_cpu_run_mins_per_user=%"PRIu64"",
-			   qos->max_cpu_run_mins_pu);
-	}
-
-	if (qos->max_cpus_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpus_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpus_per_job=NULL");
-	} else if ((qos->max_cpus_pj != NO_VAL)
-		   && ((int32_t)qos->max_cpus_pj >= 0)) {
-		xstrcat(*cols, ", max_cpus_per_job");
-		xstrfmtcat(*vals, ", %u", qos->max_cpus_pj);
-		xstrfmtcat(*extra, ", max_cpus_per_job=%u", qos->max_cpus_pj);
-	}
-
-	if (qos->max_cpus_pu == INFINITE) {
-		xstrcat(*cols, ", max_cpus_per_user");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpus_per_user=NULL");
-	} else if ((qos->max_cpus_pu != NO_VAL)
-		   && ((int32_t)qos->max_cpus_pu >= 0)) {
-		xstrcat(*cols, ", max_cpus_per_user");
-		xstrfmtcat(*vals, ", %u", qos->max_cpus_pu);
-		xstrfmtcat(*extra, ", max_cpus_per_user=%u", qos->max_cpus_pu);
-	}
-
 	if (qos->max_jobs_pu == INFINITE) {
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrcat(*vals, ", NULL");
@@ -329,30 +228,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrfmtcat(*vals, ", %u", qos->max_jobs_pu);
 		xstrfmtcat(*extra, ", max_jobs_per_user=%u", qos->max_jobs_pu);
-	}
-
-	if (qos->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_job=NULL");
-	} else if ((qos->max_nodes_pj != NO_VAL)
-		   && ((int32_t)qos->max_nodes_pj >= 0)) {
-		xstrcat(*cols, ", max_nodes_per_job");
-		xstrfmtcat(*vals, ", %u", qos->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
-			   qos->max_nodes_pj);
-	}
-
-	if (qos->max_nodes_pu == INFINITE) {
-		xstrcat(*cols, ", max_nodes_per_user");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_per_user=NULL");
-	} else if ((qos->max_nodes_pu != NO_VAL)
-		   && ((int32_t)qos->max_nodes_pu >= 0)) {
-		xstrcat(*cols, ", max_nodes_per_user");
-		xstrfmtcat(*vals, ", %u", qos->max_nodes_pu);
-		xstrfmtcat(*extra, ", max_nodes_per_user=%u",
-			   qos->max_nodes_pu);
 	}
 
 	if (qos->max_submit_jobs_pu == INFINITE) {
@@ -377,17 +252,6 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_wall_duration_per_job");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
-	}
-
-	if (qos->min_cpus_pj == INFINITE) {
-		xstrcat(*cols, ", min_cpus_per_job");
-		xstrcat(*vals, ", 1");
-		xstrcat(*extra, ", min_cpus_per_job=1");
-	} else if ((qos->min_cpus_pj != NO_VAL)
-		   && ((int32_t)qos->min_cpus_pj >= 0)) {
-		xstrcat(*cols, ", min_cpus_per_job");
-		xstrfmtcat(*vals, ", %u", qos->min_cpus_pj);
-		xstrfmtcat(*extra, ", min_cpus_per_job=%u", qos->min_cpus_pj);
 	}
 
 	if (qos->preempt_list && list_count(qos->preempt_list)) {
@@ -488,6 +352,100 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*vals, ", %f", qos->usage_thres);
 		xstrfmtcat(*extra, ", usage_thres=%f", qos->usage_thres);
 	}
+
+	/* When modifying anything below this comment it happens in
+	 * the actual function since we have to wait until we hear
+	 * about the original first.
+	 * What we do to make it known something needs to be changed
+	 * is we cat "" onto extra which will inform the caller
+	 * something needs changing.
+	 */
+
+	if (qos->grp_tres) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres");
+		xstrfmtcat(*vals, ", '%s'", qos->grp_tres);
+		xstrfmtcat(*extra, ", grp_tres='%s'", qos->grp_tres);
+	}
+
+	if (qos->grp_tres_mins) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres_mins");
+		xstrfmtcat(*vals, ", '%s'", qos->grp_tres_mins);
+		xstrfmtcat(*extra, ", grp_tres_mins='%s'",
+			   qos->grp_tres_mins);
+	}
+
+	if (qos->grp_tres_run_mins) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres_run_mins");
+		xstrfmtcat(*vals, ", '%s'", qos->grp_tres_run_mins);
+		xstrfmtcat(*extra, ", grp_tres_run_mins='%s'",
+			   qos->grp_tres_run_mins);
+	}
+
+	if (qos->max_tres_pj) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pj");
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pj);
+		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->max_tres_pj);
+	}
+
+	if (qos->max_tres_pu) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pu");
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pu);
+		xstrfmtcat(*extra, ", max_tres_pu='%s'", qos->max_tres_pu);
+	}
+
+	if (qos->max_tres_mins_pj) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_mins_pj");
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_mins_pj);
+		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
+			   qos->max_tres_mins_pj);
+	}
+
+	if (qos->max_tres_run_mins_pu) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_run_mins_pu");
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_run_mins_pu);
+		xstrfmtcat(*extra, ", max_tres_run_mins_pu='%s'",
+			   qos->max_tres_run_mins_pu);
+	}
+
+	if (qos->min_tres_pj) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", min_tres_pj");
+		xstrfmtcat(*vals, ", '%s'", qos->min_tres_pj);
+		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->min_tres_pj);
+	}
+
+end_modify:
 
 	return SLURM_SUCCESS;
 
@@ -614,7 +572,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0;
+	int set = 0, i;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
@@ -698,9 +656,15 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		error("Nothing to change");
 		return NULL;
 	}
-	query = xstrdup_printf("select name, preempt, id from %s %s;",
-			       qos_table, extra);
+
+	object = xstrdup(mqos_req_inx[0]);
+	for (i = 1; i < MQOS_COUNT; i++)
+		xstrfmtcat(object, ", %s", mqos_req_inx[i]);
+
+	query = xstrdup_printf("select %s from %s %s;",
+			       object, qos_table, extra);
 	xfree(extra);
+	xfree(object);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		FREE_NULL_BITMAP(preempt_bitstr);
@@ -711,12 +675,12 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = list_create(slurm_destroy_char);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos_rec = NULL;
-		uint32_t id = slurm_atoul(row[2]);
+		uint32_t id = slurm_atoul(row[MQOS_ID]);
 		if (preempt_bitstr) {
 			if (_preemption_loop(mysql_conn, id, preempt_bitstr))
 				break;
 		}
-		object = xstrdup(row[0]);
+		object = xstrdup(row[MQOS_NAME]);
 		list_append(ret_list, object);
 		if (!rc) {
 			xstrfmtcat(name_char, "(name='%s'", object);
@@ -730,27 +694,44 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->id = id;
 		qos_rec->flags = qos->flags;
 
-		qos_rec->grp_cpus = qos->grp_cpus;
 		qos_rec->grace_time = qos->grace_time;
-		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
-		qos_rec->grp_cpu_run_mins = qos->grp_cpu_run_mins;
+
+		mod_tres_str(&qos_rec->grp_tres,
+			     qos->grp_tres, row[MQOS_GT],
+			     NULL, "grp_tres", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->grp_tres_mins,
+			     qos->grp_tres_mins, row[MQOS_GTM],
+			     NULL, "grp_tres_mins", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->grp_tres_run_mins,
+			     qos->grp_tres_run_mins, row[MQOS_GTRM],
+			     NULL, "grp_tres_run_mins", &vals,
+			     qos_rec->id, 0);
+
 		qos_rec->grp_jobs = qos->grp_jobs;
-		qos_rec->grp_mem = qos->grp_mem;
-		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
 
-		qos_rec->max_cpus_pj = qos->max_cpus_pj;
-		qos_rec->max_cpus_pu = qos->max_cpus_pu;
-		qos_rec->max_cpu_mins_pj = qos->max_cpu_mins_pj;
-		qos_rec->max_cpu_run_mins_pu = qos->max_cpu_run_mins_pu;
+		mod_tres_str(&qos_rec->max_tres_pj,
+			     qos->max_tres_pj, row[MQOS_MTPJ],
+			     NULL, "max_tres_pj", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->max_tres_pu,
+			     qos->max_tres_pu, row[MQOS_MTPU],
+			     NULL, "max_tres_pu", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->max_tres_mins_pj,
+			     qos->max_tres_mins_pj, row[MQOS_MTMPJ],
+			     NULL, "max_tres_mins_pj", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->max_tres_run_mins_pu,
+			     qos->max_tres_run_mins_pu, row[MQOS_MTRM],
+			     NULL, "max_tres_run_mins_pu", &vals,
+			     qos_rec->id, 0);
+
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
-		qos_rec->max_nodes_pj = qos->max_nodes_pj;
-		qos_rec->max_nodes_pu = qos->max_nodes_pu;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
-		qos_rec->min_cpus_pj = qos->min_cpus_pj;
+		mod_tres_str(&qos_rec->min_tres_pj,
+			     qos->min_tres_pj, row[MQOS_MITPJ],
+			     NULL, "min_tres_pj", &vals, qos_rec->id, 0);
 
 		qos_rec->preempt_mode = qos->preempt_mode;
 		qos_rec->priority = qos->priority;
@@ -762,8 +743,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			bool cleared = 0;
 
 			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
-			if (row[1] && row[1][0])
-				bit_unfmt(qos_rec->preempt_bitstr, row[1]+1);
+			if (row[MQOS_PREEMPT] && row[MQOS_PREEMPT][0])
+				bit_unfmt(qos_rec->preempt_bitstr,
+					  row[MQOS_PREEMPT]+1);
 
 			while ((new_preempt = list_next(new_preempt_itr))) {
 				if (new_preempt[0] == '-') {
@@ -1030,21 +1012,17 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"id",
 		"flags",
 		"grace_time",
-		"grp_cpu_mins",
-		"grp_cpu_run_mins",
-		"grp_cpus",
+		"grp_tres_mins",
+		"grp_tres_run_mins",
+		"grp_tres",
 		"grp_jobs",
-		"grp_mem",
-		"grp_nodes",
 		"grp_submit_jobs",
 		"grp_wall",
-		"max_cpu_mins_per_job",
-		"max_cpu_run_mins_per_user",
-		"max_cpus_per_job",
-		"max_cpus_per_user",
+		"max_tres_mins_pj",
+		"max_tres_run_mins_pu",
+		"max_tres_pj",
+		"max_tres_pu",
 		"max_jobs_per_user",
-		"max_nodes_per_job",
-		"max_nodes_per_user",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
 		"substr(preempt, 1, length(preempt) - 1)",
@@ -1052,7 +1030,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"priority",
 		"usage_factor",
 		"usage_thres",
-		"min_cpus_per_job",
+		"min_tres_pj",
 	};
 	enum {
 		QOS_REQ_NAME,
@@ -1060,21 +1038,17 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_ID,
 		QOS_REQ_FLAGS,
 		QOS_REQ_GRACE,
-		QOS_REQ_GCM,
-		QOS_REQ_GCRM,
-		QOS_REQ_GC,
+		QOS_REQ_GTM,
+		QOS_REQ_GTRM,
+		QOS_REQ_GT,
 		QOS_REQ_GJ,
-		QOS_REQ_GMEM,
-		QOS_REQ_GN,
 		QOS_REQ_GSJ,
 		QOS_REQ_GW,
-		QOS_REQ_MCMPJ,
-		QOS_REQ_MCRM,
-		QOS_REQ_MCPJ,
-		QOS_REQ_MCPU,
+		QOS_REQ_MTMPJ,
+		QOS_REQ_MTRM,
+		QOS_REQ_MTPJ,
+		QOS_REQ_MTPU,
 		QOS_REQ_MJPU,
-		QOS_REQ_MNPJ,
-		QOS_REQ_MNPU,
 		QOS_REQ_MSJPU,
 		QOS_REQ_MWPJ,
 		QOS_REQ_PREE,
@@ -1082,7 +1056,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_PRIO,
 		QOS_REQ_UF,
 		QOS_REQ_UT,
-		QOS_REQ_MICPJ,
+		QOS_REQ_MITPJ,
 		QOS_REQ_COUNT
 	};
 
@@ -1185,30 +1159,17 @@ empty:
 		if (row[QOS_REQ_GRACE])
 			qos->grace_time = slurm_atoul(row[QOS_REQ_GRACE]);
 
-		if (row[QOS_REQ_GCM])
-			qos->grp_cpu_mins = slurm_atoull(row[QOS_REQ_GCM]);
-		else
-			qos->grp_cpu_mins = INFINITE;
-		if (row[QOS_REQ_GCRM])
-			qos->grp_cpu_run_mins = slurm_atoull(row[QOS_REQ_GCRM]);
-		else
-			qos->grp_cpu_run_mins = INFINITE;
-		if (row[QOS_REQ_GC])
-			qos->grp_cpus = slurm_atoul(row[QOS_REQ_GC]);
-		else
-			qos->grp_cpus = INFINITE;
+		if (row[QOS_REQ_GT][0])
+			qos->grp_tres = xstrdup(row[QOS_REQ_GT]);
+		if (row[QOS_REQ_GTM][0])
+			qos->grp_tres_mins = xstrdup(row[QOS_REQ_GTM]);
+		if (row[QOS_REQ_GTRM][0])
+			qos->grp_tres_run_mins = xstrdup(row[QOS_REQ_GTRM]);
+
 		if (row[QOS_REQ_GJ])
 			qos->grp_jobs = slurm_atoul(row[QOS_REQ_GJ]);
 		else
 			qos->grp_jobs = INFINITE;
-		if (row[QOS_REQ_GMEM])
-			qos->grp_mem = slurm_atoul(row[QOS_REQ_GMEM]);
-		else
-			qos->grp_mem = INFINITE;
-		if (row[QOS_REQ_GN])
-			qos->grp_nodes = slurm_atoul(row[QOS_REQ_GN]);
-		else
-			qos->grp_nodes = INFINITE;
 		if (row[QOS_REQ_GSJ])
 			qos->grp_submit_jobs = slurm_atoul(row[QOS_REQ_GSJ]);
 		else
@@ -1218,40 +1179,28 @@ empty:
 		else
 			qos->grp_wall = INFINITE;
 
-		if (row[QOS_REQ_MCMPJ])
-			qos->max_cpu_mins_pj = slurm_atoull(row[QOS_REQ_MCMPJ]);
-		else
-			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (row[QOS_REQ_MCRM])
-			qos->max_cpu_run_mins_pu =
-				slurm_atoull(row[QOS_REQ_MCRM]);
-		else
-			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
-		if (row[QOS_REQ_MCPJ])
-			qos->max_cpus_pj = slurm_atoul(row[QOS_REQ_MCPJ]);
-		else
-			qos->max_cpus_pj = INFINITE;
-		if (row[QOS_REQ_MCPU])
-			qos->max_cpus_pu = slurm_atoul(row[QOS_REQ_MCPU]);
-		else
-			qos->max_cpus_pu = INFINITE;
 		if (row[QOS_REQ_MJPU])
 			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
 			qos->max_jobs_pu = INFINITE;
-		if (row[QOS_REQ_MNPJ])
-			qos->max_nodes_pj = slurm_atoul(row[QOS_REQ_MNPJ]);
-		else
-			qos->max_nodes_pj = INFINITE;
-		if (row[QOS_REQ_MNPU])
-			qos->max_nodes_pu = slurm_atoul(row[QOS_REQ_MNPU]);
-		else
-			qos->max_nodes_pu = INFINITE;
 		if (row[QOS_REQ_MSJPU])
 			qos->max_submit_jobs_pu =
 				slurm_atoul(row[QOS_REQ_MSJPU]);
 		else
 			qos->max_submit_jobs_pu = INFINITE;
+
+		if (row[QOS_REQ_MTPJ][0])
+			qos->max_tres_pj = xstrdup(row[QOS_REQ_MTPJ]);
+
+		if (row[QOS_REQ_MTPU][0])
+			qos->max_tres_pu = xstrdup(row[QOS_REQ_MTPU]);
+
+		if (row[QOS_REQ_MTMPJ][0])
+			qos->max_tres_mins_pj = xstrdup(row[QOS_REQ_MTMPJ]);
+
+		if (row[QOS_REQ_MTRM][0])
+			qos->max_tres_run_mins_pu = xstrdup(row[QOS_REQ_MTRM]);
+
 		if (row[QOS_REQ_MWPJ])
 			qos->max_wall_pj = slurm_atoul(row[QOS_REQ_MWPJ]);
 		else
@@ -1275,10 +1224,8 @@ empty:
 		else
 			qos->usage_thres = (double)INFINITE;
 
-		if (row[QOS_REQ_MICPJ])
-			qos->min_cpus_pj = slurm_atoul(row[QOS_REQ_MICPJ]);
-		else
-			qos->min_cpus_pj = INFINITE;
+		if (row[QOS_REQ_MITPJ][0])
+			qos->min_tres_pj = xstrdup(row[QOS_REQ_MITPJ]);
 	}
 	mysql_free_result(result);
 

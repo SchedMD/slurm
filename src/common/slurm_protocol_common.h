@@ -73,7 +73,11 @@
  *       version in the code is referenced as a uint16_t which if 1403 was the
  *       api it would go over the limit.  So keep is a relatively
  *       small number.
-*/
+ * NOTE: These values must be Moved to
+ * src/plugins/accounting_storage/mysql/as_mysql_archive.c when we are
+ * done here with them since we have to support old version of archive
+ * files since they don't update once they are created.
+ */
 #define SLURM_15_08_PROTOCOL_VERSION ((29 << 8) | 0)
 #define SLURM_14_11_PROTOCOL_VERSION ((28 << 8) | 0)
 #define SLURM_14_03_PROTOCOL_VERSION ((27 << 8) | 0)

@@ -41,6 +41,7 @@
 #include <strings.h>
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -378,6 +379,9 @@ host_fini:	if (rc) {
 
 	if (gres_ptr) {
 		char *orig_gres;
+		assoc_mgr_lock_t locks = {
+			NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+			READ_LOCK, NO_LOCK, NO_LOCK };
 
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error("wiki: MODIFYJOB GRES of non-pending job %u",
@@ -397,6 +401,18 @@ host_fini:	if (rc) {
 			return ESLURM_INVALID_GRES;
 		}
 		xfree(orig_gres);
+		assoc_mgr_lock(&locks);
+		gres_set_job_tres_cnt(job_ptr->gres_list,
+				      job_ptr->details ?
+				      job_ptr->details->min_nodes : 0,
+				      job_ptr->tres_req_cnt,
+				      true);
+		xfree(job_ptr->tres_req_str);
+		job_ptr->tres_req_str =
+			assoc_mgr_make_tres_str_from_array(
+				job_ptr->tres_req_cnt,
+				true);
+		assoc_mgr_unlock(&locks);
 	}
 
 	if (wckey_ptr) {

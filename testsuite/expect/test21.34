@@ -223,6 +223,22 @@ proc check_state { job } {
 # Remove any vestigial data
 cleanup
 
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
+	exit 0
+}
+if { [test_limits_enforced] == 0 } {
+	send_user "\nWARNING: This test can't be run without enforcing limits\n"
+	exit 0
+}
+if {[test_super_user] == 0} {
+	send_user "\nWARNING Test can only be ran as SlurmUser\n"
+	exit 0
+}
+
 # Check to see that there are enough resources in the default partition
 set tmpc 0
 set tmpn 0
@@ -253,6 +269,36 @@ if {$tmpc == 0 || $tmpn == 0} {
 # Determine what the selecttype param is
 if {[string first "CR_CORE" [test_select_type_params]] != -1} {
 	set selectparam 1
+}
+
+# Get the number of nodes in the default partition
+set num_nodes [available_nodes [default_partition] "idle"]
+
+if {$num_nodes == 0} {
+	send_user "\nFAILURE: no cpus where found\n"
+	exit 1
+} else {
+	# Set QoS node values
+	set grn_num     $num_nodes
+	set maxnode_num $num_nodes
+	set maxnodespu_num $num_nodes
+}
+
+# Create 2 test qos
+add_qos $part_qos ""
+add_qos $job_qos ""
+
+# create a tmp partition to use for testing
+spawn $scontrol create partitionname=$test_part qos=$part_qos default=yes \
+    nodes=[available_nodes_hostnames $def_part]
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code
+	}
+	eof {
+		wait
+	}
 }
 
 set got_node 0
@@ -307,53 +353,6 @@ if {$totcpus == 0} {
 	set grpcpumin_num $totcpus
 	set maxcpu_num [expr $totcpus - $nthreads]
 	set maxcpumin_num $totcpus
-}
-
-# Get the number of nodes in the default partition
-set num_nodes [available_nodes [default_partition] "idle"]
-
-if {$num_nodes == 0} {
-	send_user "\nFAILURE: no cpus where found\n"
-	exit 1
-} else {
-	# Set QoS node values
-	set grn_num     $num_nodes
-	set maxnode_num $num_nodes
-	set maxnodespu_num $num_nodes
-}
-
-
-if { [test_account_storage] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
-	exit 0
-} elseif { [test_enforce_limits] == 0 } {
-	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
-	exit 0
-}
-if { [test_limits_enforced] == 0 } {
-	send_user "\nWARNING: This test can't be run without enforcing limits\n"
-	exit 0
-}
-if {[test_super_user] == 0} {
-	send_user "\nWARNING Test can only be ran as SlurmUser\n"
-	exit 0
-}
-
-# Create 2 test qos
-add_qos $part_qos ""
-add_qos $job_qos ""
-
-# create a tmp partition to use for testing
-spawn $scontrol create partitionname=$test_part qos=$part_qos default=yes \
-    nodes=[available_nodes_hostnames $def_part]
-expect {
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code
-	}
-	eof {
-		wait
-	}
 }
 
 # Gets user

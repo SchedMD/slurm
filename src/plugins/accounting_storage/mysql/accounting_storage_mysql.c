@@ -453,6 +453,36 @@ static bool _check_jobs_before_remove_without_assoctable(
 	return rc;
 }
 
+/* static int _add_remove_tres_limit(char *tres_limit_str, char *name, */
+/* 				  char **cols, char **vals, char **extra) */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
+/* 	char *tmp_str = tres_limit_str; */
+/* 	uint64_t value; */
+/* 	bool first = true; */
+
+/* 	if (!tmp_str || !tmp_str[0]) */
+/* 		return SLURM_SUCCESS; */
+
+/* 	while (tmp_str) { */
+/* 		if (id == atoi(tmp_str)) { */
+/* 			if (!(tmp_str = strchr(tmp_str, '='))) { */
+/* 				error("_add_remove_tres_limit: no value found"); */
+/* 				rc = SLURM_ERROR; */
+/* 				break; */
+/* 			} */
+/* 			if (first) */
+/* 				slurm_atoull(++tmp_str); */
+/* 		} */
+
+/* 		if (!(tmp_str = strchr(tmp_str, ','))) */
+/* 			break; */
+/* 		tmp_str++; */
+/* 	} */
+
+/* 	return SLURM_SUCCESS; */
+/* } */
+
 /* Any time a new table is added set it up here */
 static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 {
@@ -521,27 +551,23 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grace_time", "int unsigned default NULL" },
 		{ "max_jobs_per_user", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
-		{ "max_cpus_per_job", "int default NULL" },
-		{ "max_cpus_per_user", "int default NULL" },
-		{ "max_nodes_per_job", "int default NULL" },
-		{ "max_nodes_per_user", "int default NULL" },
+		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_pu", "text not null default ''" },
+		{ "max_tres_mins_pj", "text not null default ''" },
+		{ "max_tres_run_mins_pu", "text not null default ''" },
+		{ "min_tres_pj", "text not null default ''" },
 		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_mins_per_job", "bigint default NULL" },
-		{ "max_cpu_run_mins_per_user", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
-		{ "grp_cpus", "int default NULL" },
-		{ "grp_mem", "int default NULL" },
-		{ "grp_nodes", "int default NULL" },
+		{ "grp_tres", "text not null default ''" },
+		{ "grp_tres_mins", "text not null default ''" },
+		{ "grp_tres_run_mins", "text not null default ''" },
 		{ "grp_wall", "int default NULL" },
-		{ "grp_cpu_mins", "bigint default NULL" },
-		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "preempt", "text not null default ''" },
 		{ "preempt_mode", "int default 0" },
 		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
-		{ "min_cpus_per_job", "int unsigned default 1 not null" },
 		{ NULL, NULL}
 	};
 
@@ -588,11 +614,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
 		"set @msj = NULL; "
-		"set @mcpj = NULL; "
-		"set @mnpj = NULL; "
 		"set @mwpj = NULL; "
-		"set @mcmpj = NULL; "
-		"set @mcrm = NULL; "
+		"set @mtpj = ''; "
+		"set @mtmpj = ''; "
+		"set @mtrm = ''; "
 		"set @def_qos_id = NULL; "
 		"set @qos = ''; "
 		"set @delta_qos = ''; "
@@ -600,11 +625,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"if without_limits then "
 		"set @mj = 0; "
 		"set @msj = 0; "
-		"set @mcpj = 0; "
-		"set @mnpj = 0; "
 		"set @mwpj = 0; "
-		"set @mcmpj = 0; "
-		"set @mcrm = 0; "
 		"set @def_qos_id = 0; "
 		"set @qos = 1; "
 		"end if; "
@@ -619,20 +640,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"if @msj is NULL then set @s = CONCAT("
 		"@s, '@msj := max_submit_jobs, '); "
 		"end if; "
-		"if @mcpj is NULL then set @s = CONCAT("
-		"@s, '@mcpj := max_cpus_pj, ') ;"
-		"end if; "
-		"if @mnpj is NULL then set @s = CONCAT("
-		"@s, '@mnpj := max_nodes_pj, ') ;"
-		"end if; "
 		"if @mwpj is NULL then set @s = CONCAT("
 		"@s, '@mwpj := max_wall_pj, '); "
-		"end if; "
-		"if @mcmpj is NULL then set @s = CONCAT("
-		"@s, '@mcmpj := max_cpu_mins_pj, '); "
-		"end if; "
-		"if @mcrm is NULL then set @s = CONCAT("
-		"@s, '@mcrm := max_cpu_run_mins, '); "
 		"end if; "
 		"if @def_qos_id is NULL then set @s = CONCAT("
 		"@s, '@def_qos_id := def_qos_id, '); "
@@ -642,18 +651,102 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@delta_qos := REPLACE(CONCAT(delta_qos, @delta_qos), "
 		"\\\',,\\\', \\\',\\\'), '); "
 		"end if; "
-		"set @s = concat(@s, '@my_acct_new := parent_acct from \"', "
+		/* "set @s = CONCAT(@s, @mtpj := REPLACE(CONCAT(@mtpj, max_tres_pj), " */
+		/* "\\\',,\\\', \\\',\\\'), '); " */
+		/* "@mtmpj := REPLACE(CONCAT(@mtmpj, max_tres_mins_pj), " */
+		/* "\\\',,\\\', \\\',\\\'), '); " */
+		/* "@mtrm := REPLACE(CONCAT(@mtrm, max_tres_run_mins), " */
+		/* "\\\',,\\\', \\\',\\\'), '); " */
+		"set @s = concat(@s, "
+		"'@mtpj := REPLACE(CONCAT(@mtpj, max_tres_pj), "
+		"\\\',,\\\', \\\',\\\'), "
+		"@mtmpj := REPLACE(CONCAT(@mtmpj, max_tres_mins_pj), "
+		"\\\',,\\\', \\\',\\\'), "
+		"@mtrm := REPLACE(CONCAT(@mtrm, max_tres_run_mins), "
+		"\\\',,\\\', \\\',\\\'), "
+		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
 		"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
 		"set @my_acct = @my_acct_new; "
-		"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 "
-		"&& @mnpj != -1 && @mwpj != -1 && @mcmpj != -1 "
-		"&& @mcrm != -1 && @def_qos_id != -1 && @qos != '') "
-		"|| @my_acct = '' END REPEAT; "
+		"UNTIL without_limits || @my_acct = '' END REPEAT; "
 		"END;";
+	/* char *get_parent_proc = */
+	/* 	"drop procedure if exists get_parent_limits; " */
+	/* 	"create procedure get_parent_limits(" */
+	/* 	"my_table text, acct text, cluster text, without_limits int) " */
+	/* 	"begin " */
+	/* 	"set @par_id = NULL; " */
+	/* 	"set @mj = NULL; " */
+	/* 	"set @msj = NULL; " */
+	/* 	"set @mcpj = NULL; " */
+	/* 	"set @mnpj = NULL; " */
+	/* 	"set @mwpj = NULL; " */
+	/* 	"set @mcmpj = NULL; " */
+	/* 	"set @mcrm = NULL; " */
+	/* 	"set @def_qos_id = NULL; " */
+	/* 	"set @qos = ''; " */
+	/* 	"set @delta_qos = ''; " */
+	/* 	"set @my_acct = acct; " */
+	/* 	"if without_limits then " */
+	/* 	"set @mj = 0; " */
+	/* 	"set @msj = 0; " */
+	/* 	"set @mcpj = 0; " */
+	/* 	"set @mnpj = 0; " */
+	/* 	"set @mwpj = 0; " */
+	/* 	"set @mcmpj = 0; " */
+	/* 	"set @mcrm = 0; " */
+	/* 	"set @def_qos_id = 0; " */
+	/* 	"set @qos = 1; " */
+	/* 	"end if; " */
+	/* 	"REPEAT " */
+	/* 	"set @s = 'select '; " */
+	/* 	"if @par_id is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@par_id := id_assoc, '); " */
+	/* 	"end if; " */
+	/* 	"if @mj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mj := max_jobs, '); " */
+	/* 	"end if; " */
+	/* 	"if @msj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@msj := max_submit_jobs, '); " */
+	/* 	"end if; " */
+	/* 	"if @mcpj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mcpj := max_cpus_pj, ') ;" */
+	/* 	"end if; " */
+	/* 	"if @mnpj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mnpj := max_nodes_pj, ') ;" */
+	/* 	"end if; " */
+	/* 	"if @mwpj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mwpj := max_wall_pj, '); " */
+	/* 	"end if; " */
+	/* 	"if @mcmpj is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mcmpj := max_cpu_mins_pj, '); " */
+	/* 	"end if; " */
+	/* 	"if @mcrm is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@mcrm := max_cpu_run_mins, '); " */
+	/* 	"end if; " */
+	/* 	"if @def_qos_id is NULL then set @s = CONCAT(" */
+	/* 	"@s, '@def_qos_id := def_qos_id, '); " */
+	/* 	"end if; " */
+	/* 	"if @qos = '' then set @s = CONCAT(" */
+	/* 	"@s, '@qos := qos, " */
+	/* 	"@delta_qos := REPLACE(CONCAT(delta_qos, @delta_qos), " */
+	/* 	"\\\',,\\\', \\\',\\\'), '); " */
+	/* 	"end if; " */
+	/* 	"set @s = concat(@s, '@my_acct_new := parent_acct from \"', " */
+	/* 	"cluster, '_', my_table, '\" where " */
+	/* 	"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); " */
+	/* 	"prepare query from @s; " */
+	/* 	"execute query; " */
+	/* 	"deallocate prepare query; " */
+	/* 	"set @my_acct = @my_acct_new; " */
+	/* 	"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 " */
+	/* 	"&& @mnpj != -1 && @mwpj != -1 && @mcmpj != -1 " */
+	/* 	"&& @mcrm != -1 && @def_qos_id != -1 && @qos != '') " */
+	/* 	"|| @my_acct = '' END REPEAT; " */
+	/* 	"END;"; */
 	char *get_coord_qos =
 		"drop procedure if exists get_coord_qos; "
 		"create procedure get_coord_qos(my_table text, acct text, "
@@ -723,12 +816,14 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			"insert into %s (creation_time, id, type) values "
 			"(%ld, %d, 'cpu'), "
 			"(%ld, %d, 'mem'), "
-			"(%ld, %d, 'energy') "
+			"(%ld, %d, 'energy'), "
+			"(%ld, %d, 'node') "
 			"on duplicate key update deleted=0, type=VALUES(type);",
 			tres_table,
 			now, TRES_CPU,
 			now, TRES_MEM,
-			now, TRES_ENERGY);
+			now, TRES_ENERGY,
+			now, TRES_NODE);
 		if (debug_flags & DEBUG_FLAG_DB_QOS)
 			DB_DEBUG(mysql_conn->conn, "%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -986,19 +1081,16 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
-		{ "max_cpus_pj", "int default NULL" },
-		{ "max_nodes_pj", "int default NULL" },
+		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_mins_pj", "text not null default ''" },
+		{ "max_tres_run_mins", "text not null default ''" },
 		{ "max_wall_pj", "int default NULL" },
-		{ "max_cpu_mins_pj", "bigint default NULL" },
-		{ "max_cpu_run_mins", "bigint default NULL" },
 		{ "grp_jobs", "int default NULL" },
 		{ "grp_submit_jobs", "int default NULL" },
-		{ "grp_cpus", "int default NULL" },
-		{ "grp_mem", "int default NULL" },
-		{ "grp_nodes", "int default NULL" },
+		{ "grp_tres", "text not null default ''" },
+		{ "grp_tres_mins", "text not null default ''" },
+		{ "grp_tres_run_mins", "text not null default ''" },
 		{ "grp_wall", "int default NULL" },
-		{ "grp_cpu_mins", "bigint default NULL" },
-		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "def_qos_id", "int default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
@@ -1417,9 +1509,9 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 }
 
 extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
-				    char **cols, char **vals,
-				    char **extra, qos_level_t qos_level,
-				    bool for_add)
+			      char **cols, char **vals,
+			      char **extra, qos_level_t qos_level,
+			      bool for_add)
 {
 	if (!assoc)
 		return SLURM_ERROR;
@@ -1430,32 +1522,14 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		*/
 		if (assoc->shares_raw == NO_VAL)
 			assoc->shares_raw = INFINITE;
-		if (assoc->grp_cpu_mins == (uint64_t)NO_VAL)
-			assoc->grp_cpu_mins = (uint64_t)INFINITE;
-		if (assoc->grp_cpu_run_mins == (uint64_t)NO_VAL)
-			assoc->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if (assoc->grp_cpus == NO_VAL)
-			assoc->grp_cpus = INFINITE;
 		if (assoc->grp_jobs == NO_VAL)
 			assoc->grp_jobs = INFINITE;
-		if (assoc->grp_mem == NO_VAL)
-			assoc->grp_mem = INFINITE;
-		if (assoc->grp_nodes == NO_VAL)
-			assoc->grp_nodes = INFINITE;
 		if (assoc->grp_submit_jobs == NO_VAL)
 			assoc->grp_submit_jobs = INFINITE;
 		if (assoc->grp_wall == NO_VAL)
 			assoc->grp_wall = INFINITE;
-		if (assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
-			assoc->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if (assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
-			assoc->max_cpu_run_mins = (uint64_t)INFINITE;
-		if (assoc->max_cpus_pj == NO_VAL)
-			assoc->max_cpus_pj = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
-		if (assoc->max_nodes_pj == NO_VAL)
-			assoc->max_nodes_pj = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -1476,43 +1550,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", shares=%u", assoc->shares_raw);
 	}
 
-	if (assoc->grp_cpu_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_mins=NULL");
-	} else if ((assoc->grp_cpu_mins != (uint64_t)NO_VAL)
-		   && ((int64_t)assoc->grp_cpu_mins >= 0)) {
-		xstrcat(*cols, ", grp_cpu_mins");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   assoc->grp_cpu_mins);
-		xstrfmtcat(*extra, ", grp_cpu_mins=%"PRIu64"",
-			   assoc->grp_cpu_mins);
-	}
-
-	if (assoc->grp_cpu_run_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_run_mins=NULL");
-	} else if ((assoc->grp_cpu_run_mins != (uint64_t)NO_VAL)
-		   && ((int64_t)assoc->grp_cpu_run_mins >= 0)) {
-		xstrcat(*cols, ", grp_cpu_run_mins");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   assoc->grp_cpu_run_mins);
-		xstrfmtcat(*extra, ", grp_cpu_run_mins=%"PRIu64"",
-			   assoc->grp_cpu_run_mins);
-	}
-
-	if (assoc->grp_cpus == INFINITE) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpus=NULL");
-	} else if ((assoc->grp_cpus != NO_VAL)
-		   && ((int32_t)assoc->grp_cpus >= 0)) {
-		xstrcat(*cols, ", grp_cpus");
-		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
-		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
-	}
-
 	if (assoc->grp_jobs == INFINITE) {
 		xstrcat(*cols, ", grp_jobs");
 		xstrcat(*vals, ", NULL");
@@ -1522,28 +1559,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", grp_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
 		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
-	}
-
-	if (assoc->grp_mem == INFINITE) {
-		xstrcat(*cols, ", grp_mem");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_mem=NULL");
-	} else if ((assoc->grp_mem != NO_VAL)
-		   && ((int32_t)assoc->grp_mem >= 0)) {
-		xstrcat(*cols, ", grp_mem");
-		xstrfmtcat(*vals, ", %u", assoc->grp_mem);
-		xstrfmtcat(*extra, ", grp_mem=%u", assoc->grp_mem);
-	}
-
-	if (assoc->grp_nodes == INFINITE) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_nodes=NULL");
-	} else if ((assoc->grp_nodes != NO_VAL)
-		   && ((int32_t)assoc->grp_nodes >= 0)) {
-		xstrcat(*cols, ", grp_nodes");
-		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
-		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
 	}
 
 	if (assoc->grp_submit_jobs == INFINITE) {
@@ -1579,43 +1594,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*extra, ", is_def=1");
 	}
 
-	if (assoc->max_cpu_mins_pj == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_mins_pj");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_mins_pj=NULL");
-	} else if ((assoc->max_cpu_mins_pj != (uint64_t)NO_VAL)
-		   && ((int64_t)assoc->max_cpu_mins_pj >= 0)) {
-		xstrcat(*cols, ", max_cpu_mins_pj");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   assoc->max_cpu_mins_pj);
-		xstrfmtcat(*extra, ", max_cpu_mins_pj=%"PRIu64"",
-			   assoc->max_cpu_mins_pj);
-	}
-
-	if (assoc->max_cpu_run_mins == (uint64_t)INFINITE) {
-		xstrcat(*cols, ", max_cpu_run_mins");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpu_run_mins=NULL");
-	} else if ((assoc->max_cpu_run_mins != (uint64_t)NO_VAL)
-		   && ((int64_t)assoc->max_cpu_run_mins >= 0)) {
-		xstrcat(*cols, ", max_cpu_run_mins");
-		xstrfmtcat(*vals, ", %"PRIu64"",
-			   assoc->max_cpu_run_mins);
-		xstrfmtcat(*extra, ", max_cpu_run_mins=%"PRIu64"",
-			   assoc->max_cpu_run_mins);
-	}
-
-	if (assoc->max_cpus_pj == INFINITE) {
-		xstrcat(*cols, ", max_cpus_pj");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_cpus_pj=NULL");
-	} else if ((assoc->max_cpus_pj != NO_VAL)
-		   && ((int32_t)assoc->max_cpus_pj >= 0)) {
-		xstrcat(*cols, ", max_cpus_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
-		xstrfmtcat(*extra, ", max_cpus_pj=%u", assoc->max_cpus_pj);
-	}
-
 	if (assoc->max_jobs == INFINITE) {
 		xstrcat(*cols, ", max_jobs");
 		xstrcat(*vals, ", NULL");
@@ -1625,17 +1603,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
-	}
-
-	if (assoc->max_nodes_pj == INFINITE) {
-		xstrcat(*cols, ", max_nodes_pj");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_nodes_pj=NULL");
-	} else if ((assoc->max_nodes_pj != NO_VAL)
-		   && ((int32_t)assoc->max_nodes_pj >= 0)) {
-		xstrcat(*cols, ", max_nodes_pj");
-		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(*extra, ", max_nodes_pj=%u", assoc->max_nodes_pj);
 	}
 
 	if (assoc->max_submit_jobs == INFINITE) {
@@ -1672,19 +1639,91 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
 	}
 
-	/* when modifying the qos it happens in the actual function
-	   since we have to wait until we hear about the parent first. */
-	if (qos_level == QOS_LEVEL_MODIFY)
-		goto end_qos;
+	/* When modifying anything below this comment it happens in
+	 * the actual function since we have to wait until we hear
+	 * about the parent first.
+	 * What we do to make it known something needs to be changed
+	 * is we cat "" onto extra which will inform the caller
+	 * something needs changing.
+	 */
+
+	if (assoc->grp_tres) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres");
+		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres);
+		xstrfmtcat(*extra, ", grp_tres='%s'", assoc->grp_tres);
+	}
+
+	if (assoc->grp_tres_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres_mins");
+		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_mins);
+		xstrfmtcat(*extra, ", grp_tres_mins='%s'",
+			   assoc->grp_tres_mins);
+	}
+
+	if (assoc->grp_tres_run_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", grp_tres_run_mins");
+		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_run_mins);
+		xstrfmtcat(*extra, ", grp_tres_run_mins='%s'",
+			   assoc->grp_tres_run_mins);
+	}
+
+	if (assoc->max_tres_pj) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pj");
+		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_pj);
+		xstrfmtcat(*extra, ", max_tres_pj='%s'", assoc->max_tres_pj);
+	}
+
+	if (assoc->max_tres_mins_pj) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_mins_pj");
+		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_mins_pj);
+		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
+			   assoc->max_tres_mins_pj);
+	}
+
+	if (assoc->max_tres_run_mins) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_run_mins");
+		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_run_mins);
+		xstrfmtcat(*extra, ", max_tres_run_mins='%s'",
+			   assoc->max_tres_run_mins);
+	}
 
 	if (assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_type = "qos";
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
 		int set = 0;
-		ListIterator qos_itr =
-			list_iterator_create(assoc->qos_list);
+		ListIterator qos_itr;
 
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+
+		qos_itr = list_iterator_create(assoc->qos_list);
 		while ((tmp_char = list_next(qos_itr))) {
 			/* we don't want to include blank names */
 			if (!tmp_char[0])
@@ -1712,13 +1751,13 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(assoc->qos_list, default_qos_str);
-	} else {
+	} else if (qos_level != QOS_LEVEL_MODIFY) {
 		/* clear the qos */
 		xstrcat(*cols, ", qos, delta_qos");
 		xstrcat(*vals, ", '', ''");
 		xstrcat(*extra, ", qos='', delta_qos=''");
 	}
-end_qos:
+end_modify:
 
 	return SLURM_SUCCESS;
 
@@ -2120,9 +2159,10 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=NULL, "
 			       "shares=1, max_jobs=NULL, "
-			       "max_nodes_pj=NULL, "
 			       "max_wall_pj=NULL, "
-			       "max_cpu_mins_pj=NULL "
+			       "max_tres_pj='', "
+			       "max_tres_mins_pj='', "
+			       "max_tres_run_mins='' "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
@@ -2148,6 +2188,66 @@ just_update:
 	}
 
 	return rc;
+}
+
+extern void mod_tres_str(char **out, char *mod, char *cur,
+			 char *cur_par, char *name, char **vals,
+			 uint32_t id, bool assoc)
+{
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE;
+
+	xassert(out);
+	xassert(name);
+
+	if (!mod)
+		return;
+
+	/* We have to add strings in waves or we will not be able to
+	 * get removes to work correctly.  We want the string returned
+	 * after the first slurmdb_combine_tres_strings to be put in
+	 * the database.
+	 */
+	xfree(*out); /* just to make sure */
+	*out = xstrdup(mod);
+	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
+	/* let the slurmctld know we removed limits,
+	 * "" means blank NULL means no change */
+	if (!*out)
+		*out = xstrdup("");
+
+	if (xstrcmp(*out, cur)) {
+		/* We always want the first char a comma in the
+		 * database so make it that way if we have something
+		 * to add.
+		 * FIXME: perhaps we should just use TRES_STR_FLAG_COMMA1?
+		 */
+		if (vals) {
+			/* This logic is here because while the change
+			 * we are doing on the limit is the same for
+			 * each limit the other limits on the
+			 * associations might not be.  What this does
+			 * is only change the limit on the association
+			 * given the id.  I'm hoping someone in the
+			 * future comes up with a better way to do
+			 * this since this seems like a hack, but it
+			 * does do the job.
+			 */
+			xstrfmtcat(*vals, ", %s = "
+				   "if (%s=%u, '%s%s', %s)",
+				   name, assoc ? "id_assoc" : "id", id,
+				   *out[0] ? "," : "",
+				   *out, name);
+			/* xstrfmtcat(*vals, ", %s='%s%s')", */
+			/* 	   name, */
+			/* 	   *out[0] ? "," : "", */
+			/* 	   *out); */
+		}
+		if (cur_par)
+			slurmdb_combine_tres_strings(
+				out, cur_par, tres_str_flags);
+	} else
+		xfree(*out);
 }
 
 /*

@@ -281,14 +281,21 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 			      "found at %s instead", tmp_str);
 			break;
 		}
-		if (!(tmp_str = strchr(tmp_str, '='))) {
-			error("_add_tres_2_list: no value found");
-			xassert(0);
-			break;
-		}
 
-		count = slurm_atoull(++tmp_str);
-		_setup_cluster_tres(tres_list, id, count, seconds);
+		/* We don't run rollup on a node basis
+		 * because they are shared resources on
+		 * many systems so it will almost always
+		 * have over committed resources.
+		 */
+		if (id != TRES_NODE) {
+			if (!(tmp_str = strchr(tmp_str, '='))) {
+				error("_add_tres_2_list: no value found");
+				xassert(0);
+				break;
+			}
+			count = slurm_atoull(++tmp_str);
+			_setup_cluster_tres(tres_list, id, count, seconds);
+		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;

@@ -164,9 +164,10 @@ extern List priority_p_get_priority_factors_list(
 
 extern void priority_p_job_end(struct job_record *job_ptr)
 {
-	uint64_t unused_cpu_run_secs = 0;
 	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	slurmdb_assoc_rec_t *assoc_ptr;
+	int i;
+	uint64_t unused_tres_run_secs[slurmctld_tres_cnt];
 	assoc_mgr_lock_t locks = { NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -174,43 +175,66 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 	if (job_ptr->end_time >= job_ptr->start_time + time_limit_secs)
 		return;
 
-	unused_cpu_run_secs = job_ptr->total_cpus *
-		(job_ptr->start_time + time_limit_secs - job_ptr->end_time);
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		unused_tres_run_secs[i] =
+			(uint64_t)(job_ptr->start_time +
+				   time_limit_secs - job_ptr->end_time) *
+			job_ptr->tres_req_cnt[i];
+	}
 
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr =
 			(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if (unused_cpu_run_secs >
-		    qos_ptr->usage->grp_used_cpu_run_secs) {
-			qos_ptr->usage->grp_used_cpu_run_secs = 0;
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (unused_tres_run_secs[i] >
+			    qos_ptr->usage->grp_used_tres_run_secs[i]) {
+			qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
 			debug2("acct_policy_job_fini: "
-			       "grp_used_cpu_run_secs "
-			       "underflow for qos %s", qos_ptr->name);
-		} else
-			qos_ptr->usage->grp_used_cpu_run_secs -=
-				unused_cpu_run_secs;
+			       "grp_used_tres_run_secs "
+			       "underflow for qos %s tres %s%s%s",
+			       qos_ptr->name,
+			       assoc_mgr_tres_array[i]->type,
+			       assoc_mgr_tres_array[i]->name ? "/" : "",
+			       assoc_mgr_tres_array[i]->name ?
+			       assoc_mgr_tres_array[i]->name : "");
+			} else
+				qos_ptr->usage->grp_used_tres_run_secs[i] -=
+					unused_tres_run_secs[i];
+		}
 	}
 	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		/* If the job finished early remove the extra time now. */
-		if (unused_cpu_run_secs >
-		    assoc_ptr->usage->grp_used_cpu_run_secs) {
-			assoc_ptr->usage->grp_used_cpu_run_secs = 0;
-			debug2("acct_policy_job_fini: "
-			       "grp_used_cpu_run_secs "
-			       "underflow for account %s",
-			       assoc_ptr->acct);
-		} else {
-			assoc_ptr->usage->grp_used_cpu_run_secs -=
-				unused_cpu_run_secs;
-			debug4("acct_policy_job_fini: job %u. "
-			       "Removed %"PRIu64" unused seconds "
-			       "from assoc %s "
-			       "grp_used_cpu_run_secs = %"PRIu64"",
-			       job_ptr->job_id, unused_cpu_run_secs,
-			       assoc_ptr->acct,
-			       assoc_ptr->usage->grp_used_cpu_run_secs);
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (unused_tres_run_secs[i] >
+			    assoc_ptr->usage->grp_used_tres_run_secs[i]) {
+				assoc_ptr->usage->grp_used_tres_run_secs[i] = 0;
+				debug2("acct_policy_job_fini: "
+				       "grp_used_tres_run_secs "
+				       "underflow for account %s tres %s%s%s",
+				       assoc_ptr->acct,
+				       assoc_mgr_tres_array[i]->type,
+				       assoc_mgr_tres_array[i]->name ? "/" : "",
+				       assoc_mgr_tres_array[i]->name ?
+				       assoc_mgr_tres_array[i]->name : "");
+
+			} else {
+				assoc_ptr->usage->grp_used_tres_run_secs[i] -=
+					unused_tres_run_secs[i];
+				debug4("acct_policy_job_fini: job %u. "
+				       "Removed %"PRIu64" unused seconds "
+				       "from acct %s tres %s%s%s "
+				       "grp_used_tres_run_secs = %"PRIu64"",
+				       job_ptr->job_id, unused_tres_run_secs[i],
+				       assoc_ptr->acct,
+				       assoc_mgr_tres_array[i]->type,
+				       assoc_mgr_tres_array[i]->name ? "/" : "",
+				       assoc_mgr_tres_array[i]->name ?
+				       assoc_mgr_tres_array[i]->name : "",
+				       assoc_ptr->usage->
+				       grp_used_tres_run_secs[i]);
+			}
 		}
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;

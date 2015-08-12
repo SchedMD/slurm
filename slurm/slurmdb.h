@@ -202,22 +202,6 @@ typedef enum {
 #define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
 					  Combo of CRAY_A | CRAY_N */
 
-/* Define assoc_mgr_assoc_usage_t below to avoid including
- * extraneous slurmdb headers */
-#ifndef __assoc_mgr_assoc_usage_t_defined
-#  define  __assoc_mgr_assoc_usage_t_defined
-/* opaque data type */
-typedef struct assoc_mgr_assoc_usage assoc_mgr_assoc_usage_t;
-#endif
-
-/* Define assoc_mgr_qos_usage_t below to avoid including
- * extraneous slurmdb headers */
-#ifndef __assoc_mgr_qos_usage_t_defined
-#  define  __assoc_mgr_qos_usage_t_defined
-/* opaque data type */
-typedef struct assoc_mgr_qos_usage assoc_mgr_qos_usage_t;
-#endif
-
 /********************************************/
 
 /* Association conditions used for queries of the database */
@@ -246,26 +230,7 @@ typedef struct {
 
 	List def_qos_id_list;   /* list of char * */
 
-	List fairshare_list;	/* fairshare number */
-
-	List grp_cpu_mins_list; /* list of char * */
-	List grp_cpu_run_mins_list; /* list of char * */
-	List grp_cpus_list; /* list of char * */
-	List grp_jobs_list;	/* list of char * */
-	List grp_mem_list;	/* list of char * */
-	List grp_nodes_list; /* list of char * */
-	List grp_submit_jobs_list; /* list of char * */
-	List grp_wall_list; /* list of char * */
-
 	List id_list;		/* list of char */
-
-	List max_cpu_mins_pj_list; /* list of char * */
-	List max_cpu_run_mins_list; /* list of char * */
-	List max_cpus_pj_list; /* list of char * */
-	List max_jobs_list;	/* list of char * */
-	List max_nodes_pj_list; /* list of char * */
-	List max_submit_jobs_list; /* list of char * */
-	List max_wall_pj_list; /* list of char * */
 
 	uint16_t only_defs;  /* only send back defaults */
 
@@ -430,6 +395,9 @@ typedef struct {
 
 /* slurmdb_assoc_cond_t is defined above alphabetical */
 
+/* This has slurmdb_assoc_rec_t's in it so we define the struct afterwards. */
+typedef struct slurmdb_assoc_usage slurmdb_assoc_usage_t;
+
 typedef struct slurmdb_assoc_rec {
 	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *acct;		   /* account/project associated to
@@ -447,29 +415,37 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
 
-	uint64_t grp_cpu_mins;     /* max number of cpu minutes the
-				    * underlying group of
-				    * associations can run for */
-	uint64_t grp_cpu_run_mins; /* max number of cpu minutes the
-				    * underlying group of
-				    * assoiciations can
-				    * having running at one time */
-	uint32_t grp_cpus;         /* max number of cpus the
-				    * underlying group of
-				    * associations can allocate at one time */
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
-	uint32_t grp_mem;          /* max amount of memory the
-				    * underlying group of
-				    * associations can allocate at once */
-	uint32_t grp_nodes;        /* max number of nodes the
-				    * underlying group of
-				    * associations can allocate at once */
 	uint32_t grp_submit_jobs;  /* max number of jobs the
 				    * underlying group of
 				    * associations can submit at
 				    * one time */
+	char *grp_tres;            /* max number of cpus the
+				    * underlying group of
+				    * associations can allocate at one time */
+	uint64_t *grp_tres_ctld;   /* grp_tres broken out in an array
+				    * based off the ordering of the total
+				    * number of TRES in the system
+				    * (DON'T PACK) */
+	char *grp_tres_mins;       /* max number of cpu minutes the
+				    * underlying group of
+				    * associations can run for */
+	uint64_t *grp_tres_mins_ctld; /* grp_tres_mins broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system
+				       * (DON'T PACK) */
+	char *grp_tres_run_mins;   /* max number of cpu minutes the
+				    * underlying group of
+				    * assoiciations can
+				    * having running at one time */
+	uint64_t *grp_tres_run_mins_ctld; /* grp_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
 	uint32_t grp_wall;         /* total time in hours the
 				    * underlying group of
 				    * associations can run for */
@@ -483,19 +459,31 @@ typedef struct slurmdb_assoc_rec {
 				    * associations and jobs as a left
 				    * most container used with rgt */
 
-	uint64_t max_cpu_mins_pj;  /* max number of cpu seconds this
-				    * association can have per job */
-	uint64_t max_cpu_run_mins; /* max number of cpu minutes this
-				    * association can
-				    * having running at one time */
-	uint32_t max_cpus_pj;      /* max number of cpus this
-				    * association can allocate per job */
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
-	uint32_t max_nodes_pj;     /* max number of nodes this
-				    * association can allocate per job */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
+	char *max_tres_mins_pj;    /* max number of cpu seconds this
+				    * association can have per job */
+	uint64_t *max_tres_mins_ctld; /* max_tres_mins broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_run_mins;   /* max number of cpu minutes this
+				    * association can
+				    * having running at one time */
+	uint64_t *max_tres_run_mins_ctld; /* max_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
+	char *max_tres_pj;         /* max number of cpus this
+				    * association can allocate per job */
+	uint64_t *max_tres_ctld;   /* max_tres broken out in an array
+				    * based off the ordering of the
+				    * total number of TRES in the system
+				    * (DON'T PACK) */
 	uint32_t max_wall_pj;      /* longest time this
 				    * association can run a job */
 
@@ -514,9 +502,64 @@ typedef struct slurmdb_assoc_rec {
 				    * association */
 
 	uint32_t uid;		   /* user ID */
-	assoc_mgr_assoc_usage_t *usage;
+	slurmdb_assoc_usage_t *usage;
 	char *user;		   /* user associated to assoc */
 } slurmdb_assoc_rec_t;
+
+struct slurmdb_assoc_usage {
+	List children_list;     /* list of children associations
+				 * (DON'T PACK) */
+	uint64_t *grp_used_tres; /* array of active tres counts */
+	uint64_t *grp_used_tres_run_secs; /* array of running tres secs
+					   * (DON'T PACK for state file) */
+
+	double grp_used_wall;   /* group count of time used in running jobs */
+	double fs_factor;	/* Fairshare factor. Not used by all algorithms
+				 * (DON'T PACK for state file) */
+	uint32_t level_shares;  /* number of shares on this level of
+				 * the tree (DON'T PACK for state file) */
+
+	slurmdb_assoc_rec_t *parent_assoc_ptr; /* ptr to direct
+						* parent assoc
+						* set in slurmctld
+						* (DON'T PACK) */
+
+	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
+					       * assoc if fairshare
+					       * == SLURMDB_FS_USE_PARENT
+					       * set in slurmctld
+					       * (DON'T PACK) */
+
+	double shares_norm;     /* normalized shares
+				 * (DON'T PACK for state file) */
+
+	uint32_t tres_cnt; /* size of the tres arrays,
+			    * (DON'T PACK for state file) */
+	long double usage_efctv;/* effective, normalized usage
+				 * (DON'T PACK for state file) */
+	long double usage_norm;	/* normalized usage
+				 * (DON'T PACK for state file) */
+	long double usage_raw;	/* measure of resource usage */
+
+	uint32_t used_jobs;	/* count of active jobs
+				 * (DON'T PACK for state file) */
+	uint32_t used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK for state file) */
+
+	/* Currently FAIR_TREE systems are defining data on
+	 * this struct but instead we could keep a void pointer to system
+	 * specific data. This would allow subsystems to define whatever data
+	 * they need without having to modify this struct; it would also save
+	 * space.
+	 */
+	long double level_fs;	/* (FAIR_TREE) Result of fairshare equation
+				 * compared to the association's siblings
+				 * (DON'T PACK for state file) */
+
+	bitstr_t *valid_qos;    /* qos available for this association
+				 * derived from the qos_list.
+				 * (DON'T PACK for state file) */
+};
 
 typedef struct {
 	uint16_t classification; /* how this machine is classified */
@@ -673,49 +716,103 @@ typedef struct {
 } slurmdb_job_rec_t;
 
 typedef struct {
+	List job_list; /* list of job pointers to submitted/running
+			  jobs (DON'T PACK) */
+	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
+				 * for state file) */
+	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
+					* (DON'T PACK for state file) */
+	uint64_t *grp_used_tres; /* count of tres in use in this qos
+				 * (DON'T PACK for state file) */
+	uint64_t *grp_used_tres_run_secs; /* count of running tres secs
+					 * (DON'T PACK for state file) */
+	double grp_used_wall;   /* group count of time (minutes) used in
+				 * running jobs (DON'T PACK for state file) */
+	double norm_priority;/* normalized priority (DON'T PACK for
+			      * state file) */
+	uint32_t tres_cnt; /* size of the tres arrays,
+			    * (DON'T PACK for state file) */
+	long double usage_raw;	/* measure of resource usage (DON'T
+				 * PACK for state file) */
+
+	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
+			       * for state file) */
+} slurmdb_qos_usage_t;
+
+typedef struct {
 	char *description;
 	uint32_t id;
 	uint32_t flags; /* flags for various things to enforce or
 			   override other limits */
 	uint32_t grace_time; /* preemption grace time */
-	uint64_t grp_cpu_mins; /* max number of cpu minutes all jobs
-				* running under this qos can run for */
-	uint64_t grp_cpu_run_mins; /* max number of cpu minutes all jobs
-				    * running under this qos can
-				    * having running at one time */
-	uint32_t grp_cpus; /* max number of cpus this qos
-			      can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
-	uint32_t grp_mem; /* max amount of memory this qos
-			     can allocate at one time */
-	uint32_t grp_nodes; /* max number of nodes this qos
-			       can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
 				   * one time */
+	char *grp_tres;            /* max number of tres ths qos can
+				    * allocate at one time */
+	uint64_t *grp_tres_ctld;   /* grp_tres broken out in an array
+				    * based off the ordering of the total
+				    * number of TRES in the system
+				    * (DON'T PACK) */
+	char *grp_tres_mins;       /* max number of tres minutes this
+				    * qos can run for */
+	uint64_t *grp_tres_mins_ctld; /* grp_tres_mins broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system
+				       * (DON'T PACK) */
+	char *grp_tres_run_mins;   /* max number of tres minutes this
+				    * qos can have running at one time */
+	uint64_t *grp_tres_run_mins_ctld; /* grp_tres_run_mins
+					   * broken out in an array
+					   * based off the ordering
+					   * of the total number of TRES in
+					   * the system
+					   * (DON'T PACK) */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	uint64_t max_cpu_mins_pj; /* max number of cpu mins a job can
-				   * use with this qos */
-	uint64_t max_cpu_run_mins_pu; /* max number of cpu mins a user can
-				       * allocate at a given time when
-				       * using this qos (Not yet valid option) */
-	uint32_t max_cpus_pj; /* max number of cpus a job can
-			       * allocate with this qos */
-	uint32_t max_cpus_pu; /* max number of cpus a user can
-			       * allocate with this qos at one time */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
-	uint32_t max_nodes_pj; /* max number of nodes a job can
-				* allocate with this qos at one time */
-	uint32_t max_nodes_pu; /* max number of nodes a user can
-				* allocate with this qos at one time */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
 					submit with this qos at once */
+	char *max_tres_mins_pj;    /* max number of tres seconds this
+				    * qos can have per job */
+	uint64_t *max_tres_mins_pj_ctld; /* max_tres_mins broken out in an array
+					  * based off the ordering of the
+					  * total number of TRES in the system
+					  * (DON'T PACK) */
+	char *max_tres_pj;         /* max number of tres this
+				    * qos can allocate per job */
+	uint64_t *max_tres_pj_ctld;   /* max_tres_pj broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_pu;         /* max number of tres this
+				    * QOS can allocate per user */
+	uint64_t *max_tres_pu_ctld;   /* max_tres broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_run_mins_pu;   /* max number of tres minutes this
+				       * qos can having running at one
+				       * time, currently this doesn't
+				       * do anything.
+				       */
+	uint64_t *max_tres_run_mins_pu_ctld; /* max_tres_run_mins_pu
+					      * broken out in an array
+					      * based off the ordering
+					      * of the total number of TRES in
+					      * the system, currently
+					      * this doesn't do anything.
+					      * (DON'T PACK) */
 	uint32_t max_wall_pj; /* longest time this
 			       * qos can run a job */
-	uint32_t min_cpus_pj; /* min number of cpus a job can
-			       * allocate with this qos */
+	char *min_tres_pj; /* min number of tres a job can
+			    * allocate with this qos */
+	uint64_t *min_tres_pj_ctld;   /* min_tres_pj broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 
 	char *name;
 	bitstr_t *preempt_bitstr; /* other qos' this qos can preempt */
@@ -725,7 +822,7 @@ typedef struct {
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
-	assoc_mgr_qos_usage_t *usage; /* For internal use only, DON'T PACK */
+	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
@@ -867,12 +964,12 @@ typedef struct {
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
  * user_limit_list. */
 typedef struct {
-	uint64_t cpu_run_mins; /* how many cpu mins are allocated
-				* currently */
-	uint32_t cpus; /* count of CPUs allocated */
 	uint32_t jobs;	/* count of active jobs */
-	uint32_t nodes;	/* count of nodes allocated */
 	uint32_t submit_jobs; /* count of jobs pending or running */
+	uint64_t *tres; /* array of TRES allocated */
+	uint64_t *tres_run_mins; /* array of how many TRES mins are
+				  * allocated currently, currently this doesn't
+				  * do anything and isn't set up. */
 	uint32_t uid;
 } slurmdb_used_limits_t;
 
@@ -1330,7 +1427,8 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
         char *cluster_names, slurmdb_cluster_rec_t **cluster_rec);
 
 /************** helper functions **************/
-extern void slurmdb_destroy_user_defs(void *object);
+extern void slurmdb_destroy_assoc_usage(void *object);
+extern void slurmdb_destroy_qos_usage(void *object);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);
@@ -1338,10 +1436,12 @@ extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
+extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);
+extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos);
 extern void slurmdb_destroy_qos_rec(void *object);
 extern void slurmdb_destroy_reservation_rec(void *object);
 extern void slurmdb_destroy_step_rec(void *object);

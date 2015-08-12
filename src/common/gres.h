@@ -40,6 +40,7 @@
 #define _GRES_H
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
 #include "src/common/pack.h"
 
@@ -740,7 +741,25 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
 extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
 
-extern char *gres_2_tres_str(List gres_list, const List total_tres_list,
-			     bool is_job);
+/* Translate a gres_list into a tres_str
+ * IN gres_list - filled in with gres_job_state_t or gres_step_state_t's
+ * IN is_job - if is job function expects gres_job_state_t's else
+ *             gres_step_state_t's
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ * RET char * in a simple TRES format
+ */
+extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked);
+
+/* Fill in the tres_cnt based off the gres_list and node_cnt
+ * IN gres_list - filled in with gres_job_state_t's
+ * IN node_cnt - number of nodes in the job
+ * OUT tres_cnt - gres spots filled in with total number of TRES
+ *                requested for job that are requested in gres_list
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void gres_set_job_tres_cnt(List gres_list,
+				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
+				  bool locked);
 
 #endif /* !_GRES_H */
