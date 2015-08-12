@@ -470,16 +470,16 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%u", opt.cpus_per_task);
 	}
 
-	if (opt.shared != (uint16_t)NO_VAL) {
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-F");
-		opt.argv[command_pos++] = xstrdup("share");
-	} else if (opt.exclusive) {
+	if (opt.exclusive) {
 		opt.argc += 2;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-F");
 		opt.argv[command_pos++] = xstrdup("exclusive");
+	} else if (opt.shared == 1) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-F");
+		opt.argv[command_pos++] = xstrdup("share");
 	}
 
 	if (opt.nodelist) {

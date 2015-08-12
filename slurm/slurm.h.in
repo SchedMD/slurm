@@ -286,9 +286,13 @@ enum job_states {
 #define JOB_SPECIAL_EXIT 0x1000 /* Requeue an exit job in hold */
 #define JOB_REQUEUE_HOLD 0x0800 /* Requeue any job in hold */
 #define JOB_REQUEUE      0x0400 /* Requeue job in completing state */
+<<<<<<< HEAD
 #define JOB_STOPPED      0x0200	/* Job is stopped state (holding resources,
 				 * but sent SIGSTOP */
 #define JOB_LAUNCH_FAILED 0x0100
+=======
+#define JOB_UPDATE_DB    0x0200 /* Send job start to database again */
+>>>>>>> origin/slurm-14.11
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */

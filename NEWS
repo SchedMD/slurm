@@ -348,6 +348,26 @@ documents those changes that are of interest to users and administrators.
  -- Correct sacct.a man pages describing -i option.
  -- Capture salloc/srun information in sdiag statistics.
  -- Fix bug in node selection with topology optimization.
+ -- Don't set distribution when srun requests 0 memory.
+ -- Read in correct number of nodes from SLURM_HOSTFILE when specifying nodes
+    and --distribution=arbitrary.
+ -- Fix segfault in Bluegene setups where RebootQOSList is defined in
+    bluegene.conf and accounting is not setup.
+ -- Fix a bug in the unit conversion routine, specify the correct
+    divisor based on the selected unit, KILO, MEGA or GIGA.
+ -- MYSQL - Update mod_time when updating a start job record or adding one.
+ -- MYSQL - Fix issue where if an association id ever changes on at least a
+    portion of a job array is pending after it's initial start in the
+    database it could create another row for the remain array instead
+    of using the already existing row.
+ -- Fix scheduling anomaly with job arrays submitted to multiple partitions,
+    jobs could be started out of priority order.
+ -- If a host has suspened jobs do not reboot it. Reboot only hosts
+    with no jobs in any state.
+ -- ALPS - Fix issue when using --exclusive flag on srun to do the correct
+    thing (-F exclusive) instead of -F share.
+ -- Fix various memory leaks in the Perl API.
+ -- Fix a bug in the controller which display jobs in CF state as RUNNING.
 
 * Changes in Slurm 14.11.8
 ==========================

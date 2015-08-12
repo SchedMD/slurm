@@ -871,7 +871,7 @@ no_calc:
 		      "STATIC LayoutMode.  Please update your bluegene.conf.");
 
 #ifdef HAVE_BGQ
-	if ((bg_recover != NOT_FROM_CONTROLLER)
+	if ((bg_recover != NOT_FROM_CONTROLLER) && assoc_mgr_qos_list
 	    && s_p_get_string(&tmp_char, "RebootQOSList", tbl)) {
 		bool valid;
 		char *token, *last = NULL;

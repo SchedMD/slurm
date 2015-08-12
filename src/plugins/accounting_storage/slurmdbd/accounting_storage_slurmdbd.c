@@ -286,14 +286,11 @@ static void *_set_db_inx_thread(void *no_data)
 		}
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			if (!job_ptr->db_index && !job_ptr->resize_time) {
-				dbd_job_start_msg_t *req =
-					xmalloc(sizeof(dbd_job_start_msg_t));
-				if (_setup_job_start_msg(req, job_ptr)
-				    != SLURM_SUCCESS) {
-					_partial_destroy_dbd_job_start(req);
+			dbd_job_start_msg_t *req;
+
+			if (!IS_JOB_UPDATE_DB(job_ptr)) {
+				if (job_ptr->db_index || job_ptr->resize_time)
 					continue;
-				}
 
 				/* We set the db_index to NO_VAL here
 				 * to avoid a potential race condition
@@ -310,22 +307,31 @@ static void *_set_db_inx_thread(void *no_data)
 				 * it accordingly.
 				 */
 				job_ptr->db_index = NO_VAL;
-
-				/* we only want to destory the pointer
-				   here not the contents (except
-				   block_id) so call special function
-				   _partial_destroy_dbd_job_start.
-				*/
-				if (!local_job_list)
-					local_job_list = list_create(
-						_partial_destroy_dbd_job_start);
-				list_append(local_job_list, req);
-				/* Just so we don't have a crazy
-				   amount of messages at once.
-				*/
-				if (list_count(local_job_list) > 1000)
-					break;
 			}
+
+			req = xmalloc(sizeof(dbd_job_start_msg_t));
+			if (_setup_job_start_msg(req, job_ptr)
+			    != SLURM_SUCCESS) {
+				_partial_destroy_dbd_job_start(req);
+				if (job_ptr->db_index == NO_VAL)
+					job_ptr->db_index = 0;
+				continue;
+			}
+
+			/* we only want to destory the pointer
+			   here not the contents (except
+			   block_id) so call special function
+			   _partial_destroy_dbd_job_start.
+			*/
+			if (!local_job_list)
+				local_job_list = list_create(
+					_partial_destroy_dbd_job_start);
+			list_append(local_job_list, req);
+			/* Just so we don't have a crazy
+			   amount of messages at once.
+			*/
+			if (list_count(local_job_list) > 1000)
+				break;
 		}
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_read_lock);
@@ -385,6 +391,8 @@ static void *_set_db_inx_thread(void *no_data)
 						 * the start needs to be sent
 						 * again. */
 						job_ptr->db_index = id_ptr->id;
+						job_ptr->job_state &=
+							(~JOB_UPDATE_DB);
 					}
 				}
 				list_iterator_destroy(itr);

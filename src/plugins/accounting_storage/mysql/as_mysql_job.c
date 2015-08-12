@@ -459,7 +459,7 @@ no_rollup_change:
 			begin_time = submit_time;
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
-			"(id_job, id_array_job, id_array_task, "
+			"(id_job, mod_time, id_array_job, id_array_task, "
 			"id_assoc, id_qos, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
@@ -493,7 +493,8 @@ no_rollup_change:
 			xstrcat(query, ", tres_alloc");
 
 		xstrfmtcat(query,
-			   ") values (%u, %u, %u, %u, %u, %u, %u, "
+			   ") values (%u, UNIX_TIMESTAMP(), "
+			   "%u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
 			   "'%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->array_job_id,
@@ -540,7 +541,7 @@ no_rollup_change:
 			   "id_user=%u, id_group=%u, "
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
 			   "time_submit=%ld, time_eligible=%ld, "
-			   "time_start=%ld, "
+			   "time_start=%ld, mod_time=UNIX_TIMESTAMP(), "
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
@@ -643,7 +644,8 @@ no_rollup_change:
 			   "id_assoc=%u, id_resv=%u, "
 			   "timelimit=%u, mem_req=%u, "
 			   "id_array_job=%u, id_array_task=%u, "
-			   "time_eligible=%ld where job_db_inx=%d",
+			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
+			   "where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id,
@@ -877,6 +879,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	 */
 
 	query = xstrdup_printf("update \"%s_%s\" set "
+			       "mod_time=UNIX_TIMESTAMP(), "
 			       "time_end=%ld, state=%d",
 			       mysql_conn->cluster_name, job_table,
 			       end_time, job_state);

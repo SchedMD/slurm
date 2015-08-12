@@ -1346,8 +1346,14 @@ static void _queue_reboot_msg(void)
 			want_nodes_reboot = true;
 			continue;
 		}
-		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
-		    !IS_NODE_POWER_UP(node_ptr)) /* only active idle nodes */
+                /* only active idle nodes, don't reboot
+                 * nodes that are idle but have suspended
+                 * jobs on them
+                 */
+		if (IS_NODE_IDLE(node_ptr)
+                    && !IS_NODE_NO_RESPOND(node_ptr)
+                    && !IS_NODE_POWER_UP(node_ptr)
+                    && node_ptr->sus_job_cnt == 0)
 			want_reboot = true;
 		else if (IS_NODE_FUTURE(node_ptr) &&
 			 (node_ptr->last_response == (time_t) 0))

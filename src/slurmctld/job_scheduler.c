@@ -170,6 +170,7 @@ static void _job_queue_append(List job_queue, struct job_record *job_ptr,
 	job_queue_rec_t *job_queue_rec;
 
 	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
+	job_queue_rec->array_task_id = job_ptr->array_task_id;
 	job_queue_rec->job_id   = job_ptr->job_id;
 	job_queue_rec->job_ptr  = job_ptr;
 	job_queue_rec->part_ptr = part_ptr;
@@ -980,7 +981,7 @@ static int _schedule(uint32_t job_limit)
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
 	int error_code, i, j, part_cnt, time_limit, pend_time;
-	uint32_t job_depth = 0;
+	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
@@ -1305,6 +1306,7 @@ next_part:			part_ptr = (struct part_record *)
 			job_queue_rec = list_pop(job_queue);
 			if (!job_queue_rec)
 				break;
+			array_task_id = job_queue_rec->array_task_id;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
 			xfree(job_queue_rec);
@@ -1314,8 +1316,14 @@ next_part:			part_ptr = (struct part_record *)
 				last_job_update = now;
 				continue;
 			}
-			if (!IS_JOB_PENDING(job_ptr))
-				continue;  /* started in another partition */
+			if ((job_ptr->array_task_id != array_task_id) &&
+			    (array_task_id == NO_VAL)) {
+				/* Job array element started in other partition,
+				 * reset pointer to "master" job array record */
+				job_ptr = find_job_record(job_ptr->array_job_id);
+			}
+			if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+				continue;	/* started in other partition */
 			job_ptr->part_ptr = part_ptr;
 		}
 		if (job_ptr->preempt_in_progress)
@@ -3251,6 +3259,8 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 	if (job_ptr->details)
 		job_ptr->details->prolog_running++;
 
+	job_ptr->job_state |= JOB_CONFIGURING;
+
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog,
 				    PTHREAD_CREATE_DETACHED);
@@ -3331,6 +3341,7 @@ static void *_run_prolog(void *arg)
 			break;
 		}
 	}
+
 	if (status != 0) {
 		bool kill_job = false;
 		slurmctld_lock_t job_write_lock = {
@@ -3365,7 +3376,8 @@ static void *_run_prolog(void *arg)
 			error("prolog_slurmctld job %u now defunct", job_id);
 	}
 	if (job_ptr) {
-		if (job_ptr->details)
+                job_ptr->job_state &= ~JOB_CONFIGURING;
+		if (job_ptr->details && job_ptr->details->prolog_running)
 			job_ptr->details->prolog_running--;
 		if (job_ptr->batch_flag &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))

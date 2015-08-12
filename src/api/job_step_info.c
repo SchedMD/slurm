@@ -201,7 +201,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		 job_state_string(job_step_ptr->state));
 	xstrcat(out, tmp_line);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		char *io_nodes;
+		char *io_nodes = NULL;
 		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &io_nodes);

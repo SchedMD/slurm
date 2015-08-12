@@ -975,8 +975,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				return NULL;
 			}
 		}
-		job_ptr->job_state &= (~JOB_CONFIGURING);
-		debug("Configuration for job %u complete", job_ptr->job_id);
+		if (job_ptr->details
+		    && job_ptr->details->prolog_running == 0) {
+			job_ptr->job_state &= (~JOB_CONFIGURING);
+			debug("Configuration for job %u complete", job_ptr->job_id);
+		}
 	}
 
 	/* In exclusive mode, just satisfy the processor count.
@@ -2155,6 +2158,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_ALREADY_DONE;
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
+	/* Set to block in the case that mem is 0. srun leaves the dist
+	 * set to unknown if mem is 0.
+	 * ex. SallocDefaultCommand=srun -n1 -N1 --mem=0 ... */
+	if ((task_dist == SLURM_DIST_UNKNOWN) &&
+	    (!(step_specs->pn_min_memory &(~MEM_PER_CPU)))) {
+		step_specs->task_dist &= SLURM_DIST_STATE_FLAGS;
+		step_specs->task_dist |= SLURM_DIST_BLOCK;
+		task_dist = SLURM_DIST_BLOCK;
+	}
+
 	if ((task_dist != SLURM_DIST_CYCLIC) &&
 	    (task_dist != SLURM_DIST_BLOCK) &&
 	    (task_dist != SLURM_DIST_CYCLIC_CYCLIC) &&
