@@ -1240,14 +1240,6 @@ static int _queue_stage_out(struct job_record *job_ptr)
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
-	post_run_argv[0] = xstrdup("dw_wlm_cli");
-	post_run_argv[1] = xstrdup("--function");
-	post_run_argv[2] = xstrdup("post_run");
-	post_run_argv[3] = xstrdup("--token");
-	xstrfmtcat(post_run_argv[4], "%u", job_ptr->job_id);
-	post_run_argv[5] = xstrdup("--job");
-	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
 
 	data_out_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	data_out_argv[0] = xstrdup("dw_wlm_cli");
@@ -1258,11 +1250,20 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	data_out_argv[5] = xstrdup("--job");
 	xstrfmtcat(data_out_argv[6], "%s/script", job_dir);
 
+	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	post_run_argv[0] = xstrdup("dw_wlm_cli");
+	post_run_argv[1] = xstrdup("--function");
+	post_run_argv[2] = xstrdup("post_run");
+	post_run_argv[3] = xstrdup("--token");
+	xstrfmtcat(post_run_argv[4], "%u", job_ptr->job_id);
+	post_run_argv[5] = xstrdup("--job");
+	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
+
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->job_id  = job_ptr->job_id;
 	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
-	stage_args->args1   = post_run_argv;
-	stage_args->args2   = data_out_argv;
+	stage_args->args1   = data_out_argv;
+	stage_args->args2   = post_run_argv;
 
 	slurm_attr_init(&stage_attr);
 	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
@@ -1296,29 +1297,29 @@ static void *_start_stage_out(void *x)
 	DEF_TIMERS;
 
 	stage_args = (stage_args_t *) x;
-	post_run_argv = stage_args->args1;
-	data_out_argv = stage_args->args2;
+	data_out_argv = stage_args->args1;
+	post_run_argv = stage_args->args2;
 
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 5000;
+		timeout = 24 * 60 * 60 * 1000;	/* One day */
+	op = "dws_data_out";
 	START_TIMER;
-	op = "dws_post_run";
-	resp_msg = bb_run_script("dws_post_run",
+	resp_msg = bb_run_script("dws_data_out",
 				 bb_state.bb_config.get_sys_state,
-				 post_run_argv, timeout, &status);
+				 data_out_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: dws_post_run for job %u ran for %s",
+	if (DELTA_TIMER > 5000000) {	/* 5 secs */
+		info("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: dws_post_run for job %u ran for %s",
+		debug("%s: dws_data_out for job %u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
-	_log_script_argv(post_run_argv, resp_msg);
+	_log_script_argv(data_out_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_post_run for job %u status:%u response:%s",
+		error("%s: dws_data_out for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
@@ -1327,27 +1328,27 @@ static void *_start_stage_out(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 24 * 60 * 60 * 1000;	/* One day */
-		xfree(resp_msg);
+			timeout = 5000;
+		op = "dws_post_run";
 		START_TIMER;
-		op = "dws_data_out";
-		resp_msg = bb_run_script("dws_data_out",
+		resp_msg = bb_run_script("dws_post_run",
 					 bb_state.bb_config.get_sys_state,
-					 data_out_argv, timeout, &status);
+					 post_run_argv, timeout, &status);
 		END_TIMER;
-		if (DELTA_TIMER > 5000000) {	/* 5 secs */
-			info("%s: dws_data_out for job %u ran for %s",
+		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+			info("%s: dws_post_run for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		} else if (bb_state.bb_config.debug_flag) {
-			debug("%s: dws_data_out for job %u ran for %s",
+			debug("%s: dws_post_run for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		}
-		_log_script_argv(data_out_argv, resp_msg);
+		_log_script_argv(post_run_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-			error("%s: dws_data_out for job %u status:%u response:%s",
+			error("%s: dws_post_run for job %u status:%u response:%s",
 			      __func__, stage_args->job_id, status, resp_msg);
 			rc = SLURM_ERROR;
 		}
+		xfree(resp_msg);
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -2518,7 +2519,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return rc;
 
-//FIXME: How to handle job arrays?
+//FIXME: Add support for job arrays
 	if (job_ptr->array_recs) {
 		if (err_msg) {
 			xfree(*err_msg);
@@ -2970,7 +2971,8 @@ pthread_mutex_lock(&bb_state.bb_mutex);
 		      jobid_buf, TIME_STR);
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+if (0) { // FIXME: Cray API is always returning an exit code of 1
 		time_t now = time(NULL);
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
@@ -3339,7 +3341,7 @@ static void *_create_persistent(void *x)
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: ran for %s", __func__, TIME_STR);
-//FIXME	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 		error("%s: For JobID=%u Name=%s status:%u response:%s",
 		      __func__, create_args->job_id, create_args->name,
