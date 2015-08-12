@@ -1049,7 +1049,7 @@ int _print_job_shared(job_info_t * job, int width, bool right_justify,
 			break;
 		case (uint16_t)NO_VAL:
 		default:
-			_print_str("ok", width, right_justify, true);
+			_print_str("unknwn", width, right_justify, true);
 			break;
 		}
 	}
