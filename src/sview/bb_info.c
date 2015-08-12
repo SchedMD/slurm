@@ -49,11 +49,14 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ACCOUNT,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_GRES,
 	SORTID_NAME,
+	SORTID_PARTITION,
 	SORTID_PLUGIN,
+	SORTID_QOS,
 	SORTID_SIZE,
 	SORTID_STATE,
 	SORTID_STATE_TIME,
@@ -83,9 +86,15 @@ static display_data_t display_data_bb[] = {
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_INT, SORTID_COLOR_INX, NULL, FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
-	{G_TYPE_STRING, SORTID_SIZE, "Size", FALSE, EDIT_NONE,
+	{G_TYPE_STRING, SORTID_ACCOUNT, "Account", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_PARTITION, "Partition", FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_QOS, "QOS", FALSE, EDIT_NONE,
+	 refresh_bb, create_model_bb, admin_edit_bb},
+	{G_TYPE_STRING, SORTID_SIZE, "Size", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_NONE,
 	 refresh_bb, create_model_bb, admin_edit_bb},
@@ -216,6 +225,21 @@ static void _layout_bb_record(GtkTreeView *treeview,
 						 SORTID_PLUGIN),
 				   sview_bb_info->plugin);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
+						 SORTID_ACCOUNT),
+				   bb_ptr->account);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
+						 SORTID_PARTITION),
+				   bb_ptr->partition);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_bb,
+						 SORTID_QOS),
+				   bb_ptr->qos);
+
 	tmp_state = bb_state_string(bb_ptr->state);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_bb,
@@ -258,7 +282,7 @@ static void _layout_bb_record(GtkTreeView *treeview,
 }
 
 /* Reformat a numeric value with an appropriate suffix.
- * The units are GB */
+ * The input units are GB */
 static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 {
 	uint64_t tmp64;
@@ -267,15 +291,24 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 		snprintf(buf, buf_size, "INFINITE");
 	} else if (num == 0) {
 		snprintf(buf, buf_size, "0GB");
-	} else if ((num % (1024 * 1024)) == 0) {
-		tmp64 = num / (1024 * 1024);
+	} else if ((num % ((uint64_t) 1024 * 1024 * 1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t) 1024 * 1024 * 1024 * 1024 * 1024);
 		snprintf(buf, buf_size, "%"PRIu64"PB", tmp64);
+	} else if ((num % ((uint64_t) 1024 * 1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t) 1024 * 1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
+	} else if ((num % ((uint64_t) 1024 * 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t) 1024 * 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
+	} else if ((num % ((uint64_t) 1024 * 1024)) == 0) {
+		tmp64 = num / ((uint64_t) 1024 * 1024);
+		snprintf(buf, buf_size, "%"PRIu64"MB", tmp64);
 	} else if ((num % 1024) == 0) {
 		tmp64 = num / 1024;
-		snprintf(buf, buf_size, "%"PRIu64"TB", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"KB", tmp64);
 	} else {
 		tmp64 = num;
-		snprintf(buf, buf_size, "%"PRIu64"GB", tmp64);
+		snprintf(buf, buf_size, "%"PRIu64"B", tmp64);
 	}
 }
 
@@ -328,9 +361,12 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			   SORTID_COLOR,
 			   sview_colors[sview_bb_info_ptr->color_inx],
 			   SORTID_COLOR_INX,     sview_bb_info_ptr->color_inx,
+			   SORTID_PLUGIN,        sview_bb_info_ptr->plugin,
+			   SORTID_ACCOUNT,       bb_ptr->account,
 			   SORTID_GRES,          tmp_gres,
 			   SORTID_NAME,          bb_name_id,
-			   SORTID_PLUGIN,        sview_bb_info_ptr->plugin,
+			   SORTID_PARTITION,     bb_ptr->partition,
+			   SORTID_QOS,           bb_ptr->qos,
 			   SORTID_SIZE,          tmp_size,
 			   SORTID_STATE,         tmp_state,
 			   SORTID_STATE_TIME,    tmp_state_time,
@@ -423,10 +459,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 
 			/* Find any existing record for this burst buffer */
 			if (last_list) {
-				if (!last_list_itr) {
-					last_list_itr =
-						list_iterator_create(last_list);
-				}
+				last_list_itr = list_iterator_create(last_list);
 				while ((sview_bb_info_ptr =
 					list_next(last_list_itr))) {
 					if (bb_resv_ptr->job_id &&
@@ -444,7 +477,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 					_bb_info_free(sview_bb_info_ptr);
 					break;
 				}
-				list_iterator_reset(last_list_itr);
+				list_iterator_destroy(last_list_itr);
 			} else {
 				sview_bb_info_ptr = NULL;
 			}
@@ -479,10 +512,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 		}
 	}
 
-	if (last_list) {
-		list_iterator_destroy(last_list_itr);
-		FREE_NULL_LIST(last_list);
-	}
+	FREE_NULL_LIST(last_list);
 	return info_list;
 }
 

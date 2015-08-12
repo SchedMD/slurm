@@ -257,8 +257,8 @@ static bb_alloc_t * _find_bb_name_rec(char *name, uint32_t user_id)
 {
 	bb_alloc_t *bb_ptr = NULL;
 
-	xassert(bb_state.bb_hash);
-	bb_ptr = bb_state.bb_hash[user_id % BB_HASH_SIZE];
+	xassert(bb_state.bb_ahash);
+	bb_ptr = bb_state.bb_ahash[user_id % BB_HASH_SIZE];
 	while (bb_ptr) {
 		if (!xstrcmp(bb_ptr->name, name))
 			return bb_ptr;
@@ -282,8 +282,8 @@ static void _timeout_bb_rec(void)
 	int i;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_pptr = &bb_state.bb_hash[i];
-		bb_ptr = bb_state.bb_hash[i];
+		bb_pptr = &bb_state.bb_ahash[i];
+		bb_ptr = bb_state.bb_ahash[i];
 		while (bb_ptr) {
 			if (bb_ptr->seen_time < bb_state.last_load_time) {
 				if (bb_ptr->job_id == 0) {
@@ -297,7 +297,7 @@ static void _timeout_bb_rec(void)
 				}
 				bb_remove_user_load(bb_ptr, &bb_state);
 				*bb_pptr = bb_ptr->next;
-				bb_free_rec(bb_ptr);
+				bb_free_alloc_buf(bb_ptr);
 				break;
 			}
 			if ((bb_ptr->job_id != 0) &&
@@ -307,7 +307,7 @@ static void _timeout_bb_rec(void)
 				bb_ptr->cancelled = true;
 				bb_ptr->end_time = 0;
 				*bb_pptr = bb_ptr->next;
-				bb_free_rec(bb_ptr);
+				bb_free_alloc_buf(bb_ptr);
 				break;
 			}
 			age = difftime(now, bb_ptr->state_time);
@@ -429,7 +429,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 	/* Identify candidate burst buffers to revoke for higher priority job */
 	preempt_list = list_create(bb_job_queue_del);
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = bb_state.bb_hash[i];
+		bb_ptr = bb_state.bb_ahash[i];
 		while (bb_ptr) {
 			if (bb_ptr->job_id &&
 			    (bb_ptr->use_time > now) &&
@@ -547,7 +547,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			struct job_record job_rec;
 			job_rec.job_id  = job_id;
 			job_rec.user_id = user_id;
-			bb_ptr = bb_find_job_rec(&job_rec, bb_state.bb_hash);
+			bb_ptr = bb_find_alloc_rec(&bb_state, &job_rec);
 			_stop_stage_out(job_id);	/* Purge buffer */
 			if (bb_ptr) {
 				bb_ptr->cancelled = true;
@@ -565,7 +565,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			struct job_record job_rec;
 			job_rec.job_id  = job_id;
 			job_rec.user_id = user_id;
-			bb_ptr = bb_find_job_rec(&job_rec, bb_state.bb_hash);
+			bb_ptr = bb_find_alloc_rec(&bb_state, &job_rec);
 			_stop_stage_in(job_id);		/* Purge buffer */
 			if (bb_ptr) {
 				bb_ptr->cancelled = true;
@@ -586,7 +586,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			 job_id);
 	}
 	if (job_ptr) {
-		bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+		bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_ptr == NULL) {
 			bb_spec = xmalloc(sizeof(bb_job_t));
 			bb_spec->total_size = _get_bb_size(job_ptr);
@@ -870,7 +870,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	bb_pack_state(&bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.private_data == 0)
 		uid = 0;	/* User can see all data */
-	rec_count = bb_pack_bufs(uid, bb_state.bb_hash,buffer,protocol_version);
+	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	if (rec_count != 0) {
 		eof = get_buf_offset(buffer);
 		set_buf_offset(buffer, offset);
@@ -888,7 +888,8 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 
 /*
  * Preliminary validation of a job submit request with respect to burst buffer
- * options. Performed prior to establishing job ID or creating script file.
+ * options. Performed after setting default account + qos, but prior to
+ * establishing job ID or creating script file.
  *
  * Returns a SLURM errno.
  */
@@ -997,7 +998,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 		return est_start;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (!bb_ptr) {
 		rc = _test_size_limit(job_ptr, bb_size);
 		if (rc == 0) {		/* Could start now */
@@ -1054,9 +1055,7 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint64_t bb_size)
 }
 
 /*
- * Validate a job submit request with respect to burst buffer options.
- *
- * Returns a SLURM errno.
+ * Attempt to allocate resources and begin file staging for pending jobs.
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
@@ -1104,7 +1103,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		job_ptr = job_rec->job_ptr;
 		bb_size = job_rec->bb_size;
 
-		if (bb_find_job_rec(job_ptr, bb_state.bb_hash))
+		if (bb_find_alloc_rec(&bb_state, job_ptr))
 			continue;
 
 		rc = _test_size_limit(job_ptr, bb_size);
@@ -1149,7 +1148,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		return rc;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (!bb_ptr) {
 		debug("%s: %s bb_rec not found", __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -1191,7 +1190,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (bb_ptr)
 		bb_ptr->state = BB_STATE_RUNNING;
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -1227,7 +1226,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
 		debug("%s: %s bb_rec not found", __func__,
@@ -1283,7 +1282,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		return 1;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (!bb_ptr) {
 		/* No job buffers. Assuming use of persistent buffers only */
 		debug("%s: %s bb_rec not found", __func__,
@@ -1338,7 +1337,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	bb_ptr = bb_find_job_rec(job_ptr, bb_state.bb_hash);
+	bb_ptr = bb_find_alloc_rec(&bb_state, job_ptr);
 	if (!bb_ptr) {
 		_stop_stage_out(job_ptr->job_id);
 	} else {

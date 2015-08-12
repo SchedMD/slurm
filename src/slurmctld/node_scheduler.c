@@ -1042,9 +1042,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		debug3("powercapping: checking job %u : skipped, capping "
 		       "disabled", job_ptr->job_id);
 	} else if ((layout_power = which_power_layout()) == 0) {
-		debug3("powercapping: only one power or power_cpufreq layouts"
-		       "can be activated, capping disabled %d",
-		       which_power_layout());
+		debug3("powercapping disabled %d", which_power_layout());
 	} else if (!power_layout_ready()){
 		debug3("powercapping:checking job %u : skipped, problems with"
 		       "layouts, capping disabled", job_ptr->job_id);

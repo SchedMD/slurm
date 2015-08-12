@@ -1986,8 +1986,8 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_PROLOG from "
-	       "JobId=%u", comp_msg->job_id);
+	debug2("Processing RPC: REQUEST_COMPLETE_PROLOG from JobId=%u",
+	       comp_msg->job_id);
 
 	lock_slurmctld(job_write_lock);
 	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc);

@@ -772,9 +772,9 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
-			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
-			     job_ptr->job_id, job_ptr->nodes,
-			     job_ptr->total_cpus);
+			info("sched: Allocate JobId=%u Partition=%s NodeList=%s #CPUs=%u",
+			     job_ptr->job_id, job_ptr->part_ptr->name,
+			     job_ptr->nodes, job_ptr->total_cpus);
 			if (job_ptr->details->prolog_running == 0) {
 				launch_msg = build_launch_job_msg(job_ptr,
 							msg->protocol_version);

@@ -1,4 +1,4 @@
 # Makefile for layouts plugins
 
-SUBDIRS = unit power power_cpufreq
+SUBDIRS = unit power
 #basic racking energy power topology

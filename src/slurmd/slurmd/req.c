@@ -1797,15 +1797,6 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
 
-	/*
-	 *  Do not launch a new batch job while prolog in progress:
-	 */
-	if (_prolog_is_running(req->job_id)) {
-		info("[job %u] prolog running", req->job_id);
-		rc = EINPROGRESS;
-		goto done;
-	}
-
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 

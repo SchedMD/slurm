@@ -1930,6 +1930,10 @@ extern char *bb_state_string(uint16_t state)
 {
 	static char buf[16];
 
+	if (state == BB_STATE_PENDING)
+		return "pending";
+	if (state == BB_STATE_ALLOCATING)
+		return "allocating";
 	if (state == BB_STATE_ALLOCATED)
 		return "allocated";
 	if (state == BB_STATE_STAGING_IN)
@@ -1955,6 +1959,10 @@ extern char *bb_state_string(uint16_t state)
 /* Translate a burst buffer state string to its equivalant numeric value */
 extern uint16_t bb_state_num(char *tok)
 {
+	if (!strcasecmp(tok, "pending"))
+		return BB_STATE_PENDING;
+	if (!strcasecmp(tok, "allocating"))
+		return BB_STATE_ALLOCATING;
 	if (!strcasecmp(tok, "allocated"))
 		return BB_STATE_ALLOCATED;
 	if (!strcasecmp(tok, "staging-in"))
@@ -2968,9 +2976,10 @@ extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
  */
 extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 {
-	int i, j;
+	int i, j, k;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
+	burst_buffer_gres_t *bb_gres_ptr;
 
 	if (msg) {
 		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
@@ -2988,8 +2997,16 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 			     bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
 			     j < bb_info_ptr->record_count;
 			     j++, bb_resv_ptr++) {
+				for (k = 0, bb_gres_ptr = bb_resv_ptr->gres_ptr;
+				     k < bb_resv_ptr->gres_cnt;
+				     k++, bb_gres_ptr++) {
+					xfree(bb_gres_ptr->name);
+				}
+				xfree(bb_resv_ptr->account);
 				xfree(bb_resv_ptr->gres_ptr);
 				xfree(bb_resv_ptr->name);
+				xfree(bb_resv_ptr->partition);
+				xfree(bb_resv_ptr->qos);
 			}
 			xfree(bb_info_ptr->burst_buffer_resv_ptr);
 		}

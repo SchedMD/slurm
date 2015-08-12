@@ -175,10 +175,4 @@ int powercap_get_job_optimal_cpufreq(uint32_t powercap, int* allowed_freqs);
  */
 uint32_t powercap_get_cpufreq(bitstr_t *select_bitmap, int k);
 
-/**
- * powercap_fini
- * release all allocated memory
- */
-void powercap_fini(void);
-
 #endif /* !_POWERCAPPING_H */

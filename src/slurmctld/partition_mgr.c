@@ -504,7 +504,7 @@ static int _open_part_state_file(char **state_file)
 	} else 	/* Success */
 		return state_fd;
 
-	error("NOTE: Trying backup state save file. Information may be lost!");
+	error("NOTE: Trying backup partition state save file. Information may be lost!");
 	xstrcat(*state_file, ".old");
 	state_fd = open(*state_file, O_RDONLY);
 	return state_fd;
@@ -521,7 +521,7 @@ int load_all_part_state(void)
 	char *part_name = NULL, *nodes = NULL;
 	char *allow_accounts = NULL, *allow_groups = NULL, *allow_qos = NULL;
 	char *deny_accounts = NULL, *deny_qos = NULL, *qos_char = NULL;
-	char *state_file, *data = NULL;
+	char *state_file = NULL, *data = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
 	time_t time;
@@ -571,7 +571,7 @@ int load_all_part_state(void)
 
 	buffer = create_buf(data, data_size);
 
-	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
+	safe_unpackstr_xmalloc(&ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
 	if (ver_str && !strcmp(ver_str, PART_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);

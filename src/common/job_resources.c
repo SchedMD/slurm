@@ -1424,15 +1424,15 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 		return 0;
 	}
 
-	layouts_entity_get_kv("power_cpufreq", node_name, "NumFreqChoices",
+	layouts_entity_get_kv("power", node_name, "NumFreqChoices",
 			      &num_freq, L_T_UINT16);
-	layouts_entity_get_mkv("power_cpufreq", node_name,
+	layouts_entity_get_mkv("power", node_name,
 			       "CoresCount,LastCore", data,
 			       (sizeof(uint32_t)*2),L_T_UINT32);
 	if (cpu_freq_max != 0) {
 		for (i = 1; i < num_freq + 1; i++) {
 			sprintf(temp, "Cpufreq%d", i);
-			layouts_entity_pullget_kv("power_cpufreq", node_name,
+			layouts_entity_pullget_kv("power", node_name,
 						  temp, &val, L_T_UINT32);
 			if (val == cpu_freq_max) {
 				k = i;
@@ -1451,33 +1451,33 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 				if (cpu_freq_max != 0 && k != 0) {
 					sprintf(keyname, 
 						"Cpufreq%dWatts", k);
-					layouts_entity_get_kv("power_cpufreq",
+					layouts_entity_get_kv("power",
 							ename, keyname,
 							&max_watts, L_T_UINT32);
 				} else {
-					layouts_entity_get_kv("power_cpufreq",
+					layouts_entity_get_kv("power",
 							ename, "MaxCoreWatts",
 							&max_watts, L_T_UINT32);
 				}
-				layouts_entity_setpush_kv("power_cpufreq",
+				layouts_entity_setpush_kv("power",
 						    ename, "CurrentCorePower",
 						    &max_watts, L_T_UINT32);
 			} else {
-				layouts_entity_setpush_kv("power_cpufreq",
+				layouts_entity_setpush_kv("power",
 						    ename, "CurrentCorePower",
 						    &zero, L_T_UINT32);
 				desalloc_cores[num_counts] = i;
 				num_counts++;
 			}
 		} else {
-			layouts_entity_get_mkv("power_cpufreq", ename,
+			layouts_entity_get_mkv("power", ename,
 					  "CurrentCorePower,IdleCoreWatts",
 					  vals, 
 					  (sizeof(uint32_t)*2) ,L_T_UINT32);
 			if (new_value) {
 				if (vals[0] == 0) {
 					layouts_entity_setpush_kv(
-							  "power_cpufreq",
+							  "power",
 							  ename,
 							  "CurrentCorePower",
 							  &vals[1],
@@ -1490,11 +1490,11 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 					desalloc_cores[num_counts] = i;
 					num_counts++;
 					layouts_entity_setpush_kv(
-							  "power_cpufreq",
+							  "power",
 							  ename,
 							  "CurrentCorePower",
 							  &zero, L_T_UINT32);		
-					layouts_entity_get_kv("power_cpufreq",
+					layouts_entity_get_kv("power",
 							  ename,
 							  "CurrentCorePower",
 							  &der, L_T_UINT32);
@@ -1507,7 +1507,7 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 		for (i = 0; i < num_counts; i++) {
 			core_num = data[1] + 1- data[0] + desalloc_cores[i];
 			sprintf(ename, "virtualcore%u", core_num);
-			layouts_entity_setpush_kv("power_cpufreq", ename,
+			layouts_entity_setpush_kv("power", ename,
 						  "CurrentCorePower", &vals[1],
 						  L_T_UINT32);	
 		}

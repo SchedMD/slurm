@@ -89,7 +89,8 @@ extern int bb_g_reconfig(void);
 
 /*
  * Preliminary validation of a job submit request with respect to burst buffer
- * options. Performed prior to establishing job ID or creating script file.
+ * options. Performed after setting default account + qos, but prior to
+ * establishing job ID or creating script file.
  *
  * Returns a SLURM errno.
  */

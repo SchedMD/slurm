@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Optimize sacct queries with additional db indexes.
  -- Add SLURM_TOPO_LEN env variable for scontrol show topology.
  -- Add free_mem to node information.
+ -- Fix abort of batch launch if prolog is running, wait for prolog instead.
 
 * Changes in Slurm 15.08.0pre6
 ==============================

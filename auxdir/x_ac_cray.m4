@@ -30,6 +30,7 @@ AC_DEFUN([X_AC_CRAY],
   ac_have_alps_emulation="no"
   ac_have_alps_cray_emulation="no"
   ac_have_cray_network="no"
+  ac_really_no_cray="no"
 
   AC_ARG_WITH(
     [alps-emulation],
@@ -64,6 +65,15 @@ AC_DEFUN([X_AC_CRAY],
 	yes) ac_have_cray_network="yes" ;;
 	 no) ac_have_cray_network="no"  ;;
 	  *) AC_MSG_ERROR([bad value "$enableval" for --enable-cray-network]) ;:
+      esac ]
+  )
+  AC_ARG_ENABLE(
+    [really-no-cray],
+    AS_HELP_STRING(--enable-really-no-cray,Disable cray support for eslogin machines),
+      [ case "$enableval" in
+   yes) ac_really_no_cray="yes" ;;
+    no) ac_really_no_cray="no"  ;;
+     *) AC_MSG_ERROR([bad value "$enableval" for --enable-really-no-cray])  ;;
       esac ]
   )
 
@@ -205,6 +215,10 @@ AC_DEFUN([X_AC_CRAY],
     AC_MSG_RESULT([$ac_have_alps_cray])
   fi
 
+  if test "$ac_really_no_cray" = "yes"; then
+    ac_have_alps_cray="no"
+    ac_have_real_cray="no"
+  fi
   if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface
     AC_CHECK_HEADER(expat.h, [],

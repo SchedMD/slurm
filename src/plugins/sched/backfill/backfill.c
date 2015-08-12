@@ -1513,12 +1513,14 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		/* job initiated */
 		last_job_update = time(NULL);
 		if (job_ptr->array_task_id == NO_VAL) {
-			info("backfill: Started JobId=%u on %s",
-			     job_ptr->job_id, job_ptr->nodes);
+			info("backfill: Started JobId=%u in %s on %s",
+			     job_ptr->job_id, job_ptr->part_ptr->name,
+			     job_ptr->nodes);
 		} else {
-			info("backfill: Started JobId=%u_%u (%u) on %s",
+			info("backfill: Started JobId=%u_%u (%u) in %s on %s",
 			     job_ptr->array_job_id, job_ptr->array_task_id,
-			     job_ptr->job_id, job_ptr->nodes);
+			     job_ptr->job_id, job_ptr->part_ptr->name,
+			     job_ptr->nodes);
 		}
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)

@@ -4508,16 +4508,20 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 \*****************************************************************************/
 
 #define BB_SIZE_IN_NODES	0x8000000000000000
-#define BB_STATE_ALLOCATED	0x0001		/* Cray: bbs_setup started */
-#define BB_STATE_STAGING_IN	0x0002		/* Cray: bbs_data_in started */
-#define BB_STATE_STAGED_IN	0x0003		/* Cray: bbs_data_in complete */
-#define BB_STATE_RUNNING	0x0004		/* Job is running */
-#define BB_STATE_SUSPEND	0x0005		/* Job is suspended (future) */
-#define BB_STATE_STAGING_OUT	0x0010		/* Cray: bbs_post_run then
+#define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */
+#define BB_STATE_ALLOCATING	0x0001		/* Cray: bbs_setup started */
+#define BB_STATE_ALLOCATED	0x0002		/* Cray: bbs_setup started */
+#define BB_STATE_DELETING	0x0005		/* Cray: bbs_setup started */
+#define BB_STATE_DELETED	0x0006		/* Cray: bbs_setup started */
+#define BB_STATE_STAGING_IN	0x0011		/* Cray: bbs_data_in started */
+#define BB_STATE_STAGED_IN	0x0012		/* Cray: bbs_data_in complete */
+#define BB_STATE_RUNNING	0x0021		/* Job is running */
+#define BB_STATE_SUSPEND	0x0022		/* Job is suspended (future) */
+#define BB_STATE_STAGING_OUT	0x0031		/* Cray: bbs_post_run then
 						 * bbs_data_out started */
-#define BB_STATE_STAGED_OUT	0x0011		/* Cray: bbs_data_out complete */
-#define BB_STATE_TEARDOWN	0x0012		/* Cray: bbs_teardown started */
-#define BB_STATE_COMPLETE	0x0020		/* Cray: bbs_teardown complete */
+#define BB_STATE_STAGED_OUT	0x0032		/* Cray: bbs_data_out complete */
+#define BB_STATE_TEARDOWN	0x0041		/* Cray: bbs_teardown started */
+#define BB_STATE_COMPLETE	0x0042		/* Cray: bbs_teardown complete */
 
 typedef struct {
 	uint64_t avail_cnt;	/* Total count of available resources, unused
@@ -4528,13 +4532,16 @@ typedef struct {
 } burst_buffer_gres_t;
 
 typedef struct {
+	char *account;		/* Associated account (for limits) */
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t gres_cnt;	/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
-	uint64_t size;		/* In GB by default */
+	char *partition;	/* Associated partition (for limits) */
+	char *qos;		/* Associated QOS (for limits) */
+	uint64_t size;		/* In bytes by default */
 	uint16_t state;		/* See BB_STATE_* */
 	time_t state_time;	/* Time of last state change */
 	uint32_t user_id;

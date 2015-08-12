@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "July 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "August 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -84,18 +84,23 @@ Bytes is assumed if no suffix is supplied.
 By default there is no job allocation size limit.
 
 .TP
-\fBPrioBoostUse\fR
-Any job using burst buffers will have it's priority increased by this amount.
-This option will adjust a job's nice value, so user specified nice values
-for a job will be replaced by this value.
-
-.TP
 \fBPrioBoostAlloc\fR
 Any job using burst buffers will have it's priority increased by this amount
 after its file stage in has completed.
 This option will adjust a job's nice value, so user specified nice values
 for a job will be replaced by this value.
-he \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
+The \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
+The PriorityBoost options can also be replaced by a including burst buffer
+factor in the multifactor priority algorithm.
+
+.TP
+\fBPrioBoostUse\fR
+Any job using burst buffers will have it's priority increased by this amount.
+This option will adjust a job's nice value, so user specified nice values
+for a job will be replaced by this value.
+The \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
+The PriorityBoost options can also be replaced by a including burst buffer
+factor in the multifactor priority algorithm.
 
 .TP
 \fBPrivateData\fR
@@ -153,6 +158,8 @@ plus any persistent buffers belonging to the user.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
 Bytes is assumed if no suffix is supplied.
+Note that this burst buffer limit is global (applies to every user), but can be
+overridden by using TRES limits in the Slurm database.
 By default there is no job allocation size limit.
 
 .SH "EXAMPLE"

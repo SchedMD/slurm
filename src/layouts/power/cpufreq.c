@@ -7,7 +7,7 @@
 #include "src/common/log.h"
 
 const char plugin_name[] = "power_cpufreq layouts plugin";
-const char plugin_type[] = "layouts/power_cpufreq";
+const char plugin_type[] = "layouts/power";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* specific options for power tests layout */
