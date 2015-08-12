@@ -4470,25 +4470,28 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	slurmdb_tres_rec_t *object = NULL;
 
 	ListIterator itr = NULL;
+	List tmp_list = assoc_mgr_tres_list;
+	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 	if (!locked)
 		assoc_mgr_lock(&locks);
-	if (!assoc_mgr_tres_list) {
-		if (!locked)
-			assoc_mgr_unlock(&locks);
-		return SLURM_SUCCESS;
+
+	if (!tmp_list) {
+		tmp_list = list_create(slurmdb_destroy_tres_rec);
+		freeit = true;
 	}
 
-	itr = list_iterator_create(assoc_mgr_tres_list);
+	itr = list_iterator_create(tmp_list);
 	while ((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
 		while ((rec = list_next(itr))) {
 			if (object->id == rec->id)
 				break;
 		}
-		switch(update->type) {
+
+		switch (update->type) {
 		case SLURMDB_ADD_TRES:
 			if (rec) {
 				//rc = SLURM_ERROR;
@@ -4499,8 +4502,9 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 				      "This should never happen.");
 				break;
 			}
-			list_append(assoc_mgr_tres_list, object);
+			list_append(tmp_list, object);
 			object = NULL;
+			changed = true;
 			break;
 		default:
 			break;
@@ -4509,6 +4513,15 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 		slurmdb_destroy_tres_rec(object);
 	}
 	list_iterator_destroy(itr);
+	if (changed) {
+		/* We want to run this on the assoc_mgr_tres_list, but we need
+		 * to make a tmp variable since _post_tres_list will set
+		 * assoc_mgr_tres_list for us.
+		 */
+		_post_tres_list(tmp_list, list_count(tmp_list));
+	} else if (freeit)
+		FREE_NULL_LIST(tmp_list);
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 	return rc;
