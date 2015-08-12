@@ -850,8 +850,12 @@ enum ctx_keys {
 					 * value that is higher than slurmd */
 
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age
-						 * priority to pending jobs ignoring
-						 * dependencies or holds */
+						 * priority to pending jobs
+						 * ignoring dependencies or
+						 * holds */
+#define PRIORITY_FLAGS_MAX_TRES 	0x0002  /* Calcuate billed_tres as the
+						 * MAX of TRES on a node rather
+						 * than the sum or TRES. */
 #define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
 						 * relative to its time limit */
 #define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious
@@ -1403,7 +1407,7 @@ typedef struct job_info {
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
-	double cpu_equiv;	/* cpu equivalents cache. updated upon resize */
+	double billable_tres;	/* billable TRES cache. updated upon resize */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
@@ -1979,6 +1983,7 @@ typedef struct partition_info {
 	char *allow_qos;	/* comma delimited list of qos,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
+	char *billing_weights;	/* per TRES billing weights string */
 	uint16_t cr_type;	/* see CR_* values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */

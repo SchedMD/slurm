@@ -146,7 +146,46 @@ computing resources described below.</P>
 
 <P> Slurm's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
 
-<P> The computing resource is currently defined to be computing cycles delivered by a machine in the units of processor*seconds.  Future versions of the fair-share factor may additionally include a memory integral component.</P>
+<P> By default, the computing resource is the computing cycles delivered by a
+machine in the units of processor*seconds. Other resources can be taken into
+account by configuring a partition's TRESBillingWeights option. The
+TRESBillingWeights option allows you to account for consumed resources other
+than just CPUs by assigning different billing weights to different Trackable
+Resources (TRES) such as CPUs, nodes, memory, licenses and generic resources
+(GRES). For example, when billing only for CPUs, if a job requests 1CPU and 64GB
+of memory on a 16CPU, 64GB node the job will only be billed for 1CPU when it
+really used the whole node.
+</P>
+
+<P> By default, when TRESBillingWeights is configured, a job is billed for each
+individual TRES used. The billable TRES is calculated as the sum of all TRES
+types multiplied by their corresponding billing weight.
+</P>
+
+<P> For example, the following jobs on a partition configured with
+TRESBillingWeights=CPU=1.0,MemGB=0.25 and 16CPU, 64GB nodes would be billed as:
+<pre>
+      CPUs       Mem GB
+Job1: (1 *1.0) + (60*0.25) = (1 + 15) = 16
+Job2: (16*1.0) + (1 *0.25) = (16+.25) = 16.25
+Job3: (16*1.0) + (60*0.25) = (16+ 15) = 31
+</pre>
+</P>
+
+<P>
+Another method of calculating the billable TRES is by taking the MAX of the
+individual TRES' on a node (e.g. cpus, mem, gres) plus the SUM of the global
+TRES' (e.g. licenses). For example the above job's billable TRES would
+be calculated as:
+<pre>
+          CPUs      Mem GB
+Job1: MAX((1 *1.0), (60*0.25)) = 15
+Job2: MAX((15*1.0), (1 *0.25)) = 15
+Job3: MAX((16*1.0), (64*0.25)) = 16
+</pre>
+This method is turned on by defining the MAX_TRES priority flags in the
+slurm.conf.
+</P>
 
 <h3> Normalized Shares</h3>
 

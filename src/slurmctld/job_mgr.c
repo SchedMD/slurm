@@ -468,7 +468,7 @@ static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
 	detail_ptr->submit_time = time(NULL);
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
-	job_ptr->cpu_equiv = (double)NO_VAL;
+	job_ptr->billable_tres = (double)NO_VAL;
 	(void) list_append(job_list, job_ptr);
 
 	return job_ptr;
@@ -1162,7 +1162,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack8(dump_job_ptr->power_flags, buffer);
 	pack8(dump_job_ptr->sicp_mode, buffer);
 	pack16(dump_job_ptr->start_protocol_ver, buffer);
-	packdouble(dump_job_ptr->cpu_equiv, buffer);
+	packdouble(dump_job_ptr->billable_tres, buffer);
 
 	if (IS_JOB_COMPLETING(dump_job_ptr)) {
 		if (dump_job_ptr->nodes_completing == NULL) {
@@ -1277,7 +1277,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
 	char jbuf[JBUFSIZ];
-	double cpu_equiv = (double)NO_VAL;
+	double billable_tres = (double)NO_VAL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
@@ -1376,7 +1376,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack8(&power_flags, buffer);
 		safe_unpack8(&sicp_mode, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
-		safe_unpackdouble(&cpu_equiv, buffer);
+		safe_unpackdouble(&billable_tres, buffer);
 
 		if (job_state & JOB_COMPLETING) {
 			safe_unpackstr_xmalloc(&nodes_completing,
@@ -1882,7 +1882,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->comment);
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
-	job_ptr->cpu_equiv    = cpu_equiv;
+	job_ptr->billable_tres = billable_tres;
 	xfree(job_ptr->gres);
 	job_ptr->gres         = gres;
 	gres                  = NULL;  /* reused, nothing left to free */
@@ -7882,7 +7882,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack_time(dump_job_ptr->resize_time, buffer);
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack32(dump_job_ptr->priority, buffer);
-		packdouble(dump_job_ptr->cpu_equiv, buffer);
+		packdouble(dump_job_ptr->billable_tres, buffer);
 
 		/* Only send the allocated nodelist since we are only sending
 		 * the number of cpus and nodes that are currently allocated. */

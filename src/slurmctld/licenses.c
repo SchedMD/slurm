@@ -232,20 +232,6 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	last_license_update = time(NULL);
 }
 
-/* Get how many of a given license are in a list */
-extern uint32_t lic_get_value_by_type(List license_list, char *name)
-{
-	licenses_t *license_entry;
-	uint32_t used = 0;
-
-	license_entry = list_find_first(
-		license_list, _license_find_remote_rec, name);
-
-	if(license_entry)
-		used = license_entry->used;
-	return used;
-}
-
 /* Get string of used license information. Caller must xfree return value */
 extern char *get_licenses_used(void)
 {
@@ -855,6 +841,20 @@ extern uint32_t get_total_license_cnt(char *name)
 	slurm_mutex_unlock(&license_mutex);
 
 	return count;
+}
+
+/* Get how many of a given license are in a list */
+extern uint32_t license_get_total_cnt_from_list(List license_list, char *name)
+{
+	licenses_t *license_entry;
+	uint32_t total = 0;
+
+	license_entry = list_find_first(
+		license_list, _license_find_rec, name);
+
+	if(license_entry)
+		total = license_entry->total;
+	return total;
 }
 
 /* node_read should be locked before coming in here

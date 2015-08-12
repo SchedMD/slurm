@@ -427,6 +427,18 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, tmp_line);
 	}
 
+	/****** Line 10 ******/
+	if (part_ptr->billing_weights) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+
+		snprintf(tmp_line, sizeof(tmp_line), "TRESBillingWeights=%s",
+			part_ptr->billing_weights);
+		xstrcat(out, tmp_line);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

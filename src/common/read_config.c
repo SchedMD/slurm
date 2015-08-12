@@ -1044,7 +1044,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"AllowGroups", S_P_STRING},
 		{"AllowQos", S_P_STRING},
 		{"Alternate", S_P_STRING},
-		{"ChargeRate", S_P_STRING},
+		{"TRESBillingWeights", S_P_STRING},
 		{"DefMemPerCPU", S_P_UINT32},
 		{"DefMemPerNode", S_P_UINT32},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
@@ -1138,9 +1138,11 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->alternate, "Alternate", tbl))
 			s_p_get_string(&p->alternate, "Alternate", dflt);
 
-		if (!s_p_get_string(&p->charge_rate, "ChargeRate", tbl) &&
-		    !s_p_get_string(&p->charge_rate, "ChargeRate", dflt))
-			xfree(p->charge_rate);
+		if (!s_p_get_string(&p->billing_weights, "TRESBillingWeights",
+				    tbl) &&
+		    !s_p_get_string(&p->billing_weights, "TRESBillingWeights",
+				    dflt))
+			xfree(p->billing_weights);
 
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
@@ -3635,6 +3637,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
 		else if (slurm_strcasestr(temp_str, "FAIR_TREE"))
 			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
+
+		if (slurm_strcasestr(temp_str, "MAX_TRES"))
+			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 
 		xfree(temp_str);
 	}

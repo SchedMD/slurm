@@ -5311,6 +5311,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 			xfree(node_inx_str);
 			node_inx_str = NULL;
 		}
+		safe_unpackstr_xmalloc(&part->billing_weights, &uint32_tmp,
+				       buffer);
 
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
@@ -5905,7 +5907,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack_time(&job->resize_time, buffer);
 		safe_unpack_time(&job->preempt_time, buffer);
 		safe_unpack32(&job->priority, buffer);
-		safe_unpackdouble(&job->cpu_equiv, buffer);
+		safe_unpackdouble(&job->billable_tres, buffer);
 		safe_unpackstr_xmalloc(&job->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->sched_nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->partition, &uint32_tmp, buffer);

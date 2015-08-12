@@ -4050,22 +4050,15 @@ Partition name of alternate partition to be used if the state of this partition
 is "DRAIN" or "INACTIVE."
 
 .TP
-\fBChargeRate\fR
-The ChargeRate is used to define a CPU Equivalent that is multiplied by time
-when calculating the usage of a job.  Different charge rates may be specified
-per resource type; the CPU equivalent is the MAX() of the charges.
+\fBTRESBillingWeights\fR
+TRESBillingWeights is used to define the billing weights of each TRES type that
+will be used in calcuating the usage of a job.
 
-Charge rates are specified as a comma-separated list of
-\fIResourceType\fR=\fIResourceChargeRate\fR pairs. The job's quantity of
-\fIResourceType\fR is multiplied by the corresponding
-\fIResourceChargeRate\fR (floating point).  For example, when a job
-is allocated 1 CPU core and 8 GB of memory and the partition is configured with
-ChargeRate="CPU=1.0,MemGB=0.25,GRES:gpu=2.0", the CPU equivalent is
-MAX(1*1.0, 8*0.25, 0*2.0) = 2.0
+Billing weights are specified as a comma-separated list of
+\fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
 
-The CPU charge rate defaults to 1.0 and all others to 0.0. Available resource
-types include:
-
+Available TRES types include:
+.RS
 .RS
 .TP 10
 \fBCPU\fP
@@ -4084,6 +4077,23 @@ Charge per allocated GRES of type \fI<type>\fR
 .TP
 \fBLicense:\fR\fI<type>\fR\fB\fP
 Charge per allocated license of type \fI<type>\fR
+.RE
+
+The CPU billing weight defaults to 1.0 and all others to 0.0.
+
+By default the billing of TRES is calculated as the sum of all TRES types
+multiplied by their corresponding billing weight.  For example, when a job is
+allocated 1 CPU and 8 GB of memory on a partition configured with
+TRESBillingWeights="CPU=1.0,MemGB=0.25,GRES:gpu=2.0", the billable TRES will be:
+(1*1.0) + (8*0.25) + (0*2.0) = 3.0.
+
+If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
+MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
+global TRES' (e.g. licenses). Using the same example above the billable TRES
+will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
+
+If TRESBillingWeights is not defined then the job is billed against the total
+number of allocated CPUs.
 .RE
 
 .TP

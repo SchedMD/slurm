@@ -134,77 +134,104 @@ static int _compare_hostnames(struct node_record *old_node_table,
 							  struct node_record *node_table,
 							  int node_count);
 
+static bool _is_configured_tres(char *type, char *name);
+
 
 
 /* Convert the value of a k=v pair to a double. Inputs are the k=v string and an
  * integer offset representing the start of the value */
-static double _charge_rate_item_to_double(char *item_str, int value_offset)
+static double _bill_weight_item_to_double(char *value)
 {
 	double d;
 	errno = 0;
 
-	d = strtod(item_str + value_offset, NULL);
+	d = strtod(value, NULL);
 	if(errno)
-		fatal("Unable to convert %s value to double in ChargeRate",
-		      item_str);
+		fatal("Unable to convert %s value to double in "
+		      "TRESBillingWeights", value);
 
 	return d;
 }
 
-static void _charge_rate_item_add_to_list(List l, char *item_str, int offset)
+static void _bill_weight_item_add_to_list(List l, char *name, char *value)
 {
-	char *tmp_str;
-	char *kv = item_str+offset;
 	config_key_double_pair_t *pair = xmalloc(
 		sizeof(config_key_double_pair_t));
 
-	if (!(tmp_str = strstr(kv, "=")))
-		fatal("\"%s\" is an invalid ChargeRate entry", item_str);
-
-	pair->name = xstrndup(kv, tmp_str - kv);
-	pair->value = _charge_rate_item_to_double(item_str,
-			tmp_str - item_str + 1);
+	pair->name = xstrdup(name);
+	pair->value = _bill_weight_item_to_double(value);
 
 	list_append(l, pair);
 }
 
-static void _charge_rate_item(struct part_record *p, char *item_str)
+static void _bill_weight_item(struct part_record *p, char *item_str)
 {
-	if (!item_str)
-		fatal("ChargeRate item is null");
+	char *type = NULL, *value = NULL, *name = NULL;
 
-	if (!strncasecmp(item_str, "MemGB=", 6))
-		p->charge_mem_gb = _charge_rate_item_to_double(item_str, 6);
-	else if (!strncasecmp(item_str, "CPU=", 4))
-		p->charge_cpu = _charge_rate_item_to_double(item_str, 4);
-	else if (!strncasecmp(item_str, "Node=", 5))
-		p->charge_node = _charge_rate_item_to_double(item_str, 5);
-	else if (!strncasecmp(item_str, "GRES:", 5))
-		_charge_rate_item_add_to_list(p->charge_gres, item_str, 5);
-	else if (!strncasecmp(item_str, "License:", 8))
-		_charge_rate_item_add_to_list(p->charge_lic, item_str, 8);
+	if (!item_str)
+		fatal("TRESBillingWeights item is null");
+
+	type = strtok_r(item_str, "=", &value);
+
+	if (!value || !*value)
+		fatal("\"%s\" is an invalid TRESBillingWeight entry", item_str);
+
+	if (!strcasecmp(type, "MemGB")) {
+		if (!_is_configured_tres("mem", NULL))
+			goto invalid_tres;
+		p->bill_weight_mem_gb = _bill_weight_item_to_double(value);
+	} else if (!strcasecmp(type, "CPU")) {
+		if (!_is_configured_tres(type, NULL))
+			goto invalid_tres;
+		p->bill_weight_cpu = _bill_weight_item_to_double(value);
+	} else if (!strcasecmp(type, "Node")) {
+		if (!_is_configured_tres(type, NULL))
+			goto invalid_tres;
+		p->bill_weight_node = _bill_weight_item_to_double(value);
+	} else if (!strncasecmp(type, "GRES:", 5)) {
+		type = strtok_r(type, ":", &name);
+		if (!_is_configured_tres("gres", name))
+			goto invalid_tres;
+
+		_bill_weight_item_add_to_list(p->bill_weight_gres, name, value);
+	} else if (!strncasecmp(type, "License:", 8)) {
+		type = strtok_r(type, ":", &name);
+		if (!_is_configured_tres("license", name))
+			goto invalid_tres;
+
+		_bill_weight_item_add_to_list(p->bill_weight_lic, name, value);
+	} else {
+		goto invalid_tres;
+	}
+	return;
+
+invalid_tres:
+	fatal("TRESBillingWeights '%s%s%s' is not a configured TRES type. "
+	      "Please add the TRES Type to " "\"AccountingStorageTRES\" in "
+	      "the slurm.conf",
+	      type, (name) ? ":" : "", (name) ? name : "");
 }
 
-static void _charge_rate(struct part_record *p, char *charge_str)
+static void _billing_weights(struct part_record *p, char *bill_weight_str)
 {
-	char *tmp_str = xstrdup(charge_str);
+	char *tmp_str = xstrdup(bill_weight_str);
 	char *token, *last = NULL;
 
-	p->charge_cpu = 1.0;
-	p->charge_mem_gb = 0.0;
-	p->charge_node = 0.0;
+	p->bill_weight_cpu = 1.0;
+	p->bill_weight_mem_gb = 0.0;
+	p->bill_weight_node = 0.0;
 
-	if(p->charge_gres)
-		list_destroy(p->charge_gres);
-	p->charge_gres = list_create(destroy_config_key_double_pair);
+	if(p->bill_weight_gres)
+		list_destroy(p->bill_weight_gres);
+	p->bill_weight_gres = list_create(destroy_config_key_double_pair);
 
-	if(p->charge_lic)
-		list_destroy(p->charge_lic);
-	p->charge_lic = list_create(destroy_config_key_double_pair);
+	if(p->bill_weight_lic)
+		list_destroy(p->bill_weight_lic);
+	p->bill_weight_lic = list_create(destroy_config_key_double_pair);
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
-		_charge_rate_item(p, token);
+		_bill_weight_item(p, token);
 		token = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_str);
@@ -709,6 +736,28 @@ static int _init_tres(void)
 	return SLURM_SUCCESS;
 }
 
+
+static bool _is_configured_tres(char *type, char *name)
+{
+	ListIterator itr = NULL;
+	bool valid = false;
+	slurmdb_tres_rec_t *tres_rec;
+
+	itr = list_iterator_create(cluster_tres_list);
+	while ((tres_rec = list_next(itr))) {
+		if (strcasecmp(type, tres_rec->type))
+		    continue;
+
+		if ((!tres_rec->name) ||  /* cpu, mem, etc. */
+		    (!xstrcmp(name, tres_rec->name))) { /* gres, lic, etc. */
+			valid = true;
+			break;
+		}
+	}
+
+	return valid;
+}
+
 /* Convert a comma delimited list of account names into a NULL terminated
  * array of pointers to strings. Call accounts_list_free() to release memory */
 extern void accounts_list_build(char *accounts, char ***accounts_array)
@@ -884,10 +933,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 
-	if (part->charge_rate) {
-		xfree(part_ptr->charge_rate);
-		part_ptr->charge_rate = xstrdup(part->charge_rate);
-		_charge_rate(part_ptr, part_ptr->charge_rate);
+	if (part->billing_weights) {
+		xfree(part_ptr->billing_weights);
+		part_ptr->billing_weights = xstrdup(part->billing_weights);
+		_billing_weights(part_ptr, part_ptr->billing_weights);
 	}
 
 	if (part->allow_accounts) {
