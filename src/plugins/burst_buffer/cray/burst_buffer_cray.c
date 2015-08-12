@@ -136,15 +136,17 @@ typedef struct bb_sessions {
 } bb_sessions_t;
 
 typedef struct {
+	char   **args;
 	uint32_t job_id;
-	char **args;
+	uint32_t user_id;
 } pre_run_args_t;
 
 typedef struct {
+	char   **args1;
+	char   **args2;
 	uint32_t job_id;
 	uint32_t timeout;
-	char **args1;
-	char **args2;
+	uint32_t user_id;
 } stage_args_t;
 
 typedef struct {		/* Used for scheduling */
@@ -224,7 +226,7 @@ static void	_python2json(char *buf);
 static void	_recover_limit_state(void);
 static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_out(struct job_record *job_ptr);
-static void	_queue_teardown(uint32_t job_id, bool hurry);
+static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
 static void	_save_limits_state(void);
@@ -379,7 +381,8 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 		rc = _queue_stage_in(job_ptr, bb_job);
 		if (rc != SLURM_SUCCESS) {
 			bb_job->state = BB_STATE_TEARDOWN;
-			_queue_teardown(job_ptr->job_id, true);
+			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
+					true);
 		}
 	} else {
 		bb_job->state = BB_STATE_STAGED_IN;
@@ -1218,7 +1221,7 @@ static void *_start_stage_in(void *x)
 			bb_alloc->state = BB_STATE_TEARDOWN;
 			bb_alloc->state_time = time(NULL);
 		}
-		_queue_teardown(job_ptr->job_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
 	unlock_slurmctld(job_write_lock);
 
@@ -1260,10 +1263,11 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
-	stage_args->job_id  = job_ptr->job_id;
-	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
 	stage_args->args1   = data_out_argv;
 	stage_args->args2   = post_run_argv;
+	stage_args->job_id  = job_ptr->job_id;
+	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
+	stage_args->user_id = job_ptr->user_id;
 
 	slurm_attr_init(&stage_attr);
 	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
@@ -1385,8 +1389,10 @@ static void *_start_stage_out(void *x)
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job)
 			bb_job->state = BB_STATE_TEARDOWN;
-		if (rc == SLURM_SUCCESS)
-			_queue_teardown(stage_args->job_id, false);
+		if (rc == SLURM_SUCCESS) {
+			_queue_teardown(stage_args->job_id, stage_args->user_id,
+					false);
+		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
@@ -1398,7 +1404,7 @@ static void *_start_stage_out(void *x)
 	return NULL;
 }
 
-static void _queue_teardown(uint32_t job_id, bool hurry)
+static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 {
 	struct stat buf;
 	char *hash_dir = NULL, *job_script = NULL;
@@ -1436,6 +1442,7 @@ static void _queue_teardown(uint32_t job_id, bool hurry)
 
 	teardown_args = xmalloc(sizeof(stage_args_t));
 	teardown_args->job_id  = job_id;
+	teardown_args->user_id = user_id;
 	teardown_args->timeout = 0;
 	teardown_args->args1   = teardown_argv;
 
@@ -1504,22 +1511,23 @@ static void *_start_teardown(void *x)
 			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
 				bb_remove_user_load(bb_alloc, &bb_state);
 				bb_free_alloc_rec(&bb_state, bb_alloc);
+				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
 				bb_job->state = BB_STATE_COMPLETE;
 		} else {
 			/* This will happen when slurmctld restarts and needs
 			 * to clear vestigial buffers */
-//FIXME: Modify logic to pass user ID
-			uint32_t user_id = 0;
 			char buf_name[32];
 			snprintf(buf_name, sizeof(buf_name), "%u",
 				 teardown_args->job_id);
-			bb_alloc = bb_alloc_name_rec(&bb_state, buf_name,
-						     user_id);
+			bb_alloc = bb_find_name_rec(buf_name,
+						    teardown_args->user_id,
+						    &bb_state);
 			if (bb_alloc) {
 				bb_remove_user_load(bb_alloc, &bb_state);
 				bb_free_alloc_rec(&bb_state, bb_alloc);
+				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 
 		}
@@ -1780,7 +1788,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 				preempt_ptr->bb_ptr->end_time = 0;
 				preempt_ptr->bb_ptr->state = BB_STATE_TEARDOWN;
 				preempt_ptr->bb_ptr->state_time = time(NULL);
-				_queue_teardown(preempt_ptr->job_id, true);
+				_queue_teardown(preempt_ptr->job_id,
+						preempt_ptr->user_id, true);
 				if (bb_state.bb_config.debug_flag) {
 					info("%s: %s: Preempting stage-in of "
 					     "job %u for %s", plugin_type,
@@ -2219,19 +2228,20 @@ extern int fini(void)
  * the matching job is either gone or completed) */
 static void _purge_vestigial_bufs(void)
 {
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	int i;
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = bb_state.bb_ahash[i];
-		while (bb_ptr) {
-			if (bb_ptr->job_id &&
-			    !find_job_record(bb_ptr->job_id)) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			if (bb_alloc->job_id &&
+			    !find_job_record(bb_alloc->job_id)) {
 				info("%s: Purging vestigial buffer for job %u",
-				     plugin_type, bb_ptr->job_id);
-				_queue_teardown(bb_ptr->job_id, false);
+				     plugin_type, bb_alloc->job_id);
+				_queue_teardown(bb_alloc->job_id,
+						bb_alloc->user_id, false);
 			}
-			bb_ptr = bb_ptr->next;
+			bb_alloc = bb_alloc->next;
 		}
 	}
 }
@@ -2854,7 +2864,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		job_ptr->state_desc =
 			xstrdup("Could not find burst buffer record");
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		_queue_teardown(job_ptr->job_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
@@ -2865,7 +2875,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		job_ptr->state_desc =
 			xstrdup("Error managing persistent burst buffers");
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		_queue_teardown(job_ptr->job_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
@@ -2905,8 +2915,9 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		pre_run_argv[8] = xstrdup(client_nodes_file_nid);
 	}
 	pre_run_args = xmalloc(sizeof(pre_run_args_t));
-	pre_run_args->args   = pre_run_argv;
-	pre_run_args->job_id = job_ptr->job_id;
+	pre_run_args->args    = pre_run_argv;
+	pre_run_args->job_id  = job_ptr->job_id;
+	pre_run_args->user_id = job_ptr->user_id;
 //FIXME: Use prolog_running to delay launch
 //	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
 //		job_ptr->details->prolog_running++;
@@ -2986,7 +2997,8 @@ if (0) { // FIXME: Cray API is always returning an exit code of 1
 			if (bb_job)
 				bb_job->state = BB_STATE_TEARDOWN;
 		}
-		_queue_teardown(pre_run_args->job_id, true);
+		_queue_teardown(pre_run_args->job_id, pre_run_args->user_id,
+				true);
 	} else if (job_ptr && job_ptr->details &&
 		   job_ptr->details->prolog_running) {
 		job_ptr->details->prolog_running--;
@@ -3027,7 +3039,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	} else if (bb_job->total_size == 0) {
 		bb_job->state = BB_STATE_TEARDOWN;
-		_queue_teardown(job_ptr->job_id, false);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, false);
 	} else if (bb_job->state < BB_STATE_STAGING_OUT) {
 		bb_job->state = BB_STATE_STAGING_OUT;
 		_queue_stage_out(job_ptr);
@@ -3108,7 +3120,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 			bb_alloc->state = BB_STATE_TEARDOWN;
 			bb_alloc->state_time = time(NULL);
 		}
-		_queue_teardown(job_ptr->job_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
