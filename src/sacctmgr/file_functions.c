@@ -324,7 +324,6 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	print_field_t *field = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
-	char *tmp_char = NULL;
 
 	if (!assoc_list || !list_count(assoc_list))
 		return rc;
@@ -350,128 +349,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	itr2 = list_iterator_create(print_fields_list);
 	while ((assoc = list_next(itr))) {
 		while ((field = list_next(itr2))) {
-			switch(field->type) {
-			case PRINT_ACCT:
-				field->print_routine(field,
-						     assoc->acct);
-				break;
-			case PRINT_DQOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn,
-						my_uid,
-						NULL);
-
-				tmp_char = slurmdb_qos_str(
-					g_qos_list,
-					assoc->def_qos_id);
-				field->print_routine(
-					field,
-					tmp_char);
-				break;
-			case PRINT_FAIRSHARE:
-				field->print_routine(field,
-						     assoc->shares_raw);
-				break;
-			case PRINT_GRPTM:
-				field->print_routine(
-					field,
-					assoc->grp_tres_mins);
-				break;
-			case PRINT_GRPTRM:
-				field->print_routine(
-					field,
-					assoc->grp_tres_run_mins);
-				break;
-			case PRINT_GRPT:
-				field->print_routine(field,
-						     assoc->grp_tres);
-				break;
-			case PRINT_GRPJ:
-				field->print_routine(field,
-						     assoc->grp_jobs);
-				break;
-			case PRINT_GRPMEM:
-				field->print_routine(
-					field,
-					slurmdb_find_tres_count_in_string(
-						assoc->grp_tres, TRES_MEM));
-				break;
-			case PRINT_GRPN:
-				field->print_routine(
-					field,
-					slurmdb_find_tres_count_in_string(
-						assoc->grp_tres, TRES_NODE));
-				break;
-			case PRINT_GRPS:
-				field->print_routine(field,
-						     assoc->grp_submit_jobs);
-				break;
-			case PRINT_GRPW:
-				field->print_routine(
-					field,
-					assoc->grp_wall);
-				break;
-			case PRINT_MAXTM:
-				field->print_routine(
-					field,
-					assoc->max_tres_mins_pj);
-				break;
-			case PRINT_MAXTRM:
-				field->print_routine(
-					field,
-					assoc->max_tres_run_mins);
-				break;
-			case PRINT_MAXT:
-				field->print_routine(field,
-						     assoc->max_tres_pj);
-				break;
-			case PRINT_MAXJ:
-				field->print_routine(field,
-						     assoc->max_jobs);
-				break;
-			case PRINT_MAXN:
-				field->print_routine(
-					field,
-					slurmdb_find_tres_count_in_string(
-						assoc->max_tres_pj, TRES_NODE));
-				break;
-			case PRINT_MAXS:
-				field->print_routine(field,
-						     assoc->max_submit_jobs);
-				break;
-			case PRINT_MAXW:
-				field->print_routine(
-					field,
-					assoc->max_wall_pj);
-				break;
-			case PRINT_PNAME:
-				field->print_routine(field,
-						     assoc->parent_acct);
-				break;
-			case PRINT_PART:
-				field->print_routine(field,
-						     assoc->partition);
-				break;
-			case PRINT_QOS:
-				if (!g_qos_list)
-					g_qos_list = acct_storage_g_get_qos(
-						db_conn, my_uid, NULL);
-
-				field->print_routine(
-					field,
-					g_qos_list,
-					assoc->qos_list);
-				break;
-			case PRINT_USER:
-				field->print_routine(field,
-						     assoc->user);
-				break;
-			default:
-				field->print_routine(
-					field, NULL);
-				break;
-			}
+			sacctmgr_print_assoc_rec(assoc, field, NULL, 0);
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
