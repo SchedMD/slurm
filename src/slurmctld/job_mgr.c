@@ -1309,6 +1309,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		*tres_req_str = NULL;
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
+	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -2061,9 +2062,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->warn_flags   = warn_flags;
 	job_ptr->warn_signal  = warn_signal;
 	job_ptr->warn_time    = warn_time;
-
-	if (!limit_set.tres)
-		limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	memcpy(&job_ptr->limit_set, &limit_set,
 	       sizeof(acct_policy_limit_set_t));
