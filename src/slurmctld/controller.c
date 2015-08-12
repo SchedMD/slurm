@@ -655,7 +655,6 @@ int main(int argc, char *argv[])
 	slurm_sched_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
-	powercap_fini();
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
