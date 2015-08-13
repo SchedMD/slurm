@@ -71,6 +71,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -162,7 +163,7 @@ static void	_destroy_gres_slurmd_conf(void *x);
 static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
-static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt);
+static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 static bool	_is_gres_cnt_zero(char *config);
@@ -226,7 +227,7 @@ static void	_step_state_log(void *gres_data, uint32_t job_id,
 static int	_step_state_validate(char *config,
 				     gres_step_state_t **gres_data,
 				     slurm_gres_context_t *context_ptr);
-static uint32_t	_step_test(void *step_gres_data, void *job_gres_data,
+static uint64_t	_step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool ignore_alloc, char *gres_name,
 			   uint32_t job_id, uint32_t step_id);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
@@ -642,22 +643,22 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	xassert(p);
 
 	if (!gres_debug) {
-		verbose("Gres Name=%s Type=%s Count=%u",
+		verbose("Gres Name=%s Type=%s Count=%"PRIu64,
 			p->name, p->type, p->count);
 		return 0;
 	}
 
 	if (p->cpus) {
-		info("Gres Name=%s Type=%s Count=%u ID=%u File=%s CPUs=%s "
-		     "CpuCnt=%u",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s "
+		     "CPUs=%s CpuCnt=%u",
 		     p->name, p->type, p->count, p->plugin_id, p->file, p->cpus,
 		     p->cpu_cnt);
 	} else if (p->file) {
-		info("Gres Name=%s Type=%s Count=%u ID=%u File=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s",
 		     p->name, p->type, p->count, p->plugin_id, p->file);
 	} else {
-		info("Gres Name=%s Type=%s Count=%u ID=%u", p->name, p->type,
-		     p->count, p->plugin_id);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u", p->name,
+		     p->type, p->count, p->plugin_id);
 	}
 
 	return 0;
@@ -756,7 +757,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	int i;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t *p;
-	long tmp_long;
+	uint64_t tmp_uint64;
 	char *tmp_str, *last;
 
 	tbl = s_p_hashtbl_create(_gres_options);
@@ -806,30 +807,34 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
-		tmp_long = strtol(tmp_str, &last, 10);
-		if ((tmp_long == LONG_MIN) || (tmp_long == LONG_MAX)) {
+		tmp_uint64 = strtoll(tmp_str, &last, 10);
+		if ((tmp_uint64 == LONG_MIN) || (tmp_uint64 == LONG_MAX)) {
 			fatal("Invalid gres data for %s, Count=%s", p->name,
 			      tmp_str);
 		}
 		if ((last[0] == 'k') || (last[0] == 'K'))
-			tmp_long *= 1024;
+			tmp_uint64 *= 1024;
 		else if ((last[0] == 'm') || (last[0] == 'M'))
-			tmp_long *= (1024 * 1024);
+			tmp_uint64 *= (1024 * 1024);
 		else if ((last[0] == 'g') || (last[0] == 'G'))
-			tmp_long *= (1024 * 1024 * 1024);
+			tmp_uint64 *= (1024 * 1024 * 1024);
+		else if ((last[0] == 't') || (last[0] == 'T'))
+			tmp_uint64 *= (uint64_t)pow(1024, 4);
+		else if ((last[0] == 'p') || (last[0] == 'P'))
+			tmp_uint64 *= (uint64_t)pow(1024, 5);
 		else if (last[0] != '\0') {
 			fatal("Invalid gres data for %s, Count=%s", p->name,
 			      tmp_str);
 		}
-		if (p->count && (p->count != tmp_long)) {
+		if (p->count && (p->count != tmp_uint64)) {
 			fatal("Invalid gres data for %s, Count does not match "
 			      "File value", p->name);
 		}
-		if ((tmp_long < 0) || (tmp_long >= NO_VAL)) {
+		if ((tmp_uint64 < 0) || (tmp_uint64 >= NO_VAL)) {
 			fatal("Gres %s has invalid count value %ld",
-			      p->name, tmp_long);
+			      p->name, tmp_uint64);
 		}
-		p->count = tmp_long;
+		p->count = tmp_uint64;
 		xfree(tmp_str);
 	} else if (p->count == 0)
 		p->count = 1;
@@ -1111,7 +1116,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 		while ((gres_slurmd_conf =
 			(gres_slurmd_conf_t *) list_next(iter))) {
 			pack32(magic, buffer);
-			pack32(gres_slurmd_conf->count, buffer);
+			pack64(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
 			pack8(gres_slurmd_conf->has_file, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
@@ -1135,6 +1140,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 {
 	int i, j, rc;
 	uint32_t count, cpu_cnt, magic, plugin_id, utmp32;
+	uint64_t count64;
 	uint16_t rec_cnt, version;
 	uint8_t has_file;
 	char *tmp_cpus, *tmp_name, *tmp_type;
@@ -1152,7 +1158,80 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&gres_context_lock);
-	if (version >= SLURM_14_11_PROTOCOL_VERSION) {
+	if (version >= SLURM_15_08_PROTOCOL_VERSION) {
+		for (i = 0; i < rec_cnt; i++) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+
+			safe_unpack64(&count64, buffer);
+			safe_unpack32(&cpu_cnt, buffer);
+			safe_unpack8(&has_file, buffer);
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+
+	 		for (j = 0; j < gres_context_cnt; j++) {
+	 			if (gres_context[j].plugin_id != plugin_id)
+					continue;
+				if (xstrcmp(gres_context[j].gres_name,
+					    tmp_name)) {
+					/* Should have beeen caught in
+					 * gres_plugin_init() */
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s duplicate plugin ID with"
+					      " %s, unable to process",
+					      tmp_name,
+					      gres_context[j].gres_name);
+					continue;
+				}
+				if (gres_context[j].has_file &&
+				    !has_file && count64) {
+					error("gres_plugin_node_config_unpack: "
+					      "gres/%s lacks File parameter "
+					      "for node %s",
+					      tmp_name, node_name);
+					has_file = 1;
+				}
+				if (has_file && (count64 > MAX_GRES_BITMAP)) {
+					/* Avoid over-subscribing memory with
+					 * huge bitmaps */
+					error("%s: gres/%s has File plus very "
+					      "large Count (%"PRIu64") for "
+					      "node %s, resetting value to %d",
+					      __func__, tmp_name, count64,
+					      node_name, MAX_GRES_BITMAP);
+					count64 = MAX_GRES_BITMAP;
+				}
+				if (has_file)	/* Don't clear if already set */
+					gres_context[j].has_file = has_file;
+				break;
+	 		}
+			if (j >= gres_context_cnt) {
+				/* GresPlugins is inconsistently configured.
+				 * Not a fatal error. Skip this data. */
+				error("gres_plugin_node_config_unpack: no "
+				      "plugin configured to unpack data "
+				      "type %s from node %s",
+				      tmp_name, node_name);
+				xfree(tmp_cpus);
+				xfree(tmp_name);
+				continue;
+			}
+			p = xmalloc(sizeof(gres_slurmd_conf_t));
+			p->count = count64;
+			p->cpu_cnt = cpu_cnt;
+			p->has_file = has_file;
+			p->cpus = tmp_cpus;
+			tmp_cpus = NULL;	/* Nothing left to xfree */
+			p->name = tmp_name;     /* Preserve for accounting! */
+			p->type = tmp_type;
+			tmp_type = NULL;	/* Nothing left to xfree */
+			p->plugin_id = plugin_id;
+			list_append(gres_conf_list, p);
+		}
+	} else if (version >= SLURM_14_11_PROTOCOL_VERSION) {
 		for (i = 0; i < rec_cnt; i++) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
@@ -1421,7 +1500,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
-			tmp_gres_cnt = strtol(num + 1, &last_num, 10);
+			tmp_gres_cnt = strtoll(num + 1, &last_num, 10);
 			if (last_num[0] == '\0')
 				;
 			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
@@ -1430,6 +1509,10 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				tmp_gres_cnt *= (1024 * 1024);
 			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 				tmp_gres_cnt *= (1024 * 1024 * 1024);
+			else if ((last_num[0] == 't') || (last_num[0] == 'T'))
+				tmp_gres_cnt *= (uint64_t)pow(1024, 4);
+			else if ((last_num[0] == 'p') || (last_num[0] == 'P'))
+				tmp_gres_cnt *= (uint64_t)pow(1024, 5);
 			else {
 				error("Bad GRES configuration: %s", tok);
 				break;
@@ -1632,7 +1715,7 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
  * RET - total number of gres available of this ID on this node in (sum
  *	 across all records of this ID)
  */
-static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt)
+static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -1723,7 +1806,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 			     context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
-		if ((gres_data->gres_cnt_found != NO_VAL) &&
+		if ((gres_data->gres_cnt_found != NO_VAL64) &&
 		    (gres_data->gres_cnt_alloc != 0)) {
 			if (reason_down && (*reason_down == NULL)) {
 				xstrfmtcat(*reason_down,
@@ -3384,7 +3467,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name)
 {
-	int i, j, cpu_size, cpus_ctld, gres_avail = 0, gres_total, top_inx;
+	int i, j, cpu_size, cpus_ctld, top_inx;
+	uint64_t gres_avail = 0, gres_total;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_addnt = NULL;  /* Additional CPUs avail from this GRES */
@@ -4642,18 +4726,19 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
  *	value from.
  * RET The value associated with the gres type or NO_VAL if not found.
  */
-extern uint32_t gres_plugin_get_job_value_by_type(List job_gres_list,
+extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 						  char *gres_name_type)
 {
-	uint32_t gres_val, gres_name_type_id;
+	uint64_t gres_val;
+	uint32_t gres_name_type_id;
 	ListIterator  job_gres_iter;
 	gres_state_t *job_gres_ptr;
 
 	if (job_gres_list == NULL)
-		return NO_VAL;
+		return NO_VAL64;
 
 	gres_name_type_id = _build_id(gres_name_type);
-	gres_val = NO_VAL;
+	gres_val = NO_VAL64;
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
@@ -4833,13 +4918,13 @@ static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 	return SLURM_SUCCESS;
 }
 
-static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
+static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool ignore_alloc, char *gres_name,
 			   uint32_t job_id, uint32_t step_id)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint32_t gres_cnt;
+	uint64_t gres_cnt;
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
@@ -4849,7 +4934,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		if (step_gres_ptr->gres_cnt_alloc >
 		    job_gres_ptr->gres_cnt_alloc)
 			return 0;
-		return NO_VAL;
+		return NO_VAL64;
 	}
 
 	if (node_offset >= job_gres_ptr->node_cnt) {
@@ -4860,7 +4945,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 	}
 
 	if (job_gres_ptr->gres_cnt_step_alloc) {
-		uint32_t job_gres_avail = job_gres_ptr->gres_cnt_alloc;
+		uint64_t job_gres_avail = job_gres_ptr->gres_cnt_alloc;
 		if (!ignore_alloc) {
 			job_gres_avail -= job_gres_ptr->
 					  gres_cnt_step_alloc[node_offset];
@@ -4887,7 +4972,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		if (step_gres_ptr->gres_cnt_alloc > gres_cnt)
 			gres_cnt = 0;
 		else
-			gres_cnt = NO_VAL;
+			gres_cnt = NO_VAL64;
 	} else if (job_gres_ptr->gres_cnt_step_alloc &&
 		   job_gres_ptr->gres_cnt_step_alloc[node_offset]) {
 		gres_cnt = job_gres_ptr->gres_cnt_alloc -
@@ -4895,12 +4980,12 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		if (step_gres_ptr->gres_cnt_alloc > gres_cnt)
 			gres_cnt = 0;
 		else
-			gres_cnt = NO_VAL;
+			gres_cnt = NO_VAL64;
 	} else {
 		/* Note: We already validated the gres count above */
 		debug("gres/%s: %s %u.%u gres_bit_alloc is NULL",
 		      gres_name, __func__, job_id, step_id);
-		gres_cnt = NO_VAL;
+		gres_cnt = NO_VAL64;
 	}
 
 	return gres_cnt;
@@ -4920,7 +5005,7 @@ extern int gres_plugin_step_state_validate(char *req_config,
 					   uint32_t step_id)
 {
 	char *tmp_str, *tok, *last = NULL;
-	int i, rc, rc2, rc3;
+	int i, rc, rc2;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 	gres_step_state_t *step_gres_data;
 	gres_job_state_t *job_gres_data;
@@ -4982,10 +5067,9 @@ extern int gres_plugin_step_state_validate(char *req_config,
 				break;
 			}
 			job_gres_data = job_gres_ptr->gres_data;
-			rc3 = _step_test(step_gres_data, job_gres_data, NO_VAL,
-					 true, gres_context[i].gres_name,
-					 job_id, step_id);
-			if (rc3 == 0) {
+			if (!_step_test(step_gres_data, job_gres_data, NO_VAL,
+					true, gres_context[i].gres_name,
+					job_id, step_id)) {
 				info("Step %u.%u gres higher than in job "
 				     "allocation %s", job_id, step_id, tok);
 				rc = ESLURM_INVALID_GRES;
@@ -5680,23 +5764,23 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN node_offset - index into the job's node allocation
  * IN ignore_alloc - if set ignore resources already allocated to running steps
  * IN job_id, step_id - ID of the step being allocated.
- * RET Count of available CPUs on this node, NO_VAL if no limit
+ * RET Count of available CPUs on this node, NO_VAL64 if no limit
  */
-extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
+extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset, bool ignore_alloc,
 				      uint32_t job_id, uint32_t step_id)
 {
 	int i;
-	uint32_t cpu_cnt, tmp_cnt;
+	uint64_t cpu_cnt, tmp_cnt;
 	ListIterator  job_gres_iter, step_gres_iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
 
 	if (step_gres_list == NULL)
-		return NO_VAL;
+		return NO_VAL64;
 	if (job_gres_list == NULL)
 		return 0;
 
-	cpu_cnt = NO_VAL;
+	cpu_cnt = NO_VAL64;
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -5724,12 +5808,8 @@ extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 					     node_offset, ignore_alloc,
 					     gres_context[i].gres_name,
 					     job_id, step_id);
-			if (tmp_cnt != NO_VAL) {
-				if (cpu_cnt == NO_VAL)
-					cpu_cnt = tmp_cnt;
-				else
-					cpu_cnt = MIN(tmp_cnt, cpu_cnt);
-			}
+			if (tmp_cnt != NO_VAL64)
+				cpu_cnt = MIN(tmp_cnt, cpu_cnt);
 			break;
 		}
 		if (cpu_cnt == 0)
@@ -6068,18 +6148,19 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
  * IN gres_name - name of a GRES type
  * RET count of this GRES allocated to this job
  */
-extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name)
+extern uint64_t gres_get_value_by_type(List job_gres_list, char* gres_name)
 {
 	int i;
-	uint32_t gres_cnt = 0, plugin_id;
+	uint32_t plugin_id;
+	uint64_t gres_cnt = 0;
 	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_gres_data;
 
 	if (job_gres_list == NULL)
-		return NO_VAL;
+		return NO_VAL64;
 
-	gres_cnt = NO_VAL;
+	gres_cnt = NO_VAL64;
 	(void) gres_plugin_init();
 	plugin_id = _build_id(gres_name);
 

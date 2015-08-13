@@ -2339,7 +2339,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	char *subtok, *sublast = NULL;
 	char *req_config  = job_ptr->gres;
 	char *tmp_str;
-	uint32_t ngres_req;
+	uint64_t ngres_req;
 	int      rv = SLURM_SUCCESS;
 
 	/* First build the GRES requested field. */
@@ -2374,11 +2374,11 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			 * GRES type but don't find a quantity for it,
 			 * we simply write ":0" for the quantity.
 			 */
-			if (ngres_req == NO_VAL)
+			if (ngres_req == NO_VAL64)
 				ngres_req = 0;
 
 			/* Append value to the gres string. */
-			snprintf(buf, sizeof(buf), "%s%s:%u",
+			snprintf(buf, sizeof(buf), "%s%s:%"PRIu64,
 				 prefix, subtok,
 				 ngres_req * job_ptr->node_cnt);
 
@@ -2388,7 +2388,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 				prefix = ",";
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 				debug("(%s:%d) job id:%u -- ngres_req:"
-				      "%u, gres_req substring = (%s)",
+				      "%"PRIu64", gres_req substring = (%s)",
 				      THIS_FILE, __LINE__,
 				      job_ptr->job_id, ngres_req, buf);
 			}
