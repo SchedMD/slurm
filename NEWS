@@ -368,6 +368,8 @@ documents those changes that are of interest to users and administrators.
     thing (-F exclusive) instead of -F share.
  -- Fix various memory leaks in the Perl API.
  -- Fix a bug in the controller which display jobs in CF state as RUNNING.
+ -- Preserve advanced _core_ reservation when nodes added/removed/resized on
+    slurmctld restart. Rebuild core_bitmap as needed.
 
 * Changes in Slurm 14.11.8
 ==========================

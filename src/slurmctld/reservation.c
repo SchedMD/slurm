@@ -170,6 +170,7 @@ static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
+static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
@@ -2940,6 +2941,93 @@ extern int dump_all_resv_state(void)
 	return 0;
 }
 
+/* Unfortunately the reservation's core_bitmap is a global bitmap and the nodes
+ * in the system have changed in terms of their node count or nodes have been
+ * added or removed. Make best effort to rebuild the reservation's core_bitmap
+ * on the limited information currently available. The specific cores might
+ * change, but this logic at least leaves their count constant and uses the
+ * same nodes. */
+static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr)
+{
+	int i_first, i_last, i, j, k, core_offset, node_offset;
+	uint32_t core_cnt, core_inx, node_inx;
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+
+	info("Core_bitmap for reservation %s no longer valid, cores addded or removed, rebuilding",
+	     resv_ptr->name);
+
+	core_cnt = bit_set_count(resv_ptr->core_bitmap);      /* Cores needed */
+	bit_free(resv_ptr->core_bitmap);
+	resv_ptr->core_bitmap =
+		bit_alloc(cr_get_coremap_offset(node_record_count));
+
+	/* Try to use any cores in use by jobs running in this reservation */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_RUNNING(job_ptr)      ||
+		    (job_ptr->node_bitmap == NULL)||
+		    (job_ptr->job_resrcs == NULL) ||
+		    (job_ptr->resv_name == NULL)  ||
+		    strcmp(job_ptr->resv_name, resv_ptr->name))
+			continue;
+		/* This job is currently running in this reservation */
+		i_first = bit_ffs(job_ptr->node_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(job_ptr->node_bitmap);
+		else
+			i_last = i_first - 1;
+		node_offset = -1;
+		for (node_inx = i_first;
+		     ((core_cnt > 0) && (node_inx <= i_last)); node_inx++) {
+			if (!bit_test(job_ptr->node_bitmap, node_inx))
+				continue;
+			node_offset++;
+			core_offset = get_job_resources_offset(
+						job_ptr->job_resrcs,
+						node_offset, 0, 0);
+			if (core_offset < 0)
+				break;
+			j = cr_get_coremap_offset(node_inx);
+			k = cr_get_coremap_offset(node_inx + 1);
+			k -= j;	/* core count on this node */
+			for (i = 0; i < k; i++) {
+				if (!bit_test(job_ptr->job_resrcs->core_bitmap,
+					      core_offset + i))
+					continue;
+				bit_set(resv_ptr->core_bitmap, j + i);
+				if (--core_cnt == 0)
+					break;
+			}
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Use any other available cores, evenly distributing across nodes */
+	i_first = bit_ffs(resv_ptr->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(resv_ptr->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (core_inx = 0; ((core_cnt > 0) && (core_inx <= core_cnt));
+	     core_inx++) {
+		for (node_inx = i_first; node_inx <= i_last; node_inx++) {
+			if (!bit_test(resv_ptr->node_bitmap, node_inx))
+				continue;
+			j = cr_get_coremap_offset(node_inx);
+			k = cr_get_coremap_offset(node_inx + 1);
+			j += core_inx;	/* Core offset on this node */
+			if (j >= k)
+				continue;
+			if (bit_test(resv_ptr->core_bitmap, j))
+				continue;	/* Already set by job */
+			bit_set(resv_ptr->core_bitmap, j);
+			if (--core_cnt == 0)
+				break;
+		}	
+	}
+}
+
 /* Validate one reservation record, return true if good */
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 {
@@ -3053,6 +3141,13 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
 	}
+
+	if (!resv_ptr->full_nodes && resv_ptr->core_bitmap &&
+	    (bit_size(resv_ptr->core_bitmap) !=
+	     cr_get_coremap_offset(node_record_count))) {
+		_rebuild_core_bitmap(resv_ptr);
+	}
+
 	return true;
 }
 
