@@ -3261,6 +3261,17 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 	return INFINITE64;
 }
 
+extern int slurmdb_find_qos_in_list_by_name(void *x, void *key)
+{
+	slurmdb_qos_rec_t *qos_rec = (slurmdb_qos_rec_t *)x;
+	char *name = (char *)key;
+
+	if (!xstrcmp(qos_rec->name, name))
+		return 1;
+
+	return 0;
+}
+
 extern int slurmdb_find_tres_in_list(void *x, void *key)
 {
 	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
