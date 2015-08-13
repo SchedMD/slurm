@@ -326,6 +326,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 {
 	uint32_t c, s, i, j, n, b, z, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
+	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff;
@@ -394,7 +395,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			fatal("cons_res: _block_sync_core_bitmap index error");
 
 		cpus  = job_res->cpus[i];
-		vpus  = MIN(select_node_record[n].vpus, ntasks_per_core);
+		if (ntasks_per_core == 0xffff) {
+			vpus = select_node_record[n].vpus;
+		} else {
+			vpus = MIN(select_node_record[n].vpus,
+				   (ntasks_per_core * cpus_per_task));
+		}
 
 		/* compute still required cores on the node */
 		req_cpus = cpus / vpus;
@@ -671,6 +677,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 {
 	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
+	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
 	bool *sock_used, *sock_avoid;
@@ -716,7 +723,12 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			continue;
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
-		vpus    = MIN(select_node_record[n].vpus, ntasks_per_core);
+		if (ntasks_per_core == 0xffff) {
+			vpus = select_node_record[n].vpus;
+		} else {
+			vpus = MIN(select_node_record[n].vpus,
+				   (ntasks_per_core * cpus_per_task));
+		}
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: job %u node %s vpus %u cpus %u",
