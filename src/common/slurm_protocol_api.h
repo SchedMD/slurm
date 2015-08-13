@@ -92,7 +92,6 @@ enum {
 /* slurm_get_auth_info
  * returns the auth_info from slurmctld_conf object (AuthInfo parameter)
  * cache value in local buffer for best performance
- * RET char *    - auth info,  MUST be xfreed by caller
  */
 char *slurm_get_auth_info(void);
 
