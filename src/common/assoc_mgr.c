@@ -2974,17 +2974,17 @@ extern void assoc_mgr_info_get_pack_msg(
 	void *db_conn, uint16_t protocol_version)
 {
 	ListIterator itr = NULL;
-	ListIterator user_itr = NULL;
-	ListIterator acct_itr = NULL;
+	ListIterator user_itr = NULL, acct_itr = NULL, qos_itr = NULL;
+	slurmdb_qos_rec_t *qos_rec = NULL;
 	slurmdb_assoc_rec_t *assoc_rec = NULL;
-	List ret_list = NULL;
+	List ret_list = NULL, tmp_list;
 	char *tmp_char = NULL;
 	slurmdb_user_rec_t user, *user_rec = NULL;
 	int is_admin=1;
 	void *object;
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
-				   NO_LOCK, READ_LOCK, NO_LOCK };
+				   READ_LOCK, READ_LOCK, NO_LOCK };
 	Buf buffer;
 
 	buffer_ptr[0] = NULL;
@@ -2999,6 +2999,9 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		if (msg->acct_list && list_count(msg->acct_list))
 			acct_itr = list_iterator_create(msg->acct_list);
+
+		if (msg->qos_list && list_count(msg->qos_list))
+			qos_itr = list_iterator_create(msg->qos_list);
 	}
 
 	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
@@ -3021,9 +3024,18 @@ extern void assoc_mgr_info_get_pack_msg(
 		}
 	}
 
+	/* This is where we start to pack */
+	buffer = init_buf(BUF_SIZE);
+
+	packstr_array(assoc_mgr_tres_name_array, g_tres_count, buffer);
+
 	ret_list = list_create(NULL);
 
 	assoc_mgr_lock(&locks);
+
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_ASSOC))
+		goto no_assocs;
+
 	itr = list_iterator_create(assoc_mgr_assoc_list);
 	while ((assoc_rec = list_next(itr))) {
 		if (user_itr && assoc_rec->user) {
@@ -3089,8 +3101,7 @@ extern void assoc_mgr_info_get_pack_msg(
 	}
 	list_iterator_destroy(itr);
 
-	/* This is where we start to pack */
-	buffer = init_buf(BUF_SIZE);
+no_assocs:
 
 	/* pack the associations requested/allowed */
 	pack32(list_count(ret_list), buffer);
@@ -3101,13 +3112,37 @@ extern void assoc_mgr_info_get_pack_msg(
 	list_iterator_destroy(itr);
 	list_flush(ret_list);
 
-	/* There isn't much limitation that can be put on QOS */
-	pack32(list_count(assoc_mgr_qos_list), buffer);
-	itr = list_iterator_create(assoc_mgr_qos_list);
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_QOS)) {
+		tmp_list = ret_list;
+		goto no_qos;
+	}
+
+	/* now filter out the qos */
+	if (qos_itr) {
+		while ((tmp_char = list_next(qos_itr)))
+			if ((qos_rec = list_find_first(
+				     assoc_mgr_qos_list,
+				     slurmdb_find_tres_in_list,
+				     &tmp_char)))
+				list_append(ret_list, user_rec);
+		tmp_list = ret_list;
+	} else
+		tmp_list = assoc_mgr_qos_list;
+
+no_qos:
+
+	/* pack the qos requested */
+	pack32(list_count(tmp_list), buffer);
+	itr = list_iterator_create(tmp_list);
 	while ((object = list_next(itr)))
 		slurmdb_pack_qos_rec_with_usage(
 			object, protocol_version, buffer);
 	list_iterator_destroy(itr);
+	if (qos_itr)
+		list_flush(ret_list);
+
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_USERS))
+		goto no_users;
 
 	/* now filter out the users */
 	itr = list_iterator_create(assoc_mgr_user_list);
@@ -3128,6 +3163,8 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		list_append(ret_list, user_rec);
 	}
+
+no_users:
 
 	/* pack the users requested/allowed */
 	pack32(list_count(ret_list), buffer);
@@ -3150,6 +3187,8 @@ end_it:
 		list_iterator_destroy(user_itr);
 	if (acct_itr)
 		list_iterator_destroy(acct_itr);
+	if (qos_itr)
+		list_iterator_destroy(qos_itr);
 
 	return;
 }
@@ -3164,6 +3203,10 @@ extern int assoc_mgr_info_unpack_msg(
 	int i;
 
 	*object = object_ptr;
+
+	safe_unpackstr_array(&object_ptr->tres_names, &object_ptr->tres_cnt,
+			     buffer);
+
 	safe_unpack32(&count, buffer);
 	if (count) {
 		object_ptr->assoc_list =

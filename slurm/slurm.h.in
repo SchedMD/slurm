@@ -2920,11 +2920,19 @@ typedef struct {
 typedef struct {
 	List assoc_list; /* list of slurmdb_assoc_rec_t with usage packed */
 	List qos_list;   /* list of slurmdb_qos_rec_t with usage packed */
+	uint32_t tres_cnt;
+	char **tres_names;
 	List user_list;  /* list of slurmdb_user_rec_t */
 } assoc_mgr_info_msg_t;
 
+#define ASSOC_MGR_INFO_FLAG_ASSOC 0x00000001
+#define ASSOC_MGR_INFO_FLAG_USERS 0x00000002
+#define ASSOC_MGR_INFO_FLAG_QOS   0x00000004
+
 typedef struct {
 	List acct_list; /* char * list of account names */
+	uint32_t flags; /* flags determining what is returned */
+	List qos_list;  /* char * list of qos names */
 	List user_list; /* char * list of user names */
 } assoc_mgr_info_request_msg_t;
 

@@ -4145,6 +4145,12 @@ slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 		return;
 
 	FREE_NULL_LIST(msg->assoc_list);
+	FREE_NULL_LIST(msg->qos_list);
+	if (msg->tres_names) {
+		int i;
+		for (i=0; i<msg->tres_cnt; i++)
+			xfree(msg->tres_names);
+	}
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }
@@ -4152,7 +4158,11 @@ slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 extern void slurm_free_assoc_mgr_info_request_msg(
 	assoc_mgr_info_request_msg_t *msg)
 {
+	if (!msg)
+		return;
+
 	FREE_NULL_LIST(msg->acct_list);
+	FREE_NULL_LIST(msg->qos_list);
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }

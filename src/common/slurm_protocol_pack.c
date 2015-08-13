@@ -13638,27 +13638,39 @@ _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 
 	xassert(msg != NULL);
 
-	if (msg->acct_list)
-		count = list_count(msg->acct_list);
+	if (!msg->acct_list || !(count = list_count(msg->acct_list)))
+		count = NO_VAL;
+
 	pack32(count, buffer);
-	if (count && count != NO_VAL) {
+	if (count != NO_VAL) {
 		itr = list_iterator_create(msg->acct_list);
-		while ((tmp_info = list_next(itr))) {
+		while ((tmp_info = list_next(itr)))
 			packstr(tmp_info, buffer);
-		}
 		list_iterator_destroy(itr);
 	}
 	count = NO_VAL;
 
+	pack32(msg->flags, buffer);
 
-	if (msg->user_list)
-		count = list_count(msg->user_list);
+	if (!msg->qos_list || !(count = list_count(msg->qos_list)))
+		count = NO_VAL;
+
 	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->user_list);
-		while ((tmp_info = list_next(itr))) {
+	if (count != NO_VAL) {
+		itr = list_iterator_create(msg->qos_list);
+		while ((tmp_info = list_next(itr)))
 			packstr(tmp_info, buffer);
-		}
+		list_iterator_destroy(itr);
+	}
+
+	if (!msg->user_list || !(count = list_count(msg->user_list)))
+		count = NO_VAL;
+
+	pack32(count, buffer);
+	if (count != NO_VAL) {
+		itr = list_iterator_create(msg->user_list);
+		while ((tmp_info = list_next(itr)))
+			packstr(tmp_info, buffer);
 		list_iterator_destroy(itr);
 	}
 }
@@ -13676,7 +13688,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 
 	xassert(msg != NULL);
 
-	object_ptr = xmalloc(sizeof(shares_request_msg_t));
+	object_ptr = xmalloc(sizeof(assoc_mgr_info_request_msg_t));
 	*msg = object_ptr;
 
 	safe_unpack32(&count, buffer);
@@ -13686,6 +13698,18 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->acct_list, tmp_info);
+		}
+	}
+
+	safe_unpack32(&object_ptr->flags, buffer);
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		object_ptr->qos_list = list_create(slurm_destroy_char);
+		for (i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->qos_list, tmp_info);
 		}
 	}
 
