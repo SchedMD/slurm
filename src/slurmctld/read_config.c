@@ -200,14 +200,14 @@ static void _bill_weight_item(struct part_record *p, char *item_str)
 		if (!_is_configured_tres(type, NULL))
 			goto invalid_tres;
 		p->bill_weight_node = _bill_weight_item_to_double(value);
-	} else if (!strncasecmp(type, "GRES:", 5)) {
-		type = strtok_r(type, ":", &name);
+	} else if (!strncasecmp(type, "GRES/", 5)) {
+		type = strtok_r(type, "/", &name);
 		if (!_is_configured_tres("gres", name))
 			goto invalid_tres;
 
 		_bill_weight_item_add_to_list(p->bill_weight_gres, name, value);
-	} else if (!strncasecmp(type, "License:", 8)) {
-		type = strtok_r(type, ":", &name);
+	} else if (!strncasecmp(type, "License/", 8)) {
+		type = strtok_r(type, "/", &name);
 		if (!_is_configured_tres("license", name))
 			goto invalid_tres;
 

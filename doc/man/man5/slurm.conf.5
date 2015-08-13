@@ -4072,11 +4072,11 @@ Charge per allocated GB of memory
 \fBNode\fP
 Charge per allocated node
 .TP
-\fBGRES:\fR\fI<type>\fR\fB\fP
-Charge per allocated GRES of type \fI<type>\fR
+\fBGRES/<name>[:<type>]\fP
+Charge per allocated GRES of type \fI<name>\fR
 .TP
-\fBLicense:\fR\fI<type>\fR\fB\fP
-Charge per allocated license of type \fI<type>\fR
+\fBLicense/<name>\fP
+Charge per allocated license of type \fI<name>\fR
 .RE
 
 The CPU billing weight defaults to 1.0 and all others to 0.0.
@@ -4084,7 +4084,7 @@ The CPU billing weight defaults to 1.0 and all others to 0.0.
 By default the billing of TRES is calculated as the sum of all TRES types
 multiplied by their corresponding billing weight.  For example, when a job is
 allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,MemGB=0.25,GRES:gpu=2.0", the billable TRES will be:
+TRESBillingWeights="CPU=1.0,MemGB=0.25,GRES/gpu=2.0", the billable TRES will be:
 (1*1.0) + (8*0.25) + (0*2.0) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
