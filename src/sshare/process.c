@@ -80,6 +80,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	if (!resp)
 		return SLURM_ERROR;
 
+	/* FIXME: This only handles CPU Mins now */
 	format_list = list_create(slurm_destroy_char);
 	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		if (long_flag) {
