@@ -5232,6 +5232,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_ASSOCS:
+			if (!g_tres_count)
+				fatal("load_assoc_mgr_state: "
+				      "Unable to run cache without TRES, "
+				      "please make sure you have a connection "
+				      "to your database to continue.");
 			error_code = slurmdbd_unpack_list_msg(
 				&msg, ver, DBD_ADD_ASSOCS, buffer);
 			if (error_code != SLURM_SUCCESS)
@@ -5284,6 +5289,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_QOS:
+			if (!g_tres_count)
+				fatal("load_assoc_mgr_state: "
+				      "Unable to run cache without TRES, "
+				      "please make sure you have a connection "
+				      "to your database to continue.");
 			error_code = slurmdbd_unpack_list_msg(
 				&msg, ver, DBD_ADD_QOS, buffer);
 			if (error_code != SLURM_SUCCESS)
