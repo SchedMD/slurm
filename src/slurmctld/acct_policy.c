@@ -2033,9 +2033,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    qos_rec.grp_tres_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
-			/* FIXME: This is most likely not the reason
-			   we want to send back.
-			*/
 			if (reason)
 				*reason = get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_GRP_UNK);
@@ -2102,9 +2099,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    qos_rec.max_tres_pj_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
-			/* FIXME: This is most likely not the reason
-			   we want to send back.
-			*/
 			if (reason)
 				*reason = get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
