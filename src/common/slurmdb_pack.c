@@ -1937,6 +1937,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		if (uint32_tmp != NO_VAL)
 			object_ptr->grp_tres =
 				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp != NO_VAL)
 			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
@@ -1979,8 +1980,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 				   TRES_NODE, uint32_tmp);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->min_tres_pj,
-				       &uint32_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			xstrfmtcat(object_ptr->min_tres_pj, "%s%u=%u",
+				   object_ptr->min_tres_pj ? "," : "",
+				   TRES_CPU, uint32_tmp);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
