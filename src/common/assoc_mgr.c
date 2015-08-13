@@ -58,6 +58,7 @@ uint32_t g_tres_count = 0;
 
 List assoc_mgr_tres_list = NULL;
 slurmdb_tres_rec_t **assoc_mgr_tres_array = NULL;
+char **assoc_mgr_tres_name_array = NULL;
 List assoc_mgr_assoc_list = NULL;
 List assoc_mgr_res_list = NULL;
 List assoc_mgr_qos_list = NULL;
@@ -1065,13 +1066,17 @@ static int _post_tres_list(List new_list, int new_cnt)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
+	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
-	int i, new_size, max_cnt = MAX(new_cnt, g_tres_count);
+	int i, new_size, new_name_size, max_cnt = MAX(new_cnt, g_tres_count);
 
 	xassert(new_list);
 
 	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
 	new_array = xmalloc(new_size);
+
+	new_name_size = sizeof(char *) * new_cnt;
+	new_name_array = xmalloc(new_name_size);
 
 	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
@@ -1087,6 +1092,12 @@ static int _post_tres_list(List new_list, int new_cnt)
 	while ((tres_rec = list_next(itr))) {
 
 		new_array[i] = tres_rec;
+
+		new_name_array[i] = xstrdup_printf(
+			"%s%s%s",
+			tres_rec->type,
+			tres_rec->name ? "/" : "",
+			tres_rec->name ? tres_rec->name : "");
 
 		/* This should only happen if a new static TRES are added. */
 		if ((i < g_tres_count) &&
@@ -1187,6 +1198,10 @@ static int _post_tres_list(List new_list, int new_cnt)
 	xfree(assoc_mgr_tres_array);
 	assoc_mgr_tres_array = new_array;
 	new_array = NULL;
+
+	xfree(assoc_mgr_tres_name_array);
+	assoc_mgr_tres_name_array = new_name_array;
+	new_name_array = NULL;
 
 	FREE_NULL_LIST(assoc_mgr_tres_list);
 	assoc_mgr_tres_list = new_list;
@@ -1867,6 +1882,13 @@ extern int assoc_mgr_fini(char *state_save_location)
 	FREE_NULL_LIST(assoc_mgr_qos_list);
 	FREE_NULL_LIST(assoc_mgr_user_list);
 	FREE_NULL_LIST(assoc_mgr_wckey_list);
+	if (assoc_mgr_tres_name_array) {
+		int i;
+		for (i=0; i<g_tres_count; i++)
+			xfree(assoc_mgr_tres_name_array[i]);
+		xfree(assoc_mgr_tres_name_array);
+	}
+	xfree(assoc_mgr_tres_array);
 	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
