@@ -154,7 +154,7 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
 
-	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
+	auth_cred = g_slurm_auth_create(NULL, 2, slurm_get_auth_info());
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );

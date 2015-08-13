@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix a bug in the controller which display jobs in CF state as RUNNING.
  -- Preserve advanced _core_ reservation when nodes added/removed/resized on
     slurmctld restart. Rebuild core_bitmap as needed.
+ -- Fix for non-standard Munge port location for srun/pmi use.
 
 * Changes in Slurm 14.11.8
 ==========================
