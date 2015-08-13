@@ -54,6 +54,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
@@ -304,7 +305,7 @@ extern void bb_add_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 
 	state_ptr->used_space += bb_alloc->size;
 
-	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr->bb_uhash);
+	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr);
 	user_ptr->size += bb_alloc->size;
 	for (i = 0; i < bb_alloc->gres_cnt; i++) {
 		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
@@ -319,13 +320,14 @@ extern void bb_add_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 }
 
 /* Find a per-user burst buffer record for a specific user ID */
-extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
+extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 {
 	int inx = user_id % BB_HASH_SIZE;
 	bb_user_t *user_ptr;
 
-	xassert(bb_uhash);
-	user_ptr = bb_uhash[inx];
+	xassert(state_ptr);
+	xassert(state_ptr->bb_uhash);
+	user_ptr = state_ptr->bb_uhash[inx];
 	while (user_ptr) {
 		if (user_ptr->user_id == user_id)
 			return user_ptr;
@@ -333,10 +335,10 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash)
 	}
 	user_ptr = xmalloc(sizeof(bb_user_t));
 	xassert((user_ptr->magic = BB_USER_MAGIC));	/* Sets value */
-	user_ptr->next = bb_uhash[inx];
+	user_ptr->next = state_ptr->bb_uhash[inx];
 	/* user_ptr->size = 0;	initialized by xmalloc */
 	user_ptr->user_id = user_id;
-	bb_uhash[inx] = user_ptr;
+	state_ptr->bb_uhash[inx] = user_ptr;
 	return user_ptr;
 }
 
@@ -356,7 +358,7 @@ extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 		state_ptr->used_space = 0;
 	}
 
-	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr->bb_uhash);
+	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr);
 	if (user_ptr->size >= bb_alloc->size) {
 		user_ptr->size -= bb_alloc->size;
 	} else {
@@ -416,6 +418,19 @@ static uint64_t _atoi(char *tok)
 	return size_u;
 }
 #endif
+
+/* Set the bb_state's tres_pos for limit enforcement.
+ * Value is set to -1 if not found. */
+extern void bb_set_tres_pos(bb_state_t *state_ptr)
+{
+	slurmdb_tres_rec_t tres_rec;
+
+	xassert(state_ptr);
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "bb";
+	tres_rec.name = state_ptr->name;
+	state_ptr->tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+}
 
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
@@ -982,6 +997,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_ptr->account = xstrdup(bb_job->account);
 	bb_ptr->array_job_id = job_ptr->array_job_id;
 	bb_ptr->array_task_id = job_ptr->array_task_id;
+	bb_ptr->assoc_ptr = job_ptr->assoc_ptr;
 	bb_ptr->gres_cnt = bb_job->gres_cnt;
 	if (bb_ptr->gres_cnt) {
 		bb_ptr->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
@@ -1428,7 +1444,7 @@ extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
 
 	/* Now test this user's limit, considering current usage */
 	if (state_ptr->bb_config.user_size_limit != NO_VAL64) {
-		bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+		bb_user = bb_find_user_rec(user_id, state_ptr);
 		xassert(bb_user);
 		if ((bb_user->size + bb_size) >
 		    state_ptr->bb_config.user_size_limit)
@@ -1445,7 +1461,7 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 {
 	bb_user_t *bb_user;
 
-	bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);
 	bb_user->size += bb_size;
 
@@ -1458,7 +1474,7 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 {
 	bb_user_t *bb_user;
 
-	bb_user = bb_find_user_rec(user_id, state_ptr->bb_uhash);
+	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);
 	if (bb_user->size >= bb_size)
 		bb_user->size -= bb_size;

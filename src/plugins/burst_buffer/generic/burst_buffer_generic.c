@@ -411,8 +411,7 @@ static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
-		user_ptr = bb_find_user_rec(job_ptr->user_id,
-					    bb_state.bb_uhash);
+		user_ptr = bb_find_user_rec(job_ptr->user_id, &bb_state);
 		tmp_u = user_ptr->size;
 		tmp_j = add_space;
 		lim_u = bb_state.bb_config.user_size_limit;
@@ -830,6 +829,8 @@ extern int bb_p_load_state(bool init_config)
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 	_load_state(0);
+	if (init_config)
+		bb_set_tres_pos(&bb_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;

@@ -52,6 +52,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
@@ -220,6 +221,7 @@ static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
 static int	_parse_interactive(struct job_descriptor *job_desc,
 				   uint64_t *bb_size);
+static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
 static void	_purge_bb_files(uint32_t job_id);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
@@ -230,6 +232,7 @@ static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
 static void	_save_limits_state(void);
+static void	_set_assoc_ptr(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
 static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
@@ -582,7 +585,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	return bb_job;
 }
 
-/* For every currently active burst buffer, update that user's limit */
+/* At slurmctld start up time, for every currently active burst buffer,
+ * update that user's limit */
 static void _apply_limits(void)
 {
 	bb_alloc_t *bb_alloc;
@@ -591,6 +595,7 @@ static void _apply_limits(void)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
+			_set_assoc_ptr(bb_alloc);
                         bb_add_user_load(bb_alloc, &bb_state);
                         bb_alloc = bb_alloc->next;
 		}
@@ -817,6 +822,88 @@ unpack_error:
 	return;
 }
 
+/* We just found an unexpected session, set default account, QOS, & partition.
+ * Copy the information from any currently existing session for the same user.
+ * If none found, use his default account and QOS. */
+static void _pick_alloc_account(bb_alloc_t *bb_alloc)
+{
+	/* read locks on assoc & qos */
+	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+					 NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
+	slurmdb_qos_rec_t   qos_rec,   *qos_ptr   = NULL;
+	bb_alloc_t *bb_ptr = NULL;
+
+	bb_ptr = bb_state.bb_ahash[bb_alloc->user_id % BB_HASH_SIZE];
+	while (bb_ptr) {
+		if ((bb_ptr          != bb_alloc) &&
+		    (bb_ptr->user_id == bb_alloc->user_id)) {
+			bb_alloc->account   = xstrdup(bb_ptr->account);
+			bb_alloc->assoc_ptr = bb_ptr->assoc_ptr;
+			bb_alloc->partition = xstrdup(bb_ptr->partition);
+			bb_alloc->qos       = xstrdup(bb_ptr->qos);
+			return;
+		}
+		bb_ptr = bb_ptr->next;
+	}
+
+	/* Set default for this user */
+	bb_alloc->partition = xstrdup(default_part_name);
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+	assoc_rec.partition = default_part_name;
+	assoc_rec.uid = bb_alloc->user_id;
+	assoc_mgr_lock(&assoc_locks);
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    (slurmdb_assoc_rec_t **) &assoc_ptr,
+				    true) == SLURM_SUCCESS) {
+		bb_alloc->assoc_ptr = assoc_ptr;
+		bb_alloc->account   = xstrdup(assoc_rec.acct);
+
+		if (assoc_ptr->usage->valid_qos) {
+			if (assoc_ptr->def_qos_id)
+				qos_rec.id = assoc_ptr->def_qos_id;
+			else if (bit_set_count(assoc_ptr->usage->valid_qos)==1)
+				qos_rec.id =
+					bit_ffs(assoc_ptr->usage->valid_qos);
+			else if (assoc_mgr_root_assoc
+				 && assoc_mgr_root_assoc->def_qos_id)
+				qos_rec.id = assoc_mgr_root_assoc->def_qos_id;
+			else
+				qos_rec.name = "normal";
+		}
+		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce, &qos_ptr,
+					  true) == SLURM_SUCCESS) {
+			bb_alloc->qos = xstrdup(qos_ptr->name);
+		}
+	}
+	assoc_mgr_unlock(&assoc_locks);
+}
+
+/* For a given user/partition/account, set it's assoc_ptr */
+static void _set_assoc_ptr(bb_alloc_t *bb_alloc)
+{
+	/* read locks on assoc */
+	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					 NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
+
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc_rec.acct      = bb_alloc->account;
+	assoc_rec.partition = bb_alloc->partition;
+	assoc_rec.uid       = bb_alloc->user_id;
+	assoc_mgr_lock(&assoc_locks);
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    (slurmdb_assoc_rec_t **) &assoc_ptr,
+				    true) == SLURM_SUCCESS) {
+		bb_alloc->assoc_ptr = assoc_ptr;
+	}
+	assoc_mgr_unlock(&assoc_locks);
+}
+
 /*
  * Determine the current actual burst buffer state.
  */
@@ -913,8 +1000,10 @@ static void _load_state(bool init_config)
 			bb_alloc->size = instances[j].bytes;
 		bb_alloc->seen_time = bb_state.last_load_time;
 
-		if (!init_config)	/* Newly found buffer */
+		if (!init_config) {	/* Newly found buffer */
+			_pick_alloc_account(bb_alloc);
                         bb_add_user_load(bb_alloc, &bb_state);
+		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_sessions(sessions, num_sessions);
@@ -1649,7 +1738,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	}
 
 	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
-		user_ptr = bb_find_user_rec(job_ptr->user_id,bb_state.bb_uhash);
+		user_ptr = bb_find_user_rec(job_ptr->user_id, &bb_state);
 		tmp_u = user_ptr->size;
 		tmp_j = add_space;
 		lim_u = bb_state.bb_config.user_size_limit;
@@ -2281,6 +2370,7 @@ extern int bb_p_load_state(bool init_config)
 		debug("%s: %s", plugin_type,  __func__);
 	_load_state(init_config);	/* Has own locking */
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	bb_set_tres_pos(&bb_state);
 	_purge_vestigial_bufs();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -3408,14 +3498,18 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
-		if (job_ptr)
-			bb_alloc->account = xstrdup(job_ptr->account);
-		if (job_ptr && job_ptr->part_ptr)
-			bb_alloc->partition = xstrdup(job_ptr->part_ptr->name);
-		if (job_ptr && job_ptr->qos_ptr) {
-			slurmdb_qos_rec_t *qos_ptr =
-				(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			bb_alloc->qos = xstrdup(qos_ptr->name);
+		if (job_ptr) {
+			bb_alloc->account   = xstrdup(job_ptr->account);
+			bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
+			if (job_ptr->part_ptr) {
+				bb_alloc->partition =
+					xstrdup(job_ptr->part_ptr->name);
+			}
+			if (job_ptr->qos_ptr) {
+				slurmdb_qos_rec_t *qos_ptr =
+					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				bb_alloc->qos = xstrdup(qos_ptr->name);
+			}
 		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);

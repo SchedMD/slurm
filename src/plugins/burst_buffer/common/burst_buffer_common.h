@@ -46,10 +46,11 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 /* Interval, in seconds, for purging orphan bb_alloc_t records and timing out
  * staging */
-#define AGENT_INTERVAL	10
+#define AGENT_INTERVAL	30
 
 /* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE	100
@@ -87,6 +88,7 @@ typedef struct bb_config {
 #define BB_ALLOC_MAGIC		0xDEAD3448
 typedef struct bb_alloc {
 	char *account;		/* Associated account (for limits) */
+	slurmdb_assoc_rec_t *assoc_ptr;
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool cancelled;
@@ -198,6 +200,7 @@ typedef struct bb_state {
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;
 	uint64_t	total_space;	/* units are bytes */
+	int		tres_pos;	/* TRES index, for limits */
 	uint64_t	used_space;	/* units are bytes */
 } bb_state_t;
 
@@ -251,7 +254,7 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 				    bb_state_t *state_ptr);
 
 /* Find a per-user burst buffer record for a specific user ID */
-extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_user_t **bb_uhash);
+extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr);
 
 /* Remove a specific bb_alloc_t from global records.
  * RET true if found, false otherwise */
@@ -315,6 +318,10 @@ extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 /* Remove persistent burst buffer reservation for this job.
  * Call when job starts running or removed from pending state. */
 extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id);
+
+/* Set the bb_state's tres_pos for limit enforcement.
+ * Value is set to -1 if not found. */
+extern void bb_set_tres_pos(bb_state_t *state_ptr);
 
 /* For each burst buffer record, set the use_time to the time at which its
  * use is expected to begin (i.e. each job's expected start time) */

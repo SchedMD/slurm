@@ -410,15 +410,18 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		"StopStageIn=%s", burst_buffer_ptr->stop_stage_out);
 	xstrcat(out_buf, tmp_line);
 	xstrcat(out_buf, "\n");
-
 	fprintf(out, "%s", out_buf);
 	xfree(out_buf);
 
+	if (burst_buffer_ptr->buffer_count)
+		fprintf(out, "  Allocated Buffers:\n");
 	for (i = 0, bb_resv_ptr = burst_buffer_ptr->burst_buffer_resv_ptr;
 	     i < burst_buffer_ptr->buffer_count; i++, bb_resv_ptr++) {
 		 _print_burst_buffer_resv(out, bb_resv_ptr, one_liner);
 	}
 
+	if (burst_buffer_ptr->use_count)
+		fprintf(out, "  Per User Buffer Use:\n");
 	for (i = 0, bb_use_ptr = burst_buffer_ptr->burst_buffer_use_ptr;
 	     i < burst_buffer_ptr->use_count; i++, bb_use_ptr++) {
 		 _print_burst_buffer_use(out, bb_use_ptr, one_liner);
