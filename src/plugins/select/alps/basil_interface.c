@@ -685,13 +685,13 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 
 struct basil_accel_param* build_accel_param(struct job_record* job_ptr)
 {
-	int gpu_mem_req;
+	uint64_t gpu_mem_req;
 	struct basil_accel_param* head,* bap_ptr;
 
 	gpu_mem_req = gres_plugin_get_job_value_by_type(job_ptr->gres_list,
 							"gpu_mem");
 
-	if (gpu_mem_req == NO_VAL)
+	if (gpu_mem_req == NO_VAL64)
 		gpu_mem_req = 0;
 
 	if (!job_ptr) {
@@ -706,7 +706,7 @@ struct basil_accel_param* build_accel_param(struct job_record* job_ptr)
 	bap_ptr = head;
 	bap_ptr->type = BA_GPU;	/* Currently BASIL only permits
 				 * generic resources of type GPU. */
-	bap_ptr->memory_mb = gpu_mem_req;
+	bap_ptr->memory_mb = (uint32_t)gpu_mem_req;
 	bap_ptr->next = NULL;
 
 	return head;

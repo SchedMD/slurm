@@ -57,7 +57,7 @@ enum {
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	/* Count of gres available in this configuration record */
-	uint32_t count;
+	uint64_t count;
 
 	/* Specific CPUs associated with this configuration record */
 	uint16_t cpu_cnt;
@@ -547,7 +547,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list);
  *	value from.
  * RET The value associated with the gres type or NO_VAL if not found.
  */
-extern uint32_t gres_plugin_get_job_value_by_type(List job_gres_list,
+extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 						  char *gres_name_type);
 
 /*
@@ -650,7 +650,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN job_id, step_id - ID of the step being allocated.
  * RET Count of available CPUs on this node, NO_VAL if no limit
  */
-extern uint32_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
+extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset, bool ignore_alloc,
 				      uint32_t job_id, uint32_t step_id);
 
@@ -695,7 +695,7 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
  * IN gres_name - name of a GRES type
  * RET count of this GRES allocated to this job
  */
-extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name);
+extern uint64_t gres_get_value_by_type(List job_gres_list, char* gres_name);
 
 enum gres_job_data_type {
 	GRES_JOB_DATA_COUNT,	/* data-> uint32_t  */

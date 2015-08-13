@@ -988,7 +988,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
 		int i_first, i_last;
-		uint32_t avail_mem, total_mem, gres_cnt;
+		uint32_t avail_mem, total_mem;
+		uint64_t gres_cnt;
 		uint32_t nodes_picked_cnt = 0;
 		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
 		bitstr_t *selected_nodes = NULL, *non_selected_nodes = NULL;
@@ -1083,9 +1084,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 node_inx, false,
 							 job_ptr->job_id,
 							 NO_VAL);
-			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
+			if ((gres_cnt != NO_VAL64) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
-			avail_tasks = MIN(avail_tasks, gres_cnt);
+			avail_tasks = MIN((uint64_t)avail_tasks, gres_cnt);
 			gres_cnt = gres_plugin_step_test(step_gres_list,
 							 job_ptr->gres_list,
 							 node_inx, true,
@@ -1093,7 +1094,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 NO_VAL);
 			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
-			total_tasks = MIN(total_tasks, gres_cnt);
+			total_tasks = MIN((uint64_t)total_tasks, gres_cnt);
 			if (step_spec->plane_size &&
 			    step_spec->plane_size != (uint16_t) NO_VAL) {
 				if (avail_tasks < step_spec->plane_size)
