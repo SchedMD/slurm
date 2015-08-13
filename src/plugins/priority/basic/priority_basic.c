@@ -55,6 +55,16 @@
 #include "src/common/slurm_priority.h"
 #include "src/common/assoc_mgr.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+int slurmctld_tres_cnt __attribute__((weak_import)) = 0;
+#else
+int slurmctld_tres_cnt = 0;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
