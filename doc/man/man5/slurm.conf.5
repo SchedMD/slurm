@@ -4066,7 +4066,7 @@ Charge per allocated CPU. Charge rates other than 1.0 can be used to charge
 more or less for CPUs in a partition that are considered to be more or less
 capable than those in other partitions.
 .TP
-\fBMemGB\fP
+\fBMem\fP
 Charge per allocated GB of memory
 .TP
 \fBNode\fP
@@ -4084,7 +4084,7 @@ The CPU billing weight defaults to 1.0 and all others to 0.0.
 By default the billing of TRES is calculated as the sum of all TRES types
 multiplied by their corresponding billing weight.  For example, when a job is
 allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,MemGB=0.25,GRES/gpu=2.0", the billable TRES will be:
+TRESBillingWeights="CPU=1.0,Mem=0.25,GRES/gpu=2.0", the billable TRES will be:
 (1*1.0) + (8*0.25) + (0*2.0) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the

@@ -188,8 +188,8 @@ static void _bill_weight_item(struct part_record *p, char *item_str)
 	if (!value || !*value)
 		fatal("\"%s\" is an invalid TRESBillingWeight entry", item_str);
 
-	if (!strcasecmp(type, "MemGB")) {
-		if (!_is_configured_tres("mem", NULL))
+	if (!strcasecmp(type, "Mem")) {
+		if (!_is_configured_tres(type, NULL))
 			goto invalid_tres;
 		p->bill_weight_mem_gb = _bill_weight_item_to_double(value);
 	} else if (!strcasecmp(type, "CPU")) {

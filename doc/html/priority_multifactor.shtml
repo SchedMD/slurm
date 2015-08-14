@@ -163,7 +163,7 @@ types multiplied by their corresponding billing weight.
 </P>
 
 <P> For example, the following jobs on a partition configured with
-TRESBillingWeights=CPU=1.0,MemGB=0.25 and 16CPU, 64GB nodes would be billed as:
+TRESBillingWeights=CPU=1.0,Mem=0.25 and 16CPU, 64GB nodes would be billed as:
 <pre>
       CPUs       Mem GB
 Job1: (1 *1.0) + (60*0.25) = (1 + 15) = 16
