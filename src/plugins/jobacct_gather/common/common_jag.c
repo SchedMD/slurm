@@ -87,10 +87,10 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 
 	jobacct->current_weighted_freq =
 		jobacct->current_weighted_freq +
-		jobacct->this_sampled_cputime * thisfreq;
+		(uint32_t)jobacct->this_sampled_cputime * thisfreq;
 	if (jobacct->tot_cpu) {
 		return (jobacct->current_weighted_freq /
-			jobacct->tot_cpu);
+			(uint32_t)jobacct->tot_cpu);
 	} else
 		return thisfreq;
 }
@@ -658,7 +658,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 
 	acct_gather_profile_dataset_t dataset[] = {
 		{ "CPUFrequency", PROFILE_FIELD_UINT64 },
-		{ "CPUTime", PROFILE_FIELD_UINT64 },
+		{ "CPUTime", PROFILE_FIELD_DOUBLE },
 		{ "CPUUtilization", PROFILE_FIELD_DOUBLE },
 		{ "RSS", PROFILE_FIELD_UINT64 },
 		{ "VMSize", PROFILE_FIELD_UINT64 },
@@ -703,19 +703,19 @@ static void _record_profile(struct jobacctinfo *jobacct)
 
 	/* delta from last snapshot */
 	if (!jobacct->last_time) {
-		data[FIELD_CPUTIME].u64 = 0;
+		data[FIELD_CPUTIME].d = 0;
 		data[FIELD_CPUUTIL].d = 0.0;
 		data[FIELD_READ].d = 0.0;
 		data[FIELD_WRITE].d = 0.0;
 	} else {
-		data[FIELD_CPUTIME].u64 =
+		data[FIELD_CPUTIME].d =
 			jobacct->tot_cpu - jobacct->last_total_cputime;
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
 		else
 			data[FIELD_CPUUTIL].d =
-				(100.0 * (double)data[FIELD_CPUTIME].u64) /
+				(100.0 * (double)data[FIELD_CPUTIME].d) /
 				((double) et);
 
 		data[FIELD_READ].d = jobacct->tot_disk_read -
@@ -838,8 +838,8 @@ extern void jag_common_poll_data(
 
 	itr = list_iterator_create(task_list);
 	while ((jobacct = list_next(itr))) {
-		uint32_t cpu_calc;
-		uint32_t last_total_cputime;
+		double cpu_calc;
+		double last_total_cputime;
 		if (!(prec = list_find_first(prec_list, _find_prec, jobacct)))
 			continue;
 
@@ -854,7 +854,7 @@ extern void jag_common_poll_data(
 
 		last_total_cputime = jobacct->tot_cpu;
 
-		cpu_calc = (prec->ssec + prec->usec)/hertz;
+		cpu_calc = (double)(prec->ssec + prec->usec)/(double)hertz;
 		/* tally their usage */
 		jobacct->max_rss =
 			MAX(jobacct->max_rss, prec->rss);
@@ -877,7 +877,7 @@ extern void jag_common_poll_data(
 
 		jobacct->tot_disk_write = prec->disk_write;
 		jobacct->min_cpu =
-			MAX(jobacct->min_cpu, cpu_calc);
+			MAX((double)jobacct->min_cpu, cpu_calc);
 
 		/* Update the cpu times
 		 */
@@ -885,7 +885,7 @@ extern void jag_common_poll_data(
 		jobacct->user_cpu_sec = prec->usec/hertz;
 		jobacct->sys_cpu_sec = prec->ssec/hertz;
 		debug2("%s: %d mem size %"PRIu64" %"PRIu64" "
-		       "time %u(%u+%u)", __func__,
+		       "time %f(%u+%u)", __func__,
 		       jobacct->pid, jobacct->max_rss,
 		       jobacct->max_vsize, jobacct->tot_cpu,
 		       jobacct->user_cpu_sec,
@@ -900,7 +900,7 @@ extern void jag_common_poll_data(
 			_update_weighted_freq(jobacct, sbuf);
 		debug("%s: Task average frequency = %u "
 		       "pid %d mem size %"PRIu64" %"PRIu64" "
-		       "time %u(%u+%u)", __func__,
+		       "time %f(%u+%u)", __func__,
 		       jobacct->act_cpufreq,
 		       jobacct->pid, jobacct->max_rss,
 		       jobacct->max_vsize, jobacct->tot_cpu,

@@ -697,7 +697,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		jobacct->min_cpu_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_CPU:
-		jobacct->tot_cpu = *uint32;
+		jobacct->tot_cpu = *dub;
 		break;
 	case JOBACCT_DATA_ACT_CPUFREQ:
 		jobacct->act_cpufreq = *uint32;
@@ -812,7 +812,7 @@ extern int jobacctinfo_getinfo(
 		*jobacct_id = jobacct->min_cpu_id;
 		break;
 	case JOBACCT_DATA_TOT_CPU:
-		*uint32 = jobacct->tot_cpu;
+		*dub = jobacct->tot_cpu;
 		break;
 	case JOBACCT_DATA_ACT_CPUFREQ:
 		*uint32 = jobacct->act_cpufreq;
@@ -872,7 +872,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		pack64(jobacct->max_pages, buffer);
 		pack64(jobacct->tot_pages, buffer);
 		pack32((uint32_t)jobacct->min_cpu, buffer);
-		pack32((uint32_t)jobacct->tot_cpu, buffer);
+		packdouble(jobacct->tot_cpu, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
 		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
 
@@ -960,7 +960,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		safe_unpack64(&(*jobacct)->max_pages, buffer);
 		safe_unpack64(&(*jobacct)->tot_pages, buffer);
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
 		safe_unpack64(&(*jobacct)->energy.consumed_energy, buffer);
 
@@ -1008,7 +1008,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		safe_unpack64(&(*jobacct)->max_pages, buffer);
 		safe_unpack64(&(*jobacct)->tot_pages, buffer);
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
-		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->tot_cpu = (double)uint32_tmp;
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->energy.consumed_energy = (uint64_t) uint32_tmp;
@@ -1155,7 +1156,7 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_min = jobacct->min_cpu;
 	stats->cpu_min_nodeid = jobacct->min_cpu_id.nodeid;
 	stats->cpu_min_taskid = jobacct->min_cpu_id.taskid;
-	stats->cpu_ave = (double)jobacct->tot_cpu;
+	stats->cpu_ave = jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
 	if (jobacct->energy.consumed_energy == NO_VAL)
 		stats->consumed_energy = NO_VAL64;
