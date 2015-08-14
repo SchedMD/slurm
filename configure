@@ -1014,6 +1014,7 @@ with_alps_emulation
 enable_cray_emulation
 enable_native_cray
 enable_cray_network
+enable_really_no_cray
 with_datawarp
 enable_developer
 enable_debug
@@ -1709,6 +1710,7 @@ Optional Features:
                           Run SLURM in an emulated Cray mode
   --enable-native-cray    Run SLURM natively on a Cray without ALPS
   --enable-cray-network   Run SLURM on a non-Cray system with a Cray network
+  --enable-really-no-cray Disable cray support for eslogin machines
   --enable-developer      enable developer options (asserts, -Werror - also
                           sets --enable-debug as well)
   --disable-debug         disable debugging symbols and compile with
@@ -22202,6 +22204,7 @@ fi
   ac_have_alps_emulation="no"
   ac_have_alps_cray_emulation="no"
   ac_have_cray_network="no"
+  ac_really_no_cray="no"
 
 
 # Check whether --with-alps-emulation was given.
@@ -22240,6 +22243,16 @@ if test "${enable_cray_network+set}" = set; then :
 	yes) ac_have_cray_network="yes" ;;
 	 no) ac_have_cray_network="no"  ;;
 	  *) as_fn_error $? "bad value \"$enableval\" for --enable-cray-network" "$LINENO" 5 ;:
+      esac
+
+fi
+
+  # Check whether --enable-really-no-cray was given.
+if test "${enable_really_no_cray+set}" = set; then :
+  enableval=$enable_really_no_cray;  case "$enableval" in
+   yes) ac_really_no_cray="yes" ;;
+    no) ac_really_no_cray="no"  ;;
+     *) as_fn_error $? "bad value \"$enableval\" for --enable-really-no-cray" "$LINENO" 5  ;;
       esac
 
 fi
@@ -22481,6 +22494,10 @@ $as_echo_n "checking whether this is a Cray XT or XE system running on ALPS or A
 $as_echo "$ac_have_alps_cray" >&6; }
   fi
 
+  if test "$ac_really_no_cray" = "yes"; then
+    ac_have_alps_cray="no"
+    ac_have_real_cray="no"
+  fi
   if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface
     ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
