@@ -787,7 +787,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	char *query = NULL, *object = NULL;
 	int i;
-	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE;
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE | TRES_STR_FLAG_NO_NULL;
 
 	char *assoc_inx[] = {
 		"id_assoc",
@@ -890,9 +890,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_pj,
 				tres_str_flags);
-			if (!tmp_char)
-				tmp_char = xstrdup("");
-
 			mod_assoc->max_tres_pj = tmp_char;
 			tmp_char = NULL;
 			modified = 1;
@@ -903,9 +900,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_mins_pj,
 				tres_str_flags);
-			if (!tmp_char)
-				tmp_char = xstrdup("");
-
 			mod_assoc->max_tres_mins_pj = tmp_char;
 			tmp_char = NULL;
 			modified = 1;
@@ -916,9 +910,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			slurmdb_combine_tres_strings(
 				&tmp_char, assoc->max_tres_run_mins,
 				tres_str_flags);
-			if (!tmp_char)
-				tmp_char = xstrdup("");
-
 			mod_assoc->max_tres_run_mins = tmp_char;
 			tmp_char = NULL;
 			modified = 1;

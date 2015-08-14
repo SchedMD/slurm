@@ -2196,7 +2196,8 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 			 uint32_t id, bool assoc)
 {
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
-		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE;
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
+		TRES_STR_FLAG_NO_NULL;
 
 	xassert(out);
 	xassert(name);
@@ -2212,10 +2213,6 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 	xfree(*out); /* just to make sure */
 	*out = xstrdup(mod);
 	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
-	/* let the slurmctld know we removed limits,
-	 * "" means blank NULL means no change */
-	if (!*out)
-		*out = xstrdup("");
 
 	if (xstrcmp(*out, cur)) {
 		/* We always want the first char a comma in the
