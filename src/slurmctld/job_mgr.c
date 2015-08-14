@@ -1172,7 +1172,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
 
 	pack16(dump_job_ptr->direct_set_prio, buffer);
-	pack16(dump_job_ptr->job_state, buffer);
+	pack32(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
