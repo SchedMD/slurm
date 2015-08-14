@@ -525,6 +525,9 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		state_ptr->bb_config.flags = slurm_bb_str2flags(tmp);
 		xfree(tmp);
 	}
+	/* By default, disable persistent buffer creation by normal users */
+	if ((state_ptr->bb_config.flags & BB_FLAG_ENABLE_PERSISTENT) == 0)
+		state_ptr->bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
 
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);

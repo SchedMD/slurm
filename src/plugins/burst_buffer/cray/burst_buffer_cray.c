@@ -215,7 +215,7 @@ static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(bool init_config);
 static int	_open_part_state_file(char **state_file);
 static int	_parse_bb_opts(struct job_descriptor *job_desc,
-			       uint64_t *bb_size);
+			       uint64_t *bb_size, uid_t submit_uid);
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
@@ -1962,7 +1962,8 @@ static void _timeout_bb_rec(void)
 
 /* Translate a batch script or interactive burst_buffer options into in
  * appropriate burst_buffer argument */
-static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
+static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
+			  uid_t submit_uid)
 {
 	char *end_ptr = NULL, *script, *save_ptr = NULL;
 	char *bb_access = NULL, *bb_name = NULL, *bb_type = NULL, *capacity;
@@ -1971,12 +1972,16 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 	uint64_t byte_cnt = 0, tmp_cnt;
 	uint32_t node_cnt = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
-	bool hurry;
+	bool enable_persist = false, hurry;
 
 	xassert(bb_size);
 	*bb_size = 0;
 	if (!job_desc->script)
 		return _parse_interactive(job_desc, bb_size);
+
+	if (validate_operator(submit_uid) ||
+	    (bb_state.bb_config.flags & BB_FLAG_ENABLE_PERSISTENT))
+		enable_persist = true;
 
 	script = xstrdup(job_desc->script);
 	tok = strtok_r(script, "\n", &save_ptr);
@@ -1989,7 +1994,13 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
-			if (!strncmp(tok, "create_persistent", 17)) {
+			if (!strncmp(tok, "create_persistent", 17) &&
+			    !enable_persist) {
+				info("%s: User %d disabled from creating persistent burst buffer",
+				     __func__, submit_uid);
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				break;
+			} else if (!strncmp(tok, "create_persistent", 17)) {
 				if ((sub_tok = strstr(tok, "capacity=")))
 					tmp_cnt = bb_get_size_num(sub_tok + 9,
 						  bb_state.bb_config.granularity);
@@ -2035,6 +2046,12 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size)
 				xfree(bb_name);
 				xfree(bb_type);
 				*bb_size += tmp_cnt;
+			} else if (!strncmp(tok, "destroy_persistent", 17) &&
+				   !enable_persist) {
+				info("%s: User %d disabled from destroying persistent burst buffer",
+				     __func__, submit_uid);
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				break;
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
@@ -2457,7 +2474,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i, rc;
 
-	if ((rc = _parse_bb_opts(job_desc, &bb_size)) != SLURM_SUCCESS)
+	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 	if (job_desc->burst_buffer) {

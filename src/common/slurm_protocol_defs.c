@@ -4157,8 +4157,13 @@ slurm_bb_flags2str(uint32_t bb_flags)
 	static char bb_str[1024];
 
 	bb_str[0] = '\0';
-	if (bb_flags & BB_FLAG_ENABLE_PERSISTENT)
+	if (bb_flags & BB_FLAG_DISABLE_PERSISTENT)
+		strcat(bb_str, "DisablePersistent");
+	if (bb_flags & BB_FLAG_ENABLE_PERSISTENT) {
+		if (bb_str[0])
+			strcat(bb_str, ",");
 		strcat(bb_str, "EnablePersistent");
+	}
 
 	return bb_str;
 }
@@ -4168,6 +4173,8 @@ slurm_bb_str2flags(char *bb_str)
 {
 	uint32_t bb_flags = 0;
 
+	if (bb_str && strstr(bb_str, "DisablePersistent"))
+		bb_flags |= BB_FLAG_DISABLE_PERSISTENT;
 	if (bb_str && strstr(bb_str, "EnablePersistent"))
 		bb_flags |= BB_FLAG_ENABLE_PERSISTENT;
 
