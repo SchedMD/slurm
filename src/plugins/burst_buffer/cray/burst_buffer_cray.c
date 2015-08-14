@@ -3484,6 +3484,8 @@ static void *_create_persistent(void *x)
 		script_argv[i++] = xstrdup("-T");
 		script_argv[i++] = xstrdup(create_args->type);
 	}
+	/* NOTE: There is an optional group ID parameter available and
+	 * currently not used by Slurm */
 
 	START_TIMER;
 	resp_msg = bb_run_script("create_persistent",
