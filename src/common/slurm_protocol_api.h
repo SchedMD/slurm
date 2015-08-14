@@ -1239,7 +1239,7 @@ extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
  * slurm_setup_sockaddr - setup a sockaddr_in struct to be used for
  *                        communication. If TopologyParameters has
  *                        NoInAddrAny set it will work of the
- *                        interface given from getaddrinfo from the
+ *                        interface given from gethostname from the
  *                        hostname of the node.
  * OUT sin - uninitialized sockaddr_in
  * IN  port - port to used, we will call htons on it

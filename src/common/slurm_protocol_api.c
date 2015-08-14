@@ -4440,7 +4440,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 	static uint32_t s_addr = NO_VAL;
 
 	memset(sin, 0, sizeof(struct sockaddr_in));
-	sin->sin_family = AF_INET;
+	sin->sin_family = AF_SLURM;
 	sin->sin_port = htons(port);
 
 	if (s_addr == NO_VAL) {
@@ -4451,21 +4451,11 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		char *topology_params = slurm_get_topology_param();
 		if (topology_params &&
 		    slurm_strcasestr(topology_params, "NoInAddrAny")) {
-			struct addrinfo s_ainfo;
-			struct addrinfo *p_ainfo;
 			char host[MAXHOSTNAMELEN];
 
-			s_ainfo.ai_flags = 0;
-			s_ainfo.ai_family = AF_INET;
-			s_ainfo.ai_socktype = SOCK_STREAM;
-			s_ainfo.ai_protocol = IPPROTO_TCP;
-
-			if (!gethostname(host, MAXHOSTNAMELEN) &&
-			    !getaddrinfo(host, NULL, &s_ainfo, &p_ainfo)) {
-				struct sockaddr_in *p_sin =
-					(struct sockaddr_in *)p_ainfo->ai_addr;
-				s_addr = p_sin->sin_addr.s_addr;
-				freeaddrinfo(p_ainfo);
+			if (!gethostname(host, MAXHOSTNAMELEN)) {
+				slurm_set_addr_char(sin, port, host);
+				s_addr = sin->sin_addr.s_addr;
 			} else
 				fatal("slurm_setup_sockaddr: "
 				      "Can't get hostname or addr: %m");
