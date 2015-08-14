@@ -3227,6 +3227,10 @@ extern char *slurmdb_combine_tres_strings(
 
 	FREE_NULL_LIST(tres_list);
 endit:
+	/* Send back a blank string instead of NULL. */
+	if (!*tres_str_old && (flags & TRES_STR_FLAG_NO_NULL))
+		*tres_str_old = xstrdup("");
+
 	return *tres_str_old;
 }
 

@@ -89,6 +89,8 @@ typedef enum {
 #define TRES_STR_FLAG_SORT_ID     0x00000008 /* sort string by ID */
 #define TRES_STR_FLAG_SIMPLE      0x00000010 /* make a simple string */
 #define TRES_STR_FLAG_COMMA1      0x00000020 /* make a first char a comma */
+#define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
+					      * instead of NULL */
 
 typedef struct {
 	slurmdb_cluster_rec_t *cluster_rec;
@@ -220,6 +222,7 @@ extern char *slurmdb_make_tres_string_from_simple(
  *                                      TRES_STR_FLAG_SORT_ID
  *                                      TRES_STR_FLAG_SIMPLE
  *                                      TRES_STR_FLAG_COMMA1
+ *                                      TRES_STR_FLAG_NO_NULL
  * RET   : new tres_str_old - the new string (also sent out)
  */
 extern char *slurmdb_combine_tres_strings(
