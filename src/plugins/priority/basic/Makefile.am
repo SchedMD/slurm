@@ -11,3 +11,4 @@ pkglib_LTLIBRARIES = priority_basic.la
 # basic priority logging plugin.
 priority_basic_la_SOURCES = priority_basic.c
 priority_basic_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+priority_basic_la_LIBADD  = -lm
