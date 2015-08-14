@@ -681,14 +681,10 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
  */
 static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 {
-	double to_bill = 0.0;
-	double bill_weight_mem_mb = 0.0;
-	double bill_cpus = 0.0, bill_mem = 0.0, bill_nodes = 0.0;
+	double to_bill_node   = 0.0;
+	double to_bill_global = 0.0;
 	struct part_record *part_ptr = job_ptr->part_ptr;
-	uint32_t total_memory = 0;
-	uint32_t gres_alloc_count = 0;
-	uint32_t lic_alloc_count = 0;
-	config_key_double_pair_t *bill_weight_pair;
+	tres_billing_weight_t *billing_weight;
 	ListIterator itr;
 
 	/* Don't recalculate unless the job is new or resized */
@@ -708,107 +704,50 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 
 	if (priority_debug)
 		info("BillingWeight: job %d using \"%s\" from partition %s",
-		     job_ptr->job_id, part_ptr->billing_weights,
+		     job_ptr->job_id, part_ptr->billing_weights_str,
 		     job_ptr->part_ptr->name);
 
-	/* Calculate total memory since it is stored either per node or cpu */
-	if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
-		total_memory = (job_ptr->details->pn_min_memory &
-				(~MEM_PER_CPU)) * job_ptr->total_cpus;
-	else
-		total_memory = job_ptr->details->pn_min_memory *
-			       job_ptr->total_nodes;
+	itr = list_iterator_create(part_ptr->billing_weights);
+	while ((billing_weight = list_next(itr))) {
+		bool   is_mem      = false;
+		double tres_weight = billing_weight->weight;
+		char  *tres_type   = billing_weight->type;
+		char  *tres_name   = billing_weight->name;
+		double tres_value  =
+			job_ptr->tres_alloc_cnt[billing_weight->tres_id];
 
-	bill_weight_mem_mb = part_ptr->bill_weight_mem_gb / 1024.0l;
-
-	bill_mem   = (double)total_memory         * bill_weight_mem_mb;
-	bill_cpus  = (double)job_ptr->total_cpus  * part_ptr->bill_weight_cpu;
-	bill_nodes = (double)job_ptr->total_nodes * part_ptr->bill_weight_node;
-
-	to_bill = bill_cpus;
-	if (flags & PRIORITY_FLAGS_MAX_TRES) {
-		to_bill = MAX(to_bill, bill_nodes);
-		to_bill = MAX(to_bill, bill_mem);
-	} else {
-		to_bill += bill_nodes;
-		to_bill += bill_mem;
-	}
-
-	/*
-	 * Potential performance improvement:
-	 * It would likely be lower overhead to iterate through allocated
-	 * gres and maybe licenses first then compare to bill weights
-	 * rather than iterate through all defined bill weights then compare to
-	 * gres and licenses.  Site-specific differences are likely.
-	 *
-	 * It may be very uncommon for per partition per license charges to
-	 * exist but still have licenses requested per job.  It is much more
-	 * likely to define a gres charge but have many jobs that don't request
-	 * gres.  This means that the license code is probably fine for most
-	 * sites but gres may be better or worse the current way depending
-	 * on a site's configuration and job patterns.
-	 */
-
-	/* Calculate for each gres */
-	if(job_ptr->gres_list && !list_is_empty(job_ptr->gres_list)) {
-		itr = list_iterator_create(part_ptr->bill_weight_gres);
-		while ((bill_weight_pair = list_next(itr))) {
-			gres_alloc_count =
-				gres_get_value_by_type(job_ptr->gres_list,
-					bill_weight_pair->name);
-			if(gres_alloc_count > 0) {
-				double bill_gres = gres_alloc_count *
-					(double)bill_weight_pair->value;
-
-				if (priority_debug)
-					info("BillingWeight: GRES:%s = %d * %f",
-					     bill_weight_pair->name,
-					     gres_alloc_count,
-					     bill_weight_pair->value);
-
-				if (flags & PRIORITY_FLAGS_MAX_TRES)
-					to_bill = MAX(to_bill, bill_gres);
-				else
-					to_bill += bill_gres;
-			}
+		if (!strcasecmp(tres_type, "mem")) {
+			is_mem = true;
+			tres_weight /= 1024; /* mem is weighted by gb. */
 		}
-		list_iterator_destroy(itr);
-	}
 
-	/* Calculate for each license */
-	if(job_ptr->license_list && !list_is_empty(job_ptr->license_list)) {
-		itr = list_iterator_create(part_ptr->bill_weight_lic);
-		while ((bill_weight_pair = list_next(itr))) {
-			lic_alloc_count = license_get_total_cnt_from_list(
-				job_ptr->license_list,
-				bill_weight_pair->name);
-			if(lic_alloc_count > 0) {
-				if (priority_debug)
-					info("BillingWeight: Lic:%s = %d * %f",
-					     bill_weight_pair->name,
-					     lic_alloc_count,
-					     bill_weight_pair->value);
-				to_bill += lic_alloc_count *
-					   (double)bill_weight_pair->value;
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+		if (priority_debug)
+			info("BillingWeight: %s%s%s = %f * %f", tres_type,
+			     (tres_name) ? ":" : "",
+			     (tres_name) ? tres_name : "",
+			     tres_value, tres_weight);
 
-	if (priority_debug) {
-		info("BillingWeight: CPU = %d * %f", job_ptr->total_cpus,
-		     part_ptr->bill_weight_cpu);
-		info("BillingWeight: Node = %d * %f", job_ptr->total_nodes,
-		     part_ptr->bill_weight_node);
-		info("BillingWeight: Mem (MB) = %d * (%f/1024)", total_memory,
-		     part_ptr->bill_weight_mem_gb);
+		tres_value *= tres_weight;
+
+		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
+		    ((is_mem) ||
+		     (!strcasecmp(tres_type, "cpu")) ||
+		     (!strcasecmp(tres_type, "gres"))))
+			to_bill_node = MAX(to_bill_node, tres_value);
+		else
+			to_bill_global += tres_value;
+	}
+	list_iterator_destroy(itr);
+
+	job_ptr->billable_tres = to_bill_node + to_bill_global;
+
+	if (priority_debug)
 		info("BillingWeight: Job %d %s = %f", job_ptr->job_id,
 		     (flags & PRIORITY_FLAGS_MAX_TRES) ?
 		     "MAX(node TRES) + SUM(Global TRES)" : "SUM(TRES)",
-		     to_bill);
-	}
-	job_ptr->billable_tres = to_bill;
-	return to_bill;
+		     job_ptr->billable_tres);
+
+	return job_ptr->billable_tres;
 }
 
 

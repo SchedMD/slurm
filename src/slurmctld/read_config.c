@@ -135,93 +135,59 @@ static int _compare_hostnames(struct node_record *old_node_table,
 							  int node_count);
 
 
-static bool _is_configured_tres(char *type, char *name)
+static int _get_tres_id(char *type, char *name)
 {
-	bool valid = false;
 	slurmdb_tres_rec_t tres_rec;
-
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 	tres_rec.type = type;
 	tres_rec.name = name;
 
-	if (assoc_mgr_find_tres_pos(&tres_rec, false) != -1)
-		valid = true;
-
-	return valid;
+	return assoc_mgr_find_tres_pos(&tres_rec, false);
 }
 
-/* Convert the value of a k=v pair to a double. Inputs are the k=v string and an
- * integer offset representing the start of the value */
-static double _bill_weight_item_to_double(char *value)
+extern void destroy_tres_billing_weight(void *object)
 {
-	double d;
-	errno = 0;
+	tres_billing_weight_t *item= (tres_billing_weight_t *)object;
 
-	d = strtod(value, NULL);
-	if(errno)
-		fatal("Unable to convert %s value to double in "
-		      "TRESBillingWeights", value);
-
-	return d;
+	if (item) {
+		xfree(item->type);
+		xfree(item->name);
+		xfree(item);
+	}
 }
 
-static void _bill_weight_item_add_to_list(List l, char *name, char *value)
-{
-	config_key_double_pair_t *pair = xmalloc(
-		sizeof(config_key_double_pair_t));
-
-	pair->name = xstrdup(name);
-	pair->value = _bill_weight_item_to_double(value);
-
-	list_append(l, pair);
-}
-
-static void _bill_weight_item(struct part_record *p, char *item_str)
+static void _billing_weight_item(struct part_record *p, char *item_str)
 {
 	char *type = NULL, *value = NULL, *name = NULL;
+	int tres_id;
+	tres_billing_weight_t *item;
 
 	if (!item_str)
 		fatal("TRESBillingWeights item is null");
 
 	type = strtok_r(item_str, "=", &value);
+	if (strchr(type, '/'))
+		type = strtok_r(type, "/", &name);
 
 	if (!value || !*value)
 		fatal("\"%s\" is an invalid TRESBillingWeight entry", item_str);
 
-	if (!strcasecmp(type, "Mem")) {
-		if (!_is_configured_tres(type, NULL))
-			goto invalid_tres;
-		p->bill_weight_mem_gb = _bill_weight_item_to_double(value);
-	} else if (!strcasecmp(type, "CPU")) {
-		if (!_is_configured_tres(type, NULL))
-			goto invalid_tres;
-		p->bill_weight_cpu = _bill_weight_item_to_double(value);
-	} else if (!strcasecmp(type, "Node")) {
-		if (!_is_configured_tres(type, NULL))
-			goto invalid_tres;
-		p->bill_weight_node = _bill_weight_item_to_double(value);
-	} else if (!strncasecmp(type, "GRES/", 5)) {
-		type = strtok_r(type, "/", &name);
-		if (!_is_configured_tres("gres", name))
-			goto invalid_tres;
+	if ((tres_id = _get_tres_id(type, name)) == -1)
+		fatal("TRESBillingWeights '%s%s%s' is not a configured TRES "
+		      "type. Please add the TRES Type to "
+		      "\"AccountingStorageTRES\" in the slurm.conf",
+		      type, (name) ? ":" : "", (name) ? name : "");
 
-		_bill_weight_item_add_to_list(p->bill_weight_gres, name, value);
-	} else if (!strncasecmp(type, "License/", 8)) {
-		type = strtok_r(type, "/", &name);
-		if (!_is_configured_tres("license", name))
-			goto invalid_tres;
+	item = xmalloc(sizeof(tres_billing_weight_t));
+	item->type    = xstrdup(type);
+	item->name    = xstrdup(name);
+	item->weight  = strtod(value, NULL);
+	item->tres_id = tres_id;
+	if(errno)
+		fatal("Unable to convert %s value to double in "
+		      "TRESBillingWeights", value);
 
-		_bill_weight_item_add_to_list(p->bill_weight_lic, name, value);
-	} else {
-		goto invalid_tres;
-	}
-	return;
-
-invalid_tres:
-	fatal("TRESBillingWeights '%s%s%s' is not a configured TRES type. "
-	      "Please add the TRES Type to " "\"AccountingStorageTRES\" in "
-	      "the slurm.conf",
-	      type, (name) ? ":" : "", (name) ? name : "");
+	list_append(p->billing_weights, item);
 }
 
 static void _billing_weights(struct part_record *p, char *bill_weight_str)
@@ -229,21 +195,13 @@ static void _billing_weights(struct part_record *p, char *bill_weight_str)
 	char *tmp_str = xstrdup(bill_weight_str);
 	char *token, *last = NULL;
 
-	p->bill_weight_cpu = 1.0;
-	p->bill_weight_mem_gb = 0.0;
-	p->bill_weight_node = 0.0;
-
-	if(p->bill_weight_gres)
-		list_destroy(p->bill_weight_gres);
-	p->bill_weight_gres = list_create(destroy_config_key_double_pair);
-
-	if(p->bill_weight_lic)
-		list_destroy(p->bill_weight_lic);
-	p->bill_weight_lic = list_create(destroy_config_key_double_pair);
+	if(p->billing_weights)
+		list_destroy(p->billing_weights);
+	p->billing_weights = list_create(destroy_tres_billing_weight);
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
-		_bill_weight_item(p, token);
+		_billing_weight_item(p, token);
 		token = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_str);
@@ -804,10 +762,11 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 
-	if (part->billing_weights) {
-		xfree(part_ptr->billing_weights);
-		part_ptr->billing_weights = xstrdup(part->billing_weights);
-		_billing_weights(part_ptr, part_ptr->billing_weights);
+	if (part->billing_weights_str) {
+		xfree(part_ptr->billing_weights_str);
+		part_ptr->billing_weights_str =
+			xstrdup(part->billing_weights_str);
+		_billing_weights(part_ptr, part_ptr->billing_weights_str);
 	}
 
 	if (part->allow_accounts) {

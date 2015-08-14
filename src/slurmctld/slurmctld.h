@@ -330,12 +330,8 @@ struct part_record {
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
 				 * char *allow_qos but used internally */
 	char *alternate; 	/* name of alternate partition */
-	double bill_weight_cpu;	/* bill weight per allocated CPU */
-	List bill_weight_gres;	/* list of per allocated GRES bill weights */
-	List bill_weight_lic;	/* list of per allocated license bill weights */
-	double bill_weight_mem_gb;/* bill weight per allocated memory (GB) */
-	double bill_weight_node;/* bill weight per allocated node */
-	char *billing_weights;	/* per TRES billing weight string */
+	List billing_weights;   /* list of TRES billing weights */
+	char *billing_weights_str;/* per TRES billing weight string */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
@@ -383,6 +379,13 @@ extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
+
+typedef struct {
+	char *name;
+	char *type;
+	double weight;
+	int tres_id;
+} tres_billing_weight_t;
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures
@@ -2359,5 +2362,8 @@ extern void trace_job(struct job_record *, const char *, const char *);
  */
 int
 waitpid_timeout(const char *, pid_t, int *, int);
+
+/* Destroy tres_billing_weight_t */
+extern void destroy_tres_billing_weight(void *object);
 
 #endif /* !_HAVE_SLURMCTLD_H */

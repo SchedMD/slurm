@@ -428,14 +428,14 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	}
 
 	/****** Line 10 ******/
-	if (part_ptr->billing_weights) {
+	if (part_ptr->billing_weights_str) {
 		if (one_liner)
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
 
 		snprintf(tmp_line, sizeof(tmp_line), "TRESBillingWeights=%s",
-			part_ptr->billing_weights);
+			part_ptr->billing_weights_str);
 		xstrcat(out, tmp_line);
 	}
 

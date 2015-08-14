@@ -4057,29 +4057,8 @@ will be used in calcuating the usage of a job.
 Billing weights are specified as a comma-separated list of
 \fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
 
-Available TRES types include:
-.RS
-.RS
-.TP 10
-\fBCPU\fP
-Charge per allocated CPU. Charge rates other than 1.0 can be used to charge
-more or less for CPUs in a partition that are considered to be more or less
-capable than those in other partitions.
-.TP
-\fBMem\fP
-Charge per allocated GB of memory
-.TP
-\fBNode\fP
-Charge per allocated node
-.TP
-\fBGRES/<name>[:<type>]\fP
-Charge per allocated GRES of type \fI<name>\fR
-.TP
-\fBLicense/<name>\fP
-Charge per allocated license of type \fI<name>\fR
-.RE
-
-The CPU billing weight defaults to 1.0 and all others to 0.0.
+Any TRES Type is available for billing. Note that the memory is weighted per
+gigabyte.
 
 By default the billing of TRES is calculated as the sum of all TRES types
 multiplied by their corresponding billing weight.  For example, when a job is

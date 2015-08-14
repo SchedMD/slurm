@@ -5307,7 +5307,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 			xfree(node_inx_str);
 			node_inx_str = NULL;
 		}
-		safe_unpackstr_xmalloc(&part->billing_weights, &uint32_tmp,
+		safe_unpackstr_xmalloc(&part->billing_weights_str, &uint32_tmp,
 				       buffer);
 
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {

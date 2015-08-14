@@ -1138,11 +1138,11 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->alternate, "Alternate", tbl))
 			s_p_get_string(&p->alternate, "Alternate", dflt);
 
-		if (!s_p_get_string(&p->billing_weights, "TRESBillingWeights",
-				    tbl) &&
-		    !s_p_get_string(&p->billing_weights, "TRESBillingWeights",
-				    dflt))
-			xfree(p->billing_weights);
+		if (!s_p_get_string(&p->billing_weights_str,
+				    "TRESBillingWeights", tbl) &&
+		    !s_p_get_string(&p->billing_weights_str,
+				    "TRESBillingWeights", dflt))
+			xfree(p->billing_weights_str);
 
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
@@ -4855,59 +4855,6 @@ extern int sort_key_pairs(void *v1, void *v2)
 {
 	config_key_pair_t *key_a = *(config_key_pair_t **)v1;
 	config_key_pair_t *key_b = *(config_key_pair_t **)v2;
-
-	int size_a = strcmp(key_a->name, key_b->name);
-
-	if (size_a < 0)
-		return -1;
-	else if (size_a > 0)
-		return 1;
-
-	return 0;
-}
-
-extern void destroy_config_key_double_pair(void *object)
-{
-	config_key_double_pair_t *key_double_pair_ptr =
-		(config_key_double_pair_t *)object;
-
-	if (key_double_pair_ptr) {
-		xfree(key_double_pair_ptr->name);
-		xfree(key_double_pair_ptr);
-	}
-}
-
-extern void pack_config_key_double_pair(void *in, uint16_t rpc_version,
-					Buf buffer)
-{
-	config_key_double_pair_t *object = (config_key_double_pair_t *)in;
-	packstr(object->name, buffer);
-	packdouble(object->value, buffer);
-}
-
-extern int unpack_config_key_double_pair(void **object, uint16_t rpc_version,
-					 Buf buffer)
-{
-	uint32_t uint32_tmp;
-	config_key_double_pair_t *object_ptr =
-		xmalloc(sizeof(config_key_double_pair_t));
-
-	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buffer);
-	safe_unpackdouble(&object_ptr->value, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	destroy_config_key_double_pair(object_ptr);
-	*object = NULL;
-	return SLURM_ERROR;
-}
-
-extern int sort_key_double_pairs(void *v1, void *v2)
-{
-	config_key_double_pair_t *key_a = *(config_key_double_pair_t **)v1;
-	config_key_double_pair_t *key_b = *(config_key_double_pair_t **)v2;
 
 	int size_a = strcmp(key_a->name, key_b->name);
 

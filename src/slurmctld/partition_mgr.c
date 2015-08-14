@@ -1144,7 +1144,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->deny_qos, buffer);
 		packstr(part_ptr->nodes, buffer);
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
-		packstr(part_ptr->billing_weights, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
