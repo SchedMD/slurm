@@ -111,6 +111,10 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			     char **extra, char **added_preempt,
 			     bool for_add)
 {
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
+		TRES_STR_FLAG_NO_NULL;
+
 	if (!qos)
 		return SLURM_ERROR;
 
@@ -367,6 +371,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres");
+		slurmdb_combine_tres_strings(
+			&qos->grp_tres, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->grp_tres);
 		xstrfmtcat(*extra, ", grp_tres='%s'", qos->grp_tres);
 	}
@@ -377,6 +383,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres_mins");
+		slurmdb_combine_tres_strings(
+			&qos->grp_tres_mins, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->grp_tres_mins);
 		xstrfmtcat(*extra, ", grp_tres_mins='%s'",
 			   qos->grp_tres_mins);
@@ -388,6 +396,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres_run_mins");
+		slurmdb_combine_tres_strings(
+			&qos->grp_tres_run_mins, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->grp_tres_run_mins);
 		xstrfmtcat(*extra, ", grp_tres_run_mins='%s'",
 			   qos->grp_tres_run_mins);
@@ -399,6 +409,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_pj");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pj);
 		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->max_tres_pj);
 	}
@@ -409,6 +421,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_pu");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_pu, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pu);
 		xstrfmtcat(*extra, ", max_tres_pu='%s'", qos->max_tres_pu);
 	}
@@ -419,6 +433,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_mins_pj");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_mins_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->max_tres_mins_pj);
 		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
 			   qos->max_tres_mins_pj);
@@ -430,6 +446,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_run_mins_pu");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_run_mins_pu, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->max_tres_run_mins_pu);
 		xstrfmtcat(*extra, ", max_tres_run_mins_pu='%s'",
 			   qos->max_tres_run_mins_pu);
@@ -441,6 +459,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", min_tres_pj");
+		slurmdb_combine_tres_strings(
+			&qos->min_tres_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->min_tres_pj);
 		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->min_tres_pj);
 	}

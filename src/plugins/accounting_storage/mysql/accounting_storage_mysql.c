@@ -1514,6 +1514,10 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			      char **extra, qos_level_t qos_level,
 			      bool for_add)
 {
+	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
+		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
+		TRES_STR_FLAG_NO_NULL;
+
 	if (!assoc)
 		return SLURM_ERROR;
 
@@ -1654,6 +1658,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres");
+		slurmdb_combine_tres_strings(
+			&assoc->grp_tres, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres);
 		xstrfmtcat(*extra, ", grp_tres='%s'", assoc->grp_tres);
 	}
@@ -1664,6 +1670,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres_mins");
+		slurmdb_combine_tres_strings(
+			&assoc->grp_tres_mins, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_mins);
 		xstrfmtcat(*extra, ", grp_tres_mins='%s'",
 			   assoc->grp_tres_mins);
@@ -1675,6 +1683,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", grp_tres_run_mins");
+		slurmdb_combine_tres_strings(
+			&assoc->grp_tres_run_mins, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->grp_tres_run_mins);
 		xstrfmtcat(*extra, ", grp_tres_run_mins='%s'",
 			   assoc->grp_tres_run_mins);
@@ -1686,6 +1696,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_pj");
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_pj);
 		xstrfmtcat(*extra, ", max_tres_pj='%s'", assoc->max_tres_pj);
 	}
@@ -1696,6 +1708,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_mins_pj");
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_mins_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_mins_pj);
 		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
 			   assoc->max_tres_mins_pj);
@@ -1707,6 +1721,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			goto end_modify;
 		}
 		xstrcat(*cols, ", max_tres_run_mins");
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_run_mins, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_run_mins);
 		xstrfmtcat(*extra, ", max_tres_run_mins='%s'",
 			   assoc->max_tres_run_mins);
