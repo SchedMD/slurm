@@ -1277,9 +1277,10 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		while ((part_ptr = list_next(itr))) {
 			if (part_ptr->qos_ptr != rec)
 				continue;
-			error("Partition %s's QOS %s was just removed, "
-			      "you probably didn't mean for this to happen.",
-			      part_ptr->name, rec->name);
+			info("Partition %s's QOS %s was just removed, "
+			     "you probably didn't mean for this to happen "
+			     "unless you are also removing the partition.",
+			     part_ptr->name, rec->name);
 			part_ptr->qos_ptr = NULL;
 		}
 	}
