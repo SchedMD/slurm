@@ -384,6 +384,8 @@ extern void scontrol_print_assoc_mgr_info(const char *name)
 
 	/* FIXME: add more filtering in the future */
 	memset(&req, 0, sizeof(assoc_mgr_info_request_msg_t));
+	req.flags = ASSOC_MGR_INFO_FLAG_ASSOC | ASSOC_MGR_INFO_FLAG_USERS |
+		ASSOC_MGR_INFO_FLAG_QOS;
 	if (name) {
 		req.user_list = list_create(NULL);
 		list_append(req.user_list, (char *)name);

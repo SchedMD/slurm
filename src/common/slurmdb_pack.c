@@ -1937,6 +1937,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		if (uint32_tmp != NO_VAL)
 			object_ptr->grp_tres =
 				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp != NO_VAL)
 			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
@@ -1979,8 +1980,11 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 				   TRES_NODE, uint32_tmp);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-		safe_unpackstr_xmalloc(&object_ptr->min_tres_pj,
-				       &uint32_tmp, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != NO_VAL)
+			xstrfmtcat(object_ptr->min_tres_pj, "%s%u=%u",
+				   object_ptr->min_tres_pj ? "," : "",
+				   TRES_CPU, uint32_tmp);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
@@ -4527,6 +4531,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
+		packstr(job->tres_req_str, buffer);
 
 		pack32(job->uid, buffer);
 		packstr(job->user, buffer);
@@ -4748,6 +4753,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_req_str,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);

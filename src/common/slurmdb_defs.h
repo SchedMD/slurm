@@ -200,6 +200,13 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
  */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, char *tres, uint32_t flags);
+
+/* combine a name array and count array into a string */
+extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
+						  uint64_t *tres_cnts,
+						  uint32_t tres_cnt,
+						  uint32_t flags);
+
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list);
 /* Used to combine 2 different TRES strings together
@@ -220,6 +227,7 @@ extern char *slurmdb_combine_tres_strings(
 extern slurmdb_tres_rec_t *slurmdb_find_tres_in_string(
 	char *tres_str_in, int id);
 extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);
+extern int slurmdb_find_qos_in_list_by_name(void *x, void *key);
 extern int slurmdb_find_tres_in_list(void *x, void *key);
 extern int slurmdb_find_tres_in_list_by_count(void *x, void *key);
 extern int slurmdb_find_tres_in_list_by_type(void *x, void *key);

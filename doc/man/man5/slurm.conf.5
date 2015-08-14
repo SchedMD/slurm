@@ -3652,11 +3652,11 @@ resource.
 A generic resource can also be specified as non\-consumable (i.e. multiple
 jobs can use the same generic resource) with the optional field ":no_consume".
 The final field must specify a generic resources count.
-A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
-1048576 or 1073741824 respectively.
+A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
+1024, 1048576, 1073741824, etc. respectively.
 (e.g."Gres=gpu:tesla:1,gpu:kepler:1,bandwidth:lustre:no_consume:4G").
 By default a node has no generic resources and its maximum count is
-4,294,967,295.
+that of an unsigned 64bit integer.
 Also see \fBFeature\fR.
 
 .TP

@@ -1335,32 +1335,32 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSGrpCPURunMinsLimit";
 	case WAIT_QOS_GRP_JOB:
 		return"QOSGrpJobsLimit";
-	case WAIT_QOS_GRP_MEMORY:
-		return "QOSGrpMemoryLimit";
-	case WAIT_QOS_GRP_NODES:
-		return "QOSGrpNodesLimit";
+	case WAIT_QOS_GRP_MEM:
+		return "QOSGrpMemLimit";
+	case WAIT_QOS_GRP_NODE:
+		return "QOSGrpNodeLimit";
 	case WAIT_QOS_GRP_SUB_JOB:
 		return "QOSGrpSubmitJobsLimit";
 	case WAIT_QOS_GRP_WALL:
 		return "QOSGrpWallLimit";
-	case WAIT_QOS_MAX_CPUS_PER_JOB:
-		return "QOSMaxCpusPerJobLimit";
+	case WAIT_QOS_MAX_CPU_PER_JOB:
+		return "QOSMaxCpuPerJobLimit";
 	case WAIT_QOS_MAX_CPU_MINS_PER_JOB:
-		return "QOSMaxCpusMinsPerJobLimit";
+		return "QOSMaxCpuMinsPerJobLimit";
 	case WAIT_QOS_MAX_NODE_PER_JOB:
-		return "QOSMaxNodesPerJobLimit";
+		return "QOSMaxNodePerJobLimit";
 	case WAIT_QOS_MAX_WALL_PER_JOB:
 		return "QOSMaxWallDurationPerJobLimit";
 	case WAIT_QOS_MAX_CPU_PER_USER:
-		return "QOSMaxCpusPerUserLimit";
+		return "QOSMaxCpuPerUserLimit";
 	case WAIT_QOS_MAX_JOB_PER_USER:
 		return "QOSMaxJobsPerUserLimit";
 	case WAIT_QOS_MAX_NODE_PER_USER:
-		return "QOSMaxNodesPerUserLimit";
+		return "QOSMaxNodePerUserLimit";
 	case WAIT_QOS_MAX_SUB_JOB:
 		return "QOSMaxSubmitJobPerUserLimit";
-	case WAIT_QOS_MIN_CPUS:
-		return "QOSMinCPUsNotSatisfied";
+	case WAIT_QOS_MIN_CPU:
+		return "QOSMinCpuNotSatisfied";
 	case WAIT_ASSOC_GRP_CPU:
 		return "AssocGrpCpuLimit";
 	case WAIT_ASSOC_GRP_CPU_MIN:
@@ -1369,22 +1369,22 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "AssocGrpCPURunMinsLimit";
 	case WAIT_ASSOC_GRP_JOB:
 		return"AssocGrpJobsLimit";
-	case WAIT_ASSOC_GRP_MEMORY:
-		return "AssocGrpMemoryLimit";
-	case WAIT_ASSOC_GRP_NODES:
-		return "AssocGrpNodesLimit";
+	case WAIT_ASSOC_GRP_MEM:
+		return "AssocGrpMemLimit";
+	case WAIT_ASSOC_GRP_NODE:
+		return "AssocGrpNodeLimit";
 	case WAIT_ASSOC_GRP_SUB_JOB:
 		return "AssocGrpSubmitJobsLimit";
 	case WAIT_ASSOC_GRP_WALL:
 		return "AssocGrpWallLimit";
 	case WAIT_ASSOC_MAX_JOBS:
 		return "AssocMaxJobsLimit";
-	case WAIT_ASSOC_MAX_CPUS_PER_JOB:
-		return "AssocMaxCpusPerJobLimit";
+	case WAIT_ASSOC_MAX_CPU_PER_JOB:
+		return "AssocMaxCpuPerJobLimit";
 	case WAIT_ASSOC_MAX_CPU_MINS_PER_JOB:
-		return "AssocMaxCpusMinsPerJobLimit";
+		return "AssocMaxCpuMinsPerJobLimit";
 	case WAIT_ASSOC_MAX_NODE_PER_JOB:
-		return "AssocMaxNodesPerJobLimit";
+		return "AssocMaxNodePerJobLimit";
 	case WAIT_ASSOC_MAX_WALL_PER_JOB:
 		return "AssocMaxWallDurationPerJobLimit";
 	case WAIT_ASSOC_MAX_SUB_JOB:
@@ -1403,6 +1403,161 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "PowerNotAvail";
 	case WAIT_POWER_RESERVED:
 		return "PowerReserved";
+	case WAIT_ASSOC_GRP_UNK:
+		return "AssocGrpUnknown";
+	case WAIT_ASSOC_GRP_UNK_MIN:
+		return "AssocGrpUnknownMin";
+	case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+		return "AssocGrpUnknownRunMin";
+	case WAIT_ASSOC_MAX_UNK_PER_JOB:
+		return "AssocMaxUnknownPerJob";
+	case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+		return "AssocMaxUnknownMinPerJob";
+	case WAIT_ASSOC_GRP_MEM_MIN:
+		return "AssocGrpMemMin";
+	case WAIT_ASSOC_GRP_MEM_RUN_MIN:
+		return "AssocGrpMemRunMin";
+	case WAIT_ASSOC_MAX_MEM_PER_JOB:
+		return "AssocMaxMemPerJob";
+	case WAIT_ASSOC_MAX_MEM_MINS_PER_JOB:
+		return "AssocMaxMemMinPerJob";
+	case WAIT_ASSOC_GRP_NODE_MIN:
+		return "AssocGrpNodeMin";
+	case WAIT_ASSOC_GRP_NODE_RUN_MIN:
+		return "AssocGrpNodeRunMin";
+	case WAIT_ASSOC_MAX_NODE_MINS_PER_JOB:
+		return "AssocMaxNodeMinPerJob";
+	case WAIT_ASSOC_GRP_ENERGY:
+		return "AssocGrpEnergy";
+	case WAIT_ASSOC_GRP_ENERGY_MIN:
+		return "AssocGrpEnergyMin";
+	case WAIT_ASSOC_GRP_ENERGY_RUN_MIN:
+		return "AssocGrpEnergyRunMin";
+	case WAIT_ASSOC_MAX_ENERGY_PER_JOB:
+		return "AssocMaxEnergyPerJob";
+	case WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB:
+		return "AssocMaxEnergyMinPerJob";
+	case WAIT_ASSOC_GRP_GRES:
+		return "AssocGrpGRES";
+	case WAIT_ASSOC_GRP_GRES_MIN:
+		return "AssocGrpGRESMin";
+	case WAIT_ASSOC_GRP_GRES_RUN_MIN:
+		return "AssocGrpGRESRunMin";
+	case WAIT_ASSOC_MAX_GRES_PER_JOB:
+		return "AssocMaxGRESPerJob";
+	case WAIT_ASSOC_MAX_GRES_MINS_PER_JOB:
+		return "AssocMaxGRESMinPerJob";
+	case WAIT_ASSOC_GRP_LIC:
+		return "AssocGrpLicense";
+	case WAIT_ASSOC_GRP_LIC_MIN:
+		return "AssocGrpLicenseMin";
+	case WAIT_ASSOC_GRP_LIC_RUN_MIN:
+		return "AssocGrpLicenseRunMin";
+	case WAIT_ASSOC_MAX_LIC_PER_JOB:
+		return "AssocMaxLicensePerJob";
+	case WAIT_ASSOC_MAX_LIC_MINS_PER_JOB:
+		return "AssocMaxLicenseMinPerJob";
+	case WAIT_ASSOC_GRP_BB:
+		return "AssocGrpBB";
+	case WAIT_ASSOC_GRP_BB_MIN:
+		return "AssocGrpBBMin";
+	case WAIT_ASSOC_GRP_BB_RUN_MIN:
+		return "AssocGrpBBRunMin";
+	case WAIT_ASSOC_MAX_BB_PER_JOB:
+		return "AssocMaxBBPerJob";
+	case WAIT_ASSOC_MAX_BB_MINS_PER_JOB:
+		return "AssocMaxBBMinPerJob";
+
+	case WAIT_QOS_GRP_UNK:
+		return "QOSGrpUnknown";
+	case WAIT_QOS_GRP_UNK_MIN:
+		return "QOSGrpUnknownMin";
+	case WAIT_QOS_GRP_UNK_RUN_MIN:
+		return "QOSGrpUnknownRunMin";
+	case WAIT_QOS_MAX_UNK_PER_JOB:
+		return "QOSMaxUnknownPerJob";
+	case WAIT_QOS_MAX_UNK_PER_USER:
+		return "QOSMaxUnknownPerUser";
+	case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+		return "QOSMaxUnknownMinPerJob";
+	case WAIT_QOS_MIN_UNK:
+		return "QOSMinUnknown";
+	case WAIT_QOS_GRP_MEM_MIN:
+		return "QOSGrpMemoryMin";
+	case WAIT_QOS_GRP_MEM_RUN_MIN:
+		return "QOSGrpMemoryRunMin";
+	case WAIT_QOS_MAX_MEM_PER_JOB:
+		return "QOSMaxMemoryPerJob";
+	case WAIT_QOS_MAX_MEM_PER_USER:
+		return "QOSMaxMemoryPerUser";
+	case WAIT_QOS_MAX_MEM_MINS_PER_JOB:
+		return "QOSMaxMemoryMinPerJob";
+	case WAIT_QOS_MIN_MEM:
+		return "QOSMinMemory";
+	case WAIT_QOS_GRP_NODE_MIN:
+		return "QOSGrpNodeMin";
+	case WAIT_QOS_GRP_NODE_RUN_MIN:
+		return "QOSGrpNodeRunMin";
+	case WAIT_QOS_MAX_NODE_MINS_PER_JOB:
+		return "QOSMaxNodeMinPerJob";
+	case WAIT_QOS_MIN_NODE:
+		return "QOSMinNode";
+	case WAIT_QOS_GRP_ENERGY:
+		return "QOSGrpEnergy";
+	case WAIT_QOS_GRP_ENERGY_MIN:
+		return "QOSGrpEnergyMin";
+	case WAIT_QOS_GRP_ENERGY_RUN_MIN:
+		return "QOSGrpEnergyRunMin";
+	case WAIT_QOS_MAX_ENERGY_PER_JOB:
+		return "QOSMaxEnergyPerJob";
+	case WAIT_QOS_MAX_ENERGY_PER_USER:
+		return "QOSMaxEnergyPerUser";
+	case WAIT_QOS_MAX_ENERGY_MINS_PER_JOB:
+		return "QOSMaxEnergyMinPerJob";
+	case WAIT_QOS_MIN_ENERGY:
+		return "QOSMinEnergy";
+	case WAIT_QOS_GRP_GRES:
+		return "QOSGrpGRES";
+	case WAIT_QOS_GRP_GRES_MIN:
+		return "QOSGrpGRESMin";
+	case WAIT_QOS_GRP_GRES_RUN_MIN:
+		return "QOSGrpGRESRunMin";
+	case WAIT_QOS_MAX_GRES_PER_JOB:
+		return "QOSMaxGRESPerJob";
+	case WAIT_QOS_MAX_GRES_PER_USER:
+		return "QOSMaxGRESPerUser";
+	case WAIT_QOS_MAX_GRES_MINS_PER_JOB:
+		return "QOSMaxGRESMinPerJob";
+	case WAIT_QOS_MIN_GRES:
+		return "QOSMinGRES";
+	case WAIT_QOS_GRP_LIC:
+		return "QOSGrpLicense";
+	case WAIT_QOS_GRP_LIC_MIN:
+		return "QOSGrpLicenseMin";
+	case WAIT_QOS_GRP_LIC_RUN_MIN:
+		return "QOSGrpLicenseRunMin";
+	case WAIT_QOS_MAX_LIC_PER_JOB:
+		return "QOSMaxLicensePerJob";
+	case WAIT_QOS_MAX_LIC_PER_USER:
+		return "QOSMaxLicensePerUser";
+	case WAIT_QOS_MAX_LIC_MINS_PER_JOB:
+		return "QOSMaxLicenseMinPerJob";
+	case WAIT_QOS_MIN_LIC:
+		return "QOSMinLicense";
+	case WAIT_QOS_GRP_BB:
+		return "QOSGrpBB";
+	case WAIT_QOS_GRP_BB_MIN:
+		return "QOSGrpBBMin";
+	case WAIT_QOS_GRP_BB_RUN_MIN:
+		return "QOSGrpBBRunMin";
+	case WAIT_QOS_MAX_BB_PER_JOB:
+		return "QOSMaxBBPerJob";
+	case WAIT_QOS_MAX_BB_PER_USER:
+		return "QOSMaxBBPerUser";
+	case WAIT_QOS_MAX_BB_MINS_PER_JOB:
+		return "AssocMaxBBMinPerJob";
+	case WAIT_QOS_MIN_BB:
+		return "QOSMinBB";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -3178,6 +3333,8 @@ extern void slurm_destroy_assoc_shares_object(void *object)
 		xfree(obj_ptr->name);
 		xfree(obj_ptr->parent);
 		xfree(obj_ptr->partition);
+		xfree(obj_ptr->tres_run_secs);
+		xfree(obj_ptr->tres_grp_mins);
 		xfree(obj_ptr);
 	}
 }
@@ -3194,6 +3351,12 @@ extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
 	if (msg) {
+		int i;
+		if (msg->tres_names) {
+			for (i=0; i<msg->tres_cnt; i++)
+				xfree(msg->tres_names[i]);
+			xfree(msg->tres_names);
+		}
 		FREE_NULL_LIST(msg->assoc_shares_list);
 		xfree(msg);
 	}
@@ -3995,6 +4158,12 @@ slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 		return;
 
 	FREE_NULL_LIST(msg->assoc_list);
+	FREE_NULL_LIST(msg->qos_list);
+	if (msg->tres_names) {
+		int i;
+		for (i=0; i<msg->tres_cnt; i++)
+			xfree(msg->tres_names);
+	}
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }
@@ -4002,7 +4171,11 @@ slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 extern void slurm_free_assoc_mgr_info_request_msg(
 	assoc_mgr_info_request_msg_t *msg)
 {
+	if (!msg)
+		return;
+
 	FREE_NULL_LIST(msg->acct_list);
+	FREE_NULL_LIST(msg->qos_list);
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }

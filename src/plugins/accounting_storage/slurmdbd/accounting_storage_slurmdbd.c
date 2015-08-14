@@ -136,6 +136,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->gres_req);
 		xfree(req->gres_used);
 		xfree(req->tres_alloc_str);
+		xfree(req->tres_req_str);
 	}
 }
 
@@ -226,6 +227,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->priority      = job_ptr->priority;
 	req->timelimit     = job_ptr->time_limit;
 	req->tres_alloc_str= xstrdup(job_ptr->tres_alloc_str);
+	req->tres_req_str  = xstrdup(job_ptr->tres_req_str);
 	req->wckey         = xstrdup(job_ptr->wckey);
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;

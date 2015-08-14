@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_TOPO_LEN env variable for scontrol show topology.
  -- Add free_mem to node information.
  -- Fix abort of batch launch if prolog is running, wait for prolog instead.
+ -- Fix case where job would get the wrong cpu count when using
+    --ntasks-per-core and --cpus-per-task together.
 
 * Changes in Slurm 15.08.0pre6
 ==============================
@@ -368,6 +370,9 @@ documents those changes that are of interest to users and administrators.
     thing (-F exclusive) instead of -F share.
  -- Fix various memory leaks in the Perl API.
  -- Fix a bug in the controller which display jobs in CF state as RUNNING.
+ -- Preserve advanced _core_ reservation when nodes added/removed/resized on
+    slurmctld restart. Rebuild core_bitmap as needed.
+ -- Fix for non-standard Munge port location for srun/pmi use.
 
 * Changes in Slurm 14.11.8
 ==========================

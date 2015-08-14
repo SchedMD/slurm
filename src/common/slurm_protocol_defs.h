@@ -469,16 +469,16 @@ typedef struct assoc_shares_object {
 	uint32_t assoc_id;	/* association ID */
 
 	char *cluster;          /* cluster name */
-	uint64_t cpu_run_mins;	/* currently running cpu-minutes
-				 *  = grp_used_cpu_run_secs / 60 */
-	uint64_t grp_cpu_mins;	/* cpu-minute limit */
-
 	char *name;             /* name */
 	char *parent;           /* parent name */
 	char *partition;	/* partition */
 
 	double shares_norm;     /* normalized shares */
 	uint32_t shares_raw;	/* number of shares allocated */
+
+	uint64_t *tres_run_secs; /* currently running tres-secs
+				  * = grp_used_tres_run_secs */
+	uint64_t *tres_grp_mins; /* tres-minute limit */
 
 	double usage_efctv;	/* effective, normalized usage */
 	double usage_norm;	/* normalized usage */
@@ -499,6 +499,8 @@ typedef struct shares_request_msg {
 typedef struct shares_response_msg {
 	List assoc_shares_list; /* list of assoc_shares_object_t *'s */
 	uint64_t tot_shares;
+	uint32_t tres_cnt;
+	char **tres_names;
 } shares_response_msg_t;
 
 typedef struct priority_factors_object {

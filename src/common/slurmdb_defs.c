@@ -727,6 +727,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->resv_name);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->tres_alloc_str);
+		xfree(job->tres_req_str);
 		xfree(job->user);
 		xfree(job->wckey);
 		xfree(job);
@@ -2936,6 +2937,28 @@ extern char *slurmdb_make_tres_string(List tres, uint32_t flags)
 	return tres_str;
 }
 
+extern char *slurmdb_make_tres_string_from_arrays(char **tres_names,
+						  uint64_t *tres_cnts,
+						  uint32_t tres_cnt,
+						  uint32_t flags)
+{
+	char *tres_str = NULL;
+	int i;
+
+	if (!tres_names || !tres_cnts)
+		return tres_str;
+
+	for (i=0; i<tres_cnt; i++) {
+		if ((tres_cnts[i] == INFINITE64) &&
+		    (flags & TRES_STR_FLAG_REMOVE))
+			continue;
+		xstrfmtcat(tres_str, "%s%s=%"PRIu64,
+			   tres_str ? "," : "", tres_names[i], tres_cnts[i]);
+	}
+
+	return tres_str;
+}
+
 extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_in, List full_tres_list)
 {
@@ -3259,6 +3282,17 @@ extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id)
 	}
 
 	return INFINITE64;
+}
+
+extern int slurmdb_find_qos_in_list_by_name(void *x, void *key)
+{
+	slurmdb_qos_rec_t *qos_rec = (slurmdb_qos_rec_t *)x;
+	char *name = (char *)key;
+
+	if (!xstrcmp(qos_rec->name, name))
+		return 1;
+
+	return 0;
 }
 
 extern int slurmdb_find_tres_in_list(void *x, void *key)

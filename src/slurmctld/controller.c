@@ -655,7 +655,6 @@ int main(int argc, char *argv[])
 	slurm_sched_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
-	powercap_fini();
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
@@ -1267,6 +1266,25 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
+	ListIterator itr;
+	struct part_record *part_ptr;
+	slurmctld_lock_t part_write_lock =
+		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	lock_slurmctld(part_write_lock);
+	if (part_list) {
+		itr = list_iterator_create(part_list);
+		while ((part_ptr = list_next(itr))) {
+			if (part_ptr->qos_ptr != rec)
+				continue;
+			info("Partition %s's QOS %s was just removed, "
+			     "you probably didn't mean for this to happen "
+			     "unless you are also removing the partition.",
+			     part_ptr->name, rec->name);
+			part_ptr->qos_ptr = NULL;
+		}
+	}
+	unlock_slurmctld(part_write_lock);
 
 	cnt = job_hold_by_qos_id(rec->id);
 
@@ -1330,6 +1348,7 @@ static int _init_tres(void)
 	List char_list;
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
+	slurmdb_update_object_t update_object;
 
 	if (!temp_char) {
 		error("No tres defined, this should never happen");
@@ -1339,6 +1358,12 @@ static int _init_tres(void)
 	char_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(char_list, temp_char);
 	xfree(temp_char);
+
+	if (!association_based_accounting) {
+		memset(&update_object, 0, sizeof(slurmdb_update_object_t));
+		update_object.type = SLURMDB_ADD_TRES;
+		update_object.objects = list_create(slurmdb_destroy_tres_rec);
+	}
 
 	while ((temp_char = list_pop(char_list))) {
 		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
@@ -1376,10 +1401,23 @@ static int _init_tres(void)
 			xfree(tres_rec);
 		}
 
-		if (!tres_rec->id &&
-		    (assoc_mgr_fill_in_tres(acct_db_conn, tres_rec,
-					    ACCOUNTING_ENFORCE_TRES, NULL, 0)
-		     != SLURM_SUCCESS)) {
+		if (!association_based_accounting) {
+			if (!tres_rec->id)
+				fatal("Unless running with a database you "
+				      "can only run with certain TRES, "
+				      "%s%s%s is not one of them.  "
+				      "Either set up "
+				      "a database preferably with a slurmdbd "
+				      "or remove this TRES from your "
+				      "configuration.",
+				      tres_rec->type, tres_rec->name ? "/" : "",
+				      tres_rec->name ? tres_rec->name : "");
+			list_append(update_object.objects, tres_rec);
+		} else if (!tres_rec->id &&
+			   assoc_mgr_fill_in_tres(
+				   acct_db_conn, tres_rec,
+				   ACCOUNTING_ENFORCE_TRES, NULL, 0)
+			   != SLURM_SUCCESS) {
 			if (!add_list)
 				add_list = list_create(
 					slurmdb_destroy_tres_rec);
@@ -1402,6 +1440,11 @@ static int _init_tres(void)
 		   sent dynamically */
 		assoc_mgr_refresh_lists(acct_db_conn, ASSOC_MGR_CACHE_TRES);
 		FREE_NULL_LIST(add_list);
+	}
+
+	if (!association_based_accounting) {
+		assoc_mgr_update_tres(&update_object, false);
+		list_destroy(update_object.objects);
 	}
 
 	return SLURM_SUCCESS;

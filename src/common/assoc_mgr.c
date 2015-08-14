@@ -58,6 +58,7 @@ uint32_t g_tres_count = 0;
 
 List assoc_mgr_tres_list = NULL;
 slurmdb_tres_rec_t **assoc_mgr_tres_array = NULL;
+char **assoc_mgr_tres_name_array = NULL;
 List assoc_mgr_assoc_list = NULL;
 List assoc_mgr_res_list = NULL;
 List assoc_mgr_qos_list = NULL;
@@ -1065,13 +1066,17 @@ static int _post_tres_list(List new_list, int new_cnt)
 {
 	ListIterator itr;
 	slurmdb_tres_rec_t *tres_rec, **new_array;
+	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
-	int i, new_size, max_cnt = MAX(new_cnt, g_tres_count);
+	int i, new_size, new_name_size, max_cnt = MAX(new_cnt, g_tres_count);
 
 	xassert(new_list);
 
 	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
 	new_array = xmalloc(new_size);
+
+	new_name_size = sizeof(char *) * new_cnt;
+	new_name_array = xmalloc(new_name_size);
 
 	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
@@ -1087,6 +1092,12 @@ static int _post_tres_list(List new_list, int new_cnt)
 	while ((tres_rec = list_next(itr))) {
 
 		new_array[i] = tres_rec;
+
+		new_name_array[i] = xstrdup_printf(
+			"%s%s%s",
+			tres_rec->type,
+			tres_rec->name ? "/" : "",
+			tres_rec->name ? tres_rec->name : "");
 
 		/* This should only happen if a new static TRES are added. */
 		if ((i < g_tres_count) &&
@@ -1187,6 +1198,10 @@ static int _post_tres_list(List new_list, int new_cnt)
 	xfree(assoc_mgr_tres_array);
 	assoc_mgr_tres_array = new_array;
 	new_array = NULL;
+
+	xfree(assoc_mgr_tres_name_array);
+	assoc_mgr_tres_name_array = new_name_array;
+	new_name_array = NULL;
 
 	FREE_NULL_LIST(assoc_mgr_tres_list);
 	assoc_mgr_tres_list = new_list;
@@ -1867,6 +1882,13 @@ extern int assoc_mgr_fini(char *state_save_location)
 	FREE_NULL_LIST(assoc_mgr_qos_list);
 	FREE_NULL_LIST(assoc_mgr_user_list);
 	FREE_NULL_LIST(assoc_mgr_wckey_list);
+	if (assoc_mgr_tres_name_array) {
+		int i;
+		for (i=0; i<g_tres_count; i++)
+			xfree(assoc_mgr_tres_name_array[i]);
+		xfree(assoc_mgr_tres_name_array);
+	}
+	xfree(assoc_mgr_tres_array);
 	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_assoc_list = NULL;
 	assoc_mgr_res_list = NULL;
@@ -2769,8 +2791,9 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	return false;
 }
 
-extern List assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, List acct_list, List user_list)
+extern void assoc_mgr_get_shares(void *db_conn,
+				 uid_t uid, shares_request_msg_t *req_msg,
+				 shares_response_msg_t *resp_msg)
 {
 	ListIterator itr = NULL;
 	ListIterator user_itr = NULL;
@@ -2783,20 +2806,23 @@ extern List assoc_mgr_get_shares(void *db_conn,
 	int is_admin=1;
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_assoc_list
-	    || !list_count(assoc_mgr_assoc_list))
-		return NULL;
+	xassert(resp_msg);
+
+	if (!assoc_mgr_assoc_list || !list_count(assoc_mgr_assoc_list))
+		return;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (user_list && list_count(user_list))
-		user_itr = list_iterator_create(user_list);
+	if (req_msg) {
+		if (req_msg->user_list && list_count(req_msg->user_list))
+			user_itr = list_iterator_create(req_msg->user_list);
 
-	if (acct_list && list_count(acct_list))
-		acct_itr = list_iterator_create(acct_list);
+		if (req_msg->acct_list && list_count(req_msg->acct_list))
+			acct_itr = list_iterator_create(req_msg->acct_list);
+	}
 
 	if (private_data & PRIVATE_DATA_USAGE) {
 		uint32_t slurm_uid = slurm_get_slurm_user_id();
@@ -2818,9 +2844,18 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		}
 	}
 
-	ret_list = list_create(slurm_destroy_assoc_shares_object);
+	resp_msg->assoc_shares_list = ret_list =
+		list_create(slurm_destroy_assoc_shares_object);
 
 	assoc_mgr_lock(&locks);
+
+	resp_msg->tres_cnt = g_tres_count;
+
+	/* DON'T FREE, since this shouldn't change while the slurmctld
+	 * is running we should be ok.
+	*/
+	resp_msg->tres_names = assoc_mgr_tres_name_array;
+
 	itr = list_iterator_create(assoc_mgr_assoc_list);
 	while ((assoc = list_next(itr))) {
 		if (user_itr && assoc->user) {
@@ -2897,10 +2932,13 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
 		/* FIXME: This only works for CPUS now */
-		share->grp_cpu_mins = slurmdb_find_tres_count_in_string(
-			assoc->grp_tres_mins, TRES_CPU);
-		share->cpu_run_mins = assoc->usage->
-			grp_used_tres_run_secs[TRES_ARRAY_CPU] / 60;
+		share->tres_grp_mins = xmalloc(sizeof(uint64_t) * g_tres_count);
+		memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
+		       sizeof(uint64_t) * g_tres_count);
+		share->tres_run_secs = xmalloc(sizeof(uint64_t) * g_tres_count);
+		memcpy(share->tres_run_secs,
+		       assoc->usage->grp_used_tres_run_secs,
+		       sizeof(uint64_t) * g_tres_count);
 		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
 
@@ -2943,7 +2981,7 @@ end_it:
 	/* The ret_list should already be sorted correctly, so no need
 	   to do it again.
 	*/
-	return ret_list;
+	return;
 }
 
 extern void assoc_mgr_info_get_pack_msg(
@@ -2952,17 +2990,17 @@ extern void assoc_mgr_info_get_pack_msg(
 	void *db_conn, uint16_t protocol_version)
 {
 	ListIterator itr = NULL;
-	ListIterator user_itr = NULL;
-	ListIterator acct_itr = NULL;
+	ListIterator user_itr = NULL, acct_itr = NULL, qos_itr = NULL;
+	slurmdb_qos_rec_t *qos_rec = NULL;
 	slurmdb_assoc_rec_t *assoc_rec = NULL;
-	List ret_list = NULL;
+	List ret_list = NULL, tmp_list;
 	char *tmp_char = NULL;
 	slurmdb_user_rec_t user, *user_rec = NULL;
 	int is_admin=1;
 	void *object;
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
-				   NO_LOCK, READ_LOCK, NO_LOCK };
+				   READ_LOCK, READ_LOCK, NO_LOCK };
 	Buf buffer;
 
 	buffer_ptr[0] = NULL;
@@ -2977,6 +3015,9 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		if (msg->acct_list && list_count(msg->acct_list))
 			acct_itr = list_iterator_create(msg->acct_list);
+
+		if (msg->qos_list && list_count(msg->qos_list))
+			qos_itr = list_iterator_create(msg->qos_list);
 	}
 
 	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
@@ -2999,9 +3040,18 @@ extern void assoc_mgr_info_get_pack_msg(
 		}
 	}
 
+	/* This is where we start to pack */
+	buffer = init_buf(BUF_SIZE);
+
+	packstr_array(assoc_mgr_tres_name_array, g_tres_count, buffer);
+
 	ret_list = list_create(NULL);
 
 	assoc_mgr_lock(&locks);
+
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_ASSOC))
+		goto no_assocs;
+
 	itr = list_iterator_create(assoc_mgr_assoc_list);
 	while ((assoc_rec = list_next(itr))) {
 		if (user_itr && assoc_rec->user) {
@@ -3067,8 +3117,7 @@ extern void assoc_mgr_info_get_pack_msg(
 	}
 	list_iterator_destroy(itr);
 
-	/* This is where we start to pack */
-	buffer = init_buf(BUF_SIZE);
+no_assocs:
 
 	/* pack the associations requested/allowed */
 	pack32(list_count(ret_list), buffer);
@@ -3079,13 +3128,37 @@ extern void assoc_mgr_info_get_pack_msg(
 	list_iterator_destroy(itr);
 	list_flush(ret_list);
 
-	/* There isn't much limitation that can be put on QOS */
-	pack32(list_count(assoc_mgr_qos_list), buffer);
-	itr = list_iterator_create(assoc_mgr_qos_list);
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_QOS)) {
+		tmp_list = ret_list;
+		goto no_qos;
+	}
+
+	/* now filter out the qos */
+	if (qos_itr) {
+		while ((tmp_char = list_next(qos_itr)))
+			if ((qos_rec = list_find_first(
+				     assoc_mgr_qos_list,
+				     slurmdb_find_tres_in_list,
+				     &tmp_char)))
+				list_append(ret_list, user_rec);
+		tmp_list = ret_list;
+	} else
+		tmp_list = assoc_mgr_qos_list;
+
+no_qos:
+
+	/* pack the qos requested */
+	pack32(list_count(tmp_list), buffer);
+	itr = list_iterator_create(tmp_list);
 	while ((object = list_next(itr)))
 		slurmdb_pack_qos_rec_with_usage(
 			object, protocol_version, buffer);
 	list_iterator_destroy(itr);
+	if (qos_itr)
+		list_flush(ret_list);
+
+	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_USERS))
+		goto no_users;
 
 	/* now filter out the users */
 	itr = list_iterator_create(assoc_mgr_user_list);
@@ -3106,6 +3179,8 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		list_append(ret_list, user_rec);
 	}
+
+no_users:
 
 	/* pack the users requested/allowed */
 	pack32(list_count(ret_list), buffer);
@@ -3128,6 +3203,8 @@ end_it:
 		list_iterator_destroy(user_itr);
 	if (acct_itr)
 		list_iterator_destroy(acct_itr);
+	if (qos_itr)
+		list_iterator_destroy(qos_itr);
 
 	return;
 }
@@ -3142,6 +3219,10 @@ extern int assoc_mgr_info_unpack_msg(
 	int i;
 
 	*object = object_ptr;
+
+	safe_unpackstr_array(&object_ptr->tres_names, &object_ptr->tres_cnt,
+			     buffer);
+
 	safe_unpack32(&count, buffer);
 	if (count) {
 		object_ptr->assoc_list =
@@ -4470,25 +4551,28 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	slurmdb_tres_rec_t *object = NULL;
 
 	ListIterator itr = NULL;
+	List tmp_list = assoc_mgr_tres_list;
+	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 	if (!locked)
 		assoc_mgr_lock(&locks);
-	if (!assoc_mgr_tres_list) {
-		if (!locked)
-			assoc_mgr_unlock(&locks);
-		return SLURM_SUCCESS;
+
+	if (!tmp_list) {
+		tmp_list = list_create(slurmdb_destroy_tres_rec);
+		freeit = true;
 	}
 
-	itr = list_iterator_create(assoc_mgr_tres_list);
+	itr = list_iterator_create(tmp_list);
 	while ((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
 		while ((rec = list_next(itr))) {
 			if (object->id == rec->id)
 				break;
 		}
-		switch(update->type) {
+
+		switch (update->type) {
 		case SLURMDB_ADD_TRES:
 			if (rec) {
 				//rc = SLURM_ERROR;
@@ -4499,8 +4583,9 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 				      "This should never happen.");
 				break;
 			}
-			list_append(assoc_mgr_tres_list, object);
+			list_append(tmp_list, object);
 			object = NULL;
+			changed = true;
 			break;
 		default:
 			break;
@@ -4509,6 +4594,15 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 		slurmdb_destroy_tres_rec(object);
 	}
 	list_iterator_destroy(itr);
+	if (changed) {
+		/* We want to run this on the assoc_mgr_tres_list, but we need
+		 * to make a tmp variable since _post_tres_list will set
+		 * assoc_mgr_tres_list for us.
+		 */
+		_post_tres_list(tmp_list, list_count(tmp_list));
+	} else if (freeit)
+		FREE_NULL_LIST(tmp_list);
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 	return rc;
@@ -5219,6 +5313,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_ASSOCS:
+			if (!g_tres_count)
+				fatal("load_assoc_mgr_state: "
+				      "Unable to run cache without TRES, "
+				      "please make sure you have a connection "
+				      "to your database to continue.");
 			error_code = slurmdbd_unpack_list_msg(
 				&msg, ver, DBD_ADD_ASSOCS, buffer);
 			if (error_code != SLURM_SUCCESS)
@@ -5271,6 +5370,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			slurmdbd_free_list_msg(msg);
 			break;
 		case DBD_ADD_QOS:
+			if (!g_tres_count)
+				fatal("load_assoc_mgr_state: "
+				      "Unable to run cache without TRES, "
+				      "please make sure you have a connection "
+				      "to your database to continue.");
 			error_code = slurmdbd_unpack_list_msg(
 				&msg, ver, DBD_ADD_QOS, buffer);
 			if (error_code != SLURM_SUCCESS)

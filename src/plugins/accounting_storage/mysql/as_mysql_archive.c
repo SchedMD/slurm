@@ -100,6 +100,7 @@ typedef struct {
 	char *timelimit;
 	char *track_steps;
 	char *tres_alloc_str;
+	char *tres_req_str;
 	char *uid;
 	char *wckey;
 	char *wckey_id;
@@ -238,6 +239,7 @@ static char *job_req_inx[] = {
 	"wckey",
 	"id_wckey",
 	"tres_alloc",
+	"tres_req",
 };
 
 enum {
@@ -275,7 +277,8 @@ enum {
 	JOB_REQ_UID,
 	JOB_REQ_WCKEY,
 	JOB_REQ_WCKEYID,
-	JOB_REQ_TRES,
+	JOB_REQ_TRESA,
+	JOB_REQ_TRESR,
 	JOB_REQ_COUNT
 };
 
@@ -657,6 +660,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->suspended, buffer);
 	packstr(object->track_steps, buffer);
 	packstr(object->tres_alloc_str, buffer);
+	packstr(object->tres_req_str, buffer);
 	packstr(object->uid, buffer);
 	packstr(object->wckey, buffer);
 	packstr(object->wckey_id, buffer);
@@ -722,6 +726,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->suspended, &tmp32, buffer);
 		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
 		unpackstr_ptr(&object->tres_alloc_str, &tmp32, buffer);
+		unpackstr_ptr(&object->tres_req_str, &tmp32, buffer);
 		unpackstr_ptr(&object->uid, &tmp32, buffer);
 		unpackstr_ptr(&object->wckey, &tmp32, buffer);
 		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
@@ -1790,7 +1795,8 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.submit = row[JOB_REQ_SUBMIT];
 		job.suspended = row[JOB_REQ_SUSPENDED];
 		job.track_steps = row[JOB_REQ_TRACKSTEPS];
-		job.tres_alloc_str = row[JOB_REQ_TRES];
+		job.tres_alloc_str = row[JOB_REQ_TRESA];
+		job.tres_req_str = row[JOB_REQ_TRESR];
 		job.uid = row[JOB_REQ_UID];
 		job.wckey = row[JOB_REQ_WCKEY];
 		job.wckey_id = row[JOB_REQ_WCKEYID];
@@ -1867,10 +1873,13 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.uid,
 			   object.wckey,
 			   object.wckey_id,
-			   object.tres_alloc_str);
+			   object.tres_alloc_str,
+			   object.tres_req_str);
 
-		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION)
+		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION) {
 			xfree(object.tres_alloc_str);
+			xfree(object.tres_req_str);
+		}
 	}
 //	END_TIMER2("step query");
 //	info("job query took %s", TIME_STR);

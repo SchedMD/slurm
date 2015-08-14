@@ -282,6 +282,7 @@ typedef struct dbd_job_start_msg {
 	char*    gres_used;     /* String depicting the GRES actually used by
 				 * type for the entire job on all nodes. */
 	char    *tres_alloc_str;/* Simple comma separated list of TRES */
+	char    *tres_req_str;  /* Simple comma separated list of TRES */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 

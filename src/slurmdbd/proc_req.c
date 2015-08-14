@@ -2738,6 +2738,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_time = job_start_msg->start_time;
 	job.time_limit = job_start_msg->timelimit;
 	job.tres_alloc_str = job_start_msg->tres_alloc_str;
+	job.tres_req_str = job_start_msg->tres_req_str;
 	job.gres_alloc = job_start_msg->gres_alloc;
 	job.gres_req = job_start_msg->gres_req;
 	job.gres_used = job_start_msg->gres_used;

@@ -101,12 +101,34 @@ typedef enum {
 	SSHARE_TIME_HOURS,
 } sshare_time_format_t;
 
+enum {
+	PRINT_ACCOUNT,
+	PRINT_CLUSTER,
+	PRINT_TRESMINS,
+	PRINT_EUSED,
+	PRINT_FSFACTOR,
+	PRINT_ID,
+	PRINT_NORMS,
+	PRINT_NORMU,
+	PRINT_PART,
+	PRINT_RAWS,
+	PRINT_RAWU,
+	PRINT_RUNMINS,
+	PRINT_USER,
+	PRINT_LEVELFS
+};
+
 extern int exit_code;	/* sshare's exit code, =1 on any error at any time */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t my_uid;
 extern sshare_time_format_t time_format;
 extern char *time_format_string;
 extern List clusters;
+extern print_field_t fields[];
+extern char **tres_names;
+extern uint32_t tres_cnt;
+extern int long_flag;
+extern char *opt_field_list;
 
 extern int process(shares_response_msg_t *msg, uint16_t options);
 

@@ -59,6 +59,231 @@ enum {
 	ACCT_POLICY_JOB_FINI
 };
 
+static int get_tres_state_reason(int tres_pos, int unk_reason)
+{
+	switch (tres_pos) {
+	case TRES_ARRAY_CPU:
+		switch (unk_reason) {
+		case WAIT_ASSOC_GRP_UNK:
+			return WAIT_ASSOC_GRP_CPU;
+		case WAIT_ASSOC_GRP_UNK_MIN:
+			return WAIT_ASSOC_GRP_CPU_MIN;
+		case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+			return WAIT_ASSOC_GRP_CPU_RUN_MIN;
+		case WAIT_ASSOC_MAX_UNK_PER_JOB:
+			return WAIT_ASSOC_MAX_CPU_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+			return WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
+		case WAIT_QOS_GRP_UNK:
+			return WAIT_QOS_GRP_CPU;
+		case WAIT_QOS_GRP_UNK_MIN:
+			return WAIT_QOS_GRP_CPU_MIN;
+		case WAIT_QOS_GRP_UNK_RUN_MIN:
+			return WAIT_QOS_GRP_CPU_RUN_MIN;
+		case WAIT_QOS_MAX_UNK_PER_JOB:
+			return WAIT_QOS_MAX_CPU_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_USER:
+			return WAIT_QOS_MAX_CPU_PER_USER;
+		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+			return WAIT_QOS_MAX_CPU_MINS_PER_JOB;
+		case WAIT_QOS_MIN_UNK:
+			return WAIT_QOS_MIN_CPU;
+		default:
+			return unk_reason;
+			break;
+		}
+		break;
+	case TRES_ARRAY_MEM:
+		switch (unk_reason) {
+		case WAIT_ASSOC_GRP_UNK:
+			return WAIT_ASSOC_GRP_MEM;
+		case WAIT_ASSOC_GRP_UNK_MIN:
+			return WAIT_ASSOC_GRP_MEM_MIN;
+		case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+			return WAIT_ASSOC_GRP_MEM_RUN_MIN;
+		case WAIT_ASSOC_MAX_UNK_PER_JOB:
+			return WAIT_ASSOC_MAX_MEM_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+			return WAIT_ASSOC_MAX_MEM_MINS_PER_JOB;
+		case WAIT_QOS_GRP_UNK:
+			return WAIT_QOS_GRP_MEM;
+		case WAIT_QOS_GRP_UNK_MIN:
+			return WAIT_QOS_GRP_MEM_MIN;
+		case WAIT_QOS_GRP_UNK_RUN_MIN:
+			return WAIT_QOS_GRP_MEM_RUN_MIN;
+		case WAIT_QOS_MAX_UNK_PER_JOB:
+			return WAIT_QOS_MAX_MEM_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_USER:
+			return WAIT_QOS_MAX_MEM_PER_USER;
+		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+			return WAIT_QOS_MAX_MEM_MINS_PER_JOB;
+		case WAIT_QOS_MIN_UNK:
+			return WAIT_QOS_MIN_MEM;
+		default:
+			return unk_reason;
+			break;
+		}
+		break;
+	case TRES_ARRAY_ENEGRY:
+		switch (unk_reason) {
+		case WAIT_ASSOC_GRP_UNK:
+			return WAIT_ASSOC_GRP_ENERGY;
+		case WAIT_ASSOC_GRP_UNK_MIN:
+			return WAIT_ASSOC_GRP_ENERGY_MIN;
+		case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+			return WAIT_ASSOC_GRP_ENERGY_RUN_MIN;
+		case WAIT_ASSOC_MAX_UNK_PER_JOB:
+			return WAIT_ASSOC_MAX_ENERGY_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+			return WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB;
+		case WAIT_QOS_GRP_UNK:
+			return WAIT_QOS_GRP_ENERGY;
+		case WAIT_QOS_GRP_UNK_MIN:
+			return WAIT_QOS_GRP_ENERGY_MIN;
+		case WAIT_QOS_GRP_UNK_RUN_MIN:
+			return WAIT_QOS_GRP_ENERGY_RUN_MIN;
+		case WAIT_QOS_MAX_UNK_PER_JOB:
+			return WAIT_QOS_MAX_ENERGY_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_USER:
+			return WAIT_QOS_MAX_ENERGY_PER_USER;
+		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+			return WAIT_QOS_MAX_ENERGY_MINS_PER_JOB;
+		case WAIT_QOS_MIN_UNK:
+			return WAIT_QOS_MIN_ENERGY;
+		default:
+			return unk_reason;
+			break;
+		}
+		break;
+	case TRES_ARRAY_NODE:
+		switch (unk_reason) {
+		case WAIT_ASSOC_GRP_UNK:
+			return WAIT_ASSOC_GRP_NODE;
+		case WAIT_ASSOC_GRP_UNK_MIN:
+			return WAIT_ASSOC_GRP_NODE_MIN;
+		case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+			return WAIT_ASSOC_GRP_NODE_RUN_MIN;
+		case WAIT_ASSOC_MAX_UNK_PER_JOB:
+			return WAIT_ASSOC_MAX_NODE_PER_JOB;
+		case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+			return WAIT_ASSOC_MAX_NODE_MINS_PER_JOB;
+		case WAIT_QOS_GRP_UNK:
+			return WAIT_QOS_GRP_NODE;
+		case WAIT_QOS_GRP_UNK_MIN:
+			return WAIT_QOS_GRP_NODE_MIN;
+		case WAIT_QOS_GRP_UNK_RUN_MIN:
+			return WAIT_QOS_GRP_NODE_RUN_MIN;
+		case WAIT_QOS_MAX_UNK_PER_JOB:
+			return WAIT_QOS_MAX_NODE_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_USER:
+			return WAIT_QOS_MAX_NODE_PER_USER;
+		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+			return WAIT_QOS_MAX_NODE_MINS_PER_JOB;
+		case WAIT_QOS_MIN_UNK:
+			return WAIT_QOS_MIN_NODE;
+		default:
+			return unk_reason;
+			break;
+		}
+		break;
+	default:
+		if (!xstrcmp("gres", assoc_mgr_tres_array[tres_pos]->type))
+			switch (unk_reason) {
+			case WAIT_ASSOC_GRP_UNK:
+				return WAIT_ASSOC_GRP_GRES;
+			case WAIT_ASSOC_GRP_UNK_MIN:
+				return WAIT_ASSOC_GRP_GRES_MIN;
+			case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+				return WAIT_ASSOC_GRP_GRES_RUN_MIN;
+			case WAIT_ASSOC_MAX_UNK_PER_JOB:
+				return WAIT_ASSOC_MAX_GRES_PER_JOB;
+			case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+				return WAIT_ASSOC_MAX_GRES_MINS_PER_JOB;
+			case WAIT_QOS_GRP_UNK:
+				return WAIT_QOS_GRP_GRES;
+			case WAIT_QOS_GRP_UNK_MIN:
+				return WAIT_QOS_GRP_GRES_MIN;
+			case WAIT_QOS_GRP_UNK_RUN_MIN:
+				return WAIT_QOS_GRP_GRES_RUN_MIN;
+			case WAIT_QOS_MAX_UNK_PER_JOB:
+				return WAIT_QOS_MAX_GRES_PER_JOB;
+			case WAIT_QOS_MAX_UNK_PER_USER:
+				return WAIT_QOS_MAX_GRES_PER_USER;
+			case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+				return WAIT_QOS_MAX_GRES_MINS_PER_JOB;
+			case WAIT_QOS_MIN_UNK:
+				return WAIT_QOS_MIN_GRES;
+			default:
+				return unk_reason;
+				break;
+			}
+		else if (!xstrcmp("license",
+				  assoc_mgr_tres_array[tres_pos]->type))
+			switch (unk_reason) {
+			case WAIT_ASSOC_GRP_UNK:
+				return WAIT_ASSOC_GRP_LIC;
+			case WAIT_ASSOC_GRP_UNK_MIN:
+				return WAIT_ASSOC_GRP_LIC_MIN;
+			case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+				return WAIT_ASSOC_GRP_LIC_RUN_MIN;
+			case WAIT_ASSOC_MAX_UNK_PER_JOB:
+				return WAIT_ASSOC_MAX_LIC_PER_JOB;
+			case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+				return WAIT_ASSOC_MAX_LIC_MINS_PER_JOB;
+			case WAIT_QOS_GRP_UNK:
+				return WAIT_QOS_GRP_LIC;
+			case WAIT_QOS_GRP_UNK_MIN:
+				return WAIT_QOS_GRP_LIC_MIN;
+			case WAIT_QOS_GRP_UNK_RUN_MIN:
+				return WAIT_QOS_GRP_LIC_RUN_MIN;
+			case WAIT_QOS_MAX_UNK_PER_JOB:
+				return WAIT_QOS_MAX_LIC_PER_JOB;
+			case WAIT_QOS_MAX_UNK_PER_USER:
+				return WAIT_QOS_MAX_LIC_PER_USER;
+			case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+				return WAIT_QOS_MAX_LIC_MINS_PER_JOB;
+			case WAIT_QOS_MIN_UNK:
+				return WAIT_QOS_MIN_LIC;
+			default:
+				return unk_reason;
+				break;
+			}
+		else if (!xstrcmp("bb", assoc_mgr_tres_array[tres_pos]->type))
+			switch (unk_reason) {
+			case WAIT_ASSOC_GRP_UNK:
+				return WAIT_ASSOC_GRP_BB;
+			case WAIT_ASSOC_GRP_UNK_MIN:
+				return WAIT_ASSOC_GRP_BB_MIN;
+			case WAIT_ASSOC_GRP_UNK_RUN_MIN:
+				return WAIT_ASSOC_GRP_BB_RUN_MIN;
+			case WAIT_ASSOC_MAX_UNK_PER_JOB:
+				return WAIT_ASSOC_MAX_BB_PER_JOB;
+			case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
+				return WAIT_ASSOC_MAX_BB_MINS_PER_JOB;
+			case WAIT_QOS_GRP_UNK:
+				return WAIT_QOS_GRP_BB;
+			case WAIT_QOS_GRP_UNK_MIN:
+				return WAIT_QOS_GRP_BB_MIN;
+			case WAIT_QOS_GRP_UNK_RUN_MIN:
+				return WAIT_QOS_GRP_BB_RUN_MIN;
+			case WAIT_QOS_MAX_UNK_PER_JOB:
+				return WAIT_QOS_MAX_BB_PER_JOB;
+			case WAIT_QOS_MAX_UNK_PER_USER:
+				return WAIT_QOS_MAX_BB_PER_USER;
+			case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
+				return WAIT_QOS_MAX_BB_MINS_PER_JOB;
+			case WAIT_QOS_MIN_UNK:
+				return WAIT_QOS_MIN_BB;
+			default:
+				return unk_reason;
+				break;
+			}
+		break;
+	}
+
+	return unk_reason;
+}
+
 static void _set_qos_order(struct job_record *job_ptr,
 			   slurmdb_qos_rec_t **qos_ptr_1,
 			   slurmdb_qos_rec_t **qos_ptr_2)
@@ -68,7 +293,8 @@ static void _set_qos_order(struct job_record *job_ptr,
 	xassert(qos_ptr_2);
 
 	/* Initialize incoming pointers */
-	*qos_ptr_1 = *qos_ptr_2 = NULL;
+	*qos_ptr_1 = NULL;
+	*qos_ptr_2 = NULL;
 
 	if (job_ptr->qos_ptr) {
 		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr) {
@@ -745,7 +971,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		if (job_desc->tres_req_cnt[tres_pos] >
 		    qos_ptr->max_tres_pu_ctld[tres_pos]) {
 			if (reason)
-				*reason = WAIT_QOS_MAX_CPU_PER_USER;
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 
 			debug2("job submit for user %s(%u): "
 			       "min tres(%s%s%s) request %"PRIu64" exceeds "
@@ -764,7 +991,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		} else if (job_desc->tres_req_cnt[tres_pos] >
 			   qos_ptr->grp_tres_ctld[tres_pos]) {
 			if (reason)
-				*reason = WAIT_QOS_GRP_CPU;
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_QOS_GRP_UNK);
 
 			debug2("job submit for user %s(%u): "
 			       "min tres(%s%s%s) request %"PRIu64" exceeds "
@@ -825,6 +1053,9 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			    qos_out_ptr->max_tres_mins_pj_ctld,
 			    &acct_policy_limit_set->time,
 			    strict_checking)) {
+			if (reason)
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 			debug2("job submit for user %s(%u): "
 			       "tres(%s%s%s) time limit request %"PRIu64" "
 			       "exceeds max per-job limit %"PRIu64" "
@@ -839,7 +1070,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->max_tres_mins_pj_ctld[tres_pos],
 			       qos_ptr->name);
-
+			rc = false;
+			goto end_it;
 		}
 
 		if ((qos_out_ptr->max_wall_pj == INFINITE) &&
@@ -897,7 +1129,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   acct_policy_limit_set->tres,
 					   strict_checking, 1)) {
 		if (reason)
-			*reason = WAIT_QOS_MAX_CPUS_PER_JOB;
+			*reason = get_tres_state_reason(
+				tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 
 		debug2("job submit for user %s(%u): "
 		       "min tres(%s%s%s) request %"PRIu64" exceeds "
@@ -957,7 +1190,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   acct_policy_limit_set->tres,
 					   strict_checking, 0)) {
 		if (reason)
-			*reason = WAIT_QOS_MIN_CPUS;
+			*reason = get_tres_state_reason(
+				tres_pos, WAIT_QOS_MIN_UNK);
 
 		debug2("job submit for user %s(%u): "
 		       "min tres(%s%s%s) request %"PRIu64" exceeds "
@@ -1170,7 +1404,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	switch (i) {
 	case 1:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "QOS %s group max tres(%s%s%s) minutes limit "
 		       "of %"PRIu64" is already at or exceeded with %"PRIu64,
@@ -1187,7 +1422,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "the job is requesting more than allowed with QOS %s's "
 		       "group max tres(%s%s%s) minutes of %"PRIu64" "
@@ -1212,7 +1448,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * being killed
 		 */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_GRP_CPU_MIN;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "the job is at or exceeds QOS %s's "
 		       "group max tres(%s%s%s) minutes of %"PRIu64" "
@@ -1255,7 +1492,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_GRP_CPU;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s%s%s) request %"PRIu64" exceeds "
 		       "group max tres limit %"PRIu64,
@@ -1272,7 +1510,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 3:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason =	WAIT_QOS_GRP_CPU;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
 		       "QOS %s group max tres(%s%s%s) limit "
@@ -1307,7 +1546,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason =	WAIT_QOS_GRP_CPU_RUN_MIN;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
 		debug2("job %u is being held, "
 		       "QOS %s group max running tres(%s%s%s) minutes "
 		       "limit %"PRIu64" is already full with %"PRIu64,
@@ -1324,7 +1564,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 3:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason =	WAIT_QOS_GRP_CPU_RUN_MIN;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
 		       "QOS %s group max running tres(%s%s%s) minutes "
@@ -1359,7 +1600,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_MAX_CPU_MINS_PER_JOB;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_MINS_PER_JOB);
 		debug2("Job %u being held, "
 		       "the job is requesting more than allowed with QOS %s's "
 		       "max tres(%s%s%s) minutes of %"PRIu64" "
@@ -1385,7 +1627,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_MAX_CPUS_PER_JOB;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s%s%s) per job "
 		       "request %"PRIu64" exceeds "
@@ -1411,7 +1654,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 0)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = WAIT_QOS_MIN_CPUS;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MIN_UNK);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s%s%s) per job "
 		       "request %"PRIu64" exceeds "
@@ -1442,7 +1686,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * TRES limit for the given QOS
 		 */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason =	WAIT_QOS_MAX_CPU_PER_USER;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s%s%s) "
 		       "request %"PRIu64" exceeds "
@@ -1463,7 +1708,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * the QOS per-user TRES limit with their
 		 * current usage */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason =	WAIT_QOS_MAX_CPU_PER_USER;
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
 		       "QOS %s max tres(%s%s%s) per user limit "
@@ -1788,11 +2034,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    qos_rec.grp_tres_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
-			/* FIXME: This is most likely not the reason
-			   we want to send back.
-			*/
 			if (reason)
-				*reason = WAIT_ASSOC_GRP_CPU;
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_ASSOC_GRP_UNK);
+
 			debug2("job submit for user %s(%u): "
 			       "min tres(%s%s%s) request %"PRIu64" exceeds "
 			       "group max tres limit %"PRIu64" for account %s",
@@ -1855,11 +2100,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    qos_rec.max_tres_pj_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
-			/* FIXME: This is most likely not the reason
-			   we want to send back.
-			*/
 			if (reason)
-				*reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
+
 			debug2("job submit for user %s(%u): "
 			       "min tres(%s%s%s) request %"PRIu64" exceeds "
 			       "max tres limit %"PRIu64" for account %s",
@@ -2244,7 +2488,8 @@ extern bool acct_policy_job_runnable_post_select(
 		switch (i) {
 		case 1:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_GRP_CPU_MIN;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "assoc %u(%s/%s/%s) group max tres(%s%s%s) "
 			       "minutes limit of %"PRIu64" is already at or "
@@ -2263,7 +2508,8 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_GRP_CPU_MIN;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "the job is requesting more than allowed "
 			       "with assoc %u(%s/%s/%s) "
@@ -2290,7 +2536,8 @@ extern bool acct_policy_job_runnable_post_select(
 			 * being killed
 			 */
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_GRP_CPU_MIN;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "the job is at or exceeds assoc %u(%s/%s/%s) "
 			       "group max tres(%s%s%s) minutes of %"PRIu64" "
@@ -2332,7 +2579,8 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_GRP_CPU;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK);
 			debug2("job %u is being held, "
 			       "assoc %u(%s/%s/%s) min tres(%s%s%s) "
 			       "request %"PRIu64" exceeds "
@@ -2351,7 +2599,8 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 3:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK);
 			debug2("job %u being held, "
 			       "if allowed the job request will exceed "
 			       "assoc %u(%s/%s/%s) group max "
@@ -2388,7 +2637,8 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU_RUN_MIN;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
 			debug2("job %u is being held, "
 			       "assoc %u(%s/%s/%s) group max running "
 			       "tres(%s%s%s) minutes limit %"PRIu64
@@ -2407,7 +2657,8 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 3:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason =	WAIT_ASSOC_GRP_CPU_RUN_MIN;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
 			debug2("job %u being held, "
 			       "if allowed the job request will exceed "
 			       "assoc %u(%s/%s/%s) group max running "
@@ -2453,7 +2704,8 @@ extern bool acct_policy_job_runnable_post_select(
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_MAX_UNK_MINS_PER_JOB);
 			debug2("Job %u being held, "
 			       "the job is requesting more than allowed "
 			       "with assoc %u(%s/%s/%s) max tres(%s%s%s) "
@@ -2478,7 +2730,8 @@ extern bool acct_policy_job_runnable_post_select(
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_MAX_CPUS_PER_JOB;
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
 			debug2("job %u is being held, "
 			       "the job is requesting more than allowed "
 			       "with assoc %u(%s/%s/%s) max tres(%s%s%s) "
@@ -2567,7 +2820,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 
 		if (grp_nodes < max_nodes_limit) {
 			max_nodes_limit = grp_nodes;
-			*wait_reason = WAIT_QOS_GRP_NODES;
+			*wait_reason = WAIT_QOS_GRP_NODE;
 		}
 	}
 
@@ -2581,7 +2834,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 			max_nodes_limit)) {
 			max_nodes_limit =
 				assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE];
-			*wait_reason = WAIT_ASSOC_GRP_NODES;
+			*wait_reason = WAIT_ASSOC_GRP_NODE;
 			grp_set = 1;
 		}
 

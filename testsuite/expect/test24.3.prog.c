@@ -79,6 +79,7 @@ int _setup_assoc_list(void)
 {
 	slurmdb_update_object_t update;
 	slurmdb_assoc_rec_t *assoc = NULL;
+	slurmdb_tres_rec_t *tres = NULL;
 
 	/* make the main list */
 	assoc_mgr_assoc_list =
@@ -87,11 +88,30 @@ int _setup_assoc_list(void)
 		list_create(slurmdb_destroy_user_rec);
 	assoc_mgr_qos_list =
 		list_create(slurmdb_destroy_qos_rec);
+	assoc_mgr_tres_list =
+		list_create(slurmdb_destroy_tres_rec);
+	assoc_mgr_tres_array = xmalloc(sizeof(slurmdb_tres_rec_t));
 
 	/* we just want make it so we setup_children so just pretend
 	 * we are running off cache */
 	running_cache = 1;
 	assoc_mgr_init(NULL, NULL, SLURM_SUCCESS);
+
+
+	/* Here we make the tres we want to add to the system.
+	 * We do this as an update to avoid having to do setup. */
+	memset(&update, 0, sizeof(slurmdb_update_object_t));
+	update.type = SLURMDB_ADD_TRES;
+	update.objects = list_create(slurmdb_destroy_tres_rec);
+
+	tres = xmalloc(sizeof(slurmdb_tres_rec_t));
+	tres->id = 1;
+	tres->type = xstrdup("cpu");
+	list_append(update.objects, tres);
+
+	if (assoc_mgr_update_tres(&update, false))
+		error("assoc_mgr_update_tres: %m");
+	FREE_NULL_LIST(update.objects);
 
 	/* Here we make the associations we want to add to the system.
 	 * We do this as an update to avoid having to do setup. */
@@ -111,7 +131,7 @@ int _setup_assoc_list(void)
 	/* First only add the accounts */
 	/* root association */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 1;
 	/* assoc->lft = 1; */
 	/* assoc->rgt = 28; */
@@ -120,7 +140,7 @@ int _setup_assoc_list(void)
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 2;
 	assoc->parent_id = 1;
 	assoc->shares_raw = 40;
@@ -131,7 +151,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountA id 2 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 21;
 	/* assoc->lft = 3; */
 	/* assoc->rgt = 6; */
@@ -142,7 +162,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountB id 21 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 211;
 	/* assoc->lft = 4; */
 	/* assoc->rgt = 5; */
@@ -155,7 +175,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountA id 2 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 22;
 	/* assoc->lft = 7; */
 	/* assoc->rgt = 12; */
@@ -166,7 +186,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountC id 22 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 221;
 	/* assoc->lft = 8; */
 	/* assoc->rgt = 9; */
@@ -178,7 +198,7 @@ int _setup_assoc_list(void)
 	list_append(update.objects, assoc);
 
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 222;
 	/* assoc->lft = 10; */
 	/* assoc->rgt = 11; */
@@ -191,7 +211,7 @@ int _setup_assoc_list(void)
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 3;
 	/* assoc->lft = 14; */
 	/* assoc->rgt = 23; */
@@ -202,7 +222,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountD id 3 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 31;
 	/* assoc->lft = 19; */
 	/* assoc->rgt = 22; */
@@ -213,7 +233,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountE id 31 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 311;
 	/* assoc->lft = 20; */
 	/* assoc->rgt = 21; */
@@ -226,7 +246,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountD id 3 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 32;
 	/* assoc->lft = 15; */
 	/* assoc->rgt = 18; */
@@ -237,7 +257,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountF id 32 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 321;
 	/* assoc->lft = 16; */
 	/* assoc->rgt = 17; */
@@ -250,7 +270,7 @@ int _setup_assoc_list(void)
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 4;
 	/* assoc->lft = 24; */
 	/* assoc->rgt = 27; */
@@ -261,7 +281,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountG id 4 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 41;
 	/* assoc->lft = 25; */
 	/* assoc->rgt = 26; */
@@ -276,7 +296,7 @@ int _setup_assoc_list(void)
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 5;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -287,7 +307,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountH id 5 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 51;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -299,7 +319,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountHTA id 51 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 511;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -312,7 +332,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountHTA id 51 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 512;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -325,7 +345,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountHTA id 51 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 513;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -338,7 +358,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountH id 5 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 52;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -351,7 +371,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountH id 5 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 53;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -364,7 +384,7 @@ int _setup_assoc_list(void)
 
 	/* sub of AccountH id 5 */
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
-	assoc->usage = create_assoc_mgr_assoc_usage();
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
 	assoc->id = 54;
 	/* assoc->lft = ; */
 	/* assoc->rgt = ; */
@@ -436,7 +456,7 @@ int main (int argc, char **argv)
 	 * sleep to make sure the thread gets started. */
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
-	resp.assoc_shares_list = assoc_mgr_get_shares(NULL, 0, NULL, NULL);
+	assoc_mgr_get_shares(NULL, 0, NULL, &resp);
 	process(&resp, 0);
 
 	/* free memory */
@@ -450,5 +470,6 @@ int main (int argc, char **argv)
 		list_destroy(assoc_mgr_assoc_list);
 	if (assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
+	xfree(assoc_mgr_tres_array);
 	return 0;
 }

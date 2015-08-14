@@ -86,10 +86,10 @@
 #define _pack_layout_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_assoc_mgr_info_msg(msg,buf)      _pack_buffer_msg(msg,buf)
 
-static void _pack_assoc_shares_object(void *in, Buf buffer,
+static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 				      uint16_t protocol_version);
-static int _unpack_assoc_shares_object(void **object, Buf buffer,
-				       uint16_t protocol_version);
+static int _unpack_assoc_shares_object(void **object, uint32_t tres_cnt,
+				       Buf buffer, uint16_t protocol_version);
 static void _pack_shares_request_msg(shares_request_msg_t * msg, Buf buffer,
 				     uint16_t protocol_version);
 static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
@@ -2347,10 +2347,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	return rc;
 }
 
-static void _pack_assoc_shares_object(void *in, Buf buffer,
+static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 				      uint16_t protocol_version)
 {
 	assoc_shares_object_t *object = (assoc_shares_object_t *)in;
+	uint64_t tmp64;
 
 	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		if (!object) {
@@ -2364,12 +2365,13 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 			packdouble(0, buffer);
 			pack32(0, buffer);
 
+			pack64_array(NULL, 0, buffer);
+			pack64_array(NULL, 0, buffer);
+
 			packdouble(0, buffer);
 			packdouble(0, buffer);
 			pack64(0, buffer);
 
-			pack64(0, buffer);
-			pack64(0, buffer);
 			packdouble(0, buffer);
 			packdouble(0, buffer);
 
@@ -2388,12 +2390,13 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 		packdouble(object->shares_norm, buffer);
 		pack32(object->shares_raw, buffer);
 
+		pack64_array(object->tres_run_secs, tres_cnt, buffer);
+		pack64_array(object->tres_grp_mins, tres_cnt, buffer);
+
 		packdouble(object->usage_efctv, buffer);
 		packdouble(object->usage_norm, buffer);
 		pack64(object->usage_raw, buffer);
 
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->cpu_run_mins, buffer);
 		packdouble(object->fs_factor, buffer);
 		packdouble(object->level_fs, buffer);
 
@@ -2436,9 +2439,16 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 		packdouble(object->usage_efctv, buffer);
 		packdouble(object->usage_norm, buffer);
 		pack64(object->usage_raw, buffer);
-
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->cpu_run_mins, buffer);
+		if (object->tres_grp_mins)
+			tmp64 = object->tres_grp_mins[TRES_ARRAY_CPU];
+		else
+			tmp64 = 0;
+		pack64(tmp64, buffer);
+		if (object->tres_run_secs)
+			tmp64 = object->tres_run_secs[TRES_ARRAY_CPU] / 60;
+		else
+			tmp64 = 0;
+		pack64(tmp64, buffer);
 		packdouble(object->fs_factor, buffer);
 		packdouble(object->level_fs, buffer);
 
@@ -2479,8 +2489,16 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 		packdouble(object->usage_norm, buffer);
 		pack64(object->usage_raw, buffer);
 
-		pack64(object->grp_cpu_mins, buffer);
-		pack64(object->cpu_run_mins, buffer);
+		if (object->tres_grp_mins)
+			tmp64 = object->tres_grp_mins[TRES_ARRAY_CPU];
+		else
+			tmp64 = 0;
+		pack64(tmp64, buffer);
+		if (object->tres_run_secs)
+			tmp64 = object->tres_run_secs[TRES_ARRAY_CPU] / 60;
+		else
+			tmp64 = 0;
+		pack64(tmp64, buffer);
 
 		pack16(object->user, buffer);
 	} else {
@@ -2489,8 +2507,8 @@ static void _pack_assoc_shares_object(void *in, Buf buffer,
 	}
 }
 
-static int _unpack_assoc_shares_object(void **object, Buf buffer,
-				       uint16_t protocol_version)
+static int _unpack_assoc_shares_object(void **object, uint32_t tres_cnt,
+				       Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	assoc_shares_object_t *object_ptr =
@@ -2512,12 +2530,19 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 		safe_unpackdouble(&object_ptr->shares_norm, buffer);
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
+		safe_unpack64_array(&object_ptr->tres_run_secs,
+				    &uint32_tmp, buffer);
+		if (uint32_tmp != tres_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&object_ptr->tres_grp_mins,
+				    &uint32_tmp, buffer);
+		if (uint32_tmp != tres_cnt)
+			goto unpack_error;
+
 		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
 
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
 		safe_unpackdouble(&object_ptr->fs_factor, buffer);
 		safe_unpackdouble(&object_ptr->level_fs, buffer);
 
@@ -2539,8 +2564,20 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
 
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+		object_ptr->tres_grp_mins = xmalloc(
+			sizeof(uint64_t) * tres_cnt);
+		safe_unpack64(&object_ptr->tres_grp_mins[TRES_ARRAY_CPU],
+			      buffer);
+		object_ptr->tres_run_secs = xmalloc(
+			sizeof(uint64_t) * tres_cnt);
+		safe_unpack64(&object_ptr->tres_run_secs[TRES_ARRAY_CPU],
+			      buffer);
+		object_ptr->tres_run_secs[0] *= 60;
+
+		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
+		safe_unpackdouble(&object_ptr->usage_norm, buffer);
+		safe_unpack64(&object_ptr->usage_raw, buffer);
+
 		safe_unpackdouble(&object_ptr->fs_factor, buffer);
 		safe_unpackdouble(&object_ptr->level_fs, buffer);
 
@@ -2561,8 +2598,15 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer,
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
 
-		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
-		safe_unpack64(&object_ptr->cpu_run_mins, buffer);
+		object_ptr->tres_grp_mins = xmalloc(
+			sizeof(uint64_t) * tres_cnt);
+		safe_unpack64(&object_ptr->tres_grp_mins[TRES_ARRAY_CPU],
+			      buffer);
+		object_ptr->tres_run_secs = xmalloc(
+			sizeof(uint64_t) * tres_cnt);
+		safe_unpack64(&object_ptr->tres_run_secs[TRES_ARRAY_CPU],
+			      buffer);
+		object_ptr->tres_run_secs[0] *= 60;
 
 		safe_unpack16(&object_ptr->user, buffer);
 	} else {
@@ -2764,17 +2808,40 @@ static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer,
 	uint32_t count = NO_VAL;
 
 	xassert(msg != NULL);
-	if (msg->assoc_shares_list)
-		count = list_count(msg->assoc_shares_list);
-	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->assoc_shares_list);
-		while ((share = list_next(itr)))
-			_pack_assoc_shares_object(share, buffer,
-						  protocol_version);
-		list_iterator_destroy(itr);
+
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		packstr_array(msg->tres_names, msg->tres_cnt, buffer);
+
+		if (!msg->assoc_shares_list ||
+		    !(count = list_count(msg->assoc_shares_list)))
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(msg->assoc_shares_list);
+			while ((share = list_next(itr)))
+				_pack_assoc_shares_object(
+					share, msg->tres_cnt, buffer,
+					protocol_version);
+			list_iterator_destroy(itr);
+		}
+		pack64(msg->tot_shares, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!msg->assoc_shares_list ||
+		    !(count = list_count(msg->assoc_shares_list)))
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(msg->assoc_shares_list);
+			while ((share = list_next(itr)))
+				_pack_assoc_shares_object(
+					share, msg->tres_cnt, buffer,
+					protocol_version);
+			list_iterator_destroy(itr);
+		}
+		pack64(msg->tot_shares, buffer);
 	}
-	pack64(msg->tot_shares, buffer);
 }
 
 static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
@@ -2785,25 +2852,55 @@ static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
 	int i = 0;
 	void *tmp_info = NULL;
 	shares_response_msg_t *object_ptr = NULL;
-	xassert(msg != NULL);
+
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(shares_response_msg_t));
 	*msg = object_ptr;
 
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		object_ptr->assoc_shares_list =
-			list_create(slurm_destroy_assoc_shares_object);
-		for (i=0; i<count; i++) {
-			if (_unpack_assoc_shares_object(&tmp_info, buffer,
-						       protocol_version)
-			   != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(object_ptr->assoc_shares_list, tmp_info);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackstr_array(&object_ptr->tres_names,
+				     &object_ptr->tres_cnt, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->assoc_shares_list =
+				list_create(slurm_destroy_assoc_shares_object);
+			for (i=0; i<count; i++) {
+				if (_unpack_assoc_shares_object(
+					    &tmp_info, object_ptr->tres_cnt,
+					    buffer, protocol_version)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->assoc_shares_list,
+					    tmp_info);
+			}
 		}
+
+		safe_unpack64(&object_ptr->tot_shares, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		object_ptr->tres_names = xmalloc(sizeof(char *));
+		object_ptr->tres_names[0] = xstrdup("cpu");
+		object_ptr->tres_cnt = 1;
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->assoc_shares_list =
+				list_create(slurm_destroy_assoc_shares_object);
+			for (i=0; i<count; i++) {
+				if (_unpack_assoc_shares_object(
+					    &tmp_info, object_ptr->tres_cnt,
+					    buffer, protocol_version)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->assoc_shares_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack64(&object_ptr->tot_shares, buffer);
 	}
 
-	safe_unpack64(&object_ptr->tot_shares, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -13641,27 +13738,39 @@ _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 
 	xassert(msg != NULL);
 
-	if (msg->acct_list)
-		count = list_count(msg->acct_list);
+	if (!msg->acct_list || !(count = list_count(msg->acct_list)))
+		count = NO_VAL;
+
 	pack32(count, buffer);
-	if (count && count != NO_VAL) {
+	if (count != NO_VAL) {
 		itr = list_iterator_create(msg->acct_list);
-		while ((tmp_info = list_next(itr))) {
+		while ((tmp_info = list_next(itr)))
 			packstr(tmp_info, buffer);
-		}
 		list_iterator_destroy(itr);
 	}
 	count = NO_VAL;
 
+	pack32(msg->flags, buffer);
 
-	if (msg->user_list)
-		count = list_count(msg->user_list);
+	if (!msg->qos_list || !(count = list_count(msg->qos_list)))
+		count = NO_VAL;
+
 	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->user_list);
-		while ((tmp_info = list_next(itr))) {
+	if (count != NO_VAL) {
+		itr = list_iterator_create(msg->qos_list);
+		while ((tmp_info = list_next(itr)))
 			packstr(tmp_info, buffer);
-		}
+		list_iterator_destroy(itr);
+	}
+
+	if (!msg->user_list || !(count = list_count(msg->user_list)))
+		count = NO_VAL;
+
+	pack32(count, buffer);
+	if (count != NO_VAL) {
+		itr = list_iterator_create(msg->user_list);
+		while ((tmp_info = list_next(itr)))
+			packstr(tmp_info, buffer);
 		list_iterator_destroy(itr);
 	}
 }
@@ -13679,7 +13788,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 
 	xassert(msg != NULL);
 
-	object_ptr = xmalloc(sizeof(shares_request_msg_t));
+	object_ptr = xmalloc(sizeof(assoc_mgr_info_request_msg_t));
 	*msg = object_ptr;
 
 	safe_unpack32(&count, buffer);
@@ -13689,6 +13798,18 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 			safe_unpackstr_xmalloc(&tmp_info,
 					       &uint32_tmp, buffer);
 			list_append(object_ptr->acct_list, tmp_info);
+		}
+	}
+
+	safe_unpack32(&object_ptr->flags, buffer);
+
+	safe_unpack32(&count, buffer);
+	if (count != NO_VAL) {
+		object_ptr->qos_list = list_create(slurm_destroy_char);
+		for (i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->qos_list, tmp_info);
 		}
 	}
 

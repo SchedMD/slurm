@@ -386,7 +386,10 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = MIN(threads_per_core, ntasks_per_core);
+	if (ntasks_per_core != 0xffff) {
+		threads_per_core = MIN(threads_per_core,
+				       (ntasks_per_core * cpus_per_task));
+	}
 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;

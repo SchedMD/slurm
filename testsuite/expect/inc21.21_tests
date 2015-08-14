@@ -25,7 +25,7 @@
 
 proc print_err { test_type func_type } {
 
-	send_user "(Within: inc21.21_test functio: $func_type "
+	send_user "(Within: inc21.21_test function: $func_type "
 	send_user "Testing: $test_type)\n"
 }
 
