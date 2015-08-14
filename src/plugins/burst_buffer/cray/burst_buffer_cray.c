@@ -776,9 +776,9 @@ static void _recover_limit_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpack16(&protocol_version, buffer);
 	if (protocol_version == (uint16_t)NO_VAL) {
-		error("*************************************************************");
-		error("Can not recover burst buffer state, data version incompatible");
-		error("*************************************************************");
+		error("******************************************************************");
+		error("Can not recover burst_buffer/cray state, data version incompatible");
+		error("******************************************************************");
 		return;
 	}
 
@@ -2351,6 +2351,19 @@ static void _purge_vestigial_bufs(void)
 }
 
 /*
+ * Return the total burst buffer size in MB
+ */
+extern uint64_t bb_g_get_system_size(void)
+{
+	uint64_t size = 0;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	size = bb_state.total_space / (1024 * 1024);	/* bytes to MB */
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+	return size;
+}
+
+/*
  * Load the current burst buffer state (e.g. how much space is available now).
  * Run at the beginning of each scheduling cycle in order to recognize external
  * changes to the burst buffer state (e.g. capacity is added, removed, fails,
@@ -2760,6 +2773,31 @@ fini:	/* Clean-up */
 	xfree(dw_cli_path);
 
 	return rc;
+}
+
+/*
+ * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
+ * IN job_ptr - job record, set's tres_cnt field
+ * IN node_cnt - number of nodes in the job
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void bb_g_set_job_tres_cnt(struct job_record *job_ptr,
+				  uint32_t node_cnt, bool locked)
+{
+	bb_job_t *bb_job;
+
+	if (!job_ptr->tres_req_cnt) {
+		error("%s: Job %u lacks tres_req_cnt field",
+		      __func__, job_ptr->job_id);
+	}
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	if ((bb_job = _get_bb_job(job_ptr))) {
+		job_ptr->tres_req_cnt[bb_state.tres_pos] =
+			bb_job->total_size / (1024 * 1024);
+	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 }
 
 /*

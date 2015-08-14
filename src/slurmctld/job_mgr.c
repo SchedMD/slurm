@@ -5855,6 +5855,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if (!will_run &&
 	    (error_code = bb_g_job_validate2(job_ptr, err_msg, is_job_array)))
 		goto cleanup_fail;
+	bb_g_set_job_tres_cnt(job_ptr, job_desc->min_nodes, false);
 
 	job_ptr->license_list = license_list;
 	license_list = NULL;
@@ -7237,6 +7238,8 @@ extern void job_set_req_tres(
 			      job_ptr->tres_req_cnt,
 			      true);
 
+	bb_g_set_job_tres_cnt(job_ptr, node_cnt, true);
+
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_req_cnt, true);
@@ -7295,6 +7298,8 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			      alloc_nodes,
 			      job_ptr->tres_alloc_cnt,
 			      true);
+
+	bb_g_set_job_tres_cnt(job_ptr, alloc_nodes, true);
 
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(

@@ -815,6 +815,19 @@ extern int fini(void)
 }
 
 /*
+ * Return the total burst buffer size in MB
+ */
+extern uint64_t bb_g_get_system_size(void)
+{
+	uint64_t size = 0;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	size = bb_state.total_space / (1024 * 1024);	/* bytes to MB */
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+	return size;
+}
+
+/*
  * Load the current burst buffer state (e.g. how much space is available now).
  * Run at the beginning of each scheduling cycle in order to recognize external
  * changes to the burst buffer state (e.g. capacity is added, removed, fails,
@@ -967,6 +980,27 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 {
 	/* This function is unused by this plugin type */
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
+ * IN job_ptr - job record, set's tres_cnt field
+ * IN node_cnt - number of nodes in the job
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void bb_g_set_job_tres_cnt(struct job_record *job_ptr,
+				  uint32_t node_cnt, bool locked)
+{
+	if (!job_ptr->tres_req_cnt) {
+		error("%s: Job %u lacks tres_req_cnt field",
+		      __func__, job_ptr->job_id);
+	}
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	job_ptr->tres_req_cnt[bb_state.tres_pos] =
+		_get_bb_size(job_ptr) / (1024 * 1024);
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 }
 
 /*

@@ -77,6 +77,7 @@
 #include "src/slurmctld/reservation.h"
 
 typedef struct slurm_bb_ops {
+	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
 	int		(*state_pack)	(uid_t uid, Buf buffer,
 					 uint16_t protocol_version);
@@ -85,6 +86,8 @@ typedef struct slurm_bb_ops {
 					 uid_t submit_uid);
 	int		(*job_validate2)(struct job_record *job_ptr,
 					 char **err_msg, bool is_job_array);
+	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
+					     uint32_t node_cnt, bool locked);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
 	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr,
@@ -99,11 +102,13 @@ typedef struct slurm_bb_ops {
  * Must be synchronized with slurm_bb_ops_t above.
  */
 static const char *syms[] = {
+	"bb_p_get_system_size",
 	"bb_p_load_state",
 	"bb_p_state_pack",
 	"bb_p_reconfig",
 	"bb_p_job_validate",
 	"bb_p_job_validate2",
+	"bb_p_job_set_tres_cnt",
 	"bb_p_job_get_est_start",
 	"bb_p_job_try_stage_in",
 	"bb_p_job_test_stage_in",
@@ -302,6 +307,26 @@ extern int bb_g_reconfig(void)
 }
 
 /*
+ * Give the total burst buffer size of a given plugin name (in MB);
+ */
+extern uint64_t bb_g_get_system_size(char *name)
+{
+	uint64_t i, size = 0;
+
+	(void) bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		if (g_context[i] && !xstrcmp(g_context[i]->type ,name)) {
+			size = (*(ops[i].get_system_size))();
+			break;
+		}
+	}
+	slurm_mutex_unlock(&g_context_lock);
+
+	return size;
+}
+
+/*
  * Preliminary validation of a job submit request with respect to burst buffer
  * options. Performed after setting default account + qos, but prior to
  * establishing job ID or creating script file.
@@ -350,6 +375,30 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+/*
+ * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
+ * IN job_ptr - job record, set's tres_cnt field
+ * IN node_cnt - number of nodes in the job
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void bb_g_set_job_tres_cnt(struct job_record *job_ptr,
+				  uint32_t node_cnt,
+				  bool locked)
+{
+	DEF_TIMERS;
+	int i;
+
+	START_TIMER;
+	(void) bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		(*(ops[i].job_set_tres_cnt))(job_ptr, node_cnt, locked);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
 }
 
 /* sort jobs by expected start time */

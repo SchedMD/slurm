@@ -1378,7 +1378,14 @@ static int _init_tres(void)
 			tres_rec->id = TRES_ENERGY;
 		else if (!strcasecmp(temp_char, "node"))
 			tres_rec->id = TRES_NODE;
-		else if (!strncasecmp(temp_char, "gres/", 5)) {
+		else if (!strncasecmp(temp_char, "bb/", 3)) {
+			tres_rec->type[2] = '\0';
+			tres_rec->name = xstrdup(temp_char+3);
+			if (!tres_rec->name)
+				fatal("Burst Buffer type tres need to have a "
+				      "name, (i.e. bb/cray).  You gave %s",
+				      temp_char);
+		} else if (!strncasecmp(temp_char, "gres/", 5)) {
 			tres_rec->type[4] = '\0';
 			tres_rec->name = xstrdup(temp_char+5);
 			if (!tres_rec->name)
@@ -2104,6 +2111,9 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			continue;
 		} else if (tres_rec->id == TRES_MEM) {
 			mem_tres = tres_rec;
+			continue;
+		} else if (!strcmp(tres_rec->type, "bb")) {
+			tres_rec->count = bb_g_get_system_size(tres_rec->name);
 			continue;
 		} else if (!strcmp(tres_rec->type, "gres")) {
 			tres_rec->count = gres_get_system_cnt(tres_rec->name);
