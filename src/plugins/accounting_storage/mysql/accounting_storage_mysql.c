@@ -2176,10 +2176,16 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=NULL, "
 			       "shares=1, max_jobs=NULL, "
+			       "max_submit_jobs=NULL, "
 			       "max_wall_pj=NULL, "
 			       "max_tres_pj='', "
 			       "max_tres_mins_pj='', "
-			       "max_tres_run_mins='' "
+			       "max_tres_run_mins='', "
+			       "grp_jobs=NULL, grp_submit_jobs=NULL, "
+			       "grp_wall=NULL, "
+			       "grp_tres='', "
+			       "grp_tres_mins='', "
+			       "grp_tres_run_mins='', qos='', delta_qos='' "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
