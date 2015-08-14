@@ -3328,6 +3328,8 @@ extern void slurm_destroy_assoc_shares_object(void *object)
 		xfree(obj_ptr->name);
 		xfree(obj_ptr->parent);
 		xfree(obj_ptr->partition);
+		xfree(obj_ptr->tres_run_secs);
+		xfree(obj_ptr->tres_grp_mins);
 		xfree(obj_ptr);
 	}
 }
@@ -3344,6 +3346,12 @@ extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
 	if (msg) {
+		int i;
+		if (msg->tres_names) {
+			for (i=0; i<msg->tres_cnt; i++)
+				xfree(msg->tres_names[i]);
+			xfree(msg->tres_names);
+		}
 		FREE_NULL_LIST(msg->assoc_shares_list);
 		xfree(msg);
 	}

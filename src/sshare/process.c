@@ -40,76 +40,115 @@
 #include "src/sshare/sshare.h"
 #include <math.h>
 
-extern int long_flag;
+static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
+			int last);
+
+int long_flag;		/* exceeds 80 character limit with more info */
+char **tres_names = NULL;
+uint32_t tres_cnt = 0;
+char *opt_field_list = NULL;
+
+print_field_t fields[] = {
+	{-20, "Account", print_fields_str, PRINT_ACCOUNT},
+	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
+	{13, "EffectvUsage", print_fields_double, PRINT_EUSED},
+	{10, "FairShare", print_fields_double, PRINT_FSFACTOR},
+	{10, "LevelFS", print_fields_double, PRINT_LEVELFS},
+	{6, "ID", print_fields_uint, PRINT_ID},
+	{11, "NormShares", print_fields_double, PRINT_NORMS},
+	{11, "NormUsage", print_fields_double, PRINT_NORMU},
+	{12, "Partition", print_fields_str, PRINT_PART},
+	{10, "RawShares", print_fields_uint32, PRINT_RAWS},
+	{11, "RawUsage", print_fields_uint64, PRINT_RAWU},
+	{10, "User", print_fields_str, PRINT_USER},
+	{30, "GrpTRESMins", _print_tres, PRINT_TRESMINS},
+	{30, "TRESRunMins", _print_tres, PRINT_RUNMINS},
+	{0,  NULL, NULL, 0}
+};
+
+static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
+			int last)
+{
+	int abs_len = abs(field->len);
+	char *print_this;
+
+	print_this = slurmdb_make_tres_string_from_arrays(
+		tres_names, tres_cnts, tres_cnt, TRES_STR_FLAG_REMOVE);
+
+	if (!print_this)
+		print_this = xstrdup("");
+
+	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
+	    && last)
+		printf("%s", print_this);
+	else if (print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if (strlen(print_this) > abs_len)
+			print_this[abs_len-1] = '+';
+
+		if (field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, print_this);
+		else
+			printf("%-*.*s ", abs_len, abs_len, print_this);
+	}
+	xfree(print_this);
+}
 
 extern int process(shares_response_msg_t *resp, uint16_t options)
 {
 	uint32_t flags = slurmctld_conf.priority_flags;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, i;
 	assoc_shares_object_t *share = NULL;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;
 	char *print_acct = NULL;
 	List tree_list = NULL;
+	char *tmp_char = NULL;
 
 	int field_count = 0;
-
-	print_field_t *field = NULL;
 
 	List format_list;
 	List print_fields_list; /* types are of print_field_t */
 
-	enum {
-		PRINT_ACCOUNT,
-		PRINT_CLUSTER,
-		PRINT_CPUMINS,
-		PRINT_EUSED,
-		PRINT_FSFACTOR,
-		PRINT_ID,
-		PRINT_NORMS,
-		PRINT_NORMU,
-		PRINT_PART,
-		PRINT_RAWS,
-		PRINT_RAWU,
-		PRINT_RUNMINS,
-		PRINT_USER,
-		PRINT_LEVELFS
-	};
-
 	if (!resp)
 		return SLURM_ERROR;
 
-	/* FIXME: This only handles CPU Mins now */
+	tres_names = resp->tres_names;
+	tres_cnt = resp->tres_cnt;
+
 	format_list = list_create(slurm_destroy_char);
-	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
+	if (opt_field_list) {
+		slurm_addto_char_list(format_list, opt_field_list);
+	} else if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		if (long_flag) {
 			if (options & PRINT_PARTITIONS)
 				slurm_addto_char_list(
 					format_list,
 					"A,User,P,RawShares,NormShares,"
-					"RawUsage,NormUsage,EffUsage,"
-					"FSFctr,LevelFS,GrpCPUMins,"
-					"CPURunMins");
+					"RawUsage,NormUsage,Eff,"
+					"Fairshare,LevelFS,GrpTRESMins,"
+					"TRESRunMins");
 			else
 				slurm_addto_char_list(
 					format_list,
 					"A,User,RawShares,NormShares,"
-					"RawUsage,NormUsage,EffUsage,"
-					"FSFctr,LevelFS,GrpCPUMins,"
-					"CPURunMins");
+					"RawUsage,NormUsage,Eff,"
+					"Fairshare,LevelFS,GrpTRESMins,"
+					"TRESRunMins");
 
 		} else {
 			if (options & PRINT_PARTITIONS)
 				slurm_addto_char_list(
 					format_list,
 					"A,User,P,RawShares,NormShares,"
-					"RawUsage,EffUsage,FSFctr");
+					"RawUsage,Eff,Fairshare");
 			else
 				slurm_addto_char_list(
 					format_list,
 					"A,User,RawShares,NormShares,"
-					"RawUsage,EffUsage,FSFctr");
+					"RawUsage,Eff,Fairshare");
 		}
 	} else {
 		if (long_flag) {
@@ -117,117 +156,53 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 				slurm_addto_char_list(
 					format_list,
 					"A,User,P,RawShares,NormShares,"
-					"RawUsage,NormUsage,EffUsage,"
-					"FSFctr,GrpCPUMins,CPURunMins");
+					"RawUsage,NormUsage,Eff,"
+					"Fairshare,GrpTRESMins,TRESRunMins");
 			else
 				slurm_addto_char_list(
 					format_list,
 					"A,User,RawShares,NormShares,"
-					"RawUsage,NormUsage,EffUsage,"
-					"FSFctr,GrpCPUMins,CPURunMins");
+					"RawUsage,NormUsage,Eff,"
+					"Fairshare,GrpTRESMins,TRESRunMins");
 		} else {
 			if (options & PRINT_PARTITIONS)
 				slurm_addto_char_list(
 					format_list,
 					"A,User,P,RawShares,NormShares,"
-					"RawUsage,EffUsage,FSFctr");
+					"RawUsage,Eff,Fairshare");
 			else
 				slurm_addto_char_list(
 					format_list,
 					"A,User,RawShares,NormShares,"
-					"RawUsage,EffUsage,FSFctr");
+					"RawUsage,Eff,Fairshare");
 		}
 	}
 
 
-	print_fields_list = list_create(destroy_print_field);
+	print_fields_list = list_create(NULL);
 	itr = list_iterator_create(format_list);
 	while ((object = list_next(itr))) {
-		char *tmp_char = NULL;
-		field = xmalloc(sizeof(print_field_t));
-		if (!strncasecmp("Account", object, 1)) {
-			field->type = PRINT_ACCOUNT;
-			field->name = xstrdup("Account");
-			field->len = -20;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("Cluster", object, 2)) {
-			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Cluster");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("EffUsage", object, 1)) {
-			field->type = PRINT_EUSED;
-			field->name = xstrdup("Effectv Usage");
-			field->len = 13;
-			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("FSFctr", object, 4)) {
-			field->type = PRINT_FSFACTOR;
-			field->name = xstrdup("FairShare");
-			field->len = 10;
-			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("LevelFS", object, 1)) {
-			field->type = PRINT_LEVELFS;
-			field->name = xstrdup("Level FS");
-			field->len = 10;
-			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("ID", object, 1)) {
-			field->type = PRINT_ID;
-			field->name = xstrdup("ID");
-			field->len = 6;
-			field->print_routine = print_fields_uint;
-		} else if (!strncasecmp("NormShares", object, 5)) {
-			field->type = PRINT_NORMS;
-			field->name = xstrdup("Norm Shares");
-			field->len = 11;
-			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("NormUsage", object, 5)) {
-			field->type = PRINT_NORMU;
-			field->name = xstrdup("Norm Usage");
-			field->len = 11;
-			field->print_routine = print_fields_double;
-		} else if (!strncasecmp("Partition", object, 1)) {
-			field->type = PRINT_PART;
-			field->name = xstrdup("Partition");
-			field->len = 12;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("RawShares", object, 4)) {
-			field->type = PRINT_RAWS;
-			field->name = xstrdup("Raw Shares");
-			field->len = 10;
-			field->print_routine = print_fields_uint32;
-		} else if (!strncasecmp("RawUsage", object, 4)) {
-			field->type = PRINT_RAWU;
-			field->name = xstrdup("Raw Usage");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if (!strncasecmp("User", object, 1)) {
-			field->type = PRINT_USER;
-			field->name = xstrdup("User");
-			field->len = 10;
-			field->print_routine = print_fields_str;
-		} else if (!strncasecmp("GrpCPUMins", object, 1)) {
-			field->type = PRINT_CPUMINS;
-			field->name = xstrdup("GrpCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
-		} else if (!strncasecmp("CPURunMins", object, 2)) {
-			field->type = PRINT_RUNMINS;
-			field->name = xstrdup("CPURunMins");
-			field->len = 15;
-			field->print_routine = print_fields_uint64;
-		} else {
-			exit_code=1;
-			fprintf(stderr, "Unknown field '%s'\n", object);
+		for (i = 0; fields[i].name; i++) {
+			if ((tmp_char = strstr(object, "\%")))
+				tmp_char[0] = '\0';
+
+			if (!strncasecmp(fields[i].name,
+					 object, strlen(object))) {
+				if (tmp_char) {
+					int newlen = atoi(tmp_char+1);
+					if (newlen)
+						fields[i].len = newlen;
+				}
+
+				list_append(print_fields_list, &fields[i]);
+				break;
+			}
+		}
+
+		if (!fields[i].name) {
+			error("Invalid field requested: \"%s\"", object);
 			exit(1);
-			xfree(field);
-			continue;
 		}
-		if ((tmp_char = strstr(object, "\%"))) {
-			int newlen = atoi(tmp_char+1);
-			if (newlen)
-				field->len = newlen;
-		}
-		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(format_list);
@@ -251,6 +226,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
+		print_field_t *field = NULL;
 
 		if ((options & PRINT_USERS_ONLY) && share->user == 0)
 			continue;
@@ -362,14 +338,17 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 						     share->partition,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_CPUMINS:
+			case PRINT_TRESMINS:
 				field->print_routine(field,
-						     share->grp_cpu_mins,
+						     share->tres_grp_mins,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RUNMINS:
+				/* convert to minutes */
+				for (i=0; i<tres_cnt; i++)
+					share->tres_run_secs[i] /= 60;
 				field->print_routine(field,
-						     share->cpu_run_mins,
+						     share->tres_run_secs,
 						     (curr_inx == field_count));
 				break;
 			default:

@@ -2791,8 +2791,9 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	return false;
 }
 
-extern List assoc_mgr_get_shares(void *db_conn,
-				 uid_t uid, List acct_list, List user_list)
+extern void assoc_mgr_get_shares(void *db_conn,
+				 uid_t uid, shares_request_msg_t *req_msg,
+				 shares_response_msg_t *resp_msg)
 {
 	ListIterator itr = NULL;
 	ListIterator user_itr = NULL;
@@ -2805,20 +2806,23 @@ extern List assoc_mgr_get_shares(void *db_conn,
 	int is_admin=1;
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	if (!assoc_mgr_assoc_list
-	    || !list_count(assoc_mgr_assoc_list))
-		return NULL;
+	xassert(resp_msg);
+
+	if (!assoc_mgr_assoc_list || !list_count(assoc_mgr_assoc_list))
+		return;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (user_list && list_count(user_list))
-		user_itr = list_iterator_create(user_list);
+	if (req_msg) {
+		if (req_msg->user_list && list_count(req_msg->user_list))
+			user_itr = list_iterator_create(req_msg->user_list);
 
-	if (acct_list && list_count(acct_list))
-		acct_itr = list_iterator_create(acct_list);
+		if (req_msg->acct_list && list_count(req_msg->acct_list))
+			acct_itr = list_iterator_create(req_msg->acct_list);
+	}
 
 	if (private_data & PRIVATE_DATA_USAGE) {
 		uint32_t slurm_uid = slurm_get_slurm_user_id();
@@ -2840,9 +2844,18 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		}
 	}
 
-	ret_list = list_create(slurm_destroy_assoc_shares_object);
+	resp_msg->assoc_shares_list = ret_list =
+		list_create(slurm_destroy_assoc_shares_object);
 
 	assoc_mgr_lock(&locks);
+
+	resp_msg->tres_cnt = g_tres_count;
+
+	/* DON'T FREE, since this shouldn't change while the slurmctld
+	 * is running we should be ok.
+	*/
+	resp_msg->tres_names = assoc_mgr_tres_name_array;
+
 	itr = list_iterator_create(assoc_mgr_assoc_list);
 	while ((assoc = list_next(itr))) {
 		if (user_itr && assoc->user) {
@@ -2919,10 +2932,13 @@ extern List assoc_mgr_get_shares(void *db_conn,
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
 		/* FIXME: This only works for CPUS now */
-		share->grp_cpu_mins = slurmdb_find_tres_count_in_string(
-			assoc->grp_tres_mins, TRES_CPU);
-		share->cpu_run_mins = assoc->usage->
-			grp_used_tres_run_secs[TRES_ARRAY_CPU] / 60;
+		share->tres_grp_mins = xmalloc(sizeof(uint64_t) * g_tres_count);
+		memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
+		       sizeof(uint64_t) * g_tres_count);
+		share->tres_run_secs = xmalloc(sizeof(uint64_t) * g_tres_count);
+		memcpy(share->tres_run_secs,
+		       assoc->usage->grp_used_tres_run_secs,
+		       sizeof(uint64_t) * g_tres_count);
 		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
 
@@ -2965,7 +2981,7 @@ end_it:
 	/* The ret_list should already be sorted correctly, so no need
 	   to do it again.
 	*/
-	return ret_list;
+	return;
 }
 
 extern void assoc_mgr_info_get_pack_msg(

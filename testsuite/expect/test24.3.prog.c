@@ -456,7 +456,7 @@ int main (int argc, char **argv)
 	 * sleep to make sure the thread gets started. */
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
-	resp.assoc_shares_list = assoc_mgr_get_shares(NULL, 0, NULL, NULL);
+	assoc_mgr_get_shares(NULL, 0, NULL, &resp);
 	process(&resp, 0);
 
 	/* free memory */

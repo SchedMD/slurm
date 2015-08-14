@@ -266,14 +266,14 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
 
 /*
- * get the share information from the association list in the form of
- * a list containing assoc_share_object_t's
+ * get the share information from the association list
  * IN: uid: uid_t of user issuing the request
- * IN: acct_list: char * list of accounts you want (NULL for all)
- * IN: user_list: char * list of user names you want (NULL for all)
+ * IN: req_msg: info about request
+ * IN/OUT: resp_msg: message filled in with assoc_mgr info
  */
-extern List assoc_mgr_get_shares(
-	void *db_conn, uid_t uid, List acct_list, List user_list);
+extern void assoc_mgr_get_shares(void *db_conn,
+				 uid_t uid, shares_request_msg_t *req_msg,
+				 shares_response_msg_t *resp_msg);
 
 /*
  * get the state of the association manager and pack it up in buffer

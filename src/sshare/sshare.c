@@ -46,22 +46,21 @@
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
 
-int exit_code;		/* sshare's exit code, =1 on any error at any time */
-int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int long_flag;		/* exceeds 80 character limit with more info */
-int verbosity;		/* count of -v options */
-uint32_t my_uid = 0;
-List clusters = NULL;
-
 static int      _get_info(shares_request_msg_t *shares_req,
 			  shares_response_msg_t **shares_resp);
 static int      _addto_name_char_list(List char_list, char *names, bool gid);
 static char *   _convert_to_name(int id, bool gid);
 static void     _print_version( void );
 static void	_usage(void);
+static void     _help_format_msg(void);
 
-int
-main (int argc, char *argv[])
+int exit_code;		/* sshare's exit code, =1 on any error at any time */
+int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int verbosity;		/* count of -v options */
+uint32_t my_uid = 0;
+List clusters = NULL;
+
+int main (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS, opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -75,11 +74,13 @@ main (int argc, char *argv[])
 	static struct option long_options[] = {
 		{"accounts", 1, 0, 'A'},
 		{"all",      0, 0, 'a'},
+                {"helpformat",0,0, 'e'},
 		{"long",     0, 0, 'l'},
+		{"partition",0, 0, 'm'},
 		{"cluster",  1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
-		{"noheader", 0, 0, 'h'},
-		{"partition",0, 0, 'm'},
+		{"noheader", 0, 0, 'n'},
+		{"format",   1, 0, 'o'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2",0, 0, 'P'},
 		{"users",    1, 0, 'u'},
@@ -99,7 +100,7 @@ main (int argc, char *argv[])
 	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqUu:t:vVm",
+	while((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPqUu:t:vVm",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -115,6 +116,10 @@ main (int argc, char *argv[])
 				req_msg.acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(req_msg.acct_list, optarg);
+			break;
+		case 'e':
+			_help_format_msg();
+			exit(0);
 			break;
 		case 'h':
 			print_fields_have_header = 0;
@@ -138,6 +143,9 @@ main (int argc, char *argv[])
 			break;
 		case 'n':
 			print_fields_have_header = 0;
+			break;
+		case 'o':
+			xstrfmtcat(opt_field_list, "%s,", optarg);
 			break;
 		case 'p':
 			print_fields_parsable_print =
@@ -415,11 +423,16 @@ Usage:  sshare [OPTION]                                                    \n\
   Valid OPTIONs are:                                                       \n\
     -a or --all            list all users                                  \n\
     -A or --accounts=      display specific accounts (comma separated list)\n\
-    -h or --noheader       omit header from output                         \n\
+    -e or --helpformat     Print a list of fields that can be specified    \n\
+                           with the '--format' option                      \n\
+    -l or --long           include normalized usage in output              \n\
+    -m or --partition      print the partition part of the association     \n\
     -M or --cluster=name   cluster to issue commands to.  Default is       \n\
                            current cluster.  cluster with no name will     \n\
                            reset to default.                               \n\
-    -l or --long           include normalized usage in output              \n\
+    -n or --noheader       omit header from output                         \n\
+    -o or --format=        Comma separated list of fields. (use            \n\
+                           (\"--helpformat\" for a list of available fields).\n\
     -p or --parsable       '|' delimited output with a trailing '|'        \n\
     -P or --parsable2      '|' delimited output without a trailing '|'     \n\
     -u or --users=         display specific users (comma separated list)   \n\
@@ -431,3 +444,17 @@ Usage:  sshare [OPTION]                                                    \n\
                                                                            \n\n");
 }
 
+static void _help_format_msg(void)
+{
+	int i;
+
+	for (i = 0; fields[i].name; i++) {
+		if (i & 3)
+			printf(" ");
+		else if (i)
+			printf("\n");
+		printf("%-17s", fields[i].name);
+	}
+	printf("\n");
+	return;
+}
