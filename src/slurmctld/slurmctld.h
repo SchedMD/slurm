@@ -722,7 +722,10 @@ struct job_record {
 					 * plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */
 	uint16_t start_protocol_ver;	/* Slurm version job was
-					 * started with */
+					 * started with either the
+					 * creating message or the
+					 * lowest slurmd in the
+					 * allocation */
 	time_t start_time;		/* time execution begins,
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */
@@ -822,11 +825,10 @@ struct 	step_record {
 	uint8_t no_kill;		/* 1 if no kill on node failure */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
-	uint16_t slurmd_protocol_ver;   /* Lowest protocol version running on
-					 * the slurmd's in this step.
-					 */
 	uint16_t start_protocol_ver;	/* Slurm version step was
-					 * started with */
+					 * started with either srun
+					 * or the lowest slurmd
+					 * version it is talking to */
 	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
@@ -2072,12 +2074,14 @@ extern void step_alloc_lps(struct step_record *step_ptr);
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * IN batch_step - set if step is a batch script
- * RET - 0 or error code
+ * IN protocol_version - slurm protocol version of client
+  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 extern int step_create(job_step_create_request_msg_t *step_specs,
-		       struct step_record** new_step_record, bool batch_step);
+		       struct step_record** new_step_record, bool batch_step,
+		       uint16_t protocol_version);
 
 /*
  * step_layout_create - creates a step_layout according to the inputs.
