@@ -1019,9 +1019,10 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
 
+	assoc_mgr_lock(&locks);
+
 	real_decay = run_decay * _calc_billable_tres(job_ptr, start_period);
 
-	assoc_mgr_lock(&locks);
 	/* Just to make sure we don't make a
 	   window where the qos_ptr could of
 	   changed make sure we get it again
