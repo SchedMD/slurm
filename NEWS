@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix abort of batch launch if prolog is running, wait for prolog instead.
  -- Fix case where job would get the wrong cpu count when using
     --ntasks-per-core and --cpus-per-task together.
+ -- Add TRESBillingWeights to partitions in slurm.conf which allows taking into
+    consideration any TRES Type when calculating the usage of a job.
 
 * Changes in Slurm 15.08.0pre6
 ==============================
