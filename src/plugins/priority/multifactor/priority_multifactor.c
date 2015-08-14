@@ -766,15 +766,12 @@ static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
 		if (tres_run_delta[i] >
 		    qos->usage->grp_used_tres_run_secs[i]) {
 			error("_remove_qos_tres_run_secs: job %u: "
-			      "QOS %s TRES %s%s%s grp_used_tres_run_secs "
+			      "QOS %s TRES %s grp_used_tres_run_secs "
 			      "underflow, tried to remove %"PRIu64" seconds "
 			      "when only %"PRIu64" remained.",
 			      job_id,
 			      qos->name,
-			      assoc_mgr_tres_array[i]->type,
-			      assoc_mgr_tres_array[i]->name ? "/" : "",
-			      assoc_mgr_tres_array[i]->name ?
-			      assoc_mgr_tres_array[i]->name : "",
+			      assoc_mgr_tres_name_array[i],
 			      tres_run_delta[i],
 			      qos->usage->grp_used_tres_run_secs[i]);
 			qos->usage->grp_used_tres_run_secs[i] = 0;
@@ -785,15 +782,12 @@ static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
 		if (priority_debug) {
 			info("_remove_qos_tres_run_secs: job %u: "
 			     "Removed %"PRIu64" unused seconds "
-			     "from QOS %s TRES %s%s%s "
+			     "from QOS %s TRES %s "
 			     "grp_used_tres_run_secs = %"PRIu64,
 			     job_id,
 			     tres_run_delta[i],
 			     qos->name,
-			     assoc_mgr_tres_array[i]->type,
-			     assoc_mgr_tres_array[i]->name ? "/" : "",
-			     assoc_mgr_tres_array[i]->name ?
-			     assoc_mgr_tres_array[i]->name : "",
+			     assoc_mgr_tres_name_array[i],
 			     qos->usage->grp_used_tres_run_secs[i]);
 		}
 	}
@@ -812,15 +806,12 @@ static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
 		if (tres_run_delta[i] >
 		    assoc->usage->grp_used_tres_run_secs[i]) {
 			error("_remove_assoc_tres_run_secs: job %u: "
-			      "assoc %u TRES %s%s%s grp_used_tres_run_secs "
+			      "assoc %u TRES %s grp_used_tres_run_secs "
 			      "underflow, tried to remove %"PRIu64" seconds "
 			      "when only %"PRIu64" remained.",
 			      job_id,
 			      assoc->id,
-			      assoc_mgr_tres_array[i]->type,
-			      assoc_mgr_tres_array[i]->name ? "/" : "",
-			      assoc_mgr_tres_array[i]->name ?
-			      assoc_mgr_tres_array[i]->name : "",
+			      assoc_mgr_tres_name_array[i],
 			      tres_run_delta[i],
 			      assoc->usage->grp_used_tres_run_secs[i]);
 			assoc->usage->grp_used_tres_run_secs[i] = 0;
@@ -831,15 +822,12 @@ static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
 		if (priority_debug) {
 			info("_remove_assoc_tres_run_secs: job %u: "
 			     "Removed %"PRIu64" unused seconds "
-			     "from assoc %d TRES %s%s%s "
+			     "from assoc %d TRES %s "
 			     "grp_used_tres_run_secs = %"PRIu64,
 			     job_id,
 			     tres_run_delta[i],
 			     assoc->id,
-			     assoc_mgr_tres_array[i]->type,
-			     assoc_mgr_tres_array[i]->name ? "/" : "",
-			     assoc_mgr_tres_array[i]->name ?
-			     assoc_mgr_tres_array[i]->name : "",
+			     assoc_mgr_tres_name_array[i],
 			     assoc->usage->grp_used_tres_run_secs[i]);
 		}
 	}
@@ -1010,11 +998,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (!job_ptr->tres_alloc_cnt[i])
 				continue;
-			info("TRES %s%s%s: %"PRIu64,
-			     assoc_mgr_tres_array[i]->type,
-			     assoc_mgr_tres_array[i]->name ? "/" : "",
-			     assoc_mgr_tres_array[i]->name ?
-			     assoc_mgr_tres_array[i]->name : "",
+			info("TRES %s: %"PRIu64,
+			     assoc_mgr_tres_name_array[i],
 			     job_ptr->tres_alloc_cnt[i]);
 		}
 	}

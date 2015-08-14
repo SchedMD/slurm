@@ -202,12 +202,9 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 			qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
 			debug2("acct_policy_job_fini: "
 			       "grp_used_tres_run_secs "
-			       "underflow for qos %s tres %s%s%s",
+			       "underflow for qos %s tres %s",
 			       qos_ptr->name,
-			       assoc_mgr_tres_array[i]->type,
-			       assoc_mgr_tres_array[i]->name ? "/" : "",
-			       assoc_mgr_tres_array[i]->name ?
-			       assoc_mgr_tres_array[i]->name : "");
+			       assoc_mgr_tres_name_array[i]);
 			} else
 				qos_ptr->usage->grp_used_tres_run_secs[i] -=
 					unused_tres_run_secs[i];
@@ -222,26 +219,20 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 				assoc_ptr->usage->grp_used_tres_run_secs[i] = 0;
 				debug2("acct_policy_job_fini: "
 				       "grp_used_tres_run_secs "
-				       "underflow for account %s tres %s%s%s",
+				       "underflow for account %s tres %s",
 				       assoc_ptr->acct,
-				       assoc_mgr_tres_array[i]->type,
-				       assoc_mgr_tres_array[i]->name ? "/" : "",
-				       assoc_mgr_tres_array[i]->name ?
-				       assoc_mgr_tres_array[i]->name : "");
+				       assoc_mgr_tres_name_array[i]);
 
 			} else {
 				assoc_ptr->usage->grp_used_tres_run_secs[i] -=
 					unused_tres_run_secs[i];
 				debug4("acct_policy_job_fini: job %u. "
 				       "Removed %"PRIu64" unused seconds "
-				       "from acct %s tres %s%s%s "
+				       "from acct %s tres %s "
 				       "grp_used_tres_run_secs = %"PRIu64"",
 				       job_ptr->job_id, unused_tres_run_secs[i],
 				       assoc_ptr->acct,
-				       assoc_mgr_tres_array[i]->type,
-				       assoc_mgr_tres_array[i]->name ? "/" : "",
-				       assoc_mgr_tres_array[i]->name ?
-				       assoc_mgr_tres_array[i]->name : "",
+				       assoc_mgr_tres_name_array[i],
 				       assoc_ptr->usage->
 				       grp_used_tres_run_secs[i]);
 			}
