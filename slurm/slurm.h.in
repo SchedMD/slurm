@@ -668,7 +668,7 @@ enum jobacct_data_type {
 	JOBACCT_DATA_TOT_PAGES,	/* data-> uint64_t psize */
 	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_CPU,	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_CPU,	/* data-> double psize */
 	JOBACCT_DATA_ACT_CPUFREQ, /* data-> uint32_t psize hb*/
 	JOBACCT_DATA_CONSUMED_ENERGY, /* data-> uint64_t psize hb*/
 	JOBACCT_DATA_MAX_DISK_READ, /* data->double psize */
