@@ -786,6 +786,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
+	req.protocol_version = ctx->step_resp->slurmd_protocol_ver;
 
 	debug3("sending signal %d to job %u on host %s",
 	       signo, ctx->job_id, name);
@@ -1578,6 +1579,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
+	req.protocol_version = ctx->step_resp->slurmd_protocol_ver;
 
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 	       return SLURM_ERROR;
@@ -1621,6 +1623,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
+	msg.protocol_version = ctx->step_resp->slurmd_protocol_ver;
 
 #ifdef HAVE_FRONT_END
 	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);

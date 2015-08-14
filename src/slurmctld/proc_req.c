@@ -2276,10 +2276,12 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	error_code = step_create(req_step_msg, &step_rec, false);
+	if (step_rec->slurmd_protocol_ver > msg->protocol_version)
+		step_rec->slurmd_protocol_ver = msg->protocol_version;
 
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,
-					     msg->protocol_version);
+					     step_rec->slurmd_protocol_ver);
 		ext_sensors_g_get_stepstartdata(step_rec);
 	}
 	END_TIMER2("_slurm_rpc_job_step_create");
@@ -2322,6 +2324,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		}
 #endif
 		job_step_resp.cred           = slurm_cred;
+		job_step_resp.slurmd_protocol_ver =
+			step_rec->slurmd_protocol_ver;
 		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
 		job_step_resp.switch_job     = step_rec->switch_job;
 

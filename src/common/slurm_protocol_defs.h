@@ -715,6 +715,9 @@ typedef struct job_step_create_response_msg {
                                            * step is laid out */
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *select_jobinfo;	/* select opaque data type */
+	uint16_t slurmd_protocol_ver;   /* Lowest protocol version running on
+					 * the slurmd's in this step.
+					 */
 	switch_jobinfo_t *switch_job;	/* switch context, opaque
                                          * data structure */
 } job_step_create_response_msg_t;

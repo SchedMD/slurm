@@ -2114,8 +2114,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
 	char *tmp_tres_str = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 #ifdef HAVE_ALPS_CRAY
 	uint32_t resv_id = 0;
@@ -2622,6 +2622,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	 * used by this job step */
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	last_bit  = bit_fls(job_ptr->node_bitmap);
+
+	step_ptr->slurmd_protocol_ver = SLURM_PROTOCOL_VERSION;
+
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
 
@@ -2629,6 +2632,14 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			continue;
 		job_node_offset++;
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
+			struct node_record *node_ptr =
+				node_record_table_ptr + i;
+
+			if (step_ptr->slurmd_protocol_ver >
+			    node_ptr->protocol_version)
+				step_ptr->slurmd_protocol_ver =
+					node_ptr->protocol_version;
+
 			/* find out the position in the job */
 			pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
 			if (pos == -1)
@@ -2648,8 +2659,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			    && (job_ptr->details->cpu_bind_type
 				& CPU_BIND_ONE_THREAD_PER_CORE)) {
 				uint16_t threads;
-				struct node_record *node_ptr =
-					node_record_table_ptr + i;
 				if (slurmctld_conf.fast_schedule)
 					threads = node_ptr->config_ptr->threads;
 				else
@@ -3547,6 +3556,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	pack16(step_ptr->resv_port_cnt, buffer);
 	pack16(step_ptr->state, buffer);
 	pack16(step_ptr->start_protocol_ver, buffer);
+	pack16(step_ptr->slurmd_protocol_ver, buffer);
 
 	pack8(step_ptr->no_kill, buffer);
 
@@ -3615,6 +3625,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	uint8_t no_kill;
 	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
+	uint16_t slurmd_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt, state;
 	uint32_t core_size, cpu_count, exit_code, pn_min_memory, name_len;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
@@ -3638,6 +3649,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
+		safe_unpack16(&slurmd_protocol_ver, buffer);
 
 		safe_unpack8(&no_kill, buffer);
 
@@ -3897,6 +3909,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
 	step_ptr->state        = state;
 	step_ptr->start_protocol_ver = start_protocol_ver;
+	step_ptr->slurmd_protocol_ver = slurmd_protocol_ver;
 
 	if (!step_ptr->ext_sensors)
 		step_ptr->ext_sensors = ext_sensors_alloc();

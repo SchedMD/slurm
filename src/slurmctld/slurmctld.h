@@ -721,7 +721,7 @@ struct job_record {
 					 * and epilog scripts as set by SPANK
 					 * plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */
-	uint16_t start_protocol_ver;	/* Slurm version step was
+	uint16_t start_protocol_ver;	/* Slurm version job was
 					 * started with */
 	time_t start_time;		/* time execution begins,
 					 * actual or expected */
@@ -822,6 +822,9 @@ struct 	step_record {
 	uint8_t no_kill;		/* 1 if no kill on node failure */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
+	uint16_t slurmd_protocol_ver;   /* Lowest protocol version running on
+					 * the slurmd's in this step.
+					 */
 	uint16_t start_protocol_ver;	/* Slurm version step was
 					 * started with */
 	int *resv_port_array;		/* reserved port indexes */
