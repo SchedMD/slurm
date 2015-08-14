@@ -113,7 +113,7 @@ proc sshare_opt { soption } {
 		return $matches
 	}
 
-	if { $soption == "-noheader" || $soption == "h" } {
+	if { $soption == "-noheader" || $soption == "n" } {
 
 		spawn $sshare -$soption
 		expect {
@@ -125,7 +125,7 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "Account|User|Raw Shares|Norm Shares|Raw Usage|Norm Usage|Effectv Usage" {
+			-re "Account|User|RawShares|NormShares|RawUsage|NormUsage|EffectvUsage" {
 				if {$debug} {send_user "\nmatch4\n"}
 				incr matches
 				exp_continue
@@ -164,12 +164,12 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "Account\\|User\\|Raw Shares\\|Norm Shares\\|" {
+			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Effectv Usage\\|FairShare\\|" {
+			-re "RawUsage\\|EffectvUsage\\|FairShare\\|" {
 				if {$debug} {send_user "\nmatch5\n"}
 				incr matches
 				exp_continue
@@ -203,12 +203,12 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "Account\\|User\\|Raw Shares\\|Norm Shares\\|" {
+			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
 				if {$debug} {send_user "\nmatch6\n"}
 				incr matches
 				exp_continue
 			}
-			-re "Raw Usage\\|Effectv Usage\\|FairShare" {
+			-re "RawUsage\\|EffectvUsage\\|FairShare" {
 				if {$debug} {send_user "\nmatch7\n"}
 				incr matches
 				exp_continue
@@ -334,7 +334,7 @@ if {$matches != 3} {
 	set exit_code 1
 }
 
-set matches [sshare_opt h ]
+set matches [sshare_opt n ]
 if {$matches != 0} {
 	send_user "\nFAILURE: sshare -n failed ($matches != 0)\n"
 	set exit_code 1
