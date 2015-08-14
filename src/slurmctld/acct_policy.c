@@ -293,7 +293,8 @@ static void _set_qos_order(struct job_record *job_ptr,
 	xassert(qos_ptr_2);
 
 	/* Initialize incoming pointers */
-	*qos_ptr_1 = *qos_ptr_2 = NULL;
+	*qos_ptr_1 = NULL;
+	*qos_ptr_2 = NULL;
 
 	if (job_ptr->qos_ptr) {
 		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr) {
