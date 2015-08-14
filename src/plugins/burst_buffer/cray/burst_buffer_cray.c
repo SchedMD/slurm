@@ -3027,12 +3027,6 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	if ((bb_job->total_size + bb_job->swap_size) == 0) {
-		/* Only persistent burst buffer operations */
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-		return rc;
-	}
-
 	hash_inx = job_ptr->job_id % 10;
 	xstrfmtcat(job_dir, "%s/hash.%d/job.%u", state_save_loc, hash_inx,
 		   job_ptr->job_id);
