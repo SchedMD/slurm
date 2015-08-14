@@ -1972,7 +1972,7 @@ void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			xfree(tmp_char);
 			break;
-		case PRINT_TRES:
+		case PRINT_TRESA:
 			switch(type) {
 			case JOB:
 				tmp_char = job->tres_alloc_str;
@@ -1980,6 +1980,35 @@ void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_char = step->tres_alloc_str;
 				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+
+			if (!g_tres_list) {
+				slurmdb_tres_cond_t tres_cond;
+				memset(&tres_cond, 0,
+				       sizeof(slurmdb_tres_cond_t));
+				tres_cond.with_deleted = 1;
+				g_tres_list = slurmdb_tres_get(
+					acct_db_conn, &tres_cond);
+			}
+
+			tmp_char = slurmdb_make_tres_string_from_simple(
+				tmp_char, g_tres_list);
+
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_TRESR:
+			switch(type) {
+			case JOB:
+				tmp_char = job->tres_req_str;
+				break;
+			case JOBSTEP:
 			case JOBCOMP:
 			default:
 				tmp_char = NULL;

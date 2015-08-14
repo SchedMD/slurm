@@ -94,6 +94,7 @@ char *job_req_inx[] = {
 	"t1.gres_req",
 	"t1.gres_used",
 	"t1.tres_alloc",
+	"t1.tres_req",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -139,7 +140,8 @@ enum {
 	JOB_REQ_GRES_ALLOC,
 	JOB_REQ_GRES_REQ,
 	JOB_REQ_GRES_USED,
-	JOB_REQ_TRES,
+	JOB_REQ_TRESA,
+	JOB_REQ_TRESR,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -695,8 +697,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 
-		if (row[JOB_REQ_TRES])
-			job->tres_alloc_str = xstrdup(row[JOB_REQ_TRES]);
+		if (row[JOB_REQ_TRESA])
+			job->tres_alloc_str = xstrdup(row[JOB_REQ_TRESA]);
+		if (row[JOB_REQ_TRESR])
+			job->tres_req_str = xstrdup(row[JOB_REQ_TRESR]);
 
 		if (only_pending || (job_cond && job_cond->without_steps))
 			goto skip_steps;

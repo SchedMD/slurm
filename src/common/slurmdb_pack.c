@@ -4531,6 +4531,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
+		packstr(job->tres_req_str, buffer);
 
 		pack32(job->uid, buffer);
 		packstr(job->user, buffer);
@@ -4752,6 +4753,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_req_str,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);

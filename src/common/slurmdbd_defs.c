@@ -2662,6 +2662,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->node_inx);
 		xfree(msg->partition);
 		xfree(msg->tres_alloc_str);
+		xfree(msg->tres_req_str);
 		xfree(msg->wckey);
 		xfree(msg);
 	}
@@ -3325,6 +3326,7 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack_time(msg->submit_time, buffer);
 		pack32(msg->timelimit, buffer);
 		packstr(msg->tres_alloc_str, buffer);
+		packstr(msg->tres_req_str, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->wckey, buffer);
 	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
@@ -3444,6 +3446,8 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->tres_req_str,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
