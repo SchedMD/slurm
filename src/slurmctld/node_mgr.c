@@ -854,8 +854,9 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
-			else if (_is_cloud_hidden(node_ptr))
-				hidden = false;
+//			Don't hide the node if explicitly requested by name
+//			else if (_is_cloud_hidden(node_ptr))
+//				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
 				hidden = true;
