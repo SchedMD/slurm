@@ -2237,11 +2237,6 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 	slurmdb_combine_tres_strings(out, cur, tres_str_flags);
 
 	if (xstrcmp(*out, cur)) {
-		/* We always want the first char a comma in the
-		 * database so make it that way if we have something
-		 * to add.
-		 * FIXME: perhaps we should just use TRES_STR_FLAG_COMMA1?
-		 */
 		if (vals) {
 			/* This logic is here because while the change
 			 * we are doing on the limit is the same for
@@ -2254,9 +2249,8 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 			 * does do the job.
 			 */
 			xstrfmtcat(*vals, ", %s = "
-				   "if (%s=%u, '%s%s', %s)",
+				   "if (%s=%u, '%s', %s)",
 				   name, assoc ? "id_assoc" : "id", id,
-				   *out[0] ? "," : "",
 				   *out, name);
 			/* xstrfmtcat(*vals, ", %s='%s%s')", */
 			/* 	   name, */
