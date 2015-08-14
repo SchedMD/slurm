@@ -448,6 +448,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"DestroyBuffer", S_P_STRING},
+		{"Flags", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
 /*		{"Gres", S_P_STRING},	*/
@@ -519,6 +520,12 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 	s_p_get_string(&state_ptr->bb_config.destroy_buffer, "DestroyBuffer",
 		       bb_hashtbl);
+
+	if (s_p_get_string(&tmp, "Flags", bb_hashtbl)) {
+		state_ptr->bb_config.flags = slurm_bb_str2flags(tmp);
+		xfree(tmp);
+	}
+
 	s_p_get_string(&state_ptr->bb_config.get_sys_state, "GetSysState",
 		       bb_hashtbl);
 	if (s_p_get_string(&tmp, "Granularity", bb_hashtbl)) {
@@ -708,6 +715,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	packstr(config_ptr->default_pool,    buffer);
 	packstr(config_ptr->deny_users_str,  buffer);
 	packstr(config_ptr->destroy_buffer,  buffer);
+	pack32(config_ptr->flags,            buffer);
 	packstr(config_ptr->get_sys_state,   buffer);
 	pack64(config_ptr->granularity,      buffer);
 	pack32(config_ptr->gres_cnt,         buffer);

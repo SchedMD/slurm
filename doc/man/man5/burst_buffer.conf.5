@@ -58,6 +58,18 @@ and per\-job burst buffers.
 This option is not used by the burst_buffer/cray plugin.
 
 .TP
+\fBFlags\fR
+String used to control various functions.
+Multiple options may be comma separated.
+Supported options include:
+.RS
+.TP
+\fBEnablePersistent\fR
+Enables regular users the ability to create and destroy persistent burst buffers.
+By default, only privileged users can create ore destroy persistent burst buffers.
+.RE
+
+.TP
 \fBGetSysState\fR
 Fully qualified path name of a program which will return the current burst
 buffer state.

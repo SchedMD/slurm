@@ -4151,6 +4151,29 @@ rpc_num2string(uint16_t opcode)
 	}
 }
 
+extern char *
+slurm_bb_flags2str(uint32_t bb_flags)
+{
+	static char bb_str[1024];
+
+	bb_str[0] = '\0';
+	if (bb_flags & BB_FLAG_ENABLE_PERSISTENT)
+		strcat(bb_str, "EnablePersistent");
+
+	return bb_str;
+}
+
+extern uint32_t
+slurm_bb_str2flags(char *bb_str)
+{
+	uint32_t bb_flags = 0;
+
+	if (bb_str && strstr(bb_str, "EnablePersistent"))
+		bb_flags |= BB_FLAG_ENABLE_PERSISTENT;
+
+	return bb_flags;
+}
+
 extern void
 slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 {

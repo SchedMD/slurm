@@ -1390,6 +1390,10 @@ extern char *priority_flags_string(uint16_t priority_flags);
 /* user needs to xfree return value */
 extern char *reservation_flags_string(uint32_t flags);
 
+/* Functions to convert burst buffer flags between strings and numbers */
+extern char *   slurm_bb_flags2str(uint32_t bb_flags);
+extern uint32_t slurm_bb_str2flags(char *bb_str);
+
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t
  * to its name.

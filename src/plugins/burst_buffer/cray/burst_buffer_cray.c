@@ -991,7 +991,8 @@ static void _load_state(bool init_config)
 
 		bb_alloc = bb_alloc_name_rec(&bb_state, sessions[i].token,
 					     sessions[i].user_id);
-		if ((sessions[i].token[0] >='0') &&
+		if ((sessions[i].token != NULL)  &&
+		    (sessions[i].token[0] >='0') &&
 		    (sessions[i].token[0] <='9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
@@ -2353,7 +2354,7 @@ static void _purge_vestigial_bufs(void)
 /*
  * Return the total burst buffer size in MB
  */
-extern uint64_t bb_g_get_system_size(void)
+extern uint64_t bb_p_get_system_size(void)
 {
 	uint64_t size = 0;
 
@@ -2782,7 +2783,7 @@ fini:	/* Clean-up */
  * IN node_cnt - number of nodes in the job
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void bb_g_set_job_tres_cnt(struct job_record *job_ptr,
+extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
 				  uint32_t node_cnt, bool locked)
 {
 	bb_job_t *bb_job;

@@ -314,9 +314,10 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line 5 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StageInTimeout=%u StageOutTimeout=%u ",
+		"StageInTimeout=%u StageOutTimeout=%u Flags=%s",
 		burst_buffer_ptr->stage_in_timeout,
-		burst_buffer_ptr->stage_out_timeout);
+		burst_buffer_ptr->stage_out_timeout,
+		slurm_bb_flags2str(burst_buffer_ptr->flags));
 	xstrcat(out_buf, tmp_line);
 	if (one_liner)
 		xstrcat(out_buf, " ");

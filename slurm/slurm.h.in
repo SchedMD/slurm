@@ -4642,6 +4642,12 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 /*****************************************************************************\
  *      SLURM BURST BUFFER FUNCTIONS
 \*****************************************************************************/
+#define BB_FLAG_DISABLE_PERSISTENT	0x0001	/* Disable regular user to create
+						 * and destroy persistent burst
+						 * buffers */
+#define BB_FLAG_ENABLE_PERSISTENT	0x0002	/* Allow regular user to create
+						 * and destroy persistent burst
+						 * buffers */
 
 #define BB_SIZE_IN_NODES	0x8000000000000000
 #define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */
@@ -4695,6 +4701,7 @@ typedef struct {
 	char *create_buffer;
 	char *deny_users;
 	char *destroy_buffer;
+	uint32_t flags;			/* See BB_FLAG_* above */
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */

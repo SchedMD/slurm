@@ -186,6 +186,10 @@ A sample batch script follows:</p>
 /home/alan/a.out
 </pre>
 
+<p><b>NOTE:</b> The ability to create and destroy peristent burst buffers may be
+limited by the "Flags" option in the burst_buffer.conf file.
+By default only privileged users can create ore destroy persistent burst buffers.</p>
+
 <h2><a name="interactive">Interactive Job Options</a></h2>
 
 <p>Interactive jobs may include directives for creating job specific burst
@@ -262,6 +266,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:nodes:2,generic:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 11 August 2015</p>
+<p style="text-align:center;">Last modified 14 August 2015</p>
 
 <!--#include virtual="footer.txt"-->

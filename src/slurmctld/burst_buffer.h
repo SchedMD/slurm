@@ -118,7 +118,7 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
  * IN node_cnt - number of nodes in the job
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void bb_g_set_job_tres_cnt(struct job_record *job_ptr,
+extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
 				  uint32_t node_cnt, bool locked);
 
 /*

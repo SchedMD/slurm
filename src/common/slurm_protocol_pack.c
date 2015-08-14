@@ -11098,6 +11098,7 @@ static int _unpack_burst_buffer_info_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->destroy_buffer,
 				       &uint32_tmp, buffer);
+		safe_unpack32(&bb_info_ptr->flags, buffer);
 		safe_unpackstr_xmalloc(&bb_info_ptr->get_sys_state, &uint32_tmp,
 				       buffer);
 		safe_unpack64(&bb_info_ptr->granularity, buffer);

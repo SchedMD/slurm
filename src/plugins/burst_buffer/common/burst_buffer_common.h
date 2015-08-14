@@ -65,6 +65,7 @@ typedef struct bb_config {
 	uid_t   *deny_users;
 	char    *deny_users_str;
 	char    *destroy_buffer;
+	uint32_t flags;			/* See BB_FLAG_* in slurm.h */
 	char    *get_sys_state;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
