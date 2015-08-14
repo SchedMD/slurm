@@ -1266,6 +1266,24 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
+	ListIterator itr;
+	struct part_record *part_ptr;
+	slurmctld_lock_t part_write_lock =
+		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+	lock_slurmctld(part_write_lock);
+	if (part_list) {
+		itr = list_iterator_create(part_list);
+		while ((part_ptr = list_next(itr))) {
+			if (part_ptr->qos_ptr != rec)
+				continue;
+			error("Partition %s's QOS %s was just removed, "
+			      "you probably didn't mean for this to happen.",
+			      part_ptr->name, rec->name);
+			part_ptr->qos_ptr = NULL;
+		}
+	}
+	unlock_slurmctld(part_write_lock);
 
 	cnt = job_hold_by_qos_id(rec->id);
 
