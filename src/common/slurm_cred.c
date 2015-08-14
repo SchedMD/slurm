@@ -1788,6 +1788,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
 					    cred->jobid, cred->stepid,
 					    SLURM_PROTOCOL_VERSION);
+		pack16(cred->job_core_spec,  buffer);
 		pack32(cred->job_mem_limit,  buffer);
 		pack32(cred->step_mem_limit, buffer);
 		packstr(cred->step_hostlist, buffer);
