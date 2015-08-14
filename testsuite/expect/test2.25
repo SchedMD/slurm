@@ -248,7 +248,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: scontrol show cache did not show correct information($match != 5).\n"
+		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 5).\n"
 		set exit_code 1
 	}
 
@@ -330,3 +330,4 @@ if {[test_using_slurmdbd]} {
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
+exit $exit_code
