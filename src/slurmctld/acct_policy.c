@@ -701,6 +701,7 @@ static int _validate_tres_usage_limits_for_assoc(
 	bool safe_limits)
 {
 	int i;
+	uint64_t usage = 0;
 
 	xassert(tres_limit_array);
 	xassert(qos_tres_limit_array);
@@ -722,9 +723,11 @@ static int _validate_tres_usage_limits_for_assoc(
 			if (tres_req_cnt[i] > tres_limit_array[i])
 				return 2;
 
-			if (tres_usage && curr_usage &&
+			if (curr_usage)
+				usage = curr_usage[i];
+			if (tres_usage &&
 			    ((tres_req_cnt[i] + tres_usage[i]) >
-			     (tres_limit_array[i] - curr_usage[i])))
+			     (tres_limit_array[i] - usage)))
 				return 3;
 		}
 	}
@@ -890,6 +893,7 @@ static int _validate_tres_usage_limits_for_qos(
 	uint16_t *admin_limit_set,
 	bool safe_limits)
 {
+	uint64_t usage = 0;
 	int i;
 
 	xassert(tres_limit_array);
@@ -914,9 +918,11 @@ static int _validate_tres_usage_limits_for_qos(
 			if (tres_req_cnt[i] > tres_limit_array[i])
 				return 2;
 
-			if (tres_usage && curr_usage &&
+			if (curr_usage)
+				usage = curr_usage[i];
+			if (tres_usage &&
 			    ((tres_req_cnt[i] + tres_usage[i]) >
-			     (tres_limit_array[i] - curr_usage[i])))
+			     (tres_limit_array[i] - usage)))
 				return 3;
 		}
 	}
