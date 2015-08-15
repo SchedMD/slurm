@@ -2041,7 +2041,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       job_desc->user_id,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
-			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       assoc_ptr->max_tres_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			break;
