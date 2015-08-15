@@ -462,6 +462,60 @@ int unpack64_array(uint64_t ** valp, uint32_t * size_val, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
+void packdouble_array(double *valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		packdouble(*(valp + i), buffer);
+	}
+}
+
+int unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc_nz((*size_val) * sizeof(double));
+	for (i = 0; i < *size_val; i++) {
+		if (unpackdouble((*valp) + i, buffer))
+			return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+void packlongdouble_array(long double *valp, uint32_t size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	pack32(size_val, buffer);
+
+	for (i = 0; i < size_val; i++) {
+		packlongdouble(*(valp + i), buffer);
+	}
+}
+
+int unpacklongdouble_array(long double **valp, uint32_t* size_val, Buf buffer)
+{
+	uint32_t i = 0;
+
+	if (unpack32(size_val, buffer))
+		return SLURM_ERROR;
+
+	*valp = xmalloc_nz((*size_val) * sizeof(long double));
+	for (i = 0; i < *size_val; i++) {
+		if (unpacklongdouble((*valp) + i, buffer))
+			return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+
+
 /*
  * Given a 16-bit integer in host byte order, convert to network byte order,
  * store in buffer and adjust buffer counters.
