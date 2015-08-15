@@ -1309,6 +1309,7 @@ static int _restore_node_state(int recover,
 		}
 
 		node_ptr->last_response = old_node_ptr->last_response;
+		node_ptr->protocol_version = old_node_ptr->protocol_version;
 
 		/* make sure we get the old state from the select
 		 * plugin, just swap it out to avoid possible memory leak */
