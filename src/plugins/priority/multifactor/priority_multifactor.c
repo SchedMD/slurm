@@ -173,6 +173,7 @@ static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
  */
 static int _apply_decay(double real_decay)
 {
+	int i;
 	ListIterator itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
@@ -198,6 +199,8 @@ static int _apply_decay(double real_decay)
 	*/
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw *= real_decay;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			assoc->usage->usage_tres_raw[i] *= real_decay;
 		assoc->usage->grp_used_wall *= real_decay;
 	}
 	list_iterator_destroy(itr);
@@ -205,6 +208,8 @@ static int _apply_decay(double real_decay)
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((qos = list_next(itr))) {
 		qos->usage->usage_raw *= real_decay;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			qos->usage->usage_tres_raw[i] *= real_decay;
 		qos->usage->grp_used_wall *= real_decay;
 	}
 	list_iterator_destroy(itr);
@@ -223,6 +228,7 @@ static int _reset_usage(void)
 	ListIterator itr = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
+	int i;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -239,6 +245,8 @@ static int _reset_usage(void)
 	 */
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			assoc->usage->usage_tres_raw[i] = 0;
 		assoc->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
@@ -246,6 +254,8 @@ static int _reset_usage(void)
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((qos = list_next(itr))) {
 		qos->usage->usage_raw = 0;
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			qos->usage->usage_tres_raw[i] = 0;
 		qos->usage->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
@@ -753,7 +763,8 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 }
 
 
-static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
+static void _handle_qos_tres_run_secs(uint64_t *tres_run_decay,
+				      uint64_t *tres_run_delta,
 				      uint32_t job_id,
 				      slurmdb_qos_rec_t *qos)
 {
@@ -763,9 +774,12 @@ static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (tres_run_decay)
+			qos->usage->usage_tres_raw[i] += tres_run_decay[i];
+
 		if (tres_run_delta[i] >
 		    qos->usage->grp_used_tres_run_secs[i]) {
-			error("_remove_qos_tres_run_secs: job %u: "
+			error("_handle_qos_tres_run_secs: job %u: "
 			      "QOS %s TRES %s grp_used_tres_run_secs "
 			      "underflow, tried to remove %"PRIu64" seconds "
 			      "when only %"PRIu64" remained.",
@@ -780,7 +794,7 @@ static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
 				tres_run_delta[i];
 
 		if (priority_debug) {
-			info("_remove_qos_tres_run_secs: job %u: "
+			info("_handle_qos_tres_run_secs: job %u: "
 			     "Removed %"PRIu64" unused seconds "
 			     "from QOS %s TRES %s "
 			     "grp_used_tres_run_secs = %"PRIu64,
@@ -793,7 +807,8 @@ static void _remove_qos_tres_run_secs(uint64_t *tres_run_delta,
 	}
 }
 
-static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
+static void _handle_assoc_tres_run_secs(uint64_t *tres_run_decay,
+					uint64_t *tres_run_delta,
 					uint32_t job_id,
 					slurmdb_assoc_rec_t *assoc)
 {
@@ -803,9 +818,12 @@ static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
+		if (tres_run_decay)
+			assoc->usage->usage_tres_raw[i] += tres_run_decay[i];
+
 		if (tres_run_delta[i] >
 		    assoc->usage->grp_used_tres_run_secs[i]) {
-			error("_remove_assoc_tres_run_secs: job %u: "
+			error("_handle_assoc_tres_run_secs: job %u: "
 			      "assoc %u TRES %s grp_used_tres_run_secs "
 			      "underflow, tried to remove %"PRIu64" seconds "
 			      "when only %"PRIu64" remained.",
@@ -820,7 +838,7 @@ static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
 				tres_run_delta[i];
 
 		if (priority_debug) {
-			info("_remove_assoc_tres_run_secs: job %u: "
+			info("_handle_assoc_tres_run_secs: job %u: "
 			     "Removed %"PRIu64" unused seconds "
 			     "from assoc %d TRES %s "
 			     "grp_used_tres_run_secs = %"PRIu64,
@@ -833,17 +851,17 @@ static void _remove_assoc_tres_run_secs(uint64_t *tres_run_delta,
 	}
 }
 
-static void _remove_tres_run_secs(uint64_t *tres_run_delta,
+static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 				  struct job_record *job_ptr)
 {
 
 	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 
-	_remove_qos_tres_run_secs(tres_run_delta,
+	_handle_qos_tres_run_secs(NULL, tres_run_delta,
 				  job_ptr->job_id, job_ptr->qos_ptr);
 	while (assoc) {
-		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
-					    assoc);
+		_handle_assoc_tres_run_secs(NULL, tres_run_delta,
+					    job_ptr->job_id, assoc);
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 }
@@ -898,7 +916,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 				job_ptr->tres_alloc_cnt[i];
 		}
 
-		_remove_tres_run_secs(tres_run_delta, job_ptr);
+		_handle_tres_run_secs(tres_run_delta, job_ptr);
 	}
 	assoc_mgr_unlock(&locks);
 	list_iterator_destroy(itr);
@@ -918,6 +936,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	slurmdb_assoc_rec_t *assoc;
 	double run_delta = 0.0, run_decay = 0.0, real_decay = 0.0;
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
+	uint64_t tres_run_decay[slurmctld_tres_cnt];
 	uint64_t tres_time_delta = 0;
 	int i;
 	uint64_t job_time_limit_ends = 0;
@@ -984,10 +1003,6 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	} else
 		tres_time_delta = run_delta;
 
-	for (i=0; i<slurmctld_tres_cnt; i++)
-		tres_run_delta[i] = tres_time_delta *
-			job_ptr->tres_alloc_cnt[i];
-
 	/* make sure we only run through this once at the end */
 	if (adjust_for_end)
 		job_ptr->end_time_exp = (time_t)NO_VAL;
@@ -1005,6 +1020,12 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	}
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
+
+	for (i=0; i<slurmctld_tres_cnt; i++) {
+		tres_run_delta[i] = tres_time_delta *
+			job_ptr->tres_alloc_cnt[i];
+		tres_run_decay[i] = run_decay * job_ptr->tres_alloc_cnt[i];
+	}
 
 	assoc_mgr_lock(&locks);
 
@@ -1027,7 +1048,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		qos->usage->grp_used_wall += run_decay;
 		qos->usage->usage_raw += (long double)real_decay;
 
-		_remove_qos_tres_run_secs(tres_run_delta, job_ptr->job_id, qos);
+		_handle_qos_tres_run_secs(tres_run_decay, tres_run_delta,
+					  job_ptr->job_id, qos);
 	}
 
 	/* We want to do this all the way up
@@ -1046,8 +1068,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 			     assoc->user, assoc->partition,
 			     assoc->usage->usage_raw, run_decay,
 			     assoc->usage->grp_used_wall);
-		_remove_assoc_tres_run_secs(tres_run_delta, job_ptr->job_id,
-					    assoc);
+		_handle_assoc_tres_run_secs(tres_run_decay, tres_run_delta,
+					    job_ptr->job_id, assoc);
 
 		assoc = assoc->usage->parent_assoc_ptr;
 	}

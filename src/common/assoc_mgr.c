@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -378,6 +379,8 @@ static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
 			assoc2->usage->grp_used_tres[i];
 		assoc1->usage->grp_used_tres_run_secs[i] +=
 			assoc2->usage->grp_used_tres_run_secs[i];
+		assoc1->usage->usage_tres_raw[i] +=
+			assoc2->usage->usage_tres_raw[i];
 	}
 	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
 
@@ -772,6 +775,9 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 				last_root->usage->usage_raw;
 			assoc_mgr_root_assoc->usage->usage_norm =
 				last_root->usage->usage_norm;
+			memcpy(assoc_mgr_root_assoc->usage->usage_tres_raw,
+			       last_root->usage->usage_tres_raw,
+			       sizeof(long double) * g_tres_count);
 		}
 	}
 
@@ -2931,7 +2937,12 @@ extern void assoc_mgr_get_shares(void *db_conn,
 		share->shares_norm = assoc->usage->shares_norm;
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
-		/* FIXME: This only works for CPUS now */
+		share->usage_tres_raw = xmalloc(
+			sizeof(long double) * g_tres_count);
+		memcpy(share->usage_tres_raw,
+		       assoc->usage->usage_tres_raw,
+		       sizeof(long double) * g_tres_count);
+
 		share->tres_grp_mins = xmalloc(sizeof(uint64_t) * g_tres_count);
 		memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
 		       sizeof(uint64_t) * g_tres_count);
@@ -3344,7 +3355,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	slurmdb_assoc_rec_t * rec = NULL;
 	slurmdb_assoc_rec_t * object = NULL;
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, i;
 	int parents_changed = 0;
 	int run_update_resvs = 0;
 	int resort = 0;
@@ -3685,6 +3696,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			if (!object->user) {
 				_clear_used_assoc_info(object);
 				object->usage->usage_raw = 0;
+				for (i=0; i<object->usage->tres_cnt; i++)
+					object->usage->usage_tres_raw[i] = 0;
 				object->usage->grp_used_wall = 0;
 			}
 
@@ -4673,6 +4686,7 @@ static void _reset_children_usages(List children_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
+	int i;
 
 	if (!children_list || !list_count(children_list))
 		return;
@@ -4681,6 +4695,9 @@ static void _reset_children_usages(List children_list)
 	while ((assoc = list_next(itr))) {
 		assoc->usage->usage_raw = 0.0;
 		assoc->usage->grp_used_wall = 0.0;
+		for (i=0; i<assoc->usage->tres_cnt; i++)
+			assoc->usage->usage_tres_raw[i] = 0;
+
 		if (assoc->user)
 			continue;
 
@@ -4689,11 +4706,82 @@ static void _reset_children_usages(List children_list)
 	list_iterator_destroy(itr);
 }
 
+/* tres read lock needs to be locked before calling this. */
+static char *_make_usage_tres_raw_str(long double *tres_cnt)
+{
+	int i;
+	char *tres_str = NULL;
+
+	if (!tres_cnt)
+		return NULL;
+
+	for (i=0; i<g_tres_count; i++) {
+		if (!assoc_mgr_tres_array[i] || !tres_cnt[i])
+			continue;
+		xstrfmtcat(tres_str, "%s%u=%Lf", tres_str ? "," : "",
+			   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
+	}
+
+	return tres_str;
+}
+
+static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
+{
+	char *tmp_str = tres_str;
+	int pos, id;
+	char *endptr;
+	slurmdb_tres_rec_t tres_rec;
+
+	xassert(tres_cnt);
+
+	if (!tres_str || !tres_str[0])
+		return;
+
+	if (tmp_str[0] == ',')
+		tmp_str++;
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+
+	while (tmp_str) {
+		id = atoi(tmp_str);
+		/* 0 isn't a valid tres id */
+		if (id <= 0) {
+			error("_set_usage_tres_raw: no id "
+			      "found at %s instead", tmp_str);
+			break;
+		}
+		if (!(tmp_str = strchr(tmp_str, '='))) {
+			error("_set_usage_tres_raw: "
+			      "no value found %s", tres_str);
+			break;
+		}
+
+		tres_rec.id = id;
+		pos = assoc_mgr_find_tres_pos(&tres_rec, true);
+		if (pos != -1) {
+			/* set the index to the count */
+			tres_cnt[pos] = strtold(++tmp_str, &endptr);
+		} else {
+			debug("_set_usage_tres_raw: "
+			       "no tres of id %u found in the array",
+			       tres_rec.id);
+		}
+		if (!(tmp_str = strchr(tmp_str, ',')))
+			break;
+		tmp_str++;
+	}
+
+
+	return;
+}
+
 extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
 	char *child;
 	char *child_str;
 	long double old_usage_raw = 0.0;
+	long double old_usage_tres_raw[g_tres_count];
+	int i;
 	double old_grp_used_wall = 0.0;
 	slurmdb_assoc_rec_t *sav_assoc = assoc;
 
@@ -4710,6 +4798,8 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	info("Resetting usage for %s %s", child, child_str);
 
 	old_usage_raw = assoc->usage->usage_raw;
+	for (i=0; i<g_tres_count; i++)
+		old_usage_tres_raw[i] = assoc->usage->usage_tres_raw[i];
 	old_grp_used_wall = assoc->usage->grp_used_wall;
 /*
  *	Reset this association's raw and group usages and subtract its
@@ -4723,6 +4813,11 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 		     assoc->id, assoc->user, assoc->acct);
 
 		assoc->usage->usage_raw -= old_usage_raw;
+
+		for (i=0; i<g_tres_count; i++)
+			assoc->usage->usage_tres_raw[i] -=
+				old_usage_tres_raw[i];
+
 		assoc->usage->grp_used_wall -= old_grp_used_wall;
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
@@ -4747,6 +4842,7 @@ extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
 	qos->usage->grp_used_wall = 0;
 
 	for (i=0; i<qos->usage->tres_cnt; i++) {
+		qos->usage->usage_tres_raw[i] = 0;
 		if (!qos->usage->grp_used_tres[i])
 			qos->usage->grp_used_tres_run_secs[i] = 0;
 	}
@@ -4756,7 +4852,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 {
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
+		*tmp_char = NULL;
 	dbd_list_msg_t msg;
 	Buf buffer = init_buf(high_buffer_size);
 	assoc_mgr_lock_t locks = { READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK,
@@ -4886,6 +4983,10 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 			pack32(assoc->id, buffer);
 			packlongdouble(assoc->usage->usage_raw, buffer);
+			tmp_char = _make_usage_tres_raw_str(
+				assoc->usage->usage_tres_raw);
+			packstr(tmp_char, buffer);
+			xfree(tmp_char);
 			pack32(assoc->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -4949,6 +5050,9 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		while ((qos = list_next(itr))) {
 			pack32(qos->id, buffer);
 			packlongdouble(qos->usage->usage_raw, buffer);
+			tmp_char = _make_usage_tres_raw_str(
+				qos->usage->usage_tres_raw);
+			packstr(tmp_char, buffer);
 			pack32(qos->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -5006,7 +5110,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 extern int load_assoc_usage(char *state_save_location)
 {
-	int data_allocated, data_read = 0;
+	int data_allocated, data_read = 0, i;
 	uint32_t data_size = 0;
 	uint16_t ver = 0;
 	int state_fd;
@@ -5075,10 +5179,14 @@ extern int load_assoc_usage(char *state_save_location)
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
 		slurmdb_assoc_rec_t *assoc = NULL;
+		char *tmp_str = NULL;
+		uint32_t tmp32;
+		long double usage_tres_raw[g_tres_count];
 
 		if (ver == SLURM_15_08_PROTOCOL_VERSION) {
 			safe_unpack32(&assoc_id, buffer);
 			safe_unpacklongdouble(&usage_raw, buffer);
+			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
 			safe_unpack32(&grp_used_wall, buffer);
 		} else {
 			uint64_t tmp64;
@@ -5097,12 +5205,17 @@ extern int load_assoc_usage(char *state_save_location)
 		if (assoc) {
 			assoc->usage->grp_used_wall = 0;
 			assoc->usage->usage_raw = 0;
+			for (i=0; i < g_tres_count; i++)
+				assoc->usage->usage_tres_raw[i] = 0;
+			memset(usage_tres_raw, 0, sizeof(usage_tres_raw));
+			_set_usage_tres_raw(usage_tres_raw, tmp_str);
 		}
-
 		while (assoc) {
 			assoc->usage->grp_used_wall += grp_used_wall;
 			assoc->usage->usage_raw += usage_raw;
-
+			for (i=0; i < g_tres_count; i++)
+				assoc->usage->usage_tres_raw[i] +=
+					usage_tres_raw[i];
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
 	}
@@ -5189,12 +5302,15 @@ extern int load_qos_usage(char *state_save_location)
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
 		uint32_t grp_used_wall = 0;
+		uint32_t tmp32;
 		long double usage_raw = 0;
 		slurmdb_qos_rec_t *qos = NULL;
+		char *tmp_str = NULL;
 
 		if (ver >= SLURM_15_08_PROTOCOL_VERSION) {
 			safe_unpack32(&qos_id, buffer);
 			safe_unpacklongdouble(&usage_raw, buffer);
+			safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
 			safe_unpack32(&grp_used_wall, buffer);
 		} else {
 			uint64_t tmp64 = 0;
@@ -5209,6 +5325,8 @@ extern int load_qos_usage(char *state_save_location)
 		if (qos) {
 			qos->usage->grp_used_wall = grp_used_wall;
 			qos->usage->usage_raw = usage_raw;
+			_set_usage_tres_raw(qos->usage->usage_tres_raw,
+					    tmp_str);
 		}
 
 		list_iterator_reset(itr);

@@ -539,8 +539,9 @@ struct slurmdb_assoc_usage {
 				 * (DON'T PACK for state file) */
 	long double usage_norm;	/* normalized usage
 				 * (DON'T PACK for state file) */
-	long double usage_raw;	/* measure of resource usage */
+	long double usage_raw;	/* measure of TRESBillableUnits usage */
 
+	long double *usage_tres_raw; /* measure of each TRES usage */
 	uint32_t used_jobs;	/* count of active jobs
 				 * (DON'T PACK for state file) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
@@ -736,6 +737,8 @@ typedef struct {
 	long double usage_raw;	/* measure of resource usage (DON'T
 				 * PACK for state file) */
 
+	long double *usage_tres_raw; /* measure of each TRES usage (DON'T
+				      * PACK for state file)*/
 	List user_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
 			       * for state file) */
 } slurmdb_qos_usage_t;

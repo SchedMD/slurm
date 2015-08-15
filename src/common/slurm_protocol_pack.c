@@ -2371,6 +2371,7 @@ static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 			packdouble(0, buffer);
 			packdouble(0, buffer);
 			pack64(0, buffer);
+			packlongdouble_array(NULL, 0, buffer);
 
 			packdouble(0, buffer);
 			packdouble(0, buffer);
@@ -2396,6 +2397,7 @@ static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 		packdouble(object->usage_efctv, buffer);
 		packdouble(object->usage_norm, buffer);
 		pack64(object->usage_raw, buffer);
+		packlongdouble_array(object->usage_tres_raw, tres_cnt, buffer);
 
 		packdouble(object->fs_factor, buffer);
 		packdouble(object->level_fs, buffer);
@@ -2542,6 +2544,8 @@ static int _unpack_assoc_shares_object(void **object, uint32_t tres_cnt,
 		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
+		safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+					    &uint32_tmp, buffer);
 
 		safe_unpackdouble(&object_ptr->fs_factor, buffer);
 		safe_unpackdouble(&object_ptr->level_fs, buffer);
@@ -2572,11 +2576,15 @@ static int _unpack_assoc_shares_object(void **object, uint32_t tres_cnt,
 			sizeof(uint64_t) * tres_cnt);
 		safe_unpack64(&object_ptr->tres_run_secs[TRES_ARRAY_CPU],
 			      buffer);
-		object_ptr->tres_run_secs[0] *= 60;
+		object_ptr->tres_run_secs[TRES_ARRAY_CPU] *= 60;
 
 		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
+		object_ptr->usage_tres_raw = xmalloc(
+			sizeof(long double) * tres_cnt);
+		object_ptr->usage_tres_raw[TRES_ARRAY_CPU] =
+			(long double)object_ptr->usage_raw;
 
 		safe_unpackdouble(&object_ptr->fs_factor, buffer);
 		safe_unpackdouble(&object_ptr->level_fs, buffer);
@@ -2597,6 +2605,10 @@ static int _unpack_assoc_shares_object(void **object, uint32_t tres_cnt,
 		safe_unpackdouble(&object_ptr->usage_efctv, buffer);
 		safe_unpackdouble(&object_ptr->usage_norm, buffer);
 		safe_unpack64(&object_ptr->usage_raw, buffer);
+		object_ptr->usage_tres_raw = xmalloc(
+			sizeof(long double) * tres_cnt);
+		object_ptr->usage_tres_raw[TRES_ARRAY_CPU] =
+			(long double)object_ptr->usage_raw;
 
 		object_ptr->tres_grp_mins = xmalloc(
 			sizeof(uint64_t) * tres_cnt);

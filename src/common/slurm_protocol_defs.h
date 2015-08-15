@@ -482,7 +482,8 @@ typedef struct assoc_shares_object {
 
 	double usage_efctv;	/* effective, normalized usage */
 	double usage_norm;	/* normalized usage */
-	uint64_t usage_raw;	/* measure of resource usage */
+	uint64_t usage_raw;	/* measure of TRESBillableUnits usage */
+	long double *usage_tres_raw; /* measure of each TRES usage */
 	double fs_factor;	/* fairshare factor */
 	double level_fs;	/* fairshare factor at this level. stored on an
 				 * assoc as a long double, but that is not

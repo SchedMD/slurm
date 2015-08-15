@@ -1363,6 +1363,7 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t rpc_version, Buf buffer)
 	packlongdouble(usage->usage_efctv, buffer);
 	packlongdouble(usage->usage_norm, buffer);
 	packlongdouble(usage->usage_raw, buffer);
+	packlongdouble_array(usage->usage_tres_raw, usage->tres_cnt, buffer);
 	pack32(usage->used_jobs, buffer);
 	pack32(usage->used_submit_jobs, buffer);
 	packlongdouble(usage->level_fs, buffer);
@@ -1388,6 +1389,9 @@ extern int slurmdb_unpack_assoc_usage(void **object, uint16_t rpc_version,
 	safe_unpacklongdouble(&object_ptr->usage_efctv, buffer);
 	safe_unpacklongdouble(&object_ptr->usage_norm, buffer);
 	safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+	safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+				    &tmp32, buffer);
+
 	safe_unpack32(&object_ptr->used_jobs, buffer);
 	safe_unpack32(&object_ptr->used_submit_jobs, buffer);
 	safe_unpacklongdouble(&object_ptr->level_fs, buffer);
@@ -1405,10 +1409,25 @@ unpack_error:
 extern void slurmdb_pack_assoc_rec_with_usage(void *in, uint16_t rpc_version,
 					      Buf buffer)
 {
+	slurmdb_assoc_rec_t *object = (slurmdb_assoc_rec_t *)in;
+
 	slurmdb_pack_assoc_rec(in, rpc_version, buffer);
 
-	slurmdb_pack_assoc_usage(((slurmdb_assoc_rec_t *)in)->usage,
-				 rpc_version, buffer);
+	pack64_array(object->grp_tres_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->grp_tres_run_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->grp_tres_ctld,
+		     object->usage->tres_cnt, buffer);
+
+	pack64_array(object->max_tres_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->max_tres_run_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->max_tres_ctld,
+		     object->usage->tres_cnt, buffer);
+
+	slurmdb_pack_assoc_usage(object->usage, rpc_version, buffer);
 }
 
 extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
@@ -1416,6 +1435,7 @@ extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
 					       Buf buffer)
 {
 	int rc;
+	uint32_t uint32_tmp;
 	slurmdb_assoc_rec_t *object_ptr;
 
 	if ((rc = slurmdb_unpack_assoc_rec(object, rpc_version, buffer))
@@ -1424,10 +1444,29 @@ extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
 
 	object_ptr = *object;
 
+	safe_unpack64_array(&object_ptr->grp_tres_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->grp_tres_run_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->grp_tres_ctld,
+			    &uint32_tmp, buffer);
+
+	safe_unpack64_array(&object_ptr->max_tres_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->max_tres_run_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->max_tres_ctld,
+			    &uint32_tmp, buffer);
+
 	rc = slurmdb_unpack_assoc_usage((void **)&object_ptr->usage,
 					rpc_version, buffer);
 
 	return rc;
+
+unpack_error:
+	slurmdb_destroy_assoc_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
 }
 
 extern void slurmdb_pack_event_rec(void *in, uint16_t rpc_version, Buf buffer)
@@ -2116,6 +2155,7 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer)
 	packdouble(usage->grp_used_wall, buffer);
 	packdouble(usage->norm_priority, buffer);
 	packlongdouble(usage->usage_raw, buffer);
+	packlongdouble_array(usage->usage_tres_raw, usage->tres_cnt, buffer);
 
 	if (!usage->user_limit_list ||
 	    !(count = list_count(usage->user_limit_list)))
@@ -2151,6 +2191,8 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
 	safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
 	safe_unpackdouble(&object_ptr->norm_priority, buffer);
 	safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+	safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+				    &count, buffer);
 
 	safe_unpack32(&count, buffer);
 	if (count != NO_VAL) {
@@ -2178,9 +2220,25 @@ unpack_error:
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t rpc_version,
 					    Buf buffer)
 {
+	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
+
 	slurmdb_pack_qos_rec(in, rpc_version, buffer);
 
-	slurmdb_pack_qos_usage(((slurmdb_qos_rec_t *)in)->usage,
+	pack64_array(object->grp_tres_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->grp_tres_run_mins_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->grp_tres_ctld,
+		     object->usage->tres_cnt, buffer);
+
+	pack64_array(object->max_tres_mins_pj_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->max_tres_run_mins_pu_ctld,
+		     object->usage->tres_cnt, buffer);
+	pack64_array(object->max_tres_pj_ctld,
+		     object->usage->tres_cnt, buffer);
+
+	slurmdb_pack_qos_usage(object->usage,
 			       rpc_version, buffer);
 }
 
@@ -2190,6 +2248,7 @@ extern int slurmdb_unpack_qos_rec_with_usage(void **object,
 {
 	int rc;
 	slurmdb_qos_rec_t *object_ptr;
+	uint32_t uint32_tmp;
 
 	if ((rc = slurmdb_unpack_qos_rec(object, rpc_version, buffer))
 	    != SLURM_SUCCESS)
@@ -2197,10 +2256,29 @@ extern int slurmdb_unpack_qos_rec_with_usage(void **object,
 
 	object_ptr = *object;
 
+	safe_unpack64_array(&object_ptr->grp_tres_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->grp_tres_run_mins_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->grp_tres_ctld,
+			    &uint32_tmp, buffer);
+
+	safe_unpack64_array(&object_ptr->max_tres_mins_pj_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->max_tres_run_mins_pu_ctld,
+			    &uint32_tmp, buffer);
+	safe_unpack64_array(&object_ptr->max_tres_pj_ctld,
+			    &uint32_tmp, buffer);
+
 	rc = slurmdb_unpack_qos_usage((void **)&object_ptr->usage,
 				      rpc_version, buffer);
 
 	return rc;
+
+unpack_error:
+	slurmdb_destroy_qos_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
 }
 
 extern void slurmdb_pack_reservation_rec(void *in, uint16_t rpc_version,

@@ -38,17 +38,59 @@
 
 #include "scontrol.h"
 
+static uint32_t tres_cnt = 0;
+static char **tres_names = NULL;
+
+static void _print_tres_line(const char *name, uint64_t *limits, uint64_t *used,
+			     uint64_t divider)
+{
+	int i;
+	char *new_line_char = one_liner ? " " : "\n    ";
+	bool comma = 0;
+
+	xassert(tres_cnt);
+	xassert(tres_names);
+
+	printf("%s=", name);
+	if (!limits)
+		goto endit;
+
+	for (i=0; i<tres_cnt; i++) {
+		if (limits[i] == INFINITE64)
+			continue;
+
+		printf("%s%s=%"PRIu64,
+		       comma ? "," : "", tres_names[i], limits[i]);
+
+		if (used) {
+			uint64_t total_used = used[i];
+
+			if (divider)
+				total_used /= divider;
+
+			printf("(%"PRIu64")", total_used);
+		}
+
+		comma = 1;
+	}
+endit:
+	printf("%s", new_line_char);
+}
+
 static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 {
 	ListIterator itr;
 	slurmdb_user_rec_t *user_rec;
 	slurmdb_assoc_rec_t *assoc_rec;
 	slurmdb_qos_rec_t *qos_rec;
-	uint64_t usage_mins;
+	uint64_t tmp64_array[msg->tres_cnt];
 	char *new_line_char = one_liner ? " " : "\n    ";
 	int i;
 
 	printf("Current Association Manager state\n");
+
+	tres_cnt = msg->tres_cnt;
+	tres_names = msg->tres_names;
 
 	if (!msg->user_list || !list_count(msg->user_list)) {
 		printf("\nNo users currently cached in Slurm.\n\n");
@@ -77,9 +119,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 		while ((assoc_rec = list_next(itr))) {
 			if (!assoc_rec->usage)
 				continue;
-
-			usage_mins =
-				(uint64_t)(assoc_rec->usage->usage_raw / 60.0);
 
 			printf("ClusterName=%s Account=%s ",
 			       assoc_rec->cluster,
@@ -149,49 +188,23 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			if (assoc_rec->grp_tres) {
-				printf("GrpTRES=%s", assoc_rec->grp_tres);
-				if (assoc_rec->usage->tres_cnt &&
-				    assoc_rec->usage->grp_used_tres) {
-					printf("(");
-					for (i=0; i<assoc_rec->usage->tres_cnt;
-					     i++)
-						printf("%s%"PRIu64,
-						       i ? "," : "",
-						       assoc_rec->usage->
-						       grp_used_tres[i]);
-					printf(")");
-				}
-				printf("%s", new_line_char);
-			} else
-				printf("GrpTRES=%s", new_line_char);
-
-			if (assoc_rec->grp_tres_mins)
-				printf("GrpTRESMins=%s(%"PRIu64")%s",
-				       assoc_rec->grp_tres_mins,
-				       usage_mins,
-				       new_line_char);
+			_print_tres_line("GrpTRES",
+					 assoc_rec->grp_tres_ctld,
+					 assoc_rec->usage->grp_used_tres, 0);
+			if (assoc_rec->usage->usage_tres_raw)
+				for (i=0; i<tres_cnt; i++)
+					tmp64_array[i] = (uint64_t)
+						assoc_rec->usage->
+						usage_tres_raw[i];
 			else
-				printf("GrpTRESMins=%s", new_line_char);
-
-			if (assoc_rec->grp_tres_mins) {
-				printf("GrpTRESRunMins=%s",
-				       assoc_rec->grp_tres_run_mins);
-				if (assoc_rec->usage->tres_cnt &&
-				    assoc_rec->usage->grp_used_tres_run_secs) {
-					printf("(");
-					for (i=0; i<assoc_rec->usage->tres_cnt;
-					     i++)
-						printf("%s%"PRIu64,
-						       i ? "," : "",
-						       assoc_rec->usage->
-						       grp_used_tres_run_secs[i]
-						       / 60);
-					printf(")");
-				}
-				printf("%s", new_line_char);
-			} else
-				printf("GrpTRESRunMins=%s", new_line_char);
+				memset(tmp64_array, 0, sizeof(tmp64_array));
+			_print_tres_line("GrpTRESMins",
+					 assoc_rec->grp_tres_mins_ctld,
+					 tmp64_array, 60);
+			_print_tres_line("GrpTRESRunMins",
+					 assoc_rec->grp_tres_run_mins_ctld,
+					 assoc_rec->usage->
+					 grp_used_tres_run_secs, 60);
 
 			if (assoc_rec->max_jobs != INFINITE)
 				printf("MaxJobs=%u(%u) ",
@@ -242,9 +255,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			if (!qos_rec->usage)
 				continue;
 
-			usage_mins =
-				(uint64_t)(qos_rec->usage->usage_raw / 60.0);
-
 			printf("QOS=%s(%u)%s", qos_rec->name, qos_rec->id,
 				new_line_char);
 
@@ -273,49 +283,23 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			if (qos_rec->grp_tres) {
-				printf("GrpTRES=%s", qos_rec->grp_tres);
-				if (qos_rec->usage->tres_cnt &&
-				    qos_rec->usage->grp_used_tres) {
-					printf("(");
-					for (i=0; i<qos_rec->usage->tres_cnt;
-					     i++)
-						printf("%s%"PRIu64,
-						       i ? "," : "",
-						       qos_rec->usage->
-						       grp_used_tres[i]);
-					printf(")");
-				}
-				printf("%s", new_line_char);
-			} else
-				printf("GrpTRES=%s", new_line_char);
-
-			if (qos_rec->grp_tres_mins)
-				printf("GrpTRESMins=%s(%"PRIu64")%s",
-				       qos_rec->grp_tres_mins,
-				       usage_mins,
-				       new_line_char);
+			_print_tres_line("GrpTRES",
+					 qos_rec->grp_tres_ctld,
+					 qos_rec->usage->grp_used_tres, 0);
+			if (qos_rec->usage->usage_tres_raw)
+				for (i=0; i<tres_cnt; i++)
+					tmp64_array[i] = (uint64_t)
+						qos_rec->usage->
+						usage_tres_raw[i];
 			else
-				printf("GrpTRESMins=%s", new_line_char);
-
-			if (qos_rec->grp_tres_mins) {
-				printf("GrpTRESRunMins=%s",
-				       qos_rec->grp_tres_run_mins);
-				if (qos_rec->usage->tres_cnt &&
-				    qos_rec->usage->grp_used_tres_run_secs) {
-					printf("(");
-					for (i=0; i<qos_rec->usage->tres_cnt;
-					     i++)
-						printf("%s%"PRIu64,
-						       i ? "," : "",
-						       qos_rec->usage->
-						       grp_used_tres_run_secs[i]
-						       / 60);
-					printf(")");
-				}
-				printf("%s", new_line_char);
-			} else
-				printf("GrpTRESRunMins=%s", new_line_char);
+				memset(tmp64_array, 0, sizeof(tmp64_array));
+			_print_tres_line("GrpTRESMins",
+					 qos_rec->grp_tres_mins_ctld,
+					 tmp64_array, 60);
+			_print_tres_line("GrpTRESRunMins",
+					 qos_rec->grp_tres_run_mins_ctld,
+					 qos_rec->usage->
+					 grp_used_tres_run_secs, 60);
 
 			if (qos_rec->max_jobs_pu != INFINITE)
 				printf("MaxJobsPU=%u(%u) ",
