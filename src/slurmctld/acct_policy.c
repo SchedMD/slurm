@@ -696,7 +696,7 @@ static int _validate_tres_usage_limits_for_assoc(
 	uint64_t *qos_tres_limit_array,
 	uint64_t *tres_req_cnt,
 	uint64_t *tres_usage,
-	uint64_t curr_usage,
+	uint64_t *curr_usage,
 	uint16_t *admin_limit_set,
 	bool safe_limits)
 {
@@ -714,7 +714,7 @@ static int _validate_tres_usage_limits_for_assoc(
 		    (tres_limit_array[i] == INFINITE64))
 			continue;
 
-		if (curr_usage >= tres_limit_array[i])
+		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
 			return 1;
 
 		if (safe_limits) {
@@ -722,8 +722,9 @@ static int _validate_tres_usage_limits_for_assoc(
 			if (tres_req_cnt[i] > tres_limit_array[i])
 				return 2;
 
-			if (tres_usage && ((tres_req_cnt[i] + tres_usage[i]) >
-					   (tres_limit_array[i] - curr_usage)))
+			if (tres_usage && curr_usage &&
+			    ((tres_req_cnt[i] + tres_usage[i]) >
+			     (tres_limit_array[i] - curr_usage[i])))
 				return 3;
 		}
 	}
@@ -885,7 +886,7 @@ static int _validate_tres_usage_limits_for_qos(
 	uint64_t *out_tres_limit_array,
 	uint64_t *tres_req_cnt,
 	uint64_t *tres_usage,
-	uint64_t curr_usage,
+	uint64_t *curr_usage,
 	uint16_t *admin_limit_set,
 	bool safe_limits)
 {
@@ -905,7 +906,7 @@ static int _validate_tres_usage_limits_for_qos(
 
 		out_tres_limit_array[i] = tres_limit_array[i];
 
-		if (curr_usage >= tres_limit_array[i])
+		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
 			return 1;
 
 		if (safe_limits) {
@@ -913,8 +914,9 @@ static int _validate_tres_usage_limits_for_qos(
 			if (tres_req_cnt[i] > tres_limit_array[i])
 				return 2;
 
-			if (tres_usage && ((tres_req_cnt[i] + tres_usage[i]) >
-					   (tres_limit_array[i] - curr_usage)))
+			if (tres_usage && curr_usage &&
+			    ((tres_req_cnt[i] + tres_usage[i]) >
+			     (tres_limit_array[i] - curr_usage[i])))
 				return 3;
 		}
 	}
@@ -1329,7 +1331,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					 uint64_t *tres_req_cnt,
 					 uint64_t *job_tres_time_limit)
 {
-	uint64_t usage_mins;
+	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
@@ -1346,10 +1348,12 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
-	usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
-	for (i=0; i<slurmctld_tres_cnt; i++)
+	for (i=0; i<slurmctld_tres_cnt; i++) {
 		tres_run_mins[i] =
 			qos_ptr->usage->grp_used_tres_run_secs[i] / 60;
+		tres_usage_mins[i] =
+			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
+	}
 
 	/*
 	 * Try to get the used limits for the user or initialize a local
@@ -1367,7 +1371,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, job_tres_time_limit,
-		tres_run_mins, usage_mins, job_ptr->limit_set.tres,
+		tres_run_mins, tres_usage_mins, job_ptr->limit_set.tres,
 		safe_limits);
 	switch (i) {
 	case 1:
@@ -1381,7 +1385,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       qos_ptr->name,
 		       assoc_mgr_tres_name_array[tres_pos],
 		       qos_ptr->grp_tres_mins_ctld[tres_pos],
-		       usage_mins);
+		       tres_usage_mins[i]);
 		rc = false;
 		goto end_it;
 		break;
@@ -1423,7 +1427,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       qos_ptr->name,
 		       assoc_mgr_tres_name_array[tres_pos],
 		       qos_ptr->grp_tres_mins_ctld[tres_pos],
-		       qos_ptr->grp_tres_mins_ctld[tres_pos] - usage_mins,
+		       qos_ptr->grp_tres_mins_ctld[tres_pos] -
+		       tres_usage_mins[tres_pos],
 		       job_tres_time_limit[tres_pos] + tres_run_mins[tres_pos],
 		       tres_run_mins[tres_pos],
 		       tres_req_cnt[tres_pos]);
@@ -1444,10 +1449,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
 		tres_req_cnt, qos_ptr->usage->grp_used_tres,
-		0, job_ptr->limit_set.tres, 1);
+		NULL, job_ptr->limit_set.tres, 1);
 	switch (i) {
 	case 1:
-		/* not possible because the curr_usage sent in is 0 */
+		/* not possible because the curr_usage sent in is NULL */
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
@@ -1492,10 +1497,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->grp_tres_run_mins_ctld,
 		qos_out_ptr->grp_tres_run_mins_ctld,
-		job_tres_time_limit, tres_run_mins, 0, NULL, 1);
+		job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
 	switch (i) {
 	case 1:
-		/* not possible because the curr_usage sent in is 0 */
+		/* not possible because the curr_usage sent in is NULL */
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
@@ -1614,10 +1619,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
 		tres_req_cnt, used_limits->tres,
-		0, job_ptr->limit_set.tres, 1);
+		NULL, job_ptr->limit_set.tres, 1);
 	switch (i) {
 	case 1:
-		/* not possible because the curr_usage sent in is 0 */
+		/* not possible because the curr_usage sent in is NULL */
 		break;
 	case 2:
 		/* Hold the job if it exceeds the per-user
@@ -1681,7 +1686,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 			     slurmdb_qos_rec_t *qos_out_ptr,
 			     uint64_t *job_tres_usage_mins)
 {
-	uint64_t usage_mins;
+	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint32_t wall_mins;
 	int rc = true, tres_pos = 0, i;
 	time_t now = time(NULL);
@@ -1695,13 +1700,15 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	 * job has been running for 11 minutes it continues
 	 * until 20.
 	 */
-	usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
+	for (i=0; i<slurmctld_tres_cnt; i++)
+		tres_usage_mins[i] =
+			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, NULL,
-		NULL, usage_mins, NULL, 0);
+		NULL, tres_usage_mins, NULL, 0);
 	switch (i) {
 	case 1:
 		last_job_update = now;
@@ -1713,7 +1720,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 		     qos_ptr->name,
 		     assoc_mgr_tres_name_array[tres_pos],
 		     qos_ptr->grp_tres_mins_ctld[tres_pos],
-		     usage_mins);
+		     tres_usage_mins[tres_pos]);
 		job_ptr->state_reason = FAIL_TIMEOUT;
 		rc = false;
 		goto end_it;
@@ -1749,10 +1756,10 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->max_tres_mins_pj_ctld,
 		qos_out_ptr->max_tres_mins_pj_ctld, job_tres_usage_mins,
-		NULL, 0, NULL, 1);
+		NULL, NULL, NULL, 1);
 	switch (i) {
 	case 1:
-		/* not possible curr_usage is 0 */
+		/* not possible curr_usage is NULL */
 		break;
 	case 2:
 		last_job_update = now;
@@ -2313,10 +2320,10 @@ extern bool acct_policy_job_runnable_post_select(
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr;
+	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	uint64_t job_tres_time_limit[slurmctld_tres_cnt];
 	bool rc = true;
-	uint64_t usage_mins;
 	bool safe_limits = false;
 	int i, tres_pos;
 	int parent = 0; /* flag to tell us if we are looking at the
@@ -2385,11 +2392,14 @@ extern bool acct_policy_job_runnable_post_select(
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
-		usage_mins = (uint64_t)(assoc_ptr->usage->usage_raw / 60.0);
-		for (i=0; i<slurmctld_tres_cnt; i++)
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			tres_usage_mins[i] =
+				(uint64_t)(assoc_ptr->usage->usage_tres_raw[i]
+					   / 60);
 			tres_run_mins[i] =
 				assoc_ptr->usage->grp_used_tres_run_secs[i] /
 				60;
+		}
 
 #if _DEBUG
 		info("acct_job_limits: %u of %u",
@@ -2403,7 +2413,7 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos, assoc_ptr->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld,
 			job_tres_time_limit, tres_run_mins,
-			usage_mins, job_ptr->limit_set.tres,
+			tres_usage_mins, job_ptr->limit_set.tres,
 			safe_limits);
 		switch (i) {
 		case 1:
@@ -2419,7 +2429,7 @@ extern bool acct_policy_job_runnable_post_select(
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       assoc_ptr->grp_tres_mins_ctld[tres_pos],
-			       usage_mins);
+			       tres_usage_mins[tres_pos]);
 			rc = false;
 			goto end_it;
 			break;
@@ -2465,7 +2475,7 @@ extern bool acct_policy_job_runnable_post_select(
 			       assoc_mgr_tres_name_array[tres_pos],
 			       assoc_ptr->grp_tres_mins_ctld[tres_pos],
 			       assoc_ptr->grp_tres_mins_ctld[tres_pos] -
-			       usage_mins,
+			       tres_usage_mins[tres_pos],
 			       job_tres_time_limit[tres_pos] +
 			       tres_run_mins[tres_pos],
 			       tres_run_mins[tres_pos],
@@ -2483,10 +2493,10 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos,
 			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
 			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
-			0, job_ptr->limit_set.tres, 1);
+			NULL, job_ptr->limit_set.tres, 1);
 		switch (i) {
 		case 1:
-			/* not possible because the curr_usage sent in is 0 */
+			/* not possible because the curr_usage sent in is NULL*/
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
@@ -2535,10 +2545,10 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos,
 			assoc_ptr->grp_tres_run_mins_ctld,
 			qos_rec.grp_tres_run_mins_ctld,
-			job_tres_time_limit, tres_run_mins, 0, NULL, 1);
+			job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
 		switch (i) {
 		case 1:
-			/* not possible because the curr_usage sent in is 0 */
+			/* not possible because the curr_usage sent in is NULL*/
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
@@ -2849,7 +2859,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 {
 	uint64_t job_tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t time_delta;
-	uint64_t usage_mins;
+	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint32_t wall_mins;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
@@ -2902,13 +2912,16 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 
 	/* handle any association stuff here */
 	while (assoc) {
-		usage_mins = (uint64_t)(assoc->usage->usage_raw / 60.0);
+		for (i=0; i<slurmctld_tres_cnt; i++)
+			tres_usage_mins[i] =
+				(uint64_t)(assoc->usage->usage_tres_raw[i]
+					   / 60.0);
 		wall_mins = assoc->usage->grp_used_wall / 60;
 
 		i = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld, NULL,
-			NULL, usage_mins, NULL, 0);
+			NULL, tres_usage_mins, NULL, 0);
 		switch (i) {
 		case 1:
 			last_job_update = now;
@@ -2921,7 +2934,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			     assoc->user, assoc->partition,
 			     assoc_mgr_tres_name_array[tres_pos],
 			     assoc->grp_tres_mins_ctld[tres_pos],
-			     usage_mins);
+			     tres_usage_mins[tres_pos]);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			goto job_failed;
 			break;
@@ -2951,10 +2964,10 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 		i = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->max_tres_mins_ctld,
 			qos_rec.max_tres_mins_pj_ctld, job_tres_usage_mins,
-			NULL, 0, NULL, 1);
+			NULL, NULL, NULL, 1);
 		switch (i) {
 		case 1:
-			/* not possible curr_usage is 0 */
+			/* not possible curr_usage is NULL */
 			break;
 		case 2:
 			last_job_update = now;
