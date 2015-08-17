@@ -236,30 +236,30 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 				     struct job_record *job_ptr)
 {
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	char jobid_buf[32];
 
 	xassert(job_ptr);
 	xassert(state_ptr);
-	bb_ptr = state_ptr->bb_ahash[job_ptr->user_id % BB_HASH_SIZE];
-	while (bb_ptr) {
-		if (bb_ptr->job_id == job_ptr->job_id) {
-			if (bb_ptr->user_id == job_ptr->user_id) {
-				xassert(bb_ptr->magic == BB_ALLOC_MAGIC);
-				return bb_ptr;
+	bb_alloc = state_ptr->bb_ahash[job_ptr->user_id % BB_HASH_SIZE];
+	while (bb_alloc) {
+		if (bb_alloc->job_id == job_ptr->job_id) {
+			if (bb_alloc->user_id == job_ptr->user_id) {
+				xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
+				return bb_alloc;
 			}
 			error("%s: Slurm state inconsistent with burst "
 			      "buffer. %s has UserID mismatch (%u != %u)",
 			      __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
-			      bb_ptr->user_id, job_ptr->user_id);
+			      bb_alloc->user_id, job_ptr->user_id);
 			/* This has been observed when slurmctld crashed and
 			 * the job state recovered was missing some jobs
 			 * which already had burst buffers configured. */
 		}
-		bb_ptr = bb_ptr->next;
+		bb_alloc = bb_alloc->next;
 	}
-	return bb_ptr;
+	return bb_alloc;
 }
 
 /* Find a burst buffer record by name
@@ -269,35 +269,36 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 				    bb_state_t *state_ptr)
 {
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	int i, hash_inx = user_id % BB_HASH_SIZE;
 
 	/* Try this user ID first */
-	bb_ptr = state_ptr->bb_ahash[hash_inx];
-	while (bb_ptr) {
-		if (!xstrcmp(bb_ptr->name, bb_name))
-			return bb_ptr;
-		bb_ptr = bb_ptr->next;
+	bb_alloc = state_ptr->bb_ahash[hash_inx];
+	while (bb_alloc) {
+		if (!xstrcmp(bb_alloc->name, bb_name))
+			return bb_alloc;
+		bb_alloc = bb_alloc->next;
 	}
 
 	/* Now search all other records */
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		if (i == hash_inx)
 			continue;
-		bb_ptr = state_ptr->bb_ahash[i];
-		while (bb_ptr) {
-			if (!xstrcmp(bb_ptr->name, bb_name)) {
-				xassert(bb_ptr->magic == BB_ALLOC_MAGIC);
-				return bb_ptr;
+		bb_alloc = state_ptr->bb_ahash[i];
+		while (bb_alloc) {
+			if (!xstrcmp(bb_alloc->name, bb_name)) {
+				xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
+				return bb_alloc;
 			}
-			bb_ptr = bb_ptr->next;
+			bb_alloc = bb_alloc->next;
 		}
 	}
 
-	return bb_ptr;
+	return bb_alloc;
 }
 
 /* Add a burst buffer allocation to a user's load */
+//FIXME: VESTIGIAL: Use bb_limit_add
 extern void bb_add_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
@@ -343,11 +344,11 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 }
 
 /* Remove a burst buffer allocation from a user's load */
+//FIXME: VESTIGIAL: Use bb_limit_rem
 extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	bb_user_t *user_ptr;
 	int i, j;
-
 	if (state_ptr->used_space >= bb_alloc->size) {
 		state_ptr->used_space -= bb_alloc->size;
 	} else {
@@ -899,47 +900,47 @@ extern int bb_preempt_queue_sort(void *x, void *y)
 extern void bb_set_use_time(bb_state_t *state_ptr)
 {
 	struct job_record *job_ptr;
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	time_t now = time(NULL);
 	int i;
 
 	state_ptr->next_end_time = now + 60 * 60; /* Start estimate now+1hour */
 	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_ptr = state_ptr->bb_ahash[i];
-		while (bb_ptr) {
-			if (bb_ptr->job_id &&
-			    ((bb_ptr->state == BB_STATE_STAGING_IN) ||
-			     (bb_ptr->state == BB_STATE_STAGED_IN))) {
-				job_ptr = find_job_record(bb_ptr->job_id);
+		bb_alloc = state_ptr->bb_ahash[i];
+		while (bb_alloc) {
+			if (bb_alloc->job_id &&
+			    ((bb_alloc->state == BB_STATE_STAGING_IN) ||
+			     (bb_alloc->state == BB_STATE_STAGED_IN))) {
+				job_ptr = find_job_record(bb_alloc->job_id);
 				if (!job_ptr) {
 					error("%s: job %u with allocated burst "
 					      "buffers not found",
-					      __func__, bb_ptr->job_id);
-					bb_ptr->use_time = now + 24 * 60 * 60;
+					      __func__, bb_alloc->job_id);
+					bb_alloc->use_time = now + 24 * 60 * 60;
 				} else if (job_ptr->start_time) {
-					bb_ptr->end_time = job_ptr->end_time;
-					bb_ptr->use_time = job_ptr->start_time;
+					bb_alloc->end_time = job_ptr->end_time;
+					bb_alloc->use_time = job_ptr->start_time;
 				} else {
 					/* Unknown start time */
-					bb_ptr->use_time = now + 60 * 60;
+					bb_alloc->use_time = now + 60 * 60;
 				}
-			} else if (bb_ptr->job_id) {
-				job_ptr = find_job_record(bb_ptr->job_id);
+			} else if (bb_alloc->job_id) {
+				job_ptr = find_job_record(bb_alloc->job_id);
 				if (job_ptr)
-					bb_ptr->end_time = job_ptr->end_time;
+					bb_alloc->end_time = job_ptr->end_time;
 			} else {
-				bb_ptr->use_time = now;
+				bb_alloc->use_time = now;
 			}
-			if (bb_ptr->end_time && bb_ptr->size) {
-				if (bb_ptr->end_time <= now)
+			if (bb_alloc->end_time && bb_alloc->size) {
+				if (bb_alloc->end_time <= now)
 					state_ptr->next_end_time = now;
 				else if (state_ptr->next_end_time >
-					 bb_ptr->end_time) {
+					 bb_alloc->end_time) {
 					state_ptr->next_end_time =
-						bb_ptr->end_time;
+						bb_alloc->end_time;
 				}
 			}
-			bb_ptr = bb_ptr->next;
+			bb_alloc = bb_alloc->next;
 		}
 	}
 }
@@ -972,23 +973,23 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id)
 {
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	int i;
 
 	xassert(state_ptr->bb_ahash);
 	state_ptr->persist_create_time = time(NULL);
-	bb_ptr = xmalloc(sizeof(bb_alloc_t));
+	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
-	xassert((bb_ptr->magic = BB_USER_MAGIC));	/* Sets value */
-	bb_ptr->next = state_ptr->bb_ahash[i];
-	state_ptr->bb_ahash[i] = bb_ptr;
-	bb_ptr->name = xstrdup(name);
-	bb_ptr->state = BB_STATE_ALLOCATED;
-	bb_ptr->state_time = time(NULL);
-	bb_ptr->seen_time = time(NULL);
-	bb_ptr->user_id = user_id;
+	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->next = state_ptr->bb_ahash[i];
+	state_ptr->bb_ahash[i] = bb_alloc;
+	bb_alloc->name = xstrdup(name);
+	bb_alloc->state = BB_STATE_ALLOCATED;
+	bb_alloc->state_time = time(NULL);
+	bb_alloc->seen_time = time(NULL);
+	bb_alloc->user_id = user_id;
 
-	return bb_ptr;
+	return bb_alloc;
 }
 
 /* Allocate a per-job burst buffer record for a specific job.
@@ -998,40 +999,40 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 				    struct job_record *job_ptr,
 				    bb_job_t *bb_job)
 {
-	bb_alloc_t *bb_ptr = NULL;
+	bb_alloc_t *bb_alloc = NULL;
 	int i;
 
 	xassert(state_ptr->bb_ahash);
 	xassert(job_ptr);
 	state_ptr->persist_create_time = time(NULL);
-	bb_ptr = xmalloc(sizeof(bb_alloc_t));
-	bb_ptr->account = xstrdup(bb_job->account);
-	bb_ptr->array_job_id = job_ptr->array_job_id;
-	bb_ptr->array_task_id = job_ptr->array_task_id;
-	bb_ptr->assoc_ptr = job_ptr->assoc_ptr;
-	bb_ptr->gres_cnt = bb_job->gres_cnt;
-	if (bb_ptr->gres_cnt) {
-		bb_ptr->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
-					   bb_ptr->gres_cnt);
+	bb_alloc = xmalloc(sizeof(bb_alloc_t));
+	bb_alloc->account = xstrdup(bb_job->account);
+	bb_alloc->array_job_id = job_ptr->array_job_id;
+	bb_alloc->array_task_id = job_ptr->array_task_id;
+	bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
+	bb_alloc->gres_cnt = bb_job->gres_cnt;
+	if (bb_alloc->gres_cnt) {
+		bb_alloc->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
+					     bb_alloc->gres_cnt);
 	}
-	for (i = 0; i < bb_ptr->gres_cnt; i++) {
-		bb_ptr->gres_ptr[i].used_cnt = bb_job->gres_ptr[i].count;
-		bb_ptr->gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
+	for (i = 0; i < bb_alloc->gres_cnt; i++) {
+		bb_alloc->gres_ptr[i].used_cnt = bb_job->gres_ptr[i].count;
+		bb_alloc->gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
 	}
-	bb_ptr->job_id = job_ptr->job_id;
-	xassert((bb_ptr->magic = BB_ALLOC_MAGIC));	/* Sets value */
+	bb_alloc->job_id = job_ptr->job_id;
+	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
-	bb_ptr->next = state_ptr->bb_ahash[i];
-	bb_ptr->partition = xstrdup(bb_job->partition);
-	bb_ptr->qos = xstrdup(bb_job->qos);
-	state_ptr->bb_ahash[i] = bb_ptr;
-	bb_ptr->size = bb_job->total_size;
-	bb_ptr->state = BB_STATE_ALLOCATED;
-	bb_ptr->state_time = time(NULL);
-	bb_ptr->seen_time = time(NULL);
-	bb_ptr->user_id = job_ptr->user_id;
+	bb_alloc->next = state_ptr->bb_ahash[i];
+	bb_alloc->partition = xstrdup(bb_job->partition);
+	bb_alloc->qos = xstrdup(bb_job->qos);
+	state_ptr->bb_ahash[i] = bb_alloc;
+	bb_alloc->size = bb_job->total_size;
+	bb_alloc->state = BB_STATE_ALLOCATED;
+	bb_alloc->state_time = time(NULL);
+	bb_alloc->seen_time = time(NULL);
+	bb_alloc->user_id = job_ptr->user_id;
 
-	return bb_ptr;
+	return bb_alloc;
 }
 
 /* Allocate a burst buffer record for a job and increase the job priority
@@ -1040,7 +1041,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_job)
 {
-	bb_alloc_t *bb_ptr;
+	bb_alloc_t *bb_alloc;
 	uint16_t new_nice;
 	char jobid_buf[32];
 
@@ -1060,10 +1061,10 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 		}
 	}
 
-	bb_ptr = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_add_user_load(bb_ptr, state_ptr);
+	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
+	bb_add_user_load(bb_alloc, state_ptr);
 
-	return bb_ptr;
+	return bb_alloc;
 }
 
 /* Free memory associated with allocated bb record, caller is responsible for
@@ -1472,6 +1473,8 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 {
 	bb_user_t *bb_user;
 
+	state_ptr->used_space += bb_size;
+
 	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);
 	bb_user->size += bb_size;
@@ -1484,6 +1487,13 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
+
+	if (state_ptr->used_space >= bb_size) {
+		state_ptr->used_space -= bb_size;
+	} else {
+		error("%s: used_space underflow", __func__);
+		state_ptr->used_space = 0;
+	}
 
 	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);

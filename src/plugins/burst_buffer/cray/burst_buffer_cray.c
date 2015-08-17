@@ -596,7 +596,9 @@ static void _apply_limits(void)
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
 			_set_assoc_ptr(bb_alloc);
-                        bb_add_user_load(bb_alloc, &bb_state);
+			bb_limit_add(bb_alloc->user_id, bb_alloc->account,
+				     bb_alloc->partition, bb_alloc->qos,
+				     bb_alloc->size, &bb_state);
                         bb_alloc = bb_alloc->next;
 		}
 	}
@@ -942,10 +944,11 @@ static void _load_state(bool init_config)
 				= pools[i].granularity;
 			bb_state.total_space
 				= pools[i].quantity * pools[i].granularity;
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				continue;
 			bb_state.used_space
 				= (pools[i].quantity - pools[i].free) *
 				  pools[i].granularity;
-			xassert(bb_state.used_space >= 0);
 
 			/* Everything else is a generic burst buffer resource */
 			bb_state.bb_config.gres_cnt = 0;
@@ -960,6 +963,8 @@ static void _load_state(bool init_config)
 			gres_ptr->avail_cnt = pools[i].quantity;
 			gres_ptr->granularity = pools[i].granularity;
 			gres_ptr->name = xstrdup(pools[i].id);
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				continue;
 			gres_ptr->used_cnt = pools[i].quantity - pools[i].free;
 		}
 	}
@@ -1003,7 +1008,9 @@ static void _load_state(bool init_config)
 
 		if (!init_config) {	/* Newly found buffer */
 			_pick_alloc_account(bb_alloc);
-                        bb_add_user_load(bb_alloc, &bb_state);
+			bb_limit_add(bb_alloc->user_id, bb_alloc->account,
+				     bb_alloc->partition, bb_alloc->qos,
+				     bb_alloc->size, &bb_state);
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -1616,7 +1623,10 @@ static void *_start_teardown(void *x)
 		_purge_bb_files(teardown_args->job_id);
 		if ((job_ptr = find_job_record(teardown_args->job_id))) {
 			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
-				bb_remove_user_load(bb_alloc, &bb_state);
+				bb_limit_rem(bb_alloc->user_id,
+					     bb_alloc->account,
+					     bb_alloc->partition, bb_alloc->qos,
+					     bb_alloc->size, &bb_state);
 				bb_free_alloc_rec(&bb_state, bb_alloc);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
@@ -1632,7 +1642,10 @@ static void *_start_teardown(void *x)
 						    teardown_args->user_id,
 						    &bb_state);
 			if (bb_alloc) {
-				bb_remove_user_load(bb_alloc, &bb_state);
+				bb_limit_rem(bb_alloc->user_id,
+					     bb_alloc->account,
+					     bb_alloc->partition, bb_alloc->qos,
+					     bb_alloc->size, &bb_state);
 				bb_free_alloc_rec(&bb_state, bb_alloc);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
@@ -1922,7 +1935,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
  */
 static void _timeout_bb_rec(void)
 {
-	bb_alloc_t **bb_pptr, *bb_ptr = NULL;
+	bb_alloc_t **bb_pptr, *bb_alloc = NULL;
 	struct job_record *job_ptr;
 	int i;
 
@@ -1931,34 +1944,37 @@ static void _timeout_bb_rec(void)
 
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_pptr = &bb_state.bb_ahash[i];
-		bb_ptr = bb_state.bb_ahash[i];
-		while (bb_ptr) {
-			if (bb_ptr->seen_time < bb_state.last_load_time) {
-				if (bb_ptr->job_id == 0) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			if (bb_alloc->seen_time < bb_state.last_load_time) {
+				if (bb_alloc->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
 					     "purged",
-					     __func__, bb_ptr->name);
+					     __func__, bb_alloc->name);
 				} else if (bb_state.bb_config.debug_flag) {
 					info("%s: burst buffer for job %u "
 					     "purged",
-					     __func__, bb_ptr->job_id);
+					     __func__, bb_alloc->job_id);
 				}
-				bb_remove_user_load(bb_ptr, &bb_state);
-				*bb_pptr = bb_ptr->next;
-				bb_free_alloc_buf(bb_ptr);
+				bb_limit_rem(bb_alloc->user_id,
+					     bb_alloc->account,
+					     bb_alloc->partition, bb_alloc->qos,
+					     bb_alloc->size, &bb_state);
+				*bb_pptr = bb_alloc->next;
+				bb_free_alloc_buf(bb_alloc);
 				break;
 			}
-			if (bb_ptr->state == BB_STATE_COMPLETE) {
-				job_ptr = find_job_record(bb_ptr->job_id);
+			if (bb_alloc->state == BB_STATE_COMPLETE) {
+				job_ptr = find_job_record(bb_alloc->job_id);
 				if (!job_ptr || IS_JOB_PENDING(job_ptr)) {
 					/* Job purged or BB preempted */
-					*bb_pptr = bb_ptr->next;
-					bb_free_alloc_buf(bb_ptr);
+					*bb_pptr = bb_alloc->next;
+					bb_free_alloc_buf(bb_alloc);
 					break;
 				}
 			}
-			bb_pptr = &bb_ptr->next;
-			bb_ptr = bb_ptr->next;
+			bb_pptr = &bb_alloc->next;
+			bb_alloc = bb_alloc->next;
 		}
 	}
 }
@@ -3643,7 +3659,10 @@ static void *_destroy_persistent(void *x)
 		bb_alloc->state = BB_STATE_COMPLETE;
 		bb_alloc->job_id = destroy_args->job_id;
 		bb_alloc->state_time = time(NULL);
-		bb_remove_user_load(bb_alloc, &bb_state);
+		bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
+			     bb_alloc->partition, bb_alloc->qos,
+			     bb_alloc->size, &bb_state);
+
 		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 	}
 	xfree(resp_msg);
