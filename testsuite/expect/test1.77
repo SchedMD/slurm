@@ -58,8 +58,8 @@ expect {
             set found 1
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
 		exit 1
 	}
 	eof {
