@@ -3094,8 +3094,9 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	int i;
 	resv_desc_msg_t resv_desc;
 
-	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES ||
-	    resv_ptr->flags & RESERVE_FLAG_STATIC)
+	if ((resv_ptr->node_bitmap == NULL) ||
+	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
+	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
 	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
