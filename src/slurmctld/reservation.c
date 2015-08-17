@@ -3289,7 +3289,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	int i;
 	resv_desc_msg_t resv_desc;
 
-	if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
+	if ((resv_ptr->node_bitmap == NULL) ||
+	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
 
