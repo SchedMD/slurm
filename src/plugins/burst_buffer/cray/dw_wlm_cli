@@ -1,0 +1,49 @@
+#!/bin/bash
+# Emulate dw_wlm_cli (Cray's DataWarp interface) for testing purposes
+# See "Flags=EmulateCray" in burst_buffer.conf man page
+if [ $2 == "create_persistent" ]; then
+   echo 'created'
+fi
+if [ $2 == "data_in" ]; then
+   sleep 1
+fi
+if [ $2 == "data_out" ]; then
+   sleep 1
+fi
+if [ $2 == "destroy_persistent" ]; then
+   sleep 0.1
+fi
+if [ $2 == "job_process" ]; then
+   sleep 0.1
+fi
+if [ $2 == "paths" ]; then
+   if [ $7 == "--pathfile" ]; then
+      echo 'DWPATHS=/tmp/dw' > $8
+   fi
+fi
+if [ $2 == "pre_run" ]; then
+   sleep 0.1
+fi
+if [ $2 == "post_run" ]; then
+   sleep 0.1
+fi
+if [ $2 == "pools" ]; then
+   echo '{ "pools": [ { "id":"dwcache", "units":"bytes", "granularity":16777216, "quantity":2048, "free":2048 } ] }'
+fi
+if [ $2 == "setup" ]; then
+   sleep 0.1
+fi
+if [ $2 == "show_configurations" ]; then
+   echo '{ "configurations": [ ] }'
+fi
+if [ $2 == "show_instances" ]; then
+   echo '{ "instances": [ ] }'
+fi
+if [ $2 == "show_sessions" ]; then
+   echo '{ "sessions": [ ] }'
+fi
+if [ $2 == "teardown" ]; then
+   sleep 0.1
+fi
+
+exit 0

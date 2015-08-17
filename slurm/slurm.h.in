@@ -4648,6 +4648,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_FLAG_ENABLE_PERSISTENT	0x0002	/* Allow regular user to create
 						 * and destroy persistent burst
 						 * buffers */
+#define BB_FLAG_EMULATE_CRAY		0x0004	/* Using dw_wlm_cli emulator */
 
 #define BB_SIZE_IN_NODES	0x8000000000000000
 #define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */

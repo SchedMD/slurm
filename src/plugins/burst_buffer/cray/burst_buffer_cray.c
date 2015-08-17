@@ -1926,6 +1926,9 @@ static void _timeout_bb_rec(void)
 	struct job_record *job_ptr;
 	int i;
 
+	if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+		return;
+
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_pptr = &bb_state.bb_ahash[i];
 		bb_ptr = bb_state.bb_ahash[i];
@@ -2592,7 +2595,7 @@ static void _update_job_env(struct job_record *job_ptr, char *file_path)
 	if (fstat(path_fd, &stat_buf) == -1) {
 		error("%s: stat error on file %s: %m", __func__, file_path);
 		stat_buf.st_size = 2048;
-	} else if (stat_buf.st_size)
+	} else if (stat_buf.st_size == 0)
 		goto fini;
 	data_buf = xmalloc(stat_buf.st_size);
 	while (inx < stat_buf.st_size) {

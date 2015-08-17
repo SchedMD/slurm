@@ -64,9 +64,16 @@ Multiple options may be comma separated.
 Supported options include:
 .RS
 .TP
+\fBDisablePersistent\fR
+Prevents regular users from being able to create and destroy persistent burst buffers.
+This is the default behaviour, only privileged users can create or destroy persistent burst buffers.
+.TP
+\fBEmulateCray\fR
+Emulating a Cray DataWarp system using the dw_wlm_cli script in the burst_buffer/cray plugin.
+.TP
 \fBEnablePersistent\fR
-Enables regular users the ability to create and destroy persistent burst buffers.
-By default, only privileged users can create ore destroy persistent burst buffers.
+Enables regular users to create and destroy persistent burst buffers.
+By default, only privileged users can create or destroy persistent burst buffers.
 .RE
 
 .TP

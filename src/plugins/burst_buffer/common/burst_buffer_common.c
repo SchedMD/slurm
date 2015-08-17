@@ -245,7 +245,7 @@ extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
 	while (bb_ptr) {
 		if (bb_ptr->job_id == job_ptr->job_id) {
 			if (bb_ptr->user_id == job_ptr->user_id) {
-				xassert(bb_ptr->magic == BB_USER_MAGIC);
+				xassert(bb_ptr->magic == BB_ALLOC_MAGIC);
 				return bb_ptr;
 			}
 			error("%s: Slurm state inconsistent with burst "
@@ -1019,7 +1019,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 		bb_ptr->gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
 	}
 	bb_ptr->job_id = job_ptr->job_id;
-	xassert((bb_ptr->magic = BB_JOB_MAGIC));	/* Sets value */
+	xassert((bb_ptr->magic = BB_ALLOC_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
 	bb_ptr->next = state_ptr->bb_ahash[i];
 	bb_ptr->partition = xstrdup(bb_job->partition);
