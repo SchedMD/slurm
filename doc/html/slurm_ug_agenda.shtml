@@ -62,9 +62,10 @@ are shown below.</p>
 <tr><td nowrap>16:30 - 17:00</td><td>Technical</td><td>Lu, Zhang, et. al.</td><td>Extending Slurm with Support for SR-IOV and IVShmem </td></tr>
  
 <tr>
-  <td bgcolor="#F0F1C9">19:00 </td>
+  <td bgcolor="#F0F1C9">19:00</td>
   <td bgcolor="#F0F1C9">Dinner</td>
-  <td colspan="2" bgcolor="#F0F1C9">TBD</td>
+  <td bgcolor="#F0F1C9">Old Ebbitt Grill (Partial Atrium 1)</td>
+  <td bgcolor="#F0F1C9">675 15th Street, NW, Washington, DC 20005</td>
 </tr>
 </table>
 
@@ -373,6 +374,6 @@ experiences performed in the SC3UIS platforms, mainly in GUANE-1 supercomputing 
 <p>Tim Wickberg (The George Washington University)</p>
 <p>The George Washington University is proud to host the 2015 user group meeting in Washington DC. We present a brief overview of our user of Slurm on Colonial One, our University-wide shared HPC cluster. We present both a detailed overview of our use and configuration of the "fairshare" priority model to assign resources across disparate participating schools, colleges, and research centers, as well as some novel uses of the scheduler for non-traditional tasks such as file system backups.</p>
 
-<p style="text-align:center;">Last modified 20 July 2015</p>
+<p style="text-align:center;">Last modified 17 August 2015</p>
 
 <!--#include virtual="footer.txt"-->
