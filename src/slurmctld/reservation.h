@@ -116,7 +116,6 @@ extern int validate_job_resv(struct job_record *job_ptr);
  *	from using due to reservations
  *
  * IN job_ptr   - job to test
- * IN lic_name  - name of license
  * IN when      - when the job is expected to start
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free

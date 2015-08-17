@@ -4297,7 +4297,7 @@ static uint32_t _get_job_duration(struct job_record *job_ptr)
 }
 
 static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
-			 char *type, uint32_t cnt)
+			 char *type, uint64_t cnt)
 {
 	burst_buffer_info_t *bb_array;
 	burst_buffer_gres_t *gres_ptr;
@@ -4343,7 +4343,7 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 
 static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 {
-	int32_t cnt;
+	uint64_t cnt;
 	char *end_ptr = NULL, *end_ptr2 = NULL;
 	char *sep, *tmp_spec, *tok, *plugin, *type;
 
@@ -4374,14 +4374,18 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 		cnt = strtol(tok, &end_ptr2, 10);
 		if ((end_ptr2[0] == 'n') || (end_ptr2[0] == 'N')) {
 			type = "nodes";	/* Cray node spec format */
+		} else if ((end_ptr2[0] == 'k') || (end_ptr2[0] == 'K')) {
+			cnt *= ((uint64_t) 1024);
 		} else if ((end_ptr2[0] == 'm') || (end_ptr2[0] == 'M')) {
-			cnt = (cnt + 1023) / 1024;
+			cnt *= ((uint64_t) 1024 * 1024);
 		} else if ((end_ptr2[0] == 'g') || (end_ptr2[0] == 'G')) {
-			;	/* No change */
+			cnt *= ((uint64_t) 1024 * 1024 * 1024);
 		} else if ((end_ptr2[0] == 't') || (end_ptr2[0] == 'T')) {
-			cnt *= 1024;
+			cnt *= ((uint64_t) 1024 * 1024 * 1024 * 1024);
 		} else if ((end_ptr2[0] == 'p') || (end_ptr2[0] == 'P')) {
-			cnt *= (1024 * 1024);
+			cnt *= ((uint64_t) 1024 * 1024 * 1024 * 1024 * 1024);
+		} else {	/* Default GB */
+			cnt *= ((uint64_t) 1024 * 1024 * 1024);
 		}
 
 		if (cnt)
@@ -4396,7 +4400,6 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
  *	from using due to reservations
  *
  * IN job_ptr   - job to test
- * IN lic_name  - name of license
  * IN when      - when the job is expected to start
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free
@@ -4425,8 +4428,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
 		if ((resv_ptr->burst_buffer == NULL) ||
 		    (resv_ptr->burst_buffer[0] == '\0'))
 			continue;	/* reservation has no burst buffers */
-		if (job_ptr->resv_name &&
-		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+		if (!xstrcmp(job_ptr->resv_name, resv_ptr->name))
 			continue;	/* job can use this reservation */
 
 		_update_bb_resv(&bb_resv, resv_ptr->burst_buffer);
@@ -5366,8 +5368,10 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	struct node_record *node_ptr;
 
 	if (!resv_ptr->node_bitmap) {
-		error("%s: reservation %s lacks a bitmap",
-		      __func__, resv_ptr->name);
+		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
+			error("%s: reservation %s lacks a bitmap",
+			      __func__, resv_ptr->name);
+		}
 		return;
 	}
 
