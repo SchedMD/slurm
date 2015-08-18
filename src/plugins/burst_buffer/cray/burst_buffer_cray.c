@@ -311,10 +311,7 @@ static void _purge_bb_files(uint32_t job_id)
 
 {
 	char *hash_dir = NULL, *job_dir = NULL;
-	char *script_file = NULL, *setup_env_file = NULL;
-	char *data_in_env_file = NULL, *pre_run_env_file = NULL;
-	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *teardown_env_file = NULL, *client_nids_file = NULL;
+	char *script_file = NULL, *path_file = NULL, *client_nids_file = NULL;
 	int hash_inx;
 
 	hash_inx = job_id % 10;
@@ -322,35 +319,21 @@ static void _purge_bb_files(uint32_t job_id)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
 	(void) mkdir(job_dir, 0700);
-	xstrfmtcat(setup_env_file, "%s/setup_env", job_dir);
-	xstrfmtcat(data_in_env_file, "%s/data_in_env", job_dir);
-	xstrfmtcat(pre_run_env_file, "%s/pre_run_env", job_dir);
-	xstrfmtcat(post_run_env_file, "%s/post_run_env", job_dir);
-	xstrfmtcat(data_out_env_file, "%s/data_out_env", job_dir);
-	xstrfmtcat(teardown_env_file, "%s/teardown_env", job_dir);
-	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
 
-	(void) unlink(setup_env_file);
-	(void) unlink(data_in_env_file);
-	(void) unlink(pre_run_env_file);
-	(void) unlink(post_run_env_file);
-	(void) unlink(data_out_env_file);
-	(void) unlink(teardown_env_file);
-	(void) unlink(client_nids_file);
+	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
+	xstrfmtcat(path_file, "%s/pathfile", job_dir);
 	xstrfmtcat(script_file, "%s/script", job_dir);
+
+	(void) unlink(client_nids_file);
+	(void) unlink(path_file);
 	(void) unlink(script_file);
 	(void) unlink(job_dir);
 
-	xfree(hash_dir);
-	xfree(job_dir);
-	xfree(script_file);
-	xfree(setup_env_file);
-	xfree(data_in_env_file);
-	xfree(pre_run_env_file);
-	xfree(post_run_env_file);
-	xfree(data_out_env_file);
-	xfree(teardown_env_file);
 	xfree(client_nids_file);
+	xfree(path_file);
+	xfree(script_file);
+	xfree(job_dir);
+	xfree(hash_dir);
 }
 
 /* Validate that our configuration is valid for this plugin type */
