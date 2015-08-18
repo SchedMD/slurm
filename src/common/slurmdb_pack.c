@@ -1909,6 +1909,9 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_jobs, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_MEM);
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_NODE);
 		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_submit_jobs, buffer);
