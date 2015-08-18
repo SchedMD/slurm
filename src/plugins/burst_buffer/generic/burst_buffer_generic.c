@@ -1395,3 +1395,12 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Translate a burst buffer string to it's equivalent TRES string
+ * Caller must xfree the return value
+ */
+extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
+{
+	return NULL;
+}

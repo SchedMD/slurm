@@ -4222,3 +4222,43 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 		}
 	}
 }
+
+/*
+ * Translate a burst buffer string to it's equivalent TRES string
+ * Caller must xfree the return value
+ */
+extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
+{
+	char *save_ptr = NULL, *sep, *tmp, *tok;
+	char *result = NULL;
+	uint64_t size, total = 0;
+
+	if (!burst_buffer || (bb_state.tres_pos < 1))
+		return result;
+
+	tmp = xstrdup(burst_buffer);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, ':');
+		if (sep) {
+			if (!strncmp(tok, "cray:", 5))
+				tok += 5;
+			else
+				tok = NULL;
+		}
+
+		if (tok) {
+			uint64_t mb_xlate = 1024 * 1024;
+			size = bb_get_size_num(tok,
+					       bb_state.bb_config.granularity);
+			total += (size + mb_xlate - 1) / mb_xlate;
+		}
+
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	if (total)
+		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_pos, total);
+
+	return result;
+}

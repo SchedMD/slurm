@@ -53,11 +53,13 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
@@ -425,12 +427,19 @@ static uint64_t _atoi(char *tok)
 extern void bb_set_tres_pos(bb_state_t *state_ptr)
 {
 	slurmdb_tres_rec_t tres_rec;
+	int inx;
 
 	xassert(state_ptr);
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 	tres_rec.type = "bb";
 	tres_rec.name = state_ptr->name;
-	state_ptr->tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	inx = assoc_mgr_find_tres_pos(&tres_rec, false);
+	if (inx == -1) {
+		debug("%s: Tres %s not found by assoc_mgr",
+		       __func__, state_ptr->name);
+	} else {
+		state_ptr->tres_pos = assoc_mgr_tres_array[inx]->id;
+	}
 }
 
 /* Load and process configuration parameters */

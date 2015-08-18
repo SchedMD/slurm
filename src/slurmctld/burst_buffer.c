@@ -96,6 +96,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
 	int		(*job_cancel) (struct job_record *job_ptr);
+	char *		(*xlate_bb_2_tres_str) (char *burst_buffer);
 } slurm_bb_ops_t;
 
 /*
@@ -115,7 +116,8 @@ static const char *syms[] = {
 	"bb_p_job_begin",
 	"bb_p_job_start_stage_out",
 	"bb_p_job_test_stage_out",
-	"bb_p_job_cancel"
+	"bb_p_job_cancel",
+	"bb_p_xlate_bb_2_tres_str"
 };
 
 static int g_context_cnt = -1;
@@ -613,4 +615,33 @@ extern int bb_g_job_cancel(struct job_record *job_ptr)
 	END_TIMER2(__func__);
 
 	return rc;
+}
+
+/*
+ * Translate a burst buffer string to it's equivalent TRES string
+ * Caller must xfree the return value
+ */
+extern char *bb_g_xlate_bb_2_tres_str(char *burst_buffer)
+{
+	DEF_TIMERS;
+	int i;
+	char *tmp = NULL, *tmp2;
+
+	START_TIMER;
+	(void) bb_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		tmp2 = (*(ops[i].xlate_bb_2_tres_str))(burst_buffer);
+		if (!tmp) {
+			tmp = tmp2;
+		} else {
+			xstrcat(tmp, ",");
+			xstrcat(tmp, tmp2);
+			xfree(tmp2);
+		}
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return tmp;
 }

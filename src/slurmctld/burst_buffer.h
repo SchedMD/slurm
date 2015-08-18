@@ -176,4 +176,10 @@ extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
  */
 extern int bb_g_job_cancel(struct job_record *job_ptr);
 
+/*
+ * Translate a burst buffer string to it's equivalent TRES string
+ * Caller must xfree the return value
+ */
+extern char *bb_g_xlate_bb_2_tres_str(char *burst_buffer);
+
 #endif /* !_SLURM_BURST_BUFFER_H */
