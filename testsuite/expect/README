@@ -241,7 +241,7 @@ test2.21   Validate scontrol requeue of failed or completed job.
 test2.22   Validate scontrol requeuehold requeues job to held pending state.
 test2.23   Validate scontrol requeuehold State=SpecialExit.
 test2.24   Validate the scontrol write config creates accurate config
-test2.25   Validate scontrol show cache command.
+test2.25   Validate scontrol show assoc_mgr command.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).

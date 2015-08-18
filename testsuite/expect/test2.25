@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validate that scontrol show cache shows the data cached in
+#          Validate that scontrol show assoc_mgr shows the data cached in
 #          the slurmctld
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -176,7 +176,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
@@ -208,7 +208,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: 1 scontrol show cache did not show correct information ($match != 5).\n"
+		send_user "\nFAILURE: 1 scontrol show assoc_mgr did not show correct information ($match != 5).\n"
 		set exit_code 1
 	}
 
@@ -216,7 +216,7 @@ if {[test_using_slurmdbd]} {
 	mod_assoc_vals
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
@@ -248,7 +248,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: 2 scontrol show cache did not show correct information ($match != 5).\n"
+		send_user "\nFAILURE: 2 scontrol show assoc_mgr did not show correct information ($match != 5).\n"
 		set exit_code 1
 	}
 
@@ -257,7 +257,7 @@ if {[test_using_slurmdbd]} {
 
 	set match 0
 	set limit_match 0
-	spawn $bin_bash -c "exec $scontrol show cache | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
@@ -289,7 +289,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 2 && $limit_match} {
-		send_user "\nFAILURE: 3 scontrol show cache did not show correct information ($match != 2).\n"
+		send_user "\nFAILURE: 3 scontrol show assoc_mgr did not show correct information ($match != 2).\n"
 		set exit_code 1
 	}
 
@@ -298,7 +298,7 @@ if {[test_using_slurmdbd]} {
 } else {
 
 	set match 0
-	spawn $scontrol show cache
+	spawn $scontrol show assoc_mgr
 	expect {
 		-re "Controller cache data" {
 			incr match
@@ -322,7 +322,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: 4 scontrol show cache did not show correct information ($match != 3)\n"
+		send_user "\nFAILURE: 4 scontrol show assoc_mgr did not show correct information ($match != 3)\n"
 		set exit_code 1
 	}
 }
