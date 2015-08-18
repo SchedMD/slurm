@@ -653,6 +653,7 @@ static void _qos_alter_job(struct job_record *job_ptr,
 static bool _validate_tres_limits_for_assoc(
 	int *tres_pos,
 	uint64_t *job_tres_array,
+	uint64_t divisor,
 	uint64_t *assoc_tres_array,
 	uint64_t *qos_tres_array,
 	uint16_t *admin_set_limit_tres_array,
@@ -660,6 +661,7 @@ static bool _validate_tres_limits_for_assoc(
 	bool update_call, bool max_limit)
 {
 	int i;
+	uint64_t job_tres;
 
 	if (!strict_checking)
 		return true;
@@ -673,10 +675,15 @@ static bool _validate_tres_limits_for_assoc(
 		    || (!job_tres_array[i] && !update_call))
 			continue;
 
+		job_tres = job_tres_array[i];
+
+		if (divisor)
+			job_tres /= divisor;
+
 		if (max_limit) {
-			if (job_tres_array[i] > assoc_tres_array[i])
+			if (job_tres > assoc_tres_array[i])
 				return false;
-		} else if (job_tres_array[i] < assoc_tres_array[i])
+		} else if (job_tres < assoc_tres_array[i])
 				return false;
 	}
 
@@ -764,6 +771,7 @@ static int _validate_tres_usage_limits_for_assoc(
 static bool _validate_tres_limits_for_qos(
 	int *tres_pos,
 	uint64_t *job_tres_array,
+	uint64_t divisor,
 	uint64_t *grp_tres_array,
 	uint64_t *max_tres_array,
 	uint64_t *out_grp_tres_array,
@@ -773,6 +781,7 @@ static bool _validate_tres_limits_for_qos(
 {
 	uint64_t max_tres_limit, out_max_tres_limit;
 	int i;
+	uint64_t job_tres;
 
 	if (!strict_checking)
 		return true;
@@ -798,21 +807,26 @@ static bool _validate_tres_limits_for_qos(
 
 		out_max_tres_array[i] = max_tres_array[i];
 
+		job_tres = job_tres_array[i];
+
+		if (divisor)
+			job_tres /= divisor;
+
 		if (out_grp_tres_array) {
 			if (out_grp_tres_array[i] == INFINITE64)
 				out_grp_tres_array[i] = grp_tres_array[i];
 
 			if (max_limit) {
-				if (job_tres_array[i] > grp_tres_array[i])
+				if (job_tres > grp_tres_array[i])
 					return false;
-			}  else if (job_tres_array[i] < grp_tres_array[i])
+			}  else if (job_tres < grp_tres_array[i])
 				return false;
 		}
 
 		if (max_limit) {
-			if (job_tres_array[i] > max_tres_array[i])
+			if (job_tres > max_tres_array[i])
 				return false;
-		} else if (job_tres_array[i] < max_tres_array[i])
+		} else if (job_tres < max_tres_array[i])
 			return false;
 	}
 
@@ -962,7 +976,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	 */
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
-					   job_desc->tres_req_cnt,
+					   job_desc->tres_req_cnt, 0,
 					   qos_ptr->grp_tres_ctld,
 					   qos_ptr->max_tres_pu_ctld,
 					   qos_out_ptr->grp_tres_ctld,
@@ -1113,7 +1127,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	}
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
-					   job_desc->tres_req_cnt,
+					   job_desc->tres_req_cnt, 0,
 					   NULL,
 					   qos_ptr->max_tres_pj_ctld,
 					   NULL,
@@ -1132,6 +1146,34 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		       assoc_mgr_tres_name_array[tres_pos],
 		       job_desc->tres_req_cnt[tres_pos],
 		       qos_ptr->max_tres_pj_ctld[tres_pos],
+		       qos_ptr->name);
+		rc = false;
+		goto end_it;
+	}
+
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   job_desc->tres_req_cnt,
+					   job_desc->tres_req_cnt[
+						   TRES_ARRAY_NODE],
+					   NULL,
+					   qos_ptr->max_tres_pn_ctld,
+					   NULL,
+					   qos_out_ptr->max_tres_pn_ctld,
+					   acct_policy_limit_set->tres,
+					   strict_checking, 1)) {
+		if (reason)
+			*reason = get_tres_state_reason(
+				tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
+
+		debug2("job submit for user %s(%u): "
+		       "min tres(%s) request %"PRIu64" exceeds "
+		       "per-node max tres limit %"PRIu64" for qos '%s'",
+		       user_name,
+		       job_desc->user_id,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       job_desc->tres_req_cnt[tres_pos] /
+		       job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+		       qos_ptr->max_tres_pn_ctld[tres_pos],
 		       qos_ptr->name);
 		rc = false;
 		goto end_it;
@@ -1171,7 +1213,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	}
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
-					   job_desc->tres_req_cnt,
+					   job_desc->tres_req_cnt, 0,
 					   NULL,
 					   qos_ptr->min_tres_pj_ctld,
 					   NULL,
@@ -1281,6 +1323,8 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	/* we don't need to check max_tres_mins_pj here */
 
 	/* we don't need to check max_tres_pj here */
+
+	/* we don't need to check max_tres_pn here */
 
 	/* we don't need to check min_tres_pj here */
 
@@ -1560,7 +1604,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	/* we don't need to check grp_wall here */
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
-					   job_tres_time_limit,
+					   job_tres_time_limit, 0,
 					   NULL,
 					   qos_ptr->max_tres_mins_pj_ctld,
 					   NULL,
@@ -1584,7 +1628,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	}
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
-					   tres_req_cnt,
+					   tres_req_cnt, 0,
 					   NULL,
 					   qos_ptr->max_tres_pj_ctld,
 					   NULL,
@@ -1609,6 +1653,31 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
 					   tres_req_cnt,
+					   tres_req_cnt[TRES_ARRAY_NODE],
+					   NULL,
+					   qos_ptr->max_tres_pn_ctld,
+					   NULL,
+					   qos_out_ptr->max_tres_pn_ctld,
+					   job_ptr->limit_set.tres,
+					   1, 1)) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
+		debug2("job %u is being held, "
+		       "QOS %s min tres(%s) per node "
+		       "request %"PRIu64" exceeds "
+		       "max tres limit %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       tres_req_cnt[tres_pos] / tres_req_cnt[TRES_ARRAY_NODE],
+		       qos_ptr->max_tres_pn_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
+	}
+
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   tres_req_cnt, 0,
 					   NULL,
 					   qos_ptr->min_tres_pj_ctld,
 					   NULL,
@@ -1978,7 +2047,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 */
 
 		if (!_validate_tres_limits_for_assoc(
-			    &tres_pos, job_desc->tres_req_cnt,
+			    &tres_pos, job_desc->tres_req_cnt, 0,
 			    assoc_ptr->grp_tres_ctld,
 			    qos_rec.grp_tres_ctld,
 			    acct_policy_limit_set->tres,
@@ -2041,7 +2110,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 		tres_pos = 0;
 		if (!_validate_tres_limits_for_assoc(
-			    &tres_pos, job_desc->tres_req_cnt,
+			    &tres_pos, job_desc->tres_req_cnt, 0,
 			    assoc_ptr->max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
 			    acct_policy_limit_set->tres,
@@ -2058,6 +2127,34 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
 			       assoc_ptr->max_tres_ctld[tres_pos],
+			       assoc_ptr->acct);
+			rc = false;
+			break;
+		}
+
+		tres_pos = 0;
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, job_desc->tres_req_cnt,
+			    job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+			    assoc_ptr->max_tres_pn_ctld,
+			    qos_rec.max_tres_pn_ctld,
+			    acct_policy_limit_set->tres,
+			    strict_checking, update_call, 1)) {
+			if (reason)
+				*reason = get_tres_state_reason(
+					tres_pos,
+					WAIT_ASSOC_MAX_UNK_PER_NODE);
+
+			debug2("job submit for user %s(%u): "
+			       "min tres(%s) request %"PRIu64" exceeds "
+			       "max tres limit %"PRIu64" per node "
+			       "for account %s",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       job_desc->tres_req_cnt[tres_pos] /
+			       job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+			       assoc_ptr->max_tres_pn_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -2623,7 +2720,7 @@ extern bool acct_policy_job_runnable_post_select(
 		}
 
 		if (!_validate_tres_limits_for_assoc(
-			    &tres_pos, job_tres_time_limit,
+			    &tres_pos, job_tres_time_limit, 0,
 			    assoc_ptr->max_tres_mins_ctld,
 			    qos_rec.max_tres_mins_pj_ctld,
 			    job_ptr->limit_set.tres,
@@ -2646,7 +2743,7 @@ extern bool acct_policy_job_runnable_post_select(
 		}
 
 		if (!_validate_tres_limits_for_assoc(
-			    &tres_pos, tres_req_cnt,
+			    &tres_pos, tres_req_cnt, 0,
 			    assoc_ptr->max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
 			    job_ptr->limit_set.tres,
@@ -2667,6 +2764,31 @@ extern bool acct_policy_job_runnable_post_select(
 			rc = false;
 			break;
 		}
+
+		if (!_validate_tres_limits_for_assoc(
+			    &tres_pos, tres_req_cnt,
+			    tres_req_cnt[TRES_ARRAY_NODE],
+			    assoc_ptr->max_tres_pn_ctld,
+			    qos_rec.max_tres_pn_ctld,
+			    job_ptr->limit_set.tres,
+			    1, 0, 1)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = get_tres_state_reason(
+				tres_pos, WAIT_ASSOC_MAX_UNK_PER_NODE);
+			debug2("job %u is being held, "
+			       "the job is requesting more than allowed "
+			       "with assoc %u(%s/%s/%s) max tres(%s) "
+			       "per node limit of %"PRIu64" with %"PRIu64,
+			       job_ptr->job_id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       assoc_ptr->max_tres_pn_ctld[tres_pos],
+			       tres_req_cnt[tres_pos]);
+			rc = false;
+			break;
+		}
+
 		/* we do not need to check max_jobs here */
 
 		/* we don't need to check submit_jobs here */
