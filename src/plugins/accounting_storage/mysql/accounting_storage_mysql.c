@@ -2024,7 +2024,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			"where (%s);",
 			qos_table, now,
 			name_char);
-		info("here with %s", query);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		return rc;
