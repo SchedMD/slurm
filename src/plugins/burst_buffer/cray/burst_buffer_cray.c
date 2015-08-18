@@ -363,12 +363,14 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 		return EAGAIN;
 
 	if (bb_job->total_size || bb_job->swap_size) {
-		bb_job->state = BB_STATE_ALLOCATING;
-		rc = _queue_stage_in(job_ptr, bb_job);
-		if (rc != SLURM_SUCCESS) {
-			bb_job->state = BB_STATE_TEARDOWN;
-			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
-					true);
+		if (bb_job->state < BB_STATE_ALLOCATING) {
+			bb_job->state = BB_STATE_ALLOCATING;
+			rc = _queue_stage_in(job_ptr, bb_job);
+			if (rc != SLURM_SUCCESS) {
+				bb_job->state = BB_STATE_TEARDOWN;
+				_queue_teardown(job_ptr->job_id,
+						job_ptr->user_id, true);
+			}
 		}
 	} else {
 		bb_job->state = BB_STATE_STAGED_IN;
