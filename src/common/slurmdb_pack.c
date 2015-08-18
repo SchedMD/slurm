@@ -1267,6 +1267,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		if (uint32_tmp != NO_VAL)
 			object_ptr->grp_tres =
 				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp != NO_VAL)
 			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
@@ -3707,7 +3708,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 	char *tmp_info = NULL;
 	*object = object_ptr;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->acct_list =
