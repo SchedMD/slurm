@@ -476,7 +476,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		slurmdb_combine_tres_strings(
 			&qos->min_tres_pj, NULL, tres_str_flags);
 		xstrfmtcat(*vals, ", '%s'", qos->min_tres_pj);
-		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->min_tres_pj);
+		xstrfmtcat(*extra, ", min_tres_pj='%s'", qos->min_tres_pj);
 	}
 
 end_modify:
