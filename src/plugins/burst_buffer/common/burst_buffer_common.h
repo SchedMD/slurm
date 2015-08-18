@@ -105,6 +105,7 @@ typedef struct bb_alloc {
 	time_t seen_time;	/* Time buffer last seen */
 	uint64_t size;
 	uint16_t state;
+	time_t create_time;	/* Time of creation */
 	time_t state_time;	/* Time of last state change */
 	time_t use_time;	/* Expected time when use will begin */
 	uint32_t user_id;

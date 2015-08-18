@@ -677,6 +677,7 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 				packstr(bb_alloc->account,      buffer);
 				pack32(bb_alloc->array_job_id,  buffer);
 				pack32(bb_alloc->array_task_id, buffer);
+				pack_time(bb_alloc->create_time, buffer);
 				pack32(bb_alloc->gres_cnt, buffer);
 				for (j = 0; j < bb_alloc->gres_cnt; j++) {
 					packstr(bb_alloc->gres_ptr[j].name,
@@ -690,7 +691,6 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 				packstr(bb_alloc->qos,          buffer);
 				pack64(bb_alloc->size,          buffer);
 				pack16(bb_alloc->state,         buffer);
-				pack_time(bb_alloc->state_time, buffer);
 				pack32(bb_alloc->user_id,       buffer);
 				rec_count++;
 			}

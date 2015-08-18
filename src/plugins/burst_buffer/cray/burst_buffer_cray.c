@@ -363,8 +363,8 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 		return EAGAIN;
 
 	if (bb_job->total_size || bb_job->swap_size) {
-		if (bb_job->state < BB_STATE_ALLOCATING) {
-			bb_job->state = BB_STATE_ALLOCATING;
+		if (bb_job->state < BB_STATE_STAGING_IN) {
+			bb_job->state = BB_STATE_STAGING_IN;
 			rc = _queue_stage_in(job_ptr, bb_job);
 			if (rc != SLURM_SUCCESS) {
 				bb_job->state = BB_STATE_TEARDOWN;
@@ -621,6 +621,7 @@ static void _save_limits_state(void)
 		while (bb_alloc) {
 			if (bb_alloc->name) {
 				packstr(bb_alloc->account,	buffer);
+				pack_time(bb_alloc->create_time,buffer);
 				packstr(bb_alloc->name,		buffer);
 				packstr(bb_alloc->partition,	buffer);
 				packstr(bb_alloc->qos,		buffer);
@@ -730,6 +731,7 @@ static void _recover_limit_state(void)
 	uint32_t data_size = 0, rec_count = 0, name_len = 0, user_id = 0;
 	int i, state_fd;
 	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
+	time_t create_time = 0;
 	bb_alloc_t *bb_alloc;
 	Buf buffer;
 
@@ -772,6 +774,7 @@ static void _recover_limit_state(void)
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
 		safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+		safe_unpack_time(&create_time, buffer);
 		safe_unpackstr_xmalloc(&name,      &name_len, buffer);
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
@@ -782,6 +785,7 @@ static void _recover_limit_state(void)
 			xfree(bb_alloc->account);
 			bb_alloc->account = account;
 			account = NULL;
+			bb_alloc->create_time = create_time;
 			xfree(bb_alloc->partition);
 			bb_alloc->partition = partition;
 			partition = NULL;
@@ -981,12 +985,14 @@ static void _load_state(bool init_config)
 
 		bb_alloc = bb_alloc_name_rec(&bb_state, sessions[i].token,
 					     sessions[i].user_id);
+//FIXME: Set create_time
 		if ((sessions[i].token != NULL)  &&
 		    (sessions[i].token[0] >='0') &&
 		    (sessions[i].token[0] <='9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
 		}
+//FIXME: Below logic seems wrong
 		for (j = 0; j < num_instances; j++)
 			bb_alloc->size = instances[j].bytes;
 		bb_alloc->seen_time = bb_state.last_load_time;
@@ -1251,6 +1257,8 @@ static void *_start_stage_in(void *x)
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;
 			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				bb_alloc->create_time = time(NULL);
 		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_read_lock);
@@ -2095,14 +2103,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 						   (~BB_SIZE_IN_NODES);
 				} else
 					byte_cnt += tmp_cnt;
-				if ((sub_tok = strstr(tok, "access_mode"))) {
-					job_access = xstrdup(sub_tok);
+				if ((sub_tok = strstr(tok, "access_mode="))) {
+					job_access = xstrdup(sub_tok + 12);
 					sub_tok = strchr(job_access, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
-				if ((sub_tok = strstr(tok, "type"))) {
-					job_type = xstrdup(sub_tok);
+				if ((sub_tok = strstr(tok, "type="))) {
+					job_type = xstrdup(sub_tok + 5);
 					sub_tok = strchr(job_type, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
@@ -3553,6 +3561,8 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				 BB_STATE_ALLOCATED);
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+			bb_alloc->create_time = time(NULL);
 		bb_alloc->size = create_args->size;
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
