@@ -790,12 +790,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			}
 		}
 
-		safe_unpack32(&count, buffer);
-		object_ptr->tres_str = xstrdup_printf("%d=%u", TRES_CPU, count);
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
+		safe_unpack32(&count, buffer);
+		object_ptr->tres_str = xstrdup_printf("%d=%u", TRES_CPU, count);
 
 		safe_unpack16(&object_ptr->dimensions, buffer);
 		safe_unpack32(&object_ptr->flags, buffer);
