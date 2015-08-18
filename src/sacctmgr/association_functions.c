@@ -551,6 +551,21 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			set = 1;
 			xfree(tmp_char);
 		}
+	} else if (!strncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
+		if (!g_tres_list) {
+			slurmdb_tres_cond_t tres_cond;
+			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+			tres_cond.with_deleted = 1;
+			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
+		}
+		if ((tmp_char = slurmdb_format_tres_str(
+			     value, g_tres_list, 1))) {
+			slurmdb_combine_tres_strings(
+				&assoc->max_tres_pn, tmp_char,
+				tres_flags);
+			set = 1;
+			xfree(tmp_char);
+		}
 	} else if (!strncasecmp(type, "MaxTRESMinsPerJob",
 				MAX(command_len, 8))) {
 		if (!g_tres_list) {
@@ -752,6 +767,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_MAXT:
 		field->print_routine(field, assoc->max_tres_pj, last);
 		break;
+	case PRINT_MAXTN:
+		field->print_routine(field, assoc->max_tres_pn, last);
+		break;
 	case PRINT_MAXJ:
 		field->print_routine(field, assoc->max_jobs, last);
 		break;
@@ -836,7 +854,7 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 			slurm_addto_char_list(format_list,
 					      "Share,GrpJ,GrpTRES,"
 					      "GrpS,GrpWall,GrpTRESMins,MaxJ,"
-					      "MaxTRES,MaxS,MaxW,"
+					      "MaxTRES,MaxTRESPerN,MaxS,MaxW,"
 					      "MaxTRESMins,QOS,DefaultQOS,"
 					      "GrpTRESRunMins");
 	}

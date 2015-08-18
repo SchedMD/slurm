@@ -928,6 +928,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -986,6 +987,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 		packstr(object->max_tres_mins_pj, buffer);
 		packstr(object->max_tres_run_mins, buffer);
 		packstr(object->max_tres_pj, buffer);
+		packstr(object->max_tres_pn, buffer);
 		pack32(object->max_jobs, buffer);
 		pack32(object->max_submit_jobs, buffer);
 		pack32(object->max_wall_pj, buffer);
@@ -1199,6 +1201,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pn,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
@@ -1608,6 +1612,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -1641,6 +1646,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->max_tres_mins_pj, buffer);
 		packstr(object->max_tres_run_mins_pu, buffer);
 		packstr(object->max_tres_pj, buffer);
+		packstr(object->max_tres_pn, buffer);
 		packstr(object->max_tres_pu, buffer);
 		pack32(object->max_jobs_pu, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
@@ -1926,6 +1932,8 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins_pu,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_pj,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->max_tres_pn,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_pu,
 				       &uint32_tmp, buffer);

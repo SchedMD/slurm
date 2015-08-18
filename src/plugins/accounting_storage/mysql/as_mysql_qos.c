@@ -49,6 +49,7 @@ static char *mqos_req_inx[] = {
 	"max_tres_mins_pj",
 	"max_tres_run_mins_pu",
 	"max_tres_pj",
+	"max_tres_pn",
 	"max_tres_pu",
 	"min_tres_pj",
 };
@@ -63,6 +64,7 @@ enum {
 	MQOS_MTMPJ,
 	MQOS_MTRM,
 	MQOS_MTPJ,
+	MQOS_MTPN,
 	MQOS_MTPU,
 	MQOS_MITPJ,
 	MQOS_COUNT
@@ -415,6 +417,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", max_tres_pj='%s'", qos->max_tres_pj);
 	}
 
+	if (qos->max_tres_pn) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pn");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_pn, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pn);
+		xstrfmtcat(*extra, ", max_tres_pn='%s'", qos->max_tres_pn);
+	}
+
 	if (qos->max_tres_pu) {
 		if (!for_add) {
 			xstrcat(*extra, "");
@@ -734,6 +748,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		mod_tres_str(&qos_rec->max_tres_pj,
 			     qos->max_tres_pj, row[MQOS_MTPJ],
 			     NULL, "max_tres_pj", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->max_tres_pn,
+			     qos->max_tres_pn, row[MQOS_MTPN],
+			     NULL, "max_tres_pn", &vals, qos_rec->id, 0);
 		mod_tres_str(&qos_rec->max_tres_pu,
 			     qos->max_tres_pu, row[MQOS_MTPU],
 			     NULL, "max_tres_pu", &vals, qos_rec->id, 0);
@@ -1041,6 +1058,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_tres_mins_pj",
 		"max_tres_run_mins_pu",
 		"max_tres_pj",
+		"max_tres_pn",
 		"max_tres_pu",
 		"max_jobs_per_user",
 		"max_submit_jobs_per_user",
@@ -1067,6 +1085,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MTMPJ,
 		QOS_REQ_MTRM,
 		QOS_REQ_MTPJ,
+		QOS_REQ_MTPN,
 		QOS_REQ_MTPU,
 		QOS_REQ_MJPU,
 		QOS_REQ_MSJPU,
@@ -1211,6 +1230,9 @@ empty:
 
 		if (row[QOS_REQ_MTPJ][0])
 			qos->max_tres_pj = xstrdup(row[QOS_REQ_MTPJ]);
+
+		if (row[QOS_REQ_MTPN][0])
+			qos->max_tres_pn = xstrdup(row[QOS_REQ_MTPN]);
 
 		if (row[QOS_REQ_MTPU][0])
 			qos->max_tres_pu = xstrdup(row[QOS_REQ_MTPU]);

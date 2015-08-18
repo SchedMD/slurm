@@ -526,6 +526,24 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 				xfree(tmp_char);
 			}
+		} else if (!strncasecmp(argv[i], "MaxTRESPerNode",
+					MAX(command_len, 11))) {
+			if (!g_tres_list) {
+				slurmdb_tres_cond_t tres_cond;
+				memset(&tres_cond, 0,
+				       sizeof(slurmdb_tres_cond_t));
+				tres_cond.with_deleted = 1;
+				g_tres_list = slurmdb_tres_get(
+					db_conn, &tres_cond);
+			}
+			if ((tmp_char = slurmdb_format_tres_str(
+				     argv[i]+end, g_tres_list, 1))) {
+				slurmdb_combine_tres_strings(
+					&qos->max_tres_pn, tmp_char,
+					tres_flags);
+				set = 1;
+				xfree(tmp_char);
+			}
 		} else if (!strncasecmp(argv[i], "MaxTRESMinsPerJob",
 					MAX(command_len, 8))) {
 			if (!g_tres_list) {
@@ -898,7 +916,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				      "Flags%40,UsageThres,UsageFactor,"
 				      "GrpTRES,GrpTRESMins,GrpTRESRunMins,"
 				      "GrpJ,GrpS,GrpW,"
-				      "MaxTRES,MaxTRESMins,MaxW,"
+				      "MaxTRES,MaxTRESPerN,MaxTRESMins,MaxW,"
 				      "MaxTRESPerUser,"
 				      "MaxJobsPerUser,"
 				      "MaxSubmitJobsPerUser,MinTRES");
@@ -1071,6 +1089,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_MAXT:
 				field->print_routine(
 					field, qos->max_tres_pj,
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXTN:
+				field->print_routine(
+					field, qos->max_tres_pn,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTU:

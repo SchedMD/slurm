@@ -484,6 +484,12 @@ typedef struct slurmdb_assoc_rec {
 				    * based off the ordering of the
 				    * total number of TRES in the system
 				    * (DON'T PACK) */
+	char *max_tres_pn;         /* max number of TRES this
+				    * association can allocate per node */
+	uint64_t *max_tres_pn_ctld;   /* max_tres_pn broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 	uint32_t max_wall_pj;      /* longest time this
 				    * association can run a job */
 
@@ -788,6 +794,12 @@ typedef struct {
 	char *max_tres_pj;         /* max number of tres this
 				    * qos can allocate per job */
 	uint64_t *max_tres_pj_ctld;   /* max_tres_pj broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
+	char *max_tres_pn;         /* max number of tres this
+				    * qos can allocate per job */
+	uint64_t *max_tres_pn_ctld;   /* max_tres_pj broken out in an array
 				       * based off the ordering of the
 				       * total number of TRES in the system
 				       * (DON'T PACK) */

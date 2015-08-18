@@ -676,6 +676,8 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->max_tres_run_mins_ctld);
 		xfree(assoc->max_tres_pj);
 		xfree(assoc->max_tres_ctld);
+		xfree(assoc->max_tres_pn);
+		xfree(assoc->max_tres_pn_ctld);
 		xfree(assoc->parent_acct);
 		xfree(assoc->partition);
 		FREE_NULL_LIST(assoc->qos_list);
@@ -752,6 +754,8 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->max_tres_run_mins_pu_ctld);
 		xfree(qos->max_tres_pj);
 		xfree(qos->max_tres_pj_ctld);
+		xfree(qos->max_tres_pn);
+		xfree(qos->max_tres_pn_ctld);
 		xfree(qos->max_tres_pu);
 		xfree(qos->max_tres_pu_ctld);
 		xfree(qos->min_tres_pj);
@@ -2130,9 +2134,12 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	debug2("  MaxTRESRunMins   : %s",
 	       assoc_ptr->max_tres_run_mins ?
 	       assoc_ptr->max_tres_run_mins : "NONE");
-	debug2("  MaxTRES          : %s",
+	debug2("  MaxTRESPerJob    : %s",
 	       assoc_ptr->max_tres_pj ?
 	       assoc_ptr->max_tres_pj : "NONE");
+	debug2("  MaxTRESPerNode   : %s",
+	       assoc_ptr->max_tres_pn ?
+	       assoc_ptr->max_tres_pn : "NONE");
 
 	if (assoc_ptr->max_jobs == INFINITE)
 		debug2("  MaxJobs          : NONE");
@@ -2769,6 +2776,8 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	out->max_submit_jobs = in->max_submit_jobs;
 	xfree(out->max_tres_pj);
 	out->max_tres_pj = xstrdup(in->max_tres_pj);
+	xfree(out->max_tres_pn);
+	out->max_tres_pn = xstrdup(in->max_tres_pn);
 	xfree(out->max_tres_mins_pj);
 	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);
 	xfree(out->max_tres_run_mins);
@@ -2800,6 +2809,8 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);
 	xfree(out->max_tres_pj);
 	out->max_tres_pj = xstrdup(in->max_tres_pj);
+	xfree(out->max_tres_pn);
+	out->max_tres_pn = xstrdup(in->max_tres_pn);
 	xfree(out->max_tres_pu);
 	out->max_tres_pu = xstrdup(in->max_tres_pu);
 	xfree(out->max_tres_run_mins_pu);

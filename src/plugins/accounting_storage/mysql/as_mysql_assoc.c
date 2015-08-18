@@ -58,6 +58,7 @@ char *assoc_req_inx[] = {
 	"max_tres_mins_pj",
 	"max_tres_run_mins",
 	"max_tres_pj",
+	"max_tres_pn",
 	"max_jobs",
 	"max_submit_jobs",
 	"max_wall_pj",
@@ -84,6 +85,7 @@ enum {
 	ASSOC_REQ_MTMPJ,
 	ASSOC_REQ_MTRM,
 	ASSOC_REQ_MTPJ,
+	ASSOC_REQ_MTPN,
 	ASSOC_REQ_MJ,
 	ASSOC_REQ_MSJ,
 	ASSOC_REQ_MWPJ,
@@ -97,7 +99,7 @@ enum {
 
 static char *get_parent_limits_select =
 	"select @par_id, @mj, @msj, "
-	"@mwpj, @mtpj, @mtmpj, @mtrm, "
+	"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 	"@def_qos_id, @qos, @delta_qos;";
 
 enum {
@@ -106,6 +108,7 @@ enum {
 	ASSOC2_REQ_MSJ,
 	ASSOC2_REQ_MWPJ,
 	ASSOC2_REQ_MTPJ,
+	ASSOC2_REQ_MTPN,
 	ASSOC2_REQ_MTMPJ,
 	ASSOC2_REQ_MTRM,
 	ASSOC2_REQ_DEF_QOS,
@@ -145,6 +148,7 @@ static char *massoc_req_inx[] = {
 	"max_tres_mins_pj",
 	"max_tres_run_mins",
 	"max_tres_pj",
+	"max_tres_pn",
 };
 
 enum {
@@ -162,6 +166,7 @@ enum {
 	MASSOC_MTMPJ,
 	MASSOC_MTRM,
 	MASSOC_MTPJ,
+	MASSOC_MTPN,
 	MASSOC_COUNT
 };
 
@@ -723,6 +728,9 @@ static int _set_assoc_limits_for_add(
 		&assoc->max_tres_pj, row[ASSOC2_REQ_MTPJ],
 		tres_str_flags);
 	slurmdb_combine_tres_strings(
+		&assoc->max_tres_pn, row[ASSOC2_REQ_MTPN],
+		tres_str_flags);
+	slurmdb_combine_tres_strings(
 		&assoc->max_tres_mins_pj, row[ASSOC2_REQ_MTMPJ],
 		tres_str_flags);
 	slurmdb_combine_tres_strings(
@@ -797,6 +805,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"max_jobs",
 		"max_submit_jobs",
 		"max_tres_pj",
+		"max_tres_pn",
 		"max_wall_pj",
 		"max_tres_mins_pj",
 		"max_tres_run_mins",
@@ -815,6 +824,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_MJ,
 		ASSOC_MSJ,
 		ASSOC_MTPJ,
+		ASSOC_MTPN,
 		ASSOC_MWPJ,
 		ASSOC_MTMPJ,
 		ASSOC_MTRM,
@@ -891,6 +901,16 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				&tmp_char, assoc->max_tres_pj,
 				tres_str_flags);
 			mod_assoc->max_tres_pj = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
+		}
+
+		if (assoc->max_tres_pn) {
+			tmp_char = xstrdup(row[ASSOC_MTPN]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->max_tres_pn,
+				tres_str_flags);
+			mod_assoc->max_tres_pn = tmp_char;
 			tmp_char = NULL;
 			modified = 1;
 		}
@@ -1415,6 +1435,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				if (row2[ASSOC2_REQ_MTPJ][0])
 					alt_assoc.max_tres_pj =
 						row2[ASSOC2_REQ_MTPJ];
+				if (row2[ASSOC2_REQ_MTPN][0])
+					alt_assoc.max_tres_pn =
+						row2[ASSOC2_REQ_MTPN];
 				if (row2[ASSOC2_REQ_MTMPJ][0])
 					alt_assoc.max_tres_mins_pj =
 						row2[ASSOC2_REQ_MTMPJ];
@@ -1455,6 +1478,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_tres_str(&mod_assoc->max_tres_pj,
 			     assoc->max_tres_pj, row[MASSOC_MTPJ],
 			     alt_assoc.max_tres_pj, "max_tres_pj",
+			     &vals, mod_assoc->id, 1);
+		mod_tres_str(&mod_assoc->max_tres_pn,
+			     assoc->max_tres_pn, row[MASSOC_MTPN],
+			     alt_assoc.max_tres_pn, "max_tres_pn",
 			     &vals, mod_assoc->id, 1);
 		mod_tres_str(&mod_assoc->max_tres_mins_pj,
 			     assoc->max_tres_mins_pj, row[MASSOC_MTMPJ],
@@ -1811,6 +1838,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint32_t parent_msj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
 	char *parent_mtpj = NULL;
+	char *parent_mtpn = NULL;
 	char *parent_mtmpj = NULL;
 	char *parent_mtrm = NULL;
 	char *parent_acct = NULL;
@@ -2035,6 +2063,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					parent_mtpj = xstrdup(
 						row2[ASSOC2_REQ_MTPJ]);
 
+				xfree(parent_mtpn);
+				if (row2[ASSOC2_REQ_MTPN][0])
+					parent_mtpn = xstrdup(
+						row2[ASSOC2_REQ_MTPN]);
+
 				xfree(parent_mtmpj);
 				if (row2[ASSOC2_REQ_MTMPJ][0])
 					parent_mtmpj = xstrdup(
@@ -2085,6 +2118,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if (row[ASSOC_REQ_MTPJ][0])
 			assoc->max_tres_pj = xstrdup(row[ASSOC_REQ_MTPJ]);
 
+		if (row[ASSOC_REQ_MTPN][0])
+			assoc->max_tres_pn = xstrdup(row[ASSOC_REQ_MTPN]);
+
 		if (row[ASSOC_REQ_MTMPJ][0])
 			assoc->max_tres_mins_pj = xstrdup(row[ASSOC_REQ_MTMPJ]);
 
@@ -2100,6 +2136,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			&assoc->max_tres_pj, parent_mtpj,
 			TRES_STR_FLAG_NONE);
 		xfree(parent_mtpj);
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_pn, parent_mtpn,
+			TRES_STR_FLAG_NONE);
+		xfree(parent_mtpn);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_mins_pj, parent_mtmpj,
 			TRES_STR_FLAG_NONE);

@@ -552,6 +552,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "max_jobs_per_user", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
 		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_pn", "text not null default ''" },
 		{ "max_tres_pu", "text not null default ''" },
 		{ "max_tres_mins_pj", "text not null default ''" },
 		{ "max_tres_run_mins_pu", "text not null default ''" },
@@ -616,6 +617,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @msj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mtpj = ''; "
+		"set @mtpn = ''; "
 		"set @mtmpj = ''; "
 		"set @mtrm = ''; "
 		"set @def_qos_id = NULL; "
@@ -659,6 +661,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		/* "\\\',,\\\', \\\',\\\'), '); " */
 		"set @s = concat(@s, "
 		"'@mtpj := REPLACE(CONCAT(@mtpj, max_tres_pj), "
+		"\\\',,\\\', \\\',\\\'), "
+		"@mtpn := REPLACE(CONCAT(@mtpn, max_tres_pn), "
 		"\\\',,\\\', \\\',\\\'), "
 		"@mtmpj := REPLACE(CONCAT(@mtmpj, max_tres_mins_pj), "
 		"\\\',,\\\', \\\',\\\'), "
@@ -1082,6 +1086,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "max_jobs", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
 		{ "max_tres_pj", "text not null default ''" },
+		{ "max_tres_pn", "text not null default ''" },
 		{ "max_tres_mins_pj", "text not null default ''" },
 		{ "max_tres_run_mins", "text not null default ''" },
 		{ "max_wall_pj", "int default NULL" },
@@ -1702,6 +1707,18 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", max_tres_pj='%s'", assoc->max_tres_pj);
 	}
 
+	if (assoc->max_tres_pn) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pn");
+		slurmdb_combine_tres_strings(
+			&assoc->max_tres_pn, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", assoc->max_tres_pn);
+		xstrfmtcat(*extra, ", max_tres_pn='%s'", assoc->max_tres_pn);
+	}
+
 	if (assoc->max_tres_mins_pj) {
 		if (qos_level == QOS_LEVEL_MODIFY) {
 			xstrcat(*extra, "");
@@ -2179,6 +2196,7 @@ just_update:
 			       "max_submit_jobs=NULL, "
 			       "max_wall_pj=NULL, "
 			       "max_tres_pj='', "
+			       "max_tres_pn='', "
 			       "max_tres_mins_pj='', "
 			       "max_tres_run_mins='', "
 			       "grp_jobs=NULL, grp_submit_jobs=NULL, "

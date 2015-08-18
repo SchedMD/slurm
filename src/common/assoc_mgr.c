@@ -1118,7 +1118,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 			slurmdb_assoc_rec_t *assoc_rec;
 			uint64_t grp_tres[new_cnt], grp_tres_mins[new_cnt],
 				grp_tres_run_mins[new_cnt], max_tres[new_cnt],
-				max_tres_mins[new_cnt],
+				max_tres_pn[new_cnt], max_tres_mins[new_cnt],
 				max_tres_run_mins[new_cnt];
 
 			/* update the associations and such here */
@@ -1133,6 +1133,8 @@ static int _post_tres_list(List new_list, int new_cnt)
 						 grp_tres_run_mins_ctld,
 						 new_size);
 					xrealloc(assoc_rec->max_tres_ctld,
+						 new_size);
+					xrealloc(assoc_rec->max_tres_pn_ctld,
 						 new_size);
 					xrealloc(assoc_rec->max_tres_mins_ctld,
 						 new_size);
@@ -1150,6 +1152,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 					memset(grp_tres_run_mins,
 					       0, array_size);
 					memset(max_tres, 0, array_size);
+					memset(max_tres_pn, 0, array_size);
 					memset(max_tres_mins, 0, array_size);
 					memset(max_tres_run_mins,
 					       0, array_size);
@@ -1174,6 +1177,8 @@ static int _post_tres_list(List new_list, int new_cnt)
 								pos];
 						max_tres[i] = assoc_rec->
 							max_tres_ctld[pos];
+						max_tres_pn[i] = assoc_rec->
+							max_tres_pn_ctld[pos];
 						max_tres_mins[i] = assoc_rec->
 							max_tres_mins_ctld[pos];
 						max_tres_run_mins[i] =
@@ -1190,6 +1195,8 @@ static int _post_tres_list(List new_list, int new_cnt)
 					       grp_tres_run_mins, array_size);
 					memcpy(assoc_rec->max_tres_ctld,
 					       max_tres, array_size);
+					memcpy(assoc_rec->max_tres_pn_ctld,
+					       max_tres_pn, array_size);
 					memcpy(assoc_rec->max_tres_mins_ctld,
 					       max_tres_mins, array_size);
 					memcpy(assoc_rec->
@@ -2289,6 +2296,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		assoc->max_tres_run_mins = ret_assoc->max_tres_run_mins;
 	if (!assoc->max_tres_pj)
 		assoc->max_tres_pj     = ret_assoc->max_tres_pj;
+	if (!assoc->max_tres_pn)
+		assoc->max_tres_pn     = ret_assoc->max_tres_pn;
 	assoc->max_jobs        = ret_assoc->max_jobs;
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
@@ -2500,6 +2509,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 		qos->max_tres_run_mins_pu = found_qos->max_tres_run_mins_pu;
 	if (!qos->max_tres_pj)
 		qos->max_tres_pj     = found_qos->max_tres_pj;
+	if (!qos->max_tres_pn)
+		qos->max_tres_pn     = found_qos->max_tres_pn;
 	if (!qos->max_tres_pu)
 		qos->max_tres_pu     = found_qos->max_tres_pu;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
@@ -3480,6 +3491,18 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 					rec->max_tres_pj, INFINITE64, 1);
 			}
 
+			if (object->max_tres_pn) {
+				update_jobs = true;
+				xfree(rec->max_tres_pn);
+				if (object->max_tres_pn[0]) {
+					rec->max_tres_pn = object->max_tres_pn;
+					object->max_tres_pn = NULL;
+				}
+				assoc_mgr_set_tres_cnt_array(
+					&rec->max_tres_pn_ctld,
+					rec->max_tres_pn, INFINITE64, 1);
+			}
+
 			if (object->max_tres_mins_pj) {
 				xfree(rec->max_tres_mins_pj);
 				if (object->max_tres_mins_pj[0]) {
@@ -4181,6 +4204,18 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pj_ctld,
 					rec->max_tres_pj, INFINITE64, 1);
+			}
+
+			if (object->max_tres_pn) {
+				update_jobs = true;
+				xfree(rec->max_tres_pn);
+				if (object->max_tres_pn[0]) {
+					rec->max_tres_pn = object->max_tres_pn;
+					object->max_tres_pn = NULL;
+				}
+				assoc_mgr_set_tres_cnt_array(
+					&rec->max_tres_pn_ctld,
+					rec->max_tres_pn, INFINITE64, 1);
 			}
 
 			if (object->max_tres_pu) {
@@ -5798,6 +5833,8 @@ extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 				     assoc->grp_tres_run_mins, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
 				     assoc->max_tres_pj, INFINITE64, 1);
+	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_pn_ctld,
+				     assoc->max_tres_pn, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
 				     assoc->max_tres_mins_pj, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
@@ -5821,6 +5858,8 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 				     qos->grp_tres_run_mins, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
 				     qos->max_tres_pj, INFINITE64, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pn_ctld,
+				     qos->max_tres_pn, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pu_ctld,
 				     qos->max_tres_pu, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,

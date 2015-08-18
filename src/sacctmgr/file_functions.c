@@ -338,7 +338,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 	slurm_addto_char_list(format_list,
 			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,"
 			      "GrpMEM,GrpN,GrpS,GrpW,MaxTRESM,MaxTRES,"
-			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
+			      "MaxTRESPerN,MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
@@ -528,6 +528,18 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->max_tres_pj,
 			   file_opts->assoc_rec.max_tres_pj);
+	}
+
+	if (file_opts->assoc_rec.max_tres_pn
+	    && xstrcmp(assoc->max_tres_pn, file_opts->assoc_rec.max_tres_pn)) {
+		mod_assoc.max_tres_pn = file_opts->assoc_rec.max_tres_pn;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed MaxTRESPerNode",
+			   type, name,
+			   assoc->max_tres_pn,
+			   file_opts->assoc_rec.max_tres_pn);
 	}
 
 	if ((file_opts->assoc_rec.max_jobs != NO_VAL)
@@ -1476,6 +1488,19 @@ extern int print_file_add_limits_to_line(char **line,
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pj, g_tres_list);
 		xstrfmtcat(*line, ":MaxTRESPerJob=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (assoc->max_tres_pn) {
+		if (!g_tres_list) {
+			slurmdb_tres_cond_t tres_cond;
+			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+			tres_cond.with_deleted = 1;
+			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
+		}
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->max_tres_pn, g_tres_list);
+		xstrfmtcat(*line, ":MaxTRESPerNode=%s", tmp_char);
 		xfree(tmp_char);
 	}
 

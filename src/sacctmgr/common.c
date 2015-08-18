@@ -405,6 +405,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxTRES");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxTRESPerNode",
+				 object, MAX(command_len, 11))) {
+		field->type = PRINT_MAXTN;
+		field->name = xstrdup("MaxTRESPerNode");
+		field->len = 14;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESMinsPerJob", object,
 				MAX(command_len, 8))) {
 		field->type = PRINT_MAXTM;
@@ -1603,6 +1609,8 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 
 	printf("  MaxTRES       = %s\n",
 	       assoc->max_tres_pj ? assoc->max_tres_pj : "NONE");
+	printf("  MaxTRESPerNode= %s\n",
+	       assoc->max_tres_pn ? assoc->max_tres_pn : "NONE");
 	printf("  MaxTRESMins   = %s\n",
 	       assoc->max_tres_mins_pj ? assoc->max_tres_mins_pj : "NONE");
 	printf("  MaxTRESRUNMins= %s\n", assoc->max_tres_run_mins ?
@@ -1684,6 +1692,8 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 	printf("  MaxTRESPerJob = %s\n",
 	       qos->max_tres_pj ? qos->max_tres_pj : "NONE");
+	printf("  MaxTRESPerNode= %s\n",
+	       qos->max_tres_pn ? qos->max_tres_pn : "NONE");
 	printf("  MaxTRESPerUser= %s\n",
 	       qos->max_tres_pu ? qos->max_tres_pu : "NONE");
 	printf("  MaxTRESMins   = %s\n",
