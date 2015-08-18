@@ -2647,12 +2647,12 @@ extern bool acct_policy_job_runnable_post_select(
 			debug2("job %u is being held, "
 			       "the job is requesting more than allowed "
 			       "with assoc %u(%s/%s/%s) max tres(%s) "
-			       "minutes of %"PRIu64" with %"PRIu64,
+			       "limit of %"PRIu64" with %"PRIu64,
 			       job_ptr->job_id,
 			       assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
-			       assoc_ptr->max_tres_mins_ctld[tres_pos],
+			       assoc_ptr->max_tres_ctld[tres_pos],
 			       tres_req_cnt[tres_pos]);
 			rc = false;
 			break;
