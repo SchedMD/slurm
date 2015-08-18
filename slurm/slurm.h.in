@@ -409,13 +409,17 @@ enum job_state_reason {
 				      * (Unknown) */
 	WAIT_ASSOC_MAX_UNK_PER_JOB,  /* ASSOC MaxTRESPerJob exceeded
 				      * (Unknown) */
+	WAIT_ASSOC_MAX_UNK_PER_NODE,  /* ASSOC MaxTRESPerNode exceeded
+				       * (Unknown) */
 	WAIT_ASSOC_MAX_UNK_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob
 					 * exceeded (Unknown) */
+	WAIT_ASSOC_MAX_CPU_PER_NODE,  /* ASSOC MaxTRESPerNode exceeded (CPU) */
 	WAIT_ASSOC_GRP_MEM_MIN,      /* ASSOC GrpTRESMins exceeded
 				      * (Memory) */
 	WAIT_ASSOC_GRP_MEM_RUN_MIN,  /* ASSOC GrpTRESRunMins exceeded
 				      * (Memory) */
 	WAIT_ASSOC_MAX_MEM_PER_JOB,  /* ASSOC MaxTRESPerJob exceeded (Memory) */
+	WAIT_ASSOC_MAX_MEM_PER_NODE,  /* ASSOC MaxTRESPerNode exceeded (CPU) */
 	WAIT_ASSOC_MAX_MEM_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob
 					 * exceeded (Memory) */
 	WAIT_ASSOC_GRP_NODE_MIN,     /* ASSOC GrpTRESMins exceeded (Node) */
@@ -430,12 +434,15 @@ enum job_state_reason {
 					  * (Energy) */
 	WAIT_ASSOC_MAX_ENERGY_PER_JOB,   /* ASSOC MaxTRESPerJob exceeded
 					  * (Energy) */
+	WAIT_ASSOC_MAX_ENERGY_PER_NODE,  /* ASSOC MaxTRESPerNode
+					  * exceeded (Energy) */
 	WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob
 					    * exceeded (Energy) */
 	WAIT_ASSOC_GRP_GRES,          /* ASSOC GrpTRES exceeded (GRES) */
 	WAIT_ASSOC_GRP_GRES_MIN,      /* ASSOC GrpTRESMins exceeded (GRES) */
 	WAIT_ASSOC_GRP_GRES_RUN_MIN,  /* ASSOC GrpTRESRunMins exceeded (GRES) */
-	WAIT_ASSOC_MAX_GRES_PER_JOB, /* ASSOC MaxTRESPerJob exceeded (GRES) */
+	WAIT_ASSOC_MAX_GRES_PER_JOB,  /* ASSOC MaxTRESPerJob exceeded (GRES) */
+	WAIT_ASSOC_MAX_GRES_PER_NODE, /* ASSOC MaxTRESPerNode exceeded (GRES) */
 	WAIT_ASSOC_MAX_GRES_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob
 					  * exceeded (GRES) */
 	WAIT_ASSOC_GRP_LIC,          /* ASSOC GrpTRES exceeded
@@ -456,16 +463,20 @@ enum job_state_reason {
 				     * (burst buffer) */
 	WAIT_ASSOC_MAX_BB_PER_JOB,  /* ASSOC MaxTRESPerJob exceeded
 				     * (burst buffer) */
+	WAIT_ASSOC_MAX_BB_PER_NODE, /* ASSOC MaxTRESPerNode exceeded
+				     * (burst buffer) */
 	WAIT_ASSOC_MAX_BB_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob exceeded
 					* (burst buffer) */
 	WAIT_QOS_GRP_UNK,           /* QOS GrpTRES exceeded (Unknown) */
 	WAIT_QOS_GRP_UNK_MIN,       /* QOS GrpTRESMins exceeded (Unknown) */
 	WAIT_QOS_GRP_UNK_RUN_MIN,   /* QOS GrpTRESRunMins exceeded (Unknown) */
 	WAIT_QOS_MAX_UNK_PER_JOB,   /* QOS MaxTRESPerJob exceeded (Unknown) */
+	WAIT_QOS_MAX_UNK_PER_NODE,  /* QOS MaxTRESPerNode exceeded (Unknown) */
 	WAIT_QOS_MAX_UNK_PER_USER,  /* QOS MaxTRESPerUser exceeded (Unknown) */
 	WAIT_QOS_MAX_UNK_MINS_PER_JOB,/* QOS MaxTRESMinsPerJob
 				       * exceeded (Unknown) */
 	WAIT_QOS_MIN_UNK,           /* QOS MinTRESPerJob exceeded (Unknown) */
+	WAIT_QOS_MAX_CPU_PER_NODE,  /* QOS MaxTRESPerNode exceeded (CPU) */
 	WAIT_QOS_GRP_MEM_MIN,       /* QOS GrpTRESMins exceeded
 				     * (Memory) */
 	WAIT_QOS_GRP_MEM_RUN_MIN,   /* QOS GrpTRESRunMins exceeded
@@ -473,12 +484,14 @@ enum job_state_reason {
 	WAIT_QOS_MAX_MEM_MINS_PER_JOB,/* QOS MaxTRESMinsPerJob
 				       * exceeded (Memory) */
 	WAIT_QOS_MAX_MEM_PER_JOB,   /* QOS MaxTRESPerJob exceeded (CPU) */
+	WAIT_QOS_MAX_MEM_PER_NODE,  /* QOS MaxTRESPerNode exceeded (MEM) */
 	WAIT_QOS_MAX_MEM_PER_USER,  /* QOS MaxTRESPerUser exceeded (CPU) */
 	WAIT_QOS_MIN_MEM,           /* QOS MinTRESPerJob not reached (Memory) */
 	WAIT_QOS_GRP_ENERGY,        /* QOS GrpTRES exceeded (Energy) */
 	WAIT_QOS_GRP_ENERGY_MIN,    /* QOS GrpTRESMins exceeded (Energy) */
 	WAIT_QOS_GRP_ENERGY_RUN_MIN, /* QOS GrpTRESRunMins exceeded (Energy) */
 	WAIT_QOS_MAX_ENERGY_PER_JOB, /* QOS MaxTRESPerJob exceeded (Energy) */
+	WAIT_QOS_MAX_ENERGY_PER_NODE,/* QOS MaxTRESPerNode exceeded (Energy) */
 	WAIT_QOS_MAX_ENERGY_PER_USER,/* QOS MaxTRESPerUser exceeded (Energy) */
 	WAIT_QOS_MAX_ENERGY_MINS_PER_JOB,/* QOS MaxTRESMinsPerJob
 					  * exceeded (Energy) */
@@ -492,6 +505,7 @@ enum job_state_reason {
 	WAIT_QOS_GRP_GRES_MIN,      /* QOS GrpTRESMins exceeded (GRES) */
 	WAIT_QOS_GRP_GRES_RUN_MIN,  /* QOS GrpTRESRunMins exceeded (GRES) */
 	WAIT_QOS_MAX_GRES_PER_JOB,  /* QOS MaxTRESPerJob exceeded (GRES) */
+	WAIT_QOS_MAX_GRES_PER_NODE, /* QOS MaxTRESPerNode exceeded (GRES) */
 	WAIT_QOS_MAX_GRES_PER_USER, /* QOS MaxTRESPerUser exceeded
 				     * (GRES) */
 	WAIT_QOS_MAX_GRES_MINS_PER_JOB,/* QOS MaxTRESMinsPerJob
@@ -513,6 +527,8 @@ enum job_state_reason {
 	WAIT_QOS_GRP_BB_RUN_MIN,    /* QOS GrpTRESRunMins exceeded
 				     * (burst buffer) */
 	WAIT_QOS_MAX_BB_PER_JOB,   /* QOS MaxTRESPerJob exceeded
+				    * (burst buffer) */
+	WAIT_QOS_MAX_BB_PER_NODE,  /* QOS MaxTRESPerNode exceeded
 				    * (burst buffer) */
 	WAIT_QOS_MAX_BB_PER_USER,  /* QOS MaxTRESPerUser exceeded
 				    * (burst buffer) */

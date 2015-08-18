@@ -82,6 +82,8 @@ static int get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_GRP_CPU_RUN_MIN;
 		case WAIT_QOS_MAX_UNK_PER_JOB:
 			return WAIT_QOS_MAX_CPU_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_NODE:
+			return WAIT_QOS_MAX_CPU_PER_NODE;
 		case WAIT_QOS_MAX_UNK_PER_USER:
 			return WAIT_QOS_MAX_CPU_PER_USER;
 		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
@@ -113,6 +115,8 @@ static int get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_GRP_MEM_RUN_MIN;
 		case WAIT_QOS_MAX_UNK_PER_JOB:
 			return WAIT_QOS_MAX_MEM_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_NODE:
+			return WAIT_QOS_MAX_MEM_PER_NODE;
 		case WAIT_QOS_MAX_UNK_PER_USER:
 			return WAIT_QOS_MAX_MEM_PER_USER;
 		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
@@ -144,6 +148,8 @@ static int get_tres_state_reason(int tres_pos, int unk_reason)
 			return WAIT_QOS_GRP_ENERGY_RUN_MIN;
 		case WAIT_QOS_MAX_UNK_PER_JOB:
 			return WAIT_QOS_MAX_ENERGY_PER_JOB;
+		case WAIT_QOS_MAX_UNK_PER_NODE:
+			return WAIT_QOS_MAX_ENERGY_PER_NODE;
 		case WAIT_QOS_MAX_UNK_PER_USER:
 			return WAIT_QOS_MAX_ENERGY_PER_USER;
 		case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
@@ -207,6 +213,8 @@ static int get_tres_state_reason(int tres_pos, int unk_reason)
 				return WAIT_QOS_GRP_GRES_RUN_MIN;
 			case WAIT_QOS_MAX_UNK_PER_JOB:
 				return WAIT_QOS_MAX_GRES_PER_JOB;
+			case WAIT_QOS_MAX_UNK_PER_NODE:
+				return WAIT_QOS_MAX_GRES_PER_NODE;
 			case WAIT_QOS_MAX_UNK_PER_USER:
 				return WAIT_QOS_MAX_GRES_PER_USER;
 			case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
@@ -268,6 +276,8 @@ static int get_tres_state_reason(int tres_pos, int unk_reason)
 				return WAIT_QOS_GRP_BB_RUN_MIN;
 			case WAIT_QOS_MAX_UNK_PER_JOB:
 				return WAIT_QOS_MAX_BB_PER_JOB;
+			case WAIT_QOS_MAX_UNK_PER_NODE:
+				return WAIT_QOS_MAX_BB_PER_NODE;
 			case WAIT_QOS_MAX_UNK_PER_USER:
 				return WAIT_QOS_MAX_BB_PER_USER;
 			case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
