@@ -186,7 +186,7 @@ if {[test_using_slurmdbd]} {
 			incr match
 			exp_continue
 		}
-		-re " GrpCPUs=" {
+		-re " GrpTRES=" {
 			incr match
 			exp_continue
 		}
@@ -194,7 +194,7 @@ if {[test_using_slurmdbd]} {
 			incr match
 			exp_continue
 		}
-		-re " MaxCPUs=" {
+		-re " MaxTRESPJ=" {
 			incr match
 			exp_continue
 		}
@@ -208,7 +208,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 5).\n"
+		send_user "\nFAILURE: 1 scontrol show cache did not show correct information ($match != 5).\n"
 		set exit_code 1
 	}
 
@@ -226,7 +226,7 @@ if {[test_using_slurmdbd]} {
 			incr match
 			exp_continue
 		}
-		-re " GrpCPUs=3" {
+		-re " GrpTRES=cpu=3" {
 			incr match
 			exp_continue
 		}
@@ -234,7 +234,7 @@ if {[test_using_slurmdbd]} {
 			incr match
 			exp_continue
 		}
-		-re " MaxCPUs=6" {
+		-re " MaxTRESPJ=cpu=6" {
 			incr match
 			exp_continue
 		}
@@ -248,7 +248,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 5} {
-		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 5).\n"
+		send_user "\nFAILURE: 2 scontrol show cache did not show correct information ($match != 5).\n"
 		set exit_code 1
 	}
 
@@ -267,7 +267,7 @@ if {[test_using_slurmdbd]} {
 			incr match
 			exp_continue
 		}
-		-re " GrpCPUs=3" {
+		-re " GrpTRES=cpu=3" {
 			incr limit_match
 			exp_continue
 		}
@@ -275,7 +275,7 @@ if {[test_using_slurmdbd]} {
 			incr limit_match
 			exp_continue
 		}
-		-re " MaxCPUs=6" {
+		-re " MaxTRESPJ=cpu=6" {
 			incr limit_match
 			exp_continue
 		}
@@ -289,7 +289,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 2 && $limit_match} {
-		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 2).\n"
+		send_user "\nFAILURE: 3 scontrol show cache did not show correct information ($match != 2).\n"
 		set exit_code 1
 	}
 
@@ -322,7 +322,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	if {$match != 3} {
-		send_user "\nFAILURE: scontrol show cache did not show correct information ($match != 3)\n"
+		send_user "\nFAILURE: 4 scontrol show cache did not show correct information ($match != 3)\n"
 		set exit_code 1
 	}
 }
