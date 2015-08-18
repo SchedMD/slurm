@@ -1085,9 +1085,13 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 		pack32(object->shares_raw, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
@@ -1108,9 +1112,13 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
@@ -1769,9 +1777,13 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->grace_time, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
@@ -1788,9 +1800,13 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins_pu, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
@@ -1880,9 +1896,13 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->grace_time, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
@@ -1896,9 +1916,13 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins_pu, TRES_CPU);
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
 		pack64(uint64_tmp, buffer);
 		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
