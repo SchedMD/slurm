@@ -2715,6 +2715,8 @@ extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
 extern void slurm_free_resource_allocation_response_msg_members (
 	resource_allocation_response_msg_t * msg)
 {
+	int i;
+
 	if (msg) {
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
@@ -2722,9 +2724,11 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->alias_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
+		for (i = 0; i < msg->env_size; i++)
+			xfree(msg->environment[i]);
+		xfree(msg->environment);
 		xfree(msg->node_list);
 		xfree(msg->partition);
-		xfree(msg->account);
 		xfree(msg->qos);
 		xfree(msg->resv_name);
 	}

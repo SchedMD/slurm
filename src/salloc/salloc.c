@@ -422,7 +422,20 @@ int main(int argc, char *argv[])
 				     cluster_name);
 		xfree(cluster_name);
 	}
-
+	if (alloc->env_size) {	/* Used to set Burst Buffer environment */
+		char *key, *value, *tmp;
+		for (i = 0; i < alloc->env_size; i++) {
+			tmp = xstrdup(alloc->environment[i]);
+			key = tmp;
+			value = strchr(tmp, '=');
+			if (value) {
+				value[0] = '\0';
+				value++;
+				env_array_append(&env, key, value);
+			}
+			xfree(tmp);
+		}
+	}
 
 	env_array_set_environment(env);
 	env_array_free(env);

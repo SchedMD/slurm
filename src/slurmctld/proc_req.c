@@ -1022,7 +1022,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 {
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS;
+	int i, error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -1141,6 +1141,15 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			       job_ptr->job_resrcs->cpu_array_value,
 			       (sizeof(uint16_t) * job_ptr->job_resrcs->
 				cpu_array_cnt));
+		}
+		if (job_ptr->details->env_cnt) {
+			alloc_msg.env_size = job_ptr->details->env_cnt;
+			alloc_msg.environment = xmalloc(sizeof(char *) *
+							alloc_msg.env_size);
+			for (i = 0; i < alloc_msg.env_size; i++) {
+				alloc_msg.environment[i] =
+					xstrdup(job_ptr->details->env_sup[i]);
+			}
 		}
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_ptr->job_id;
@@ -2777,6 +2786,16 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		job_info_resp_msg.resv_name      = xstrdup(job_ptr->resv_name);
 		job_info_resp_msg.select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+		if (job_ptr->details->env_cnt) {
+			job_info_resp_msg.env_size = job_ptr->details->env_cnt;
+			job_info_resp_msg.environment =
+				xmalloc(sizeof(char *) *
+				        job_info_resp_msg.env_size);
+			for (i = 0; i < job_info_resp_msg.env_size; i++) {
+				job_info_resp_msg.environment[i] =
+					xstrdup(job_ptr->details->env_sup[i]);
+			}
+		}
 		unlock_slurmctld(job_read_lock);
 
 		slurm_msg_t_init(&response_msg);

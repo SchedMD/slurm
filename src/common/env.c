@@ -988,9 +988,10 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 {
 	char *tmp = NULL;
 	char *dist = NULL, *lllp_dist = NULL;
+	char *key, *value;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	uint32_t node_cnt = alloc->node_cnt;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -1092,6 +1093,21 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	slurm_step_layout_destroy(step_layout);
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
+
+	if (alloc->env_size) {	/* Used to set Burst Buffer environment */
+		for (i = 0; i < alloc->env_size; i++) {
+			tmp = xstrdup(alloc->environment[i]);
+			key = tmp;
+			value = strchr(tmp, '=');
+			if (value) {
+				value[0] = '\0';
+				value++;
+				env_array_overwrite(dest, key, value);
+			}
+			xfree(tmp);
+		}
+	}
+
 	return rc;
 }
 
