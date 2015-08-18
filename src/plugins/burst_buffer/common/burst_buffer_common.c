@@ -1085,10 +1085,13 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 	if (bb_alloc) {
 		xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
 		bb_alloc->magic = 0;
+		xfree(bb_alloc->account);
+		xfree(bb_alloc->assocs);
 		for (i = 0; i < bb_alloc->gres_cnt; i++)
 			xfree(bb_alloc->gres_ptr[i].name);
 		xfree(bb_alloc->gres_ptr);
 		xfree(bb_alloc->name);
+		xfree(bb_alloc->qos);
 		xfree(bb_alloc);
 	}
 }
@@ -1514,4 +1517,43 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 	}
 
 //FIXME: Need TRES limit remove here
+}
+
+/* Log creation of a persistent burst buffer in the database */
+extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_reservation_rec_t resv;
+
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	resv.assocs = bb_alloc->assocs;
+	resv.cluster = slurmctld_cluster_name;
+	resv.name = bb_alloc->name;
+	resv.time_start = bb_alloc->create_time;
+	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
+
+	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
+	xfree(resv.tres_str);
+
+	return rc;
+}
+
+/* Log deletion of a persistent burst buffer in the database */
+extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_reservation_rec_t resv;
+
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	resv.assocs = bb_alloc->assocs;
+	resv.cluster = slurmctld_cluster_name;
+	resv.name = bb_alloc->name;
+	resv.time_end = time(NULL);
+	resv.time_start = bb_alloc->create_time;
+	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
+
+	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
+	xfree(resv.tres_str);
+
+	return rc;
 }

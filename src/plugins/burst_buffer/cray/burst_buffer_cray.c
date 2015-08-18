@@ -626,6 +626,8 @@ static void _save_limits_state(void)
 				packstr(bb_alloc->partition,	buffer);
 				packstr(bb_alloc->qos,		buffer);
 				pack32(bb_alloc->user_id,	buffer);
+				if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+					pack64(bb_alloc->size,	buffer);
 				rec_count++;
 			}
 			bb_alloc = bb_alloc->next;
@@ -729,8 +731,10 @@ static void _recover_limit_state(void)
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t data_size = 0, rec_count = 0, name_len = 0, user_id = 0;
+	uint64_t size;
 	int i, state_fd;
 	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
+	char *end_ptr = NULL;
 	time_t create_time = 0;
 	bb_alloc_t *bb_alloc;
 	Buf buffer;
@@ -779,8 +783,18 @@ static void _recover_limit_state(void)
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
 		safe_unpack32(&user_id, buffer);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+			safe_unpack64(&size, buffer);
 
-		bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
+			bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
+			if (name && (name[0] >='0') && (name[0] <='9'))
+				bb_alloc->job_id = strtol(name, &end_ptr, 10);
+			bb_alloc->seen_time = time(NULL);
+			bb_alloc->size = size;
+		} else {
+			bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
+		}
 		if (bb_alloc) {
 			xfree(bb_alloc->account);
 			bb_alloc->account = account;
@@ -3488,6 +3502,7 @@ static void *_create_persistent(void *x)
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int i, status = 0;
+	slurmdb_assoc_rec_t *assoc;
 	DEF_TIMERS;
 
 	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
@@ -3567,6 +3582,14 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
 			bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
+			assoc = job_ptr->assoc_ptr;
+			while (assoc) {
+				xstrfmtcat(bb_alloc->assocs, ",%u",
+					   assoc->id);
+				assoc = assoc->usage->parent_assoc_ptr;
+			}
+			if (bb_alloc->assocs)
+				xstrcat(bb_alloc->assocs, ",");
 			if (job_ptr->part_ptr) {
 				bb_alloc->partition =
 					xstrdup(job_ptr->part_ptr->name);
@@ -3597,12 +3620,14 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	DEF_TIMERS;
 
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
 				    &bb_state);
 	if (!bb_alloc) {
 		info("%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -3640,11 +3665,14 @@ static void *_destroy_persistent(void *x)
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
 		}
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
 				 BB_STATE_PENDING);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else {
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
 				 BB_STATE_DELETED);
@@ -3656,8 +3684,8 @@ static void *_destroy_persistent(void *x)
 		bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
 			     bb_alloc->partition, bb_alloc->qos,
 			     bb_alloc->size, &bb_state);
-
 		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
