@@ -77,6 +77,7 @@ static int _find_prec(void *x, void *key)
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 				      char * sbuf)
 {
+	uint32_t tot_cpu;
 	int thisfreq = 0;
 
 	if (cpunfo_frequency)
@@ -88,9 +89,9 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	jobacct->current_weighted_freq =
 		jobacct->current_weighted_freq +
 		(uint32_t)jobacct->this_sampled_cputime * thisfreq;
-	if (jobacct->tot_cpu >= 1) {
-		return (jobacct->current_weighted_freq /
-			(uint32_t)jobacct->tot_cpu);
+	tot_cpu = (uint32_t) jobacct->tot_cpu;	/* Cast from double */
+	if (tot_cpu) {
+		return (uint32_t) (jobacct->current_weighted_freq / tot_cpu);
 	} else
 		return thisfreq;
 }
