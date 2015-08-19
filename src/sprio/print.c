@@ -80,12 +80,19 @@ int print_jobs_array(List jobs, List format)
 
 static double _get_priority(priority_factors_object_t *prio_factors)
 {
+	int i = 0;
 	double priority = prio_factors->priority_age
 		+ prio_factors->priority_fs
 		+ prio_factors->priority_js
 		+ prio_factors->priority_part
 		+ prio_factors->priority_qos
 		- (double)(prio_factors->nice - NICE_OFFSET);
+
+	for (i = 0; i < prio_factors->tres_cnt; i++) {
+		if (!prio_factors->priority_tres[i])
+			continue;
+		priority += prio_factors->priority_tres[i];
+	}
 
 	return priority;
 }
@@ -436,6 +443,72 @@ int _print_job_user_name(priority_factors_object_t * job, int width,
 	else {
 		char *uname = uid_to_string_cached((uid_t) job->user_id);
 		_print_str(uname, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_tres_normalized(priority_factors_object_t * job, int width,
+			   bool right, char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		char *names;
+		xstrcat(names, "TRES");
+
+		_print_str(names, width, right, true);
+		xfree(names);
+	}
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
+	else {
+		char *values;
+		int i = 0;
+		xstrcat(values, "");
+		for (i = 0; i < job->tres_cnt; i++) {
+			if (!job->priority_tres[i])
+				continue;
+			if (values[0])
+				xstrcat(values, ",");
+			xstrfmtcat(values, "%s=%.2f", job->tres_names[i],
+				   job->priority_tres[i]/job->tres_weights[i]);
+		}
+
+		_print_str(values, width, right, true);
+		xfree(values);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_tres_weighted(priority_factors_object_t * job, int width,
+			   bool right, char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		char *names;
+		xstrcat(names, "TRES");
+
+		_print_str(names, width, right, true);
+		xfree(names);
+	}
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str(weight_tres, width, right, true);
+	else {
+		char *values;
+		int i = 0;
+		xstrcat(values, "");
+		for (i = 0; i < job->tres_cnt; i++) {
+			if (!job->priority_tres[i])
+				continue;
+			if (values[0])
+				xstrcat(values, ",");
+			xstrfmtcat(values, "%s=%.0f", job->tres_names[i],
+				   job->priority_tres[i]);
+		}
+
+		_print_str(values, width, right, true);
+		xfree(values);
 	}
 	if (suffix)
 		printf("%s", suffix);

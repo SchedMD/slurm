@@ -79,6 +79,7 @@
 #include "src/common/gres.h"
 
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/read_config.h"
 
 #include "fair_tree.h"
 
@@ -152,6 +153,7 @@ static uint32_t weight_fs;   /* weight for Fairshare factor */
 static uint32_t weight_js;   /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos;  /* weight for QOS factor */
+static double  *weight_tres; /* tres weights */
 static uint32_t flags;       /* Priority Flags */
 static uint32_t prevflags;    /* Priority Flags before _internal_setup() resets
 			       * flags after a reconfigure */
@@ -501,11 +503,15 @@ static uint32_t _get_priority_internal(time_t start_time,
 	double priority	= 0.0;
 	priority_factors_object_t pre_factors;
 	uint64_t tmp_64;
+	double tmp_tres = 0.0;
 
 	if (job_ptr->direct_set_prio && (job_ptr->priority > 0)) {
-		if (job_ptr->prio_factors)
+		if (job_ptr->prio_factors) {
+			xfree(job_ptr->prio_factors->tres_weights);
+			xfree(job_ptr->prio_factors->priority_tres);
 			memset(job_ptr->prio_factors, 0,
 			       sizeof(priority_factors_object_t));
+		}
 		return job_ptr->priority;
 	}
 
@@ -513,15 +519,28 @@ static uint32_t _get_priority_internal(time_t start_time,
 		error("_get_priority_internal: job %u does not have a "
 		      "details symbol set, can't set priority",
 		      job_ptr->job_id);
-		if (job_ptr->prio_factors)
+		if (job_ptr->prio_factors) {
+			xfree(job_ptr->prio_factors->tres_weights);
+			xfree(job_ptr->prio_factors->priority_tres);
 			memset(job_ptr->prio_factors, 0,
 			       sizeof(priority_factors_object_t));
+		}
 		return 0;
 	}
 
 	set_priority_factors(start_time, job_ptr);
-	memcpy(&pre_factors, job_ptr->prio_factors,
-	       sizeof(priority_factors_object_t));
+
+	if (priority_debug) {
+		memcpy(&pre_factors, job_ptr->prio_factors,
+		       sizeof(priority_factors_object_t));
+		if (job_ptr->prio_factors->priority_tres) {
+			pre_factors.priority_tres = xmalloc(sizeof(double) *
+							    slurmctld_tres_cnt);
+			memcpy(pre_factors.priority_tres,
+			       job_ptr->prio_factors->priority_tres,
+			       sizeof(double) * slurmctld_tres_cnt);
+		}
+	}
 
 	job_ptr->prio_factors->priority_age  *= (double)weight_age;
 	job_ptr->prio_factors->priority_fs   *= (double)weight_fs;
@@ -529,11 +548,26 @@ static uint32_t _get_priority_internal(time_t start_time,
 	job_ptr->prio_factors->priority_part *= (double)weight_part;
 	job_ptr->prio_factors->priority_qos  *= (double)weight_qos;
 
+	if (weight_tres) {
+		int i;
+		double *tres_factors = NULL;
+		tres_factors = job_ptr->prio_factors->priority_tres;
+
+		for (i = 0; i < slurmctld_tres_cnt; i++) {
+			if (!tres_factors[i])
+				continue;
+
+			tres_factors[i] *= weight_tres[i];
+			tmp_tres += tres_factors[i];
+		}
+	}
+
 	priority = job_ptr->prio_factors->priority_age
 		+ job_ptr->prio_factors->priority_fs
 		+ job_ptr->prio_factors->priority_js
 		+ job_ptr->prio_factors->priority_part
 		+ job_ptr->prio_factors->priority_qos
+		+ tmp_tres
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
 
 	/* Priority 0 is reserved for held jobs */
@@ -570,6 +604,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_fs
 				 + job_ptr->prio_factors->priority_js
 				 + job_ptr->prio_factors->priority_qos
+				 + tmp_tres
 				 - (double)(job_ptr->prio_factors->nice
 					    - NICE_OFFSET));
 
@@ -595,6 +630,13 @@ static uint32_t _get_priority_internal(time_t start_time,
 	}
 
 	if (priority_debug) {
+		int i;
+		double *post_tres_factors =
+			job_ptr->prio_factors->priority_tres;
+		double *pre_tres_factors = pre_factors.priority_tres;
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
+
 		info("Weighted Age priority is %f * %u = %.2f",
 		     pre_factors.priority_age, weight_age,
 		     job_ptr->prio_factors->priority_age);
@@ -610,15 +652,31 @@ static uint32_t _get_priority_internal(time_t start_time,
 		info("Weighted QOS priority is %f * %u = %.2f",
 		     pre_factors.priority_qos, weight_qos,
 		     job_ptr->prio_factors->priority_qos);
-		info("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f - %d "
-		     "= %.2f",
+
+		assoc_mgr_lock(&locks);
+		for(i = 0; i < slurmctld_tres_cnt; i++) {
+			if (!post_tres_factors || !post_tres_factors[i])
+				continue;
+			info("Weighted TRES:%s is %f * %.2f = %.2f",
+			     assoc_mgr_tres_name_array[i],
+			     pre_tres_factors[i], weight_tres[i],
+			     post_tres_factors[i]);
+		}
+		assoc_mgr_unlock(&locks);
+
+		info("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f + %2.f "
+		     "- %d = %.2f",
 		     job_ptr->job_id, job_ptr->prio_factors->priority_age,
 		     job_ptr->prio_factors->priority_fs,
 		     job_ptr->prio_factors->priority_js,
 		     job_ptr->prio_factors->priority_part,
 		     job_ptr->prio_factors->priority_qos,
+		     tmp_tres,
 		     (job_ptr->prio_factors->nice - NICE_OFFSET),
 		     priority);
+
+		if (pre_factors.priority_tres)
+			xfree(pre_factors.priority_tres);
 	}
 	return (uint32_t)priority;
 }
@@ -1334,6 +1392,7 @@ static void *_cleanup_thread(void *no_data)
 
 static void _internal_setup(void)
 {
+	char *tres_weights_str;
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
 		priority_debug = 1;
 	else
@@ -1348,6 +1407,10 @@ static void _internal_setup(void)
 	weight_js = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
+	xfree(weight_tres);
+	if ((tres_weights_str = slurm_get_priority_weight_tres())) {
+		weight_tres = tres_parse_weights(tres_weights_str);
+	}
 	flags = slurmctld_conf.priority_flags;
 
 	if (priority_debug) {
@@ -1597,6 +1660,8 @@ int fini ( void )
 	if (cleanup_handler_thread)
 		pthread_join(cleanup_handler_thread, NULL);
 
+	xfree(weight_tres);
+
 	slurm_mutex_unlock(&decay_lock);
 
 	return SLURM_SUCCESS;
@@ -1756,6 +1821,19 @@ extern List priority_p_get_priority_factors_list(
 			obj = xmalloc(sizeof(priority_factors_object_t));
 			memcpy(obj, job_ptr->prio_factors,
 			       sizeof(priority_factors_object_t));
+
+			obj->priority_tres = xmalloc(sizeof(double) *
+						     slurmctld_tres_cnt);
+			memcpy(obj->priority_tres,
+			       job_ptr->prio_factors->priority_tres,
+			       sizeof(double) * slurmctld_tres_cnt);
+
+			obj->tres_weights = xmalloc(sizeof(double) *
+						    slurmctld_tres_cnt);
+			memcpy(obj->tres_weights,
+			       job_ptr->prio_factors->tres_weights,
+			       sizeof(double) * slurmctld_tres_cnt);
+
 			obj->job_id = job_ptr->job_id;
 			obj->user_id = job_ptr->user_id;
 			list_append(ret_list, obj);
@@ -1833,9 +1911,12 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 	if (!job_ptr->prio_factors)
 		job_ptr->prio_factors =
 			xmalloc(sizeof(priority_factors_object_t));
-	else
+	else {
+		xfree(job_ptr->prio_factors->tres_weights);
+		xfree(job_ptr->prio_factors->priority_tres);
 		memset(job_ptr->prio_factors, 0,
 		       sizeof(priority_factors_object_t));
+	}
 
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
@@ -1948,6 +2029,39 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 		job_ptr->prio_factors->nice = job_ptr->details->nice;
 	else
 		job_ptr->prio_factors->nice = NICE_OFFSET;
+
+	if (weight_tres) {
+		int i;
+		double *tres_factors = NULL;
+
+		if (!job_ptr->prio_factors->priority_tres) {
+			job_ptr->prio_factors->priority_tres =
+				xmalloc(sizeof(double) * slurmctld_tres_cnt);
+			job_ptr->prio_factors->tres_weights =
+				xmalloc(sizeof(double) * slurmctld_tres_cnt);
+			memcpy(job_ptr->prio_factors->tres_weights, weight_tres,
+			       sizeof(double) * slurmctld_tres_cnt);
+			job_ptr->prio_factors->tres_cnt = slurmctld_tres_cnt;
+		}
+		tres_factors = job_ptr->prio_factors->priority_tres;
+
+		/* can't memcpy because of different types
+		 * uint64_t vs. double */
+		for (i = 0; i < slurmctld_tres_cnt; i++) {
+			uint64_t value = 0;
+			if (job_ptr->tres_alloc_cnt)
+				value = job_ptr->tres_alloc_cnt[i];
+			else if (job_ptr->tres_req_cnt)
+				value = job_ptr->tres_req_cnt[i];
+
+			if (value &&
+			    job_ptr->part_ptr &&
+			    job_ptr->part_ptr->tres_cnt &&
+			    job_ptr->part_ptr->tres_cnt[i])
+				tres_factors[i] = value /
+					(double)job_ptr->part_ptr->tres_cnt[i];
+		}
+	}
 }
 
 

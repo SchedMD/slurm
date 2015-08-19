@@ -352,6 +352,12 @@ uint32_t slurm_get_priority_weight_partition(void);
  */
 uint32_t slurm_get_priority_weight_qos(void);
 
+/* slurm_get_priority_weight_tres
+ * returns the priority weights for TRES' from slurmctld_conf object
+ * RET char * of the tres weights.
+ */
+char *slurm_get_priority_weight_tres(void);
+
 /* slurm_get_private_data
  * get private data from slurmctld_conf object
  * RET uint16_t   - private_data

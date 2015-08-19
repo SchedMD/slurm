@@ -1849,6 +1849,20 @@ Applicable only if PriorityType=priority/multifactor.
 The default value is 0.
 
 .TP
+\fBPriorityWeightTRES\fR
+A comma separated list of TRES Types and weights that sets the degree that each
+TRES Type contributes to the job's priority.
+
+.nf
+e.g.
+PriorityWeightTRES=CPU=1.0,Mem=0.25,GRES/gpu=2.0
+.fi
+
+Applicable only if PriorityType=priority/multifactor and if
+AccountingStorageTRES is configured with each TRES Type.
+The default values are 0.
+
+.TP
 \fBPrivateData\fR
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.

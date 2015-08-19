@@ -53,10 +53,10 @@ assigned non-zero weights are
 .RS
 .TP 15
 \fIdefault\fR
-"%.15i %.10Y %.10A %.10F %.10J %.10P %.10Q"
+"%.15i %.10Y %.10A %.10F %.10J %.10P %.10Q %20T"
 .TP
 \fI\-l, \-\-long\fR
-"%.15i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N"
+"%.15i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N %20T"
 .RE
 
 .IP
@@ -112,6 +112,12 @@ Normalized quality of service priority
 .TP
 \fB%Q\fR
 Weighted quality of service priority
+.TP
+\fB%t\fR
+Normalized TRES priorities
+.TP
+\fB%T\fR
+Weighted TRES priorities
 .TP
 \fB%u\fR
 User name for a job

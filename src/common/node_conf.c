@@ -1072,6 +1072,8 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	ext_sensors_destroy(node_ptr->ext_sensors);
 	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
 	xfree(node_ptr->tres_str);
+	xfree(node_ptr->tres_fmt_str);
+	xfree(node_ptr->tres_cnt);
 }
 
 /*

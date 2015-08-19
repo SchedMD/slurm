@@ -2927,50 +2927,109 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 {
 	priority_factors_object_t *object = (priority_factors_object_t *)in;
 
-	if (!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(0, buffer);
+			pack32(0, buffer);
 
-		packdouble(0, buffer);
-		packdouble(0, buffer);
-		packdouble(0, buffer);
-		packdouble(0, buffer);
-		packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
 
-		pack16(0, buffer);
+			pack16(0, buffer);
 
-		return;
+			return;
+		}
+
+		pack32(object->job_id, buffer);
+		pack32(object->user_id, buffer);
+
+		packdouble(object->priority_age, buffer);
+		packdouble(object->priority_fs, buffer);
+		packdouble(object->priority_js, buffer);
+		packdouble(object->priority_part, buffer);
+		packdouble(object->priority_qos, buffer);
+
+		packdouble_array(object->priority_tres, object->tres_cnt,
+				 buffer);
+		pack32(object->tres_cnt, buffer);
+		packstr_array(assoc_mgr_tres_name_array, object->tres_cnt,
+			      buffer);
+		packdouble_array(object->tres_weights, object->tres_cnt,
+				 buffer);
+
+		pack16(object->nice, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+
+			pack16(0, buffer);
+
+			return;
+		}
+
+		pack32(object->job_id, buffer);
+		pack32(object->user_id, buffer);
+
+		packdouble(object->priority_age, buffer);
+		packdouble(object->priority_fs, buffer);
+		packdouble(object->priority_js, buffer);
+		packdouble(object->priority_part, buffer);
+		packdouble(object->priority_qos, buffer);
+
+		pack16(object->nice, buffer);
 	}
-
-	pack32(object->job_id, buffer);
-	pack32(object->user_id, buffer);
-
-	packdouble(object->priority_age, buffer);
-	packdouble(object->priority_fs, buffer);
-	packdouble(object->priority_js, buffer);
-	packdouble(object->priority_part, buffer);
-	packdouble(object->priority_qos, buffer);
-
-	pack16(object->nice, buffer);
 }
 
 static int _unpack_priority_factors_object(void **object, Buf buffer,
 					   uint16_t protocol_version)
 {
+	uint32_t tmp32;
+
 	priority_factors_object_t *object_ptr =
 		xmalloc(sizeof(priority_factors_object_t));
-
 	*object = (void *) object_ptr;
-	safe_unpack32(&object_ptr->job_id, buffer);
-	safe_unpack32(&object_ptr->user_id, buffer);
 
-	safe_unpackdouble(&object_ptr->priority_age, buffer);
-	safe_unpackdouble(&object_ptr->priority_fs, buffer);
-	safe_unpackdouble(&object_ptr->priority_js, buffer);
-	safe_unpackdouble(&object_ptr->priority_part, buffer);
-	safe_unpackdouble(&object_ptr->priority_qos, buffer);
+	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack32(&object_ptr->user_id, buffer);
 
-	safe_unpack16(&object_ptr->nice, buffer);
+		safe_unpackdouble(&object_ptr->priority_age, buffer);
+		safe_unpackdouble(&object_ptr->priority_fs, buffer);
+		safe_unpackdouble(&object_ptr->priority_js, buffer);
+		safe_unpackdouble(&object_ptr->priority_part, buffer);
+		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+
+		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
+					buffer);
+		safe_unpack32(&object_ptr->tres_cnt, buffer);
+		safe_unpackstr_array(&object_ptr->tres_names,
+				     &object_ptr->tres_cnt, buffer);
+		safe_unpackdouble_array(&object_ptr->tres_weights, &tmp32,
+					buffer);
+
+		safe_unpack16(&object_ptr->nice, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack32(&object_ptr->user_id, buffer);
+
+		safe_unpackdouble(&object_ptr->priority_age, buffer);
+		safe_unpackdouble(&object_ptr->priority_fs, buffer);
+		safe_unpackdouble(&object_ptr->priority_js, buffer);
+		safe_unpackdouble(&object_ptr->priority_part, buffer);
+		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+
+		safe_unpack16(&object_ptr->nice, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -4173,6 +4232,9 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		if (power_mgmt_data_unpack(&node->power, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&node->tres_fmt_str, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
@@ -5449,7 +5511,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		}
 		safe_unpackstr_xmalloc(&part->billing_weights_str, &uint32_tmp,
 				       buffer);
-
+		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
@@ -6593,6 +6656,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->priority_weight_js, buffer);
 		pack32(build_ptr->priority_weight_part, buffer);
 		pack32(build_ptr->priority_weight_qos, buffer);
+		packstr(build_ptr->priority_weight_tres, buffer);
 
 		pack16(build_ptr->private_data, buffer);
 		packstr(build_ptr->proctrack_type, buffer);
@@ -7473,6 +7537,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->priority_weight_js, buffer);
 		safe_unpack32(&build_ptr->priority_weight_part, buffer);
 		safe_unpack32(&build_ptr->priority_weight_qos, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->priority_weight_tres,
+				       &uint32_tmp, buffer);
 
 		safe_unpack16(&build_ptr->private_data, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint32_tmp,

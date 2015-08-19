@@ -7233,6 +7233,7 @@ extern void job_set_req_tres(
 				 job_ptr->tres_req_cnt,
 				 true);
 
+	/* FIXME: this assumes that all nodes have equal TRES */
 	gres_set_job_tres_cnt(job_ptr->gres_list,
 			      node_cnt,
 			      job_ptr->tres_req_cnt,

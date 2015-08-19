@@ -879,8 +879,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
  * IN/OUT buffer - buffer where data is placed, pointers automatically updated
  * IN protocol_version - slurm protocol version of client
  * IN show_flags -
- * NOTE: if you make any changes here be sure to make the corresponding
- *	changes to load_node_config in api/node_info.c
+ * NOTE: if you make any changes here be sure to make the corresponding changes
+ * 	to _unpack_node_info_members() in common/slurm_protocol_pack.c
  * NOTE: READ lock_slurmctld config before entry
  */
 static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
@@ -963,6 +963,8 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 				      protocol_version);
 		power_mgmt_data_pack(dump_node_ptr->power, buffer,
 				     protocol_version);
+
+		packstr(dump_node_ptr->tres_fmt_str,buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);

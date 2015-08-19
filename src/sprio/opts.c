@@ -308,6 +308,14 @@ extern int parse_format( char* format )
 							     field_size,
 							     right_justify,
 							     suffix );
+		else if (field[0] == 't')
+			job_format_add_tres_normalized(params.format_list,
+						     field_size, right_justify,
+						     suffix);
+		else if (field[0] == 'T')
+			job_format_add_tres_weighted(params.format_list,
+						     field_size, right_justify,
+						     suffix);
 		else
 			error( "Invalid job format specification: %c",
 			       field[0] );

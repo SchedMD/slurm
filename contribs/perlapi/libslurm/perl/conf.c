@@ -252,6 +252,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, priority_weight_js, uint32_t);
 	STORE_FIELD(hv, conf, priority_weight_part, uint32_t);
 	STORE_FIELD(hv, conf, priority_weight_qos, uint32_t);
+	STORE_FIELD(hv, conf, priority_weight_tres, charp);
 	STORE_FIELD(hv, conf, private_data, uint16_t);
 
 	if (conf->proctrack_type)
@@ -528,6 +529,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, priority_weight_js, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_weight_part, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_weight_qos, uint32_t, TRUE);
+	FETCH_FIELD(hv, conf, priority_weight_tres, charp, TRUE);
 	FETCH_FIELD(hv, conf, private_data, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, proctrack_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, prolog, charp, FALSE);

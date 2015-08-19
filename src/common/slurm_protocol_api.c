@@ -804,6 +804,24 @@ uint32_t slurm_get_priority_weight_qos(void)
 	return factor;
 }
 
+/* slurm_get_priority_weight_tres
+ * returns the priority weights for TRES' from slurmctld_conf object
+ * char * string of configured tres weights.
+ */
+char *slurm_get_priority_weight_tres(void)
+{
+	char *weights = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		weights = conf->priority_weight_tres;
+		slurm_conf_unlock();
+	}
+
+	return weights;
+}
 
 /* slurm_get_private_data
  * get private data from slurmctld_conf object

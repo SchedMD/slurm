@@ -371,6 +371,8 @@ struct part_record {
 	uint32_t max_cpu_cnt;	/* max # of cpus on a node in the partition */
 	uint32_t max_core_cnt;	/* max # of cores on a node in the partition */
 	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
+	uint64_t *tres_cnt;	/* array of total TRES in partition. NO_PACK */
+	char     *tres_fmt_str;	/* str of configured TRES in partition */
 };
 
 extern List part_list;			/* list of part_record entries */
@@ -2368,5 +2370,10 @@ waitpid_timeout(const char *, pid_t, int *, int);
  * RET array of tres weights.
  */
 extern double *tres_parse_weights(char *weights_str);
+
+/*
+ * Calcuate and populate the number of tres' for all partitions.
+ */
+extern void set_partition_tres();
 
 #endif /* !_HAVE_SLURMCTLD_H */

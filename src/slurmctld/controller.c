@@ -2064,6 +2064,8 @@ extern void send_all_to_accounting(time_t event_time)
 
 static int _add_node_gres_tres(void *x, void *arg)
 {
+	uint64_t gres_cnt;
+	int tres_pos;
 	slurmdb_tres_rec_t *tres_rec_in = (slurmdb_tres_rec_t *)x;
 	struct node_record *node_ptr = (struct node_record *)arg;
 
@@ -2072,11 +2074,10 @@ static int _add_node_gres_tres(void *x, void *arg)
 	if (xstrcmp(tres_rec_in->type, "gres"))
 		return 0;
 
-	xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
-		   node_ptr->tres_str ? "," : "",
-		   tres_rec_in->id,
-		   gres_plugin_node_config_cnt(
-			   node_ptr->gres_list, tres_rec_in->name));
+	gres_cnt = gres_plugin_node_config_cnt(node_ptr->gres_list,
+					       tres_rec_in->name);
+	if ((tres_pos = assoc_mgr_find_tres_pos(tres_rec_in, true)) != -1)
+		node_ptr->tres_cnt[tres_pos] = gres_cnt;
 
 	return 0;
 }
@@ -2152,19 +2153,25 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		if (mem_tres)
 			mem_tres->count += mem_count;
 
-		xfree(node_ptr->tres_str);
-
-		/* add the cpu tres to the node */
-		xstrfmtcat(node_ptr->tres_str, "%s%u=%"PRIu64,
-			   node_ptr->tres_str ? "," : "",
-			   TRES_CPU, cpu_count);
-
-		/* add the mem tres to the node */
-		xstrfmtcat(node_ptr->tres_str, ",%u=%"PRIu64,
-			   TRES_MEM, mem_count);
+		if (!node_ptr->tres_cnt)
+			node_ptr->tres_cnt = xmalloc(sizeof(uint64_t) *
+						     slurmctld_tres_cnt);
+		node_ptr->tres_cnt[TRES_ARRAY_CPU] = cpu_count;
+		node_ptr->tres_cnt[TRES_ARRAY_MEM] = mem_count;
 
 		list_for_each(assoc_mgr_tres_list,
 			      _add_node_gres_tres, node_ptr);
+
+		xfree(node_ptr->tres_str);
+		node_ptr->tres_str =
+			assoc_mgr_make_tres_str_from_array(node_ptr->tres_cnt,
+							   TRES_STR_FLAG_SIMPLE,
+							   true);
+		xfree(node_ptr->tres_fmt_str);
+		node_ptr->tres_fmt_str =
+			assoc_mgr_make_tres_str_from_array(node_ptr->tres_cnt,
+							   0,
+							   true);
 	}
 
 	/* FIXME: cluster_cpus probably needs to be removed and handled
@@ -2174,6 +2181,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		cpu_tres->count = cluster_cpus;
 
 	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = node_record_count;
+
+	set_partition_tres();
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);

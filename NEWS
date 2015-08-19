@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     --ntasks-per-core and --cpus-per-task together.
  -- Add TRESBillingWeights to partitions in slurm.conf which allows taking into
     consideration any TRES Type when calculating the usage of a job.
+ -- Add PriorityWeightTRES slurm.conf option to be able to configure priority
+    factors for TRES types.
 
 * Changes in Slurm 15.08.0pre6
 ==============================

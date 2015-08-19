@@ -282,6 +282,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityWeightJobSize", S_P_UINT32},
 	{"PriorityWeightPartition", S_P_UINT32},
 	{"PriorityWeightQOS", S_P_UINT32},
+	{"PriorityWeightTRES", S_P_STRING},
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
@@ -2333,6 +2334,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->preempt_type);
 	xfree (ctl_conf_ptr->priority_params);
 	xfree (ctl_conf_ptr->priority_type);
+	xfree (ctl_conf_ptr->priority_weight_tres);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->prolog_slurmctld);
@@ -2483,6 +2485,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->preempt_type);
 	xfree (ctl_conf_ptr->priority_params);
 	xfree (ctl_conf_ptr->priority_type);
+	xfree (ctl_conf_ptr->priority_weight_tres);
 	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
@@ -3711,6 +3714,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->priority_weight_qos,
 			    "PriorityWeightQOS", hashtbl))
 		conf->priority_weight_qos = 0;
+	if (!s_p_get_string(&conf->priority_weight_tres, "PriorityWeightTRES",
+			    hashtbl))
+		conf->priority_weight_tres = NULL;
 
 	/* Check for possible overflow of priority.
 	 * We also check when doing the computation for each job. */
@@ -3719,6 +3725,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		(uint64_t) conf->priority_weight_js   +
 		(uint64_t) conf->priority_weight_part +
 		(uint64_t) conf->priority_weight_qos;
+	/* TODO include TRES weights */
 	if (tot_prio_weight > 0xffffffff) {
 		error("PriorityWeight values too high, job priority value may "
 		      "overflow");

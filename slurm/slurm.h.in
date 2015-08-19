@@ -1992,6 +1992,7 @@ typedef struct node_info {
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
+	char *tres_fmt_str;	/* str representing configured TRES on node */
 	char *version;		 /* Slurm version number */
 } node_info_t;
 
@@ -2146,6 +2147,7 @@ typedef struct partition_info {
 	uint16_t state_up;	/* see PARTITION_ states above */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
+	char    *tres_fmt_str;	/* str of configured TRES in partition */
 } partition_info_t;
 
 typedef struct delete_partition_msg {
@@ -2655,6 +2657,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t priority_weight_js; /* weight for Job Size factor */
 	uint32_t priority_weight_part; /* weight for Partition factor */
 	uint32_t priority_weight_qos; /* weight for QOS factor */
+	char    *priority_weight_tres; /* weights (str) for different TRES' */
 	uint16_t private_data;	/* block viewing of information,
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */

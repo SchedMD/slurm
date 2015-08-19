@@ -3401,6 +3401,9 @@ extern void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
 		(priority_factors_object_t *)object;
+	xfree(obj_ptr->tres_weights);
+	xfree(obj_ptr->tres_names);
+	xfree(obj_ptr->priority_tres);
 	xfree(obj_ptr);
 }
 

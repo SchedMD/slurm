@@ -70,6 +70,8 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/licenses.h"
+#include "src/slurmctld/burst_buffer.h"
 
 
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
@@ -95,6 +97,57 @@ static void   _unlink_free_nodes(bitstr_t *old_bitmap,
 			struct part_record *part_ptr);
 static uid_t *_remove_duplicate_uids(uid_t *);
 static int _uid_cmp(const void *, const void *);
+
+static void _calc_part_tres(struct part_record *part_ptr)
+{
+	int i, j;
+	struct node_record *node_ptr;
+	uint64_t *tres_cnt;
+
+	xfree(part_ptr->tres_cnt);
+	xfree(part_ptr->tres_fmt_str);
+	part_ptr->tres_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
+	tres_cnt = part_ptr->tres_cnt;
+
+	tres_cnt[TRES_ARRAY_NODE] = part_ptr->total_nodes;
+
+	/* sum up nodes' tres in the partition. */
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (!bit_test(part_ptr->node_bitmap, i))
+			continue;
+		for (j = 0; j < slurmctld_tres_cnt; j++)
+			tres_cnt[j]+= node_ptr->tres_cnt[j];
+	}
+
+	/* grab the global tres and stick in partiton for easy reference. */
+	for(i = 0; i < slurmctld_tres_cnt; i++) {
+		slurmdb_tres_rec_t *tres_rec = assoc_mgr_tres_array[i];
+
+		if (!strcasecmp(tres_rec->type, "bb"))
+			tres_cnt[i] = bb_g_get_system_size(tres_rec->name);
+		else if (!strcasecmp(tres_rec->type, "license"))
+			tres_cnt[i] = get_total_license_cnt(tres_rec->name);
+	}
+
+	part_ptr->tres_fmt_str =
+		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt, 0, true);
+}
+
+/*
+ * Calcuate and populate the number of tres' for all partitions.
+ */
+extern void set_partition_tres()
+{
+	struct part_record * part_ptr;
+	ListIterator itr = list_iterator_create(part_list);
+
+	while ((part_ptr = (struct part_record *)list_next(itr))) {
+		xfree(part_ptr->tres_cnt);
+		_calc_part_tres(part_ptr);
+	}
+	list_iterator_destroy(itr);
+}
 
 /*
  * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap
@@ -975,6 +1028,10 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
+	xfree(part_ptr->billing_weights_str);
+	xfree(part_ptr->billing_weights);
+	xfree(part_ptr->tres_cnt);
+	xfree(part_ptr->tres_fmt_str);
 	xfree(part_entry);
 }
 
@@ -1145,6 +1202,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->nodes, buffer);
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
 	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
