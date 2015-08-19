@@ -422,7 +422,7 @@ static uint64_t _atoi(char *tok)
 }
 #endif
 
-/* Set the bb_state's tres_pos for limit enforcement.
+/* Set the bb_state's tres_id and tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
 extern void bb_set_tres_pos(bb_state_t *state_ptr)
 {
@@ -438,7 +438,8 @@ extern void bb_set_tres_pos(bb_state_t *state_ptr)
 		debug("%s: Tres %s not found by assoc_mgr",
 		       __func__, state_ptr->name);
 	} else {
-		state_ptr->tres_pos = assoc_mgr_tres_array[inx]->id;
+		state_ptr->tres_id  = assoc_mgr_tres_array[inx]->id;
+		state_ptr->tres_pos = inx;
 	}
 }
 
@@ -1529,9 +1530,10 @@ extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 	resv.assocs = bb_alloc->assocs;
 	resv.cluster = slurmctld_cluster_name;
 	resv.name = bb_alloc->name;
+	resv.id = bb_alloc->id;
 	resv.time_start = bb_alloc->create_time;
-	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
-
+	xstrfmtcat(resv.tres_str, "%d=%"PRIu64,
+		   state_ptr->tres_id, bb_alloc->size / (1024 * 1024));
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
 
@@ -1548,11 +1550,13 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 	resv.assocs = bb_alloc->assocs;
 	resv.cluster = slurmctld_cluster_name;
 	resv.name = bb_alloc->name;
+	resv.id = bb_alloc->id;
 	resv.time_end = time(NULL);
 	resv.time_start = bb_alloc->create_time;
-	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
+	xstrfmtcat(resv.tres_str, "%d=%"PRIu64,
+		   state_ptr->tres_id, bb_alloc->size / (1024 * 1024));
 
-	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
+	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
 
 	return rc;

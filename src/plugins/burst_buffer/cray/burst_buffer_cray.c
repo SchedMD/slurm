@@ -100,6 +100,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 /* Most state information is in a common structure so that we can more
  * easily use common functions from multiple burst buffer plugins */
 static bb_state_t 	bb_state;
+static uint32_t		last_persistent_id = 1;
 static char *		state_save_loc = NULL;
 
 /* Description of each Cray DW configuration entry
@@ -622,6 +623,7 @@ static void _save_limits_state(void)
 			if (bb_alloc->name) {
 				packstr(bb_alloc->account,	buffer);
 				pack_time(bb_alloc->create_time,buffer);
+				pack32(bb_alloc->id,		buffer);
 				packstr(bb_alloc->name,		buffer);
 				packstr(bb_alloc->partition,	buffer);
 				packstr(bb_alloc->qos,		buffer);
@@ -730,7 +732,8 @@ static void _recover_limit_state(void)
 	char *state_file = NULL, *data = NULL;
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
-	uint32_t data_size = 0, rec_count = 0, name_len = 0, user_id = 0;
+	uint32_t data_size = 0, rec_count = 0, name_len = 0;
+	uint32_t id = 0, user_id = 0;
 	uint64_t size;
 	int i, state_fd;
 	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
@@ -779,6 +782,7 @@ static void _recover_limit_state(void)
 	for (i = 0; i < rec_count; i++) {
 		safe_unpackstr_xmalloc(&account,   &name_len, buffer);
 		safe_unpack_time(&create_time, buffer);
+		safe_unpack32(&id, buffer);
 		safe_unpackstr_xmalloc(&name,      &name_len, buffer);
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
@@ -788,6 +792,8 @@ static void _recover_limit_state(void)
 
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
 			bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
+			bb_alloc->id = id;
+			last_persistent_id = MAX(last_persistent_id, id);
 			if (name && (name[0] >='0') && (name[0] <='9'))
 				bb_alloc->job_id = strtol(name, &end_ptr, 10);
 			bb_alloc->seen_time = time(NULL);
@@ -2619,7 +2625,7 @@ static void _update_job_env(struct job_record *job_ptr, char *file_path)
 		stat_buf.st_size = 2048;
 	} else if (stat_buf.st_size == 0)
 		goto fini;
-	data_buf = xmalloc(stat_buf.st_size);
+	data_buf = xmalloc(stat_buf.st_size + 1);
 	while (inx < stat_buf.st_size) {
 		read_size = read(path_fd, data_buf + inx, stat_buf.st_size);
 		if (read_size > 0) {
@@ -3446,7 +3452,7 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 	bb_buf_t *buf_ptr;
 	bb_job_t *bb_job;
 	int i, old_state;
-	bool active_buf;
+	bool active_buf = false;
 
 	bb_job = bb_job_find(&bb_state, job_id);
 	if (!bb_job) {
@@ -3600,6 +3606,12 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 			}
 		}
+//FIXME: Read create time and ID as set in DW database here
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
+			bb_alloc->create_time = time(NULL);
+			bb_alloc->id = ++last_persistent_id;
+		}
+		(void) bb_post_persist_create(bb_alloc, &bb_state);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
@@ -3685,7 +3697,8 @@ static void *_destroy_persistent(void *x)
 			     bb_alloc->partition, bb_alloc->qos,
 			     bb_alloc->size, &bb_state);
 		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
-		unlock_slurmctld(job_write_lock);
+		(void) bb_post_persist_delete(bb_alloc, &bb_state);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
@@ -4262,7 +4275,7 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 	char *result = NULL;
 	uint64_t size, total = 0;
 
-	if (!burst_buffer || (bb_state.tres_pos < 1))
+	if (!burst_buffer || (bb_state.tres_id < 1))
 		return result;
 
 	tmp = xstrdup(burst_buffer);
@@ -4287,7 +4300,7 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 	}
 
 	if (total)
-		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_pos, total);
+		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_id, total);
 
 	return result;
 }

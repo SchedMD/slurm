@@ -551,6 +551,7 @@ extern void slurmdb_destroy_assoc_usage(void *object)
 		FREE_NULL_BITMAP(usage->valid_qos);
 		xfree(usage->grp_used_tres_run_secs);
 		xfree(usage->grp_used_tres);
+		xfree(usage->usage_tres_raw);
 		xfree(usage);
 	}
 }
@@ -565,6 +566,7 @@ extern void slurmdb_destroy_qos_usage(void *object)
 		FREE_NULL_LIST(usage->user_limit_list);
 		xfree(usage->grp_used_tres_run_secs);
 		xfree(usage->grp_used_tres);
+		xfree(usage->usage_tres_raw);
 		xfree(usage);
 	}
 }
