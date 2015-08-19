@@ -399,7 +399,9 @@ int main(int argc, char *argv[])
 	/* Must set before plugins are loaded. */
 	if (slurmctld_conf.backup_controller &&
 	    (strcmp(node_name, slurmctld_conf.backup_controller) == 0)) {
+#ifndef HAVE_ALPS_CRAY
 		char *sched_params = NULL;
+#endif
 		slurmctld_primary = 0;
 
 #ifdef HAVE_ALPS_CRAY
