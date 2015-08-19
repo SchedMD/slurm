@@ -131,6 +131,7 @@ typedef struct bb_pools {
 /* Description of each Cray DW pool entry
  */
 typedef struct bb_sessions {
+	uint32_t created;
 	uint32_t id;
 	char    *token;
 	bool     used;
@@ -3613,10 +3614,22 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 			}
 		}
-//FIXME: Read create time and ID as set in DW database here
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
 			bb_alloc->create_time = time(NULL);
 			bb_alloc->id = ++last_persistent_id;
+		} else {
+			bb_sessions_t *sessions;
+			int  num_sessions = 0;
+			sessions = _bb_get_sessions(&num_sessions, &bb_state);
+			for (i = 0; i < num_sessions; i++) {
+				if (xstrcmp(sessions[i].token,
+					    create_args->name))
+					continue;
+				bb_alloc->create_time = sessions[i].created;
+				bb_alloc->id = sessions[i].id;
+				break;
+			}
+			_bb_free_sessions(sessions, num_sessions);
 		}
 		(void) bb_post_persist_create(bb_alloc, &bb_state);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -4254,7 +4267,9 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 		switch (type) {
 			case json_type_int:
 				x = json_object_get_int64(iter.val);
-				if (strcmp(iter.key, "id") == 0) {
+				if (strcmp(iter.key, "created") == 0) {
+					ent->created = x;
+				} else if (strcmp(iter.key, "id") == 0) {
 					ent->id = x;
 				} else if (strcmp(iter.key, "owner") == 0) {
 					ent->user_id = x;
