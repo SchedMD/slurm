@@ -336,7 +336,7 @@ Define the hostname of the computer on which the Slurm controller and
 optional backup controller will execute. You can also specify addresses
 of these computers if desired (defaults to their hostnames).
 The IP addresses can be either numeric IP addresses or names.
-Hostname values should should not be the fully qualified domain
+Hostname values should not be the fully qualified domain
 name (e.g. use <I>tux</I> rather than <I>tux.abc.com</I>).
 <P>
 <input type="text" name="control_machine" value="linux0"> <B>ControlMachine</B>:
