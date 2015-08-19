@@ -1183,7 +1183,6 @@ static int _accounting_cluster_ready(void)
 	FREE_NULL_BITMAP(total_node_bitmap);
 
 	assoc_mgr_lock(&locks);
-	slurmctld_tres_cnt = g_tres_count;
 
 	set_cluster_tres(true);
 
@@ -1349,6 +1348,8 @@ static int _init_tres(void)
 	List add_list = NULL;
 	slurmdb_tres_rec_t *tres_rec;
 	slurmdb_update_object_t update_object;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!temp_char) {
 		error("No tres defined, this should never happen");
@@ -1455,6 +1456,13 @@ static int _init_tres(void)
 		list_destroy(update_object.objects);
 	}
 
+	/* Set up the slurmctld_tres_cnt here (Current code is set to
+	 * not have this ever change).
+	*/
+	assoc_mgr_lock(&locks);
+	slurmctld_tres_cnt = g_tres_count;
+	assoc_mgr_unlock(&locks);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1489,13 +1497,6 @@ static void _update_cluster_tres(void)
 			job_set_alloc_tres(job_ptr, true);
 	}
 	list_iterator_destroy(job_iterator);
-
-	/* Set up the slurmctld_tres_cnt here so we don't have to
-	 * worry about locking the assoc_mgr if we just need the
-	 * count.  This would be used for Jobs so slurmctld_tres_cnt
-	 * should be protected by the job lock.
-	*/
-	slurmctld_tres_cnt = g_tres_count;
 
 	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(job_write_lock);
