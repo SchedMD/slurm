@@ -5870,7 +5870,8 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 				     qos->min_tres_pj, INFINITE64, 1);
 }
 
-extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
+extern char *assoc_mgr_make_tres_str_from_array(
+	uint64_t *tres_cnt, uint32_t flags, bool locked)
 {
 	int i;
 	char *tres_str = NULL;
@@ -5886,8 +5887,15 @@ extern char *assoc_mgr_make_tres_str_from_array(uint64_t *tres_cnt, bool locked)
 	for (i=0; i<g_tres_count; i++) {
 		if (!assoc_mgr_tres_array[i] || !tres_cnt[i])
 			continue;
-		xstrfmtcat(tres_str, "%s%u=%"PRIu64, tres_str ? "," : "",
-			   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
+		if (flags & TRES_STR_FLAG_SIMPLE)
+			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+				   tres_str ? "," : "",
+				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
+		else
+			xstrfmtcat(tres_str, "%s%s=%"PRIu64,
+				   tres_str ? "," : "",
+				   assoc_mgr_tres_name_array[i], tres_cnt[i]);
+
 	}
 
 	if (!locked)
