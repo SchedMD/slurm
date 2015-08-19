@@ -20,6 +20,7 @@ sacctmgr_SOURCES =	\
 	event_functions.c	\
 	file_functions.c	\
 	job_functions.c		\
+	reservation_functions.c	\
 	resource_functions.c	\
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\

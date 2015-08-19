@@ -653,8 +653,11 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
-	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {
+	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_res((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Reservations", MAX(command_len, 4)) ||
+		   !strncasecmp(argv[0], "Resv", MAX(command_len, 4))) {
+		error_code = sacctmgr_list_reservation((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Transactions", MAX(command_len, 1))
 		   || !strncasecmp(argv[0], "Txn", MAX(command_len, 1))) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
@@ -671,8 +674,8 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", "
 			"\"Cluster\", \"Configuration\",\n\"Event\", "
-			"\"Problem\", \"QOS\", \"Resource\", \"Transaction\", "
-			"\"User\", or \"WCKey\"\n");
+			"\"Problem\", \"QOS\", \"Resource\", \"Reservation\", "
+			"\"Transaction\", \"TRES\", \"User\", or \"WCKey\"\n");
 	}
 
 	if (error_code != SLURM_SUCCESS) {
@@ -849,7 +852,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
                   \"configuration\", \"coordinator\", \"event\", \"job\",  \n\
-                  \"problem\", \"qos\", \"resource\", \"transaction\",     \n\
+                  \"problem\", \"qos\", \"resource\", \"reservation\",     \n\
+                  \"transaction\", \"tres\",                               \n\
                    \"user\" or \"wckey\"                                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
@@ -938,8 +942,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             (where options) Clusters=, Names=, Servers=,   \n\
        delete resource    - Clusters=, Names=                              \n\
                                                                            \n\
+       list reservation   - Clusters=, End=, ID=, Names=, Nodes=, Start=   \n\
+                                                                           \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
                             Format=, ID=, Start=, User=, and WithAssoc     \n\
+                                                                           \n\
+       list tres          - ID=, Name=, Type=, WithDeleted                 \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccount=,                  \n\
                             DefaultWCKey=, Format=, Names=,                \n\
@@ -1010,7 +1018,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Description, Flags, Manager, Name,             \n\
                             PercentAllowed, PercentUsed, Server, and Type  \n\
                                                                            \n\
+       Reservation        - Assoc, Cluster, End, Flags, ID, Name,          \n\
+                            NodeNames, Start, TRES                         \n\
+                                                                           \n\
        Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
+                                                                           \n\
+       TRES               - ID, Name, Type                                 \n\
                                                                            \n\
        User               - AdminLevel, Coordinators, DefaultAccount,      \n\
                             DefaultWCKey, User                             \n\
