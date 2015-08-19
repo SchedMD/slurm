@@ -1136,7 +1136,8 @@ static int _run_srun_script (srun_job_t *job, char *script)
 
 static void _set_env_vars(resource_allocation_response_msg_t *resp)
 {
-	char *tmp;
+	char *key, *value, *tmp;
+	int i;
 
 	if (!getenv("SLURM_JOB_CPUS_PER_NODE")) {
 		tmp = uint32_compressed_to_str(resp->num_cpu_groups,
@@ -1156,6 +1157,20 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp)
 		}
 	} else {
 		unsetenv("SLURM_NODE_ALIASES");
+	}
+
+	if (resp->env_size) {	/* Used to set Burst Buffer environment */
+		for (i = 0; i < resp->env_size; i++) {
+			tmp = xstrdup(resp->environment[i]);
+			key = tmp;
+			value = strchr(tmp, '=');
+			if (value) {
+				value[0] = '\0';
+				value++;
+				setenv(key, value, 0);
+			}
+			xfree(tmp);
+		}
 	}
 
 	return;

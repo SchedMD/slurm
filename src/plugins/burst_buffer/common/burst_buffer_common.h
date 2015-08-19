@@ -90,6 +90,7 @@ typedef struct bb_config {
 typedef struct bb_alloc {
 	char *account;		/* Associated account (for limits) */
 	slurmdb_assoc_rec_t *assoc_ptr;
+	char *assocs;		/* Association string, used for accounting */
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool cancelled;
@@ -105,6 +106,7 @@ typedef struct bb_alloc {
 	time_t seen_time;	/* Time buffer last seen */
 	uint64_t size;
 	uint16_t state;
+	time_t create_time;	/* Time of creation */
 	time_t state_time;	/* Time of last state change */
 	time_t use_time;	/* Expected time when use will begin */
 	uint32_t user_id;
@@ -360,4 +362,9 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
 
+/* Log creation of a persistent burst buffer in the database */
+extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
+
+/* Log deletion of a persistent burst buffer in the database */
+extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 #endif	/* __BURST_BUFFER_COMMON_H__ */

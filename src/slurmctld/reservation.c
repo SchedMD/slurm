@@ -73,6 +73,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
@@ -786,6 +787,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	}
 	resv.time_end = resv_ptr->end_time;
 	resv.time_start = resv_ptr->start_time;
+	resv.tres_str = resv_ptr->tres_str;
 
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 
@@ -797,6 +799,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
+	time_t now = time(NULL);
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return rc;
@@ -805,11 +808,13 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	resv.cluster = slurmctld_cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.name = resv_ptr->name;
+	resv.time_end = now;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	 * hasn't started yet so we don't get trash records in the
 	 * database if said database isn't up right now */
-	resv.time_start_prev = time(NULL);
+	resv.time_start_prev = now;
+	resv.tres_str = resv_ptr->tres_str;
 	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 
 	return rc;
@@ -1762,6 +1767,13 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			   TRES_CPU, cpu_cnt);
 
 	if ((name1 = licenses_2_tres_str(resv_ptr->license_list))) {
+		xstrfmtcat(resv_ptr->tres_str, "%s%s",
+			   resv_ptr->tres_str ? "," : "",
+			   name1);
+		xfree(name1);
+	}
+
+	if ((name1 = bb_g_xlate_bb_2_tres_str(resv_ptr->burst_buffer))) {
 		xstrfmtcat(resv_ptr->tres_str, "%s%s",
 			   resv_ptr->tres_str ? "," : "",
 			   name1);

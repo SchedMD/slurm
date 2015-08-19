@@ -70,6 +70,7 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 			rc = SLURM_ERROR;
 			continue;
 		} else if ((!strcasecmp(object->type, "gres") ||
+			    !strcasecmp(object->type, "bb") ||
 			    !strcasecmp(object->type, "license"))) {
 			if (!object->name) {
 				error("%s type tres "

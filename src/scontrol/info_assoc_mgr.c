@@ -42,10 +42,11 @@ static uint32_t tres_cnt = 0;
 static char **tres_names = NULL;
 
 static void _print_tres_line(const char *name, uint64_t *limits, uint64_t *used,
-			     uint64_t divider)
+			     uint64_t divider, bool last)
 {
 	int i;
-	char *new_line_char = one_liner ? " " : "\n    ";
+	char *next_line = last ? "\n" : "\n    ";
+	char *new_line_char = one_liner && !last ? " " : next_line;
 	bool comma = 0;
 
 	xassert(tres_cnt);
@@ -165,11 +166,11 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 
 
 			if (assoc_rec->grp_jobs != INFINITE)
-				printf("GrpJobs=%u(%u) ",
+				printf("GrpJobs=%u(%u)",
 				       assoc_rec->grp_jobs,
 				       assoc_rec->usage->used_jobs);
 			else
-				printf("GrpJobs= ");
+				printf("GrpJobs=");
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
@@ -190,7 +191,7 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 
 			_print_tres_line("GrpTRES",
 					 assoc_rec->grp_tres_ctld,
-					 assoc_rec->usage->grp_used_tres, 0);
+					 assoc_rec->usage->grp_used_tres, 0, 0);
 			if (assoc_rec->usage->usage_tres_raw)
 				for (i=0; i<tres_cnt; i++)
 					tmp64_array[i] = (uint64_t)
@@ -200,11 +201,11 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				memset(tmp64_array, 0, sizeof(tmp64_array));
 			_print_tres_line("GrpTRESMins",
 					 assoc_rec->grp_tres_mins_ctld,
-					 tmp64_array, 60);
+					 tmp64_array, 60, 0);
 			_print_tres_line("GrpTRESRunMins",
 					 assoc_rec->grp_tres_run_mins_ctld,
 					 assoc_rec->usage->
-					 grp_used_tres_run_secs, 60);
+					 grp_used_tres_run_secs, 60, 0);
 
 			if (assoc_rec->max_jobs != INFINITE)
 				printf("MaxJobs=%u(%u) ",
@@ -229,18 +230,22 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			if (assoc_rec->max_tres_pj)
-				printf("MaxTRESPJ=%s%s",
-				       assoc_rec->max_tres_pj,
-				       new_line_char);
-			else
-				printf("MaxTRESPJ=%s", new_line_char);
+			_print_tres_line("MaxTRESPJ",
+					 assoc_rec->max_tres_ctld,
+					 NULL, 0, 0);
 
-			if (assoc_rec->max_tres_mins_pj)
-				printf("MaxTRESMinsPJ=%s\n",
-				       assoc_rec->max_tres_mins_pj);
-			else
-				printf("MaxTRESMinsPJ=\n");
+			_print_tres_line("MaxTRESPN",
+					 assoc_rec->max_tres_pn_ctld,
+					 NULL, 0, 0);
+
+			_print_tres_line("MaxTRESMinsPJ",
+					 assoc_rec->max_tres_mins_ctld,
+					 NULL, 0, 1);
+
+			/* Doesn't do anything yet */
+			/* _print_tres_line("MaxTRESRunMins", */
+			/* 		 assoc_rec->max_tres_mins_ctld, */
+			/* 		 NULL, 0, 1); */
 		}
 	}
 
@@ -285,7 +290,7 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 
 			_print_tres_line("GrpTRES",
 					 qos_rec->grp_tres_ctld,
-					 qos_rec->usage->grp_used_tres, 0);
+					 qos_rec->usage->grp_used_tres, 0, 0);
 			if (qos_rec->usage->usage_tres_raw)
 				for (i=0; i<tres_cnt; i++)
 					tmp64_array[i] = (uint64_t)
@@ -295,11 +300,11 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				memset(tmp64_array, 0, sizeof(tmp64_array));
 			_print_tres_line("GrpTRESMins",
 					 qos_rec->grp_tres_mins_ctld,
-					 tmp64_array, 60);
+					 tmp64_array, 60, 0);
 			_print_tres_line("GrpTRESRunMins",
 					 qos_rec->grp_tres_run_mins_ctld,
 					 qos_rec->usage->
-					 grp_used_tres_run_secs, 60);
+					 grp_used_tres_run_secs, 60, 0);
 
 			if (qos_rec->max_jobs_pu != INFINITE)
 				printf("MaxJobsPU=%u(%u) ",
@@ -324,31 +329,30 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
-			if (qos_rec->max_tres_pj)
-				printf("MaxTRESPJ=%s%s",
-				       qos_rec->max_tres_pj,
-				       new_line_char);
-			else
-				printf("MaxTRESPJ=%s", new_line_char);
+			_print_tres_line("MaxTRESPJ",
+					 qos_rec->max_tres_pj_ctld,
+					 NULL, 0, 0);
 
-			if (qos_rec->max_tres_pu)
-				printf("MaxTRESPU=%s%s",
-				       qos_rec->max_tres_pu,
-				       new_line_char);
-			else
-				printf("MaxTRESPU=%s", new_line_char);
+			_print_tres_line("MaxTRESPN",
+					 qos_rec->max_tres_pn_ctld,
+					 NULL, 0, 0);
 
-			if (qos_rec->max_tres_mins_pj)
-				printf("MaxTRESMinsPJ=%s%s",
-				       qos_rec->max_tres_mins_pj,
-					new_line_char);
-			else
-				printf("MaxTRESMinsPJ=%s", new_line_char);
+			_print_tres_line("MaxTRESPU",
+					 qos_rec->max_tres_pu_ctld,
+					 NULL, 0, 0);
 
-			if (qos_rec->min_tres_pj)
-				printf("MinTRESPJ=%s\n", qos_rec->min_tres_pj);
-			else
-				printf("MinTRESPJ=\n");
+			_print_tres_line("MaxTRESMinsPJ",
+					 qos_rec->max_tres_mins_pj_ctld,
+					 NULL, 0, 0);
+
+			/* Doesn't do anything yet */
+			/* _print_tres_line("MaxTRESRunMinsPU", */
+			/* 		 qos_rec->max_tres_mins_pu_ctld, */
+			/* 		 NULL, 0); */
+
+			_print_tres_line("MinTRESPJ",
+					 qos_rec->min_tres_pj_ctld,
+					 NULL, 0, 1);
 		}
 	}
 }

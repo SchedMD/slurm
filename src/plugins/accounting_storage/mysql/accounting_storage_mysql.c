@@ -1998,8 +1998,38 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 		return SLURM_ERROR;
+	} else if (table == qos_table) {
+		query = xstrdup_printf(
+			"update %s set "
+			"mod_time=%ld, deleted=1, "
+			"grace_time=NULL, "
+			"max_jobs_per_user=NULL, "
+			"max_submit_jobs_per_user=NULL, "
+			"max_tres_pj='', "
+			"max_tres_pn='', "
+			"max_tres_pu='', "
+			"max_tres_mins_pj='', "
+			"max_tres_run_mins_pu='', "
+			"min_tres_pj='', "
+			"max_wall_duration_per_job=NULL, "
+			"grp_jobs=NULL, grp_submit_jobs=NULL, "
+			"grp_tres='', "
+			"grp_tres_mins='', "
+			"grp_tres_run_mins='', "
+			"grp_wall=NULL, "
+			"preempt='', "
+			"priority=0, "
+			"usage_factor=1, "
+			"usage_thres=NULL "
+			"where (%s);",
+			qos_table, now,
+			name_char);
+		if (debug_flags & DEBUG_FLAG_DB_QOS)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		return rc;
 	} else if ((table == acct_coord_table)
-		   || (table == qos_table)
 		   || (table == wckey_table)
 		   || (table == clus_res_table)
 		   || (table == res_table))

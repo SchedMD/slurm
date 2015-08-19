@@ -311,10 +311,7 @@ static void _purge_bb_files(uint32_t job_id)
 
 {
 	char *hash_dir = NULL, *job_dir = NULL;
-	char *script_file = NULL, *setup_env_file = NULL;
-	char *data_in_env_file = NULL, *pre_run_env_file = NULL;
-	char *post_run_env_file = NULL, *data_out_env_file = NULL;
-	char *teardown_env_file = NULL, *client_nids_file = NULL;
+	char *script_file = NULL, *path_file = NULL, *client_nids_file = NULL;
 	int hash_inx;
 
 	hash_inx = job_id % 10;
@@ -322,35 +319,21 @@ static void _purge_bb_files(uint32_t job_id)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
 	(void) mkdir(job_dir, 0700);
-	xstrfmtcat(setup_env_file, "%s/setup_env", job_dir);
-	xstrfmtcat(data_in_env_file, "%s/data_in_env", job_dir);
-	xstrfmtcat(pre_run_env_file, "%s/pre_run_env", job_dir);
-	xstrfmtcat(post_run_env_file, "%s/post_run_env", job_dir);
-	xstrfmtcat(data_out_env_file, "%s/data_out_env", job_dir);
-	xstrfmtcat(teardown_env_file, "%s/teardown_env", job_dir);
-	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
 
-	(void) unlink(setup_env_file);
-	(void) unlink(data_in_env_file);
-	(void) unlink(pre_run_env_file);
-	(void) unlink(post_run_env_file);
-	(void) unlink(data_out_env_file);
-	(void) unlink(teardown_env_file);
-	(void) unlink(client_nids_file);
+	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
+	xstrfmtcat(path_file, "%s/pathfile", job_dir);
 	xstrfmtcat(script_file, "%s/script", job_dir);
+
+	(void) unlink(client_nids_file);
+	(void) unlink(path_file);
 	(void) unlink(script_file);
 	(void) unlink(job_dir);
 
-	xfree(hash_dir);
-	xfree(job_dir);
-	xfree(script_file);
-	xfree(setup_env_file);
-	xfree(data_in_env_file);
-	xfree(pre_run_env_file);
-	xfree(post_run_env_file);
-	xfree(data_out_env_file);
-	xfree(teardown_env_file);
 	xfree(client_nids_file);
+	xfree(path_file);
+	xfree(script_file);
+	xfree(job_dir);
+	xfree(hash_dir);
 }
 
 /* Validate that our configuration is valid for this plugin type */
@@ -380,12 +363,14 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 		return EAGAIN;
 
 	if (bb_job->total_size || bb_job->swap_size) {
-		bb_job->state = BB_STATE_ALLOCATING;
-		rc = _queue_stage_in(job_ptr, bb_job);
-		if (rc != SLURM_SUCCESS) {
-			bb_job->state = BB_STATE_TEARDOWN;
-			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
-					true);
+		if (bb_job->state < BB_STATE_STAGING_IN) {
+			bb_job->state = BB_STATE_STAGING_IN;
+			rc = _queue_stage_in(job_ptr, bb_job);
+			if (rc != SLURM_SUCCESS) {
+				bb_job->state = BB_STATE_TEARDOWN;
+				_queue_teardown(job_ptr->job_id,
+						job_ptr->user_id, true);
+			}
 		}
 	} else {
 		bb_job->state = BB_STATE_STAGED_IN;
@@ -636,10 +621,13 @@ static void _save_limits_state(void)
 		while (bb_alloc) {
 			if (bb_alloc->name) {
 				packstr(bb_alloc->account,	buffer);
+				pack_time(bb_alloc->create_time,buffer);
 				packstr(bb_alloc->name,		buffer);
 				packstr(bb_alloc->partition,	buffer);
 				packstr(bb_alloc->qos,		buffer);
 				pack32(bb_alloc->user_id,	buffer);
+				if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+					pack64(bb_alloc->size,	buffer);
 				rec_count++;
 			}
 			bb_alloc = bb_alloc->next;
@@ -743,8 +731,11 @@ static void _recover_limit_state(void)
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t data_size = 0, rec_count = 0, name_len = 0, user_id = 0;
+	uint64_t size;
 	int i, state_fd;
 	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
+	char *end_ptr = NULL;
+	time_t create_time = 0;
 	bb_alloc_t *bb_alloc;
 	Buf buffer;
 
@@ -787,16 +778,28 @@ static void _recover_limit_state(void)
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
 		safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+		safe_unpack_time(&create_time, buffer);
 		safe_unpackstr_xmalloc(&name,      &name_len, buffer);
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
 		safe_unpack32(&user_id, buffer);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+			safe_unpack64(&size, buffer);
 
-		bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
+			bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
+			if (name && (name[0] >='0') && (name[0] <='9'))
+				bb_alloc->job_id = strtol(name, &end_ptr, 10);
+			bb_alloc->seen_time = time(NULL);
+			bb_alloc->size = size;
+		} else {
+			bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
+		}
 		if (bb_alloc) {
 			xfree(bb_alloc->account);
 			bb_alloc->account = account;
 			account = NULL;
+			bb_alloc->create_time = create_time;
 			xfree(bb_alloc->partition);
 			bb_alloc->partition = partition;
 			partition = NULL;
@@ -996,12 +999,14 @@ static void _load_state(bool init_config)
 
 		bb_alloc = bb_alloc_name_rec(&bb_state, sessions[i].token,
 					     sessions[i].user_id);
+//FIXME: Set create_time
 		if ((sessions[i].token != NULL)  &&
 		    (sessions[i].token[0] >='0') &&
 		    (sessions[i].token[0] <='9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
 		}
+//FIXME: Below logic seems wrong
 		for (j = 0; j < num_instances; j++)
 			bb_alloc->size = instances[j].bytes;
 		bb_alloc->seen_time = bb_state.last_load_time;
@@ -1266,6 +1271,8 @@ static void *_start_stage_in(void *x)
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;
 			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				bb_alloc->create_time = time(NULL);
 		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_read_lock);
@@ -2110,14 +2117,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 						   (~BB_SIZE_IN_NODES);
 				} else
 					byte_cnt += tmp_cnt;
-				if ((sub_tok = strstr(tok, "access_mode"))) {
-					job_access = xstrdup(sub_tok);
+				if ((sub_tok = strstr(tok, "access_mode="))) {
+					job_access = xstrdup(sub_tok + 12);
 					sub_tok = strchr(job_access, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
-				if ((sub_tok = strstr(tok, "type"))) {
-					job_type = xstrdup(sub_tok);
+				if ((sub_tok = strstr(tok, "type="))) {
+					job_type = xstrdup(sub_tok + 5);
 					sub_tok = strchr(job_type, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
@@ -3495,6 +3502,7 @@ static void *_create_persistent(void *x)
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int i, status = 0;
+	slurmdb_assoc_rec_t *assoc;
 	DEF_TIMERS;
 
 	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
@@ -3568,10 +3576,20 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				 BB_STATE_ALLOCATED);
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+			bb_alloc->create_time = time(NULL);
 		bb_alloc->size = create_args->size;
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
 			bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
+			assoc = job_ptr->assoc_ptr;
+			while (assoc) {
+				xstrfmtcat(bb_alloc->assocs, ",%u",
+					   assoc->id);
+				assoc = assoc->usage->parent_assoc_ptr;
+			}
+			if (bb_alloc->assocs)
+				xstrcat(bb_alloc->assocs, ",");
 			if (job_ptr->part_ptr) {
 				bb_alloc->partition =
 					xstrdup(job_ptr->part_ptr->name);
@@ -3602,12 +3620,14 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	DEF_TIMERS;
 
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
 				    &bb_state);
 	if (!bb_alloc) {
 		info("%s: destroy_persistent: No burst buffer with name '%s' found for job %u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -3645,11 +3665,14 @@ static void *_destroy_persistent(void *x)
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
 		}
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
 				 BB_STATE_PENDING);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else {
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
 				 BB_STATE_DELETED);
@@ -3661,8 +3684,8 @@ static void *_destroy_persistent(void *x)
 		bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
 			     bb_alloc->partition, bb_alloc->qos,
 			     bb_alloc->size, &bb_state);
-
 		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
@@ -4226,4 +4249,45 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 				break;
 		}
 	}
+}
+
+/*
+ * Translate a burst buffer string to it's equivalent TRES string
+ * (e.g. "cray:2G,generic:4M" -> "1004=2048,1005=4")
+ * Caller must xfree the return value
+ */
+extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
+{
+	char *save_ptr = NULL, *sep, *tmp, *tok;
+	char *result = NULL;
+	uint64_t size, total = 0;
+
+	if (!burst_buffer || (bb_state.tres_pos < 1))
+		return result;
+
+	tmp = xstrdup(burst_buffer);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, ':');
+		if (sep) {
+			if (!strncmp(tok, "cray:", 5))
+				tok += 5;
+			else
+				tok = NULL;
+		}
+
+		if (tok) {
+			uint64_t mb_xlate = 1024 * 1024;
+			size = bb_get_size_num(tok,
+					       bb_state.bb_config.granularity);
+			total += (size + mb_xlate - 1) / mb_xlate;
+		}
+
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	if (total)
+		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_pos, total);
+
+	return result;
 }

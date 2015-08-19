@@ -2654,8 +2654,10 @@ _initgroups(stepd_step_rec_t *job)
 			return -1;
 		}
 		if (size > max - 1) {
-			error("%s: too many groups %d for user %s\n",
-			      __func__, size, job->user_name);
+			error("\
+%s: too many groups %d max %d for user %s groups %d %d\n",
+			      __func__, size, max, job->user_name,
+			      primary_gid, job->gid);
 		}
 		grps[size++] = primary_gid;
 

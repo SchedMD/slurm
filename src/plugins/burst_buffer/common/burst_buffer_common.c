@@ -53,11 +53,13 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
@@ -425,12 +427,19 @@ static uint64_t _atoi(char *tok)
 extern void bb_set_tres_pos(bb_state_t *state_ptr)
 {
 	slurmdb_tres_rec_t tres_rec;
+	int inx;
 
 	xassert(state_ptr);
 	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
 	tres_rec.type = "bb";
 	tres_rec.name = state_ptr->name;
-	state_ptr->tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	inx = assoc_mgr_find_tres_pos(&tres_rec, false);
+	if (inx == -1) {
+		debug("%s: Tres %s not found by assoc_mgr",
+		       __func__, state_ptr->name);
+	} else {
+		state_ptr->tres_pos = assoc_mgr_tres_array[inx]->id;
+	}
 }
 
 /* Load and process configuration parameters */
@@ -677,6 +686,7 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 				packstr(bb_alloc->account,      buffer);
 				pack32(bb_alloc->array_job_id,  buffer);
 				pack32(bb_alloc->array_task_id, buffer);
+				pack_time(bb_alloc->create_time, buffer);
 				pack32(bb_alloc->gres_cnt, buffer);
 				for (j = 0; j < bb_alloc->gres_cnt; j++) {
 					packstr(bb_alloc->gres_ptr[j].name,
@@ -690,7 +700,6 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 				packstr(bb_alloc->qos,          buffer);
 				pack64(bb_alloc->size,          buffer);
 				pack16(bb_alloc->state,         buffer);
-				pack_time(bb_alloc->state_time, buffer);
 				pack32(bb_alloc->user_id,       buffer);
 				rec_count++;
 			}
@@ -1076,10 +1085,13 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 	if (bb_alloc) {
 		xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
 		bb_alloc->magic = 0;
+		xfree(bb_alloc->account);
+		xfree(bb_alloc->assocs);
 		for (i = 0; i < bb_alloc->gres_cnt; i++)
 			xfree(bb_alloc->gres_ptr[i].name);
 		xfree(bb_alloc->gres_ptr);
 		xfree(bb_alloc->name);
+		xfree(bb_alloc->qos);
 		xfree(bb_alloc);
 	}
 }
@@ -1505,4 +1517,43 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 	}
 
 //FIXME: Need TRES limit remove here
+}
+
+/* Log creation of a persistent burst buffer in the database */
+extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_reservation_rec_t resv;
+
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	resv.assocs = bb_alloc->assocs;
+	resv.cluster = slurmctld_cluster_name;
+	resv.name = bb_alloc->name;
+	resv.time_start = bb_alloc->create_time;
+	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
+
+	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
+	xfree(resv.tres_str);
+
+	return rc;
+}
+
+/* Log deletion of a persistent burst buffer in the database */
+extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_reservation_rec_t resv;
+
+	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
+	resv.assocs = bb_alloc->assocs;
+	resv.cluster = slurmctld_cluster_name;
+	resv.name = bb_alloc->name;
+	resv.time_end = time(NULL);
+	resv.time_start = bb_alloc->create_time;
+	xstrfmtcat(resv.tres_str, "bb/%s", state_ptr->name);
+
+	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
+	xfree(resv.tres_str);
+
+	return rc;
 }

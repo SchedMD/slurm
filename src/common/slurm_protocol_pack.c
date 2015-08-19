@@ -11149,6 +11149,7 @@ static int _unpack_burst_buffer_info_msg(
 					       &uint32_tmp, buffer);
 			safe_unpack32(&bb_resv_ptr->array_job_id, buffer);
 			safe_unpack32(&bb_resv_ptr->array_task_id, buffer);
+			safe_unpack_time(&bb_resv_ptr->create_time, buffer);
 			safe_unpack32(&bb_resv_ptr->gres_cnt, buffer);
 			bb_resv_ptr->gres_ptr = xmalloc(bb_resv_ptr->gres_cnt *
 						sizeof(burst_buffer_gres_t));
@@ -11168,7 +11169,6 @@ static int _unpack_burst_buffer_info_msg(
 					       &uint32_tmp, buffer);
 			safe_unpack64(&bb_resv_ptr->size, buffer);
 			safe_unpack16(&bb_resv_ptr->state, buffer);
-			safe_unpack_time(&bb_resv_ptr->state_time, buffer);
 			safe_unpack32(&bb_resv_ptr->user_id, buffer);
 		}
 

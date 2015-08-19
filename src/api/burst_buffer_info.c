@@ -182,13 +182,18 @@ static void _print_burst_buffer_resv(FILE *out,
 	}
 	xstrcat(out_buf, tmp_line);
 	_get_size_str(sz_buf, sizeof(sz_buf), burst_buffer_ptr->size);
-	slurm_make_time_str(&burst_buffer_ptr->state_time, time_buf,
-			    sizeof(time_buf));
+	if (burst_buffer_ptr->create_time) {
+		slurm_make_time_str(&burst_buffer_ptr->create_time, time_buf,
+				    sizeof(time_buf));
+	} else {
+		time_t now = time(NULL);
+		slurm_make_time_str(&now, time_buf, sizeof(time_buf));
+	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Account=%s Partition=%s QOS=%s Size=%s State=%s StateTime=%s UserID=%s(%u)",
-		 burst_buffer_ptr->account, burst_buffer_ptr->partition,
-		 burst_buffer_ptr->qos, sz_buf,
-		 bb_state_string(burst_buffer_ptr->state), time_buf,
+		 "Account=%s CreateTime=%s Partition=%s QOS=%s Size=%s State=%s UserID=%s(%u)",
+		 burst_buffer_ptr->account,  time_buf,
+		 burst_buffer_ptr->partition, burst_buffer_ptr->qos, sz_buf,
+		 bb_state_string(burst_buffer_ptr->state),
 	         uid_to_string(burst_buffer_ptr->user_id),
 	         burst_buffer_ptr->user_id);
 	xstrcat(out_buf, tmp_line);

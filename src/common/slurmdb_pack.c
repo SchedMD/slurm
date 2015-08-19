@@ -790,12 +790,12 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t rpc_version,
 			}
 		}
 
-		safe_unpack32(&count, buffer);
-		object_ptr->tres_str = xstrdup_printf("%d=%u", TRES_CPU, count);
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
+		safe_unpack32(&count, buffer);
+		object_ptr->tres_str = xstrdup_printf("%d=%u", TRES_CPU, count);
 
 		safe_unpack16(&object_ptr->dimensions, buffer);
 		safe_unpack32(&object_ptr->flags, buffer);
@@ -1014,7 +1014,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 
 		packstr(object->user, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint64_t tmp64;
+		uint64_t uint64_tmp;
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1083,22 +1083,26 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 		   the order of things just to be in alpha order we
 		   just renamed it and called it good */
 		pack32(object->shares_raw, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_jobs, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
-			object->grp_tres_mins, TRES_MEM);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_MEM);
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
@@ -1106,19 +1110,23 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t rpc_version,
 		pack16(object->is_def, buffer);
 		pack32(object->lft, buffer);
 
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_jobs, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_submit_jobs, buffer);
 		pack32(object->max_wall_pj, buffer);
 
@@ -1231,7 +1239,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint64_t tmp64;
+		uint64_t uint64_tmp;
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1255,28 +1263,53 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 		safe_unpack32(&object_ptr->shares_raw, buffer);
 
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres_run_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_MEM, uint32_tmp);
+				   TRES_MEM, uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
@@ -1284,24 +1317,41 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpack16(&object_ptr->is_def, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_mins_pj =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_run_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_pj =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%"PRIu64,
 				   object_ptr->max_tres_pj ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
@@ -1593,7 +1643,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
-	uint64_t tmp64;
+	uint64_t uint64_tmp;
 
 	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		if (!object) {
@@ -1715,8 +1765,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble(NO_VAL64, buffer);
-			packdouble(NO_VAL64, buffer);
+			packdouble(NO_VAL, buffer);
+			packdouble(NO_VAL, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1725,49 +1775,57 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->flags, buffer);
 
 		pack32(object->grace_time, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_jobs, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_MEM);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins_pu, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pu, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_jobs_pu, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pu, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->min_tres_pj, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 
 		packstr(object->name, buffer);
 
@@ -1826,8 +1884,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack16(0, buffer);
 			pack32(0, buffer);
 
-			packdouble(NO_VAL64, buffer);
-			packdouble(NO_VAL64, buffer);
+			packdouble(NO_VAL, buffer);
+			packdouble(NO_VAL, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1836,41 +1894,52 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(object->flags, buffer);
 
 		pack32(object->grace_time, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres_run_mins, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_jobs, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
+			object->grp_tres, TRES_MEM);
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->grp_tres, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_mins_pj, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_run_mins_pu, TRES_CPU);
-		pack64(tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		if (uint64_tmp == INFINITE64)
+			uint64_tmp = (uint64_t)INFINITE;
+		pack64(uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pu, TRES_CPU);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_jobs_pu, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pj, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
-		tmp64 = slurmdb_find_tres_count_in_string(
+		pack32((uint32_t)uint64_tmp, buffer);
+		uint64_tmp = slurmdb_find_tres_count_in_string(
 			object->max_tres_pu, TRES_NODE);
-		pack32((uint32_t)tmp64, buffer);
+		pack32((uint32_t)uint64_tmp, buffer);
 		pack32(object->max_submit_jobs_pu, buffer);
 		pack32(object->max_wall_pj, buffer);
 
@@ -1903,7 +1972,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 				  Buf buffer)
 {
 	uint32_t uint32_tmp;
-	uint64_t tmp64;
+	uint64_t uint64_tmp;
 	int i;
 	slurmdb_qos_rec_t *object_ptr = xmalloc(sizeof(slurmdb_qos_rec_t));
 	uint32_t count = NO_VAL;
@@ -1976,66 +2045,121 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint32_t)NO_VAL)
 			object_ptr->grp_tres_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres_run_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_MEM, uint32_tmp);
+				   TRES_MEM, uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_mins_pj =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_run_mins_pu =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_pj =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_pu =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%"PRIu64,
 				   object_ptr->max_tres_pj ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->max_tres_pu, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->max_tres_pu, "%s%u=%"PRIu64,
 				   object_ptr->max_tres_pu ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->min_tres_pj, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->min_tres_pj, "%s%u=%"PRIu64,
 				   object_ptr->min_tres_pj ? "," : "",
-				   TRES_CPU, uint32_tmp);
+				   TRES_CPU, uint64_tmp);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
@@ -2066,59 +2190,109 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres_run_mins =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->grp_tres =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_MEM, uint32_tmp);
+				   TRES_MEM, uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->grp_tres, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->grp_tres, "%s%u=%"PRIu64,
 				   object_ptr->grp_tres ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_mins_pj =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
-		safe_unpack64(&tmp64, buffer);
-		if (tmp64 != NO_VAL64)
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
+		safe_unpack64(&uint64_tmp, buffer);
+		if (uint64_tmp == (uint64_t)INFINITE)
+			uint64_tmp = INFINITE64;
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_run_mins_pu =
-				xstrdup_printf("%u=%"PRIu64, TRES_CPU, tmp64);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_pj =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
 			object_ptr->max_tres_pu =
-				xstrdup_printf("%u=%u", TRES_CPU, uint32_tmp);
+				xstrdup_printf("%u=%"PRIu64, TRES_CPU,
+					       uint64_tmp);
 		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->max_tres_pj, "%s%u=%"PRIu64,
 				   object_ptr->max_tres_pj ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != NO_VAL)
-			xstrfmtcat(object_ptr->max_tres_pu, "%s%u=%u",
+		if (uint32_tmp == INFINITE)
+			uint64_tmp = INFINITE64;
+		else
+			uint64_tmp = uint32_tmp;
+
+		if (uint64_tmp != (uint64_t)NO_VAL)
+			xstrfmtcat(object_ptr->max_tres_pu, "%s%u=%"PRIu64,
 				   object_ptr->max_tres_pu ? "," : "",
-				   TRES_NODE, uint32_tmp);
+				   TRES_NODE, uint64_tmp);
 		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
@@ -2448,8 +2622,8 @@ extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 			}
 		}
 	} else if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		uint64_t tmp64;
-		safe_unpack64(&tmp64, buffer); /* not needed (alloc_secs) */
+		uint64_t uint64_tmp;
+		safe_unpack64(&uint64_tmp, buffer); /* not needed (alloc_secs) */
 		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
@@ -2459,7 +2633,7 @@ extern int slurmdb_unpack_reservation_rec(void **object, uint16_t rpc_version,
 		object_ptr->tres_str = xstrdup_printf(
 			"%d=%u", TRES_CPU, uint32_tmp);
 
-		safe_unpack64(&tmp64, buffer); /* not needed (down_secs) */
+		safe_unpack64(&uint64_tmp, buffer); /* not needed (down_secs) */
 		safe_unpack32(&object_ptr->flags, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
@@ -3707,7 +3881,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 	char *tmp_info = NULL;
 	*object = object_ptr;
 
-	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->acct_list =

@@ -709,7 +709,7 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		     job_ptr->job_id);
 
 	/* No billing weights defined. Return CPU count */
-	if (!part_ptr->billing_weights) {
+	if (!part_ptr || !part_ptr->billing_weights) {
 		job_ptr->billable_tres = job_ptr->total_cpus;
 		return job_ptr->billable_tres;
 	}
