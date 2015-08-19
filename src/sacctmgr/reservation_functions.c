@@ -198,7 +198,8 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		 * members of the type returned by slurmdbd
 		 */
 		slurm_addto_char_list(format_list,
-				      "Cluster,Name%15,TimeStart,TimeEnd");
+				      "Cluster,Name%15,TRES%30,"
+				      "TimeStart,TimeEnd");
 	}
 
 	reservation_list = acct_storage_g_get_reservations(
