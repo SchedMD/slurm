@@ -1183,9 +1183,9 @@ static int _accounting_cluster_ready(void)
 	FREE_NULL_BITMAP(total_node_bitmap);
 
 	assoc_mgr_lock(&locks);
-	set_cluster_tres(true);
-
 	slurmctld_tres_cnt = g_tres_count;
+
+	set_cluster_tres(true);
 
 	cluster_tres_str = slurmdb_make_tres_string(
 		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
