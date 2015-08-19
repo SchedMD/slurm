@@ -467,10 +467,11 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos);
 
 /* Make a simple tres string from a tres count array.
  * IN tres_cnt - counts of each tres used
+ * IN flags - TRES_STR_FLAG_SIMPLE or 0 for formatted string
  * IN locked - if the assoc_mgr tres read lock is locked or not.
  * RET char * of simple tres string
  */
 extern char *assoc_mgr_make_tres_str_from_array(
-	uint64_t *tres_cnt, bool locked);
+	uint64_t *tres_cnt, uint32_t flags, bool locked);
 
 #endif /* _SLURM_ASSOC_MGR_H */

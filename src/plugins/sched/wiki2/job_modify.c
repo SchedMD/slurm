@@ -411,7 +411,7 @@ host_fini:	if (rc) {
 		job_ptr->tres_req_str =
 			assoc_mgr_make_tres_str_from_array(
 				job_ptr->tres_req_cnt,
-				true);
+				TRES_STR_FLAG_SIMPLE, true);
 		assoc_mgr_unlock(&locks);
 	}
 

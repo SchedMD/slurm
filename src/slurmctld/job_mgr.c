@@ -6721,7 +6721,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->tres_req_cnt = job_desc->tres_req_cnt;
 	job_desc->tres_req_cnt = NULL;
 	job_ptr->tres_req_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_req_cnt, false);
+		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, false);
 
 	_add_job_hash(job_ptr);
 
@@ -7242,7 +7242,7 @@ extern void job_set_req_tres(
 
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_req_cnt, true);
+		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -7303,11 +7303,11 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
-		job_ptr->tres_alloc_cnt, true);
+		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
 
 	xfree(job_ptr->tres_fmt_alloc_str);
-	job_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
-		job_ptr->tres_alloc_str, assoc_mgr_tres_list);
+	job_ptr->tres_fmt_alloc_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_alloc_cnt, 0, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -10068,7 +10068,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					false);
+					TRES_STR_FLAG_SIMPLE, false);
 
 		}
 	}
@@ -10093,7 +10093,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					false);
+					TRES_STR_FLAG_SIMPLE, false);
 
 		}
 		if (save_max_cpus) {
@@ -10563,7 +10563,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
-					false);
+					TRES_STR_FLAG_SIMPLE, false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10735,7 +10735,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				      true);
 		xfree(job_ptr->tres_req_str);
 		job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
-			job_ptr->tres_req_cnt, true);
+			job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -10974,7 +10974,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt, true);
+					job_ptr->tres_req_cnt,
+					TRES_STR_FLAG_SIMPLE, true);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {
