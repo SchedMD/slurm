@@ -595,7 +595,8 @@ empty:
 		//START_TIMER;
 		xstrfmtcat(query, "select distinct %s,'%s' as cluster "
 			   "from \"%s_%s\" as t1%s",
-			   tmp, cluster_name, cluster_name, resv_table, extra);
+			   tmp, cluster_name, cluster_name, resv_table,
+			   extra ? extra : "");
 	}
 	list_iterator_destroy(itr);
 	if (use_cluster_list == as_mysql_cluster_list)
