@@ -1330,9 +1330,9 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_GRP_CPU:
 		return "QOSGrpCpuLimit";
 	case WAIT_QOS_GRP_CPU_MIN:
-		return "QOSGrpCPUMinsLimit";
+		return "QOSGrpCPUMinutesLimit";
 	case WAIT_QOS_GRP_CPU_RUN_MIN:
-		return "QOSGrpCPURunMinsLimit";
+		return "QOSGrpCPURunMinutesLimit";
 	case WAIT_QOS_GRP_JOB:
 		return"QOSGrpJobsLimit";
 	case WAIT_QOS_GRP_MEM:
@@ -1346,7 +1346,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_CPU_PER_JOB:
 		return "QOSMaxCpuPerJobLimit";
 	case WAIT_QOS_MAX_CPU_MINS_PER_JOB:
-		return "QOSMaxCpuMinsPerJobLimit";
+		return "QOSMaxCpuMinutesPerJobLimit";
 	case WAIT_QOS_MAX_NODE_PER_JOB:
 		return "QOSMaxNodePerJobLimit";
 	case WAIT_QOS_MAX_WALL_PER_JOB:
@@ -1364,9 +1364,9 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_ASSOC_GRP_CPU:
 		return "AssocGrpCpuLimit";
 	case WAIT_ASSOC_GRP_CPU_MIN:
-		return "AssocGrpCPUMinsLimit";
+		return "AssocGrpCPUMinutesLimit";
 	case WAIT_ASSOC_GRP_CPU_RUN_MIN:
-		return "AssocGrpCPURunMinsLimit";
+		return "AssocGrpCPURunMinutesLimit";
 	case WAIT_ASSOC_GRP_JOB:
 		return"AssocGrpJobsLimit";
 	case WAIT_ASSOC_GRP_MEM:
@@ -1382,7 +1382,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_ASSOC_MAX_CPU_PER_JOB:
 		return "AssocMaxCpuPerJobLimit";
 	case WAIT_ASSOC_MAX_CPU_MINS_PER_JOB:
-		return "AssocMaxCpuMinsPerJobLimit";
+		return "AssocMaxCpuMinutesPerJobLimit";
 	case WAIT_ASSOC_MAX_NODE_PER_JOB:
 		return "AssocMaxNodePerJobLimit";
 	case WAIT_ASSOC_MAX_WALL_PER_JOB:
@@ -1406,86 +1406,86 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_ASSOC_GRP_UNK:
 		return "AssocGrpUnknown";
 	case WAIT_ASSOC_GRP_UNK_MIN:
-		return "AssocGrpUnknownMin";
+		return "AssocGrpUnknownMinutes";
 	case WAIT_ASSOC_GRP_UNK_RUN_MIN:
-		return "AssocGrpUnknownRunMin";
+		return "AssocGrpUnknownRunMinutes";
 	case WAIT_ASSOC_MAX_UNK_PER_JOB:
 		return "AssocMaxUnknownPerJob";
 	case WAIT_ASSOC_MAX_UNK_PER_NODE:
 		return "AssocMaxUnknownPerNode";
 	case WAIT_ASSOC_MAX_UNK_MINS_PER_JOB:
-		return "AssocMaxUnknownMinPerJob";
+		return "AssocMaxUnknownMinutesPerJob";
 	case WAIT_ASSOC_MAX_CPU_PER_NODE:
 		return "AssocMaxCpuPerNode";
 	case WAIT_ASSOC_GRP_MEM_MIN:
-		return "AssocGrpMemMin";
+		return "AssocGrpMemMinutes";
 	case WAIT_ASSOC_GRP_MEM_RUN_MIN:
-		return "AssocGrpMemRunMin";
+		return "AssocGrpMemRunMinutes";
 	case WAIT_ASSOC_MAX_MEM_PER_JOB:
 		return "AssocMaxMemPerJob";
 	case WAIT_ASSOC_MAX_MEM_PER_NODE:
 		return "AssocMaxMemPerNode";
 	case WAIT_ASSOC_MAX_MEM_MINS_PER_JOB:
-		return "AssocMaxMemMinPerJob";
+		return "AssocMaxMemMinutesPerJob";
 	case WAIT_ASSOC_GRP_NODE_MIN:
-		return "AssocGrpNodeMin";
+		return "AssocGrpNodeMinutes";
 	case WAIT_ASSOC_GRP_NODE_RUN_MIN:
-		return "AssocGrpNodeRunMin";
+		return "AssocGrpNodeRunMinutes";
 	case WAIT_ASSOC_MAX_NODE_MINS_PER_JOB:
-		return "AssocMaxNodeMinPerJob";
+		return "AssocMaxNodeMinutesPerJob";
 	case WAIT_ASSOC_GRP_ENERGY:
 		return "AssocGrpEnergy";
 	case WAIT_ASSOC_GRP_ENERGY_MIN:
-		return "AssocGrpEnergyMin";
+		return "AssocGrpEnergyMinutes";
 	case WAIT_ASSOC_GRP_ENERGY_RUN_MIN:
-		return "AssocGrpEnergyRunMin";
+		return "AssocGrpEnergyRunMinutes";
 	case WAIT_ASSOC_MAX_ENERGY_PER_JOB:
 		return "AssocMaxEnergyPerJob";
 	case WAIT_ASSOC_MAX_ENERGY_PER_NODE:
 		return "AssocMaxEnergyPerNode";
 	case WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB:
-		return "AssocMaxEnergyMinPerJob";
+		return "AssocMaxEnergyMinutesPerJob";
 	case WAIT_ASSOC_GRP_GRES:
 		return "AssocGrpGRES";
 	case WAIT_ASSOC_GRP_GRES_MIN:
-		return "AssocGrpGRESMin";
+		return "AssocGrpGRESMinutes";
 	case WAIT_ASSOC_GRP_GRES_RUN_MIN:
-		return "AssocGrpGRESRunMin";
+		return "AssocGrpGRESRunMinutes";
 	case WAIT_ASSOC_MAX_GRES_PER_JOB:
 		return "AssocMaxGRESPerJob";
 	case WAIT_ASSOC_MAX_GRES_PER_NODE:
 		return "AssocMaxGRESPerNode";
 	case WAIT_ASSOC_MAX_GRES_MINS_PER_JOB:
-		return "AssocMaxGRESMinPerJob";
+		return "AssocMaxGRESMinutesPerJob";
 	case WAIT_ASSOC_GRP_LIC:
 		return "AssocGrpLicense";
 	case WAIT_ASSOC_GRP_LIC_MIN:
-		return "AssocGrpLicenseMin";
+		return "AssocGrpLicenseMinutes";
 	case WAIT_ASSOC_GRP_LIC_RUN_MIN:
-		return "AssocGrpLicenseRunMin";
+		return "AssocGrpLicenseRunMinutes";
 	case WAIT_ASSOC_MAX_LIC_PER_JOB:
 		return "AssocMaxLicensePerJob";
 	case WAIT_ASSOC_MAX_LIC_MINS_PER_JOB:
-		return "AssocMaxLicenseMinPerJob";
+		return "AssocMaxLicenseMinutesPerJob";
 	case WAIT_ASSOC_GRP_BB:
 		return "AssocGrpBB";
 	case WAIT_ASSOC_GRP_BB_MIN:
-		return "AssocGrpBBMin";
+		return "AssocGrpBBMinutes";
 	case WAIT_ASSOC_GRP_BB_RUN_MIN:
-		return "AssocGrpBBRunMin";
+		return "AssocGrpBBRunMinutes";
 	case WAIT_ASSOC_MAX_BB_PER_JOB:
 		return "AssocMaxBBPerJob";
 	case WAIT_ASSOC_MAX_BB_PER_NODE:
 		return "AssocMaxBBPerNode";
 	case WAIT_ASSOC_MAX_BB_MINS_PER_JOB:
-		return "AssocMaxBBMinPerJob";
+		return "AssocMaxBBMinutesPerJob";
 
 	case WAIT_QOS_GRP_UNK:
 		return "QOSGrpUnknown";
 	case WAIT_QOS_GRP_UNK_MIN:
-		return "QOSGrpUnknownMin";
+		return "QOSGrpUnknownMinutes";
 	case WAIT_QOS_GRP_UNK_RUN_MIN:
-		return "QOSGrpUnknownRunMin";
+		return "QOSGrpUnknownRunMinutes";
 	case WAIT_QOS_MAX_UNK_PER_JOB:
 		return "QOSMaxUnknownPerJob";
 	case WAIT_QOS_MAX_UNK_PER_NODE:
@@ -1493,15 +1493,15 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_UNK_PER_USER:
 		return "QOSMaxUnknownPerUser";
 	case WAIT_QOS_MAX_UNK_MINS_PER_JOB:
-		return "QOSMaxUnknownMinPerJob";
+		return "QOSMaxUnknownMinutesPerJob";
 	case WAIT_QOS_MIN_UNK:
 		return "QOSMinUnknown";
 	case WAIT_QOS_MAX_CPU_PER_NODE:
 		return "QOSMaxCpuPerNode";
 	case WAIT_QOS_GRP_MEM_MIN:
-		return "QOSGrpMemoryMin";
+		return "QOSGrpMemoryMinutes";
 	case WAIT_QOS_GRP_MEM_RUN_MIN:
-		return "QOSGrpMemoryRunMin";
+		return "QOSGrpMemoryRunMinutes";
 	case WAIT_QOS_MAX_MEM_PER_JOB:
 		return "QOSMaxMemoryPerJob";
 	case WAIT_QOS_MAX_MEM_PER_NODE:
@@ -1509,23 +1509,23 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_MEM_PER_USER:
 		return "QOSMaxMemoryPerUser";
 	case WAIT_QOS_MAX_MEM_MINS_PER_JOB:
-		return "QOSMaxMemoryMinPerJob";
+		return "QOSMaxMemoryMinutesPerJob";
 	case WAIT_QOS_MIN_MEM:
 		return "QOSMinMemory";
 	case WAIT_QOS_GRP_NODE_MIN:
-		return "QOSGrpNodeMin";
+		return "QOSGrpNodeMinutes";
 	case WAIT_QOS_GRP_NODE_RUN_MIN:
-		return "QOSGrpNodeRunMin";
+		return "QOSGrpNodeRunMinutes";
 	case WAIT_QOS_MAX_NODE_MINS_PER_JOB:
-		return "QOSMaxNodeMinPerJob";
+		return "QOSMaxNodeMinutesPerJob";
 	case WAIT_QOS_MIN_NODE:
 		return "QOSMinNode";
 	case WAIT_QOS_GRP_ENERGY:
 		return "QOSGrpEnergy";
 	case WAIT_QOS_GRP_ENERGY_MIN:
-		return "QOSGrpEnergyMin";
+		return "QOSGrpEnergyMinutes";
 	case WAIT_QOS_GRP_ENERGY_RUN_MIN:
-		return "QOSGrpEnergyRunMin";
+		return "QOSGrpEnergyRunMinutes";
 	case WAIT_QOS_MAX_ENERGY_PER_JOB:
 		return "QOSMaxEnergyPerJob";
 	case WAIT_QOS_MAX_ENERGY_PER_NODE:
@@ -1533,15 +1533,15 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_ENERGY_PER_USER:
 		return "QOSMaxEnergyPerUser";
 	case WAIT_QOS_MAX_ENERGY_MINS_PER_JOB:
-		return "QOSMaxEnergyMinPerJob";
+		return "QOSMaxEnergyMinutesPerJob";
 	case WAIT_QOS_MIN_ENERGY:
 		return "QOSMinEnergy";
 	case WAIT_QOS_GRP_GRES:
 		return "QOSGrpGRES";
 	case WAIT_QOS_GRP_GRES_MIN:
-		return "QOSGrpGRESMin";
+		return "QOSGrpGRESMinutes";
 	case WAIT_QOS_GRP_GRES_RUN_MIN:
-		return "QOSGrpGRESRunMin";
+		return "QOSGrpGRESRunMinutes";
 	case WAIT_QOS_MAX_GRES_PER_JOB:
 		return "QOSMaxGRESPerJob";
 	case WAIT_QOS_MAX_GRES_PER_NODE:
@@ -1549,29 +1549,29 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_GRES_PER_USER:
 		return "QOSMaxGRESPerUser";
 	case WAIT_QOS_MAX_GRES_MINS_PER_JOB:
-		return "QOSMaxGRESMinPerJob";
+		return "QOSMaxGRESMinutesPerJob";
 	case WAIT_QOS_MIN_GRES:
 		return "QOSMinGRES";
 	case WAIT_QOS_GRP_LIC:
 		return "QOSGrpLicense";
 	case WAIT_QOS_GRP_LIC_MIN:
-		return "QOSGrpLicenseMin";
+		return "QOSGrpLicenseMinutes";
 	case WAIT_QOS_GRP_LIC_RUN_MIN:
-		return "QOSGrpLicenseRunMin";
+		return "QOSGrpLicenseRunMinutes";
 	case WAIT_QOS_MAX_LIC_PER_JOB:
 		return "QOSMaxLicensePerJob";
 	case WAIT_QOS_MAX_LIC_PER_USER:
 		return "QOSMaxLicensePerUser";
 	case WAIT_QOS_MAX_LIC_MINS_PER_JOB:
-		return "QOSMaxLicenseMinPerJob";
+		return "QOSMaxLicenseMinutesPerJob";
 	case WAIT_QOS_MIN_LIC:
 		return "QOSMinLicense";
 	case WAIT_QOS_GRP_BB:
 		return "QOSGrpBB";
 	case WAIT_QOS_GRP_BB_MIN:
-		return "QOSGrpBBMin";
+		return "QOSGrpBBMinutes";
 	case WAIT_QOS_GRP_BB_RUN_MIN:
-		return "QOSGrpBBRunMin";
+		return "QOSGrpBBRunMinutes";
 	case WAIT_QOS_MAX_BB_PER_JOB:
 		return "QOSMaxBBPerJob";
 	case WAIT_QOS_MAX_BB_PER_NODE:
@@ -1579,7 +1579,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 	case WAIT_QOS_MAX_BB_PER_USER:
 		return "QOSMaxBBPerUser";
 	case WAIT_QOS_MAX_BB_MINS_PER_JOB:
-		return "AssocMaxBBMinPerJob";
+		return "AssocMaxBBMinutesPerJob";
 	case WAIT_QOS_MIN_BB:
 		return "QOSMinBB";
 	default:
