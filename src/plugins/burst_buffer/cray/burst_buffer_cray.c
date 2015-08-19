@@ -1744,7 +1744,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	 * If not, determine how much space must be free. */
 	if (bb_limit_test(job_ptr->user_id, bb_job->account, bb_job->partition,
 			  bb_job->qos, add_space, &bb_state) < 1) {
-		debug("%s: %s requested space above limit", __func__,
+		debug("%s: %s requested burst buffer space above limit",
+		      __func__,
 		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		return 1;
 	}

@@ -213,9 +213,6 @@ typedef struct bb_state {
 extern void bb_add_persist(bb_state_t *state_ptr,
 			   bb_pend_persist_t *bb_persist);
 
-/* Add a burst buffer allocation to a user's load */
-extern void bb_add_user_load(bb_alloc_t *bb_ptr, bb_state_t *state_ptr);
-
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr);
 
@@ -317,9 +314,6 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
 
-/* Remove a burst buffer allocation from a user's load */
-extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
-
 /* Remove persistent burst buffer reservation for this job.
  * Call when job starts running or removed from pending state. */
 extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id);
@@ -349,10 +343,14 @@ extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id);
 extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
 
-/* Determine if a request of a given size can run
+/* Determine if a request of a given size can run based upon limits in
+ * burst_buffer.conf. TRES limits handled by slurmctld (job not eligible until
+ * TRES limits satisfied).
+ *
  * RET: -1  Can never run
  *       0  Can run later
- *       1  Can run now */
+ *       1  Can run now
+ */
 extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
 

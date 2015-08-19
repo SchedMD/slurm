@@ -295,7 +295,8 @@ static void _timeout_bb_rec(void)
 					     "purged",
 					     __func__, bb_ptr->job_id);
 				}
-				bb_remove_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_rem
+//				bb_remove_user_load(bb_ptr, &bb_state);
 				*bb_pptr = bb_ptr->next;
 				bb_free_alloc_buf(bb_ptr);
 				break;
@@ -600,7 +601,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 						   user_id);
 			bb_ptr->size = size;
 			bb_ptr->state = state;
-			bb_add_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_add
+//			bb_add_user_load(bb_ptr, &bb_state);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -642,7 +644,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			}
 		} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
 			if (bb_ptr->size != 0) {
-				bb_remove_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_rem
+//				bb_remove_user_load(bb_ptr, &bb_state);
 				bb_ptr->size = 0;
 			}
 		}
@@ -650,7 +653,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			queue_job_scheduler();
 	}
 	if ((bb_ptr->state != BB_STATE_STAGED_OUT) && (bb_ptr->size != size)) {
-		bb_remove_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_rem
+//		bb_remove_user_load(bb_ptr, &bb_state);
 		if (size != 0) {
 			error("%s: Size mismatch (%"PRIu64" != %"PRIu64"). "
 			      "BB UserID=%u JobID=%u Name=%s",
@@ -658,7 +662,8 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 			      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
 		}
 		bb_ptr->size = MAX(bb_ptr->size, size);
-		bb_add_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_add
+//		bb_add_user_load(bb_ptr, &bb_state);
 	}
 
 	return SLURM_SUCCESS;
@@ -1322,7 +1327,8 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			rc =  0;
 		} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
 			if (bb_ptr->size != 0) {
-				bb_remove_user_load(bb_ptr, &bb_state);
+//FIXME: VESTIGIAL: Use bb_limit_rem
+//				bb_remove_user_load(bb_ptr, &bb_state);
 				bb_ptr->size = 0;
 			}
 			rc =  1;

@@ -296,29 +296,6 @@ extern bb_alloc_t *bb_find_name_rec(char *bb_name, uint32_t user_id,
 	return bb_alloc;
 }
 
-/* Add a burst buffer allocation to a user's load */
-//FIXME: VESTIGIAL: Use bb_limit_add
-extern void bb_add_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
-{
-	bb_user_t *user_ptr;
-	int i, j;
-
-	state_ptr->used_space += bb_alloc->size;
-
-	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr);
-	user_ptr->size += bb_alloc->size;
-	for (i = 0; i < bb_alloc->gres_cnt; i++) {
-		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
-			if (strcmp(bb_alloc->gres_ptr[i].name,
-				   state_ptr->bb_config.gres_ptr[j].name))
-				continue;
-			state_ptr->bb_config.gres_ptr[j].used_cnt +=
-				bb_alloc->gres_ptr[i].used_cnt;
-			break;
-		}
-	}
-}
-
 /* Find a per-user burst buffer record for a specific user ID */
 extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 {
@@ -340,61 +317,6 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 	user_ptr->user_id = user_id;
 	state_ptr->bb_uhash[inx] = user_ptr;
 	return user_ptr;
-}
-
-/* Remove a burst buffer allocation from a user's load */
-//FIXME: VESTIGIAL: Use bb_limit_rem
-extern void bb_remove_user_load(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
-{
-	bb_user_t *user_ptr;
-	int i, j;
-	if (state_ptr->used_space >= bb_alloc->size) {
-		state_ptr->used_space -= bb_alloc->size;
-	} else {
-		error(
-"%s: used space underflow releasing buffer %s for job %u (%"PRIu64" < %"PRIu64")",
-		      __func__, bb_alloc->name, bb_alloc->job_id,
-		     state_ptr->used_space, bb_alloc->size);
-		state_ptr->used_space = 0;
-	}
-
-	user_ptr = bb_find_user_rec(bb_alloc->user_id, state_ptr);
-	if (user_ptr->size >= bb_alloc->size) {
-		user_ptr->size -= bb_alloc->size;
-	} else {
-		error("%s: user %u table underflow for buffer %s",
-		      __func__, user_ptr->user_id, bb_alloc->name);
-		user_ptr->size = 0;
-	}
-	bb_alloc->size = 0;
-
-	for (i = 0; i < bb_alloc->gres_cnt; i++) {
-		for (j = 0; j < state_ptr->bb_config.gres_cnt; j++) {
-			if (strcmp(bb_alloc->gres_ptr[i].name,
-				   state_ptr->bb_config.gres_ptr[j].name))
-				continue;
-			if (state_ptr->bb_config.gres_ptr[j].used_cnt >=
-			    bb_alloc->gres_ptr[i].used_cnt) {
-				state_ptr->bb_config.gres_ptr[j].used_cnt -=
-					bb_alloc->gres_ptr[i].used_cnt;
-			} else {
-				error(
-"%s: gres %s underflow releasing buffer %s for job %u (%"PRIu64" < %"PRIu64")",
-				      __func__, bb_alloc->gres_ptr[i].name,
-				      bb_alloc->name, bb_alloc->job_id,
-				      state_ptr->bb_config.gres_ptr[j].used_cnt,
-				      bb_alloc->gres_ptr[i].used_cnt);
-				state_ptr->bb_config.gres_ptr[j].used_cnt = 0;
-			}
-			break;
-		}
-		if (j >= state_ptr->bb_config.gres_cnt) {
-			error("%s: failed to find gres %s from job %u",
-			      __func__, bb_alloc->gres_ptr[i].name,
-			      bb_alloc->job_id);
-		}
-		bb_alloc->gres_ptr[i].used_cnt = 0;
-	}
 }
 
 #if _SUPPORT_GRES
@@ -1069,7 +991,8 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	}
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_add_user_load(bb_alloc, state_ptr);
+	bb_limit_add(bb_alloc->user_id, bb_alloc->account, bb_alloc->partition,
+		     bb_alloc->qos, bb_alloc->size, state_ptr);
 
 	return bb_alloc;
 }
@@ -1445,10 +1368,14 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 	}
 }
 
-/* Determine if a request of a given size can run
+/* Determine if a request of a given size can run based upon limits in
+ * burst_buffer.conf. TRES limits handled by slurmctld (job not eligible until
+ * TRES limits satisfied).
+ *
  * RET: -1  Can never run
  *       0  Can run later
- *       1  Can run now */
+ *       1  Can run now
+ */
 extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
@@ -1472,8 +1399,6 @@ extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
 		    state_ptr->bb_config.user_size_limit)
 			return 0;
 	}
-
-//FIXME: Need TRES limit check here
 	return 1;
 }
 
@@ -1489,7 +1414,6 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 	xassert(bb_user);
 	bb_user->size += bb_size;
 
-//FIXME: Need TRES limit add here
 }
 
 /* Release claim against resource limit for a user */
@@ -1514,7 +1438,6 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 		error("%s: user limit underflow for uid %u", __func__, user_id);
 	}
 
-//FIXME: Need TRES limit remove here
 }
 
 /* Log creation of a persistent burst buffer in the database */
