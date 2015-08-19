@@ -83,16 +83,13 @@ static char *	_print_users(uid_t *buf);
  * Return value must be xfreed */
 static uid_t *_parse_users(char *buf)
 {
-	char *delim, *tmp, *tok, *save_ptr = NULL;
+	char *tmp, *tok, *save_ptr = NULL;
 	int inx = 0, array_size;
 	uid_t *user_array = NULL;
 
 	if (!buf)
 		return user_array;
 	tmp = xstrdup(buf);
-	delim = strchr(tmp, ',');
-	if (delim)
-		delim[0] = '\0';
 	array_size = 1;
 	user_array = xmalloc(sizeof(uid_t) * array_size);
 	tok = strtok_r(tmp, ",", &save_ptr);

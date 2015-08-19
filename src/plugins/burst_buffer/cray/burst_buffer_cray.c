@@ -2551,24 +2551,30 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.allow_users) {
+		bool found_user = false;
 		for (i = 0; bb_state.bb_config.allow_users[i]; i++) {
 			if (job_desc->user_id ==
-			    bb_state.bb_config.allow_users[i])
+			    bb_state.bb_config.allow_users[i]) {
+				found_user = true;
 				break;
+			}
 		}
-		if (bb_state.bb_config.allow_users[i] == 0) {
+		if (!found_user) {
 			rc = ESLURM_BURST_BUFFER_PERMISSION;
 			goto fini;
 		}
 	}
 
 	if (bb_state.bb_config.deny_users) {
+		bool found_user = false;
 		for (i = 0; bb_state.bb_config.deny_users[i]; i++) {
 			if (job_desc->user_id ==
-			    bb_state.bb_config.deny_users[i])
+			    bb_state.bb_config.deny_users[i]) {
+				found_user = true;
 				break;
+			}
 		}
-		if (bb_state.bb_config.deny_users[i] != 0) {
+		if (found_user) {
 			rc = ESLURM_BURST_BUFFER_PERMISSION;
 			goto fini;
 		}
