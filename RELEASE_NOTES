@@ -32,14 +32,19 @@ upgrading Slurm to a new major release.
 
 HIGHLIGHTS
 ==========
- -- In order to support inter-cluster job dependencies, the MaxJobID
-    configuration parameter default value has been reduced from 4,294,901,760
-    to 2,147,418,112 and it's maximum value is now 2,147,463,647.
-    ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
-    UPGRADED FROM AN OLDER VERSION!
+ -- Added TRES (Trackable resources) to track utilization of memory, GRES,
+    burst buffer, license, and any other configurable resources in the
+    accounting database.
+ -- Add configurable billing weight that takes into consideration any TRES when
+    calculating a job's resource utilization.
+ -- Add configurable prioritization factor that takes into consideration any
+    TRES when calculating a job's resource utilization.
  -- Add burst buffer support infrastructure. Currently available plugin include
     burst_buffer/generic (uses administrator supplied programs to manage file
-    staging) and burst_buffer/cray (uses Cray APIs to manage files).
+    staging) and burst_buffer/cray (uses Cray APIs to manage buffers).
+ -- Modify slurmctld outgoing RPC logic to support more parallel tasks (up to
+    85 RPCs and 256 pthreads; the old logic supported up to 21 RPCs and 256
+    threads).
  -- Add support for job dependencies joined with OR operator (e.g.
     "--depend=afterok:123?afternotok:124").
  -- Add advance reservation flag of "replace" that causes allocated resources
@@ -79,8 +84,6 @@ HIGHLIGHTS
     Libcurl is required for build. Configure slurm.conf as follows
     JobCompType=jobcomp/elasticsearch
     JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200
- -- Added TRES (Trackable resources) to track Mem, GRES, license, etc.
-    utilization in the accounting database.
  -- DATABASE SCHEME HAS CHANGED.  WHEN UPDATING THE MIGRATION PROCESS MAY TAKE
     SOME AMOUNT OF TIME DEPENDING ON HOW LARGE YOUR DATABASE IS.  WHILE UPDATING
     NO RECORDS WILL BE LOST, BUT THE SLURMDBD MAY NOT BE RESPONSIVE DURING THE
@@ -91,6 +94,11 @@ HIGHLIGHTS
     particularly energy sensors. This has introduced an operational issue. See
     OTHER CHANGES.
  -- MPI/MVAPICH plugin now requires Munge for authentication.
+ -- In order to support inter-cluster job dependencies, the MaxJobID
+    configuration parameter default value has been reduced from 4,294,901,760
+    to 2,147,418,112 and it's maximum value is now 2,147,463,647.
+    ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
+    UPGRADED FROM AN OLDER VERSION!
 
 RPMBUILD CHANGES
 ================

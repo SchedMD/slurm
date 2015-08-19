@@ -180,12 +180,12 @@ typedef enum {
 
 	/* EVENT */
 	PRINT_DURATION,
-	PRINT_END,
+	PRINT_TIMEEND,
 	PRINT_EVENTRAW,
 	PRINT_EVENT,
 	PRINT_NODENAME,
 	PRINT_REASON,
-	PRINT_START,
+	PRINT_TIMESTART,
 	PRINT_STATERAW,
 	PRINT_STATE,
 
@@ -197,7 +197,11 @@ typedef enum {
 	PRINT_CALLOWED,
 	PRINT_ALLOWED,
 	PRINT_ALLOCATED,
-	PRINT_USED
+	PRINT_USED,
+
+	/* RESERVATION */
+	PRINT_ASSOC_NAME = 10000,
+
 } sacctmgr_print_t;
 
 
@@ -250,6 +254,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_res(int argc, char *argv[]);
 extern int sacctmgr_list_wckey(int argc, char *argv[]);
 extern int sacctmgr_list_tres(int, char **);
+extern int sacctmgr_list_reservation(int argc, char **argv);
 
 extern int sacctmgr_modify_assoc(int argc, char *argv[]);
 extern int sacctmgr_modify_user(int argc, char *argv[]);

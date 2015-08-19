@@ -142,10 +142,11 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	config_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
 	common.$(OBJEXT) event_functions.$(OBJEXT) \
 	file_functions.$(OBJEXT) job_functions.$(OBJEXT) \
-	resource_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
-	qos_functions.$(OBJEXT) txn_functions.$(OBJEXT) \
-	user_functions.$(OBJEXT) wckey_functions.$(OBJEXT) \
-	problem_functions.$(OBJEXT) tres_function.$(OBJEXT)
+	reservation_functions.$(OBJEXT) resource_functions.$(OBJEXT) \
+	sacctmgr.$(OBJEXT) qos_functions.$(OBJEXT) \
+	txn_functions.$(OBJEXT) user_functions.$(OBJEXT) \
+	wckey_functions.$(OBJEXT) problem_functions.$(OBJEXT) \
+	tres_function.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/db_api/libslurmdb.o \
@@ -482,6 +483,7 @@ sacctmgr_SOURCES = \
 	event_functions.c	\
 	file_functions.c	\
 	job_functions.c		\
+	reservation_functions.c	\
 	resource_functions.c	\
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\
@@ -597,6 +599,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/problem_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resource_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres_function.Po@am__quote@
