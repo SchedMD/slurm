@@ -309,7 +309,8 @@ extern int bb_g_reconfig(void)
 }
 
 /*
- * Give the total burst buffer size of a given plugin name (in MB);
+ * Give the total burst buffer size in MG of a given plugin name (e.g. "cray");.
+ * If "name" is NULL, return the total space of all burst buffer plugins.
  */
 extern uint64_t bb_g_get_system_size(char *name)
 {
@@ -619,6 +620,7 @@ extern int bb_g_job_cancel(struct job_record *job_ptr)
 
 /*
  * Translate a burst buffer string to it's equivalent TRES string
+ * (e.g. "cray:2G,generic:4M" -> "1004=2048,1005=4")
  * Caller must xfree the return value
  */
 extern char *bb_g_xlate_bb_2_tres_str(char *burst_buffer)

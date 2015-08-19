@@ -4253,6 +4253,7 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 
 /*
  * Translate a burst buffer string to it's equivalent TRES string
+ * (e.g. "cray:2G,generic:4M" -> "1004=2048,1005=4")
  * Caller must xfree the return value
  */
 extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
