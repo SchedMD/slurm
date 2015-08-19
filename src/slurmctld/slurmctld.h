@@ -330,8 +330,8 @@ struct part_record {
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
 				 * char *allow_qos but used internally */
 	char *alternate; 	/* name of alternate partition */
-	List billing_weights;   /* list of TRES billing weights */
-	char *billing_weights_str;/* per TRES billing weight string */
+	double *billing_weights;    /* array of TRES billing weights */
+	char   *billing_weights_str;/* per TRES billing weight string */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
@@ -379,13 +379,6 @@ extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
-
-typedef struct {
-	char *name;
-	char *type;
-	double weight;
-	int tres_id;
-} tres_billing_weight_t;
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures
@@ -2370,7 +2363,10 @@ extern void trace_job(struct job_record *, const char *, const char *);
 int
 waitpid_timeout(const char *, pid_t, int *, int);
 
-/* Destroy tres_billing_weight_t */
-extern void destroy_tres_billing_weight(void *object);
+/* Parse TRES weights
+ * IN weights_str - string of tres and weights to be parsed.
+ * RET array of tres weights.
+ */
+extern double *tres_parse_weights(char *weights_str);
 
 #endif /* !_HAVE_SLURMCTLD_H */

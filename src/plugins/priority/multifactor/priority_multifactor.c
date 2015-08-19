@@ -693,11 +693,11 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
  */
 static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 {
+	int    i;
 	double to_bill_node   = 0.0;
 	double to_bill_global = 0.0;
+	double *billing_weights = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
-	tres_billing_weight_t *billing_weight;
-	ListIterator itr;
 
 	/* Don't recalculate unless the job is new or resized */
 	if ((!fuzzy_equal(job_ptr->billable_tres, NO_VAL)) &&
@@ -719,14 +719,13 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		     job_ptr->job_id, part_ptr->billing_weights_str,
 		     job_ptr->part_ptr->name);
 
-	itr = list_iterator_create(part_ptr->billing_weights);
-	while ((billing_weight = list_next(itr))) {
+	billing_weights = part_ptr->billing_weights;
+	for (i = 0; i < slurmctld_tres_cnt; i++) {
 		bool   is_mem      = false;
-		double tres_weight = billing_weight->weight;
-		char  *tres_type   = billing_weight->type;
-		char  *tres_name   = billing_weight->name;
-		double tres_value  =
-			job_ptr->tres_alloc_cnt[billing_weight->tres_id];
+		double tres_weight = billing_weights[i];
+		char  *tres_type   = assoc_mgr_tres_array[i]->type;
+		char  *tres_name   = assoc_mgr_tres_array[i]->name;
+		double tres_value  = job_ptr->tres_alloc_cnt[i];
 
 		if (!strcasecmp(tres_type, "mem")) {
 			is_mem = true;
@@ -749,7 +748,6 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		else
 			to_bill_global += tres_value;
 	}
-	list_iterator_destroy(itr);
 
 	job_ptr->billable_tres = to_bill_node + to_bill_global;
 

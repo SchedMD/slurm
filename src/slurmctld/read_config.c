@@ -145,67 +145,65 @@ static int _get_tres_id(char *type, char *name)
 	return assoc_mgr_find_tres_pos(&tres_rec, false);
 }
 
-extern void destroy_tres_billing_weight(void *object)
-{
-	tres_billing_weight_t *item= (tres_billing_weight_t *)object;
-
-	if (item) {
-		xfree(item->type);
-		xfree(item->name);
-		xfree(item);
-	}
-}
-
-static void _billing_weight_item(struct part_record *p, char *item_str)
+static int _tres_weight_item(double *weights, char *item_str)
 {
 	char *type = NULL, *value = NULL, *name = NULL;
 	int tres_id;
-	tres_billing_weight_t *item;
 
-	if (!item_str)
-		fatal("TRESBillingWeights item is null");
+	if (!item_str) {
+		error("TRES weight item is null");
+		return SLURM_ERROR;
+	}
 
 	type = strtok_r(item_str, "=", &value);
 	if (strchr(type, '/'))
 		type = strtok_r(type, "/", &name);
 
-	if (!value || !*value)
-		fatal("\"%s\" is an invalid TRESBillingWeight entry", item_str);
+	if (!value || !*value) {
+		error("\"%s\" is an invalid TRES weight entry", item_str);
+		return SLURM_ERROR;
+	}
 
-	if ((tres_id = _get_tres_id(type, name)) == -1)
-		fatal("TRESBillingWeights '%s%s%s' is not a configured TRES "
-		      "type. Please add the TRES Type to "
-		      "\"AccountingStorageTRES\" in the slurm.conf",
+	if ((tres_id = _get_tres_id(type, name)) == -1) {
+		error("TRES weight '%s%s%s' is not a configured TRES type.",
 		      type, (name) ? ":" : "", (name) ? name : "");
+		return SLURM_ERROR;
+	}
 
-	item = xmalloc(sizeof(tres_billing_weight_t));
-	item->type    = xstrdup(type);
-	item->name    = xstrdup(name);
-	item->weight  = strtod(value, NULL);
-	item->tres_id = tres_id;
-	if(errno)
-		fatal("Unable to convert %s value to double in "
-		      "TRESBillingWeights", value);
+	weights[tres_id] = strtod(value, NULL);
+	if(errno) {
+		error("Unable to convert %s value to double in %s",
+		      __func__, value);
+		return SLURM_ERROR;
+	}
 
-	list_append(p->billing_weights, item);
+	return SLURM_SUCCESS;
 }
 
-static void _billing_weights(struct part_record *p, char *bill_weight_str)
+extern double *tres_parse_weights(char *weights_str)
 {
-	char *tmp_str = xstrdup(bill_weight_str);
+	double *weights;
+	char *tmp_str = xstrdup(weights_str);
 	char *token, *last = NULL;
 
-	if(p->billing_weights)
-		list_destroy(p->billing_weights);
-	p->billing_weights = list_create(destroy_tres_billing_weight);
+	if (!weights_str || !*weights_str)
+		return NULL;
+
+	weights = xmalloc(sizeof(double) * slurmctld_tres_cnt);
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
-		_billing_weight_item(p, token);
+		if (_tres_weight_item(weights, token)) {
+			xfree(weights);
+			xfree(tmp_str);
+			fatal("failed to parse tres weights str '%s'",
+			      weights_str);
+			return NULL;
+		}
 		token = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_str);
-	return;
+	return weights;
 }
 
 /* Verify that Slurm directories are secure, not world writable */
@@ -764,9 +762,11 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->billing_weights_str) {
 		xfree(part_ptr->billing_weights_str);
+		xfree(part_ptr->billing_weights);
 		part_ptr->billing_weights_str =
 			xstrdup(part->billing_weights_str);
-		_billing_weights(part_ptr, part_ptr->billing_weights_str);
+		part_ptr->billing_weights =
+			tres_parse_weights(part_ptr->billing_weights_str);
 	}
 
 	if (part->allow_accounts) {
