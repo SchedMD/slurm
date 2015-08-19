@@ -94,9 +94,11 @@ typedef struct bb_alloc {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	bool cancelled;
+	time_t create_time;	/* Time of creation */
 	time_t end_time;	/* Expected time when use will end */
 	uint32_t gres_cnt;	/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
+	uint32_t id;		/* ID for reservation/accounting */
 	uint32_t job_id;
 	uint32_t magic;
 	char *name;		/* For persistent burst buffers */
@@ -106,7 +108,6 @@ typedef struct bb_alloc {
 	time_t seen_time;	/* Time buffer last seen */
 	uint64_t size;
 	uint16_t state;
-	time_t create_time;	/* Time of creation */
 	time_t state_time;	/* Time of last state change */
 	time_t use_time;	/* Expected time when use will begin */
 	uint32_t user_id;
@@ -203,6 +204,7 @@ typedef struct bb_state {
 	bool		term_flag;
 	pthread_mutex_t	term_mutex;
 	uint64_t	total_space;	/* units are bytes */
+	int		tres_id;	/* TRES ID, for limits */
 	int		tres_pos;	/* TRES index, for limits */
 	uint64_t	used_space;	/* units are bytes */
 } bb_state_t;
