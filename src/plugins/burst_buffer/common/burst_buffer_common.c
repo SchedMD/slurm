@@ -906,7 +906,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	int i;
 
 	xassert(state_ptr->bb_ahash);
-	state_ptr->persist_create_time = time(NULL);
+	state_ptr->last_update_time = time(NULL);
 	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
 	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
@@ -933,7 +933,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 
 	xassert(state_ptr->bb_ahash);
 	xassert(job_ptr);
-	state_ptr->persist_create_time = time(NULL);
+	state_ptr->last_update_time = time(NULL);
 	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	bb_alloc->account = xstrdup(bb_job->account);
 	bb_alloc->array_job_id = job_ptr->array_job_id;

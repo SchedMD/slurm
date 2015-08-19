@@ -607,7 +607,7 @@ static void _save_limits_state(void)
 	int error_code = 0;
 	uint16_t protocol_version = SLURM_15_08_PROTOCOL_VERSION;
 
-	if ((bb_state.persist_create_time < last_save_time) ||
+	if ((bb_state.last_update_time <= last_save_time) ||
 	    (bb_state.bb_ahash == NULL))
 		return;
 
@@ -1006,16 +1006,19 @@ static void _load_state(bool init_config)
 
 		bb_alloc = bb_alloc_name_rec(&bb_state, sessions[i].token,
 					     sessions[i].user_id);
-//FIXME: Set create_time
+		bb_alloc->create_time = sessions[i].created;
+		bb_alloc->id = sessions[i].id;
 		if ((sessions[i].token != NULL)  &&
 		    (sessions[i].token[0] >='0') &&
 		    (sessions[i].token[0] <='9')) {
 			bb_alloc->job_id =
 				strtol(sessions[i].token, &end_ptr, 10);
 		}
-//FIXME: Below logic seems wrong
-		for (j = 0; j < num_instances; j++)
-			bb_alloc->size = instances[j].bytes;
+		for (j = 0; j < num_instances; j++) {
+			if (xstrcmp(sessions[i].token, instances[j].label))
+				continue;
+			bb_alloc->size += instances[j].bytes;
+		}
 		bb_alloc->seen_time = bb_state.last_load_time;
 
 		if (!init_config) {	/* Newly found buffer */
@@ -1278,8 +1281,7 @@ static void *_start_stage_in(void *x)
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;
 			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
-			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-				bb_alloc->create_time = time(NULL);
+			bb_alloc->create_time = time(NULL);
 		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_read_lock);
@@ -3590,8 +3592,6 @@ if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
 				 BB_STATE_ALLOCATED);
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
-		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-			bb_alloc->create_time = time(NULL);
 		bb_alloc->size = create_args->size;
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
@@ -3701,6 +3701,7 @@ static void *_destroy_persistent(void *x)
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
 				 BB_STATE_PENDING);
+		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else {
@@ -3718,6 +3719,7 @@ static void *_destroy_persistent(void *x)
 			     bb_alloc->size, &bb_state);
 		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		(void) bb_post_persist_delete(bb_alloc, &bb_state);
+		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
 	xfree(resp_msg);
