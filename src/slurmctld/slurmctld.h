@@ -745,6 +745,7 @@ struct job_record {
 	char *tres_req_str;             /* string format of
 					 * tres_req_cnt primarily
 					 * used for state */
+	char *tres_fmt_req_str;         /* formatted req tres string for job */
 	uint64_t *tres_alloc_cnt;       /* array of tres counts allocated
 					 * based off g_tres_count in
 					 * assoc_mgr */

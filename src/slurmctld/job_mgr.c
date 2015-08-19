@@ -1261,6 +1261,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->tres_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_req_str, buffer);
+	packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1311,7 +1312,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char jbuf[JBUFSIZ];
 	double billable_tres = (double)NO_VAL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL,
-		*tres_req_str = NULL;
+		*tres_req_str = NULL, *tres_fmt_req_str = NULL;
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -1502,6 +1503,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
@@ -1918,6 +1920,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
 	tres_fmt_alloc_str = NULL;
+
+	xfree(job_ptr->tres_fmt_req_str);
+	job_ptr->tres_fmt_req_str = tres_fmt_req_str;
+	tres_fmt_req_str = NULL;
+
 	/* do this after the format string just incase for some
 	 * reason the tres_alloc_str is NULL but not the fmt_str */
 	if (job_ptr->tres_alloc_str)
@@ -2190,6 +2197,7 @@ unpack_error:
 	xfree(task_id_str);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
+	xfree(tres_fmt_req_str);
 	xfree(tres_req_str);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
@@ -3788,6 +3796,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->tres_req_cnt = xmalloc(i);
 	memcpy(job_ptr_pend->tres_req_cnt, job_ptr->tres_req_cnt, i);
 	job_ptr_pend->tres_req_str = xstrdup(job_ptr->tres_req_str);
+	job_ptr_pend->tres_fmt_req_str = xstrdup(job_ptr->tres_fmt_req_str);
 
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 
@@ -6722,6 +6731,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->tres_req_cnt = NULL;
 	job_ptr->tres_req_str = assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, false);
+	job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, 0, false);
 
 	_add_job_hash(job_ptr);
 
@@ -7197,6 +7208,7 @@ extern void job_set_req_tres(
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xfree(job_ptr->tres_req_str);
+	xfree(job_ptr->tres_fmt_req_str);
 	xfree(job_ptr->tres_req_cnt);
 
 	if (!assoc_mgr_locked)
@@ -7244,6 +7256,9 @@ extern void job_set_req_tres(
 	/* now that the array is filled lets make the string from it */
 	job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
+
+	job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
+		job_ptr->tres_req_cnt, 0, true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -7628,6 +7643,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->tres_fmt_alloc_str);
 	xfree(job_ptr->tres_req_cnt);
 	xfree(job_ptr->tres_req_str);
+	xfree(job_ptr->tres_fmt_req_str);
 	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
@@ -8131,6 +8147,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 						  protocol_version);
 		pack32(dump_job_ptr->bit_flags, buffer);
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
+		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
@@ -10071,6 +10088,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr->tres_req_cnt,
 					TRES_STR_FLAG_SIMPLE, false);
 
+			xfree(job_ptr->tres_fmt_req_str);
+			job_ptr->tres_fmt_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					0, false);
 		}
 	}
 	if (job_specs->max_cpus != NO_VAL) {
@@ -10096,6 +10118,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr->tres_req_cnt,
 					TRES_STR_FLAG_SIMPLE, false);
 
+			xfree(job_ptr->tres_fmt_req_str);
+			job_ptr->tres_fmt_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt, 0, false);
 		}
 		if (save_max_cpus) {
 			detail_ptr->max_cpus = save_max_cpus;
@@ -10565,6 +10591,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
 					TRES_STR_FLAG_SIMPLE, false);
+
+			xfree(job_ptr->tres_fmt_req_str);
+			job_ptr->tres_fmt_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt, 0, false);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -10737,6 +10768,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(job_ptr->tres_req_str);
 		job_ptr->tres_req_str =	assoc_mgr_make_tres_str_from_array(
 			job_ptr->tres_req_cnt, TRES_STR_FLAG_SIMPLE, true);
+
+		xfree(job_ptr->tres_fmt_req_str);
+		job_ptr->tres_fmt_req_str = assoc_mgr_make_tres_str_from_array(
+				job_ptr->tres_req_cnt, 0, false);
 		assoc_mgr_unlock(&locks);
 	}
 
@@ -10977,6 +11012,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				assoc_mgr_make_tres_str_from_array(
 					job_ptr->tres_req_cnt,
 					TRES_STR_FLAG_SIMPLE, true);
+
+			xfree(job_ptr->tres_fmt_req_str);
+			job_ptr->tres_fmt_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt, 0, false);
 			assoc_mgr_unlock(&locks);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (authorized || (license_list == NULL))) {

@@ -6209,6 +6209,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->bitflags, buffer);
 		safe_unpackstr_xmalloc(&job->tres_alloc_str,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->tres_req_str,
+				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
