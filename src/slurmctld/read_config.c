@@ -170,6 +170,7 @@ static int _tres_weight_item(double *weights, char *item_str)
 		return SLURM_ERROR;
 	}
 
+	errno = 0;
 	weights[tres_id] = strtod(value, NULL);
 	if(errno) {
 		error("Unable to convert %s value to double in %s",

@@ -1436,6 +1436,7 @@ static int _init_tres(void)
 		} else
 			slurmdb_destroy_tres_rec(tres_rec);
 	}
+	FREE_NULL_LIST(char_list);
 
 	if (add_list) {
 		if (acct_storage_g_add_tres(acct_db_conn, getuid(), add_list)

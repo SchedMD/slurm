@@ -1383,6 +1383,7 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->deny_accounts);
 	xfree(p->deny_qos);
 	xfree(p->alternate);
+	xfree(p->billing_weights_str);
 	xfree(p->name);
 	xfree(p->nodes);
 	xfree(ptr);

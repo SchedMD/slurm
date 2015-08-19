@@ -5088,6 +5088,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			tmp_char = _make_usage_tres_raw_str(
 				qos->usage->usage_tres_raw);
 			packstr(tmp_char, buffer);
+			xfree(tmp_char);
 			pack32(qos->usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -5253,6 +5254,8 @@ extern int load_assoc_usage(char *state_save_location)
 					usage_tres_raw[i];
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
+
+		xfree(tmp_str);
 	}
 	assoc_mgr_unlock(&locks);
 
@@ -5364,6 +5367,7 @@ extern int load_qos_usage(char *state_save_location)
 					    tmp_str);
 		}
 
+		xfree(tmp_str);
 		list_iterator_reset(itr);
 	}
 	list_iterator_destroy(itr);
