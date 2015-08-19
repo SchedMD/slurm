@@ -1465,6 +1465,7 @@ static void *_start_stage_out(void *x)
 			timeout = 5000;
 		op = "dws_post_run";
 		START_TIMER;
+		xfree(resp_msg);
 		resp_msg = bb_run_script("dws_post_run",
 					 bb_state.bb_config.get_sys_state,
 					 post_run_argv, timeout, &status);
@@ -1482,7 +1483,6 @@ static void *_start_stage_out(void *x)
 			      __func__, stage_args->job_id, status, resp_msg);
 			rc = SLURM_ERROR;
 		}
-		xfree(resp_msg);
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -1643,7 +1643,6 @@ static void *_start_teardown(void *x)
 					     bb_alloc->account,
 					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
-				bb_free_alloc_rec(&bb_state, bb_alloc);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
@@ -2773,6 +2772,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 		}
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
+	xfree(resp_msg);
+	_free_script_argv(script_argv);
 
 	/* Run "paths" function, get DataWarp environment variables */
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -3672,6 +3673,7 @@ static void *_destroy_persistent(void *x)
 	if (destroy_args->hurry)
 		script_argv[7] = xstrdup("--hurry");
 
+	START_TIMER;
 	resp_msg = bb_run_script("destroy_persistent",
 				 bb_state.bb_config.get_sys_state,
 				 script_argv, 3000, &status);
@@ -3717,8 +3719,8 @@ static void *_destroy_persistent(void *x)
 		bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
 			     bb_alloc->partition, bb_alloc->qos,
 			     bb_alloc->size, &bb_state);
-		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		(void) bb_post_persist_delete(bb_alloc, &bb_state);
+		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}

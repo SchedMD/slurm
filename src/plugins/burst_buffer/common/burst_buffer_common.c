@@ -1012,6 +1012,7 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 			xfree(bb_alloc->gres_ptr[i].name);
 		xfree(bb_alloc->gres_ptr);
 		xfree(bb_alloc->name);
+		xfree(bb_alloc->partition);
 		xfree(bb_alloc->qos);
 		xfree(bb_alloc);
 	}
