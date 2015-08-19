@@ -88,7 +88,7 @@ extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version);
 extern int bb_g_reconfig(void);
 
 /*
- * Give the total burst buffer size in MG of a given plugin name (e.g. "cray");.
+ * Give the total burst buffer size in MB of a given plugin name (e.g. "cray");.
  * If "name" is NULL, return the total space of all burst buffer plugins.
  */
 extern uint64_t bb_g_get_system_size(char *name);
