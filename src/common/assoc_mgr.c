@@ -3024,6 +3024,8 @@ extern void assoc_mgr_info_get_pack_msg(
 	slurmdb_user_rec_t user, *user_rec = NULL;
 	int is_admin=1;
 	void *object;
+	uint32_t flags = 0;
+
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
 				   READ_LOCK, READ_LOCK, NO_LOCK };
@@ -3044,6 +3046,7 @@ extern void assoc_mgr_info_get_pack_msg(
 
 		if (msg->qos_list && list_count(msg->qos_list))
 			qos_itr = list_iterator_create(msg->qos_list);
+		flags = msg->flags;
 	}
 
 	if (private_data & (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
@@ -3075,7 +3078,7 @@ extern void assoc_mgr_info_get_pack_msg(
 
 	assoc_mgr_lock(&locks);
 
-	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_ASSOC))
+	if (!(flags & ASSOC_MGR_INFO_FLAG_ASSOC))
 		goto no_assocs;
 
 	itr = list_iterator_create(assoc_mgr_assoc_list);
@@ -3154,7 +3157,7 @@ no_assocs:
 	list_iterator_destroy(itr);
 	list_flush(ret_list);
 
-	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_QOS)) {
+	if (!(flags & ASSOC_MGR_INFO_FLAG_QOS)) {
 		tmp_list = ret_list;
 		goto no_qos;
 	}
@@ -3183,7 +3186,7 @@ no_qos:
 	if (qos_itr)
 		list_flush(ret_list);
 
-	if (!(msg->flags & ASSOC_MGR_INFO_FLAG_USERS))
+	if (!(flags & ASSOC_MGR_INFO_FLAG_USERS))
 		goto no_users;
 
 	/* now filter out the users */
@@ -4837,6 +4840,8 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	info("Resetting usage for %s %s", child, child_str);
 
 	old_usage_raw = assoc->usage->usage_raw;
+	/* clang needs this memset to avoid a warning */
+	memset(old_usage_tres_raw, 0, sizeof(old_usage_tres_raw));
 	for (i=0; i<g_tres_count; i++)
 		old_usage_tres_raw[i] = assoc->usage->usage_tres_raw[i];
 	old_grp_used_wall = assoc->usage->grp_used_wall;

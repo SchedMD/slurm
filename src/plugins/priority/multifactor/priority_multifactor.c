@@ -540,7 +540,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 			       job_ptr->prio_factors->priority_tres,
 			       sizeof(double) * slurmctld_tres_cnt);
 		}
-	}
+	} else	/* clang needs this memset to avoid a warning */
+		memset(&pre_factors, 0, sizeof(priority_factors_object_t));
 
 	job_ptr->prio_factors->priority_age  *= (double)weight_age;
 	job_ptr->prio_factors->priority_fs   *= (double)weight_fs;
@@ -548,15 +549,12 @@ static uint32_t _get_priority_internal(time_t start_time,
 	job_ptr->prio_factors->priority_part *= (double)weight_part;
 	job_ptr->prio_factors->priority_qos  *= (double)weight_qos;
 
-	if (weight_tres) {
+	if (weight_tres && job_ptr->prio_factors->priority_tres) {
 		int i;
 		double *tres_factors = NULL;
 		tres_factors = job_ptr->prio_factors->priority_tres;
 
 		for (i = 0; i < slurmctld_tres_cnt; i++) {
-			if (!tres_factors[i])
-				continue;
-
 			tres_factors[i] *= weight_tres[i];
 			tmp_tres += tres_factors[i];
 		}
@@ -653,7 +651,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		     pre_factors.priority_qos, weight_qos,
 		     job_ptr->prio_factors->priority_qos);
 
-		if (post_tres_factors) {
+		if (pre_tres_factors && post_tres_factors) {
 			assoc_mgr_lock(&locks);
 			for(i = 0; i < slurmctld_tres_cnt; i++) {
 				if (!post_tres_factors[i])
@@ -820,7 +818,7 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 }
 
 
-static void _handle_qos_tres_run_secs(uint64_t *tres_run_decay,
+static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 				      uint64_t *tres_run_delta,
 				      uint32_t job_id,
 				      slurmdb_qos_rec_t *qos)
@@ -864,7 +862,7 @@ static void _handle_qos_tres_run_secs(uint64_t *tres_run_decay,
 	}
 }
 
-static void _handle_assoc_tres_run_secs(uint64_t *tres_run_decay,
+static void _handle_assoc_tres_run_secs(long double *tres_run_decay,
 					uint64_t *tres_run_delta,
 					uint32_t job_id,
 					slurmdb_assoc_rec_t *assoc)
@@ -993,7 +991,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	slurmdb_assoc_rec_t *assoc;
 	double run_delta = 0.0, run_decay = 0.0, real_decay = 0.0;
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
-	uint64_t tres_run_decay[slurmctld_tres_cnt];
+	long double tres_run_decay[slurmctld_tres_cnt];
 	uint64_t tres_time_delta = 0;
 	int i;
 	uint64_t job_time_limit_ends = 0;
@@ -1077,11 +1075,14 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	}
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
-
+	/* clang needs these memset to avoid a warning */
+	memset(tres_run_decay, 0, sizeof(tres_run_decay));
+	memset(tres_run_delta, 0, sizeof(tres_run_delta));
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		tres_run_delta[i] = tres_time_delta *
 			job_ptr->tres_alloc_cnt[i];
-		tres_run_decay[i] = run_decay * job_ptr->tres_alloc_cnt[i];
+		tres_run_decay[i] = (long double)run_decay *
+			(long double)job_ptr->tres_alloc_cnt[i];
 	}
 
 	assoc_mgr_lock(&locks);

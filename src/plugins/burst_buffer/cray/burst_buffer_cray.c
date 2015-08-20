@@ -2093,8 +2093,11 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					bb_name = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_name, ' ')))
 						sub_tok[0] = '\0';
-				} else
+				} else {
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					break;
+				}
+
 				if ((sub_tok = strstr(tok, "hurry"))) {
 					hurry = true;
 					sub_tok[0] = '\0';
