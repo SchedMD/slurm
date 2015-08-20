@@ -969,12 +969,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		int seconds = 0;
 		int tot_time = 0;
 
-		loc_c_usage = NULL;
-		c_usage     = NULL;
-		r_usage     = NULL;
-		a_usage     = NULL;
-		w_usage     = NULL;
-
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn,
 				 "%s curr hour is now %ld-%ld",
@@ -1542,6 +1536,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		_destroy_local_id_usage(a_usage);
 		_destroy_local_id_usage(w_usage);
 		_destroy_local_resv_usage(r_usage);
+		c_usage     = NULL;
+		r_usage     = NULL;
+		a_usage     = NULL;
+		w_usage     = NULL;
+
 		list_flush(assoc_usage_list);
 		list_flush(cluster_down_list);
 		list_flush(wckey_usage_list);
