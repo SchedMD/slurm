@@ -736,12 +736,11 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + 100;
 			update_cnt++;
 			continue;
-		} else if (! val) {
+		} else if (!val && argv[i + 1]) {
 			tag = argv[i];
-			val = argv[i + 1];
-			++i;
-			if (val)
-				vallen = strlen(val);
+			taglen = strlen(tag);
+			val = argv[++i];
+			vallen = strlen(val);
 		} else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);

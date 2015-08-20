@@ -177,7 +177,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	int i;
-	uint64_t unused_tres_run_secs[slurmctld_tres_cnt];
+	uint64_t *unused_tres_run_secs;
 	assoc_mgr_lock_t locks = { NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -185,6 +185,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 	if (job_ptr->end_time >= job_ptr->start_time + time_limit_secs)
 		return;
 
+	unused_tres_run_secs = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		unused_tres_run_secs[i] =
 			(uint64_t)(job_ptr->start_time +
@@ -241,6 +242,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
 	assoc_mgr_unlock(&locks);
+	xfree(unused_tres_run_secs);
 
 	return;
 }

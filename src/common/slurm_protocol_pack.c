@@ -13854,7 +13854,6 @@ _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 			packstr(tmp_info, buffer);
 		list_iterator_destroy(itr);
 	}
-	count = NO_VAL;
 
 	pack32(msg->flags, buffer);
 

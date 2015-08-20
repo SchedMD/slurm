@@ -1665,9 +1665,13 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   qos_out_ptr->max_tres_pn_ctld,
 					   job_ptr->limit_set.tres,
 					   1, 1)) {
+		uint64_t req_per_node;
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
+		req_per_node = tres_req_cnt[tres_pos];
+		if (tres_req_cnt[TRES_ARRAY_NODE] > 1)
+			req_per_node /= tres_req_cnt[TRES_ARRAY_NODE];
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) per node "
 		       "request %"PRIu64" exceeds "
@@ -1675,7 +1679,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		       job_ptr->job_id,
 		       qos_ptr->name,
 		       assoc_mgr_tres_name_array[tres_pos],
-		       tres_req_cnt[tres_pos] / tres_req_cnt[TRES_ARRAY_NODE],
+		       req_per_node,
 		       qos_ptr->max_tres_pn_ctld[tres_pos]);
 		rc = false;
 		goto end_it;
@@ -2483,11 +2487,6 @@ extern bool acct_policy_job_runnable_post_select(
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
-
-	/* Sanity check, you have to have at least 1 node, this
-	 * really is here to avoid a clang error. */
-	if (!tres_req_cnt[TRES_ARRAY_NODE])
-		tres_req_cnt[TRES_ARRAY_NODE] = 1;
 
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
