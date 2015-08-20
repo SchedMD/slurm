@@ -108,6 +108,16 @@ extern void srun_allocate (uint32_t job_id)
 			msg_arg->cpu_freq_min = job_ptr->details->cpu_freq_min;
 			msg_arg->cpu_freq_max = job_ptr->details->cpu_freq_max;
 			msg_arg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
+			if (job_ptr->details->env_cnt) {
+				msg_arg->env_size = job_ptr->details->env_cnt;
+				msg_arg->environment = xmalloc(
+					sizeof(char *) * msg_arg->env_size);
+				for (i = 0; i < msg_arg->env_size; i++) {
+					msg_arg->environment[i] =
+						xstrdup(job_ptr->details->
+							env_sup[i]);
+				}
+			}
 		}
 		memcpy(msg_arg->cpus_per_node,
 		       job_resrcs_ptr->cpu_array_value,
@@ -121,15 +131,6 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->select_jobinfo = select_g_select_jobinfo_copy(
 				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
-		if (job_ptr->details->env_cnt) {
-			msg_arg->env_size = job_ptr->details->env_cnt;
-			msg_arg->environment = xmalloc(sizeof(char *) *
-						       msg_arg->env_size);
-			for (i = 0; i < msg_arg->env_size; i++) {
-				msg_arg->environment[i] =
-					xstrdup(job_ptr->details->env_sup[i]);
-			}
-		}
 
 		_srun_agent_launch(addr, job_ptr->alloc_node,
 				   RESPONSE_RESOURCE_ALLOCATION, msg_arg,

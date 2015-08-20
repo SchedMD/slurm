@@ -1362,8 +1362,8 @@ static int _init_tres(void)
 	slurm_addto_char_list(char_list, temp_char);
 	xfree(temp_char);
 
+	memset(&update_object, 0, sizeof(slurmdb_update_object_t));
 	if (!association_based_accounting) {
-		memset(&update_object, 0, sizeof(slurmdb_update_object_t));
 		update_object.type = SLURMDB_ADD_TRES;
 		update_object.objects = list_create(slurmdb_destroy_tres_rec);
 	}

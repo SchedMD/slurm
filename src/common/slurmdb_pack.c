@@ -3769,7 +3769,6 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t rpc_version,
 			}
 			list_iterator_destroy(itr);
 		}
-		count = NO_VAL;
 
 		pack32(NO_VAL, buffer);
 

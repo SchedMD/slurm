@@ -9590,7 +9590,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->tres_req_cnt[TRES_ARRAY_CPU],
 		job_specs->min_nodes != NO_VAL ?
 		job_specs->min_nodes :
-		detail_ptr->min_nodes);
+		detail_ptr ? detail_ptr->min_nodes : 1);
 
 	if (job_specs->gres) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
@@ -10281,6 +10281,19 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		     save_min_nodes, detail_ptr->min_nodes, job_ptr->job_id);
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
+		job_ptr->tres_req_cnt[TRES_ARRAY_NODE] =
+			(uint64_t)detail_ptr->min_nodes;
+		xfree(job_ptr->tres_req_str);
+		job_ptr->tres_req_str =
+			assoc_mgr_make_tres_str_from_array(
+				job_ptr->tres_req_cnt,
+				TRES_STR_FLAG_SIMPLE, false);
+
+		xfree(job_ptr->tres_fmt_req_str);
+		job_ptr->tres_fmt_req_str =
+			assoc_mgr_make_tres_str_from_array(
+				job_ptr->tres_req_cnt,
+				0, false);
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
