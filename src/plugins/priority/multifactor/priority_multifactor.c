@@ -653,16 +653,18 @@ static uint32_t _get_priority_internal(time_t start_time,
 		     pre_factors.priority_qos, weight_qos,
 		     job_ptr->prio_factors->priority_qos);
 
-		assoc_mgr_lock(&locks);
-		for(i = 0; i < slurmctld_tres_cnt; i++) {
-			if (!post_tres_factors || !post_tres_factors[i])
-				continue;
-			info("Weighted TRES:%s is %f * %.2f = %.2f",
-			     assoc_mgr_tres_name_array[i],
-			     pre_tres_factors[i], weight_tres[i],
-			     post_tres_factors[i]);
+		if (post_tres_factors) {
+			assoc_mgr_lock(&locks);
+			for(i = 0; i < slurmctld_tres_cnt; i++) {
+				if (!post_tres_factors[i])
+					continue;
+				info("Weighted TRES:%s is %f * %.2f = %.2f",
+				     assoc_mgr_tres_name_array[i],
+				     pre_tres_factors[i], weight_tres[i],
+				     post_tres_factors[i]);
+			}
+			assoc_mgr_unlock(&locks);
 		}
-		assoc_mgr_unlock(&locks);
 
 		info("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f + %2.f "
 		     "- %d = %.2f",
