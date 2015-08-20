@@ -1208,9 +1208,9 @@ proc archive_load { file } {
 }
 
 #
-# Use sacctmgr to create a res
+# Use sacctmgr to create a resource
 #
-proc add_res {name res_limits} {
+proc add_resource {name res_limits} {
 	global sacctmgr timeout
 
 	set exit_code 0
@@ -1230,7 +1230,7 @@ proc add_res {name res_limits} {
 		set command "$command $option=$res_req($option)"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add res $command]
+	set my_pid [eval spawn $sacctmgr -i add resource $command]
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1708,7 +1708,7 @@ proc check_qos_limits { name qos_req } {
 
 ###############################################################
 #
-# Proc: check_res_limits
+# Proc: check_resource_limits
 #
 # Purpose: Verify that the reservation limits are correct
 #
@@ -1716,7 +1716,7 @@ proc check_qos_limits { name qos_req } {
 #
 #
 ###############################################################
-proc check_res_limits { name res_limits } {
+proc check_resource_limits { name res_limits } {
 	global sacctmgr
 
 	set command "format=name"
@@ -1739,7 +1739,7 @@ proc check_res_limits { name res_limits } {
 
 	log_user 0
 	set match 0
-	spawn $sacctmgr -p -n list res $name $command
+	spawn $sacctmgr -p -n list resource $name $command
 	expect {
 		-re "$values" {
 			set match 1
@@ -1766,15 +1766,15 @@ proc check_res_limits { name res_limits } {
 
 ###############################################################
 #
-# Proc: mod_res
+# Proc: mod_resource
 #
-# Purpose: Modify existing reservation limits
+# Purpose: Modify existing resources limits
 #
 # Returns: 0 if successful, 1 otherwise
 #
 #
 ###############################################################
-proc mod_res {name mod_limits} {
+proc mod_resource {name mod_limits} {
 
 	global sacctmgr
 	set commands ""
@@ -1795,7 +1795,7 @@ proc mod_res {name mod_limits} {
 
 	log_user 0
 	set match 0
-	spawn $sacctmgr -i mod res where name=$name set $commands
+	spawn $sacctmgr -i mod resource where name=$name set $commands
 	expect {
 		-re "Modified server resources ..." {
 			set match 1

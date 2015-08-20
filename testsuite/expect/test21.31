@@ -136,21 +136,21 @@ set resource1(cluster) "$cluster,$tc2"
 #
 # add a global resource designating multiple clusters
 #
-add_res $sr1 [array get resource1]
+add_resource $sr1 [array get resource1]
 
 #
 # Use sacctmgr list to verify the test global resource fields
 #
-if {[check_res_limits $sr1 [array get resource1_chck]] == 1} {
+if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 	send_user "\nFAILURE: list resource output is incorrect. \n"
 	incr exit_code 1
 }
 
 #
-# use scontrol show lic to verify the cluster license was created
+# use scontrol show license to verify the cluster license was created
 #
 set matches 0
-set my_pid [eval spawn $scontrol show lic]
+set my_pid [eval spawn $scontrol show license]
 expect {
 	-re "LicenseName=($sr1@$resource1(Server))" {
 		incr matches
@@ -178,18 +178,18 @@ if {$matches != 2} {
 #
 # modify resources
 #
-if {[mod_res $sr1 [array get resource1_chng]] == 1} {
+if {[mod_resource $sr1 [array get resource1_chng]] == 1} {
 	send_user "\nFAILURE: Resource modify not working ($matches != 1).\n"
 	incr exit_code 1
 }
 
 #
-# Use sacctmgr to list the test res modifications
+# Use sacctmgr to list the test resource modifications
 #
-# Use sacctmgr list to verify the test res fields
+# Use sacctmgr list to verify the test resource fields
 #
 set resource1_chck(count) $resource1_chng(count)
-if {[check_res_limits $sr1 [array get resource1_chck]] == 1} {
+if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 	send_user "\nFAILURE: list resource output is incorrect.\n"
 	incr exit_code 1
 }
@@ -198,7 +198,7 @@ if {[check_res_limits $sr1 [array get resource1_chck]] == 1} {
 # use scontrol to verify the modified cluster license
 #
 set matches 0
-set my_pid [eval spawn $scontrol show lic $sr1@$resource1(Server)]
+set my_pid [eval spawn $scontrol show license $sr1@$resource1(Server)]
 expect {
 	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches
@@ -232,7 +232,7 @@ incr exit_code [remove_res $sr1]
 # use scontrol to verify cluster license was removed
 #
 set matches 0
-set my_pid [eval spawn $scontrol show lic]
+set my_pid [eval spawn $scontrol show license]
 expect {
 	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches
@@ -254,19 +254,19 @@ if {$matches != 0} {
 #
 # add multiple global resources in a single call
 #
-add_res "$sr2,$sr3" [array get resource2]
+add_resource "$sr2,$sr3" [array get resource2]
 
 #
 # Use sacctmgr list to verify both global resources were added
 #
 # Check resource 2
-if {[check_res_limits $sr2 [array get resource2_chck]] == 1} {
+if {[check_resource_limits $sr2 [array get resource2_chck]] == 1} {
 	send_user "\nFAILURE: list resource output is incorrect.\n"
 	incr exit_code 1
 }
 
 # Check resource 3
-if {[check_res_limits $sr3 [array get resource2_chck]] == 1} {
+if {[check_resource_limits $sr3 [array get resource2_chck]] == 1} {
 	send_user "\nFAILURE: list resource output is incorrect.\n"
 	incr exit_code 1
 }
