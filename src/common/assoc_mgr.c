@@ -764,7 +764,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 			      "itself as it's parent",
 			      assoc->id);
 		}
-	} else {
+	} else if (assoc_mgr_root_assoc != assoc) {
 		slurmdb_assoc_rec_t *last_root = assoc_mgr_root_assoc;
 
 		assoc_mgr_root_assoc = assoc;
