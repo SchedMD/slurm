@@ -1965,7 +1965,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		job_ptr->node_cnt_wag = selected_node_cnt;
 	}
 
-	memset(tres_req_cnt, 0, sizeof(tres_req_cnt));
+	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	tres_req_cnt[TRES_ARRAY_CPU] =
 		(uint64_t)(job_ptr->total_cpus ?
 			   job_ptr->total_cpus : job_ptr->details->min_cpus);
@@ -1979,6 +1979,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			      selected_node_cnt,
 			      tres_req_cnt,
 			      false);
+
 	if (!test_only && (error_code == SLURM_SUCCESS)
 	    && (selected_node_cnt != NO_VAL)
 	    && !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt)) {
