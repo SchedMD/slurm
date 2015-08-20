@@ -4312,7 +4312,7 @@ extern int nodelist_find(const char *nodelist, const char *name)
 }
 
 extern void convert_num_unit2(double num, char *buf, int buf_size,
-			      int orig_type, int divisor, bool exact)
+			      int orig_type, int divisor, uint32_t flags)
 {
 	char *unit = "\0KMGTP?";
 	uint64_t i;
@@ -4320,7 +4320,7 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 	if ((int64_t)num == 0) {
 		snprintf(buf, buf_size, "0");
 		return;
-	} else if (exact) {
+	} else if (flags & CONVERT_NUM_UNIT_EXACT) {
 		i = (uint64_t)num % (divisor / 2);
 
 		if (i > 0) {
@@ -4330,9 +4330,11 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 		}
 	}
 
-	while (num > divisor) {
-		num /= divisor;
-		orig_type++;
+	if (!(flags & CONVERT_NUM_UNIT_NO)) {
+		while (num > divisor) {
+			num /= divisor;
+			orig_type++;
+		}
 	}
 
 	if (orig_type < UNIT_NONE || orig_type > UNIT_PETA)
@@ -4348,9 +4350,10 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 		snprintf(buf, buf_size, "%.2f%c", num, unit[orig_type]);
 }
 
-extern void convert_num_unit(double num, char *buf, int buf_size, int orig_type)
+extern void convert_num_unit(double num, char *buf, int buf_size,
+			     int orig_type, uint32_t flags)
 {
-	convert_num_unit2(num, buf, buf_size, orig_type, 1024, true);
+	convert_num_unit2(num, buf, buf_size, orig_type, 1024, flags);
 }
 
 extern int revert_num_unit(const char *buf)

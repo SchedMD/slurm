@@ -1228,7 +1228,7 @@ cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq)
 			buf[0] = '\0';
 	} else
 		convert_num_unit2((double)cpu_freq, buf, buf_size,
-				  UNIT_KILO, 1000, false);
+				  UNIT_KILO, 1000, 0);
 }
 
 /*

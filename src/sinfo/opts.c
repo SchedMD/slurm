@@ -65,6 +65,7 @@
 #define OPT_LONG_HELP   0x100
 #define OPT_LONG_USAGE  0x101
 #define OPT_LONG_HIDE	0x102
+#define OPT_LONG_NOCONVERT 0x104
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -107,6 +108,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"cluster",   required_argument, 0, 'M'},
 		{"clusters",  required_argument, 0, 'M'},
 		{"nodes",     required_argument, 0, 'n'},
+                {"noconvert", no_argument,       0, OPT_LONG_NOCONVERT},
 		{"Node",      no_argument,       0, 'N'},
 		{"format",    required_argument, 0, 'o'},
 		{"Format",    required_argument, 0, 'O'},
@@ -124,6 +126,8 @@ extern void parse_command_line(int argc, char *argv[])
 		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{NULL,        0,                 0, 0}
 	};
+
+	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 
 	if (getenv("SINFO_ALL")) {
 		env_a_set = true;
@@ -205,6 +209,9 @@ extern void parse_command_line(int argc, char *argv[])
 				exit(1);
 			}
 			working_cluster_rec = list_peek(params.clusters);
+			break;
+		case OPT_LONG_NOCONVERT:
+			params.convert_flags |= CONVERT_NUM_UNIT_NO;
 			break;
 		case (int) 'n':
 			xfree(params.nodes);
@@ -1278,6 +1285,8 @@ Usage: sinfo [OPTIONS]\n\
   -b, --bg                   show bgblocks (on Blue Gene systems)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
+  --noconvert                Fields such as MaxRSS, ReqMem and others will\n\
+                             not be converted from their orignal unit types.\n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\

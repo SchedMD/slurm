@@ -242,8 +242,10 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 {
 	char tmp_min[8];
 	char tmp_max[8];
-	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE,
+			 params.convert_flags);
+	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE,
+			 params.convert_flags);
 
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -268,9 +270,9 @@ _build_min_max_32_string(char *buffer, int buf_size,
 
 	if (use_suffix) {
 		convert_num_unit((float)min, tmp_min, sizeof(tmp_min),
-				 UNIT_NONE);
+				 UNIT_NONE, params.convert_flags);
 		convert_num_unit((float)max, tmp_max, sizeof(tmp_max),
-				 UNIT_NONE);
+				 UNIT_NONE, params.convert_flags);
 	} else {
 		snprintf(tmp_min, sizeof(tmp_min), "%u", min);
 		snprintf(tmp_max, sizeof(tmp_max), "%u", max);
@@ -476,13 +478,17 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->cpus_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE);
+					 tmpa, sizeof(tmpa), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->cpus_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE);
+					 tmpi, sizeof(tmpi), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->cpus_other,
-					 tmpo, sizeof(tmpo), UNIT_NONE);
+					 tmpo, sizeof(tmpo), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->cpus_total,
-					 tmpt, sizeof(tmpt), UNIT_NONE);
+					 tmpt, sizeof(tmpt), UNIT_NONE,
+					 params.convert_flags);
 		} else {
 			snprintf(tmpa, sizeof(tmpa), "%u",
 				 sinfo_data->cpus_alloc);
@@ -764,7 +770,8 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)sinfo_data->nodes_total,
-					 tmp, sizeof(tmp), UNIT_NONE);
+					 tmp, sizeof(tmp), UNIT_NONE,
+					 params.convert_flags);
 		else
 			snprintf(tmp, sizeof(tmp), "%d",
 				 sinfo_data->nodes_total);
@@ -787,9 +794,11 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE);
+					 tmpa, sizeof(tmpa), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->nodes_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE);
+					 tmpi, sizeof(tmpi), UNIT_NONE,
+					 params.convert_flags);
 		} else {
 			snprintf(tmpa, sizeof(tmpa), "%d",
 				 sinfo_data->nodes_alloc);
@@ -818,13 +827,17 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
-					 tmpa, sizeof(tmpa), UNIT_NONE);
+					 tmpa, sizeof(tmpa), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->nodes_idle,
-					 tmpi, sizeof(tmpi), UNIT_NONE);
+					 tmpi, sizeof(tmpi), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->nodes_other,
-					 tmpo, sizeof(tmpo), UNIT_NONE);
+					 tmpo, sizeof(tmpo), UNIT_NONE,
+					 params.convert_flags);
 			convert_num_unit((float)sinfo_data->nodes_total,
-					 tmpt, sizeof(tmpt), UNIT_NONE);
+					 tmpt, sizeof(tmpt), UNIT_NONE,
+					 params.convert_flags);
 		} else {
 			snprintf(tmpa, sizeof(tmpa), "%u",
 				 sinfo_data->nodes_alloc);

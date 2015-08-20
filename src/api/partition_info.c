@@ -256,7 +256,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else {
 		if (cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)part_ptr->max_nodes,
-					 tmp1, sizeof(tmp1), UNIT_NONE);
+					 tmp1, sizeof(tmp1), UNIT_NONE,
+					 CONVERT_NUM_UNIT_EXACT);
 		else
 			snprintf(tmp1, sizeof(tmp1),"%u", part_ptr->max_nodes);
 
@@ -274,7 +275,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrcat(out, tmp_line);
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
-				 UNIT_NONE);
+				 UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 	else
 		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
 	sprintf(tmp_line, " MinNodes=%s", tmp1);
@@ -366,7 +368,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_cpus, tmp1,
-				 sizeof(tmp1), UNIT_NONE);
+				 sizeof(tmp1), UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 	else
 		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->total_cpus);
 
@@ -375,7 +378,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp2,
-				 sizeof(tmp2), UNIT_NONE);
+				 sizeof(tmp2), UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 	else
 		snprintf(tmp2, sizeof(tmp2), "%u", part_ptr->total_nodes);
 

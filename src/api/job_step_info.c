@@ -237,11 +237,12 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &nodes);
 		convert_num_unit((float)nodes, tmp_node_cnt,
-				 sizeof(tmp_node_cnt), UNIT_NONE);
+				 sizeof(tmp_node_cnt), UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 	} else {
 		convert_num_unit((float)_nodes_in_list(job_step_ptr->nodes),
 				 tmp_node_cnt, sizeof(tmp_node_cnt),
-				 UNIT_NONE);
+				 UNIT_NONE, CONVERT_NUM_UNIT_EXACT);
 	}
 
 	snprintf(tmp_line, sizeof(tmp_line),

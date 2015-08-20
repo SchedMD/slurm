@@ -545,6 +545,8 @@ void parse_command_line(int argc, char **argv)
 	params.opt_uid = getuid();
 	params.opt_gid = getgid();
 
+	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
+
 	verbosity         = 0;
 	log_init("sacct", opts, SYSLOG_FACILITY_DAEMON, NULL);
 	opterr = 1;		/* Let getopt report problems to the user */
@@ -666,7 +668,7 @@ void parse_command_line(int argc, char **argv)
 			long_output = true;
 			break;
 		case OPT_LONG_NOCONVERT:
-			params.no_convert = true;
+			params.convert_flags |= CONVERT_NUM_UNIT_NO;
 			break;
 		case 'n':
 			print_fields_have_header = 0;

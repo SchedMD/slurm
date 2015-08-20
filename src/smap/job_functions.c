@@ -309,7 +309,8 @@ static int _print_text_job(job_info_t * job_ptr)
 
 	if (params.cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)node_cnt, tmp_cnt,
-				 sizeof(tmp_cnt), UNIT_NONE);
+				 sizeof(tmp_cnt), UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 	else
 		snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
 

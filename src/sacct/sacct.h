@@ -174,6 +174,7 @@ typedef enum {
 } sacct_print_types_t;
 
 typedef struct {
+	uint32_t convert_flags;
 	slurmdb_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
@@ -184,7 +185,6 @@ typedef struct {
 	int opt_noheader;	/* can only be cleared */
 	int opt_allocs;		/* --total */
 	int opt_uid;		/* running persons uid */
-	bool no_convert;        /* don't convert units from original types */
 } sacct_parameters_t;
 
 extern print_field_t fields[];

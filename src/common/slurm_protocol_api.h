@@ -69,6 +69,9 @@
 #define MIN_NOALLOC_JOBID ((uint32_t) 0xffff0000)
 #define MAX_NOALLOC_JOBID ((uint32_t) 0xfffffffd)
 
+#define CONVERT_NUM_UNIT_EXACT 0x00000001
+#define CONVERT_NUM_UNIT_NO    0x00000002
+
 enum controller_id {
 	PRIMARY_CONTROLLER = 1,
 	SECONDARY_CONTROLLER = 2
@@ -1210,9 +1213,9 @@ extern void slurm_free_msg(slurm_msg_t * msg);
 extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
 extern void convert_num_unit2(double num, char *buf, int buf_size,
-			      int orig_type, int divisor, bool exact);
+			      int orig_type, int divisor, uint32_t flags);
 extern void convert_num_unit(double num, char *buf, int buf_size,
-			     int orig_type);
+			     int orig_type, uint32_t flags);
 extern int revert_num_unit(const char *buf);
 extern void parse_int_to_array(int in, int *out);
 

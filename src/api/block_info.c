@@ -125,10 +125,11 @@ char *slurm_sprint_block_info(
 
 	/****** Line 1 ******/
 	convert_num_unit((float)block_ptr->cnode_cnt, tmp1, sizeof(tmp1),
-			 UNIT_NONE);
+			 UNIT_NONE, CONVERT_NUM_UNIT_EXACT);
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
 		convert_num_unit((float)block_ptr->cnode_err_cnt, tmp2,
-				 sizeof(tmp2), UNIT_NONE);
+				 sizeof(tmp2), UNIT_NONE,
+				 CONVERT_NUM_UNIT_EXACT);
 		tmp_char = xstrdup_printf("%s/%s", tmp1, tmp2);
 	} else
 		tmp_char = tmp1;
