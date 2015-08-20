@@ -3344,7 +3344,7 @@ extern int slurmdb_find_tres_in_list_by_type(void *x, void *key)
 	bool found = false;
 
 	while (type[end]) {
-		if (type[end] == ':') {
+		if (type[end] == '/') {
 			found = true;
 			break;
 		}
