@@ -109,25 +109,25 @@ static void _calc_part_tres(struct part_record *part_ptr)
 	part_ptr->tres_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
 	tres_cnt = part_ptr->tres_cnt;
 
-	tres_cnt[TRES_ARRAY_NODE] = part_ptr->total_nodes;
-
 	/* sum up nodes' tres in the partition. */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(part_ptr->node_bitmap, i))
 			continue;
 		for (j = 0; j < slurmctld_tres_cnt; j++)
-			tres_cnt[j]+= node_ptr->tres_cnt[j];
+			tres_cnt[j] += node_ptr->tres_cnt[j];
 	}
+
+	/* Just to be safe, lets do this after the node TRES ;) */
+	tres_cnt[TRES_ARRAY_NODE] = part_ptr->total_nodes;
 
 	/* grab the global tres and stick in partiton for easy reference. */
 	for(i = 0; i < slurmctld_tres_cnt; i++) {
 		slurmdb_tres_rec_t *tres_rec = assoc_mgr_tres_array[i];
 
-		if (!strcasecmp(tres_rec->type, "bb"))
-			tres_cnt[i] = bb_g_get_system_size(tres_rec->name);
-		else if (!strcasecmp(tres_rec->type, "license"))
-			tres_cnt[i] = get_total_license_cnt(tres_rec->name);
+		if (!strcasecmp(tres_rec->type, "bb") ||
+		    !strcasecmp(tres_rec->type, "license"))
+			tres_cnt[i] = tres_rec->count;
 	}
 
 	part_ptr->tres_fmt_str =
