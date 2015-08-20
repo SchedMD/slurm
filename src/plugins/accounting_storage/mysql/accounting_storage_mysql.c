@@ -1822,7 +1822,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	    || (table == res_table) || (table == clus_res_table))
 		cluster_centric = false;
 
-	if (vals[1])
+	if (vals && vals[1])
 		tmp_vals = slurm_add_slash_to_quotes(vals+2);
 
 	if (cluster_centric) {
