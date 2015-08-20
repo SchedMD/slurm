@@ -1208,6 +1208,10 @@ extern bb_job_t *bb_job_find(bb_state_t *state_ptr, uint32_t job_id)
 	bb_job_t *bb_job;
 
 	xassert(state_ptr);
+
+	if (!state_ptr->bb_jhash)
+		return NULL;
+
 	bb_job = state_ptr->bb_jhash[job_id % BB_HASH_SIZE];
 	while (bb_job) {
 		if (bb_job->job_id == job_id) {
