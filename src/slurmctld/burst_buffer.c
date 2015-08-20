@@ -315,11 +315,17 @@ extern int bb_g_reconfig(void)
 extern uint64_t bb_g_get_system_size(char *name)
 {
 	uint64_t i, size = 0;
+	int offset = 0;
 
 	(void) bb_g_init();
+
+	if (strncmp(name, "burst_buffer/", 13))
+		offset = 13;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		if (g_context[i] && !xstrcmp(g_context[i]->type ,name)) {
+
+		if (g_context[i] && !xstrcmp(g_context[i]->type+offset, name)) {
 			size = (*(ops[i].get_system_size))();
 			break;
 		}
