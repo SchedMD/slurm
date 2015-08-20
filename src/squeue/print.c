@@ -951,7 +951,8 @@ int _print_job_num_cpus(job_info_t * job, int width, bool right, char* suffix)
 	else {
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)job->num_cpus, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
+					 sizeof(tmp_char), UNIT_NONE,
+					 params.convert_flags);
 		else
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "%u", job->num_cpus);
@@ -981,7 +982,8 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 
 		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)node_cnt, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
+					 sizeof(tmp_char), UNIT_NONE,
+					 params.convert_flags);
 		else
 			snprintf(tmp_char, sizeof(tmp_char), "%d", node_cnt);
 
@@ -1004,17 +1006,20 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 			strcpy(sockets, "*");
 		else
 			convert_num_unit((float)job->sockets_per_node, sockets,
-					sizeof(sockets), UNIT_NONE);
+					sizeof(sockets), UNIT_NONE,
+					params.convert_flags);
 		if (job->cores_per_socket == (uint16_t) NO_VAL)
 			strcpy(cores, "*");
 		else
 			convert_num_unit((float)job->cores_per_socket, cores,
-					sizeof(cores), UNIT_NONE);
+					sizeof(cores), UNIT_NONE,
+					params.convert_flags);
 		if (job->threads_per_core == (uint16_t) NO_VAL)
 			strcpy(threads, "*");
 		else
 			convert_num_unit((float)job->threads_per_core, threads,
-					sizeof(threads), UNIT_NONE);
+					sizeof(threads), UNIT_NONE,
+					params.convert_flags);
 		sct[0] = '\0';
 		strcat(sct, sockets);
 		strcat(sct, ":");
@@ -1081,7 +1086,8 @@ int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,
 		_print_str("MIN_CPUS", width, right_justify, true);
 	else {
 		convert_num_unit((float)job->pn_min_cpus, tmp_char,
-				 sizeof(tmp_char), UNIT_NONE);
+				 sizeof(tmp_char), UNIT_NONE,
+				 params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -1101,7 +1107,8 @@ int _print_sockets(job_info_t * job, int width, bool right_justify,
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->sockets_per_node, tmp_char,
-				 sizeof(tmp_char), UNIT_NONE);
+				 sizeof(tmp_char), UNIT_NONE,
+				 params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -1121,7 +1128,8 @@ int _print_cores(job_info_t * job, int width, bool right_justify,
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->cores_per_socket, tmp_char,
-					sizeof(tmp_char), UNIT_NONE);
+					sizeof(tmp_char), UNIT_NONE,
+					params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -1141,7 +1149,8 @@ int _print_threads(job_info_t * job, int width, bool right_justify,
 			strcpy(tmp_char, "*");
 		else
 			convert_num_unit((float)job->threads_per_core, tmp_char,
-					sizeof(tmp_char), UNIT_NONE);
+					sizeof(tmp_char), UNIT_NONE,
+					params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -1161,7 +1170,8 @@ int _print_pn_min_memory(job_info_t * job, int width, bool right_justify,
 	    	tmp_char[0] = '\0';
 		job->pn_min_memory &= (~MEM_PER_CPU);
 		convert_num_unit((float)job->pn_min_memory, min_mem,
-				 sizeof(min_mem), UNIT_MEGA);
+				 sizeof(min_mem), UNIT_MEGA,
+				 params.convert_flags);
 		strcat(tmp_char, min_mem);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -1181,7 +1191,8 @@ _print_pn_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
 		convert_num_unit((float)job->pn_min_tmp_disk,
-				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
+				 tmp_char, sizeof(tmp_char), UNIT_MEGA,
+				 params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 

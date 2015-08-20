@@ -536,7 +536,8 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				   resv_ptr->burst_buffer);
 
 	convert_num_unit((float)resv_ptr->core_cnt,
-			 time_buf, sizeof(time_buf), UNIT_NONE);
+			 time_buf, sizeof(time_buf), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
 						 SORTID_CORE_CNT),
@@ -568,7 +569,8 @@ static void _layout_resv_record(GtkTreeView *treeview,
 
 	/* NOTE: node_cnt in reservation info from slurmctld ONE number */
 	convert_num_unit((float)resv_ptr->node_cnt,
-			 time_buf, sizeof(time_buf), UNIT_NONE);
+			 time_buf, sizeof(time_buf), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
 						 SORTID_NODE_CNT),
@@ -643,10 +645,12 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	tmp_flags = reservation_flags_string(resv_ptr->flags);
 
 	convert_num_unit((float)resv_ptr->core_cnt,
-			 tmp_cores, sizeof(tmp_cores), UNIT_NONE);
+			 tmp_cores, sizeof(tmp_cores), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	convert_num_unit((float)resv_ptr->node_cnt,
-			 tmp_nodes, sizeof(tmp_nodes), UNIT_NONE);
+			 tmp_nodes, sizeof(tmp_nodes), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_start,
 			    sizeof(tmp_start));

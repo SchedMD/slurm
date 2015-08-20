@@ -333,8 +333,10 @@ static int _build_min_max_32_string(char *buffer, int buf_size,
 {
 	char tmp_min[8];
 	char tmp_max[8];
-	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE,
+			 working_sview_config.convert_flags);
+	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -928,11 +930,14 @@ static void _layout_part_record(GtkTreeView *treeview,
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
 
 	convert_num_unit((float)sview_part_info->sub_part_total.node_alloc_cnt,
-			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
+			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	convert_num_unit((float)sview_part_info->sub_part_total.node_idle_cnt,
-			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
+			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	convert_num_unit((float)sview_part_info->sub_part_total.node_error_cnt,
-			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
+			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	snprintf(ind_cnt, sizeof(ind_cnt), "%s/%s/%s",
 		 tmp_cnt, tmp_cnt1, tmp_cnt2);
 
@@ -966,7 +971,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_CPUS:
 			convert_num_unit((float)part_ptr->total_cpus,
 					 tmp_cnt, sizeof(tmp_cnt),
-					 UNIT_NONE);
+					 UNIT_NONE,
+					 working_sview_config.convert_flags);
 			temp_char = tmp_cnt;
 			break;
 		case SORTID_DEFAULT:
@@ -1036,7 +1042,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			convert_num_unit((float)sview_part_info->
 					 sub_part_total.mem_total,
 					 tmp_cnt, sizeof(tmp_cnt),
-					 UNIT_MEGA);
+					 UNIT_MEGA,
+					 working_sview_config.convert_flags);
 			temp_char = tmp_cnt;
 			break;
 		case SORTID_NODELIST:
@@ -1049,7 +1056,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 			if (cluster_flags & CLUSTER_FLAG_BG)
 				convert_num_unit((float)part_ptr->total_nodes,
 						 tmp_cnt,
-						 sizeof(tmp_cnt), UNIT_NONE);
+						 sizeof(tmp_cnt), UNIT_NONE,
+						 working_sview_config.
+						 convert_flags);
 			else
 				sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 			temp_char = tmp_cnt;
@@ -1075,7 +1084,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_PRIORITY:
 			convert_num_unit((float)part_ptr->priority,
-					 time_buf, sizeof(time_buf), UNIT_NONE);
+					 time_buf, sizeof(time_buf), UNIT_NONE,
+					 working_sview_config.convert_flags);
 			temp_char = time_buf;
 			break;
 		case SORTID_REASON:
@@ -1110,7 +1120,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			convert_num_unit(
 				(float)sview_part_info->sub_part_total.
 				disk_total,
-				time_buf, sizeof(time_buf), UNIT_NONE);
+				time_buf, sizeof(time_buf), UNIT_NONE,
+				working_sview_config.convert_flags);
 			temp_char = time_buf;
 			break;
 		case SORTID_TIMELIMIT:
@@ -1144,7 +1155,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else {
 				convert_num_unit(
 					(float)limit_set,
-					time_buf, sizeof(time_buf), UNIT_NONE);
+					time_buf, sizeof(time_buf), UNIT_NONE,
+					working_sview_config.convert_flags);
 				temp_char = time_buf;
 			}
 			limit_set = NO_VAL;
@@ -1188,7 +1200,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_cpus, tmp_cpu_cnt,
-				 sizeof(tmp_cpu_cnt), UNIT_NONE);
+				 sizeof(tmp_cpu_cnt), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		sprintf(tmp_cpu_cnt, "%u", part_ptr->total_cpus);
 
@@ -1244,14 +1257,15 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else {
 		convert_num_unit((float)part_ptr->max_nodes,
 				 tmp_max_nodes, sizeof(tmp_max_nodes),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	}
 
 	if (part_ptr->min_nodes == (uint32_t) INFINITE)
 		snprintf(tmp_min_nodes, sizeof(tmp_min_nodes), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes,
-				 tmp_min_nodes, sizeof(tmp_min_nodes), UNIT_NONE);
+				 tmp_min_nodes, sizeof(tmp_min_nodes),
+				 UNIT_NONE, working_sview_config.convert_flags);
 	}
 
 	if (part_ptr->max_cpus_per_node == INFINITE) {
@@ -1263,7 +1277,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp_node_cnt,
-				 sizeof(tmp_node_cnt), UNIT_NONE);
+				 sizeof(tmp_node_cnt), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		sprintf(tmp_node_cnt, "%u", part_ptr->total_nodes);
 
@@ -1292,7 +1307,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		tmp_preempt = slurm_get_preempt_mode();	/* use cluster param */
 
 	convert_num_unit((float)part_ptr->priority,
-			 tmp_prio, sizeof(tmp_prio), UNIT_NONE);
+			 tmp_prio, sizeof(tmp_prio), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	if (part_ptr->max_share & SHARED_FORCE) {
 		snprintf(tmp_share_buf, sizeof(tmp_share_buf), "force:%u",
@@ -1393,21 +1409,24 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 		if (sview_part_sub->cpu_alloc_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_alloc_cnt,
 					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
+					 sizeof(tmp_cnt), UNIT_NONE,
+					 working_sview_config.convert_flags);
 			xstrfmtcat(tmp_cpus, "Alloc:%s", tmp_cnt);
 			if (cluster_flags & CLUSTER_FLAG_BG) {
 				convert_num_unit(
 					(float)(sview_part_sub->cpu_alloc_cnt
 						/ cpus_per_node),
 					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE);
+					sizeof(tmp_cnt), UNIT_NONE,
+					working_sview_config.convert_flags);
 				xstrfmtcat(tmp_nodes, "Alloc:%s", tmp_cnt);
 			}
 		}
 		if (sview_part_sub->cpu_error_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_error_cnt,
 					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
+					 sizeof(tmp_cnt), UNIT_NONE,
+					 working_sview_config.convert_flags);
 			if (tmp_cpus)
 				xstrcat(tmp_cpus, " ");
 			xstrfmtcat(tmp_cpus, "Err:%s", tmp_cnt);
@@ -1416,7 +1435,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 					(float)(sview_part_sub->cpu_error_cnt
 						/ cpus_per_node),
 					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE);
+					sizeof(tmp_cnt), UNIT_NONE,
+					working_sview_config.convert_flags);
 				if (tmp_nodes)
 					xstrcat(tmp_nodes, " ");
 				xstrfmtcat(tmp_nodes, "Err:%s", tmp_cnt);
@@ -1425,7 +1445,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 		if (sview_part_sub->cpu_idle_cnt) {
 			convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
 					 tmp_cnt,
-					 sizeof(tmp_cnt), UNIT_NONE);
+					 sizeof(tmp_cnt), UNIT_NONE,
+					 working_sview_config.convert_flags);
 			if (tmp_cpus)
 				xstrcat(tmp_cpus, " ");
 			xstrfmtcat(tmp_cpus, "Idle:%s", tmp_cnt);
@@ -1434,7 +1455,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 					(float)(sview_part_sub->cpu_idle_cnt
 						/ cpus_per_node),
 					tmp_cnt,
-					sizeof(tmp_cnt), UNIT_NONE);
+					sizeof(tmp_cnt), UNIT_NONE,
+					working_sview_config.convert_flags);
 				if (tmp_nodes)
 					xstrcat(tmp_nodes, " ");
 				xstrfmtcat(tmp_nodes, "Idle:%s", tmp_cnt);
@@ -1443,20 +1465,24 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 	} else {
 		tmp_cpus = xmalloc(20);
 		convert_num_unit((float)sview_part_sub->cpu_cnt,
-				 tmp_cpus, 20, UNIT_NONE);
+				 tmp_cpus, 20, UNIT_NONE,
+				 working_sview_config.convert_flags);
 	}
 
 	if (!tmp_nodes) {
 		convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt,
-				 sizeof(tmp_cnt), UNIT_NONE);
+				 sizeof(tmp_cnt), UNIT_NONE,
+				 working_sview_config.convert_flags);
 		tmp_nodes = xstrdup(tmp_cnt);
 	}
 
 	convert_num_unit((float)sview_part_sub->disk_total, tmp_disk,
-			 sizeof(tmp_disk), UNIT_NONE);
+			 sizeof(tmp_disk), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	convert_num_unit((float)sview_part_sub->mem_total, tmp_mem,
-			 sizeof(tmp_mem), UNIT_MEGA);
+			 sizeof(tmp_mem), UNIT_MEGA,
+			 working_sview_config.convert_flags);
 
 	tmp_nodelist = hostlist_ranged_string_xmalloc(sview_part_sub->hl);
 

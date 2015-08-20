@@ -109,6 +109,8 @@ struct squeue_parameters {
 	uint32_t job_id;	/* set if request for a single job ID */
 	uint32_t user_id;	/* set if request for a single user ID */
 
+	uint32_t convert_flags;
+
 	List  account_list;
 	List  format_list;
 	List  job_list;

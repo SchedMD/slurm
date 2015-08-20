@@ -529,6 +529,7 @@ static void _init_sview_conf(void)
 	default_sview_config.show_grid = TRUE;
 	default_sview_config.default_page = JOB_PAGE;
 	default_sview_config.tab_pos = GTK_POS_TOP;
+	default_sview_config.convert_flags = CONVERT_NUM_UNIT_EXACT;
 
 	for(i=0; i<PAGE_CNT; i++) {
 		memset(&default_sview_config.page_opts[i],

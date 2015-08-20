@@ -126,6 +126,7 @@ typedef struct {
 	int opt_noheader;	/* can only be cleared */
 	int opt_verbose;	/* --verbose */
 	bool pid_format;
+	uint32_t convert_flags;
 } sstat_parameters_t;
 
 extern List print_fields_list;

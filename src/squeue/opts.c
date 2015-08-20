@@ -66,10 +66,11 @@
 #include "src/squeue/squeue.h"
 
 /* getopt_long options, integers but not characters */
-#define OPT_LONG_HELP  0x100
-#define OPT_LONG_USAGE 0x101
-#define OPT_LONG_HIDE  0x102
-#define OPT_LONG_START 0x103
+#define OPT_LONG_HELP      0x100
+#define OPT_LONG_USAGE     0x101
+#define OPT_LONG_HIDE      0x102
+#define OPT_LONG_START     0x103
+#define OPT_LONG_NOCONVERT 0x104
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -115,6 +116,7 @@ parse_command_line( int argc, char* argv[] )
 		{"cluster",    required_argument, 0, 'M'},
 		{"clusters",   required_argument, 0, 'M'},
 		{"name",       required_argument, 0, 'n'},
+                {"noconvert",  no_argument,       0, OPT_LONG_NOCONVERT},
 		{"node",       required_argument, 0, 'w'},
 		{"nodes",      required_argument, 0, 'w'},
 		{"nodelist",   required_argument, 0, 'w'},
@@ -307,6 +309,9 @@ parse_command_line( int argc, char* argv[] )
 		case OPT_LONG_START:
 			params.start_flag = true;
 			override_format_env = true;
+			break;
+		case OPT_LONG_NOCONVERT:
+			params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 			break;
 		case OPT_LONG_USAGE:
 			_usage();

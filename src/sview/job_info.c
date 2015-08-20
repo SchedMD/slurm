@@ -1501,7 +1501,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)job_ptr->num_cpus,
 				 tmp_char, sizeof(tmp_char),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->num_cpus);
 
@@ -1513,7 +1513,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)job_ptr->max_cpus,
 				 tmp_char, sizeof(tmp_char),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->max_cpus);
 
@@ -1525,7 +1525,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)job_ptr->num_cpus,
 				 tmp_char, sizeof(tmp_char),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->num_cpus);
 
@@ -1660,7 +1660,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   job_ptr->licenses);
 
 	convert_num_unit((float)job_ptr->pn_min_cpus,
-			 tmp_char, sizeof(tmp_char), UNIT_NONE);
+			 tmp_char, sizeof(tmp_char), UNIT_NONE,
+			 working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CPU_REQ),
@@ -1673,7 +1674,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (min_mem > 0) {
 		int len;
 		convert_num_unit((float)min_mem,
-				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
+				 tmp_char, sizeof(tmp_char), UNIT_MEGA,
+				 working_sview_config.convert_flags);
 		len = strlen(tmp_char);
 		if (job_ptr->pn_min_memory & MEM_PER_CPU)
 			sprintf(tmp_char+len, " Per CPU");
@@ -1688,7 +1690,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	if (job_ptr->pn_min_tmp_disk > 0)
 		convert_num_unit((float)job_ptr->pn_min_tmp_disk,
-				 tmp_char, sizeof(tmp_char), UNIT_MEGA);
+				 tmp_char, sizeof(tmp_char), UNIT_MEGA,
+				 working_sview_config.convert_flags);
 	else
 		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter,
@@ -1736,7 +1739,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
-				 tmp_char, sizeof(tmp_char), UNIT_NONE);
+				 tmp_char, sizeof(tmp_char), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 sview_job_info_ptr->node_cnt);
@@ -1748,7 +1752,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
-				 tmp_char, sizeof(tmp_char), UNIT_NONE);
+				 tmp_char, sizeof(tmp_char), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 job_ptr->max_nodes);
@@ -1760,7 +1765,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
-				 tmp_char, sizeof(tmp_char), UNIT_NONE);
+				 tmp_char, sizeof(tmp_char), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 sview_job_info_ptr->node_cnt);
@@ -2113,26 +2119,28 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->num_cpus,
 				 tmp_cpu_cnt, sizeof(tmp_cpu_cnt),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	} else {
 		snprintf(tmp_cpu_cnt, sizeof(tmp_cpu_cnt), "%u",
 			 job_ptr->num_cpus);
 	}
 
 	convert_num_unit((float)job_ptr->pn_min_cpus,
-			 tmp_cpu_req, sizeof(tmp_cpu_req), UNIT_NONE);
+			 tmp_cpu_req, sizeof(tmp_cpu_req), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->max_cpus,
 				 tmp_cpus_max, sizeof(tmp_cpus_max),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	} else {
 		snprintf(tmp_cpus_max, sizeof(tmp_cpus_max), "%u",
 			 job_ptr->max_cpus);
 	}
 
 	convert_num_unit((float)job_ptr->pn_min_tmp_disk,
-			 tmp_disk, sizeof(tmp_disk), UNIT_MEGA);
+			 tmp_disk, sizeof(tmp_disk), UNIT_MEGA,
+			 working_sview_config.convert_flags);
 
 	if (WIFSIGNALED(job_ptr->derived_ec))
 		term_sig = WTERMSIG(job_ptr->derived_ec);
@@ -2162,7 +2170,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	if (min_mem > 0) {
 		int len;
 		convert_num_unit((float)min_mem,
-				 tmp_mem_min, sizeof(tmp_mem_min), UNIT_MEGA);
+				 tmp_mem_min, sizeof(tmp_mem_min), UNIT_MEGA,
+				 working_sview_config.convert_flags);
 		len = strlen(tmp_mem_min);
 		if (job_ptr->pn_min_memory & MEM_PER_CPU)
 			sprintf(tmp_mem_min+len, " Per CPU");
@@ -2173,7 +2182,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)sview_job_info_ptr->node_cnt,
-				 tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
+				 tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE,
+				 working_sview_config.convert_flags);
 	else
 		sprintf(tmp_node_cnt, "%u", sview_job_info_ptr->node_cnt);
 
@@ -2551,7 +2561,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		return;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_char, sizeof(tmp_char),
-			 UNIT_NONE);
+			 UNIT_NONE, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CPUS),
@@ -2607,14 +2617,17 @@ static void _layout_step_record(GtkTreeView *treeview,
 						    &nodes);
 			convert_num_unit(
 				(float)nodes,
-				tmp_char, sizeof(tmp_char), UNIT_NONE);
+				tmp_char, sizeof(tmp_char), UNIT_NONE,
+				working_sview_config.convert_flags);
 		} else if (cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
-				tmp_char, sizeof(tmp_char), UNIT_NONE);
+				tmp_char, sizeof(tmp_char), UNIT_NONE,
+				working_sview_config.convert_flags);
 		else {
 			convert_num_unit((float)_nodes_in_list(tmp_nodes),
-					 tmp_char, sizeof(tmp_char), UNIT_NONE);
+					 tmp_char, sizeof(tmp_char), UNIT_NONE,
+					 working_sview_config.convert_flags);
 		}
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
@@ -2655,7 +2668,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 				   tmp_time);
 
 	convert_num_unit((float)step_ptr->num_tasks, tmp_char, sizeof(tmp_char),
-			 UNIT_NONE);
+			 UNIT_NONE, working_sview_config.convert_flags);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_TASKS),
@@ -2680,7 +2693,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
 
 	convert_num_unit((float)step_ptr->num_cpus, tmp_cpu_min,
-			 sizeof(tmp_cpu_min), UNIT_NONE);
+			 sizeof(tmp_cpu_min), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	if (suspended)
 		state = JOB_SUSPENDED;
@@ -2703,20 +2717,24 @@ static void _update_step_record(job_step_info_t *step_ptr,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &nodes);
 			convert_num_unit((float)nodes, tmp_node_cnt,
-					 sizeof(tmp_node_cnt), UNIT_NONE);
+					 sizeof(tmp_node_cnt), UNIT_NONE,
+					 working_sview_config.convert_flags);
 		} else if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
-				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE);
+				tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE,
+				working_sview_config.convert_flags);
 		} else {
 			convert_num_unit((float)_nodes_in_list(tmp_nodes),
 					 tmp_node_cnt, sizeof(tmp_node_cnt),
-					 UNIT_NONE);
+					 UNIT_NONE,
+					 working_sview_config.convert_flags);
 		}
 	}
 
 	convert_num_unit((float)step_ptr->num_tasks, tmp_task_cnt,
-			 sizeof(tmp_task_cnt), UNIT_NONE);
+			 sizeof(tmp_task_cnt), UNIT_NONE,
+			 working_sview_config.convert_flags);
 
 	if ((step_ptr->time_limit == NO_VAL) ||
 	    (step_ptr->time_limit == INFINITE)) {
@@ -4743,7 +4761,7 @@ static void _edit_jobs(GtkTreeModel *model, GtkTreeIter *iter,
 {
 	jobs_foreach_common_t job_foreach_common;
 	global_error_code = SLURM_SUCCESS;
-	/* setup params that applies to ALL selections */
+	/* setup working_sview_config that applies to ALL selections */
 	memset(&job_foreach_common, 0, sizeof(jobs_foreach_common_t));
 	job_foreach_common.type = type;
 	job_foreach_common.edit_type = EDIT_EDIT;
@@ -4880,7 +4898,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	if (response == GTK_RESPONSE_OK) {
 		jobs_foreach_common_t job_foreach_common;
 		global_error_code = SLURM_SUCCESS;
-		/* setup params that applies to ALL selections */
+		/* setup working_sview_config that applies to ALL selections */
 		memset(&job_foreach_common, 0, sizeof(jobs_foreach_common_t));
 		job_foreach_common.type = type;
 		job_foreach_common.edit_type = edit_type;

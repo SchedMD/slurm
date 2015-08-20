@@ -207,7 +207,7 @@ static void _layout_bb_record(GtkTreeView *treeview,
 	} else if (bb_ptr->array_task_id == NO_VAL) {
 		convert_num_unit(bb_ptr->job_id, bb_name_id,
 				 sizeof(bb_name_id),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	} else {
 		snprintf(bb_name_id, sizeof(bb_name_id),
 			 "%u_%u(%u)",
@@ -340,7 +340,7 @@ static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 	} else if (bb_ptr->array_task_id == NO_VAL) {
 		convert_num_unit(bb_ptr->job_id, bb_name_id,
 				 sizeof(bb_name_id),
-				 UNIT_NONE);
+				 UNIT_NONE, working_sview_config.convert_flags);
 	} else {
 		snprintf(bb_name_id, sizeof(bb_name_id),
 			 "%u_%u(%u)",
@@ -500,7 +500,9 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 				convert_num_unit(bb_resv_ptr->job_id,
 						 bb_name_id,
 						 sizeof(bb_name_id),
-						 UNIT_NONE);
+						 UNIT_NONE,
+						 working_sview_config.
+						 convert_flags);
 			} else {
 				snprintf(bb_name_id, sizeof(bb_name_id),
 					 "%u_%u(%u)",
@@ -564,7 +566,8 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 			convert_num_unit(bb_ptr->job_id,
 					 bb_name_id,
 					 sizeof(bb_name_id),
-					 UNIT_NONE);
+					 UNIT_NONE,
+					 working_sview_config.convert_flags);
 		} else {
 			snprintf(bb_name_id, sizeof(bb_name_id),
 				 "%u_%u(%u)",

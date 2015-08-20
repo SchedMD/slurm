@@ -209,6 +209,7 @@ typedef struct {
 	bool show_hidden;
 	bool save_page_opts;
 	uint16_t tab_pos;
+	uint32_t convert_flags;
 } sview_config_t;
 
 struct display_data {

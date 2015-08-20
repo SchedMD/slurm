@@ -43,6 +43,9 @@
 #include "sstat.h"
 #include <time.h>
 
+/* getopt_long options, integers but not characters */
+#define OPT_LONG_NOCONVERT 0x100
+
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
@@ -132,6 +135,7 @@ void _do_help(void)
 void _init_params()
 {
 	memset(&params, 0, sizeof(sstat_parameters_t));
+	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 }
 
 /* returns number of objects added to list */
@@ -339,6 +343,7 @@ void parse_command_line(int argc, char **argv)
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
 		{"format", 1, 0, 'o'},
+                {"noconvert",  no_argument, 0, OPT_LONG_NOCONVERT},
 		{"pidformat", 0, 0, 'i'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
@@ -381,6 +386,9 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'n':
 			print_fields_have_header = 0;
+			break;
+		case OPT_LONG_NOCONVERT:
+			params.convert_flags |= CONVERT_NUM_UNIT_NO;
 			break;
 		case 'o':
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
