@@ -3705,9 +3705,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->db_index = save_db_index;
 
 	job_ptr_pend->prio_factors = save_prio_factors;
-	if (job_ptr_pend->prio_factors && job_ptr->prio_factors)
-		memcpy(job_ptr_pend->prio_factors, job_ptr->prio_factors,
-				sizeof(priority_factors_object_t));
+	slurm_copy_priority_factors_object(job_ptr_pend->prio_factors,
+					   job_ptr->prio_factors);
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
 	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
