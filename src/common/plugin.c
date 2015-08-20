@@ -320,7 +320,18 @@ plugin_unload( plugin_handle_t plug )
 		if ( ( fini = dlsym( plug, "fini" ) ) != NULL ) {
 			(*fini)();
 		}
+#ifndef MEMORY_LEAK_DEBUG
+/**************************************************************************\
+ * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
+ * "configure --enable-memory-leak-debug" then execute
+ *
+ * Note that without --enable-memory-leak-debug the daemon will
+ * unload the shared objects at exit thus preventing valgrind
+ * to display the stack where the eventual leaks may be.
+ * It is always best to test with and without --enable-memory-leak-debug.
+\**************************************************************************/
 		(void) dlclose( plug );
+#endif
 	}
 }
 
