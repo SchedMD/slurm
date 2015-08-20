@@ -2,7 +2,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 15.08.0pre7
+* Changes in Slurm 15.08.0rc1
 ==============================
  -- Added power_cpufreq layout.
  -- Make complete_batch_script RPC work with message aggregation.
