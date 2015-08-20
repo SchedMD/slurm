@@ -273,11 +273,15 @@ bail:
 static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 {
 	xcgroup_t cg;
+	int rc;
 
 	if (xcgroup_create(ns, &cg, "", 0, 0) != XCGROUP_SUCCESS)
 		return SLURM_ERROR;
 
-	return xcgroup_move_process(&cg, getpid());
+	rc = xcgroup_move_process(&cg, getpid());
+	xcgroup_destroy(&cg);
+
+	return rc;
 }
 
 int _slurm_cgroup_destroy(void)
