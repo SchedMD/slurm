@@ -1212,7 +1212,11 @@ static int _post_tres_list(List new_list, int new_cnt)
 	assoc_mgr_tres_array = new_array;
 	new_array = NULL;
 
-	xfree(assoc_mgr_tres_name_array);
+	if (assoc_mgr_tres_name_array) {
+		for (i=0; i<g_tres_count; i++)
+			xfree(assoc_mgr_tres_name_array[i]);
+		xfree(assoc_mgr_tres_name_array);
+	}
 	assoc_mgr_tres_name_array = new_name_array;
 	new_name_array = NULL;
 
