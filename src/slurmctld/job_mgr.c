@@ -1911,11 +1911,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->tres_req_str);
 	job_ptr->tres_req_str = tres_req_str;
 	tres_req_str = NULL;
-	if (job_ptr->tres_req_str)
-		assoc_mgr_set_tres_cnt_array(
-			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true);
-	else
-		job_set_req_tres(job_ptr, true);
 
 	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
@@ -1924,15 +1919,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->tres_fmt_req_str);
 	job_ptr->tres_fmt_req_str = tres_fmt_req_str;
 	tres_fmt_req_str = NULL;
-
-	/* do this after the format string just incase for some
-	 * reason the tres_alloc_str is NULL but not the fmt_str */
-	if (job_ptr->tres_alloc_str)
-		assoc_mgr_set_tres_cnt_array(
-			&job_ptr->tres_alloc_cnt, job_ptr->tres_alloc_str,
-			0, true);
-	else
-		job_set_alloc_tres(job_ptr, true);
 
 	xfree(job_ptr->account);
 	job_ptr->account = account;
@@ -2165,6 +2151,21 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		} else
 			job_ptr->qos_id = qos_rec.id;
 	}
+
+	/* do this after the format string just incase for some
+	 * reason the tres_alloc_str is NULL but not the fmt_str */
+	if (job_ptr->tres_alloc_str)
+		assoc_mgr_set_tres_cnt_array(
+			&job_ptr->tres_alloc_cnt, job_ptr->tres_alloc_str,
+			0, true);
+	else
+		job_set_alloc_tres(job_ptr, true);
+
+	if (job_ptr->tres_req_str)
+		assoc_mgr_set_tres_cnt_array(
+			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true);
+	else
+		job_set_req_tres(job_ptr, true);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;

@@ -500,6 +500,8 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	int i;
 
+	memset(&used_tres_run_secs, 0, sizeof(uint64_t) * slurmctld_tres_cnt);
+
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
 		return;
