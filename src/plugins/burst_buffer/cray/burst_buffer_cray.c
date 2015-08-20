@@ -2520,6 +2520,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i, rc;
 
+	xassert(job_desc);
+	xassert(job_desc->tres_req_cnt);
+
 	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -2605,6 +2608,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		rc = ESLURM_BURST_BUFFER_LIMIT;
 		goto fini;
 	}
+	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
 
 fini:	job_desc->shared = 0;	/* Compute nodes can not be shared */
 	pthread_mutex_unlock(&bb_state.bb_mutex);

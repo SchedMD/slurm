@@ -5646,6 +5646,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			      job_desc->tres_req_cnt,
 			      false);
 
+	if ((error_code = bb_g_job_validate(job_desc, submit_uid))
+	    != SLURM_SUCCESS)
+		goto cleanup_fail;
+
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
@@ -6052,10 +6056,6 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	int rc;
 
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
-	if (rc != SLURM_SUCCESS)
-		return rc;
-
-	rc = bb_g_job_validate(job_desc, submit_uid);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

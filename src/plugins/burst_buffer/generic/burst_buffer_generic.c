@@ -911,6 +911,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	char *key;
 	int i;
 
+	xassert(job_desc);
+	xassert(job_desc->tres_req_cnt);
+
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_user_id:%u, submit_uid:%d",
 		     plugin_type, __func__, job_desc->user_id, submit_uid);
@@ -968,6 +971,8 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		     "%"PRIu64", but total space is only %"PRIu64"",
 		     job_desc->user_id, bb_size, bb_state.total_space);
 	}
+
+	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
 
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
