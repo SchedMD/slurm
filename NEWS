@@ -359,8 +359,6 @@ documents those changes that are of interest to users and administrators.
     and --distribution=arbitrary.
  -- Fix segfault in Bluegene setups where RebootQOSList is defined in
     bluegene.conf and accounting is not setup.
- -- Fix a bug in the unit conversion routine, specify the correct
-    divisor based on the selected unit, KILO, MEGA or GIGA.
  -- MYSQL - Update mod_time when updating a start job record or adding one.
  -- MYSQL - Fix issue where if an association id ever changes on at least a
     portion of a job array is pending after it's initial start in the
