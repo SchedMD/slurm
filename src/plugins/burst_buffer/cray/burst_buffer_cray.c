@@ -429,7 +429,6 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	bb_specs = xstrdup(job_ptr->burst_buffer);
 	tok = strtok_r(bb_specs, " ", &save_ptr);
 	while (tok) {
-		tmp_cnt = 0;
 		if (!strncmp(tok, "SLURM_JOB=", 10)) {
 			/* Format: "SLURM_JOB=SIZE=%"PRIu64",ACCESS=%s,TYPE=%s" */
 			have_bb = true;
@@ -438,12 +437,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			job_type = strstr(tok, ",TYPE=");
 			if (job_type) {
 				job_type[0] = '\0';
-				job_type += 6;
+				/* FIXME: Contents current unused */
 			}
 			job_access = strstr(tok, ",ACCESS=");
 			if (job_access) {
 				job_access[0] = '\0';
-				job_access += 8;
+				/* FIXME: Contents current unused */
 			}
 			bb_size = strstr(tok, "SIZE=");
 			if (bb_size) {
@@ -452,8 +451,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					bb_size + 5,
 					bb_state.bb_config.granularity);
 				bb_job->total_size += tmp_cnt;
-			} else
-				tmp_cnt = 0;
+			}
 		} else if (!strncmp(tok, "SLURM_SWAP=", 11)) {
 			/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
 			tok += 11;
@@ -497,12 +495,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			bb_type = strstr(tok, ",TYPE=");
 			if (bb_type) {
 				bb_type[0] = '\0';
-				bb_type += 6;
+				/* FIXME: Contents current unused */
 			}
 			bb_access = strstr(tok, ",ACCESS=");
 			if (bb_access) {
 				bb_access[0] = '\0';
-				bb_access += 8;
+				/* FIXME: Contents current unused */
 			}
 			bb_size = strstr(tok, ",SIZE=");
 			if (bb_size) {
@@ -2097,7 +2095,6 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
-
 				if ((sub_tok = strstr(tok, "hurry"))) {
 					hurry = true;
 					sub_tok[0] = '\0';
@@ -3735,14 +3732,16 @@ static void *_destroy_persistent(void *x)
 				 BB_STATE_DELETED);
 
 		/* Modify internal buffer record for purging */
-		bb_alloc->state = BB_STATE_COMPLETE;
-		bb_alloc->job_id = destroy_args->job_id;
-		bb_alloc->state_time = time(NULL);
-		bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
-			     bb_alloc->partition, bb_alloc->qos,
-			     bb_alloc->size, &bb_state);
-		(void) bb_post_persist_delete(bb_alloc, &bb_state);
-		(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		if (bb_alloc) {
+			bb_alloc->state = BB_STATE_COMPLETE;
+			bb_alloc->job_id = destroy_args->job_id;
+			bb_alloc->state_time = time(NULL);
+			bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
+				     bb_alloc->partition, bb_alloc->qos,
+				     bb_alloc->size, &bb_state);
+			(void) bb_post_persist_delete(bb_alloc, &bb_state);
+			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		}
 		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
@@ -3751,7 +3750,7 @@ static void *_destroy_persistent(void *x)
 	return NULL;
 }
 
-/* _bb_get_instances()
+/* _bb_get_configs()
  *
  * Handle the JSON stream with configuration info (instance use details).
  */
