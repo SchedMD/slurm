@@ -7321,6 +7321,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			      true);
 
 	/* now that the array is filled lets make the string from it */
+	xfree(job_ptr->tres_alloc_str);
 	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
 
