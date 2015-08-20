@@ -1106,7 +1106,7 @@ static int _post_tres_list(List new_list, int new_cnt)
 			tres_rec->name ? tres_rec->name : "");
 
 		/* This should only happen if a new static TRES are added. */
-		if ((i < g_tres_count) &&
+		if (assoc_mgr_tres_array && (i < g_tres_count) &&
 		    (new_array[i]->id != assoc_mgr_tres_array[i]->id))
 			changed_pos = true;
 		i++;
