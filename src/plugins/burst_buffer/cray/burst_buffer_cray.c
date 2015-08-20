@@ -981,6 +981,7 @@ static void _load_state(bool init_config)
 	instances = _bb_get_instances(&num_instances, &bb_state);
 	if (instances == NULL) {
 		info("%s: failed to find DataWarp instances", __func__);
+		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state);
 	pthread_mutex_lock(&bb_state.bb_mutex);
