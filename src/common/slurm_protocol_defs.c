@@ -3363,6 +3363,7 @@ extern void slurm_destroy_assoc_shares_object(void *object)
 		xfree(obj_ptr->partition);
 		xfree(obj_ptr->tres_run_secs);
 		xfree(obj_ptr->tres_grp_mins);
+		xfree(obj_ptr->usage_tres_raw);
 		xfree(obj_ptr);
 	}
 }
