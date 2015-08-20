@@ -3407,6 +3407,34 @@ extern void slurm_destroy_priority_factors_object(void *object)
 	xfree(obj_ptr);
 }
 
+extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
+					       priority_factors_object_t *src)
+{
+	int size;
+
+	if (!dest || !src)
+		return;
+
+	size = sizeof(double) * src->tres_cnt;
+
+	memcpy(dest, src, sizeof(priority_factors_object_t));
+	if (src->priority_tres) {
+		dest->priority_tres = xmalloc(size);
+		memcpy(dest->priority_tres, src->priority_tres, size);
+	}
+
+	if (src->tres_names) {
+		int char_size = sizeof(char *) * src->tres_cnt;
+		dest->tres_names = xmalloc(char_size);
+		memcpy(dest->tres_names, src->tres_names, char_size);
+	}
+
+	if (src->tres_weights) {
+		dest->tres_weights = xmalloc(size);
+		memcpy(dest->tres_weights, src->tres_weights, size);
+	}
+}
+
 extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
