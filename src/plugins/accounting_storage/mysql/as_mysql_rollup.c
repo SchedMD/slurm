@@ -869,6 +869,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	List wckey_usage_list = list_create(_destroy_local_id_usage);
 	List resv_usage_list = list_create(_destroy_local_resv_usage);
 	uint16_t track_wckey = slurm_get_track_wckey();
+	local_cluster_usage_t *loc_c_usage = NULL;
+	local_cluster_usage_t *c_usage = NULL;
+	local_resv_usage_t *r_usage = NULL;
+	local_id_usage_t *a_usage = NULL;
+	local_id_usage_t *w_usage = NULL;
 	/* char start_char[20], end_char[20]; */
 
 	char *job_req_inx[] = {
@@ -963,11 +968,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		int last_wckeyid = -1;
 		int seconds = 0;
 		int tot_time = 0;
-		local_cluster_usage_t *loc_c_usage = NULL;
-		local_cluster_usage_t *c_usage = NULL;
-		local_resv_usage_t *r_usage = NULL;
-		local_id_usage_t *a_usage = NULL;
-		local_id_usage_t *w_usage = NULL;
+
+		loc_c_usage = NULL;
+		c_usage     = NULL;
+		r_usage     = NULL;
+		a_usage     = NULL;
+		w_usage     = NULL;
 
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn,
@@ -999,8 +1005,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
-			xfree(query);
-			_destroy_local_cluster_usage(c_usage);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
@@ -1113,8 +1117,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
-			xfree(query);
-			_destroy_local_cluster_usage(c_usage);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
@@ -1172,9 +1174,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				if (!(result2 = mysql_db_query_ret(
 					      mysql_conn,
 					      query, 0))) {
-					xfree(query);
-					_destroy_local_cluster_usage(c_usage);
-					return SLURM_ERROR;
+					rc = SLURM_ERROR;
+					goto end_it;
 				}
 				xfree(query);
 				while ((row2 = mysql_fetch_row(result2))) {
@@ -1497,7 +1498,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				     mysql_conn, cluster_name, curr_start,
 				     curr_end, now, c_usage))
 			    != SLURM_SUCCESS) {
-				_destroy_local_cluster_usage(c_usage);
 				goto end_it;
 			}
 		}
@@ -1514,7 +1514,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
-				_destroy_local_cluster_usage(c_usage);
 				goto end_it;
 			}
 		}
@@ -1534,7 +1533,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
-				_destroy_local_cluster_usage(c_usage);
 				goto end_it;
 			}
 		}
@@ -1552,13 +1550,22 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		curr_end = curr_start + add_sec;
 	}
 end_it:
+	xfree(query);
 	xfree(suspend_str);
 	xfree(job_str);
 	xfree(resv_str);
-	list_iterator_destroy(a_itr);
-	list_iterator_destroy(c_itr);
-	list_iterator_destroy(w_itr);
-	list_iterator_destroy(r_itr);
+	_destroy_local_cluster_usage(c_usage);
+	_destroy_local_id_usage(a_usage);
+	_destroy_local_id_usage(w_usage);
+	_destroy_local_resv_usage(r_usage);
+	if (a_itr)
+		list_iterator_destroy(a_itr);
+	if (c_itr)
+		list_iterator_destroy(c_itr);
+	if (w_itr)
+		list_iterator_destroy(w_itr);
+	if (r_itr)
+		list_iterator_destroy(r_itr);
 
 	FREE_NULL_LIST(assoc_usage_list);
 	FREE_NULL_LIST(cluster_down_list);
