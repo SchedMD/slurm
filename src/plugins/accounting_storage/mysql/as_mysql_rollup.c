@@ -1474,6 +1474,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				}
 				list_iterator_destroy(tmp_itr);
 			}
+			list_iterator_destroy(t_itr);
 		}
 
 		/* now apply the down time from the slurmctld disconnects */
@@ -1540,6 +1541,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 	end_loop:
 		_destroy_local_cluster_usage(c_usage);
+		_destroy_local_id_usage(a_usage);
+		_destroy_local_id_usage(w_usage);
+		_destroy_local_resv_usage(r_usage);
 		list_flush(assoc_usage_list);
 		list_flush(cluster_down_list);
 		list_flush(wckey_usage_list);
