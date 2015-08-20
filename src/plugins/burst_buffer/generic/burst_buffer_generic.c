@@ -988,23 +988,23 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 }
 
 /*
- * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * Fill in the tres_cnt (in MB) based off the job record
  * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
- * IN job_ptr - job record, set's tres_cnt field
- * IN node_cnt - number of nodes in the job
+ * IN job_ptr - job record
+ * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
 extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint32_t node_cnt, bool locked)
+				  uint64_t *tres_cnt,
+				  bool locked)
 {
-	if (!job_ptr->tres_req_cnt) {
-		error("%s: Job %u lacks tres_req_cnt field",
+	if (!tres_cnt) {
+		error("%s: No tres_cnt given when looking at job %u",
 		      __func__, job_ptr->job_id);
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	job_ptr->tres_req_cnt[bb_state.tres_pos] =
-		_get_bb_size(job_ptr) / (1024 * 1024);
+	tres_cnt[bb_state.tres_pos] = _get_bb_size(job_ptr) / (1024 * 1024);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 }
 

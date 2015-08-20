@@ -87,7 +87,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_validate2)(struct job_record *job_ptr,
 					 char **err_msg, bool is_job_array);
 	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
-					     uint32_t node_cnt, bool locked);
+					     uint64_t *tres_cnt, bool locked);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
 	int		(*job_try_stage_in) (List job_queue);
 	int		(*job_test_stage_in) (struct job_record *job_ptr,
@@ -387,14 +387,14 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
 }
 
 /*
- * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * Fill in the tres_cnt (in MB) based off the job record
  * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
- * IN job_ptr - job record, set's tres_cnt field
- * IN node_cnt - number of nodes in the job
+ * IN job_ptr - job record
+ * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
 extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint32_t node_cnt,
+				  uint64_t *tres_cnt,
 				  bool locked)
 {
 	DEF_TIMERS;
@@ -404,7 +404,7 @@ extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
 	(void) bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		(*(ops[i].job_set_tres_cnt))(job_ptr, node_cnt, locked);
+		(*(ops[i].job_set_tres_cnt))(job_ptr, tres_cnt, locked);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);

@@ -113,14 +113,14 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
 			      bool is_job_array);
 
 /*
- * Fill in the tres_cnt (in MB) based off the job record and node_cnt
+ * Fill in the tres_cnt (in MB) based off the job record
  * NOTE: Based upon job-specific burst buffers, excludes persistent buffers
- * IN job_ptr - job record, set's tres_cnt field
- * IN node_cnt - number of nodes in the job
+ * IN job_ptr - job record
+ * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
 extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint32_t node_cnt, bool locked);
+				  uint64_t *tres_cnt, bool locked);
 
 /*
  * For a given job, return our best guess if when it might be able to start
