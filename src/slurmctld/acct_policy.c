@@ -2934,6 +2934,7 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 	bool update_accounting = false;
 	struct job_details *details_ptr;
 	int rc = SLURM_SUCCESS;
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 
 	/* check to see if we are enforcing associations and the job
 	 * is pending or if we are even enforcing limits. */
@@ -2958,9 +2959,9 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 	 * should be ok with the memcpy here */
 	memcpy(&acct_policy_limit_set, &job_ptr->limit_set,
 	       sizeof(acct_policy_limit_set_t));
-
+	job_desc.tres_req_cnt = tres_req_cnt;
 	/* copy all the tres requests over */
-	memcpy(&job_desc.tres_req_cnt, &job_ptr->tres_req_cnt,
+	memcpy(job_desc.tres_req_cnt, job_ptr->tres_req_cnt,
 	       sizeof(uint64_t) * slurmctld_tres_cnt);
 
 	/* Only set this value if not set from a limit */
