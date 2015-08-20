@@ -100,6 +100,7 @@ static void _destroy_local_id_usage(void *object)
 {
 	local_id_usage_t *a_usage = (local_id_usage_t *)object;
 	if (a_usage) {
+		FREE_NULL_LIST(a_usage->loc_tres);
 		xfree(a_usage);
 	}
 }
@@ -118,6 +119,7 @@ static void _destroy_local_resv_usage(void *object)
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
 	if (r_usage) {
 		FREE_NULL_LIST(r_usage->local_assocs);
+		FREE_NULL_LIST(r_usage->loc_tres);
 		xfree(r_usage);
 	}
 }
