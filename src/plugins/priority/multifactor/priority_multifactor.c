@@ -677,8 +677,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		     (job_ptr->prio_factors->nice - NICE_OFFSET),
 		     priority);
 
-		if (pre_factors.priority_tres)
-			xfree(pre_factors.priority_tres);
+		xfree(pre_factors.priority_tres);
 	}
 	return (uint32_t)priority;
 }
