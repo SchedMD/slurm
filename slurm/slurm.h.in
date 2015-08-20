@@ -4672,6 +4672,7 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 						 * and destroy persistent burst
 						 * buffers */
 #define BB_FLAG_EMULATE_CRAY		0x0004	/* Using dw_wlm_cli emulator */
+#define BB_FLAG_PRIVATE_DATA		0x0008	/* Buffers only visible to owner */
 
 #define BB_SIZE_IN_NODES	0x8000000000000000
 #define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */
@@ -4729,12 +4730,7 @@ typedef struct {
 	uint64_t granularity;		/* Granularity of resource allocation */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
-	uint64_t job_size_limit;	/* In bytes or NO_VAL */
 	char *name;			/* Plugin name */
-	uint64_t persist_resv_sz;	/* Space reserved for persistent buffers */
-	uint16_t private_data;		/* limit access to data */
-	uint32_t prio_boost_alloc;	/* job priority boost after staged in */
-	uint32_t prio_boost_use;	/* job priority boost on use */
 	uint32_t stage_in_timeout;	/* Seconds or zero */
 	uint32_t stage_out_timeout;	/* Seconds or zero */
 	char *start_stage_in;
@@ -4743,7 +4739,6 @@ typedef struct {
 	char *stop_stage_out;
 	uint64_t total_space;		/* In bytes */
 	uint64_t used_space;		/* In bytes */
-	uint64_t user_size_limit;	/* In bytes or NO_VAL */
 
 	uint32_t  buffer_count;
 	burst_buffer_resv_t *burst_buffer_resv_ptr;

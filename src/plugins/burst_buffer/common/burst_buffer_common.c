@@ -218,16 +218,12 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 		for (i = 0; i < config_ptr->gres_cnt; i++)
 			config_ptr->gres_ptr[i].avail_cnt = 0;
 	}
-	config_ptr->job_size_limit = NO_VAL64;
 	config_ptr->stage_in_timeout = 0;
 	config_ptr->stage_out_timeout = 0;
-	config_ptr->prio_boost_alloc = 0;
-	config_ptr->prio_boost_use = 0;
 	xfree(config_ptr->start_stage_in);
 	xfree(config_ptr->start_stage_out);
 	xfree(config_ptr->stop_stage_in);
 	xfree(config_ptr->stop_stage_out);
-	config_ptr->user_size_limit = NO_VAL64;
 }
 
 /* Find a per-job burst buffer record for a specific job.
@@ -382,17 +378,12 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
 /*		{"Gres", S_P_STRING},	*/
-		{"JobSizeLimit", S_P_STRING},
-		{"PrioBoostAlloc", S_P_UINT32},
-		{"PrioBoostUse", S_P_UINT32},
-		{"PrivateData", S_P_STRING},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
 		{"StartStageIn", S_P_STRING},
 		{"StartStageOut", S_P_STRING},
 		{"StopStageIn", S_P_STRING},
 		{"StopStageOut", S_P_STRING},
-		{"UserSizeLimit", S_P_STRING},
 		{NULL}
 	};
 
@@ -495,31 +486,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(tmp);
 	}
 #endif
-	if (s_p_get_string(&tmp, "JobSizeLimit", bb_hashtbl)) {
-		state_ptr->bb_config.job_size_limit = bb_get_size_num(tmp, 1);
-		xfree(tmp);
-	}
-	if (s_p_get_uint32(&state_ptr->bb_config.prio_boost_alloc,
-			   "PrioBoostAlloc", bb_hashtbl) &&
-	    (state_ptr->bb_config.prio_boost_alloc > NICE_OFFSET)) {
-		error("%s: PrioBoostAlloc can not exceed %u",
-		      __func__, NICE_OFFSET);
-		state_ptr->bb_config.prio_boost_alloc = NICE_OFFSET;
-	}
-	if (s_p_get_uint32(&state_ptr->bb_config.prio_boost_use, "PrioBoostUse",
-			   bb_hashtbl) &&
-	    (state_ptr->bb_config.prio_boost_use > NICE_OFFSET)) {
-		error("%s: PrioBoostUse can not exceed %u",
-		      __func__, NICE_OFFSET);
-		state_ptr->bb_config.prio_boost_use = NICE_OFFSET;
-	}
-	if (s_p_get_string(&tmp, "PrivateData", bb_hashtbl)) {
-		if (!strcasecmp(tmp, "true") ||
-		    !strcasecmp(tmp, "yes")  ||
-		    !strcasecmp(tmp, "1"))
-			state_ptr->bb_config.private_data = 1;
-		xfree(tmp);
-	}
 	s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout, "StageInTimeout",
 		       bb_hashtbl);
 	s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
@@ -532,10 +498,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.stop_stage_out, "StopStageOut",
 		       bb_hashtbl);
-	if (s_p_get_string(&tmp, "UserSizeLimit", bb_hashtbl)) {
-		state_ptr->bb_config.user_size_limit = bb_get_size_num(tmp, 1);
-		xfree(tmp);
-	}
 
 	s_p_hashtbl_destroy(bb_hashtbl);
 	xfree(bb_conf);
@@ -562,12 +524,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 			     state_ptr->bb_config.gres_ptr[i].name,
 			     state_ptr->bb_config.gres_ptr[i].avail_cnt);
 		}
-		info("%s: JobSizeLimit:%"PRIu64"",  __func__,
-		     state_ptr->bb_config.job_size_limit);
-		info("%s: PrioBoostAlloc:%u", __func__,
-		     state_ptr->bb_config.prio_boost_alloc);
-		info("%s: PrioBoostUse:%u", __func__,
-		     state_ptr->bb_config.prio_boost_use);
 		info("%s: StageInTimeout:%u", __func__,
 		     state_ptr->bb_config.stage_in_timeout);
 		info("%s: StageOutTimeout:%u", __func__,
@@ -580,8 +536,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		     state_ptr->bb_config.stop_stage_in);
 		info("%s: StopStageOut:%s",  __func__,
 		     state_ptr->bb_config.stop_stage_out);
-		info("%s: UserSizeLimit:%"PRIu64"",  __func__,
-		     state_ptr->bb_config.user_size_limit);
 	}
 }
 
@@ -657,20 +611,14 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 		pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
 		pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
 	}
-	pack16(config_ptr->private_data,     buffer);
 	packstr(config_ptr->start_stage_in,  buffer);
 	packstr(config_ptr->start_stage_out, buffer);
 	packstr(config_ptr->stop_stage_in,   buffer);
 	packstr(config_ptr->stop_stage_out,  buffer);
-	pack64(config_ptr->job_size_limit,   buffer);
-	pack64(state_ptr->persist_resv_sz,   buffer);
-	pack32(config_ptr->prio_boost_alloc, buffer);
-	pack32(config_ptr->prio_boost_use,   buffer);
 	pack32(config_ptr->stage_in_timeout, buffer);
 	pack32(config_ptr->stage_out_timeout,buffer);
 	pack64(state_ptr->total_space,       buffer);
 	pack64(state_ptr->used_space,        buffer);
-	pack64(config_ptr->user_size_limit,  buffer);
 }
 
 /* Pack individual burst buffer usage records into a buffer (used for limits) */
@@ -971,24 +919,6 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 				struct job_record *job_ptr, bb_job_t *bb_job)
 {
 	bb_alloc_t *bb_alloc;
-	uint16_t new_nice;
-	char jobid_buf[32];
-
-	if (state_ptr->bb_config.prio_boost_use && job_ptr && job_ptr->details){
-		new_nice = (NICE_OFFSET - state_ptr->bb_config.prio_boost_use);
-		if (new_nice < job_ptr->details->nice) {
-			int64_t new_prio = job_ptr->priority;
-			new_prio += job_ptr->details->nice;
-			new_prio -= new_nice;
-			job_ptr->priority = new_prio;
-			job_ptr->details->nice = new_nice;
-			info("%s: Uses burst buffer, reset priority to %u "
-			     "for %s", __func__,
-			     job_ptr->priority,
-			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-
-		}
-	}
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
 	bb_limit_add(bb_alloc->user_id, bb_alloc->account, bb_alloc->partition,
@@ -1380,26 +1310,9 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
 {
-	bb_user_t *bb_user;
-
 	xassert(state_ptr);
 
-	/* Test against global limits */
-	if (((state_ptr->bb_config.job_size_limit  != NO_VAL64) &&
-	     (bb_size > state_ptr->bb_config.job_size_limit)) ||
-	    ((state_ptr->bb_config.user_size_limit != NO_VAL64) &&
-	     (bb_size > state_ptr->bb_config.user_size_limit))) {
-		return -1;
-	}
-
-	/* Now test this user's limit, considering current usage */
-	if (state_ptr->bb_config.user_size_limit != NO_VAL64) {
-		bb_user = bb_find_user_rec(user_id, state_ptr);
-		xassert(bb_user);
-		if ((bb_user->size + bb_size) >
-		    state_ptr->bb_config.user_size_limit)
-			return 0;
-	}
+//FIXME: Vestigial, initial work based upon lack of TRES limits
 	return 1;
 }
 

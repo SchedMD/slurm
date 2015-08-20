@@ -4231,6 +4231,11 @@ slurm_bb_flags2str(uint32_t bb_flags)
 			strcat(bb_str, ",");
 		strcat(bb_str, "EnablePersistent");
 	}
+	if (bb_flags & BB_FLAG_PRIVATE_DATA) {
+		if (bb_str[0])
+			strcat(bb_str, ",");
+		strcat(bb_str, "PrivateData");
+	}
 
 	return bb_str;
 }
@@ -4246,6 +4251,8 @@ slurm_bb_str2flags(char *bb_str)
 		bb_flags |= BB_FLAG_EMULATE_CRAY;
 	if (bb_str && strstr(bb_str, "EnablePersistent"))
 		bb_flags |= BB_FLAG_ENABLE_PERSISTENT;
+	if (bb_str && strstr(bb_str, "PrivateData"))
+		bb_flags |= BB_FLAG_PRIVATE_DATA;
 
 	return bb_flags;
 }

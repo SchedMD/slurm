@@ -107,33 +107,6 @@ This option is not used by the burst_buffer/cray plugin.
 .\ See the example below.
 
 .TP
-\fBJobSizeLimit\fR
-Maximum burst buffer allocation size for any single job.
-The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
-"t" (terabytes), "p" (petabytes), or "n" (nodes).
-Bytes is assumed if no suffix is supplied.
-By default there is no job allocation size limit.
-
-.TP
-\fBPrioBoostAlloc\fR
-Any job using burst buffers will have it's priority increased by this amount
-after its file stage in has completed.
-This option will adjust a job's nice value, so user specified nice values
-for a job will be replaced by this value.
-The \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
-The PriorityBoost options can also be replaced by a including burst buffer
-factor in the multifactor priority algorithm.
-
-.TP
-\fBPrioBoostUse\fR
-Any job using burst buffers will have it's priority increased by this amount.
-This option will adjust a job's nice value, so user specified nice values
-for a job will be replaced by this value.
-The \fBPrioBoostAlloc\fR value will override the \fBPrioBoostUse\fR value.
-The PriorityBoost options can also be replaced by a including burst buffer
-factor in the multifactor priority algorithm.
-
-.TP
 \fBPrivateData\fR
 If set to "true" then users will only be able to view burst buffers they can
 use.
@@ -181,18 +154,6 @@ See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
 Slurm distribution for an example.
 This option is not used by the burst_buffer/cray plugin.
 
-.TP
-\fBUserSizeLimit\fR
-Maximum burst buffer allocation size for any single user.
-The size is calculated by adding the burst buffer allocations for all jobs
-plus any persistent buffers belonging to the user.
-The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
-"t" (terabytes), "p" (petabytes), or "n" (nodes).
-Bytes is assumed if no suffix is supplied.
-Note that this burst buffer limit is global (applies to every user), but can be
-overridden by using TRES limits in the Slurm database.
-By default there is no job allocation size limit.
-
 .SH "EXAMPLE"
 .LP
 .br
@@ -211,16 +172,6 @@ PrivateData=true
 #
 .br
 Granularity=1G
-.br
-JobSizeLimit=200G   # Applies to each job
-.br
-UserSizeLimit=500G  # Applies to each user
-.br
-#
-.br
-PrioBoostUse=100
-.br
-PrioBoostAlloc=200
 .br
 #
 .br

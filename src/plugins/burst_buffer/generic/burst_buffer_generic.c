@@ -371,25 +371,13 @@ static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
-	bb_user_t *user_ptr;
-	uint64_t tmp_u, tmp_j, lim_u, resv_space = 0;
+	uint64_t resv_space = 0;
 	int add_total_space_needed = 0, add_user_space_needed = 0;
 	int add_total_space_avail  = 0, add_user_space_avail  = 0;
 	time_t now = time(NULL), when;
 	bb_alloc_t *bb_ptr = NULL;
 	int i;
 	char jobid_buf[32];
-
-	/* Determine if burst buffer can be allocated now for the job.
-	 * If not, determine how much space must be free. */
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
-	     (add_space > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
-	     (add_space > bb_state.bb_config.user_size_limit))) {
-		debug("%s: %s requested space above limit", __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-		return 1;
-	}
 
 	if (job_ptr->start_time <= now)
 		when = now;
@@ -411,14 +399,6 @@ static int _test_size_limit(struct job_record *job_ptr, uint64_t add_space)
 		slurm_free_burst_buffer_info_msg(resv_bb);
 	}
 
-	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
-		user_ptr = bb_find_user_rec(job_ptr->user_id, &bb_state);
-		tmp_u = user_ptr->size;
-		tmp_j = add_space;
-		lim_u = bb_state.bb_config.user_size_limit;
-
-		add_user_space_needed = tmp_u + tmp_j - lim_u;
-	}
 	add_total_space_needed = bb_state.used_space + add_space + resv_space -
 				 bb_state.total_space;
 
@@ -504,7 +484,6 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 	uint32_t job_id = 0, user_id = 0;
 	uint16_t state = 0;
 	bb_alloc_t *bb_ptr;
-	uint16_t new_nice;
 	struct job_record *job_ptr = NULL;
 	bb_job_t *bb_spec;
 	static s_p_options_t _job_options[] = {
@@ -627,22 +606,7 @@ static int _parse_job_info(void **dest, slurm_parser_enum_t type,
 		      bb_ptr->user_id, bb_ptr->job_id, bb_ptr->name);
 		bb_ptr->state = state;
 		bb_ptr->state_time = time(NULL);
-		if ((bb_ptr->state == BB_STATE_STAGED_IN) &&
-		    bb_state.bb_config.prio_boost_alloc &&
-		    job_ptr && job_ptr->details) {
-			new_nice = (NICE_OFFSET -
-				    bb_state.bb_config.prio_boost_alloc);
-			if (new_nice < job_ptr->details->nice) {
-				int64_t new_prio = job_ptr->priority;
-				new_prio += job_ptr->details->nice;
-				new_prio -= new_nice;
-				job_ptr->priority = new_prio;
-				job_ptr->details->nice = new_nice;
-				info("%s: StageIn complete, reset priority "
-					"to %u for job_id %u", __func__,
-					job_ptr->priority, job_ptr->job_id);
-			}
-		} else if (bb_ptr->state == BB_STATE_STAGED_OUT) {
+		if (bb_ptr->state == BB_STATE_STAGED_OUT) {
 			if (bb_ptr->size != 0) {
 //FIXME: VESTIGIAL: Use bb_limit_rem
 //				bb_remove_user_load(bb_ptr, &bb_state);
@@ -884,7 +848,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
-	if (bb_state.bb_config.private_data == 0)
+	if ((bb_state.bb_config.flags & BB_FLAG_PRIVATE_DATA) == 0)
 		uid = 0;	/* User can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
@@ -934,14 +898,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		return ESLURM_BURST_BUFFER_LIMIT;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (((bb_state.bb_config.job_size_limit  != NO_VAL64) &&
-	     (bb_size > bb_state.bb_config.job_size_limit)) ||
-	    ((bb_state.bb_config.user_size_limit != NO_VAL64) &&
-	     (bb_size > bb_state.bb_config.user_size_limit))) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-		return ESLURM_BURST_BUFFER_LIMIT;
-	}
-
 	if (bb_state.bb_config.allow_users) {
 		for (i = 0; bb_state.bb_config.allow_users[i]; i++) {
 			if (job_desc->user_id ==

@@ -71,17 +71,14 @@ typedef struct bb_config {
 					 * units are GB */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;	/* Type is defined in slurm.h */
-	uint64_t job_size_limit;
 	uint32_t prio_boost_alloc;
 	uint32_t prio_boost_use;
-	uint16_t private_data;
 	uint32_t stage_in_timeout;
 	uint32_t stage_out_timeout;
 	char    *start_stage_in;
 	char    *start_stage_out;
 	char    *stop_stage_in;
 	char    *stop_stage_out;
-	uint64_t user_size_limit;
 } bb_config_t;
 
 /* Current burst buffer allocations (instances). Some of these will be job

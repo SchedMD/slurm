@@ -1728,9 +1728,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	List preempt_list;
 	ListIterator preempt_iter;
-	bb_user_t *user_ptr;
-	int64_t tmp_g, tmp_u, tmp_j, tmp_r;
-	int64_t lim_u, add_space, resv_space = 0;
+	int64_t tmp_g, tmp_r;
+	int64_t add_space, resv_space = 0;
 	int64_t tmp_f;	/* Could go negative due to reservations */
 	int64_t add_total_space_needed = 0, add_user_space_needed = 0;
 	int64_t add_total_space_avail  = 0, add_user_space_avail  = 0;
@@ -1767,14 +1766,6 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 		}
 	}
 
-	if (bb_state.bb_config.user_size_limit != NO_VAL64) {
-		user_ptr = bb_find_user_rec(job_ptr->user_id, &bb_state);
-		tmp_u = user_ptr->size;
-		tmp_j = add_space;
-		lim_u = bb_state.bb_config.user_size_limit;
-		if (tmp_u + tmp_j > lim_u)
-			add_user_space_needed = tmp_u + tmp_j - lim_u;
-	}
 	add_total_space_needed = bb_state.used_space + add_space + resv_space -
 		bb_state.total_space;
 	needed_gres_ptr = xmalloc(sizeof(needed_gres_t) * bb_job->gres_cnt);
@@ -2492,7 +2483,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
-	if (bb_state.bb_config.private_data == 0)
+	if ((bb_state.bb_config.flags & BB_FLAG_PRIVATE_DATA) == 0)
 		uid = 0;	/* Any user can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);

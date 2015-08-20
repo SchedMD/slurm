@@ -96,15 +96,8 @@ Please see the <i>burst_buffer.conf</i> man page for more information.</p>
 <pre>
 # Excerpt of burst_buffer.conf file for generic plugin
 AllowUsers=alan:brenda
-PrivateData=true
-#
-JobSizeLimit=20GB   # Applies to each job
-UserSizeLimit=50GB  # Applies to ALL users
+Flags=EnablePersistent,PrivateData
 Granularity=1GB
-#
-PrioBoostUse=100
-PrioBoostAlloc=200
-#
 StageInTimeout=30
 StageOutTimeout=30
 #
@@ -188,7 +181,7 @@ A sample batch script follows:</p>
 
 <p><b>NOTE:</b> The ability to create and destroy peristent burst buffers may be
 limited by the "Flags" option in the burst_buffer.conf file.
-By default only privileged users can create ore destroy persistent burst buffers.</p>
+By default only privileged users can create or destroy persistent burst buffers.</p>
 
 <h2><a name="interactive">Interactive Job Options</a></h2>
 
@@ -222,19 +215,23 @@ srun --bb="capacity=1GB access=striped" a.out
 
 <pre>
 $ scontrol show burst
-Name=generic Granularity=100GB TotalSpace=50TB UsedSpace=42TB
-  JobSizeLimit=10TB UserSizeLimit=40TB
-  PrioBoostAlloc=200 PrioBoostUse=100 
-  StageInTimeout=30 StageOutTimeout=30 
+Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
+  StageInTimeout=30 StageOutTimeout=30 Flags=EnablePersistent,PrivateData
   AllowUsers=alan:brenda
+  CreateBuffer=/usr/local/slurm/15.08/sbin/CB
+  DestroyBuffer=/usr/local/slurm/15.08/sbin/DB
   GetSysState=/usr/local/slurm/15.08/sbin/GSS
   StartStageIn=/usr/local/slurm/15.08/sbin/SSI
   StartStageIn=/usr/local/slurm/15.08/sbin/SSO
   StopStageIn=/usr/local/slurm/15.08/sbin/PSI
   StopStageIn=/usr/local/slurm/15.08/sbin/PSO
-    JobID=18 Size=10TB State=staged-in StateTime=2014-11-19T09:17:21 UserID=alan(1000)
-    JobID=20 Size=10TB State=staged-in StateTime=2014-11-19T09:10:42 UserID=alan(1000)
-    Name=DB1 Size=22TB State=staged-in StateTime=2014-11-19T09:02:21 UserID=brenda(1001)
+  Allocated Buffers:
+    JobID=18 Account=foo CreateTime=2015-08-19T16:46:05 Partition=debug QOS=high   Size=10T State=allocated UserID=alan(1000)
+    JobID=20 Account=foo CreateTime=2015-08-19T16:46:45 Partition=debug QOS=high   Size=10T State=allocated UserID=alan(1000)
+    Name=DB1 Account=bar CreateTime=2015-08-19T16:46:45 Partition=debug QOS=normal Size=22T State=allocated UserID=brenda(1001)
+  Per User Buffer Use:
+    UserID=alan(1000) Used=20T
+    UserID=brenda(1001) Used=22T
 </pre>
 
 <h2><a name="reservation">Advanced Reservations</a></h2>
@@ -263,9 +260,9 @@ $ scontrol create reservation starttime=now duration=60 \
 
 $ scontrol create reservation StartTime=noon duration=60 \
   users=brenda NodeCnt=8 \
-  BurstBuffer=cray:nodes:2,generic:20GB
+  BurstBuffer=cray:20GB
 </pre>
 
-<p style="text-align:center;">Last modified 14 August 2015</p>
+<p style="text-align:center;">Last modified 20 August 2015</p>
 
 <!--#include virtual="footer.txt"-->
