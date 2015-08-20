@@ -3797,6 +3797,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	memcpy(job_ptr_pend->tres_req_cnt, job_ptr->tres_req_cnt, i);
 	job_ptr_pend->tres_req_str = xstrdup(job_ptr->tres_req_str);
 	job_ptr_pend->tres_fmt_req_str = xstrdup(job_ptr->tres_fmt_req_str);
+	job_ptr_pend->tres_alloc_str = NULL;
+	job_ptr_pend->tres_fmt_alloc_str = NULL;
 
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
 
