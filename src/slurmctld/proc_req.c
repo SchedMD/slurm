@@ -802,7 +802,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->priority_weight_js  = conf->priority_weight_js;
 	conf_ptr->priority_weight_part= conf->priority_weight_part;
 	conf_ptr->priority_weight_qos = conf->priority_weight_qos;
-	conf_ptr->priority_weight_tres = conf->priority_weight_tres;
+	conf_ptr->priority_weight_tres = xstrdup(conf->priority_weight_tres);
 
 	conf_ptr->private_data        = conf->private_data;
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
