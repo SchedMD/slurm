@@ -1408,6 +1408,9 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
+	/* clang needs this memset to avoid a warning */
+	memset(tres_run_mins, 0, sizeof(tres_run_mins));
+	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		tres_run_mins[i] =
 			qos_ptr->usage->grp_used_tres_run_secs[i] / 60;
@@ -1785,6 +1788,8 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	 * job has been running for 11 minutes it continues
 	 * until 20.
 	 */
+	/* clang needs this memset to avoid a warning */
+	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	for (i=0; i<slurmctld_tres_cnt; i++)
 		tres_usage_mins[i] =
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
@@ -1935,6 +1940,9 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 	time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	new_time_limit_secs = (uint64_t)new_time_limit * 60;
 
+	/* clang needs these memset to avoid a warning */
+	memset(used_tres_run_secs, 0, sizeof(used_tres_run_secs));
+	memset(new_used_tres_run_secs, 0, sizeof(new_used_tres_run_secs));
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		used_tres_run_secs[i] =
 			job_ptr->tres_alloc_cnt[i] * time_limit_secs;
@@ -2474,6 +2482,15 @@ extern bool acct_policy_job_runnable_post_select(
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
+	/* Sanity check, you have to have at least 1 node, this
+	 * really is here to avoid a clang error. */
+	if (!tres_req_cnt[TRES_ARRAY_NODE])
+		tres_req_cnt[TRES_ARRAY_NODE] = 1;
+
+	/* clang needs this memset to avoid a warning */
+	memset(tres_run_mins, 0, sizeof(tres_run_mins));
+	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
+	memset(job_tres_time_limit, 0, sizeof(job_tres_time_limit));
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		job_tres_time_limit[i] = (uint64_t)job_ptr->time_limit *
 			tres_req_cnt[i];
@@ -3028,6 +3045,11 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 
 	time_delta = (uint64_t)(((now - job_ptr->start_time) -
 				 job_ptr->tot_sus_time) / 60);
+
+	/* clang needs this memset to avoid a warning */
+	memset(job_tres_usage_mins, 0, sizeof(tres_usage_mins));
+	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
+
 	/* find out how many cpu minutes this job has been
 	 * running for. We add 1 here to make it so we can check for
 	 * just > instead of >= in our checks */
