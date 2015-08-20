@@ -1823,17 +1823,21 @@ extern List priority_p_get_priority_factors_list(
 			memcpy(obj, job_ptr->prio_factors,
 			       sizeof(priority_factors_object_t));
 
-			obj->priority_tres = xmalloc(sizeof(double) *
-						     slurmctld_tres_cnt);
-			memcpy(obj->priority_tres,
-			       job_ptr->prio_factors->priority_tres,
-			       sizeof(double) * slurmctld_tres_cnt);
+			if (job_ptr->prio_factors->priority_tres) {
+				obj->priority_tres = xmalloc(
+					sizeof(double) * slurmctld_tres_cnt);
+				memcpy(obj->priority_tres,
+				       job_ptr->prio_factors->priority_tres,
+				       sizeof(double) * slurmctld_tres_cnt);
+			}
 
-			obj->tres_weights = xmalloc(sizeof(double) *
-						    slurmctld_tres_cnt);
-			memcpy(obj->tres_weights,
-			       job_ptr->prio_factors->tres_weights,
-			       sizeof(double) * slurmctld_tres_cnt);
+			if (job_ptr->prio_factors->tres_weights) {
+				obj->tres_weights = xmalloc(sizeof(double) *
+							    slurmctld_tres_cnt);
+				memcpy(obj->tres_weights,
+				       job_ptr->prio_factors->tres_weights,
+				       sizeof(double) * slurmctld_tres_cnt);
+			}
 
 			obj->job_id = job_ptr->job_id;
 			obj->user_id = job_ptr->user_id;
