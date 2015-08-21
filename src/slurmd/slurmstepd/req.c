@@ -419,8 +419,8 @@ _handle_accept(void *arg)
 	}
 
 	/* Get the uid & gid from the credential, then destroy it. */
-	uid = g_slurm_auth_get_uid(auth_cred, NULL);
-	gid = g_slurm_auth_get_gid(auth_cred, NULL);
+	uid = g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
+	gid = g_slurm_auth_get_gid(auth_cred, slurm_get_auth_info());
 	debug3("  Identity: uid=%d, gid=%d", uid, gid);
 	g_slurm_auth_destroy(auth_cred);
 	free_buf(buffer);

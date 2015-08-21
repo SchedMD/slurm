@@ -177,6 +177,8 @@ script for Slurm?</a></li>
 <li><a href="#delete_partition">How do I safely remove partitions?</a></li>
 <li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
 <li><a href="#mic_config">How can Slurm be configured to support Intel Phi (MIC)?</a></li>
+<li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
+    configuration be copied from an existing cluster to the new cluster?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2022,8 +2024,15 @@ install the latest MPSS and Slurm packages from yum/zypper,
 add new MICs (via console utility or GUI),
 add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
+<p><a name="cluster_acct"><b>63. When adding a new cluster, how can the Slurm cluster
+    configuration be copied from an existing cluster to the new cluster?</b></a><br>
+Accounts need to be configured the cluster. An easy way to copy information from
+an existing cluster is to use the sacctmgr command to dump that cluster's information,
+modify it using some editor, the load the new information using the sacctmgr
+command. See the sacctmgr man page for details, including an example.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 June 2015</p>
+<p style="text-align:center;">Last modified 21 August 2015</p>
 
 <!--#include virtual="footer.txt"-->

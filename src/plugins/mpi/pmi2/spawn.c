@@ -204,7 +204,7 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
 		return SLURM_ERROR;
 	}
-	auth_uid = g_slurm_auth_get_uid(auth_cred, NULL);
+	auth_uid = g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
 	(void) g_slurm_auth_destroy(auth_cred);
 	my_uid = getuid();
 	if ((auth_uid != 0) && (auth_uid != my_uid)) {

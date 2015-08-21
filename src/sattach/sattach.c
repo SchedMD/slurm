@@ -577,7 +577,8 @@ static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
 	message_thread_state_t *mts = (message_thread_state_t *)arg;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
+					     slurm_get_auth_info());
 	static uid_t slurm_uid;
 	static bool slurm_uid_set = false;
 	uid_t uid = getuid();
