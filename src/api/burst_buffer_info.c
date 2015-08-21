@@ -139,9 +139,11 @@ extern int slurm_load_burst_buffer_info(burst_buffer_info_msg_t **
  * IN out - file to write to
  * IN info_ptr - burst_buffer information message pointer
  * IN one_liner - print as a single line if true
+ * IN verbose - higher values to log additional details
  */
 extern void slurm_print_burst_buffer_info_msg(FILE *out,
-		 burst_buffer_info_msg_t *info_ptr, int one_liner)
+		 burst_buffer_info_msg_t *info_ptr, int one_liner,
+		 int verbose)
 {
 	int i;
 	burst_buffer_info_t *burst_buffer_ptr;
@@ -154,13 +156,13 @@ extern void slurm_print_burst_buffer_info_msg(FILE *out,
 	for (i = 0, burst_buffer_ptr = info_ptr->burst_buffer_array;
 	     i < info_ptr->record_count; i++, burst_buffer_ptr++) {
 		slurm_print_burst_buffer_record(out, burst_buffer_ptr,
-						one_liner);
+						one_liner, verbose);
 	}
 }
 
 static void _print_burst_buffer_resv(FILE *out,
 				     burst_buffer_resv_t* burst_buffer_ptr,
-				     int one_liner)
+				     int one_liner, bool verbose)
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
 	char *out_buf = NULL;
@@ -189,13 +191,23 @@ static void _print_burst_buffer_resv(FILE *out,
 		time_t now = time(NULL);
 		slurm_make_time_str(&now, time_buf, sizeof(time_buf));
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "Account=%s CreateTime=%s Partition=%s QOS=%s Size=%s State=%s UserID=%s(%u)",
-		 burst_buffer_ptr->account,  time_buf,
-		 burst_buffer_ptr->partition, burst_buffer_ptr->qos, sz_buf,
-		 bb_state_string(burst_buffer_ptr->state),
-	         uid_to_string(burst_buffer_ptr->user_id),
-	         burst_buffer_ptr->user_id);
+	if (verbose) {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "Account=%s CreateTime=%s Partition=%s QOS=%s "
+			 "Size=%s State=%s UserID=%s(%u)",
+			 burst_buffer_ptr->account,  time_buf,
+			 burst_buffer_ptr->partition, burst_buffer_ptr->qos,
+			 sz_buf, bb_state_string(burst_buffer_ptr->state),
+			 uid_to_string(burst_buffer_ptr->user_id),
+			 burst_buffer_ptr->user_id);
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "CreateTime=%s Size=%s State=%s UserID=%s(%u)",
+			 time_buf, sz_buf,
+			 bb_state_string(burst_buffer_ptr->state),
+			 uid_to_string(burst_buffer_ptr->user_id),
+			 burst_buffer_ptr->user_id);
+	}
 	xstrcat(out_buf, tmp_line);
 
 	/* Gres includes "nodes" on Cray systems */
@@ -241,11 +253,13 @@ static void _print_burst_buffer_use(FILE *out,
  * IN out - file to write to
  * IN burst_buffer_ptr - an individual burst buffer record pointer
  * IN one_liner - print as a single line if not zero
+ * IN verbose - higher values to log additional details
  * RET out - char * containing formatted output (must be freed after call)
  *	   NULL is returned on failure.
  */
 extern void slurm_print_burst_buffer_record(FILE *out,
-		burst_buffer_info_t *burst_buffer_ptr, int one_liner)
+		burst_buffer_info_t *burst_buffer_ptr, int one_liner,
+		int verbose)
 {
 	char tmp_line[512];
 	char g_sz_buf[32],t_sz_buf[32], u_sz_buf[32];
@@ -263,7 +277,8 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 		      burst_buffer_ptr->used_space);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s UsedSpace=%s",
+		 "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s "
+		 "UsedSpace=%s",
 		 burst_buffer_ptr->name, burst_buffer_ptr->default_pool,
 		 g_sz_buf, t_sz_buf, u_sz_buf);
 	xstrcat(out_buf, tmp_line);
@@ -382,7 +397,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		fprintf(out, "  Allocated Buffers:\n");
 	for (i = 0, bb_resv_ptr = burst_buffer_ptr->burst_buffer_resv_ptr;
 	     i < burst_buffer_ptr->buffer_count; i++, bb_resv_ptr++) {
-		 _print_burst_buffer_resv(out, bb_resv_ptr, one_liner);
+		 _print_burst_buffer_resv(out, bb_resv_ptr, one_liner, verbose);
 	}
 
 	/****** Lines (optional) ******/

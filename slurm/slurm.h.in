@@ -4784,9 +4784,11 @@ extern void slurm_free_burst_buffer_info_msg PARAMS(
  * IN out - file to write to
  * IN info_ptr - burst_buffer information message pointer
  * IN one_liner - print as a single line if true
+ * IN verbose - higher values to log additional details
  */
 extern void slurm_print_burst_buffer_info_msg PARAMS(
-		(FILE *out, burst_buffer_info_msg_t *info_ptr, int one_liner));
+		(FILE *out, burst_buffer_info_msg_t *info_ptr, int one_liner,
+		 int verbosity));
 
 /*
  * slurm_print_burst_buffer_record - output information about a specific Slurm
@@ -4795,12 +4797,13 @@ extern void slurm_print_burst_buffer_info_msg PARAMS(
  * IN out - file to write to
  * IN burst_buffer_ptr - an individual burst buffer record pointer
  * IN one_liner - print as a single line if not zero
+ * IN verbose - higher values to log additional details
  * RET out - char * containing formatted output (must be freed after call)
  *	   NULL is returned on failure.
  */
 extern void slurm_print_burst_buffer_record PARAMS(
 			(FILE *out, burst_buffer_info_t *burst_buffer_ptr,
-			 int one_liner));
+			 int one_liner, int verbose));
 
 /*
  * slurm_network_callerid - issue RPC to get the job id of a job from a remote
