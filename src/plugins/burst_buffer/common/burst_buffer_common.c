@@ -1294,30 +1294,14 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 				info("  Destroy Name:%s Hurry:%d",
 				     buf_ptr->name, (int) buf_ptr->hurry);
 			} else {
-				info("  Create  Name:%s Size:%"PRIu64" Access:%s Type:%s State:%s",
+				info("  Create  Name:%s Size:%"PRIu64
+				     " Access:%s Type:%s State:%s",
 				     buf_ptr->name, buf_ptr->size,
 				     buf_ptr->access, buf_ptr->type,
 				     bb_state_string(buf_ptr->state));
 			}
 		}
 	}
-}
-
-/* Determine if a request of a given size can run based upon limits in
- * burst_buffer.conf. TRES limits handled by slurmctld (job not eligible until
- * TRES limits satisfied).
- *
- * RET: -1  Can never run
- *       0  Can run later
- *       1  Can run now
- */
-extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
-{
-	xassert(state_ptr);
-
-//FIXME: Vestigial, initial work based upon lack of TRES limits
-	return 1;
 }
 
 /* Make claim against resource limit for a user */

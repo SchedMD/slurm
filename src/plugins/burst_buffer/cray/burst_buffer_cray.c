@@ -437,12 +437,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			job_type = strstr(tok, ",TYPE=");
 			if (job_type) {
 				job_type[0] = '\0';
-				/* FIXME: Contents current unused */
+				/* Contents current unused by Slurm */
 			}
 			job_access = strstr(tok, ",ACCESS=");
 			if (job_access) {
 				job_access[0] = '\0';
-				/* FIXME: Contents current unused */
+				/* Contents current unused by Slurm */
 			}
 			bb_size = strstr(tok, "SIZE=");
 			if (bb_size) {
@@ -495,12 +495,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			bb_type = strstr(tok, ",TYPE=");
 			if (bb_type) {
 				bb_type[0] = '\0';
-				/* FIXME: Contents current unused */
+				bb_type++;
 			}
 			bb_access = strstr(tok, ",ACCESS=");
 			if (bb_access) {
 				bb_access[0] = '\0';
-				/* FIXME: Contents current unused */
+				bb_access++;
 			}
 			bb_size = strstr(tok, ",SIZE=");
 			if (bb_size) {
@@ -1032,13 +1032,14 @@ static void _load_state(bool init_config)
 
 	/*
 	 * Load the configurations information
+	 * NOTE: This information is currently unused
 	 */
 	configs = _bb_get_configs(&num_configs, &bb_state);
 	if (configs == NULL) {
 		info("%s: failed to find DataWarp configurations", __func__);
+		num_configs = 0;
 	}
-	_bb_free_configs(configs, num_sessions);
-//FIXME: configurations data is currently unused, is it needed?
+	_bb_free_configs(configs, num_configs);
 
 	_recover_limit_state();
 	_apply_limits();
@@ -1740,16 +1741,6 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 
 	xassert(bb_job);
 	add_space = bb_job->total_size + bb_job->persist_add;
-
-	/* Determine if burst buffer can be allocated now for the job.
-	 * If not, determine how much space must be free. */
-	if (bb_limit_test(job_ptr->user_id, bb_job->account, bb_job->partition,
-			  bb_job->qos, add_space, &bb_state) < 1) {
-		debug("%s: %s requested burst buffer space above limit",
-		      __func__,
-		      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-		return 1;
-	}
 
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
@@ -2594,12 +2585,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
-	if (bb_limit_test(job_desc->user_id, job_desc->account,
-			  job_desc->partition, job_desc->qos, bb_size,
-			  &bb_state) < 1) {
-		rc = ESLURM_BURST_BUFFER_LIMIT;
-		goto fini;
-	}
 	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
 
 fini:	job_desc->shared = 0;	/* Compute nodes can not be shared */
@@ -2722,7 +2707,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return rc;
 
-//FIXME: Add support for job arrays
 	if (job_ptr->array_recs) {
 		if (err_msg) {
 			xfree(*err_msg);
@@ -3236,7 +3220,6 @@ static void *_start_pre_run(void *x)
  */
 extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 {
-//FIXME: Test for memory leaks
 	bb_job_t *bb_job;
 	char jobid_buf[32];
 

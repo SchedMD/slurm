@@ -340,17 +340,6 @@ extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id);
 extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
 
-/* Determine if a request of a given size can run based upon limits in
- * burst_buffer.conf. TRES limits handled by slurmctld (job not eligible until
- * TRES limits satisfied).
- *
- * RET: -1  Can never run
- *       0  Can run later
- *       1  Can run now
- */
-extern int bb_limit_test(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
-
 /* Make claim against resource limit for a user */
 extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
