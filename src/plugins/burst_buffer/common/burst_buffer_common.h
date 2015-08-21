@@ -168,11 +168,11 @@ typedef struct {
 } bb_pend_persist_t;
 
 /* Used for building queue of jobs records for various purposes */
-typedef struct job_queue_rec {
+typedef struct bb_job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_job;	/* Used by cray plugin only */
 	struct job_record *job_ptr;
-} job_queue_rec_t;
+} bb_job_queue_rec_t;
 
 /* Used for building queue of job preemption candidates */
 struct preempt_bb_recs {

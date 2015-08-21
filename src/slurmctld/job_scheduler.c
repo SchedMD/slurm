@@ -3392,14 +3392,7 @@ static void *_run_prolog(void *arg)
 		if (job_ptr == NULL)
 			error("prolog_slurmctld job %u now defunct", job_id);
 	}
-	if (job_ptr) {
-                job_ptr->job_state &= ~JOB_CONFIGURING;
-		if (job_ptr->details && job_ptr->details->prolog_running)
-			job_ptr->details->prolog_running--;
-		if (job_ptr->batch_flag &&
-		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)))
-			launch_job(job_ptr);
-	}
+	prolog_running_decr(job_ptr);
 	if (job_ptr && job_ptr->node_bitmap) {
 		for (i=0; i<node_record_count; i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
@@ -3419,6 +3412,23 @@ static void *_run_prolog(void *arg)
 	FREE_NULL_BITMAP(node_bitmap);
 
 	return NULL;
+}
+
+/* Decrement a job's prolog_running counter and launch the job if zero */
+extern void prolog_running_decr(struct job_record *job_ptr)
+{
+	if (!job_ptr)
+		return;
+
+	if (job_ptr->details && job_ptr->details->prolog_running &&
+	    (--job_ptr->details->prolog_running > 0))
+		return;
+
+	job_ptr->job_state &= ~JOB_CONFIGURING;
+	if (job_ptr->batch_flag &&
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+		launch_job(job_ptr);
+	}
 }
 
 /*

@@ -118,6 +118,9 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);
 
+/* Decrement a job's prolog_running counter and launch the job if zero */
+extern void prolog_running_decr(struct job_record *job_ptr);
+
 /*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.

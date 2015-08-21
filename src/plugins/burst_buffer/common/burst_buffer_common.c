@@ -747,8 +747,8 @@ extern void bb_job_queue_del(void *x)
 /* Sort job queue by expected start time */
 extern int bb_job_queue_sort(void *x, void *y)
 {
-	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
-	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
+	bb_job_queue_rec_t *job_rec1 = *(bb_job_queue_rec_t **) x;
+	bb_job_queue_rec_t *job_rec2 = *(bb_job_queue_rec_t **) y;
 	struct job_record *job_ptr1 = job_rec1->job_ptr;
 	struct job_record *job_ptr2 = job_rec2->job_ptr;
 

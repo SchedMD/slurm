@@ -1052,7 +1052,7 @@ static void _alloc_job_bb(struct job_record *job_ptr, uint64_t bb_size)
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
-	job_queue_rec_t *job_rec;
+	bb_job_queue_rec_t *job_rec;
 	List job_candidates;
 	ListIterator job_iter;
 	struct job_record *job_ptr;
@@ -1079,7 +1079,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		bb_size = _get_bb_size(job_ptr);
 		if (bb_size == 0)
 			continue;
-		job_rec = xmalloc(sizeof(job_queue_rec_t));
+		job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
 		job_rec->bb_size = bb_size;
 		list_push(job_candidates, job_rec);

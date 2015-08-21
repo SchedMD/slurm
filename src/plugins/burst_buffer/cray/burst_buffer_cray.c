@@ -62,6 +62,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
@@ -293,7 +294,7 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 
 static void _job_queue_del(void *x)
 {
-	job_queue_rec_t *job_rec = (job_queue_rec_t *) x;
+	bb_job_queue_rec_t *job_rec = (bb_job_queue_rec_t *) x;
 	if (job_rec) {
 		xfree(job_rec);
 	}
@@ -2913,7 +2914,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
-	job_queue_rec_t *job_rec;
+	bb_job_queue_rec_t *job_rec;
 	List job_candidates;
 	ListIterator job_iter;
 	struct job_record *job_ptr;
@@ -2938,7 +2939,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job == NULL)
 			continue;
-		job_rec = xmalloc(sizeof(job_queue_rec_t));
+		job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
 		job_rec->bb_job = bb_job;
 		list_push(job_candidates, job_rec);
@@ -3118,9 +3119,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	pre_run_args->args    = pre_run_argv;
 	pre_run_args->job_id  = job_ptr->job_id;
 	pre_run_args->user_id = job_ptr->user_id;
-//FIXME: Use prolog_running to delay launch
-//	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
-//		job_ptr->details->prolog_running++;
+	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
+		job_ptr->details->prolog_running++;
 
 	slurm_attr_init(&pre_run_attr);
 	if (pthread_attr_setdetachstate(&pre_run_attr, PTHREAD_CREATE_DETACHED))
@@ -3154,18 +3154,14 @@ static void *_start_pre_run(void *x)
 	struct job_record *job_ptr;
 	DEF_TIMERS;
 
-//FIXME: Move below after prolog_running use in place
-	lock_slurmctld(job_write_lock);
-	pthread_mutex_lock(&bb_state.bb_mutex);
-//FIXME: END HERE
 	START_TIMER;
 	resp_msg = bb_run_script("dws_pre_run",
 				 bb_state.bb_config.get_sys_state,
 				 pre_run_args->args, 2000, &status);
 	END_TIMER;
 
-//	lock_slurmctld(job_write_lock);
-//	pthread_mutex_lock(&bb_state.bb_mutex);
+	lock_slurmctld(job_write_lock);
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
 	if (job_ptr) {
 		jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf));
@@ -3200,9 +3196,8 @@ static void *_start_pre_run(void *x)
 		}
 		_queue_teardown(pre_run_args->job_id, pre_run_args->user_id,
 				true);
-	} else if (job_ptr && job_ptr->details &&
-		   job_ptr->details->prolog_running) {
-		job_ptr->details->prolog_running--;
+	} else {
+		prolog_running_decr(job_ptr);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
