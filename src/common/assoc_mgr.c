@@ -771,15 +771,13 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		/* set up new root since if running off cache the
 		   total usage for the cluster doesn't get set up again */
 		if (last_root) {
-			int i;
-
 			assoc_mgr_root_assoc->usage->usage_raw =
 				last_root->usage->usage_raw;
 			assoc_mgr_root_assoc->usage->usage_norm =
 				last_root->usage->usage_norm;
-			for (i=0; i<g_tres_count; i++)
-				assoc_mgr_root_assoc->usage->usage_tres_raw[i] =
-					last_root->usage->usage_tres_raw[i];
+			memcpy(assoc_mgr_root_assoc->usage->usage_tres_raw,
+			       last_root->usage->usage_tres_raw,
+			       sizeof(long double) * g_tres_count);
 		}
 	}
 
