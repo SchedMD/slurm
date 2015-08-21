@@ -261,7 +261,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 {
 	struct allocation_msg_thread *msg_thr =
 		(struct allocation_msg_thread *)arg;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
+					     slurm_get_auth_info());
 	uid_t uid = getuid();
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {

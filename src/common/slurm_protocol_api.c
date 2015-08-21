@@ -2981,7 +2981,7 @@ static int _unpack_msg_uid(Buf buffer)
 
 	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL)
 		return uid;
-	uid = (int) g_slurm_auth_get_uid(auth_cred, NULL);
+	uid = (int) g_slurm_auth_get_uid(auth_cred, slurm_get_auth_info());
 	g_slurm_auth_destroy(auth_cred);
 
 	return uid;

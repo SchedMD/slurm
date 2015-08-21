@@ -1445,7 +1445,8 @@ static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
 	struct step_launch_state *sls = (struct step_launch_state *)arg;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
+					     slurm_get_auth_info());
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
 	int rc;
