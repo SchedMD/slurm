@@ -424,7 +424,7 @@ if { $exit_code } {
 send_user "$cluster..$start_str.$end_str.$cluster_cpus.$node_list.\n"
 
 set matches 0
-set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,node,start,end,cpu --noheader start=$start_str end=$end_str]
+set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,noden,start,end,cpu --noheader start=$start_str end=$end_str]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
