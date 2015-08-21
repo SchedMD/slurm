@@ -777,6 +777,7 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 {
 	int i;
 	struct gs_job *j_ptr;
+	uint16_t preempt_mode;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 		info("gang: update_active_row: rebuilding part %s...",
@@ -801,9 +802,11 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
+				preempt_mode =
+					slurm_job_preempt_mode(j_ptr->job_ptr);
 				if (p_ptr->num_shadows &&
-				    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
-				     PREEMPT_MODE_SUSPEND)) {
+				    (preempt_mode != PREEMPT_MODE_OFF) &&
+				    (preempt_mode != PREEMPT_MODE_SUSPEND)) {
 					_preempt_job_queue(j_ptr->job_id);
 				} else
 					_suspend_job(j_ptr->job_id);
@@ -825,9 +828,11 @@ static void _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 			/* this job has been preempted by a shadow job.
 			 * suspend it and preserve it's job_list order */
 			if (j_ptr->sig_state != GS_SUSPEND) {
+				preempt_mode =
+					slurm_job_preempt_mode(j_ptr->job_ptr);
 				if (p_ptr->num_shadows &&
-				    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
-				     PREEMPT_MODE_SUSPEND)) {
+				    (preempt_mode != PREEMPT_MODE_OFF) &&
+				    (preempt_mode != PREEMPT_MODE_SUSPEND)) {
 					_preempt_job_queue(j_ptr->job_id);
 				} else
 					_suspend_job(j_ptr->job_id);
@@ -943,6 +948,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 {
 	int i;
 	struct gs_job *j_ptr;
+	uint16_t preempt_mode;
 
 	xassert(p_ptr);
 	xassert(job_ptr->job_id > 0);
@@ -1017,9 +1023,10 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
 			info("gang: _add_job_to_part: suspending job %u",
 			     job_ptr->job_id);
 		}
+		preempt_mode = slurm_job_preempt_mode(job_ptr);
 		if (p_ptr->num_shadows &&
-		    (slurm_job_preempt_mode(job_ptr) !=
-		     PREEMPT_MODE_SUSPEND)) {
+		    (preempt_mode != PREEMPT_MODE_OFF) &&
+		    (preempt_mode != PREEMPT_MODE_SUSPEND)) {
 			_preempt_job_queue(job_ptr->job_id);
 		} else
 			_suspend_job(job_ptr->job_id);
@@ -1499,6 +1506,7 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 {
 	int i, j;
 	struct gs_job *j_ptr;
+	uint16_t preempt_mode;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering _cycle_job_list");
@@ -1534,9 +1542,10 @@ static void _cycle_job_list(struct gs_part *p_ptr)
 		    		info("gang: _cycle_job_list: suspending job %u",
 				     j_ptr->job_id);
 			}
+			preempt_mode = slurm_job_preempt_mode(j_ptr->job_ptr);
 			if (p_ptr->num_shadows &&
-			    (slurm_job_preempt_mode(j_ptr->job_ptr) !=
-			     PREEMPT_MODE_SUSPEND)) {
+			    (preempt_mode != PREEMPT_MODE_OFF) &&
+			    (preempt_mode != PREEMPT_MODE_SUSPEND)) {
 				_preempt_job_queue(j_ptr->job_id);
 			} else
 				_suspend_job(j_ptr->job_id);

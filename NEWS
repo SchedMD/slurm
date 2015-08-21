@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Preserve advanced _core_ reservation when nodes added/removed/resized on
     slurmctld restart. Rebuild core_bitmap as needed.
  -- Fix for non-standard Munge port location for srun/pmi use.
+ -- Fix gang scheduling/preemption issue that could cancel job at startup.
 
 * Changes in Slurm 14.11.8
 ==========================
