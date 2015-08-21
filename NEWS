@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix for non-standard Munge port location for srun/pmi use.
  -- Fix gang scheduling/preemption issue that could cancel job at startup.
  -- Fix a bug in squeue which prevented squeue -tPD to print array jobs.
+ -- Sort job arrays in job queue according to array_task_id when priorities are
+    equal.
 
 * Changes in Slurm 14.11.8
 ==========================
