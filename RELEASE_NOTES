@@ -1,7 +1,6 @@
 RELEASE NOTES FOR SLURM VERSION 15.08
 12 May 2015
 
-
 IMPORTANT NOTES:
 ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
 UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
@@ -42,6 +41,8 @@ HIGHLIGHTS
  -- Add burst buffer support infrastructure. Currently available plugin include
     burst_buffer/generic (uses administrator supplied programs to manage file
     staging) and burst_buffer/cray (uses Cray APIs to manage buffers).
+ -- Add power capping support for Cray systems with automatic rebalancing of
+    power allocation between nodes.
  -- Modify slurmctld outgoing RPC logic to support more parallel tasks (up to
     85 RPCs and 256 pthreads; the old logic supported up to 21 RPCs and 256
     threads).
