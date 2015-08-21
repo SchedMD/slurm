@@ -1462,11 +1462,12 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	ListIterator iter;
 	struct job_record *job_ptr;
 	uint16_t mode;
-	int job_cnt = 0, rc = SLURM_SUCCESS;
+	int job_cnt = 0, rc;
 	checkpoint_msg_t ckpt_msg;
 
 	iter = list_iterator_create(preemptee_job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		rc = SLURM_SUCCESS;
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
 			job_cnt++;
@@ -1513,9 +1514,10 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
 			debug("preempted job %u suspended by gang scheduler",
 			      job_ptr->job_id);
-		} else {
-			error("Invalid preempt_mode: %u", mode);
-			rc = SLURM_ERROR;
+		} else if (mode == PREEMPT_MODE_OFF) {
+			error("%s: Invalid preempt_mode %u for job %u",
+			      __func__, mode, job_ptr->job_id);
+			continue;
 		}
 
 		if (rc != SLURM_SUCCESS) {
@@ -1525,12 +1527,13 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				continue;
 
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
-			if (rc == SLURM_SUCCESS)
-				info("preempted job %u had to be killed",
-				     job_ptr->job_id);
-			else {
-				info("preempted job %u kill failure %s",
-				     job_ptr->job_id, slurm_strerror(rc));
+			if (rc == SLURM_SUCCESS) {
+				info("%s: preempted job %u had to be killed",
+				     __func__, job_ptr->job_id);
+			} else {
+				info("%s: preempted job %u kill failure %s",
+				     __func__, job_ptr->job_id,
+				     slurm_strerror(rc));
 			}
 		}
 	}

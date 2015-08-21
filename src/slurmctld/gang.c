@@ -661,16 +661,21 @@ static void _preempt_job_dequeue(void)
 				error("preempted job %u could not be "
 				      "requeued: %s",
 				      job_ptr->job_id, slurm_strerror(rc));
+		} else if (preempt_mode == PREEMPT_MODE_OFF) {
+			error("Invalid preempt_mode %u for job %u",
+			      preempt_mode, job_ptr->job_id);
+			continue;
 		}
 
 		if (rc != SLURM_SUCCESS) {
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
-				info("preempted job %u had to be killed",
-				     job_ptr->job_id);
+				info("%s: preempted job %u had to be killed",
+				     __func__,job_ptr->job_id);
 			else {
-				info("preempted job %u kill failure %s",
-				     job_ptr->job_id, slurm_strerror(rc));
+				info("%s: preempted job %u kill failure %s",
+				     __func__, job_ptr->job_id,
+				     slurm_strerror(rc));
 			}
 		}
 	}
