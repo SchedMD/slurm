@@ -92,11 +92,11 @@ documents those changes that are of interest to users and administrators.
     using the FAIR_TREE algorithm instead.
  -- Set job's reason to BadConstaints when job can't run on any node.
  -- Prevent abort on update of reservation with no nodes (licenses only).
- -- Prevent slurmctld from dumping core ifjob_resrcs is missing in the
+ -- Prevent slurmctld from dumping core if job_resrcs is missing in the
     job data structure.
  -- Fix squeue to print array task ids according to man page when
     SLURM_BITSTR_LEN is defined in the environment.
- -- In squeue sort jobs based on array job ID if available.
+ -- In squeue, sort jobs based on array job ID if available.
  -- Fix the calculation of job energy by not including the NO_VAL values.
  -- Advanced reservation fixes: enable update of bluegene reservation, avoid
     abort on multi-core reservations.
