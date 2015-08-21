@@ -621,6 +621,9 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	List header_list = NULL;
 
+	/* init memory before chance of going to end_it before being init'ed. */
+	memset(&total_field, 0, sizeof(print_field_t));
+
 //	slurmdb_report_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
@@ -672,7 +675,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	list_append_list(header_list, print_fields_list);
 	list_append_list(header_list, grouping_print_fields_list);
 
-	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
