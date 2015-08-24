@@ -331,6 +331,10 @@ static uint64_t _atoi(char *tok)
 			size_u = size_u * 1024 * 1024;
 		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
 			size_u = size_u * 1024 * 1024 * 1024;
+		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
+			size_u = size_u * 1024 * 1024 * 1024 * 1024;
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			size_u = size_u * 1024 * 1024 * 1024 * 1024 * 1024;
 		}
 	}
 	return size_u;
