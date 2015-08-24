@@ -3012,15 +3012,19 @@ extern char *slurmdb_make_tres_string_from_simple(
 		if (tres_str)
 			xstrcat(tres_str, ",");
 		if (!tres_rec->type)
-			xstrfmtcat(tres_str, "%u=%"PRIu64"",
-				   tres_rec->id, count);
+			xstrfmtcat(tres_str, "%u=", tres_rec->id);
 
 		else
-			xstrfmtcat(tres_str, "%s%s%s=%"PRIu64"",
+			xstrfmtcat(tres_str, "%s%s%s=",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
-				   tres_rec->name ? tres_rec->name : "",
-				   count);
+				   tres_rec->name ? tres_rec->name : "");
+		if (count != INFINITE64)
+			xstrfmtcat(tres_str, "%"PRIu64, count);
+		else
+			xstrfmtcat(tres_str, "NONE");
+
+
 	get_next:
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
