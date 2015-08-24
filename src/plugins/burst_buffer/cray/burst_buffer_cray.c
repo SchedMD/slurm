@@ -3502,6 +3502,7 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 			bb_job->state = BB_STATE_ALLOCATED;
 		else if (bb_job->state == BB_STATE_DELETING)
 			bb_job->state = BB_STATE_DELETED;
+		queue_job_scheduler();
 	}
 }
 
