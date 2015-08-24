@@ -217,7 +217,7 @@ static void	_parse_instance_capacity(json_object *instance,
 static int	_xlate_batch(struct job_descriptor *job_desc);
 static int	_xlate_interactive(struct job_descriptor *job_desc);
 static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
-static void	_purge_bb_files(uint32_t job_id);
+static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
 static void	_recover_limit_state(void);
@@ -301,8 +301,9 @@ static void _job_queue_del(void *x)
 }
 
 /* Purge files we have created for the job.
- * bb_state.bb_mutex is locked on function entry. */
-static void _purge_bb_files(uint32_t job_id)
+ * bb_state.bb_mutex is locked on function entry.
+ * job_ptr may be NULL if not found */
+static void _purge_bb_files(uint32_t job_id, struct job_record *job_ptr)
 
 {
 	char *hash_dir = NULL, *job_dir = NULL;
@@ -316,17 +317,20 @@ static void _purge_bb_files(uint32_t job_id)
 	(void) mkdir(job_dir, 0700);
 
 	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
-	xstrfmtcat(path_file, "%s/pathfile", job_dir);
-	xstrfmtcat(script_file, "%s/script", job_dir);
-
 	(void) unlink(client_nids_file);
-	(void) unlink(path_file);
-	(void) unlink(script_file);
-	(void) unlink(job_dir);
-
 	xfree(client_nids_file);
+
+	xstrfmtcat(path_file, "%s/pathfile", job_dir);
+	(void) unlink(path_file);
 	xfree(path_file);
-	xfree(script_file);
+
+	if (!job_ptr || (job_ptr->batch_flag == 0)) {
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		(void) unlink(script_file);
+		xfree(script_file);
+	}
+
+	(void) unlink(job_dir);
 	xfree(job_dir);
 	xfree(hash_dir);
 }
@@ -1633,8 +1637,9 @@ static void *_start_teardown(void *x)
 	} else {
 		lock_slurmctld(job_write_lock);
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		_purge_bb_files(teardown_args->job_id);
-		if ((job_ptr = find_job_record(teardown_args->job_id))) {
+		job_ptr = find_job_record(teardown_args->job_id);
+		_purge_bb_files(teardown_args->job_id, job_ptr);
+		if (job_ptr) {
 			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
 				bb_limit_rem(bb_alloc->user_id,
 					     bb_alloc->account,
@@ -2784,6 +2789,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job == NULL)
 			continue;
+		if (bb_job->state == BB_STATE_COMPLETE)
+			bb_job->state = BB_STATE_PENDING;     /* job requeued */
 		job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
 		job_rec->bb_job = bb_job;
@@ -2846,7 +2853,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 		     (int) test_only);
 	}
-	if ((bb_job = _get_bb_job(job_ptr)) == NULL) {
+	bb_job = _get_bb_job(job_ptr);
+	if (bb_job && (bb_job->state == BB_STATE_COMPLETE))
+		bb_job->state = BB_STATE_PENDING;	/* job requeued */
+	if (bb_job == NULL) {
 		rc = -1;
 	} else if (bb_job->state < BB_STATE_STAGING_IN) {
 		/* Job buffer not allocated, create now if space available */
