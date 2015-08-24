@@ -2615,6 +2615,14 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	} else if (step_ptr->pn_min_memory == MEM_PER_CPU)
 		step_ptr->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
 
+#ifdef HAVE_FRONT_END
+	if (step_ptr->job_ptr->front_end_ptr &&
+	    (step_ptr->start_protocol_ver >
+	     step_ptr->job_ptr->front_end_ptr->protocol_version))
+		step_ptr->start_protocol_ver =
+			step_ptr->job_ptr->front_end_ptr->protocol_version;
+#endif
+
 #ifdef HAVE_BGQ
 	/* Since we have to deal with a conversion between cnodes and
 	   midplanes here the math is really easy, and already has
@@ -2640,10 +2648,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			struct node_record *node_ptr =
 				node_record_table_ptr + i;
 
+#ifndef HAVE_FRONT_END
 			if (step_ptr->start_protocol_ver >
 			    node_ptr->protocol_version)
 				step_ptr->start_protocol_ver =
 					node_ptr->protocol_version;
+#endif
 
 			/* find out the position in the job */
 			pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
