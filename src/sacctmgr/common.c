@@ -1600,6 +1600,8 @@ extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 {
+	char *tmp_char;
+
 	if (!assoc)
 		return;
 
@@ -1619,12 +1621,24 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  GrpSubmitJobs = %u\n",
 		       assoc->grp_submit_jobs);
 
-	printf("  GrpTRES       = %s\n",
-	       assoc->grp_tres ? assoc->grp_tres : "NONE");
-	printf("  GrpTRESMins   = %s\n",
-	       assoc->grp_tres_mins ? assoc->grp_tres_mins : "NONE");
-	printf("  GrpTRESRunMins= %s\n",
-	       assoc->grp_tres_run_mins ? assoc->grp_tres_run_mins : "NONE");
+	if (assoc->grp_tres) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->grp_tres, g_tres_list);
+		printf("  GrpTRES       = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (assoc->grp_tres_mins) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->grp_tres_mins, g_tres_list);
+		printf("  GrpTRESMins   = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (assoc->grp_tres_run_mins) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->grp_tres_run_mins, g_tres_list);
+		printf("  GrpTRESRunMins= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 
 	if (assoc->grp_wall == INFINITE)
 		printf("  GrpWall       = NONE\n");
@@ -1646,14 +1660,30 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  MaxSubmitJobs = %u\n",
 		       assoc->max_submit_jobs);
 
-	printf("  MaxTRES       = %s\n",
-	       assoc->max_tres_pj ? assoc->max_tres_pj : "NONE");
-	printf("  MaxTRESPerNode= %s\n",
-	       assoc->max_tres_pn ? assoc->max_tres_pn : "NONE");
-	printf("  MaxTRESMins   = %s\n",
-	       assoc->max_tres_mins_pj ? assoc->max_tres_mins_pj : "NONE");
-	printf("  MaxTRESRUNMins= %s\n", assoc->max_tres_run_mins ?
-	       assoc->max_tres_run_mins : "NONE");
+	if (assoc->max_tres_pj) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->max_tres_pj, g_tres_list);
+		printf("  MaxTRES       = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (assoc->max_tres_pn) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->max_tres_pn, g_tres_list);
+		printf("  MaxTRESPerNode= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (assoc->max_tres_mins_pj) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->max_tres_mins_pj, g_tres_list);
+		printf("  MaxTRESMins   = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (assoc->max_tres_run_mins) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->max_tres_run_mins, g_tres_list);
+		printf("  MaxTRESRUNMins= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 
 	if (assoc->max_wall_pj == INFINITE)
 		printf("  MaxWall       = NONE\n");
@@ -1679,6 +1709,8 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 {
+	char *tmp_char;
+
 	if (!qos)
 		return;
 
@@ -1707,12 +1739,24 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpSubmitJobs  = %u\n",
 		       qos->grp_submit_jobs);
 
-	printf("  GrpTRES       = %s\n",
-	       qos->grp_tres ? qos->grp_tres : "NONE");
-	printf("  GrpTRESMins   = %s\n",
-	       qos->grp_tres_mins ? qos->grp_tres_mins : "NONE");
-	printf("  GrpTRESRunMins= %s\n",
-	       qos->grp_tres_run_mins ? qos->grp_tres_run_mins : "NONE");
+	if (qos->grp_tres) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->grp_tres, g_tres_list);
+		printf("  GrpTRES       = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->grp_tres_mins) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->grp_tres_mins, g_tres_list);
+		printf("  GrpTRESMins   = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->grp_tres_run_mins) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->grp_tres_run_mins, g_tres_list);
+		printf("  GrpTRESRunMins= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 
 	if (qos->grp_wall == INFINITE)
 		printf("  GrpWall        = NONE\n");
@@ -1729,16 +1773,36 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  MaxSubmitJobs  = %u\n",
 		       qos->max_submit_jobs_pu);
 
-	printf("  MaxTRESPerJob = %s\n",
-	       qos->max_tres_pj ? qos->max_tres_pj : "NONE");
-	printf("  MaxTRESPerNode= %s\n",
-	       qos->max_tres_pn ? qos->max_tres_pn : "NONE");
-	printf("  MaxTRESPerUser= %s\n",
-	       qos->max_tres_pu ? qos->max_tres_pu : "NONE");
-	printf("  MaxTRESMins   = %s\n",
-	       qos->max_tres_mins_pj ? qos->max_tres_mins_pj : "NONE");
-	printf("  MaxTRESRUNMins= %s\n", qos->max_tres_run_mins_pu ?
-	       qos->max_tres_run_mins_pu : "NONE");
+	if (qos->max_tres_pj) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_pj, g_tres_list);
+		printf("  MaxTRESPerJob = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_pn) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_pn, g_tres_list);
+		printf("  MaxTRESPerNode= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_pu) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_pu, g_tres_list);
+		printf("  MaxTRESPerUser= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_mins_pj) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_mins_pj, g_tres_list);
+		printf("  MaxTRESMins   = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_run_mins_pu) {
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_run_mins_pu, g_tres_list);
+		printf("  MaxTRESRUNMins= %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 
 	if (qos->max_wall_pj == INFINITE)
 		printf("  MaxWall        = NONE\n");
