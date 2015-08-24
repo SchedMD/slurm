@@ -3360,13 +3360,17 @@ void make_node_idle(struct node_record *node_ptr,
 							  sizeof(jbuf)),
 				      node_ptr->name);
 		} else {
-			if (node_ptr->comp_job_cnt)
+			if (node_ptr->comp_job_cnt) {
 				(node_ptr->comp_job_cnt)--;
-			else
-				error("%s: %s node %s run_job_cnt underflow",
+			} else if (IS_NODE_DOWN(node_ptr)) {
+				/* We were not expecting this response,
+				 * ignore it */
+			} else {
+				error("%s: %s node %s comp_job_cnt underflow",
 				      __func__, jobid2str(job_ptr, jbuf,
 							  sizeof(jbuf)),
 				      node_ptr->name);
+			}
 			if (node_ptr->comp_job_cnt > 0)
 				return;		/* More jobs completing */
 		}
