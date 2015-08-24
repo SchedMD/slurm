@@ -925,6 +925,7 @@ static void _load_state(bool init_config)
 	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
 	int i, j;
 	char *end_ptr = NULL;
+	time_t now = time(NULL);
 
 	/*
 	 * Load the pools information
@@ -996,7 +997,12 @@ static void _load_state(bool init_config)
 				bb_alloc->seen_time = bb_state.last_load_time;
 				continue;
 			}
-			error("%s: Unexpected burst buffer %s found",
+			if (difftime(now, sessions[i].created) < 2) {
+				/* Newly created in other thread. Give that
+				 * thread a chance to add the entry */
+				continue;
+			}
+			error("%s: Unexpected burst buffer found: %s",
 			      __func__, sessions[i].token);
 		}
 
