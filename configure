@@ -22370,7 +22370,8 @@ $as_echo "$ac_have_alps_cray" >&6; }
   fi
 
   if test "$ac_have_alps_cray" = "yes"; then
-    # libexpat is always required for the XML-RPC interface
+    # libexpat is always required for the XML-RPC interface, but it is only
+    # needed in the select plugin, so set it up here instead of everywhere.
     ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
 if test "x$ac_cv_header_expat_h" = xyes; then :
 
@@ -22416,18 +22417,16 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_expat_XML_ParserCreate" >&5
 $as_echo "$ac_cv_lib_expat_XML_ParserCreate" >&6; }
 if test "x$ac_cv_lib_expat_XML_ParserCreate" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBEXPAT 1
-_ACEOF
-
-  LIBS="-lexpat $LIBS"
-
+  CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS -lexpat"
 else
   as_fn_error $? "Cray BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
 fi
 
 
     if test "$ac_have_real_cray" = "yes"; then
+      # libjob is needed, but we don't want to put it on the LIBS line here.
+      # If we are on a native system it is handled elsewhere, and on a hybrid
+      # we only need this in libsrun.
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
 $as_echo_n "checking for job_getjid in -ljob... " >&6; }
 if ${ac_cv_lib_job_job_getjid+:} false; then :
@@ -22465,12 +22464,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
 $as_echo "$ac_cv_lib_job_job_getjid" >&6; }
 if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBJOB 1
-_ACEOF
-
-  LIBS="-ljob $LIBS"
-
+  CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -ljob"
 else
   as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
 fi

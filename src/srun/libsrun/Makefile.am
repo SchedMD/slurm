@@ -3,7 +3,8 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun \
+	 $(CRAY_JOB_CPPFLAGS)
 
 noinst_LTLIBRARIES = libsrun.la
 
@@ -16,7 +17,8 @@ libsrun_la_SOURCES = \
 	opt.c opt.h \
 	srun_job.c srun_job.h
 libsrun_la_LIBADD = $(DL_LIBS)
-libsrun_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+libsrun_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic \
+	$(CRAY_JOB_LDFLAGS)
 
 force:
 $(convenience_libs) : force
