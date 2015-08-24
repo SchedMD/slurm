@@ -68,9 +68,10 @@
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
@@ -167,7 +168,8 @@
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x124
 #define LONG_OPT_QOS             0x127
-#define LONG_OPT_BURST_BUFFER    0x128
+#define LONG_OPT_BURST_BUFFER_SPEC  0x128
+#define LONG_OPT_BURST_BUFFER_FILE  0x129
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET	 0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -243,7 +245,7 @@ static void  _opt_list(void);
 static bool _opt_verify(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
-
+static char *_read_file(char *fname);
 static bool  _under_parallel_debugger(void);
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
@@ -900,7 +902,8 @@ static void _set_options(const int argc, char **argv)
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
-		{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER},
+		{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
+		{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1423,9 +1426,13 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.epilog);
 			opt.epilog = xstrdup(optarg);
 			break;
-		case LONG_OPT_BURST_BUFFER:
+		case LONG_OPT_BURST_BUFFER_SPEC:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
+			break;
+		case LONG_OPT_BURST_BUFFER_FILE:
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
@@ -2544,6 +2551,40 @@ static void _opt_list(void)
 
 }
 
+/* Read specified file's contents into a buffer.
+ * Caller must xfree the buffer's contents */
+static char *_read_file(char *fname)
+{
+	int fd, i, offset = 0;
+	struct stat stat_buf;
+	char *file_buf;
+
+	fd = open(fname, O_RDONLY);
+	if (fd < 0) {
+		fatal("Could not open burst buffer specification file %s: %m",
+		      fname);
+	}
+	if (fstat(fd, &stat_buf) < 0) {
+		fatal("Could not stat burst buffer specification file %s: %m",
+		      fname);
+	}
+	file_buf = xmalloc(stat_buf.st_size);
+	while (stat_buf.st_size > offset) {
+		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
+		if (i < 0) {
+			if (errno == EAGAIN)
+				continue;
+			fatal("Could not read burst buffer specification "
+			      "file %s: %m", fname);
+		}
+		if (i == 0)
+			break;	/* EOF */
+		offset += i;
+	}
+	close(fd);
+	return file_buf;
+}
+
 /* Determine if srun is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
@@ -2597,7 +2638,8 @@ static void _usage(void)
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
-"            [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
+"            [--core-spec=cores] [--thread-spec=threads]\n"
+"            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "            [--acctg-freq=<datatype>=<interval>\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 
@@ -2617,6 +2659,7 @@ static void _help(void)
 "                              task=<interval> energy=<interval>\n"
 "                              network=<interval> filesystem=<interval>\n"
 "      --bb=<spec>             burst buffer specifications\n"
+"      --bbf=<file_name>       burst buffer specification file\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"

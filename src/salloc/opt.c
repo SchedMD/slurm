@@ -157,7 +157,8 @@
 #define LONG_OPT_GET_USER_ENV    0x125
 #define LONG_OPT_NETWORK         0x126
 #define LONG_OPT_QOS             0x127
-#define LONG_OPT_BURST_BUFFER    0x128
+#define LONG_OPT_BURST_BUFFER_SPEC  0x128
+#define LONG_OPT_BURST_BUFFER_FILE  0x129
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -206,9 +207,10 @@ static void  _opt_list(void);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
-
+static char *_read_file(char *fname);
 static void  _proc_get_user_env(char *optarg);
 static void _process_env_var(env_vars_t *e, const char *val);
+
 static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -675,7 +677,8 @@ void set_options(const int argc, char **argv)
 		{"exclude",       required_argument, 0, 'x'},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"begin",         required_argument, 0, LONG_OPT_BEGIN},
-		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER},
+		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
+		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"cnload-image",  required_argument, 0, LONG_OPT_LINUX_IMAGE},
@@ -1245,9 +1248,13 @@ void set_options(const int argc, char **argv)
 			}
 			opt.req_switch = parse_int("switches", optarg, true);
 			break;
-		case LONG_OPT_BURST_BUFFER:
+		case LONG_OPT_BURST_BUFFER_SPEC:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
+			break;
+		case LONG_OPT_BURST_BUFFER_FILE:
+			xfree(opt.burst_buffer);
+			opt.burst_buffer = _read_file(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
@@ -1743,6 +1750,40 @@ extern int   spank_unset_job_env(const char *name)
 	return 0;	/* not found */
 }
 
+/* Read specified file's contents into a buffer.
+ * Caller must xfree the buffer's contents */
+static char *_read_file(char *fname)
+{
+	int fd, i, offset = 0;
+	struct stat stat_buf;
+	char *file_buf;
+
+	fd = open(fname, O_RDONLY);
+	if (fd < 0) {
+		fatal("Could not open burst buffer specification file %s: %m",
+		      fname);
+	}
+	if (fstat(fd, &stat_buf) < 0) {
+		fatal("Could not stat burst buffer specification file %s: %m",
+		      fname);
+	}
+	file_buf = xmalloc(stat_buf.st_size);
+	while (stat_buf.st_size > offset) {
+		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
+		if (i < 0) {
+			if (errno == EAGAIN)
+				continue;
+			fatal("Could not read burst buffer specification "
+			      "file %s: %m", fname);
+		}
+		if (i == 0)
+			break;	/* EOF */
+		offset += i;
+	}
+	close(fd);
+	return file_buf;
+}
+
 /* helper function for printing options
  *
  * warning: returns pointer to memory allocated on the stack.
@@ -1936,7 +1977,8 @@ static void _usage(void)
 "              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
-"              [--bb=burst_buffer_spec] [executable [args...]]\n");
+"              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
+"              [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -1951,6 +1993,7 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "      --bell                  ring the terminal bell when the job is allocated\n"
 "      --bb=<spec>             burst buffer specifications\n"
+"      --bbf=<file_name>       burst buffer specification file\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
