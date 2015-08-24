@@ -2808,16 +2808,8 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 	xfree(resp_msg);
 	_free_script_argv(script_argv);
 	xfree(path_file);
-	if (rc != SLURM_SUCCESS)
-		goto fini;
 
-	/* Start buffer allocation and stage-in immediately if space */
-	pthread_mutex_lock(&bb_state.bb_mutex);
-	if (_test_size_limit(job_ptr, bb_job) == 0)
-		(void) _alloc_job_bb(job_ptr, bb_job, false);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
-
-fini:	/* Clean-up */
+	/* Clean-up */
 	if (rc != SLURM_SUCCESS) {
 		pthread_mutex_lock(&bb_state.bb_mutex);
 		bb_job_del(&bb_state, job_ptr->job_id);
