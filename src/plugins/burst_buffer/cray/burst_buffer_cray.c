@@ -867,7 +867,8 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 		bb_alloc->assoc_ptr = assoc_ptr;
 		bb_alloc->account   = xstrdup(assoc_rec.acct);
 
-		if (assoc_ptr->usage->valid_qos) {
+		if (assoc_ptr && assoc_ptr->usage &&
+		    assoc_ptr->usage->valid_qos) {
 			if (assoc_ptr->def_qos_id)
 				qos_rec.id = assoc_ptr->def_qos_id;
 			else if (bit_set_count(assoc_ptr->usage->valid_qos)==1)
