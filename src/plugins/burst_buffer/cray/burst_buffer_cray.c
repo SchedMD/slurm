@@ -214,8 +214,8 @@ static int	_parse_bb_opts(struct job_descriptor *job_desc,
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
-static int	_parse_interactive(struct job_descriptor *job_desc,
-				   uint64_t *bb_size);
+static int	_xlate_batch(struct job_descriptor *job_desc);
+static int	_xlate_interactive(struct job_descriptor *job_desc);
 static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
 static void	_purge_bb_files(uint32_t job_id);
 static void	_purge_vestigial_bufs(void);
@@ -402,13 +402,12 @@ static void *_bb_agent(void *args)
  * NOTE: delete return value using _del_bb_size() */
 static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 {
-	char *bb_specs, *bb_hurry, *bb_name, *bb_size, *bb_type, *bb_access;
-	char *end_ptr = NULL, *save_ptr = NULL, *sep, *tok, *tmp;
+	char *bb_specs, *bb_hurry, *bb_name, *bb_type, *bb_access;
+	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
 	uint64_t tmp_cnt;
 	int inx;
 	bb_job_t *bb_job;
-	char *job_type = NULL, *job_access = NULL;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -428,131 +427,127 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	}
 	bb_job->state = BB_STATE_PENDING;
 	bb_specs = xstrdup(job_ptr->burst_buffer);
-	tok = strtok_r(bb_specs, " ", &save_ptr);
+	tok = strtok_r(bb_specs, "\n", &save_ptr);
 	while (tok) {
-		if (!strncmp(tok, "SLURM_JOB=", 10)) {
-			/* Format: "SLURM_JOB=SIZE=%"PRIu64",ACCESS=%s,TYPE=%s" */
-			have_bb = true;
-			tok += 10;
-			/* Work from the back and replace keys with '\0' */
-			job_type = strstr(tok, ",TYPE=");
-			if (job_type) {
-				job_type[0] = '\0';
-				/* Contents current unused by Slurm */
-			}
-			job_access = strstr(tok, ",ACCESS=");
-			if (job_access) {
-				job_access[0] = '\0';
-				/* Contents current unused by Slurm */
-			}
-			bb_size = strstr(tok, "SIZE=");
-			if (bb_size) {
-				bb_size[0] = '\0';
-				tmp_cnt = bb_get_size_num(
-					bb_size + 5,
-					bb_state.bb_config.granularity);
-				bb_job->total_size += tmp_cnt;
-			}
-		} else if (!strncmp(tok, "SLURM_SWAP=", 11)) {
-			/* Format: "SLURM_SWAP=%uGB(%uNodes)" */
-			tok += 11;
-			bb_job->swap_size += strtol(tok, &end_ptr, 10);
-			if (bb_job->swap_size)
+		if ((tok[1] == 'B') && (tok[2] == 'B')) {
+			tok += 3;
+			while (isspace(tok[0]))
+				tok++;
+			if (!strncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
-			if ((end_ptr[0] == 'G') && (end_ptr[1] == 'B') &&
-			    (end_ptr[2] == '(')) {
-				bb_job->swap_nodes = strtol(end_ptr + 3,
-							    NULL, 10);
-			} else {
-				bb_job->swap_nodes = 1;
-			}
-		} else if (!strncmp(tok, "SLURM_GRES=", 11)) {
-			/* Format: "SLURM_GRES=nodes:%u" */
-			tmp = xstrdup(tok + 11);
-			tok = strtok_r(tmp, ",", &end_ptr);
-			while (tok) {
-				have_bb = true;
-				inx = bb_job->gres_cnt++;
-				bb_job->gres_ptr = xrealloc(bb_job->gres_ptr,
-							    sizeof(bb_gres_t) *
-							    bb_job->gres_cnt);
-				sep = strchr(tok, ':');
-				if (sep) {
-					sep[0] = '\0';
-					bb_job->gres_ptr[inx].count =
-						strtol(sep + 1, NULL, 10);
-				} else {
-					bb_job->gres_ptr[inx].count = 1;
+				if ((sub_tok = strstr(tok, "access_mode="))) {
+					bb_access = xstrdup(sub_tok + 12);
+					sub_tok = strchr(bb_access, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				} else if ((sub_tok = strstr(tok, "access="))) {
+					bb_access = xstrdup(sub_tok + 7);
+					sub_tok = strchr(bb_access, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
 				}
-				bb_job->gres_ptr[inx].name = xstrdup(tok);
-				tok = strtok_r(NULL, ",", &end_ptr);
+				if ((sub_tok = strstr(tok, "capacity="))) {
+					tmp_cnt = bb_get_size_num(
+						sub_tok + 9,
+						bb_state.bb_config.granularity);
+				} else {
+					tmp_cnt = 0;
+				}
+				if ((sub_tok = strstr(tok, "name="))) {
+					bb_name = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_name, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
+				if ((sub_tok = strstr(tok, "type="))) {
+					bb_type = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_type, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
+				inx = bb_job->buf_cnt++;
+				bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
+							   sizeof(bb_buf_t) *
+							   bb_job->buf_cnt);
+				bb_job->buf_ptr[inx].access = bb_access;
+				//bb_job->buf_ptr[inx].destroy = false;
+				//bb_job->buf_ptr[inx].hurry = false;
+				bb_job->buf_ptr[inx].name = bb_name;
+				bb_job->buf_ptr[inx].size = tmp_cnt;
+				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
+				bb_job->buf_ptr[inx].type = bb_type;
+				bb_access = NULL;
+				bb_name = NULL;
+				bb_type = NULL;
+			} else if (!strncmp(tok, "destroy_persistent", 17) ||
+				   !strncmp(tok, "delete_persistent", 16)) {
+				have_bb = true;
+				if ((sub_tok = strstr(tok, "name="))) {
+					bb_name = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_name, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
+				if ((sub_tok = strstr(tok, "type="))) {
+					bb_type = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_type, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
+				bb_hurry = strstr(tok, "hurry");
+				inx = bb_job->buf_cnt++;
+				bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
+							   sizeof(bb_buf_t) *
+							   bb_job->buf_cnt);
+				//bb_job->buf_ptr[inx].access = NULL;
+				bb_job->buf_ptr[inx].destroy = true;
+				bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
+				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
+				//bb_job->buf_ptr[inx].size = 0;
+				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
+				//bb_job->buf_ptr[inx].type = NULL;
+			} else {
+				/* Ignore other (future) options */
 			}
-			xfree(tmp);
-		} else if (!strncmp(tok, "SLURM_PERSISTENT_CREATE=", 24)) {
-			/* Format: SLURM_PERSISTENT_CREATE=NAME=%s,SIZE=%"PRIu64",ACCESS=%s,TYPE=%s" */
-			have_bb = true;
-			tok += 24;
-			/* Work from the back and replace keys with '\0' */
-			bb_type = strstr(tok, ",TYPE=");
-			if (bb_type) {
-				bb_type[0] = '\0';
-				bb_type++;
+		} else if ((tok[1] == 'D') && (tok[2] == 'W')) {
+			tok += 3;
+			while (isspace(tok[0]))
+				tok++;
+			if (!strncmp(tok, "jobdw", 5)) {
+				have_bb = true;
+				if ((sub_tok = strstr(tok, "capacity="))) {
+					tmp_cnt = bb_get_size_num(
+						sub_tok + 9,
+						bb_state.bb_config.granularity);
+				} else {
+					tmp_cnt = 0;
+				}
+				bb_job->total_size += tmp_cnt;
+			} else if (!strncmp(tok, "persistentdw", 12)) {
+				have_bb = true;
+			} else if (!strncmp(tok, "swap", 4)) {
+				have_bb = true;
+				tok += 4;
+				while (isspace(tok[0]))
+					tok++;
+				bb_job->swap_size = strtol(tok, &end_ptr, 10);
+				if (job_ptr->details &&
+				    job_ptr->details->max_nodes) {
+					bb_job->swap_nodes =
+						job_ptr->details->max_nodes;
+				} else if (job_ptr->details) {
+					bb_job->swap_nodes =
+						job_ptr->details->min_nodes;
+				} else {
+					bb_job->swap_nodes = 1;
+				}
+				bb_job->total_size += (bb_job->swap_size *
+						       bb_job->swap_nodes);
+			} else {
+				/* Ignore stage-in, stage-out, etc. */
 			}
-			bb_access = strstr(tok, ",ACCESS=");
-			if (bb_access) {
-				bb_access[0] = '\0';
-				bb_access++;
-			}
-			bb_size = strstr(tok, ",SIZE=");
-			if (bb_size) {
-				bb_size[0] = '\0';
-				tmp_cnt = bb_get_size_num(
-					bb_size + 6,
-					bb_state.bb_config.granularity);
-				bb_job->persist_add += tmp_cnt;
-			} else
-				tmp_cnt = 0;
-			bb_name = strstr(tok, "NAME=");
-			if (bb_name)
-				bb_name += 5;
-			inx = bb_job->buf_cnt++;
-			bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
-						   sizeof(bb_buf_t) *
-						   bb_job->buf_cnt);
-			bb_job->buf_ptr[inx].access = xstrdup(bb_access);
-			//bb_job->buf_ptr[inx].destroy = false;
-			//bb_job->buf_ptr[inx].hurry = false;
-			bb_job->buf_ptr[inx].name = xstrdup(bb_name);
-			bb_job->buf_ptr[inx].size = tmp_cnt;
-			bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
-			bb_job->buf_ptr[inx].type = xstrdup(bb_type);
-		} else if (!strncmp(tok, "SLURM_PERSISTENT_DESTROY=", 25)) {
-			/* Format: SLURM_PERSISTENT_DESTROY=NAME=%s[,HURRY]" */
-			have_bb = true;
-			tok += 25;
-			/* Work from the back and replace keys with '\0' */
-			bb_hurry = strstr(tok, ",HURRY");
-			if (bb_hurry)
-				bb_hurry[0] = '\0';
-			bb_name = strstr(tok, "NAME=");
-			if (bb_name)
-				bb_name += 5;
-			inx = bb_job->buf_cnt++;
-			bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
-						   sizeof(bb_buf_t) *
-						   bb_job->buf_cnt);
-			//bb_job->buf_ptr[inx].access = NULL;
-			bb_job->buf_ptr[inx].destroy = true;
-			bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
-			bb_job->buf_ptr[inx].name = xstrdup(bb_name);
-			//bb_job->buf_ptr[inx].size = 0;
-			bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
-			//bb_job->buf_ptr[inx].type = NULL;
-		} else if (!strncmp(tok, "SLURM_PERSISTENT_USE", 20)) {
-			/* Format: SLURM_PERSISTENT_USE" */
-			have_bb = true;
 		}
-		tok = strtok_r(NULL, " ", &save_ptr);
+		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
 	xfree(bb_specs);
 
@@ -1983,37 +1978,38 @@ static void _timeout_bb_rec(void)
 	}
 }
 
-/* Translate a batch script or interactive burst_buffer options into in
- * appropriate burst_buffer argument */
+/* Perform basic burst_buffer option validation */
 static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			  uid_t submit_uid)
 {
-	char *end_ptr = NULL, *script, *save_ptr = NULL;
-	char *bb_access = NULL, *bb_name = NULL, *bb_type = NULL, *capacity;
-	char *job_access = NULL, *job_type = NULL;
-	char *sub_tok, *tok, *persistent = NULL;
-	uint64_t byte_cnt = 0, tmp_cnt;
-	uint32_t node_cnt = 0, swap_cnt = 0;
-	int rc = SLURM_SUCCESS;
-	bool enable_persist = false, hurry;
+	char *bb_script, *save_ptr = NULL;
+	char *bb_name = NULL, *capacity;
+	char *end_ptr = NULL, *sub_tok, *tok;
+	uint64_t tmp_cnt;
+	int rc = SLURM_SUCCESS, swap_cnt;
+	bool enable_persist = false;
 
 	xassert(bb_size);
 	*bb_size = 0;
-	if (!job_desc->script)
-		return _parse_interactive(job_desc, bb_size);
 
 	if (validate_operator(submit_uid) ||
 	    (bb_state.bb_config.flags & BB_FLAG_ENABLE_PERSISTENT))
 		enable_persist = true;
 
-	script = xstrdup(job_desc->script);
-	tok = strtok_r(script, "\n", &save_ptr);
+	if (job_desc->script)
+		rc = _xlate_batch(job_desc);
+	else
+		rc = _xlate_interactive(job_desc);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	bb_script = xstrdup(job_desc->burst_buffer);
+	tok = strtok_r(bb_script, "\n", &save_ptr);
 	while (tok) {
 		tmp_cnt = 0;
 		if (tok[0] != '#') {
 			break;	/* Quit at first non-comment */
 		} else if ((tok[1] == 'B') && (tok[2] == 'B')) {
-			hurry = false;
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
@@ -2025,53 +2021,26 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				break;
 			} else if (!strncmp(tok, "create_persistent", 17)) {
-				if ((sub_tok = strstr(tok, "capacity=")))
+				if ((sub_tok = strstr(tok, "capacity="))) {
 					tmp_cnt = bb_get_size_num(
 						sub_tok + 9,
 						bb_state.bb_config.granularity);
-				if (tmp_cnt == 0) {
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-					break;
+					*bb_size += tmp_cnt;
 				}
+				if (tmp_cnt == 0)
+					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_name, ' ')))
 						sub_tok[0] = '\0';
 				} else {
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-					break;
 				}
-				if ((bb_name[0] >= '0') && (bb_name[0] <= '9')){
+				if ((bb_name[0] >= '0') && (bb_name[0] <= '9'))
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-					break;
-				}
-				if ((sub_tok = strstr(tok, "access="))) {
-					bb_access = xstrdup(sub_tok + 7);
-					if ((sub_tok = strchr(bb_access, ' ')))
-						sub_tok[0] = '\0';
-				}
-				if ((sub_tok = strstr(tok, "type="))) {
-					bb_type = xstrdup(sub_tok + 5);
-					if ((sub_tok = strchr(bb_type, ' ')))
-						sub_tok[0] = '\0';
-				}
-				xstrfmtcat(persistent,
-					   "SLURM_PERSISTENT_CREATE=NAME=%s,"
-					   "SIZE=%"PRIu64,
-					   bb_name, tmp_cnt);
-				if (bb_access) {
-					xstrfmtcat(persistent,
-						   ",ACCESS=%s", bb_access);
-				}
-				if (bb_type) {
-					xstrfmtcat(persistent,
-						   ",TYPE=%s", bb_type);
-				}
-				xstrcat(persistent, " ");
-				xfree(bb_access);
 				xfree(bb_name);
-				xfree(bb_type);
-				*bb_size += tmp_cnt;
+				if (rc != SLURM_SUCCESS)
+					break;
 			} else if (!strncmp(tok, "destroy_persistent", 17) &&
 				   !enable_persist) {
 				info("%s: User %d disabled from destroying "
@@ -2080,31 +2049,12 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				break;
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
-				if ((sub_tok = strstr(tok, "name="))) {
-					bb_name = xstrdup(sub_tok + 5);
-					if ((sub_tok = strchr(bb_name, ' ')))
-						sub_tok[0] = '\0';
-				} else {
+				if (!(sub_tok = strstr(tok, "name="))) {
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
-				if ((sub_tok = strstr(tok, "hurry"))) {
-					hurry = true;
-					sub_tok[0] = '\0';
-				} else if ((sub_tok = strchr(bb_name, ' ')))
-					sub_tok[0] = '\0';
-				xstrfmtcat(persistent,
-					   "SLURM_PERSISTENT_DESTROY=NAME=%s",
-					   bb_name);
-				if (hurry)
-					xstrcat(persistent, "HURRY ");
-				else
-					xstrcat(persistent, " ");
-				xfree(bb_name);
 			}
 		} else if ((tok[1] == 'D') && (tok[2] == 'W')) {
-			/* We just capture the size requirement and leave other
-			 * parsing to Cray's tools */
 			tok += 3;
 			while (isspace(tok[0]) && (tok[0] != '\0'))
 				tok++;
@@ -2114,164 +2064,127 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					capacity + 9,
 					bb_state.bb_config.granularity);
 				if (tmp_cnt == 0) {
-					rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
-				if (tmp_cnt & BB_SIZE_IN_NODES) {
-					node_cnt += tmp_cnt &
-						(~BB_SIZE_IN_NODES);
-				} else
-					byte_cnt += tmp_cnt;
-				if ((sub_tok = strstr(tok, "access_mode="))) {
-					job_access = xstrdup(sub_tok + 12);
-					sub_tok = strchr(job_access, ' ');
-					if (sub_tok)
-						sub_tok[0] = '\0';
-				}
-				if ((sub_tok = strstr(tok, "type="))) {
-					job_type = xstrdup(sub_tok + 5);
-					sub_tok = strchr(job_type, ' ');
-					if (sub_tok)
-						sub_tok[0] = '\0';
-				}
+				*bb_size += tmp_cnt;
 			} else if (!strncmp(tok, "swap", 4)) {
 				tok += 4;
 				while (isspace(tok[0]) && (tok[0] != '\0'))
 					tok++;
 				swap_cnt += strtol(tok, &end_ptr, 10);
-			} else if (!strncmp(tok, "persistentdw", 12)) {
-				xstrcat(persistent, "SLURM_PERSISTENT_USE ");
+				if ((job_desc->max_nodes == 0) ||
+				    (job_desc->max_nodes == NO_VAL)) {
+					info("%s: user %u submitted job with "
+					     "swap space specification, but "
+					     "no max node count specification",
+					     __func__, job_desc->user_id);
+					if (job_desc->min_nodes == NO_VAL)
+						job_desc->min_nodes = 1;
+					job_desc->max_nodes =
+						job_desc->min_nodes;
+				}
+				*bb_size += swap_cnt * job_desc->max_nodes;
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
-	xfree(script);
-
-	if ((rc == SLURM_SUCCESS) &&
-	    (byte_cnt || node_cnt || swap_cnt || persistent)) {
-		xfree(job_desc->burst_buffer);
-		if (swap_cnt) {
-			uint32_t job_nodes;
-			if ((job_desc->max_nodes == 0) ||
-			    (job_desc->max_nodes == NO_VAL)) {
-				job_nodes = 1;
-				info("%s: user %u submitted job with swap "
-				     "space specification, but no node count "
-				     "specification",
-				     __func__, job_desc->user_id);
-
-			} else {
-				job_nodes = job_desc->max_nodes;
-			}
-			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_SWAP=%uGB(%uNodes) ",
-				   swap_cnt, job_nodes);
-			byte_cnt += (swap_cnt * 1024 * 1024 * 1024) * job_nodes;
-		}
-		if (byte_cnt) {
-			/* Include cache plus swap space */
-			if (job_desc->burst_buffer)
-				xstrcat(job_desc->burst_buffer, " ");
-			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_JOB=SIZE=%"PRIu64"", byte_cnt);
-			if (job_access) {
-				xstrfmtcat(job_desc->burst_buffer,
-					   ",ACCESS=%s", job_access);
-			}
-			if (job_type) {
-				xstrfmtcat(job_desc->burst_buffer,
-					   ",TYPE=%s", job_type);
-			}
-			xstrcat(job_desc->burst_buffer, " ");
-			*bb_size += byte_cnt;
-		}
-		if (node_cnt) {
-			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_GRES=nodes:%u ", node_cnt);
-		}
-		if (persistent) {
-			xstrcat(job_desc->burst_buffer, persistent);
-		}
-	}
-	xfree(job_access);
-	xfree(job_type);
-	xfree(persistent);
+	xfree(bb_script);
 
 	return rc;
 }
 
-/* Parse interactive burst_buffer options into an appropriate burst_buffer
- * argument */
-static int _parse_interactive(struct job_descriptor *job_desc,
-			      uint64_t *bb_size)
+/* Copy a batch job's burst_buffer options into a separate buffer */
+static int _xlate_batch(struct job_descriptor *job_desc)
 {
-	char *access = NULL, *sep = "", *type = NULL;
+	char *script, *save_ptr = NULL, *tok;
+
+	xfree(job_desc->burst_buffer);
+	script = xstrdup(job_desc->script);
+	tok = strtok_r(script, "\n", &save_ptr);
+	while (tok) {
+		if (tok[0] != '#')
+			break;	/* Quit at first non-comment */
+		if (((tok[1] == 'B') && (tok[2] == 'B')) ||
+		    ((tok[1] == 'D') && (tok[2] == 'W'))) {
+			if (job_desc->burst_buffer)
+				xstrcat(job_desc->burst_buffer, "\n");
+			xstrcat(job_desc->burst_buffer, tok);
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(script);
+	return SLURM_SUCCESS;
+}
+
+/* Parse simple interactive burst_buffer options into an format identical to
+ * burst_buffer options in a batch script file */
+static int _xlate_interactive(struct job_descriptor *job_desc)
+{
+	char *access = NULL, *type = NULL;
 	char *end_ptr = NULL, *tok;
-	int64_t tmp_cnt;
-	uint64_t byte_cnt = 0;
-	uint32_t node_cnt = 0, swap_cnt = 0;
+	uint32_t buf_size = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
-	if (!job_desc->burst_buffer)
+	if (!job_desc->burst_buffer || (job_desc->burst_buffer[0] == '#'))
 		return rc;
 
+	if ((tok = strstr(job_desc->burst_buffer, "access="))) {
+		access = xstrdup(tok + 7);
+		tok = strchr(access, ',');
+		if (tok)
+			tok[0] = '\0';
+		tok = strchr(access, ' ');
+		if (tok)
+			tok[0] = '\0';
+	}
+
 	if ((tok = strstr(job_desc->burst_buffer, "capacity="))) {
-		tmp_cnt = bb_get_size_num(tok + 9,
-					  bb_state.bb_config.granularity);
-		if (tmp_cnt == 0)
-			return ESLURM_INVALID_BURST_BUFFER_CHANGE;
-		if (tmp_cnt & BB_SIZE_IN_NODES)
-			node_cnt += tmp_cnt & (~BB_SIZE_IN_NODES);
-		else
-			byte_cnt += tmp_cnt;
+		buf_size = bb_get_size_num(tok + 9, 1);
+		if (buf_size == 0) {
+			rc = ESLURM_INVALID_BURST_BUFFER_CHANGE;
+			goto fini;
+		}
 	}
 
 	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
 		swap_cnt = strtol(tok + 5, &end_ptr, 10);
 
-	xfree(job_desc->burst_buffer);
-	if ((rc == SLURM_SUCCESS) && (byte_cnt || node_cnt || swap_cnt)) {
-		if (swap_cnt) {
-			uint32_t job_nodes;
-			if ((job_desc->max_nodes == 0) ||
-			    (job_desc->max_nodes == NO_VAL)) {
-				job_nodes = 1;
-				info("%s: user %u submitted job with swap "
-				     "space specification, but no node count "
-				     "specification",
-				     __func__, job_desc->user_id);
+	if ((tok = strstr(job_desc->burst_buffer, "type="))) {
+		type = xstrdup(tok + 5);
+		tok = strchr(access, ',');
+		if (tok)
+			tok[0] = '\0';
+		tok = strchr(access, ' ');
+		if (tok)
+			tok[0] = '\0';
+	}
 
-			} else {
-				job_nodes = job_desc->max_nodes;
-			}
+	if (rc == SLURM_SUCCESS)
+		xfree(job_desc->burst_buffer);
+	if ((rc == SLURM_SUCCESS) && (swap_cnt || buf_size)) {
+		if (swap_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "SLURM_SWAP=%uGB(%uNodes)",
-				   swap_cnt, job_nodes);
-			sep = " ";
-			byte_cnt += swap_cnt * 1024 * 1024 * job_nodes;
+				   "#DW swap %uGiB\n", swap_cnt);
 		}
-		if (byte_cnt) {
+		if (buf_size) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "%sSLURM_JOB=SIZE=%"PRIu64"", sep, byte_cnt);
-			sep = " ";
-			*bb_size += byte_cnt;
+				   "#DW jobdw capacity=%s",
+				   bb_get_size_str(buf_size));
 			if (access) {
 				xstrfmtcat(job_desc->burst_buffer,
-					   ",ACCESS=%s", access);
+					   " access_mode=%s", access);
 			}
 			if (type) {
 				xstrfmtcat(job_desc->burst_buffer,
-					   ",TYPE=%s", type);
+					   " type=%s", type);
 			}
-		}
-		if (node_cnt) {
-			xstrfmtcat(job_desc->burst_buffer,
-				   "%sSLURM_GRES=nodes:%u", sep, node_cnt);
+			xstrfmtcat(job_desc->burst_buffer, "\n");
 		}
 	}
-	xfree(access);
-	xfree(type);
 
+fini:	xfree(access);
+	xfree(type);
 	return rc;
 }
 
@@ -2279,42 +2192,14 @@ static int _parse_interactive(struct job_descriptor *job_desc,
  * commands, as needed by the Cray API */
 static int _build_bb_script(struct job_record *job_ptr, char *script_file)
 {
-	char *in_buf, *out_buf = NULL;
-	char *sep, *tok, *tmp;
-	int i, rc;
+	char *out_buf = NULL;
+	int rc;
 
 	xstrcat(out_buf, "#!/bin/bash\n");
-
-	if ((tok = strstr(job_ptr->burst_buffer, "swap="))) {
-		tok += 5;
-		i = strtol(tok, NULL, 10);
-		xstrfmtcat(out_buf, "#DW swap=%dGiB\n", i);
-	}
-
-	in_buf = xstrdup(job_ptr->burst_buffer);
-	tmp = in_buf;
-	if ((tok = strstr(tmp, "jobdw="))) {
-		tok += 6;
-		sep = NULL;
-		if ((tok[0] == '\'') || (tok[0] == '\"')) {
-			sep = strchr(tok + 1, tok[0]);
-			if (sep) {
-				tok++;
-				sep[0] = '\0';
-			}
-		}
-		if (!sep) {
-			sep = tok;
-			while ((sep[0] != ' ') && (sep[0] != '\0'))
-				sep++;
-			sep[0] = '\0';
-		}
-		xstrfmtcat(out_buf, "#DW jobdw %s\n", tok);
-	}
-	xfree(in_buf);
-
+	xstrcat(out_buf, job_ptr->burst_buffer);
 	rc = _write_file(script_file, out_buf);
 	xfree(out_buf);
+
 	return rc;
 }
 
@@ -2499,9 +2384,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 extern int bb_p_job_validate(struct job_descriptor *job_desc,
 			     uid_t submit_uid)
 {
-	bool have_gres = false, have_persist = false, have_swap = false;
 	uint64_t bb_size = 0;
-	char *key;
 	int i, rc;
 
 	xassert(job_desc);
@@ -2511,49 +2394,19 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
-	if (job_desc->burst_buffer) {
-		if (bb_state.bb_config.debug_flag) {
-			info("%s: %s: job_user_id:%u, submit_uid:%d",
-			     plugin_type, __func__, job_desc->user_id,
-			     submit_uid);
-			info("%s: burst_buffer:%s", __func__,
-			     job_desc->burst_buffer);
-			info("%s: script:%s", __func__, job_desc->script);
-		}
-
-		if (job_desc->user_id == 0) {
-			info("%s: User root can not allocate burst buffers",
-			     __func__);
-			return EPERM;
-		}
-
-		key = strstr(job_desc->burst_buffer, "SLURM_JOB=SIZE=");
-		if (key) {
-			bb_size = bb_get_size_num(
-				key + 15,
-				bb_state.bb_config.granularity);
-		}
-		if (strstr(job_desc->burst_buffer, "SLURM_GRES="))
-			have_gres = true;
-		key = strstr(job_desc->burst_buffer,"SLURM_PERSISTENT_CREATE=");
-		if (key) {
-			have_persist = true;
-			key = strstr(key, "SIZE=");
-			if (key) {
-				bb_size += bb_get_size_num(
-					key + 5,
-					bb_state.bb_config.granularity);
-			}
-		}
-		if (strstr(job_desc->burst_buffer, "SLURM_PERSISTENT_DESTROY="))
-			have_persist = true;
-		if (strstr(job_desc->burst_buffer, "SLURM_PERSISTENT_USE"))
-			have_persist = true;
-		if (strstr(job_desc->burst_buffer, "SLURM_SWAP="))
-			have_swap = true;
-	}
-	if ((bb_size == 0) && !have_gres && !have_persist && !have_swap)
+	if (!job_desc->burst_buffer)
 		return SLURM_SUCCESS;
+
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: job_user_id:%u, submit_uid:%d",
+		     plugin_type, __func__, job_desc->user_id, submit_uid);
+		info("%s: burst_buffer:%s", __func__, job_desc->burst_buffer);
+	}
+
+	if (job_desc->user_id == 0) {
+		info("%s: User root can not allocate burst buffers", __func__);
+		return EPERM;
+	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.allow_users) {
@@ -2586,10 +2439,10 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
+	job_desc->shared = 0;	/* Compute nodes can not be shared */
 	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
 
-fini:	job_desc->shared = 0;	/* Compute nodes can not be shared */
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+fini:	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
 }
