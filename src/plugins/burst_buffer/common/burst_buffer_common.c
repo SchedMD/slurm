@@ -980,6 +980,20 @@ extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_alloc)
 	return false;
 }
 
+/*
+ * Return time in msec since "start time"
+ */
+static int _tot_wait (struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
+}
+
 /* Execute a script, wait for termination and return its stdout.
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified pathname of the program to execute
@@ -1060,10 +1074,11 @@ extern char *bb_run_script(char *script_type, char *script_path,
 		error("%s: fork(): %m", __func__);
 	} else if (max_wait != -1) {
 		struct pollfd fds;
-		time_t start_time = time(NULL);
+		struct timeval tstart;
 		resp_size = 1024;
 		resp = xmalloc(resp_size);
 		close(pfd[1]);
+		gettimeofday(&tstart, NULL);
 		while (1) {
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
@@ -1071,15 +1086,14 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			if (max_wait <= 0) {
 				new_wait = -1;
 			} else {
-				new_wait = (time(NULL) - start_time) * 1000
-					   + max_wait;
+				new_wait = max_wait - _tot_wait(&tstart);
 				if (new_wait <= 0)
 					break;
 			}
 			i = poll(&fds, 1, new_wait);
 			if (i == 0) {
-				error("%s: %s poll timeout",
-				      __func__, script_type);
+				error("%s: %s poll timeout @ %d msec",
+				      __func__, script_type, max_wait);
 				break;
 			} else if (i < 0) {
 				error("%s: %s poll:%m", __func__, script_type);
