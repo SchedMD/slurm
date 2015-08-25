@@ -486,6 +486,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.argv[command_pos++] = xstrdup("share");
 	}
 
+	if (opt.cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-j");
+		opt.argv[command_pos++] = xstrdup("1");
+	}
+
 	if (opt.nodelist) {
 		char *nids = _get_nids(opt.nodelist);
 		if (nids) {
