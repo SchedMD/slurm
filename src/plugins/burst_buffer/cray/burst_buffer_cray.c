@@ -903,7 +903,8 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, &qos_ptr,
 					  true) == SLURM_SUCCESS) {
-			bb_alloc->qos = xstrdup(qos_ptr->name);
+			if (qos_ptr)
+				bb_alloc->qos = xstrdup(qos_ptr->name);
 		}
 	}
 	assoc_mgr_unlock(&assoc_locks);
