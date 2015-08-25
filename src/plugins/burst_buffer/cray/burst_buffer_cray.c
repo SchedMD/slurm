@@ -572,6 +572,14 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 	xfree(bb_specs);
 
 	if (!have_bb) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+		xstrfmtcat(job_ptr->state_desc,
+			   "%s: Invalid burst buffer spec (%s)",
+			   plugin_type, job_ptr->burst_buffer);
+		job_ptr->priority = 0;
+		info("Invalid burst buffer spec for job %u (%s)",
+		     job_ptr->job_id, job_ptr->burst_buffer);
 		bb_job_del(&bb_state, job_ptr->job_id);
 		return NULL;
 	}
@@ -2023,7 +2031,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 	char *end_ptr = NULL, *sub_tok, *tok;
 	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS, swap_cnt;
-	bool enable_persist = false;
+	bool enable_persist = false, have_bb = false;
 
 	xassert(bb_size);
 	*bb_size = 0;
@@ -2057,6 +2065,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				break;
 			} else if (!strncmp(tok, "create_persistent", 17)) {
+				have_bb = true;
 				if ((sub_tok = strstr(tok, "capacity="))) {
 					tmp_cnt = bb_get_size_num(
 						sub_tok + 9,
@@ -2085,10 +2094,13 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				break;
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
+				have_bb = true;
 				if (!(sub_tok = strstr(tok, "name="))) {
 					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
+			} else {
+				/* Ignore other (future) options */
 			}
 		} else if ((tok[1] == 'D') && (tok[2] == 'W')) {
 			tok += 3;
@@ -2096,6 +2108,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				tok++;
 			if (!strncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
+				have_bb = true;
 				tmp_cnt = bb_get_size_num(
 					capacity + 9,
 					bb_state.bb_config.granularity);
@@ -2104,7 +2117,10 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					break;
 				}
 				*bb_size += tmp_cnt;
+			} else if (!strncmp(tok, "persistentdw", 12)) {
+				have_bb = true;
 			} else if (!strncmp(tok, "swap", 4)) {
+				have_bb = true;
 				tok += 4;
 				while (isspace(tok[0]) && (tok[0] != '\0'))
 					tok++;
@@ -2126,6 +2142,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
 	xfree(bb_script);
+
+	if (!have_bb)
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 
 	return rc;
 }
@@ -2286,7 +2305,9 @@ extern int fini(void)
 	pthread_mutex_unlock(&bb_state.term_mutex);
 
 	if (bb_state.bb_thread) {
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 		pthread_join(bb_state.bb_thread, NULL);
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		bb_state.bb_thread = 0;
 	}
 	bb_clear_config(&bb_state.bb_config, true);
