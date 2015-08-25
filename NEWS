@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Fix issue with frontend systems (outside ALPs or BlueGene) where srun
     wouldn't get the correct protocol version to launch a step.
+ -- Fix for message aggregation return rpcs where none of the messages are
+    intended for the head of the tree.
 
 * Changes in Slurm 15.08.0rc1
 ==============================

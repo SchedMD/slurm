@@ -5760,7 +5760,7 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				 * handled on the tree node.
 				 */
 				memcpy(&comp_resp_msg->sender,
-				       &comp_msg->sender,
+				       &ncomp_msg->sender,
 				       sizeof(slurm_addr_t));
 
 				resp_msg->data = comp_resp_msg;
