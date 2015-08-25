@@ -54,33 +54,32 @@ configuration parameter in the <i>slurm.conf</i> file.
 Multiple plugin names may be specified in a comma separated list.
 Detailed logging of burst buffer specific actions may be generated for debugging
 purposes by using the <i>DebugFlags=BurstBuffer</i> configuration parameter.
-This DebugFlag can result in very verbose logging and is only intended for
-diagnostic purposes rather than for use in a production system.</p>
+The BurstBuffer DebugFlags (like many other DebugFlags) can result in very
+verbose logging and is only intended for diagnostic purposes rather than for
+use in a production system.</p>
 
 <pre>
-# Excerpt of slurm.conf file
+# Excerpt of example slurm.conf file
 BurstBufferType=burst_buffer/generic
-DebugFlags=BurstBuffer
+# DebugFlags=BurstBuffer # Commented out
 </pre>
 
 <p>Burst buffer specific options should be defined in a <i>burst_buffer.conf</i>
 file.
 If multiple burst buffer plugins are configured, an independent configuration
-file can be specified for each one with a file name including the plugin name.
+file can be specified for each plugin with a file name including the plugin name.
 For example files named "burst_buffer_cray.conf" and
-"burst_buffer_generic.conf" can be used indepdently by the cray and generic
+"burst_buffer_generic.conf" can be used independently by the cray and generic
 burst buffer plugins respectively.
 This file can contain information about who can or can not use burst buffers,
-resource limits, priority boost specifications for jobs using burst buffers,
-timeouts, and paths to script used to perform various functions.
-Note that the UserSizeLimit is global (applies to every user), but can be
-overridden by using <a href="resource_limits.html">TRES limits</a> in the
-Slurm database for finer grained controls.
-The PriorityBoost options can also be replaced by a including burst buffer
-factor in the <a href="priority_multifactor.html">multifactor priority</a>
-algorithm.</p>
+timeouts, and paths of scripts used to perform various functions, etc.
+<a href="resource_limits.html">TRES limits</a> can be configured to establish
+limits by association, QOS, etc.
+The size of a job's burst buffer requirements can be used as a factor in
+setting the job priority as described in the
+<a href="priority_multifactor.html">multifactor priority</a> document.</p>
 
-<p>Note that sample scripts for performing these burst buffer operations for the
+<p>Note that sample scripts for performing burst buffer operations for the
 burst_buffer/generic plugin are included with the Slurm distribution.
 These scripts were intended for Slurm development and testing purposes and
 are <b>not</b> currently intended for customer use.
@@ -91,7 +90,8 @@ scripts, please see
 The Ramdisk Storage Accelerator</a> by Timothy B. Wickberg.
 Note that these scripts/programs are executed as SlurmUser rather than user
 root.
-Please see the <i>burst_buffer.conf</i> man page for more information.</p>
+Please see the <i>burst_buffer.conf</i> man page for more configuration
+information.</p>
 
 <pre>
 # Excerpt of burst_buffer.conf file for generic plugin
@@ -123,26 +123,20 @@ when using the <u>burst_buffer/generic</u> plugin.
 The prefix of "#DW" (for "DataWarp") is used for burst buffer directives when
 using the <u>burst_buffer/cray</u> plugin.
 Please reference Cray documentation for details about the DataWarp options.
-For DataWarp systems, the prefix of "#BB" can be used for interactive jobs
-to create or delete persistent burst buffer storage (NOTE: The "#BB" prefix
-is used since the command is interpreted by Slurm and not by the Cray Datawarp
-software).
-Slurm converts the batch script's burst buffer options into a summary of
-buffer creation and deletion requests and stores the information in the job's
-"burst_buffer" field (a string) which is visible using the "scontrol show job"
-command or the appropriate options in the squeue and sview commands.
+For DataWarp systems, the prefix of "#BB" can be used to create or delete
+persistent burst buffer storage (NOTE: The "#BB" prefix is used since the
+command is interpreted by Slurm and not by the Cray Datawarp software).
 Interactive jobs (those submitted using the <i>salloc</i> and <i>srun</i>
 commands) can specify their burst buffer space requirements using the "--bb"
-command line option, but staging of jobs before and after the resource
-allocation is not supported.</p>
+or "--bbf" command line options, as described later in this document.</p>
 
 <p>A basic validation is performed on the job's burst buffer options at job
 submit time.
 If the options are invalid, the job will be rejected and an error message will
 be returned directly to the user.
 If the job is accepted, but later fails (e.g. some problem staging files), the
-job will be held and its "Reason" field will be set to an appropriate error
-message.</p>
+job will be held and its "Reason" field will be set to error message provided
+by the underlying infrastructure.</p>
 
 <p>Users may also request to be notified by email upon completion of burst
 buffer stage out using the "--mail-type=stage_out" or "--mail-type=all" option.
@@ -163,10 +157,10 @@ These options are only available for batch jobs.</p>
 <li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt; [access=&lt;access&gt;] [type=&lt;type&gt;]</li>
 <li>#BB destroy_persistent name=&lt;name&gt; [hurry]</li>
 </ul>
-<p>The persistent burst buffer name may not start with a numeric value (numbers
-are reserved for job specific burst buffers).
-The size specification can include a suffix of GB, TB, PB, etc for gigabytes,
-terabytes, petabytes, etc.
+<p>The persistent burst buffer name may not start with a numeric value (numeric
+names are reserved for job-specific burst buffers).
+The size specification can include a suffix of M, G, T, P, etc. for megabytes,
+gigabytes, terabytes, petabytes, etc.
 Multiple persistent burst buffers may be created or deleted within a single
 job.
 A sample batch script follows:</p>
@@ -179,18 +173,23 @@ A sample batch script follows:</p>
 /home/alan/a.out
 </pre>
 
-<p><b>NOTE:</b> The ability to create and destroy peristent burst buffers may be
+<p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may be
 limited by the "Flags" option in the burst_buffer.conf file.
 By default only privileged users can create or destroy persistent burst buffers.</p>
 
 <h2><a name="interactive">Interactive Job Options</a></h2>
 
 <p>Interactive jobs may include directives for creating job specific burst
-buffers.
-Note that for interactive jobs, the burst buffers will be allocated and
-deleted, but no file staging is supported.
-These options may be specified using the "--bb" option of the salloc or srun
-command.
+buffers as well as file staging.
+These options may be specified using either the "--bb" or "--bbf" option of
+the salloc or srun command.
+The "--bbf" option take as an argument a filename and that file should contain
+a collection of burst buffer operations identical to that used for batch jobs.
+This file may contain file staging directives.
+Alternately the "--bb" option may be used to specify burst buffer directives
+as the option argument. The format of those directives can either be identical
+to those used in a batch script OR a very limited set of directives can be uses,
+which are translated to the equivalent script for later processing.
 Multiple directives should be space separated.</p>
 <ul>
 <li>access=&lt;access&gt;</li>
@@ -200,18 +199,24 @@ Multiple directives should be space separated.</p>
 </ul>
 <p>If a swap option is specified, the job must also specify the required
 node count.
-The capacity specification can include a suffix of GB, TB, PB, etc for gigabytes,
-terabytes, petabytes, etc.
-A sample command line follows:</p>
+The capacity specification can include a suffix of M, G, T, P, etc. for
+megabytes, gigabytes, terabytes, petabytes, etc.
+A sample command line follows and we also show the equivalent burst buffer
+script generated by the options:</p>
 <pre>
-srun --bb="capacity=1GB access=striped" a.out
+# Sample execute line:
+srun --bb="capacity=1G access=striped type=scratch" a.out
+
+# Equivalent script as generated by Slurm's burst_buffer/cray plugin
+#DW jobdw capacity=1GiB access_mode=striped type=scratch
 </pre>
 
 <h2><a name="status">Status Commands</a></h2>
 
 <p>Slurm's current burst buffer state information is available using the 
 <i>scontrol show burst</i> command or by using the <i>sview</i> command's
-<i>Burst Buffer</i> tab.</p>
+<i>Burst Buffer</i> tab. A sample scontrol output is shown below. The scontrol
+"-v" option may be used for a more verbose output format.</p>
 
 <pre>
 $ scontrol show burst
@@ -226,9 +231,9 @@ Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
   StopStageIn=/usr/local/slurm/15.08/sbin/PSI
   StopStageIn=/usr/local/slurm/15.08/sbin/PSO
   Allocated Buffers:
-    JobID=18 Account=foo CreateTime=2015-08-19T16:46:05 Partition=debug QOS=high   Size=10T State=allocated UserID=alan(1000)
-    JobID=20 Account=foo CreateTime=2015-08-19T16:46:45 Partition=debug QOS=high   Size=10T State=allocated UserID=alan(1000)
-    Name=DB1 Account=bar CreateTime=2015-08-19T16:46:45 Partition=debug QOS=normal Size=22T State=allocated UserID=brenda(1001)
+    JobID=18 CreateTime=2015-08-19T16:46:05 Size=10T State=allocated UserID=alan(1000)
+    JobID=20 CreateTime=2015-08-19T16:46:45 Size=10T State=allocated UserID=alan(1000)
+    Name=DB1 CreateTime=2015-08-19T16:46:45 Size=22T State=allocated UserID=brenda(1001)
   Per User Buffer Use:
     UserID=alan(1000) Used=20T
     UserID=brenda(1001) Used=22T
@@ -245,9 +250,9 @@ If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.<br><br>
 <i>type</i> specifies a Cray generic burst buffer resource, for example "nodes".
 if "type" is not specified, the number is a measure of storage space.<br><br>
-<i>units</i> may be "N" (nodes), "GB" (gigabytes), "TB" (terabytes),
-"PB" (petabytes), etc. with the default units being megabytes for reservations
-of storage space.<br><br>
+<i>units</i> may be "N" (nodes), "M" (megabytes), "G" (gigabytes),
+"T" (terabytes), "P" (petabytes), etc. with the default units being bytes for
+reservations of storage space.<br><br>
 
 Jobs using this reservation are not restricted to these burst buffer resources,
 but may use these reserved resources plus any which are generally available.
@@ -256,13 +261,13 @@ Some examples follow.</p>
 <pre>
 $ scontrol create reservation starttime=now duration=60 \
   users=alan flags=any_nodes \
-  burstbuffer=cray:100GB,generic:20GB
+  burstbuffer=cray:100G,generic:20G
 
 $ scontrol create reservation StartTime=noon duration=60 \
   users=brenda NodeCnt=8 \
-  BurstBuffer=cray:20GB
+  BurstBuffer=cray:20G
 </pre>
 
-<p style="text-align:center;">Last modified 20 August 2015</p>
+<p style="text-align:center;">Last modified 25 August 2015</p>
 
 <!--#include virtual="footer.txt"-->

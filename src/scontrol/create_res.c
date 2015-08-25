@@ -129,7 +129,8 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			} else {
 				resv_msg_ptr->accounts = val;
 			}
-		} else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 2)) == 0){
+		} else if (strncasecmp(tag, "BurstBuffer", MAX(taglen, 2))
+			   == 0) {
 			resv_msg_ptr->burst_buffer = val;
 		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
 			time_t  t = parse_time(val, 0);
