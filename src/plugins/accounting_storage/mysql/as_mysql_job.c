@@ -602,8 +602,6 @@ no_rollup_change:
 			if (!reinit) {
 				error("It looks like the storage has gone "
 				      "away trying to reconnect");
-				mysql_db_close_db_connection(
-					mysql_conn);
 				/* reconnect */
 				check_connection(mysql_conn);
 				reinit = 1;

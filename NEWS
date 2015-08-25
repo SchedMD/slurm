@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- When restarting or reconfiging the slurmctld, if job is completing handle
     accounting correctly to avoid meaningless errors about overflow.
  -- Add AccountingStorageTRES to scontrol show config
+ -- MySQL - Fix minor memory leak if a connection ever goes away whist using it.
 
 * Changes in Slurm 15.08.0rc1
 ==============================
@@ -398,6 +399,7 @@ documents those changes that are of interest to users and administrators.
     or binary.
  -- Fix testing for CR_Memory when CR_Memory and CR_ONE_TASK_PER_CORE are used
     with select/linear.
+ -- MySQL - Fix minor memory leak if a connection ever goes away whist using it.
 
 * Changes in Slurm 14.11.8
 ==========================
