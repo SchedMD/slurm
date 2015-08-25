@@ -7,6 +7,11 @@ documents those changes that are of interest to users and administrators.
     wouldn't get the correct protocol version to launch a step.
  -- Fix for message aggregation return rpcs where none of the messages are
     intended for the head of the tree.
+ -- Fix segfault in sreport when there was no response from the dbd.
+ -- ALPS - Fix compile to not link against -ljob and -lexpat with every lib
+    or binary.
+ -- Fix testing for CR_Memory when CR_Memory and CR_ONE_TASK_PER_CORE are used
+    with select/linear.
 
 * Changes in Slurm 15.08.0rc1
 ==============================
