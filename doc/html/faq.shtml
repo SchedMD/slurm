@@ -179,6 +179,8 @@ script for Slurm?</a></li>
 <li><a href="#mic_config">How can Slurm be configured to support Intel Phi (MIC)?</a></li>
 <li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</a></li>
+<li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
+rebooting the nodes?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2031,8 +2033,35 @@ an existing cluster is to use the sacctmgr command to dump that cluster's inform
 modify it using some editor, the load the new information using the sacctmgr
 command. See the sacctmgr man page for details, including an example.</p>
 
+<p><a name="cray_dvs"><b>64. How can I update Slurm on a Cray DVS file system
+   without rebooting the nodes?</b></a><br>
+The problem with DVS caching is related to the fact that the dereferenced value
+of /opt/slurm/default symlink is cached in the DVS attribute cache, and that
+cache is not dropped when the rest of the VM caches are.</p>
+
+<p>The Cray Native SLURM installation manual indicates that slurm should
+have a "default" symlink run through /etc/alternatives.
+As an alternative to that:
+<ol>
+<li>Institute a policy that all changes to files which could be open
+persistently (i.e., .so files) are always modified by creating a new access
+path.  I.e., installations go to a new directory.</li>
+<li>Dump the /etc/alternatives stuff, just use a regular symlink, e.g., default
+points to 15.8.0-1.</li>
+<li>Add a new mountpoint on all the compute nodes for /dsl/opt/slurm where the
+attrcache_timeout attribute is reduced from 14440s to 60s (or 15s -- whatever):<br>
+mount -t dvs /opt/slurm /dsl/opt/slurm -o<br>
+path=/dsl/opt/slurm,nodename=c0-0c0s0n0,loadbalance,cache,ro,attrcache_timeout=15<br>
+In the example above, c0-0c0s0n0 is the single DVS server for the system.</li>
+</ol>
+<p>Using this strategy avoids the caching problems, making upgrades simple.
+One just has to wait for about 20 seconds after changing the default symlinks
+before starting the slurmds again.</p>
+<p>(Information courtesy of Douglas Jacobsen, NERSC,
+Lawrence Berkeley National Laboratory)</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 August 2015</p>
+<p style="text-align:center;">Last modified 25 August 2015</p>
 
 <!--#include virtual="footer.txt"-->
