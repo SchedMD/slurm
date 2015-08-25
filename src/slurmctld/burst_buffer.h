@@ -98,6 +98,8 @@ extern uint64_t bb_g_get_system_size(char *name);
  * options. Performed after setting default account + qos, but prior to
  * establishing job ID or creating script file.
  *
+ * job_desc IN - Job submission request
+ * submit_uid IN - ID of the user submitting the job.
  * Returns a SLURM errno.
  */
 extern int bb_g_job_validate(struct job_descriptor *job_desc,
