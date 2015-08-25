@@ -667,6 +667,8 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->accounting_storage_loc =
 		xstrdup(conf->accounting_storage_loc);
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
+	conf_ptr->accounting_storage_tres =
+		xstrdup(conf->accounting_storage_tres);
 	conf_ptr->accounting_storage_type =
 		xstrdup(conf->accounting_storage_type);
 	conf_ptr->accounting_storage_user =

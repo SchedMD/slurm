@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     with select/linear.
  -- When restarting or reconfiging the slurmctld, if job is completing handle
     accounting correctly to avoid meaningless errors about overflow.
+ -- Add AccountingStorageTRES to scontrol show config
 
 * Changes in Slurm 15.08.0rc1
 ==============================

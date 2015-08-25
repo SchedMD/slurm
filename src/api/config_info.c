@@ -368,6 +368,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AccountingStorageTRES");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->accounting_storage_tres);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AccountingStorageType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->accounting_storage_type);
 	list_append(ret_list, key_pair);
