@@ -227,6 +227,7 @@ static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
 static void	_save_limits_state(void);
+static void	_set_alloc_assoc(bb_alloc_t *bb_alloc);
 static void	_set_assoc_ptr(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
 static void *	_start_stage_in(void *x);
@@ -261,6 +262,21 @@ static void _python2json(char *buf)
 				break;
 		}
 	}
+}
+
+/* For a given bb_alloc_t, set it's assoc string based upon its assoc_ptr value.
+ * association lock must be set when called */
+static void _set_alloc_assoc(bb_alloc_t *bb_alloc)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+
+	assoc_ptr = bb_alloc->assoc_ptr;
+	while (assoc_ptr) {
+		xstrfmtcat(bb_alloc->assocs, ",%u", assoc_ptr->id);
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+	if (bb_alloc->assocs)
+		xstrcat(bb_alloc->assocs, ",");
 }
 
 /* Free an array of xmalloced records. The array must be NULL terminated. */
@@ -848,6 +864,9 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 			bb_alloc->assoc_ptr = bb_ptr->assoc_ptr;
 			bb_alloc->partition = xstrdup(bb_ptr->partition);
 			bb_alloc->qos       = xstrdup(bb_ptr->qos);
+			assoc_mgr_lock(&assoc_locks);
+			_set_alloc_assoc(bb_alloc);
+			assoc_mgr_unlock(&assoc_locks);
 			return;
 		}
 		bb_ptr = bb_ptr->next;
@@ -880,6 +899,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 			else
 				qos_rec.name = "normal";
 		}
+		_set_alloc_assoc(bb_alloc);
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, &qos_ptr,
 					  true) == SLURM_SUCCESS) {
@@ -907,6 +927,7 @@ static void _set_assoc_ptr(bb_alloc_t *bb_alloc)
 				    (slurmdb_assoc_rec_t **) &assoc_ptr,
 				    true) == SLURM_SUCCESS) {
 		bb_alloc->assoc_ptr = assoc_ptr;
+		_set_alloc_assoc(bb_alloc);
 	}
 	assoc_mgr_unlock(&assoc_locks);
 }
@@ -1029,6 +1050,8 @@ static void _load_state(bool init_config)
 				     bb_alloc->partition, bb_alloc->qos,
 				     bb_alloc->size, &bb_state);
 		}
+		if (bb_alloc->job_id == 0)
+			bb_post_persist_create(bb_alloc, &bb_state);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_sessions(sessions, num_sessions);
@@ -1670,7 +1693,6 @@ static void *_start_teardown(void *x)
 					     bb_alloc->account,
 					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
-				bb_free_alloc_rec(&bb_state, bb_alloc);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 
@@ -1971,6 +1993,7 @@ static void _timeout_bb_rec(void)
 					     bb_alloc->account,
 					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
+				bb_post_persist_delete(bb_alloc, &bb_state);
 				*bb_pptr = bb_alloc->next;
 				bb_free_alloc_buf(bb_alloc);
 				break;
