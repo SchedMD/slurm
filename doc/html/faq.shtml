@@ -59,6 +59,8 @@
 <li><a href="#req">How can a job in complete or failed state be requeued?</a></li>
 <li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
   What exactly is considered a CPU?</a></li>
+<li><a href="#sbatch_srun">What is the difference between the sbatch
+  and srun commands?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -1008,7 +1010,32 @@ resource allocation with respect to base boards, sockets, cores and threads.</p>
 <p>(<b>NOTE:</b> An exception to this would be if the system administrator
 configured SelectTypeParameters=CR_CPU and each node's CPU count without its
 socket/core/thread specification. In that case, each thread would be
-independently scheduled as a CPU. This is not a typical configuration.)
+independently scheduled as a CPU. This is not a typical configuration.)</p>
+
+<p><a name="sbatch_srun"><b>31. What is the difference between the sbatch
+  and srun commands?</b></a><br>
+The srun command has two different modes of operation. First, if not run within
+an existing job (i.e. not within a Slurm job allocation created by salloc or
+sbatch), then it will create a job allocation and spawn an application.
+If run within an existing allocation, the srun command only spawns the
+application.
+For this question, we will only address the first mode of operation and compare
+creating a job allocation using the sbatch and srun commands.</p>
+
+<p>The srun command is designed for interactive use, with someone monitoring
+the output.
+The output of the application is seen as output of the srun command,
+typically at the user's terminal.
+The sbatch command is designed to submit a script for later execution and its
+output is written to a file.
+Command options used in the job allocation are almost identical.
+The most noticable difference in options is that the sbatch command supports
+the concept of <a href="job_array.html">job arrays</a>, while srun does not.
+Another significant difference is in fault tolerance.
+Failures involving sbatch jobs typically result in the job being requeued
+and executed again, while failures involving srun typically result in an
+error message being generated with the expectation that the user will respond
+in an appropriate fashion.</p> 
 
 <p class="footer"><a href="#top">top</a></p>
 
