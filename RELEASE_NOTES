@@ -203,74 +203,271 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
- -- Changed the following fields in struct struct job_descriptor
+ -- Changed the following fields in struct struct job_descriptor:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct job_info
+    task_dist changed from 16 to 32 bit.
+ -- Changed the following fields in struct job_info:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct slurm_step_ctx_params_t
+    job_state changed from 16 to 32 bit.
+ -- Changed the following fields in struct slurm_ctl_conf:
+    min_job_age, task_plugin_param changed from 16 to 32 bit.
+    bf_cycle_sum changed from 32 to 64 bit.
+ -- Changed the following fields in struct slurm_step_ctx_params_t:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct slurm_step_launch_params_t
+    task_dist changed from 16 to 32 bit.
+ -- Changed the following fields in struct slurm_step_launch_params_t:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct job_step_info_t
+    task_dist changed from 16 to 32 bit.
+ -- Changed the following fields in struct slurm_step_layout_t:
+    task_dist changed from 16 to 32 bit.
+ -- Changed the following fields in struct job_step_info_t:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct resource_allocation_response_msg_t
+    state changed from 16 to 32 bit.
+ -- Changed the following fields in struct resource_allocation_response_msg_t:
     cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct stats_info_response_msg
+ -- Changed the following fields in struct stats_info_response_msg:
     bf_cycle_sum changed from 32 to 64 bits.
+ -- Changed the following fields in struct acct_gather_energy:
+    base_consumed_energy, consumed_energy, previous_consumed_energy
+    changed from 32 to 64 bits.
+ -- Changed the following fields in struct ext_sensors_data:
+    consumed_energy changed from 32 to 64 bits.
 
-Added the following struct definitions
-======================================
+Added members to the following struct definitions
+=================================================
+ -- Added the following fields to struct acct_gather_node_resp_msg:
+    sensor_cnt
  -- Added the following fields to struct slurm_ctl_conf:
-    launch_params.
+    accounting_storage_tres, bb_type, cpu_freq_govs,
+    eio_timeout, launch_params, msg_aggr_params, power_parameters,
+    power_plugin, priority_weight_tres, prolog_epilog_timeout
+    topology_param.
  -- Added the following fields to struct job_descriptor:
-    clusters, cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
+    bit_flags, burst_buffer, clusters, cpu_freq_min,
+    cpu_freq_gov, power_flags, sicp_mode
+    tres_req_cnt.
  -- Added the following fields to struct job_info:
-    cpu_freq_min, cpu_freq_gov, power_flags, sicp_mode.
+    bitflags, burst_buffer, cpu_freq_min, cpu_freq_gov,
+    billable_tres, power_flags, sicp_mode tres_req_str, tres_alloc_str.
  -- Added the following fields to struct slurm_step_ctx_params_t:
     cpu_freq_min, cpu_freq_gov.
  -- Added the following fields to struct slurm_step_launch_params_t:
-    cpu_freq_min, cpu_freq_gov.
+    accel_bind_type, cpu_freq_min, cpu_freq_gov.
  -- Added the following fields to struct job_step_info_t:
-    cpu_freq_min, cpu_freq_gov.
+    cpu_freq_min, cpu_freq_gov task_dist, tres_alloc_str.
  -- Added the following fields to struct resource_allocation_response_msg_t:
-    cpu_freq_min, cpu_freq_gov.
+    account, cpu_freq_min, cpu_freq_gov, env_size, environment, qos
+    resv_name.
  -- Added the following fields to struct reserve_info_t:
-    burst_buffer.
+    burst_buffer, core_cnt, resv_watts, tres_str.
  -- Added the following fields to struct resv_desc_msg_t:
-    burst_buffer.
+    burst_buffer, core_cnt, resv_watts, tres_str.
  -- Added the following fields to struct node_info_t:
-    owner.
+    free_mem, power, owner, tres_fmt_str.
+ -- Added the following fields to struct partition_info:
+    billing_weights_str, qos_char, tres_fmt_str
 
 Added the following struct definitions
 ======================================
- -- Added CPU_FREQ_GOV_MASK: mask for all defined cpu-frequency governors.
-
+ -- Added power_mgmt_data_t: Power managment data stucture
+ -- Added sicp_info_t: sicp data structure
+ -- Added sicp_info_msg_t: sicp data structure message
+ -- Added layout_info_msg_t: layout message data structure
+ -- Added update_layout_msg_t: layout update message data structure
+ -- Added step_alloc_info_msg_t: Step allocation message data structure.
+ -- Added powercap_info_msg_t: Powercap information data structure.
+ -- Added update_powercap_msg_t: Update message for powercap info
+    data structure.
+ -- Added will_run_response_msg_t: Data structure to test if a job can run.
+ -- Added assoc_mgr_info_msg_t: Association manager information data structure.
+ -- Added assoc_mgr_info_request_msg_t: Association manager request message.
+ -- Added network_callerid_msg_t: Network callerid data structure.
+ -- Added burst_buffer_gres_t: Burst buffer gres data structure.
+ -- Added burst_buffer_resv_t: Burst buffer reservation data structure.
+ -- Added burst_buffer_use_t: Burst buffer user information.
+ -- Added burst_buffer_info_t: Burst buffer information data structure.
+ -- Added burst_buffer_info_msg_t: Burst buffer message data structure.
 
 Changed the following enums and #defines
 ========================================
- -- Added MAIL_JOB_STAGE_OUT
+ -- Added INFINITE64: 64 bit infinite value.
+ -- Added NO_VAL: 64 bit no val value.
+ -- Added SLURM_EXTERN_CONT: Job step id of external process container.
+ -- Added DEFAULT_EIO_SHUTDOWN_WAIT: Time to wait after eio shutdown signal.
+ -- Added MAIL_JOB_STAGE_OUT: Mail job stage out flag.
+ -- Added CPU_FREQ_GOV_MASK: Mask for all defined cpu-frequency governors.
+ -- Added JOB_LAUNCH_FAILED: Job launch failed state.
+ -- Added JOB_STOPPED: Job stopped state.
+ -- Added SLURM_DIST*: Slurm distribution flags.
+ -- Added CPU_FREQ_GOV_MASK: Cpu frequency gov mask
+ -- Added CPU_FREQ_*_OLD: Vestigial values for transition from v14.11 systems.
+ -- Added PRIORITY_FLAGS_MAX_TRES: Flag for max tres limit.
+ -- Added KILL_INV_DEP and NO_KILL_INV_DEP: Invalid dependency flags.
+ -- Added CORE_SPEC_THREAD: Flag for thread count
+ -- Changed WAIT_QOS/ASSOC_*: changed to tres values.
+ -- Added WAIT_ASSOC/QOS_GRP/MAX_*: Association tres states.
+ -- Added ENERGY_DATA_*: sensor count and node energy added to
+    jobacct_data_type enum
+ -- Added accel_bind_type: enum for accel bind type
+ -- Added SLURM_POWER_FLAGS_LEVEL: Slurm power cap flag.
+ -- Added PART_FLAG_EXCLUSIVE_USER: mask for exclusive allocation of nodes.
+ -- Added PART_FLAG_EXC_USER_CLR: mask to clear exclusive allocation of nodes.
+ -- Added RESERVE_FLAG_ANY_NODES: mask to allow usage for any compute node.
+ -- Added RESERVE_FLAG_NO_ANY_NODES: mask to clear any compute node flag.
+ -- Added RESERVE_FLAG_REPLACE: Replace job resources flag.
+ -- Added DEBUG_FLAG_*: Debug flags for burst buffer, cpu freq, power
+    managment, sicp, DB archive, and tres.
+ -- Added PROLOG_FLAG_CONTAIN: Proctrack plugin container flag
+ -- Added ASSOC_MGR_INFO_FLAG_*: Association manager info flags for
+    association, user, and qos.
+ -- Added BB_FLAG_DISABLE_PERSISTENT: Disable peristant burst buffers.
+ -- Added BB_FLAG_ENABLE_PERSISTENT: Enable peristant burst buffers.
+ -- Added BB_FLAG_EMULATE_CRAY: Using dw_wlm_cli emulator flag
+ -- Added BB_FLAG_PRIVATE_DATA: Flag to allow buffer to be seen by owner.
+ -- Added BB_STATE_*: Burst buffer state masks
 
 Added the following API's
 =========================
+ -- Added slurm_job_will_run2 to determine of a job could execute immediately.
  -- Added APIs to load, print, and update layouts:
     slurm_print_layout_info, slurm_load_layout, slurm_update_layout.
+ -- Added APIs to free and get association manager information:
+    slurm_load_assoc_mgr_info, slurm_free_assoc_mgr_info_msg,
+    slurm_free_assoc_mgr_info_request_msg
+ -- Added APIs to get cpu allocation from node name or id:
+    slurm_job_cpus_allocated_str_on_node_id,
+    slurm_job_cpus_allocated_str_on_node
+ -- Added APIs to load, free, print, and update powercap information
+    slurm_load_powercap, slurm_free_powercap_info_msg,
+    slurm_print_powercap_info_msg, slurm_update_powercap
+ -- Added slurm_burst_buffer_state_string to translate state number to string
+    equivalent
+ -- Added APIs to load, free, and print burst buffer information
+    slurm_load_burst_buffer_info, slurm_free_burst_buffer_info_msg,
+    slurm_print_burst_buffer_info_msg, slurm_print_burst_buffer_record
+ -- Added slurm_network_callerid to get the job id of a job based upon network
+    socket information.
 
 Changed the following API's
 ============================
-
+ -- slurm_get_node_energy - Changed argument
+    acct_gather_energy_t **acct_gather_energy to uint16_t *sensors_cnt
+    and acct_gather_energy_t **energy
+ -- slurm_sbcast_lookup - Added step_id argument
 
 DBD API Changes
 ===============
 
 Changed members of the following structs
 ========================================
-
+ -- Changed slurmdb_association_cond_t to slurmdb_assoc_cond_t:
+ -- Changed the following fields in struct slurmdb_account_cond_t:
+    slurmdb_association_cond_t *assoc_cond changed to
+    slurmdb_assoc_cond_t *assoc_cond
+ -- Changed the following fields in struct slurmdb_assoc_rec:
+    slurmdb_association_rec *assoc_next to
+    slurmdb_assoc_rec *assoc_next
+    slurmdb_association_rec *assoc_next_id to
+    slurmdb_assoc_rec *assoc_next_id
+    assoc_mgr_association_usage_t *usage to
+    slurmdb_assoc_usage_t *usage
+ -- Changed the following fields in struct slurmdb_cluster_rec_t:
+    slurmdb_association_rec_t *root_assoc to
+    slurmdb_assoc_rec_t *root_assoc
+ -- Changed the following fields in struct slurmdb_job_rec_t:
+    state changed from 16 to 32 bit
+ -- Changed the following fields in struct slurmdb_qos_rec_t:
+    assoc_mgr_qos_usage_t *usage to slurmdb_qos_usage_t *usage
+ -- Changed the following fields in struct slurmdb_step_rec_t:
+    task_dist was changed from 16 to 32 bit
+ -- Changed the following fields in struct slurmdb_wckey_cond_t:
+    slurmdb_association_cond_t *assoc_cond to slurmdb_assoc_cond_t *assoc_cond
+ -- Changed the following fields in struct slurmdb_hierarchical_rec_t:
+    slurmdb_association_cond_t *assoc_cond to slurmdb_assoc_cond_t *assoc_cond
 
 Added the following struct definitions
 ======================================
+ -- Added slurmdb_tres_rec_t: Tres data structure for the slurmdbd.
+ -- Added slurmdb_assoc_cond_t: Slurmdbd association condition.
+ -- Added slurmdb_tres_cond_t: Tres condition data structure.
+ -- Added slurmdb_assoc_usage: Slurmdbd association usage limits.
+ -- Added slurmdbd_qos_usage_t: slurmdbd qos usage data structure.
+
+Added members to the following struct definitions
+=================================================
+ -- Added the following fields to struct slurmdb_accounting_rec_t:
+    tres_rec
+ -- Added the following fields to struct slurmdb_assoc_rec_t:
+    accounting_list, grp_tres, grp_tre_ctld, grp_tres_mins, grp_tres_mins_ctld,
+    grp_tres_run_mins, grp_tres_run_mins_ctld, max_tres_mins_pj,
+    max_tres_mins_ctld, max_tres_run_mins, max_tres_run_mins_ctld,
+    max_tres_pj, max_tres_ctld, max_tres_pn, max_tres_pn_ctld
+ -- Added the following fields to struct slurmdb_cluser_rec_t:
+    tres_str
+ -- Added the following fields to struct slurmdb_cluster_accounting_rec_t:
+    tres_rec
+ -- Added the following fields to struct slurmdb_event_rec_t:
+    tres_str
+ -- Added the following fields to struct slurmdb_job_rec_t:
+    tres_alloc_str, tres_req_str
+ -- Added the following fields to struct slurmdb_qos_rec_t:
+    grp_tres, grp_tres_ctld, grp_tres_mins, grp_tres_mins_ctld,
+    grp_tres_run_mins, grp_tres_run_mins_ctld, max_tres_mins_pj,
+    max_tres_mins_pj_ctld, max_tres_pj, max_tres_pj_ctld, max_tres_pn,
+    max_tres_pn_ctld, max_tres_pn, max_tres_pn_ctld, max_tres_pu,
+    max_tres_pu_ctld, max_tres_run_mins_pu, max_tres_run_mins_pu_ctld,
+    min_tres_pj, min_tres_pj_ctld
+ -- Added the following fields to struct slurmdb_reservation_rec_t:
+    tres_str, tres_list
+ -- Added the following fields to struct slurmdb_step_rec_t:
+    req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov, tres_alloc_str
+ -- Added the following fields to struct slurmdb_used_limits_t:
+    tres, tres_run_mins
+ -- Added the following fields to struct slurmdb_report_assoc_rec_t:
+    tres_list
+ -- Added the following fields to struct slurmdb_report_user_rec_t:
+    tres_list
+ -- Added the following fields to struct slurmdb_report_cluster_rec_t:
+    accounting_list, tres_list
+ -- Added the following fields to struct slurmdb_report_job_grouping_t:
+    tres_list
+ -- Added the following fields to struct slurmdb_report_acct_grouping_t:
+    tres_list
+ -- Added the following fields to struct slurmdb_report_cluster_grouping_t:
+    tres_list
 
 Added the following enums and #defines
 ========================================
+-- Added QOS_FLAG_PART_QOS: partition qos flag
 
 Added the following API's
 =========================
+ -- slurmdb_get_first_avail_cluster() - Get the first cluster that will run
+    a job
+ -- slurmdb_destroy_assoc_usage() - Helper function
+ -- slurmdb_destroy_qos_usage() - Helper function
+ -- slurmdb_free_assoc_mgr_state_msg() - Helper function
+ -- slurmdb_free_assoc_rec_members() - Helper function
+ -- slurmdb_destroy_assoc_rec() - Helper function
+ -- slurmdb_free_qos_rec_members() - Helper function
+ -- slurmdb_destroy_tres_rec_noalloc() - Helper function
+ -- slurmdb_destroy_tres_rec() - Helper function
+ -- slurmdb_destroy_tres_cond() - Helper function
+ -- slurmdb_destroy_assoc_cond() - Helper function
+ -- slurmdb_init_assoc_rec() - Helper function
+ -- slurmdb_init_tres_cond() - Helper function
+ -- slurmdb_tres_add() - Add tres to accounting
+ -- slurmdb_tres_get() - Get tres info from accounting
+
+Changed the following API's
+============================
+ -- slurmdb_associations_get() - Changed assoc_cond arg type to
+    slurmdb_assoc_cond_t
+ -- slurmdb_associations_modify() - Changed assoc_cond arg type to
+    slurmdb_assoc_cond_t and assoc arg type to slurmdb_assoc_rec_t
+ -- slurmdb_associations_remove() - Changed assoc_cond arg type to
+    slurmdb_assoc_cond_t
+ -- slurmdb_report_cluster_account_by_user(),
+    slurmdb_report_cluster_user_by_account(), slurmdb_problems_get() - Changed
+    assoc_cond arg type to slurmdb_assoc_cond_t
+ -- slurmdb_init_qos_rec() - added init_val argument
