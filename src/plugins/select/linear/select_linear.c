@@ -482,7 +482,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	job_resources_t *job_resrcs_ptr;
 
-	if (job_ptr->details->pn_min_memory  && (cr_type == CR_MEMORY)) {
+	if (job_ptr->details->pn_min_memory  && (cr_type & CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -564,7 +564,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	if (mode != SELECT_MODE_TEST_ONLY) {
 		use_total_gres = false;
 		if (job_ptr->details->pn_min_memory  &&
-		    (cr_type == CR_MEMORY)) {
+		    (cr_type & CR_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->pn_min_memory
 					& (~MEM_PER_CPU);
@@ -2253,7 +2253,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (remove_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -2661,7 +2661,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	}
 
 	if (job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -2748,7 +2748,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (alloc_all && job_ptr->details &&
-	    job_ptr->details->pn_min_memory && (cr_type == CR_MEMORY)) {
+	    job_ptr->details->pn_min_memory && (cr_type & CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			job_memory_cpu = job_ptr->details->pn_min_memory &
 				(~MEM_PER_CPU);
@@ -3010,7 +3010,7 @@ static void _init_node_cr(void)
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
 		if (job_ptr->details && job_ptr->details->pn_min_memory &&
-		    (cr_type == CR_MEMORY)) {
+		    (cr_type & CR_MEMORY)) {
 			if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 				job_memory_cpu = job_ptr->details->
 					pn_min_memory &

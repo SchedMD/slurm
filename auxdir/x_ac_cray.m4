@@ -220,14 +220,18 @@ AC_DEFUN([X_AC_CRAY],
     ac_have_real_cray="no"
   fi
   if test "$ac_have_alps_cray" = "yes"; then
-    # libexpat is always required for the XML-RPC interface
+    # libexpat is always required for the XML-RPC interface, but it is only
+    # needed in the select plugin, so set it up here instead of everywhere.
     AC_CHECK_HEADER(expat.h, [],
 		    AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
-    AC_CHECK_LIB(expat, XML_ParserCreate, [],
+    AC_CHECK_LIB(expat, XML_ParserCreate, [CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS -lexpat"],
 		 AC_MSG_ERROR([Cray BASIL requires libexpat.so (i.e. libexpat1-dev)]))
 
     if test "$ac_have_real_cray" = "yes"; then
-      AC_CHECK_LIB([job], [job_getjid], [],
+      # libjob is needed, but we don't want to put it on the LIBS line here.
+      # If we are on a native system it is handled elsewhere, and on a hybrid
+      # we only need this in libsrun.
+      AC_CHECK_LIB([job], [job_getjid], [CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -ljob"],
 	      AC_MSG_ERROR([Need cray-job (usually in /opt/cray/job/default)]))
       AC_DEFINE(HAVE_REAL_CRAY, 1, [Define to 1 for running on a real Cray system])
     fi

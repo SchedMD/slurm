@@ -631,6 +631,7 @@ static int _run_report(int type, int argc, char *argv[])
 	List header_list = NULL;
 	char *object_str = "";
 
+	/* init memory before chance of going to end_it before being init'ed. */
 	memset(&total_field, 0, sizeof(print_field_t));
 	print_fields_list = list_create(destroy_print_field);
 

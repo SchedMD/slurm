@@ -1763,6 +1763,7 @@ extern int sort_job_queue2(void *x, void *y)
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
+	uint32_t job_id1, job_id2;
 	uint32_t p1, p2;
 
 	/* The following block of code is designed to minimize run time in
@@ -1814,7 +1815,21 @@ extern int sort_job_queue2(void *x, void *y)
 		return -1;
 
 	/* If the priorities are the same sort by increasing job id's */
-	if (job_rec1->job_id > job_rec2->job_id)
+	if (job_rec1->array_task_id == NO_VAL)
+		job_id1 = job_rec1->job_id;
+	else
+		job_id1 = job_rec1->job_ptr->array_job_id;
+	if (job_rec2->array_task_id == NO_VAL)
+		job_id2 = job_rec2->job_id;
+	else
+		job_id2 = job_rec2->job_ptr->array_job_id;
+	if (job_id1 > job_id2)
+		return 1;
+	else if (job_id1 < job_id2)
+		return -1;
+
+	/* If job IDs match compare task IDs */
+	if (job_rec1->array_task_id > job_rec2->array_task_id)
 		return 1;
 
 	return -1;

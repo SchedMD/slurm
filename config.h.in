@@ -175,12 +175,6 @@
 /* Define to 1 if you have a functional curl library. */
 #undef HAVE_LIBCURL
 
-/* Define to 1 if you have the `expat' library (-lexpat). */
-#undef HAVE_LIBEXPAT
-
-/* Define to 1 if you have the `job' library (-ljob). */
-#undef HAVE_LIBJOB
-
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
