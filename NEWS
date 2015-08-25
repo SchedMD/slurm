@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault in sreport when there was no response from the dbd.
  -- ALPS - Fix compile to not link against -ljob and -lexpat with every lib
     or binary.
+ -- Fix testing for CR_Memory when CR_Memory and CR_ONE_TASK_PER_CORE are used
+    with select/linear.
 
 * Changes in Slurm 14.11.8
 ==========================
