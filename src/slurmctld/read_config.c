@@ -1920,6 +1920,14 @@ static int _sync_nodes_to_comp_job(void)
 			     __func__, job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
+
+			/* deallocate_nodes will remove this job from
+			 * the system before it was added, so add it
+			 * now
+			 */
+			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
+				acct_policy_job_begin(job_ptr);
+
 			deallocate_nodes(job_ptr, false, false, false);
 			/* The job in completing state at slurmctld restart or
 			 * reconfiguration, do not log completion again.

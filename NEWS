@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     or binary.
  -- Fix testing for CR_Memory when CR_Memory and CR_ONE_TASK_PER_CORE are used
     with select/linear.
+ -- When restarting or reconfiging the slurmctld, if job is completing handle
+    accounting correctly to avoid meaningless errors about overflow.
 
 * Changes in Slurm 15.08.0rc1
 ==============================
