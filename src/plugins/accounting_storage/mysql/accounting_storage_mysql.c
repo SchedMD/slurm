@@ -839,6 +839,8 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 		errno = ESLURM_DB_CONNECTION;
 		return ESLURM_DB_CONNECTION;
 	} else if (mysql_db_ping(mysql_conn) != 0) {
+		/* avoid memory leak and end thread */
+		mysql_db_close_db_connection(mysql_conn);
 		if (mysql_db_get_db_connection(
 			    mysql_conn, mysql_db_name, mysql_db_info)
 		    != SLURM_SUCCESS) {
