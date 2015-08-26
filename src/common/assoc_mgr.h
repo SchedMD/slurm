@@ -474,4 +474,13 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos);
 extern char *assoc_mgr_make_tres_str_from_array(
 	uint64_t *tres_cnt, uint32_t flags, bool locked);
 
+/* Fill in the default qos id or name given an association record.  If
+ * none is given it gives the default qos for the system.
+ * IN/OUT: qos_rec - fills in the name or id of the default qos
+ *
+ * NOTE: READ lock needs to be set on associations and QOS before
+ * calling this. */
+extern void assoc_mgr_get_default_qos_info(
+	slurmdb_assoc_rec_t *assoc_ptr, slurmdb_qos_rec_t *qos_rec);
+
 #endif /* _SLURM_ASSOC_MGR_H */

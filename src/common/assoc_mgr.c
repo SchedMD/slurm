@@ -5921,3 +5921,32 @@ extern char *assoc_mgr_make_tres_str_from_array(
 
 	return tres_str;
 }
+
+/* READ lock needs to be set on associations before calling this. */
+extern void assoc_mgr_get_default_qos_info(
+	slurmdb_assoc_rec_t *assoc_ptr, slurmdb_qos_rec_t *qos_rec)
+{
+	xassert(qos_rec);
+
+	if (!qos_rec->name && !qos_rec->id) {
+		if (assoc_ptr && assoc_ptr->usage->valid_qos) {
+			if (assoc_ptr->def_qos_id)
+				qos_rec->id = assoc_ptr->def_qos_id;
+			else if (bit_set_count(assoc_ptr->usage->valid_qos)
+				 == 1)
+				qos_rec->id =
+					bit_ffs(assoc_ptr->usage->valid_qos);
+			else if (assoc_mgr_root_assoc
+				 && assoc_mgr_root_assoc->def_qos_id)
+				qos_rec->id = assoc_mgr_root_assoc->def_qos_id;
+			else
+				qos_rec->name = "normal";
+		} else if (assoc_mgr_root_assoc
+			   && assoc_mgr_root_assoc->def_qos_id)
+			qos_rec->id = assoc_mgr_root_assoc->def_qos_id;
+		else
+			qos_rec->name = "normal";
+	}
+
+	return;
+}

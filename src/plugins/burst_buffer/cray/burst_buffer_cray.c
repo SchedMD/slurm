@@ -917,19 +917,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 		bb_alloc->assoc_ptr = assoc_ptr;
 		bb_alloc->account   = xstrdup(assoc_rec.acct);
 
-		if (assoc_ptr && assoc_ptr->usage &&
-		    assoc_ptr->usage->valid_qos) {
-			if (assoc_ptr->def_qos_id)
-				qos_rec.id = assoc_ptr->def_qos_id;
-			else if (bit_set_count(assoc_ptr->usage->valid_qos)==1)
-				qos_rec.id =
-					bit_ffs(assoc_ptr->usage->valid_qos);
-			else if (assoc_mgr_root_assoc
-				 && assoc_mgr_root_assoc->def_qos_id)
-				qos_rec.id = assoc_mgr_root_assoc->def_qos_id;
-			else
-				qos_rec.name = "normal";
-		}
+		assoc_mgr_get_default_qos_info(assoc_ptr, &qos_rec);
 		_set_alloc_assoc(bb_alloc);
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, &qos_ptr,
