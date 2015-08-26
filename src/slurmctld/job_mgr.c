@@ -2023,20 +2023,25 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (!job_ptr->array_recs)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
-		job_ptr->array_recs->task_id_bitmap = bit_alloc(task_id_size);
 		xfree(job_ptr->array_recs->task_id_str);
-		if (task_id_str) {
-			bit_unfmt_hexmask(job_ptr->array_recs->task_id_bitmap,
-					  task_id_str);
-			job_ptr->array_recs->task_id_str = task_id_str;
-			task_id_str = NULL;
-		}
-		job_ptr->array_recs->task_cnt =
-			bit_set_count(job_ptr->array_recs->task_id_bitmap);
+		if (task_id_size) {
+			job_ptr->array_recs->task_id_bitmap =
+				bit_alloc(task_id_size);
+			if (task_id_str) {
+				bit_unfmt_hexmask(
+					job_ptr->array_recs->task_id_bitmap,
+					task_id_str);
+				job_ptr->array_recs->task_id_str = task_id_str;
+				task_id_str = NULL;
+			}
+			job_ptr->array_recs->task_cnt =
+				bit_set_count(job_ptr->array_recs->
+					      task_id_bitmap);
 
-		if (job_ptr->array_recs->task_cnt > 1)
-			job_count += (job_ptr->array_recs->task_cnt - 1);
-
+			if (job_ptr->array_recs->task_cnt > 1)
+				job_count += (job_ptr->array_recs->task_cnt-1);
+		} else
+			xfree(task_id_str);
 		job_ptr->array_recs->array_flags    = array_flags;
 		job_ptr->array_recs->max_run_tasks  = max_run_tasks;
 		job_ptr->array_recs->tot_run_tasks  = tot_run_tasks;
@@ -3725,7 +3730,12 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 			  job_ptr_pend->array_task_id);
 	}
 	xfree(job_ptr_pend->array_recs->task_id_str);
-	job_ptr_pend->array_recs->task_cnt--;
+	if (job_ptr_pend->array_recs->task_cnt) {
+		job_ptr_pend->array_recs->task_cnt--;
+	} else {
+		error("Job %u array_recs->task_cnt underflow",
+		      job_ptr->array_job_id);
+	}
 	job_ptr_pend->array_task_id = NO_VAL;
 
 	job_ptr_pend->batch_host = NULL;
@@ -14987,8 +14997,10 @@ extern void job_array_pre_sched(struct job_record *job_ptr)
 	i = bit_ffs(job_ptr->array_recs->task_id_bitmap);
 	if (i < 0) {
 		/* This happens if the final task in a meta-job is requeued */
-		error("%s has empty task_id_bitmap",
-		      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+		if (job_ptr->restart_cnt == 0) {
+			error("%s has empty task_id_bitmap",
+			      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+		}
 		FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 		return;
 	}
@@ -15017,6 +15029,8 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      job_ptr->array_job_id, job_ptr->array_task_id);
 		}
 		xfree(job_ptr->array_recs->task_id_str);
+		if (job_ptr->array_recs->task_cnt == 0)
+			FREE_NULL_BITMAP(job_ptr->array_recs->task_id_bitmap);
 
 		/* While it is efficient to set the db_index to 0 here
 		 * to get the database to update the record for
