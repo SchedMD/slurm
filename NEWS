@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Fix minor memory leak if a connection ever goes away whist using it.
  -- ALPS - Make it so srun --hint=nomultithread works correctly.
  -- Make MaxTRESPerUser work in sacctmgr.
+ -- Fix handling of requeued jobs with steps that are still finishing.
 
 * Changes in Slurm 15.08.0rc1
 ==============================

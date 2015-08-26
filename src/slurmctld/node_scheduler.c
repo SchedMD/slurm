@@ -2079,8 +2079,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
 	gres_plugin_job_clear(job_ptr->gres_list);
-	step_list_purge(job_ptr);
-	job_ptr->step_list = list_create(NULL);
+	if (!job_ptr->step_list)
+		job_ptr->step_list = list_create(NULL);
 
 	job_ptr->node_bitmap = select_bitmap;
 

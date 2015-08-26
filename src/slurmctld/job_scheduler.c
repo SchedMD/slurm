@@ -198,7 +198,8 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
-	if (cleaning) {
+	if (cleaning ||
+	    (job_ptr->step_list && list_count(job_ptr->step_list))) {
 		/* Job's been requeued and the
 		 * previous run hasn't finished yet */
 		job_ptr->state_reason = WAIT_CLEANING;
