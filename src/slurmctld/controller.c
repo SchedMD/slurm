@@ -1366,7 +1366,11 @@ static int _init_tres(void)
 	if (!association_based_accounting) {
 		update_object.type = SLURMDB_ADD_TRES;
 		update_object.objects = list_create(slurmdb_destroy_tres_rec);
-	}
+	} else if (!g_tres_count)
+		fatal("You are running with a database but for some reason "
+		      "we have no TRES from it.  This should only happen if "
+		      "the database is down and you don't have "
+		      "any state files.");
 
 	while ((temp_char = list_pop(char_list))) {
 		tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
