@@ -5163,7 +5163,7 @@ extern int load_assoc_usage(char *state_save_location)
 	uint16_t ver = 0;
 	int state_fd;
 	char *data = NULL, *state_file;
-	Buf buffer;
+	Buf buffer = NULL;
 	time_t buf_time;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
@@ -5179,6 +5179,7 @@ extern int load_assoc_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Assoc usage file (%s) to recover", state_file);
+		goto unpack_error;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -5288,7 +5289,7 @@ extern int load_qos_usage(char *state_save_location)
 	uint16_t ver = 0;
 	int state_fd;
 	char *data = NULL, *state_file;
-	Buf buffer;
+	Buf buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, READ_LOCK, WRITE_LOCK,
@@ -5305,6 +5306,7 @@ extern int load_qos_usage(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No Qos usage file (%s) to recover", state_file);
+		goto unpack_error;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -5405,7 +5407,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	uint16_t ver = 0;
 	int state_fd;
 	char *data = NULL, *state_file;
-	Buf buffer;
+	Buf buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, READ_LOCK,
@@ -5420,7 +5422,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		debug2("No association state file (%s) to recover", state_file);
-		return ENOENT;
+		goto unpack_error;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);

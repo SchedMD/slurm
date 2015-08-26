@@ -405,6 +405,8 @@ documents those changes that are of interest to users and administrators.
  -- ALPS - Make it so srun --hint=nomultithread works correctly.
  -- Prevent job array task ID from being reported as NO_VAL if last task in the
     array gets requeued.
+ -- Fix some potential deadlock issues when state files don't exist in the
+    association manager.
 
 * Changes in Slurm 14.11.8
 ==========================
