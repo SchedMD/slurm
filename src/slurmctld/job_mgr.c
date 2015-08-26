@@ -2469,9 +2469,12 @@ extern void build_array_str(struct job_record *job_ptr)
 {
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 
-	if (!array_recs || array_recs->task_id_str || !array_recs->task_cnt ||
-	    !array_recs->task_id_bitmap)
+	if (!array_recs || array_recs->task_id_str ||
+	    !array_recs->task_id_bitmap ||
+	    (job_ptr->array_task_id != NO_VAL) ||
+	    (bit_ffs(job_ptr->array_recs->task_id_bitmap) == -1))
 		return;
+
 
 	array_recs->task_id_str = bit_fmt_hexmask(array_recs->task_id_bitmap);
 
