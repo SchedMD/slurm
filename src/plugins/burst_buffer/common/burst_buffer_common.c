@@ -1308,15 +1308,17 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 		xfree(out_buf);
 		for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
 		     i++, buf_ptr++) {
-			if (buf_ptr->destroy) {
-				info("  Destroy Name:%s Hurry:%d",
-				     buf_ptr->name, (int) buf_ptr->hurry);
-			} else {
+			if (buf_ptr->create) {
 				info("  Create  Name:%s Size:%"PRIu64
 				     " Access:%s Type:%s State:%s",
 				     buf_ptr->name, buf_ptr->size,
 				     buf_ptr->access, buf_ptr->type,
 				     bb_state_string(buf_ptr->state));
+			} else if (buf_ptr->destroy) {
+				info("  Destroy Name:%s Hurry:%d",
+				     buf_ptr->name, (int) buf_ptr->hurry);
+			} else {
+				info("  Use  Name:%s", buf_ptr->name);
 			}
 		}
 	}

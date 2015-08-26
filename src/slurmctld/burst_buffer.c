@@ -85,7 +85,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_validate)	(struct job_descriptor *job_desc,
 					 uid_t submit_uid);
 	int		(*job_validate2)(struct job_record *job_ptr,
-					 char **err_msg, bool is_job_array);
+					 char **err_msg);
 	void		(*job_set_tres_cnt) (struct job_record *job_ptr,
 					     uint64_t *tres_cnt, bool locked);
 	time_t		(*job_get_est_start) (struct job_record *job_ptr);
@@ -369,8 +369,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
-			      bool is_job_array)
+extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -379,7 +378,7 @@ extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		rc2 = (*(ops[i].job_validate2))(job_ptr, err_msg, is_job_array);
+		rc2 = (*(ops[i].job_validate2))(job_ptr, err_msg);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);

@@ -358,7 +358,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			new_job_ptr->start_time = (time_t) 0;
 			/* Do NOT clear db_index here, it is handled when
 			 * task_id_str is created elsewhere */
-			(void) bb_g_job_validate2(job_ptr, NULL, false);
+			(void) bb_g_job_validate2(job_ptr, NULL);
 		} else {
 			error("%s: Unable to copy record for %s", __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -373,8 +373,9 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			time_t now = time(NULL);
 			if (difftime(now, last_log_time) > 600) {
 				/* Log at most once every 10 minutes */
-				info(
-"%s has run for %d usec, exiting with %d of %d jobs tested, %d job-partition pairs added",
+				info("%s has run for %d usec, exiting with %d "
+				     "of %d jobs tested, %d job-partition "
+				     "pairs added",
 				     __func__, build_queue_timeout, tested_jobs,
 				     list_count(job_list), job_part_pairs);
 				last_log_time = now;
@@ -980,7 +981,7 @@ static int _schedule(uint32_t job_limit)
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int failed_part_cnt = 0, failed_resv_cnt = 0, job_cnt = 0;
-	int error_code, i, j, part_cnt, time_limit, pend_time;
+	int error_code, bb, i, j, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	struct job_record *job_ptr = NULL;
@@ -1539,6 +1540,26 @@ next_task:
 			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		bb = bb_g_job_test_stage_in(job_ptr, false);
+		if (bb != 1) {
+			if (bb == 0) {
+				job_ptr->state_reason =
+					WAIT_BURST_BUFFER_STAGING;
+			} else {
+				job_ptr->state_reason =
+					WAIT_BURST_BUFFER_RESOURCE;
+			}
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
+			debug3("sched: JobId=%u. State=%s. Reason=%s. "
+			       "Priority=%u.",
+			       job_ptr->job_id,
+			       job_state_string(job_ptr->job_state),
+			       job_reason_string(job_ptr->state_reason),
+			       job_ptr->priority);
 			continue;
 		}
 

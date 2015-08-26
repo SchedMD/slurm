@@ -122,6 +122,7 @@ typedef struct bb_user {
 /* Burst buffer creation records with state */
 typedef struct {
 	char    *access;	/* Buffer access */
+	bool     create;	/* Set if buffer create requested */
 	bool     destroy;	/* Set if buffer destroy requested */
 	bool     hurry;		/* Fast buffer destroy */
 	char    *name;		/* Buffer name, non-numeric for persistent */

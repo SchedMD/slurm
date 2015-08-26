@@ -5475,7 +5475,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	struct job_record *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 	List license_list = NULL, gres_list = NULL;
-	bool is_job_array = false, valid;
+	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority;
 	static uint32_t node_scaling = 1;
@@ -5878,10 +5878,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_ptr->batch_flag = 1;
 	} else
 		job_ptr->batch_flag = 0;
-	if (job_desc->array_bitmap)
-		is_job_array = true;
 	if (!will_run &&
-	    (error_code = bb_g_job_validate2(job_ptr, err_msg, is_job_array)))
+	    (error_code = bb_g_job_validate2(job_ptr, err_msg)))
 		goto cleanup_fail;
 
 	job_ptr->license_list = license_list;
@@ -11521,7 +11519,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				} else {
 					/* The array_recs structure is moved
 					 * to the new job record copy */
-					bb_g_job_validate2(job_ptr, NULL,false);
+					bb_g_job_validate2(job_ptr, NULL);
 					job_ptr = new_job_ptr;
 				}
 			}

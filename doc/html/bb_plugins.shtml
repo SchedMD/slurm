@@ -117,8 +117,7 @@ Validation of a job submit request with respect to burst buffer option.
 A Slurm errno.
 
 <p class="commandline">
-int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
-bool is_job_array)
+int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Validation of a job submit request with respect to burst buffer option.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -126,8 +125,6 @@ Validation of a job submit request with respect to burst buffer option.
 (input) Job record for the job request with respect to burst buffer.<br>
 <span class="commandline">err_msg</span>
 (output) Error message, sent directlt to job submission command<br>
-<span class="commandline">is_job_array</span>
-(input) Set if the job is a job array.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 A Slurm errno.
 

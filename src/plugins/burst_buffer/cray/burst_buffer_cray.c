@@ -234,6 +234,8 @@ static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
 static void	_test_config(void);
+static bool	_test_persistent_use_ready(bb_job_t *bb_job,
+					   struct job_record *job_ptr);
 static int	_test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
@@ -490,7 +492,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 							   sizeof(bb_buf_t) *
 							   bb_job->buf_cnt);
 				bb_job->buf_ptr[inx].access = bb_access;
-				//bb_job->buf_ptr[inx].destroy = false;
+				bb_job->buf_ptr[inx].create = true;
 				//bb_job->buf_ptr[inx].hurry = false;
 				bb_job->buf_ptr[inx].name = bb_name;
 				bb_job->buf_ptr[inx].size = tmp_cnt;
@@ -520,6 +522,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 							   sizeof(bb_buf_t) *
 							   bb_job->buf_cnt);
 				//bb_job->buf_ptr[inx].access = NULL;
+				//bb_job->buf_ptr[inx].create = false;
 				bb_job->buf_ptr[inx].destroy = true;
 				bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
 				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
@@ -545,6 +548,24 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->total_size += tmp_cnt;
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				have_bb = true;
+				if ((sub_tok = strstr(tok, "name="))) {
+					bb_name = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_name, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
+				inx = bb_job->buf_cnt++;
+				bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
+							   sizeof(bb_buf_t) *
+							   bb_job->buf_cnt);
+				//bb_job->buf_ptr[inx].access = NULL;
+				//bb_job->buf_ptr[inx].create = false;
+				//bb_job->buf_ptr[inx].destroy = false;
+				//bb_job->buf_ptr[inx].hurry = false;
+				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
+				//bb_job->buf_ptr[inx].size = 0;
+				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
+				//bb_job->buf_ptr[inx].type = NULL;
 			} else if (!strncmp(tok, "swap", 4)) {
 				have_bb = true;
 				tok += 4;
@@ -2044,7 +2065,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 		rc = _xlate_batch(job_desc);
 	else
 		rc = _xlate_interactive(job_desc);
-	if (rc != SLURM_SUCCESS)
+	if ((rc != SLURM_SUCCESS) || (!job_desc->burst_buffer))
 		return rc;
 
 	bb_script = xstrdup(job_desc->burst_buffer);
@@ -2073,16 +2094,16 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					*bb_size += tmp_cnt;
 				}
 				if (tmp_cnt == 0)
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_name, ' ')))
 						sub_tok[0] = '\0';
 				} else {
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				}
 				if ((bb_name[0] >= '0') && (bb_name[0] <= '9'))
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				xfree(bb_name);
 				if (rc != SLURM_SUCCESS)
 					break;
@@ -2096,7 +2117,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
 				have_bb = true;
 				if (!(sub_tok = strstr(tok, "name="))) {
-					rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
 			} else {
@@ -2447,6 +2468,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	xassert(job_desc);
 	xassert(job_desc->tres_req_cnt);
 
+	if (job_desc->array_inx)	/* Job arrays not supported */
+		return ESLURM_INVALID_ARRAY;
+
 	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -2502,24 +2526,6 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 fini:	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
-}
-
-static void _purge_job_file(char *job_dir, char *file_name)
-{
-	char *tmp = NULL;
-	xstrfmtcat(tmp, "%s/%s", job_dir, file_name);
-	(void) unlink(tmp);
-	xfree(tmp);
-}
-
-static void _purge_job_files(char *job_dir)
-{
-	_purge_job_file(job_dir, "setup_env");
-	_purge_job_file(job_dir, "data_in_env");
-	_purge_job_file(job_dir, "pre_run_env");
-	_purge_job_file(job_dir, "post_run_env");
-	_purge_job_file(job_dir, "data_out_env");
-	_purge_job_file(job_dir, "teardown_env");
 }
 
 /* Add key=value pairs from "resp_msg" to the job's environment */
@@ -2603,8 +2609,7 @@ fini:	xfree(data_buf);
  *
  * Returns a SLURM errno.
  */
-extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
-			      bool is_job_array)
+extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *path_file = NULL, *resp_msg = NULL, **script_argv;
@@ -2725,8 +2730,6 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg,
 		bb_job_del(&bb_state, job_ptr->job_id);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 	}
-	if (is_job_array)
-		_purge_job_files(job_dir);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -2793,7 +2796,9 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 
 	if ((bb_job->persist_add == 0) && (bb_job->swap_size == 0) &&
 	    (bb_job->total_size == 0)) {
-		/* Only deleting or using persistent buffers, can run now */
+		/* Only deleting or using persistent buffers */
+		if (!_test_persistent_use_ready(bb_job, job_ptr))
+			est_start += 60 * 60;	/* one hour, guess... */
 	} else if (bb_job->state == BB_STATE_PENDING) {
 		rc = _test_size_limit(job_ptr, bb_job);
 		if (rc == 0) {		/* Could start now */
@@ -3264,7 +3269,16 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			rc++;
 		} else if (buf_ptr->state != BB_STATE_PENDING) {
 			;	/* Nothing to do */
-		} else if (!buf_ptr->destroy) {	/* Create the buffer */
+		} else if (buf_ptr->create) {	/* Create the buffer */
+			bb_alloc = bb_find_name_rec(buf_ptr->name,
+						    job_ptr->user_id,
+						    &bb_state);
+			if (bb_alloc) {
+				info("Attempt by job %u to create duplicate "
+				     "persistent burst buffer named %s",
+				     job_ptr->job_id, buf_ptr->name);
+				continue;
+			}
 			rc++;
 			bb_limit_add(job_ptr->user_id, bb_job->account,
 				     bb_job->partition, bb_job->qos,
@@ -3354,10 +3368,48 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			slurm_attr_destroy(&create_attr);
 		} else if (buf_ptr->destroy) {
 			rc++;
+		} else {
+			/* Buffer used, not created or destroyed.
+			 * Just check for existence */
+			bb_alloc = bb_find_name_rec(buf_ptr->name,
+						    job_ptr->user_id,
+						    &bb_state);
+			if (bb_alloc && (bb_alloc->state == BB_STATE_ALLOCATED))
+				bb_job->state = BB_STATE_ALLOCATED;
+			else
+				rc++;
 		}
 	}
 
 	return rc;
+}
+
+/* Test for the existence of persistent burst buffers to be used (but not
+ * created) by this job. Return TRUE of they are all ready */
+static bool _test_persistent_use_ready(bb_job_t *bb_job,
+				       struct job_record *job_ptr)
+{
+	int i, not_ready_cnt = 0;
+	bb_alloc_t *bb_alloc;
+	bb_buf_t *buf_ptr;
+
+	xassert(bb_job);
+	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
+	     i++, buf_ptr++) {
+		if (buf_ptr->create || buf_ptr->destroy)
+			continue;
+		bb_alloc = bb_find_name_rec(buf_ptr->name, job_ptr->user_id,
+					    &bb_state);
+		if (bb_alloc && (bb_alloc->state == BB_STATE_ALLOCATED)) {
+			bb_job->state = BB_STATE_ALLOCATED;
+		} else {
+			not_ready_cnt++;
+			break;
+		}
+	}
+	if (not_ready_cnt != 0)
+		return false;
+	return true;
 }
 
 static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,

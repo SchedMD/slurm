@@ -1246,7 +1246,8 @@ next_task:
 		    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
 			xfree(job_ptr->state_desc);
 			if (bb == -1) {
-				job_ptr->state_reason=WAIT_BURST_BUFFER_RESOURCE;
+				job_ptr->state_reason=
+					WAIT_BURST_BUFFER_RESOURCE;
 				job_ptr->start_time =
 					bb_g_job_get_est_start(job_ptr);
 			} else {	/* bb == 0 */
@@ -1262,6 +1263,8 @@ next_task:
 			last_job_update = now;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			later_start = 0;
+			if (bb == -1)
+				continue;
 		} else if (job_ptr->start_time <= now) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
 			uint32_t hard_limit;

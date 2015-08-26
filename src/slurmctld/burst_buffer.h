@@ -111,8 +111,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
  *
  * Returns a SLURM errno.
  */
-extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg,
-			      bool is_job_array);
+extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg);
 
 /*
  * Fill in the tres_cnt (in MB) based off the job record
