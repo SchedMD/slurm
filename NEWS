@@ -402,6 +402,8 @@ documents those changes that are of interest to users and administrators.
     with select/linear.
  -- MySQL - Fix minor memory leak if a connection ever goes away whist using it.
  -- ALPS - Make it so srun --hint=nomultithread works correctly.
+ -- Prevent job array task ID from being reported as NO_VAL if last task in the
+    array gets requeued.
 
 * Changes in Slurm 14.11.8
 ==========================
