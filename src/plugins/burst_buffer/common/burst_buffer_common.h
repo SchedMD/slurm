@@ -348,8 +348,13 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
 
-/* Log creation of a persistent burst buffer in the database */
-extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
+/* Log creation of a persistent burst buffer in the database
+ * job_ptr IN - Point to job that created, could be NULL at startup
+ * bb_alloc IN - Pointer to persistent burst buffer state info
+ * state_ptr IN - Pointer to burst_buffer plugin state info
+ */
+extern int bb_post_persist_create(struct job_record *job_ptr,
+				  bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 
 /* Log deletion of a persistent burst buffer in the database */
 extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);

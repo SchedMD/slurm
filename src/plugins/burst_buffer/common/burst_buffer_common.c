@@ -1360,8 +1360,13 @@ extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
 
 }
 
-/* Log creation of a persistent burst buffer in the database */
-extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+/* Log creation of a persistent burst buffer in the database
+ * job_ptr IN - Point to job that created, could be NULL at startup
+ * bb_alloc IN - Pointer to persistent burst buffer state info
+ * state_ptr IN - Pointer to burst_buffer plugin state info
+ */
+extern int bb_post_persist_create(struct job_record *job_ptr,
+				  bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
@@ -1376,6 +1381,12 @@ extern int bb_post_persist_create(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 		   state_ptr->tres_id, bb_alloc->size / (1024 * 1024));
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
+
+	if (job_ptr && job_ptr->tres_alloc_cnt && state_ptr->tres_pos) {
+//FIXME: Also need to decrement association's TRES usage
+		job_ptr->tres_alloc_cnt[state_ptr->tres_pos] -=
+			(bb_alloc->size / (1024 * 1024));
+	}
 
 	return rc;
 }

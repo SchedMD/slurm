@@ -1060,7 +1060,7 @@ static void _load_state(bool init_config)
 				     bb_alloc->size, &bb_state);
 		}
 		if (bb_alloc->job_id == 0)
-			bb_post_persist_create(bb_alloc, &bb_state);
+			bb_post_persist_create(NULL, bb_alloc, &bb_state);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_sessions(sessions, num_sessions);
@@ -3536,7 +3536,7 @@ static void *_create_persistent(void *x)
 			}
 			_bb_free_sessions(sessions, num_sessions);
 		}
-		(void) bb_post_persist_create(bb_alloc, &bb_state);
+		(void) bb_post_persist_create(job_ptr, bb_alloc, &bb_state);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
