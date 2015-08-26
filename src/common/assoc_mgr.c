@@ -3024,7 +3024,7 @@ extern void assoc_mgr_info_get_pack_msg(
 	slurmdb_user_rec_t user, *user_rec = NULL;
 	int is_admin=1;
 	void *object;
-	uint32_t flags = 0;
+	uint32_t flags = 0, count;
 
 	uint16_t private_data = slurm_get_private_data();
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK,
@@ -3175,9 +3175,12 @@ no_assocs:
 		tmp_list = assoc_mgr_qos_list;
 
 no_qos:
-
 	/* pack the qos requested */
-	pack32(list_count(tmp_list), buffer);
+	if (tmp_list)
+		count = list_count(tmp_list);
+	else
+		count = 0;
+	pack32(count, buffer);
 	itr = list_iterator_create(tmp_list);
 	while ((object = list_next(itr)))
 		slurmdb_pack_qos_rec_with_usage(
