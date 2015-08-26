@@ -3544,7 +3544,11 @@ static void *_create_persistent(void *x)
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
 		if (job_ptr) {
+			assoc_mgr_lock_t assoc_locks =
+				{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				  NO_LOCK, NO_LOCK, NO_LOCK };
 			bb_alloc->account   = xstrdup(job_ptr->account);
+			assoc_mgr_lock(&assoc_locks);
 			if (job_ptr->assoc_ptr) {
 				/* Only add the direct association id
 				 * here, we don't need to keep track
@@ -3556,14 +3560,16 @@ static void *_create_persistent(void *x)
 				bb_alloc->assocs = xstrdup_printf(
 					",%u,", assoc->id);
 			}
-			if (job_ptr->part_ptr) {
-				bb_alloc->partition =
-					xstrdup(job_ptr->part_ptr->name);
-			}
 			if (job_ptr->qos_ptr) {
 				slurmdb_qos_rec_t *qos_ptr =
 					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 				bb_alloc->qos = xstrdup(qos_ptr->name);
+			}
+			assoc_mgr_unlock(&assoc_locks);
+
+			if (job_ptr->part_ptr) {
+				bb_alloc->partition =
+					xstrdup(job_ptr->part_ptr->name);
 			}
 		}
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
