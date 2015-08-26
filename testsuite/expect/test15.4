@@ -81,7 +81,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "(uid=.*\\)\r\n)" {
+	-re "(uid=.*\n)" {
 		set job_grp_info $expect_out(1,string)
 		set got_job_grps 1
 		exp_continue
