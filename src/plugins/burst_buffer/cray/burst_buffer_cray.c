@@ -227,7 +227,6 @@ static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
 static void	_save_bb_state(void);
-static void	_set_alloc_assoc(bb_alloc_t *bb_alloc);
 static void	_set_assoc_ptr(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
 static void *	_start_stage_in(void *x);
@@ -264,21 +263,6 @@ static void _python2json(char *buf)
 				break;
 		}
 	}
-}
-
-/* For a given bb_alloc_t, set it's assoc string based upon its assoc_ptr value.
- * association lock must be set when called */
-static void _set_alloc_assoc(bb_alloc_t *bb_alloc)
-{
-	slurmdb_assoc_rec_t *assoc_ptr = NULL;
-
-	assoc_ptr = bb_alloc->assoc_ptr;
-	while (assoc_ptr) {
-		xstrfmtcat(bb_alloc->assocs, ",%u", assoc_ptr->id);
-		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-	}
-	if (bb_alloc->assocs)
-		xstrcat(bb_alloc->assocs, ",");
 }
 
 /* Free an array of xmalloced records. The array must be NULL terminated. */
@@ -895,9 +879,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 			bb_alloc->assoc_ptr = bb_ptr->assoc_ptr;
 			bb_alloc->partition = xstrdup(bb_ptr->partition);
 			bb_alloc->qos       = xstrdup(bb_ptr->qos);
-			assoc_mgr_lock(&assoc_locks);
-			_set_alloc_assoc(bb_alloc);
-			assoc_mgr_unlock(&assoc_locks);
+			bb_alloc->assocs    = xstrdup(bb_ptr->assocs);
 			return;
 		}
 		bb_ptr = bb_ptr->next;
@@ -916,9 +898,11 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 				    true) == SLURM_SUCCESS) {
 		bb_alloc->assoc_ptr = assoc_ptr;
 		bb_alloc->account   = xstrdup(assoc_rec.acct);
+		if (assoc_ptr)
+			bb_alloc->assocs =
+				xstrdup_printf(",%u,", assoc_ptr->id);
 
 		assoc_mgr_get_default_qos_info(assoc_ptr, &qos_rec);
-		_set_alloc_assoc(bb_alloc);
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, &qos_ptr,
 					  true) == SLURM_SUCCESS) {
@@ -947,7 +931,8 @@ static void _set_assoc_ptr(bb_alloc_t *bb_alloc)
 				    (slurmdb_assoc_rec_t **) &assoc_ptr,
 				    true) == SLURM_SUCCESS) {
 		bb_alloc->assoc_ptr = assoc_ptr;
-		_set_alloc_assoc(bb_alloc);
+		xfree(bb_alloc->assocs);
+		bb_alloc->assocs    = xstrdup_printf(",%u,", assoc_ptr->id);
 	}
 	assoc_mgr_unlock(&assoc_locks);
 }
@@ -3474,7 +3459,6 @@ static void *_create_persistent(void *x)
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int i, status = 0;
-	slurmdb_assoc_rec_t *assoc;
 	DEF_TIMERS;
 
 	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
@@ -3554,15 +3538,17 @@ static void *_create_persistent(void *x)
 		bb_alloc->size = create_args->size;
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);
-			bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
-			assoc = job_ptr->assoc_ptr;
-			while (assoc) {
-				xstrfmtcat(bb_alloc->assocs, ",%u",
-					   assoc->id);
-				assoc = assoc->usage->parent_assoc_ptr;
+			if (job_ptr->assoc_ptr) {
+				/* Only add the direct association id
+				 * here, we don't need to keep track
+				 * of the tree.
+				 */
+				slurmdb_assoc_rec_t *assoc = job_ptr->assoc_ptr;
+				bb_alloc->assoc_ptr = assoc;
+				xfree(bb_alloc->assocs);
+				bb_alloc->assocs = xstrdup_printf(
+					",%u,", assoc->id);
 			}
-			if (bb_alloc->assocs)
-				xstrcat(bb_alloc->assocs, ",");
 			if (job_ptr->part_ptr) {
 				bb_alloc->partition =
 					xstrdup(job_ptr->part_ptr->name);
