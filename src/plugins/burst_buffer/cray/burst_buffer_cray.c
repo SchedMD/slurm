@@ -875,10 +875,14 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 	while (bb_ptr) {
 		if ((bb_ptr          != bb_alloc) &&
 		    (bb_ptr->user_id == bb_alloc->user_id)) {
+			xfree(bb_alloc->account);
 			bb_alloc->account   = xstrdup(bb_ptr->account);
 			bb_alloc->assoc_ptr = bb_ptr->assoc_ptr;
+			xfree(bb_alloc->partition);
 			bb_alloc->partition = xstrdup(bb_ptr->partition);
+			xfree(bb_alloc->qos);
 			bb_alloc->qos       = xstrdup(bb_ptr->qos);
+			xfree(bb_alloc->assocs);
 			bb_alloc->assocs    = xstrdup(bb_ptr->assocs);
 			return;
 		}
@@ -897,7 +901,9 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 				    (slurmdb_assoc_rec_t **) &assoc_ptr,
 				    true) == SLURM_SUCCESS) {
 		bb_alloc->assoc_ptr = assoc_ptr;
+		xfree(bb_alloc->account);
 		bb_alloc->account   = xstrdup(assoc_rec.acct);
+		xfree(bb_alloc->assocs);
 		if (assoc_ptr)
 			bb_alloc->assocs =
 				xstrdup_printf(",%u,", assoc_ptr->id);
@@ -906,6 +912,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, &qos_ptr,
 					  true) == SLURM_SUCCESS) {
+			xfree(bb_alloc->qos);
 			if (qos_ptr)
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 		}
