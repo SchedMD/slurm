@@ -74,9 +74,9 @@ int
 pam_setup (char *user, char *host)
 {
 	/*
-	 * Any application using PAM must provide a conversion function, which
+	 * Any application using PAM must provide a conversation function, which
 	 * is used for direct communication between a loaded module and the
-	 * application. In this case, SLURM does need a communication mechanism,
+	 * application. In this case, SLURM does not need a communication mechanism,
 	 * so the default (or null) conversation function may be used.
 	 */
 	struct pam_conv conv = {misc_conv, NULL};
@@ -91,36 +91,45 @@ pam_setup (char *user, char *host)
 	 * a user, the limits imposed by the sys admin are picked up. Opening
 	 * a PAM session requires a PAM handle, which is obtained when the PAM
 	 * interface is initialized. (PAM handles are required with essentially
-	 * all PAM calls.) It's also necessary to have the users PAM credentials
+	 * all PAM calls.) It's also necessary to have the user's PAM credentials
 	 * to open a user session.
  	 */
         if ((rc = pam_start (SLURM_SERVICE_PAM, user, &conv, &pam_h))
 			!= PAM_SUCCESS) {
-                error ("pam_start: %s", pam_strerror(pam_h, rc));
-                return SLURM_ERROR;
+                error ("pam_start: %s", pam_strerror(NULL, rc));
+                goto fail1;
         } else if ((rc = pam_set_item (pam_h, PAM_USER, user))
 			!= PAM_SUCCESS) {
                 error ("pam_set_item USER: %s", pam_strerror(pam_h, rc));
-                return SLURM_ERROR;
+                goto fail2;
         } else if ((rc = pam_set_item (pam_h, PAM_RUSER, user))
 			!= PAM_SUCCESS) {
                 error ("pam_set_item RUSER: %s", pam_strerror(pam_h, rc));
-                return SLURM_ERROR;
+                goto fail2;
         } else if ((rc = pam_set_item (pam_h, PAM_RHOST, host))
 			!= PAM_SUCCESS) {
                 error ("pam_set_item HOST: %s", pam_strerror(pam_h, rc));
-              return SLURM_ERROR;
+                goto fail2;
         } else if ((rc = pam_setcred (pam_h, PAM_ESTABLISH_CRED))
 			!= PAM_SUCCESS) {
-                error ("pam_setcred: %s", pam_strerror(pam_h, rc));
-                return SLURM_ERROR;
+                error ("pam_setcred ESTABLISH: %s", pam_strerror(pam_h, rc));
+                goto fail2;
         } else if ((rc = pam_open_session (pam_h, 0)) != PAM_SUCCESS) {
                 error("pam_open_session: %s", pam_strerror(pam_h, rc));
-                return SLURM_ERROR;
+                goto fail3;
         }
 
 	return SLURM_SUCCESS;
 
+fail3:
+        pam_setcred (pam_h, PAM_DELETE_CRED);
+
+fail2:
+        pam_end (pam_h, rc);
+
+fail1:
+        pam_h = NULL;
+        return SLURM_ERROR;
 }
 
 
@@ -143,9 +152,14 @@ pam_finish ()
 		 */
                 if ((rc = pam_close_session (pam_h, 0)) != PAM_SUCCESS) {
                         error("pam_close_session: %s", pam_strerror(pam_h, rc));
-                } else if (pam_end (pam_h, rc) != PAM_SUCCESS) {
-                        error("pam_end: %s", pam_strerror(pam_h, rc));
                 }
+                if ((rc = pam_setcred (pam_h, PAM_DELETE_CRED)) != PAM_SUCCESS){
+                        error("pam_setcred DELETE: %s", pam_strerror(pam_h,rc));
+                }
+                if ((rc = pam_end (pam_h, rc)) != PAM_SUCCESS) {
+                        error("pam_end: %s", pam_strerror(NULL, rc));
+                }
+                pam_h = NULL;
         }
 }
 

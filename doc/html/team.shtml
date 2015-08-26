@@ -216,6 +216,7 @@ Lead Slurm developers are:
 <br>
 <li>Garrison Vaughan</li>
 <br>
+<li>Pythagoras Watson  (Lawrence Livermore National Laboratory)</li>
 <li>Daniel M. Weeks (Rensselaer Polytechnic Institute)</li>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
@@ -231,6 +232,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 25 Febuary 2015</p>
+<p style="text-align:center;">Last modified 26 August 2015</p>
 
 <!--#include virtual="footer.txt"-->
