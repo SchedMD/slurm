@@ -741,3 +741,7 @@ test34.*   Test of Slurm preemption.
 ====================================
 test34.1   Validate that partition PreemptMode is enforced.
 test34.2   Validate that qos PreemptMode is enforced.
+
+test35.*   Burst buffer tests
+=============================
+test35.1   Cray persistent burst buffer creation

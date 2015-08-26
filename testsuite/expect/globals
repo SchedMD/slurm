@@ -221,6 +221,7 @@ set alpha_numeric_colon  "\[a-zA-Z0-9_,\:\-\]+"
 set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
+set alpha_under_slash    "\[a-zA-Z/_\]+"
 set digit                "\[0-9\]"
 set end_of_line          "\[\r\n\]"
 set float                "\[0-9\]+\\.?\[0-9\]*"
@@ -993,14 +994,13 @@ proc test_topology { } {
 			wait
 		}
 	}
-
 	log_user 1
 	return $have_topology
 }
 
 ################################################################
 #
-# Proc: get_task_plugins
+# Proc: get_task_types
 #
 # Purpose: get the task plugins running with task/ stripped
 #
@@ -1011,7 +1011,7 @@ proc get_affinity_types { } {
 	global scontrol alpha_comma_slash
 
 	log_user 0
-	set affinity 0
+	set affinity ""
 	spawn $scontrol show config
 	expect {
 		-re "TaskPlugin *= ($alpha_comma_slash)" {
@@ -1028,9 +1028,71 @@ proc get_affinity_types { } {
 			wait
 		}
 	}
-
 	log_user 1
 	return $affinity
+}
+
+################################################################
+#
+# Proc: get_bb_persistent
+#
+# Purpose: Determine if persistent burst buffers can be created by users
+#
+# Returns: 1 if true, 0 if false
+#
+################################################################
+proc get_bb_persistent { } {
+	global scontrol
+
+	log_user 0
+	set bb_persistent 0
+	spawn $scontrol show burst
+	expect {
+		-re "EnablePersistent" {
+			set bb_persistent 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $bb_persistent
+}
+
+################################################################
+#
+# Proc: get_bb_types
+#
+# Purpose: get the burst buffer plugins running with task/ stripped
+#
+# Returns Returns comma separated list of task plugins running without the task/
+#
+################################################################
+proc get_bb_types { } {
+	global scontrol alpha_under_slash
+
+	log_user 0
+	set bb_types ""
+	spawn $scontrol show config
+	expect {
+		-re "BurstBufferType *= ($alpha_under_slash)" {
+			set parts [split $expect_out(1,string) ",/"]
+			while 1 {
+				set task_found [lsearch $parts "burst_buffer"]
+				if { $task_found == -1 } break
+				set parts [lreplace $parts $task_found $task_found]
+			}
+			set bb_types [join $parts ","]
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $bb_types
 }
 
 ################################################################
