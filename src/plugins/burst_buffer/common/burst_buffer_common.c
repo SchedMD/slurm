@@ -972,6 +972,7 @@ extern bool bb_free_alloc_rec(bb_state_t *state_ptr, bb_alloc_t *bb_alloc)
 			xassert(bb_link->magic == BB_ALLOC_MAGIC);
 			*bb_plink = bb_alloc->next;
 			bb_free_alloc_buf(bb_alloc);
+			state_ptr->last_update_time = time(NULL);
 			return true;
 		}
 		bb_plink = &bb_link->next;

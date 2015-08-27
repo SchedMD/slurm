@@ -220,13 +220,13 @@ static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
 static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
-static void	_recover_limit_state(void);
+static void	_recover_bb_state(void);
 static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_out(struct job_record *job_ptr);
 static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
-static void	_save_limits_state(void);
+static void	_save_bb_state(void);
 static void	_set_alloc_assoc(bb_alloc_t *bb_alloc);
 static void	_set_assoc_ptr(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
@@ -405,17 +405,17 @@ static void *_bb_agent(void *args)
 
 	while (!bb_state.term_flag) {
 		bb_sleep(&bb_state, AGENT_INTERVAL);
-		if (bb_state.term_flag)
-			break;
-		_load_state(false);	/* Has own locking */
-		lock_slurmctld(job_write_lock);
-		pthread_mutex_lock(&bb_state.bb_mutex);
-		_timeout_bb_rec();
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-		unlock_slurmctld(job_write_lock);
-
-		_save_limits_state();	/* Has own locks excluding file write */
+		if (!bb_state.term_flag) {
+			_load_state(false);	/* Has own locking */
+			lock_slurmctld(job_write_lock);
+			pthread_mutex_lock(&bb_state.bb_mutex);
+			_timeout_bb_rec();
+			pthread_mutex_unlock(&bb_state.bb_mutex);
+			unlock_slurmctld(job_write_lock);
+		}
+		_save_bb_state();	/* Has own locks excluding file write */
 	}
+
 	return NULL;
 }
 
@@ -631,7 +631,7 @@ static void _apply_limits(void)
 /* Write current burst buffer state to a file so that we can preserve account,
  * partition, and QOS information of persistent burst buffers as there is no
  * place to store that information within the DataWarp data structures */
-static void _save_limits_state(void)
+static void _save_bb_state(void)
 {
 	static time_t last_save_time = 0;
 	static int high_buffer_size = 16 * 1024;
@@ -644,8 +644,8 @@ static void _save_limits_state(void)
 	int error_code = 0;
 	uint16_t protocol_version = SLURM_15_08_PROTOCOL_VERSION;
 
-	if ((bb_state.last_update_time <= last_save_time) ||
-	    (bb_state.bb_ahash == NULL))
+	if ((bb_state.last_update_time <= last_save_time) &&
+	    !bb_state.term_flag)
 		return;
 
 	/* Build buffer with name/account/partition/qos information for all
@@ -654,32 +654,34 @@ static void _save_limits_state(void)
 	pack16(protocol_version, buffer);
 	count_offset = get_buf_offset(buffer);
 	pack32(rec_count, buffer);
-	pthread_mutex_lock(&bb_state.bb_mutex);
-	for (i = 0; i < BB_HASH_SIZE; i++) {
-		bb_alloc = bb_state.bb_ahash[i];
-		while (bb_alloc) {
-			if (bb_alloc->name) {
-				packstr(bb_alloc->account,	buffer);
-				pack_time(bb_alloc->create_time,buffer);
-				pack32(bb_alloc->id,		buffer);
-				packstr(bb_alloc->name,		buffer);
-				packstr(bb_alloc->partition,	buffer);
-				packstr(bb_alloc->qos,		buffer);
-				pack32(bb_alloc->user_id,	buffer);
-				if (bb_state.bb_config.flags &
-				    BB_FLAG_EMULATE_CRAY)
-					pack64(bb_alloc->size,	buffer);
-				rec_count++;
+	if (bb_state.bb_ahash) {
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_alloc = bb_state.bb_ahash[i];
+			while (bb_alloc) {
+				if (bb_alloc->name) {
+					packstr(bb_alloc->account,	buffer);
+					pack_time(bb_alloc->create_time,buffer);
+					pack32(bb_alloc->id,		buffer);
+					packstr(bb_alloc->name,		buffer);
+					packstr(bb_alloc->partition,	buffer);
+					packstr(bb_alloc->qos,		buffer);
+					pack32(bb_alloc->user_id,	buffer);
+					if (bb_state.bb_config.flags &
+					    BB_FLAG_EMULATE_CRAY)
+						pack64(bb_alloc->size,	buffer);
+					rec_count++;
+				}
+				bb_alloc = bb_alloc->next;
 			}
-			bb_alloc = bb_alloc->next;
 		}
+		save_time = time(NULL);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+		offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, count_offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, offset);
 	}
-	save_time = time(NULL);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
-	offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, count_offset);
-	pack32(rec_count, buffer);
-	set_buf_offset(buffer, offset);
 
 	xstrfmtcat(old_file, "%s/%s", slurmctld_conf.state_save_location,
 		   "burst_buffer_cray_state.old");
@@ -767,7 +769,7 @@ static int _open_part_state_file(char **state_file)
 
 /* Recover saved burst buffer state and use it to preserve account, partition,
  * and QOS information for persistent burst buffers. */
-static void _recover_limit_state(void)
+static void _recover_bb_state(void)
 {
 	char *state_file = NULL, *data = NULL;
 	int data_allocated, data_read = 0;
@@ -1101,8 +1103,9 @@ static void _load_state(bool init_config)
 	}
 	_bb_free_configs(configs, num_configs);
 
-	_recover_limit_state();
+	_recover_bb_state();
 	_apply_limits();
+	bb_state.last_update_time = time(NULL);
 
 	return;
 }
@@ -1391,6 +1394,7 @@ static void *_start_stage_in(void *x)
 					     __func__, stage_args->job_id);
 				}
 				queue_job_scheduler();
+				bb_state.last_update_time = time(NULL);
 			} else {
 				error("%s: unable to find bb_alloc record "
 				      "for job %u",
@@ -1408,6 +1412,7 @@ static void *_start_stage_in(void *x)
 		if (bb_alloc) {
 			bb_alloc->state = BB_STATE_TEARDOWN;
 			bb_alloc->state_time = time(NULL);
+			bb_state.last_update_time = time(NULL);
 		}
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
@@ -1572,6 +1577,7 @@ static void *_start_stage_out(void *x)
 				info("%s: Stage-out failed for job %u",
 				     __func__, stage_args->job_id);
 			}
+			bb_state.last_update_time = time(NULL);
 		} else {
 			error("%s: unable to find bb record for job %u",
 			      __func__, stage_args->job_id);
@@ -2397,6 +2403,8 @@ extern int bb_p_load_state(bool init_config)
 	bb_set_tres_pos(&bb_state);
 	_purge_vestigial_bufs();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	_save_bb_state();	/* Has own locks excluding file write */
 
 	return SLURM_SUCCESS;
 }
@@ -3226,6 +3234,8 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		if (bb_alloc) {
 			bb_alloc->state = BB_STATE_TEARDOWN;
 			bb_alloc->state_time = time(NULL);
+			bb_state.last_update_time = time(NULL);
+
 		}
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
@@ -3532,9 +3542,12 @@ static void *_create_persistent(void *x)
 				   plugin_type, __func__, resp_msg);
 			resp_msg = NULL;
 		}
+		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id,
 				 create_args->job_id,
 				 create_args->name, BB_STATE_PENDING);
+		bb_state.last_update_time = time(NULL);
+		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else if (resp_msg && strstr(resp_msg, "created")) {
 		lock_slurmctld(job_write_lock);
@@ -3589,6 +3602,7 @@ static void *_create_persistent(void *x)
 			_bb_free_sessions(sessions, num_sessions);
 		}
 		(void) bb_post_persist_create(job_ptr, bb_alloc, &bb_state);
+		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
