@@ -197,6 +197,8 @@ OTHER CHANGES
     merges them into job files has changed. The command line options to sh5util
     have not changed and will continue to service both versions for the next
     few releases of Slurm.
+ -- Add environment variables SLURM_ARRAY_TASK_MAX, SLURM_ARRAY_TASK_MIN,
+    SLURM_ARRAY_TASK_STEP for job arrays.
 
 API CHANGES
 ===========

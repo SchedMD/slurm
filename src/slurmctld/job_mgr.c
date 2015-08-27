@@ -3883,8 +3883,9 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 static void _create_job_array(struct job_record *job_ptr,
 			      job_desc_msg_t *job_specs)
 {
+	struct job_details *details;
 	char *sep = NULL;
-	int max_run_tasks;
+	int max_run_tasks, min_task_id, max_task_id, step_task_id = 1;
 	uint32_t i_cnt;
 
 	if (!job_specs->array_bitmap)
@@ -3899,7 +3900,9 @@ static void _create_job_array(struct job_record *job_ptr,
 
 	job_ptr->array_job_id = job_ptr->job_id;
 	job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
-	i_cnt = bit_fls(job_specs->array_bitmap) + 1;
+	min_task_id = bit_ffs(job_specs->array_bitmap);
+	max_task_id = bit_fls(job_specs->array_bitmap);
+	i_cnt = max_task_id + 1;
 	job_specs->array_bitmap = bit_realloc(job_specs->array_bitmap, i_cnt);
 	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
 	job_specs->array_bitmap = NULL;
@@ -3914,6 +3917,24 @@ static void _create_job_array(struct job_record *job_ptr,
 		max_run_tasks = atoi(sep + 1);
 		if (max_run_tasks > 0)
 			job_ptr->array_recs->max_run_tasks = max_run_tasks;
+	}
+
+	details = job_ptr->details;
+	if (details) {
+		if (job_specs->array_inx) {
+			sep = strchr(job_specs->array_inx, ':');
+			if (sep)
+				step_task_id = atoi(sep + 1);
+		}
+		details->env_sup = xrealloc(details->env_sup,
+					    (sizeof(char *) *
+					    (details->env_cnt + 3)));
+		xstrfmtcat(details->env_sup[details->env_cnt++],
+			   "SLURM_TASK_ARRAY_MIN=%d", min_task_id);
+		xstrfmtcat(details->env_sup[details->env_cnt++],
+			   "SLURM_TASK_ARRAY_MAX=%d", max_task_id);
+		xstrfmtcat(details->env_sup[details->env_cnt++],
+			   "SLURM_TASK_ARRAY_STEP=%d", step_task_id);
 	}
 }
 

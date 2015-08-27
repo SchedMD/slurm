@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix handling of requeued jobs with steps that are still finishing.
  -- Cleaner copy for PriorityWeightTRES, it also fixes a core dump when trying
     to free it otherwise.
+ -- Add environment variables SLURM_ARRAY_TASK_MAX, SLURM_ARRAY_TASK_MIN,
+    SLURM_ARRAY_TASK_STEP for job arrays.
 
 * Changes in Slurm 15.08.0rc1
 ==============================
