@@ -1705,10 +1705,12 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 #else
 			if (slurmctld_conf.fast_schedule) {
 				resv_ptr->core_cnt +=
-					node_ptr->config_ptr->cores;
+					(node_ptr->config_ptr->cores *
+					 node_ptr->config_ptr->sockets);
 				cpu_cnt += node_ptr->config_ptr->cpus;
 			} else {
-				resv_ptr->core_cnt += node_ptr->cores;
+				resv_ptr->core_cnt += (node_ptr->cores *
+						       node_ptr->sockets);
 				cpu_cnt += node_ptr->cpus;
 			}
 #endif
@@ -1721,18 +1723,20 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			bit_set_count(resv_ptr->core_bitmap);
 
 		if (resv_ptr->node_bitmap) {
-			for (i=0; i<node_record_count; i++, node_ptr++) {
+			for (i = 0; i < node_record_count; i++, node_ptr++) {
 				int offset, core;
 				uint32_t cores, threads;
 				if (!bit_test(resv_ptr->node_bitmap, i))
 					continue;
 
 				if (slurmctld_conf.fast_schedule) {
-					cores = node_ptr->config_ptr->cores;
+					cores = (node_ptr->config_ptr->cores *
+						 node_ptr->config_ptr->sockets);
 					threads = node_ptr->config_ptr->threads;
 				} else {
-					cores = node_ptr->cores;
-					threads = node_ptr->config_ptr->threads;
+					cores = (node_ptr->cores *
+						 node_ptr->sockets);
+					threads = node_ptr->threads;
 				}
 				offset = cr_get_coremap_offset(i);
 
