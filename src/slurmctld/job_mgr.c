@@ -3930,11 +3930,11 @@ static void _create_job_array(struct job_record *job_ptr,
 					    (sizeof(char *) *
 					    (details->env_cnt + 3)));
 		xstrfmtcat(details->env_sup[details->env_cnt++],
-			   "SLURM_TASK_ARRAY_MIN=%d", min_task_id);
+			   "SLURM_ARRAY_TASK_MIN=%d", min_task_id);
 		xstrfmtcat(details->env_sup[details->env_cnt++],
-			   "SLURM_TASK_ARRAY_MAX=%d", max_task_id);
+			   "SLURM_ARRAY_TASK_MAX=%d", max_task_id);
 		xstrfmtcat(details->env_sup[details->env_cnt++],
-			   "SLURM_TASK_ARRAY_STEP=%d", step_task_id);
+			   "SLURM_ARRAY_TASK_STEP=%d", step_task_id);
 	}
 }
 

@@ -70,6 +70,9 @@ delete_file
 make_bash_script $file_script "
 $bin_echo array_id=\$SLURM_ARRAY_JOB_ID
 $bin_echo task_id=\$SLURM_ARRAY_TASK_ID
+$bin_echo task_min=\$SLURM_ARRAY_TASK_MIN
+$bin_echo task_max=\$SLURM_ARRAY_TASK_MAX
+$bin_echo task_step=\$SLURM_ARRAY_TASK_STEP
 $bin_sleep aaaa
 exit 0
 "
@@ -154,6 +157,7 @@ for {set cnt 0} {$cnt<$array_end} {incr cnt} {
 }
 send_user "\nchecking environment variables\n"
 # Checks that the array job ids are correct
+set max_inx [expr $array_end - 1]
 for {set index 0} {$index < $array_end} {incr index} {
 	set env_cnt 0
 	spawn $bin_cat test$test_id-$job_id\_$index\.output
@@ -166,12 +170,24 @@ for {set index 0} {$index < $array_end} {incr index} {
 			incr env_cnt
 			exp_continue
 		}
+		-re "task_min=0" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_max=$max_inx" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_step=1" {
+			incr env_cnt
+			exp_continue
+		}
 		eof {
 			wait
 		}
 	}
-	if {$env_cnt != 2} {
-		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output\n"
+	if {$env_cnt != 5} {
+		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output ($env_cnt != 5)\n"
 		set exit_code 1
 	}
 }
@@ -197,8 +213,8 @@ for {set index 0} {$index < $array_end} {incr index} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+	delete_file
 } else {
 	send_user "\nFAILURE\n"
 }
-delete_file
 exit $exit_code
