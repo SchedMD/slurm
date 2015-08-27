@@ -807,7 +807,7 @@ uint32_t slurm_get_priority_weight_qos(void)
 
 /* slurm_get_priority_weight_tres
  * returns the priority weights for TRES' from slurmctld_conf object
- * char * string of configured tres weights.
+ * RET char * string of configured tres weights. MUST be xfreed by caller
  */
 char *slurm_get_priority_weight_tres(void)
 {
@@ -817,7 +817,7 @@ char *slurm_get_priority_weight_tres(void)
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		weights = conf->priority_weight_tres;
+		weights = xstrdup(conf->priority_weight_tres);
 		slurm_conf_unlock();
 	}
 
