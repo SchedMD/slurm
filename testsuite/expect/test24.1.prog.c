@@ -325,6 +325,7 @@ int main (int argc, char **argv)
 	conf->priority_weight_js = 0;
 	conf->priority_weight_part = 0;
 	conf->priority_weight_qos = 0;
+	xfree(conf->priority_weight_tres);
 	slurm_conf_unlock();
 
 	/* we don't want to do any decay here so make the save state
