@@ -745,3 +745,4 @@ test34.2   Validate that qos PreemptMode is enforced.
 test35.*   Burst buffer tests
 =============================
 test35.1   Cray persistent burst buffer creation
+test35.2   Cray job-specific burst buffer use

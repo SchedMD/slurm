@@ -549,7 +549,8 @@ EXTRA_DIST = \
 	etc.33.1.4/topology.conf	\
 	test34.1			\
 	test34.2			\
-	test35.1
+	test35.1			\
+	test35.2
 
 distclean-local:
 	rm -rf *error *output

@@ -37,9 +37,9 @@ set exit_code   0
 set output_mk   "test$test_id.mk.output"
 set output_rm   "test$test_id.rm.output"
 set output_use  "test$test_id.use.output"
-set script_mk   "test$test_id.mk"
-set script_rm   "test$test_id.rm"
-set script_use  "test$test_id.use"
+set script_mk   "test$test_id.mk.bash"
+set script_rm   "test$test_id.rm.bash"
+set script_use  "test$test_id.use.bash"
 
 proc find_bb_name { fname bb_name } {
 	global bin_cat
@@ -83,7 +83,7 @@ $scontrol show burst"
 # Remove any vestigial buffer
 #
 send_user "\n\nClean up vestigial burst buffer\n"
-set max_job_state_delay 300
+incr max_job_state_delay 300
 set job_id 0
 spawn $sbatch -N1 --output=/dev/null $script_rm
 expect {
@@ -151,13 +151,13 @@ if {$job_id_mk == 0} {
 } elseif {[wait_for_job $job_id_mk "DONE"] != 0} {
 	send_user "\nFAILURE: job did not complete\n"
 	set exit_code 1
-} elseif {[wait_for_job $job_id_use "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
-	set exit_code 1
 }
 
 if {$job_id_use == 0} {
 	send_user "\nFAILURE: job did not launch\n"
+	set exit_code 1
+} elseif {[wait_for_job $job_id_use "DONE"] != 0} {
+	send_user "\nFAILURE: job did not complete\n"
 	set exit_code 1
 } elseif {[wait_for_file $output_use] != 0} {
 	set exit_code 1
