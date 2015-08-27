@@ -1,0 +1,258 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that sinfo -O (--Format) option displays the
+#          correct user specified values.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id             4.13
+set test_acct           "test$test_id\_acct"
+set test_part           "test$test_id\_part"
+set test_node           [get_idle_node_in_part [default_partition]]
+set alpha_numeric_dot   "\[a-zA-Z0-9_.:\-\]+"
+set exit_code           0
+
+array set node_sinfo_vals { }
+array set part_sinfo_vals { }
+
+array set node_info {
+	AllocMem           allocmem
+	CPUTot             cpus
+	CPULoad            cpusload
+	CoresPerSocket     cores
+	TmpDisk            disk
+	Features           features
+	FreeMem            freemem
+	Gres               gres
+	NodeAddr           nodeaddr
+	NodeName           nodehost
+	RealMemory         memory
+	State              statelong
+	Sockets            sockets
+	ThreadsPerCore     threads
+	Version            version
+	Weight             weight
+}
+
+array set part_info {
+	State              available
+	MaxCPUsPerNode     maxcpuspernode
+	Nodes              nodehost
+	TotalNodes         nodes
+	PreemptMode        preemptmode
+	Priority           priority
+	Shared             share
+	RootOnly           root
+}
+
+print_header $test_id
+
+proc cleanup { } {
+
+	global scontrol test_part exit_code
+
+	spawn $scontrol delete partitionname=$test_part
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+}
+
+send_user "\n=== Testing Node Information ===\n"
+set first_option 1
+foreach option [array names node_info] {
+
+	if {$first_option == 1} {
+		set first_option 0
+	} else {
+		log_user 0
+	}
+	spawn $scontrol show node $test_node
+	expect {
+		-re "\\m$option=($alpha_numeric_dot)\\M" {
+			set node_sinfo_vals($node_info($option)) \
+			    $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+}
+
+set first_option 1
+foreach option [array names node_sinfo_vals] {
+
+	set match 0
+	if {$first_option == 1} {
+		set first_option 0
+	} else {
+		log_user 0
+	}
+	spawn $sinfo -n$test_node -O$option -h
+	expect {
+		-nocase -re "$node_sinfo_vals($option)" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 1} {
+		send_user "\nFAILURE: Node information $option output does "
+		send_user "not match sinfo output. "
+		send_user "Looking for value: $node_sinfo_vals($option)\n"
+		exit 1
+	}
+	log_user 1
+}
+
+#
+# Add test partition
+#
+spawn $scontrol create partitionname=$test_part nodes=$test_node
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set match 0
+spawn $scontrol show partitionname=$test_part
+expect {
+	-re "PartitionName=$test_part" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: test partition was not created\n"
+	exit 1
+}
+
+send_user "\n=== Testing Partition Information ===\n"
+set first_option 1
+foreach option [array names part_info] {
+
+	set part_sinfo_vals($part_info($option)) "UNKNOWN"
+	set match 0
+	if {$first_option == 1} {
+		set first_option 0
+	} else {
+		log_user 0
+	}
+	spawn $scontrol show partition $test_part
+	expect {
+		-re "\\m$option=($alpha_numeric_dot)\\M" {
+			set part_sinfo_vals($part_info($option)) \
+			    $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+}
+
+set first_option 1
+foreach option [array names part_sinfo_vals] {
+
+	set match 0
+	if {$first_option == 1} {
+		set $first_option 0
+	} else {
+		log_user 0
+	}
+	spawn $sinfo -p$test_part -O$option -h
+	expect {
+		-nocase -re "$part_sinfo_vals($option)" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sinfo is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 1} {
+		send_user "\nFAILURE: Partition information $option "
+		send_user "output does not match sinfo output. "
+		send_user "Looking for value: "
+		send_user "$option = $part_sinfo_vals($option)\n"
+		cleanup
+		exit 1
+	}
+	log_user 1
+}
+
+cleanup
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
