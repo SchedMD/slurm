@@ -300,7 +300,7 @@ if {[test_using_slurmdbd]} {
 	set match 0
 	spawn $scontrol show assoc_mgr
 	expect {
-		-re "Controller cache data" {
+		-re "Current Association Manager state" {
 			incr match
 			exp_continue
 		}
@@ -309,6 +309,10 @@ if {[test_using_slurmdbd]} {
 			exp_continue
 		}
 		-re "No associations currently cached in Slurm" {
+			incr match
+			exp_continue
+		}
+		-re "No QOS currently cached in Slurm" {
 			incr match
 			exp_continue
 		}
@@ -321,8 +325,8 @@ if {[test_using_slurmdbd]} {
 		}
 	}
 
-	if {$match != 3} {
-		send_user "\nFAILURE: 4 scontrol show assoc_mgr did not show correct information ($match != 3)\n"
+	if {$match != 4} {
+		send_user "\nFAILURE: 4 scontrol show assoc_mgr did not show correct information ($match != 4)\n"
 		set exit_code 1
 	}
 }
