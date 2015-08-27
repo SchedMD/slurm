@@ -1642,7 +1642,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 {
 	int i;
-	uint32_t cpu_cnt = 0;
+	uint32_t core_cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
 
 	if (!resv_ptr->node_bitmap)
@@ -1654,22 +1654,24 @@ static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr)
 					&cnodes_per_mp);
 #endif
 
-	for (i=0; i<node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (!bit_test(resv_ptr->node_bitmap, i))
 			continue;
 #ifdef HAVE_BG
 		if (cnodes_per_mp)
-			cpu_cnt += cnodes_per_mp;
+			core_cnt += cnodes_per_mp;
 		else
-			cpu_cnt += node_ptr->sockets;
+			core_cnt += node_ptr->sockets;
 #else
-		if (slurmctld_conf.fast_schedule)
-			cpu_cnt += node_ptr->config_ptr->cores;
-		else
-			cpu_cnt += node_ptr->cores;
+		if (slurmctld_conf.fast_schedule) {
+			core_cnt += (node_ptr->config_ptr->cores *
+				     node_ptr->config_ptr->sockets);
+		} else {
+			core_cnt += (node_ptr->cores * node_ptr->sockets);
+		}
 #endif
 	}
-	resv_ptr->cpu_cnt = cpu_cnt;
+	resv_ptr->cpu_cnt = core_cnt;
 }
 
 /*
