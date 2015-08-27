@@ -2808,11 +2808,21 @@ static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
 	uint32_t node_flags;
-	time_t now = time(NULL);
+	time_t boot_req_time, now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
 	/* Do not change last_response value (in the future) for nodes being
 	 *  booted so unexpected reboots are recognized */
+	if (IS_NODE_DOWN(node_ptr) &&
+	    !xstrcmp(node_ptr->reason, "Scheduled reboot")) {
+		boot_req_time = node_ptr->last_response -
+				slurm_get_resume_timeout();
+		if (node_ptr->boot_time < boot_req_time) {
+			debug("Still waiting for boot of node %s",
+			      node_ptr->name);
+			return;
+		}
+	}
 	if (node_ptr->last_response < now)
 		node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {

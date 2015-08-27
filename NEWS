@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
     array gets requeued.
  -- Fix some potential deadlock issues when state files don't exist in the
     association manager.
+ -- Correct RebootProgram logic when executed outside of a maintenance
+    reservation.
 
 * Changes in Slurm 14.11.8
 ==========================
