@@ -2366,12 +2366,6 @@ extern void trace_job(struct job_record *, const char *, const char *);
 int
 waitpid_timeout(const char *, pid_t, int *, int);
 
-/* Parse TRES weights
- * IN weights_str - string of tres and weights to be parsed.
- * RET array of tres weights.
- */
-extern double *tres_parse_weights(char *weights_str);
-
 /*
  * Calcuate and populate the number of tres' for all partitions.
  */

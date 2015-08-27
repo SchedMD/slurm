@@ -1411,7 +1411,8 @@ static void _internal_setup(void)
 	weight_qos = slurm_get_priority_weight_qos();
 	xfree(weight_tres);
 	if ((tres_weights_str = slurm_get_priority_weight_tres())) {
-		weight_tres = tres_parse_weights(tres_weights_str);
+		weight_tres = slurm_get_tres_weight_array(tres_weights_str,
+							  slurmctld_tres_cnt);
 	}
 	flags = slurmctld_conf.priority_flags;
 

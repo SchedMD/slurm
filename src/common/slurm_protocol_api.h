@@ -361,6 +361,14 @@ uint32_t slurm_get_priority_weight_qos(void);
  */
 char *slurm_get_priority_weight_tres(void);
 
+/* slurm_get_priority_weight_tres_array
+ * IN weights_str - string of tres and weights to be parsed.
+ * IN tres_cnt - count of how many tres' are on the system (e.g.
+ * 		slurmctld_tres_cnt).
+ * RET double* of tres weights.
+ */
+double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt);
+
 /* slurm_get_private_data
  * get private data from slurmctld_conf object
  * RET uint16_t   - private_data

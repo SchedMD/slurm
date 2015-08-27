@@ -60,6 +60,7 @@
 #include <ctype.h>
 
 /* PROJECT INCLUDES */
+#include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -820,6 +821,84 @@ char *slurm_get_priority_weight_tres(void)
 		slurm_conf_unlock();
 	}
 
+	return weights;
+}
+
+static int _get_tres_id(char *type, char *name)
+{
+	slurmdb_tres_rec_t tres_rec;
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = type;
+	tres_rec.name = name;
+
+	return assoc_mgr_find_tres_pos(&tres_rec, false);
+}
+
+static int _tres_weight_item(double *weights, char *item_str)
+{
+	char *type = NULL, *value = NULL, *name = NULL;
+	int tres_id;
+
+	if (!item_str) {
+		error("TRES weight item is null");
+		return SLURM_ERROR;
+	}
+
+	type = strtok_r(item_str, "=", &value);
+	if (strchr(type, '/'))
+		type = strtok_r(type, "/", &name);
+
+	if (!value || !*value) {
+		error("\"%s\" is an invalid TRES weight entry", item_str);
+		return SLURM_ERROR;
+	}
+
+	if ((tres_id = _get_tres_id(type, name)) == -1) {
+		error("TRES weight '%s%s%s' is not a configured TRES type.",
+		      type, (name) ? ":" : "", (name) ? name : "");
+		return SLURM_ERROR;
+	}
+
+	errno = 0;
+	weights[tres_id] = strtod(value, NULL);
+	if(errno) {
+		error("Unable to convert %s value to double in %s",
+		      __func__, value);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* slurm_get_priority_weight_tres_array
+ * IN weights_str - string of tres and weights to be parsed.
+ * IN tres_cnt - count of how many tres' are on the system (e.g.
+ * 		slurmctld_tres_cnt).
+ * RET double* of tres weights.
+ */
+double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt)
+{
+	double *weights;
+	char *tmp_str = xstrdup(weights_str);
+	char *token, *last = NULL;
+
+	if (!weights_str || !*weights_str || !tres_cnt)
+		return NULL;
+
+	weights = xmalloc(sizeof(double) * tres_cnt);
+
+	token = strtok_r(tmp_str, ",", &last);
+	while (token) {
+		if (_tres_weight_item(weights, token)) {
+			xfree(weights);
+			xfree(tmp_str);
+			fatal("failed to parse tres weights str '%s'",
+			      weights_str);
+			return NULL;
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
 	return weights;
 }
 
