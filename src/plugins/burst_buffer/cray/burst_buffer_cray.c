@@ -2476,15 +2476,16 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 	xassert(job_desc);
 	xassert(job_desc->tres_req_cnt);
 
-	if (job_desc->array_inx)	/* Job arrays not supported */
-		return ESLURM_INVALID_ARRAY;
-
 	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
-	if (!job_desc->burst_buffer)
-		return SLURM_SUCCESS;
+	if ((job_desc->burst_buffer == NULL) ||
+	    (job_desc->burst_buffer[0] == '\0'))
+		return rc;
+
+	if (job_desc->array_inx)	/* Job arrays not supported */
+		return ESLURM_INVALID_ARRAY;
 
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: job_user_id:%u, submit_uid:%d",
