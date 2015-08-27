@@ -1756,6 +1756,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		if ((key_pair->value == NULL) ||
 		    (strlen(key_pair->value) == 0) ||
 		    !strcasecmp(key_pair->value, "(null type)") ||
+		    !strcasecmp(key_pair->value, "(null)") ||
 		    !strcasecmp(key_pair->value, "N/A") ||
 		    (!strcasecmp(key_pair->name, "KeepAliveTime") &&
 		     !strcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
@@ -1767,9 +1768,11 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			      key_pair->name,
 			      key_pair->value);
 		} else {
-			key_pair->value = strtok(key_pair->value, " (");
+			/* Only write out values. Use strtok
+			 * to grab just the value (ie. "60 sec") */
+			temp = strtok(key_pair->value, " (");
 			temp = xstrdup_printf("%s=%s",
-					      key_pair->name, key_pair->value);
+					      key_pair->name, temp);
 		}
 
 		if (!strcasecmp(key_pair->name, "ControlMachine") ||
