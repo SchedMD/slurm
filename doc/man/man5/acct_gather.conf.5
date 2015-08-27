@@ -50,7 +50,7 @@ accumulated, only the first and last adjustments are used to calculated the
 consumption. The default is "no".
 
 .TP
-\fBEnergyIPMIPowerSensors\fI<key=values>\fR
+\fBEnergyIPMIPowerSensors\fR=<key=values>\fR
 Optionally specify the ids of the sensors to used.
 Multiple <key=values> can be set with ";" separators.
 The key "Node" is mandatory and is used to know the consumed energy for nodes
@@ -62,9 +62,13 @@ These keys are useful only when profile is activated for energy to store power
 The sum of the listed sensors is used for each key.
 EnergyIPMIPowerSensors is optional, default value is "Node=number" where
 "number" is the id of the first power sensor returned by ipmi-sensors.
+.br
 i.e.
+.br
 EnergyIPMIPowerSensors=Node=16,19,23,26;Socket0=16,23;Socket1=19,26;SSUP=23,26;KNC=16,19
+.br
 EnergyIPMIPowerSensors=Node=29,32;SSUP0=29;SSUP1=32
+.br
 EnergyIPMIPowerSensors=Node=1280
 
 .LP
