@@ -153,7 +153,7 @@ Buf init_buf(int size)
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
-	my_buf->head = xmalloc_nz(sizeof(char)*size);
+	my_buf->head = xmalloc(sizeof(char)*size);
 	return my_buf;
 }
 
