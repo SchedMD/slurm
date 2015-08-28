@@ -1366,12 +1366,14 @@ extern void bb_limit_rem(
  * job_ptr IN - Point to job that created, could be NULL at startup
  * bb_alloc IN - Pointer to persistent burst buffer state info
  * state_ptr IN - Pointer to burst_buffer plugin state info
+ * NOTE: assoc_mgr association and qos read lock should be set before this.
  */
 extern int bb_post_persist_create(struct job_record *job_ptr,
 				  bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
+	uint64_t size_mb;
 
 	if (!state_ptr->tres_id) {
 		debug2("%s: Not tracking this TRES, "
@@ -1379,21 +1381,45 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 		return SLURM_SUCCESS;
 	}
 
+	size_mb = (bb_alloc->size / (1024 * 1024));
+
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
 	resv.cluster = slurmctld_cluster_name;
 	resv.name = bb_alloc->name;
 	resv.id = bb_alloc->id;
 	resv.time_start = bb_alloc->create_time;
-	xstrfmtcat(resv.tres_str, "%d=%"PRIu64,
-		   state_ptr->tres_id, bb_alloc->size / (1024 * 1024));
+	xstrfmtcat(resv.tres_str, "%d=%"PRIu64, state_ptr->tres_id, size_mb);
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
 
-	if (job_ptr && job_ptr->tres_alloc_cnt && state_ptr->tres_pos) {
-//FIXME: Also need to decrement association's TRES usage
-		job_ptr->tres_alloc_cnt[state_ptr->tres_pos] -=
-			(bb_alloc->size / (1024 * 1024));
+	if (state_ptr->tres_pos) {
+		slurmdb_assoc_rec_t *assoc_ptr = bb_alloc->assoc_ptr;
+
+		while (assoc_ptr) {
+			assoc_ptr->usage->grp_used_tres[state_ptr->tres_pos] +=
+				size_mb;
+			/* FIXME: should grp_used_tres_run_secs be
+			 * done some how? Same for QOS below. */
+			debug2("%s: after adding persisant bb %s(%u), "
+			       "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) "
+			       "is %"PRIu64,
+			       __func__, bb_alloc->name, bb_alloc->id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_name_array[state_ptr->tres_pos],
+			       assoc_ptr->usage->
+			       grp_used_tres_run_secs[state_ptr->tres_pos]);
+			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		}
+
+		if (job_ptr && job_ptr->tres_alloc_cnt)
+			job_ptr->tres_alloc_cnt[state_ptr->tres_pos] -= size_mb;
+
+		if (bb_alloc->qos_ptr) {
+			bb_alloc->qos_ptr->usage->grp_used_tres[
+				state_ptr->tres_pos] += size_mb;
+		}
 	}
 
 	return rc;
@@ -1404,6 +1430,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
+	uint64_t size_mb;
 
 	if (!state_ptr->tres_id) {
 		debug2("%s: Not tracking this TRES, "
@@ -1411,6 +1438,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 		return SLURM_SUCCESS;
 	}
 
+	size_mb = (bb_alloc->size / (1024 * 1024));
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
@@ -1419,11 +1447,46 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 	resv.id = bb_alloc->id;
 	resv.time_end = time(NULL);
 	resv.time_start = bb_alloc->create_time;
-	xstrfmtcat(resv.tres_str, "%d=%"PRIu64,
-		   state_ptr->tres_id, bb_alloc->size / (1024 * 1024));
+	xstrfmtcat(resv.tres_str, "%d=%"PRIu64, state_ptr->tres_id, size_mb);
 
 	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
+
+	if (state_ptr->tres_pos) {
+		slurmdb_assoc_rec_t *assoc_ptr = bb_alloc->assoc_ptr;
+
+		while (assoc_ptr) {
+			if (assoc_ptr->usage->grp_used_tres[state_ptr->tres_pos]
+			    >= size_mb)
+				assoc_ptr->usage->grp_used_tres[
+					state_ptr->tres_pos] -= size_mb;
+			else
+				assoc_ptr->usage->grp_used_tres[
+					state_ptr->tres_pos] = 0;
+			/* FIXME: should grp_used_tres_run_secs be
+			 * done some how? Same for QOS below. */
+			debug2("%s: after removing persisant bb %s(%u), "
+			       "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) "
+			       "is %"PRIu64,
+			       __func__, bb_alloc->name, bb_alloc->id,
+			       assoc_ptr->id, assoc_ptr->acct,
+			       assoc_ptr->user, assoc_ptr->partition,
+			       assoc_mgr_tres_name_array[state_ptr->tres_pos],
+			       assoc_ptr->usage->
+			       grp_used_tres_run_secs[state_ptr->tres_pos]);
+			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		}
+
+		if (bb_alloc->qos_ptr) {
+			if (bb_alloc->qos_ptr->usage->grp_used_tres[
+				    state_ptr->tres_pos] >= size_mb)
+				bb_alloc->qos_ptr->usage->grp_used_tres[
+					state_ptr->tres_pos] -= size_mb;
+			else
+				bb_alloc->qos_ptr->usage->grp_used_tres[
+					state_ptr->tres_pos] = 0;
+		}
+	}
 
 	return rc;
 }
