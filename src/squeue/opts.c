@@ -137,6 +137,8 @@ parse_command_line( int argc, char* argv[] )
 		{NULL,         0,                 0, 0}
 	};
 
+	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
+
 	if (getenv("SQUEUE_ALL"))
 		params.all_flag = true;
 	if (getenv("SQUEUE_ARRAY"))
@@ -311,7 +313,7 @@ parse_command_line( int argc, char* argv[] )
 			override_format_env = true;
 			break;
 		case OPT_LONG_NOCONVERT:
-			params.convert_flags = CONVERT_NUM_UNIT_EXACT;
+			params.convert_flags |= CONVERT_NUM_UNIT_NO;
 			break;
 		case OPT_LONG_USAGE:
 			_usage();
