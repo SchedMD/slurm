@@ -189,7 +189,6 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	bool job_indepen = false;
 	uint16_t cleaning = 0;
 	time_t now = time(NULL);
-	int bb;
 
 	xassert(job_ptr->magic == JOB_MAGIC);
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
@@ -249,17 +248,6 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 
 	if (!job_indepen)	/* can not run now */
 		return false;
-
-	/* Backfill scheduler needs to evaluate each job in order to schedule
-	 * burst buffer use for pending jobs. */
-	if (!sched_plugin &&
-	    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
-		if (bb == -1)
-			job_ptr->state_reason = WAIT_BURST_BUFFER_RESOURCE;
-		else	/* bb == 0 */
-			job_ptr->state_reason = WAIT_BURST_BUFFER_STAGING;
-		return false;
-	}
 
 	return true;
 }
@@ -991,7 +979,7 @@ static int _schedule(uint32_t job_limit)
 	struct slurmctld_resv **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	struct part_record **sched_part_ptr = NULL;
-	int *sched_part_jobs = NULL;
+	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -1011,7 +999,7 @@ static int _schedule(uint32_t job_limit)
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
-	time_t now, sched_start;
+	time_t now, last_job_sched_start, sched_start;
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
 	uint16_t reject_state_reason = WAIT_NO_REASON;
@@ -1185,6 +1173,7 @@ static int _schedule(uint32_t job_limit)
 	lock_slurmctld(job_write_lock);
 	now = time(NULL);
 	sched_start = now;
+	last_job_sched_start = now;
 	START_TIMER;
 	if (!avail_front_end(NULL)) {
 		ListIterator job_iterator = list_iterator_create(job_list);
@@ -1544,6 +1533,8 @@ next_task:
 			continue;
 		}
 
+		last_job_sched_start = MAX(last_job_sched_start,
+					   job_ptr->start_time);
 		bb = bb_g_job_test_stage_in(job_ptr, false);
 		if (bb != 1) {
 			if (bb == 0) {
@@ -1552,6 +1543,10 @@ next_task:
 			} else {
 				job_ptr->state_reason =
 					WAIT_BURST_BUFFER_RESOURCE;
+			}
+			if (job_ptr->start_time == 0) {
+				job_ptr->start_time = last_job_sched_start;
+				bb_wait_cnt++;
 			}
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
@@ -1735,6 +1730,9 @@ next_task:
 			reject_state_reason = job_ptr->state_reason;
 		}
 	}
+
+	if (bb_wait_cnt)
+		(void) bb_g_job_try_stage_in();
 
 	save_last_part_update = last_part_update;
 	FREE_NULL_BITMAP(avail_node_bitmap);
