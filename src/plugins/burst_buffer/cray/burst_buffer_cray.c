@@ -969,6 +969,8 @@ static void _load_state(bool init_config)
 	int i, j;
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
+	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+					 NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/*
 	 * Load the pools information
@@ -1030,6 +1032,7 @@ static void _load_state(bool init_config)
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state);
 	pthread_mutex_lock(&bb_state.bb_mutex);
+	assoc_mgr_lock(&assoc_locks);
 	bb_state.last_load_time = time(NULL);
 	for (i = 0; i < num_sessions; i++) {
 		if (!init_config) {
@@ -1074,6 +1077,7 @@ static void _load_state(bool init_config)
 		if (bb_alloc->job_id == 0)
 			bb_post_persist_create(NULL, bb_alloc, &bb_state);
 	}
+	assoc_mgr_unlock(&assoc_locks);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
@@ -3528,6 +3532,9 @@ static void *_create_persistent(void *x)
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else if (resp_msg && strstr(resp_msg, "created")) {
+		assoc_mgr_lock_t assoc_locks =
+			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+			  NO_LOCK, NO_LOCK, NO_LOCK };
 		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(create_args->job_id);
 		if (!job_ptr) {
@@ -3541,12 +3548,9 @@ static void *_create_persistent(void *x)
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
+		assoc_mgr_lock(&assoc_locks);
 		if (job_ptr) {
-			assoc_mgr_lock_t assoc_locks =
-				{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				  NO_LOCK, NO_LOCK, NO_LOCK };
 			bb_alloc->account   = xstrdup(job_ptr->account);
-			assoc_mgr_lock(&assoc_locks);
 			if (job_ptr->assoc_ptr) {
 				/* Only add the direct association id
 				 * here, we don't need to keep track
@@ -3564,7 +3568,6 @@ static void *_create_persistent(void *x)
 				bb_alloc->qos_ptr = qos_ptr;
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 			}
-			assoc_mgr_unlock(&assoc_locks);
 
 			if (job_ptr->part_ptr) {
 				bb_alloc->partition =
@@ -3590,6 +3593,7 @@ static void *_create_persistent(void *x)
 		}
 		(void) bb_post_persist_create(job_ptr, bb_alloc, &bb_state);
 		bb_state.last_update_time = time(NULL);
+		assoc_mgr_unlock(&assoc_locks);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
@@ -3666,6 +3670,9 @@ static void *_destroy_persistent(void *x)
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else {
+		assoc_mgr_lock_t assoc_locks =
+			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+			  NO_LOCK, NO_LOCK, NO_LOCK };
 		pthread_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id,
 				 destroy_args->job_id, destroy_args->name,
@@ -3678,7 +3685,11 @@ static void *_destroy_persistent(void *x)
 			bb_alloc->state_time = time(NULL);
 			bb_limit_rem(bb_alloc->user_id,
 				     bb_alloc->size, &bb_state);
+
+			assoc_mgr_lock(&assoc_locks);
 			(void) bb_post_persist_delete(bb_alloc, &bb_state);
+			assoc_mgr_unlock(&assoc_locks);
+
 			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		}
 		bb_state.last_update_time = time(NULL);
