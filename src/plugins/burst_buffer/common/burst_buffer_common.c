@@ -1373,6 +1373,12 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
 
+	if (!state_ptr->tres_id) {
+		debug2("%s: Not tracking this TRES, "
+		       "not sending to the database.", __func__);
+		return SLURM_SUCCESS;
+	}
+
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
 	resv.cluster = slurmctld_cluster_name;
@@ -1398,6 +1404,13 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;
+
+	if (!state_ptr->tres_id) {
+		debug2("%s: Not tracking this TRES, "
+		       "not sending to the database.", __func__);
+		return SLURM_SUCCESS;
+	}
+
 
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = bb_alloc->assocs;
