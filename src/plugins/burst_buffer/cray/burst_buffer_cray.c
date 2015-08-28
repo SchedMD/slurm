@@ -227,7 +227,7 @@ static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state);
 static void	_save_bb_state(void);
-static void	_set_assoc_ptr(bb_alloc_t *bb_alloc);
+static void	_set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
 static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
@@ -603,7 +603,7 @@ static void _apply_limits(void)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
-			_set_assoc_ptr(bb_alloc);
+			_set_assoc_mgr_ptrs(bb_alloc);
 			bb_limit_add(bb_alloc->user_id,
 				     bb_alloc->size, &bb_state);
 			bb_alloc = bb_alloc->next;
@@ -866,8 +866,8 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 	/* read locks on assoc & qos */
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
-	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
-	slurmdb_qos_rec_t   qos_rec,   *qos_ptr   = NULL;
+	slurmdb_assoc_rec_t assoc_rec;
+	slurmdb_qos_rec_t   qos_rec;
 	bb_alloc_t *bb_ptr = NULL;
 
 	bb_ptr = bb_state.bb_ahash[bb_alloc->user_id % BB_HASH_SIZE];
@@ -881,6 +881,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 			bb_alloc->partition = xstrdup(bb_ptr->partition);
 			xfree(bb_alloc->qos);
 			bb_alloc->qos       = xstrdup(bb_ptr->qos);
+			bb_alloc->qos_ptr = bb_ptr->qos_ptr;
 			xfree(bb_alloc->assocs);
 			bb_alloc->assocs    = xstrdup(bb_ptr->assocs);
 			return;
@@ -897,35 +898,37 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 	assoc_mgr_lock(&assoc_locks);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **) &assoc_ptr,
+				    &bb_alloc->assoc_ptr,
 				    true) == SLURM_SUCCESS) {
-		bb_alloc->assoc_ptr = assoc_ptr;
 		xfree(bb_alloc->account);
 		bb_alloc->account   = xstrdup(assoc_rec.acct);
 		xfree(bb_alloc->assocs);
-		if (assoc_ptr)
+		if (bb_alloc->assoc_ptr)
 			bb_alloc->assocs =
-				xstrdup_printf(",%u,", assoc_ptr->id);
+				xstrdup_printf(",%u,", bb_alloc->assoc_ptr->id);
 
-		assoc_mgr_get_default_qos_info(assoc_ptr, &qos_rec);
+		assoc_mgr_get_default_qos_info(bb_alloc->assoc_ptr, &qos_rec);
 		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce, &qos_ptr,
+					  accounting_enforce,
+					  &bb_alloc->qos_ptr,
 					  true) == SLURM_SUCCESS) {
 			xfree(bb_alloc->qos);
-			if (qos_ptr)
-				bb_alloc->qos = xstrdup(qos_ptr->name);
+			if (bb_alloc->qos_ptr)
+				bb_alloc->qos =
+					xstrdup(bb_alloc->qos_ptr->name);
 		}
 	}
 	assoc_mgr_unlock(&assoc_locks);
 }
 
 /* For a given user/partition/account, set it's assoc_ptr */
-static void _set_assoc_ptr(bb_alloc_t *bb_alloc)
+static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 {
 	/* read locks on assoc */
-	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
-	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
+	slurmdb_assoc_rec_t assoc_rec;
+	slurmdb_qos_rec_t qos_rec;
 
 	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc_rec.acct      = bb_alloc->account;
@@ -934,12 +937,20 @@ static void _set_assoc_ptr(bb_alloc_t *bb_alloc)
 	assoc_mgr_lock(&assoc_locks);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    (slurmdb_assoc_rec_t **) &assoc_ptr,
+				    &bb_alloc->assoc_ptr,
 				    true) == SLURM_SUCCESS) {
-		bb_alloc->assoc_ptr = assoc_ptr;
 		xfree(bb_alloc->assocs);
-		bb_alloc->assocs    = xstrdup_printf(",%u,", assoc_ptr->id);
+		bb_alloc->assocs =
+			xstrdup_printf(",%u,", bb_alloc->assoc_ptr->id);
 	}
+
+	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+	qos_rec.name = bb_alloc->qos;
+	assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+			      accounting_enforce,
+			      &bb_alloc->qos_ptr,
+			      true);
+
 	assoc_mgr_unlock(&assoc_locks);
 }
 
@@ -3550,6 +3561,7 @@ static void *_create_persistent(void *x)
 			if (job_ptr->qos_ptr) {
 				slurmdb_qos_rec_t *qos_ptr =
 					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+				bb_alloc->qos_ptr = qos_ptr;
 				bb_alloc->qos = xstrdup(qos_ptr->name);
 			}
 			assoc_mgr_unlock(&assoc_locks);

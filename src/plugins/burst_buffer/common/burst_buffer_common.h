@@ -102,6 +102,7 @@ typedef struct bb_alloc {
 	struct bb_alloc *next;
 	char *partition;	/* Associated partition (for limits) */
 	char *qos;		/* Associated QOS (for limits) */
+	slurmdb_qos_rec_t *qos_ptr;
 	time_t seen_time;	/* Time buffer last seen */
 	uint64_t size;
 	uint16_t state;
