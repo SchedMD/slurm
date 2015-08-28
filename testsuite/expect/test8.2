@@ -110,6 +110,9 @@ if {$job_id == 0} {
 #
 # Confirm parameters passed into SLURM
 #
+# Sleep a bit for job to catch up
+sleep 1
+
 set matches 0
 spawn $scontrol show job $job_id
 expect {
