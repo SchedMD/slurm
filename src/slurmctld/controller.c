@@ -2713,6 +2713,10 @@ handle_parts:
 	list_iterator_destroy(itr);
 
 end_it:
+	/* issuing a reconfig will reset the pointers on the burst
+	   buffers */
+	bb_g_reconfig();
+
 	unlock_slurmctld(job_write_lock);
 	/* This needs to be after the lock and after we update the
 	   jobs so if we need to send them we are set. */

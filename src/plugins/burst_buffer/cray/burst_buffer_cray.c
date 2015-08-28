@@ -2404,6 +2404,7 @@ extern int bb_p_load_state(bool init_config)
 extern int bb_p_reconfig(void)
 {
 	char *old_default_pool;
+	int i;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
@@ -2417,6 +2418,15 @@ extern int bb_p_reconfig(void)
 		xfree(old_default_pool);
 	_test_config();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	/* reconfig is the place we make sure the pointers are correct */
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc_t *bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			_set_assoc_mgr_ptrs(bb_alloc);
+			bb_alloc = bb_alloc->next;
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
