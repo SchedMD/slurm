@@ -420,6 +420,7 @@ void _init_params()
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	params.job_cond->without_usage_truncation = 1;
+	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 }
 
 int get_data(void)
@@ -544,8 +545,6 @@ void parse_command_line(int argc, char **argv)
 
 	params.opt_uid = getuid();
 	params.opt_gid = getgid();
-
-	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 
 	verbosity         = 0;
 	log_init("sacct", opts, SYSLOG_FACILITY_DAEMON, NULL);
