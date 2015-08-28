@@ -604,8 +604,7 @@ static void _apply_limits(void)
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
 			_set_assoc_ptr(bb_alloc);
-			bb_limit_add(bb_alloc->user_id, bb_alloc->account,
-				     bb_alloc->partition, bb_alloc->qos,
+			bb_limit_add(bb_alloc->user_id,
 				     bb_alloc->size, &bb_state);
 			bb_alloc = bb_alloc->next;
 		}
@@ -1058,8 +1057,7 @@ static void _load_state(bool init_config)
 
 		if (!init_config) {	/* Newly found buffer */
 			_pick_alloc_account(bb_alloc);
-			bb_limit_add(bb_alloc->user_id, bb_alloc->account,
-				     bb_alloc->partition, bb_alloc->qos,
+			bb_limit_add(bb_alloc->user_id,
 				     bb_alloc->size, &bb_state);
 		}
 		if (bb_alloc->job_id == 0)
@@ -1688,8 +1686,6 @@ static void *_start_teardown(void *x)
 		if (job_ptr) {
 			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
 				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->account,
-					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
@@ -1706,8 +1702,6 @@ static void *_start_teardown(void *x)
 						    &bb_state);
 			if (bb_alloc) {
 				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->account,
-					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
@@ -2006,8 +2000,6 @@ static void _timeout_bb_rec(void)
 					     __func__, bb_alloc->job_id);
 				}
 				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->account,
-					     bb_alloc->partition, bb_alloc->qos,
 					     bb_alloc->size, &bb_state);
 				bb_post_persist_delete(bb_alloc, &bb_state);
 				*bb_pptr = bb_alloc->next;
@@ -3271,8 +3263,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 				continue;
 			}
 			rc++;
-			bb_limit_add(job_ptr->user_id, bb_job->account,
-				     bb_job->partition, bb_job->qos,
+			bb_limit_add(job_ptr->user_id,
 				     buf_ptr->size, &bb_state);
 			bb_job->state = BB_STATE_ALLOCATING;
 			buf_ptr->state = BB_STATE_ALLOCATING;
@@ -3426,14 +3417,10 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		buf_ptr->state = new_state;
 		if ((old_state == BB_STATE_ALLOCATING) &&
 		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, bb_job->account,
-				     bb_job->partition, bb_job->qos,
-				     buf_ptr->size, &bb_state);
+			bb_limit_rem(user_id, buf_ptr->size, &bb_state);
 		if ((old_state == BB_STATE_DELETING) &&
 		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, bb_job->account,
-				     bb_job->partition, bb_job->qos,
-				     buf_ptr->size, &bb_state);
+			bb_limit_rem(user_id, buf_ptr->size, &bb_state);
 		break;
 	}
 
@@ -3677,8 +3664,7 @@ static void *_destroy_persistent(void *x)
 			bb_alloc->state = BB_STATE_COMPLETE;
 			bb_alloc->job_id = destroy_args->job_id;
 			bb_alloc->state_time = time(NULL);
-			bb_limit_rem(bb_alloc->user_id, bb_alloc->account,
-				     bb_alloc->partition, bb_alloc->qos,
+			bb_limit_rem(bb_alloc->user_id,
 				     bb_alloc->size, &bb_state);
 			(void) bb_post_persist_delete(bb_alloc, &bb_state);
 			(void) bb_free_alloc_rec(&bb_state, bb_alloc);

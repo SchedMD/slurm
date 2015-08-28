@@ -925,8 +925,7 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_alloc_t *bb_alloc;
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_limit_add(bb_alloc->user_id, bb_alloc->account, bb_alloc->partition,
-		     bb_alloc->qos, bb_alloc->size, state_ptr);
+	bb_limit_add(bb_alloc->user_id, bb_alloc->size, state_ptr);
 
 	return bb_alloc;
 }
@@ -1326,8 +1325,8 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 }
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_add(
+	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
 
@@ -1340,8 +1339,8 @@ extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
 }
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_rem(
+	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr)
 {
 	bb_user_t *bb_user;
 

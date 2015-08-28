@@ -342,12 +342,12 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
+extern void bb_limit_add(
+	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr);
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(uint32_t user_id, char *account, char *partition,
-			 char *qos, uint64_t bb_size, bb_state_t *state_ptr);
+extern void bb_limit_rem(
+	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr);
 
 /* Log creation of a persistent burst buffer in the database
  * job_ptr IN - Point to job that created, could be NULL at startup
