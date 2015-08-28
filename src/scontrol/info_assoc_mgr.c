@@ -57,11 +57,15 @@ static void _print_tres_line(const char *name, uint64_t *limits, uint64_t *used,
 		goto endit;
 
 	for (i=0; i<tres_cnt; i++) {
-		if (limits[i] == INFINITE64)
+		/* only print things that have limits or usage */
+		if (!used && (limits[i] == INFINITE64))
 			continue;
 
-		printf("%s%s=%"PRIu64,
-		       comma ? "," : "", tres_names[i], limits[i]);
+		printf("%s%s=", comma ? "," : "", tres_names[i]);
+		if (limits[i] == INFINITE64)
+			printf("N");
+		else
+			printf("%"PRIu64, limits[i]);
 
 		if (used) {
 			uint64_t total_used = used[i];
