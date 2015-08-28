@@ -1318,7 +1318,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
- * IN node_fail - true of job terminated due to node failure
+ * IN node_fail - true if job terminated due to node failure
  * IN job_return_code - job's return code, if set then set state to JOB_FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
