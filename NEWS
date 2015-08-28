@@ -414,6 +414,7 @@ documents those changes that are of interest to users and administrators.
     association manager.
  -- Correct RebootProgram logic when executed outside of a maintenance
     reservation.
+ -- Requeue job if possible when slurmstepd aborts.
 
 * Changes in Slurm 14.11.8
 ==========================

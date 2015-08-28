@@ -744,11 +744,13 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		}
 
 		close(fd);
-		if (stepd->stepid == NO_VAL)
-			debug("found apparently running job %u", stepd->jobid);
-		else
-			debug("found apparently running step %u.%u",
-			      stepd->jobid, stepd->stepid);
+		if (stepd->stepid == NO_VAL) {
+			debug("%s: found apparently running job %u",
+			      __func__, stepd->jobid);
+		} else {
+			debug("%s: found apparently running step %u.%u",
+			      __func__, stepd->jobid, stepd->stepid);
+		}
 		msg->job_id[n]  = stepd->jobid;
 		msg->step_id[n] = stepd->stepid;
 		n++;

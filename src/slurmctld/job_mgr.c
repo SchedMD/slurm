@@ -4762,7 +4762,7 @@ extern int prolog_complete(uint32_t job_id,
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
- * IN node_fail - true of job terminated due to node failure
+ * IN node_fail - true if job terminated due to node failure
  * IN job_return_code - job's return code, if set then set state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
@@ -4814,9 +4814,15 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	}
 
 	if ((job_return_code == NO_VAL) &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr)))
-		info("%s: %s cancelled from interactive user or node failure",
-		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
+		if (node_fail) {
+			info("%s: %s cancelled by node failure",
+			     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+		} else {
+			info("%s: %s cancelled by interactive user",
+			     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+		}
+	}
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		uint32_t suspend_job_state = job_ptr->job_state;
@@ -11924,11 +11930,14 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (job_ptr->start_time       < startup_time)	&&
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
 			bool requeue = false;
-			if ((job_ptr->start_time < node_ptr->boot_time) &&
-			    (job_ptr->details && job_ptr->details->requeue))
+			char *requeue_msg = "";
+			if (job_ptr->details && job_ptr->details->requeue) {
 				requeue = true;
+				requeue_msg = ", Requeuing job";
+			}
 			info("Batch JobId=%u missing from node 0 (not found "
-			     "BatchStartTime after startup)", job_ptr->job_id);
+			     "BatchStartTime after startup)%s",
+			     job_ptr->job_id, requeue_msg);
 			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id, 0, requeue, true, NO_VAL);
 		} else {
