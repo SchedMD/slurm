@@ -1399,17 +1399,28 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 		while (assoc_ptr) {
 			assoc_ptr->usage->grp_used_tres[state_ptr->tres_pos] +=
 				size_mb;
-			/* FIXME: should grp_used_tres_run_secs be
-			 * done some how? Same for QOS below. */
 			debug2("%s: after adding persisant bb %s(%u), "
-			       "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) "
+			       "assoc %u(%s/%s/%s) grp_used_tres(%s) "
 			       "is %"PRIu64,
 			       __func__, bb_alloc->name, bb_alloc->id,
 			       assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[state_ptr->tres_pos],
 			       assoc_ptr->usage->
-			       grp_used_tres_run_secs[state_ptr->tres_pos]);
+			       grp_used_tres[state_ptr->tres_pos]);
+
+			/* FIXME: should grp_used_tres_run_secs be
+			 * done some how? Same for QOS below.
+			 */
+			/* debug2("%s: after adding persisant bb %s(%u), " */
+			/*        "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) " */
+			/*        "is %"PRIu64, */
+			/*        __func__, bb_alloc->name, bb_alloc->id, */
+			/*        assoc_ptr->id, assoc_ptr->acct, */
+			/*        assoc_ptr->user, assoc_ptr->partition, */
+			/*        assoc_mgr_tres_name_array[state_ptr->tres_pos], */
+			/*        assoc_ptr->usage-> */
+			/*        grp_used_tres_run_secs[state_ptr->tres_pos]); */
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 		}
 
@@ -1457,23 +1468,47 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 
 		while (assoc_ptr) {
 			if (assoc_ptr->usage->grp_used_tres[state_ptr->tres_pos]
-			    >= size_mb)
+			    >= size_mb) {
 				assoc_ptr->usage->grp_used_tres[
 					state_ptr->tres_pos] -= size_mb;
-			else
+				debug2("%s: after removing persisant "
+				       "bb %s(%u), assoc %u(%s/%s/%s) "
+				       "grp_used_tres(%s) is %"PRIu64,
+				       __func__, bb_alloc->name, bb_alloc->id,
+				       assoc_ptr->id, assoc_ptr->acct,
+				       assoc_ptr->user, assoc_ptr->partition,
+				       assoc_mgr_tres_name_array[
+					       state_ptr->tres_pos],
+				       assoc_ptr->usage->
+				       grp_used_tres[state_ptr->tres_pos]);
+			} else {
+				error("%s: underflow removing persisant "
+				      "bb %s(%u), assoc %u(%s/%s/%s) "
+				      "grp_used_tres(%s) had %"PRIu64
+				      " but we are trying to remove %"PRIu64,
+				      __func__, bb_alloc->name, bb_alloc->id,
+				      assoc_ptr->id, assoc_ptr->acct,
+				      assoc_ptr->user, assoc_ptr->partition,
+				      assoc_mgr_tres_name_array[
+					      state_ptr->tres_pos],
+				      assoc_ptr->usage->
+				      grp_used_tres[state_ptr->tres_pos],
+				      size_mb);
 				assoc_ptr->usage->grp_used_tres[
 					state_ptr->tres_pos] = 0;
+			}
+
 			/* FIXME: should grp_used_tres_run_secs be
 			 * done some how? Same for QOS below. */
-			debug2("%s: after removing persisant bb %s(%u), "
-			       "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) "
-			       "is %"PRIu64,
-			       __func__, bb_alloc->name, bb_alloc->id,
-			       assoc_ptr->id, assoc_ptr->acct,
-			       assoc_ptr->user, assoc_ptr->partition,
-			       assoc_mgr_tres_name_array[state_ptr->tres_pos],
-			       assoc_ptr->usage->
-			       grp_used_tres_run_secs[state_ptr->tres_pos]);
+			/* debug2("%s: after removing persisant bb %s(%u), " */
+			/*        "assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) " */
+			/*        "is %"PRIu64, */
+			/*        __func__, bb_alloc->name, bb_alloc->id, */
+			/*        assoc_ptr->id, assoc_ptr->acct, */
+			/*        assoc_ptr->user, assoc_ptr->partition, */
+			/*        assoc_mgr_tres_name_array[state_ptr->tres_pos], */
+			/*        assoc_ptr->usage-> */
+			/*        grp_used_tres_run_secs[state_ptr->tres_pos]); */
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 		}
 
