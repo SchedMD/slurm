@@ -243,15 +243,15 @@ in the \f2cluster_list\fP. Use \-1 for all clusters.  The default is
 current cluster you are executing the \f3sacct\fP command on\&.
 
 .TP
-\f3\-\-noconvert\fP
-Fields such as MaxRSS, ReqMem and others will not be converted from their orignal
-unit types.
-.IP
-
-.TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
 No heading will be added to the output. The default action is to
 display a header.
+.IP
+
+.TP
+\f3\-\-noconvert\fP
+Don't convert units from their original type (e.g. 2048M won't be converted to
+2G).
 .IP
 
 .TP

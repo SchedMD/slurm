@@ -1285,13 +1285,13 @@ Usage: sinfo [OPTIONS]\n\
   -b, --bg                   show bgblocks (on Blue Gene systems)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
-  --noconvert                Fields such as MaxRSS, ReqMem and others will\n\
-                             not be converted from their orignal unit types.\n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
   -l, --long                 long output - displays more information\n\
   -n, --nodes=NODES          report on specific node(s)\n\
+  --noconvert                don't convert units from their original type\n\
+			     (e.g. 2048M won't be converted to 2G).\n\
   -N, --Node                 Node-centric format\n\
   -o, --format=format        format specification\n\
   -O, --Format=format        long format specification\n\

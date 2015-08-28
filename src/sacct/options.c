@@ -349,12 +349,12 @@ sacct [<OPTION>]                                                            \n \
                    displayed.                                               \n\
      -M, --clusters:                                                        \n\
                    Only send data about these clusters. -1 for all clusters.\n\
-     --noconvert:                                                           \n\
-                   Fields such as MaxRSS, ReqMem and others will not be     \n\
-		   converted from their orignal unit types.                 \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
+     --noconvert:                                                           \n\
+		   Don't convert units from their original type             \n\
+		   (e.g. 2048M won't be converted to 2G).                   \n\
      -N, --nodelist:                                                        \n\
                    Display jobs that ran on any of these nodes,             \n\
                    can be one or more using a ranged string.                \n\

@@ -92,6 +92,8 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
+     --noconvert:  Don't convert units from their original type             \n\
+		   (e.g. 2048M won't be converted to 2G).                   \n\
      -o, --format:                                                          \n\
 	           Comma separated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
