@@ -343,6 +343,25 @@ expect {
 	}
 }
 
+#
+# Remove test QoS
+#
+set match 0
+spawn $sacctmgr -i delete qos $test_qos
+expect {
+	-re "Deleting QOS" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 set match 0
 spawn $sacctmgr -i create qos $test_qos
 expect {
