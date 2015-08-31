@@ -453,18 +453,13 @@ int _print_tres_normalized(priority_factors_object_t * job, int width,
 			   bool right, char* suffix)
 {
 	if (job == NULL) {	/* Print the Header instead */
-		char *names;
-		xstrcat(names, "TRES");
-
-		_print_str(names, width, right, true);
-		xfree(names);
-	}
+		_print_str("TRES", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		char *values;
+		char *values = xstrdup("");
 		int i = 0;
-		xstrcat(values, "");
+
 		for (i = 0; i < job->tres_cnt; i++) {
 			if (!job->priority_tres[i])
 				continue;
@@ -486,18 +481,14 @@ int _print_tres_weighted(priority_factors_object_t * job, int width,
 			   bool right, char* suffix)
 {
 	if (job == NULL) {	/* Print the Header instead */
-		char *names;
-		xstrcat(names, "TRES");
-
-		_print_str(names, width, right, true);
-		xfree(names);
+		_print_str("TRES", width, right, true);
 	}
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str(weight_tres, width, right, true);
 	else {
-		char *values;
+		char *values = xstrdup("");
 		int i = 0;
-		xstrcat(values, "");
+
 		for (i = 0; i < job->tres_cnt; i++) {
 			if (!job->priority_tres[i])
 				continue;
