@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     to free it otherwise.
  -- Add environment variables SLURM_ARRAY_TASK_MAX, SLURM_ARRAY_TASK_MIN,
     SLURM_ARRAY_TASK_STEP for job arrays.
+ -- Fix srun to use the NoInAddrAny TopologyParam option.
 
 * Changes in Slurm 15.08.0rc1
 ==============================

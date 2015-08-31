@@ -2659,7 +2659,7 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
 
 	cnt = 0;
 eagain:
-	_slurm_set_addr_any(&addr, port);
+	slurm_setup_sockaddr(&addr, port);
 	cc = slurm_init_msg_engine(&addr);
 	if (cc < 0 && port == 0) {
 		++cnt;
