@@ -1943,6 +1943,7 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 			_get_fairshare_priority(job_ptr);
 	}
 
+	/* FIXME: this should work off the product of TRESBillingWeights */
 	if (weight_js) {
 		uint32_t cpu_cnt = 0, min_nodes = 1;
 		/* On the initial run of this we don't have total_cpus
