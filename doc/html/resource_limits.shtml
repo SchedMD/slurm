@@ -11,9 +11,12 @@ but should use their own resource limits mechanisms.</p>
 
 <h2>Hierachy</h2>
 
-<p>Slurm's hierarchical limits are enforced in the following order:
+<p>Slurm's hierarchical limits are enforced in the following order
+  with Job QOS and Partition QOS order being reversable by using the QOS
+  flag 'OverPartQOS':
 <ol>
-	<li>QOS limit</li>
+	<li>Partition QOS limit</li>
+	<li>Job QOS limit</li>
 	<li>User association</li>
 	<li>Account association(s)</li>
 	<li>Root/Cluster association</li>
@@ -106,115 +109,140 @@ jobs which belong to that association are immediately canceled.
 When limits are lowered, running jobs will not be canceled to
 satisfy the new limits, but the new lower limits will be enforced.</p>
 
-<h2>Policies supported</h2>
-
-<p> A limited subset of scheduling policy options are currently
-supported.
-The available options are expected to increase as development
-continues.
-Most of these scheduling policy options are available not only
-for a user association, but also for each cluster and account.
+<h2>Limits in both Associations and QOS</h2>
+<p>When dealing with Associations, most of these limits are available
+not only for a user association, but also for each cluster and account.
 If a new association is created for some user and a scheduling
 policy option is not specified the default will be: the option
 for the cluster/account pair, and if both are not specified
 then the option for the cluster, and if that also is not
 specified then no limit will apply.</p>
 
-<p>Currently available scheduling policy options:</p>
 <ul>
-<li><b>Fairshare=</b> Integer value used for determining priority.
-  Essentially this is the amount of claim this association and it's
-  children have to the above system. Can also be the string "parent",
-  this means that the parent association is used for fairshare.
-</li>
-
-<li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
-  running from this association and its children.  If this limit is
+<li><b>GrpTRESMins=</b> The total number of TRES minutes that can
+  possibly be used by past, present and future jobs
+  running from an association and its children or QOS.  If this limit is
   reached all jobs running in this group will be killed, and no new
-  jobs will be allowed to run.  The usage is decayed (at a rate of
+  jobs will be allowed to run.  This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree again.  This limit only applies when using the Priority
-  Multifactor plugin.
+  association tree or QOS again.  This limit only applies when using
+  the Priority Multifactor plugin.
 </li>
 
-<li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
-  time from jobs running from this association and its children.  If
+<li><b>GrpTRESRunMins=</b> Used to limit the combined total number of TRES
+  minutes used by all jobs running with an association and its
+  children or QOS.  This takes into consideration time limit of
+  running jobs and consumes it, if the limit is reached no new jobs
+  are started until other jobs finish to allow time to free up.
+</li>
+
+<li><b>GrpTRES=</b> The total count of TRES able to be used at any given
+  time from jobs running from an association and its children or QOS.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </li>
 
 <li><b>GrpJobs=</b> The total number of jobs able to run at any given
-  time from this association and its children.  If
+  time from an association and its children QOS.  If
   this limit is reached new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
 </li>
 
-<li><b>GrpMemory=</b> The total amount of memory (MB) able to be used
-  at any given time from jobs running from this association and its
-  children.  If this limit is reached new jobs will be queued but only
-  allowed to run after resources have been relinquished from this group.
-</li>
-
-<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
-  time from jobs running from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after resources have been relinquished from this group.
-  Each job's node allocation is counted separately
-  (i.e. if a single node has resources allocated to two jobs, this is counted
-  as two allocated nodes).
-</li>
-
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
-  to the system at any given time from this association and its children.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this group.
+  to the system at any given time from an association and its children
+  or QOS.  If this limit is reached new submission requests will be
+  denied until previous jobs complete from this group.
 </li>
 
 <li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for. If this limit is reached submission requests
-  will be denied and the running jobs will be killed.
+  this group can run for.  If this limit is reached submission requests
+  will be denied.
 </li>
 
-<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
+<li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by a job.
+  If this limit is reached the job will be killed if not running in
+  Safe mode, othewise the job will pend until enough time is given to
+  complete the job.
+</li>
+
+<li><b>MaxTRESPerJob=</b> The maximum size in TRES any given job can
+  have from the association/QOS.  If this limit is reached the job will
+  be denied at submission if the QOS running the job has the
+  DenyOnLimit flag set, otherwise the job will pend.
+</li>
+
+<li><b>MaxTRESPerNode=</b> The maximum size in TRES each node in a job
+  allocation can use.  If this limit is reached the job will
+  be denied at submission if the QOS running the job has the
+  DenyOnLimit flag set, otherwise the job will pend.
 </li>
 
 <li><b>MaxJobs=</b> The total number of jobs able to run at any given
-  time from this association.  If this limit is reached new jobs will
+  time for the given association/QOS.  If this limit is reached new jobs will
   be queued but only allowed to run after previous jobs complete from
-  this association.
-</li>
-
-<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
+  the association/QOS.
 </li>
 
 <li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
-  to the system at any given time from this association.  If
+  to the system at any given time from the given association/QOS.  If
   this limit is reached new submission requests will be denied until
   previous jobs complete from this association.
 </li>
 
 <li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
-  submitted to this association can run for.  If this limit is reached
+  submitted can run for the given association/QOS.  If this limit is reached
   the job will be denied at submission.
 </li>
 
-<li><b>QOS=</b> comma separated list of QOS's this association is
-  able to run.
-</li>
-
 <!-- For future use
-<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
-  running from this association.  If this limit is
+<li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by jobs
+  running from the given association/QOS.  If this limit is
   reached the job will be killed will be allowed to run.
 </li>
 -->
 
 </ul>
+
+<h2>Association specific scheduling policies supported</h2>
+
+<p> These represent the scheduling policies unique to associations.
+  Shared policies and limits QOS has in common are listed later.</p>
+
+<ul>
+<li><b>Fairshare=</b> Integer value used for determining priority.
+  Essentially this is the amount of claim this association and it's
+  children have to the above system. Can also be the string "parent",
+  when used on a user this means that the parent association is used
+  for fairshare.  If Fairshare=parent is set on an account, that
+  account's children will be effectively reparented for fairshare
+  calculations to the first parent of their parent that is not
+  Fairshare=parent.  Limits remain the same, only it's fairshare value
+  is affected.
+</li>
+
+<li><b>QOS=</b> comma separated list of QOS's an association is
+  able to run.
+</li>
+</ul>
+
+<h2>QOS specific limits supported</h2>
+
+<ul>
+<li><b>MaxTRESPerUser=</b> The maximum number of limited TRES a user can
+  request (combo of all jobs running or pending).  If this limit is breached
+  the job will pend unless the QOS running the job has the
+  DenyOnLimit flag set, which will cause the job to be denied at submission.
+</li>
+
+<li><b>MinTRESPerJob=</b> The minimum size in TRES any given job can
+  have from when using the requested QOS.  If this limit is breached
+  the job will pend unless the QOS running the job has the
+  DenyOnLimit flag set, which will cause the job to be denied at submission.
+</li>
+
+</ul>
+
 
 <p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in
 Slurm's configuration on a per-partition basis, but the above options

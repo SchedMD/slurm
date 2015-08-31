@@ -278,9 +278,9 @@ prevent users from accessing invalid accounts.
   enforced you need to use the 'limits' option.
 </li>
 <li>safe - This will ensure a job will only be launched when using an
-  association or qos that has a GrpCPUMins limit set if the job will be
+  association or qos that has a GrpTRESMins limit set if the job will be
   able to run to completion. Without this option set, jobs will be
-  launched as long as their usage hasn't reached the cpu-minutes limit
+  launched as long as their usage hasn't reached the TRES-minutes limit
   which can lead to jobs being launched but then killed when the limit is
   reached. By setting this option, both the 'associations' option and the
   'limits' option are set automatically.
@@ -653,131 +653,15 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <h2>Limit Enforcement</h2>
 
-<p>Slurm's hierarchical limits are enforced in the following order:
-<ol>
-	<li>QOS limit</li>
-	<li>User association</li>
-	<li>Account association(s)</li>
-	<li>Root/Cluster association</li>
-	<li>Partition limit</li>
-	<li>None</li>
-</ol>
-Note: Higher precedent limits override lower.
+<p>Various limits and limit enforcement are described in
+  the <a href="resource_limits.html">Resource Limits</a> web page.</p>
 
-<p>All of the above entities can include limits as described below and
-in the <a href="resource_limits.html">Resource Limits</a> document.
-To enable any limit enforcement you must at least have
+<p>To enable any limit enforcement you must at least have
 <b>AccountingStorageEnforce=limits</b> in your slurm.conf,
 otherwise, even if you have limits set, they will not be enforced.
 Other options for AccountingStorageEnforce and the explanation for
 each are found on the <a href="resource_limits.html">Resource
 Limits</a> document.</p>
-
-<ul>
-
-<li><b>Fairshare=</b> Integer value used for determining priority.
-  Essentially this is the amount of claim this association and it's
-  children have to the above system. Can also be the string "parent",
-  when used on a user this means that the parent association is used
-  for fairshare.  If Fairshare=parent is set on an account, that
-  account's children will be effectively reparented for fairshare
-  calculations to the first parent of their parent that is not
-  Fairshare=parent.  Limits remain the same, only it's fairshare value
-  is affected.
-</li>
-
-<li><b>GrpCPUMins=</b> The total number of cpu minutes that can
-  possibly be used by past, present and future jobs
-  running from this association and its children.  If this limit is
-  reached all jobs running in this group will be killed, and no new
-  jobs will be allowed to run.  This usage is decayed (at a rate of
-  PriorityDecayHalfLife).  It can also be reset (according to
-  PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree again.  This limit only applies when using the Priority
-  Multifactor plugin.
-</li>
-
-<li><b>GrpCPURunMins=</b> Used to limit the combined total number of CPU
-  minutes used by all jobs running with this association and its
-  children.  This takes into consideration time limit of
-  running jobs and consumes it, if the limit is reached no new jobs
-  are started until other jobs finish to allow time to free up.
-</li>
-
-<li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
-  time from jobs running from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after resources have been relinquished from this group.
-</li>
-
-<li><b>GrpJobs=</b> The total number of jobs able to run at any given
-  time from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after previous jobs complete from this group.
-</li>
-
-<li><b>GrpMemory=</b> The total amount of memory (MB) able to be used
-  at any given time from jobs running from this association and its
-  children.  If this limit is reached new jobs will be queued but only
-  allowed to run after resources have been relinquished from this group.
-</li>
-
-<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
-  time from jobs running from this association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after resources have been relinquished from this group.
-  Each job's node allocation is counted separately
-  (i.e. if a single node has resources allocated to two jobs, this is counted
-  as two allocated nodes).
-</li>
-
-<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
-  to the system at any given time from this association and its children.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this group.
-</li>
-
-<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for.  If this limit is reached submission requests
-  will be denied.
-</li>
-
-<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
-  running from this association.  If this limit is
-  reached the job will be killed.
-</li>
-
-<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
-</li>
-
-<li><b>MaxJobs=</b> The total number of jobs able to run at any given
-  time from this association.  If this limit is reached new jobs will
-  be queued but only allowed to run after previous jobs complete from
-  this association.
-</li>
-
-<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
-  have from this association.  If this limit is reached the job will
-  be denied at submission.
-</li>
-
-<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
-  to the system at any given time from this association.  If
-  this limit is reached new submission requests will be denied until
-  previous jobs complete from this association.
-</li>
-
-<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
-  submitted to this association can run for.  If this limit is reached
-  the job will be denied at submission.
-</li>
-
-<li><b>QOS=</b> comma separated list of QOS's this association is
-  able to run.
-</li>
-</ul>
 
 <h2>Modifying Entities</h2>
 

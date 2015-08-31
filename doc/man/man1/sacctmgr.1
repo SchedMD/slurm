@@ -234,7 +234,7 @@ The login name. Only lowercase usernames are supported.
 Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal accounts.
 
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
-\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+\fBNOTE:\fR The group limits (GrpJobs, GrpTRES, etc.) are tested when a job is
 being considered for being allocated resources.
 If starting a job would cause any of its group limit to be exceeded,
 that job will not be considered for scheduling even if that job might preempt
@@ -268,8 +268,8 @@ this QOS.
 NOTE: This value is only meaningful for QOS PreemptMode=CANCEL)
 
 .TP
-\fIGrpCPUMins\fP=<max cpu minutes>
-The total number of cpu minutes that can possibly be used by past,
+\fIGrpTRESMins\fP=<TRES=max TRES minutes,...>
+The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 To clear a previously set value use the modify command with a new
 value of \-1.
@@ -286,16 +286,16 @@ jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
 
 .TP
-\fIGrpCPURunMins\fP=<max cpu run minutes>
-Used to limit the combined total number of CPU minutes used by all
+\fIGrpTRESRunMins\fP=<TRES=max TRES run minutes,...>
+Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 
 .TP
-\fIGrpCPUs\fP=<max cpus>
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+\fIGrpTRES\fP=<TRES=max TRES,...>
+Maximum number of TRES running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new
 value of \-1.
@@ -308,26 +308,6 @@ Resource plugin.
 Maximum number of running jobs in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpMemory\fP=<max memory (MB) >
-Maximum amount of memory running jobs are able to be allocated in aggregate for
-this association and all associations which are children of this association.
-To clear a previously set value use the modify command with a new
-value of \-1.
-.P
-NOTE: This limit only applies fully when using the Select Consumable
-Resource plugin.
-
-.TP
-\fIGrpNodes\fP=<max nodes>
-Maximum number of nodes running jobs are able to be allocated in aggregate for
-this association and all associations which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP=<max jobs>
@@ -354,16 +334,16 @@ jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
 
 .TP
-\fIMaxCPUMins\fP=<max cpu minutes>
-Maximum number of CPU minutes each job is able to use in this association.
+\fIMaxTRESMins\fP=<max TRES minutes>
+Maximum number of TRES minutes each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
 value of \-1.
 
 .TP
-\fIMaxCPUs\fP=<max cpus>
-Maximum number of CPUs each job is able to use in this association.
+\fIMaxTRES\fP=<max TRES>
+Maximum number of TRES each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
@@ -379,14 +359,6 @@ association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxNodes\fP=<max nodes>
-Maximum number of nodes each job is able to use in this association.
-This is overridden if set directly on a user.
-Default is the cluster's limit.
-To clear a previously set value use the modify command with a new value of \-1.
-This is a c\-node limit on BlueGene systems.
 
 .TP
 \fIMaxSubmitJobs\fP=<max jobs>
@@ -598,36 +570,27 @@ of their parent that is not Fairshare=parent.  Limits remain the same,
 only it's fairshare value is affected.
 
 .TP
-\fIGrpCPUMins\fP
-The total number of cpu minutes that can possibly be used by past,
+\fIGrpTRESMins\fP
+The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 
 .TP
-\fIGrpCPURunMins\fP
-Used to limit the combined total number of CPU minutes used by all
+\fIGrpTRESRunMins\fP
+Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 
 .TP
-\fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+\fIGrpTRES\fP
+Maximum number of TRES running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 
 .TP
 \fIGrpJobs\fP
 Maximum number of running jobs in aggregate for
 this association and all associations which are children of this association.
-
-.TP
-\fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
-this association and all associations which are children of this association.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -652,20 +615,16 @@ associations with a LFT inside this LFT and before the RGT are
 children of this association.
 
 .TP
-\fIMaxCPUMins\fP
-Maximum number of CPU minutes each job is able to use.
+\fIMaxTRESMins\fP
+Maximum number of TRES minutes each job is able to use.
 
 .TP
-\fIMaxCPUs\fP
-Maximum number of CPUs each job is able to use.
+\fIMaxTRES\fP
+Maximum number of TRES each job is able to use.
 
 .TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
-
-.TP
-\fIMaxNodes\fP
-Maximum number of nodes each job is able to use.
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -758,8 +717,9 @@ When a slurmctld registers with the database the port the controller
 is listening on is placed here.
 
 .TP
-\fITRESs\fP
-Trackable RESources (CPU, MEM, etc) this cluster is accounting for.
+\fITRES\fP
+Trackable RESources (BB (Burst buffer), CPU, Energy, GRES, License, Memory, and
+Node) this cluster is accounting for.
 
 .TP
 \fIFlags\fP
@@ -835,12 +795,12 @@ Specific events to look for, valid options are Cluster or Node,
 default is both.
 
 .TP
-\fIMaxCPUs\fP=<OPT>
-Max number of cpus affected by an event.
+\fIMaxTRES\fP=<OPT>
+Max number of TRES affected by an event.
 
 .TP
-\fIMinCPUs\fP=<OPT>
-Min number of cpus affected by an event.
+\fIMinTRES\fP=<OPT>
+Min number of TRES affected by an event.
 
 .TP
 \fINodes\fP=<comma separated list of node names>
@@ -889,8 +849,8 @@ The name of the cluster event happened on.
 The hostlist of nodes on a cluster in a cluster event.
 
 .TP
-\fICPUs\fP
-Number of cpus involved with the event.
+\fITRES\fP
+Number of TRES involved with the event.
 
 .TP
 \fIDuration\fP
@@ -1020,34 +980,25 @@ Preemption grace time to be extended to a job which has been
 selected for preemption.
 
 .TP
-\fIGrpCPUMins\fP
-The total number of cpu minutes that can possibly be used by past,
+\fIGrpTRESMins\fP
+The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 
 .TP
-\fIGrpCPURunMins\fP Used to limit the combined total number of CPU
+\fIGrpTRESRunMins\fP Used to limit the combined total number of TRES
 minutes used by all jobs running with this QOS.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 
 .TP
-\fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+\fIGrpTRES\fP
+Maximum number of TRES running jobs are able to be allocated in aggregate for
 this QOS.
 
 .TP
 \fIGrpJobs\fP
 Maximum number of running jobs in aggregate for this QOS.
-
-.TP
-\fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
-this QOS.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1064,37 +1015,29 @@ running jobs will be killed.
 The id of the QOS.
 
 .TP
-\fIMaxCPUMins\fP
-Maximum number of CPU minutes each job is able to use.
+\fIMaxTRESMins\fP
+Maximum number of TRES minutes each job is able to use.
 
 .TP
-\fIMaxCPUs\fP
-Maximum number of CPUs each job is able to use.
+\fIMaxTRESperJob\fP
+Maximum number of TRES each job is able to use.
 
 .TP
-\fIMaxCpusPerUser\fP
-Maximum number of CPUs each user is able to use.
+\fIMaxTRESPerNode\fP
+Maximum number of TRES each node in a job allocation can use.
+
+.TP
+\fIMaxTRESPerUser\fP
+Maximum number of TRES each user is able to use.
 
 .TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
 
 .TP
-\fIMaxNodes\fP
-Maximum number of nodes each job is able to use.
-
-.TP
-\fIMinCPUs\fP
-Minimum number of CPUs each job running under this QOS must request.
+\fIMinTRESPerJob\fP
+Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
-
-.TP
-\fIMaxNodesPerUser\fP
-Maximum number of nodes each user is able to use.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1164,8 +1107,8 @@ value is zero, no preemption grace time is allowed on this partition.
 NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
 
 .TP
-\fIGrpCPUMins\fP
-The total number of cpu minutes that can possibly be used by past,
+\fIGrpTRESMins\fP
+The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 To clear a previously set value use the modify command with a new
 value of \-1.
@@ -1177,28 +1120,16 @@ submitted with this QOS will be delayed until they are able to run
 inside the limit.
 
 .TP
-\fIGrpCPUs\fP
-Maximum number of CPUs running jobs are able to be allocated in aggregate for
+\fIGrpTRES\fP
+Maximum number of TRES running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in Slurm.
-You can still set this, but have to wait for future versions of Slurm
-before it is enforced.)
+value of \-1.
 
 .TP
 \fIGrpJobs\fP
 Maximum number of running jobs in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpNodes\fP
-Maximum number of nodes running jobs are able to be allocated in aggregate for
-this QOS.
-To clear a previously set value use the modify command with a new value of \-1.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1219,42 +1150,31 @@ submitted with this QOS will be delayed until they are able to run
 inside the limit.
 
 .TP
-\fIMaxCPUMins\fP
-Maximum number of CPU minutes each job is able to use.
+\fIMaxTRESMins\fP
+Maximum number of TRES minutes each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1.
 
 .TP
-\fIMaxCPUs\fP
-Maximum number of CPUs each job is able to use.
+\fIMaxTRESPerJob\fP
+Maximum number of TRES each job is able to use.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: This limit is not currently enforced in Slurm.
-You can still set this, but have to wait for future versions of Slurm
-before it is enforced.)
+value of \-1.
 
 .TP
-\fIMaxCpusPerUser\fP
-Maximum number of CPUs each user is able to use.
+\fIMaxTRESPerNode\fP
+Maximum number of TRES each node in a job allocation can use.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
+\fIMaxTRESPerUser\fP
+Maximum number of TRES each user is able to use.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIMaxJobs\fP
 Maximum number of jobs each user is allowed to run at one time.
 To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxNodes\fP
-Maximum number of nodes each job is able to use.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxNodesPerUser\fP
-Maximum number of nodes each user is able to use.
-To clear a previously set value use the modify command with a new value of \-1.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1270,8 +1190,8 @@ The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
-\fIMinCPUs\fP
-Minimum number of CPUs each job running under this QOS must request.
+\fIMinTRES\fP
+Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
 To clear a previously set value use the modify command with a new
 value of \-1.
@@ -1307,11 +1227,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 \fIUsageFactor\fP
 Usage factor when running with this QOS.  This is a float that is factored into
 the priority time calculations of running jobs.  e.g. if the usagefactor of a
-QOS was 2 for every cpu second a job ran it would count for 2.  Also if the
-usagefactor was .5, every second would only count for half of the time.  Setting
-this value to 0 will make it so that running jobs will not add time to fairshare
-or association/qos limits.  To clear a previously set value use the modify
-command with a new value of \-1.
+QOS was 2 for every TRESBillingUnit second a job ran it would count for 2.
+Also if the usagefactor was .5, every second would only count for half
+of the time.  Setting this value to 0 will make it so that running
+jobs will not add time to fairshare or association/qos limits.  To
+clear a previously set value use the modify command with a new value of \-1.
 
 
 .SH "SPECIFICATIONS FOR RESOURCE"
@@ -1581,8 +1501,10 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 
 .TP
 \fIName\fP
-The name of the trackable resource. For the default trackable resources
-CPU, Memory and Energy the names are equal to their types.
+The name of the trackable resource.  This option is required for
+TRES types BB (Burst buffer), GRES, and License.  Types CPU, Energy,
+Memory, and Node do not have Names.  For example if GRES is the
+type then name is the denomination of the GRES itself e.g. GPU.
 
 .TP
 \fIID\fP
@@ -1591,8 +1513,23 @@ in the database.
 
 .TP
 \fIType\fP
-The type of the trackable resource. For example if license is the
-type then name is the denomination of the license itself e.g. vcs.
+The type of the trackable resource. Current types are BB (Burst
+buffer), CPU, Energy, GRES, License, Memory, and Node.
+
+.SH "TRES information"
+Trackable RESources (TRES) are used in many QOS or Association limits.
+When setting the limits they are comma separated list.  Each TRES has
+a different limit, i.e. GrpTRESMins=cpu=10,mem=20 would make 2
+different limits 1 for 10 cpu minutes and 1 for 20 MB memory minutes.
+This is the case for each limit that deals with TRES.  To remove the
+limit \-1 is used i.e. GrpTRESMins=cpu-1 would remove only the cpu
+TRES limit.
+
+NOTE: On GrpTRES limits dealing with nodes as a TRES.  Each job's node
+allocation is counted separately (i.e. if a single node has resources
+allocated to two jobs, this is counted as two allocated nodes).
+
+NOTE: When dealing with Memory as a TRES all limits are in MB.
 
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a
@@ -1645,19 +1582,19 @@ To edit/create a file start with a cluster line for the new cluster
 Anything included on this line will be the defaults for all
 associations on this cluster.  These options are as follows...
 .TP
-\fIGrpCPUMins=\fP
-The total number of cpu minutes that can possibly be used by past,
+\fIGrpTRESMins=\fP
+The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .TP
-\fIGrpCPURunMins=\fP
-Used to limit the combined total number of CPU minutes used by all
+\fIGrpTRESRunMins=\fP
+Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpCPUs=\fP
-Maximum number of CPUs running jobs are able to be
+\fIGrpTRES=\fP
+Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
@@ -1722,19 +1659,19 @@ All account options are
 \fIDescription=\fP
 A brief description of the account.
 .TP
-\fIGrpCPUMins=\fP
-Maximum number of CPU hours running jobs are able to
+\fIGrpTRESMins=\fP
+Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
-\fIGrpCPURunMins=\fP
-Used to limit the combined total number of CPU minutes used by all
+\fIGrpTRESRunMins=\fP
+Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
 .TP
-\fIGrpCPUs=\fP
-Maximum number of CPUs running jobs are able to be
+\fIGrpTRES=\fP
+Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .TP
@@ -2103,25 +2040,29 @@ QOS expedite and it will not have access to QOS normal.
   zebra         g1       expedite,normal
 .br
 
-An example of trackable resources
+An example of listing trackable resources
 .br
 
 .br
 ->sacctmgr show tres
 .br
-      Name     ID     Type
+      Type              Name      ID
 .br
----------- ------ --------
+---------- ----------------- --------
 .br
-       cpu      1      cpu
+       cpu                          1
 .br
-       mem      2      mem
+       mem                          2
 .br
-    energy      3   energy
+    energy                          3
 .br
-       gpu   1001     gres
+      node                          4
 .br
-       vcs   1002  license
+      gres         gpu:tesla     1001
+.br
+   license               vcs     1002
+.br
+        bb              cray     1003
 .br
 
 .ec
@@ -2130,7 +2071,7 @@ An example of trackable resources
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2015 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.
