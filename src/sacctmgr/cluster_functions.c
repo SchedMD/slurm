@@ -416,8 +416,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				      "Cl,Controlh,Controlp,RPC");
 		if (!without_limits)
 			slurm_addto_char_list(format_list,
-					      "Fa,GrpJ,GrpN,GrpS,MaxJ,MaxN,"
-					      "MaxS,MaxW,QOS,DefaultQOS");
+					      "Fa,GrpJ,GrpTRES,GrpS,MaxJ,"
+					      "MaxTRES,MaxS,MaxW,QOS,"
+					      "DefaultQOS");
 	}
 
 	cluster_cond->with_deleted = with_deleted;
