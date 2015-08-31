@@ -181,7 +181,7 @@ specific information about its configuration and use.</p>
 <p>A partition can now have an associated Quality Of Service (QOS).  This will
 allow a partition to have all the limits available to a QOS.  If a limit is set
 in both,  the partition QOS will take precedence over the job&rsquo;s QOS unless the
-job&rsquo;s QOS has the &rsquo;PartitionQOS&rsquo; flag set.  This also allows for truly floating
+job&rsquo;s QOS has the &rsquo;OverPartQOS&rsquo; flag set.  This also allows for truly floating
 partitions where a partition can have access to all the nodes in the system you
 can set a GrpCPU limit in the Partition QOS making it so only so many CPUs can be
 used at once it just doesn&rsquo;t matter which ones.  This can improve utilization as

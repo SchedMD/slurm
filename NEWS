@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Add environment variables SLURM_ARRAY_TASK_MAX, SLURM_ARRAY_TASK_MIN,
     SLURM_ARRAY_TASK_STEP for job arrays.
  -- Fix srun to use the NoInAddrAny TopologyParam option.
+ -- Change QOS flag name from PartitionQOS to OverPartQOS to be a better
+    description.
 
 * Changes in Slurm 15.08.0rc1
 ==============================
@@ -339,7 +341,7 @@ documents those changes that are of interest to users and administrators.
  -- Add QOS option to a partition.  This will allow a partition to have
     all the limits a QOS has.  If a limit is set in both QOS the partition
     QOS will override the job's QOS unless the job's QOS has the
-    PartitionQOS flag set.
+    OverPartQOS flag set.
  -- The task_dist_states variable has been split into "flags" and "base"
     components. Added SLURM_DIST_PACK_NODES and SLURM_DIST_NO_PACK_NODES values
     to give user greater control over task distribution. The srun --dist options

@@ -200,7 +200,7 @@ limit the number of GrpCPUs or GrpNodes the partition will have
 access to all the nodes, but only be able to run on the number of
 resources in it.<p>
 <p>The Partition QOS will override the job's QOS.  If the opposite is
-desired you need to have the job's QOS have the 'PartitionQOS' flag
+desired you need to have the job's QOS have the 'OverPartQOS' flag
 which will reverse the order of precedence.</p>
 
 
@@ -234,7 +234,7 @@ override the requested partition's MaxNodes limit.
 <li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
 override the requested partition's MinNodes limit.
 
-<li><b>PartitionQOS</b> If set, jobs using this QOS will be able to
+<li><b>OverPartQOS</b> If set, jobs using this QOS will be able to
 override any limits used by the the requested partition's QOS limits.
 
 <li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to

@@ -313,7 +313,7 @@ static void _set_qos_order(struct job_record *job_ptr,
 			 * partition's QOS as the king.
 			 */
 			if (((slurmdb_qos_rec_t *)job_ptr->qos_ptr)->flags
-			    & QOS_FLAG_PART_QOS) {
+			    & QOS_FLAG_OVER_PART_QOS) {
 				*qos_ptr_1 = job_ptr->qos_ptr;
 				*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
 			} else {

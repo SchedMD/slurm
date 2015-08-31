@@ -60,7 +60,7 @@ HIGHLIGHTS
  -- A partition can now have an associated QOS.  This will allow a partition
     to have all the limits a QOS has.  If a limit is set in both QOS
     the partition QOS will override the job's QOS unless the job's QOS has the
-    'PartitionQOS' flag set.
+    'OverPartQOS' flag set.
  -- Expanded --cpu-freq parameters to include min-max:governor specifications.
     --cpu-freq now supported on salloc and sbatch.
  -- Add support for optimized job allocations with respect to SGI Hypercube
