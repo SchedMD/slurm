@@ -11,6 +11,7 @@
 <LI> <a href=#jobsize>Job Size Factor</a>
 <LI> <a href=#partition>Partition Factor</a>
 <LI> <a href=#qos>Quality of Service (QOS) Factor</a>
+<LI> <a href=#tres>TRES Factors</a>
 <LI> <a href=#fairshare>Fair-share Factor</a>
 <LI> <a href=#sprio>The <i>sprio</i> utility</a>
 <LI> <a href=#config>Configuration</a>
@@ -31,7 +32,7 @@
 <a name=mfjppintro>
 <h2>Multi-factor 'Factors'</h2></a>
 
-<P> There are five factors in the Multi-factor Job Priority plugin that influence job priority:</P>
+<P> There are six factors in the Multi-factor Job Priority plugin that influence job priority:</P>
 
 <DL>
 <DT> Age
@@ -44,6 +45,9 @@
 <DD> a factor associated with each node partition
 <DT> QOS
 <DD> a factor associated with each Quality Of Service
+<DT> TRES
+<DD> each TRES Type has it's own factor for a job which represents the number of
+requested/allocated TRES Type in a given partition
 </DL>
 
 <P> Additionally, a weight can be assigned to each of the above
@@ -64,7 +68,10 @@ Job_priority =
 	(PriorityWeightFairshare) * (fair-share_factor) +
 	(PriorityWeightJobSize) * (job_size_factor) +
 	(PriorityWeightPartition) * (partition_factor) +
-	(PriorityWeightQOS) * (QOS_factor)
+	(PriorityWeightQOS) * (QOS_factor) +
+	SUM(TRES_weight_cpu * TRES_factor_cpu,
+	    TRES_weight_&lt;type&gt; * TRES_factor_&lt;type&gt;,
+	    ...)
 </PRE>
 
 <P> All of the factors in this formula are floating point numbers that
@@ -130,6 +137,18 @@ partition factor.</P>
 number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
 priority of all the QOS's to become the QOS factor.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=tres>
+<h2>TRES Factors</h2></a>
+
+<P>
+Each TRES Type has its own priority factor for a job which represents the amount
+of TRES Type requested/allocated in a given partition. For global TRES Types,
+such as GRES, Licenses and Burst Buffers, the factor represents the number of
+TRES Type requested/allocated in the whole system. The more a given TRES Type is
+requested/allocated on a job, the greater the job priority will be for that job.
+</P>
 
 <!-------------------------------------------------------------------------->
 <a name=fairshare>
@@ -480,7 +499,7 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <a name=sprio>
 <h2>The <i>sprio</i> utility</h2></a>
 
-<P> The <i>sprio</i> command provides a summary of the five factors
+<P> The <i>sprio</i> command provides a summary of the six factors
 that comprise each job's scheduling priority.  While <i>squeue</i> has
 format options (%p and %Q) that display a job's composite priority,
 sprio can be used to display a breakdown of the priority components
@@ -547,9 +566,12 @@ factor as it is currently configured.</P>
 <DD> An unsigned integer that scales the contribution of the partition factor.
 <DT> PriorityWeightQOS
 <DD> An unsigned integer that scales the contribution of the quality of service factor.
+<DT> PriorityWeightTRES
+<DD> A list of TRES Types and weights that scales the contribution of each TRES
+  Type's factor.
 </DL>
 
-<P> Note:  As stated above, the five priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
+<P> Note:  As stated above, the six priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
 
 <!-------------------------------------------------------------------------->
 <a name=configexample>
