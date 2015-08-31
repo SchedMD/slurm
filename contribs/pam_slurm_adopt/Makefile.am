@@ -7,7 +7,6 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
 # -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 PLUGIN_FLAGS = -module --export-dynamic -avoid-version
-AM_CFLAGS = -Wall -Wextra -Werror
 
 pkglibdir = $(PAM_DIR)
 

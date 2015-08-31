@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun to use the NoInAddrAny TopologyParam option.
  -- Change QOS flag name from PartitionQOS to OverPartQOS to be a better
     description.
+ -- Fix rpmbuild issue on Centos7.
 
 * Changes in Slurm 15.08.0rc1
 ==============================

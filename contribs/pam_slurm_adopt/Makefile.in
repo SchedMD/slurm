@@ -497,7 +497,6 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
 # -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 PLUGIN_FLAGS = -module --export-dynamic -avoid-version
-AM_CFLAGS = -Wall -Wextra -Werror
 @HAVE_PAM_FALSE@pam_lib = 
 @HAVE_PAM_TRUE@pam_lib = pam_slurm_adopt.la
 pkglib_LTLIBRARIES = $(pam_lib)
