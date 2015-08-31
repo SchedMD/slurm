@@ -160,7 +160,7 @@ COMMAND CHANGES (see man pages for details)
     be used to override the CR_PACK_NODE configuration option.
  -- Added BurstBuffer specification to advanced reservation.
  -- For advanced reservation, replace flag "License_only" with flag "Any_Nodes".
-    It can be used to indicate the an advanced reservation resources (licenses
+    It can be used to indicate the advanced reservation resources (licenses
     and/or burst buffers) can be used with any compute nodes.
  -- Add "--sicp" (available for inter-cluster dependencies) and "--power"
     (specify power management options) to salloc, sbatch and srun commands.
