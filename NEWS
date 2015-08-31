@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 15.08.0rc2
-==============================
+* Changes in Slurm 15.08.0
+==========================
  -- Fix issue with frontend systems (outside ALPs or BlueGene) where srun
     wouldn't get the correct protocol version to launch a step.
  -- Fix for message aggregation return rpcs where none of the messages are
