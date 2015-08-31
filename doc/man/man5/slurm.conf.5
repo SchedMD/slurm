@@ -4087,6 +4087,12 @@ will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
 
 If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
+
+\fBNOTE:\fR TRESBillingWeights is only used when calcuating fairshare and
+doesn't affect job priority directly as it is currently not used for the size of
+the job. If you want TRES' to play a role in the job's priority then refer to
+the PriorityWeightTRES option.
+
 .RE
 
 .TP

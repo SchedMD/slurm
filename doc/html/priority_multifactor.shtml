@@ -166,7 +166,7 @@ computing resources described below.</P>
 <P> Slurm's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
 
 <P> By default, the computing resource is the computing cycles delivered by a
-machine in the units of processor*seconds. Other resources can be taken into
+machine in the units of allocated_cpus*seconds. Other resources can be taken into
 account by configuring a partition's TRESBillingWeights option. The
 TRESBillingWeights option allows you to account for consumed resources other
 than just CPUs by assigning different billing weights to different Trackable
