@@ -37,6 +37,7 @@ source ./inc21.21_tests
 
 set test_id     "21.21"
 set exit_code   0
+set test_qos    "test$test_id\_qos"
 set file_in     "test.$test_id.input"
 set ta		"test$test_id-account.1"
 set maxcpu      MaxCpus
@@ -79,8 +80,6 @@ array set acct_mod_assoc_test_vals {
 	maxjob       -1
 	maxsubmit    -1
 }
-
-
 
 print_header    $test_id
 
@@ -344,6 +343,38 @@ expect {
 	}
 }
 
+set match 0
+spawn $sacctmgr -i create qos $test_qos
+expect {
+	-re "Adding QOS" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: $test_qos was not created\n"
+	exit 1
+}
+
+spawn $sacctmgr -i mod account $ta set qos=$test_qos
+expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 #
 # Spawn a job via salloc using this account
 #
@@ -466,7 +497,6 @@ if {$job_id == 0} {
 	}
 }
 
-
 #
 # Check to see if limits are enforced.
 #
@@ -502,8 +532,27 @@ if {$damatches != 1} {
 	set exit_code 1
 }
 
+#
+# Remove test QoS
+#
+set match 0
+spawn $sacctmgr -i delete qos $test_qos
+expect {
+	-re "Deleting QOS" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 if {$exit_code == 0} {
-#	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in
 	print_success $test_id
 }
 exit $exit_code
