@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct RebootProgram logic when executed outside of a maintenance
     reservation.
  -- Requeue job if possible when slurmstepd aborts.
+ -- If a node is down do not set it in power suspend mode, as it could be resumed
+    and defeat the purpose of being shut down.
 
 * Changes in Slurm 14.11.8
 ==========================
