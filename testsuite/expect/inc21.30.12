@@ -37,7 +37,7 @@ proc inc21_30_12 { } {
 	# gets exactly what we would expect.
 	reset_qos_usage "" $qostest
 
-	spawn $salloc --account=$acct --qos=$qostest -N2 -t$grpwall_num $srun $bin_sleep 10
+	spawn $salloc --account=$acct --qos=$qostest -N2 -t2 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -62,17 +62,15 @@ proc inc21_30_12 { } {
 	}
 
 	# Cancel job
-	cancel_job $job_id1
+	wait_for_job $job_id1 DONE
 
-	reset_qos_usage "" $qostest
-
-	spawn $salloc --account=$acct --qos=$qostest -N2 -t2 $srun $bin_sleep 10
+	spawn $salloc --account=$acct --qos=$qostest -N2 -t2 $srun -I $bin_sleep 10
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
 			send_user "\nJob $job_id2 is waiting for resources. This is exected. (Within: inc21.30.12)\n"
 		}
-		-re "Granted job allocation ($number)"{
+		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
 			send_user "\nFAILURE: Job $job_id2 should be waiting for resources, but is not. (Within: inc21.30.12)\n"
 			set exit_code 1
