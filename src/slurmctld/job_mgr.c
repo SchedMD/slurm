@@ -12618,7 +12618,13 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	xassert(job_ptr);
 
 	acct_policy_remove_job_submit(job_ptr);
-	(void) bb_g_job_start_stage_out(job_ptr);
+	if (job_ptr->nodes) {
+		(void) bb_g_job_start_stage_out(job_ptr);
+	} else {
+		/* Never allocated compute nodes
+		 * Unless it ran, there is nothing to stage-out */
+		(void) bb_g_job_cancel(job_ptr);
+	}
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
