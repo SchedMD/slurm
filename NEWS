@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ===========================
  -- If a node is down do not set it in power suspend mode, as it could be
     resumed and defeat the purpose of being shut down.
+ -- Fix truncation of job reason in squeue.
 
 * Changes in Slurm 14.11.9
 ==========================
