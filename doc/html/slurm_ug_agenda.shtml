@@ -50,8 +50,8 @@ are shown below.</p>
 <tr><td nowrap bgcolor="#F0F1C9">10:30 - 10:45</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:45 - 11:15</td><td>Technical</td><td>Jette and Wickberg</td><td>Burst Buffer Support </td></tr>
 <tr><td nowrap>11:15 - 11:45</td><td>Technical</td><td>Auble, Perry</td><td>Message Aggregation </td></tr>
-<tr><td nowrap>11:45 - 00:15</td><td>Technical</td><td>Auble</td><td>Quality Of Service Attached to a Partition</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">00:15 - 13:15</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+<tr><td nowrap>11:45 - 12:15</td><td>Technical</td><td>Auble</td><td>Quality Of Service Attached to a Partition</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">12:15 - 13:15</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>13:15 - 13:45</td><td>Technical</td><td>Jette</td><td>Power Management Support for Cray Systems</td></tr>
 <tr><td nowrap>13:45 - 14:15</td><td>Technical</td><td>Kortas and Hadri</td><td>Optimal Usage under a Power Capping Constraint</td></tr>
 <tr><td nowrap>14:15 - 14:45</td><td>Technical</td><td>Hautreux</td><td>Slurm Layouts Framework</td></tr>
@@ -88,8 +88,8 @@ are shown below.</p>
 <tr><td nowrap>10:15 - 10:45</td><td>Technical</td><td>Haymore</td><td>Profile-driven testbed</td></tr>
 <tr><td nowrap>10:45 - 11:15</td><td>Technical</td><td>Benini, Trofinoff </td><td>Workload Simulator</td></tr>
 <tr><td nowrap>11:15 - 11:45</td><td>Technical</td><td>Auble, Georgiou</td><td>Slurm Roadmap</td></tr>
-<tr><td nowrap>11:45 - 00:15</td><td>Technical</td><td>Jette</td><td>Federated Cluster Scheduling</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">00:15 - 13:15</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+<tr><td nowrap>11:45 - 12:15</td><td>Technical</td><td>Jette</td><td>Federated Cluster Scheduling</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">12:15 - 13:15</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>13:15 - 13:45</td><td>Technical</td><td>Schultz, Perry</td><td>Support for heterogeneous resources and MPMD model</td></tr>
 <tr><td nowrap>13:45 - 14:15</td><td>Technical</td><td>Jacobsen, Botts</td><td>Experiences of Native SLURM on the NERSC Edison Cray XC30</td></tr>
 <tr><td nowrap>14:15 - 14:34</td><td>Site Report</td><td>Cox</td><td>Brigham Young University</td></tr>
