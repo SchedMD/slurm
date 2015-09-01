@@ -636,6 +636,7 @@ test21.30  sacctmgr test if the QoS values are enforced
 test21.31  sacctmgr modify Resource values
 test21.32  Validate that mod qos =,+=,-= change the preempt value
 test21.34  Validate that partition and job qos limits are enforced
+test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
 
 
 test22.#   Testing of sreport commands and options.

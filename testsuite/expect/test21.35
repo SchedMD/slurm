@@ -1,0 +1,338 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that DenyOnLimit is enforced on QoS and
+#          Association limits.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id      21.35
+set test_acct    "test$test_id\_acct"
+set test_qos     "test$test_id\_qos"
+set file_in      "test$test_id.sc"
+set max_wall_val 2
+set job_id       0
+set exit_code    0
+
+# mod qos
+array set max_tres_type {
+	cpu       2
+	node      1
+}
+
+array set lim_type_type {
+	0         MaxTres
+	1         MaxTresPerUser
+	2         MaxTresMin
+
+}
+
+# Reset QoS
+array set reset_qos_val {
+	MaxCpus         -1
+	MaxNode         -1
+	MaxJobs         -1
+	MaxSubmitJobs   -1
+	MaxCpuMin       -1
+	MaxWall         -1
+	MaxCpusPerUser  -1
+	MaxNode         -1
+	MaxNodesPerUser -1
+}
+
+# Reset Associtions
+array set reset_assoc_val {
+	MaxCpus         -1
+	MaxNode         -1
+	MaxJobs         -1
+	MaxSubmitJobs   -1
+	MaxCpuMin       -1
+	MaxWall         -1
+	MaxNode         -1
+}
+
+print_header $test_id
+
+proc check_limit { type name } {
+
+	global sacctmgr sbatch lim_type_type i option max_tres_type
+	global job_id test_qos test_acct reset_qos_val reset_assoc_val
+	global file_in number exit_code
+
+	set flag ""
+	set modified 0
+	spawn $sacctmgr -i mod $type $name set $lim_type_type($i)=$option=$max_tres_type($option)
+	expect {
+		-re "Modified" {
+			set modified 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$modified != 1} {
+		send_user "\nFAILURE: sacctmgr did not modify tres=$option=$max_tres_type($option)\n"
+		set exit_code 1
+	}
+
+	if { ![string compare $option "cpu"] } {
+		set tmp [expr  $max_tres_type($option) + 1]
+		set flag "-n$tmp"
+	} elseif { ![string compare $option "node"] } {
+		set tmp [expr  $max_tres_type($option) + 1]
+		set flag "-N$tmp"
+	}
+
+	set match 0
+	spawn $sbatch $flag -t1 -o/dev/null --account=$test_acct $file_in
+	expect {
+		-re "Job violates accounting/QOS policy" {
+			set match 1
+			exp_continue
+		}
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 1 || $job_id} {
+		send_user "\nFAILURE: job should have been killed upon submittion\n"
+		#cleanup
+		cancel_job $job_id
+		exit 1
+	}
+
+	# Cancel the submitted job
+	cancel_job $job_id
+
+	# Reset limits
+	mod_qos $test_qos [array get reset_qos_val]
+	mod_acct $test_acct "" "" [array get reset_assoc_val]
+
+}
+
+
+proc cleanup { } {
+
+	global sacctmgr file_in bin_rm test_acct test_qos exit_code
+
+	# Delete test account and qos
+	spawn $sacctmgr -i delete account $test_acct
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $sacctmgr -i delete qos $test_qos
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Remove test script
+	exec $bin_rm -f $file_in
+
+}
+
+# Clean up any vestigial data
+cleanup
+
+make_bash_script $file_in "
+sleep 2"
+
+#add qos
+set added 1
+spawn $sacctmgr -i create qos $test_qos
+expect {
+	-re "Adding QOS" {
+		set added 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$added != 1} {
+	send_user "\nFAILURE: test QoS $test_qos was not created\n"
+	exit 1
+}
+
+set match 0
+spawn $sacctmgr -i create account $test_acct qos=$test_qos
+expect {
+	-re "Associations" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user"\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: test account $test_acct was not created\n"
+	exit 1
+}
+
+spawn $sacctmgr -i create user name=[get_my_nuid] account=$test_acct
+expect {
+	timeout {
+		send_user"\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Set DenyOnLimit qos flag
+set modified 0
+spawn $sacctmgr -i mod qos $test_qos set flag=DenyOnLimit
+expect {
+	-re "Modified qos" {
+		set modified 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFIALURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+for {set i 0} {$i < 3} {incr i} {
+
+	foreach option [array names max_tres_type] {
+		# Check DenyOnLimit for QoS
+		send_user "\n==== Testing QoS ====\n"
+		check_limit "qos" $test_qos
+
+		if {$i == 0} {
+			# Check DenyOnLimit for Association
+			send_user "\n==== Testing Association ====\n"
+			check_limit "account" $test_acct
+		}
+
+	}
+}
+
+#
+# Test Max Wall
+#
+set modified 0
+spawn $sacctmgr -i mod qos $test_qos set maxwall=$max_wall_val
+expect {
+	-re "Modified qos" {
+		set modified 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$modified != 1} {
+	send_user "\nFAILURE: sacctmgr did not modify tres=$option=$max_tres_qos($option)\n"
+	set exit_code 1
+}
+
+set match 0
+spawn $sbatch -N1 -t[expr $max_wall_val + 1] -o/dev/null --account=$test_acct $file_in
+expect {
+	-re "Job violates accounting/QOS policy" {
+		set match 1
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1 || $job_id} {
+	send_user "\nFAILURE: job should have been killed upon submittion\n"
+	set exit_code 1
+}
+
+# Cancel the submitted job
+cancel_job $job_id
+
+cleanup
+
+if {$exit_code == 0} {
+	print_success $test_id
+} else {
+	send_user "\nFAILURE: test $test_id\n"
+}
