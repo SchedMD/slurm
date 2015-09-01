@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Test that partition and job qos limits are enforced when using
-#          the PartitionQos flag for the job's qos
+#          the OverPartQos flag for the job's qos
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -408,10 +408,10 @@ send_user "\n========== Run limit test on partition's qos limits ==========\n\n"
 part_test
 
 #
-# Set partitionqos flag on job's qos
+# Set overpartqos flag on job's qos
 #
 set changed 0
-spawn $sacctmgr -i mod qos $job_qos set flag=partitionqos
+spawn $sacctmgr -i mod qos $job_qos set flag=overpartqos
 expect {
 	-re "Modified qos" {
 		set changed 1
