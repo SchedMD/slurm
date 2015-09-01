@@ -2970,7 +2970,7 @@ typedef struct network_callerid_msg {
 	unsigned char ip_dst[16];
 	uint32_t port_src;
 	uint32_t port_dst;
-	int32_t af;	// NOTE: un/packed as uint32_t
+	int32_t af;	/* NOTE: un/packed as uint32_t */
 } network_callerid_msg_t;
 
 /*****************************************************************************\
