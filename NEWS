@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 15.08.1
 ==========================
  -- Fix test21.30 and 21.34 to check grpwall better.
+ -- If a node is down do not set it in power suspend mode, as it could be
+    resumed and defeat the purpose of being shut down.
 
 * Changes in Slurm 15.08.0
 ==========================
