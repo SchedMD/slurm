@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.10
 ===========================
  -- Fix truncation of job reason in squeue.
+ -- If a node is in DOWN or DRAIN state, leave it unavailable for allocation
+    when powered down.
 
 * Changes in Slurm 14.11.9
 ==========================
