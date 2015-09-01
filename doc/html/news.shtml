@@ -4,68 +4,52 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#1411">Slurm Version 14.11, November 2014</a></li>
 <li><a href="#1508">Slurm Version 15.08, August 2015</a></li>
 <li><a href="#1605">Slurm Version 16.05 and beyond</a></li>
 </ul>
 
-
-<h2><a name="1411">Major Updates in Slurm Version 14.11</a></h2>
-<p>Slurm Version 14.11 was released in November 2014.
-Major enhancements include:
-<ul>
-<li>Added job array data structure and removed the array size restriction.</li>
-<li>Performance for job array operations and database interactions are
-    dramatically improved.</li>
-<li>Added support for reserving CPUs and/or memory on a compute node for system
-    use. This can largely eliminate system noise from applications.</li>
-<li>Added support for allocation of generic resources by model type for
-    heterogeneous systems (e.g. request a Kepler GPU, a Tesla GPU, or a GPU of
-    any type).</li>
-<li>Added support for non-consumable generic resources that are shared, but
-    limited in number.</li>
-<li>Added support for automatic job requeue policy based on exit value.</li>
-<li>Added user options to set the CPU governor (OnDemand, Performance,
-    PowerSave or UserSpace) in addition to being able to explicitly set the
-    CPU frequency currently available.</li>
-<li>Added support for an advanced reservation start time that remains constant
-    relative to the current time.</li>
-<li>Added reporting Slurm message traffic by user, type, count and time
-    consumed.</li>
-</ul>
-</p>
-
 <h2><a name="1508">Major Updates Planned for Slurm Version 15.08</a></h2>
-<p>Slurm Version 15.08 is scheduled for release in August 2015.
-Major enhancements to include:
+<p>Slurm Version 15.08 was released in August 2015.
+Major enhancement include:
 <ul>
-<!-- SchedMD led -->
-<li>Convert charging from being based upon CPU time allocated to a more
-    general <i>system billing unit</i>, which can be computed as a function of
-    many different resources (e.g. CPU, memory, power, GPUs, etc.). A job's
-    consumption of all these resources will be logged in Slurm's database.</li>
-<li>Add the ability for a compute node to be allocated to multiple jobs, but
-    restricted to a single user.</li>
-<li>Support added for cluster-wide power capping.</li>
-<li>A partition can now have an associated Quality Of Service (QOS). This will
-    allow a partition to have all of the limits available to a QOS.</li>
-<li>Add support for QOS-based job preemption to be used with job suspend/resume
-    mechanism.</li>
-<li>Add support for burst buffers, data storage available for before, during
-    and/or after job computation in support of data staging, checkpoint,
-    etc. Plugins provied for Cray Data Warp and a generic script-based
-    interface.</li>
+<li>Added TRES (Trackable resources) to track utilization of memory, GRES,
+    burst buffer, license, and any other configurable resources in the
+    accounting database.</li>
+<li>Add configurable billing weight that takes into consideration any TRES when
+    calculating a job's resource utilization.</li>
+<li>Add configurable prioritization factor that takes into consideration any
+    TRES when calculating a job's resource utilization.</li>
+<li>Add burst buffer support infrastructure. Currently available plugin include
+    burst_buffer/generic (uses administrator supplied programs to manage file
+    staging) and burst_buffer/cray (uses Cray APIs to manage buffers).
+<li>Add power capping support for Cray systems with automatic rebalancing of
+    power allocation between nodes.</li>
+<li>Add support for job dependencies joined with OR operator (e.g.
+    "--depend=afterok:123?afternotok:124").</li>
+<li>Add advance reservation flag of "replace" that causes allocated resources
+    to be replaced with idle resources. This maintains a pool of available
+    resources that maintains a constant size (to the extent possible).</li>
+<li>Permit PreemptType=qos and PreemptMode=suspend,gang to be used together.
+    A high-priority QOS job will now oversubscribe resources and gang schedule,
+    but only if there are insufficient resources for the job to be started
+    without preemption. NOTE: That with PreemptType=qos, the partition's
+    Shared=FORCE:# configuration option will permit one job more per resource
+    to be run than than specified, but only if started by preemption.</li>
+<li>A partition can now have an associated QOS.  This will allow a partition
+    to have all the limits a QOS has.  If a limit is set in both QOS
+    the partition QOS will override the job's QOS unless the job's QOS has the
+    'OverPartQOS' flag set.</li>
+<li>Expanded --cpu-freq parameters to include min-max:governor specifications.
+    --cpu-freq now supported on salloc and sbatch.</li>
 <li>Add support for optimized job allocations with respect to SGI Hypercube
     topology.</li>
-<!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
-<li>Add support for
-<a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
-<!-- Intel led -->
+<li>Optimize resource allocation for systems with dragonfly networks.</li>
+<li>Add the ability for a compute node to be allocated to multiple jobs, but
+    restricted to a single user. Added "--exclusive=user" option to salloc,
+    the scontrol and sview commands. Added new partition configuration parameter
+    "ExclusiveUser=yes|no".</li>
+<li>Added plugin to record job completion information using Elasticsearch.</li>
 <li>Add support for PMI Exascale (PMIx) for improved MPI scalability.</li>
-<!-- Bull led -->
-<li>Add support asymmetric resource allocation and MPMD programming. Multiple
-    resource allocation specification (memory, CPUs, GPUs, etc.) will be
-    supported in a single job allocation.</li>
 <li>Add support for communication gateway nodes to improve scalability.</li>
 <li>Add layouts framework, which will be the basis for further developments toward
     optimizing scheduling with respect to additional parameters such as temperature
@@ -78,8 +62,13 @@ have not been finalized. Anyone desiring to perform Slurm development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Improved support for GPU affinity with respect to CPUs and network
-    resources.</li>
+<!-- Bull led -->
+<li>Add support asymmetric resource allocation and MPMD programming. Multiple
+    resource allocation specification (memory, CPUs, GPUs, etc.) will be
+    supported in a single job allocation.</li>
+<!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
+<li>Add support for
+<a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
 <li>Integration with
     <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm
     (Flexnet Publisher)</a> license management.</li>
@@ -95,6 +84,6 @@ to coordinate activities. Future development plans includes:
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based Slurm administration tool.</li>
 </ul>
-<p style="text-align:center;">Last modified 31 March 2015</p>
+<p style="text-align:center;">Last modified 31 August 2015</p>
 
 <!--#include virtual="footer.txt"-->
