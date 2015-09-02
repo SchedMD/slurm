@@ -49,6 +49,8 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
+#include "src/common/mpi.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -57,7 +59,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/plugstack.h"
-#include "src/common/node_select.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -163,6 +164,7 @@ main (int argc, char *argv[])
 	pthread_join(job->msgid, NULL);
 
 ending:
+	mpi_fini();	/* Remove stale PMI2 sockets */
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
 	(void) core_spec_g_fini();
