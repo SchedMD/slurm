@@ -117,8 +117,8 @@ set timeout [expr $max_job_delay + 60 + 60 + 60]
 exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
-1,3   /bin/true
-0,2   /bin/date
+1,3   true
+0,2   date
 "
 close $file
 exec $bin_chmod 700 $file_in

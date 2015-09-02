@@ -71,9 +71,9 @@ file delete $file_out $file_err
 make_bash_script $file_in "
 $srun $bin_sleep 500 &
 
-trap /bin/true SIGINT
+trap true SIGINT
 
-while /bin/true; do
+while true; do
 	wait
 	if \[ \$? -ge 128 \]; then
 		echo \"INTerrupted wait, resuming\"

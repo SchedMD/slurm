@@ -894,14 +894,13 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		   && (IS_JOB_PENDING(job)
 		       || IS_JOB_TIMEOUT(job)
 		       || IS_JOB_FAILED(job))) {
-		int len = width ? width : FORMAT_STRING_SIZE;
-		char id[len], *reason;
+		char *reason_fmt = NULL, *reason = NULL;
 		if (job->state_desc)
 			reason = job->state_desc;
 		else
 			reason = job_reason_string(job->state_reason);
-		snprintf(id, len, "(%s)", reason);
-		_print_str(id, width, right, true);
+		xstrfmtcat(reason_fmt, "(%s)", reason);
+		_print_str(reason_fmt, width, right, true);
 	} else {
 		char *nodes = xstrdup(job->nodes);
 		char *ionodes = NULL;
