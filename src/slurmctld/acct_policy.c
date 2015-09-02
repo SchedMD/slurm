@@ -1248,13 +1248,20 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 					 slurmdb_qos_rec_t *qos_out_ptr)
 {
 	uint32_t wall_mins;
-	uint32_t time_limit;
+	uint32_t time_limit = NO_VAL;
 	int rc = true;
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
+	bool safe_limits;
 
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
+
+	/* check to see if we should be using safe limits, if so we
+	 * will only start a job if there are sufficient remaining
+	 * cpu-minutes for it to run to completion */
+	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
+		safe_limits = true;
 
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
@@ -1302,8 +1309,17 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	/* we don't need to check submit_jobs here */
 
-	if ((qos_out_ptr->grp_wall == INFINITE)
+	if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
+	    && (qos_out_ptr->grp_wall == INFINITE)
 	    && (qos_ptr->grp_wall != INFINITE)) {
+		if (time_limit == NO_VAL) {
+			time_limit = job_ptr->time_limit;
+			_set_time_limit(&time_limit,
+					job_ptr->part_ptr->max_time,
+					MIN(qos_ptr->grp_wall,
+					    qos_ptr->max_wall_pj),
+					&job_ptr->limit_set.time);
+		}
 
 		qos_out_ptr->grp_wall = qos_ptr->grp_wall;
 
@@ -1317,6 +1333,19 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			       job_ptr->job_id,
 			       qos_ptr->grp_wall,
 			       wall_mins, qos_ptr->name);
+			rc = false;
+			goto end_it;
+		} else if (safe_limits &&
+			   ((wall_mins + time_limit) > qos_ptr->grp_wall)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_QOS_GRP_WALL;
+			debug2("job %u being held, "
+			       "the job request will exceed "
+			       "group wall limit %u is ran "
+			       "with %u for qos %s",
+			       job_ptr->job_id,
+			       qos_ptr->grp_wall,
+			       wall_mins + time_limit, qos_ptr->name);
 			rc = false;
 			goto end_it;
 		}
@@ -1360,12 +1389,17 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_wall_pj == INFINITE)
 	    && (qos_ptr->max_wall_pj != INFINITE)) {
+		if (time_limit == NO_VAL) {
+			time_limit = job_ptr->time_limit;
+			_set_time_limit(&time_limit,
+					job_ptr->part_ptr->max_time,
+					qos_ptr->max_wall_pj,
+					&job_ptr->limit_set.time);
+		}
 
 		qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
 
-		time_limit = qos_ptr->max_wall_pj;
-		if ((job_ptr->time_limit != NO_VAL) &&
-		    (job_ptr->time_limit > time_limit)) {
+		if (time_limit > qos_out_ptr->max_wall_pj) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason =
 				WAIT_QOS_MAX_WALL_PER_JOB;
@@ -2267,9 +2301,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	uint32_t time_limit;
+	uint32_t time_limit = NO_VAL;
 	bool rc = true;
 	uint32_t wall_mins;
+	bool safe_limits;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -2306,17 +2341,21 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 &&
-	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_1,
-						 &qos_rec)))
+	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_1, &qos_rec)))
 		goto end_it;
 
 	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
 	   the limit.
 	*/
 	if (qos_ptr_2 &&
-	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_2,
-						 &qos_rec)))
+	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_2, &qos_rec)))
 		goto end_it;
+
+	/* check to see if we should be using safe limits, if so we
+	 * will only start a job if there are sufficient remaining
+	 * cpu-minutes for it to run to completion */
+	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
+		safe_limits = true;
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
@@ -2359,22 +2398,46 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 		/* we don't need to check submit_jobs here */
 
-		if ((qos_rec.grp_wall == INFINITE)
-		    && (assoc_ptr->grp_wall != INFINITE)
-		    && (wall_mins >= assoc_ptr->grp_wall)) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_GRP_WALL;
-			debug2("job %u being held, "
-			       "assoc %u is at or exceeds "
-			       "group wall limit %u "
-			       "with %u for account %s",
-			       job_ptr->job_id, assoc_ptr->id,
-			       assoc_ptr->grp_wall,
-			       wall_mins, assoc_ptr->acct);
-			rc = false;
-			goto end_it;
-		}
+		if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
+		    && (qos_rec.grp_wall == INFINITE)
+		    && (assoc_ptr->grp_wall != INFINITE)) {
+			if (time_limit == NO_VAL) {
+				time_limit = job_ptr->time_limit;
+				_set_time_limit(&time_limit,
+						job_ptr->part_ptr->max_time,
+						MIN(assoc_ptr->grp_wall,
+						    assoc_ptr->max_wall_pj),
+						&job_ptr->limit_set.time);
+			}
 
+			if (wall_mins >= assoc_ptr->grp_wall) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_ASSOC_GRP_WALL;
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group wall limit %u "
+				       "with %u for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_wall,
+				       wall_mins, assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			} else if (safe_limits &&
+				   ((wall_mins + time_limit) >
+				    assoc_ptr->grp_wall)) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_QOS_GRP_WALL;
+				debug2("job %u being held, "
+				       "the job request with assoc %u "
+				       "will exceed group wall limit %u is ran "
+				       "with %u for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_wall,
+				       wall_mins + time_limit, assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
+		}
 
 		/* We don't need to look at the regular limits for
 		 * parents since we have pre-propogated them, so just
@@ -2411,9 +2474,15 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 		if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 		    && (qos_rec.max_wall_pj == INFINITE)
 		    && (assoc_ptr->max_wall_pj != INFINITE)) {
-			time_limit = assoc_ptr->max_wall_pj;
-			if ((job_ptr->time_limit != NO_VAL) &&
-			    (job_ptr->time_limit > time_limit)) {
+			if (time_limit == NO_VAL) {
+				time_limit = job_ptr->time_limit;
+				_set_time_limit(&time_limit,
+						job_ptr->part_ptr->max_time,
+						assoc_ptr->max_wall_pj,
+						&job_ptr->limit_set.time);
+			}
+
+			if (time_limit > assoc_ptr->max_wall_pj) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_ASSOC_MAX_WALL_PER_JOB;
