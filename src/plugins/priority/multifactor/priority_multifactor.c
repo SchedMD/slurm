@@ -1110,6 +1110,27 @@ static int _apply_new_usage(struct job_record *job_ptr,
 					  job_ptr->job_id, qos);
 	}
 
+	/* sanity check, there should always be a part_ptr here */
+	if (job_ptr->part_ptr)
+		qos = (slurmdb_qos_rec_t *)job_ptr->part_ptr->qos_ptr;
+	else
+		qos = NULL;
+
+	/* now apply the usage factor for this qos */
+	if (qos) {
+		/* usage factor only matter's on the job qos */
+		/* if (qos->usage_factor >= 0) { */
+		/* 	real_decay *= qos->usage_factor; */
+		/* 	run_decay *= qos->usage_factor; */
+		/* } */
+		qos->usage->grp_used_wall += run_decay;
+		qos->usage->usage_raw += (long double)real_decay;
+
+		_handle_qos_tres_run_secs(tres_run_decay, tres_run_delta,
+					  job_ptr->job_id, qos);
+	}
+
+
 	/* We want to do this all the way up
 	 * to and including root.  This way we
 	 * can keep track of how much usage
