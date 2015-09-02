@@ -4,11 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 15.08.1
 ==========================
  -- Fix test21.30 and 21.34 to check grpwall better.
- -- If a node is down do not set it in power suspend mode, as it could be
-    resumed and defeat the purpose of being shut down.
  -- Add time to the partition QOS the job is running on instead of just the
     job QOS.
- -- Print usage for GrpJobs GrpSubmitJobs and GrpWall even if there is no
+ -- Print usage for GrpJobs, GrpSubmitJobs and GrpWall even if there is no
     limit.
  -- If AccountingEnforce=safe is set make sure a job can finish before going
     over the limit with grpwall on a QOS or association.
