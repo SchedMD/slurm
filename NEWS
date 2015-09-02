@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     resumed and defeat the purpose of being shut down.
  -- Add time to the partition QOS the job is running on instead of just the
     job QOS.
+ -- Print usage for GrpJobs GrpSubmitJobs and GrpWall even if there is no
+    limit.
 
 * Changes in Slurm 15.08.0
 ==========================

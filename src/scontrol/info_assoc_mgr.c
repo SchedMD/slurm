@@ -174,7 +174,8 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->grp_jobs,
 				       assoc_rec->usage->used_jobs);
 			else
-				printf("GrpJobs=");
+				printf("GrpJobs=N(%u)",
+				       assoc_rec->usage->used_jobs);
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
@@ -183,13 +184,15 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       assoc_rec->grp_submit_jobs,
 				       assoc_rec->usage->used_submit_jobs);
 			else
-				printf("GrpSubmitJobs= ");
+				printf("GrpSubmitJobs=N(%u) ",
+				       assoc_rec->usage->used_submit_jobs);
 			if (assoc_rec->grp_wall != INFINITE)
 				printf("GrpWall=%u(%.2f)",
 				       assoc_rec->grp_wall,
-				       assoc_rec->usage->grp_used_wall);
+				       assoc_rec->usage->grp_used_wall/60);
 			else
-				printf("GrpWall=");
+				printf("GrpWall=N(%.2f)",
+				       assoc_rec->usage->grp_used_wall/60);
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
@@ -276,19 +279,22 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 				       qos_rec->grp_jobs,
 				       qos_rec->usage->grp_used_jobs);
 			else
-				printf("GrpJobs= ");
+				printf("GrpJobs=N(%u) ",
+				       qos_rec->usage->grp_used_jobs);
 			if (qos_rec->grp_submit_jobs != INFINITE)
 				printf("GrpSubmitJobs=%u(%u) ",
 				       qos_rec->grp_submit_jobs,
 				       qos_rec->usage->grp_used_submit_jobs);
 			else
-				printf("GrpSubmitJobs= ");
+				printf("GrpSubmitJobs=N(%u) ",
+				       qos_rec->usage->grp_used_submit_jobs);
 			if (qos_rec->grp_wall != INFINITE)
 				printf("GrpWall=%u(%.2f)",
 				       qos_rec->grp_wall,
-				       qos_rec->usage->grp_used_wall);
+				       qos_rec->usage->grp_used_wall/60);
 			else
-				printf("GrpWall=");
+				printf("GrpWall=N(%.2f)",
+				       qos_rec->usage->grp_used_wall/60);
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
