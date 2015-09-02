@@ -9595,8 +9595,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			job_ptr->direct_set_prio = 0;
 			set_job_prio(job_ptr);
-			info("sched: update_job: releasing hold for job_id %u",
-			     job_ptr->job_id);
+			info("\
+sched: update_job: releasing hold for job_id %u uid %u",
+			     job_ptr->job_id, uid);
 			job_ptr->state_reason = WAIT_NO_REASON;
 			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
