@@ -13,7 +13,7 @@ test_mode=$5
 delay_time=1
 while [ $delay_time -le 60 ]
 do
-	$srun -N1  --test-only --immediate /bin/true
+	$srun -N1  --test-only --immediate true
 	rc=$?
 	if [ $rc -eq 0 ]
 	then
