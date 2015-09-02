@@ -940,8 +940,10 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 				    &bb_alloc->assoc_ptr,
 				    true) == SLURM_SUCCESS) {
 		xfree(bb_alloc->assocs);
-		bb_alloc->assocs =
-			xstrdup_printf(",%u,", bb_alloc->assoc_ptr->id);
+		if (bb_alloc->assoc_ptr) {
+			bb_alloc->assocs =
+				xstrdup_printf(",%u,", bb_alloc->assoc_ptr->id);
+		}
 	}
 
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
