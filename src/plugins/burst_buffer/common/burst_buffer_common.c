@@ -903,6 +903,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc->job_id = job_ptr->job_id;
 	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
+	xstrfmtcat(bb_alloc->name, "%u", job_ptr->job_id);
 	bb_alloc->next = state_ptr->bb_ahash[i];
 	bb_alloc->partition = xstrdup(bb_job->partition);
 	bb_alloc->qos = xstrdup(bb_job->qos);

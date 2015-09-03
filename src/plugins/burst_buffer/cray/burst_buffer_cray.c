@@ -69,6 +69,8 @@
 #include "src/slurmctld/state_save.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
+#define TIME_SLOP 5	/* time allowed to synchronize operations between
+			 * threads */
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -1045,7 +1047,7 @@ static void _load_state(bool init_config)
 				bb_alloc->seen_time = bb_state.last_load_time;
 				continue;
 			}
-			if (difftime(now, sessions[i].created) < 2) {
+			if (difftime(now, sessions[i].created) < TIME_SLOP) {
 				/* Newly created in other thread. Give that
 				 * thread a chance to add the entry */
 				continue;
@@ -2006,7 +2008,13 @@ static void _timeout_bb_rec(void)
 		bb_pptr = &bb_state.bb_ahash[i];
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
-			if (bb_alloc->seen_time < bb_state.last_load_time) {
+			if ((bb_alloc->seen_time + TIME_SLOP) <
+			    bb_state.last_load_time) {
+				if (bb_alloc->state == BB_STATE_TEARDOWN) {
+					/* Teardown complete, but bb_alloc
+					 * state not yet updated */
+					continue;
+				}
 				if (bb_alloc->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
 					     "purged",
