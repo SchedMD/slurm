@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -3078,6 +3079,22 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	return rc;
 }
 
+/* Kill job from CONFIGURING state */
+static void _kill_job(struct job_record *job_ptr)
+{
+	last_job_update = time(NULL);
+	job_ptr->end_time = last_job_update;
+	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+	job_ptr->priority = 0;	/* Hold job */
+	build_cg_bitmap(job_ptr);
+	job_ptr->exit_code = 1;
+	job_ptr->state_reason = WAIT_HELD;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");
+	job_completion_logger(job_ptr, false);
+	deallocate_nodes(job_ptr, false, false, false);
+}
+
 static void *_start_pre_run(void *x)
 {
 	/* Locks: write job */
@@ -3089,6 +3106,7 @@ static void *_start_pre_run(void *x)
 	bb_job_t *bb_job;
 	int status = 0;
 	struct job_record *job_ptr;
+	bool run_kill_job = false;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -3117,15 +3135,10 @@ static void *_start_pre_run(void *x)
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		time_t now = time(NULL);
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_desc =
-				xstrdup("Burst buffer pre_run error");
-			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			last_job_update = now;
+			run_kill_job = true;
 			bb_job = _get_bb_job(job_ptr);
 			if (bb_job)
 				bb_job->state = BB_STATE_TEARDOWN;
@@ -3136,6 +3149,8 @@ static void *_start_pre_run(void *x)
 		prolog_running_decr(job_ptr);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
+	if (run_kill_job)
+		_kill_job(job_ptr);
 	unlock_slurmctld(job_write_lock);
 
 	xfree(resp_msg);
