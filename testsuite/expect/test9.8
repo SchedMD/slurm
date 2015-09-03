@@ -51,7 +51,7 @@ if {[test_alps]} {
 	exit $exit_code
 }
 
-if {[test_select_type_params "Memory"]} {
+if {![test_select_type_params "Memory"]} {
 	set mem_per_step 0
 } elseif {[test_launch_poe]} {
 	set mem_per_step 200
