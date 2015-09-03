@@ -37,14 +37,13 @@ proc inc21_34_2 { qostest } {
 	# gets exactly what we would expect.
 	reset_qos_usage "" $qostest
 
-	spawn $salloc --account=$acct -N2 -t$grpwall_num $srun $bin_sleep 10
+	spawn $salloc --account=$acct -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\nJob $job_id1 has been submitted. (Within: inc21.34.2)\n"
 		}
-		-re "Pending job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
+		-re "Job violates accounting/QOS policy" {
 			send_user "\nFAILURE: This job should not be pending, but is. (Within: inc21.34.2)\n"
 			set exit_code 1
 		}
@@ -61,18 +60,22 @@ proc inc21_34_2 { qostest } {
 		}
 	}
 
-	# Cancel job
-	cancel_job $job_id1
+	if {$job_id1 == 0} {
+		send_user "\nFAILURE: job was not submitted\n"
+		set exit_code 1
+	} else {
+		# For for job 1 to finish so that we can test wall time limit
+		wait_for_job $job_id1 DONE
+	}
 
-	reset_qos_usage "" $qostest
-
-	spawn $salloc --account=$acct -N2 -t2 $srun $bin_sleep 10
+	set match 0
+	spawn $salloc -I --account=$acct -N2 -t1 $srun $bin_sleep 10
 	expect {
-		-re "Pending job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			send_user "\nJob $job_id2 is waiting for resources. This is exected. (Within: inc21.34.2)\n"
+		-re "Job violates accounting/QOS policy" {
+			send_user "\nJob is waiting for resources. This is exected. (Within: inc21.34.2)\n"
+			set match 1
 		}
-		-re "Granted job allocation ($number)"{
+		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
 			send_user "\nFAILURE: Job $job_id2 should be waiting for resources, but is not. (Within: inc21.34.2)\n"
 			set exit_code 1
@@ -86,6 +89,19 @@ proc inc21_34_2 { qostest } {
 		}
 	}
 
+	if {$match != 1} {
+		send_user "\nFAILURE: job was submitted when it should not have been\n"
+		set exit_code 1
+	}
+
+	# Reset QoS usage
+	reset_qos_usage "" $qostest
+
 	# Cancel job
-	cancel_job $job_id2
+	if {$exit_code} {
+		cancel_job $job_id2
+		cancel_job $job_id1
+	} else {
+		cancel_job $job_id2
+	}
 }

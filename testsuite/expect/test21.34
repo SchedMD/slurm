@@ -67,7 +67,7 @@ set maxcpu           MaxCpus
 set maxcpu_num       0
 # Set maxcpumin_num to multiple of CPUs per core to work with most configurations
 set maxcpumin        MaxCPUMins
-set maxcpumin_num    0
+set maxcpumin_num    2
 set maxwall          MaxWall
 set maxwall_num      2
 set maxcpuspu        MaxCPUSPerUser

@@ -432,13 +432,17 @@ proc inc21_21_submit_test { limit } {
 #
 proc inc21_21_grpwall { test_type limit } {
 
-	global number bin_id ta srun bin_sleep bin_rm file_in
+	global number bin_id ta srun bin_sleep bin_rm file_in test_qos
 	set exit_code 0
 	set job_id 0
 	set timeout 120
 
 	send_user "\n====== Test $test_type"
 	send_user "(Within: inc21.21_tests function: inc21_21_grpwall) ======\n"
+
+	# Since wall is a decayed variable lets reset it to make sure the test
+	# gets exactly what we would expect.
+	reset_qos_usage "" $test_qos
 
 	make_bash_script $file_in "
 	$bin_sleep 61
