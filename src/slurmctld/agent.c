@@ -777,8 +777,8 @@ static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type)
 	int rc = 1;
 
 	if ((rc = is_node_resp (node_name)))
-		verbose("agent/is_node_resp: node:%s rpc:%d : %m",
-			node_name, msg_type);
+		verbose("agent/is_node_resp: node:%s RPC:%s : %m",
+			node_name, rpc_num2string(msg_type));
 	return rc;
 }
 
