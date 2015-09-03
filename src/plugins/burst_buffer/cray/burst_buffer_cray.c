@@ -2731,6 +2731,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	    (resp_msg && !strncmp(resp_msg, "job_file_valid True", 19))) {
 		error("%s: paths for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
+		_update_job_env(job_ptr, path_file);
 	} else
 #endif
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
