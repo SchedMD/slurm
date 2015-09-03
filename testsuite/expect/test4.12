@@ -450,16 +450,15 @@ if {![string compare $select_type "bluegene"]} {
 } elseif {![string compare $select_type "linear"]} {
 	 set smallest $inode_procs
 } else {
-	set select_params [test_select_type_params]
 	if {$part_exclusive == 1} {
 		set smallest $inode_procs
-	} elseif {[string first "CR_CPU" $select_params] != -1} {
+	} elseif {[test_select_type_params "CR_CPU"]} {
 		set smallest $inode_threads_per_core
-	} elseif {![string compare $select_params "NONE"]} {
+	} elseif {[test_select_type_params "NONE"]} {
 		set smallest $inode_threads_per_core
-	} elseif {[string first "CR_CORE" $select_params] != -1} {
+	} elseif {[test_select_type_params "CR_CORE"]} {
 		set smallest $inode_threads_per_core
-	} elseif {[string first "CR_SOCKET" $select_params] != -1} {
+	} elseif {[test_select_type_params "CR_SOCKET"]} {
 		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
 	} else {
 		send_user "\nWARNING: failed to parse SelectTypeParameters '$select_params'\n"

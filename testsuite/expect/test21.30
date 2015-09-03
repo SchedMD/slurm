@@ -174,7 +174,7 @@ proc check_state { job } {
 }
 
 # Determine what the selecttype param is
-if {[string first "CR_CORE" [test_select_type_params]] != -1} {
+if {[test_select_type_params "CR_CORE"]} {
 	set selectparam 1
 }
 
@@ -334,8 +334,7 @@ if {![string compare $select_type "linear"] || [default_part_exclusive]} {
 	send_user "\nWARNING: This test is incompatible with exclusive node allocations\n"
 	exit 0
 }
-set select_type_params [test_select_type_params]
-if {[string match "*CR_SOCKET*" $select_type_params]} {
+if {[test_select_type_params "CR_SOCKET"]} {
 	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
 	exit 0
 }
@@ -455,7 +454,6 @@ set mod_qos_vals(GrpNodes) "-1"
 # Test GrpCpus
 #
 set mod_qos_vals(GrpCpus) $grcpu_num
-send_user "\nmoding qos\n"
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_2

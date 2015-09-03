@@ -145,7 +145,7 @@ cset prompt "(%|#|\\\$|]|\[^>]>) *(|\[^ ]* *)$"
 # Specify locations of other executable files used
 # Only the shell names (e.g. bin_bash) must be full pathnames
 #
-cset bin_awk 	"awk"
+cset bin_awk	"awk"
 cset bin_bash   [exec which bash | tail -n 1]
 cset bin_cat	"cat"
 cset bin_cc	"gcc"
@@ -1537,11 +1537,11 @@ proc get_default_acct { user } {
 	if { !$user } {
 		spawn $bin_id -un
 		expect {
-	       	       -re "($alpha_numeric_under)" {
-		       	   set user $expect_out(1,string)
+		       -re "($alpha_numeric_under)" {
+			   set user $expect_out(1,string)
 		       }
 		       eof {
-		    	   wait
+			   wait
 		       }
 		}
 	}
@@ -1943,10 +1943,11 @@ proc test_select_type { } {
 #
 ################################################################
 
-proc test_select_type_params { } {
+proc test_select_type_params { type } {
 	global scontrol bin_bash bin_grep alpha_numeric_comma
 
 	log_user 0
+	set ret 0
 	set params ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 	expect {
@@ -1958,9 +1959,25 @@ proc test_select_type_params { } {
 			wait
 		}
 	}
+
+	set params [split $params ,]
+
+	if {[string compare -nocase $type "MEMORY"]} {
+		foreach item $params {
+			if {[string first $type $item] == 0} {
+				set ret 1
+			}
+		}
+	} else {
+		foreach item $params {
+			if {[string compare -nocase $type $item] == 0} {
+				set ret 1
+			}
+		}
+	}
 	log_user 1
 
-	return $params
+	return $ret
 }
 
 ################################################################
@@ -2386,13 +2403,13 @@ proc check_acct_associations { } {
 	set rc 1
 	log_user 0
 	send_user "Testing Associations\n"
-     	#
-     	# Use sacctmgr to check associations
-     	#
-     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster]
-     	expect {
+	#
+	# Use sacctmgr to check associations
+	#
+	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster]
+	expect {
 	       -re "($number)\\|($number)\\|($alpha_numeric_under)\\|" {
-	       	      # Here we are checking if we have duplicates and
+		      # Here we are checking if we have duplicates and
 		      # setting up an array to check for holes later
 
 		      set cluster $expect_out(3,string)
@@ -2401,7 +2418,7 @@ proc check_acct_associations { } {
 			      set c_max($cluster) -1
 		      }
 
-	    	      set num1 $expect_out(1,string)
+		      set num1 $expect_out(1,string)
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($cluster,$num1)]
 		      set sec [info exists found($cluster,$num2)]
@@ -2417,15 +2434,15 @@ proc check_acct_associations { } {
 			     set found($cluster,$num2) 1
 			     if { $c_min($cluster) == -1
 				  || $c_min($cluster) > $num1 } {
-			     	    set c_min($cluster) $num1
+				    set c_min($cluster) $num1
 			     }
 			     if { $c_max($cluster) == -1
 				  || $c_max($cluster) < $num2 } {
-			     	    set c_max($cluster) $num2
+				    set c_max($cluster) $num2
 			     }
 		      }
 		      exp_continue
- 	       }
+	       }
 	       timeout {
 		      send_user "FAILURE: sacctmgr add not responding\n"
 		      slow_kill $s_pid
@@ -2550,19 +2567,19 @@ proc check_accounting_admin_level { } {
 	}
 
 	if { ![string length $user_name] } {
-	   	send_user "FAILURE: No name returned from id\n"
+		send_user "FAILURE: No name returned from id\n"
 		return ""
 	}
 
-     	#
-     	# Use sacctmgr to check admin_level
-     	#
-     	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
-     	expect {
+	#
+	# Use sacctmgr to check admin_level
+	#
+	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
+	expect {
 		-re "($alpha)" {
-	    	      set admin_level $expect_out(1,string)
+		      set admin_level $expect_out(1,string)
 		      exp_continue
- 	       }
+	       }
 	       timeout {
 		      send_user "FAILURE: sacctmgr add not responding\n"
 		      slow_kill $s_pid
@@ -2690,9 +2707,9 @@ proc get_bluegene_psets { } {
 # Purpose: Determine what kind of bluegene system we are running
 #
 # Returns 'L' for bluegene/L,
-# 	  'P' for bluegene/P,
+#	  'P' for bluegene/P,
 #	  'Q' for bluegene/Q,
-# 	  0 if not set
+#	  0 if not set
 #
 ################################################################
 
@@ -3233,7 +3250,7 @@ proc get_fs_damping_factor { } {
 # Proc: slurmctld_plug_stack_nonstop
 #
 # Purpose: Use scontrol to determine that the
-# 	   SlurmctldPlugstack is set to nonstop.
+#	   SlurmctldPlugstack is set to nonstop.
 #
 # Returns: 1 if the value is set to nonstop.
 #

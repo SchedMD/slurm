@@ -411,8 +411,7 @@ set node_count [available_nodes $def_partition ""]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
 set cr_socket 0
-set select_type_params [test_select_type_params]
-if {[string match "*CR_SOCKET*" $select_type_params]} {
+if {[test_select_type_params "CR_SOCKET"]} {
 	set cr_socket 1
 }
 
