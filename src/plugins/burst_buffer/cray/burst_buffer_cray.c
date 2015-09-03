@@ -3741,9 +3741,13 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-//FIXME: Cray API returning error if no configurations
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-	if (0) {
+#if 0
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+#else
+//FIXME: Cray bug: API returning error if no configurations, use above code when fixed
+	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+	    (!resp_msg || (resp_msg[0] != '{'))) {
+#endif
 		error("%s: show_configurations status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -3800,9 +3804,13 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-//FIXME: Cray API returning error if no instances
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-	if (0) {
+#if 0
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+#else
+//FIXME: Cray bug: API returning error if no instances, use above code when fixed
+	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+	    (!resp_msg || (resp_msg[0] != '{'))) {
+#endif
 		error("%s: show_instances status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
@@ -3918,9 +3926,13 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
-//FIXME: Cray API returning error if no sessions
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-	if (0) {
+#if 0
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+#else
+//FIXME: Cray bug: API returning error if no sessions, use above code when fixed
+	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+	    (!resp_msg || (resp_msg[0] != '{'))) {
+#endif
 		error("%s: show_sessions status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
