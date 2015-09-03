@@ -2502,7 +2502,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 
 	if (job_desc->user_id == 0) {
 		info("%s: User root can not allocate burst buffers", __func__);
-		return EPERM;
+		return ESLURM_BURST_BUFFER_PERMISSION;
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -3533,8 +3533,7 @@ static void *_create_persistent(void *x)
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: ran for %s", __func__, TIME_STR);
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-	if (0) { //FIXME: Cray bug: API exit code NOT 0 on success as documented
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: For JobID=%u Name=%s status:%u response:%s",
 		      __func__, create_args->job_id, create_args->name,
 		      status, resp_msg);
