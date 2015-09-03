@@ -1960,21 +1960,24 @@ proc test_select_type_params { type } {
 		}
 	}
 
+	# Since string first doesn't have any case
+	# distinction just make it always be upper.
+	set type [string toupper $type]
+	set params [string toupper $params]
 	set params [split $params ,]
 
-	if {[string compare -nocase $type "MEMORY"]} {
-		foreach item $params {
-			if {[string first $type $item] == 0} {
-				set ret 1
-			}
-		}
-	} else {
-		foreach item $params {
-			if {[string compare -nocase $type $item] == 0} {
-				set ret 1
-			}
+	foreach item $params {
+		# i.e. Check for CR_CORE_MEMORY or CR_CORE
+		if {[string first "MEMORY" $item] != -1 &&
+		    [string first $type $item] != -1} {
+			set ret 1
+			break
+		} elseif {![string compare $type $item]} {
+			set ret 1
+			break
 		}
 	}
+
 	log_user 1
 
 	return $ret
