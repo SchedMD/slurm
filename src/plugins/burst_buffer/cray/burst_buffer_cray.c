@@ -2725,6 +2725,14 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	else if (bb_state.bb_config.debug_flag)
 		debug("%s: paths ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
+#if 1
+	//FIXME: Cray API returning valid response, but exit 1 in some cases
+	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
+	    (resp_msg && !strncmp(resp_msg, "job_file_valid True", 19))) {
+		error("%s: paths for job %u status:%u response:%s",
+		      __func__, job_ptr->job_id, status, resp_msg);
+	} else
+#endif
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: paths for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
@@ -3107,8 +3115,7 @@ static void *_start_pre_run(void *x)
 		      jobid_buf, TIME_STR);
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
-//	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-	if (0) { // FIXME: Cray API is always returning an exit code of 1
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		time_t now = time(NULL);
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
