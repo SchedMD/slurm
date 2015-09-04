@@ -281,6 +281,8 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 static int _job_rec_field(const struct job_record *job_ptr,
                           const char *name)
 {
+	int i;
+
 	if (job_ptr == NULL) {
 		error("_job_rec_field: job_ptr is NULL");
 		lua_pushnil (L);
@@ -339,6 +341,23 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		}
 	} else if (!strcmp(name, "req_switch")) {
 		lua_pushnumber (L, job_ptr->req_switch);
+	} else if (!strcmp(name, "spank_job_env")) {
+		if ((job_ptr->spank_job_env_size == 0) ||
+		    (job_ptr->spank_job_env == NULL)) {
+			lua_pushnil (L);
+		} else {
+			lua_newtable(L);
+			for (i = 0; i < job_ptr->spank_job_env_size; i++) {
+				if (job_ptr->spank_job_env[i] != NULL) {
+					lua_pushnumber (L, i);
+					lua_pushstring (L,
+						job_ptr->spank_job_env[i]);
+					lua_settable (L, -3);
+				}
+			}
+		}
+	} else if (!strcmp(name, "spank_job_env_size")) {
+		lua_pushnumber (L, job_ptr->spank_job_env_size);
 	} else if (!strcmp(name, "time_limit")) {
 		lua_pushnumber (L, job_ptr->time_limit);
 	} else if (!strcmp(name, "time_min")) {
@@ -623,6 +642,8 @@ static void _push_job_env(struct job_descriptor *job_desc)
 static int _get_job_req_field(const struct job_descriptor *job_desc,
 			      const char *name)
 {
+	int i;
+
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
 		lua_pushnil (L);
@@ -734,6 +755,23 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		lua_pushnumber (L, job_desc->sockets_per_node);
+	} else if (!strcmp(name, "spank_job_env")) {
+		if ((job_desc->spank_job_env_size == 0) ||
+		    (job_desc->spank_job_env == NULL)) {
+			lua_pushnil (L);
+		} else {
+			lua_newtable(L);
+			for (i = 0; i < job_desc->spank_job_env_size; i++) {
+				if (job_desc->spank_job_env[i] != NULL) {
+					lua_pushnumber (L, i);
+					lua_pushstring (L,
+						job_desc->spank_job_env[i]);
+					lua_settable (L, -3);
+				}
+			}
+		}
+	} else if (!strcmp(name, "spank_job_env_size")) {
+		lua_pushnumber (L, job_desc->spank_job_env_size);
 	} else if (!strcmp(name, "std_err")) {
 		lua_pushstring (L, job_desc->std_err);
 	} else if (!strcmp(name, "std_in")) {
