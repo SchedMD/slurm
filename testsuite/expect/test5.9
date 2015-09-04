@@ -447,7 +447,7 @@ if {$match != $cnt} {
 cancel_job $job_id
 wait_for_job $job_id DONE
 
-remove_acct [get_cluster_name] $test_acct
+remove_acct "" $test_acct
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_out $file_in
