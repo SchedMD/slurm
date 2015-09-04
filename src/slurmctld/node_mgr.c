@@ -278,7 +278,7 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
 	char *features = NULL, *gres = NULL, *cpu_spec_list = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
-	uint16_t node_state2, core_spec_cnt = 0;
+	uint16_t core_spec_cnt = 0;
 	uint32_t node_state;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
@@ -349,7 +349,6 @@ extern int load_all_node_state ( bool state_only )
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
-		uint16_t base_state2;
 		uint16_t obj_protocol_version = (uint16_t)NO_VAL;
 		if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
@@ -407,35 +406,6 @@ extern int load_all_node_state ( bool state_only )
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
-		} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
-			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
-			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
-			safe_unpackstr_xmalloc (&node_hostname,
-							    &name_len, buffer);
-			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
-			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
-			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
-			safe_unpack16 (&node_state2,  buffer);
-			safe_unpack16 (&cpus,        buffer);
-			safe_unpack16 (&boards,     buffer);
-			safe_unpack16 (&sockets,     buffer);
-			safe_unpack16 (&cores,       buffer);
-			safe_unpack16 (&threads,     buffer);
-			safe_unpack32 (&real_memory, buffer);
-			safe_unpack32 (&tmp_disk,    buffer);
-			safe_unpack32 (&reason_uid,  buffer);
-			safe_unpack_time (&reason_time, buffer);
-			safe_unpack16 (&obj_protocol_version, buffer);
-			if (gres_plugin_node_state_unpack(
-				    &gres_list, buffer, node_name,
-				    protocol_version) != SLURM_SUCCESS)
-				goto unpack_error;
-			base_state2 = node_state2 & NODE_STATE_BASE;
-			/* First decode the quantities as 16 bit
-			 * then assign to 32 bit.
-			 */
-			node_state = node_state2;
-			base_state = base_state2;
 		} else {
 			error("load_all_node_state: protocol_version "
 			      "%hu not supported", protocol_version);
@@ -1030,61 +1000,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		xfree(gres_drain);
 		xfree(gres_used);
 
-		packstr(dump_node_ptr->os, buffer);
-		packstr(dump_node_ptr->reason, buffer);
-		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
-					protocol_version);
-		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-					protocol_version);
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
-		packstr (dump_node_ptr->name, buffer);
-		packstr (dump_node_ptr->node_hostname, buffer);
-		packstr (dump_node_ptr->comm_name, buffer);
-		pack16  (dump_node_ptr->node_state, buffer);
-		packstr (dump_node_ptr->version, buffer);
-		/* On a bluegene system always use the regular node
-		* infomation not what is in the config_ptr.
-		*/
-#ifndef HAVE_BG
-		if (slurmctld_conf.fast_schedule) {
-			/* Only data from config_record used for scheduling */
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-			pack16(dump_node_ptr->config_ptr->boards, buffer);
-			pack16(dump_node_ptr->config_ptr->sockets, buffer);
-			pack16(dump_node_ptr->config_ptr->cores, buffer);
-			pack16(dump_node_ptr->config_ptr->threads, buffer);
-			pack32(dump_node_ptr->config_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
-		} else {
-#endif
-			/* Individual node data used for scheduling */
-			pack16(dump_node_ptr->cpus, buffer);
-			pack16(dump_node_ptr->boards, buffer);
-			pack16(dump_node_ptr->sockets, buffer);
-			pack16(dump_node_ptr->cores, buffer);
-			pack16(dump_node_ptr->threads, buffer);
-			pack32(dump_node_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->tmp_disk, buffer);
-#ifndef HAVE_BG
-		}
-#endif
-		pack32(dump_node_ptr->cpu_load, buffer);
-		pack32(dump_node_ptr->config_ptr->weight, buffer);
-		pack32(dump_node_ptr->reason_uid, buffer);
-
-		pack_time(dump_node_ptr->boot_time, buffer);
-		pack_time(dump_node_ptr->reason_time, buffer);
-		pack_time(dump_node_ptr->slurmd_start_time, buffer);
-
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
-
-		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->features, buffer);
-		if (dump_node_ptr->gres)
-			packstr(dump_node_ptr->gres, buffer);
-		else
-			packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,

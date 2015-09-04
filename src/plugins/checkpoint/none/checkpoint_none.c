@@ -132,7 +132,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	uint32_t size;
 
 	size = 0;
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(CHECK_NONE, buffer);
 		pack32(size, buffer);
 	}
@@ -146,7 +146,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	uint32_t x;
 	uint32_t size;
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&id, buffer);
 		safe_unpack32(&size, buffer);
 		if (id != CHECK_NONE) {

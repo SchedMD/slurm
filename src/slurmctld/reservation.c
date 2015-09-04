@@ -1425,7 +1425,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		} else {
 			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 		}
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		pack32(resv_ptr->core_cnt,	buffer);
 		pack_time(end_relative,		buffer);
@@ -1520,7 +1520,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
 				       &uint32_tmp, 	buffer);
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);

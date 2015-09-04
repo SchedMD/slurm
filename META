@@ -7,19 +7,19 @@
 ##
   Meta:		1
   Name:		slurm
-  Major:	15
-  Minor:	08
+  Major:	16
+  Minor:	05
   Micro:	0
-  Version:	15.08.0
-  Release:	1
+  Version:	16.05.0
+  Release:	0pre1
+# Include leading zero for all pre-releases
 
 ##
 #  When making a new Major/Minor version update
 #  src/common/slurm_protocol_common.h
 #  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version
 #  it was so the slurmdbd can continue to send the old protocol version.
-#  In src/common/slurm_protocol_util.c check_header_version(),
-#  and _get_slurm_version()
+#  In src/common/slurm_protocol_util.c check_header_version()
 #  need to be updated also when changes are added also.
 #
 #  NOTE: The API version can not be the same as the Slurm version above.  The
@@ -31,6 +31,6 @@
 #        the config.h file that may be used throughout Slurm, so don't remove
 #	 them.
 ##
-  API_CURRENT:	29
+  API_CURRENT:	30
   API_AGE:	0
   API_REVISION:	0

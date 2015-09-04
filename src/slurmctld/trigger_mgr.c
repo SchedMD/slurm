@@ -71,7 +71,6 @@
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION        "PROTOCOL_VERSION"
-#define TRIGGER_14_03_STATE_VERSION  "VER004"	/* SLURM version 14.03 */
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -960,15 +959,8 @@ extern void trigger_state_restore(void)
 
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	if (ver_str) {
-		/* 14.03 and 2.6 all had the same version, so just go
-		   with 14.03 here.
-		*/
-		if (!strcmp(ver_str, TRIGGER_STATE_VERSION))
-			safe_unpack16(&protocol_version, buffer);
-		else if (!strcmp(ver_str, TRIGGER_14_03_STATE_VERSION))
-			protocol_version = SLURM_14_03_PROTOCOL_VERSION;
-	}
+	if (ver_str && !strcmp(ver_str, TRIGGER_STATE_VERSION))
+		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("Can't recover trigger state, data version "

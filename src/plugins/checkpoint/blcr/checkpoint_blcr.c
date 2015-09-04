@@ -343,7 +343,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t x;
 		uint32_t y;
 		uint32_t z;
@@ -376,7 +376,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t id;
 		uint32_t size;
 

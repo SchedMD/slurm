@@ -688,7 +688,7 @@ int load_all_part_state(void)
 				      part_name, flags);
 				error_code = EINVAL;
 			}
-		} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -1203,7 +1203,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else

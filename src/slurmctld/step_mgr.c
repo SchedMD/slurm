@@ -2882,7 +2882,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		uint32_t utmp32 = 0;
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);

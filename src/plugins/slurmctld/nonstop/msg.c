@@ -244,14 +244,8 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 		info("slurmctld/nonstop: msg decrypted:%s", msg_decrypted);
 	cmd_ptr = msg_decrypted;
 
-			   /* 123456789012345678901234567890 */
-	if (strncmp(cmd_ptr, "VERSION:14.03", 13) == 0) {
-		cmd_ptr = strchr(cmd_ptr + 10, ':');
-		if (cmd_ptr) {
-			cmd_ptr++;
-			protocol_version = SLURM_14_03_PROTOCOL_VERSION;
-		}
-	}
+	/* 123456789012345678901234567890 */
+
 	if (protocol_version == 0) {
 		info("slurmctld/nonstop: Message version invalid");
 		resp = xstrdup("Error:\"Message version invalid\"");

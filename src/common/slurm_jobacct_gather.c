@@ -643,7 +643,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int len;
 			Buf buffer = init_buf(0);
 			jobacctinfo_pack(jobacct, protocol_version,
@@ -756,7 +756,7 @@ extern int jobacctinfo_getinfo(
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			char* buf;
 			int len;
 			Buf buffer;
@@ -889,7 +889,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			buffer);
 		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
 			buffer);
-	} else if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		if (!jobacct || no_pack) {
 			pack8((uint8_t) 0, buffer);
 			return;
@@ -987,7 +987,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
 			rpc_version, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-	} else if (rpc_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp == (uint8_t) 0)
 			return SLURM_SUCCESS;

@@ -47,6 +47,11 @@
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
+#define SLURM_14_03_PROTOCOL_VERSION ((27 << 8) | 0) /* slurm version
+						      * 14.03, not
+						      * needed here
+						      * but added for
+						      * reference. */
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 

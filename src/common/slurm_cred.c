@@ -1369,7 +1369,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
 		xassert(len > 0);
-	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		safe_unpack32(&cred->jobid, buffer);
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
