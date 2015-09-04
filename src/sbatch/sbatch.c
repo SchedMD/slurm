@@ -77,6 +77,7 @@ static int   _set_rlimit_env(void);
 static void  _set_spank_env(void);
 static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
+static int   _job_wait(uint32_t job_id);
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 	char *script_name;
 	void *script_body;
 	int script_size = 0;
-	int retries = 0;
+	int rc = 0, retries = 0;
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -217,10 +218,55 @@ int main(int argc, char *argv[])
 			printf(";%s", working_cluster_rec->name);
 		printf("\n");
 	}
+	if (opt.wait)
+		rc = _job_wait(resp->job_id);
 
 	xfree(desc.script);
 	slurm_free_submit_response_response_msg(resp);
-	return 0;
+	return rc;
+}
+
+/* Wait for specified job ID to terminate, return it's exit code */
+static int _job_wait(uint32_t job_id)
+{
+	slurm_job_info_t *job_ptr;
+	job_info_msg_t *resp = NULL;
+	int ec = 0, ec2, i, rc;
+	int sleep_time = 2;
+	bool complete = false;
+
+	while (!complete) {
+		complete = true;
+		sleep(sleep_time);
+		sleep_time = MIN(sleep_time + 2, 10);
+
+		rc = slurm_load_job(&resp, job_id, SHOW_ALL);
+		if (rc == SLURM_SUCCESS) {
+			for (i = 0, job_ptr = resp->job_array;
+			     (i < resp->record_count) && complete;
+			     i++, job_ptr++) {
+				if (IS_JOB_FINISHED(job_ptr)) {
+					if (WIFEXITED(job_ptr->exit_code)) {
+						ec2 = WEXITSTATUS(job_ptr->
+								  exit_code);
+					} else
+						ec2 = 1;
+					ec = MAX(ec, ec2);
+				} else {
+					complete = false;
+				}
+			}
+			slurm_free_job_info_msg(resp);
+		} else if (rc == ESLURM_INVALID_JOB_ID) {
+			error("Job %u no longer found and exit code not found",
+			      job_id);
+		} else {
+			error("Currently unable to load job state "
+			      "information, retrying: %m");
+		}
+	}
+
+	return ec;
 }
 
 static char *_find_quote_token(char *tmp, char *sep, char **last)

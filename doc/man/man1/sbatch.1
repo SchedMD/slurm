@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "August 2015" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1445,6 +1445,15 @@ The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 
 .TP
+\fB\-W\fR, \fB\-\-wait\fR
+Do not exit until the submitted job terminates.
+The exit code of the sbatch command will be the same as the exit code
+of the submitted job. If the job terminated due to a signal rather than a
+normal exit, the exit code will be set to 1.
+In the case of a job array, the exit code recorded will be the highest value
+for any task in the job array.
+
+.TP
 \fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
 Controls when the execution of the command begins.
 By default the job will begin execution as soon as the allocation is made.
@@ -1677,6 +1686,9 @@ Same as \fB\-\-thread\-spec\fR
 .TP
 \fBSBATCH_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR
+.TP
+\fBSBATCH_WAIT\fR
+Same as \fB\-W\fR, \fB\-\-wait\fR
 .TP
 \fBSBATCH_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR

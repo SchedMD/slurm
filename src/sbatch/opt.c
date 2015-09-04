@@ -133,6 +133,7 @@
 #define LONG_OPT_SICP        0x101
 #define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_POWER       0x103
+#define LONG_OPT_WAIT        0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -401,6 +402,7 @@ static void _opt_default()
 	opt.reservation       = NULL;
 	opt.req_switch        = -1;
 	opt.umask             = -1;
+	opt.wait              = false;
 	opt.wait4switch       = -1;
 	opt.wckey             = NULL;
 
@@ -451,7 +453,9 @@ env_vars_t env_vars[] = {
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  {"SBATCH_EXPORT",        OPT_STRING,     &opt.export_env,    NULL          },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL          },
@@ -471,18 +475,17 @@ env_vars_t env_vars[] = {
   {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL          },
+  {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SBATCH_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  {"SBATCH_WAIT",          OPT_BOOL,       &opt.wait,          NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &opt.wait_all_nodes,NULL          },
-  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
-  {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
-  {"SBATCH_EXPORT",        OPT_STRING,     &opt.export_env,    NULL          },
-  {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
+  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
 
   {NULL, 0, NULL, NULL}
 };
@@ -791,6 +794,7 @@ static struct option long_options[] = {
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
+	{"wait",          no_argument,       0, LONG_OPT_WAIT},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
@@ -798,7 +802,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRsS:t:uU:vVw:x:";
+	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1675,6 +1679,9 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
+			break;
+		case LONG_OPT_WAIT:
+			opt.wait = true;
 			break;
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
@@ -2951,6 +2958,7 @@ static void _opt_list(void)
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
 	info("sicp              : %u", opt.sicp_mode);
+	info("wait              : %s", opt.wait ? "no" : "yes");
 	xfree(str);
 
 }
@@ -2982,7 +2990,7 @@ static void _usage(void)
 "              [--mloader-image=path] [--ioload-image=path]\n"
 #endif
 #endif
-"              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
+"              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
@@ -3067,6 +3075,7 @@ static void _help(void)
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
+"  -W, --wait                  wait for completion of submitted job\n"
 "      --wckey=wckey           wckey to run job under\n"
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"
 

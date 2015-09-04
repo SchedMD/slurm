@@ -1,6 +1,11 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.0-pre1
+===============================
+ -- Add sbatch "--wait" option that waits for job completion before exiting.
+    Exit code will match that of spawned job.
+
 * Changes in Slurm 15.08.1
 ==========================
  -- Fix test21.30 and 21.34 to check grpwall better.

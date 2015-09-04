@@ -168,6 +168,7 @@ typedef struct sbatch_options {
 	int get_user_env_mode;	/* --get-user-env=[S|L]         */
 	char *export_env;	/* --export			*/
 	char *export_file;	/* --export-file=file		*/
+	bool wait;		/* -W, --wait			*/
 	char *wckey;            /* --wckey workload characterization key */
 	char *reservation;      /* --reservation */
  	int ckpt_interval;	/* --checkpoint (int minutes)   */
