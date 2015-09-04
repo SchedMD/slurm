@@ -834,7 +834,6 @@ extern int load_all_front_end_state(bool state_only)
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state = (uint32_t)NO_VAL;
-		uint16_t tmp_state;
 		uint16_t obj_protocol_version = (uint16_t)NO_VAL;;
 
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
