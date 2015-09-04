@@ -381,6 +381,12 @@ uint16_t slurm_get_private_data(void);
  */
 char *slurm_get_state_save_location(void);
 
+/* slurm_get_tmp_fs
+ * returns the TmpFS configuration parameter from slurmctld_conf object
+ * RET char *    - tmp_fs, MUST be xfreed by caller
+ */
+extern char *slurm_get_tmp_fs(void);
+
 /* slurm_get_auth_type
  * returns the authentication type from slurmctld_conf object
  * RET char *    - auth type, MUST be xfreed by caller
