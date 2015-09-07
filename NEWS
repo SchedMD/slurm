@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- If AccountingEnforce=safe is set make sure a job can finish before going
     over the limit with grpwall on a QOS or association.
  -- burst_buffer/cray - Major updates based upon recent Cray changes.
+ -- Improve clean up logic of pmi2 plugin.
 
 * Changes in Slurm 15.08.0
 ==========================

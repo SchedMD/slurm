@@ -114,6 +114,6 @@ extern int *task_socks;
 extern bool in_stepd(void);
 extern int  pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env);
 extern int  pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env);
-extern void pmi2_cleanup_stepd();
+extern void pmi2_cleanup_stepd(void);
 
 #endif	/* _SETUP_H */

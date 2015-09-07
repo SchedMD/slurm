@@ -69,8 +69,8 @@
 static int *initialized = NULL;
 static int *finalized = NULL;
 
-static eio_handle_t *pmi2_handle = NULL;
-static volatile int _agent_running = 0;
+static eio_handle_t *pmi2_handle;
+static volatile int _agent_running;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
 static int  _tree_listen_read(eio_obj_t *obj, List objs);
@@ -360,7 +360,7 @@ pmi2_start_agent(void)
 	      (unsigned long) pmi2_agent_tid);
 
 	/* wait for the agent to start */
-	while( !_agent_running ){
+	while (!_agent_running) {
 		sched_yield();
 	}
 
@@ -374,10 +374,10 @@ extern int
 pmi2_stop_agent(void)
 {
 	/* brake eio loop */
-	if( NULL != pmi2_handle ){
+	if (pmi2_handle != NULL) {
 		eio_signal_shutdown(pmi2_handle);
 		/* wait for the agent to finish */
-		while( _agent_running ){
+		while (_agent_running ) {
 			sched_yield();
 		}
 	}
