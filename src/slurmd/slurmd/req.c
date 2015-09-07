@@ -4,6 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2010-2013 SchedMD LLC.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -5908,7 +5909,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	forward_data_msg_t *req = (forward_data_msg_t *)msg->data;
 	uint32_t req_uid;
 	struct sockaddr_un sa;
-	int fd = -1, rc;
+	int fd = -1, rc = 0;
 
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
@@ -5916,12 +5917,14 @@ _rpc_forward_data(slurm_msg_t *msg)
 	/* sanity check */
 	if (strlen(req->address) > sizeof(sa.sun_path) - 1) {
 		slurm_seterrno(EINVAL);
+		rc = errno;
 		goto done;
 	}
 
 	/* connect to specified address */
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
+		rc = errno;
 		error("failed creating UNIX domain socket: %m");
 		goto done;
 	}
@@ -5931,6 +5934,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	while ((rc = connect(fd, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) &&
 	       (errno == EINTR));
 	if (rc < 0) {
+		rc = errno;
 		debug2("failed connecting to specified socket '%s': %m",
 		       req->address);
 		goto done;
@@ -5950,9 +5954,9 @@ _rpc_forward_data(slurm_msg_t *msg)
 
 rwfail:
 done:
-	if (fd >= 0)
+	if (fd >= 0){
 		close(fd);
-	rc = errno;
+	}
 	slurm_send_rc_msg(msg, rc);
 }
 
