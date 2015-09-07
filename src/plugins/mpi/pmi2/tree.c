@@ -6,7 +6,10 @@
  *  All rights reserved.
  *  Portions copyright (C) 2014 Institute of Semiconductor Physics
  *                     Siberian Branch of Russian Academy of Science
- *  Written by Artem Polyakov <artpol84@gmail.com>.
+ *  Written by Artem Y. Polyakov <artpol84@gmail.com>.
+ *  All rights reserved.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
+ *  Written by Artem Y. Polyakov <artemp@mellanox.com>.
  *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -702,15 +705,18 @@ tree_msg_to_stepds(hostlist_t hl, uint32_t len, char *data)
 
 	nodelist = hostlist_ranged_string_xmalloc(hl);
 
+	debug("tree_msg_to_stepds: send to %s", nodelist);
+
 	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
 		while ((ret_data_info = list_pop(ret_list))) {
 			temp_rc = slurm_get_return_code(ret_data_info->type,
 							ret_data_info->data);
 			if (temp_rc){
 				rc = temp_rc;
+				error("tree_msg_to_stepds: host=%s, rc = %d",
+				      ret_data_info->node_name, rc);
 			} else {
-				hostlist_delete_host(hl, 
-							ret_data_info->node_name);
+				hostlist_delete_host(hl, ret_data_info->node_name);
 			}
 		}
 	} else {
