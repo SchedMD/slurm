@@ -786,29 +786,30 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		/* Not really errors,
 		 * but we want messages displayed by default */
 		if (sig == SIG_TIME_LIMIT) {
-			error("*** %s CANCELLED AT %s DUE TO TIME LIMIT on %s ***",
-			      entity, time_str, job->node_name);
+			error("*** %s ON %s CANCELLED AT %s DUE TO TIME LIMIT ***",
+			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_PREEMPTED) {
-			error("*** %s CANCELLED AT %s DUE TO PREEMPTION on %s ***",
-			      entity, time_str, job->node_name);
+			error("*** %s ON %s CANCELLED AT %s DUE TO PREEMPTION ***",
+			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_NODE_FAIL) {
-			error("*** %s CANCELLED AT %s DUE TO NODE %s FAILURE ***",
-			      entity, time_str, job->node_name);
+			error("*** %s ON %s CANCELLED AT %s DUE TO NODE "
+			      "FAILURE, SEE SLURMCTLD LOG FOR DETAILS ***",
+			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_REQUEUED) {
-			error("*** %s CANCELLED AT %s DUE TO JOB REQUEUE ***",
-			      entity, time_str);
+			error("*** %s ON %s CANCELLED AT %s DUE TO JOB REQUEUE ***",
+			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_FAILURE) {
-			error("*** %s FAILED (non-zero exit code or other "
-			      "failure mode) on %s ***",
+			error("*** %s ON %s FAILED (non-zero exit code or other "
+			      "failure mode) ***",
 			      entity, job->node_name);
 			msg_sent = 1;
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
-			error("*** %s CANCELLED AT %s *** on %s",
-			      entity, time_str, job->node_name);
+			error("*** %s ON %s CANCELLED AT %s ***",
+			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		}
 	}
