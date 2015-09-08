@@ -46,8 +46,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#if HAVE_JSON
-#include <json-c/json.h>
+#if HAVE_JSON_C_INC
+#  include <json-c/json.h>
+#elif HAVE_JSON_INC
+#  include <json/json.h>
 #endif
 
 #include "slurm/slurm.h"
