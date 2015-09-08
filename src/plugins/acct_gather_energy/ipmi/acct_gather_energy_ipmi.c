@@ -628,7 +628,7 @@ static int _ipmi_send_profile(void)
 	uint16_t i, j;
 	uint64_t data[descriptions_len];
 	uint32_t id;
-	time_t last_time;
+	time_t last_time = last_update_time;
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
