@@ -2027,17 +2027,43 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		/* Non-fatal errors for job below */
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
 			/* Required nodes are down or drained */
+			char *node_str = NULL, *unavail_node = NULL;
 			debug3("JobId=%u required nodes not avail",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc,
-				   "ReqNodeNotAvail, May be reserved for other job");
-			if (unavail_node_str) {
-				xstrfmtcat(job_ptr->state_desc,
-					   ", UnavailableNodes:%s",
-					   unavail_node_str);
+			if (unavail_node_str) {	/* Set in few cases */
+				node_str = unavail_node_str;
+			} else {
+				bitstr_t *unavail_bitmap;
+				unavail_bitmap = bit_copy(avail_node_bitmap);
+				bit_not(unavail_bitmap);
+				if (job_ptr->details  &&
+				    job_ptr->details->req_node_bitmap &&
+				    bit_overlap(unavail_bitmap,
+					   job_ptr->details->req_node_bitmap)) {
+					bit_and(unavail_bitmap,
+						job_ptr->details->
+						req_node_bitmap);
+				}
+				if (bit_ffs(unavail_bitmap) != -1) {
+					unavail_node = bitmap2node_name(
+								unavail_bitmap);
+					node_str = unavail_node;
+				}
+				FREE_NULL_BITMAP(unavail_bitmap);
 			}
+			if (node_str) {
+				xstrfmtcat(job_ptr->state_desc,
+					   "ReqNodeNotAvail, "
+					   "UnavailableNodes:%s",
+					   node_str);
+			} else {
+				xstrfmtcat(job_ptr->state_desc,
+					   "ReqNodeNotAvail, May be reserved "
+					   "for other job");
+			}
+			xfree(unavail_node);	
 			last_job_update = now;
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
