@@ -2234,10 +2234,10 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 
 	if ((tok = strstr(job_desc->burst_buffer, "type="))) {
 		type = xstrdup(tok + 5);
-		tok = strchr(access, ',');
+		tok = strchr(type, ',');
 		if (tok)
 			tok[0] = '\0';
-		tok = strchr(access, ' ');
+		tok = strchr(type, ' ');
 		if (tok)
 			tok[0] = '\0';
 	}
