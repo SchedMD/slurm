@@ -373,6 +373,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		}
 		tested_jobs++;
 		job_ptr->preempt_in_progress = false;	/* initialize */
+		if (job_ptr->state_reason != WAIT_NO_REASON)
+			job_ptr->state_reason_prev = job_ptr->state_reason;
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
