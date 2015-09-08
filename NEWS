@@ -368,6 +368,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix truncation of job reason in squeue.
  -- If a node is in DOWN or DRAIN state, leave it unavailable for allocation
     when powered down.
+ -- Update the slurm.conf man page documenting better nohold_on_prolog_fail
+    variable.
 
 * Changes in Slurm 14.11.9
 ==========================
