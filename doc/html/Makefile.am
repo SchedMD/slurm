@@ -98,6 +98,7 @@ generated_html = \
 	testimonials.html \
 	topology.html \
 	topology_plugin.html \
+	tres.html \
 	troubleshoot.html \
 	tutorials.html \
 	wckey.html
