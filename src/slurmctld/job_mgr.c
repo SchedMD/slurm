@@ -3946,7 +3946,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 				continue;
 			rc = select_nodes(job_ptr, test_only,
-					  select_node_bitmap, NULL, err_msg);	//
+					  select_node_bitmap, NULL, err_msg);
 			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			    (rc != ESLURM_RESERVATION_BUSY) &&
@@ -3960,7 +3960,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	} else {
 		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 			test_only = true;
-		rc = select_nodes(job_ptr, test_only, select_node_bitmap,	//
+		rc = select_nodes(job_ptr, test_only, select_node_bitmap,
 				  NULL, err_msg);
 	}
 
