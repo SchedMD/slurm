@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     variables when running in an existing srun (e.g. an srun within an salloc).
  -- Fix missing else when packing an update partition message.
  -- Use more flexible mechnanism to find json installation.
+ -- Make sure safe_limits was initialized before processing limits in the
+    slurmctld.
 
 * Changes in Slurm 15.08.0
 ==========================

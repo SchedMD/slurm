@@ -2304,7 +2304,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 	uint32_t time_limit = NO_VAL;
 	bool rc = true;
 	uint32_t wall_mins;
-	bool safe_limits;
+	bool safe_limits = false;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
