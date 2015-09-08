@@ -517,10 +517,11 @@ extern int acct_gather_profile_p_create_dataset(
 	}
 
 	/* insert fields */
-	if (H5Tinsert(dtype_id, "ElapsedTime", sizeof(uint64_t),
+	if (H5Tinsert(dtype_id, "ElapsedTime", 0,
 		      H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
-	if (H5Tinsert(dtype_id, "EpochTime", 0, H5T_NATIVE_UINT64) < 0)
+	if (H5Tinsert(dtype_id, "EpochTime", sizeof(uint64_t),
+		      H5T_NATIVE_UINT64) < 0)
 		return SLURM_ERROR;
 
 	dataset_loc = dataset;

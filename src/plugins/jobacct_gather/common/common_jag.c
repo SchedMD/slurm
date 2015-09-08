@@ -59,7 +59,7 @@ static long hertz = 0;
 
 static int my_pagesize = 0;
 static DIR  *slash_proc = NULL;
-static int energy_profile = ENERGY_DATA_JOULES_TASK;
+static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
 static uint64_t debug_flags = 0;
 
 static int _find_prec(void *x, void *key)
@@ -743,6 +743,7 @@ extern void jag_common_init(long in_hertz)
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 				  &profile_opt);
+
 	/* If we are profiling energy it will be checked at a
 	   different rate, so just grab the last one.
 	*/

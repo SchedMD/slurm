@@ -628,6 +628,7 @@ static int _ipmi_send_profile(void)
 	uint16_t i, j;
 	uint64_t data[descriptions_len];
 	uint32_t id;
+	time_t last_time;
 
 	if (!_running_profile())
 		return SLURM_SUCCESS;
@@ -660,6 +661,8 @@ static int _ipmi_send_profile(void)
 			id = descriptions[i].sensor_idxs[j];
 			data[i] += sensors[id].energy.current_watts;
 		}
+		if (descriptions[i].sensor_cnt)
+			last_time = sensors[id].energy.poll_time;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -671,7 +674,7 @@ static int _ipmi_send_profile(void)
 		}
 	}
 	return acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
-						     last_update_time);
+						     last_time);
 }
 
 
@@ -950,6 +953,17 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	xassert(_run_in_daemon());
 
 	switch (data_type) {
+	case ENERGY_DATA_NODE_ENERGY_UP:
+		slurm_mutex_lock(&ipmi_mutex);
+		if (_is_thread_launcher()) {
+			if (_thread_init() == SLURM_SUCCESS)
+				_thread_update_node_energy();
+		} else {
+			_get_joules_task(10);
+		}
+		_get_node_energy(energy);
+		slurm_mutex_unlock(&ipmi_mutex);
+		break;
 	case ENERGY_DATA_NODE_ENERGY:
 		slurm_mutex_lock(&ipmi_mutex);
 		_get_node_energy(energy);
