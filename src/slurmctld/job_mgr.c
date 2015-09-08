@@ -7538,7 +7538,12 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		pack16(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);
-		pack16(dump_job_ptr->state_reason, buffer);
+		if ((dump_job_ptr->state_reason == WAIT_NO_REASON) &&
+		    IS_JOB_PENDING(dump_job_ptr)) {
+			/* Scheduling cycle in progress, send latest reason */
+			pack16(dump_job_ptr->state_reason_prev, buffer);
+		} else
+			pack16(dump_job_ptr->state_reason, buffer);
 		pack8(dump_job_ptr->reboot,        buffer);
 		pack16(dump_job_ptr->restart_cnt,  buffer);
 		pack16(show_flags,  buffer);
