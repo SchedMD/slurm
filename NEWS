@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Major updates based upon recent Cray changes.
  -- Improve clean up logic of pmi2 plugin.
  -- Improve job state reason string when required nodes not available.
+ -- Fix missing else when packing an update partition message
 
 * Changes in Slurm 15.08.0
 ==========================

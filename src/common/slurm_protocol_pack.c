@@ -4367,7 +4367,7 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		pack16(msg-> preempt_mode, buffer);
 		pack16(msg-> priority,     buffer);
 		pack16(msg-> state_up,     buffer);
-	} if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_14_03_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
