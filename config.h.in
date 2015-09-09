@@ -169,6 +169,12 @@
 /* Define if you are compiling with json. */
 #undef HAVE_JSON
 
+/* Define if headers in include/json-c. */
+#undef HAVE_JSON_C_INC
+
+/* Define if headers in include/json. */
+#undef HAVE_JSON_INC
+
 /* Define to 1 if you have the <kstat.h> header file. */
 #undef HAVE_KSTAT_H
 

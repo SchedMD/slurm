@@ -501,8 +501,6 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	print_fields_list = list_create(destroy_print_field);
-
 	if (!list_count(format_list)) {
 		if (event_cond->event_type == SLURMDB_EVENT_CLUSTER)
 			slurm_addto_char_list(format_list,

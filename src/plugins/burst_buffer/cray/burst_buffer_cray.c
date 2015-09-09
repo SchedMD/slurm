@@ -46,8 +46,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#if HAVE_JSON
+#if HAVE_JSON_C_INC
 #  include <json-c/json.h>
+#elif HAVE_JSON_INC
+#  include <json/json.h>
 #endif
 
 #include "slurm/slurm.h"
@@ -444,6 +446,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				tok++;
 			if (!strncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
+				bb_access = NULL;
+				bb_name = NULL;
+				bb_type = NULL;
 				if ((sub_tok = strstr(tok, "access_mode="))) {
 					bb_access = xstrdup(sub_tok + 12);
 					sub_tok = strchr(bb_access, ' ');
@@ -485,24 +490,22 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].size = tmp_cnt;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
-				bb_access = NULL;
-				bb_name = NULL;
-				bb_type = NULL;
 			} else if (!strncmp(tok, "destroy_persistent", 17) ||
 				   !strncmp(tok, "delete_persistent", 16)) {
 				have_bb = true;
+				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
 					sub_tok = strchr(bb_name, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
-				if ((sub_tok = strstr(tok, "type="))) {
-					bb_type = xstrdup(sub_tok + 5);
-					sub_tok = strchr(bb_type, ' ');
-					if (sub_tok)
-						sub_tok[0] = '\0';
-				}
+				/* if ((sub_tok = strstr(tok, "type="))) { */
+				/* 	bb_type = xstrdup(sub_tok + 5); */
+				/* 	sub_tok = strchr(bb_type, ' '); */
+				/* 	if (sub_tok) */
+				/* 		sub_tok[0] = '\0'; */
+				/* } */
 				bb_hurry = strstr(tok, "hurry");
 				inx = bb_job->buf_cnt++;
 				bb_job->buf_ptr = xrealloc(bb_job->buf_ptr,
@@ -535,6 +538,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->total_size += tmp_cnt;
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				have_bb = true;
+				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "name="))) {
 					bb_name = xstrdup(sub_tok + 5);
 					sub_tok = strchr(bb_name, ' ');
@@ -621,7 +625,7 @@ static void _save_bb_state(void)
 {
 	static time_t last_save_time = 0;
 	static int high_buffer_size = 16 * 1024;
-	time_t save_time;
+	time_t save_time = time(NULL);
 	bb_alloc_t *bb_alloc;
 	uint32_t rec_count = 0;
 	Buf buffer;
@@ -2055,7 +2059,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 	char *bb_name = NULL, *capacity;
 	char *end_ptr = NULL, *sub_tok, *tok;
 	uint64_t tmp_cnt;
-	int rc = SLURM_SUCCESS, swap_cnt;
+	int rc = SLURM_SUCCESS, swap_cnt = 0;
 	bool enable_persist = false, have_bb = false;
 
 	xassert(bb_size);
@@ -2091,6 +2095,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				break;
 			} else if (!strncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
+				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "capacity="))) {
 					tmp_cnt = bb_get_size_num(
 						sub_tok + 9,
@@ -2106,7 +2111,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				} else {
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				}
-				if ((bb_name[0] >= '0') && (bb_name[0] <= '9'))
+				if (!bb_name ||
+				    ((bb_name[0] >= '0') &&
+				     (bb_name[0] <= '9')))
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				xfree(bb_name);
 				if (rc != SLURM_SUCCESS)
@@ -2232,10 +2239,10 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 
 	if ((tok = strstr(job_desc->burst_buffer, "type="))) {
 		type = xstrdup(tok + 5);
-		tok = strchr(access, ',');
+		tok = strchr(type, ',');
 		if (tok)
 			tok[0] = '\0';
-		tok = strchr(access, ' ');
+		tok = strchr(type, ' ');
 		if (tok)
 			tok[0] = '\0';
 	}

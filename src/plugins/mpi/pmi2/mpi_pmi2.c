@@ -4,6 +4,9 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
+ *  Written by Artem Polyakov <artemp@mellanox.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -175,4 +178,12 @@ int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 	spawn_job_wait();
 
 	return SLURM_SUCCESS;
+}
+
+extern int fini()
+{
+	/* cleanup after ourself */
+	pmi2_stop_agent();
+	pmi2_cleanup_stepd();
+	return 0;
 }

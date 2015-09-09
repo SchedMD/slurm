@@ -661,6 +661,14 @@ static void _opt_env(void)
 			_process_env_var(e, val);
 		e++;
 	}
+
+	/* Running srun within an existing srun. Don't inherit values. */
+	if (getenv("SLURM_STEP_ID")) {
+		xfree(opt.cpu_bind);
+		opt.cpu_bind_type = 0;
+		xfree(opt.mem_bind);
+		opt.mem_bind_type = 0;
+	}
 }
 
 

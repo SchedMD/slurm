@@ -4,6 +4,9 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
+ *  Written by Artem Y. Polyakov <artemp@mellanox.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -111,5 +114,6 @@ extern int *task_socks;
 extern bool in_stepd(void);
 extern int  pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env);
 extern int  pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env);
+extern void pmi2_cleanup_stepd(void);
 
 #endif	/* _SETUP_H */

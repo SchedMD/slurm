@@ -19430,7 +19430,7 @@ else
      for d in $x_ac_json_dirs; do
        test -d "$d" || continue
        test -d "$d/include" || continue
-       test -f "$d/include/json-c/json_object.h" || continue
+       test -f "$d/include/json-c/json_object.h" || test -f "$d/include/json/json_object.h" || continue
        for bit in $x_ac_json_libs; do
          test -d "$d/$bit" || continue
          _x_ac_json_libs_save="$LIBS"
@@ -19472,6 +19472,16 @@ $as_echo "$x_ac_cv_json_dir" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
   else
+    if test -f "$d/include/json-c/json_object.h" ; then
+
+$as_echo "#define HAVE_JSON_C_INC 1" >>confdefs.h
+
+    fi
+    if test -f "$d/include/json/json_object.h" ; then
+
+$as_echo "#define HAVE_JSON_INC 1" >>confdefs.h
+
+    fi
 
 $as_echo "#define HAVE_JSON 1" >>confdefs.h
 

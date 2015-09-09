@@ -73,7 +73,7 @@ to coordinate activities. Future development plans includes:
     <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm
     (Flexnet Publisher)</a> license management.</li>
 <li>Distributed architecture to support the management of resources with Intel
-    MIC processors.</li>
+    Knight's Landing processors.</li>
 <li>IP communications over InfiniBand network for improved performance.</li>
 <li>Fault-tolerance and jobs dynamic adaptation through communication protocol
     between Slurm, MPI libraries and the application.</li>

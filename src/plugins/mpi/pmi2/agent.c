@@ -4,6 +4,9 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
+ *  Written by Artem Y. Polyakov <artemp@mellanox.com>.
+ *  All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -66,7 +69,8 @@
 static int *initialized = NULL;
 static int *finalized = NULL;
 
-static pthread_t pmi2_agent_tid = 0;
+static eio_handle_t *pmi2_handle;
+static volatile int _agent_running;
 
 static bool _tree_listen_readable(eio_obj_t *obj);
 static int  _tree_listen_read(eio_obj_t *obj, List objs);
@@ -297,9 +301,10 @@ send_response:
 static void *
 _agent(void * unused)
 {
-	eio_handle_t *pmi2_handle;
 	eio_obj_t *tree_listen_obj, *task_obj;
 	int i;
+
+	_agent_running = 1;
 
 	pmi2_handle = eio_handle_create(0);
 
@@ -324,6 +329,8 @@ _agent(void * unused)
 	debug("mpi/pmi2: agent thread exit");
 
 	eio_handle_destroy(pmi2_handle);
+
+	_agent_running = 0;
 	return NULL;
 }
 
@@ -335,6 +342,7 @@ pmi2_start_agent(void)
 {
 	int retries = 0;
 	pthread_attr_t attr;
+	pthread_t pmi2_agent_tid = 0;
 
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -351,6 +359,11 @@ pmi2_start_agent(void)
 	debug("mpi/pmi2: started agent thread (%lu)",
 	      (unsigned long) pmi2_agent_tid);
 
+	/* wait for the agent to start */
+	while (!_agent_running) {
+		sched_yield();
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -360,8 +373,14 @@ pmi2_start_agent(void)
 extern int
 pmi2_stop_agent(void)
 {
-	if (pmi2_agent_tid)
-		pthread_cancel(pmi2_agent_tid);
+	/* brake eio loop */
+	if (pmi2_handle != NULL) {
+		eio_signal_shutdown(pmi2_handle);
+		/* wait for the agent to finish */
+		while (_agent_running ) {
+			sched_yield();
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
