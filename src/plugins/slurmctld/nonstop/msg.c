@@ -254,7 +254,7 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 		cmd_ptr = strchr(cmd_ptr + 13, ':');
 		if (cmd_ptr) {
 			cmd_ptr++;
-			protocol_version = SLURM_14_03_PROTOCOL_VERSION;
+			protocol_version = SLURM_PROTOCOL_VERSION;
 		}
 	}
 	if (protocol_version == 0) {
