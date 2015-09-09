@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     when powered down.
  -- Update the slurm.conf man page documenting better nohold_on_prolog_fail
     variable.
+ -- Don't trucate task ID information in "squeue --array/-r" or "sview".
 
 * Changes in Slurm 14.11.9
 ==========================
