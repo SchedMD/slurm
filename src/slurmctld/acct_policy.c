@@ -1252,7 +1252,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	int rc = true;
 	slurmdb_used_limits_t *used_limits = NULL;
 	bool free_used_limits = false;
-	bool safe_limits;
+	bool safe_limits = false;
 
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
