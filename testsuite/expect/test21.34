@@ -222,9 +222,6 @@ proc check_state { job } {
 
 }
 
-# Remove any vestigial data
-cleanup
-
 if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
@@ -240,6 +237,9 @@ if {[test_super_user] == 0} {
 	send_user "\nWARNING Test can only be ran as SlurmUser\n"
 	exit 0
 }
+
+# Remove any vestigial data
+cleanup
 
 # Check to see that there are enough resources in the default partition
 set tmpc 0
