@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ===============================
  -- Add sbatch "--wait" option that waits for job completion before exiting.
     Exit code will match that of spawned job.
+ -- Modify advanced reservation save/restore logic for core reservations to
+    support configuration changes (changes in configured nodes or cores counts).
 
 * Changes in Slurm 15.08.1
 ==========================
