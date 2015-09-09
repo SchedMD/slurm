@@ -1822,7 +1822,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					   "ReqNodeNotAvail, May be reserved "
 					   "for other job");
 			}
-			xfree(unavail_node);	
+			xfree(unavail_node);
 			last_job_update = now;
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
