@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Make sure safe_limits was initialized before processing limits in the
     slurmctld.
  -- Fix for burst_buffer/cray to parse type option correctly.
+ -- Fix memory error and version number in the nonstop plugin and reservation
+    code.
 
 * Changes in Slurm 15.08.0
 ==========================
