@@ -1099,7 +1099,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 node_inx, true,
 							 job_ptr->job_id,
 							 NO_VAL);
-			if ((gres_cnt != NO_VAL) && (cpus_per_task > 0))
+			if ((gres_cnt != NO_VAL64) && (cpus_per_task > 0))
 				gres_cnt /= cpus_per_task;
 			total_tasks = MIN((uint64_t)total_tasks, gres_cnt);
 			if (step_spec->plane_size &&

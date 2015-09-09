@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for burst_buffer/cray to parse type option correctly.
  -- Fix memory error and version number in the nonstop plugin and reservation
     code.
+ -- When requesting GRES in a step check for correct variable for the count.
 
 * Changes in Slurm 15.08.0
 ==========================
