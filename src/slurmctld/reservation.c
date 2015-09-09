@@ -2391,7 +2391,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 		xfree(resv_ptr->partition);
-		resv_ptr->partition	= xstrdup(resv_desc_ptr->partition);
+		resv_ptr->partition	= resv_desc_ptr->partition;
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
 	}
