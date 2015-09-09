@@ -226,8 +226,7 @@ extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
 	if (!job_resrcs_ptr)
 		return SLURM_SUCCESS;
 
-	if (job_resrcs_ptr->node_bitmap)
-		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
+	FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
 
 	if (job_resrcs_ptr->nodes &&
 	    (node_name2bitmap(job_resrcs_ptr->nodes, false,

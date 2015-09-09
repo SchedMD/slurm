@@ -151,6 +151,7 @@ static void *_fork_script(void *x);
 static void _free_script_arg(resv_thread_args_t *args);
 static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
+static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
 static uint32_t _get_job_duration(struct job_record *job_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
@@ -171,7 +172,6 @@ static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
-static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
@@ -183,6 +183,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
 			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
+static void _set_core_resrcs(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
@@ -274,6 +275,10 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 						      core_bitmap);
 	}
 	resv_copy_ptr->core_cnt = resv_orig_ptr->core_cnt;
+	if (resv_orig_ptr->core_resrcs) {
+		resv_copy_ptr->core_resrcs = copy_job_resources(resv_orig_ptr->
+								core_resrcs);
+	}
 	resv_copy_ptr->duration = resv_orig_ptr->duration;
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
@@ -349,6 +354,11 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	src_resv->core_bitmap = NULL;
 
 	dest_resv->core_cnt = src_resv->core_cnt;
+
+	free_job_resources(&dest_resv->core_resrcs);
+	dest_resv->core_resrcs = src_resv->core_resrcs;
+	src_resv->core_resrcs = NULL;
+
 	dest_resv->duration = src_resv->duration;
 	dest_resv->end_time = src_resv->end_time;
 
@@ -424,12 +434,13 @@ static void _del_resv_rec(void *x)
 		xassert(resv_ptr->magic == RESV_MAGIC);
 		resv_ptr->magic = 0;
 		xfree(resv_ptr->accounts);
-		for (i=0; i<resv_ptr->account_cnt; i++)
+		for (i = 0; i < resv_ptr->account_cnt; i++)
 			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->burst_buffer);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->features);
 		FREE_NULL_LIST(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
@@ -1356,6 +1367,112 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	return ESLURM_USER_ID_MISSING;
 }
 
+/* Given a core_resrcs data structure (which has information only about the
+ * nodes in that reservation), build a global core_bitmap (which includes
+ * information about all nodes in the system).
+ * RET SLURM_SUCCESS or error code */
+static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
+{
+	int i, i_first, i_last, j, node_inx;
+	int c, core_offset_local, core_offset_global, core_end;
+
+	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
+	    (bit_ffs(resv_ptr->core_resrcs->core_bitmap) == -1))
+		return SLURM_SUCCESS;
+
+	FREE_NULL_BITMAP(resv_ptr->core_resrcs->node_bitmap);
+	if (resv_ptr->core_resrcs->nodes &&
+	    (node_name2bitmap(resv_ptr->core_resrcs->nodes, false,
+			      &resv_ptr->core_resrcs->node_bitmap))) {
+		error("Invalid nodes (%s) for reservation %s",
+		      resv_ptr->core_resrcs->nodes, resv_ptr->name);
+		return SLURM_ERROR;
+	} else if (resv_ptr->core_resrcs->nodes == NULL) {
+		resv_ptr->core_resrcs->node_bitmap =
+			bit_alloc(node_record_count);
+	}
+
+	i = bit_set_count(resv_ptr->core_resrcs->node_bitmap);
+	if (resv_ptr->core_resrcs->nhosts != i) {
+		error("Invalid change in resource allocation node count for "
+		      "reservation %s, %u to %d",
+		      resv_ptr->name, resv_ptr->core_resrcs->nhosts, i);
+		return SLURM_ERROR;
+	}
+
+	_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
+	i_first = bit_ffs(resv_ptr->core_resrcs->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(resv_ptr->core_resrcs->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first, node_inx = -1; i <= i_last; i++) {
+		if (!bit_test(resv_ptr->core_resrcs->node_bitmap, i))
+			continue;
+		node_inx++;
+		core_offset_global = cr_get_coremap_offset(i);
+		core_end = cr_get_coremap_offset(i + 1);
+		core_offset_local = get_job_resources_offset(
+					resv_ptr->core_resrcs, node_inx, 0, 0);
+		for (c = core_offset_global, j = core_offset_local;
+	 	     c < core_end; c++, j++) {
+			if (!bit_test(resv_ptr->core_resrcs->core_bitmap, j))
+				continue;
+			bit_set(resv_ptr->core_bitmap, c);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Build core_resrcs based upon node_bitmap and core_bitmap as needed.
+ * This translates a global core_bitmap (including all nodes) to a
+ * core_bitmap for only those nodes in the reservation. This is needed to
+ * handle nodes being added or removed from the system or their core count
+ * changing. */
+static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
+{
+	int i, i_first, i_last, j, node_inx, rc;
+	int c, core_offset_local, core_offset_global, core_end;
+
+	if (!resv_ptr->core_bitmap || resv_ptr->core_resrcs ||
+	    !resv_ptr->node_bitmap ||
+	    ((i_first = bit_ffs(resv_ptr->node_bitmap)) == -1))
+		return;
+
+	resv_ptr->core_resrcs = create_job_resources();
+	resv_ptr->core_resrcs->nodes = xstrdup(resv_ptr->node_list);
+	resv_ptr->core_resrcs->node_bitmap = bit_copy(resv_ptr->node_bitmap);
+	resv_ptr->core_resrcs->nhosts = bit_set_count(resv_ptr->node_bitmap);
+	rc = build_job_resources(resv_ptr->core_resrcs, node_record_table_ptr,
+				 slurmctld_conf.fast_schedule);
+	if (rc != SLURM_SUCCESS) {
+		free_job_resources(&resv_ptr->core_resrcs);
+		return;
+	}
+	resv_ptr->core_resrcs->cpus = xmalloc(sizeof(uint16_t) *
+					      resv_ptr->core_resrcs->nhosts);
+	core_offset_local = -1;
+	node_inx = -1;
+	i_last = bit_fls(resv_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(resv_ptr->node_bitmap, i))
+			continue;
+		node_inx++;
+		core_offset_global = cr_get_coremap_offset(i);
+		core_end = cr_get_coremap_offset(i + 1);
+		for (c = core_offset_global, j = core_offset_local;
+		     c < core_end; c++, j++) {
+			core_offset_local++;
+			if (!bit_test(resv_ptr->core_bitmap, c))
+				continue;
+			bit_set(resv_ptr->core_resrcs->core_bitmap,
+				core_offset_local);
+			resv_ptr->core_resrcs->cpus[node_inx]++;
+		}
+	}
+}
+
 /*
  * _pack_resv - dump configuration information about a specific reservation
  *	in machine independent form (for network transmission or state save)
@@ -1390,7 +1507,44 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		end_relative = resv_ptr->end_time;
 	}
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		packstr(resv_ptr->accounts,	buffer);
+		packstr(resv_ptr->burst_buffer,	buffer);
+		pack32(resv_ptr->core_cnt,	buffer);
+		pack_time(end_relative,		buffer);
+		packstr(resv_ptr->features,	buffer);
+		pack32(resv_ptr->flags,		buffer);
+		packstr(resv_ptr->licenses,	buffer);
+		packstr(resv_ptr->name,		buffer);
+		pack32(resv_ptr->node_cnt,	buffer);
+		packstr(resv_ptr->node_list,	buffer);
+		packstr(resv_ptr->partition,	buffer);
+		pack32(resv_ptr->resv_watts,    buffer);
+		pack_time(start_relative,	buffer);
+		packstr(resv_ptr->tres_fmt_str,	buffer);
+		packstr(resv_ptr->users,	buffer);
+
+		if (internal) {
+			pack8(resv_ptr->account_not,	buffer);
+			packstr(resv_ptr->assoc_list,	buffer);
+			/* NOTE: Restoring core_bitmap directly only works if
+			 * the system's node and core counts don't change.
+			 * core_resrcs is used so configuration changes can be
+			 * supported */
+			_set_core_resrcs(resv_ptr);
+			pack_job_resources(resv_ptr->core_resrcs, buffer,
+					   protocol_version);
+			pack32(resv_ptr->duration,	buffer);
+			pack8(resv_ptr->full_nodes,	buffer);
+			pack32(resv_ptr->resv_id,	buffer);
+			pack_time(resv_ptr->start_time_prev,	buffer);
+			pack_time(resv_ptr->start_time,	buffer);
+			packstr(resv_ptr->tres_str,	buffer);
+			pack8(resv_ptr->user_not,	buffer);
+		} else {
+			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
+		}
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		packstr(resv_ptr->burst_buffer,	buffer);
 		pack32(resv_ptr->core_cnt,	buffer);
@@ -1468,7 +1622,48 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&resv_ptr->accounts,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
+				       &uint32_tmp,	buffer);
+		safe_unpack32(&resv_ptr->core_cnt,	buffer);
+		safe_unpack_time(&resv_ptr->end_time,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->features,
+				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->flags,		buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->licenses,
+				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+
+		safe_unpack32(&resv_ptr->node_cnt,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->node_list,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->partition,
+				       &uint32_tmp, 	buffer);
+		safe_unpack32(&resv_ptr->resv_watts,    buffer);
+		safe_unpack_time(&resv_ptr->start_time_first,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->tres_fmt_str,
+				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->users, &uint32_tmp, buffer);
+
+		/* Fields saved for internal use only (save state) */
+		safe_unpack8((uint8_t *)&resv_ptr->account_not,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
+				       &uint32_tmp,	buffer);
+		resv_ptr->core_resrcs = create_job_resources();
+		if (unpack_job_resources(&resv_ptr->core_resrcs, buffer,
+					 protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&resv_ptr->duration,	buffer);
+		safe_unpack8((uint8_t *)&resv_ptr->full_nodes,	buffer);
+		safe_unpack32(&resv_ptr->resv_id,	buffer);
+		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
+		safe_unpack_time(&resv_ptr->start_time, buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->tres_str,
+				       &uint32_tmp, 	buffer);
+		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
@@ -1740,7 +1935,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				}
 				offset = cr_get_coremap_offset(i);
 
-				for (core=0; core < cores; core++) {
+				for (core = 0; core < cores; core++) {
 					if (!bit_test(resv_ptr->core_bitmap,
 						     core + offset))
 						continue;
@@ -2519,6 +2714,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_ptr->node_list);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		free_job_resources(&resv_ptr->core_resrcs);
 		resv_ptr->node_bitmap = bit_alloc(node_record_count);
 		if ((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) {
@@ -2564,6 +2760,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_desc_ptr->node_list = NULL;  /* Nothing left to free */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		free_job_resources(&resv_ptr->core_resrcs);
 		resv_ptr->node_bitmap = node_bitmap;
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
@@ -2957,93 +3154,6 @@ extern int dump_all_resv_state(void)
 	return 0;
 }
 
-/* Unfortunately the reservation's core_bitmap is a global bitmap and the nodes
- * in the system have changed in terms of their node count or nodes have been
- * added or removed. Make best effort to rebuild the reservation's core_bitmap
- * on the limited information currently available. The specific cores might
- * change, but this logic at least leaves their count constant and uses the
- * same nodes. */
-static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr)
-{
-	int i_first, i_last, i, j, k, core_offset, node_offset;
-	uint32_t core_cnt, core_inx, node_inx;
-	ListIterator job_iterator;
-	struct job_record  *job_ptr;
-
-	info("Core_bitmap for reservation %s no longer valid, cores addded or removed, rebuilding",
-	     resv_ptr->name);
-
-	core_cnt = bit_set_count(resv_ptr->core_bitmap);      /* Cores needed */
-	bit_free(resv_ptr->core_bitmap);
-	resv_ptr->core_bitmap =
-		bit_alloc(cr_get_coremap_offset(node_record_count));
-
-	/* Try to use any cores in use by jobs running in this reservation */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr)      ||
-		    (job_ptr->node_bitmap == NULL)||
-		    (job_ptr->job_resrcs == NULL) ||
-		    (job_ptr->resv_name == NULL)  ||
-		    strcmp(job_ptr->resv_name, resv_ptr->name))
-			continue;
-		/* This job is currently running in this reservation */
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(job_ptr->node_bitmap);
-		else
-			i_last = i_first - 1;
-		node_offset = -1;
-		for (node_inx = i_first;
-		     ((core_cnt > 0) && (node_inx <= i_last)); node_inx++) {
-			if (!bit_test(job_ptr->node_bitmap, node_inx))
-				continue;
-			node_offset++;
-			core_offset = get_job_resources_offset(
-						job_ptr->job_resrcs,
-						node_offset, 0, 0);
-			if (core_offset < 0)
-				break;
-			j = cr_get_coremap_offset(node_inx);
-			k = cr_get_coremap_offset(node_inx + 1);
-			k -= j;	/* core count on this node */
-			for (i = 0; i < k; i++) {
-				if (!bit_test(job_ptr->job_resrcs->core_bitmap,
-					      core_offset + i))
-					continue;
-				bit_set(resv_ptr->core_bitmap, j + i);
-				if (--core_cnt == 0)
-					break;
-			}
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	/* Use any other available cores, evenly distributing across nodes */
-	i_first = bit_ffs(resv_ptr->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(resv_ptr->node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (core_inx = 0; ((core_cnt > 0) && (core_inx <= core_cnt));
-	     core_inx++) {
-		for (node_inx = i_first; node_inx <= i_last; node_inx++) {
-			if (!bit_test(resv_ptr->node_bitmap, node_inx))
-				continue;
-			j = cr_get_coremap_offset(node_inx);
-			k = cr_get_coremap_offset(node_inx + 1);
-			j += core_inx;	/* Core offset on this node */
-			if (j >= k)
-				continue;
-			if (bit_test(resv_ptr->core_bitmap, j))
-				continue;	/* Already set by job */
-			bit_set(resv_ptr->core_bitmap, j);
-			if (--core_cnt == 0)
-				break;
-		}	
-	}
-}
-
 /* Validate one reservation record, return true if good */
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 {
@@ -3053,6 +3163,8 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		error("Read reservation without name");
 		return false;
 	}
+	if (_get_core_resrcs(resv_ptr) != SLURM_SUCCESS)
+		return false;
 	if (resv_ptr->partition) {
 		struct part_record *part_ptr = NULL;
 		part_ptr = find_part_record(resv_ptr->partition);
@@ -3156,12 +3268,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
-	}
-
-	if (!resv_ptr->full_nodes && resv_ptr->core_bitmap &&
-	    (bit_size(resv_ptr->core_bitmap) !=
-	     cr_get_coremap_offset(node_record_count))) {
-		_rebuild_core_bitmap(resv_ptr);
 	}
 
 	return true;
@@ -3274,6 +3380,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			FREE_NULL_BITMAP(new_bitmap);
 			FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 			resv_ptr->core_bitmap = core_bitmap;	/* is NULL */
+			free_job_resources(&resv_ptr->core_resrcs);
 			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = bitmap2node_name(resv_ptr->
 							       node_bitmap);
@@ -3340,6 +3447,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		FREE_NULL_BITMAP(tmp_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->core_bitmap = core_bitmap;
+		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		info("modified reservation %s due to unusable nodes, "
@@ -3597,6 +3705,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		FREE_NULL_BITMAP(tmp1_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->core_bitmap = core_bitmap;
+		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
