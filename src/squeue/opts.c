@@ -259,6 +259,7 @@ parse_command_line( int argc, char* argv[] )
 			break;
 		case (int)'r':
 			params.array_flag = true;
+			setenv("SLURM_BITSTR_LEN", "0", 1);
 			break;
 		case (int) 's':
 			if (optarg) {

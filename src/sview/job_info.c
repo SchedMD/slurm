@@ -1328,7 +1328,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       int update)
 {
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
-	char tmp_char[50];
+	char tmp_char[64];
 	char time_buf[32];
 	char tmp1[128];
 	char running_char[50];
@@ -3190,7 +3190,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
-			char task_str[16];
+			char task_str[64];
 			sview_job_info_t *first_job_info_ptr =
 				list_find_first(info_list,
 						_task_array_match, job_ptr);
