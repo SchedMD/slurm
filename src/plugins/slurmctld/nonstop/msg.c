@@ -60,6 +60,11 @@
 #include "src/plugins/slurmctld/nonstop/msg.h"
 #include "src/plugins/slurmctld/nonstop/read_config.h"
 
+/* This version string must also be declared in the
+ * client library smd_ns.c
+ */
+char *version_string = "VERSION:16.05";
+
 /* When a remote socket closes on AIX, we have seen poll() return EAGAIN
  * indefinitely for a pending write request. Rather than locking up
  * socket, abort after _MAX_RETRIES poll() failures. */
@@ -245,13 +250,19 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 	cmd_ptr = msg_decrypted;
 
 	/* 123456789012345678901234567890 */
+	if (strncmp(cmd_ptr, version_string, 13) == 0) {
+		cmd_ptr = strchr(cmd_ptr + 13, ':');
+		if (cmd_ptr) {
+			cmd_ptr++;
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		}
+	}
 
 	if (protocol_version == 0) {
 		info("slurmctld/nonstop: Message version invalid");
 		resp = xstrdup("Error:\"Message version invalid\"");
 		goto send_resp;
 	}
-
 	if (strncmp(cmd_ptr, "CALLBACK:JOBID:", 15) == 0) {
 		resp = register_callback(cmd_ptr, cmd_uid, cli_addr,
 					 protocol_version);

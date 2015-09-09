@@ -4647,7 +4647,7 @@ static void _update_constraint_planning(constraint_planning_t* sched,
 	cstr_slot->start = start;
 	cstr_slot->end = end;
 
-	/* iterate on the current slot list to identify 
+	/* iterate on the current slot list to identify
 	 * the modifications and do them live */
 	iter = list_iterator_create(sched->slot_list);
 	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
@@ -4770,7 +4770,7 @@ static void _print_constraint_planning(constraint_planning_t* sched)
 }
 
 /*
- * Determine how many watts the specified job is prevented from using 
+ * Determine how many watts the specified job is prevented from using
  * due to reservations
  *
  * IN job_ptr   - job to test
