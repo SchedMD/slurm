@@ -1157,11 +1157,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			return nodes_avail;
 		FREE_NULL_BITMAP(nodes_avail);
 
-		/* total_task_cnt can be 0 if using GRES and all the
-		 * GRES are used up, so we want to pend if that is the
-		 * case.
-		 */
-		if (!total_task_cnt || (total_task_cnt >= step_spec->num_tasks))
+		if (total_task_cnt >= step_spec->num_tasks)
 			*return_code = ESLURM_NODES_BUSY;
 		else
 			*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
