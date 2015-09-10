@@ -432,7 +432,7 @@ extern int set_system_cgroup_cpus(char *phys_cpu_str)
 
 extern int set_system_cgroup_mem_limit(uint32_t mem_spec_limit)
 {
-	uint64_t mem_spec_bytes = mem_spec_limit * 1024 * 1024;
+    uint64_t mem_spec_bytes = (uint64_t)mem_spec_limit * 1024 * 1024;
 	xcgroup_set_uint64_param(&system_memory_cg, "memory.limit_in_bytes",
 				 mem_spec_bytes);
 	return SLURM_SUCCESS;
