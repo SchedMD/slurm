@@ -60,9 +60,8 @@
 #include "src/plugins/slurmctld/nonstop/msg.h"
 #include "src/plugins/slurmctld/nonstop/read_config.h"
 
-/* This version string must also be declared in the
- * client library smd_ns.c
- */
+/* This version string is defined at configure time of libsmd. The
+ * META of libsmd needs to reflect this version. */
 char *version_string = "VERSION:16.05";
 
 /* When a remote socket closes on AIX, we have seen poll() return EAGAIN
