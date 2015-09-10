@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
+ -- Fix a bug which caused scontrol to core dump when releasing or
+    holding a job by name.
 
 * Changes in Slurm 14.11.9
 ==========================

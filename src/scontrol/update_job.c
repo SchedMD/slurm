@@ -370,6 +370,7 @@ scontrol_hold(char *op, char *job_str)
 	static job_info_msg_t *jobs = NULL;
 	job_array_resp_msg_t *resp = NULL;
 	int i, rc = SLURM_SUCCESS, rc2;
+	int j;
 	job_desc_msg_t job_msg;
 	uint32_t job_id = 0;
 	char *job_name = NULL;
@@ -493,16 +494,16 @@ scontrol_hold(char *op, char *job_str)
 					job_msg.job_id_str);
 			}
 		} else if (resp) {
-			for (i = 0; i < resp->job_array_count; i++) {
-				if ((resp->error_code[i] == SLURM_SUCCESS) &&
+			for (j = 0; j < resp->job_array_count; j++) {
+				if ((resp->error_code[j] == SLURM_SUCCESS) &&
 				    (resp->job_array_count == 1))
 					continue;
 				exit_code = 1;
 				if (quiet_flag == 1)
 					continue;
 				fprintf(stderr, "%s: %s\n",
-					resp->job_array_id[i],
-					slurm_strerror(resp->error_code[i]));
+					resp->job_array_id[j],
+					slurm_strerror(resp->error_code[j]));
 			}
 			slurm_free_job_array_resp(resp);
 		}
