@@ -4975,8 +4975,11 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			gres_cnt = NO_VAL64;
 	} else if (job_gres_ptr->gres_cnt_step_alloc &&
 		   job_gres_ptr->gres_cnt_step_alloc[node_offset]) {
-		gres_cnt = job_gres_ptr->gres_cnt_alloc -
-			   job_gres_ptr->gres_cnt_step_alloc[node_offset];
+		gres_cnt = job_gres_ptr->gres_cnt_alloc;
+		if (!ignore_alloc) {
+			gres_cnt -= job_gres_ptr->
+				    gres_cnt_step_alloc[node_offset];
+		}
 		if (step_gres_ptr->gres_cnt_alloc > gres_cnt)
 			gres_cnt = 0;
 		else

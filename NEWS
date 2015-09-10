@@ -384,6 +384,10 @@ documents those changes that are of interest to users and administrators.
  -- Update the slurm.conf man page documenting better nohold_on_prolog_fail
     variable.
  -- Don't trucate task ID information in "squeue --array/-r" or "sview".
+ -- Fix a bug which caused scontrol to core dump when releasing or
+    holding a job by name.
+ -- Fix unit conversion bug in slurmd which caused wrong memory calculation
+    for cgroups.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
