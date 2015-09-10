@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     available you hold the requesting step until the GRES is available.
  -- Fix a bug which caused scontrol to core dump when releasing or
     holding a job by name.
+ -- Fix unit conversion bug in slurmd which caused wrong memory calculation
+    for cgroups.
 
 * Changes in Slurm 14.11.9
 ==========================
