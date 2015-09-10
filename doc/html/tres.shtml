@@ -23,7 +23,7 @@ Current TRES Types are
 <li><b>AccountingStorageTRES</b>
 <p>Used to define which TRES are
   to be track on the system.  By default CPU, Energy, Memory, and Node
-  are tracked.  This will be the case weither specified or not. The
+  are tracked.  This will be the case whether specified or not. The
   following example
   <pre>AccountingStorageTRES=gres/craynetwork,license/iop1,bb/cray</pre>
   will track cpu, energy, memory, nodes along with a gres called craynetwork
