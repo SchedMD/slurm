@@ -36,7 +36,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
-
+ -- MYSQL - Change debug to print out with DebugFlags=DB_Step instead of debug4
+ -- Simplify code when user is selecting a job/step/array id and removed
+    anomaly when only asking for 1 (task_id was never set to INFINITE).
+ -- MYSQL - If user is requesting various task_ids only return requested steps.
 * Changes in Slurm 15.08.0
 ==========================
  -- Fix issue with frontend systems (outside ALPs or BlueGene) where srun

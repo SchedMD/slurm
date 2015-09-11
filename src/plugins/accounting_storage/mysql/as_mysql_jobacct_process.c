@@ -714,7 +714,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				    (selected_step->jobid !=
 				     job->array_job_id)) {
 					continue;
-				} else if (selected_step->stepid == NO_VAL) {
+				} else if ((selected_step->array_task_id !=
+					    INFINITE) &&
+					   (selected_step->array_task_id !=
+					    job->array_task_id))
+					continue;
+				else if (selected_step->stepid == NO_VAL) {
 					job->show_full = 1;
 					break;
 				} else if (selected_step->stepid == INFINITE)
@@ -751,8 +756,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			xfree(extra);
 		}
 
-		debug4("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		if (debug_flags & DEBUG_FLAG_DB_STEP)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
 		if (!(step_result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
