@@ -3318,6 +3318,19 @@ extern int slurmdb_find_qos_in_list_by_name(void *x, void *key)
 	return 0;
 }
 
+extern int slurmdb_find_selected_step_in_list(void *x, void *key)
+{
+	slurmdb_selected_step_t *selected_step = (slurmdb_selected_step_t *)x;
+	slurmdb_selected_step_t *query_step = (slurmdb_selected_step_t *)key;
+
+	if ((query_step->jobid == selected_step->jobid) &&
+	    (query_step->stepid == selected_step->stepid) &&
+	    (query_step->array_task_id == selected_step->array_task_id))
+		return 1;
+
+	return 0;
+}
+
 extern int slurmdb_find_tres_in_list(void *x, void *key)
 {
 	slurmdb_tres_rec_t *tres_rec = (slurmdb_tres_rec_t *)x;
