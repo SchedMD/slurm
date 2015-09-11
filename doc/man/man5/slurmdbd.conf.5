@@ -149,6 +149,14 @@ returned by the \fIgethostname()\fR function cut at the first dot (e.g. use
 "tux001" rather than "tux001.my.com").
 
 .TP
+\fBDbdAddr\fR
+Name that \fBDbdHost\fR should be referred to in establishing a communications
+path. This name will be used as an argument to the gethostbyname() function for
+identification. For example, "elx0000" might be used to designate the Ethernet
+address for node "lx0000".  By default the \fBDbdAddr\fR will be identical in
+value to \fBDbdHost\fR.
+
+.TP
 \fBDbdHost\fR
 The name of the machine where the Slurm Database Daemon is executed.
 This should be a node name without the full domain name.  I.e., the hostname

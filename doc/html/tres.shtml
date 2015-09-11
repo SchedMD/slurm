@@ -2,11 +2,11 @@
 
 <h1>Trackable RESources (TRES)</h1>
 
-<p>A TRES is a resource that can be tracked for usage or to enforce
-  limits against.  A TRES is made of a combo of a Type and a Name.
+<p>A TRES is a resource that can be tracked for usage or used to enforce
+  limits against.  A TRES is a combination of a Type and a Name.
   Types are predefined.
 
-Current TRES Types are
+Current TRES Types are:
 </p>
 <ul>
 <li>BB (burst buffers)</li>
@@ -22,21 +22,23 @@ Current TRES Types are
 <ul>
 <li><b>AccountingStorageTRES</b>
 <p>Used to define which TRES are
-  to be track on the system.  By default CPU, Energy, Memory, and Node
-  are tracked.  This will be the case weither specified or not. The
-  following example
+  to be tracked on the system. By default CPU, Energy, Memory and Node
+  are tracked.  This will be the case whether specified or not. The
+  following example:
+</p>
   <pre>AccountingStorageTRES=gres/craynetwork,license/iop1,bb/cray</pre>
-  will track cpu, energy, memory, nodes along with a gres called craynetwork
+<p>
+  will track cpu, energy, memory and nodes along with a GRES called craynetwork
   as well as a license called iop1.  It will also track usage on a
   Cray burst buffer. Whenever these resources are used on the
-  cluster they are recorded. The TRES are automatically set up in the database
+  cluster they are recorded. TRES are automatically set up in the database
   on the start of the slurmctld.
 </p>
 
-<p> The TRES that need/have associated names are BB, GRES, and
-  License.  As seen in the above example GRES/License are typically
-  different on each system.  The BB TRES is directly named the same as
-  the burst buffer plugin used in the above example we are using the
+<p> The TRES that require associated names are BB, GRES, and
+  License.  As seen in the above example, GRES and License are typically
+  different on each system.  The BB TRES is named the same as
+  the burst buffer plugin being used. In the above example we are using the
   <i>Cray</i> burst buffer plugin.
 </p>
 </li>
@@ -51,30 +53,38 @@ AccountingStorageTRES is configured with each TRES Type.
 The default values are 0.</p>
 </li>
 
-</li>
 <li><b>TRESBillingWeights</b>
 <p>For each partition this option is used to define the billing
   weights of each TRES type that will be used in calcuating the usage
   of a job.
 </p>
+
 <p>Billing weights are specified as a comma-separated list of
 <i>TRES=Weight</i> pairs.
 </p>
+
 <p>Any TRES Type is available for billing. Note that the memory is weighted per
 gigabyte.
 </p>
+
 <p>By default the billing of TRES is calculated as the sum of all TRES types
 multiplied by their corresponding billing weight.  For example, when a job is
 allocated 1 CPU and 8 GB of memory on a partition configured with
-<pre>TRESBillingWeights="CPU=1.0,Mem=0.25,GRES/gpu=2.0"</pre>, the
-billable TRES will be: (1*1.0) + (8*0.25) + (0*2.0) = 3.0.
 </p>
+
+<pre>TRESBillingWeights="CPU=1.0,Mem=0.25,GRES/gpu=2.0"</pre>
+
+<p>, the billable TRES will be:
+</p>
+<pre>(1*1.0) + (8*0.25) + (0*2.0) = 3.0</pre>
+
 <p>If <i>PriorityFlags=MAX_TRES</i> is configured, the billable TRES is
   calculated as the MAX of individual TRES' on a node (e.g. cpus, mem,
   gres) plus the sum of all global TRES' (e.g. licenses). Using the
-  same example above the billable TRES will be:
-  MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
+  same example above, the billable TRES will be:
 </p>
+<pre>MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0</pre>
+
 <p>If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
 </p>
@@ -84,6 +94,7 @@ doesn't affect job priority directly as it is currently not used for the size of
 the job. If you want TRES' to play a role in the job's priority then refer to
 the PriorityWeightTRES option.
 </p>
+
 <p><b>NOTE:</b> As with PriorityWeightTRES only TRES definied in
   AccountingStorageTRES are available for TRESBillingWeights.
 </p>
@@ -92,17 +103,17 @@ the PriorityWeightTRES option.
 </ul>
 
 <h2>sacct</h2>
-<p>Sacct can be used to view the TRES of each job by adding "tres" to the
+<p>sacct can be used to view the TRES of each job by adding "tres" to the
   --format option.
 </p>
 
 <h2>sacctmgr</h2>
-<p>Sacctmgr is used to view the various TRES available globally in the
+<p>sacctmgr is used to view the various TRES available globally in the
   system. <i>sacctmgr show tres</i> will do this.
 </p>
 
 <h2>sreport</h2>
-<p>Before 15.08 sreport would only report on CPU usage.  It now will
+<p>Before 15.08, sreport would only report on CPU usage.  It will now
   work on different TRES.  Simply using the comma separated input
   option <i>--tres=</i> will have sreport generate reports available
   for the requested TRES types.  More information about these reports

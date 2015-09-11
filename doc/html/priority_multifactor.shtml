@@ -145,7 +145,7 @@ priority of all the QOS's to become the QOS factor.</P>
 <P>
 Each TRES Type has its own priority factor for a job which represents the amount
 of TRES Type requested/allocated in a given partition. For global TRES Types,
-such as GRES, Licenses and Burst Buffers, the factor represents the number of
+such as Licenses and Burst Buffers, the factor represents the number of
 TRES Type requested/allocated in the whole system. The more a given TRES Type is
 requested/allocated on a job, the greater the job priority will be for that job.
 </P>
