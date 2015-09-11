@@ -37,6 +37,8 @@ set test_id          "1.19"
 set exit_code        0
 set file_err_j       "test$test_id.j.%j.error"
 set file_in          "test$test_id.input"
+set file_out_perc    "test$test_id.%%.output"
+set file_out_perc_result "test$test_id.%.output"
 set file_out_J       "test$test_id.J.%J.output"
 set file_out_n       "test$test_id.n.%n.output"
 set file_out_s       "test$test_id.s.%s.output"
@@ -167,6 +169,37 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 } else {
 	send_user "\nFAILURE: file format of %j in stderr failed\n"
 	set exit_code 1
+}
+
+#
+# Spawn a shell via srun that includes literal percent sign (%) in stdout
+#  file name and confirm it is created
+#
+set job_id   0
+set srun_pid [spawn $srun --output=$file_out_perc -N1 -v -t1 $bin_printenv $node_name_env]
+expect {
+	-re "jobid ($number).*" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job initiation failed\n"
+	exit 1
+}
+if {[wait_for_file $file_out_perc_result] != 0} {
+	send_user "\nFAILURE: file format of %% in stdout failed\n"
+	set exit_code 1
+} else {
+	exec $bin_rm -f $file_out_perc_result
 }
 
 #

@@ -2025,33 +2025,39 @@ rather than the node where \fBsrun\fR executes, these format specifiers
 are not supported on a BGQ system.
 .RS 10
 .TP
+\fB\\\\\fR
+Do not process any of the replacement symbols.
+.TP
+\fB%%\fR
+The character "%".
+.TP
 \fB%A\fR
 Job array's master job allocation number.
 .TP
 \fB%a\fR
 Job array ID (index) number.
 .TP
-%J
+\fB%J\fR
 jobid.stepid of the running job. (e.g. "128.0")
 .TP
-%j
+\fB%j\fR
 jobid of the running job.
 .TP
-%s
+\fB%s\fR
 stepid of the running job.
 .TP
-%N
+\fB%N\fR
 short hostname. This will create a separate IO file per node.
 .TP
-%n
+\fB%n\fR
 Node identifier relative to current job (e.g. "0" is the first node of
 the running job) This will create a separate IO file per node.
 .TP
-%t
+\fB%t\fR
 task identifier (rank) relative to current job. This will create a
 separate IO file per task.
 .TP
-%u
+\fB%u\fR
 User name.
 .PP
 A number placed between the percent character and format specifier may be

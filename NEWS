@@ -9,6 +9,10 @@ documents those changes that are of interest to users and administrators.
     support configuration changes (changes in configured nodes or cores counts).
  -- Allow ControlMachine, BackupController, DbdHost and DbdBackupHost to be
     either short or long hostname.
+ -- Job output and error files can now contain "%" character by specifying
+    a file name with two consecutive "%" characters. For example,
+    "sbatch -o "slurm.%%.%j" for job ID 123 will generate an output file named
+    "slurm.%.123".
 
 * Changes in Slurm 15.08.1
 ==========================

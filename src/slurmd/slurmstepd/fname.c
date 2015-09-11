@@ -54,6 +54,17 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static void _batch_path_check(char **p, char **q, char **name,
+			      unsigned int wid, stepd_step_rec_t *job,
+			      int taskid);
+static char * _create_batch_fname(char *name, char *path,
+				  stepd_step_rec_t *job, int taskid);
+static char * _create_step_fname(char *name, char *path, stepd_step_rec_t *job,
+				 int taskid);
+static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
+			     bool double_p, stepd_step_rec_t *job, int taskid,
+			     int offset);
+
 /*
  * Max zero-padding width
  */
@@ -65,125 +76,245 @@
 char *
 fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 {
-	unsigned int wid   = 0;
 	char *name = NULL;
 	char *orig = xstrdup(format);
-	char *p, *q;
 	int id;
 	char *esc;
 
 	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id))
-			return (xstrdup ("/dev/null"));
+		return (xstrdup ("/dev/null"));
 
 	esc = is_path_escaped(orig);
 
-	/* If format doesn't specify an absolute pathname,
-	 * use cwd
+	/* If format doesn't specify an absolute pathname, use cwd
 	 */
 	if (orig[0] != '/') {
 		xstrcat(name, job->cwd);
 		if (esc) {
 			xstrcat(name, esc);
-			goto via;
+			goto fini;
 		}
 		if (name[strlen(name)-1] != '/')
 			xstrcatchar(name, '/');
 	}
 
 	if (esc) {
-		/* esc is malloc
-		 */
+		/* esc is malloc */
 		name = esc;
-		goto via;
+		goto fini;
 	}
 
-	q = p = orig;
+	if (job->batch)
+		name = _create_batch_fname(name, orig, job, taskid);
+	else
+		name = _create_step_fname(name, orig, job, taskid);
+
+fini:
+	xfree(orig);
+	return name;
+}
+
+static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *job,
+				 int taskid)
+{
+	unsigned int wid   = 0;
+	char *p, *q;
+	q = p = path;
+
 	while (*p != '\0') {
 		if (*p == '%') {
+			if (*(p+1) == '%') {
+				p++;
+				xmemcat(name, q, p);
+				q = ++p;
+				continue;
+			}
 			if (isdigit(*(++p))) {
 				unsigned long in_width = 0;
 				xmemcat(name, q, p - 1);
-				if ((in_width = strtoul(p, &p, 10)) > MAX_WIDTH)
+				if ((in_width = strtoul(p, &p, 10)) >
+				    MAX_WIDTH) {
 					wid = MAX_WIDTH;
-				else
+				} else
 					wid = (unsigned int)in_width;
 				q = p - 1;
 				if (*p == '\0')
 					break;
 			}
 
-			switch (*p) {
-			case 'a':  /* '%a' => array task id   */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*u", wid,
-					   job->array_task_id);
-				q = ++p;
-				break;
-			case 'A':  /* '%A' => array master job id */
-				xmemcat(name, q, p - 1);
-				if (job->array_task_id == NO_VAL) {
-					xstrfmtcat(name, "%0*u", wid,
-						   job->jobid);
-				} else {
-					xstrfmtcat(name, "%0*u", wid,
-						   job->array_job_id);
-				}
-				q = ++p;
-				break;
-			case 's':  /* '%s' => step id        */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*u", wid, job->stepid);
-				q = ++p;
-				break;
-			case 't':  /* '%t' => taskid         */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*u", wid, taskid);
-				q = ++p;
-				break;
-			case 'n':  /* '%n' => nodeid         */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*u", wid, job->nodeid);
-				q = ++p;
-				break;
-			case 'N':  /* '%N' => node name      */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%s", conf->hostname);
-				q = ++p;
-				break;
-			case 'u':  /* '%u' => user name      */
-				if (!job->user_name)
-					job->user_name =
-						uid_to_string(job->uid);
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%s", job->user_name);
-				q = ++p;
-				break;
-			case 'J':  /* '%J' => jobid.stepid */
-			case 'j':  /* '%j' => jobid        */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*u", wid, job->jobid);
-
-				if ((*p == 'J') && (job->stepid != NO_VAL))
-					xstrfmtcat(name, ".%u", job->stepid);
-				q = ++p;
-				break;
-
-			default:
-				break;
-			}
+			_batch_path_check(&p, &q, &name, wid, job, taskid);
 			wid = 0;
-
 		} else
 			p++;
 	}
 
 	if (q != p)
 		xmemcat(name, q, p);
-via:
-	xfree(orig);
+
 	return name;
 }
 
+static char *_create_step_fname (char *name, char *path, stepd_step_rec_t *job,
+				 int taskid)
+{
+
+	unsigned int wid   = 0;
+	char *p, *q;
+	bool double_p = false;
+	int str_offset = 1;
+
+	q = p = path;
+	while (*p != '\0') {
+		if (*p == '%') {
+			if (*(p+1) == '%') {
+				p++;
+				double_p = true;
+			}
+
+			if (isdigit(*(++p))) {
+				unsigned long in_width = 0;
+				if ((in_width = strtoul(p, &p, 10)) ==
+				    MAX_WIDTH) {
+					/* Remove % and double digit 10 */
+					str_offset = 3;
+				} else
+					str_offset = 2;
+				wid = (unsigned int)in_width;
+				if (*p == '\0')
+					break;
+
+			}
+			_step_path_check(&p, &q, &name, wid, double_p,
+					 job, taskid, str_offset);
+			wid = 0;
+		} else
+			p++;
+		double_p = false;
+		str_offset = 1;
+
+	}
+
+	if (q != p)
+		xmemcat(name, q, p);
+
+	return name;
+}
+
+/*
+ * Substitute the path option for a step.
+ *
+ */
+static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
+			     bool double_p, stepd_step_rec_t *job, int taskid,
+			     int offset)
+{
+	switch (**p) {
+	case '%': /* This is in case there is a 3rd %, ie. %%% */
+		xmemcat(*name, *q, *p - 1);
+		*q = *p;
+		break;
+	case 't':  /* '%t' => taskid         */
+		xmemcat(*name, *q, *p - offset);
+		if (!double_p) {
+			xstrfmtcat(*name, "%0*u", wid, taskid);
+			(*p)++;
+		}
+		*q = (*p)++;
+		break;
+	case 'n':  /* '%n' => nodeid         */
+		xmemcat(*name, *q, *p - offset);
+		if (!double_p) {
+			xstrfmtcat(*name, "%0*u", wid, job->nodeid);
+			(*p)++;
+		}
+		*q = (*p)++;
+		break;
+	case 'N':  /* '%N' => node name      */
+		xmemcat(*name, *q, *p - offset);
+		if (!double_p) {
+			xstrfmtcat(*name, "%s", conf->hostname);
+			(*p)++;
+		}
+		*q = (*p)++;
+		break;
+	case 'u':  /* '%u' => user name      */
+		if (!job->user_name)
+			job->user_name = uid_to_string(job->uid);
+		xmemcat(*name, *q, *p - 1);
+		if (!double_p) {
+			xstrfmtcat(*name, "%s", job->user_name);
+			(*p)++;
+		}
+		*q = (*p)++;
+		break;
+	default:
+		break;
+	}
+}
+
+/*
+ * Substitute the path option for a batch job
+ *
+ */
+static void _batch_path_check(char **p, char **q, char **name,
+			      unsigned int wid, stepd_step_rec_t *job,
+			      int taskid)
+{
+
+	switch (**p) {
+	case 'a':  /* '%a' => array task id   */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid,
+			   job->array_task_id);
+		*q = ++(*p);
+		break;
+	case 'A':  /* '%A' => array master job id */
+		xmemcat(*name, *q, *p - 1);
+		if (job->array_task_id == NO_VAL)
+			xstrfmtcat(*name, "%0*u", wid, job->jobid);
+		else
+			xstrfmtcat(*name, "%0*u",wid, job->array_job_id);
+		*q = ++(*p);
+		break;
+	case 'J':  /* '%J' => jobid.stepid */
+	case 'j':  /* '%j' => jobid        */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid, job->jobid);
+		if ((**p == 'J') && (job->stepid != NO_VAL))
+			xstrfmtcat(*name, ".%u", job->stepid);
+		*q = ++(*p);
+		break;
+	case 'n':  /* '%n' => nodeid         */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid, job->nodeid);
+		*q = ++(*p);
+		break;
+	case 'N':  /* '%N' => node name      */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%s", conf->hostname);
+		*q = ++(*p);
+		break;
+	case 's':  /* '%s' => step id        */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid, job->stepid);
+		*q = ++(*p);
+		break;
+	case 't':  /* '%t' => taskid         */
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%0*u", wid, taskid);
+		*q = ++(*p);
+		break;
+	case 'u':  /* '%u' => user name      */
+		if (!job->user_name)
+			job->user_name = uid_to_string(job->uid);
+		xmemcat(*name, *q, *p - 1);
+		xstrfmtcat(*name, "%s", job->user_name);
+		*q = ++(*p);
+		break;
+	default:
+		break;
+	}
+}
 /*
  * Return >= 0 if fmt specifies "single task only" IO
  *  i.e. if it specifies a single integer only
