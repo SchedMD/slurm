@@ -1172,6 +1172,15 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
+		/* Since the job could have been killed while the prolog was
+		 * running, test if the credential has since been revoked
+		 * and exit as needed. */
+		if (slurm_cred_revoked(conf->vctx, req->cred)) {
+			info("Job %u already killed, do not launch step %u.%u",
+			     req->job_id, req->job_id, req->job_step_id);
+			errnum = ESLURMD_CREDENTIAL_REVOKED;
+			goto done;
+		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(req->job_id);

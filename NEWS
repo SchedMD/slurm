@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
     interrupts.
  -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
+ -- Do not launch step if job killed while the prolog was running.
 
 * Changes in Slurm 14.03.11
 ===========================
