@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
+ -- MYSQL - Change debug to print out with DebugFlags=DB_Step instead of debug4
 
 * Changes in Slurm 15.08.0
 ==========================
