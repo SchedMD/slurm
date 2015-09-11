@@ -1351,7 +1351,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.features);
 	xfree(job_alloc_req.gres);
 	xfree(job_alloc_req.name);
-	xfree(job_alloc_req.network);On 
+	xfree(job_alloc_req.network);
 	xfree(job_alloc_req.partition);
 	xfree(job_alloc_req.qos);
 	xfree(job_alloc_req.wckey);
