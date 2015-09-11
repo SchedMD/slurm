@@ -1345,6 +1345,16 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 		if (i == SLURM_SUCCESS)
 			will_run_time = will_run_idle;
 	}
+	xfree(job_alloc_req.account);
+	xfree(job_alloc_req.dependency);
+	xfree(job_alloc_req.exc_nodes);
+	xfree(job_alloc_req.features);
+	xfree(job_alloc_req.gres);
+	xfree(job_alloc_req.name);
+	xfree(job_alloc_req.network);
+	xfree(job_alloc_req.partition);
+	xfree(job_alloc_req.qos);
+	xfree(job_alloc_req.wckey);
 
 	pthread_mutex_lock(&job_fail_mutex);	/* Resume lock */
 
@@ -1374,18 +1384,6 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 		}
 		goto fini;
 	}
-
-	xfree(job_alloc_req.account);
-	xfree(job_alloc_req.dependency);
-	xfree(job_alloc_req.exc_nodes);
-	xfree(job_alloc_req.features);
-	xfree(job_alloc_req.gres);
-	xfree(job_alloc_req.name);
-	xfree(job_alloc_req.network);
-	xfree(job_alloc_req.partition);
-	xfree(job_alloc_req.qos);
-	xfree(job_alloc_req.reservation);
-	xfree(job_alloc_req.wckey);
 
 merge:
 	if (!new_job_ptr) {	/* Fix for CLANG false positive */
