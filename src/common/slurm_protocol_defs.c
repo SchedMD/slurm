@@ -262,7 +262,7 @@ extern int slurm_addto_char_list(List char_list, char *names)
 		name = xstrndup(names+start, (i-start));
 		while ((tmp_char = list_next(itr))) {
 			if (!strcasecmp(tmp_char, name))
-			break;
+				break;
 		}
 
 		/* If we get a duplicate remove the
@@ -284,15 +284,73 @@ endit:
 	return count;
 }
 
+static int _addto_step_list_internal(List step_list, char *names,
+				     int start, int end)
+{
+	int count = 0;
+	char *dot = NULL, *name;
+	slurmdb_selected_step_t *selected_step = NULL;
+
+	if ((end-start) <= 0)
+		return 0;
+
+	name = xmalloc((end-start+1));
+	memcpy(name, names+start, (end-start));
+
+	if (!isdigit(*name)) {
+		fatal("Bad job/step specified: %s", name);
+		xfree(name);
+		return 0;
+	}
+
+	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+
+	if (!(dot = strstr(name, "."))) {
+		debug2("No jobstep requested");
+		selected_step->stepid = NO_VAL;
+	} else {
+		*dot++ = 0;
+		/* can't use NO_VAL since that means all */
+		if (!strcmp(dot, "batch"))
+			selected_step->stepid = INFINITE;
+		else if (isdigit(*dot))
+			selected_step->stepid = atoi(dot);
+		else
+			fatal("Bad step specified: %s", name);
+	}
+
+	if (!(dot = strstr(name, "_"))) {
+		debug2("No jobarray requested");
+		selected_step->array_task_id = NO_VAL;
+	} else {
+		*dot++ = 0;
+		/* INFINITE means give me all the tasks of the array */
+		if (!dot)
+			selected_step->array_task_id = INFINITE;
+		else if (isdigit(*dot))
+			selected_step->array_task_id = atoi(dot);
+		else
+			fatal("Bad job array element specified: %s", name);
+	}
+
+	selected_step->jobid = atoi(name);
+	xfree(name);
+
+	if (!list_find_first(step_list,
+			     slurmdb_find_selected_step_in_list,
+			     selected_step)) {
+		list_append(step_list, selected_step);
+		count++;
+	} else
+		slurmdb_destroy_selected_step(selected_step);
+
+	return count;
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_step_list(List step_list, char *names)
 {
 	int i=0, start=0;
-	char *name = NULL, *dot = NULL;
-	slurmdb_selected_step_t *selected_step = NULL;
-	slurmdb_selected_step_t *curr_step = NULL;
-
-	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
 	int count = 0;
@@ -300,144 +358,32 @@ extern int slurm_addto_step_list(List step_list, char *names)
 	if (!step_list) {
 		error("No list was given to fill in");
 		return 0;
+	} else if (!names)
+		return 0;
+
+	if (names[i] == '\"' || names[i] == '\'') {
+		quote_c = names[i];
+		quote = 1;
+		i++;
+	}
+	start = i;
+	while (names[i]) {
+		//info("got %d - %d = %d", i, start, i-start);
+		if (quote && names[i] == quote_c)
+			break;
+		else if (names[i] == '\"' || names[i] == '\'')
+			names[i] = '`';
+		else if (names[i] == ',') {
+			count += _addto_step_list_internal(
+				step_list, names, start, i);
+			i++;
+			start = i;
+		}
+		i++;
 	}
 
-	itr = list_iterator_create(step_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while(names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					char *dot = NULL;
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
+	count += _addto_step_list_internal(step_list, names, start, i);
 
-					selected_step = xmalloc(
-						sizeof(slurmdb_selected_step_t));
-					dot = strstr(name, ".");
-					if (dot == NULL) {
-						debug2("No jobstep requested");
-						selected_step->stepid = NO_VAL;
-					} else {
-						*dot++ = 0;
-						/* can't use NO_VAL
-						 * since that means all */
-						if (!strcmp(dot, "batch"))
-							selected_step->stepid =
-								INFINITE;
-						else
-							selected_step->stepid =
-								atoi(dot);
-					}
-
-					dot = strstr(name, "_");
-					if (dot == NULL) {
-						debug2("No jobarray requested");
-						selected_step->array_task_id =
-							NO_VAL;
-					} else {
-						*dot++ = 0;
-						/* INFINITE means give
-						 * me all the tasks of
-						 * the array */
-						if (!dot)
-							selected_step->
-								array_task_id =
-								INFINITE;
-						else
-							selected_step->
-								array_task_id =
-								atoi(dot);
-					}
-
-					selected_step->jobid = atoi(name);
-					xfree(name);
-
-					while((curr_step = list_next(itr))) {
-						if ((curr_step->jobid
-						    == selected_step->jobid)
-						   && (curr_step->stepid
-						       == selected_step->
-						       stepid))
-							break;
-					}
-
-					if (!curr_step) {
-						list_append(step_list,
-							    selected_step);
-						count++;
-					} else
-						slurmdb_destroy_selected_step(
-							selected_step);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-
-			selected_step =
-				xmalloc(sizeof(slurmdb_selected_step_t));
-
-			dot = strstr(name, ".");
-			if (dot == NULL) {
-				debug2("No jobstep requested");
-				selected_step->stepid = NO_VAL;
-			} else {
-				*dot++ = 0;
-				/* can't use NO_VAL since that means all */
-				if (!strcmp(dot, "batch"))
-					selected_step->stepid = INFINITE;
-				else
-					selected_step->stepid = atoi(dot);
-			}
-			dot = strstr(name, "_");
-			if (dot == NULL) {
-				debug2("No jobarray requested");
-				selected_step->array_task_id =
-					NO_VAL;
-			} else {
-				*dot++ = 0;
-				/* INFINITE means give me all the tasks of
-				 * the array */
-				if (dot[0])
-					selected_step->array_task_id =
-						atoi(dot);
-			}
-
-			selected_step->jobid = atoi(name);
-			xfree(name);
-
-			while((curr_step = list_next(itr))) {
-				if ((curr_step->jobid == selected_step->jobid)
-				   && (curr_step->stepid
-				       == selected_step->stepid))
-					break;
-			}
-
-			if (!curr_step) {
-				list_append(step_list, selected_step);
-				count++;
-			} else
-				slurmdb_destroy_selected_step(
-					selected_step);
-		}
-	}
-	list_iterator_destroy(itr);
 	return count;
 }
 
