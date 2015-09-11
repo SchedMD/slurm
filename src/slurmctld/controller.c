@@ -196,7 +196,8 @@ static int      job_sched_cnt = 0;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
-static char	node_name[MAX_SLURM_NAME];
+static char	node_name_short[MAX_SLURM_NAME];
+static char	node_name_long[MAX_SLURM_NAME];
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
@@ -385,7 +386,9 @@ int main(int argc, char *argv[])
 	info("%s version %s started on cluster %s",
 	     slurm_prog_name, SLURM_VERSION_STRING, slurmctld_cluster_name);
 
-	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
+	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)))
+		fatal("getnodename_short error %s", slurm_strerror(error_code));
+	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
@@ -398,7 +401,8 @@ int main(int argc, char *argv[])
 
 	/* Must set before plugins are loaded. */
 	if (slurmctld_conf.backup_controller &&
-	    (strcmp(node_name, slurmctld_conf.backup_controller) == 0)) {
+	    ((strcmp(node_name_short, slurmctld_conf.backup_controller) == 0) ||
+	     (strcmp(node_name_long, slurmctld_conf.backup_controller) == 0))) {
 #ifndef HAVE_ALPS_CRAY
 		char *sched_params = NULL;
 #endif
@@ -481,9 +485,10 @@ int main(int argc, char *argv[])
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 		} else {
-			error("this host (%s) not valid controller (%s or %s)",
-				node_name, slurmctld_conf.control_machine,
-				slurmctld_conf.backup_controller);
+			error("this host (%s/%s) not a valid controller "
+			      "(%s or %s)", node_name_short, node_name_long,
+			      slurmctld_conf.control_machine,
+			      slurmctld_conf.backup_controller);
 			exit(0);
 		}
 
@@ -931,7 +936,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* set node_addr to bind to (NULL means any) */
 	if (slurmctld_conf.backup_controller && slurmctld_conf.backup_addr &&
-	    (strcmp(node_name, slurmctld_conf.backup_controller) == 0) &&
+	    ((strcmp(node_name_short, slurmctld_conf.backup_controller) == 0) ||
+	     (strcmp(node_name_long, slurmctld_conf.backup_controller) == 0)) &&
 	    (strcmp(slurmctld_conf.backup_controller,
 		    slurmctld_conf.backup_addr) != 0)) {
 		node_addr = slurmctld_conf.backup_addr ;
@@ -1924,7 +1930,8 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_assert_primary_time) >=
 		     slurmctld_conf.slurmctld_timeout) &&
 		    slurmctld_conf.backup_controller &&
-		    strcmp(node_name, slurmctld_conf.backup_controller)) {
+		    strcmp(node_name_short, slurmctld_conf.backup_controller) &&
+		    strcmp(node_name_long, slurmctld_conf.backup_controller)) {
 			now = time(NULL);
 			last_assert_primary_time = now;
 			(void) _shutdown_backup_controller(0);
@@ -2774,7 +2781,8 @@ static bool  _valid_controller(void)
 	if (slurmctld_conf.control_machine == NULL)
 		return match;
 
-	if (strcmp(node_name, slurmctld_conf.control_machine) == 0)
+	if ((strcmp(node_name_short, slurmctld_conf.control_machine) == 0) ||
+	    (strcmp(node_name_long, slurmctld_conf.control_machine) == 0))
 		match = true;
 	else if (strchr(slurmctld_conf.control_machine, ',')) {
 		char *token, *last = NULL;
@@ -2782,7 +2790,8 @@ static bool  _valid_controller(void)
 
 		token = strtok_r(tmp_name, ",", &last);
 		while (token) {
-			if (strcmp(node_name, token) == 0) {
+			if ((strcmp(node_name_short, token) == 0) ||
+			    (strcmp(node_name_long, token) == 0)) {
 				match = true;
 				break;
 			}

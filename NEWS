@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     Exit code will match that of spawned job.
  -- Modify advanced reservation save/restore logic for core reservations to
     support configuration changes (changes in configured nodes or cores counts).
+ -- Allow ControlMachine, BackupController, DbdHost and DbdBackupHost to be
+    either short or long hostname.
 
 * Changes in Slurm 15.08.1
 ==========================

@@ -118,7 +118,8 @@ static void  _usage(char *prog_name);
 int main(int argc, char *argv[])
 {
 	pthread_attr_t thread_attr;
-	char node_name[128];
+	char node_name_short[128];
+	char node_name_long[128];
 	void *db_conn = NULL;
 	assoc_init_args_t assoc_init_arg;
 
@@ -195,12 +196,15 @@ int main(int argc, char *argv[])
 		goto end_it;
 	}
 
-	if (gethostname_short(node_name, sizeof(node_name)))
+	if (gethostname(node_name_long, sizeof(node_name_long)))
 		fatal("getnodename: %m");
+	if (gethostname_short(node_name_short, sizeof(node_name_short)))
+		fatal("getnodename_short: %m");
 
 	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
-		    (!strcmp(node_name, slurmdbd_conf->dbd_backup) ||
+		    (!strcmp(node_name_short, slurmdbd_conf->dbd_backup) ||
+		     !strcmp(node_name_long, slurmdbd_conf->dbd_backup) ||
 		     !strcmp(slurmdbd_conf->dbd_backup, "localhost"))) {
 			info("slurmdbd running in background mode");
 			have_control = false;
@@ -211,14 +215,16 @@ int main(int argc, char *argv[])
 			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn, 0);
 		} else if (slurmdbd_conf->dbd_host &&
-			   (!strcmp(slurmdbd_conf->dbd_host, node_name) ||
+			   (!strcmp(slurmdbd_conf->dbd_host, node_name_short) ||
+			    !strcmp(slurmdbd_conf->dbd_host, node_name_long) ||
 			    !strcmp(slurmdbd_conf->dbd_host, "localhost"))) {
 			backup = false;
 			have_control = true;
 		} else {
 			fatal("This host not configured to run SlurmDBD "
-			      "(%s != %s | (backup) %s)",
-			      node_name, slurmdbd_conf->dbd_host,
+			      "((%s or %s) != %s | (backup) %s)",
+			      node_name_short, node_name_long,
+			      slurmdbd_conf->dbd_host,
 			      slurmdbd_conf->dbd_backup);
 		}
 
