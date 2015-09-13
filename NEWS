@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Simplify code when user is selecting a job/step/array id and removed
     anomaly when only asking for 1 (task_id was never set to INFINITE).
  -- MYSQL - If user is requesting various task_ids only return requested steps.
+ -- Fix issue when tres cnt for energy is 0 for total reported.
+
 * Changes in Slurm 15.08.0
 ==========================
  -- Fix issue with frontend systems (outside ALPs or BlueGene) where srun
