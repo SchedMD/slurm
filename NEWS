@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     anomaly when only asking for 1 (task_id was never set to INFINITE).
  -- MYSQL - If user is requesting various task_ids only return requested steps.
  -- Fix issue when tres cnt for energy is 0 for total reported.
+ -- Resolved scalability issues of power adaptive scheduling with layouts.
 
 * Changes in Slurm 15.08.0
 ==========================
