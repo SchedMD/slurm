@@ -68,6 +68,7 @@
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -84,6 +85,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/powercapping.h"
 
 #define _DEBUG 0
 #ifndef BB_STAGE_ARRAY_TASK_CNT
@@ -1666,6 +1668,14 @@ next_task:
 			last_job_update = now;
 			reject_array_job_id = 0;
 			reject_array_part   = NULL;
+		
+			/* synchronize power layouts key/values */
+			if ((powercap_get_cluster_current_cap() != 0) &&
+			    (which_power_layout() == 2)) {
+				layouts_entity_pull_kv("power", 
+						       "Cluster", 
+						       "CurrentSumPower");
+			}
 #ifdef HAVE_BG
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
