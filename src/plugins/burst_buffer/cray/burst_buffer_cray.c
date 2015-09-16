@@ -2013,13 +2013,13 @@ static void _timeout_bb_rec(void)
 		bb_pptr = &bb_state.bb_ahash[i];
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
-			if ((bb_alloc->seen_time + TIME_SLOP) <
-			    bb_state.last_load_time) {
-				if (bb_alloc->state == BB_STATE_TEARDOWN) {
-					/* Teardown complete, but bb_alloc
-					 * state not yet updated */
-					continue;
-				}
+			if (((bb_alloc->seen_time + TIME_SLOP) <
+			     bb_state.last_load_time) &&
+			    (bb_alloc->state == BB_STATE_TEARDOWN)) {
+				/* Teardown complete, but bb_alloc state not yet
+				 * updated; go to next allocation */
+			} else if ((bb_alloc->seen_time + TIME_SLOP) <
+				   bb_state.last_load_time) {
 				if (bb_alloc->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
 					     "purged",
@@ -2035,8 +2035,7 @@ static void _timeout_bb_rec(void)
 				*bb_pptr = bb_alloc->next;
 				bb_free_alloc_buf(bb_alloc);
 				break;
-			}
-			if (bb_alloc->state == BB_STATE_COMPLETE) {
+			} else if (bb_alloc->state == BB_STATE_COMPLETE) {
 				job_ptr = find_job_record(bb_alloc->job_id);
 				if (!job_ptr || IS_JOB_PENDING(job_ptr)) {
 					/* Job purged or BB preempted */
