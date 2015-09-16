@@ -1308,7 +1308,7 @@ static void *_start_stage_in(void *x)
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 5000;
+		timeout = 10000;
 	op = "setup";
 	START_TIMER;
 	resp_msg = bb_run_script("setup",
@@ -1527,7 +1527,7 @@ static void *_start_stage_out(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 5000;
+			timeout = 10000;
 		op = "dws_post_run";
 		START_TIMER;
 		xfree(resp_msg);
@@ -1683,7 +1683,7 @@ static void *_start_teardown(void *x)
 	if (teardown_args->timeout)
 		timeout = teardown_args->timeout * 1000;
 	else
-		timeout = 5000;
+		timeout = 10000;
 	resp_msg = bb_run_script("teardown",
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
@@ -2692,7 +2692,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("job_process",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 2000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: job_process ran for %s", __func__, TIME_STR);
@@ -2725,7 +2725,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("paths",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 2000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: paths ran for %s", __func__, TIME_STR);
@@ -3118,7 +3118,7 @@ static void *_start_pre_run(void *x)
 	START_TIMER;
 	resp_msg = bb_run_script("dws_pre_run",
 				 bb_state.bb_config.get_sys_state,
-				 pre_run_args->args, 2000, &status);
+				 pre_run_args->args, 10000, &status);
 	END_TIMER;
 
 	lock_slurmctld(job_write_lock);
@@ -3549,7 +3549,7 @@ static void *_create_persistent(void *x)
 	START_TIMER;
 	resp_msg = bb_run_script("create_persistent",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
@@ -3686,7 +3686,7 @@ static void *_destroy_persistent(void *x)
 	START_TIMER;
 	resp_msg = bb_run_script("destroy_persistent",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
@@ -3771,7 +3771,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_configurations",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
@@ -3834,7 +3834,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_instances",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
@@ -3896,7 +3896,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("pools",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag) {
 		/* Only log pools data if different to limit volume of logs */
@@ -3956,7 +3956,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_sessions",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, 10000, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);
