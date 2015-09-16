@@ -76,6 +76,7 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -1969,6 +1970,12 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
 
+	/* synchronize power layouts key/values */
+	if ((powercap_get_cluster_current_cap() != 0) &&
+	    (which_power_layout() == 2)) {
+		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
+	}
+
 	/* return result */
 	if (error_code) {
 		info("%s: %s error %s ",
@@ -2222,6 +2229,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg, bool locked)
 	/* this has to be done after the job_complete */
 
 	END_TIMER2("_slurm_rpc_complete_batch_script");
+
+	/* synchronize power layouts key/values */
+	if ((powercap_get_cluster_current_cap() != 0) &&
+	    (which_power_layout() == 2)) {
+		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
+	}
 
 	/* return result */
 	if (error_code) {

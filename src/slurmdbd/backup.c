@@ -92,11 +92,11 @@ extern void run_dbd_backup(void)
 
 	/* get a connection */
 	slurm_set_addr(&dbd_addr, slurmdbd_conf->dbd_port,
-		       slurmdbd_conf->dbd_host);
+		       slurmdbd_conf->dbd_addr);
 
 	if (dbd_addr.sin_port == 0)
-		error("Unable to locate SlurmDBD host %s:%u",
-		      slurmdbd_conf->dbd_host, slurmdbd_conf->dbd_port);
+		error("Unable to locate SlurmDBD addr %s:%u",
+		      slurmdbd_conf->dbd_addr, slurmdbd_conf->dbd_port);
 	else
 		_open_slurmdbd_fd(dbd_addr);
 

@@ -27,6 +27,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
+ -- MYSQL - Change debug to print out with DebugFlags=DB_Step instead of debug4
+ -- Simplify code when user is selecting a job/step/array id and removed
+    anomaly when only asking for 1 (task_id was never set to INFINITE).
+ -- MYSQL - If user is requesting various task_ids only return requested steps.
+ -- Fix issue when tres cnt for energy is 0 for total reported.
+ -- Resolved scalability issues of power adaptive scheduling with layouts.
  -- Burst_buffer/cray bug - Fix teardown race condition that can result in
     infinite loop.
 
@@ -393,6 +399,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with GRES in steps so that if you have multiple exclusive steps
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
+ -- Fix slurmdbd backup to use DbdAddr when contacting the primary.
 
 * Changes in Slurm 14.11.9
 ==========================
@@ -1223,6 +1230,7 @@ documents those changes that are of interest to users and administrators.
  -- Use the slurm_getpwuid_r wrapper of getpwuid_r to handle possible
     interrupts.
  -- Allow --ignore-pbs to take effect when read as an #SBATCH argument.
+ -- Do not launch step if job killed while the prolog was running.
 
 * Changes in Slurm 14.03.11
 ===========================
