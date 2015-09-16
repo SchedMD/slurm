@@ -1317,11 +1317,11 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 							ename, "MaxCoreWatts",
 							&max_watts, L_T_UINT32);
 				}
-				layouts_entity_setpush_kv("power",
+				layouts_entity_set_kv("power",
 						    ename, "CurrentCorePower",
 						    &max_watts, L_T_UINT32);
 			} else {
-				layouts_entity_setpush_kv("power",
+				layouts_entity_set_kv("power",
 						    ename, "CurrentCorePower",
 						    &zero, L_T_UINT32);
 				desalloc_cores[num_counts] = i;
@@ -1334,7 +1334,7 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 					  (sizeof(uint32_t)*2) ,L_T_UINT32);
 			if (new_value) {
 				if (vals[0] == 0) {
-					layouts_entity_setpush_kv(
+					layouts_entity_set_kv(
 							  "power",
 							  ename,
 							  "CurrentCorePower",
@@ -1347,7 +1347,7 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 				} else {
 					desalloc_cores[num_counts] = i;
 					num_counts++;
-					layouts_entity_setpush_kv(
+					layouts_entity_set_kv(
 							  "power",
 							  ename,
 							  "CurrentCorePower",
@@ -1365,7 +1365,7 @@ extern int adapt_layouts(job_resources_t *job_resrcs_ptr, uint32_t cpu_freq_max,
 		for (i = 0; i < num_counts; i++) {
 			core_num = data[1] + 1- data[0] + desalloc_cores[i];
 			sprintf(ename, "virtualcore%u", core_num);
-			layouts_entity_setpush_kv("power", ename,
+			layouts_entity_set_kv("power", ename,
 						  "CurrentCorePower", &vals[1],
 						  L_T_UINT32);	
 		}

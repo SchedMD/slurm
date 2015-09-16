@@ -70,6 +70,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -1053,6 +1054,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bitstr_t *tmp_bitmap;
 		int k = 1, *allowed_freqs;
 		float ratio = 0;
+		
+		/*
+		 *centralized synchronization of all key/values
+		 */
+		layouts_entity_pull_kv("power", "Cluster", "CurrentSumPower");
 
 		/*
 		 * get current powercapping logic state (min,cur,max)

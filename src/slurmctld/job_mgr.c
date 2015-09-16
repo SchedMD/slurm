@@ -11034,6 +11034,8 @@ extern int update_job(slurm_msg_t *msg, uid_t uid)
 	}
 
 	slurm_send_rc_msg(msg, rc);
+	xfree(job_specs->job_id_str);
+
 	return rc;
 }
 

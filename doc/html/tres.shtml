@@ -55,7 +55,7 @@ The default values are 0.</p>
 
 <li><b>TRESBillingWeights</b>
 <p>For each partition this option is used to define the billing
-  weights of each TRES type that will be used in calcuating the usage
+  weights of each TRES type that will be used in calculating the usage
   of a job.
 </p>
 

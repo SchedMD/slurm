@@ -1261,11 +1261,18 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 		return;
 	}
 
-	local_total_time = (uint64_t)total_time *
-			   (uint64_t)total_acct->tres_rec.count;
 	total_reported = total_acct->alloc_secs + total_acct->down_secs
 			 + total_acct->pdown_secs + total_acct->idle_secs
 			 + total_acct->resv_secs;
+
+	/* ENERGY could be 0 if there is no power cap set, so just say
+	 * we reported the whole thing in that case.
+	 */
+	if (!total_acct->tres_rec.count && (tres->id == TRES_ENERGY))
+		local_total_time = total_reported;
+	else
+		local_total_time = (uint64_t)total_time *
+			(uint64_t)total_acct->tres_rec.count;
 
 	field_count = list_count(print_fields_list);
 	iter = list_iterator_create(print_fields_list);

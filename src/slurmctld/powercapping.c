@@ -75,7 +75,7 @@ int _which_power_layout(char *layout)
 {
 	uint32_t max_watts;
 
-	return layouts_entity_pullget_kv(layout, L_CLUSTER, L_SUM_MAX,
+	return layouts_entity_get_kv(layout, L_CLUSTER, L_SUM_MAX,
 					 &max_watts, L_T_UINT32);
 
 }
@@ -135,7 +135,7 @@ uint32_t powercap_get_cluster_max_watts(void)
 	if (!power_layout_ready())
 		return 0;
 
-	layouts_entity_pullget_kv(L_NAME, L_CLUSTER, L_SUM_MAX, &max_watts,
+	layouts_entity_get_kv(L_NAME, L_CLUSTER, L_SUM_MAX, &max_watts,
 				  L_T_UINT32);
 
 	return max_watts;
@@ -155,12 +155,12 @@ uint32_t powercap_get_cluster_min_watts(void)
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		layouts_entity_pullget_kv(L_NAME, node_ptr->name, L_NODE_IDLE,
+		layouts_entity_get_kv(L_NAME, node_ptr->name, L_NODE_IDLE,
 					  &tmp_watts, L_T_UINT32);
-		layouts_entity_pullget_kv(L_NAME, node_ptr->name, L_NODE_DOWN,
+		layouts_entity_get_kv(L_NAME, node_ptr->name, L_NODE_DOWN,
 					  &down_watts, L_T_UINT32);
 		tmp_watts = MIN(tmp_watts, down_watts);
-		layouts_entity_pullget_kv(L_NAME, node_ptr->name, L_NODE_SAVE,
+		layouts_entity_get_kv(L_NAME, node_ptr->name, L_NODE_SAVE,
 					  &save_watts, L_T_UINT32);
 		tmp_watts = MIN(tmp_watts, save_watts);
 		min_watts += tmp_watts;
@@ -254,13 +254,13 @@ uint32_t powercap_get_cluster_adjusted_max_watts(void)
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (bit_test(power_node_bitmap, i)) {
-			layouts_entity_pullget_kv(L_NAME, node_ptr->name,
+			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NODE_SAVE, &val, L_T_UINT32);
 		} else if (!bit_test(up_node_bitmap, i)) {
-			layouts_entity_pullget_kv(L_NAME, node_ptr->name,
+			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NODE_DOWN, &val, L_T_UINT32);
 		} else {
-			layouts_entity_pullget_kv(L_NAME, node_ptr->name,
+			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NODE_MAX, &val, L_T_UINT32);
 		}
 		adj_max_watts += val;
@@ -314,22 +314,22 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t *idle_bitmap)
 		if (bit_test(idle_bitmap, i)) {
 			 /* idle nodes, 2 cases : power save or not */
 			if (bit_test(power_node_bitmap, i)) {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						node_ptr->name, L_NODE_SAVE,
 						&val, L_T_UINT32);
 			} else {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						node_ptr->name, L_NODE_IDLE,
 						&val, L_T_UINT32);
 			}
 		} else {
 			/* non idle nodes, 2 cases : down or not */
 			if (!bit_test(up_node_bitmap, i)) {
-				layouts_entity_pullget_kv(L_NAME, 
+				layouts_entity_get_kv(L_NAME, 
 						node_ptr->name, L_NODE_DOWN,
 						&val, L_T_UINT32);
 			} else {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						node_ptr->name, L_NODE_MAX,
 						&val, L_T_UINT32);
 			}
@@ -377,7 +377,7 @@ uint32_t powercap_get_cpufreq(bitstr_t *select_bitmap, int k)
 	     i++, node_ptr++) {
 		if (bit_test(select_bitmap, i)) {
 			sprintf(ename, "Cpufreq%d", k);
-			layouts_entity_pullget_kv(L_NAME, node_ptr->name,
+			layouts_entity_get_kv(L_NAME, node_ptr->name,
 						  ename, &cpufreq, L_T_UINT32);
 		}
 		break;
@@ -436,13 +436,13 @@ int* powercap_get_job_nodes_numfreq(bitstr_t *select_bitmap,
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (bit_test(select_bitmap, i)) {
-			layouts_entity_pullget_kv(L_NAME, node_ptr->name,
+			layouts_entity_get_kv(L_NAME, node_ptr->name,
 					L_NUM_FREQ, &num_freq, L_T_UINT16);
 			allowed_freqs = xmalloc(sizeof(int)*((int)num_freq+2));
 			allowed_freqs[-1] = (int) num_freq;
 			for (p = num_freq; p > 0; p--) {
 				sprintf(ename, "Cpufreq%d", p);
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 					  	  node_ptr->name, ename,
 						  &cpufreq, L_T_UINT32);
 
@@ -504,11 +504,11 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 		if (bit_test(idle_bitmap, i)) {
 			/* idle nodes, 2 cases : power save or not */
 			if (bit_test(power_node_bitmap, i)) {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						  node_ptr->name, L_NODE_SAVE,
 						  &val, L_T_UINT32);
 			} else {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						  node_ptr->name, L_NODE_IDLE,
 						  &val, L_T_UINT32);
 			}
@@ -521,7 +521,7 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 			/* tmp_max_watts = IdleWatts - cpus*IdleCoreWatts
 			 * + cpus*MaxCoreWatts */
 			sprintf(ename, "virtualcore%u", data[3]);
-			if (num_cpus == 0)
+			if (num_cpus == 0 || num_cpus > data[2])
 				num_cpus = data[2];
 			layouts_entity_get_mkv(L_NAME, ename,
 					       "IdleCoreWatts,MaxCoreWatts",
@@ -570,11 +570,11 @@ uint32_t powercap_get_node_bitmap_maxwatts_dvfs(bitstr_t *idle_bitmap,
 		} else {
 			/* non-idle nodes, 2 cases : down or not */
 			if (!bit_test(up_node_bitmap, i)) {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						  node_ptr->name, L_NODE_DOWN,
 						  &val, L_T_UINT32);
 			} else {
-				layouts_entity_pullget_kv(L_NAME,
+				layouts_entity_get_kv(L_NAME,
 						  node_ptr->name, L_NODE_CUR,
 						  &val, L_T_UINT32);
 			}
