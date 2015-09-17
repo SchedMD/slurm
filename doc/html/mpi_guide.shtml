@@ -387,7 +387,7 @@ $ ./configure --with-pmi=pmi2 --with-pm=slurm
 scalability than Slurm's <i>pmi</i> plugin.
 If <i>pmi2</i> is not configured to be Slurm's default MPI plugin at your site,
 this can be specified using the srun command's "--mpi-pmi2" option as shown
-below or with the environment variable setting of "SLURM_MPI_TYPTE=mpi2".</p>
+below or with the environment variable setting of "SLURM_MPI_TYPE=mpi2".</p>
 <pre>
 $ srun -n16 --mpi=pmi2 a.out
 </pre>
