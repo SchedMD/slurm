@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     and you use all the GRES up instead of reporting the configuration isn't
     available you hold the requesting step until the GRES is available.
  -- Fix slurmdbd backup to use DbdAddr when contacting the primary.
+ -- Fix error in MPI documentation.
 
 * Changes in Slurm 14.11.9
 ==========================
