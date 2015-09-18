@@ -59,8 +59,9 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 	struct tm tm;
 	int debug_limit = limit;
 
-	(*delta_t)  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	(*delta_t) +=  tv2->tv_usec - tv1->tv_usec;
+	(*delta_t)  = (tv2->tv_sec - tv1->tv_sec) * 1000000;
+	(*delta_t) += tv2->tv_usec;
+	(*delta_t) -= tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
 	if (from) {
 		if (!limit) {

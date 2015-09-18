@@ -111,7 +111,7 @@ typedef struct node_space_map {
 
 /* Diag statistics */
 extern diag_stats_t slurmctld_diag_stats;
-int bf_last_yields = 0;
+uint32_t bf_sleep_usec = 0;
 
 /*********************** local variables *********************/
 static bool stop_backfill = false;
@@ -143,13 +143,14 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 static int  _attempt_backfill(void);
 static void _clear_job_start_times(void);
 static int  _delta_tv(struct timeval *tv);
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static bool _job_is_completing(void);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
-static void _my_sleep(int usec);
+static uint32_t _my_sleep(int usec);
 static int  _num_feature_count(struct job_record *job_ptr);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
@@ -424,25 +425,33 @@ static int _delta_tv(struct timeval *tv)
 	return delta_t;
 }
 
-static void _my_sleep(int usec)
+/* Sleep for at least specified time, returns actual sleep time in usec */
+static uint32_t _my_sleep(int usec)
 {
 	int64_t nsec;
+	uint32_t sleep_time = 0;
 	struct timespec ts = {0, 0};
-	struct timeval  tv = {0, 0};
+	struct timeval  tv1 = {0, 0}, tv2 = {0, 0};
 
-	if (gettimeofday(&tv, NULL)) {		/* Some error */
+	if (gettimeofday(&tv1, NULL)) {		/* Some error */
 		sleep(1);
-		return;
+		return 1000000;
 	}
 
-	nsec  = tv.tv_usec + usec;
+	nsec  = tv1.tv_usec + usec;
 	nsec *= 1000;
-	ts.tv_sec  = tv.tv_sec + (nsec / 1000000000);
+	ts.tv_sec  = tv1.tv_sec + (nsec / 1000000000);
 	ts.tv_nsec = nsec % 1000000000;
 	pthread_mutex_lock(&term_lock);
 	if (!stop_backfill)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
 	pthread_mutex_unlock(&term_lock);
+	if (gettimeofday(&tv2, NULL))
+		return usec;
+	sleep_time = (tv2.tv_sec - tv1.tv_sec) * 1000000;
+	sleep_time += tv2.tv_usec;
+	sleep_time -= tv1.tv_usec;
+	return sleep_time;
 }
 
 static void _load_config(void)
@@ -573,15 +582,18 @@ extern void backfill_reconfig(void)
 	slurm_mutex_unlock(&config_lock);
 }
 
-static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
-			   int yield_sleep_usecs)
+/* Update backfill scheduling statistics
+ * IN tv1 - start time
+ * IN tv2 - end (current) time
+ */
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
 {
 	uint32_t delta_t, real_time;
 
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-
-	real_time = (delta_t - (bf_last_yields * yield_sleep_usecs));
+	delta_t  = (tv2->tv_sec - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec;
+	delta_t -=  tv1->tv_usec;
+	real_time = delta_t - bf_sleep_usec;
 
 	slurmctld_diag_stats.bf_cycle_counter++;
 	slurmctld_diag_stats.bf_cycle_sum += real_time;
@@ -679,8 +691,7 @@ static int _yield_locks(int usec)
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
-	bf_last_yields++;
-	_my_sleep(usec);
+	bf_sleep_usec += _my_sleep(usec);
 	lock_slurmctld(all_locks);
 	slurm_mutex_lock(&config_lock);
 	if (config_flag)
@@ -756,7 +767,7 @@ static int _attempt_backfill(void)
 	uint32_t test_array_count = 0;
 	bool resv_overlap = false;
 
-	bf_last_yields = 0;
+	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
 	/*
 	 * Run a Basil Inventory immediately before setting up the schedule
@@ -1478,7 +1489,7 @@ next_task:
 	xfree(node_space);
 	FREE_NULL_LIST(job_queue);
 	gettimeofday(&bf_time2, NULL);
-	_do_diag_stats(&bf_time1, &bf_time2, yield_sleep);
+	_do_diag_stats(&bf_time1, &bf_time2);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
 		info("backfill: completed testing %u(%d) jobs, %s",
