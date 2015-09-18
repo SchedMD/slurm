@@ -191,7 +191,9 @@ This is the default behavior.
 \fBhold\fP \fIjob_list\fP
 Prevent a pending job from beginning started (sets it's priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
-The job_list argument is a comma separated list of job IDs.
+The job_list argument is a comma separated list of job IDs OR
+"jobname=" with the job's name, which will attempt to hold all jobs having
+that name.
 Note that when a job is held by a system administrator using the \fBhold\fP
 command, only a system administrator may release the job for execution (also
 see the \fBuhold\fP command). When the job is held by its owner, it may also
@@ -275,8 +277,9 @@ or removed from the cluster.
 .TP
 \fBrelease\fP \fIjob_list\fP
 Release a previously held job to begin execution.
-The job_list argument is a comma separated list of job IDs. It is possible to
-use the job name, specifying "name=job_name".
+The job_list argument is a comma separated list of job IDs OR
+"jobname=" with the job's name, which will attempt to hold all jobs having
+that name.
 Also see \fBhold\fR.
 
 .TP

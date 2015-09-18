@@ -362,8 +362,8 @@ static void _opt_env(void)
  */
 static void _opt_args(int argc, char **argv)
 {
-	int opt_char;
-	int option_index;
+	char **rest = NULL;
+	int i, opt_char, option_index;
 	static struct option long_options[] = {
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
@@ -372,6 +372,7 @@ static void _opt_args(int argc, char **argv)
 		{"interactive", no_argument,       0, 'i'},
 		{"cluster",     required_argument, 0, 'M'},
 		{"clusters",    required_argument, 0, 'M'},
+		{"jobname",     required_argument, 0, 'n'},
 		{"name",        required_argument, 0, 'n'},
 		{"nodelist",    required_argument, 0, 'w'},
 		{"partition",   required_argument, 0, 'p'},
@@ -464,10 +465,17 @@ static void _opt_args(int argc, char **argv)
 		}
 	}
 
-	if (optind < argc) {
-		char **rest = argv + optind;
+	if (optind < argc)
+		rest = argv + optind;
+	if (rest && (rest[0][0] >= '0') && (rest[0][0] <= '9')) {
 		opt.job_list = rest;
 		_xlate_job_step_ids(rest);
+	} else if (rest) {
+		for (i = optind; i < argc; i++) {
+			if (opt.job_name)
+				xstrcat(opt.job_name, ",");
+			xstrcat(opt.job_name, argv[i]);
+		}
 	}
 
 	if (!_opt_verify())
