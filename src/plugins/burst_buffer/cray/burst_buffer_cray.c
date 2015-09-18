@@ -2628,7 +2628,11 @@ fini:	xfree(data_buf);
  *
  * NOTE: We run several DW APIs at job submit time so that we can notify the
  * user immediately if there is some error, although that can be a relatively
- * slow operation.
+ * slow operation. We have a timeout of 3 seconds on the DW APIs here and log
+ * any times over 0.2 seconds.
+ *
+ * NOTE: We do this work inline so the user can be notified immediately if
+ * there is some problem with their script.
  *
  * Returns a SLURM errno.
  */
@@ -2692,7 +2696,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("job_process",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: job_process ran for %s", __func__, TIME_STR);
@@ -2725,7 +2729,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("paths",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, 3000, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: paths ran for %s", __func__, TIME_STR);
