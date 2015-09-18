@@ -151,8 +151,7 @@ SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
 
 <p>These options are used for both the <u>burst_buffer/cray</u> and
 <u>burst_buffer/generic</u> plugins to create and delete persistent burst
-buffers, which have a lifetime independent of the job.
-These options are only available for batch jobs.</p>
+buffers, which have a lifetime independent of the job.</p>
 <ul>
 <li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt; [access=&lt;access&gt;] [type=&lt;type&gt;]</li>
 <li>#BB destroy_persistent name=&lt;name&gt; [hurry]</li>
@@ -268,6 +267,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:20G
 </pre>
 
-<p style="text-align:center;">Last modified 25 August 2015</p>
+<p style="text-align:center;">Last modified 18 September 2015</p>
 
 <!--#include virtual="footer.txt"-->
