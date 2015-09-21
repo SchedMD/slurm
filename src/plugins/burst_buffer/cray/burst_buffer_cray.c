@@ -1308,7 +1308,7 @@ static void *_start_stage_in(void *x)
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 10000;
+		timeout = 60 * 60 * 1000;	/* 3600 secs == 1 hour */
 	op = "setup";
 	START_TIMER;
 	resp_msg = bb_run_script("setup",
@@ -1527,7 +1527,7 @@ static void *_start_stage_out(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 10000;
+			timeout = 60 * 60 * 1000;     /* 3600 secs == 1 hour */
 		op = "dws_post_run";
 		START_TIMER;
 		xfree(resp_msg);
@@ -1683,7 +1683,7 @@ static void *_start_teardown(void *x)
 	if (teardown_args->timeout)
 		timeout = teardown_args->timeout * 1000;
 	else
-		timeout = 10000;
+		timeout = 60 * 60 * 1000;	/* 3600 secs == 1 hour */
 	resp_msg = bb_run_script("teardown",
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
