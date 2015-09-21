@@ -980,7 +980,10 @@ uint16_t parse_mail_type(const char *arg)
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
 	while (tok) {
-		if (strcasecmp(tok, "BEGIN") == 0)
+		if (strcasecmp(tok, "NONE") == 0) {
+			rc = 0;
+			break;
+		} else if (strcasecmp(tok, "BEGIN") == 0)
 			rc |= MAIL_JOB_BEGIN;
 		else if  (strcasecmp(tok, "END") == 0)
 			rc |= MAIL_JOB_END;
