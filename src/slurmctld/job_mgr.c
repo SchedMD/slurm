@@ -5941,6 +5941,8 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	    (job_desc->min_cpus  <  job_desc->min_nodes) &&
 	    (job_desc->max_cpus  >= job_desc->min_nodes))
 		job_desc->min_cpus = job_desc->min_nodes;
+	if (job_desc->reboot && (job_desc->reboot != (uint16_t) NO_VAL))
+		job_desc->shared = 0;
 
 	return SLURM_SUCCESS;
 }

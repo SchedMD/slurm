@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Download</h1>
+<h1>Download Slurm</h1>
 <p>Slurm source can be downloaded from
 <a href="http://www.schedmd.com/#repos">
 http://www.schedmd.com/#repos</a>.<br>
@@ -20,9 +20,8 @@ Trinity Centre for High Performance Computing,
 Trinity College Dublin, Ireland.
 -->
 
-<p>Related software available from various sources include:
+<h2>Download Related Software</h2>
 <ul>
-
 <li><b>Authentication</b> plugins identifies the user originating
 a message.</li>
 <ul>
