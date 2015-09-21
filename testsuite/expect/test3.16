@@ -1,0 +1,147 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that scontrol show license is sorted
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id         "3.16"
+set exit_code       0
+set lic_a           "lic_a_test$test_id"
+set lic_b           "lic_b_test$test_id"
+set lic_c           "lic_c_test$test_id"
+
+print_header $test_id
+
+proc add_lic { license } {
+
+	global sacctmgr exit_code
+
+	set added 0
+	spawn $sacctmgr -i add resource name=$license cluster=linux count=50 \
+	    percentallowed=10 type=license
+	expect {
+		-re "Adding Resource" {
+			set added 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not reponding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$added != 1} {
+		send_user "\nFAILURE: sacctmgr did not add license: $license\n"
+		set exit_code 1
+	}
+}
+
+proc delete_lic { license } {
+
+	global sacctmgr exit_code 1
+
+	set deleted 0
+	spawn $sacctmgr -i delete resource name=$license
+	expect {
+		-re "Deleting resource" {
+			set deleted 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $deleted != 1 } {
+		send_user "\nFailure: sacctmgr could not delete "
+		send_user "license: $license\n"
+		set exit_code 1
+	}
+}
+
+print_header $test_id
+
+if { [test_using_slurmdbd] == 0 } {
+        send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
+        exit $exit_code
+} elseif { [test_super_user] == 0} {
+        send_user "\nWARNING: This test can't be run without superuser permissions\n"
+        exit $exit_code
+}
+
+# Add the licenses in random order
+add_lic $lic_c
+add_lic $lic_a
+add_lic $lic_b
+
+set match 0
+spawn $scontrol show lic
+expect {
+	-re "LicenseName=$lic_a" {
+		incr match 1
+		exp_continue
+	}
+	-re "LicenseName=$lic_b" {
+		incr match 1
+		exp_continue
+	}
+	-re "LicenseName=$lic_c" {
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if { $match != 3 } {
+	send_user "\nFAILURE: licenses are not sorted\n"
+	set exit_code 1
+}
+
+delete_lic $lic_a
+delete_lic $lic_b
+delete_lic $lic_c
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
