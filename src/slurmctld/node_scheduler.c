@@ -2327,7 +2327,7 @@ static void _launch_prolog(struct job_record *job_ptr)
 #endif
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
-						 SLURM_15_08_PROTOCOL_VERSION);
+						 SLURM_PROTOCOL_VERSION);
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 #ifdef HAVE_FRONT_END
