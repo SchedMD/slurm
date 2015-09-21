@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix to handle arrays with respect to number of jobs submitted.  Previously
     only 1 job was accounted (against MaxSubmitJob) for when an array was
     submitted.
+ -- Correct counting for job array limits, job count limit underflow possible
+    when master cancellation of master job record.
 
 * Changes in Slurm 14.11.9
 ==========================
