@@ -849,6 +849,15 @@ static void _layouts_init_keydef(xhash_t* keydefs,
 	}
 }
 
+static void _debug_output_keydefs (void* item, void* args)
+{
+	layouts_keydef_t* keydef = (layouts_keydef_t*) item;
+	debug3("layouts/keydefs: loaded: %s flags=0x%08lx refkey=%s",
+	       keydef->key, (long unsigned int) keydef->flags,
+	       (keydef->ref_key == NULL) ? "-":keydef->ref_key);
+
+}
+
 static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 {
 	layouts_conf_spec_t* spec = (layouts_conf_spec_t*)x;
@@ -888,6 +897,7 @@ static int _layouts_init_layouts_walk_helper(void* x, void* arg)
 	_layouts_init_keydef(mgr->keydefs,
 			     plugin->ops->spec->keyspec,
 			     plugin);
+	xhash_walk(mgr->keydefs, _debug_output_keydefs, NULL);
 	++*i;
 	return SLURM_SUCCESS;
 }
