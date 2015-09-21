@@ -1741,7 +1741,7 @@ proc check_resource_limits { name res_limits } {
 	set match 0
 	spawn $sacctmgr -p -n list resource $name $command
 	expect {
-		-re "$values" {
+		-nocase -re "$values" {
 			set match 1
 			exp_continue
 		}

@@ -624,8 +624,7 @@ test21.17  sacctmgr modify user
 test21.18  sacctmgr modify multiple users
 test21.19  sacctmgr add and delete coordinator
 test21.20  sacctmgr add and modify QoS
-test21.21  sacctmgr add an account to this cluster and try using it with
-	   salloc, sbatch and srun.
+test21.21  sacctmgr add an account to cluster; use with salloc, sbatch and srun
 test21.22  sacctmgr load file
 test21.23  sacctmgr wckey
 test21.24  sacctmgr dump file
@@ -637,6 +636,7 @@ test21.29  sacctmgr clear (modify) QoS values
 test21.30  sacctmgr test if the QoS values are enforced
 test21.31  sacctmgr modify Resource values
 test21.32  Validate that mod qos =,+=,-= change the preempt value
+test21.33  Validate that a resource can be added to a cluster after creation
 test21.34  Validate that partition and job qos limits are enforced
 test21.35  Validate DenyOnLimit QoS flag is enforced on QoS and Associations.
 
