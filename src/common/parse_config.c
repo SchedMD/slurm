@@ -1570,8 +1570,9 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 				   int tables_count,
 				   s_p_values_t* item)
 {
-	hostlist_t item_hl;
+	hostlist_t item_hl, sub_item_hl;
 	int item_count, i;
+	int j, items_per_record, items_idx = 0;
 	char* item_str = NULL;
 
 	xassert(item);
@@ -1588,7 +1589,7 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 			if (!s_p_parse_pair(tables[i],
 					    item->key,
 					    item->data)) {
-				error("Error parsing %s = %s.",
+				error("parsing %s=%s.",
 				      item->key, (char*)item->data);
 				return 0;
 			}
@@ -1596,25 +1597,72 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 		return 1;
 	}
 
-	/* not a plain string in the original s_p_options_t, a temporary
+	/*
+	 * Not a plain string in the original s_p_options_t, a temporary
 	 * hostlist has been generated, parse each expanded value using
-	 * s_p_parse_pair() mapping it to the right master key table */
+	 * s_p_parse_pair() mapping it to the right master key table.
+	 *
+	 * If the number of expanded value is less than the number of
+	 * key tables, cycle around the expanded value in order to
+	 * feed all the requested key tables (entities) with a value.
+	 *
+	 * If the number of expanded value m is greater than the number
+	 * of key tables n (entities) and (m mod(n)) is zero, then split the
+	 * set of expanded values in n consecutive sets (strings).
+	 */
 	item_hl = (hostlist_t)(item->data);
 	item_count = hostlist_count(item_hl);
-	if ((item_count != tables_count) && (item_count != 1)) {
-		error("%s count must equal that of value "
-				"records or there must be no"
-				" more than one (%d != %d).",
-				item->key, item_count, tables_count);
+	if ((item_count < tables_count) || (item_count == 1)) {
+		items_per_record = 1;
+	} else if ((item_count >= tables_count) &&
+		   ((item_count % tables_count) == 0)) {
+		items_per_record = (int) (item_count / tables_count);
+	} else {
+		item_str = hostlist_ranged_string_malloc(item_hl);
+		error("parsing %s=%s : count is not coherent with the"
+		      " amount of records or there must be no more than"
+		      " one (%d vs %d)", item->key, item_str,
+		      item_count, tables_count);
+		free(item_str);
 		return 0;
 	}
+
 	for (i = 0; i < tables_count; ++i) {
-		if (item_count > 0) {
-			--item_count;
+
+		/* Extract the string representation of the proper value(s)
+		 * from the expanded one (if not already done) */
+		if (item_count > 1) {
 			if (item_str)
 				free(item_str);
+			if (items_per_record > 1) {
+				/* multiple items per table,
+				 * extract the consecutive set for this table */
+				item_str = hostlist_nth(item_hl, items_idx++);
+				sub_item_hl = hostlist_create(item_str);
+				for (j = 1; j < items_per_record; j++) {
+					free(item_str);
+					item_str = hostlist_nth(item_hl,
+								items_idx++);
+					hostlist_push_host(sub_item_hl,
+							   item_str);
+				}
+				free(item_str);
+				item_str = hostlist_ranged_string_malloc(
+					sub_item_hl);
+				hostlist_destroy(sub_item_hl);
+			} else {
+				/* one item per table,
+				 * extract the right item for this table */
+				item_str = hostlist_nth(item_hl, items_idx++);
+			}
+			if (items_idx >= item_count)
+				items_idx = 0;
+		} else if (item_count == 1) {
+			/* only one item, extract it once for all */
+			item_count--;
 			item_str = hostlist_shift(item_hl);
 		}
+
 		/*
 		 * The destination tables are created without any info on the
 		 * operator associated with the key in s_p_parse_line_expanded.
@@ -1623,7 +1671,8 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 		 */
 		if (!s_p_parse_pair_with_op(tables[i], item->key, item_str,
 					    item->operator)) {
-			error("Error parsing %s = %s.", item->key, item_str);
+			error("parsing %s=%s after expansion.", item->key,
+			      item_str);
 			free(item_str);
 			return 0;
 		}

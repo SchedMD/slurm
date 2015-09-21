@@ -1001,7 +1001,7 @@ static s_p_hashtbl_t* _conf_make_hashtbl(int struct_type,
 
 	/* available for constructing a tree */
 	static s_p_options_t tree_options_entity[] = {
-		{"Enclosed", S_P_PLAIN_STRING},
+		{"Enclosed", S_P_STRING},
 		{NULL}
 	};
 	static s_p_options_t tree_options[] = {
