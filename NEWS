@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Burst_buffer/cray bug - Fix teardown race condition that can result in
     infinite loop.
  -- Add support for --mail-type=NONE option.
+ -- Job "--reboot" option automatically, set's exclusive node mode.
 
 * Changes in Slurm 15.08.0
 ==========================
