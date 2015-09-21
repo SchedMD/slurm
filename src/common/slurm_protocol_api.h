@@ -424,6 +424,12 @@ extern char *slurm_get_bb_type(void);
  */
 extern char *slurm_get_checkpoint_type(void);
 
+ /* slurm_get_checkpoint_dir
+  * returns the checkpoint_dir from slurmctld_conf object
+  * RET char *    - checkpoint dir, MUST be xfreed by caller
+  */
+extern char *slurm_get_checkpoint_dir(void);
+
 /* slurm_get_cluster_name
  * returns the cluster name from slurmctld_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller

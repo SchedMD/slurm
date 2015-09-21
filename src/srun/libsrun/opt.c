@@ -427,7 +427,7 @@ static void _opt_default(void)
 	opt.time_min_str = NULL;
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
-	opt.ckpt_dir = NULL;
+	opt.ckpt_dir = slurm_get_checkpoint_dir();
 	opt.restart_dir = NULL;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;

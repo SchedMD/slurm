@@ -1011,6 +1011,24 @@ extern char *slurm_get_checkpoint_type(void)
 	return checkpoint_type;
 }
 
+/* slurm_get_checkpoint_dir
+ * returns the job_ckpt_dir from slurmctld_conf object
+ * RET char *    - checkpoint dir, MUST be xfreed by caller
+ */
+extern char *slurm_get_checkpoint_dir(void)
+{
+	char *checkpoint_dir = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		checkpoint_dir = xstrdup(conf->job_ckpt_dir);
+		slurm_conf_unlock();
+	}
+	return checkpoint_dir;
+}
+
 /* slurm_get_cluster_name
  * returns the cluster name from slurmctld_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller
@@ -4641,4 +4659,3 @@ uint16_t slurm_get_prolog_timeout(void)
 
 	return timeout;
 }
-
