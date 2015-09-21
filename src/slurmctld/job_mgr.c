@@ -4605,9 +4605,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			orig_task_cnt = job_ptr->array_recs->task_cnt;
 			new_task_count = bit_set_count(job_ptr->array_recs->
 						       task_id_bitmap);
-			job_ptr->array_recs->task_cnt = new_task_count;
-			job_count -= (orig_task_cnt - new_task_count);
-			if (job_ptr->array_recs->task_cnt == 0) {
+			if (!new_task_count) {
 				last_job_update		= now;
 				job_ptr->job_state	= JOB_CANCELLED;
 				job_ptr->start_time	= now;
@@ -4615,7 +4613,18 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				job_ptr->requid		= uid;
 				srun_allocate_abort(job_ptr);
 				job_completion_logger(job_ptr, false);
-			}
+				/* Master job record, even wihtout tasks,
+				 * counts as one job record */
+				job_count -= (orig_task_cnt - 1);
+			} else
+				job_count -= (orig_task_cnt - new_task_count);
+
+			/* Set the task_cnt here since
+			 * job_completion_logger needs the total
+			 * pending count to handle the acct_policy
+			 * limit for submitted jobs correctly.
+			 */
+			job_ptr->array_recs->task_cnt = new_task_count;
 			bit_not(tmp_bitmap);
 			bit_and(array_bitmap, tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
