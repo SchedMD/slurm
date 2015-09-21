@@ -376,7 +376,8 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 
 static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 				    slurmdb_qos_rec_t *qos_ptr,
-				    uint64_t *used_tres_run_secs)
+				    uint64_t *used_tres_run_secs,
+				    uint32_t job_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
 	int i;
@@ -402,19 +403,19 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 
 	switch(type) {
 	case ACCT_POLICY_ADD_SUBMIT:
-		qos_ptr->usage->grp_used_submit_jobs++;
-		used_limits->submit_jobs++;
+		qos_ptr->usage->grp_used_submit_jobs += job_cnt;
+		used_limits->submit_jobs += job_cnt;
 		break;
 	case ACCT_POLICY_REM_SUBMIT:
 		if (qos_ptr->usage->grp_used_submit_jobs)
-			qos_ptr->usage->grp_used_submit_jobs--;
+			qos_ptr->usage->grp_used_submit_jobs -= job_cnt;
 		else
 			debug2("acct_policy_remove_job_submit: "
 			       "grp_submit_jobs underflow for qos %s",
 			       qos_ptr->name);
 
 		if (used_limits->submit_jobs)
-			used_limits->submit_jobs--;
+			used_limits->submit_jobs -= job_cnt;
 		else
 			debug2("acct_policy_remove_job_submit: "
 			       "used_submit_jobs underflow for "
@@ -499,6 +500,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	int i;
+	uint32_t job_cnt = 1;
 
 	memset(used_tres_run_secs, 0, sizeof(uint64_t) * slurmctld_tres_cnt);
 
@@ -513,26 +515,29 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		for (i=0; i<slurmctld_tres_cnt; i++)
 			used_tres_run_secs[i] =
 				job_ptr->tres_alloc_cnt[i] * time_limit_secs;
-	}
+	} else if (((type == ACCT_POLICY_ADD_SUBMIT) ||
+		    (type == ACCT_POLICY_REM_SUBMIT)) &&
+		   job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+		job_cnt = job_ptr->array_recs->task_cnt;
 
 	assoc_mgr_lock(&locks);
 
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_1,
-				used_tres_run_secs);
+				used_tres_run_secs, job_cnt);
 	_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
-				used_tres_run_secs);
+				used_tres_run_secs, job_cnt);
 
 	assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
-			assoc_ptr->usage->used_submit_jobs++;
+			assoc_ptr->usage->used_submit_jobs += job_cnt;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
 			if (assoc_ptr->usage->used_submit_jobs)
-				assoc_ptr->usage->used_submit_jobs--;
+				assoc_ptr->usage->used_submit_jobs -= job_cnt;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "used_submit_jobs underflow for "

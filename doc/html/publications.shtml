@@ -76,6 +76,9 @@ Doug Jacobsen, James Botts, NERSC</li>
 <li>Technical: <a href="SLUG15/Roadmap.pdf">Slurm Roadmap - Versions 16.05 and beyond</a>,
 Morris Jette and Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
 
+<li>Technical: <a href="SLUG15/PMIx.pdf">Exascale Process Management Interface</a>,
+Ralph Castain (Intel), Joshua Ladd (Mellanox), Artem Polyakov (Mellanox), David Bigagli (SchedMD), Gary Brown (Adaptive Computing)</li>
+
 <li>Site Report: <a href="SLUG15/BYU.pdf">Brigham Young University</a>,
 Ryan Cox, BYU</li>
 
