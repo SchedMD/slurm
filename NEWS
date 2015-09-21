@@ -404,6 +404,9 @@ documents those changes that are of interest to users and administrators.
     available you hold the requesting step until the GRES is available.
  -- Fix slurmdbd backup to use DbdAddr when contacting the primary.
  -- Fix error in MPI documentation.
+ -- Fix to handle arrays with respect to number of jobs submitted.  Previously
+    only 1 job was accounted (against MaxSubmitJob) for when an array was
+    submitted.
 
 * Changes in Slurm 14.11.9
 ==========================

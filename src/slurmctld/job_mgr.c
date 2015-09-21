@@ -4128,7 +4128,17 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_g_schedule();	/* work for external scheduler */
 	}
 
-	slurmctld_diag_stats.jobs_submitted++;
+       /* Moved this (_create_job_array) here to handle when a job
+	* array is submitted since we
+	* want to know the array task count when we check the job against
+	* QoS/Assoc limits
+	*/
+	_create_job_array(job_ptr, job_specs);
+
+	slurmctld_diag_stats.jobs_submitted +=
+		job_ptr->array_recs ?
+		job_ptr->array_recs->task_cnt : 1;
+
 	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
@@ -4150,7 +4160,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->start_time = job_ptr->end_time = now;
 			job_completion_logger(job_ptr, false);
 		} else {	/* job remains queued */
-			_create_job_array(job_ptr, job_specs);
 			if ((error_code == ESLURM_NODES_BUSY) ||
 			    (error_code == ESLURM_RESERVATION_BUSY) ||
 			    (error_code == ESLURM_ACCOUNTING_POLICY)) {
@@ -4179,7 +4188,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!will_run) {
-		_create_job_array(job_ptr, job_specs);
 		debug2("sched: JobId=%u allocated resources: NodeList=%s",
 		       job_ptr->job_id, job_ptr->nodes);
 		rebuild_job_part_list(job_ptr);
