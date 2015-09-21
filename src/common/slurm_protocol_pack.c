@@ -10272,7 +10272,7 @@ _pack_layout_info_request_msg(layout_info_request_msg_t * msg, Buf buffer,
 	packstr(msg->layout_type, buffer);
 	packstr(msg->entities, buffer);
 	packstr(msg->type, buffer);
-	pack32(msg->no_relation, buffer);
+	pack32(msg->flags, buffer);
 }
 
 static int
@@ -10288,7 +10288,7 @@ _unpack_layout_info_request_msg(layout_info_request_msg_t ** msg, Buf buffer,
 	safe_unpackstr_xmalloc(&layout_info->layout_type, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&layout_info->entities, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&layout_info->type, &uint32_tmp, buffer);
-	safe_unpack32(&layout_info->no_relation, buffer);
+	safe_unpack32(&layout_info->flags, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

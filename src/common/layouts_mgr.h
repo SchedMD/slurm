@@ -189,7 +189,7 @@ entity_t* layouts_get_entity(const char* name);
  * Return SLURM_SUCCES or SLURM_ERROR in case of failure
  */
 int layouts_pack_layout(char *l_type, char *entities, char *type,
-			uint32_t no_relation, Buf buffer);
+			uint32_t flags, Buf buffer);
 
 /*
  * layouts_update_layout - update a particular layout loading the information

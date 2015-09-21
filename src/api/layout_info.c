@@ -71,7 +71,7 @@
 }*/
 
 extern int slurm_load_layout (char *layout_type, char *entities, char *type,
-			      uint32_t no_relation, layout_info_msg_t **resp)
+			      uint32_t flags, layout_info_msg_t **resp)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -84,7 +84,7 @@ extern int slurm_load_layout (char *layout_type, char *entities, char *type,
 	req.layout_type  = layout_type;
 	req.entities     = entities;
 	req.type         = type;
-	req.no_relation  = no_relation;
+	req.flags        = flags;
 	req_msg.msg_type = REQUEST_LAYOUT_INFO;
 	req_msg.data     = &req;
 

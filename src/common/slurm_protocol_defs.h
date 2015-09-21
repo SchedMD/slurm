@@ -600,11 +600,13 @@ typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
 
+#define LAYOUTS_DUMP_NOLAYOUT 0x00000001
+#define LAYOUTS_DUMP_STATE    0x10000000
 typedef struct layout_info_request_msg {
 	char* layout_type;
 	char* entities;
 	char* type;
-	uint32_t no_relation;
+	uint32_t flags;
 } layout_info_request_msg_t;
 
 typedef struct complete_job_allocation {

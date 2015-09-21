@@ -1594,7 +1594,7 @@ typedef struct _pack_args {
 	hostlist_t list_entities;
 	char       *type;
 	uint32_t   all;
-	uint32_t   no_relation;
+	uint32_t   flags;
 	uint32_t   record_count;
 } _pack_args_t;
 
@@ -1750,7 +1750,8 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	}
 
 	/* print this entity as root if necessary */
-	if (level == 0 && pargs->no_relation != 1 && pargs->type == NULL) {
+	if (level == 0 && !(pargs->flags & LAYOUTS_DUMP_NOLAYOUT)
+	    && pargs->type == NULL) {
 		if (pargs->all != 0 ||
 		    pargs->list_entities == NULL ||
 		    hostlist_find(pargs->list_entities, e_name) != -1) {
@@ -1781,7 +1782,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 	pargs->current_line = NULL;
 
 	/* don't print enclosed if no_relation option */
-	if (pargs->no_relation == 1
+	if ((pargs->flags & LAYOUTS_DUMP_NOLAYOUT)
 	    && enclosed_str != NULL
 	    && pargs->list_entities == NULL) {
 		xfree(enclosed_str);
@@ -2535,7 +2536,7 @@ entity_t* layouts_get_entity(const char* name)
 
 
 int layouts_pack_layout(char *l_type, char *char_entities, char *type,
-			uint32_t no_relation, Buf buffer)
+			uint32_t flags, Buf buffer)
 {
 	_pack_args_t pargs;
 	layout_t* layout;
@@ -2563,15 +2564,13 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 			pargs.list_entities = hostlist_create(char_entities);
 	}
 	pargs.type = type;
-	pargs.no_relation = no_relation;
+	pargs.flags = flags;
 	pargs.record_count = 0;
 	orig_offset = get_buf_offset(buffer);
 	pack32(pargs.record_count, buffer);
 
-	if ( pargs.no_relation == 0
-	     && pargs.list_entities == NULL
-	     && pargs.type == NULL ) {
-		/* start by packing the layout priority */
+	/* start by packing the layout priority in case we are dumping state */
+	if (pargs.flags & LAYOUTS_DUMP_STATE) {
 		str = xstrdup_printf("Priority=%u\n", layout->priority);
 		packstr(str, buffer);
 		pargs.record_count++;
@@ -2648,8 +2647,8 @@ int layouts_state_save_layout(char* l_type)
 	START_TIMER;
 
 	/* pack the targeted layout into a tmp buffer */
-	error_code = layouts_pack_layout(l_type, "*", NULL, 0, buffer);
-
+	error_code = layouts_pack_layout(l_type, "*", NULL,
+					 LAYOUTS_DUMP_STATE, buffer);
 	if (error_code != SLURM_SUCCESS) {
 		error("unable to save layout[%s] state", l_type);
 		return error_code;

@@ -47,7 +47,7 @@ scontrol_print_layout (int argc, char *argv[])
 	int i = 0, tag_len = 0;
 	char *tag = NULL, *val = NULL;
 	char *layout_type = NULL, *entities = NULL, *type = NULL;
-	uint32_t no_relation = 0;
+	uint32_t flags = 0;
 	layout_info_msg_t *layout_info_ptr = NULL;
 
 	while (i < argc) {
@@ -71,7 +71,7 @@ scontrol_print_layout (int argc, char *argv[])
 		} else if (strncasecmp (tag, "type", MAX(tag_len, 3)) == 0) {
 			type = val;
 		} else if (strncasecmp (tag, "nolayout", MAX(tag_len, 4)) == 0){
-			no_relation = 1;
+			flags |= LAYOUTS_DUMP_NOLAYOUT;
 		} else {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -81,10 +81,8 @@ scontrol_print_layout (int argc, char *argv[])
 		}
 		i++;
 	}
-	if (slurm_load_layout (layout_type,
-			       entities, type,
-			       no_relation, &layout_info_ptr)
-					== SLURM_PROTOCOL_SUCCESS) {
+	if (slurm_load_layout (layout_type, entities, type, flags,
+			       &layout_info_ptr) == SLURM_PROTOCOL_SUCCESS) {
 		slurm_print_layout_info ( stdout, layout_info_ptr, one_liner );
 		slurm_free_layout_info_msg (layout_info_ptr);
 	}
