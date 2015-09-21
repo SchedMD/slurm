@@ -38,6 +38,24 @@ documents those changes that are of interest to users and administrators.
  -- Add support for --mail-type=NONE option.
  -- Job "--reboot" option automatically, set's exclusive node mode.
  -- Fix memory leak when using PrologFlags=Alloc.
+ -- Fix truncation of job reason in squeue.
+ -- If a node is in DOWN or DRAIN state, leave it unavailable for allocation
+    when powered down.
+ -- Update the slurm.conf man page documenting better nohold_on_prolog_fail
+    variable.
+ -- Don't trucate task ID information in "squeue --array/-r" or "sview".
+ -- Fix a bug which caused scontrol to core dump when releasing or
+    holding a job by name.
+ -- Fix unit conversion bug in slurmd which caused wrong memory calculation
+    for cgroups.
+ -- Fix issue with GRES in steps so that if you have multiple exclusive steps
+    and you use all the GRES up instead of reporting the configuration isn't
+    available you hold the requesting step until the GRES is available.
+ -- Fix slurmdbd backup to use DbdAddr when contacting the primary.
+ -- Fix error in MPI documentation.
+ -- Fix to handle arrays with respect to number of jobs submitted.  Previously
+    only 1 job was accounted (against MaxSubmitJob) for when an array was
+    submitted.
 
 * Changes in Slurm 15.08.0
 ==========================
