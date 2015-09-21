@@ -406,7 +406,7 @@ static void _opt_default()
 
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
-	opt.ckpt_dir = xstrdup(opt.cwd);
+	opt.ckpt_dir = slurm_get_checkpoint_dir();
 
 	opt.nice = 0;
 	opt.priority = 0;

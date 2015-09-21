@@ -189,6 +189,7 @@ Lead Slurm developers are:
 <li>Gerrit Renker (Swiss National Supercomputing Centre)</li>
 <li>Andy Riebs (HP)</li>
 <li>Asier Roa (Barcelona Supercomputing Center, Spain)</li>
+<li>Manuel Rodríguez-Pascual (CIEMAT, Spain)</li>
 <li>Andy Roosen (University of Deleware)</li>
 <li>Miguel Ros (Barcelona Supercomputing Center, Spain)</li>
 <li>Beat Rubischon (DALCO AG, Switzerland)</li>
@@ -236,6 +237,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 26 August 2015</p>
+<p style="text-align:center;">Last modified 21 September 2015</p>
 
 <!--#include virtual="footer.txt"-->
