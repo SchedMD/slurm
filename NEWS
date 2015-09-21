@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
     a file name with two consecutive "%" characters. For example,
     "sbatch -o "slurm.%%.%j" for job ID 123 will generate an output file named
     "slurm.%.123".
+ -- Pass user name in Prolog RPC from controller to slurmd when using
+    PrologFlags=Alloc. Allows SLURM_JOB_USER env variable to be set when using
+    Native Slurm on a Cray.
 
 * Changes in Slurm 15.08.1
 ==========================

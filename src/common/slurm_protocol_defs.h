@@ -914,6 +914,7 @@ typedef struct prolog_launch_msg {
 	char *std_err;			/* pathname of stderr */
 	char *std_out;			/* pathname of stdout */
 	uint32_t uid;
+	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
 } prolog_launch_msg_t;
 

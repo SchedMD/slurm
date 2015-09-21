@@ -1746,6 +1746,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
+		job_env.user_name = req->user_name;
 #if defined(HAVE_BG)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID,
