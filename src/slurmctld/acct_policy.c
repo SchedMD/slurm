@@ -187,14 +187,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
 			if (qos_ptr->usage->grp_used_submit_jobs)
-				qos_ptr->usage->grp_used_submit_jobs--;
+				qos_ptr->usage->grp_used_submit_jobs -= job_cnt;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "grp_submit_jobs underflow for qos %s",
 				       qos_ptr->name);
 
 			if (used_limits->submit_jobs)
-				used_limits->submit_jobs--;
+				used_limits->submit_jobs -= job_cnt;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "used_submit_jobs underflow for "
@@ -283,7 +283,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
 			if (assoc_ptr->usage->used_submit_jobs)
-				assoc_ptr->usage->used_submit_jobs--;
+				assoc_ptr->usage->used_submit_jobs -= job_cnt;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "used_submit_jobs underflow for "

@@ -3912,7 +3912,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	_create_job_array(job_ptr, job_specs);
 
 	slurmctld_diag_stats.jobs_submitted +=
-		job_ptr->array_recs ?
+		(job_ptr->array_recs && job_ptr->array_recs->task_cnt) ?
 		job_ptr->array_recs->task_cnt : 1;
 
 	acct_policy_add_job_submit(job_ptr);
