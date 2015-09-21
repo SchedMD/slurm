@@ -1,0 +1,30 @@
+# example unit layout configuration file
+# unit layout only aims at validating layouts framework internals
+Priority=10
+
+Root=GlobalPass
+Entity=GlobalPass Type=UnitTestPass Enclosed=pass[1-4] children_count=0
+
+# parents aggregation unit tests
+Entity=pass1 Type=UnitTestPass Enclosed=pass1_test[1-9] long=9 uint16=18 uint32=27 float=36.0 double=45.0 ldouble=54.0
+Entity=pass1_test[1-9] Type=UnitTest  \
+		       parents_sum_long=0 parents_fshare_long=0 \
+		       parents_sum_uint16=0 parents_fshare_uint16=0 \
+		       parents_sum_uint32=0 parents_fshare_uint32=0 \
+		       parents_sum_float=0.0 parents_fshare_float=0.0 \
+		       parents_sum_double=0.0 parents_fshare_double=0.0 \
+		       parents_sum_ldouble=0.0 parents_fshare_ldouble=0.0
+
+# children aggregation unit tests
+Entity=pass2 Type=UnitTestPass Enclosed=pass2_test[1-9] children_count=0 \
+	     children_sum_long=0 children_avg_long=0 children_min_long=INFINITE children_max_long=0 \
+	     children_sum_uint16=0 children_avg_uint16=0 children_min_uint16=INFINITE children_max_uint16=0 \
+	     children_sum_uint32=0 children_avg_uint32=0 children_min_uint32=INFINITE children_max_uint32=0 \
+	     children_sum_float=0.0 children_avg_float=0.0 children_min_float=INFINITE children_max_float=0.0 \
+	     children_sum_double=0.0 children_avg_double=0.0 children_min_double=INFINITE children_max_double=0.0 \
+	     children_sum_ldouble=0.0 children_avg_ldouble=0.0 children_min_ldouble=INFINITE children_max_ldouble=0.0
+Entity=pass2_test[1-9] Type=UnitTest string=test[11-19] long=1 uint16=16 uint32=32 float=[1-9].[0] double=1[1-9].[0] ldouble=111[1-9].[0]
+
+# high density configurations unit tests
+Entity=pass[3-4] Type=UnitTestPass Enclosed=pass[3-4]_test[1-9]
+Entity=pass[3-4]_test[1-9] Type=UnitTest string=dense[11-19] long=-1 uint16=16 uint32=32 float=[1-9].[0] double=2[1-9].[0] ldouble=222[1-9].[0]
