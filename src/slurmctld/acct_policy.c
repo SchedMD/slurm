@@ -116,6 +116,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	uint64_t used_cpu_run_secs = 0;
 	uint32_t job_memory = 0;
 	uint32_t node_cnt;
+	uint32_t job_cnt;
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
@@ -156,6 +157,11 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		}
 	}
 
+	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+		job_cnt = job_ptr->array_recs->task_cnt;
+	else
+		job_cnt = 1;
+
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr = NULL;
@@ -176,8 +182,8 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		}
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
-			qos_ptr->usage->grp_used_submit_jobs++;
-			used_limits->submit_jobs++;
+			qos_ptr->usage->grp_used_submit_jobs += job_cnt;
+			used_limits->submit_jobs += job_cnt;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
 			if (qos_ptr->usage->grp_used_submit_jobs)
@@ -273,7 +279,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	while (assoc_ptr) {
 		switch(type) {
 		case ACCT_POLICY_ADD_SUBMIT:
-			assoc_ptr->usage->used_submit_jobs++;
+			assoc_ptr->usage->used_submit_jobs += job_cnt;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
 			if (assoc_ptr->usage->used_submit_jobs)
