@@ -1011,7 +1011,6 @@ extern char *slurm_get_checkpoint_type(void)
 	return checkpoint_type;
 }
 
-
 /* slurm_get_checkpoint_dir
  * returns the job_ckpt_dir from slurmctld_conf object
  * RET char *    - checkpoint dir, MUST be xfreed by caller
@@ -4660,4 +4659,3 @@ uint16_t slurm_get_prolog_timeout(void)
 
 	return timeout;
 }
-

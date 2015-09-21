@@ -430,7 +430,6 @@ extern char *slurm_get_checkpoint_type(void);
   */
 extern char *slurm_get_checkpoint_dir(void);
 
-
 /* slurm_get_cluster_name
  * returns the cluster name from slurmctld_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller
