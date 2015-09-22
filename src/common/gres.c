@@ -4067,20 +4067,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
-			/* Insure that if specific CPUs are associated with
-			 * specific GRES and the CPU count matches the
-			 * slurmctld configuration that we only use the GRES
-			 * on the CPUs that have already been allocated. */
 			if (job_gres_ptr->type_model &&
 			    (!node_gres_ptr->topo_model[i] ||
 			     xstrcmp(job_gres_ptr->type_model,
 				     node_gres_ptr->topo_model[i])))
-				continue;
-			if (core_bitmap && node_gres_ptr->topo_cpus_bitmap[i] &&
-			    (bit_size(core_bitmap) ==
-			     bit_size(node_gres_ptr->topo_cpus_bitmap[i])) &&
-			    !bit_overlap(core_bitmap,
-					 node_gres_ptr->topo_cpus_bitmap[i]))
 				continue;
 			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);

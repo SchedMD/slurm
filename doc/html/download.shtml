@@ -177,17 +177,6 @@ Slurm's PAM module has also been packaged for
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
 (both named <i>libpam-slurm</i>).</li><br>
 
-<li><b>Schedulers</b> offering control over the workload</li>
-<ul>
-<li><a href="http://www.sdsc.edu/catalina/">Catalina</a> a scheduler supporting the
-<a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
-<li><a href="http://www-03.ibm.com/systems/platformcomputing/products/lsf/">Load Sharing Facility (LSF)</a></li>
-<li><a href="http://www.adaptivecomputing.com/products/open-source/maui/">
-Maui Scheduler</a></li>
-<li><a href="http://www.adaptivecomputing.com/products/hpc-products/moab-hpc-suite-enterprise-edition/">
-Moab Cluster Suite</a></li>
-</ul><br>
-
 <li><b>Command wrappers</b><br>
 There is a wrapper for Maui/Moab's showq command
 <a href="https://github.com/pedmon/slurm_showq">here</a>.<br><br>
