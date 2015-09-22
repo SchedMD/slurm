@@ -48,8 +48,8 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/mpi.h"
 #include "src/common/env.h"
+#include "src/common/slurm_mpi.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*

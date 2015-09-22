@@ -56,7 +56,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/eio.h"
-#include "src/common/mpi.h"
+#include "src/common/slurm_mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
