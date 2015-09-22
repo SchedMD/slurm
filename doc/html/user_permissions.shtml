@@ -1,0 +1,45 @@
+<!--#include virtual="header.txt"-->
+
+<h1>User Permissions</h1>
+
+<p>Slurm supports several special user permissions as described below.</p>
+
+<h2>Operator</h2>
+
+<p>These users can add, modify, and remove any database object
+(user, account, etc), and add other operators.
+On a SlurmDBD served cluster, these users can
+<ul>
+<li>View information that is blocked to regular uses by a PrivateData flag</li>
+<li>Create/Alter/Delete Reservations</li>
+</ul>
+
+<p>Set using an <b>AdminLevel</b> option in the user's database record.
+For configuration information, see
+<a href="accounting.html">Accounting and Resource Limits</a>.</p>
+
+<h2>Admin</h2>
+
+<p>These users have the same level of privileges as an operator in the database.
+They can also alter anything on a served slurmctld as if they were the SlurmUser
+or root.</p>
+
+<p>An <b>AdminLevel</b> option in the user's database record.
+For configuration information, see
+<a href="accounting.html">Accounting and Resource Limits</a>.</p>
+
+<h2>Coordinator</h2>
+
+<p>A special privileged user, usually an account manager or such, that can add
+users or sub-accounts to the account they are coordinator over.
+This should be a trusted person since they can change limits on account and
+user associations inside their realm.</p>
+
+<p>Set using a table in Slurm's database defining user's and accounts for
+which they can serve as coordinators.
+For configuration information, see the
+<a href="sacctmgr.html">sacctmgr</a> man page.</p>
+
+<p style="text-align:center;">Last modified 22 September 2015</p>
+
+<!--#include virtual="footer.txt"-->

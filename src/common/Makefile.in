@@ -154,17 +154,17 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	strnatcmp.h forward.c forward.h msg_aggr.c msg_aggr.h \
 	strlcpy.c strlcpy.h list.c list.h xtree.c xtree.h xhash.c \
 	xhash.h net.c net.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
-	parse_config.c parse_config.h parse_value.c parse_value.h \
-	parse_spec.c parse_spec.h plugin.c plugin.h plugrack.c \
-	plugrack.h power.c power.h print_fields.c print_fields.h \
-	read_config.c read_config.h node_select.c node_select.h env.c \
-	env.h fd.c fd.h slurm_cred.h slurm_cred.c slurm_errno.c \
-	slurm_ext_sensors.c slurm_ext_sensors.h slurm_priority.c \
-	slurm_priority.h slurm_protocol_api.c slurm_protocol_api.h \
-	slurm_protocol_pack.c slurm_protocol_pack.h \
-	slurm_protocol_util.c slurm_protocol_util.h \
-	slurm_protocol_socket_implementation.c \
+	safeopen.h bitstring.c bitstring.h mpi.c slurm_mpi.h pack.c \
+	pack.h parse_config.c parse_config.h parse_value.c \
+	parse_value.h parse_spec.c parse_spec.h plugin.c plugin.h \
+	plugrack.c plugrack.h power.c power.h print_fields.c \
+	print_fields.h read_config.c read_config.h node_select.c \
+	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
+	slurm_errno.c slurm_ext_sensors.c slurm_ext_sensors.h \
+	slurm_priority.c slurm_priority.h slurm_protocol_api.c \
+	slurm_protocol_api.h slurm_protocol_pack.c \
+	slurm_protocol_pack.h slurm_protocol_util.c \
+	slurm_protocol_util.h slurm_protocol_socket_implementation.c \
 	slurm_protocol_socket_common.h slurm_protocol_common.h \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
@@ -597,7 +597,7 @@ libcommon_la_SOURCES = \
 	cbuf.c cbuf.h			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
-	mpi.c mpi.h                     \
+	mpi.c slurm_mpi.h               \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_value.c parse_value.h	\

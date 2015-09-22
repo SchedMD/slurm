@@ -51,10 +51,10 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/slurm_step_layout.h"
-#include "src/common/eio.h"
 #include "src/common/bitstring.h"
-#include "src/common/mpi.h"
+#include "src/common/eio.h"
+#include "src/common/slurm_mpi.h"
+#include "src/common/slurm_step_layout.h"
 
 #include "src/api/step_io.h"
 

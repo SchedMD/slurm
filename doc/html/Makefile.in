@@ -531,6 +531,7 @@ generated_html = \
 	tres.html \
 	troubleshoot.html \
 	tutorials.html \
+	user_permissions.html \
 	wckey.html
 
 html_DATA = \

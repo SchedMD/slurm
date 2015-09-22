@@ -41,8 +41,8 @@
 #endif
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/mpi.h"
 #include "src/common/env.h"
+#include "src/common/slurm_mpi.h"
 
 typedef struct gmpi_state gmpi_state_t;
 
