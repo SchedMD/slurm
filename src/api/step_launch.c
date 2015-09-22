@@ -2003,7 +2003,10 @@ _valid_uid_gid(uid_t uid, gid_t *gid, char **user_name)
 			return 1;
 		}
 	}
-
+	if (*gid != 0) {
+		if (slurm_find_group_user(result, *gid))
+			return 1;
+	}
 	/* root user may have launched this job for this user, but
 	 * root did not explicitly set the gid. This would set the
 	 * gid to 0. In this case we should set the appropriate
