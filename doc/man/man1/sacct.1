@@ -126,25 +126,28 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-AllocCPUS        Account         AssocID        AveCPU
-AveCPUFreq       AveDiskRead     AveDiskWrite   AvePages
-AveRSS           AveVMSize       BlockID        Cluster
-Comment          ConsumedEnergy  CPUTime        CPUTimeRAW
-DerivedExitCode  Elapsed         Eligible       End
-ExitCode         GID             Group          JobID
-JobIDRaw         JobName         Layout         MaxDiskRead
-MaxDiskReadNode  MaxDiskReadTask MaxDiskWrite   MaxDiskWriteNode
-MaxDiskWriteTask MaxPages        MaxPagesNode   MaxPagesTask
-MaxRSS           MaxRSSNode      MaxRSSTask     MaxVMSize
-MaxVMSizeNode    MaxVMSizeTask   MinCPU         MinCPUNode
-MinCPUTask       NCPUS           NNodes         NodeList
-NTasks           Priority        Partition      QOSRAW
-ReqCPUFreqMin    ReqCPUFreqMax   ReqCPUFreqGov  ReqCPUs
-ReqMem           Reservation     ReservationId  Reserved
-ResvCPU          ResvCPURAW      Start          State
-Submit           Suspended       SystemCPU      Timelimit
-TotalCPU         Tres            UID            User
-UserCPU          WCKey           WCKeyID
+AllocCPUS         AllocGRES         AllocNodes        AllocTRES
+Account           AssocID           AveCPU            AveCPUFreq
+AveDiskRead       AveDiskWrite      AvePages          AveRSS
+AveVMSize         BlockID           Cluster           Comment
+ConsumedEnergy    ConsumedEnergyRaw CPUTime           CPUTimeRAW
+DerivedExitCode   Elapsed           Eligible          End
+ExitCode          GID               Group             JobID
+JobIDRaw          JobName           Layout            MaxDiskRead
+MaxDiskReadNode   MaxDiskReadTask   MaxDiskWrite      MaxDiskWriteNode
+MaxDiskWriteTask  MaxPages          MaxPagesNode      MaxPagesTask
+MaxRSS            MaxRSSNode        MaxRSSTask        MaxVMSize
+MaxVMSizeNode     MaxVMSizeTask     MinCPU            MinCPUNode
+MinCPUTask        NCPUS             NNodes            NodeList
+NTasks            Priority          Partition         QOS
+QOSRAW            ReqCPUFreq        ReqCPUFreqMin     ReqCPUFreqMax
+ReqCPUFreqGov     ReqCPUS           ReqGRES           ReqMem
+ReqNodes          ReqTRES           Reservation       ReservationId
+Reserved          ResvCPU           ResvCPURAW        Start
+State             Submit            Suspended         SystemCPU
+Timelimit         TotalCPU          TRESAlloc         TRESReq
+UID               User              UserCPU           WCKey
+WCKeyID
 
 .ft 1
 .fi
@@ -442,6 +445,16 @@ Count of allocated CPUs. Equivalant to \f3NCPUS\fP.
 Names and counts of generic resources allocated.
 
 .TP
+\f3AllocNodes\fP
+Number of nodes allocated to the job/step.  0 if the job is pending.
+
+.TP
+\f3AllocTres\fP
+Trackable resources. These are the resources allocated to the job/step
+after the job started running.  For pending jobs this should be blank.
+For more details see AccountingStorageTRES in slurm.conf.
+
+.TP
 \f3Account\fP
 Account the job ran under.
 
@@ -677,7 +690,8 @@ List of nodes in job/step.
 
 .TP
 \f3NNodes\fP
-Number of nodes in a job or step.
+Number of nodes in a job or step.  If the job is running, or ran, this count
+will be the number allocated, else the number will be the number requested.
 
 .TP
 \f3NTasks\fP
@@ -717,6 +731,17 @@ Names and counts of generic resources requested.
 Minimum required memory for the job, in MB. A 'c' at the end of
 number represents Memory Per CPU, a 'n' represents Memory Per Node.
 Note: This value is only from the job allocation, not the step.
+
+.TP
+\f3ReqNodes\fP
+Requested minimum Node count for the job/step.
+
+.TP
+\f3ReqTres\fP
+Trackable resources. These are the minimum resource counts requested by the
+job/step at submission time.
+For more details see AccountingStorageTRES in slurm.conf.
+
 
 .TP
 \f3Reservation\fP
@@ -790,11 +815,6 @@ identical to that of the \f3Elapsed\fP field.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
-
-.TP
-\f3Tres\fP
-Trackable resources. These are the resources specified by the
-job at submission time. For more details see AccountingStorageTRES in slurm.conf.
 
 .TP
 \f3UID\fP

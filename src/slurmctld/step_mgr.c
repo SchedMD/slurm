@@ -2548,10 +2548,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 #endif
 	xfree(step_ptr->tres_alloc_str);
 
-	xstrfmtcat(step_ptr->tres_alloc_str, "%s%u=%"PRIu64,
-		   step_ptr->tres_alloc_str ? "," : "",
-		   TRES_CPU, cpu_count);
-
 	tres_count = (uint64_t)step_ptr->pn_min_memory;
 	if (tres_count & MEM_PER_CPU) {
 		tres_count &= (~MEM_PER_CPU);
@@ -2559,9 +2555,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	} else
 		tres_count *= node_count;
 
-	xstrfmtcat(step_ptr->tres_alloc_str, "%s%u=%"PRIu64,
+	xstrfmtcat(step_ptr->tres_alloc_str,
+		   "%s%u=%"PRIu64",%u=%"PRIu64",%u=%u",
 		   step_ptr->tres_alloc_str ? "," : "",
-		   TRES_MEM, tres_count);
+		   TRES_CPU, cpu_count,
+		   TRES_MEM, tres_count,
+		   TRES_NODE, node_count);
 
 	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
 		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",

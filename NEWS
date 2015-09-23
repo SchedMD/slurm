@@ -79,6 +79,13 @@ documents those changes that are of interest to users and administrators.
     diversion.
  -- Pending job array records will be combined into single line by default,
     even if started and requeued or modified.
+ -- Fix sacct --format=nnodes to print out correct information for pending
+    jobs.
+ -- Make is so 'scontrol update job 1234 qos='' will set the qos back to
+    the default qos for the association.
+ -- Add [Alloc|Req]Nodes to sacct to be more like cpus.
+ -- Fix sacct documentation about [Alloc|Req]TRES
+ -- Put node count in TRES string for steps.
 
 * Changes in Slurm 15.08.0
 ==========================
@@ -450,6 +457,7 @@ documents those changes that are of interest to users and administrators.
     submitted.
  -- Correct counting for job array limits, job count limit underflow possible
     when master cancellation of master job record.
+ -- For pending jobs have sacct print 0 for nnodes instead of the bogus 2.
 
 * Changes in Slurm 14.11.9
 ==========================
