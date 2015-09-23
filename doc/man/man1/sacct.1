@@ -442,6 +442,10 @@ Count of allocated CPUs. Equivalant to \f3NCPUS\fP.
 Names and counts of generic resources allocated.
 
 .TP
+\f3AllocNodes\fP
+Number of nodes allocated to the job/step.  0 if the job is pending.
+
+.TP
 \f3Account\fP
 Account the job ran under.
 
@@ -677,7 +681,8 @@ List of nodes in job/step.
 
 .TP
 \f3NNodes\fP
-Number of nodes in a job or step.
+Number of nodes in a job or step.  If the job is running, or ran, this count
+will be the number allocated, else the number will be the number requested.
 
 .TP
 \f3NTasks\fP
@@ -719,6 +724,9 @@ number represents Memory Per CPU, a 'n' represents Memory Per Node.
 Note: This value is only from the job allocation, not the step.
 
 .TP
+\f3ReqNodes\fP
+Requested minimum Node count for the job/step.
+
 \f3Reservation\fP
 Reservation Name.
 

@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
     jobs.
  -- Make is so 'scontrol update job 1234 qos='' will set the qos back to
     the default qos for the association.
+ -- Add [Alloc|Req]Nodes to sacct to be more like cpus.
 
 * Changes in Slurm 15.08.0
 ==========================

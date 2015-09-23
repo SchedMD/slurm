@@ -46,6 +46,7 @@ sacct_parameters_t params;
 print_field_t fields[] = {
 	{10, "AllocCPUS", print_fields_uint, PRINT_ALLOC_CPUS},
 	{12, "AllocGRES", print_fields_str, PRINT_ALLOC_GRES},
+	{10, "AllocNodes", print_fields_str, PRINT_ALLOC_NODES},
 	{10, "Account", print_fields_str, PRINT_ACCOUNT},
 	{10, "TRESAlloc", print_fields_str, PRINT_TRESA},
 	{10, "TRESReq", print_fields_str, PRINT_TRESR},
@@ -109,6 +110,7 @@ print_field_t fields[] = {
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
 	{12, "ReqGRES", print_fields_str, PRINT_REQ_GRES},
 	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
+	{8,  "ReqNodes", print_fields_str, PRINT_REQ_NODES},
 	{20, "Reservation",  print_fields_str, PRINT_RESERVATION},
 	{8,  "ReservationId",  print_fields_uint, PRINT_RESERVATION_ID},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},

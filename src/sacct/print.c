@@ -318,6 +318,37 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ALLOC_NODES:
+			switch(type) {
+			case JOB:
+				tmp_int = job->alloc_nodes;
+				tmp_char = job->tres_alloc_str;
+				break;
+			case JOBSTEP:
+				tmp_int = step->nnodes;
+				tmp_char = step->tres_alloc_str;
+				break;
+			case JOBCOMP:
+				tmp_int = job_comp->node_cnt;
+				break;
+			default:
+				break;
+			}
+
+			if (!tmp_int && tmp_char) {
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     tmp_char, TRES_NODE))
+				    != INFINITE64)
+					tmp_int = tmp_uint64;
+			}
+			convert_num_unit((double)tmp_int, outbuf,
+					 sizeof(outbuf), UNIT_NONE,
+					 params.convert_flags);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ACCOUNT:
 			switch(type) {
 			case JOB:
@@ -1675,6 +1706,38 @@ void print_fields(type_t type, void *object)
 				else
 					sprintf(outbuf+strlen(outbuf), "n");
 			}
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_REQ_NODES:
+			switch(type) {
+			case JOB:
+				tmp_int = 0;
+				tmp_char = job->tres_req_str;
+				break;
+			case JOBSTEP:
+				tmp_int = step->nnodes;
+				tmp_char = step->tres_alloc_str;
+				break;
+			case JOBCOMP:
+				tmp_int = job_comp->node_cnt;
+				break;
+			default:
+				break;
+			}
+
+			if (!tmp_int && tmp_char) {
+				if ((tmp_uint64 =
+				     slurmdb_find_tres_count_in_string(
+					     tmp_char, TRES_NODE))
+				    != INFINITE64)
+					tmp_int = tmp_uint64;
+			}
+			convert_num_unit((double)tmp_int, outbuf,
+					 sizeof(outbuf), UNIT_NONE,
+					 params.convert_flags);
+
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
