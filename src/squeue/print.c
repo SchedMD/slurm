@@ -59,6 +59,7 @@
 #include "src/squeue/print.h"
 #include "src/squeue/squeue.h"
 
+static void	_combine_pending_array_tasks(List l);
 static int	_filter_job(job_info_t * job);
 static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
@@ -130,6 +131,8 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 			list_append(l, (void *) job_rec_ptr);
 		}
 	}
+
+	_combine_pending_array_tasks(l);
 	_part_state_free();
 	sort_jobs_by_start_time (l);
 	sort_job_list (l);
@@ -173,6 +176,61 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+/* Combine pending tasks of a job array into a single record.
+ * The tasks may have been split into separate job records because they were
+ * modified or started, but the records can be re-combined if pending. */
+static void _combine_pending_array_tasks(List job_list)
+{
+	squeue_job_rec_t *job_rec_ptr, *task_rec_ptr;
+	ListIterator job_iterator, task_iterator;
+	bitstr_t *task_bitmap;
+	int bitmap_size, update_cnt;
+
+	if (params.array_flag)	/* Want to see each task separately */
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_rec_ptr = list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_rec_ptr->job_ptr) ||
+		    !job_rec_ptr->job_ptr->array_task_str ||
+		    !job_rec_ptr->job_ptr->array_bitmap)
+			continue;
+		update_cnt = 0;
+		task_bitmap = (bitstr_t *) job_rec_ptr->job_ptr->array_bitmap;
+		bitmap_size = bit_size(task_bitmap);
+		task_iterator = list_iterator_create(job_list);
+		while ((task_rec_ptr = list_next(task_iterator))) {
+			if (!IS_JOB_PENDING(task_rec_ptr->job_ptr) ||
+			    (task_rec_ptr == job_rec_ptr) ||
+			    (task_rec_ptr->job_ptr->array_job_id !=
+			     job_rec_ptr->job_ptr->array_job_id) ||
+			    (task_rec_ptr->job_ptr->array_task_id >=
+			     bitmap_size))
+				continue;
+			/* Combine this task into master job array record */
+			update_cnt++;
+			bit_set(task_bitmap,
+				task_rec_ptr->job_ptr->array_task_id);
+			list_delete_item(task_iterator);
+		}
+		list_iterator_destroy(task_iterator);
+		if (update_cnt) {
+			int bitstr_len = -1;
+			char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
+			if (bitstr_len_str)
+				bitstr_len = atoi(bitstr_len_str);
+			if (bitstr_len < 0)
+				bitstr_len = 64;
+			xfree(job_rec_ptr->job_ptr->array_task_str);
+			job_rec_ptr->job_ptr->array_task_str =
+				xmalloc(bitstr_len);
+			bit_fmt(job_rec_ptr->job_ptr->array_task_str,
+				bitstr_len, task_bitmap);
+		}
+	}
+	list_iterator_destroy(job_iterator);
 }
 
 static void _job_list_del(void *x)
