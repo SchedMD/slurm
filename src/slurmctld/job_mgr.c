@@ -9888,14 +9888,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				resv_name = job_ptr->resv_name;
 
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-			qos_rec.name = job_specs->qos;
+
+			/* If the qos is blank that means we want the default */
+			if (job_specs->qos[0])
+				qos_rec.name = job_specs->qos;
 
 			new_qos_ptr = _determine_and_validate_qos(
 				resv_name, job_ptr->assoc_ptr,
 				authorized, &qos_rec, &error_code, false);
 			if (error_code == SLURM_SUCCESS) {
 				info("%s: setting QOS to %s for job_id %u",
-				     __func__, job_specs->qos, job_ptr->job_id);
+				     __func__, new_qos_ptr->name,
+				     job_ptr->job_id);
 				if (job_ptr->qos_id != qos_rec.id) {
 					job_ptr->qos_id = qos_rec.id;
 					job_ptr->qos_ptr = new_qos_ptr;

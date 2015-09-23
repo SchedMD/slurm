@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     even if started and requeued or modified.
  -- Fix sacct --format=nnodes to print out correct information for pending
     jobs.
+ -- Make is so 'scontrol update job 1234 qos='' will set the qos back to
+    the default qos for the association.
 
 * Changes in Slurm 15.08.0
 ==========================
