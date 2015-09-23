@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     diversion.
  -- Pending job array records will be combined into single line by default,
     even if started and requeued or modified.
+ -- Fix sacct --format=nnodes to print out correct information for pending
+    jobs.
 
 * Changes in Slurm 15.08.0
 ==========================
