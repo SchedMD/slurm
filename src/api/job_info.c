@@ -682,8 +682,10 @@ line6:
 	else
 		snprintf(tmp6, sizeof(tmp6), "%u", job_ptr->threads_per_core);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "NumNodes=%s NumCPUs=%s CPUs/Task=%u ReqB:S:C:T=%s:%s:%s:%s",
-		 tmp2, tmp1, job_ptr->cpus_per_task, tmp3, tmp4, tmp5, tmp6);
+		 "NumNodes=%s NumCPUs=%s NumTasks=%u CPUs/Task=%u "
+		 "ReqB:S:C:T=%s:%s:%s:%s",
+		 tmp2, tmp1, job_ptr->num_tasks, job_ptr->cpus_per_task,
+		 tmp3, tmp4, tmp5, tmp6);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

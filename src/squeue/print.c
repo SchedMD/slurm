@@ -1035,6 +1035,20 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_num_tasks(job_info_t * job, int width, bool right, char* suffix)
+{
+	char tmp_char[18];
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("TASKS", width, right, true);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "%u", job->num_tasks);
+       		_print_str(tmp_char, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_shared(job_info_t * job, int width, bool right_justify,
 		      char* suffix)
 {

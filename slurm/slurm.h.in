@@ -1581,9 +1581,9 @@ typedef struct job_info {
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket*/
 	uint16_t ntasks_per_board; /* number of tasks to invoke on each board */
-
-	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
+	uint32_t num_nodes;	/* minimum number of nodes required by job */
+	uint32_t num_tasks;	/* requested task count */
 	char *partition;	/* name of assigned partition */
 	uint32_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */

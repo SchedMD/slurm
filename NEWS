@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Pass user name in Prolog RPC from controller to slurmd when using
     PrologFlags=Alloc. Allows SLURM_JOB_USER env variable to be set when using
     Native Slurm on a Cray.
+ -- Add "NumTasks" to job information visible to Slurm commands.
 
 * Changes in Slurm 15.08.1
 ==========================
