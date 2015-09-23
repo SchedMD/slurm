@@ -1,0 +1,306 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that multiple partitions can be specified
+#          in sinfo environment variables
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        4.14
+set test_part_1    "test$test_id\_partition_1"
+set test_part_2    "test$test_id\_partition_2"
+set test_node      ""
+set alpha_num_dot  "\[a-zA-Z0-9_.\-\]+"
+set default_part   default_partition
+set exit_code      0
+
+print_header $test_id
+
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	exit $exit_code
+}
+
+proc delete_part { } {
+
+	global scontrol exit_code test_part_1 test_part_2
+
+	spawn $scontrol delete partition=$test_part_1
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol delete partition=$test_part_2
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+# Remove any vestigial Partitions
+delete_part
+
+# get a node for the test partition
+spawn $bin_bash -c "$sinfo -h --state=idle -o%n | head -n1"
+expect {
+	-re "($alpha_numeric_under)" {
+		set test_node $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Create test partitions
+spawn $scontrol create partition=$test_part_1 nodes=$test_node
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scontrol create partition=$test_part_2 nodes=$test_node
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Check that partitions were created
+set found 0
+spawn $sinfo -h -p$test_part_1,$test_part_2 -o%P
+expect {
+	-re "$test_part_1" {
+		incr found
+		exp_continue
+	}
+	-re "$test_part_2" {
+		incr found
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 2} {
+	send_user "\nFAILURE: Test partition was not created ($found != 2)\n"
+	delete_part
+	exit 1
+}
+
+#### Using the Environment Variable ####
+set match 0
+set found 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P"
+expect {
+	-re "($alpha_num_dot)" {
+		set str $expect_out(1,string)
+		if {![string compare $str $test_part_1] || \
+		    ![string compare $str $test_part_2] } {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 2 || $found != 2} {
+	send_user "\nFAILURE: partitions do not match (match:$match found:$found != 2)\n"
+	set exit_code 1
+}
+
+#### Test command line option override ####
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -p$test_part_2"
+expect {
+	-re "($alpha_num_dot)" {
+		set str $expect_out(1,string)
+		if {![string compare $str $test_part_1] } {
+			set match -99
+		}
+		if {![string compare $str $test_part_2] } {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: sinfo -p did not override environment variable ($match != 1)\n"
+	set exit_code 1
+}
+
+set match 0
+set found 0
+spawn $bin_bash -c "SINFO_ALL=1 $sinfo -h -o%P -p$test_part_1,$test_part_2"
+expect {
+	-re "($alpha_num_dot)" {
+		set str $expect_out(1,string)
+		if {![string compare $str $test_part_1] || \
+		    ![string compare $str $test_part_2]} {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 2 || $found != 2} {
+	send_user "\nFAILURE: sinfo -p did not override env variable (match:$match found:$found != 2)\n"
+	set exit_code 1
+}
+
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
+expect {
+	-re "($alpha_num_dot)" {
+		set str $expect_out(1,string)
+		if {![string compare $str $test_part_1] || \
+		    ![string compare $str $test_part_2]} {
+			incr match
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 2} {
+	send_user "\nFAILURE: sinfo did not show all partitions ($match != 2)\n"
+	set exit_code 1
+}
+
+#### Test conflicts ####
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 SINFO_ALL=1 $sinfo"
+expect {
+	-re "Conflicting options" {
+		send_user "\nThis error is expected, do not worry.\n"
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
+	set exit_code 1
+}
+
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -p$test_part_1 -a"
+expect {
+	-re "Conflicting options" {
+		send_user "\nThis error is expected, do not worry.\n"
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	send_user "\nFAILURE: sinfo should have produced an error ($match != 1)\n"
+	set exit_code 1
+}
+
+# Delete test partitions
+delete_part
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code

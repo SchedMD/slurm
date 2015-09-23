@@ -284,6 +284,7 @@ test4.10   Confirm that sinfo reports a proper version number (--version
 test4.11   Test down node reason display (--list-reasons option).
 test4.12   Test cpu total and allocation numbers.
 test4.13   Test sinfo's -O (--Format) option.
+test4.14   Test that multiple partitions can be specified in the env variable.
 
 
 test5.#    Testing of squeue options.
