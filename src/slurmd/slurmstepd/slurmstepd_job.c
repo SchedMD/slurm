@@ -71,82 +71,18 @@
 #include "src/slurmd/slurmstepd/multi_prog.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#ifdef HAVE_NATIVE_CRAY
+static bool already_validated_uid = true;
+#else
+static bool already_validated_uid = false;
+#endif
+
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
 static void _job_init_task_info(stepd_step_rec_t *job, uint32_t **gtid,
 				char *ifname, char *ofname, char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
-
-/* returns 0 if invalid gid, otherwise returns 1.  Set gid with
- * correct gid if root launched job.  Also set user_name
- * if not already set. */
-static int
-_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name)
-{
-	struct passwd *pwd;
-	struct group *grp;
-	int i;
-
-#ifdef HAVE_NATIVE_CRAY
-	/* already verified */
-	if (*user_name)
-		return 1;
-#endif
-znovu:
-	errno = 0;
-	pwd = getpwuid(uid);
-	if (!pwd) {
-		if (errno == EINTR)
-			goto znovu;
-		error("uid %ld not found on system", (long) uid);
-		slurm_seterrno(ESLURMD_UID_NOT_FOUND);
-		return 0;
-	}
-
-	if (!*user_name)
-		*user_name = xstrdup(pwd->pw_name);
-
-	if (pwd->pw_gid == *gid)
-		return 1;
-
-	grp = getgrgid(*gid);
-	if (!grp) {
-		error("gid %ld not found on system", (long)(*gid));
-		slurm_seterrno(ESLURMD_GID_NOT_FOUND);
-		return 0;
-	}
-
-	/* Allow user root to use any valid gid */
-	if (pwd->pw_uid == 0) {
-		pwd->pw_gid = *gid;
-		return 1;
-	}
-	for (i = 0; grp->gr_mem[i]; i++) {
-		if (!strcmp(pwd->pw_name, grp->gr_mem[i])) {
-			pwd->pw_gid = *gid;
-		       	return 1;
-	       	}
-	}
-	if (*gid != 0) {
-		if (slurm_find_group_user(pwd, *gid))
-			return 1;
-	}
-	/* root user may have launched this job for this user, but
-	 * root did not explicitly set the gid. This would set the
-	 * gid to 0. In this case we should set the appropriate
-	 * default gid for the user (from the passwd struct).
-	 */
-	if (*gid == 0) {
-		*gid = pwd->pw_gid;
-		return 1;
-	}
-	error("uid %ld is not a member of gid %ld",
-		(long)pwd->pw_uid, (long)(*gid));
-	slurm_seterrno(ESLURMD_GID_NOT_FOUND);
-
-	return 0;
-}
 
 /*
  * return the default output filename for a batch job
@@ -310,7 +246,8 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	xassert(msg->complete_nodelist != NULL);
 	debug3("entering stepd_step_rec_create");
 
-	if (!_valid_uid_gid((uid_t)msg->uid, &(msg->gid), &(msg->user_name)))
+	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
+				 &(msg->user_name), already_validated_uid, 1))
 		return NULL;
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
@@ -498,7 +435,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	debug3("entering batch_stepd_step_rec_create");
 
-	if (!_valid_uid_gid((uid_t)msg->uid, &(msg->gid), &(msg->user_name)))
+	if (!slurm_valid_uid_gid((uid_t)msg->uid, &(msg->gid),
+				 &(msg->user_name), already_validated_uid, 1))
 		return NULL;
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))

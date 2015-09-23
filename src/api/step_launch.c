@@ -106,13 +106,30 @@ static pid_t  srun_ppid = (pid_t) 0;
 static uid_t  slurm_uid;
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
+#ifdef HAVE_NATIVE_CRAY
+/* On a Cray we need to validate the gid
+ * before the launch of the tasks.  Since a native
+ * Cray really isn't a cluster but a distributed system this should
+ * be ok.
+ * This could be hacked by a user, but the only damage they
+ * could really do is set SLURM_USER_NAME to be something
+ * other than the actual name.  Running any getpwXXX commands
+ * on a cray compute node is not scalable and could
+ * potentially cause all sorts of issues and timeouts when
+ * talking with LDAP or NIS when done on the compute node.  We
+ * have not seen this issue on a regular cluster, so we do
+ * the validating there instead when not on a Cray.
+ */
+static bool   validate_gid = true;
+#else
+static bool   validate_gid = false;
+#endif
 static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
 static int  _start_io_timeout_thread(step_launch_state_t *sls);
 static void *_check_io_timeout(void *_sls);
-static int _valid_uid_gid(uid_t uid, gid_t *gid, char **user_name);
 
 static struct io_operations message_socket_ops = {
 	.readable = &eio_message_socket_readable,
@@ -222,7 +239,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.job_id = ctx->step_req->job_id;
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
-	if (!_valid_uid_gid((uid_t)launch.uid, &launch.gid, &launch.user_name))
+	if (!slurm_valid_uid_gid((uid_t)launch.uid, &launch.gid,
+				 &launch.user_name, 0, validate_gid))
 		return SLURM_ERROR;
 	launch.argc = params->argc;
 	launch.argv = params->argv;
@@ -402,7 +420,8 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.job_id = ctx->step_req->job_id;
 	launch.uid = ctx->step_req->user_id;
 	launch.gid = params->gid;
-	if (!_valid_uid_gid((uid_t)launch.uid, &launch.gid, &launch.user_name))
+	if (!slurm_valid_uid_gid((uid_t)launch.uid, &launch.gid,
+				 &launch.user_name, 0, validate_gid))
 		return SLURM_ERROR;
 	launch.argc = params->argc;
 	launch.argv = params->argv;
@@ -1940,87 +1959,4 @@ _check_io_timeout(void *_sls)
 	}
 	pthread_mutex_unlock(&sls->lock);
 	return NULL;
-}
-
-/* returns 0 if invalid gid, otherwise returns 1.  Set gid with
- * correct gid if root launched job.  Also set user_name
- * if not already set. */
-static int
-_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name)
-{
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
-	int rc;
-
-#ifdef HAVE_NATIVE_CRAY
-	struct group *grp;
-	int i;
-#endif
-	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-
-	if (!result || rc) {
-		error("uid %ld not found on system", (long)uid);
-		slurm_seterrno(ESLURMD_UID_NOT_FOUND);
-		return 0;
-	}
-
-	if (!*user_name)
-		*user_name = xstrdup(result->pw_name);
-
-#ifdef HAVE_NATIVE_CRAY
-	/* On a Cray this
-	 * needs to happen before the launch of the tasks.  Since a native
-	 * Cray really isn't a cluster but a distributed system this should
-	 * be ok.
-	 * This could be hacked by a user, but the only damage they
-	 * could really do is set SLURM_USER_NAME to be something
-	 * other than the actual name.  Running any getpwXXX commands
-	 * on a cray compute node is not scalable and could
-	 * potentially cause all sorts of issues and timeouts when
-	 * talking with LDAP or NIS when done on the compute node.  We
-	 * have not seen this issue on a regular cluster, so we do
-	 * the validating there instead when not on a Cray.
-	 */
-
-	if (result->pw_gid == *gid)
-		return 1;
-
-	grp = getgrgid(*gid);
-	if (!grp) {
-		error("gid %ld not found on system", (long)(*gid));
-		slurm_seterrno(ESLURMD_GID_NOT_FOUND);
-		return 0;
-	}
-
-	/* Allow user root to use any valid gid */
-	if (result->pw_uid == 0) {
-		result->pw_gid = *gid;
-		return 1;
-	}
-	for (i = 0; grp->gr_mem[i]; i++) {
-		if (!strcmp(result->pw_name, grp->gr_mem[i])) {
-			result->pw_gid = *gid;
-			return 1;
-		}
-	}
-	if (*gid != 0) {
-		if (slurm_find_group_user(result, *gid))
-			return 1;
-	}
-	/* root user may have launched this job for this user, but
-	 * root did not explicitly set the gid. This would set the
-	 * gid to 0. In this case we should set the appropriate
-	 * default gid for the user (from the passwd struct).
-	 */
-	if (*gid == 0) {
-		*gid = result->pw_gid;
-		return 1;
-	}
-	error("uid %ld is not a member of gid %ld",
-		(long)result->pw_uid, (long)(*gid));
-	slurm_seterrno(ESLURMD_GID_NOT_FOUND);
-	return 0;
-#else
-	return 1;
-#endif
 }
