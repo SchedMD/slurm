@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     submitted.
  -- Correct counting for job array limits, job count limit underflow possible
     when master cancellation of master job record.
+ -- For pending jobs have sacct print 0 for nnodes instead of the bogus 2.
 
 * Changes in Slurm 14.11.9
 ==========================

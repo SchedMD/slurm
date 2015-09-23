@@ -1364,25 +1364,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = job->alloc_nodes;
-				tmp_char = job->nodes;
 				break;
 			case JOBSTEP:
 				tmp_int = step->nnodes;
-				tmp_char = step->nodes;
 				break;
 			case JOBCOMP:
 				tmp_int = job_comp->node_cnt;
-				tmp_char = job_comp->nodelist;
 				break;
 			default:
 				break;
 			}
 
-			if (!tmp_int) {
-				hostlist_t hl = hostlist_create(tmp_char);
-				tmp_int = hostlist_count(hl);
-				hostlist_destroy(hl);
-			}
 			convert_num_unit((double)tmp_int,
 					 outbuf, sizeof(outbuf), UNIT_NONE);
 			field->print_routine(field,
