@@ -75,6 +75,10 @@ documents those changes that are of interest to users and administrators.
     submitted.
  -- Correct counting for job array limits, job count limit underflow possible
     when master cancellation of master job record.
+ -- Combine 2 _valid_uid_gid functions into a single function to avoid
+    diversion.
+ -- Pending job array records will be combined into single line by default,
+    even if started and requeued or modified.
 
 * Changes in Slurm 15.08.0
 ==========================
