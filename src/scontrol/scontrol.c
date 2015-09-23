@@ -933,37 +933,34 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "requeue", MAX(tag_len, 3)) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		} else if (argc < 2) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			scontrol_requeue((argc - 1), &argv[1]);
+			for (i = 1; i < argc; i++) {
+				scontrol_requeue(argv[i]);
+			}
 		}
 	}
 	else if (strncasecmp(tag, "requeuehold", 11) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		} else if (argc < 2) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			scontrol_requeue_hold((argc - 1), &argv[1]);
+			uint32_t state_flag = 0, start_pos = 1;
+			if ((argc > 2) &&
+			    (parse_requeue_flags(argv[1], &state_flag) == 0)) {
+				start_pos = 2;
+			}
+			for (i = start_pos; i < argc; i++) {
+				scontrol_requeue_hold(state_flag, argv[i]);
+			}
 		}
 
 	}
