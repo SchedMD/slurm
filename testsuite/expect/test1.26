@@ -138,10 +138,10 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nWARNING: srun not responding, "
-		send_user "expected if not SlurmUser or root.\n"
+		send_user "\nFAILURE: srun not responding.\n"
 		slow_kill $srun_pid
 		set slurm_user 0
+		set exit_code 1
 	}
 	eof {
 		wait
