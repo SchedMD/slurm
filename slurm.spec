@@ -53,7 +53,6 @@
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt blcr
-%slurm_without_opt openssl
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
