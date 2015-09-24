@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Add [Alloc|Req]Nodes to sacct to be more like cpus.
  -- Fix sacct documentation about [Alloc|Req]TRES
  -- Put node count in TRES string for steps.
+ -- Fix issue with wrong protocol version when using the srun --no-allocate
+    option.
 
 * Changes in Slurm 15.08.0
 ==========================
