@@ -39,12 +39,14 @@ set lic_c           "lic_c_test$test_id"
 
 print_header $test_id
 
+set cluster [get_cluster_name]
+
 proc add_lic { license } {
 
-	global sacctmgr exit_code
+	global sacctmgr exit_code cluster
 
 	set added 0
-	spawn $sacctmgr -i add resource name=$license cluster=linux count=50 \
+	spawn $sacctmgr -i add resource name=$license cluster=$cluster count=50 \
 	    percentallowed=10 type=license
 	expect {
 		-re "Adding Resource" {
