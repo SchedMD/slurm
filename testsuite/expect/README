@@ -572,6 +572,7 @@ test17.38  Test for sbatch --signal.
 test17.39  Validate dependecy OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
+test17.42  Test of sbatch --wait option.
 
 
 test19.#   Testing of strigger options.
