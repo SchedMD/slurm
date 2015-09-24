@@ -4603,7 +4603,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-	info("got batch finish");
+
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 	if (running_serial) {

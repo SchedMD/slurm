@@ -113,6 +113,7 @@ extern partition_info_msg_t *old_part_info_ptr;
 extern reserve_info_msg_t *old_res_info_ptr;
 extern slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr;
 
+extern int	parse_requeue_flags(char *s, uint32_t *flags);
 extern int	scontrol_callerid(int argc, char **argv);
 extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc,
 				    char **argv);
@@ -159,8 +160,8 @@ extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);
 extern void	scontrol_print_layout (int argc, char *argv[]);
 extern void	scontrol_print_powercap (char *node_list);
-extern void	scontrol_requeue(int argc, char **argv);
-extern void	scontrol_requeue_hold(int argc, char **argv);
+extern void	scontrol_requeue(char *job_str);
+extern void	scontrol_requeue_hold(uint32_t state_flag, char *job_str);
 extern void	scontrol_suspend(char *op, char *job_id_str);
 extern int	scontrol_update_front_end (int argc, char *argv[]);
 extern int	scontrol_update_job (int argc, char *argv[]);

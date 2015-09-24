@@ -56,7 +56,6 @@ static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
 static int	_parse_checkpoint_args(int argc, char **argv,
 				       uint16_t *max_wait, char **image_dir);
-static int	_parse_requeue_flags(char *, uint32_t *state_flags);
 static int	_parse_restart_args(int argc, char **argv,
 				    uint16_t *stick, char **image_dir);
 static void	_update_job_size(uint32_t job_id);
@@ -580,21 +579,20 @@ scontrol_suspend(char *op, char *job_str)
  * IN job_id_str - a job id
  */
 extern void
-scontrol_requeue(int argc, char **argv)
+scontrol_requeue(char *job_str)
 {
-	char *job_id_str, *job_str;
+	char *job_id_str;
 	int rc, i;
 	job_array_resp_msg_t *resp = NULL;
 
-	if (!argv[0]) {
+	if (!job_str[0]) {
 		exit_code = 1;
 		return;
 	}
 
-	job_str = argv[0];
-	if (strncasecmp(argv[0], "jobid=", 6) == 0)
+	if (strncasecmp(job_str, "jobid=", 6) == 0)
 		job_str += 6;
-	if (strncasecmp(argv[0], "job=", 4) == 0)
+	if (strncasecmp(job_str, "job=", 4) == 0)
 		job_str += 4;
 
 	if (_is_job_id(job_str)) {
@@ -637,32 +635,12 @@ scontrol_requeue(int argc, char **argv)
 }
 
 extern void
-scontrol_requeue_hold(int argc, char **argv)
+scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 {
 	int rc, i;
-	uint32_t state_flag;
-	char *job_id_str, *job_str;
+	char *job_id_str;
 	job_array_resp_msg_t *resp = NULL;
-
-	state_flag = 0;
-
-	if (argc == 1)
-		job_str = argv[0];
-	else
-		job_str = argv[1];
-
-	if (strncasecmp(job_str, "jobid=", 6) == 0)
-		job_str += 6;
-	if (strncasecmp(job_str, "job=", 4) == 0)
-		job_str += 4;
-
-	if (argc == 2) {
-		if (_parse_requeue_flags(argv[0], &state_flag) < 0) {
-			error("Invalid state specification %s", argv[0]);
-			exit_code = 1;
-			return;
-		}
-	}
+info("state:%u", state_flag);
 	state_flag |= JOB_REQUEUE_HOLD;
 
 	if (_is_job_id(job_str)) {
@@ -1369,35 +1347,37 @@ fini:	slurm_free_resource_allocation_response_msg(alloc_info);
 		fclose(resize_sh);
 }
 
-/* _parse_requeue_args()
+/* parse_requeue_args()
+ * IN s - string to parse
+ * OUT flags - flags to set based upon argument
+ * RET 0 on successful parse, -1 otherwise
  */
-static int
-_parse_requeue_flags(char *s, uint32_t *state)
+extern int
+parse_requeue_flags(char *s, uint32_t *flags)
 {
-	char *p;
-	char *p0;
-	char *z;
+	char *p, *p0, *z;
 
 	p0 = p = xstrdup(s);
 	/* search for =
 	 */
 	z = strchr(p, '=');
 	if (!z) {
+		xfree(p0);
 		return -1;
 	}
 	*z = 0;
 
 	/* validate flags keyword
 	 */
-	if (strncasecmp(p, "state", 5) != 0) {
+	if (strncasecmp(p, "state", 5)) {
+		xfree(p0);
 		return -1;
 	}
 	++z;
 
 	p = z;
-	if (strncasecmp(p, "specialexit", 11) == 0
-	    || strncasecmp(p, "se", 2) == 0) {
-		*state = JOB_SPECIAL_EXIT;
+	if (!strncasecmp(p, "specialexit", 11) || !strncasecmp(p, "se", 2)) {
+		*flags = JOB_SPECIAL_EXIT;
 		xfree(p0);
 		return 0;
 	}
