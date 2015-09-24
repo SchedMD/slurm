@@ -169,18 +169,19 @@ static void _print_burst_buffer_resv(FILE *out,
 	int i;
 
 	/****** Line 1 ******/
-	if (burst_buffer_ptr->name) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			"    Name=%s ", burst_buffer_ptr->name);
-	} else if (burst_buffer_ptr->array_task_id == NO_VAL) {
+	if (burst_buffer_ptr->job_id &&
+	    (burst_buffer_ptr->array_task_id == NO_VAL)) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			"    JobID=%u ", burst_buffer_ptr->job_id);
-	} else {
+	} else if (burst_buffer_ptr->job_id) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			"    JobID=%u_%u(%u) ",
 			burst_buffer_ptr->array_job_id,
 		        burst_buffer_ptr->array_task_id,
 		        burst_buffer_ptr->job_id);
+	} else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			"    Name=%s ", burst_buffer_ptr->name);
 	}
 	xstrcat(out_buf, tmp_line);
 	_get_size_str(sz_buf, sizeof(sz_buf), burst_buffer_ptr->size);
