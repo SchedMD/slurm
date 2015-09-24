@@ -1,0 +1,119 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that sbatch, srun, salloc return partition error message.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        17.41
+set test_part      [default_partition]
+set part_inv       "$test_part\g"
+set file_in        "test$test_id\.sc"
+set exit_code      0
+
+make_bash_script $file_in "sleep 1"
+
+proc test_sbatch { part }  {
+	global srun salloc sbatch exit_code file_in part_inv
+
+	send_user "\n=======Testing Values: $part=======\n"
+
+	send_user "\n====Testing sbatch====\n"
+	set match 0
+	spawn $sbatch -t1 -p$part -o/dev/null $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match == 0} {
+		send_user "\nFAILURE: error message was not correct\n"
+		set exit_code 1
+	}
+
+	send_user "\n====Testing srun====\n"
+	set match 0
+	spawn $srun -t1 -p$part -o/dev/null $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match == 0} {
+		send_user "\nFAILURE: error message was not correct\n"
+		set exit_code 1
+	}
+
+	send_user "\n====Testing salloc====\n"
+	set match 0
+	spawn $salloc -t1 -p$part $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match == 0} {
+		send_user "\nFAILURE: error message was not correct\n"
+		set exit_code 1
+	}
+}
+
+test_sbatch $test_part\g
+test_sbatch "$test_part\,$test_part\g"
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code

@@ -569,7 +569,8 @@ test17.36  Test that the shared option in partitions is enforced.
 test17.37  Validate that afternotok dependency is enforced.
 test17.38  Test for sbatch --signal.
 test17.39  Validate dependecy OR option.
-test17.34  Test of --thread-spec option.
+test17.40  Test of --thread-spec option.
+test17.41  Validate that sbatch, srun, salloc return partition error message.
 
 
 test19.#   Testing of strigger options.
