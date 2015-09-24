@@ -2058,11 +2058,16 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	if (gres_ptr->gres_data == NULL)
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
+
+	/* remove the last count */
+	context_ptr->total_cnt -= gres_data->gres_cnt_config;
+
 	_get_gres_cnt(gres_data, orig_config,
 		      context_ptr->gres_name,
 		      context_ptr->gres_name_colon,
 		      context_ptr->gres_name_colon_len);
 
+	/* add the new */
 	context_ptr->total_cnt += gres_data->gres_cnt_config;
 
 	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
