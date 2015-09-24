@@ -13,17 +13,26 @@ but should use their own resource limits mechanisms.</p>
 
 <p>Slurm's hierarchical limits are enforced in the following order
   with Job QOS and Partition QOS order being reversable by using the QOS
-  flag 'OverPartQOS':
+  flag 'OverPartQOS':</p>
 <ol>
 	<li>Partition QOS limit</li>
 	<li>Job QOS limit</li>
 	<li>User association</li>
-	<li>Account association(s)</li>
+	<li>Account association(s), ascending the hierarchy</li>
 	<li>Root/Cluster association</li>
 	<li>Partition limit</li>
 	<li>None</li>
 </ol>
-Note: Higher precedent limits override lower.
+
+<p>Note: If limits are defined at multiple points in this hierachy,
+the point in this list where the limit is first defined will be used.
+Consider the following example:</p>
+<ul>
+<li>MaxJobs=20 and MaxSubmitJobs is undefined in the partition QOS</li>
+<li>No limits are set in the job QOS and</li>
+<li>MaxJobs=4 and MaxSubmitJobs=50 in the user association</li>
+</ul>
+<p>The limits in effect will be MaxJobs=20 and MaxSubmitJobs=50.</p>
 
 <h2>Configuration</h2>
 
@@ -256,6 +265,6 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 13 May 2014</p>
+<p style="text-align: center;">Last modified 24 September 2015</p>
 
 </ul></body></html>
