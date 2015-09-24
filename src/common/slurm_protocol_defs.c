@@ -188,16 +188,31 @@ extern List slurm_copy_char_list(List char_list)
 	return ret_list;
 }
 
+static int _find_char_in_list(void *x, void *key)
+{
+	char *char1 = (char *)x;
+	char *char2 = (char *)key;
+
+	if (!strcasecmp(char1, char2))
+		return 1;
+
+	return 0;
+}
+
 
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
-	char *name = NULL, *tmp_char = NULL;
+	int i = 0, start = 0;
+	char *name = NULL;
 	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
 	int count = 0;
+	bool brack_not = false;
+	bool first_brack = false;
+	char *this_node_name;
+	hostlist_t host_list;
 
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -218,69 +233,113 @@ extern int slurm_addto_char_list(List char_list, char *names)
 				break;
 			else if ((names[i] == '\"') || (names[i] == '\''))
 				names[i] = '`';
-			else if (names[i] == ',') {
-				/* If there is a comma at the end just
-				   ignore it */
-				if (!names[i+1])
-					break;
+			else if (names[i] == '[')
+			       /* Make sure there is a open bracket. This
+				* check is to allow comma sperated notation
+				* within the bracket ie. linux[0-1,2]  */
+				first_brack = true;
+			else if (names[i] == ',' && !first_brack) {
+				/* Check that the string before , was
+				 * not a [] notation value */
+				if (!brack_not) {
+					/* If there is a comma at the end just
+					 * ignore it */
+					if (!names[i+1])
+						break;
 
-				name = xstrndup(names+start, (i-start));
+					name = xstrndup(names+start,
+							(i-start));
+					//info("got %s %d", name, i-start);
+
+					/* If we get a duplicate remove the
+					 * first one and tack this on the end.
+					 * This is needed for get associations
+					 * with qos.
+					 */
+					if (list_find(itr,
+						      _find_char_in_list,
+						      name)) {
+						list_delete_item(itr);
+					} else
+						count++;
+
+					xstrtolower(name);
+					list_append(char_list, name);
+
+					list_iterator_reset(itr);
+
+					i++;
+					start = i;
+					if (!names[i]) {
+						info("There is a problem "
+						     "with your request. "
+						     "It appears you have "
+						     "spaces inside your "
+						     "list.");
+						count = 0;
+						goto endit;
+					}
+				} else {
+					brack_not = false;
+					/* Skip over the , so it is
+					 * not included in the char list */
+					start = ++i;
+				}
+			} else if (names[i] == ']') {
+				brack_not = true;
+				first_brack = false;
+				name = xstrndup(names+start, ((i + 1)-start));
 				//info("got %s %d", name, i-start);
 
-				while ((tmp_char = list_next(itr))) {
-					if (!strcasecmp(tmp_char, name))
-						break;
+				if ((host_list = hostlist_create(name))) {
+					while ((this_node_name =
+						xstrdup(hostlist_shift
+							(host_list)))) {
+						/* If we get a duplicate
+						 * remove the first one and tack
+						 * this on the end. This is
+						 * needed for get associations
+						 * with qos.
+						 */
+						if (list_find(itr,
+							    _find_char_in_list,
+							    this_node_name)) {
+							list_delete_item(itr);
+						} else
+							count++;
+
+						xstrtolower(this_node_name);
+						list_append(char_list,
+							    this_node_name);
+
+						list_iterator_reset(itr);
+
+						start = i + 1;
+					}
 				}
-				/* If we get a duplicate remove the
-				 * first one and tack this on the end.
-				 * This is needed for get associations
-				 * with qos.
-				 */
-				if (tmp_char)
-					list_delete_item(itr);
-				else
-					count++;
-
-				xstrtolower(name);
-				list_append(char_list, name);
-
-				list_iterator_reset(itr);
-
-				i++;
-				start = i;
-				if (!names[i]) {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					count = 0;
-					goto endit;
-				}
+				hostlist_destroy(host_list);
 			}
 			i++;
 		}
 
-		name = xstrndup(names+start, (i-start));
-		while ((tmp_char = list_next(itr))) {
-			if (!strcasecmp(tmp_char, name))
-				break;
+		if (i-start) {
+			name = xstrndup(names+start, (i-start));
+			/* If we get a duplicate remove the
+			 * first one and tack this on the end.
+			 * This is needed for get associations
+			 * with qos.
+			 */
+			if (list_find(itr, _find_char_in_list, name)) {
+				list_delete_item(itr);
+			} else
+				count++;
+
+			xstrtolower(name);
+			list_append(char_list, name);
 		}
-
-		/* If we get a duplicate remove the
-		 * first one and tack this on the end.
-		 * This is needed for get associations
-		 * with qos.
-		 */
-		if (tmp_char)
-			list_delete_item(itr);
-		else
-			count++;
-
-		xstrtolower(name);
-		list_append(char_list, name);
 	}
 endit:
 	list_iterator_destroy(itr);
-
 	return count;
 }
 
