@@ -1545,11 +1545,11 @@ extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 
 extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
-        if (msg) {
-                xfree(msg->node_list);
+	if (msg) {
+		xfree(msg->node_list);
 		FREE_NULL_LIST(msg->preemptee_job_id);
-                xfree(msg);
-        }
+		xfree(msg);
+	}
 }
 
 inline void slurm_free_forward_data_msg(forward_data_msg_t *msg)
@@ -2736,7 +2736,7 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t * msg)
 
 /*
  * slurm_free_job_alloc_info_response_msg - free slurm job allocation
- *	                                    info response message
+ *					    info response message
  * IN msg - pointer to job allocation info response message
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
@@ -3651,7 +3651,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
- 	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_SICP_INFO:
 	case REQUEST_POWERCAP_INFO:
 		/* No body to free */
@@ -3754,7 +3754,7 @@ extern void slurm_free_job_notify_msg(job_notify_msg_t * msg)
  *   programs running with root privileges.
  */
 extern bool valid_spank_job_env(char **spank_job_env,
-			        uint32_t spank_job_env_size, uid_t uid)
+				uint32_t spank_job_env_size, uid_t uid)
 {
 	int i;
 	char *entry;

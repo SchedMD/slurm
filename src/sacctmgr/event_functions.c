@@ -468,26 +468,26 @@ extern int sacctmgr_list_event(int argc, char *argv[])
 	   time correctly for just the past day.
 	*/
 	if (argc == 0) {
-                struct tm start_tm;
+		struct tm start_tm;
 		event_cond->period_start = time(NULL);
 
-                if (!slurm_localtime_r(&event_cond->period_start,
+		if (!slurm_localtime_r(&event_cond->period_start,
 				       &start_tm)) {
-                        fprintf(stderr,
-                                " Couldn't get localtime from %ld",
-                                (long)event_cond->period_start);
-                        exit_code = 1;
-                        return 0;
-                }
-                start_tm.tm_sec = 0;
-                start_tm.tm_min = 0;
-                start_tm.tm_hour = 0;
-                start_tm.tm_mday--;
-                start_tm.tm_isdst = -1;
-                event_cond->period_start = slurm_mktime(&start_tm);
-        }
+			fprintf(stderr,
+				" Couldn't get localtime from %ld",
+				(long)event_cond->period_start);
+			exit_code = 1;
+			return 0;
+		}
+		start_tm.tm_sec = 0;
+		start_tm.tm_min = 0;
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday--;
+		start_tm.tm_isdst = -1;
+		event_cond->period_start = slurm_mktime(&start_tm);
+	}
 
-	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))
 		    || !strncasecmp (argv[i], "Set", MAX(command_len, 3)))
