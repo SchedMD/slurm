@@ -122,6 +122,11 @@ proc check_limit { type name } {
 			set match 1
 			exp_continue
 		}
+		-re "Node count specification invalid" {
+			send_user "\nWARNING: Test exceeds available node count\n"
+			set match 1
+			exp_continue
+		}
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			set exit_code 1
@@ -141,9 +146,6 @@ proc check_limit { type name } {
 		cancel_job $job_id
 		exit 1
 	}
-
-	# Cancel the submitted job
-	cancel_job $job_id
 
 	# Reset limits
 	mod_qos $test_qos [array get reset_qos_val]

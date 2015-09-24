@@ -234,7 +234,7 @@ sleep 10"
 
 	if { $pending != 1 || $running != $val } {
 		send_user "\nFAILURE found $pending jobs pending "
-		send_user "and $running jobs running"
+		send_user "and $running jobs running (want 1 and $val) "
 		print_err $test_type "inc21_21_grp_test"
 		set exit_code 1
 	}
