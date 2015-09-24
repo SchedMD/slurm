@@ -292,11 +292,13 @@ Requires: slurm-plugins slurm-sql
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
+%if %{slurm_with mysql}
 %package sql
 Summary: Slurm SQL support
 Group: System Environment/Base
 %description sql
 Slurm SQL support. Contains interfaces to MySQL.
+%endif
 
 %package plugins
 Summary: Slurm plugins (loadable shared objects)
@@ -886,9 +888,11 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
+%if %{slurm_with mysql}
 %files -f sql.files sql
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
+%endif
 #############################################################################
 
 %files -f plugins.files plugins
