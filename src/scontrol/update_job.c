@@ -101,7 +101,7 @@ static bool _is_job_id(char *job_str)
 	return true;
 
 fail:	xfree(local_job_str);
-	debug("Character %d in %s is not a valid job ID", i, job_str);
+	debug("Character %d in %s is invalid job ID", i, job_str);
 	return false;
 }
 
@@ -640,7 +640,7 @@ scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 	int rc, i;
 	char *job_id_str;
 	job_array_resp_msg_t *resp = NULL;
-info("state:%u", state_flag);
+
 	state_flag |= JOB_REQUEUE_HOLD;
 
 	if (_is_job_id(job_str)) {
@@ -729,6 +729,18 @@ scontrol_update_job (int argc, char *argv[])
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id_str = val;
+		}
+		else if (strncasecmp(tag, "ArrayTaskThrottle",
+				     MAX(taglen, 10)) == 0) {
+			int throttle;
+			throttle = strtoll(val, (char **) NULL, 10);
+			if (throttle < 0) {
+				error("Invalid ArrayTaskThrottle value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.array_inx = val;
+			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
@@ -1221,6 +1233,14 @@ scontrol_update_job (int argc, char *argv[])
 				slurm_free_job_array_resp(resp);
 			}
 			job_msg.job_id_str = _next_job_id();
+		}
+	} else if (job_msg.job_id_str) {
+		exit_code = 1;
+		rc = ESLURM_INVALID_JOB_ID;
+		slurm_seterrno(rc);
+		if (quiet_flag != 1) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(rc), job_msg.job_id_str);
 		}
 	}
 

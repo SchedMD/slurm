@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "June 2015" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "September 2015" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -478,6 +478,15 @@ Repeat the last command executed.
 \fIAccount\fP=<account>
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
+.TP
+\fIArrayTaskThrottle\fP=<count>
+Speciify the maximum number of tasks in a job array that can execute at
+the same time.
+Set the count to zero in order to eliminate any limit.
+The task throttle count for a job array is reported as part of its ArrayTaskId
+field, preceeded with a percent sign.
+For example "ArrayTaskId=1\-10%2" indicates the maximum number of running tasks
+is limited to 2.
 .TP
 \fIBurstBuffer\fP=<spec>
 Burst buffer specification to be changed for this job's resource use.

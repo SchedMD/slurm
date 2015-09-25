@@ -67,6 +67,9 @@ Brian Haymore, The University of Utah</li>
 <li>Technical: <a href="SLUG15/BSC_Slurm_Workload_Simulator_Enhancements.pdf">Using and Modifying the BSC Slurm Workload Simulator</a>,
 Stephen Trofinoff and Massimo Benini, CSCS</li>
 
+<li>Technical: <a href="SLUG15/machine_learning.pdf">Improving Job Scheduling by using Machine Learning</a>,
+David Glesser, Yiannis Georgiou (BULL) and Denis Trystram (LIG)</li>
+
 <li>Technical: <a href="SLUG15/MultiCluster.pdf">Federated Cluster Scheduling</a>,
 Brian Christiansen and Danny Auble, SchedMD</li>
 
@@ -661,6 +664,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 21 September 2015</p>
+<p style="text-align:center;">Last modified 25 September 2015</p>
 
 <!--#include virtual="footer.txt"-->
