@@ -183,6 +183,7 @@ script for Slurm?</a></li>
     configuration be copied from an existing cluster to the new cluster?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
 rebooting the nodes?</a></li>
+<li><a href="#pam_exclude">How can I exclude some users from pam_slurm?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -2086,6 +2087,50 @@ One just has to wait for about 20 seconds after changing the default symlinks
 before starting the slurmds again.</p>
 <p>(Information courtesy of Douglas Jacobsen, NERSC,
 Lawrence Berkeley National Laboratory)</p>
+
+<p><a name="pam_exclude"><b>65.How can I exclude some users from pam_slurm?</b></a><br>
+<b>CAUTION:</b> Please test this on a test machine/VM before you actually do
+this on your Slurm computers.</p>
+
+<p><b>Step 1.</b> Make sure pam_listfile.so exists on your system.
+The following command is an example on Redhat 6:</p>
+<pre>
+ls -la /lib64/security/pam_listfile.so
+</pre>
+
+<p><b>Step 2.</b> Create user list (e.g. /etc/ssh/allowed_users):</p>
+<pre>
+# /etc/ssh/allowed_users
+root
+myadmin
+</pre>
+<p>And, change file mode to keep it secret from regular users(Optional):</p>
+<pre>
+chmod 600 /etc/ssh/allowed_users
+</pre>
+<p><b>NOTE:</b> root is not necessarily listed on the allowed_users, but I
+feel somewhat safe if it's on the list.</p>
+
+<p><b>Step 3.</b> On /etc/pam.d/sshd, add pam_listfile.so with sufficient flag 
+before pam_slurm.so (e.g. my /etc/pam.d/sshd looks like this):</p>
+<pre>
+#%PAM-1.0
+auth       required     pam_sepermit.so
+auth       include      password-auth
+account    sufficient   pam_listfile.so item=user sense=allow file=/etc/ssh/allowed_users onerr=fail
+account    required     pam_slurm.so
+account    required     pam_nologin.so
+account    include      password-auth
+password   include      password-auth
+# pam_selinux.so close should be the first session rule
+session    required     pam_selinux.so close
+session    required     pam_loginuid.so
+# pam_selinux.so open should only be followed by sessions to be executed in the user context
+session    required     pam_selinux.so open env_params
+session    optional     pam_keyinit.so force revoke
+session    include      password-auth
+</pre>
+<p>(Information courtesy of Koji Tanaka, Indiana University)</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
