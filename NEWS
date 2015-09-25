@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     PrologFlags=Alloc. Allows SLURM_JOB_USER env variable to be set when using
     Native Slurm on a Cray.
  -- Add "NumTasks" to job information visible to Slurm commands.
+ -- Add mail wrapper script "smail" that will include job statistics in email
+    notification messages.
 
 * Changes in Slurm 15.08.2
 ==========================
