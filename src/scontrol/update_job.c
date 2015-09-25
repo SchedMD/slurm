@@ -101,7 +101,7 @@ static bool _is_job_id(char *job_str)
 	return true;
 
 fail:	xfree(local_job_str);
-	debug("Character %d in %s is not a valid job ID", i, job_str);
+	debug("Character %d in %s is invalid job ID", i, job_str);
 	return false;
 }
 
@@ -1221,6 +1221,14 @@ scontrol_update_job (int argc, char *argv[])
 				slurm_free_job_array_resp(resp);
 			}
 			job_msg.job_id_str = _next_job_id();
+		}
+	} else if (job_msg.job_id_str) {
+		exit_code = 1;
+		rc = ESLURM_INVALID_JOB_ID;
+		slurm_seterrno(rc);
+		if (quiet_flag != 1) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(rc), job_msg.job_id_str);
 		}
 	}
 
