@@ -214,6 +214,7 @@ Lead Slurm developers are:
 <li>Nina Suvanphim (Cray)</li>
 <br>
 <li>Prashanth Tamraparni (HP, India)</li>
+<li>Koji Tanaka (Indiana University)</li>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
 <li>Kevin Tew (Lawrence Livermore National Laboratory/Brigham Young University)</li>
 <li>John Thiltges (University of Nebraska-Lincoln)</li>
@@ -238,6 +239,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 21 September 2015</p>
+<p style="text-align:center;">Last modified 25 September 2015</p>
 
 <!--#include virtual="footer.txt"-->
