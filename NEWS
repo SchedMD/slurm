@@ -72,6 +72,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with wrong protocol version when using the srun --no-allocate
     option.
  -- Fix TRES counts on GRES on a clean start of the slurmctld.
+ -- Add ability to change a job array's maximum running task count:
+    "scontrol update jobid=# arraytaskthrottle=#"
 
 * Changes in Slurm 15.08.0
 ==========================

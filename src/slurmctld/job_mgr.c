@@ -10992,6 +10992,21 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
+	if (job_specs->array_inx && job_ptr->array_recs) {
+		int throttle;
+		throttle = strtoll(job_specs->array_inx, (char **) NULL, 10);
+		if (throttle >= 0) {
+			info("update_job: set max_run_tasks to %d for "
+			     "job array %u", throttle, job_ptr->job_id);
+			job_ptr->array_recs->max_run_tasks = throttle;
+		} else {
+			info("update_job: invalid max_run_tasks of %d for "
+			     "job array %u, ignored",
+			     throttle, job_ptr->job_id);
+			error_code = ESLURM_BAD_TASK_COUNT;
+		}
+	}
+
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;

@@ -730,6 +730,18 @@ scontrol_update_job (int argc, char *argv[])
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id_str = val;
 		}
+		else if (strncasecmp(tag, "ArrayTaskThrottle",
+				     MAX(taglen, 10)) == 0) {
+			int throttle;
+			throttle = strtoll(val, (char **) NULL, 10);
+			if (throttle < 0) {
+				error("Invalid ArrayTaskThrottle value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.array_inx = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
 			update_cnt++;
