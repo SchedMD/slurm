@@ -640,7 +640,7 @@ scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 	int rc, i;
 	char *job_id_str;
 	job_array_resp_msg_t *resp = NULL;
-info("state:%u", state_flag);
+
 	state_flag |= JOB_REQUEUE_HOLD;
 
 	if (_is_job_id(job_str)) {
