@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
  -- Correct counting for job array limits, job count limit underflow possible
     when master cancellation of master job record.
  -- For pending jobs have sacct print 0 for nnodes instead of the bogus 2.
+ -- Fix for tracking node state when jobs that have been allocated exclusive
+    access to nodes (i.e. entire nodes) and later relinquish some nodes. Nodes
+    would previously appear partly allocated and prevent use by other jobs.
 
 * Changes in Slurm 14.11.9
 ==========================
