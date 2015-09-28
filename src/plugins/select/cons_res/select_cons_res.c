@@ -1303,6 +1303,17 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
+	if (job->whole_node) {
+		/* The node_bitmap remains set for this node, set but its entire
+		 * core_bitmap will be cleared by clear_job_resources_node()
+		 * below. Clear whole_node flag to prevent add_job_to_cores()
+		 * from considering all cores on all allocated nodes as being
+		 * allocated to this job. */
+		verbose("%s: Clearing flag whole_node for job %u",
+			__func__, job_ptr->job_id);
+		job->whole_node = 0;
+	}
+
 	/* subtract memory */
 	node_inx  = node_ptr - node_record_table_ptr;
 	first_bit = bit_ffs(job->node_bitmap);
