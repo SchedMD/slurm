@@ -150,6 +150,12 @@ If a single job can not be entirely placed within a single network leaf
 switch, the job will be spread across as many leaf switches as possible
 in order to optimize the job's network bandwidth.</p>
 
+<p><b>NOTE:</b>Slurm first identifies the network switches which provide the
+best fit for pending jobs and then selectes the nodes with the lowest "weight"
+within those switches. If optimizing resource selection by node weight is more
+important than optimizing network topology then do NOT use the
+topology/tree plugin.</p>
+
 <h2>User Options</h2>
 
 <p>For use with the topology/tree plugin, user can also specify the maximum
@@ -179,6 +185,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 7 April 2015</p>
+<p style="text-align:center;">Last modified 28 September 2015</p>
 
 <!--#include virtual="footer.txt"-->
