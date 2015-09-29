@@ -4546,9 +4546,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	info("%s: %s WIFEXITED %d WEXITSTATUS %d",
-	     __func__, jobid2str(job_ptr, jbuf),
-	     WIFEXITED(job_return_code), WEXITSTATUS(job_return_code));
+	if (WIFSIGNALED(job_return_code)) {
+		info("%s: %s WTERMSIG %d",  __func__,
+		     jobid2str(job_ptr, jbuf), WTERMSIG(job_return_code));
+	} else {
+		info("%s: %s WEXITSTATUS %d",  __func__,
+		     jobid2str(job_ptr, jbuf), WEXITSTATUS(job_return_code));
+	}
 
 	if (IS_JOB_FINISHED(job_ptr)) {
 		if (job_ptr->exit_code == 0)
