@@ -955,6 +955,96 @@ extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
 	return _change_job_resources_node(job_resrcs_ptr, node_id, false);
 }
 
+/* Completely remove specified node from job resources structure */
+extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
+{
+	int i, i_first, i_last, n;
+	int bit_inx = 0, core_cnt = 0, host_cnt, len, node_inx = node_id;
+
+	xassert(job);
+
+	/* Modify core/socket counter arrays to remove this node */
+	host_cnt = job->nhosts;
+	for (i = 0; i < job->nhosts; i++) {
+		host_cnt -= job->sock_core_rep_count[i];
+		if (job->sock_core_rep_count[i] <= node_inx) {
+			bit_inx += job->sockets_per_node[i] *
+				   job->cores_per_socket[i] *
+				   job->sock_core_rep_count[i];
+			node_inx -= job->sock_core_rep_count[i];
+		} else {
+			bit_inx += job->sockets_per_node[i] *
+				   job->cores_per_socket[i] * node_inx;
+			core_cnt = job->sockets_per_node[i] *
+				   job->cores_per_socket[i];
+			job->sock_core_rep_count[i]--;
+			if (job->sock_core_rep_count[i] == 0) {
+				for ( ; host_cnt > 0; i++) {
+					job->cores_per_socket[i] =
+						job->cores_per_socket[i+1];
+					job->sock_core_rep_count[i] =
+						job->sock_core_rep_count[i+1];
+					job->sockets_per_node[i] =
+						job->sockets_per_node[i+1];
+					host_cnt -= job->sock_core_rep_count[i];
+				}
+			}
+			break;
+		}
+	}
+	if (core_cnt < 1) {
+		error("%s: core_cnt=0", __func__);
+		return SLURM_ERROR;
+	}
+
+	/* Shift core_bitmap contents and shrink it to remove this node */
+	len = bit_size(job->core_bitmap);
+	for (i = bit_inx; (i + core_cnt) < len; i++) {
+		if (bit_test(job->core_bitmap, i + core_cnt))
+			bit_set(job->core_bitmap, i);
+		else
+			bit_clear(job->core_bitmap, i);
+		if (!job->core_bitmap_used)
+			;
+		else if (bit_test(job->core_bitmap_used, i + core_cnt))
+			bit_set(job->core_bitmap_used, i);
+		else
+			bit_clear(job->core_bitmap_used, i);
+	}
+	job->core_bitmap = bit_realloc(job->core_bitmap, len - core_cnt);
+	if (job->core_bitmap_used) {
+		job->core_bitmap_used = bit_realloc(job->core_bitmap_used,
+						    len - core_cnt);
+	}
+
+	/* Shift cpus, cpus_used, memory_allocated, and memory_used arrays */
+	i_first = bit_ffs(job->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first, n = -1; i <= i_last; i++) {
+		if (!bit_test(job->node_bitmap, i))
+			continue;
+		if (++n == node_id) {
+			bit_clear(job->node_bitmap, i);
+			break;
+		}
+	}
+	job->nhosts--;
+	for (i = n; i < job->nhosts; i++) {
+		job->cpus[i] = job->cpus[i+1];
+		job->cpus_used[i] = job->cpus_used[i+1];
+		job->memory_allocated[i] = job->memory_allocated[i+1];
+		job->memory_used[i] = job->memory_used[i+1];
+	}
+
+	job->nodes = bitmap2node_name(job->node_bitmap);
+	job->ncpus = build_job_resources_cpu_array(job);
+
+	return SLURM_SUCCESS;
+}
+
 /* Return the count of core bitmaps set for the specific node */
 extern int count_job_resources_node(job_resources_t *job_resrcs_ptr,
 				    uint32_t node_id)

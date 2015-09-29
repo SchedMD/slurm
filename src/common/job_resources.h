@@ -247,6 +247,10 @@ extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
 extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id);
 
+/* Completely remove specified node from job resources structure */
+extern int extract_job_resources_node(job_resources_t *job_resrcs_ptr,
+				      uint32_t node_id);
+
 /* Return the count of core bitmaps set for the specific node */
 extern int count_job_resources_node(job_resources_t *job_resrcs_ptr,
 				    uint32_t node_id);

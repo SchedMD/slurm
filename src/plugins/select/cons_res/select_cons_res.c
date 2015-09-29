@@ -1269,8 +1269,13 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 					node_usage[i].node_state -=
 						job->node_req;
 				} else {
+					node_ptr = node_record_table_ptr + i;
 					error("cons_res:_rm_job_from_res: "
-					      "node_state mis-count");
+					      "node_state mis-count (job:%u "
+					      "job_cnt:%u node:%s node_cnt:%u)",
+					      job_ptr->job_id, job->node_req,
+					      node_ptr->name,
+					      node_usage[i].node_state);
 					node_usage[i].node_state =
 						NODE_CR_AVAILABLE;
 				}
@@ -1303,27 +1308,17 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
-	if (job->whole_node) {
-		/* The node_bitmap remains set for this node, set but its entire
-		 * core_bitmap will be cleared by clear_job_resources_node()
-		 * below. Clear whole_node flag to prevent add_job_to_cores()
-		 * from considering all cores on all allocated nodes as being
-		 * allocated to this job. */
-		verbose("%s: Clearing flag whole_node for job %u",
-			__func__, job_ptr->job_id);
-		job->whole_node = 0;
-	}
-
 	/* subtract memory */
 	node_inx  = node_ptr - node_record_table_ptr;
 	first_bit = bit_ffs(job->node_bitmap);
 	last_bit  = bit_fls(job->node_bitmap);
-	for (i = first_bit, n = -1; i <= last_bit; i++) {
+	for (i = first_bit, n = 0; i <= last_bit; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
-		n++;
-		if (i != node_inx)
+		if (i != node_inx) {
+			n++;
 			continue;
+		}
 
 		if (job->cpus[n] == 0) {
 			info("attempt to remove node %s from job %u again",
@@ -1339,10 +1334,6 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 					job_ptr->job_id, node_ptr->name);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
-		job->cpus[n] = 0;
-		job->ncpus = build_job_resources_cpu_array(job);
-		clear_job_resources_node(job, n);
-
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
 			error("cons_res: node %s memory is underallocated "
 			      "(%u-%u) for job %u",
@@ -1352,7 +1343,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		} else
 			node_usage[i].alloc_memory -= job->memory_allocated[n];
 
-		job->memory_allocated[n] = 0;
+		extract_job_resources_node(job, n);
+
 		break;
 	}
 
