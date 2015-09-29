@@ -208,6 +208,7 @@ opt_t opt;
 int error_exit = 1;
 int immediate_exit = 1;
 char *mpi_type = NULL;
+time_t srun_begin_time = 0;
 resource_allocation_response_msg_t *global_resp = NULL;
 
 /*---- forward declarations of static functions  ----*/

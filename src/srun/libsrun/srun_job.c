@@ -469,6 +469,9 @@ extern void init_srun(int ac, char **av,
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
+
+	/* save process startup time to be used with -I<timeout> */
+	srun_begin_time = time(NULL);
 }
 
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,

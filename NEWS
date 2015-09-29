@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     would previously appear partly allocated and prevent use by other jobs.
  -- Fix updating job in db after extending job's timelimit past partition's
     timelimit.
+ -- Fix srun -I<timeout> from flooding the controller with step create requests.
 
 * Changes in Slurm 14.11.9
 ==========================
