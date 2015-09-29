@@ -155,6 +155,7 @@ static void _launch_complete_log(char *type, uint32_t job_id);
 static void _launch_complete_rm(uint32_t job_id);
 static void _launch_complete_wait(uint32_t job_id);
 static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
+static bool _launch_job_test(uint32_t job_id);
 static void _note_batch_job_finished(uint32_t job_id);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
@@ -1573,6 +1574,15 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			goto done;
 		}
 	}
+
+	if (_launch_job_test(req->job_id)) {
+		error("Job %u already running, do not launch second copy",
+		      req->job_id);
+		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
+		_launch_job_fail(req->job_id, rc);
+		goto done;
+	}
+
 	slurm_cred_handle_reissue(conf->vctx, req->cred);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		error("Job %u already killed, do not launch batch job",
@@ -5557,6 +5567,24 @@ static void _launch_complete_log(char *type, uint32_t job_id)
 	slurm_mutex_unlock(&job_state_mutex);
 #endif
 }
+
+/* Test if we have a specific job ID still running */
+static bool _launch_job_test(uint32_t job_id)
+{
+	bool found = false;
+	int j;
+
+	slurm_mutex_lock(&job_state_mutex);
+	for (j = 0; j < JOB_STATE_CNT; j++) {
+		if (job_id == active_job_id[j]) {
+			found = true;
+			break;
+		}
+	}
+	slurm_mutex_unlock(&job_state_mutex);
+	return found;
+}
+
 
 static void _launch_complete_rm(uint32_t job_id)
 {

@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix updating job in db after extending job's timelimit past partition's
     timelimit.
  -- Fix srun -I<timeout> from flooding the controller with step create requests.
+ -- Requeue/hold batch job launch request if job already running (possible if
+    node went to DOWN state, but jobs remained active).
 
 * Changes in Slurm 14.11.9
 ==========================
