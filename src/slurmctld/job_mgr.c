@@ -10177,12 +10177,15 @@ sched: update_job: releasing hold for job_id %u uid %u",
 			error_code = SLURM_SUCCESS;
 		else
 			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		if ((job_ptr->state_reason != WAIT_HELD) &&
-		    (job_ptr->state_reason != WAIT_HELD_USER)) {
-			job_ptr->state_reason = fail_reason;
-			xfree(job_ptr->state_desc);
+
+		if (error_code != SLURM_SUCCESS) {
+			if ((job_ptr->state_reason != WAIT_HELD) &&
+			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+				job_ptr->state_reason = fail_reason;
+				xfree(job_ptr->state_desc);
+			}
+			goto fini;
 		}
-		return error_code;
 	} else if ((job_ptr->state_reason != WAIT_HELD)
 		   && (job_ptr->state_reason != WAIT_HELD_USER)
 		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
