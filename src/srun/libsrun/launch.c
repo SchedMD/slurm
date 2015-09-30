@@ -302,12 +302,16 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
-		} else if (opt.immediate) {
-			job->step_ctx = slurm_step_ctx_create(
-				&job->ctx_params);
 		} else {
-			/* Wait 60 to 70 seconds for response */
-			step_wait = (getpid() % 10) * 1000 + 60000;
+			if (opt.immediate)
+				step_wait = MAX(1, opt.immediate -
+						   difftime(time(NULL),
+							    srun_begin_time)) *
+					    1000;
+			else
+				/* Wait 60 to 70 seconds for response */
+				step_wait = (getpid() % 10) * 1000 + 60000;
+
 			job->step_ctx = slurm_step_ctx_create_timeout(
 						&job->ctx_params, step_wait);
 		}
@@ -321,7 +325,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 		if (((opt.immediate != 0) &&
 		     ((opt.immediate == 1) ||
-		      (difftime(time(NULL), srun_begin_time) >
+		      (difftime(time(NULL), srun_begin_time) >=
 		       opt.immediate))) ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) &&
