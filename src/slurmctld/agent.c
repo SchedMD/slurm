@@ -733,9 +733,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
-				set_node_down(node_names,
-					      "Prolog/Epilog failure");
-				down_msg = ", set to state DOWN";
+				drain_nodes(node_names,
+					    "Prolog/Epilog failure", getuid());
+				down_msg = ", set to state DRAIN";
 #endif
 				error("Prolog/Epilog failure on nodes %s%s",
 				      node_names, down_msg);
@@ -963,10 +963,11 @@ static void *_thread_per_group_rpc(void *args)
 			unlock_slurmctld(node_write_lock);
 		}
 
-		/* SPECIAL CASE: Kill non-startable batch job,
-		 * Requeue the job on ESLURMD_PROLOG_FAILED */
+		/* SPECIAL CASE: Requeue/hold non-startable batch job,
+		 * Requeue job prolog failure or duplicate job ID */
 		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) &&
 		    (rc != SLURM_SUCCESS) && (rc != ESLURMD_PROLOG_FAILED) &&
+		    (rc != ESLURM_DUPLICATE_JOB_ID) &&
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
@@ -976,7 +977,8 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, 0, false, false, _wif_status());
+			job_complete(job_id, getuid(), false, false,
+				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}
@@ -1009,6 +1011,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURMD_PROLOG_FAILED:
+		case ESLURM_DUPLICATE_JOB_ID:
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURM_INVALID_JOB_ID:
