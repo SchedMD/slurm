@@ -4784,9 +4784,15 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	info("%s: %s WIFEXITED %d WEXITSTATUS %d",
-	     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-	     WIFEXITED(job_return_code), WEXITSTATUS(job_return_code));
+	if (WIFSIGNALED(job_return_code)) {
+		info("%s: %s WTERMSIG %d",  __func__,
+		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		     WTERMSIG(job_return_code));
+	} else {
+		info("%s: %s WEXITSTATUS %d",  __func__,
+		     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		     WEXITSTATUS(job_return_code));
+	}
 
 	if (IS_JOB_FINISHED(job_ptr)) {
 		if (job_ptr->exit_code == 0)
@@ -11139,12 +11145,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = SLURM_SUCCESS;
 		else
 			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		if ((job_ptr->state_reason != WAIT_HELD) &&
-		    (job_ptr->state_reason != WAIT_HELD_USER)) {
-			job_ptr->state_reason = fail_reason;
-			xfree(job_ptr->state_desc);
+
+		if (error_code != SLURM_SUCCESS) {
+			if ((job_ptr->state_reason != WAIT_HELD) &&
+			    (job_ptr->state_reason != WAIT_HELD_USER)) {
+				job_ptr->state_reason = fail_reason;
+				xfree(job_ptr->state_desc);
+			}
+			goto fini;
 		}
-		return error_code;
 	} else if ((job_ptr->state_reason != WAIT_HELD)
 		   && (job_ptr->state_reason != WAIT_HELD_USER)
 		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
