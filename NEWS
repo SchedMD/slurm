@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun -I<timeout> from flooding the controller with step create requests.
  -- Requeue/hold batch job launch request if job already running (possible if
     node went to DOWN state, but jobs remained active).
+ -- If a job's CPUs/task ratio is increased due to configured MaxMemPerCPU,
+    then increase it's allocated CPU count in order to enforce CPU limits.
 
 * Changes in Slurm 14.11.9
 ==========================
