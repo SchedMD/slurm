@@ -177,7 +177,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	/* build job cgroup relative path if no set (should not be) */
 	if ( *job_cgroup_path == '\0' ) {
 		if ( snprintf(job_cgroup_path,PATH_MAX, "%s/job_%u",
-			      user_cgroup_path,jobid) >= PATH_MAX ) {
+			      user_cgroup_path, jobid) >= PATH_MAX ) {
 			error("task/cgroup: unable to build job %u devices "
 			      "cg relative path : %m", jobid);
 			return SLURM_ERROR;
@@ -187,31 +187,21 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	/* build job step cgroup relative path (should not be) */
 	if ( *jobstep_cgroup_path == '\0' ) {
 		int cc;
-
 		if (stepid == SLURM_BATCH_SCRIPT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_batch", job_cgroup_path);
-			if (cc >= PATH_MAX) {
-				error("task/cgroup: unable to build "
-				      "step batch devices cg path : %m");
-
-			}
 		} else if (stepid == SLURM_EXTERN_CONT) {
 			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
 				      "%s/step_extern", job_cgroup_path);
-			if (cc >= PATH_MAX) {
-				error("task/cgroup: unable to build "
-				      "step extern devices cg path : %m");
-
-			}
 		} else {
-
-			if (snprintf(jobstep_cgroup_path,PATH_MAX, "%s/step_%u",
-				     job_cgroup_path,stepid) >= PATH_MAX ) {
-				error("task/cgroup: unable to build job step %u "
-				      "devices cg relative path : %m",stepid);
-				return SLURM_ERROR;
-			}
+			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
+				     "%s/step_%u",
+				     job_cgroup_path, stepid);
+		}
+		if (cc >= PATH_MAX ) {
+			error("task/cgroup: unable to build job step %u.%u "
+			      "devices cg relative path : %m", jobid, stepid);
+			return SLURM_ERROR;
 		}
 	}
 

@@ -239,10 +239,22 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	/* build job step cgroup relative path if not set (may not be) */
 	if (*jobstep_cgroup_path == '\0') {
-		if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
-			     job_cgroup_path, stepid) >= PATH_MAX) {
+		int len;
+		if (stepid == SLURM_BATCH_SCRIPT) {
+			len = snprintf(jobstep_cgroup_path, PATH_MAX,
+				       "%s/step_batch", job_cgroup_path);
+		} else if (stepid == SLURM_EXTERN_CONT) {
+			len = snprintf(jobstep_cgroup_path, PATH_MAX,
+				       "%s/step_extern", job_cgroup_path);
+		} else {
+			len = snprintf(jobstep_cgroup_path, PATH_MAX,
+				       "%s/step_%u",
+				       job_cgroup_path, stepid);
+		}
+		if (len >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build job step "
-			      "%u memory cg relative path : %m", stepid);
+			      "%u.%u memory cg relative path : %m",
+			      jobid, stepid);
 			return SLURM_ERROR;
 		}
 	}
@@ -251,7 +263,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (snprintf(task_cgroup_path, PATH_MAX, "%s/task_%u",
 		     jobstep_cgroup_path, taskid) >= PATH_MAX) {
 		error("jobacct_gather/cgroup: unable to build task %u "
-		      "memory cg relative path : %m", taskid);
+		      "memory cg relative path: %m", taskid);
 		return SLURM_ERROR;
 	}
 
