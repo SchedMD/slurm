@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     would previously appear partly allocated and prevent use by other jobs.
  -- Correct some cgroup paths ("step_batch" vs. "step_4294967294", "step_exter"
     vs. "step_extern", and "step_extern" vs. "step_4294967295").
+ -- Fix advanced reservation core selection logic with network topology.
 
 * Changes in Slurm 15.08.1
 ==========================
