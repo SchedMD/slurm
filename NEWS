@@ -25,6 +25,25 @@ documents those changes that are of interest to users and administrators.
  -- Fix for tracking node state when jobs that have been allocated exclusive
     access to nodes (i.e. entire nodes) and later relinquish some nodes. Nodes
     would previously appear partly allocated and prevent use by other jobs.
+ -- Correct some cgroup paths ("step_batch" vs. "step_4294967294", "step_exter"
+    vs. "step_extern", and "step_extern" vs. "step_4294967295").
+ -- Fix advanced reservation core selection logic with network topology.
+ -- MYSQL - Remove restriction to have to be at least an operator to query TRES
+    values.
+ -- For pending jobs have sacct print 0 for nnodes instead of the bogus 2.
+ -- Fix for tracking node state when jobs that have been allocated exclusive
+    access to nodes (i.e. entire nodes) and later relinquish some nodes. Nodes
+    would previously appear partly allocated and prevent use by other jobs.
+ -- Fix updating job in db after extending job's timelimit past partition's
+    timelimit.
+ -- Fix srun -I<timeout> from flooding the controller with step create requests.
+ -- Requeue/hold batch job launch request if job already running (possible if
+    node went to DOWN state, but jobs remained active).
+ -- If a job's CPUs/task ratio is increased due to configured MaxMemPerCPU,
+    then increase it's allocated CPU count in order to enforce CPU limits.
+ -- Don't mark powered down node as not responding. This could be triggered by
+    race condition of the node suspend and ping logic, preventing use of the
+    node.
 
 * Changes in Slurm 15.08.1
 ==========================
@@ -479,6 +498,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun -I<timeout> from flooding the controller with step create requests.
  -- Requeue/hold batch job launch request if job already running (possible if
     node went to DOWN state, but jobs remained active).
+ -- If a job's CPUs/task ratio is increased due to configured MaxMemPerCPU,
+    then increase it's allocated CPU count in order to enforce CPU limits.
+ -- Don't mark powered down node as not responding. This could be triggered by
+    race condition of the node suspend and ping logic.
 
 * Changes in Slurm 14.11.9
 ==========================

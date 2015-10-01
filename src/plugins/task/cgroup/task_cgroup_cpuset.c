@@ -1126,33 +1126,22 @@ again:
 
 	/* build job step cgroup relative path (should not be) */
 	if (*jobstep_cgroup_path == '\0') {
+		int cc;
 		if (stepid == SLURM_BATCH_SCRIPT) {
-			if (snprintf(jobstep_cgroup_path, PATH_MAX,
-				     "%s/step_batch", job_cgroup_path)
-			    >= PATH_MAX) {
-				error("task/cgroup: unable to build job step"
-				      " %u_batch cpuset cg relative path: %m",
-				      jobid);
-				return SLURM_ERROR;
-			}
+			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
+				      "%s/step_batch", job_cgroup_path);
 		} else if (stepid == SLURM_EXTERN_CONT) {
-			if (snprintf(jobstep_cgroup_path, PATH_MAX,
-				     "%s/step_exter", job_cgroup_path)
-			    >= PATH_MAX) {
-				error("task/cgroup: unable to build job step"
-				      " %u_exter cpuset cg relative path: %m",
-				      jobid);
-				return SLURM_ERROR;
-			}
+			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
+				      "%s/step_extern", job_cgroup_path);
 		} else {
-			if (snprintf(jobstep_cgroup_path,
-				     PATH_MAX, "%s/step_%u",
-				     job_cgroup_path, stepid) >= PATH_MAX) {
-				error("task/cgroup: unable to build job step"
-				      " %u.%u cpuset cg relative path: %m",
-				      jobid, stepid);
-				return SLURM_ERROR;
-			}
+			cc = snprintf(jobstep_cgroup_path, PATH_MAX,
+				      "%s/step_%u", job_cgroup_path, stepid);
+		}
+		if (cc >= PATH_MAX) {
+			error("task/cgroup: unable to build job step %u.%u "
+			      "cpuset cg relative path: %m",
+			      jobid, stepid);
+			return SLURM_ERROR;
 		}
 	}
 

@@ -688,6 +688,7 @@ are allocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
@@ -702,6 +703,7 @@ resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
@@ -1348,9 +1350,14 @@ are allocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
+
+NOTE: If a job specifies a memory per CPU limit that exceeds this system limit,
+that job's count of CPUs per task will automatically be increased. This may
+result in the job failing due to CPU count limits.
 
 .TP
 \fBMaxMemPerNode\fR
@@ -1362,6 +1369,7 @@ resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).

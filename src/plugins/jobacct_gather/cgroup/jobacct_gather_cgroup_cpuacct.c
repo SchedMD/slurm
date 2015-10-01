@@ -242,7 +242,8 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		}
 		if (len >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build job step "
-			      "%u cpuacct cg relative path : %m", stepid);
+			      " %u.%u cpuacct cg relative path: %m",
+			      jobid, stepid);
 			return SLURM_ERROR;
 		}
 	}
