@@ -173,7 +173,6 @@ extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	bool is_admin = false;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *tres_req_inx[] = {
@@ -190,12 +189,6 @@ extern List as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-	if (!(is_admin = is_user_min_admin_level(
-		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-		errno = ESLURM_ACCESS_DENIED;
-		return NULL;
-	}
 
 	if (!tres_cond) {
 		xstrcat(extra, "where deleted=0");

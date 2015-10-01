@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct some cgroup paths ("step_batch" vs. "step_4294967294", "step_exter"
     vs. "step_extern", and "step_extern" vs. "step_4294967295").
  -- Fix advanced reservation core selection logic with network topology.
+ -- MYSQL - Remove restriction to have to be at least an operator to query TRES
+    values.
 
 * Changes in Slurm 15.08.1
 ==========================
