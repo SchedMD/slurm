@@ -2944,7 +2944,8 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 		node_ptr->not_responding = true;
 	}
 
-	if (IS_NODE_NO_RESPOND(node_ptr))
+	if (IS_NODE_NO_RESPOND(node_ptr) ||
+	    IS_NODE_POWER_SAVE(node_ptr))
 		return;		/* Already known to be not responding */
 
 	if (node_ptr->last_response >= msg_time) {
