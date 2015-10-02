@@ -329,17 +329,18 @@ extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
 	/* in libslurm (src/common/xcgroup.c) */
 	xcgroup_t slurm_cg;
 	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+
 #ifdef MULTIPLE_SLURMD
-	if (conf->node_name != NULL)
-		xstrsubstitute(pre,"%n", conf->node_name);
-	else {
+	if (conf->node_name != NULL) {
+		xstrsubstitute(pre, "%n", conf->node_name);
+	} else {
 		xfree(pre);
 		pre = (char*) xstrdup("/slurm");
 	}
 #endif
 
 	/* create slurm cgroup in the ns (it could already exist) */
-	if (xcgroup_create(ns,&slurm_cg,pre,
+	if (xcgroup_create(ns, &slurm_cg, pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		return pre;
 	}
@@ -351,7 +352,7 @@ extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
 		return pre;
 	} else {
 		debug3("slurm cgroup %s successfully created for ns %s: %m",
-		       pre,ns->subsystems);
+		       pre, ns->subsystems);
 		xcgroup_destroy(&slurm_cg);
 	}
 
