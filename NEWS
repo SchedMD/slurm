@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     then increase it's allocated CPU count in order to enforce CPU limits.
  -- Don't mark powered down node as not responding. This could be triggered by
     race condition of the node suspend and ping logic.
+ -- Don't requeue RPC going out from slurmctld to DOWN nodes (can generate
+    repeating communication errors).
 
 * Changes in Slurm 14.11.9
 ==========================
