@@ -95,6 +95,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/front_end.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
@@ -184,7 +185,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
-			  int count, int *spot);
+			  int *count, int *spot);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
@@ -514,7 +515,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 			       state_t *state,
 			       thd_complete_t *thd_comp)
 {
-	switch(*state) {
+	switch (*state) {
 	case DSH_ACTIVE:
 		thd_comp->work_done = false;
 		if (thread_ptr->end_time <= thd_comp->now) {
@@ -594,7 +595,7 @@ static void *_wdog(void *args)
 			} else {
 				itr = list_iterator_create(
 					thread_ptr[i].ret_list);
-				while((ret_data_info = list_next(itr))) {
+				while ((ret_data_info = list_next(itr))) {
 					_update_wdog_state(&thread_ptr[i],
 							   &ret_data_info->err,
 							   &thd_comp);
@@ -723,7 +724,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			} else
 				node_names = thread_ptr[i].nodelist;
 
-			switch(state) {
+			switch (state) {
 			case DSH_NO_RESP:
 				node_not_resp(node_names,
 					      thread_ptr[i].start_time,
@@ -782,7 +783,7 @@ static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type)
 	return rc;
 }
 
-/* return a value for wihc WEXITSTATUS returns 1 */
+/* return a value for which WEXITSTATUS() returns 1 */
 static int _wif_status(void)
 {
 	static int rc = 0;
@@ -1077,30 +1078,47 @@ static void _sig_handler(int dummy)
 }
 
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
-			  int count, int *spot)
+			  int *count, int *spot)
 {
+#ifdef HAVE_FRONT_END
+	front_end_record_t *node_ptr;
+#else
+	struct node_record *node_ptr;
+#endif
 	ret_data_info_t *ret_data_info = NULL;
-	ListIterator itr = list_iterator_create(thread_ptr->ret_list);
-	while((ret_data_info = list_next(itr))) {
+	ListIterator itr;
+	int rc = 0;
+
+	itr = list_iterator_create(thread_ptr->ret_list);
+	while ((ret_data_info = list_next(itr))) {
 		debug2("got err of %d", ret_data_info->err);
 		if (ret_data_info->err != DSH_NO_RESP)
 			continue;
 
-		debug("got the name %s to resend out of %d",
-		      ret_data_info->node_name, count);
-
-		if (agent_arg_ptr) {
+#ifdef HAVE_FRONT_END
+		node_ptr = find_front_end_record(ret_data_info->node_name);
+#else
+		node_ptr = find_node_record(ret_data_info->node_name);
+#endif
+		if (node_ptr &&
+		    (IS_NODE_DOWN(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))) {
+			--(*count);
+		} else if (agent_arg_ptr) {
+			debug("%s: got the name %s to resend out of %d",
+			      __func__, ret_data_info->node_name, *count);
 			hostlist_push_host(agent_arg_ptr->hostlist,
 				      ret_data_info->node_name);
+			++(*spot);
+		}
 
-			if ((++(*spot)) == count) {
-				list_iterator_destroy(itr);
-				return 1;
-			}
+		if (*spot == *count) {
+			rc = 1;
+			break;
 		}
 	}
 	list_iterator_destroy(itr);
-	return 0;
+
+	return rc;
 }
 
 /*
@@ -1110,6 +1128,11 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
  */
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 {
+#ifdef HAVE_FRONT_END
+	front_end_record_t *node_ptr;
+#else
+	struct node_record *node_ptr;
+#endif
 	agent_arg_t *agent_arg_ptr;
 	queued_request_t *queued_req_ptr = NULL;
 	thd_t *thread_ptr = agent_info_ptr->thread_struct;
@@ -1135,16 +1158,38 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 			debug("got the name %s to resend",
 			      thread_ptr[i].nodelist);
-			hostlist_push_host(agent_arg_ptr->hostlist,
-				      thread_ptr[i].nodelist);
-
-			if ((++j) == count)
+#ifdef HAVE_FRONT_END
+			node_ptr = find_front_end_record(
+						thread_ptr[i].nodelist);
+#else
+			node_ptr = find_node_record(thread_ptr[i].nodelist);
+#endif
+			if (node_ptr &&
+			    (IS_NODE_DOWN(node_ptr) ||
+			     IS_NODE_POWER_SAVE(node_ptr))) {
+				/* Do not re-send RPC to DOWN node */
+				if (count)
+					count--;
+			} else {
+				hostlist_push_host(agent_arg_ptr->hostlist,
+						   thread_ptr[i].nodelist);
+				j++;
+			}
+			if (j == count)
 				break;
 		} else {
 			if (_setup_requeue(agent_arg_ptr, &thread_ptr[i],
-					  count, &j))
+					   &count, &j))
 				break;
 		}
+	}
+	if (count == 0) {
+		/* All non-responding nodes are DOWN.
+		 * Do not requeue, but discard this RPC */
+		hostlist_destroy(agent_arg_ptr->hostlist);
+		*(agent_info_ptr->msg_args_pptr) = agent_arg_ptr->msg_args;
+		xfree(agent_arg_ptr);
+		return;
 	}
 	if (count != j) {
 		error("agent: Retry count (%d) != actual count (%d)",
