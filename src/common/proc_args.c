@@ -168,9 +168,14 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	} else {
 		/* -m plane=<plane_size> */
 		dist_str = strchr(arg,'=');
-		if (dist_str != NULL) {
-			*plane_size=atoi(dist_str+1);
-			len = dist_str-arg;
+		if (!dist_str)
+			dist_str = getenv("SLURM_DIST_PLANESIZE");
+		else {
+			len = dist_str - arg;
+			dist_str++;
+		}
+		if (dist_str) {
+			*plane_size = atoi(dist_str);
 			plane_dist = true;
 		}
 	}
