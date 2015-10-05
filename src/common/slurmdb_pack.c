@@ -3442,8 +3442,16 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 			for (i=0; i<count; i++) {
 				slurmdb_unpack_selected_step(
 					&job, rpc_version, buffer);
-				list_append(object_ptr->step_list, job);
+				/* There is no such thing as jobid 0,
+				 * if we process it the database will
+				 * return all jobs. */
+				if (!job->jobid)
+					slurmdb_destroy_selected_step(job);
+				else
+					list_append(object_ptr->step_list, job);
 			}
+			if (!list_count(object_ptr->step_list))
+				FREE_NULL_LIST(object_ptr->step_list);
 		}
 
 		safe_unpack32(&count, buffer);
