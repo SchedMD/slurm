@@ -14,7 +14,7 @@ cluster.
 Good responsiveness and throughput can be achieved while you only pay for the
 resources needed.</p>
 
-<p>The rest of this document describes details abou. Slurm's infrastructure that
+<p>The rest of this document describes details about Slurm's infrastructure that
 can be used to support Elastic Computing.</p>
 
 <p>Slurm's Elastic Computing logic relies heavily upon the existing power save
