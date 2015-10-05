@@ -68,6 +68,20 @@ if {[test_select_type_params "CR_CPU"]} {
 	set cr_cpu 1
 }
 
+log_user 0
+set job_mem_opt  "--comment=no_mem"
+spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
+expect {
+	-re "MEMORY" {
+		set job_mem_opt  "--mem-per-cpu=4"
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
 proc cr_core_cpu { node } {
 
 	global cr_cpu cr_core core_cnt socket_cnt scontrol number exit_code
@@ -147,11 +161,11 @@ proc delete_part {part} {
 }
 
 proc sub_job { job shared part } {
-	global sbatch file_in number job_id exit_code
+	global sbatch file_in number job_id exit_code job_mem_opt
 
 	set job_id 0
 	if { $shared } {
-		spawn $sbatch -a$job -t1 -p$part --share -o/dev/null $file_in
+		spawn $sbatch -a$job -t1 $job_mem_opt -p$part --share -o/dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set job_id $expect_out(1,string)
@@ -166,7 +180,7 @@ proc sub_job { job shared part } {
 			}
 		}
 	} else {
-		spawn $sbatch -a$job -t1 -p$part -o/dev/null $file_in
+		spawn $sbatch -a$job -t1 $job_mem_opt -p$part -o/dev/null $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set job_id $expect_out(1,string)

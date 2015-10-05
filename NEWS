@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     node.
  -- Don't requeue RPC going out from slurmctld to DOWN nodes (can generate
     repeating communication errors).
+ -- Propagate sbatch "--dist=plane=#" option to srun.
 
 * Changes in Slurm 15.08.1
 ==========================
@@ -506,6 +507,7 @@ documents those changes that are of interest to users and administrators.
     race condition of the node suspend and ping logic.
  -- Don't requeue RPC going out from slurmctld to DOWN nodes (can generate
     repeating communication errors).
+ -- Propagate sbatch "--dist=plane=#" option to srun.
 
 * Changes in Slurm 14.11.9
 ==========================

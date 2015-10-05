@@ -1939,7 +1939,7 @@ proc test_select_type { } {
 #
 # Purpose: Determine SelectTypeParameters being used
 #
-# Returns value of SelectTypeParameters
+# Returns 1 if "type" (input) is found, 0 otherwise
 #
 ################################################################
 
