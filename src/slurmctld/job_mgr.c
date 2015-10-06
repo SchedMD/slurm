@@ -5542,16 +5542,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
 	*job_pptr = (struct job_record *) NULL;
-	/*
-	 * Check user permission for negative 'nice' and non-0 priority values
-	 * (both restricted to SlurmUser) before running the job_submit plugin.
-	 */
-	if ((submit_uid != 0) && (submit_uid != slurmctld_conf.slurm_user_id)) {
-		if (job_desc->priority != 0)
-			job_desc->priority = NO_VAL;
-		if (job_desc->nice < NICE_OFFSET)
-			job_desc->nice = NICE_OFFSET;
-	}
+
 	user_submit_priority = job_desc->priority;
 
 	/* insure that selected nodes are in this partition */
@@ -6099,6 +6090,16 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 {
 	int rc;
 
+	/*
+	 * Check user permission for negative 'nice' and non-0 priority values
+	 * (both restricted to SlurmUser) before running the job_submit plugin.
+	 */
+	if ((submit_uid != 0) && (submit_uid != slurmctld_conf.slurm_user_id)) {
+		if (job_desc->priority != 0)
+			job_desc->priority = NO_VAL;
+		if (job_desc->nice < NICE_OFFSET)
+			job_desc->nice = NICE_OFFSET;
+	}
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
