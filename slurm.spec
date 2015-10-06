@@ -19,7 +19,7 @@
 # --without debug    %_without_debug    1    don't compile with debugging symbols
 # --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
-# --with mysql       %_with_mysql       1    require mysql support
+# --with mysql       %_with_mysql       1    require mysql/mariadb support
 # --with openssl     %_with_openssl     1    require openssl RPM to be installed
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --with percs       %_with_percs       1    build percs RPM
@@ -130,12 +130,22 @@ BuildRequires: readline-devel
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
+%define use_mysql_devel %(perl -e '`rpm -q mariadb-devel`; print $?;')
+
 %if %{slurm_with mysql}
+%if %{use_mysql_devel}
 BuildRequires: mysql-devel >= 5.0.0
+%else
+BuildRequires: mariadb-devel >= 5.0.0
+%endif
 %endif
 
 %if %{slurm_with cray_alps}
+%if %{use_mysql_devel}
 BuildRequires: mysql-devel
+%else
+BuildRequires: mariadb-devel
+%endif
 %endif
 
 %if %{slurm_with cray}
@@ -150,7 +160,11 @@ BuildRequires: pkg-config
 %endif
 
 %if %{slurm_with cray_network}
+%if %{use_mysql_devel}
 BuildRequires: mysql-devel
+%else
+BuildRequires: mariadb-devel
+%endif
 BuildRequires: cray-libalpscomm_cn-devel
 BuildRequires: cray-libalpscomm_sn-devel
 BuildRequires: hwloc-devel
