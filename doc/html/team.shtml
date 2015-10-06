@@ -38,6 +38,7 @@ Lead Slurm developers are:
 <li>P&auml;r Andersson (National Supercomputer Centre, Sweden)</li>
 <li>Don Albert (Bull)</li>
 <li>Ernest Artiaga (Barcelona Supercomputing Center, Spain)</li>
+<li>Axel Auweter (Leibniz Supercomputing Centre, Germany)</li>
 <br>
 <li>Jason W. Bacon</li>
 <li>Leith Bade (Australian National University)</li>
@@ -239,6 +240,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 25 September 2015</p>
+<p style="text-align:center;">Last modified 6 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
