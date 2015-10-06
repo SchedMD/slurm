@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Propagate sbatch "--dist=plane=#" option to srun.
  -- Fix sacct to not return all jobs if the -j option is given with a trailing
     ','.
+ -- Permit job_submit plugin to set a job's priority.
 
 * Changes in Slurm 14.11.9
 ==========================
