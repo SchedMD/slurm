@@ -131,7 +131,11 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
 %if %{slurm_with mysql}
+%if 0%{el7}
+BuildRequires: mariadb-devel >= 5.0.0
+%else
 BuildRequires: mysql-devel >= 5.0.0
+%endif
 %endif
 
 %if %{slurm_with cray_alps}
