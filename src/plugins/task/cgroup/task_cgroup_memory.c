@@ -278,7 +278,7 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 		return -1;
 	}
 
-	xcgroup_set_param (cg, "memory.use_hierarchy","1");
+	xcgroup_set_param (cg, "memory.use_hierarchy", "1");
 
 	/* when RAM space has not to be constrained and we are here, it
 	 * means that only Swap space has to be constrained. Thus set
@@ -461,7 +461,7 @@ extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job)
 	 * Attach the current task to the step memory cgroup
 	 */
 	pid = getpid();
-	if (xcgroup_add_pids(&step_memory_cg,&pid,1) != XCGROUP_SUCCESS) {
+	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to add task[pid=%u] to "
 		      "memory cg '%s'",pid,step_memory_cg.path);
 		fstatus = SLURM_ERROR;
