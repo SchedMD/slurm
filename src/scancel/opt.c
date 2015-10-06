@@ -577,7 +577,7 @@ _xlate_job_step_ids(char **rest)
 			/* Shift args if job IDs are comma separated.
 			 * Commas may be embedded in the task IDs, so we can't
 			 * simply split the string on commas. */
-			if ((j + 4) >= id_args_size) {
+			if ((i + 4) >= id_args_size) {
 				id_args_size *= 2;
 				id_args = xrealloc(id_args, sizeof(char *) *
 						   id_args_size);
