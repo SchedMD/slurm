@@ -49,6 +49,9 @@ documents those changes that are of interest to users and administrators.
  -- Propagate sbatch "--dist=plane=#" option to srun.
  -- Add acct_gather_energy/ibmaem plugin for systems with IBM Systems Director
     Active Energy Manager.
+ -- Fix spec file to look for mariadb or mysql devel packages for build
+    requirements.
+ -- MySQL - Improve the code with asking for jobs in a suspended state.
 
 * Changes in Slurm 15.08.1
 ==========================

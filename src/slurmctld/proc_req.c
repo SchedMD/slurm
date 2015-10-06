@@ -4384,6 +4384,9 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_suspend");
 
+	if (!sus_ptr->job_id_str)
+		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+
 	if (error_code) {
 		info("_slurm_rpc_suspend(%s) for %s %s", op,
 		     sus_ptr->job_id_str, slurm_strerror(error_code));

@@ -998,6 +998,12 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int status = 0;
 	pid_t pid;
 
+	set_oom_adj(0);	/* the tasks may be killed by OOM */
+	if (task_g_pre_setuid(job)) {
+		error("%s: Failed to invoke task plugins: one of "
+		      "task_p_pre_setuid functions returned error", __func__);
+	}
+
 	acct_gather_profile_g_task_start(0);
 	pid = fork();
 	if (pid == 0) {

@@ -466,7 +466,7 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	file_path = cg->path;
 	uid = cg->uid;
 	gid = cg->gid;
-	create_only=0;
+	create_only = 0;
 	notify = cg->notify;
 
 	/* save current mask and apply working one */
