@@ -251,7 +251,7 @@ enum {
 	STEP_REQ_COUNT
 };
 
-static void _state_time_string(char **extra, uint32_t state,
+static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			       uint32_t start, uint32_t end)
 {
 	int base_state = state & JOB_STATE_BASE;
@@ -291,7 +291,15 @@ static void _state_time_string(char **extra, uint32_t state,
 		}
 		break;
 	case JOB_SUSPENDED:
-		/* Handle this the same way we handle RUNNING. */
+		xstrfmtcat(*extra,
+			   "(select count(time_start) from "
+			   "\"%s_%s\" where "
+			   "(time_start <= %u && (time_end >= %u "
+			   "|| time_end = 0)) && job_db_inx=t1.job_db_inx)",
+			   cluster_name, suspend_table,
+			   end ? end : start,
+			   start);
+		break;
 	case JOB_RUNNING:
 		if (start) {
 			if (!end) {
@@ -1197,82 +1205,31 @@ no_resv:
 	}
 
 	if (job_cond->state_list && list_count(job_cond->state_list)) {
+		set = 0;
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
 		itr = list_iterator_create(job_cond->state_list);
 		while ((object = list_next(itr))) {
-			uint32_t state = (uint32_t)slurm_atoul(object);
-			state &= JOB_STATE_BASE;
-			if (state == JOB_SUSPENDED)
-				break;
+			if (set)
+				xstrcat(*extra, " || ");
+
+			_state_time_string(extra, cluster_name,
+					   (uint32_t)slurm_atoul(object),
+					   job_cond->usage_start,
+					   job_cond->usage_end);
+			set = 1;
 		}
 		list_iterator_destroy(itr);
-
-		if (object) {
-			MYSQL_RES *result = NULL;
-			MYSQL_ROW row;
-			char *query = xstrdup_printf(
-				"select job_db_inx from \"%s_%s\"",
-				cluster_name, suspend_table);
-			if (job_cond->usage_start) {
-				if (!job_cond->usage_end) {
-					xstrfmtcat(query,
-						   " where (!time_end "
-						   "|| (%d between "
-						   "time_start and time_end))",
-						   (int)job_cond->usage_start);
-				} else {
-					xstrfmtcat(query,
-						   " where (!time_end "
-						   "|| (time_start && "
-						   "((%d between time_start "
-						   "and time_end) "
-						   "|| (time_start between "
-						   "%d and %d))))",
-						   (int)job_cond->usage_start,
-						   (int)job_cond->usage_start,
-						   (int)job_cond->usage_end);
-				}
-			} else if (job_cond->usage_end) {
-				xstrfmtcat(query, " where (time_start && "
-					   "time_start < %d)",
-					   (int)job_cond->usage_end);
-			}
-
-			if (debug_flags & DEBUG_FLAG_DB_JOB)
-				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-			result = mysql_db_query_ret(mysql_conn, query, 0);
-			xfree(query);
-			if (!result)
-				return SLURM_ERROR;
-			set = 0;
-			while ((row = mysql_fetch_row(result))) {
-				if (set)
-					xstrfmtcat(*extra,
-						   " || t1.job_db_inx=%s",
-						   row[0]);
-				else {
-					set = 1;
-					if (*extra)
-						xstrfmtcat(
-							*extra,
-							" || (t1.job_db_inx=%s",
-							row[0]);
-					else
-						xstrfmtcat(*extra, " where "
-							   "(t1.job_db_inx=%s",
-							   row[0]);
-				}
-			}
-			mysql_free_result(result);
-			if (set)
-				xstrcat(*extra, ")");
-		}
+		xstrcat(*extra, ")");
 	}
 
 	return SLURM_SUCCESS;
 }
 
-extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
-				 slurmdb_job_cond_t *job_cond,
+extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 				 char **extra)
 {
 	int set = 0;
@@ -1484,26 +1441,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if (job_cond->state_list && list_count(job_cond->state_list)) {
-		set = 0;
-		if (*extra)
-			xstrcat(*extra, " && (");
-		else
-			xstrcat(*extra, " where (");
-
-		itr = list_iterator_create(job_cond->state_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-
-			_state_time_string(extra, (uint32_t)slurm_atoul(object),
-					   job_cond->usage_start,
-					   job_cond->usage_end);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	} else {
+	if (!job_cond->state_list || !list_count(job_cond->state_list)) {
 		/* Only do this (default of all eligible jobs) if no
 		   state is given */
 		if (job_cond->usage_start) {
@@ -1598,7 +1536,7 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	    && (slurm_atoul(list_peek(job_cond->state_list)) == JOB_PENDING))
 		only_pending = 1;
 
-	setup_job_cond_limits(mysql_conn, job_cond, &extra);
+	setup_job_cond_limits(job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);

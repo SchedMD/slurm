@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     Active Energy Manager.
  -- Fix spec file to look for mariadb or mysql devel packages for build
     requirements.
+ -- MySQL - Improve the code with asking for jobs in a suspended state.
 
 * Changes in Slurm 15.08.1
 ==========================
