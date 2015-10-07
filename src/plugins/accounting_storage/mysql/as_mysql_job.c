@@ -251,6 +251,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	uint32_t wckeyid = 0;
 	uint32_t job_state;
 	int node_cnt = 0;
+	uint32_t array_task_id =
+		(job_ptr->array_job_id) ? job_ptr->array_task_id : NO_VAL;
 	uint32_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
 
@@ -501,7 +503,7 @@ no_rollup_change:
 			   "'%s', %u, %u, %ld, %ld, %ld, "
 			   "'%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->array_job_id,
-			   job_ptr->array_task_id, job_ptr->assoc_id,
+			   array_task_id, job_ptr->assoc_id,
 			   job_ptr->qos_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -559,7 +561,7 @@ no_rollup_change:
 			   node_cnt,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id,
-			   job_ptr->array_task_id);
+			   array_task_id);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
@@ -661,7 +663,7 @@ no_rollup_change:
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id,
-			   job_ptr->array_task_id,
+			   array_task_id,
 			   begin_time, job_ptr->db_index);
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)

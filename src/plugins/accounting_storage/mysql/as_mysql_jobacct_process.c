@@ -542,6 +542,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->array_task_id = slurm_atoul(row[JOB_REQ_ARRAYTASKID]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
 
+		/* This shouldn't happen with new jobs, but older jobs
+		 * could of been added without a start and so the
+		 * array_task_id would be 0 instead of it's real value */
+		if (!job->array_job_id && !job->array_task_id)
+			job->array_task_id = NO_VAL;
+
 		if (row[JOB_REQ_RESV_NAME] && row[JOB_REQ_RESV_NAME][0])
 			job->resv_name = xstrdup(row[JOB_REQ_RESV_NAME]);
 
