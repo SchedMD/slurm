@@ -85,7 +85,7 @@ int pmixp_usock_create_srv(char *path)
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, path);
-	if (ret = bind(fd, (struct sockaddr *)&sa, SUN_LEN(&sa))) {
+	if ((ret = bind(fd, (struct sockaddr *)&sa, SUN_LEN(&sa)))) {
 		PMIXP_ERROR_STD("Cannot bind() UNIX socket %s", path);
 		goto err_fd;
 	}
