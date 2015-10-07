@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix spec file to look for mariadb or mysql devel packages for build
     requirements.
  -- MySQL - Improve the code with asking for jobs in a suspended state.
+ -- Fix slurcmtld allowing root to see job steps using squeues -s.
 
 * Changes in Slurm 15.08.1
 ==========================
