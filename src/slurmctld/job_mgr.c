@@ -6092,9 +6092,10 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/*
 	 * Check user permission for negative 'nice' and non-0 priority values
-	 * (both restricted to SlurmUser) before running the job_submit plugin.
+	 * (restricted to root, SlurmUser, or SLURMDB_ADMIN_OPERATOR) _before_
+	 * running the job_submit plugin.
 	 */
-	if ((submit_uid != 0) && (submit_uid != slurmctld_conf.slurm_user_id)) {
+	if (!validate_operator(submit_uid)) {
 		if (job_desc->priority != 0)
 			job_desc->priority = NO_VAL;
 		if (job_desc->nice < NICE_OFFSET)
