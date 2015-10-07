@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     requirements.
  -- MySQL - Improve the code with asking for jobs in a suspended state.
  -- Fix slurcmtld allowing root to see job steps using squeues -s.
+ -- Do not send burst buffer stage out email unless the job uses burst buffers.
 
 * Changes in Slurm 15.08.1
 ==========================
