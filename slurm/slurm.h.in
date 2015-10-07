@@ -1448,7 +1448,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if job needs exclusive access to the node,
 				 * or NO_VAL to accept the system default.
 				 * SHARED_FORCE to eliminate user control. */
-	uint8_t sicp_mode;	/* set for inter-cluster jobs */
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size; /* element count in spank_env */
@@ -1613,7 +1612,6 @@ typedef struct job_info {
 						*/
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
-	uint8_t sicp_mode;	/* set for inter-cluster jobs */
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
@@ -1653,16 +1651,6 @@ typedef struct job_info_msg {
 	uint32_t record_count;	/* number of records */
 	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
-
-typedef struct sicp_info {
-	uint32_t job_id;
-	uint32_t job_state;
-} sicp_info_t;
-
-typedef struct sicp_info_msg {
-	uint32_t record_count;		/* number of records */
-	sicp_info_t *sicp_array;	/* inter-cluster job records */
-} sicp_info_msg_t;
 
 typedef struct step_update_request_msg {
 	time_t end_time;	/* step end time */
@@ -2475,7 +2463,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
 #define DEBUG_FLAG_CPU_FREQ     0x0000020000000000 /* --cpu_freq debug */
 #define DEBUG_FLAG_POWER        0x0000040000000000 /* Power plugin debug */
-#define DEBUG_FLAG_SICP		0x0000080000000000 /* Slurm Inter-Cluster */
+//#define AVAILABLE		0x0000080000000000
 #define DEBUG_FLAG_DB_ARCHIVE	0x0000100000000000 /* DBD Archiving/Purging */
 #define DEBUG_FLAG_DB_TRES      0x0000200000000000 /* Database TRES debug */
 

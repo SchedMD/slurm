@@ -125,7 +125,6 @@
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
 #define OPT_CORE_SPEC   0x1a
-#define OPT_SICP        0x1b
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_PROFILE     0x20
@@ -146,7 +145,6 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_RESV_PORTS  0x10d
-#define LONG_OPT_SICP        0x10e
 #define LONG_OPT_POWER       0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
@@ -545,7 +543,6 @@ static void _opt_default(void)
 
 	opt.nice = 0;
 	opt.priority = 0;
-	opt.sicp_mode = 0;
 	opt.power_flags = 0;
 }
 
@@ -627,7 +624,6 @@ env_vars_t env_vars[] = {
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
-{"SLURM_SICP",          OPT_SICP,       NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
@@ -838,9 +834,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
 		break;
-	case OPT_SICP:
-		opt.sicp_mode = 1;
-		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = _get_int(val, "thread_spec", true) |
 					 CORE_SPEC_THREAD;
@@ -971,7 +964,6 @@ static void _set_options(const int argc, char **argv)
 		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 		{"runjob-opts",      required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
-		{"sicp",             optional_argument, 0, LONG_OPT_SICP},
 		{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 		{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1689,9 +1681,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
-			break;
-		case LONG_OPT_SICP:
-			opt.sicp_mode = 1;
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = _get_int(optarg, "thread_spec", true) |
@@ -2553,7 +2542,6 @@ static void _opt_list(void)
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	info("power             : %s", power_flags_str(opt.power_flags));
-	info("sicp              : %u", opt.sicp_mode);
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
 	xfree(str);
@@ -2645,7 +2633,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
-"            [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
+"            [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -2732,8 +2720,6 @@ static void _help(void)
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
-"      --sicp                  If specified, signifies job is to receive\n"
-"                              job id from the incluster reserve range.\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"

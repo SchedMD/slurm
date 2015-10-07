@@ -1555,8 +1555,6 @@ _show_it (int argc, char *argv[])
 	} else if (strncasecmp (tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);
-	} else if (strncasecmp (tag, "sicp", MAX(tag_len, 2)) == 0) {
-		scontrol_print_sicp ();     /* UNDOCUMENTED TESTING OPTION */
 	} else if (strncasecmp (tag, "slurmd", MAX(tag_len, 2)) == 0) {
 		_print_slurmd (val);
 	} else if (strncasecmp (tag, "steps", MAX(tag_len, 2)) == 0) {

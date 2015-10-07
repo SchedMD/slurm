@@ -1167,8 +1167,8 @@ line15:
 	else
 		xstrcat(out, "\n   ");
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Power=%s SICP=%u",
-		 power_flags_str(job_ptr->power_flags), job_ptr->sicp_mode);
+		 "Power=%s",
+		 power_flags_str(job_ptr->power_flags));
 	xstrcat(out, tmp_line);
 
 	/****** Line 38 (optional) ******/

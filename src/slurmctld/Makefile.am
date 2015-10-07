@@ -56,8 +56,6 @@ slurmctld_SOURCES =     \
 	reservation.h	\
 	sched_plugin.c	\
 	sched_plugin.h	\
-	sicp.c		\
-	sicp.h		\
 	slurmctld.h	\
 	srun_comm.c	\
 	srun_comm.h	\

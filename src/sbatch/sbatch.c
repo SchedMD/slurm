@@ -604,8 +604,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.power_flags)
 		desc->power_flags = opt.power_flags;
-	if (opt.sicp_mode)
-		desc->sicp_mode = opt.sicp_mode;
 	if (opt.kill_invalid_dep)
 		desc->bitflags = opt.kill_invalid_dep;
 

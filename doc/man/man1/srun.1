@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2015" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1618,11 +1618,6 @@ CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option.
 
 .TP
-\fB\-\-sicp\fR
-Identify a job as one which jobs submitted to other clusters can be dependent
-upon.
-
-.TP
 \fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
@@ -2318,9 +2313,6 @@ Same as \fB\-\-restart\-dir\fR
 .TP
 \fBSLURM_RESV_PORTS\fR
 Same as \fB\-\-resv\-ports\fR
-.TP
-\fBSLURM_SICP\fR
-Same as \fB\-\-sicp\fR
 .TP
 \fBSLURM_SIGNAL\fR
 Same as \fB\-\-signal\fR

@@ -111,7 +111,6 @@
 #define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
 
-#define OPT_SICP        0x10
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
 #define OPT_POWER       0x13
@@ -178,7 +177,6 @@
 #define LONG_OPT_PROFILE         0x144
 #define LONG_OPT_CPU_FREQ        0x145
 #define LONG_OPT_PRIORITY        0x160
-#define LONG_OPT_SICP            0x161
 #define LONG_OPT_POWER           0x162
 #define LONG_OPT_THREAD_SPEC     0x163
 
@@ -328,7 +326,6 @@ static void _opt_default()
 	opt.account  = NULL;
 	opt.comment  = NULL;
 	opt.qos      = NULL;
-	opt.sicp_mode = 0;
 	opt.power_flags = 0;
 
 	opt.distribution = SLURM_DIST_UNKNOWN;
@@ -433,7 +430,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
-  {"SALLOC_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
@@ -595,10 +591,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.power_flags = power_flags_id((char *)val);
 		break;
 
-	case OPT_SICP:
-		opt.sicp_mode = 1;
-		break;
-
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time, &opt.warn_flags)) {
@@ -719,7 +711,6 @@ void set_options(const int argc, char **argv)
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
-		{"sicp",          optional_argument, 0, LONG_OPT_SICP},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
@@ -1205,9 +1196,6 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
-			break;
-		case LONG_OPT_SICP:
-			opt.sicp_mode = 1;
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,
@@ -1872,7 +1860,6 @@ static void _opt_list(void)
 		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
 	info("power          : %s", power_flags_str(opt.power_flags));
-	info("sicp           : %u", opt.sicp_mode);
 	info("profile        : `%s'",
 	     acct_gather_profile_to_string(opt.profile));
 	info("qos            : %s", opt.qos);
@@ -1974,7 +1961,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
-"              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
+"              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -2030,8 +2017,6 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
 "  -s, --share                 share nodes with other jobs\n"
-"      --sicp                  If specified, signifies job is to receive\n"
-"                              job id from the incluster reserve range.\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

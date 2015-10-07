@@ -862,8 +862,6 @@ job_desc_msg_create_from_opts (void)
 
 	if (opt.power_flags)
 		j->power_flags = opt.power_flags;
-	if (opt.sicp_mode)
-		j->sicp_mode = opt.sicp_mode;
 
 	return j;
 }

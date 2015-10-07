@@ -749,8 +749,6 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->script);
 	} else if (!strcmp(name, "shared")) {
 		lua_pushnumber (L, job_desc->shared);
-	} else if (!strcmp(name, "sicp_mode")) {
-		lua_pushnumber (L, job_desc->sicp_mode);
 	} else if (!strcmp(name, "sockets_per_board")) {
 		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else if (!strcmp(name, "sockets_per_node")) {
@@ -962,8 +960,6 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->script = xstrdup(value_str);
 	} else if (!strcmp(name, "shared")) {
 		job_desc->shared = luaL_checknumber(L, 3);
-	} else if (!strcmp(name, "sicp_mode")) {
-		job_desc->sicp_mode = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		job_desc->sockets_per_node = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "std_err")) {

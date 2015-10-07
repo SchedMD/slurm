@@ -122,7 +122,6 @@
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
 #define OPT_CPU_FREQ      0x1b
-#define OPT_SICP          0x1c
 #define OPT_POWER         0x1d
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
@@ -130,7 +129,6 @@
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
-#define LONG_OPT_SICP        0x101
 #define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_POWER       0x103
 #define LONG_OPT_WAIT        0x104
@@ -335,7 +333,6 @@ static void _opt_default()
 	opt.time_limit = NO_VAL;
 	opt.time_min = NO_VAL;
 	opt.partition = NULL;
-	opt.sicp_mode = 0;
 	opt.power_flags = 0;
 
 	opt.job_name = NULL;
@@ -478,7 +475,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
-  {"SBATCH_SICP",          OPT_SICP,       NULL,               NULL          },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
@@ -675,9 +671,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
 		break;
-	case OPT_SICP:
-		opt.sicp_mode = 1;
-		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = parse_int("thread_spec", val, false) |
 					 CORE_SPEC_THREAD;
@@ -783,7 +776,6 @@ static struct option long_options[] = {
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
-	{"sicp",          optional_argument, 0, LONG_OPT_SICP},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
@@ -1761,9 +1753,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
-			break;
-		case LONG_OPT_SICP:
-			opt.sicp_mode = 1;
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec",
@@ -2957,7 +2946,6 @@ static void _opt_list(void)
 	info("burst_buffer      : `%s'", opt.burst_buffer);
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
-	info("sicp              : %u", opt.sicp_mode);
 	info("wait              : %s", opt.wait ? "no" : "yes");
 	xfree(str);
 
@@ -2995,7 +2983,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name]\n"
-"              [--cpu-freq=min[-max[:gov]] [--sicp] [--power=flags]\n"
+"              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
@@ -3066,7 +3054,6 @@ static void _help(void)
 "      --requeue               if set, permit the job to be requeued\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
-"      --sicp                  If specified, signifies job is to receive\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"

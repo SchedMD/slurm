@@ -187,7 +187,6 @@ typedef struct sbatch_options {
 	bool test_only;		/* --test-only			*/
 	char *burst_buffer;	/* -bb				*/
 	uint8_t power_flags;	/* Power management options	*/
-	uint8_t sicp_mode;	/* Inter-cluster job ID		*/
 } opt_t;
 
 extern opt_t opt;

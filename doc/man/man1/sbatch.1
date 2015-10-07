@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "August 2015" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "October 2015" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1315,11 +1315,6 @@ CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option.
 
 .TP
-\fB\-\-sicp\fR
-Identify a job as one which jobs submitted to other clusters can be dependent
-upon.
-
-.TP
 \fB\-\-signal\fR=[B:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
@@ -1681,9 +1676,6 @@ for that number of switches. See \fB\-\-switches\fR
 .TP
 \fBSBATCH_REQUEUE\fR
 Same as \fB\-\-requeue\fR
-.TP
-\fBSBATCH_SICP\fR
-Same as \fB\-\-sicp\fR
 .TP
 \fBSBATCH_SIGNAL\fR
 Same as \fB\-\-signal\fR
