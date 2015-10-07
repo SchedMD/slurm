@@ -242,16 +242,16 @@ expect {
 		set this_tid  $expect_out(2,string)
 		set this_lid  $expect_out(3,string)
 		incr this_cnt 1
-		if {$prev_node != $this_node} {
-			if {$prev_cnt != $block_size } {
+		if {$prev_node == $this_node} {
+			incr prev_cnt 1
+		} else {
+			if {$prev_node == -1 && $prev_cnt > $block_size } {
 				send_user "\nFAILURE: incorrect distribution "
-				send_user " $this_node, $prev_node, $prev_cnt\n"
+				send_user "(nodeid:$prev_node task_cnt:$prev_cnt)\n"
 				set exit_code 1
 			}
 			set prev_node $this_node
 			set prev_cnt 1
-		} else {
-			incr prev_cnt 1
 		}
 		exp_continue
 	}
@@ -267,8 +267,9 @@ expect {
 	}
 	-re $prompt
 }
-if {$prev_cnt != $block_size} {
-	send_user "\nFAILURE: incorrect final distribution\n"
+if {$prev_cnt > $block_size} {
+	send_user "\nFAILURE: incorrect final distribution "
+	send_user "(nodeid:$prev_node task_cnt:$prev_cnt)\n"
 	set exit_code 1
 }
 if {$this_cnt != $task_cnt} {

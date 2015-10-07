@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix spec file to look for mariadb or mysql devel packages for build
     requirements.
  -- MySQL - Improve the code with asking for jobs in a suspended state.
+ -- Fix slurcmtld allowing root to see job steps using squeues -s.
+ -- Do not send burst buffer stage out email unless the job uses burst buffers.
 
 * Changes in Slurm 15.08.1
 ==========================
@@ -517,6 +519,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct to not return all jobs if the -j option is given with a trailing
     ','.
  -- Permit job_submit plugin to set a job's priority.
+ -- Fix occasional srun segfault.
 
 * Changes in Slurm 14.11.9
 ==========================
