@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct -j, (nothing but a comma) to not return all jobs.
  -- Fixed slurmctld not sending cold-start messages correctly to the database
     when a cold-start (-c) happens to the slurmctld.
+ -- Fix case where if the backup slurmdbd has existing connections when it gives
+    up control that the it would be killed.
 
 * Changes in Slurm 15.08.1
 ==========================
