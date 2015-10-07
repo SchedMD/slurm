@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Permit job_submit plugin to set a job's priority.
  -- Fix issue with sacct, printing 0_0 for array's that had finished in the
     database but the start record hadn't made it yet.
+ -- Fix sacct -j, (nothing but a comma) to not return all jobs.
 
 * Changes in Slurm 14.11.9
 ==========================
