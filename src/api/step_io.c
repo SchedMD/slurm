@@ -1341,7 +1341,6 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	int rc = SLURM_SUCCESS;
 	pthread_mutex_lock(&cio->ioservers_lock);
 
-	server = (struct server_io_info *)cio->ioserver[node_id]->arg;
 	if (sent_message)
 		*sent_message = false;
 
@@ -1353,6 +1352,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	if (cio->ioserver[node_id] == NULL) {
 		goto done;
 	}
+	server = (struct server_io_info *)cio->ioserver[node_id]->arg;
 
 	/* In this case, the I/O connection has closed so can't send a test
 	   message.  This error case is handled elsewhere. */
