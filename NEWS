@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix occasional srun segfault.
  -- Fix issue with sacct, printing 0_0 for array's that had finished in the
     database but the start record hadn't made it yet.
+ -- sacctmgr - Don't allow default account associations to be removed
+    from a user.
 
 * Changes in Slurm 15.08.1
 ==========================
