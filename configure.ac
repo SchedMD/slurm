@@ -243,6 +243,7 @@ AM_CONDITIONAL(BUILD_HDF5, test "$with_hdf5" = "yes")
 AC_DEFINE([H5_NO_DEPRECATED_SYMBOLS], [1], [Make sure we get the 1.8 HDF5 API])
 
 X_AC_HWLOC
+X_AC_PMIX
 X_AC_FREEIPMI
 X_AC_SLURM_SEMAPHORE
 X_AC_RRDTOOL
@@ -657,6 +658,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/none/Makefile
 		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/mpi/pmi2/Makefile
+		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile

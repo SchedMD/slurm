@@ -5,4 +5,7 @@ if REAL_BGQ_LOADED
 SUBDIRS = none
 else
 SUBDIRS = mpich1_p4 mpich1_shmem mpichgm mpichmx mvapich none lam openmpi pmi2
+if HAVE_PMIX
+SUBDIRS += pmix
+endif
 endif
