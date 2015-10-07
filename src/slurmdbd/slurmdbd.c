@@ -93,6 +93,7 @@ static pthread_t commit_handler_thread;	/* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 static bool running_commit = 0;
+static bool restart_backup = false;
 
 /* Local functions */
 static void  _become_slurm_user(void);
@@ -113,6 +114,7 @@ static void *_signal_handler(void *no_data);
 static void  _update_logging(bool startup);
 static void  _update_nice(void);
 static void  _usage(char *prog_name);
+static void  _restart_self(int argc, char **argv);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
@@ -265,7 +267,7 @@ int main(int argc, char *argv[])
 		if (rpc_handler_thread)
 			pthread_join(rpc_handler_thread, NULL);
 
-		if (backup && primary_resumed) {
+		if (backup && primary_resumed && !restart_backup) {
 			shutdown_time = 0;
 			info("Backup has given up control");
 		}
@@ -277,7 +279,7 @@ int main(int argc, char *argv[])
 
 end_it:
 
-	if (signal_handler_thread)
+	if (signal_handler_thread && (!backup || !restart_backup))
 		pthread_join(signal_handler_thread, NULL);
 	if (commit_handler_thread)
 		pthread_join(commit_handler_thread, NULL);
@@ -292,6 +294,13 @@ end_it:
 	}
 
 	FREE_NULL_LIST(registered_clusters);
+
+	if (backup && restart_backup) {
+		info("Primary has come back but backup is "
+		     "running the rollup. To avoid contention, "
+		     "the backup dbd will now restart.");
+		_restart_self(argc, argv);
+	}
 
 	assoc_mgr_fini(NULL);
 	slurm_acct_storage_fini();
@@ -563,12 +572,23 @@ static void _request_registrations(void *db_conn)
 
 static void _rollup_handler_cancel()
 {
-	if (running_rollup)
-		debug("Waiting for rollup thread to finish.");
-	slurm_mutex_lock(&rollup_lock);
-	if (rollup_handler_thread)
-		pthread_cancel(rollup_handler_thread);
-	slurm_mutex_unlock(&rollup_lock);
+	if (running_rollup) {
+		if (backup && running_rollup && primary_resumed)
+			debug("Hard cancelling rollup thread");
+		else
+			debug("Waiting for rollup thread to finish.");
+	}
+
+	if (rollup_handler_thread) {
+		if (backup && running_rollup && primary_resumed) {
+			pthread_cancel(rollup_handler_thread);
+			restart_backup = true;
+		} else {
+			slurm_mutex_lock(&rollup_lock);
+			pthread_cancel(rollup_handler_thread);
+			slurm_mutex_unlock(&rollup_lock);
+		}
+	}
 }
 
 /* _rollup_handler - Process rollup duties */
@@ -809,4 +829,11 @@ static void _become_slurm_user(void)
 		fatal("Can not set uid to SlurmUser(%u): %m",
 		      slurmdbd_conf->slurm_user_id);
 	}
+}
+
+extern void _restart_self(int argc, char **argv)
+{
+	info("Restarting self");
+	if (execvp(argv[0], argv))
+		fatal("failed to restart the dbd: %m");
 }

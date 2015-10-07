@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Add a PIMX plugin for fast wire up of MPI jobs.
  -- Remove vestigial "SICP" job option (inter-cluster job option). Completely
     different logic will be forthcoming.
+ -- Fix case where the primary and backup dbds would both be performing rollup.
 
 * Changes in Slurm 15.08.2
 ==========================
