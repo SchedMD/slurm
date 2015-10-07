@@ -248,6 +248,9 @@
 /* define if you have permapi_h */
 #undef HAVE_PERMAPI_H
 
+/* Define to 1 if pmix library found */
+#undef HAVE_PMIX
+
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 
