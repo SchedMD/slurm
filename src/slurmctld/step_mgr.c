@@ -2962,7 +2962,9 @@ extern int pack_ctld_job_step_info_response_msg(
 		    (job_id != job_ptr->array_job_id))
 			continue;
 
-		if (((show_flags & SHOW_ALL) == 0) &&
+		valid_job = 1;
+
+		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (job_ptr->part_ptr) &&
 		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
@@ -2972,8 +2974,6 @@ extern int pack_ctld_job_step_info_response_msg(
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 						  job_ptr->account))
 			continue;
-
-		valid_job = 1;
 
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
