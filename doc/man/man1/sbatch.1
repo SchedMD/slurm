@@ -1736,6 +1736,39 @@ Do not free a block on Blue Gene L/P systems only.
 \fBMPIRUN_PARTITION\fR
 The block name on Blue Gene systems only.
 .TP
+\fBSBATCH_CPU_BIND\fR
+Set to value of the \-\-cpu_bind\fR option.
+.TP
+\fBSBATCH_CPU_BIND_VERBOSE\fR
+Set to "verbose" if the \-\-cpu_bind\fR option includes the verbose option.
+Set to "quiet" otherwise.
+.TP
+\fBSBATCH_CPU_BIND_TYPE\fR
+Set to the CPU binding type specified with the \-\-cpu_bind\fR option.
+Possible values two possible comma separated strings.
+The first possible string identifies the entity to be bound to: "threads",
+"cores", "sockets", "ldoms" and "boards".
+The second string identifies manner in which tasks are bound:
+"none", "rank", "map_cpu", "mask_cpu", "rank_ldom", "map_ldom" or "mask_ldom".
+.TP
+\fBSBATCH_CPU_BIND_LIST\fR
+Set to bit mask used for CPU binding.
+
+.TP
+\fBSBATCH_MEM_BIND\fR
+Set to value of the \-\-mem_bind\fR option.
+.TP
+\fBSBATCH_MEM_BIND_VERBOSE\fR
+Set to "verbose" if the \-\-mem_bind\fR option includes the verbose option.
+Set to "quiet" otherwise.
+.TP
+\fBSBATCH_MEM_BIND_TYPE\fR
+Set to the memory binding type specified with the \-\-mem_bind\fR option.
+Possible values are "none", "rank", "map_map", "mask_mem" and "local".
+.TP
+\fBSBATCH_MEM_BIND_LIST\fR
+Set to bit mask used for memory binding.
+.TP
 \fBSLURM_ARRAY_TASK_ID\fR
 Job array ID (index) number.
 .TP
@@ -1799,9 +1832,6 @@ Name of the partition in which the job is running.
 .TP
 \fBSLURM_LOCALID\fR
 Node local task ID for the process within a job.
-.TP
-\fBSLURM_MEM_BIND\fR
-Set to value of the \-\-mem_bind\fR option.
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
