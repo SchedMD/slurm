@@ -478,6 +478,11 @@ int main(int argc, char *argv[])
 
 			if (recover == 0) {
 				slurmctld_init_db = 1;
+				/* This needs to be set up the nodes
+				   going down and this happens before it is
+				   normally set up so do it now.
+				*/
+				set_cluster_tres(false);
 				_accounting_mark_all_nodes_down("cold-start");
 			}
 		} else {

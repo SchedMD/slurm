@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Don't allow default account associations to be removed
     from a user.
  -- Fix sacct -j, (nothing but a comma) to not return all jobs.
+ -- Fixed slurmctld not sending cold-start messages correctly to the database
+    when a cold-start (-c) happens to the slurmctld.
 
 * Changes in Slurm 15.08.1
 ==========================
