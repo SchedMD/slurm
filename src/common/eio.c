@@ -202,18 +202,17 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	slurm_msg_t_init(msg);
 again:
 	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
-		if (errno == EINTR) {
+		if (errno == EINTR)
 			goto again;
-		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
-		      uc[0],uc[1],uc[2],uc[3]);
+		      uc[0], uc[1], uc[2], uc[3]);
 		goto cleanup;
 	}
 
-	(*obj->ops->handle_msg)(obj->arg, msg); /* handle_msg should free
-					      * msg->data */
+	(*obj->ops->handle_msg)(obj->arg, msg);
+
 cleanup:
-	if ((msg->conn_fd >= 0) && slurm_close(msg->conn_fd) < 0)
+	if ((msg->conn_fd >= 0) && (slurm_close(msg->conn_fd) < 0))
 		error ("close(%d): %m", msg->conn_fd);
 	slurm_free_msg(msg);
 
