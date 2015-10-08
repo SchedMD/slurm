@@ -435,8 +435,7 @@ extern int slurm_addto_step_list(List step_list, char *names)
 		else if (names[i] == ',') {
 			count += _addto_step_list_internal(
 				step_list, names, start, i);
-			i++;
-			start = i;
+			start = i + 1;
 		}
 		i++;
 	}

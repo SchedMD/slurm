@@ -1,8 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Check bluegene.conf file creation
-#          (-Dc option).
+#          Check bluegene.conf file creation (-Dc option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -39,7 +38,7 @@ set matches       0
 set non_bg        0
 set prompt        ".*$"
 set created       0
-set file          "bluegene-test.conf"
+set file_out      "bluegene-test.conf"
 set stuff         ""
 set too_small     0
 
@@ -72,7 +71,7 @@ expect {
 		if { $matches == 0 } {
 			send "create 1\r"
 		} elseif { $matches == 1 } {
-			send "save $file\r"
+			send "save $file_out\r"
 		} elseif { $matches == 2 } {
 			send "exit\r"
 		}
@@ -119,7 +118,7 @@ if {![string compare $type "L"]} {
 
 set matches       0
 if { $exit_code != 1 } {
-	spawn grep -v \^\# $file
+	spawn grep -v \^\# $file_out
 	expect {
 		-re "BlrtsImage" {
 #			Absent from Bluegene/P and Bluegene/Q
@@ -205,7 +204,7 @@ if { $exit_code != 1 } {
 
 }
 if {$exit_code == 0} {
-	exec rm -f $file
+	exec rm -f $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

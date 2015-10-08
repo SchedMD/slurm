@@ -539,7 +539,7 @@ static void _free_server_thread(pthread_t my_tid)
  * After one second, start sending SIGKILL to the threads. */
 static void _wait_for_thread_fini(void)
 {
-	int i, j;
+	int j;
 
 	if (thread_count == 0)
 		return;
@@ -553,8 +553,15 @@ static void _wait_for_thread_fini(void)
 		pthread_kill(slave_thread_id[j], SIGUSR1);
 	}
 	slurm_mutex_unlock(&thread_count_lock);
-	usleep(100000);	/* Give the threads 100 msec to clean up */
 
+	/* Can't send SIGKILL to threads as it goes to the process. Since this
+	 * is called only when the rpc_mgr is quitting, just let the threads die
+	 * by the dbd dying.  If it's the backup and it's giving up control, let
+	 * the threads finish. thread_count will be decremented when the thread
+	 * finishes -- even if the rpc_mgr is gone.
+	 */
+	/*usleep(100000); */	/* Give the threads 100 msec to clean up */
+	/*
 	for (i=0; ; i++) {
 		if (thread_count == 0)
 			return;
@@ -576,6 +583,7 @@ static void _wait_for_thread_fini(void)
 		slurm_mutex_unlock(&thread_count_lock);
 		sleep(1);
 	}
+	*/
 }
 
 static void _sig_handler(int signal)
