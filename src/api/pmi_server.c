@@ -81,7 +81,7 @@ struct agent_arg {
 };				/* details for message agent manager */
 struct msg_arg {
 	struct barrier_resp *bar_ptr;
-	struct kvs_comm_set *kvs_ptr;
+	kvs_comm_set_t *kvs_ptr;
 };
 int agent_cnt = 0;		/* number of active message agents */
 int agent_max_cnt = 32;		/* maximum number of active agents */
@@ -185,7 +185,7 @@ static void *_msg_thread(void *x)
 static void *_agent(void *x)
 {
 	struct agent_arg *args = (struct agent_arg *) x;
-	struct kvs_comm_set *kvs_set;
+	kvs_comm_set_t *kvs_set;
 	struct msg_arg *msg_args;
 	struct kvs_hosts *kvs_host_list;
 	int i, j, kvs_set_cnt = 0, host_cnt, pmi_fanout = 32;
@@ -208,7 +208,7 @@ static void *_agent(void *x)
 	START_TIMER;
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	kvs_set = xmalloc(sizeof(struct kvs_comm_set) * args->barrier_xmit_cnt);
+	kvs_set = xmalloc(sizeof(kvs_comm_set_t) * args->barrier_xmit_cnt);
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
 			continue;	/* already sent message to host */
@@ -414,7 +414,7 @@ static void _print_kvs(void)
 #endif
 }
 
-extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
+extern int pmi_kvs_put(kvs_comm_set_t *kvs_set_ptr)
 {
 	int i, usec_timer;
 	struct kvs_comm *kvs_ptr;

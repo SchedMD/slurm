@@ -1533,7 +1533,7 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		break;
 	case PMI_KVS_PUT_REQ:
 		debug2("PMI_KVS_PUT_REQ received");
-		rc = pmi_kvs_put((struct kvs_comm_set *) msg->data);
+		rc = pmi_kvs_put((kvs_comm_set_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
 		break;
 	case PMI_KVS_GET_REQ:

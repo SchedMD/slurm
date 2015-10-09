@@ -58,7 +58,6 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
-#include "src/api/slurm_pmi.h"
 #include "src/common/bitstring.h"
 #include "src/common/job_options.h"
 #include "src/common/list.h"
@@ -66,9 +65,9 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
-#include "src/common/xassert.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
+#include "src/common/xassert.h"
 
 #define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe
@@ -465,6 +464,25 @@ typedef struct ret_data_info {
 /*****************************************************************************\
  * Slurm Protocol Data Structures
 \*****************************************************************************/
+struct kvs_hosts {
+	uint32_t	task_id;	/* job step's task id */
+	uint16_t	port;		/* communication port */
+	char *		hostname;	/* communication host */
+};
+struct kvs_comm {
+	char *		kvs_name;
+	uint32_t	kvs_cnt;	/* count of key-pairs */
+	char **		kvs_keys;
+	char **		kvs_values;
+	uint16_t *	kvs_key_sent;
+};
+typedef struct kvs_comm_set {
+
+	uint16_t	host_cnt;	/* hosts getting this message */
+	struct kvs_hosts *kvs_host_ptr;	/* host forwarding info */
+ 	uint16_t	kvs_comm_recs;	/* count of kvs_comm entries */
+	struct kvs_comm **kvs_comm_ptr;	/* pointers to kvs_comm entries */
+} kvs_comm_set_t;
 
 typedef struct assoc_shares_object {
 	uint32_t assoc_id;	/* association ID */
@@ -1314,7 +1332,7 @@ extern void slurm_free_layout_info_msg(layout_info_msg_t * msg);
 extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
-extern void slurm_free_put_kvs_msg(struct kvs_comm_set *msg);
+extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg);
 extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
 extern void slurm_free_reserve_info_members(reserve_info_t * resv);
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);

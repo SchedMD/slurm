@@ -53,42 +53,20 @@
 #endif  /*  HAVE_CONFIG_H */
 
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #define PMI_MAX_ID_LEN       16	/* Maximim size of PMI process group ID */
 #define PMI_MAX_KEY_LEN     256	/* Maximum size of a PMI key */
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     1024 /* Maximum size of a PMI value */
 
-struct kvs_hosts {
-	uint32_t	task_id;	/* job step's task id */
-	uint16_t	port;		/* communication port */
-	char *		hostname;	/* communication host */
-};
-struct kvs_comm {
-	char *		kvs_name;
-	uint32_t	kvs_cnt;	/* count of key-pairs */
-	char **		kvs_keys;
-	char **		kvs_values;
-	uint16_t *	kvs_key_sent;
-};
-struct kvs_comm_set {
-
-	uint16_t	host_cnt;	/* hosts getting this message */
-	struct kvs_hosts *kvs_host_ptr;	/* host forwarding info */
- 	uint16_t	kvs_comm_recs;	/* count of kvs_comm entries */
-	struct kvs_comm **kvs_comm_ptr;	/* pointers to kvs_comm entries */
-};
-
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
+int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 		int pmi_rank, int pmi_size);
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
+int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		int pmi_rank, int pmi_size);
-
-/* Free kvs_comm_set returned by slurm_get_kvs_comm_set() */
-void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr);
 
 /* Finalization processing */
 void slurm_pmi_finalize(void);

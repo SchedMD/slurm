@@ -60,7 +60,7 @@ uint16_t srun_port = 0;
 slurm_addr_t srun_addr;
 
 static void _delay_rpc(int pmi_rank, int pmi_size);
-static int  _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
+static int  _forward_comm_set(kvs_comm_set_t *kvs_set_ptr);
 static int  _get_addr(void);
 static void _set_pmi_time(void);
 
@@ -163,7 +163,7 @@ static void _set_pmi_time(void)
 }
 
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
+int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 		int pmi_rank, int pmi_size)
 {
 	slurm_msg_t msg_send;
@@ -212,8 +212,8 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 }
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
-		int pmi_rank, int pmi_size)
+int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
+			    int pmi_rank, int pmi_size)
 {
 	int rc, srun_fd, retries = 0, timeout = 0;
 	slurm_msg_t msg_send, msg_rcv;
@@ -331,7 +331,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 /* Forward keypair info to other tasks as required.
  * Clear message forward structure upon completion.
  * The messages are forwarded sequentially. */
-static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
+static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 {
 	int i, rc = SLURM_SUCCESS;
 	int tmp_host_cnt = kvs_set_ptr->host_cnt;
@@ -359,41 +359,6 @@ static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
 	}
 	xfree(kvs_set_ptr->kvs_host_ptr);
 	return rc;
-}
-
-static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
-{
-	int i;
-
-	if (kvs_comm_ptr == NULL)
-		return;
-
-	for (i=0; i<kvs_comm_ptr->kvs_cnt; i++) {
-		xfree(kvs_comm_ptr->kvs_keys[i]);
-		xfree(kvs_comm_ptr->kvs_values[i]);
-	}
-	xfree(kvs_comm_ptr->kvs_name);
-	xfree(kvs_comm_ptr->kvs_keys);
-	xfree(kvs_comm_ptr->kvs_values);
-	xfree(kvs_comm_ptr);
-}
-
-/* Free kvs_comm_set returned by slurm_get_kvs_comm_set() */
-void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
-{
-	int i;
-
-	if (kvs_set_ptr == NULL)
-		return;
-
-	for (i=0; i<kvs_set_ptr->host_cnt; i++)
-		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
-	xfree(kvs_set_ptr->kvs_host_ptr);
-
-	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++)
-		_free_kvs_comm(kvs_set_ptr->kvs_comm_ptr[i]);
-	xfree(kvs_set_ptr->kvs_comm_ptr);
-	xfree(kvs_set_ptr);
 }
 
 /* Finalization processing */

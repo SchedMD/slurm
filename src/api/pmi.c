@@ -655,7 +655,7 @@ have called 'PMI_Barrier()'.
 @*/
 int PMI_Barrier( void )
 {
-	struct kvs_comm_set *kvs_set_ptr = NULL;
+	kvs_comm_set_t *kvs_set_ptr = NULL;
 	struct kvs_comm *kvs_ptr;
 	int i, j, k, rc = PMI_SUCCESS;
 
@@ -1220,7 +1220,7 @@ the specified keyval space. It is a process local operation.
 @*/
 int PMI_KVS_Commit( const char kvsname[] )
 {
-	struct kvs_comm_set kvs_set;
+	kvs_comm_set_t kvs_set;
 	int i, j, rc = PMI_SUCCESS, local_pairs;
 
 	if (pmi_debug)

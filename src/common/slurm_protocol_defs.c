@@ -51,7 +51,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include "src/api/slurm_pmi.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
@@ -1602,7 +1601,7 @@ extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 	}
 }
 
-extern void slurm_free_put_kvs_msg(struct kvs_comm_set *msg)
+extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 {
 	int i, j;
 
@@ -1610,6 +1609,7 @@ extern void slurm_free_put_kvs_msg(struct kvs_comm_set *msg)
 		for (i = 0; i < msg->host_cnt; i++)
 			xfree(msg->kvs_host_ptr[i].hostname);
 		xfree(msg->kvs_host_ptr);
+
 		for (i = 0; i < msg->kvs_comm_recs; i++) {
 			xfree(msg->kvs_comm_ptr[i]->kvs_name);
 			for (j = 0; j < msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
@@ -3834,7 +3834,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case PMI_KVS_GET_RESP:
 	case PMI_KVS_PUT_REQ:
-		slurm_free_put_kvs_msg(data);
+		slurm_free_kvs_comm_set(data);
 		break;
 	case PMI_KVS_PUT_RESP:
 		/* No body */

@@ -47,7 +47,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/api/slurm_pmi.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
@@ -580,9 +579,9 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer,
 static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer,
 			    uint16_t protocol_version);
 
-static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer,
+static void _pack_kvs_data(kvs_comm_set_t *msg_ptr, Buf buffer,
 			   uint16_t protocol_version);
-static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer,
+static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, Buf buffer,
 			     uint16_t protocol_version);
 
 static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer,
@@ -1486,7 +1485,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
-		_pack_kvs_data((struct kvs_comm_set *) msg->data, buffer,
+		_pack_kvs_data((kvs_comm_set_t *) msg->data, buffer,
 			       msg->protocol_version);
 		break;
 	case PMI_KVS_GET_REQ:
@@ -2173,7 +2172,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
-		rc = _unpack_kvs_data((struct kvs_comm_set **) &msg->data,
+		rc = _unpack_kvs_data((kvs_comm_set_t **) &msg->data,
 				      buffer,
 				      msg->protocol_version);
 		break;
@@ -11972,7 +11971,7 @@ static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, Buf buffer,
 unpack_error:
 	return SLURM_ERROR;
 }
-static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer,
+static void _pack_kvs_data(kvs_comm_set_t *msg_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
 	int i;
@@ -11989,13 +11988,13 @@ static void _pack_kvs_data(struct kvs_comm_set *msg_ptr, Buf buffer,
 			      protocol_version);
 }
 
-static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer,
+static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, Buf buffer,
 			     uint16_t protocol_version)
 {
-	struct kvs_comm_set *msg;
+	kvs_comm_set_t *msg;
 	int i;
 
-	msg = xmalloc(sizeof(struct kvs_comm_set));
+	msg = xmalloc(sizeof(kvs_comm_set_t));
 	*msg_ptr = msg;
 
 	safe_unpack16(&msg->host_cnt, buffer);
@@ -12018,7 +12017,7 @@ static int  _unpack_kvs_data(struct kvs_comm_set **msg_ptr, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_put_kvs_msg(msg);
+	slurm_free_kvs_comm_set(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
