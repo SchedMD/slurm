@@ -807,10 +807,17 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			rc = SLURM_FAILURE;
 		} else {
 			int delta_time = time(NULL) - start_time;
+			int cc;
 			if (delta_time > 5) {
 				info("Warning: slurmstepd startup took %d sec, "
 				     "possible file system problem or full "
 				     "memory", delta_time);
+			}
+			cc = SLURM_SUCCESS;
+			cc = write(to_stepd[1], &cc, sizeof(int));
+			if (cc != sizeof(int)) {
+				error("\
+%s: failed to send ack to stepd %d: %m", __func__, cc);
 			}
 		}
 #endif

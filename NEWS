@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove vestigial "SICP" job option (inter-cluster job option). Completely
     different logic will be forthcoming.
  -- Fix case where the primary and backup dbds would both be performing rollup.
+ -- Add an ack reply from slurmd to slurmstepd when job setup is done and the
+    job is ready to be executed.
 
 * Changes in Slurm 15.08.2
 ==========================

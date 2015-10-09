@@ -77,6 +77,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
+static void _got_ack_from_slurmd(int);
 static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 				     slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
@@ -118,11 +119,6 @@ main (int argc, char *argv[])
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
 
-	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
-	 * allocated to any random file.  The slurmd already opened /dev/null
-	 * on STDERR_FILENO for us. */
-	dup2(STDERR_FILENO, STDIN_FILENO);
-
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(job = _step_setup(cli, self, msg))) {
@@ -146,6 +142,12 @@ main (int argc, char *argv[])
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
+	_got_ack_from_slurmd(STDIN_FILENO);
+
+	/* Fancy way of closing stdin that keeps STDIN_FILENO from being
+	 * allocated to any random file.  The slurmd already opened /dev/null
+	 * on STDERR_FILENO for us. */
+	dup2(STDERR_FILENO, STDIN_FILENO);
 
 	/* Fancy way of closing stdout that keeps STDOUT_FILENO from being
 	 * allocated to any random file.  The slurmd already opened /dev/null
@@ -365,6 +367,20 @@ _send_fail_to_slurmd(int sock)
 	return;
 rwfail:
 	error("Unable to send \"fail\" to slurmd");
+#endif
+}
+
+static void
+_got_ack_from_slurmd(int sock)
+{
+	/* If running under valgrind/memcheck, this pipe doesn't work correctly
+	 * so just skip it. */
+#ifndef SLURMSTEPD_MEMCHECK
+	int ok;
+	safe_read(sock, &ok, sizeof(int));
+	return;
+rwfail:
+	error("Unable to receive \"ok ack\" to slurmd");
 #endif
 }
 
