@@ -404,9 +404,11 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
 	job = _job_create_structure(i);
-	job->account = xstrdup(resp->account);
-	job->qos = xstrdup(resp->qos);
-	job->resv_name = xstrdup(resp->resv_name);
+	if (job) {
+		job->account = xstrdup(resp->account);
+		job->qos = xstrdup(resp->qos);
+		job->resv_name = xstrdup(resp->resv_name);
+	}
 
 	xfree(i->nodelist);
 	xfree(i);
