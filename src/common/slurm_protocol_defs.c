@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "src/api/slurm_pmi.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
@@ -1597,6 +1598,28 @@ extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostname);
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_put_kvs_msg(struct kvs_comm_set *msg)
+{
+	int i, j;
+
+	if (msg) {
+		for (i = 0; i < msg->host_cnt; i++)
+			xfree(msg->kvs_host_ptr[i].hostname);
+		xfree(msg->kvs_host_ptr);
+		for (i = 0; i < msg->kvs_comm_recs; i++) {
+			xfree(msg->kvs_comm_ptr[i]->kvs_name);
+			for (j = 0; j < msg->kvs_comm_ptr[i]->kvs_cnt; j++) {
+				xfree(msg->kvs_comm_ptr[i]->kvs_keys[j]);
+				xfree(msg->kvs_comm_ptr[i]->kvs_values[j]);
+			}
+			xfree(msg->kvs_comm_ptr[i]->kvs_keys);
+			xfree(msg->kvs_comm_ptr[i]->kvs_values);
+		}
+		xfree(msg->kvs_comm_ptr);
 		xfree(msg);
 	}
 }
@@ -3808,6 +3831,13 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case PMI_KVS_GET_REQ:
 		slurm_free_get_kvs_msg(data);
+		break;
+	case PMI_KVS_GET_RESP:
+	case PMI_KVS_PUT_REQ:
+		slurm_free_put_kvs_msg(data);
+		break;
+	case PMI_KVS_PUT_RESP:
+		/* No body */
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
 		slurm_free_resource_allocation_response_msg(data);

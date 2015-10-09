@@ -58,6 +58,7 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
+#include "src/api/slurm_pmi.h"
 #include "src/common/bitstring.h"
 #include "src/common/job_options.h"
 #include "src/common/list.h"
@@ -1313,6 +1314,7 @@ extern void slurm_free_layout_info_msg(layout_info_msg_t * msg);
 extern void slurm_free_layout_info_request_msg(layout_info_request_msg_t * msg);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t * msg);
 extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg);
+extern void slurm_free_put_kvs_msg(struct kvs_comm_set *msg);
 extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg);
 extern void slurm_free_reserve_info_members(reserve_info_t * resv);
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
