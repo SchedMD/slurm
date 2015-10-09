@@ -3493,7 +3493,13 @@ extern void slurm_free_composite_msg(composite_msg_t *msg)
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
-	switch(type) {
+	switch (type) {
+	case RESPONSE_LAUNCH_TASKS:
+		slurm_free_launch_tasks_response_msg(data);
+		break;
+	case MESSAGE_TASK_EXIT:
+		slurm_free_task_exit_msg(data);
+		break;
 	case REQUEST_BUILD_INFO:
 		slurm_free_last_update_msg(data);
 		break;
@@ -3512,7 +3518,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case MESSAGE_EPILOG_COMPLETE:
 		slurm_free_epilog_complete_msg(data);
 		break;
+	case REQUEST_KILL_JOB:
 	case REQUEST_CANCEL_JOB_STEP:
+	case SRUN_STEP_SIGNAL:
 		slurm_free_job_step_kill_msg(data);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
@@ -3546,6 +3554,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_ACCT_GATHER_UPDATE:
 		slurm_free_acct_gather_node_resp_msg(data);
 		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
@@ -3593,9 +3602,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_LAYOUT_INFO:
 		slurm_free_layout_info_request_msg(data);
 		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		slurm_free_node_registration_status_msg(data);
-		break;
 	case REQUEST_CHECKPOINT:
 		slurm_free_checkpoint_msg(data);
 		break;
@@ -3615,8 +3621,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SUSPEND_INT:
 		slurm_free_suspend_int_msg(data);
 		break;
-	case REQUEST_JOB_READY:
 	case REQUEST_JOB_REQUEUE:
+		slurm_free_requeue_msg(data);
+		break;
+	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		slurm_free_job_id_msg(data);
 		break;
@@ -3641,6 +3649,11 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_STEP_COMPLETE:
 	case REQUEST_STEP_COMPLETE_AGGR:
 		slurm_free_step_complete_msg(data);
+		break;
+	case REQUEST_JOB_STEP_STAT:
+	case REQUEST_JOB_STEP_PIDS:
+	case REQUEST_STEP_LAYOUT:
+		slurm_free_job_step_id_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
 		slurm_free_job_step_stat(data);
@@ -3707,10 +3720,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_HEALTH_CHECK:
 	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
-	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_POWERCAP_INFO:
+	case ACCOUNTING_REGISTER_CTLD:
 		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:
@@ -3750,6 +3763,57 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case MESSAGE_COMPOSITE:
 	case RESPONSE_MESSAGE_COMPOSITE:
 		slurm_free_composite_msg(data);
+		break;
+	case REQUEST_UPDATE_BLOCK:
+		slurm_free_block_info(data);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		slurm_free_job_notify_msg(data);
+		break;
+	case REQUEST_STATS_INFO:
+		slurm_free_stats_info_request_msg(data);
+		break;
+	case REQUEST_LICENSE_INFO:
+		slurm_free_license_info_request_msg(data);
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		slurm_free_acct_gather_energy_req_msg(data);
+		break;
+	case REQUEST_FORWARD_DATA:
+		slurm_free_forward_data_msg(data);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		slurm_free_network_callerid_msg(data);
+		break;
+	case SRUN_JOB_COMPLETE:
+		slurm_free_srun_job_complete_msg(data);
+		break;
+	case SRUN_PING:
+		slurm_free_srun_ping_msg(data);
+		break;
+	case SRUN_EXEC:
+		slurm_free_srun_exec_msg(data);
+		break;
+	case SRUN_TIMEOUT:
+		slurm_free_srun_timeout_msg(data);
+		break;
+	case SRUN_USER_MSG:
+		slurm_free_srun_user_msg(data);
+		break;
+	case SRUN_NODE_FAIL:
+		slurm_free_srun_node_fail_msg(data);
+		break;
+	case SRUN_STEP_MISSING:
+		slurm_free_srun_step_missing_msg(data);
+		break;
+	case PMI_KVS_GET_REQ:
+		slurm_free_get_kvs_msg(data);
+		break;
+	case RESPONSE_RESOURCE_ALLOCATION:
+		slurm_free_resource_allocation_response_msg(data);
+		break;
+	case REQUEST_ASSOC_MGR_INFO:
+		slurm_free_assoc_mgr_info_request_msg(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
