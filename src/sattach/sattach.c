@@ -598,17 +598,14 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	case RESPONSE_LAUNCH_TASKS:
 		debug2("received task launch");
 		_launch_handler(mts, msg);
-		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
 	case MESSAGE_TASK_EXIT:
 		debug2("received task exit");
 		_exit_handler(mts, msg);
-		slurm_free_task_exit_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
 		/* FIXME - does nothing yet */
-		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	default:
 		error("received spurious message type: %d",

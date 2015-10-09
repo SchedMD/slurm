@@ -766,7 +766,8 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 		case RESPONSE_RESOURCE_ALLOCATION:
 			debug2("resource allocation response received");
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			*resp = msg->data;
+			*resp = msg->data;    /* transfer payload to response */
+			msg->data = NULL;
 			rc = 1;
 			break;
 		case SRUN_JOB_COMPLETE:
@@ -820,7 +821,7 @@ _accept_msg_connection(int listen_fd,
 		return SLURM_ERROR;
 	}
 
-	rc = _handle_msg(msg, resp); /* handle_msg frees msg */
+	rc = _handle_msg(msg, resp); /* _handle_msg transfers message payload */
 	slurm_free_msg(msg);
 
 	slurm_close(conn_fd);

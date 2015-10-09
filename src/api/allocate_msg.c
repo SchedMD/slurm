@@ -187,8 +187,6 @@ static void _handle_node_fail(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.node_fail != NULL)
 		(msg_thr->callback.node_fail)(nf);
-
-	slurm_free_srun_node_fail_msg(msg->data);
 }
 
 /*
@@ -205,8 +203,6 @@ static void _handle_timeout(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.timeout != NULL)
 		(msg_thr->callback.timeout)(to);
-
-	slurm_free_srun_timeout_msg(msg->data);
 }
 
 static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
@@ -217,8 +213,6 @@ static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.user_msg != NULL)
 		(msg_thr->callback.user_msg)(um);
-
-	slurm_free_srun_user_msg(msg->data);
 }
 
 static void _handle_ping(struct allocation_msg_thread *msg_thr,
@@ -230,8 +224,6 @@ static void _handle_ping(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.ping != NULL)
 		(msg_thr->callback.ping)(ping);
-
-	slurm_free_srun_ping_msg(msg->data);
 }
 
 static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
@@ -242,8 +234,6 @@ static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.job_complete != NULL)
 		(msg_thr->callback.job_complete)(comp);
-
-	slurm_free_srun_job_complete_msg(msg->data);
 }
 
 static void _handle_suspend(struct allocation_msg_thread *msg_thr,
@@ -254,8 +244,6 @@ static void _handle_suspend(struct allocation_msg_thread *msg_thr,
 
 	if (msg_thr->callback.job_suspend != NULL)
 		(msg_thr->callback.job_suspend)(sus_msg);
-
-	slurm_free_suspend_msg(msg->data);
 }
 
 static void

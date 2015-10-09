@@ -280,12 +280,11 @@ slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
-	switch(msg->msg_type) {
+	switch (msg->msg_type) {
 	case REQUEST_LAUNCH_PROLOG:
 		debug2("Processing RPC: REQUEST_LAUNCH_PROLOG");
 		_rpc_prolog(msg);
 		last_slurmctld_msg = time(NULL);
-		slurm_free_prolog_launch_msg(msg->data);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
@@ -294,103 +293,85 @@ slurmd_req(slurm_msg_t *msg)
 		 * jobs are supported on Blue Gene (no job steps). */
 		_rpc_batch_job(msg, true);
 		last_slurmctld_msg = time(NULL);
-		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("Processing RPC: REQUEST_LAUNCH_TASKS");
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg);
-		slurm_free_launch_tasks_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 		debug2("Processing RPC: REQUEST_SIGNAL_TASKS");
 		_rpc_signal_tasks(msg);
-		slurm_free_kill_tasks_msg(msg->data);
 		break;
 	case REQUEST_CHECKPOINT_TASKS:
 		debug2("Processing RPC: REQUEST_CHECKPOINT_TASKS");
 		_rpc_checkpoint_tasks(msg);
-		slurm_free_checkpoint_tasks_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_TASKS:
 		debug2("Processing RPC: REQUEST_TERMINATE_TASKS");
 		_rpc_terminate_tasks(msg);
-		slurm_free_kill_tasks_msg(msg->data);
 		break;
 	case REQUEST_KILL_PREEMPTED:
 		debug2("Processing RPC: REQUEST_KILL_PREEMPTED");
 		last_slurmctld_msg = time(NULL);
 		_rpc_timelimit(msg);
-		slurm_free_timelimit_msg(msg->data);
 		break;
 	case REQUEST_KILL_TIMELIMIT:
 		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
 		last_slurmctld_msg = time(NULL);
 		_rpc_timelimit(msg);
-		slurm_free_timelimit_msg(msg->data);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		debug2("Processing RPC: REQUEST_REATTACH_TASKS");
 		_rpc_reattach_tasks(msg);
-		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_SIGNAL_JOB:
 		debug2("Processing RPC: REQUEST_SIGNAL_JOB");
 		_rpc_signal_job(msg);
-		slurm_free_signal_job_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND_INT:
 		debug2("Processing RPC: REQUEST_SUSPEND_INT");
 		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
-		slurm_free_suspend_int_msg(msg->data);
 		break;
 	case REQUEST_ABORT_JOB:
 		debug2("Processing RPC: REQUEST_ABORT_JOB");
 		last_slurmctld_msg = time(NULL);
 		_rpc_abort_job(msg);
-		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
 		last_slurmctld_msg = time(NULL);
 		_rpc_terminate_job(msg);
-		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT");
 		_rpc_complete_batch(msg);
-		slurm_free_complete_batch_script_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
 		debug2("Processing RPC: REQUEST_UPDATE_JOB_TIME");
 		_rpc_update_time(msg);
 		last_slurmctld_msg = time(NULL);
-		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
 		debug2("Processing RPC: REQUEST_SHUTDOWN");
 		_rpc_shutdown(msg);
-		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_RECONFIGURE:
 		debug2("Processing RPC: REQUEST_RECONFIGURE");
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
-		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:
 		debug2("Processing RPC: REQUEST_REBOOT_NODES");
 		_rpc_reboot(msg);
-		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
-		/* No body to free */
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
 			send_registration_msg(SLURM_SUCCESS, true);
@@ -398,66 +379,52 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_PING:
 		_rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
-		/* No body to free */
 		break;
 	case REQUEST_HEALTH_CHECK:
 		debug2("Processing RPC: REQUEST_HEALTH_CHECK");
 		_rpc_health_check(msg);
 		last_slurmctld_msg = time(NULL);
-		/* No body to free */
 		break;
 	case REQUEST_ACCT_GATHER_UPDATE:
 		debug2("Processing RPC: REQUEST_ACCT_GATHER_UPDATE");
 		_rpc_acct_gather_update(msg);
 		last_slurmctld_msg = time(NULL);
-		/* No body to free */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
 		debug2("Processing RPC: REQUEST_ACCT_GATHER_ENERGY");
 		_rpc_acct_gather_energy(msg);
-		slurm_free_acct_gather_energy_req_msg(msg->data);
 		break;
 	case REQUEST_JOB_ID:
 		_rpc_pid2jid(msg);
-		slurm_free_job_id_request_msg(msg->data);
 		break;
 	case REQUEST_FILE_BCAST:
 		rc = _rpc_file_bcast(msg);
 		slurm_send_rc_msg(msg, rc);
-		slurm_free_file_bcast_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		(void) _rpc_step_complete(msg);
-		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_STEP_COMPLETE_AGGR:
 		(void) _rpc_step_complete_aggr(msg);
-		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_STAT:
 		(void) _rpc_stat_jobacct(msg);
-		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_PIDS:
 		(void) _rpc_list_pids(msg);
-		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_DAEMON_STATUS:
 		_rpc_daemon_status(msg);
-		/* No body to free */
 		break;
 	case REQUEST_JOB_NOTIFY:
 		_rpc_job_notify(msg);
-		slurm_free_job_notify_msg(msg->data);
 		break;
 	case REQUEST_FORWARD_DATA:
 		_rpc_forward_data(msg);
-		slurm_free_forward_data_msg(msg->data);
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		debug2("Processing RPC: REQUEST_NETWORK_CALLERID");
 		_rpc_network_callerid(msg);
-		slurm_free_network_callerid_msg(msg->data);
 		break;
 	case MESSAGE_COMPOSITE:
 		error("Processing RPC: MESSAGE_COMPOSITE: "
@@ -467,9 +434,7 @@ slurmd_req(slurm_msg_t *msg)
 	case RESPONSE_MESSAGE_COMPOSITE:
 		debug2("Processing RPC: RESPONSE_MESSAGE_COMPOSITE");
 		msg_aggr_resp(msg);
-		slurm_free_composite_msg(msg->data);
 		break;
-	case REQUEST_SUSPEND:	/* Defunct, see REQUEST_SUSPEND_INT */
 	default:
 		error("slurmd_req: invalid request msg type %d",
 		      msg->msg_type);
@@ -532,8 +497,10 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			if (launch_req->job_step_id != SLURM_EXTERN_CONT)
 				send_error = true;
 		}
-		if (send_error)
-			info("task rank unavailable due to invalid job credential, step completion RPC impossible");
+		if (send_error) {
+			info("task rank unavailable due to invalid job "
+			     "credential, step completion RPC impossible");
+		}
 		rank = -1;
 		parent_rank = -1;
 		children = 0;

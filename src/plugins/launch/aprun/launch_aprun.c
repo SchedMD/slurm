@@ -334,29 +334,24 @@ static void _handle_msg(slurm_msg_t *msg)
 	case SRUN_PING:
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug("received job step complete message");
 		_handle_step_complete(msg->data);
-		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_USER_MSG:
 		um = msg->data;
 		info("%s", um->msg);
-		slurm_free_srun_user_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
 		debug2("received job step timeout message");
 		_handle_timeout(msg->data);
-		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_STEP_SIGNAL:
 		ss = msg->data;
 		debug("received step signal %u RPC", ss->signal);
 		if (ss->signal)
 			launch_p_fwd_signal(ss->signal);
-		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	default:
 		debug("received spurious message type: %u",

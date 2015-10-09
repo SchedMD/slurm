@@ -277,182 +277,138 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);
-		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_BUILD_INFO:
 		_slurm_rpc_dump_conf(msg);
-		slurm_free_last_update_msg(msg->data);
 		break;
 	case REQUEST_JOB_INFO:
 		_slurm_rpc_dump_jobs(msg);
-		slurm_free_job_info_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_USER_INFO:
 		_slurm_rpc_dump_jobs_user(msg);
-		slurm_free_job_user_id_msg(msg->data);
 		break;
 	case REQUEST_JOB_INFO_SINGLE:
 		_slurm_rpc_dump_job_single(msg);
-		slurm_free_job_id_msg(msg->data);
 		break;
 	case REQUEST_SHARE_INFO:
 		_slurm_rpc_get_shares(msg);
-		slurm_free_shares_request_msg(msg->data);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
 		_slurm_rpc_get_priority_factors(msg);
-		slurm_free_priority_factors_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
-		slurm_free_job_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_FRONT_END_INFO:
 		_slurm_rpc_dump_front_end(msg);
-		slurm_free_front_end_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_INFO:
 		_slurm_rpc_dump_nodes(msg);
-		slurm_free_node_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_INFO_SINGLE:
 		_slurm_rpc_dump_node_single(msg);
-		slurm_free_node_info_single_msg(msg->data);
 		break;
 	case REQUEST_PARTITION_INFO:
 		_slurm_rpc_dump_partitions(msg);
-		slurm_free_part_info_request_msg(msg->data);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		i = 0;
 		_slurm_rpc_epilog_complete(msg, (bool *)&i, 0);
-		slurm_free_epilog_complete_msg(msg->data);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
 		_slurm_rpc_job_step_kill(msg);
-		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
-		slurm_free_complete_job_allocation_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
 		_slurm_rpc_complete_prolog(msg);
-		slurm_free_complete_prolog_msg(msg->data);
 		break;
 	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_slurm_rpc_complete_batch_script(msg, 0);
-		slurm_free_complete_batch_script_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
 		_slurm_rpc_job_step_create(msg);
-		slurm_free_job_step_create_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_STEP_INFO:
 		_slurm_rpc_job_step_get_info(msg);
-		slurm_free_job_step_info_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_WILL_RUN:
 		_slurm_rpc_job_will_run(msg);
-		slurm_free_job_desc_msg(msg->data);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
-		slurm_free_node_registration_status_msg(msg->data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 		_slurm_rpc_job_alloc_info(msg);
-		slurm_free_job_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO_LITE:
 		_slurm_rpc_job_alloc_info_lite(msg);
-		slurm_free_job_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_slurm_rpc_job_sbcast_cred(msg);
-		slurm_free_step_alloc_info_msg(msg->data);
 		break;
 	case REQUEST_PING:
 		_slurm_rpc_ping(msg);
-		/* No body to free */
 		break;
 	case REQUEST_RECONFIGURE:
 		_slurm_rpc_reconfigure_controller(msg);
-		/* No body to free */
 		break;
 	case REQUEST_CONTROL:
 		_slurm_rpc_shutdown_controller(msg);
-		/* No body to free */
 		break;
 	case REQUEST_TAKEOVER:
 		_slurm_rpc_takeover(msg);
-		/* No body to free */
 		break;
 	case REQUEST_SHUTDOWN:
 		_slurm_rpc_shutdown_controller(msg);
-		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		_slurm_rpc_shutdown_controller_immediate(msg);
-		/* No body to free */
 		break;
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg);
-		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_FRONT_END:
 		_slurm_rpc_update_front_end(msg);
-		slurm_free_update_front_end_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB:
 		_slurm_rpc_update_job(msg);
-		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_NODE:
 		_slurm_rpc_update_node(msg);
-		slurm_free_update_node_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_LAYOUT:
 		_slurm_rpc_update_layout(msg);
-		slurm_free_update_layout_msg(msg->data);
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
-		slurm_free_update_part_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_POWERCAP:
 		_slurm_rpc_update_powercap(msg);
-		slurm_free_powercap_info_msg(msg->data);
 		break;
 	case REQUEST_DELETE_PARTITION:
 		_slurm_rpc_delete_partition(msg);
-		slurm_free_delete_part_msg(msg->data);
 		break;
 	case REQUEST_CREATE_RESERVATION:
 		_slurm_rpc_resv_create(msg);
-		slurm_free_resv_desc_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_RESERVATION:
 		_slurm_rpc_resv_update(msg);
-		slurm_free_resv_desc_msg(msg->data);
 		break;
 	case REQUEST_DELETE_RESERVATION:
 		_slurm_rpc_resv_delete(msg);
-		slurm_free_resv_name_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_BLOCK:
 		_slurm_rpc_update_block(msg);
-		slurm_free_block_info(msg->data);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
-		slurm_free_resv_info_request_msg(msg->data);
 		break;
 	case REQUEST_LAYOUT_INFO:
 		_slurm_rpc_layout_show(msg);
-		slurm_free_layout_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "
@@ -461,127 +417,96 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		break;
 	case REQUEST_CHECKPOINT:
 		_slurm_rpc_checkpoint(msg);
-		slurm_free_checkpoint_msg(msg->data);
 		break;
 	case REQUEST_CHECKPOINT_COMP:
 		_slurm_rpc_checkpoint_comp(msg);
-		slurm_free_checkpoint_comp_msg(msg->data);
 		break;
 	case REQUEST_CHECKPOINT_TASK_COMP:
 		_slurm_rpc_checkpoint_task_comp(msg);
-		slurm_free_checkpoint_task_comp_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:
 		_slurm_rpc_suspend(msg);
-		slurm_free_suspend_msg(msg->data);
 		break;
 	case REQUEST_JOB_REQUEUE:
 		_slurm_rpc_requeue(msg);
-		slurm_free_requeue_msg(msg->data);
 		break;
 	case REQUEST_JOB_READY:
 		_slurm_rpc_job_ready(msg);
-		slurm_free_job_id_msg(msg->data);
 		break;
 	case REQUEST_BLOCK_INFO:
 		_slurm_rpc_block_info(msg);
-		slurm_free_block_info_request_msg(msg->data);
 		break;
 	case REQUEST_BURST_BUFFER_INFO:
 		_slurm_rpc_burst_buffer_info(msg);
-		/* No body to free */
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_slurm_rpc_step_complete(msg, 0);
-		slurm_free_step_complete_msg(msg->data);
 		break;
 	case REQUEST_STEP_LAYOUT:
 		_slurm_rpc_step_layout(msg);
-		slurm_free_job_step_id_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_slurm_rpc_step_update(msg);
-		slurm_free_update_step_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_SET:
 		_slurm_rpc_trigger_set(msg);
-		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_GET:
 		_slurm_rpc_trigger_get(msg);
-		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_CLEAR:
 		_slurm_rpc_trigger_clear(msg);
-		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_PULL:
 		_slurm_rpc_trigger_pull(msg);
-		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		_slurm_rpc_job_notify(msg);
-		slurm_free_job_notify_msg(msg->data);
 		break;
 	case REQUEST_SET_DEBUG_FLAGS:
 		_slurm_rpc_set_debug_flags(msg);
-		slurm_free_set_debug_flags_msg(msg->data);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 		_slurm_rpc_set_debug_level(msg);
-		slurm_free_set_debug_level_msg(msg->data);
 		break;
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		_slurm_rpc_set_schedlog_level(msg);
-		slurm_free_set_debug_level_msg(msg->data);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
 		_slurm_rpc_accounting_update_msg(msg);
-		slurm_free_accounting_update_msg(msg->data);
 		break;
 	case ACCOUNTING_FIRST_REG:
 		_slurm_rpc_accounting_first_reg(msg);
-		/* No body to free */
 		break;
 	case ACCOUNTING_REGISTER_CTLD:
 		_slurm_rpc_accounting_register_ctld(msg);
-		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_TOPO_INFO:
 		_slurm_rpc_get_topo(msg);
-		/* No body to free */
 		break;
 	case REQUEST_POWERCAP_INFO:
 		_slurm_rpc_get_powercap(msg);
-		/* No body to free */
 		break;
 	case REQUEST_SPANK_ENVIRONMENT:
 		_slurm_rpc_dump_spank(msg);
-		slurm_free_spank_env_request_msg(msg->data);
 		break;
 	case REQUEST_REBOOT_NODES:
 		_slurm_rpc_reboot_nodes(msg);
-		/* No body to free */
 		break;
 	case REQUEST_STATS_INFO:
 		_slurm_rpc_dump_stats(msg);
-		slurm_free_stats_info_request_msg(msg->data);
 		break;
 	case REQUEST_LICENSE_INFO:
 		_slurm_rpc_dump_licenses(msg);
-		slurm_free_license_info_request_msg(msg->data);
 		break;
-	 case REQUEST_KILL_JOB:
+	case REQUEST_KILL_JOB:
 		_slurm_rpc_kill_job2(msg);
-		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	case MESSAGE_COMPOSITE:
 		_slurm_rpc_composite_msg(msg);
-		slurm_free_composite_msg(msg->data);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
 		_slurm_rpc_assoc_mgr_info(msg);
-		slurm_free_assoc_mgr_info_request_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);

@@ -1078,7 +1078,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 	/* finally, add the listening port that we told the slurmctld about
-	   eariler in the step context creation phase */
+	 * eariler in the step context creation phase */
 	if (sls->slurmctld_socket_fd > -1) {
 		obj = eio_obj_create(sls->slurmctld_socket_fd,
 				     &message_socket_ops, (void *)sls);
@@ -1495,51 +1495,41 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	case RESPONSE_LAUNCH_TASKS:
 		debug2("received task launch");
 		_launch_handler(sls, msg);
-		slurm_free_launch_tasks_response_msg(msg->data);
 		break;
 	case MESSAGE_TASK_EXIT:
 		debug2("received task exit");
 		_exit_handler(sls, msg);
-		slurm_free_task_exit_msg(msg->data);
 		break;
 	case SRUN_PING:
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_EXEC:
 		_exec_prog(msg);
-		slurm_free_srun_exec_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
 		_job_complete_handler(sls, msg);
-		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
 		debug2("received job step timeout message");
 		_timeout_handler(sls, msg);
-		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_USER_MSG:
 		um = msg->data;
 		info("%s", um->msg);
-		slurm_free_srun_user_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
 		debug2("received srun node fail");
 		_node_fail_handler(sls, msg);
-		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case SRUN_STEP_MISSING:
 		debug2("received notice of missing job step");
 		_step_missing_handler(sls, msg);
-		slurm_free_srun_step_missing_msg(msg->data);
 		break;
 	case SRUN_STEP_SIGNAL:
 		debug2("received step signal RPC");
 		_step_step_signal(sls, msg);
-		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	case PMI_KVS_PUT_REQ:
 		debug2("PMI_KVS_PUT_REQ received");
@@ -1550,7 +1540,6 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		debug2("PMI_KVS_GET_REQ received");
 		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
-		slurm_free_get_kvs_msg((kvs_get_msg_t *) msg->data);
 		break;
 	case TASK_USER_MANAGED_IO_STREAM:
 		debug2("TASK_USER_MANAGED_IO_STREAM");
