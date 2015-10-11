@@ -98,9 +98,9 @@ int pmixp_usock_create_srv(char *path)
 	}
 	return fd;
 
-      err_bind:
+err_bind:
 	unlink(path);
-      err_fd:
+err_fd:
 	close(fd);
 	return ret;
 }

@@ -135,7 +135,7 @@ pmixp_namespace_t *pmixp_nspaces_find(const char *name)
 	}
 	/* Didn't found one! */
 	nsptr = NULL;
-      exit:
+exit:
 	return nsptr;
 }
 

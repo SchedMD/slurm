@@ -150,17 +150,17 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 	_was_initialized = 1;
 	return SLURM_SUCCESS;
 
-      err_job:
+err_job:
 	pmixp_libpmix_finalize();
-      err_lib:
+err_lib:
 	pmixp_dmdx_finalize();
-      err_dmdx:
+err_dmdx:
 	pmixp_state_finalize();
-      err_state:
+err_state:
 	pmixp_nspaces_finalize();
-	err_usock:
+err_usock:
 	xfree(path);
-      err_path:
+err_path:
 	pmixp_info_free();
 	return rc;
 }

@@ -72,7 +72,7 @@ static int _hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
 	hostlist_uniq(hl);
 	*hl_out = hl;
 	return SLURM_SUCCESS;
-      err_exit:
+err_exit:
 	hostlist_destroy(hl);
 	return SLURM_ERROR;
 }
@@ -290,7 +290,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	pthread_mutexattr_destroy(&attr);
 
 	return SLURM_SUCCESS;
-      err_exit:
+err_exit:
 	return SLURM_ERROR;
 }
 
@@ -406,7 +406,7 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 	/* increase number of total contributions */
 	coll->contrib_cntr++;
 
-	proceed:
+proceed:
 	/* unlock the structure */
 	pthread_mutex_unlock(&coll->lock);
 
@@ -544,7 +544,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 		set_buf_offset(coll->buf, 0);
 	}
 
-      unlock:
+unlock:
 	if (NULL != hostlist) {
 		xfree(hostlist);
 	}
@@ -595,7 +595,7 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 		/* report the timeout event */
 		PMIXP_ERROR("Collective timeout!");
 	}
-	unlock:
+unlock:
 	/* unlock the structure */
 	pthread_mutex_unlock(&coll->lock);
 }

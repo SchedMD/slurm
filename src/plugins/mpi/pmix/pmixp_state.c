@@ -113,7 +113,7 @@ static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
 			goto exit;
 		}
 	}
-      exit:
+exit:
 	list_iterator_destroy(it);
 	return ret;
 }

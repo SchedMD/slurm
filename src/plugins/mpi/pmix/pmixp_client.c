@@ -611,7 +611,7 @@ pmix_status_t fencenb_fn(const pmix_proc_t procs[], size_t nprocs,
 		goto error;
 	}
 	return PMIX_SUCCESS;
-      error:
+error:
 	cbfunc(status, NULL, 0, cbdata, NULL, NULL);
 	return status;
 }

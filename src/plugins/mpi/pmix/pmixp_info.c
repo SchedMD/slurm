@@ -268,7 +268,7 @@ static int _resources_set(char ***env)
 	_pmixp_job_info.task_map_packed = xstrdup(p);
 
 	return SLURM_SUCCESS;
-      err_exit:
+err_exit:
 	hostlist_destroy(_pmixp_job_info.job_hl);
 	hostlist_destroy(_pmixp_job_info.step_hl);
 	if (NULL != _pmixp_job_info.hostname) {
