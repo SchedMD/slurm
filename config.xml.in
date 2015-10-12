@@ -45,7 +45,6 @@ $Id$
   <rpmlist>
       <rpm>slurm</rpm>
       <rpm>slurm-devel</rpm>
-      <rpm>slurm-auth-authd</rpm>
       <rpm>slurm-auth-none</rpm>
       <rpm>slurm-auth-munge</rpm>
       <rpm>slurm-sched-wiki</rpm>

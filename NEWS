@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix case where the primary and backup dbds would both be performing rollup.
  -- Add an ack reply from slurmd to slurmstepd when job setup is done and the
     job is ready to be executed.
+ -- Removed support for authd. authd has not been developed and supported since
+    several years. 
 
 * Changes in Slurm 15.08.2
 ==========================

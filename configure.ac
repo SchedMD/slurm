@@ -397,15 +397,10 @@ else
 fi
 
 
-AUTHD_LIBS="-lauth -le"
 savedLIBS="$LIBS"
 savedCFLAGS="$CFLAGS"
-LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
+LIBS="$SSL_LIBS $LIBS"
 CFLAGS="$SSL_CPPFLAGS $CFLAGS"
-AC_CHECK_LIB(auth, auth_init_credentials, [have_authd=yes], [have_authd=no])
-AC_SUBST(AUTHD_LIBS)
-AC_SUBST(AUTHD_CFLAGS)
-AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
 LIBS="$savedLIBS"
 CFLAGS="$savedCFLAGS"
 
@@ -536,7 +531,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_profile/hdf5/sh5util/libsh5util_old/Makefile
 		 src/plugins/acct_gather_profile/none/Makefile
 		 src/plugins/auth/Makefile
-		 src/plugins/auth/authd/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
 		 src/plugins/burst_buffer/Makefile

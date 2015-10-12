@@ -9,7 +9,6 @@
 # --enable-salloc-background %_with_salloc_background 1 on a cray system alloc salloc to execute as a background process.
 # --prefix           %_prefix        path    install path for commands, libraries, etc.
 # --with aix         %_with_aix         1    build aix RPM
-# --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with blcr        %_with_blcr        1    require blcr support
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
@@ -40,7 +39,6 @@
 
 #  Options that are off by default (enable with --with <opt>)
 %slurm_without_opt auth_none
-%slurm_without_opt authd
 %slurm_without_opt bluegene
 %slurm_without_opt cray
 %slurm_without_opt cray_alps
@@ -264,16 +262,6 @@ Group: System Environment/Base
 Requires: slurm
 %description auth-none
 Slurm NULL authentication module
-%endif
-
-%if %{slurm_with authd}
-%package auth-authd
-Summary: Slurm auth implementation using Brent Chun's authd
-Group: System Environment/Base
-Requires: slurm authd
-%description auth-authd
-Slurm authentication module for Brent Chun's authd. Used to
-authenticate user originating an RPC
 %endif
 
 # This is named munge instead of auth-munge since there are 2 plugins in the
@@ -869,13 +857,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
 %{_libdir}/slurm/crypto_munge.so
-%endif
-#############################################################################
-
-%if %{slurm_with authd}
-%defattr(-,root,root)
-%files auth-authd
-%{_libdir}/slurm/auth_authd.so
 %endif
 #############################################################################
 

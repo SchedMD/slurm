@@ -84,9 +84,6 @@ build requirements are present. Build dependencies for various plugins
 and commands are denoted below:
 </p>
 <ul>
-<li> <b>Authd</b> The auth/authd plugin will be built and installed if
-		the libauth development library and its dependency libs are
-		installed.</li>
 <li> <b>BLCR</b> The <i>checkpoint/blcr</i> plugin will be built if the
 		<i>blcr</i> development library is present.</li>
 <li> <b>cgroup Task Affinity</b> The <i>task/cgroup</i> plugin will be built
@@ -285,7 +282,6 @@ users and groups must be configured on those hosts.</p>
 authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
 configuration file.  Currently available authentication types include
-<a href="http://www.theether.org/authd/">authd</a>,
 <a href="https://code.google.com/p/munge/">munge</a>, and none.
 The default authentication infrastructure is "munge", but this does
 require the installation of the MUNGE package.
@@ -293,7 +289,7 @@ An authentication type of "none" requires no infrastructure, but permits
 any user to execute any job as another user with limited programming effort.
 This may be fine for testing purposes, but certainly not for production use.
 <b>Configure some AuthType value other than "none" if you want any security.</b>
-We recommend the use of MUNGE unless you are experienced with authd.
+We recommend the use of MUNGE.
 If using MUNGE, all nodes in the cluster must be configured with the
 same <i>munge.key</i> file.
 The MUNGE daemon, <i>munged</i>, must also be started before Slurm daemons.</p>
@@ -569,13 +565,12 @@ message) between Slurm components can use a different security mechanism
 that is configurable.
 You must specify one &quot;auth&quot; plugin for this purpose using the
 <b>AuthType</b> configuration parameter.
-Currently, only three authentication plugins are supported:
-<b>auth/none</b>, <b>auth/authd</b>, and <b>auth/munge</b>.
-The auth/none plugin is built by default, but either
-Brent Chun's <a href="http://www.theether.org/authd/">authd</a>,
-or LLNL's <a href="https://code.google.com/p/munge/">MUNGE</a>
+Currently, only two authentication plugins are supported:
+<b>auth/none</b> and <b>auth/munge</b>.
+The auth/none plugin is built by default, but
+LLNL's <a href="https://code.google.com/p/munge/">MUNGE</a>
 should be installed in order to get properly authenticated communications.
-Unless you are experienced with authd, we recommend the use of MUNGE.
+We recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will
 determine which authentication plugins may be built.
 The configuration file specifies which of the available plugins will be utilized. </p>
@@ -796,7 +791,7 @@ has no guarantee of working.</p>
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
 If the Slurm daemon's are down for longer than the specified timeout during an
 upgrade, nodes may be marked DOWN and their jobs killed.
-You can either increase the timeout values during an upgrade or insure that the 
+You can either increase the timeout values during an upgrade or insure that the
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>

@@ -25,7 +25,6 @@ Trinity College Dublin, Ireland.
 <li><b>Authentication</b> plugins identifies the user originating
 a message.</li>
 <ul>
-<li><a href="http://www.theether.org/authd">authd</a></li>
 <li><b>MUNGE</b> (recommended)<br>
 In order to compile the "auth/munge" authentication plugin for Slurm,
 you will need to build and install MUNGE, available from
@@ -38,7 +37,7 @@ you will need to build and install MUNGE, available from
 <li><b>Authentication</b> tools for users that work with Slurm.</li>
 <ul>
 <li><a href="http://sourceforge.net/projects/auks/">AUKS</a><br>
-AUKS is an utility designed to ease Kerberos V credential support addition 
+AUKS is an utility designed to ease Kerberos V credential support addition
 to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
 It includes a plugin for the Slurm workload manager. AUKS is not used as
 an authentication plugin by the Slurm code itself, but provides a mechanism
@@ -96,7 +95,7 @@ is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
 <a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
 <a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
 and control of jobs to <href="http://slurm.schedmd.com">Slurm</a>.
-Using DRMAA, grid applications builders, portal developers and ISVs can use 
+Using DRMAA, grid applications builders, portal developers and ISVs can use
 the same high-level API to link their software with different cluster/resource
 management systems.<br><br>
 There is a variant of PSNC DRMAA providing support for Slurm's --cluster option
@@ -193,7 +192,7 @@ batch job scripts for Slurm which is available
 
 <li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
 Python/Pyrex module to interface with Slurm.
-There is also a Python module to expand and collect hostlist expressions 
+There is also a Python module to expand and collect hostlist expressions
 available <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
 here</a>.</li>
 
@@ -206,7 +205,7 @@ SQL Alchemy bindings for your slurmdbd database.</li>
 
 <li><a href="http://www.lua.org/">Lua</a> may be used to implement a
 Slurm process tracking plugin.
-The Lua script available in <i>contribs/lua/protrack.lua</i> 
+The Lua script available in <i>contribs/lua/protrack.lua</i>
 implements containers using CPUSETs.
 </ul><br>
 
@@ -246,7 +245,7 @@ Portable Hardware Locality (hwloc)</a></li>
 <li><b>Node Health Check</b><br>
 Probably the most comprehensive and lightweight health check tool out
 there is
-<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
 <li><b>Accounting Tools</b><br>

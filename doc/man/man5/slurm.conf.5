@@ -307,15 +307,11 @@ The default value is dependent upon the Munge installation, but is typically
 \fBAuthType\fR
 The authentication method for communications between Slurm
 components.
-Acceptable values at present include "auth/none", "auth/authd",
-and "auth/munge".
+Acceptable values at present include "auth/none" and "auth/munge".
 The default value is "auth/munge".
 "auth/none" includes the UID in each communication, but it is not verified.
 This may be fine for testing purposes, but
 \fBdo not use "auth/none" if you desire any security\fR.
-"auth/authd" indicates that Brett Chun's authd is to be used (see
-"http://www.theether.org/authd/" for more information. Note that
-authd is no longer actively supported).
 "auth/munge" indicates that LLNL's MUNGE is to be used
 (this is the best supported authentication mechanism for Slurm,
 see "http://munge.googlecode.com/" for more information).
@@ -2811,7 +2807,7 @@ use the least loaded nodes in selected partitions.
 .TP
 \fBCR_Pack_Nodes\fR
 If a job allocation contains more resources than will be used for launching
-tasks (e.g. if whole nodes are allocated to a job), then rather than 
+tasks (e.g. if whole nodes are allocated to a job), then rather than
 distributing a job's tasks evenly across it's allocated nodes, pack them as
 tightly as possible on thsee nodes.
 For example, consider a job allocation containing two \fBentire\fR nodes with

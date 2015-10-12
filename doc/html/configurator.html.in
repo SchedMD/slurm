@@ -455,8 +455,6 @@ Define the method used for authenticating communicating between Slurm components
 Select one value for <B>AuthType</B>:<BR>
 <input type="radio" name="auth_type" value="none"> <B>None</B>: No authentication.
 Not recommended for production use.<br>
-<input type="radio" name="auth_type" value="authd"> <B>Authd</B>: Brent Chun's
-<A href="http://www.theether.org/authd/">authd</A><BR>
 <input type="radio" name="auth_type" value="munge" checked> <B>Munge</B>: LLNL's
 <A href="http://home.gna.org/munge/">Munge</A><BR>
 <P>

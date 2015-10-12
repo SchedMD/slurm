@@ -16,7 +16,6 @@ abbreviation for the type of authentication. We recommend, for example:</p>
 <li><b>none</b>&#151;A plugin that implements the API without providing any actual
 authentication service. This may be used for testing purposes, but is not suitable for
 production use due to lack of effective security.</li>
-<li><b>authd</b>&#151;Brett Chun's Linux authd.</li>
 <li><b>munge</b>&#151;LLNL's Munge protocol (recommended plugin for production use).</li>
 </ul>
 
@@ -105,7 +104,7 @@ disposal. Slurm will not pass
 credentials to the API which have not been allocated by this function.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">argv</span> &nbsp;&nbsp;(input) plugin specific
-information, timeouts for authd<br>
+information.
 <span class="commandline">auth_info</span> &nbsp;&nbsp;(input) plugin specific
 identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a newly allocated credential
