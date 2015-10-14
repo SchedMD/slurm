@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
     when a cold-start (-c) happens to the slurmctld.
  -- Fix case where if the backup slurmdbd has existing connections when it gives
     up control that the it would be killed.
+ -- Fix task/cgroup affinity to work correctly with multi-socket
+    single-threaded cores.  A regression caused only 1 socket to be used on
+    this kind of node instead of all that were available.
 
 * Changes in Slurm 15.08.1
 ==========================
