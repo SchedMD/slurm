@@ -419,9 +419,12 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				xstrfmtcat(correct_query,
 					   " drop key %s,", db_key->name);
 				_destroy_db_key(db_key);
-			} else
+			} else {
+				xstrfmtcat(correct_query,
+					   " drop key %s,", new_key_name);
 				info("adding %s to table %s",
 				     new_key, table_name);
+			}
 
 			xstrfmtcat(query, " add %s,",  new_key);
 			xstrfmtcat(correct_query, " add %s,",  new_key);
