@@ -225,6 +225,7 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
+static bool _requeue_setup_env_fail(void);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -1343,7 +1344,7 @@ rwfail:
 
 /* load the user's environment on this machine if requested
  * SLURM_GET_USER_ENV environment variable is set */
-static void
+static int
 _get_user_env(batch_job_launch_msg_t *req)
 {
 	struct passwd pwd, *pwd_ptr = NULL;
@@ -1356,29 +1357,30 @@ _get_user_env(batch_job_launch_msg_t *req)
 			break;
 	}
 	if (i >= req->envc)
-		return;		/* don't need to load env */
+		return 0;		/* don't need to load env */
 
 	if (slurm_getpwuid_r(req->uid, &pwd, pwd_buf, PW_BUF_SIZE, &pwd_ptr)
 	    || (pwd_ptr == NULL)) {
 		error("%s: getpwuid_r(%u):%m", __func__, req->uid);
-	} else {
-		verbose("get env for user %s here", pwd.pw_name);
-		/* Permit up to 120 second delay before using cache file */
-		new_env = env_array_user_default(pwd.pw_name, 120, 0);
-		if (new_env) {
-			env_array_merge(&new_env,
-					(const char **) req->environment);
-			env_array_free(req->environment);
-			req->environment = new_env;
-			req->envc = envcount(new_env);
-		} else {
-			/* One option is to kill the job, but it's
-			 * probably better to try running with what
-			 * we have. */
-			error("Unable to get user's local environment, "
-			      "running only with passed environment");
-		}
+		return -1;
 	}
+	verbose("%s: get env for user %s here", __func__, pwd.pw_name);
+
+	/* Permit up to 120 second delay before using cache file */
+	new_env = env_array_user_default(pwd.pw_name, 120, 0);
+	if (! new_env) {
+		error("%s: Unable to get user's local environment, "
+		      "running only with passed environment", __func__);
+		return -1;
+	}
+
+	env_array_merge(&new_env,
+			(const char **) req->environment);
+	env_array_free(req->environment);
+	req->environment = new_env;
+	req->envc = envcount(new_env);
+
+	return 0;
 }
 
 /* The RPC currently contains a memory size limit, but we load the
@@ -1869,7 +1871,13 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		_wait_for_job_running_prolog(req->job_id);
 	}
 
-	_get_user_env(req);
+	if (_get_user_env(req) < 0) {
+		bool requeue = _requeue_setup_env_fail();
+		if (requeue) {
+			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
+			goto done;
+		}
+	}
 	_set_batch_job_limits(msg);
 
 	/* Since job could have been killed while the prolog was
@@ -1948,10 +1956,13 @@ done:
 	 *  If job prolog failed or we could not reply,
 	 *  initiate message to slurmctld with current state
 	 */
-	if ((rc == ESLURMD_PROLOG_FAILED) ||
-	    (rc == SLURM_COMMUNICATIONS_SEND_ERROR))
+	if ((rc == ESLURMD_PROLOG_FAILED)
+	    || (rc == SLURM_COMMUNICATIONS_SEND_ERROR)
+	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
 		send_registration_msg(rc, false);
+	}
 }
+
 /*
  * Send notification message to batch job
  */
@@ -6082,4 +6093,21 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
+}
+
+static bool
+_requeue_setup_env_fail(void)
+{
+	char *sched_params = slurm_get_sched_params();
+
+	if (! sched_params)
+		return false;
+
+	if (strstr(sched_params,"requeue_setup_env_fail")) {
+		xfree(sched_params);
+		return true;
+	}
+
+	xfree(sched_params);
+	return false;
 }

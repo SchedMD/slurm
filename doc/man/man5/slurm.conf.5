@@ -2581,6 +2581,11 @@ By default if the Prolog exits with a non-zero value the job is requeued in
 held state. By specifying this parameter the job will be requeued but not
 held so that the scheduler can dispatch it to another host.
 .TP
+\fBrequeue_setup_env_fail\fR
+By default if a job environment setup fails the job keeps running with
+a limited environment. By specifying this parameter the job will be
+requeued in held state and the execution node drained.
+.TP
 \fBsched_interval=#\fR
 How frequently, in seconds, the main scheduling loop will execute and test all
 pending jobs.

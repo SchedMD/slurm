@@ -1767,7 +1767,7 @@ static void _update_config_ptr(bitstr_t *bitmap,
  * RET SLURM_SUCCESS or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid )
+extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 {
 	int error_code = 0, node_inx;
 	struct node_record *node_ptr;
@@ -2171,11 +2171,18 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 						slurmctld_conf.slurm_user_id);
 		}
 		last_node_update = time (NULL);
-	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
+	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED
+		   || reg_msg->status == ESLURMD_SETUP_ENVIRONMENT_ERROR) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			error("Prolog failure on node %s, draining the node",
-			      reg_msg->node_name);
-			drain_nodes(reg_msg->node_name, "Prolog error",
+			char *reason;
+			error("\
+%s: Prolog or job env setup failure on node %s, draining the node",
+			      __func__, reg_msg->node_name);
+			if (reg_msg->status == ESLURMD_PROLOG_FAILED)
+				reason = "Prolog error";
+			else
+				reason = "Job env setup error";
+			drain_nodes(reg_msg->node_name, reason,
 				    slurm_get_slurm_user_id());
 			last_node_update = time (NULL);
 		}

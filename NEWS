@@ -27,6 +27,9 @@ documents those changes that are of interest to users and administrators.
     job is ready to be executed.
  -- Removed support for authd. authd has not been developed and supported since
     several years. 
+ -- Introduce a new parameter requeue_setup_env_fail in SchedulerParameters.
+    A job that fails to setup the environment will be requeued and the node
+    drained.   
 
 * Changes in Slurm 15.08.2
 ==========================
