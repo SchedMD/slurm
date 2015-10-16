@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     this kind of node instead of all that were available.
  -- MYSQL - Fix minor issue after an index was added to the database it would
     previously take 2 restarts of the slurmdbd to make it stick correctly.
+ -- Add hv_to_qos_cond() and qos_rec_to_hv() functions to the Perl interface.
 
 * Changes in Slurm 15.08.1
 ==========================
