@@ -16,6 +16,7 @@
 # --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
 # --with cray_network %_with_cray_network 1  build for a non-Cray system with a Cray network
 # --without debug    %_without_debug    1    don't compile with debugging symbols
+# --with pmix        %_with_pmix        1    build pmix support
 # --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
 # --with mysql       %_with_mysql       1    require mysql/mariadb support
@@ -46,6 +47,7 @@
 %slurm_without_opt sun_const
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
+%slurm_without_opt pmix
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -444,11 +446,25 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
+	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
+	--with-hdf5=no \
 	%{?with_cflags}
 
 %__make %{?_smp_mflags}
 
 %install
+
+
+# Strip out some dependencies
+
+cat > find-requires.sh <<'EOF'
+exec %{__find_requires} "$@" | egrep -v '^libpmix.so|libevent'
+EOF
+chmod +x find-requires.sh
+%global _use_internal_dependency_generator 0
+%global __find_requires %{_builddir}/%{buildsubdir}/find-requires.sh
+
+
 rm -rf "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" %__make install
 DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
@@ -945,6 +961,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_pmi2.so
 %endif
 %{_libdir}/slurm/mpi_none.so
+%if %{slurm_with pmix}
+%{_libdir}/slurm/mpi_pmix.so
+%endif
 %{_libdir}/slurm/power_none.so
 %{_libdir}/slurm/preempt_job_prio.so
 %{_libdir}/slurm/preempt_none.so
