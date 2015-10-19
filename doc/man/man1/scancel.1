@@ -27,9 +27,9 @@ Restrict the scancel operation to jobs under this charge account.
 
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
-Signal only the batch step, the shell script, neither any other step
+Signal only the batch step (the shell script), but not any other steps
 nor any children of the shell script. This is useful when the shell
-script has to trap the signal and  take some application defined action.
+script has to trap the signal and take some application defined action.
 This is not applicable if \fIstep_id\fR is specified.
 NOTE: The shell itself may exit upon receipt of many signals.
 You may avoid this by explicitly trap signals within the shell
