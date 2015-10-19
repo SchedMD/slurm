@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct backfill scheduling logic for job with INFINITE time limit.
  -- Fix issue on a scontrol reconfig all available GRES/TRES would be zeroed
     out.
+ -- Set SLURM_HINT environment variable when --hint is used with sbatch or
+    salloc.
 
 * Changes in Slurm 15.08.1
 ==========================
