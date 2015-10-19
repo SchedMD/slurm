@@ -2675,8 +2675,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 	}
 
 	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
-		debug("_signal_jobstep: couldn't read from the "
-		      "step %u.%u: %m",
+		debug("_signal_jobstep: couldn't read from the step %u.%u: %m",
 		      jobid, stepid);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
@@ -2731,8 +2730,8 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 		      __func__, sig, req->job_id, flag);
 		_kill_all_active_steps(req->job_id, sig, false);
 	} else {
-		debug("%s: sending signal %u to step %u.%u", __func__,
-		      req->signal, req->job_id, req->job_step_id);
+		debug("%s: sending signal %u to step %u.%u flag %u", __func__,
+		      sig, req->job_id, req->job_step_id, flag);
 		rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
 				     req->signal);
 	}
