@@ -56,11 +56,11 @@ one call to \fBslurm_spank_job_prolog\fR or \fBslurm_spank_job_epilog\fR
 and subsequent calls.
 .LP
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
-\fBuser_local_init\fR functions are called. In allocator context, only the
+\fBlocal_user_init\fR functions are called. In allocator context, only the
 \fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
 Similarly, in slurmd context, only the \fBslurmd_init\fR and \fBslurmd_exit\fR
 callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
-and \fRjob_epilog\fR callbacks are used.
+and \fBjob_epilog\fR callbacks are used.
 Plugins may query the context in which they are running with the
 \fBspank_context\fR and \fBspank_remote\fR functions defined in
 \fB<slurm/spank.h>\fR.
