@@ -213,6 +213,7 @@ Lead Slurm developers are:
 <li>Marcin Stolarek</li>
 <li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
+<li>Deric Sullivan (Government of Canada)</li>
 <li>Nina Suvanphim (Cray)</li>
 <br>
 <li>Prashanth Tamraparni (HP, India)</li>
@@ -241,6 +242,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 6 October 2015</p>
+<p style="text-align:center;">Last modified 19 October 2015</p>
 
 <!--#include virtual="footer.txt"-->

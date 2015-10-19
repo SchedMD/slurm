@@ -667,6 +667,10 @@ _cancel_job_id (void *ci)
 		flags |= KILL_JOB_BATCH;
 		job_type = "batch ";
 	}
+	if (opt.full) {
+		flags |= KILL_FULL_JOB;
+		job_type = "full ";
+	}
 	if (cancel_info->array_flag)
 		flags |= KILL_JOB_ARRAY;
 

@@ -1069,7 +1069,8 @@ next_task:
 			part_time_limit = YEAR_MINUTES;
 		else
 			part_time_limit = part_ptr->max_time;
-		if (job_ptr->time_limit == NO_VAL) {
+		if ((job_ptr->time_limit == NO_VAL) ||
+		    (job_ptr->time_limit == INFINITE)) {
 			time_limit = part_time_limit;
 			job_ptr->limit_set.time = 1;
 		} else {
@@ -1163,6 +1164,8 @@ next_task:
 			end_time = (time_limit * 60) + start_res;
 		else
 			end_time = (time_limit * 60) + now;
+		if (end_time < now)	/* Overflow 32-bits */
+			end_time = INFINITE;
 		resv_end = find_resv_end(start_res);
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);

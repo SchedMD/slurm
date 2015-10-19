@@ -970,6 +970,9 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 		}
 	}
 
+	if (!cpu_bind_type)
+		setenvf(NULL, "SLURM_HINT", "%s", arg);
+
 	xfree(buf);
 	return 0;
 }
