@@ -576,7 +576,7 @@ extern int gres_plugin_reconfig(bool *did_change)
 	int rc = SLURM_SUCCESS;
 	char *plugin_names = slurm_get_gres_plugins();
 	bool plugin_change;
-	int i;
+
 
 	if (did_change)
 		*did_change = false;
@@ -590,9 +590,6 @@ extern int gres_plugin_reconfig(bool *did_change)
 		plugin_change = true;
 	else
 		plugin_change = false;
-
-	for (i=0; i < gres_context_cnt; i++)
-		gres_context[i].total_cnt = 0;
 
 	slurm_mutex_unlock(&gres_context_lock);
 

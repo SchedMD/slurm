@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     See man page for details.
  -- Fix burst_buffer/cray support for interactive allocations >4GB.
  -- Correct backfill scheduling logic for job with INFINITE time limit.
+ -- Fix issue on a scontrol reconfig all available GRES/TRES would be zeroed
+    out.
 
 * Changes in Slurm 15.08.1
 ==========================
