@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     salloc.
  -- Add scancel -f/--full option to signal all steps including batch script and
     all of its child processes.
+ -- Fix salloc -I to accept an argument
 
 * Changes in Slurm 15.08.1
 ==========================
