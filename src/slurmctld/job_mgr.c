@@ -4336,9 +4336,10 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
-		} else if (job_ptr->batch_flag
-			   && (flags & KILL_STEPS_ONLY
-			       || flags & KILL_JOB_BATCH)) {
+		} else if (job_ptr->batch_flag &&
+			   ((flags & KILL_FULL_JOB)  ||
+			    (flags & KILL_JOB_BATCH) ||
+			    (flags & KILL_STEPS_ONLY))) {
 			_signal_batch_job(job_ptr, signal, flags);
 		} else if ((flags & KILL_JOB_BATCH) && !job_ptr->batch_flag) {
 			return ESLURM_JOB_SCRIPT_MISSING;
@@ -4705,12 +4706,10 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	kill_tasks_msg->job_id      = job_ptr->job_id;
 	kill_tasks_msg->job_step_id = NO_VAL;
 
-	/* Encode the KILL_JOB_BATCH|KILL_STEPS_ONLY flags for stepd to know if
-	 * has to signal only the batch script or only the steps.
-	 * The job was submitted using the --signal=B:sig
-	 * or without B sbatch option.
-	 */
-	if (flags == KILL_JOB_BATCH)
+	/* Encode the flags for slurm stepd to know what steps get signalled */
+	if (flags == KILL_FULL_JOB)
+		z = KILL_FULL_JOB << 24;
+	else if (flags == KILL_JOB_BATCH)
 		z = KILL_JOB_BATCH << 24;
 	else if (flags == KILL_STEPS_ONLY)
 		z = KILL_STEPS_ONLY << 24;

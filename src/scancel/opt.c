@@ -258,6 +258,7 @@ static void _opt_default(void)
 	xfree(launch_type);
 }
 #endif
+	opt.full	= false;
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
 	opt.job_list    = NULL;
@@ -297,12 +298,24 @@ static void _opt_env(void)
 		else if (strcasecmp(val, "F") == 0)
 			opt.batch       = false;
 		else
-			error ("Unrecognized SCANCEL_BATCH value: %s",
-				val);
+			error ("Unrecognized SCANCEL_BATCH value: %s", val);
 	}
 
 	if (getenv("SCANCEL_CTLD"))
 		opt.ctld = true;
+
+	if ( (val=getenv("SCANCEL_FULL")) ) {
+		if (strcasecmp(val, "true") == 0)
+			opt.full       = true;
+		else if (strcasecmp(val, "T") == 0)
+			opt.full       = true;
+		else if (strcasecmp(val, "false") == 0)
+			opt.full       = false;
+		else if (strcasecmp(val, "F") == 0)
+			opt.full       = false;
+		else
+			error ("Unrecognized SCANCEL_FULL value: %s", val);
+	}
 
 	if ( (val=getenv("SCANCEL_INTERACTIVE")) ) {
 		if (strcasecmp(val, "true") == 0)
@@ -368,6 +381,7 @@ static void _opt_args(int argc, char **argv)
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
 		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
+		{"full",	no_argument,       0, 'f'},
 		{"help",        no_argument,       0, OPT_LONG_HELP},
 		{"interactive", no_argument,       0, 'i'},
 		{"cluster",     required_argument, 0, 'M'},
@@ -389,7 +403,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while ((opt_char = getopt_long(argc, argv, "A:biM:n:p:Qq:R:s:t:u:vVw:",
+	while ((opt_char = getopt_long(argc, argv, "A:bfiM:n:p:Qq:R:s:t:u:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -406,6 +420,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case OPT_LONG_CTLD:
 			opt.ctld = true;
+			break;
+		case (int)'f':
+			opt.full = true;
 			break;
 		case (int)'i':
 			opt.interactive = true;
@@ -638,6 +655,7 @@ static void _opt_list(void)
 	info("account        : %s", opt.account);
 	info("batch          : %s", tf_(opt.batch));
 	info("ctld           : %s", tf_(opt.ctld));
+	info("full           : %s", tf_(opt.full));
 	info("interactive    : %s", tf_(opt.interactive));
 	info("job_name       : %s", opt.job_name);
 	info("nodelist       : %s", opt.nodelist);
@@ -682,7 +700,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-A account] [--batch] [--interactive] [-n job_name]\n");
+	printf("Usage: scancel [-A account] [--batch] [--full] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[_array_id][.step_id]]\n");
@@ -694,6 +712,7 @@ static void _help(void)
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      send request directly to slurmctld\n"); */
+	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             act only on jobs with this name\n");
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");

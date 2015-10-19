@@ -35,6 +35,7 @@ NOTE: The shell itself may exit upon receipt of many signals.
 You may avoid this by explicitly trap signals within the shell
 script (e.g. "trap <arg> <signals>"). See the shell documentation
 for details.
+Also see the \fB\-f\fR, \fB\-\-full\fR option.
 
 .TP
 \fB-\-ctld\fR
@@ -42,6 +43,13 @@ Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
 This is the default behavior on architectures using front end nodes (e.g.
 BlueGene and Cray computers) or when the \fB\-\-clusters\fR option is used.
+
+.TP
+\fB\-f\fR, \fB\-\-full\fR
+Signal all steps associated with the job including any batch step (the shell
+script plus all of its child processes).
+By default, signals other than SIGKILL are not sent to the batch step.
+Also see the \fB\-b\fR, \fB\-\-batch\fR option.
 
 .TP
 \fB\-\-help\fR
@@ -159,6 +167,9 @@ environment variables, along with their corresponding options, are listed below.
 \fBSCANCEL_CTLD\fR
 \fB\-\-ctld\fR
 .TP
+\fBSCANCEL_FULL\fR
+\fB\-f, \-\-full\fR
+.TP
 \fBSCANCEL_INTERACTIVE\fR
 \fB\-i\fR, \fB\-\-interactive\fR
 .TP
@@ -246,7 +257,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008-2011 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010\-2013 SchedMD LLC.
+Copyright (C) 2010\-2015 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

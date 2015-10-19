@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     out.
  -- Set SLURM_HINT environment variable when --hint is used with sbatch or
     salloc.
+ -- Add scancel -f/--full option to signal all steps including batch script and
+    all of its child processes.
 
 * Changes in Slurm 15.08.1
 ==========================

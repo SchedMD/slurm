@@ -2725,7 +2725,11 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	flag = req->signal >> 24;
 	sig  = req->signal & 0xfff;
 
-	if (flag & KILL_STEPS_ONLY) {
+	if (flag & KILL_FULL_JOB) {
+		debug("%s: sending signal %u to entire job %u flag %u",
+		      __func__, sig, req->job_id, flag);
+		_kill_all_active_steps(req->job_id, sig, true);
+	} else if (flag & KILL_STEPS_ONLY) {
 		debug("%s: sending signal %u to all steps job %u flag %u",
 		      __func__, sig, req->job_id, flag);
 		_kill_all_active_steps(req->job_id, sig, false);
