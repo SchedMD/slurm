@@ -322,8 +322,8 @@ test6.11   Validate scancel quiet option, no warning if job gone
 test6.12   Test scancel signal to batch script (--batch option)
 test6.13   Test routing all signals through slurmctld rather than slurmd
 	   (undocumented --ctld option).
-test6.14   Test scancel nodelist option (--nodelist or -w)
-
+test6.14   Test scancel nodelist option (--nodelist or -w).
+test6.15   Test scancel signal of full job including batch script (--full option).
 
 test7.#    Testing of other functionality.
 ==========================================
