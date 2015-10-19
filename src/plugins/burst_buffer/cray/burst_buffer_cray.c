@@ -147,6 +147,7 @@ typedef struct bb_sessions {
 typedef struct {
 	char   **args;
 	uint32_t job_id;
+	uint32_t timeout;
 	uint32_t user_id;
 } pre_run_args_t;
 
@@ -183,10 +184,14 @@ static void	_bb_free_configs(bb_configs_t *ents, int num_ent);
 static void	_bb_free_instances(bb_instances_t *ents, int num_ent);
 static void	_bb_free_pools(bb_pools_t *ents, int num_ent);
 static void	_bb_free_sessions(bb_sessions_t *ents, int num_ent);
-static bb_configs_t *_bb_get_configs(int *num_ent, bb_state_t *state_ptr);
-static bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr);
-static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr);
-static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr);
+static bb_configs_t *_bb_get_configs(int *num_ent, bb_state_t *state_ptr,
+				     uint32_t timeout);
+static bb_instances_t *_bb_get_instances(int *num_ent, bb_state_t *state_ptr,
+					 uint32_t timeout);
+static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr,
+				 uint32_t timeout);
+static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr,
+				       uint32_t timeout);
 static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
 static int	_create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			     bool job_ready);
@@ -978,13 +983,21 @@ static void _load_state(bool init_config)
 	int i, j;
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
+	uint32_t timeout;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.other_timeout)
+		timeout = bb_state.bb_config.other_timeout * 1000;
+	else
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	/*
 	 * Load the pools information
 	 */
-	pools = _bb_get_pools(&num_pools, &bb_state);
+	pools = _bb_get_pools(&num_pools, &bb_state, timeout);
 	if (pools == NULL) {
 		error("%s: failed to find DataWarp entries, what now?",
 		      __func__);
@@ -1034,12 +1047,12 @@ static void _load_state(bool init_config)
 	/*
 	 * Load the instances information
 	 */
-	instances = _bb_get_instances(&num_instances, &bb_state);
+	instances = _bb_get_instances(&num_instances, &bb_state, timeout);
 	if (instances == NULL) {
 		info("%s: failed to find DataWarp instances", __func__);
 		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
-	sessions = _bb_get_sessions(&num_sessions, &bb_state);
+	sessions = _bb_get_sessions(&num_sessions, &bb_state, timeout);
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	assoc_mgr_lock(&assoc_locks);
 	bb_state.last_load_time = time(NULL);
@@ -1098,7 +1111,7 @@ static void _load_state(bool init_config)
 	 * Load the configurations information
 	 * NOTE: This information is currently unused
 	 */
-	configs = _bb_get_configs(&num_configs, &bb_state);
+	configs = _bb_get_configs(&num_configs, &bb_state, timeout);
 	if (configs == NULL) {
 		info("%s: failed to find DataWarp configurations", __func__);
 		num_configs = 0;
@@ -1308,7 +1321,7 @@ static void *_start_stage_in(void *x)
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 60 * 60 * 1000;	/* 3600 secs == 1 hour */
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	op = "setup";
 	START_TIMER;
 	resp_msg = bb_run_script("setup",
@@ -1352,7 +1365,7 @@ static void *_start_stage_in(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 24 * 60 * 60 * 1000;	/* One day */
+			timeout = DEFAULT_STATE_IN_TIMEOUT * 1000;
 		xfree(resp_msg);
 		op = "dws_data_in";
 		START_TIMER;
@@ -1502,7 +1515,7 @@ static void *_start_stage_out(void *x)
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = 24 * 60 * 60 * 1000;	/* One day */
+		timeout = DEFAULT_STATE_OUT_TIMEOUT * 1000;
 	op = "dws_data_out";
 	START_TIMER;
 	resp_msg = bb_run_script("dws_data_out",
@@ -1527,7 +1540,7 @@ static void *_start_stage_out(void *x)
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = 60 * 60 * 1000;     /* 3600 secs == 1 hour */
+			timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 		op = "dws_post_run";
 		START_TIMER;
 		xfree(resp_msg);
@@ -1642,7 +1655,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args = xmalloc(sizeof(stage_args_t));
 	teardown_args->job_id  = job_id;
 	teardown_args->user_id = user_id;
-	teardown_args->timeout = 0;
+	teardown_args->timeout = bb_state.bb_config.other_timeout;
 	teardown_args->args1   = teardown_argv;
 
 	slurm_attr_init(&teardown_attr);
@@ -1683,7 +1696,7 @@ static void *_start_teardown(void *x)
 	if (teardown_args->timeout)
 		timeout = teardown_args->timeout * 1000;
 	else
-		timeout = 60 * 60 * 1000;	/* 3600 secs == 1 hour */
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	resp_msg = bb_run_script("teardown",
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
@@ -2209,7 +2222,7 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 {
 	char *access = NULL, *type = NULL;
 	char *end_ptr = NULL, *tok;
-	uint32_t buf_size = 0, swap_cnt = 0;
+	uint64_t buf_size = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->burst_buffer || (job_desc->burst_buffer[0] == '#'))
@@ -2251,7 +2264,7 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	if ((rc == SLURM_SUCCESS) && (swap_cnt || buf_size)) {
 		if (swap_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "#DW swap %uGiB\n", swap_cnt);
+				   "#DW swap %"PRIu64"GiB\n", swap_cnt);
 		}
 		if (buf_size) {
 			xstrfmtcat(job_desc->burst_buffer,
@@ -2644,6 +2657,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	int hash_inx, rc = SLURM_SUCCESS, status = 0;
 	char jobid_buf[32];
 	bb_job_t *bb_job;
+	uint32_t timeout;
 	DEF_TIMERS;
 
 	if ((job_ptr->burst_buffer == NULL) ||
@@ -2673,6 +2687,10 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
+	if (bb_state.bb_config.validate_timeout)
+		timeout = bb_state.bb_config.validate_timeout * 1000;
+	else
+		timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2696,7 +2714,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("job_process",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: job_process ran for %s", __func__, TIME_STR);
@@ -2729,7 +2747,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = bb_run_script("paths",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 3000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (DELTA_TIMER > 200000)	/* 0.2 secs */
 		info("%s: paths ran for %s", __func__, TIME_STR);
@@ -3066,6 +3084,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	pre_run_args = xmalloc(sizeof(pre_run_args_t));
 	pre_run_args->args    = pre_run_argv;
 	pre_run_args->job_id  = job_ptr->job_id;
+	pre_run_args->timeout = bb_state.bb_config.other_timeout;
 	pre_run_args->user_id = job_ptr->user_id;
 	if (job_ptr->details)	/* Prevent launch until "pre_run" completes */
 		job_ptr->details->prolog_running++;
@@ -3117,12 +3136,18 @@ static void *_start_pre_run(void *x)
 	int status = 0;
 	struct job_record *job_ptr;
 	bool run_kill_job = false;
+	uint32_t timeout;
 	DEF_TIMERS;
+
+	if (pre_run_args->timeout)
+		timeout = pre_run_args->timeout * 1000;
+	else
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 
 	START_TIMER;
 	resp_msg = bb_run_script("dws_pre_run",
 				 bb_state.bb_config.get_sys_state,
-				 pre_run_args->args, 10000, &status);
+				 pre_run_args->args, timeout, &status);
 	END_TIMER;
 
 	lock_slurmctld(job_write_lock);
@@ -3521,6 +3546,7 @@ static void *_create_persistent(void *x)
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int i, status = 0;
+	uint32_t timeout;
 	DEF_TIMERS;
 
 	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
@@ -3537,6 +3563,10 @@ static void *_create_persistent(void *x)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	xstrfmtcat(script_argv[10], "%s:%"PRIu64"",
 		   bb_state.bb_config.default_pool, create_args->size);
+	if (bb_state.bb_config.other_timeout)
+		timeout = bb_state.bb_config.other_timeout * 1000;
+	else
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	i = 11;
 	if (create_args->access) {
@@ -3553,7 +3583,7 @@ static void *_create_persistent(void *x)
 	START_TIMER;
 	resp_msg = bb_run_script("create_persistent",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
@@ -3632,7 +3662,8 @@ static void *_create_persistent(void *x)
 		} else {
 			bb_sessions_t *sessions;
 			int  num_sessions = 0;
-			sessions = _bb_get_sessions(&num_sessions, &bb_state);
+			sessions = _bb_get_sessions(&num_sessions, &bb_state,
+						    timeout);
 			for (i = 0; i < num_sessions; i++) {
 				if (xstrcmp(sessions[i].token,
 					    create_args->name))
@@ -3664,6 +3695,7 @@ static void *_destroy_persistent(void *x)
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int status = 0;
+	uint32_t timeout;
 	DEF_TIMERS;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
@@ -3674,6 +3706,10 @@ static void *_destroy_persistent(void *x)
 		     "'%s' found for job %u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
+	if (bb_state.bb_config.other_timeout)
+		timeout = bb_state.bb_config.other_timeout * 1000;
+	else
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
@@ -3690,7 +3726,7 @@ static void *_destroy_persistent(void *x)
 	START_TIMER;
 	resp_msg = bb_run_script("destroy_persistent",
 				 bb_state.bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
@@ -3757,7 +3793,7 @@ static void *_destroy_persistent(void *x)
  * Handle the JSON stream with configuration info (instance use details).
  */
 static bb_configs_t *
-_bb_get_configs(int *num_ent, bb_state_t *state_ptr)
+_bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 {
 	bb_configs_t *ents = NULL;
 	json_object *j;
@@ -3775,7 +3811,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_configurations",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
@@ -3820,7 +3856,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr)
  * Handle the JSON stream with instance info (resource reservations).
  */
 static bb_instances_t *
-_bb_get_instances(int *num_ent, bb_state_t *state_ptr)
+_bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 {
 	bb_instances_t *ents = NULL;
 	json_object *j;
@@ -3838,7 +3874,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_instances",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
@@ -3882,7 +3918,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr)
  * Handle the JSON stream with resource pool info (available resource type).
  */
 static bb_pools_t *
-_bb_get_pools(int *num_ent, bb_state_t *state_ptr)
+_bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 {
 	bb_pools_t *ents = NULL;
 	json_object *j;
@@ -3900,7 +3936,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("pools",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag) {
 		/* Only log pools data if different to limit volume of logs */
@@ -3942,7 +3978,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr)
 }
 
 static bb_sessions_t *
-_bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
+_bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 {
 	bb_sessions_t *ents = NULL;
 	json_object *j;
@@ -3960,7 +3996,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr)
 	START_TIMER;
 	resp_msg = bb_run_script("show_sessions",
 				 state_ptr->bb_config.get_sys_state,
-				 script_argv, 10000, &status);
+				 script_argv, timeout, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);

@@ -218,12 +218,14 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 		for (i = 0; i < config_ptr->gres_cnt; i++)
 			config_ptr->gres_ptr[i].avail_cnt = 0;
 	}
+	config_ptr->other_timeout = 0;
 	config_ptr->stage_in_timeout = 0;
 	config_ptr->stage_out_timeout = 0;
 	xfree(config_ptr->start_stage_in);
 	xfree(config_ptr->start_stage_out);
 	xfree(config_ptr->stop_stage_in);
 	xfree(config_ptr->stop_stage_out);
+	config_ptr->validate_timeout = 0;
 }
 
 /* Find a per-job burst buffer record for a specific job.
@@ -382,12 +384,14 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
 /*		{"Gres", S_P_STRING},	*/
+		{"OtherTimeout", S_P_UINT32},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
 		{"StartStageIn", S_P_STRING},
 		{"StartStageOut", S_P_STRING},
 		{"StopStageIn", S_P_STRING},
 		{"StopStageOut", S_P_STRING},
+		{"ValidateTimeout", S_P_UINT32},
 		{NULL}
 	};
 
@@ -490,10 +494,21 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(tmp);
 	}
 #endif
-	s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout, "StageInTimeout",
-		       bb_hashtbl);
-	s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
-		       "StageOutTimeout", bb_hashtbl);
+
+	if (!s_p_get_uint32(&state_ptr->bb_config.other_timeout,
+			    "OtherTimeout", bb_hashtbl)) {
+		state_ptr->bb_config.other_timeout = DEFAULT_OTHER_TIMEOUT;
+	}
+	if (!s_p_get_uint32(&state_ptr->bb_config.stage_in_timeout,
+			    "StageInTimeout", bb_hashtbl)) {
+		state_ptr->bb_config.stage_in_timeout =
+			DEFAULT_STATE_IN_TIMEOUT;
+	}
+	if (!s_p_get_uint32(&state_ptr->bb_config.stage_out_timeout,
+			    "StageOutTimeout", bb_hashtbl)) {
+		state_ptr->bb_config.stage_out_timeout =
+			DEFAULT_STATE_OUT_TIMEOUT;
+	}
 	s_p_get_string(&state_ptr->bb_config.start_stage_in, "StartStageIn",
 		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.start_stage_out, "StartStageOut",
@@ -502,6 +517,11 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		       bb_hashtbl);
 	s_p_get_string(&state_ptr->bb_config.stop_stage_out, "StopStageOut",
 		       bb_hashtbl);
+	if (!s_p_get_uint32(&state_ptr->bb_config.validate_timeout,
+			   "ValidateTimeout", bb_hashtbl)) {
+		state_ptr->bb_config.validate_timeout =
+			DEFAULT_VALIDATE_TIMEOUT;
+	}
 
 	s_p_hashtbl_destroy(bb_hashtbl);
 	xfree(bb_conf);
@@ -528,6 +548,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 			     state_ptr->bb_config.gres_ptr[i].name,
 			     state_ptr->bb_config.gres_ptr[i].avail_cnt);
 		}
+		info("%s: OtherTimeout:%u", __func__,
+		     state_ptr->bb_config.other_timeout);
 		info("%s: StageInTimeout:%u", __func__,
 		     state_ptr->bb_config.stage_in_timeout);
 		info("%s: StageOutTimeout:%u", __func__,
@@ -540,6 +562,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		     state_ptr->bb_config.stop_stage_in);
 		info("%s: StopStageOut:%s",  __func__,
 		     state_ptr->bb_config.stop_stage_out);
+		info("%s: ValidateTimeout:%u", __func__,
+		     state_ptr->bb_config.validate_timeout);
 	}
 }
 

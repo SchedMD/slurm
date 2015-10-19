@@ -78,6 +78,15 @@ documents those changes that are of interest to users and administrators.
     when a cold-start (-c) happens to the slurmctld.
  -- Fix case where if the backup slurmdbd has existing connections when it gives
     up control that the it would be killed.
+ -- Fix task/cgroup affinity to work correctly with multi-socket
+    single-threaded cores.  A regression caused only 1 socket to be used on
+    this kind of node instead of all that were available.
+ -- MYSQL - Fix minor issue after an index was added to the database it would
+    previously take 2 restarts of the slurmdbd to make it stick correctly.
+ -- Add hv_to_qos_cond() and qos_rec_to_hv() functions to the Perl interface.
+ -- Add new burst_buffer.conf parameters: ValidateTimeout and OtherTimeout.
+    See man page for details.
+ -- Fix burst_buffer/cray support for interactive allocations >4GB.
 
 * Changes in Slurm 15.08.1
 ==========================

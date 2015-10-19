@@ -653,7 +653,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 
 	uint32_t obj_idxs[3], nthreads, cps,
 		 tpc, i, j, sock_loop, ntskip, npdist;;
-	bool core_cyclic, core_fcyclic, sock_fcyclic, core_block;
+	bool core_cyclic, core_fcyclic, sock_fcyclic;
 
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						       HWLOC_OBJ_SOCKET);
@@ -666,8 +666,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 
 	sock_fcyclic = (job->task_dist & SLURM_DIST_SOCKMASK) ==
 		SLURM_DIST_SOCKCFULL ? true : false;
-	core_block = (job->task_dist & SLURM_DIST_COREMASK) ==
-		SLURM_DIST_COREBLOCK ? true : false;
 	core_cyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
 		SLURM_DIST_CORECYCLIC ? true : false;
 	core_fcyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
@@ -734,8 +732,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		/* fill one or multiple sockets using block mode, unless
 		   otherwise stated in the job->task_dist field */
 		while ((s_ix < nsockets) && (j < npdist)) {
-			if (c_ixc[s_ix] == cps)
-				c_ixc[s_ix] = 0;
 			obj = hwloc_get_obj_below_by_type(
 				topology, HWLOC_OBJ_SOCKET, s_ix,
 				hwtype, c_ixc[s_ix]);
@@ -792,9 +788,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		if (j == npdist) {
 			i++;
 			j = 0;
-			if (!core_block)
-				c_ixn[s_ix] = c_ixc[s_ix] + 1;
-			memcpy(c_ixc, c_ixn, nsockets * sizeof(uint32_t));
 			s_ix++; // no validity check, handled by the while
 			sock_loop = 0;
 		} else {

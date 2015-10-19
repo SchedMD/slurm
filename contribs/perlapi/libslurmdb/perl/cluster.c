@@ -12,6 +12,7 @@
 
 extern char* slurm_xstrdup(const char* str);
 extern int slurmdb_report_set_start_end_time(time_t* start, time_t* end);
+extern char *slurmdb_get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
 
 int
 av_to_cluster_grouping_list(AV* av, List grouping_list)
@@ -775,6 +776,58 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, user_cpu_usec,   uint32_t);
     STORE_FIELD(hv, rec, wckey,           charp);
     STORE_FIELD(hv, rec, wckeyid,         uint32_t);
+
+    return 0;
+}
+
+int
+hv_to_qos_cond(HV* hv, slurmdb_qos_cond_t* qos_cond)
+{
+    AV*    element_av;
+    char*  str = NULL;
+    int    i, elements = 0;
+
+    FETCH_FIELD(hv, qos_cond, preempt_mode, uint16_t, FALSE);
+    FETCH_FIELD(hv, qos_cond, with_deleted, uint16_t, FALSE);
+
+    FETCH_LIST_FIELD(hv, qos_cond, description_list);
+    FETCH_LIST_FIELD(hv, qos_cond, id_list);
+    FETCH_LIST_FIELD(hv, qos_cond, name_list);
+
+    return 0;
+}
+
+int
+qos_rec_to_hv(slurmdb_qos_rec_t* rec, HV* hv, List all_qos)
+{
+    char *preempt = NULL;
+    preempt = slurmdb_get_qos_complete_str_bitstr(all_qos, rec->preempt_bitstr);
+    hv_store_charp(hv, "preempt", preempt);
+
+    STORE_FIELD(hv, rec, description,         charp);
+    STORE_FIELD(hv, rec, id,                  uint32_t);
+    STORE_FIELD(hv, rec, flags,               uint32_t);
+    STORE_FIELD(hv, rec, grace_time,          uint32_t);
+    STORE_FIELD(hv, rec, grp_jobs,            uint32_t);
+    STORE_FIELD(hv, rec, grp_submit_jobs,     uint32_t);
+    STORE_FIELD(hv, rec, grp_tres,            charp);
+    STORE_FIELD(hv, rec, grp_tres_mins,       charp);
+    STORE_FIELD(hv, rec, grp_tres_run_mins,   charp);
+    STORE_FIELD(hv, rec, grp_wall,            uint32_t);
+    STORE_FIELD(hv, rec, max_jobs_pu,         uint32_t);
+    STORE_FIELD(hv, rec, max_submit_jobs_pu,  uint32_t);
+    STORE_FIELD(hv, rec, max_tres_mins_pj,    charp);
+    STORE_FIELD(hv, rec, max_tres_pj,         charp);
+    STORE_FIELD(hv, rec, max_tres_pn,         charp);
+    STORE_FIELD(hv, rec, max_tres_pu,         charp);
+    STORE_FIELD(hv, rec, max_tres_run_mins_pu,charp);
+    STORE_FIELD(hv, rec, max_wall_pj,         uint32_t);
+    STORE_FIELD(hv, rec, min_tres_pj,         charp);
+    STORE_FIELD(hv, rec, name,                charp);
+    STORE_FIELD(hv, rec, preempt_mode,        uint16_t);
+    STORE_FIELD(hv, rec, priority,            uint32_t);
+    STORE_FIELD(hv, rec, usage_factor,        double);
+    STORE_FIELD(hv, rec, usage_thres,         double);
 
     return 0;
 }
