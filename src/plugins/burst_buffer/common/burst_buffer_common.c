@@ -625,28 +625,55 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 	bb_config_t *config_ptr = &state_ptr->bb_config;
 	int i;
 
-	packstr(config_ptr->allow_users_str, buffer);
-	packstr(config_ptr->create_buffer,   buffer);
-	packstr(config_ptr->default_pool,    buffer);
-	packstr(config_ptr->deny_users_str,  buffer);
-	packstr(config_ptr->destroy_buffer,  buffer);
-	pack32(config_ptr->flags,            buffer);
-	packstr(config_ptr->get_sys_state,   buffer);
-	pack64(config_ptr->granularity,      buffer);
-	pack32(config_ptr->gres_cnt,         buffer);
-	for (i = 0; i < config_ptr->gres_cnt; i++) {
-		packstr(config_ptr->gres_ptr[i].name, buffer);
-		pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
-		pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		packstr(config_ptr->allow_users_str, buffer);
+		packstr(config_ptr->create_buffer,   buffer);
+		packstr(config_ptr->default_pool,    buffer);
+		packstr(config_ptr->deny_users_str,  buffer);
+		packstr(config_ptr->destroy_buffer,  buffer);
+		pack32(config_ptr->flags,            buffer);
+		packstr(config_ptr->get_sys_state,   buffer);
+		pack64(config_ptr->granularity,      buffer);
+		pack32(config_ptr->gres_cnt,         buffer);
+		for (i = 0; i < config_ptr->gres_cnt; i++) {
+			packstr(config_ptr->gres_ptr[i].name, buffer);
+			pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
+			pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
+		}
+		pack32(config_ptr->other_timeout,    buffer);
+		packstr(config_ptr->start_stage_in,  buffer);
+		packstr(config_ptr->start_stage_out, buffer);
+		packstr(config_ptr->stop_stage_in,   buffer);
+		packstr(config_ptr->stop_stage_out,  buffer);
+		pack32(config_ptr->stage_in_timeout, buffer);
+		pack32(config_ptr->stage_out_timeout,buffer);
+		pack64(state_ptr->total_space,       buffer);
+		pack64(state_ptr->used_space,        buffer);
+		pack32(config_ptr->validate_timeout, buffer);
+	} else {
+		packstr(config_ptr->allow_users_str, buffer);
+		packstr(config_ptr->create_buffer,   buffer);
+		packstr(config_ptr->default_pool,    buffer);
+		packstr(config_ptr->deny_users_str,  buffer);
+		packstr(config_ptr->destroy_buffer,  buffer);
+		pack32(config_ptr->flags,            buffer);
+		packstr(config_ptr->get_sys_state,   buffer);
+		pack64(config_ptr->granularity,      buffer);
+		pack32(config_ptr->gres_cnt,         buffer);
+		for (i = 0; i < config_ptr->gres_cnt; i++) {
+			packstr(config_ptr->gres_ptr[i].name, buffer);
+			pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
+			pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
+		}
+		packstr(config_ptr->start_stage_in,  buffer);
+		packstr(config_ptr->start_stage_out, buffer);
+		packstr(config_ptr->stop_stage_in,   buffer);
+		packstr(config_ptr->stop_stage_out,  buffer);
+		pack32(config_ptr->stage_in_timeout, buffer);
+		pack32(config_ptr->stage_out_timeout,buffer);
+		pack64(state_ptr->total_space,       buffer);
+		pack64(state_ptr->used_space,        buffer);
 	}
-	packstr(config_ptr->start_stage_in,  buffer);
-	packstr(config_ptr->start_stage_out, buffer);
-	packstr(config_ptr->stop_stage_in,   buffer);
-	packstr(config_ptr->stop_stage_out,  buffer);
-	pack32(config_ptr->stage_in_timeout, buffer);
-	pack32(config_ptr->stage_out_timeout,buffer);
-	pack64(state_ptr->total_space,       buffer);
-	pack64(state_ptr->used_space,        buffer);
 }
 
 /* Pack individual burst buffer usage records into a buffer (used for limits) */

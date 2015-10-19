@@ -4720,6 +4720,7 @@ typedef struct {
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;
 	char *name;			/* Plugin name */
+	uint32_t other_timeout;		/* Seconds or zero */
 	uint32_t stage_in_timeout;	/* Seconds or zero */
 	uint32_t stage_out_timeout;	/* Seconds or zero */
 	char *start_stage_in;
@@ -4728,6 +4729,7 @@ typedef struct {
 	char *stop_stage_out;
 	uint64_t total_space;		/* In bytes */
 	uint64_t used_space;		/* In bytes */
+	uint32_t validate_timeout;	/* Seconds or zero */
 
 	uint32_t  buffer_count;
 	burst_buffer_resv_t *burst_buffer_resv_ptr;

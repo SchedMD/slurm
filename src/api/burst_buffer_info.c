@@ -304,10 +304,20 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 
 	/****** Line ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"  StageInTimeout=%u StageOutTimeout=%u Flags=%s",
+		"  Flags=%s",
+		slurm_bb_flags2str(burst_buffer_ptr->flags));
+	xstrcat(out_buf, tmp_line);
+	if (!one_liner)
+		xstrcat(out_buf, "\n");
+
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		"  StageInTimeout=%u StageOutTimeout=%u ValidateTimeout=%u "
+		"OtherTimeout=%u",
 		burst_buffer_ptr->stage_in_timeout,
 		burst_buffer_ptr->stage_out_timeout,
-		slurm_bb_flags2str(burst_buffer_ptr->flags));
+		burst_buffer_ptr->validate_timeout,
+		burst_buffer_ptr->other_timeout);
 	xstrcat(out_buf, tmp_line);
 	if (!one_liner)
 		xstrcat(out_buf, "\n");
