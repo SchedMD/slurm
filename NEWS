@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Add hv_to_qos_cond() and qos_rec_to_hv() functions to the Perl interface.
  -- Add new burst_buffer.conf parameters: ValidateTimeout and OtherTimeout.
     See man page for details.
+ -- Fix burst_buffer/cray support for interactive allocations >4GB.
 
 * Changes in Slurm 15.08.1
 ==========================

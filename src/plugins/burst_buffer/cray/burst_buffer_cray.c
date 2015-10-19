@@ -2222,7 +2222,7 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 {
 	char *access = NULL, *type = NULL;
 	char *end_ptr = NULL, *tok;
-	uint32_t buf_size = 0, swap_cnt = 0;
+	uint64_t buf_size = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!job_desc->burst_buffer || (job_desc->burst_buffer[0] == '#'))
@@ -2264,7 +2264,7 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	if ((rc == SLURM_SUCCESS) && (swap_cnt || buf_size)) {
 		if (swap_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "#DW swap %uGiB\n", swap_cnt);
+				   "#DW swap %"PRIu64"GiB\n", swap_cnt);
 		}
 		if (buf_size) {
 			xstrfmtcat(job_desc->burst_buffer,
