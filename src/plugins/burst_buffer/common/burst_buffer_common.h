@@ -55,6 +55,12 @@
 /* Hash tables are used for both job burst buffer and user limit records */
 #define BB_HASH_SIZE	100
 
+/* Default operation timeouts */
+#define DEFAULT_OTHER_TIMEOUT		300	/* 5 minutes */
+#define DEFAULT_STATE_IN_TIMEOUT	86400	/* 1 day */
+#define DEFAULT_STATE_OUT_TIMEOUT	86400	/* 1 day */
+#define DEFAULT_VALIDATE_TIMEOUT	5	/* 5 seconds */
+
 /* Burst buffer configuration parameters */
 typedef struct bb_config {
 	uid_t   *allow_users;
@@ -71,14 +77,14 @@ typedef struct bb_config {
 					 * units are GB */
 	uint32_t gres_cnt;		/* Count of records in gres_ptr */
 	burst_buffer_gres_t *gres_ptr;	/* Type is defined in slurm.h */
-	uint32_t prio_boost_alloc;
-	uint32_t prio_boost_use;
+	uint32_t other_timeout;
 	uint32_t stage_in_timeout;
 	uint32_t stage_out_timeout;
 	char    *start_stage_in;
 	char    *start_stage_out;
 	char    *stop_stage_in;
 	char    *stop_stage_out;
+	uint32_t validate_timeout;
 } bb_config_t;
 
 /* Current burst buffer allocations (instances). Some of these will be job
