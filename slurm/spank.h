@@ -334,7 +334,7 @@ spank_err_t spank_option_getopt (spank_t spank, struct spank_option *opt,
  *   item is requested from outside a task context, ESPANK_BAD_ARG
  *   if invalid args are passed to spank_get_item or spank_get_item
  *   is called from an invalid context, and ESPANK_NOT_REMOTE
- *   if not called from slurmstepd context or spank_user_local_init.
+ *   if not called from slurmstepd context or spank_local_user_init.
  */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
 
