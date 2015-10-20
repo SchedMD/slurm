@@ -1650,9 +1650,10 @@ not recommended.
 preempts jobs by requeuing them (if possible) or canceling them.
 .TP
 \fBSUSPEND\fR
-preempts jobs by suspending them.
-A suspended job will resume execution once the high priority job
-preempting it completes.
+If PreemptType=preempt/partition_prio is configured then suspend and
+automatically resume the low priority jobs.
+If PreemptType=preempt/qos is configured, then the jobs sharing resources
+will always time slice rather than one job remaining suspended.
 The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
 (the gang scheduler module performs the job resume operation).
 .RE

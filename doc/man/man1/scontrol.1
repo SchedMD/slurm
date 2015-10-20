@@ -295,7 +295,7 @@ The job_list argument is a comma separated list of job IDs.
 A held job can be released using scontrol to reset its priority (e.g.
 "scontrol release <job_id>"). The command accepts the following option:
 .RS
-.TP 12
+.TP
 \fIState=SpecialExit\fP
 The "SpecialExit" keyword specifies that the job
 has to be put in a special state \fBJOB_SPECIAL_EXIT\fP.
@@ -303,10 +303,20 @@ The "scontrol show job" command will display the JobState as
 \fBSPECIAL_EXIT\fP, while the "squeue" command as \fBSE\fP.
 .RE
 
+.TP
 \fBresume\fP \fIjob_list\fP
 Resume a previously suspended job.
 The job_list argument is a comma separated list of job IDs.
 Also see \fBsuspend\fR.
+
+\fBNOTE:\fR A suspended job releases its CPUs for allocation to other jobs.
+Resuming a previously suspended job may result in multiple jobs being
+allocated the same CPUs, which could trigger gang scheduling with some
+configurations or severe degradation in performance with other configurations.
+Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
+job without releasing its CPUs for allocaiton to other jobs and would be a
+preferable mechanism in many cases.
+Use with caution.
 
 .TP
 \fBschedloglevel\fP \fILEVEL\fP
