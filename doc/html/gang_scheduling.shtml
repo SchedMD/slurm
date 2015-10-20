@@ -500,6 +500,14 @@ Note that <I>CR_Core_Memory</I> supports CPU binding, while
 <I>CR_CPU_Memory</I> does not.
 </P>
 
-<p style="text-align:center;">Last modified 24 February 2014</p>
+<P>Note that manually suspending a job (i.e. "scontrol suspend ...") releases
+its CPUs for allocation to other jobs.
+Resuming a previously suspended job may result in multiple jobs being
+allocated the same CPUs, which could trigger gang scheduling of jobs.
+Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
+job without releasing its CPUs for allocaiton to other jobs and would be a
+preferable mechanism in many cases.</P>
+
+<p style="text-align:center;">Last modified 20 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
