@@ -102,8 +102,12 @@ priority jobs.</LI>
 Checkpointed jobs are not automatically restarted.
 <LI>A value of <I>REQUEUE</I> will requeue (if possible) or kill low priority
 jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
-<LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low
-priority jobs. The <I>SUSPEND</I> option must be used with the <I>GANG</I>
+<LI>A value of <I>SUSPEND</I> will suspend and resume jobs.
+If PreemptType=preempt/partition_prio is configured then a value of
+<I>SUSPEND</I> will suspend and automatically resume the low priority jobs.
+If PreemptType=preempt/qos is configured, then the jobs sharing resources
+will always time slice rather than one job remaining suspended.
+The <I>SUSPEND</I> option must be used with the <I>GANG</I>
 option (e.g. "PreemptMode=SUSPEND,GANG").</LI>
 <LI>A value of <I>GANG</I> may be used with any of the above values and will
 execute a module responsible for resuming jobs previously suspended for either
@@ -429,6 +433,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 20 July 2015</p>
+<p style="text-align:center;">Last modified 20 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
