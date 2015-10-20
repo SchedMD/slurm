@@ -4357,7 +4357,7 @@ is very important.
 memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
 Sharing of resources is typically useful only when using gang scheduling
-(\fBPreemptMode=suspend\fR or \fBPreemptMode=kill\fR).
+(\fBPreemptMode=suspend,gang\fR).
 Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
 Note that a value of "YES" or "FORCE" can negatively impact performance
 for systems with many thousands of running jobs.
