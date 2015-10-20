@@ -866,7 +866,7 @@ Consider which value you want to be used for scheduling purposes.
 \fB0\fR
 Base scheduling decisions upon the actual configuration of each individual
 node except that the node's processor count in Slurm's configuration must
-match the actual hardware configuration if \fBSchedulerType=sched/gang\fR
+match the actual hardware configuration if \fBPreemptMode=suspend,gang\fR
 or \fBSelectType=select/cons_res\fR are configured (both of those plugins
 maintain resource allocation information using bitmaps for the cores in the
 system and must remain static, while the node's memory and disk space can
@@ -2668,9 +2668,6 @@ An exception is made for jobs that can not run due to partition constraints
 In that case, lower priority jobs can be initiated and not impact the higher
 priority job.
 .TP
-\fBsched/gang\fR
-Defunct option. See \fBPreemptType\fR and \fBPreemptMode\fR options.
-.TP
 \fBsched/hold\fR
 To hold all newly arriving jobs if a file "/etc/slurm.hold"
 exists otherwise use the built\-in FIFO scheduler
@@ -4393,7 +4390,7 @@ For example "Shared=FORCE:4" enables each node, socket or
 core to execute up to four jobs at once.
 Recommended only for BlueGene systems configured with
 small blocks or for systems running
-with gang scheduling (\fBSchedulerType=sched/gang\fR).
+with gang scheduling (\fBPreemptMode=suspend,gang\fR).
 NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
 of \fIShared=FORCE:1\fR will only permit one job per resources normally,
@@ -4411,7 +4408,7 @@ running or suspended state.
 For example "Shared=YES:4" enables each node, socket or
 core to execute up to four jobs at once.
 Recommended only for systems running with gang scheduling
-(\fBSchedulerType=sched/gang\fR).
+(\fBPreemptMode=suspend,gang\fR).
 .TP
 \fBNO\fR
 Selected resources are allocated to a single job. No resource will be
