@@ -64,7 +64,10 @@ documents those changes that are of interest to users and administrators.
     salloc.
  -- Add scancel -f/--full option to signal all steps including batch script and
     all of its child processes.
- -- Fix salloc -I to accept an argument
+ -- Fix salloc -I to accept an argument.
+ -- Avoid reporting more allocated CPUs than exist on a node. This can be
+    triggered by resuming a previosly suspended job, resulting in
+    oversubscription of CPUs.
 
 * Changes in Slurm 15.08.1
 ==========================
