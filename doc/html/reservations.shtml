@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Resource Reservation Guide</h1>
+<h1>Advanced Resource Reservation Guide</h1>
 
 <p>Slurm has the ability to reserve resources for jobs
 being executed by select users and/or select bank accounts.
@@ -422,7 +422,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 24 June 2015</p>
+<p style="text-align: center;">Last modified 20 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
 
