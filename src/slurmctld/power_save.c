@@ -487,12 +487,12 @@ static int _init_power_config(void)
 		debug("power_save module disabled, SuspendTime < 0");
 		return -1;
 	}
-	if (suspend_rate < 1) {
-		error("power_save module disabled, SuspendRate < 1");
+	if (suspend_rate < 0) {
+		error("power_save module disabled, SuspendRate < 0");
 		return -1;
 	}
-	if (resume_rate < 1) {
-		error("power_save module disabled, ResumeRate < 1");
+	if (resume_rate < 0) {
+		error("power_save module disabled, ResumeRate < 0");
 		return -1;
 	}
 	if (suspend_prog == NULL) {
@@ -609,7 +609,7 @@ extern void start_power_mgr(pthread_t *thread_id)
 }
 
 /*
- * init_power_save - Onitialize the power save module. Started as a
+ * init_power_save - Initialize the power save module. Started as a
  *	pthread. Terminates automatically at slurmctld shutdown time.
  *	Input and output are unused.
  */
