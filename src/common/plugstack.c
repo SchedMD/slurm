@@ -2239,17 +2239,6 @@ spank_err_t spank_set_item(spank_t spank, spank_item_t item, ...)
 
 		task->argv[task->argc] = NULL;
 		break;
-
-	case S_CHECKPOINT_DIR:
-
-		//although it is correctly executed, the change won0t be reflected in
-		//the remote environment variable. I assume that I should be modifying
-		//some other stucture and not this one...
-		/*
-		p2str = va_arg(vargs, char  **);
-		strcpy(slurmd_job->ckpt_dir, *p2str);
-		break;
-		*/
 	default:
 		rc = ESPANK_ERROR;
 		break;
