@@ -123,7 +123,8 @@ extern spank_f slurm_spank_exit;
 
 
 /*  Items which may be obtained from the spank handle using the
- *   spank_get_item () call. The expected list of variable arguments may
+ *   spank_get_item () call or modified using the spank_get_item () call.
+ *  The expected list of variable arguments may
  *   be found in the comments below.
  *
  *  For example, S_JOB_NCPUS takes (uint16_t *), a pointer to uint16_t, so
@@ -170,7 +171,9 @@ enum spank_item {
     S_JOB_ALLOC_MEM,         /* Job allocated memory in MB (uint32_t *)      */
     S_STEP_ALLOC_CORES,      /* Step alloc'd cores in list format  (char **) */
     S_STEP_ALLOC_MEM,        /* Step alloc'd memory in MB (uint32_t *)       */
-    S_SLURM_RESTART_COUNT    /* Job restart count (uint32_t *)               */
+    S_SLURM_RESTART_COUNT,    /* Job restart count (uint32_t *)               */
+    S_CHECKPOINT_DIR          /* Slurm checkpoint dir (char **)               */
+
 };
 
 typedef enum spank_item spank_item_t;
@@ -337,6 +340,14 @@ spank_err_t spank_option_getopt (spank_t spank, struct spank_option *opt,
  *   if not called from slurmstepd context or spank_user_local_init.
  */
 spank_err_t spank_get_item (spank_t spank, spank_item_t item, ...);
+
+
+/*  Set  the value for the current job or task item specified.
+ *  Returns ESPANK_SUCCESS on success, ESPANK_ERROR if not.
+ * Currently it only allows to modify "S_JOB_ENV".
+ */
+spank_err_t spank_set_item (spank_t spank, spank_item_t item, ...);
+
 
 /*  Place a copy of environment variable "var" from the job's environment
  *   into buffer "buf" of size "len."
