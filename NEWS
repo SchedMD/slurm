@@ -70,6 +70,9 @@ documents those changes that are of interest to users and administrators.
     oversubscription of CPUs.
  -- Fix the pty window manager in slurmstepd not to retry IO operation with
     srun if it read EOF from the connection with it.
+ -- sbatch --ntasks option to take precedence over --ntasks-per-node plus node
+    count, as documented. Set SLURM_NTASKS/SLURM_NPROCS environment variables
+    accordingly.
 
 * Changes in Slurm 15.08.1
 ==========================
