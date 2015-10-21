@@ -843,12 +843,13 @@ static void *_window_manager(void *arg)
 			break;
 		}
 		len = slurm_read_stream(win_info->pty_fd, buf, 4);
-		if ((len == -1) &&
-		    ((errno == EINTR) || (errno == EAGAIN) ||
-		     (errno == SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT)))
+		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (len < 4) {
-			error("read window size error: %m");
+			if (errno != SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT) {
+				error("%s: read window size error: %m",
+				      __func__);
+			}
 			return NULL;
 		}
 		memcpy(&winsz.cols, buf, 2);
