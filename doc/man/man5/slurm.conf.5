@@ -1192,11 +1192,13 @@ By default, any existing file is truncated.
 
 .TP
 \fBJobRequeue\fR
-This option controls what to do by default after a node failure.
-If \fBJobRequeue\fR is set to a value of 1, then any batch job running
-on the failed node will be requeued for execution on different nodes.
-If \fBJobRequeue\fR is set to a value of 0, then any job running
-on the failed node will be terminated.
+This option controls the default ability for batch jobs to be requeued.
+Jobs may be requeued explicitly by a system administrator, after node
+failure, or upon preemption by a higher priority job.
+If \fBJobRequeue\fR is set to a value of 1, then batch job may be requeued
+unless explicitly disabled by the user.
+If \fBJobRequeue\fR is set to a value of 0, then batch job will not be requeued
+unless explicitly enabled by the user.
 Use the \fBsbatch\fR \fI\-\-no\-requeue\fR or \fI\-\-requeue\fR
 option to change the default behavior for individual jobs.
 The default value is 1.

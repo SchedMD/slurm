@@ -1068,9 +1068,10 @@ ignored if \fISchedulerType=sched/wiki\fR or
 
 .TP
 \fB\-\-no\-requeue\fR
-Specifies that the batch job should not be requeued after node failure.
+Specifies that the batch job should never be requeued under any circumstances.
 Setting this option will prevent system administrators from being able
-to restart the job (for example, after a scheduled downtime).
+to restart the job (for example, after a scheduled downtime), recover from
+a node failure, or be requeued upon preemption by a higher priority job.
 When a job is requeued, the batch script is initiated from its beginning.
 Also see the \fB\-\-requeue\fR option.
 The \fIJobRequeue\fR configuration parameter controls the default
@@ -1275,7 +1276,9 @@ silently ignored.
 
 .TP
 \fB\-\-requeue\fR
-Specifies that the batch job should be requeued after node failure.
+Specifies that the batch job should eligible to being requeue.
+The job may be requeued explicitly by a system administrator, after node
+failure, or upon preemption by a higher priority job.
 When a job is requeued, the batch script is initiated from its beginning.
 Also see the \fB\-\-no\-requeue\fR option.
 The \fIJobRequeue\fR configuration parameter controls the default
