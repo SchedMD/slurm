@@ -80,9 +80,9 @@ make_bash_script $file_in "
 $bin_sleep 5
 ulimit -u `ulimit -u -H`
 for ((inx=0; inx < $task_cnt; inx++)) ; do
-$srun -N1 -n1 --mem-per-cpu=$mem_per_step $bin_sleep $sleep_time &
+$srun -N1 -n1 --mem=0 $bin_sleep $sleep_time &
 done
-$srun -N1 -n1 --mem-per-cpu=$mem_per_step $bin_sleep $sleep_time
+$srun -N1 -n1 --mem=0 $bin_sleep $sleep_time
 "
 
 #
@@ -137,7 +137,7 @@ expect {
 }
 #
 # There could be hundreds of job steps, we don't want to see
-# the details, but want to make sure that we did start a bunch
+# the details, but want to make sure that we did start many
 #
 # Determine if this is AIX (for task count, federation switch
 # prevents each node from running more than 16 tasks)
@@ -148,16 +148,34 @@ if {[test_aix]} {
 	set desired_tasks [expr $task_cnt * 2 / 3]
 }
 
-set matches 0
-while { $matches < $desired_tasks } {
-	log_user 0
-	set matches 0
-	set timeout 60
+set job_count  0
+set step_count 0
+set timeout    60
+log_user 0
+while { 1 } {
 	exec $bin_sleep 3
-	spawn $squeue --steps --user $user_name
+
+	set job_count 0
+	spawn $squeue --state R --name $job_name --user $user_name
+	expect {
+		-re "$job_name" {
+			incr job_count
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set step_count 0
+	spawn $squeue --steps --name $job_name --user $user_name
 	expect {
 		-re "sleep" {
-			incr matches
+			incr step_count
 			exp_continue
 		}
 		-re "error:" {
@@ -166,28 +184,34 @@ while { $matches < $desired_tasks } {
 			exp_continue
 		}
 		timeout {
-			break
+			send_user "\nFAILURE: squeue not responding\n"
+			set exit_code 1
 		}
 		eof {
 			wait
-			break
 		}
 	}
-	if {$matches == 0} {
+	if {$step_count >= $desired_tasks || $step_count == 0} {
 		break
 	}
+	set scaled_task_cnt [expr $job_count * $desired_tasks]
+	if {$step_count >= $scaled_task_cnt} {
+		send_user "\nOnly started $job_count jobs, reducing step count target to $scaled_task_cnt\n"
+		set desired_tasks $scaled_task_cnt
+	}
+	
 }
 if {[test_aix]} {
 	sleep 5
 }
 
 log_user 1
-if {$matches < $desired_tasks} {
-	send_user "\nFAILURE: only started $matches job steps\n"
+if {$step_count < $desired_tasks} {
+	send_user "\nFAILURE: only started $job_count jobs and $step_count steps\n"
 	send_user "  We expected at least $desired_tasks and possibly hundreds\n"
 	set exit_code 1
 } else {
-	send_user "\nwe found $matches job steps\n"
+	send_user "\nWe found $job_count jobs and $step_count steps\n"
 }
 spawn $scancel --quiet --user $user_name
 expect {
