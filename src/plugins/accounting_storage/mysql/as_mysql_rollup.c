@@ -968,8 +968,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	while (curr_start < end) {
 		int last_id = -1;
 		int last_wckeyid = -1;
-		int seconds = 0;
-		int tot_time = 0;
 
 		if (debug_flags & DEBUG_FLAG_DB_USAGE)
 			DB_DEBUG(mysql_conn->conn,
@@ -1032,7 +1030,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_start = slurm_atoul(row[RESV_REQ_START]);
 			time_t row_end = slurm_atoul(row[RESV_REQ_END]);
 			uint32_t row_flags = slurm_atoul(row[RESV_REQ_FLAGS]);
-			int seconds;
+			int resv_seconds;
 			if (row_start < curr_start)
 				row_start = curr_start;
 
@@ -1042,7 +1040,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			/* Don't worry about it if the time is less
 			 * than 1 second.
 			 */
-			if ((seconds = (row_end - row_start)) < 1)
+			if ((resv_seconds = (row_end - row_start)) < 1)
 				continue;
 
 			r_usage = xmalloc(sizeof(local_resv_usage_t));
@@ -1055,7 +1053,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				list_create(_destroy_local_tres_usage);
 
 			_add_tres_2_list(r_usage->loc_tres,
-					 row[RESV_REQ_TRES], seconds);
+					 row[RESV_REQ_TRES], resv_seconds);
 
 			r_usage->start = row_start;
 			r_usage->end = row_end;
@@ -1132,7 +1130,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			List loc_tres = NULL;
 			uint64_t row_energy = 0;
 			int loc_seconds = 0;
-			seconds = 0;
+			int seconds = 0;
 
 			if (row[JOB_REQ_ENERGY])
 				row_energy = slurm_atoull(row[JOB_REQ_ENERGY]);
@@ -1175,6 +1173,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				}
 				xfree(query);
 				while ((row2 = mysql_fetch_row(result2))) {
+					int tot_time = 0;
 					time_t local_start = slurm_atoul(
 						row2[SUSPEND_REQ_START]);
 					time_t local_end = slurm_atoul(
@@ -1432,6 +1431,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_tres->time_alloc;
 				char *assoc = NULL;
 				ListIterator tmp_itr = NULL;
+				int resv_unused_secs;
 
 				if (idle <= 0)
 					break; /* since this will be
@@ -1440,11 +1440,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/* now divide that time by the number of
 				   associations in the reservation and add
 				   them to each association */
-				seconds = idle /
+				resv_unused_secs = idle /
 					list_count(r_usage->local_assocs);
 				/* info("resv %d got %d seconds for TRES %u " */
 				/*      "for %d assocs", */
-				/*      r_usage->id, seconds, loc_tres->id, */
+				/*      r_usage->id, resv_unused_secs, */
+				/*      loc_tres->id, */
 				/*      list_count(r_usage->local_assocs)); */
 				tmp_itr = list_iterator_create(
 					r_usage->local_assocs);
@@ -1467,7 +1468,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					_add_time_tres(a_usage->loc_tres,
 						       TIME_ALLOC, loc_tres->id,
-						       seconds, 0);
+						       resv_unused_secs, 0);
 				}
 				list_iterator_destroy(tmp_itr);
 			}

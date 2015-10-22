@@ -2340,6 +2340,11 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (opt.ntasks_set && (opt.ntasks > 0)) {
+		setenvf(NULL, "SLURM_NPROCS", "%d", opt.ntasks);
+		setenvf(NULL, "SLURM_NTASKS", "%d", opt.ntasks);
+	}
+
 	_fullpath(&opt.efname, opt.cwd);
 	_fullpath(&opt.ifname, opt.cwd);
 	_fullpath(&opt.ofname, opt.cwd);
