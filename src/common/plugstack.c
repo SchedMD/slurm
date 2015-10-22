@@ -2213,16 +2213,16 @@ spank_err_t spank_set_item(spank_t spank, spank_item_t item, ...)
 		//This modifies both spank->job and spank->task.
 		if (spank->stack->type == S_TYPE_LOCAL) {
 			launcher_job->argc = *p2int;
-			launcher_job->argv = malloc (sizeof(char*) * (launcher_job->argc + 1));
+			launcher_job->argv = xmalloc (sizeof(char*) * (launcher_job->argc + 1));
 			for (count = 0; count < launcher_job->argc; count ++){
-				launcher_job->argv[count] = malloc( strlen (*p2argv[count])+1 );
+				launcher_job->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
 				strcpy(launcher_job->argv[count], *p2argv[count]);
 				}
 		} else if (slurmd_job) {
 			slurmd_job->argc = *p2int;
-			slurmd_job->argv = malloc (sizeof(char*) * (slurmd_job->argc + 1));
+			slurmd_job->argv = xmalloc (sizeof(char*) * (slurmd_job->argc + 1));
 			for (count = 0; count < slurmd_job->argc; count ++){
-				slurmd_job->argv[count] = malloc( strlen (*p2argv[count])+1 );
+				slurmd_job->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
 				strcpy(slurmd_job->argv[count], *p2argv[count]);
 				}
 		} else {
@@ -2231,9 +2231,9 @@ spank_err_t spank_set_item(spank_t spank, spank_item_t item, ...)
 
 		task = spank->task;
 		task->argc = *p2int;
-		task->argv = malloc (sizeof(char*) * (task->argc + 1));
+		task->argv = xmalloc (sizeof(char*) * (task->argc + 1));
 		for (count = 0; count < task->argc; count ++){
-			task->argv[count] = malloc( strlen (*p2argv[count])+1 );
+			task->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
 			strcpy(task->argv[count], *p2argv[count]);
 			}
 
