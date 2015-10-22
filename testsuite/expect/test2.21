@@ -96,7 +96,7 @@ proc requeue_job { id } {
 #
 # Run a job that will complete
 #
-spawn $sbatch -N1 -o /dev/null -e /dev/null -t1 $complete_script
+spawn $sbatch -N1 -o /dev/null -e /dev/null -t1 --requeue $complete_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -131,7 +131,7 @@ cancel_job $job_id
 # Run a job that will fail
 #
 set job_id 0
-spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 $fail_script
+spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 --requeue $fail_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
