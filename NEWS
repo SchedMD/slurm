@@ -104,6 +104,8 @@ documents those changes that are of interest to users and administrators.
  -- sbatch --ntasks option to take precedence over --ntasks-per-node plus node
     count, as documented. Set SLURM_NTASKS/SLURM_NPROCS environment variables
     accordingly.
+ -- MYSQL - Make sure suspended time is only subtracted from the CPU TRES
+    as it is the only TRES that can be given to another job while suspended.
 
 * Changes in Slurm 15.08.1
 ==========================

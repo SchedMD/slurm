@@ -47,6 +47,9 @@ if {[test_front_end] != 0} {
 } elseif {[slurmd_user_root] == 0} {
 	send_user "\nWARNING: This test requires that the SlurmdUser be root\n"
 	exit 0
+} elseif {[get_node_cnt] < 2} {
+	send_user "\nWARNING: This test requires that the configuration has at least 2 nodes.\n"
+	exit 0
 }
 
 spawn $bin_bash -c "exec $sinfo -tidle -h -o%n | head -n2 |tr \'\n\' ' ' "
@@ -65,8 +68,8 @@ expect {
 	}
 }
 if {![string compare $node1 ""] || ![string compare $node2 ""]} {
-	send_user "\nFAILURE: did not get usable hostlist\n"
-	exit 1
+	send_user "\nWARNING: Did not find at least 2 idle nodes\n"
+	exit 0
 }
 
 set hostlist "$node1,$node2"
