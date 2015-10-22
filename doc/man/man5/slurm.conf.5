@@ -2448,7 +2448,7 @@ Higher values result in more overhead and less responsiveness.
 The default value is 1440 minutes (one day).
 A value at least as long as the highest allowed time limit is generally
 advisable to prevent job starvation.
-In order limit the amount of data managed by the backfill scheduler,
+In order to limit the amount of data managed by the backfill scheduler,
 if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
