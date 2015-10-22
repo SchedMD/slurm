@@ -60,8 +60,7 @@ if {$available < $node_cnt} {
 	send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
 	exit $exit_code
 }
-#For this test set KillOnBadExit to the default value 0 otherwise the
-#tes will fail giving a false positive.
+
 # NOTE: The second sleep command in task 1 is to deal with a possible race
 # condition in which the first sleep command is killed and the shell starts the
 # second command before the shell itself is killed
