@@ -47,6 +47,9 @@ if {[test_launch_poe]} {
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with select/serial systems\n"
 	exit 0
+} elseif {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
+	exit 0
 }
 
 #
