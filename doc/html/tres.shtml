@@ -63,18 +63,27 @@ The default values are 0.</p>
 <i>TRES=Weight</i> pairs.
 </p>
 
-<p>Any TRES Type is available for billing. Note that the memory is weighted per
-gigabyte.
+<p>Any TRES Type is available for billing. Note that the base unit for memory
+and burst buffers is megabytes.
 </p>
 
 <p>By default the billing of TRES is calculated as the sum of all TRES types
-multiplied by their corresponding billing weight.  For example, when a job is
-allocated 1 CPU and 8 GB of memory on a partition configured with
+multiplied by their corresponding billing weight.
 </p>
 
-<pre>TRESBillingWeights="CPU=1.0,Mem=0.25,GRES/gpu=2.0"</pre>
+<p>The weighted amount of a resource can be adjusted by adding a suffix of
+K,M,G,T or P after the billing weight. For example, a memory weight of "mem=.25"
+on a job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight
+of "mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
+</p>
 
-<p>, the billable TRES will be:
+<p>When a job is allocated 1 CPU and 8 GB of memory on a partition configured
+with:
+</p>
+
+<pre>TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0"</pre>
+
+<p>the billable TRES will be:
 </p>
 <pre>(1*1.0) + (8*0.25) + (0*2.0) = 3.0</pre>
 

@@ -127,7 +127,7 @@ proc check_state { job } {
 	}
 }
 
-spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null $script
+spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null --requeue $script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

@@ -784,16 +784,11 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		char  *tres_name   = assoc_mgr_tres_array[i]->name;
 		double tres_value  = job_ptr->tres_alloc_cnt[i];
 
-		if (!strcasecmp(tres_type, "mem")) {
-			is_mem = true;
-			tres_weight /= 1024; /* mem is weighted by gb. */
-		}
-
 		if (priority_debug)
-			info("BillingWeight: %s%s%s = %f * %f", tres_type,
+			info("BillingWeight: %s%s%s = %f * %f = %f", tres_type,
 			     (tres_name) ? ":" : "",
 			     (tres_name) ? tres_name : "",
-			     tres_value, tres_weight);
+			     tres_value, tres_weight, tres_value * tres_weight);
 
 		tres_value *= tres_weight;
 

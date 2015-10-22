@@ -834,21 +834,33 @@ static int _get_tres_id(char *type, char *name)
 	return assoc_mgr_find_tres_pos(&tres_rec, false);
 }
 
+static int _get_tres_base_unit(char *tres_type)
+{
+	int ret_unit = UNIT_NONE;
+	if ((!strcasecmp(tres_type, "mem")) ||
+	    (!strcasecmp(tres_type, "bb"))) {
+		ret_unit = UNIT_MEGA;
+	}
+
+	return ret_unit;
+}
+
 static int _tres_weight_item(double *weights, char *item_str)
 {
-	char *type = NULL, *value = NULL, *name = NULL;
+	char *type = NULL, *value_str = NULL, *val_unit = NULL, *name = NULL;
 	int tres_id;
+	double weight_value = 0;
 
 	if (!item_str) {
 		error("TRES weight item is null");
 		return SLURM_ERROR;
 	}
 
-	type = strtok_r(item_str, "=", &value);
+	type = strtok_r(item_str, "=", &value_str);
 	if (strchr(type, '/'))
 		type = strtok_r(type, "/", &name);
 
-	if (!value || !*value) {
+	if (!value_str || !*value_str) {
 		error("\"%s\" is an invalid TRES weight entry", item_str);
 		return SLURM_ERROR;
 	}
@@ -860,12 +872,24 @@ static int _tres_weight_item(double *weights, char *item_str)
 	}
 
 	errno = 0;
-	weights[tres_id] = strtod(value, NULL);
+	weight_value = strtod(value_str, &val_unit);
 	if(errno) {
 		error("Unable to convert %s value to double in %s",
-		      __func__, value);
+		      __func__, value_str);
 		return SLURM_ERROR;
 	}
+
+	if (val_unit && *val_unit) {
+		int base_unit = _get_tres_base_unit(type);
+		int convert_val = get_convert_unit_val(base_unit, *val_unit);
+		if (convert_val == SLURM_ERROR)
+			return SLURM_ERROR;
+		if (convert_val > 0) {
+			weight_value /= convert_val;
+		}
+	}
+
+	weights[tres_id] = weight_value;
 
 	return SLURM_SUCCESS;
 }
@@ -4490,6 +4514,28 @@ extern int revert_num_unit(const char *buf)
 		number *= (i*1024);
 
 	return number;
+}
+
+extern int get_convert_unit_val(int base_unit, char convert_to)
+{
+	char *unit = "\0KMGTP?";
+	int conv_unit = 0, conv_value = 0;
+	char *tmp_char = strchr(unit + 1, toupper(convert_to));
+	if (!tmp_char) {
+		error("Conversion suffix '%c' not found in '%s'",
+		      convert_to, unit + 1);
+		return SLURM_ERROR;
+	}
+
+	conv_unit = tmp_char - unit;
+	while (base_unit++ < conv_unit) {
+		if (!conv_value)
+			conv_value = 1024;
+		else
+			conv_value *= 1024;
+	}
+
+	return conv_value;
 }
 
 #if _DEBUG

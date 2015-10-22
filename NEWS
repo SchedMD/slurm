@@ -32,6 +32,9 @@ documents those changes that are of interest to users and administrators.
     drained.
  -- Add ValidateTimeout and OtherTimeout to "scontrol show burst" output.
 
+* Changes in Slurm 15.08.3
+==========================
+
 * Changes in Slurm 15.08.2
 ==========================
  -- Fix for tracking node state when jobs that have been allocated exclusive
@@ -106,6 +109,7 @@ documents those changes that are of interest to users and administrators.
     accordingly.
  -- MYSQL - Make sure suspended time is only subtracted from the CPU TRES
     as it is the only TRES that can be given to another job while suspended.
+ -- Clarify how TRESBillingWeights operates on memory and burst buffers.
 
 * Changes in Slurm 15.08.1
 ==========================
