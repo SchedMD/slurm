@@ -1237,6 +1237,7 @@ extern void convert_num_unit2(double num, char *buf, int buf_size,
 extern void convert_num_unit(double num, char *buf, int buf_size,
 			     int orig_type, uint32_t flags);
 extern int revert_num_unit(const char *buf);
+extern int get_convert_unit_val(int base_type, char convert_to);
 extern void parse_int_to_array(int in, int *out);
 
 /*

@@ -4082,13 +4082,19 @@ will be used in calcuating the usage of a job.
 Billing weights are specified as a comma-separated list of
 \fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
 
-Any TRES Type is available for billing. Note that the memory is weighted per
-gigabyte.
+Any TRES Type is available for billing. Note that base the unit for memory and
+burst buffers is megabytes.
 
 By default the billing of TRES is calculated as the sum of all TRES types
-multiplied by their corresponding billing weight.  For example, when a job is
-allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,Mem=0.25,GRES/gpu=2.0", the billable TRES will be:
+multiplied by their corresponding billing weight.
+
+The weighted amount of a resource can be adjusted by adding a suffix of K,M,G,T
+or P after the billing weight. For example, a memory weight of "mem=.25" on a
+job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
+"mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
+
+When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
+TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
 (1*1.0) + (8*0.25) + (0*2.0) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
