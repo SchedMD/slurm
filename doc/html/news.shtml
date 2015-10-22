@@ -69,20 +69,20 @@ to coordinate activities. Future development plans includes:
 <!-- Universitat Jaume I & Universitat Politecnica de Valencia -->
 <li>Add support for
 <a href="http://slurm.schedmd.com/SUG14/remote_gpu.pdf">Remote CUDA (rCUDA)</a></li>
+<li>Distributed architecture to support the management of resources with Intel
+    Knight's Landing processors.</li>
+<li>Fault-tolerance and jobs dynamic adaptation through communication protocol
+    between Slurm, MPI libraries and the application.</li>
+<li>Improved support for provisioning and virtualization.</li>
+<!-- <li>IP communications over InfiniBand network for improved performance.</li>
 <li>Integration with
     <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm
     (Flexnet Publisher)</a> license management.</li>
-<li>Distributed architecture to support the management of resources with Intel
-    Knight's Landing processors.</li>
-<li>IP communications over InfiniBand network for improved performance.</li>
-<li>Fault-tolerance and jobs dynamic adaptation through communication protocol
-    between Slurm, MPI libraries and the application.</li>
 <li>Improved support for high-throughput computing (e.g. multiple slurmctld
     daemons on a single cluster).</li>
 <li>Add Kerberos credential support including credential forwarding
     and refresh.</li>
-<li>Improved support for provisioning and virtualization.</li> 
-<li>Provide a web-based Slurm administration tool.</li>
+<li>Provide a web-based Slurm administration tool.</li> -->
 </ul>
 <p style="text-align:center;">Last modified 31 August 2015</p>
 
