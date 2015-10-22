@@ -308,7 +308,8 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 }
 
 static void _add_tres_time_2_list(List tres_list, char *tres_str,
-				  int type, int seconds, bool times_count)
+				  int type, int seconds, int suspend_seconds,
+				  bool times_count)
 {
 	char *tmp_str = tres_str;
 	int id;
@@ -321,6 +322,8 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 		return;
 
 	while (tmp_str) {
+		int loc_seconds = seconds;
+
 		id = atoi(tmp_str);
 		if (id < 1) {
 			error("_add_tres_time_2_list: no id "
@@ -333,9 +336,18 @@ static void _add_tres_time_2_list(List tres_list, char *tres_str,
 			xassert(0);
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
-		time = count * seconds;
 
+		/* Take away suspended time from TRES that are idle when the
+		 * job was suspended, currently only CPU's fill that bill.
+		 */
+		if (suspend_seconds && (id == TRES_CPU)) {
+			loc_seconds -= suspend_seconds;
+			if (loc_seconds < 1)
+				loc_seconds = 0;
+		}
+
+		count = slurm_atoull(++tmp_str);
+		time = count * loc_seconds;
 		loc_tres = _add_time_tres(tres_list, type, id,
 					  time, times_count);
 		if (loc_tres && !loc_tres->count)
@@ -810,7 +822,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 				_add_tres_time_2_list(c_usage->loc_tres,
 						      row[EVENT_REQ_TRES],
 						      TIME_DOWN,
-						      seconds, 0);
+						      seconds, 0, 0);
 
 				/* Now remove this time if there was a
 				   disconnected slurmctld during the
@@ -880,7 +892,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 	char *job_req_inx[] = {
 		"job.job_db_inx",
-		"job.id_job",
+//		"job.id_job",
 		"job.id_assoc",
 		"job.id_wckey",
 		"job.array_task_pending",
@@ -896,7 +908,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	char *job_str = NULL;
 	enum {
 		JOB_REQ_DB_INX,
-		JOB_REQ_JOBID,
+//		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
 		JOB_REQ_WCKEYID,
 		JOB_REQ_ARRAY_PENDING,
@@ -1117,7 +1129,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		while ((row = mysql_fetch_row(result))) {
-			uint32_t job_id = slurm_atoul(row[JOB_REQ_JOBID]);
+			//uint32_t job_id = slurm_atoul(row[JOB_REQ_JOBID]);
 			uint32_t assoc_id = slurm_atoul(row[JOB_REQ_ASSOCID]);
 			uint32_t wckey_id = slurm_atoul(row[JOB_REQ_WCKEYID]);
 			uint32_t array_pending =
@@ -1130,7 +1142,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			List loc_tres = NULL;
 			uint64_t row_energy = 0;
 			int loc_seconds = 0;
-			int seconds = 0;
+			int seconds = 0, suspend_seconds = 0;
 
 			if (row[JOB_REQ_ENERGY])
 				row_energy = slurm_atoull(row[JOB_REQ_ENERGY]);
@@ -1184,20 +1196,14 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					if (row_start > local_start)
 						local_start = row_start;
-					if (row_end < local_end)
+					if (!local_end || row_end < local_end)
 						local_end = row_end;
 					tot_time = (local_end - local_start);
-					if (tot_time < 1)
-						continue;
 
-					seconds -= tot_time;
+					if (tot_time > 0)
+						suspend_seconds += tot_time;
 				}
 				mysql_free_result(result2);
-			}
-			if (seconds < 1) {
-				debug4("This job (%u) was suspended "
-				       "the entire hour", job_id);
-				continue;
 			}
 
 			if (last_id != assoc_id) {
@@ -1247,11 +1253,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 
 			_add_tres_time_2_list(loc_tres, row[JOB_REQ_TRES],
-					      TIME_ALLOC, seconds, 0);
+					      TIME_ALLOC, seconds,
+					      suspend_seconds, 0);
 			if (w_usage)
 				_add_tres_time_2_list(w_usage->loc_tres,
 						      row[JOB_REQ_TRES],
-						      TIME_ALLOC, seconds, 0);
+						      TIME_ALLOC, seconds,
+						      suspend_seconds, 0);
 
 			_add_time_tres(loc_tres,
 				       TIME_ALLOC, TRES_ENERGY,
