@@ -800,10 +800,12 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 #ifndef SLURMSTEPD_MEMCHECK
 		i = read(to_slurmd[0], &rc, sizeof(int));
 		if (i < 0) {
-			error("Can not read return code from slurmstepd: %m");
+			error("\
+%s: Can not read return code from slurmstepd got %d: %m", __func__, i);
 			rc = SLURM_FAILURE;
 		} else if (i != sizeof(int)) {
-			error("slurmstepd failed to send return code");
+			error("\
+%s: slurmstepd failed to send return code got %d: %m", __func__, i);
 			rc = SLURM_FAILURE;
 		} else {
 			int delta_time = time(NULL) - start_time;
