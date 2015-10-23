@@ -12737,6 +12737,8 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		(void) bb_g_job_cancel(job_ptr);
 	}
 
+	_job_array_comp(job_ptr);
+
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     test_job_array_finished(job_ptr->array_job_id))) {
@@ -12762,8 +12764,6 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 				mail_job_info(job_ptr, MAIL_JOB_END);
 		}
 	}
-
-	_job_array_comp(job_ptr);
 
 	g_slurm_jobcomp_write(job_ptr);
 

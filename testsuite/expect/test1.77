@@ -38,6 +38,7 @@ set number      "\[0-9\]+"
 set name        "banana"
 set my_cmd      ./mycmd
 set file_in     "test$test_id.in"
+set file_out    "test$test_id.out"
 
 # Set env path to SLURM_JOB_NAME
 set env(SLURM_JOB_NAME) "zebra"
@@ -77,13 +78,11 @@ send_user "SUCCESS\n"
 # Tests -J using sbatch
 #
 set found 0
-set sbatch_pid [spawn $sbatch -J $name -t1 --wrap=env]
+set sbatch_pid [spawn $sbatch -J $name -t1 -o $file_out --wrap=env]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
-
-
 	}
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
@@ -94,8 +93,8 @@ expect {
 		wait
 	}
 }
-set wait_file [wait_for_file slurm-$job_id.out]
-spawn $bin_grep SLURM_JOB_NAME=banana slurm-$job_id.out
+set wait_file [wait_for_file $file_out]
+spawn $bin_grep SLURM_JOB_NAME=banana $file_out
 expect {
         -re "SLURM_JOB_NAME=($alpha_numeric)" {
             send_user "Job name matched $expect_out(1,string)\n"
@@ -112,7 +111,7 @@ if {$found != 1} {
 	exit 1
 }
 if {$exit_code == 0} {
-	exec $bin_rm -f slurm-$job_id.out
+	exec $bin_rm -f $file_out
 	send_user "SUCCESS\n"
 }
 exec rm -f slurm-$job_id.out
