@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     A job that fails to setup the environment will be requeued and the node
     drained.
  -- Add ValidateTimeout and OtherTimeout to "scontrol show burst" output.
+ -- Increase default sbcast buffer size from 512KB to 8MB.
 
 * Changes in Slurm 15.08.3
 ==========================

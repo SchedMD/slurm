@@ -204,7 +204,7 @@ static void _bcast_file(void)
 	if (params.block_size)
 		buf_size = MIN(params.block_size, f_stat.st_size);
 	else
-		buf_size = MIN((512 * 1024), f_stat.st_size);
+		buf_size = MIN((8 * 1024 * 1024), f_stat.st_size);
 
 	bcast_msg.fname		= params.dst_fname;
 	bcast_msg.block_no	= 1;

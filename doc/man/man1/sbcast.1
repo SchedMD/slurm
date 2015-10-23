@@ -45,8 +45,9 @@ Specify the block size used for file broadcast.
 The size can have a suffix of \fIk\fR or \fIm\fR for kilobytes
 or megabytes respectively (defaults to bytes).
 This size subject to rounding and range limits to maintain
-good performance. This value may need to be set on systems
-with very limited memory.
+good performance.
+The default value is the file size or 8MB, whichever is smaller.
+This value may need to be set on systems with very limited memory.
 .TP
 \fB\-t\fB \fIseconds\fR, fB\-\-timeout\fR=\fIseconds\fR
 Specify the message timeout in seconds.
