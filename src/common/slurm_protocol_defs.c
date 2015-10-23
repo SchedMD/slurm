@@ -3498,11 +3498,15 @@ extern void slurm_free_comp_msg_list(void *x)
 {
 	slurm_msg_t *msg = (slurm_msg_t*)x;
 	if (msg) {
-		if (msg->data_size) {
+		if (msg->data_size)
 			free_buf(msg->data);
-			msg->data = NULL;
-		} else
+		else
 			slurm_free_msg_data(msg->msg_type, msg->data);
+
+		/* make sure the data is NULL here or we could cause a
+		 * double free in slurm_free_msg
+		 */
+		msg->data = NULL;
 
 		slurm_free_msg(msg);
 	}
