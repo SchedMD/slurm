@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.3
 ==========================
+ -- Correct Slurm's RPM build if Munge is not installed.
 
 * Changes in Slurm 15.08.2
 ==========================
