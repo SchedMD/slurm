@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 15.08.3
 ==========================
  -- Correct Slurm's RPM build if Munge is not installed.
+ -- Job array termination status email ExitCode based upon highest exit code
+    from any task in the job array rather than the last task.
 
 * Changes in Slurm 15.08.2
 ==========================
