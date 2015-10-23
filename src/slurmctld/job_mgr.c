@@ -12000,7 +12000,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		node_boot_time = node_ptr->boot_time - (msg_timeout + 5);
 	}
 	batch_startup_time  = now - batch_start_timeout;
-	batch_startup_time -= msg_timeout;
+	batch_startup_time -= MIN(DEFAULT_MSG_TIMEOUT, msg_timeout);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {

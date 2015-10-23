@@ -1607,6 +1607,20 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 The combined memory limit, in megabytes, on this node for the Slurm compute
 node daemons (slurmd, slurmstepd).
 
+.TP
+The meaning of the memory information is as follows:
+
+.TP
+\fIRealMemory\fP
+The total memory, in MB, on the node.
+
+.TP
+\fIAllocMem\fP
+The total memory, in MB, currently allocated by jobs on the node.
+
+.TP
+\fIFreeMem\fP
+The total memory, in MB, currently free on the node as reported by the OS.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

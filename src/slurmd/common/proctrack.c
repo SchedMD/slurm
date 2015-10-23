@@ -223,6 +223,13 @@ static bool _test_core_dumping(char* stat_fname)
 
 	/* split into "PID (cmd" and "<rest>" */
 	str_ptr = (char *)strrchr(proc_stat, ')');
+	if (str_ptr == NULL) {
+		error("\
+%s: unexpected format of %s (%s) bracket missing?", __func__,
+		      stat_fname, proc_stat);
+		xfree(proc_stat);
+		return false;
+	}
 	*str_ptr = '\0';		/* replace trailing ')' with NULL */
 	/* parse these two strings separately, skipping the leading "(". */
 	memset (cmd, 0, sizeof(cmd));

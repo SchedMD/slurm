@@ -740,6 +740,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
    echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_mvapich.so              &&
+   echo %{_libdir}/slurm/mpi_mvapich.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray.so               &&
    echo %{_libdir}/slurm/power_cray.so               >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
@@ -754,6 +756,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
    echo %{_libdir}/slurm/job_container_none.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
    echo %{_libdir}/slurm/task_cray.so                >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_nonstop.so        &&
+   echo %{_libdir}/slurm/slurmctld_nonstop.so        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
    echo %{_libdir}/slurm/switch_cray.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_cray.so           &&
@@ -956,7 +960,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/mpi_mpich1_shmem.so
 %{_libdir}/slurm/mpi_mpichgm.so
 %{_libdir}/slurm/mpi_mpichmx.so
-%{_libdir}/slurm/mpi_mvapich.so
 %{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/mpi_pmi2.so
 %endif
@@ -986,7 +989,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/select_serial.so
-%{_libdir}/slurm/slurmctld_nonstop.so
 %{_libdir}/slurm/switch_generic.so
 %{_libdir}/slurm/switch_none.so
 %{_libdir}/slurm/task_none.so

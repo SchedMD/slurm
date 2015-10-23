@@ -735,6 +735,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->array_task_str);
 		xfree(job->batch_host);
 		xfree(job->batch_script);
+		xfree(job->burst_buffer);
 		xfree(job->command);
 		xfree(job->comment);
 		xfree(job->dependency);
@@ -2963,6 +2964,7 @@ extern void slurm_free_job_step_info_members (job_step_info_t * msg)
 {
 	if (msg != NULL) {
 		xfree(msg->ckpt_dir);
+		xfree(msg->gres);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->nodes);

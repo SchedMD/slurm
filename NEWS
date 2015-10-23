@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.3
 ==========================
+ -- Correct Slurm's RPM build if Munge is not installed.
 
 * Changes in Slurm 15.08.2
 ==========================
@@ -110,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Make sure suspended time is only subtracted from the CPU TRES
     as it is the only TRES that can be given to another job while suspended.
  -- Clarify how TRESBillingWeights operates on memory and burst buffers.
+ -- Fix some minor leaks in the job info and step info API.
 
 * Changes in Slurm 15.08.1
 ==========================
@@ -533,6 +535,9 @@ documents those changes that are of interest to users and administrators.
     has been modified to accept a "Pack" and "NoPack" option. These options can
     be used to override the CR_PACK_NODE configuration option.
 
+* Changes in Slurm 14.11.11
+===========================
+
 * Changes in Slurm 14.11.10
 ===========================
  -- Fix truncation of job reason in squeue.
@@ -578,6 +583,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with sacct, printing 0_0 for array's that had finished in the
     database but the start record hadn't made it yet.
  -- Fix sacct -j, (nothing but a comma) to not return all jobs.
+ -- Prevent slurmstepd from core dumping if /proc/<pid>/stat has
+    unexpected format.
 
 * Changes in Slurm 14.11.9
 ==========================
