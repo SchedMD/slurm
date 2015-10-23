@@ -83,6 +83,11 @@ array set acct_mod_assoc_test_vals {
 
 print_header    $test_id
 
+if { [string compare [priority_type] multifactor] } {
+	send_user "\nWARNING: test only compatible with priority/multifactor plugin\n"
+	exit $exit_code
+}
+
 # Determine what the selecttype param is
 if {[test_select_type_params "CR_CORE"]} {
 	set selectparam 1
