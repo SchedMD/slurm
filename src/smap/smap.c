@@ -184,13 +184,11 @@ int main(int argc, char *argv[])
 
 		if (params.cluster_dims == 4) {
 			startx = width;
-			COLS -= 2;
-			width = COLS - width;
+			width = COLS - width - 2;
 			height = LINES;
 		} else if (params.cluster_dims == 3) {
 			startx = width;
-			COLS -= 2;
-			width = COLS - width;
+			width = COLS - width - 2;
 			height = LINES;
 		} else {
 			startx = 0;
@@ -476,11 +474,8 @@ static void *_resize_handler(int sig)
 	delwin(text_win);
 
 	endwin();
-	COLS = 0;
-	LINES = 0;
 	initscr();
 	doupdate();	/* update now to make sure we get the new size */
-	getmaxyx(stdscr, LINES, COLS);
 
 	if (params.cluster_dims == 4) {
 		height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
@@ -508,13 +503,11 @@ static void *_resize_handler(int sig)
 
 	if (params.cluster_dims == 4) {
 		startx = width;
-		COLS -= 2;
-		width = COLS - width;
+		width = COLS - width - 2;
 		height = LINES;
 	} else if (params.cluster_dims == 3) {
 		startx = width;
-		COLS -= 2;
-		width = COLS - width;
+		width = COLS - width - 2;
 		height = LINES;
 	} else {
 		startx = 0;
