@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     manager.
  -- Fix invalid reference if a lua job_submit plugin references a default qos
     when a user doesn't exist in the database.
+ -- Use association enforcement in the lua plugin.
 
 * Changes in Slurm 15.08.2
 ==========================
