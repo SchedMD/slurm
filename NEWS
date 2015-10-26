@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Squeue recombines pending job array records only if their name and partition
     are identical.
  -- Fix some minor leaks in the job info and step info API.
+ -- Export missing QOS id when filling in association with the association
+    manager.
 
 * Changes in Slurm 15.08.2
 ==========================
