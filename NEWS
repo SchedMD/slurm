@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Use association enforcement in the lua plugin.
  -- Fix a few spots missing defines of accounting_enforce or acct_db_conn
     in the plugins.
+ -- Show requested TRES in scontrol show jobs when job is pending.
 
 * Changes in Slurm 15.08.2
 ==========================
