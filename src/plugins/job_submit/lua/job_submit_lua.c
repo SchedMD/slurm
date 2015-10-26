@@ -124,8 +124,10 @@ static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 #if defined (__APPLE__)
 int accounting_enforce __attribute__((weak_import)) = 0;
+void *acct_db_conn  __attribute__((weak_import)) = NULL;
 #else
 int accounting_enforce = 0;
+void *acct_db_conn = NULL;
 #endif
 
 /*****************************************************************************\
