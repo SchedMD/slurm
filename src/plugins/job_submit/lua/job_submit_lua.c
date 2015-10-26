@@ -240,9 +240,8 @@ static char *_get_default_account(uint32_t user_id)
 static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 {
 	slurmdb_assoc_rec_t assoc;
-	slurmdb_assoc_rec_t *assoc_ptr;
 	slurmdb_qos_rec_t qos;
-	uint32_t qos_id;
+	uint32_t qos_id = 0;
 
 	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc.uid = user_id;
@@ -252,16 +251,13 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	} else {
 		assoc.acct = _get_default_account(user_id);
 	}
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, 0,
-				    &assoc_ptr, false) != SLURM_ERROR) {
-		qos_id = assoc_ptr->def_qos_id;
-	} else {
-		return NULL;
-	}
 
-	if (!qos_id) {
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, 0,
+				    NULL, false) != SLURM_ERROR)
+		qos_id = assoc.def_qos_id;
+
+	if (!qos_id)
 		return NULL;
-	}
 
 	memset(&qos, 0, sizeof(slurmdb_qos_rec_t));
 	qos.id = qos_id;

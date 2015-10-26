@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix some minor leaks in the job info and step info API.
  -- Export missing QOS id when filling in association with the association
     manager.
+ -- Fix invalid reference if a lua job_submit plugin references a default qos
+    when a user doesn't exist in the database.
 
 * Changes in Slurm 15.08.2
 ==========================
