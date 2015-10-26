@@ -213,7 +213,7 @@ sleep 10"
 	set running 0
 	spawn $squeue -h -o "\%t \%r"
 	expect {
-		-re "PD.Assoc*" {
+		-re "PD." {
 			incr pending
 			exp_continue
 		}
@@ -439,6 +439,9 @@ proc inc21_21_grpwall { test_type limit } {
 
 	send_user "\n====== Test $test_type"
 	send_user "(Within: inc21.21_tests function: inc21_21_grpwall) ======\n"
+
+	# Wait for old jobs to clean up
+	sleep 2
 
 	# Since wall is a decayed variable lets reset it to make sure the test
 	# gets exactly what we would expect.

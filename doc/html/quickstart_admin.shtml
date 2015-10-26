@@ -38,11 +38,13 @@ those directories will have access rights equal to read/write/execute for
 everyone minus the umask value (e.g. umask=0022 generates directories with
 permissions of "drwxr-r-x" and mask=0000 generates directories with
 permissions of "drwxrwrwx" which is a security problem).</li>
+<li>Type <i>ldconfig -n &lt;library_location&gt;</i> so that the Slurm libraries
+can be found by applications that intend to use Slurm APIs directly.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
 NOTE: You will need to install this configuration file on all nodes of the cluster.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 3 through 6 can be replaced with</p>
+<p>NOTE: Items 3 through 8 can be replaced with</p>
 <ol>
 <li><i>rpmbuild -ta slurm*.tar.bz2</i></li>
 <li><i>rpm --install &lt;the rpm files&gt;</i></li>
@@ -63,6 +65,13 @@ See the README and INSTALL files in the source distribution for more details.
 <li>Type <i>make</i> to compile Slurm.</li>
 <li>Type <i>make install</i> to install the programs, documentation, libraries,
 header files, etc.</li>
+<li>Type <i>ldconfig -n &lt;library_location&gt;</i> so that the Slurm libraries
+can be found by applications that intend to use Slurm APIs directly. The
+library location will be a subdirectory of PREFIX (described below) and depend
+upon the system type and configuration, typically lib, lib64 and/or lib32.
+For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
+find that a file named "/usr/lib64/libslurm.so" was installed and the command
+"ldconfig -n /usr/lib64" should be executed.</li>
 </ol>
 <p>A full list of <i>configure</i> options will be returned by the command
 <i>configure --help</i>. The most commonly used arguments to the
@@ -840,6 +849,6 @@ options such as mysql and gui tools via a configuration menu.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 June 2015</p>
+<p style="text-align:center;">Last modified 23 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
