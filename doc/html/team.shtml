@@ -230,7 +230,7 @@ Lead Slurm developers are:
 <li>Daniel M. Weeks (Rensselaer Polytechnic Institute)</li>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
-<li>Tim Wickberg (George Washington University)</li>
+<li>Tim Wickberg (SchedMD)</li>
 <li>Chandler Wilkerson (Rice University)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
@@ -242,6 +242,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 19 October 2015</p>
+<p style="text-align:center;">Last modified 26 October 2015</p>
 
 <!--#include virtual="footer.txt"-->

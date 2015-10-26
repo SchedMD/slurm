@@ -120,7 +120,6 @@ html_DATA = \
 	ibm_pe_fig2.png \
 	k_function.gif \
 	linuxstyles.css \
-	lll.gif \
 	mc_support.gif \
 	plane_ex1.gif \
 	plane_ex2.gif \

@@ -9,10 +9,10 @@ is strongly recommended before use of this document.</p>
 Maui and Moab are not integrated with Slurm's resource limits,
 but should use their own resource limits mechanisms.</p>
 
-<h2>Hierachy</h2>
+<h2>Hierarchy</h2>
 
 <p>Slurm's hierarchical limits are enforced in the following order
-  with Job QOS and Partition QOS order being reversable by using the QOS
+  with Job QOS and Partition QOS order being reversible by using the QOS
   flag 'OverPartQOS':</p>
 <ol>
 	<li>Partition QOS limit</li>
@@ -24,7 +24,7 @@ but should use their own resource limits mechanisms.</p>
 	<li>None</li>
 </ol>
 
-<p>Note: If limits are defined at multiple points in this hierachy,
+<p>Note: If limits are defined at multiple points in this hierarchy,
 the point in this list where the limit is first defined will be used.
 Consider the following example:</p>
 <ul>
@@ -171,7 +171,7 @@ specified then no limit will apply.</p>
 
 <li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by a job.
   If this limit is reached the job will be killed if not running in
-  Safe mode, othewise the job will pend until enough time is given to
+  Safe mode, otherwise the job will pend until enough time is given to
   complete the job.
 </li>
 
@@ -224,7 +224,7 @@ specified then no limit will apply.</p>
   children have to the above system. Can also be the string "parent",
   when used on a user this means that the parent association is used
   for fairshare.  If Fairshare=parent is set on an account, that
-  account's children will be effectively reparented for fairshare
+  account's children will be effectively re-parented for fairshare
   calculations to the first parent of their parent that is not
   Fairshare=parent.  Limits remain the same, only it's fairshare value
   is affected.
@@ -265,6 +265,6 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 24 September 2015</p>
+<p style="text-align: center;">Last modified 19 October 2015</p>
 
 </ul></body></html>

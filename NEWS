@@ -40,6 +40,15 @@ documents those changes that are of interest to users and administrators.
     from any task in the job array rather than the last task.
  -- Squeue recombines pending job array records only if their name and partition
     are identical.
+ -- Fix some minor leaks in the job info and step info API.
+ -- Export missing QOS id when filling in association with the association
+    manager.
+ -- Fix invalid reference if a lua job_submit plugin references a default qos
+    when a user doesn't exist in the database.
+ -- Use association enforcement in the lua plugin.
+ -- Fix a few spots missing defines of accounting_enforce or acct_db_conn
+    in the plugins.
+ -- Show requested TRES in scontrol show jobs when job is pending.
 
 * Changes in Slurm 15.08.2
 ==========================
@@ -116,7 +125,6 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Make sure suspended time is only subtracted from the CPU TRES
     as it is the only TRES that can be given to another job while suspended.
  -- Clarify how TRESBillingWeights operates on memory and burst buffers.
- -- Fix some minor leaks in the job info and step info API.
 
 * Changes in Slurm 15.08.1
 ==========================

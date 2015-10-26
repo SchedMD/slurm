@@ -966,6 +966,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 			reason = job_reason_string(job->state_reason);
 		xstrfmtcat(reason_fmt, "(%s)", reason);
 		_print_str(reason_fmt, width, right, true);
+		xfree(reason_fmt);
 	} else {
 		char *nodes = xstrdup(job->nodes);
 		char *ionodes = NULL;

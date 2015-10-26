@@ -695,7 +695,8 @@ line6:
 	/****** Line 16 ******/
 	/* Tres should already of been converted at this point from simple */
 	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
-		 job_ptr->tres_alloc_str);
+		 job_ptr->tres_alloc_str ? job_ptr->tres_alloc_str :
+		 job_ptr->tres_req_str);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

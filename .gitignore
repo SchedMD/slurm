@@ -18,6 +18,9 @@ Makefile
 /etc/cgroup.release_common.example
 /etc/init.d.slurm
 /etc/init.d.slurmdbd
+/etc/slurmctld.service
+/etc/slurmd.service
+/etc/slurmdbd.service
 /libtool
 /slurm/slurm.h
 /slurm/stamp-h2

@@ -762,6 +762,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->std_in);
 		xfree(job->std_out);
 		xfree(job->tres_alloc_str);
+		xfree(job->tres_req_str);
 		xfree(job->wckey);
 		xfree(job->work_dir);
 	}
@@ -3108,12 +3109,14 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->allow_groups);
 		xfree(part->allow_qos);
 		xfree(part->alternate);
+		xfree(part->billing_weights_str);
 		xfree(part->deny_accounts);
 		xfree(part->deny_qos);
 		xfree(part->name);
 		xfree(part->nodes);
 		xfree(part->node_inx);
 		xfree(part->qos_char);
+		xfree(part->tres_fmt_str);
 	}
 }
 

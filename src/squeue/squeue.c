@@ -169,7 +169,8 @@ _get_window_width( void )
 static int
 _print_job ( bool clear_old )
 {
-	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
+	static job_info_msg_t *old_job_ptr;
+	job_info_msg_t *new_job_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
 
