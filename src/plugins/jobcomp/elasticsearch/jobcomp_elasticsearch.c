@@ -1,10 +1,10 @@
 /*****************************************************************************\
  *  jobcomp_elasticsearch.c - elasticsearch slurm job completion logging plugin.
  *****************************************************************************
- *  Produced at Barcelona Supercomputing Center, in collaboration with 
+ *  Produced at Barcelona Supercomputing Center, in collaboration with
  *  Barcelona School of Informatics.
  *  Written by Alejandro Sanchez Graells <alejandro.sanchezgraells@bsc.es>,
- *  <asanchez1987@gmail.com>, who borrowed heavily from jobcomp/filetxt 
+ *  <asanchez1987@gmail.com>, who borrowed heavily from jobcomp/filetxt
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -103,11 +103,11 @@ const char plugin_name[] = "Job completion elasticsearch logging plugin";
 const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","\
-	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"\
-	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"\
-	"\"partition\":\"%s\",\"alloc_node\":\"%s\","\
-	"\"nodes\":\"%s\",\"total_cpus\":%lu,\"total_nodes\":%lu,"\
+#define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","	\
+	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"	\
+	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
+	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
+	"\"nodes\":\"%s\",\"total_cpus\":%lu,\"total_nodes\":%lu,"	\
 	"\"derived_exitcode\":%lu,\"exitcode\":%lu,\"state\":\"%s\""
 
 /* Type for error string table entries */
@@ -280,7 +280,7 @@ static int _load_pending_jobs(void)
 
 	return rc;
 
-      unpack_error:
+unpack_error:
 	error("Error unpacking file %s", state_file);
 	free_buf(buffer);
 	return SLURM_FAILURE;
@@ -313,11 +313,11 @@ static int _index_job(const char *jobcomp)
 
 	if (log_url == NULL) {
 		if (((error_cnt++) % 100) == 0) {
-	                /* Periodically log errors */
-                        error("%s: Unable to save job state for %d "
-                               "jobs, caching data",
-                               plugin_type, error_cnt);
-                }
+			/* Periodically log errors */
+			error("%s: Unable to save job state for %d "
+			      "jobs, caching data",
+			      plugin_type, error_cnt);
+		}
 		debug("JobCompLoc parameter not configured");
 		return SLURM_ERROR;
 	}
@@ -395,11 +395,11 @@ static int _index_job(const char *jobcomp)
 
 	if (rc == SLURM_ERROR) {
 		if (((error_cnt++) % 100) == 0) {
-                        /* Periodically log errors */
-                        error("%s: Unable to save job state for %d "
-                               "jobs, caching data",
-                               plugin_type, error_cnt);
-                }
+			/* Periodically log errors */
+			error("%s: Unable to save job state for %d "
+			      "jobs, caching data",
+			      plugin_type, error_cnt);
+		}
 	}
 
 	return rc;
@@ -791,7 +791,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (job_ptr->details && (job_ptr->details->begin_time != NO_VAL)) {
 		eligible_time =
-		    job_ptr->start_time - job_ptr->details->begin_time;
+			job_ptr->start_time - job_ptr->details->begin_time;
 		xstrfmtcat(buffer, ",\"eligible_time\":%lu", eligible_time);
 	}
 
@@ -826,7 +826,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (job_ptr->qos_ptr != NULL) {
 		slurmdb_qos_rec_t *assoc =
-		    (slurmdb_qos_rec_t *) job_ptr->qos_ptr;
+			(slurmdb_qos_rec_t *) job_ptr->qos_ptr;
 		qos = assoc->name;
 		xstrfmtcat(buffer, ",\"qos\":\"%s\"", qos);
 	}
@@ -862,19 +862,19 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 	if (time_limit != INFINITE) {
 		xstrfmtcat(buffer, ",\"time_limit\":%lu",
-			(unsigned long) time_limit * 60);
+			   (unsigned long) time_limit * 60);
 	}
 
-	if (job_ptr->resv_name && job_ptr->resv_name[0]) {		
+	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
 		xstrfmtcat(buffer, ",\"reservation_name\":\"%s\"",
 			   job_ptr->resv_name);
 	}
 
-	if (job_ptr->gres_req && job_ptr->gres_req[0]) {		
+	if (job_ptr->gres_req && job_ptr->gres_req[0]) {
 		xstrfmtcat(buffer, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
 	}
 
-	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {		
+	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {
 		xstrfmtcat(buffer, ",\"gres_alloc\":\"%s\"",
 			   job_ptr->gres_alloc);
 	}
@@ -901,7 +901,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc_rec.cluster = xstrdup(cluster);
 		assoc_rec.id =
-		    ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->parent_id;
+			((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->parent_id;
 
 		do {
 			assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
@@ -924,7 +924,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			xstrcat(parent_accounts, acc_aux[i]);
 			xfree(acc_aux[i]);
 		}
-	
+
 		xstrfmtcat(buffer, ",\"parent_accounts\":\"%s\"",
 			   parent_accounts);
 		xfree(acc_aux);
