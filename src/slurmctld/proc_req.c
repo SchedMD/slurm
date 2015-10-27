@@ -2128,6 +2128,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg, bool locked)
 		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
 		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
 		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
+		xfree(batch_step.tres_alloc_str);
 	}
 
 #ifdef HAVE_FRONT_END
