@@ -77,6 +77,9 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 #ifndef NDEBUG
 	_pmixp_job_info.magic = PMIX_INFO_MAGIC;
 #endif
+	/* security info */
+	_pmixp_job_info.uid = job->uid;
+	_pmixp_job_info.gid = job->gid;
 
 	/* This node info */
 	_pmixp_job_info.jobid = job->jobid;

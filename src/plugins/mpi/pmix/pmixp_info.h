@@ -69,6 +69,8 @@ typedef struct {
 	int timeout;
 	char *cli_tmpdir;
 	char *lib_tmpdir;
+	uid_t uid;
+	gid_t gid;
 } pmix_jobinfo_t;
 
 extern pmix_jobinfo_t _pmixp_job_info;
@@ -109,6 +111,18 @@ eio_handle_t *pmixp_info_io();
 /* Job information */
 int pmixp_info_set(const stepd_step_rec_t *job, char ***env);
 int pmixp_info_free(void);
+
+static inline uint32_t pmixp_info_jobuid(void)
+{
+	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	return _pmixp_job_info.uid;
+}
+
+static inline uint32_t pmixp_info_jobgid(void)
+{
+	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	return _pmixp_job_info.gid;
+}
 
 static inline uint32_t pmixp_info_jobid(void)
 {

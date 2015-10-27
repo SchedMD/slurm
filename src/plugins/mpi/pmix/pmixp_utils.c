@@ -364,3 +364,62 @@ int pmixp_rmdir_recursively(char *path)
 	}
 	return rc;
 }
+
+static inline int _file_fix_rights(char *path, uid_t uid, mode_t mode)
+{
+	if (chmod(path, mode) < 0) {
+		error("chown(%s): %m", path);
+		return errno;
+	}
+
+	if (chown(path, uid, (gid_t) -1) < 0) {
+		error("chown(%s): %m", path);
+		return errno;
+	}
+	return 0;
+}
+
+int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
+{
+	char nested_path[PATH_MAX];
+	DIR *dp;
+	struct dirent *ent;
+	int rc;
+
+	/*
+	 * Make sure that "directory" exists and is a directory.
+	 */
+	if (1 != (rc = _is_dir(path))) {
+		PMIXP_ERROR("path=\"%s\" is not a directory", path);
+		return (rc == 0) ? -1 : rc;
+	}
+
+	if ((dp = opendir(path)) == NULL) {
+		PMIXP_ERROR_STD("cannot open path=\"%s\"", path);
+		return -1;
+	}
+
+	while ((ent = readdir(dp)) != NULL) {
+		if (0 == strcmp(ent->d_name, ".")
+				|| 0 == strcmp(ent->d_name, "..")) {
+			/* skip special dir's */
+			continue;
+		}
+		snprintf(nested_path, sizeof(nested_path), "%s/%s", path,
+				ent->d_name);
+		if (_is_dir(nested_path)) {
+			if( rc = _file_fix_rights(nested_path, uid, mode) ){
+				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
+				return -1;
+			}
+			pmixp_rmdir_recursively(nested_path);
+		} else {
+			if( rc = _file_fix_rights(nested_path, uid, mode) ){
+				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
+				return -1;
+			}
+		}
+	}
+	closedir(dp);
+	return 0;
+}
