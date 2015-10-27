@@ -7273,7 +7273,6 @@ extern void job_set_req_tres(
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	xfree(job_ptr->tres_req_cnt);
 	job_ptr->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
 
 	if (job_ptr->details) {
@@ -7335,6 +7334,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_alloc_cnt);
+	xfree(job_ptr->tres_fmt_alloc_str);
 
 	/* We only need to do this on non-pending jobs */
 	if (IS_JOB_PENDING(job_ptr))
@@ -7342,7 +7342,6 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
-	xfree(job_ptr->tres_alloc_cnt);
 
 	job_ptr->tres_alloc_cnt = xmalloc(
 		sizeof(uint64_t) * slurmctld_tres_cnt);
@@ -7381,11 +7380,9 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 			      true);
 
 	/* now that the array is filled lets make the string from it */
-	xfree(job_ptr->tres_alloc_str);
 	job_ptr->tres_alloc_str = assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
 
-	xfree(job_ptr->tres_fmt_alloc_str);
 	job_ptr->tres_fmt_alloc_str = assoc_mgr_make_tres_str_from_array(
 		job_ptr->tres_alloc_cnt, 0, true);
 

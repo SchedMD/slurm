@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve sched/backfill support for job features, especially XOR construct.
  -- Correct scheduling logic for job features option with XOR construct that
     could delay a job's initiation.
+ -- Remove unneeded frees when creating a tres string.
 
 * Changes in Slurm 15.08.2
 ==========================
