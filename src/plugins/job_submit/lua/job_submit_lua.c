@@ -118,6 +118,18 @@ time_t last_lua_resv_update = (time_t) 0;
 static pthread_mutex_t lua_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+int accounting_enforce __attribute__((weak_import)) = 0;
+void *acct_db_conn  __attribute__((weak_import)) = NULL;
+#else
+int accounting_enforce = 0;
+void *acct_db_conn = NULL;
+#endif
+
 /*****************************************************************************\
  * We've provided a simple example of the type of things you can do with this
  * plugin. If you develop another plugin that may be of interest to others
@@ -228,8 +240,8 @@ static char *_get_default_account(uint32_t user_id)
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = user_id;
-	if (assoc_mgr_fill_in_user(acct_db_conn,
-				   &user, 0, NULL) != SLURM_ERROR) {
+	if (assoc_mgr_fill_in_user(acct_db_conn, &user, accounting_enforce,
+				   NULL) != SLURM_ERROR) {
 		return user.default_acct;
 	} else {
 		return NULL;
@@ -240,9 +252,8 @@ static char *_get_default_account(uint32_t user_id)
 static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 {
 	slurmdb_assoc_rec_t assoc;
-	slurmdb_assoc_rec_t *assoc_ptr;
 	slurmdb_qos_rec_t qos;
-	uint32_t qos_id;
+	uint32_t qos_id = 0;
 
 	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 	assoc.uid = user_id;
@@ -252,21 +263,18 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	} else {
 		assoc.acct = _get_default_account(user_id);
 	}
-	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, 0,
-				    &assoc_ptr, false) != SLURM_ERROR) {
-		qos_id = assoc_ptr->def_qos_id;
-	} else {
-		return NULL;
-	}
 
-	if (!qos_id) {
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
+				    NULL, false) != SLURM_ERROR)
+		qos_id = assoc.def_qos_id;
+
+	if (!qos_id)
 		return NULL;
-	}
 
 	memset(&qos, 0, sizeof(slurmdb_qos_rec_t));
 	qos.id = qos_id;
-	if (assoc_mgr_fill_in_qos(acct_db_conn,
-				  &qos, 0, NULL, false) != SLURM_ERROR) {
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce,
+				  NULL, false) != SLURM_ERROR) {
 		return qos.name;
 	} else {
 		return NULL;

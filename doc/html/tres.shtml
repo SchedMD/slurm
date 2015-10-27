@@ -98,13 +98,13 @@ with:
 number of allocated CPUs.
 </p>
 
-<p><b>NOTE:</b> TRESBillingWeights is only used when calcuating fairshare and
+<p><b>NOTE:</b> TRESBillingWeights is only used when calculating fairshare and
 doesn't affect job priority directly as it is currently not used for the size of
 the job. If you want TRES' to play a role in the job's priority then refer to
 the PriorityWeightTRES option.
 </p>
 
-<p><b>NOTE:</b> As with PriorityWeightTRES only TRES definied in
+<p><b>NOTE:</b> As with PriorityWeightTRES only TRES defined in
   AccountingStorageTRES are available for TRESBillingWeights.
 </p>
 </li>
@@ -128,6 +128,6 @@ the PriorityWeightTRES option.
   for the requested TRES types.  More information about these reports
   can be found on the <a href="sreport.html">sreport manpage</a>.
 </p>
-<p style="text-align:center;">Last modified 8 September 2015</p>
+<p style="text-align:center;">Last modified 19 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
