@@ -3370,8 +3370,6 @@ extern void step_set_alloc_tres(
 {
 	uint64_t cpu_count, tres_count;
 	char *tmp_tres_str = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xfree(step_ptr->tres_alloc_str);
 #ifdef HAVE_BG_L_P
@@ -3410,6 +3408,8 @@ extern void step_set_alloc_tres(
 	}
 
 	if (make_formatted) {
+		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   READ_LOCK, NO_LOCK, NO_LOCK };
 		xfree(step_ptr->tres_fmt_alloc_str);
 
 		if (!assoc_mgr_locked)
