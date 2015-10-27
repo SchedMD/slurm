@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
     could delay a job's initiation.
  -- Remove unneeded frees when creating a tres string.
  -- Send a tres_alloc_str for the batch step
+ -- Fix incorrect check for slurmdb_find_tres_count_in_string in various places,
+    it needed to check for INFINITE64 instead of zero.
 
 * Changes in Slurm 15.08.2
 ==========================

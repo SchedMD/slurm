@@ -215,8 +215,9 @@ static List _process_grouped_report(
 			if (!job->elapsed)
 				continue;
 
-			if (!(count = slurmdb_find_tres_count_in_string(
-				      job->tres_alloc_str, tres_id)))
+			if ((count = slurmdb_find_tres_count_in_string(
+				     job->tres_alloc_str, tres_id))
+			    == INFINITE64)
 				continue;
 
 			tmp = xstrdup_printf("%"PRIu64, count);
@@ -469,8 +470,9 @@ no_objects:
 		while ((job_group = list_next(local_itr))) {
 			uint64_t count;
 
-			if (!(count = slurmdb_find_tres_count_in_string(
-				      job->tres_alloc_str, tres_id)) ||
+			if (((count = slurmdb_find_tres_count_in_string(
+				      job->tres_alloc_str, tres_id))
+			     == INFINITE64) ||
 			    (count < job_group->min_size) ||
 			    (count > job_group->max_size))
 				continue;

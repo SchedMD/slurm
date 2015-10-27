@@ -1007,14 +1007,14 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			if (step_ptr->cpu_count)
 				tasks = step_ptr->cpu_count;
 			else {
-				if (!(tasks = slurmdb_find_tres_count_in_string(
-					      step_ptr->tres_alloc_str,
-					      TRES_CPU))) {
-					if (!(tasks =
-					      slurmdb_find_tres_count_in_string(
-						      step_ptr->job_ptr->
-						      tres_alloc_str,
-						      TRES_CPU)))
+				if ((tasks = slurmdb_find_tres_count_in_string(
+					     step_ptr->tres_alloc_str,
+					     TRES_CPU)) == INFINITE64) {
+					if ((tasks =
+					     slurmdb_find_tres_count_in_string(
+						     step_ptr->job_ptr->
+						     tres_alloc_str,
+						     TRES_CPU)) == INFINITE64)
 						tasks = step_ptr->job_ptr->
 							total_nodes;
 				}
@@ -1150,14 +1150,14 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			if (step_ptr->cpu_count)
 				tasks = step_ptr->cpu_count;
 			else {
-				if (!(tasks = slurmdb_find_tres_count_in_string(
-					      step_ptr->tres_alloc_str,
-					      TRES_CPU))) {
-					if (!(tasks =
-					      slurmdb_find_tres_count_in_string(
-						      step_ptr->job_ptr->
-						      tres_alloc_str,
-						      TRES_CPU)))
+				if ((tasks = slurmdb_find_tres_count_in_string(
+					     step_ptr->tres_alloc_str,
+					     TRES_CPU)) == INFINITE64) {
+					if ((tasks =
+					     slurmdb_find_tres_count_in_string(
+						     step_ptr->job_ptr->
+						     tres_alloc_str,
+						     TRES_CPU)) == INFINITE64)
 						tasks = step_ptr->job_ptr->
 							total_nodes;
 				}
