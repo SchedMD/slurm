@@ -2124,7 +2124,7 @@ extern void start_power_mgr(pthread_t *thread_id);
  * IN node_name - name of node which has completed epilog
  */
 extern int step_epilog_complete(struct job_record  *job_ptr,
-	char *node_name);
+				char *node_name);
 
 /*
  * step_partial_comp - Note the completion of a job step on at least
