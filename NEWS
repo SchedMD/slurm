@@ -5,7 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Correct Slurm's RPM build if Munge is not installed.
  -- Job array termination status email ExitCode based upon highest exit code
-    from any task in the job array rather than the last task.
+    from any task in the job array rather than the last task. Also change the
+    state from "Ended" or "Failed" to "Mixed" where appropriate.
  -- Squeue recombines pending job array records only if their name and partition
     are identical.
  -- Fix some minor leaks in the job info and step info API.

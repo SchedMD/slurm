@@ -175,6 +175,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
+static void _job_array_comp(struct job_record *job_ptr, bool was_running);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
@@ -4617,8 +4618,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 				/* Master job record, even wihtout tasks,
 				 * counts as one job record */
 				job_count -= (orig_task_cnt - 1);
-			} else
+			} else {
+				_job_array_comp(job_ptr, false);
 				job_count -= (orig_task_cnt - new_task_count);
+			}
 
 			/* Set the task_cnt here since
 			 * job_completion_logger needs the total
@@ -12642,7 +12645,7 @@ extern bool job_array_start_test(struct job_record *job_ptr)
 	return true;
 }
 
-static void _job_array_comp(struct job_record *job_ptr)
+static void _job_array_comp(struct job_record *job_ptr, bool was_running)
 {
 	struct job_record *base_job_ptr;
 	uint32_t status;
@@ -12669,7 +12672,8 @@ static void _job_array_comp(struct job_record *job_ptr)
 					MAX(status, base_job_ptr->
 					    array_recs->max_exit_code);
 			}
-			if (base_job_ptr->array_recs->tot_run_tasks)
+			if (was_running &&
+			    base_job_ptr->array_recs->tot_run_tasks)
 				base_job_ptr->array_recs->tot_run_tasks--;
 			base_job_ptr->array_recs->tot_comp_tasks++;
 		}
@@ -12692,7 +12696,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		(void) bb_g_job_cancel(job_ptr);
 	}
 
-	_job_array_comp(job_ptr);
+	_job_array_comp(job_ptr, true);
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    ((job_ptr->array_task_id == NO_VAL) ||

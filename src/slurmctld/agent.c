@@ -1645,20 +1645,53 @@ static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
 			       char *buf, int buf_len)
 {
 	buf[0] = '\0';
+
 	if ((mail_type == MAIL_JOB_END) || (mail_type == MAIL_JOB_FAIL)) {
-		uint16_t base_state = job_ptr->job_state & JOB_STATE_BASE;
-		uint32_t exit_status;
-		if (job_ptr->array_recs)
-			exit_status = job_ptr->array_recs->max_exit_code;
-		else
-			exit_status = job_ptr->exit_code;
-		if (WIFEXITED(exit_status)) {
-			int exit_code = WEXITSTATUS(exit_status);
-			snprintf(buf, buf_len, ", %s, ExitCode %d",
-				 job_state_string(base_state), exit_code);
+		uint16_t base_state;
+		uint32_t exit_status_min, exit_status_max;
+		int exit_code_min, exit_code_max;
+
+		base_state = job_ptr->job_state & JOB_STATE_BASE;
+		if (job_ptr->array_recs) {
+			exit_status_min = job_ptr->array_recs->min_exit_code;
+			exit_status_max = job_ptr->array_recs->max_exit_code;
+			if (WIFEXITED(exit_status_min) &&
+			    WIFEXITED(exit_status_max)) {
+				char *state_string;
+				exit_code_min = WEXITSTATUS(exit_status_min);
+				exit_code_max = WEXITSTATUS(exit_status_max);
+				if ((exit_code_min == 0) && (exit_code_max > 0))
+					state_string = "Mixed";
+				else {
+					state_string =
+						job_state_string(base_state);
+				}
+				snprintf(buf, buf_len, ", %s, ExitCode [%d-%d]",
+					 state_string, exit_code_min,
+					 exit_code_max);
+			} else if (WIFSIGNALED(exit_status_max)) {
+				exit_code_max = WTERMSIG(exit_status_max);
+				snprintf(buf, buf_len, ", %s, MaxSignal [%d]",
+					 "Mixed", exit_code_max);
+			} else if (WIFEXITED(exit_status_max)) {
+				exit_code_max = WEXITSTATUS(exit_status_max);
+				snprintf(buf, buf_len, ", %s, MaxExitCode [%d]",
+					 "Mixed", exit_code_max);
+			} else {
+				snprintf(buf, buf_len, ", %s",
+					 job_state_string(base_state));
+			}
 		} else {
-			snprintf(buf, buf_len, ", %s",
-				 job_state_string(base_state));
+			exit_status_max = job_ptr->exit_code;
+			if (WIFEXITED(exit_status_max)) {
+				exit_code_max = WEXITSTATUS(exit_status_max);
+				snprintf(buf, buf_len, ", %s, ExitCode %d",
+					 job_state_string(base_state),
+					 exit_code_max);
+			} else {
+				snprintf(buf, buf_len, ", %s",
+					 job_state_string(base_state));
+			}
 		}
 	} else if (buf_len > 0) {
 		buf[0] = '\0';
@@ -1679,6 +1712,14 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 		mi->user_name = uid_to_string((uid_t)job_ptr->user_id);
 	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
+
+	/* Use job array master record, if available */
+	if ((job_ptr->array_task_id != NO_VAL) && !job_ptr->array_recs) {
+		struct job_record *master_job_ptr;
+		master_job_ptr = find_job_record(job_ptr->array_job_id);
+		if (master_job_ptr && master_job_ptr->array_recs)
+			job_ptr = master_job_ptr;
+	}
 
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
 	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
