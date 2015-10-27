@@ -2138,6 +2138,14 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
 extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 			     int *rem, uint32_t *max_rc);
 
+/*
+ * step_set_alloc_tres - set the tres up when allocating the step.
+ * Only set when job is running.
+ * NOTE: job write lock must be locked before calling this */
+extern void step_set_alloc_tres(
+	struct step_record *step_ptr, uint32_t node_count,
+	bool assoc_mgr_locked, bool make_formatted);
+
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
 

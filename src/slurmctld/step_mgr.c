@@ -2114,16 +2114,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
 	uint32_t node_count = 0;
-	uint64_t cpu_count, tres_count;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
-	char *tmp_tres_str = NULL;
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
-				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 #ifdef HAVE_ALPS_CRAY
 	uint32_t resv_id = 0;
@@ -2534,46 +2530,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	select_g_step_start(step_ptr);
 
-#ifdef HAVE_BG_L_P
-	/* Only L and P use this code */
-	if (step_ptr->job_ptr->details)
-		cpu_count = (uint64_t)step_ptr->job_ptr->details->min_cpus;
-	else
-		cpu_count = (uint64_t)step_ptr->job_ptr->cpu_cnt;
-#else
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-		cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
-	else
-		cpu_count = (uint64_t)step_ptr->cpu_count;
-#endif
-	xfree(step_ptr->tres_alloc_str);
 
-	tres_count = (uint64_t)step_ptr->pn_min_memory;
-	if (tres_count & MEM_PER_CPU) {
-		tres_count &= (~MEM_PER_CPU);
-		tres_count *= cpu_count;
-	} else
-		tres_count *= node_count;
-
-	xstrfmtcat(step_ptr->tres_alloc_str,
-		   "%s%u=%"PRIu64",%u=%"PRIu64",%u=%u",
-		   step_ptr->tres_alloc_str ? "," : "",
-		   TRES_CPU, cpu_count,
-		   TRES_MEM, tres_count,
-		   TRES_NODE, node_count);
-
-	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
-		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",
-			   step_ptr->tres_alloc_str ? "," : "",
-			   tmp_tres_str);
-		xfree(tmp_tres_str);
-	}
-
-	xfree(step_ptr->tres_fmt_alloc_str);
-	assoc_mgr_lock(&locks);
-	step_ptr->tres_fmt_alloc_str = slurmdb_make_tres_string_from_simple(
-		step_ptr->tres_alloc_str, assoc_mgr_tres_list);
-	assoc_mgr_unlock(&locks);
+	step_set_alloc_tres(step_ptr, node_count, false, true);
 
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;
@@ -3400,6 +3358,72 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		*max_rc = step_ptr->exit_code;
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * step_set_alloc_tres - set the tres up when allocating the step.
+ * Only set when job is running.
+ * NOTE: job write lock must be locked before calling this */
+extern void step_set_alloc_tres(
+	struct step_record *step_ptr, uint32_t node_count,
+	bool assoc_mgr_locked, bool make_formatted)
+{
+	uint64_t cpu_count, tres_count;
+	char *tmp_tres_str = NULL;
+	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+				   READ_LOCK, NO_LOCK, NO_LOCK };
+
+	xfree(step_ptr->tres_alloc_str);
+#ifdef HAVE_BG_L_P
+	/* Only L and P use this code */
+	if (step_ptr->job_ptr->details)
+		cpu_count = (uint64_t)step_ptr->job_ptr->details->min_cpus;
+	else
+		cpu_count = (uint64_t)step_ptr->job_ptr->cpu_cnt;
+#else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+		cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
+	else
+		cpu_count = (uint64_t)step_ptr->cpu_count;
+#endif
+	xfree(step_ptr->tres_alloc_str);
+
+	tres_count = (uint64_t)step_ptr->pn_min_memory;
+	if (tres_count & MEM_PER_CPU) {
+		tres_count &= (~MEM_PER_CPU);
+		tres_count *= cpu_count;
+	} else
+		tres_count *= node_count;
+
+	xstrfmtcat(step_ptr->tres_alloc_str,
+		   "%s%u=%"PRIu64",%u=%"PRIu64",%u=%u",
+		   step_ptr->tres_alloc_str ? "," : "",
+		   TRES_CPU, cpu_count,
+		   TRES_MEM, tres_count,
+		   TRES_NODE, node_count);
+
+	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
+		xstrfmtcat(step_ptr->tres_alloc_str, "%s%s",
+			   step_ptr->tres_alloc_str ? "," : "",
+			   tmp_tres_str);
+		xfree(tmp_tres_str);
+	}
+
+	if (make_formatted) {
+		xfree(step_ptr->tres_fmt_alloc_str);
+
+		if (!assoc_mgr_locked)
+			assoc_mgr_lock(&locks);
+
+		step_ptr->tres_fmt_alloc_str =
+			slurmdb_make_tres_string_from_simple(
+				step_ptr->tres_alloc_str, assoc_mgr_tres_list);
+
+		if (!assoc_mgr_locked)
+			assoc_mgr_unlock(&locks);
+	}
+
+	return;
 }
 
 /* convert a range of nodes allocated to a step to a hostlist with
