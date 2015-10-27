@@ -49,6 +49,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix a few spots missing defines of accounting_enforce or acct_db_conn
     in the plugins.
  -- Show requested TRES in scontrol show jobs when job is pending.
+ -- Improve sched/backfill support for job features, especially XOR construct.
+ -- Correct scheduling logic for job features option with XOR construct that
+    could delay a job's initiation.
 
 * Changes in Slurm 15.08.2
 ==========================

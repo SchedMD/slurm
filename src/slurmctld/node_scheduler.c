@@ -1003,7 +1003,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 	char *tmp_str = bitmap2node_name(job_ptr->details->req_node_bitmap);
-	info("job %u requires %d:%d:%d nodes %s err:%u",
+	info("job %u requires %d:%d:%d req_nodes:%s err:%u",
 	     job_ptr->job_id, min_nodes, req_nodes, max_nodes,
 	     tmp_str, error_code);
 	xfree(tmp_str);
@@ -1493,13 +1493,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 			tried_sched = false;	/* need to test these nodes */
 			if ((switch_record_cnt > 1) &&
-			    ((i+1) < node_set_size)) {
+			    ((i+1) < node_set_size) &&
+			    (min_feature == max_feature)) {
 				/* Keep accumulating to optimize topology */
 				continue;
 			}
 
-			if ((shared || preempt_flag)	&&
-			    ((i+1) < node_set_size)	&&
+			if ((shared || preempt_flag)	 &&
+			    ((i+1) < node_set_size)	 &&
+			    (min_feature == max_feature) &&
 			    (node_set_ptr[i].weight ==
 			     node_set_ptr[i+1].weight)) {
 				/* Keep accumulating so we can pick the
