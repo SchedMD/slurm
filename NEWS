@@ -37,7 +37,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Correct Slurm's RPM build if Munge is not installed.
  -- Job array termination status email ExitCode based upon highest exit code
-    from any task in the job array rather than the last task.
+    from any task in the job array rather than the last task. Also change the
+    state from "Ended" or "Failed" to "Mixed" where appropriate.
  -- Squeue recombines pending job array records only if their name and partition
     are identical.
  -- Fix some minor leaks in the job info and step info API.
@@ -52,6 +53,10 @@ documents those changes that are of interest to users and administrators.
  -- Improve sched/backfill support for job features, especially XOR construct.
  -- Correct scheduling logic for job features option with XOR construct that
     could delay a job's initiation.
+ -- Remove unneeded frees when creating a tres string.
+ -- Send a tres_alloc_str for the batch step
+ -- Fix incorrect check for slurmdb_find_tres_count_in_string in various places,
+    it needed to check for INFINITE64 instead of zero.
 
 * Changes in Slurm 15.08.2
 ==========================

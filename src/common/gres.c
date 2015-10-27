@@ -6623,7 +6623,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			continue; /* not tracked */
 
 		if (slurmdb_find_tres_count_in_string(
-			    tres_str, tres_rec->id))
+			    tres_str, tres_rec->id) != INFINITE64)
 			continue; /* already handled */
 
 		/* New gres */

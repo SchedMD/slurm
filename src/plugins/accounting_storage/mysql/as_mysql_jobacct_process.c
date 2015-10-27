@@ -947,11 +947,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				job->track_steps = 1;
 			else if (step &&
 				 (xstrcmp(step->stepname, job->jobname) ||
-				  ((j_cpus = slurmdb_find_tres_count_in_string(
-					job->tres_alloc_str, TRES_CPU)) &&
-				   (s_cpus = slurmdb_find_tres_count_in_string(
-					step->tres_alloc_str, TRES_CPU)) &&
-				   j_cpus != s_cpus)))
+				  (((j_cpus = slurmdb_find_tres_count_in_string(
+					     job->tres_alloc_str, TRES_CPU))
+				    != INFINITE64) &&
+				   ((s_cpus = slurmdb_find_tres_count_in_string(
+					     step->tres_alloc_str, TRES_CPU))
+				    != INFINITE64) &&
+				  j_cpus != s_cpus)))
 					job->track_steps = 1;
 		}
 	skip_steps:
