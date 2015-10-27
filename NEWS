@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct scheduling logic for job features option with XOR construct that
     could delay a job's initiation.
  -- Remove unneeded frees when creating a tres string.
+ -- Send a tres_alloc_str for the batch step
 
 * Changes in Slurm 15.08.2
 ==========================

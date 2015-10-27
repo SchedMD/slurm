@@ -3368,36 +3368,49 @@ extern void step_set_alloc_tres(
 	struct step_record *step_ptr, uint32_t node_count,
 	bool assoc_mgr_locked, bool make_formatted)
 {
-	uint64_t cpu_count, tres_count;
+	uint64_t cpu_count = 1, mem_count = 1;
 	char *tmp_tres_str = NULL;
 
-	xfree(step_ptr->tres_alloc_str);
-#ifdef HAVE_BG_L_P
-	/* Only L and P use this code */
-	if (step_ptr->job_ptr->details)
-		cpu_count = (uint64_t)step_ptr->job_ptr->details->min_cpus;
-	else
-		cpu_count = (uint64_t)step_ptr->job_ptr->cpu_cnt;
-#else
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-		cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
-	else
-		cpu_count = (uint64_t)step_ptr->cpu_count;
-#endif
-	xfree(step_ptr->tres_alloc_str);
+	xassert(step_ptr);
 
-	tres_count = (uint64_t)step_ptr->pn_min_memory;
-	if (tres_count & MEM_PER_CPU) {
-		tres_count &= (~MEM_PER_CPU);
-		tres_count *= cpu_count;
-	} else
-		tres_count *= node_count;
+	xfree(step_ptr->tres_alloc_str);
+	xfree(step_ptr->tres_fmt_alloc_str);
+
+	if ((step_ptr->step_id == SLURM_BATCH_SCRIPT) &&
+	    step_ptr->job_ptr->job_resrcs) {
+		/* get the cpus and memory on the first node */
+		if (step_ptr->job_ptr->job_resrcs->cpus)
+			cpu_count = step_ptr->job_ptr->job_resrcs->cpus[0];
+		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
+			mem_count = step_ptr->job_ptr->job_resrcs->
+				memory_allocated[0];
+	} else {
+#ifdef HAVE_BG_L_P
+		/* Only L and P use this code */
+		if (step_ptr->job_ptr->details)
+			cpu_count =
+				(uint64_t)step_ptr->job_ptr->details->min_cpus;
+		else
+			cpu_count = (uint64_t)step_ptr->job_ptr->cpu_cnt;
+#else
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
+		else
+			cpu_count = (uint64_t)step_ptr->cpu_count;
+#endif
+		mem_count = (uint64_t)step_ptr->pn_min_memory;
+		if (mem_count & MEM_PER_CPU) {
+			mem_count &= (~MEM_PER_CPU);
+			mem_count *= cpu_count;
+		} else
+			mem_count *= node_count;
+	}
 
 	xstrfmtcat(step_ptr->tres_alloc_str,
 		   "%s%u=%"PRIu64",%u=%"PRIu64",%u=%u",
 		   step_ptr->tres_alloc_str ? "," : "",
 		   TRES_CPU, cpu_count,
-		   TRES_MEM, tres_count,
+		   TRES_MEM, mem_count,
 		   TRES_NODE, node_count);
 
 	if ((tmp_tres_str = gres_2_tres_str(step_ptr->gres_list, 0, true))) {
@@ -3410,8 +3423,6 @@ extern void step_set_alloc_tres(
 	if (make_formatted) {
 		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 					   READ_LOCK, NO_LOCK, NO_LOCK };
-		xfree(step_ptr->tres_fmt_alloc_str);
-
 		if (!assoc_mgr_locked)
 			assoc_mgr_lock(&locks);
 
