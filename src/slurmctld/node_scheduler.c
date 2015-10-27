@@ -1002,7 +1002,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 	char *tmp_str = bitmap2node_name(job_ptr->details->req_node_bitmap);
-	info("job %u requires %d:%d:%d nodes %s err:%u",
+	info("job %u requires %d:%d:%d req_nodes:%s err:%u",
 	     job_ptr->job_id, min_nodes, req_nodes, max_nodes,
 	     tmp_str, error_code);
 	xfree(tmp_str);
