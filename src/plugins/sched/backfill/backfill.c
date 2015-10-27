@@ -151,7 +151,7 @@ static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int usec);
-static int  _num_feature_count(struct job_record *job_ptr);
+static int  _num_feature_count(struct job_record *job_ptr, bool *has_xor);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
@@ -268,7 +268,7 @@ static bool _many_pending_rpcs(void)
 }
 
 /* test if job has feature count specification */
-static int _num_feature_count(struct job_record *job_ptr)
+static int _num_feature_count(struct job_record *job_ptr, bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	int rc = 0;
@@ -282,6 +282,8 @@ static int _num_feature_count(struct job_record *job_ptr)
 	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
+		if (feat_ptr->op_code == FEATURE_OP_XOR)
+			*has_xor = true;
 	}
 	list_iterator_destroy(feat_iter);
 
@@ -298,11 +300,15 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap)
 {
-	bitstr_t *tmp_bitmap;
+	bitstr_t *low_bitmap = NULL, *tmp_bitmap = NULL;
 	int rc = SLURM_SUCCESS;
-	int feat_cnt = _num_feature_count(job_ptr);
+	bool has_xor = false;
+	int feat_cnt = _num_feature_count(job_ptr, &has_xor);
+	struct job_details *detail_ptr = job_ptr->details;
 	List preemptee_candidates = NULL;
 	List preemptee_job_list = NULL;
+	ListIterator feat_iter;
+	struct feature_record *feat_ptr;
 
 	if (feat_cnt) {
 		/* Ideally schedule the job feature by feature,
@@ -312,9 +318,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		 * one feature count. It should work fairly well
 		 * in cases where there are multiple feature
 		 * counts. */
-		struct job_details *detail_ptr = job_ptr->details;
-		ListIterator feat_iter;
-		struct feature_record *feat_ptr;
 		int i = 0, list_size;
 		uint16_t *feat_cnt_orig = NULL, high_cnt = 0;
 
@@ -355,6 +358,77 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		}
 		list_iterator_destroy(feat_iter);
 		xfree(feat_cnt_orig);
+	} else if (has_xor) {
+		/* Cache the feature information and test the individual
+		 * features, one at a time */
+		struct feature_record feature_base;
+		List feature_cache = detail_ptr->feature_list;
+		time_t low_start = 0;
+
+		detail_ptr->feature_list = list_create(NULL);
+		feature_base.count = 0;
+		feature_base.op_code = FEATURE_OP_END;
+		list_append(detail_ptr->feature_list, &feature_base);
+
+		tmp_bitmap = bit_copy(*avail_bitmap);
+		feat_iter = list_iterator_create(feature_cache);
+		while ((feat_ptr =
+		       (struct feature_record *) list_next(feat_iter))) {
+			feature_base.name = feat_ptr->name;
+			if ((job_req_node_filter(job_ptr, *avail_bitmap) ==
+			      SLURM_SUCCESS) &&
+			    (bit_set_count(*avail_bitmap) >= min_nodes)) {
+				preemptee_candidates =
+					slurm_find_preemptable_jobs(job_ptr);
+				rc = select_g_job_test(job_ptr, *avail_bitmap,
+						       min_nodes, max_nodes,
+						       req_nodes,
+						       SELECT_MODE_WILL_RUN,
+						       preemptee_candidates,
+						       &preemptee_job_list,
+						       exc_core_bitmap);
+				FREE_NULL_LIST(preemptee_job_list);
+				if ((rc == SLURM_SUCCESS) &&
+				    ((low_start == 0) ||
+				     (low_start > job_ptr->start_time))) {
+					low_start = job_ptr->start_time;
+					low_bitmap = *avail_bitmap;
+					*avail_bitmap = NULL;
+				}
+			}
+			FREE_NULL_BITMAP(*avail_bitmap);
+			*avail_bitmap = bit_copy(tmp_bitmap);
+		}
+		list_iterator_destroy(feat_iter);
+		FREE_NULL_BITMAP(tmp_bitmap);
+		if (low_start) {
+			job_ptr->start_time = low_start;
+			rc = SLURM_SUCCESS;
+			*avail_bitmap = low_bitmap;
+		} else {
+			rc = ESLURM_NODES_BUSY;
+			FREE_NULL_BITMAP(low_bitmap);
+		}
+
+		/* Restore the original feature information */
+		list_destroy(detail_ptr->feature_list);
+		detail_ptr->feature_list = feature_cache;
+	} else if (detail_ptr->feature_list) {
+		if ((job_req_node_filter(job_ptr, *avail_bitmap) !=
+		     SLURM_SUCCESS) ||
+		    (bit_set_count(*avail_bitmap) < min_nodes)) {
+			rc = ESLURM_NODES_BUSY;
+		} else {
+			preemptee_candidates =
+					slurm_find_preemptable_jobs(job_ptr);
+			rc = select_g_job_test(job_ptr, *avail_bitmap,
+					       min_nodes, max_nodes, req_nodes,
+					       SELECT_MODE_WILL_RUN,
+					       preemptee_candidates,
+					       &preemptee_job_list,
+					       exc_core_bitmap);
+			FREE_NULL_LIST(preemptee_job_list);
+		}
 	} else {
 		/* Try to schedule the job. First on dedicated nodes
 		 * then on shared nodes (if so configured). */
@@ -399,7 +473,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 
 	FREE_NULL_LIST(preemptee_candidates);
 	return rc;
-
 }
 
 /* Terminate backfill_agent */
