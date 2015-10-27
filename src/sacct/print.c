@@ -247,9 +247,9 @@ void print_fields(type_t type, void *object)
 		if (step->stats.cpu_min != NO_VAL)
 			got_stats = true;
 
-		if (!(step_cpu_tres_rec_count =
-		      slurmdb_find_tres_count_in_string(
-			      step->tres_alloc_str, TRES_CPU)))
+		if ((step_cpu_tres_rec_count =
+		     slurmdb_find_tres_count_in_string(
+			     step->tres_alloc_str, TRES_CPU)) == INFINITE64)
 			step_cpu_tres_rec_count =
 				slurmdb_find_tres_count_in_string(
 					(job->tres_alloc_str &&
