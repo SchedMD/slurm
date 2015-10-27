@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Send a tres_alloc_str for the batch step
  -- Fix incorrect check for slurmdb_find_tres_count_in_string in various places,
     it needed to check for INFINITE64 instead of zero.
+ -- Don't allow scontrol to create partitions with the name "DEFAULT".
 
 * Changes in Slurm 15.08.2
 ==========================
