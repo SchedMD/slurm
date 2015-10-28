@@ -2657,7 +2657,7 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 	fd = stepd_connect(conf->spooldir, conf->node_name, jobid, stepid,
 			   &protocol_version);
 	if (fd == -1) {
-		debug("signal for nonexistant %u.%u stepd_connect failed: %m",
+		debug("signal for nonexistent %u.%u stepd_connect failed: %m",
 		      jobid, stepid);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -2744,7 +2744,7 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id, &protocol_version);
 	if (fd == -1) {
-		debug("checkpoint for nonexistant %u.%u stepd_connect "
+		debug("checkpoint for nonexistent %u.%u stepd_connect "
 		      "failed: %m", req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
@@ -2790,7 +2790,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 	fd = stepd_connect(conf->spooldir, conf->node_name,
 			   req->job_id, req->job_step_id, &protocol_version);
 	if (fd == -1) {
-		debug("kill for nonexistant job %u.%u stepd_connect "
+		debug("kill for nonexistent job %u.%u stepd_connect "
 		      "failed: %m", req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;

@@ -448,7 +448,12 @@ scontrol_create_part (int argc, char *argv[])
 		exit_code = 1;
 		error("PartitionName must be given.");
 		return 0;
+	} else if (strcasecmp(part_msg.name, "default") == 0) {
+		exit_code = 1;
+		error("PartitionName cannot be \"DEFAULT\".");
+		return 0;
 	}
+
 	if (update_cnt == 0) {
 		exit_code = 1;
 		error("No parameters specified");
