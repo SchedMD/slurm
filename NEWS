@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect check for slurmdb_find_tres_count_in_string in various places,
     it needed to check for INFINITE64 instead of zero.
  -- Don't allow scontrol to create partitions with the name "DEFAULT".
+ -- burst_buffer/cray: Change error from "invalid request" to "permssion denied"
+    if a non-authorized user tries to create/destroy a persistent buffer.
 
 * Changes in Slurm 15.08.2
 ==========================

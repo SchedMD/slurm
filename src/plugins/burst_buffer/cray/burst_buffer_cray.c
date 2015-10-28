@@ -2116,7 +2116,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				info("%s: User %d disabled from creating "
 				     "persistent burst buffer",
 				     __func__, submit_uid);
-				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				rc = ESLURM_BURST_BUFFER_PERMISSION;
 				break;
 			} else if (!strncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
@@ -2148,7 +2148,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				info("%s: User %d disabled from destroying "
 				     "persistent burst buffer",
 				     __func__, submit_uid);
-				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				rc = ESLURM_BURST_BUFFER_PERMISSION;
 				break;
 			} else if (!strncmp(tok, "destroy_persistent", 17)) {
 				have_bb = true;
