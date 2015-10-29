@@ -341,12 +341,12 @@ static void _set_procdatas(List lresp)
 		/* this rank is local, store local info ab't it! */
 		if (0 <= localid) {
 			PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_RANK);
-			PMIX_VAL_SET(&kvp->value, uint32_t, localid);
+			PMIX_VAL_SET(&kvp->value, uint16_t, localid);
 			list_append(rankinfo, kvp);
 
 			/* TODO: fix when several apps will appear */
 			PMIXP_ALLOC_KEY(kvp, PMIX_NODE_RANK);
-			PMIX_VAL_SET(&kvp->value, uint32_t, localid);
+			PMIX_VAL_SET(&kvp->value, uint16_t, localid);
 			list_append(rankinfo, kvp);
 		}
 
