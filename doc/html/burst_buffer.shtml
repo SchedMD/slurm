@@ -174,7 +174,10 @@ A sample batch script follows:</p>
 
 <p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may be
 limited by the "Flags" option in the burst_buffer.conf file.
-By default only privileged users can create or destroy persistent burst buffers.</p>
+See the burst_buffer.conf man page for more information.
+By default only <a href="user_permissions.html">privileged users</a>
+(Slurm operators and administrators)
+can create or destroy persistent burst buffers.</p>
 
 <h2><a name="interactive">Interactive Job Options</a></h2>
 
@@ -267,6 +270,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:20G
 </pre>
 
-<p style="text-align:center;">Last modified 18 September 2015</p>
+<p style="text-align:center;">Last modified 29 October 2015</p>
 
 <!--#include virtual="footer.txt"-->
