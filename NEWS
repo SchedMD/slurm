@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - When inserting a job and begin_time is 0 do not set it to
     submit_time.  0 means the job isn't eligible yet so we need to treat it so.
  -- MYSQL - Don't display ineligible jobs when querying for a window of time.
+ -- Fix creation of advanced reservation of cores on nodes which are DOWN.
 
 * Changes in Slurm 15.08.2
 ==========================
