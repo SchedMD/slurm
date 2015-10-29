@@ -1726,16 +1726,15 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		rc = ESLURMD_PROLOG_FAILED;
 	}
 
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
-		_make_prolog_mem_container(msg);
-
-	if (container_g_create(req->job_id))
-		error("container_g_create(%u): %m", req->job_id);
-
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
-
 	if (first_job_run) {
+		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+			_make_prolog_mem_container(msg);
+
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
+
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);

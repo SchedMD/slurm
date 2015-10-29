@@ -28,6 +28,9 @@ documents those changes that are of interest to users and administrators.
  -- Don't allow scontrol to create partitions with the name "DEFAULT".
  -- burst_buffer/cray: Change error from "invalid request" to "permssion denied"
     if a non-authorized user tries to create/destroy a persistent buffer.
+ -- PrologFlags work: Setting a flag of "Contain" implicitly sets the "Alloc"
+    flag. Fix code path which could prevent execution of the Prolog when the
+    "Alloc" or "Contain" flag were set.
 
 * Changes in Slurm 15.08.2
 ==========================
