@@ -301,11 +301,15 @@ static void _set_procdatas(List lresp)
 	xfree(p);
 	list_append(lresp, kvp);
 
+	PMIXP_ALLOC_KEY(kvp, PMIX_NODEID);
+	PMIX_VAL_SET(&kvp->value, uint32_t, nsptr->node_id);
+	list_append(lresp, kvp);
+
 	/* store information about local processes */
 	for (i = 0; i < pmixp_info_tasks(); i++) {
 		List rankinfo;
 		ListIterator it;
-		int count, j, nodeid, localid;
+		int count, j, localid, nodeid;
 		char *nodename;
 		pmix_info_t *info;
 
@@ -356,9 +360,6 @@ static void _set_procdatas(List lresp)
 		PMIX_VAL_SET(&kvp->value, string, nodename);
 		list_append(rankinfo, kvp);
 		free(nodename);
-		PMIXP_ALLOC_KEY(kvp, PMIX_NODEID);
-		PMIX_VAL_SET(&kvp->value, uint32_t, nodeid);
-		list_append(rankinfo, kvp);
 
 		/* merge rankinfo into one PMIX_PROC_DATA key */
 		count = list_count(rankinfo);
