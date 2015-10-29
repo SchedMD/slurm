@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- PrologFlags work: Setting a flag of "Contain" implicitly sets the "Alloc"
     flag. Fix code path which could prevent execution of the Prolog when the
     "Alloc" or "Contain" flag were set.
+ -- Fix for acct_gather_energy/cray|ibmaem to work with missed enum.
 
 * Changes in Slurm 15.08.2
 ==========================
