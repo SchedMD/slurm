@@ -1465,7 +1465,8 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 					   job_cond->usage_start);
 			else
 				xstrfmtcat(*extra,
-					   "(t1.time_eligible < %ld "
+					   "(t1.time_eligible "
+					   "&& t1.time_eligible < %ld "
 					   "&& (t1.time_end >= %ld "
 					   "|| t1.time_end = 0)))",
 					   job_cond->usage_end,
@@ -1476,7 +1477,8 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			else
 				xstrcat(*extra, " where (");
 			xstrfmtcat(*extra,
-				   "(t1.time_eligible < %ld))",
+				   "(t1.time_eligible && "
+				   "t1.time_eligible < %ld))",
 				   job_cond->usage_end);
 		}
 	}
