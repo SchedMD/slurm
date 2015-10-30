@@ -2519,7 +2519,7 @@ _rpc_health_check(slurm_msg_t *msg)
 	 * slurmctld in hopes of avoiding having the node set DOWN due to
 	 * slurmd paging and not being able to respond in a timely fashion. */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
-		error("Error responding to ping: %m");
+		error("Error responding to health check: %m");
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
@@ -2564,7 +2564,7 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 		 * due to slurmd paging and not being able to respond in a
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
-			error("Error responding to ping: %m");
+			error("Error responding to account gather: %m");
 			send_registration_msg(SLURM_SUCCESS, false);
 		}
 	} else {
