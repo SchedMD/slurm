@@ -102,17 +102,21 @@ set period_end [exec date -d $end_date +%s]
 set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 
+#job0 - we really want this to look like job1 but run right before hand.
+set job0_start $period_start
+set job0_run 1200
+set job0_end [expr $job0_start + $job0_run]
 #job1
-set job1_start $period_start
-set job1_run 3900
-set job1_end [expr $job1_start+$job1_run]
+set job1_start [expr $period_start + 1200]
+set job1_run 2700
+set job1_end [expr $job1_start + $job1_run]
 # This will give us the correct time we ran for
 set job1_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
 set job1_start_str [timestamp -format %Y-%m-%dT%X -seconds $job1_start]
 set job1_end_str [timestamp -format %Y-%m-%dT%X -seconds $job1_end]
 set job1_nodes $node1
 set job1_cpus $node1_cpus
-set job1_alloc [expr $job1_run * $job1_cpus]
+set job1_alloc [expr ($job1_run + $job0_run) * $job1_cpus]
 set job1_acct $account1
 
 #job2
@@ -141,7 +145,8 @@ set job3_start $job2_end
 set job3_run 3900
 set job3_end [expr $job3_start+$job3_run]
 # This will give us the correct time we ran for
-set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
+set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job3_run]]
+
 set job3_start_str [timestamp -format %Y-%m-%dT%X -seconds $job3_start]
 set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
 #run on just node0
@@ -331,6 +336,7 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+puts $file "('65536', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job0_start, $job0_start, $job0_start, $job0_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
 puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
 puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
 puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
