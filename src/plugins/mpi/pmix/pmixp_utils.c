@@ -192,17 +192,33 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
 	int rc;
+	struct timeval tv;
+	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLIN;
-
 	/* Drop shutdown before the check */
 	*shutdown = 0;
 
-	rc = poll(pfd, 1, 10);
-	if (rc < 0) {
-		*shutdown = -errno;
-		return false;
+	gettimeofday(&tv,NULL);
+	start = tv.tv_sec + 1E-6*tv.tv_usec;
+	cur = start;
+	while( cur - start < 0.01 ){
+		rc = poll(pfd, 1, 10);
+		
+		/* update current timestamp */
+		gettimeofday(&tv,NULL);
+		cur = tv.tv_sec + 1E-6*tv.tv_usec;
+		if( rc < 0 ){
+			if( errno == EINTR ){
+				continue;
+			} else {
+				*shutdown = -errno;
+				return false;
+			}
+		}
+		break;
 	}
+
 	bool ret = ((rc == 1) && (pfd[0].revents & POLLIN));
 	if (!ret && (pfd[0].revents & (POLLERR | POLLHUP | POLLNVAL))) {
 		if (pfd[0].revents & (POLLERR | POLLNVAL)) {
@@ -219,13 +235,31 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
 	int rc;
+	struct timeval tv;
+	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLOUT;
-	rc = poll(pfd, 1, 10);
-	if (rc < 0) {
-		*shutdown = -errno;
-		return false;
+
+	gettimeofday(&tv,NULL);
+	start = tv.tv_sec + 1E-6*tv.tv_usec;
+	cur = start;
+	while( cur - start < 0.01 ){
+		rc = poll(pfd, 1, 10);
+		
+		/* update current timestamp */
+		gettimeofday(&tv,NULL);
+		cur = tv.tv_sec + 1E-6*tv.tv_usec;
+		if( rc < 0 ){
+			if( errno == EINTR ){
+				continue;
+			} else {
+				*shutdown = -errno;
+				return false;
+			}
+		}
+		break;
 	}
+
 	if (pfd[0].revents & (POLLERR | POLLHUP | POLLNVAL)) {
 		if (pfd[0].revents & (POLLERR | POLLNVAL)) {
 			*shutdown = -EBADF;
