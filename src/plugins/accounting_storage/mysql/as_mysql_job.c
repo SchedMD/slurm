@@ -458,8 +458,6 @@ no_rollup_change:
 		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
 
 	if (!job_ptr->db_index) {
-		if (!begin_time)
-			begin_time = submit_time;
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, mod_time, id_array_job, id_array_task, "

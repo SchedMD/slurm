@@ -1702,16 +1702,15 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		rc = ESLURMD_PROLOG_FAILED;
 	}
 
-	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
-		_make_prolog_mem_container(msg);
-
-	if (container_g_create(req->job_id))
-		error("container_g_create(%u): %m", req->job_id);
-
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
-
 	if (first_job_run) {
+		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
+			_make_prolog_mem_container(msg);
+
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
+
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
@@ -2506,7 +2505,7 @@ _rpc_health_check(slurm_msg_t *msg)
 	 * slurmctld in hopes of avoiding having the node set DOWN due to
 	 * slurmd paging and not being able to respond in a timely fashion. */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
-		error("Error responding to ping: %m");
+		error("Error responding to health check: %m");
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
@@ -2551,7 +2550,7 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 		 * due to slurmd paging and not being able to respond in a
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
-			error("Error responding to ping: %m");
+			error("Error responding to account gather: %m");
 			send_registration_msg(SLURM_SUCCESS, false);
 		}
 	} else {

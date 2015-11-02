@@ -176,12 +176,18 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 			    (socklen_t *)&len)) < 0) {
 		if (errno == EINTR)
 			continue;
-		if (errno == EAGAIN       ||
-		    errno == ECONNABORTED ||
-		    errno == EWOULDBLOCK) {
+		if ((errno == EAGAIN) ||
+		    (errno == ECONNABORTED) ||
+		    (errno == EWOULDBLOCK)) {
 			return SLURM_SUCCESS;
 		}
 		error("Error on msg accept socket: %m");
+		if ((errno == EMFILE)  ||
+		    (errno == ENFILE)  ||
+		    (errno == ENOBUFS) ||
+		    (errno == ENOMEM)) {
+			return SLURM_SUCCESS;
+		}
 		obj->shutdown = true;
 		return SLURM_SUCCESS;
 	}

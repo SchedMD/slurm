@@ -3851,7 +3851,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		FREE_NULL_BITMAP(feature_bitmap);
 	}
 
-	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) {
+	if (((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) &&
+	    ((resv_desc_ptr->flags & RESERVE_FLAG_SPEC_NODES) == 0)) {
 		/* Nodes must be available */
 		bit_and(node_bitmap, avail_node_bitmap);
 	}

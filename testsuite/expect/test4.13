@@ -52,7 +52,7 @@ array set node_info {
 	FreeMem            freemem
 	Gres               gres
 	NodeAddr           nodeaddr
-	NodeName           nodehost
+	NodeHostName       nodehost
 	RealMemory         memory
 	State              statelong
 	Sockets            sockets
@@ -103,8 +103,7 @@ foreach option [array names node_info] {
 	spawn $scontrol show node $test_node
 	expect {
 		-re "\\m$option=($alpha_numeric_dot)\\M" {
-			set node_sinfo_vals($node_info($option)) \
-			    $expect_out(1,string)
+			set node_sinfo_vals($node_info($option)) $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
@@ -122,11 +121,6 @@ set first_option 1
 foreach option [array names node_sinfo_vals] {
 
 	set match 0
-	if {$first_option == 1} {
-		set first_option 0
-	} else {
-		log_user 0
-	}
 	spawn $sinfo -n$test_node -O$option -h
 	expect {
 		-nocase -re "$node_sinfo_vals($option)" {
@@ -145,10 +139,9 @@ foreach option [array names node_sinfo_vals] {
 	if {$match != 1} {
 		send_user "\nFAILURE: Node information $option output does "
 		send_user "not match sinfo output. "
-		send_user "Looking for value: $node_sinfo_vals($option)\n"
-		exit 1
+		send_user "Looking for value: $option = $node_sinfo_vals($option)\n"
+		set exit_code 1
 	}
-	log_user 1
 }
 
 #
@@ -218,11 +211,6 @@ set first_option 1
 foreach option [array names part_sinfo_vals] {
 
 	set match 0
-	if {$first_option == 1} {
-		set $first_option 0
-	} else {
-		log_user 0
-	}
 	spawn $sinfo -p$test_part -O$option -h
 	expect {
 		-nocase -re "$part_sinfo_vals($option)" {
@@ -243,15 +231,16 @@ foreach option [array names part_sinfo_vals] {
 		send_user "output does not match sinfo output. "
 		send_user "Looking for value: "
 		send_user "$option = $part_sinfo_vals($option)\n"
-		cleanup
-		exit 1
+		set exit_code 1
 	}
-	log_user 1
 }
 
 cleanup
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
+
 exit $exit_code
