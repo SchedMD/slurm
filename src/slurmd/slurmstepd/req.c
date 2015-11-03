@@ -153,7 +153,7 @@ _create_socket(const char *name)
 	if (bind(fd, (struct sockaddr *) &addr, len) < 0)
 		return -2;
 
-	if (listen(fd, 5) < 0)
+	if (listen(fd, 32) < 0)
 		return -3;
 
 	return fd;
