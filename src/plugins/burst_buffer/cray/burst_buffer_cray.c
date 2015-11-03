@@ -852,6 +852,10 @@ static void _recover_bb_state(void)
 			bb_alloc = bb_find_name_rec(name, user_id, &bb_state);
 		}
 		if (bb_alloc) {
+			if (bb_state.bb_config.debug_flag) {
+				info("Recovered burst buffer %s from user %u",
+				     bb_alloc->name, bb_alloc->user_id);
+			}
 			xfree(bb_alloc->account);
 			bb_alloc->account = account;
 			account = NULL;
