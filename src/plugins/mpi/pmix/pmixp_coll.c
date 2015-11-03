@@ -116,6 +116,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 		memset(coll->ch_contribs, 0, sizeof(int) * coll->children_cnt);
 		coll->seq++; /* move to the next collective */
 		coll->contrib_cntr = 0;
+		coll->contrib_local = 0;
 		coll->cbdata = NULL;
 		coll->cbfunc = NULL;
 		break;
