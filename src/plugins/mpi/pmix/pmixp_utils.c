@@ -318,7 +318,7 @@ int pmixp_stepd_send(char *nodelist, const char *address, char *data,
 {
 
 	int retry = 0, rc;
-	unsigned int delay = 100; /* in milliseconds */
+	unsigned int delay = 500; /* in milliseconds */
 	hostlist_t hl;
 
 	hl = hostlist_create(nodelist);
