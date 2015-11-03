@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     in an hour counting multiple times.
  -- Burstbuffer/Cray plugin - Fix for persistent burst buffer use.
  -- Modifications to pam_slurm_adopt to work correctly for the "extern" step.
+ -- Alphabetize debugflags when printing them out.
 
 * Changes in Slurm 15.08.2
 ==========================
