@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
     administrator.
  -- MYSQL - Fix rollups for multiple jobs running by the same association
     in an hour counting multiple times.
+ -- Burstbuffer/Cray plugin - Fix for persistent burst buffer use.
 
 * Changes in Slurm 15.08.2
 ==========================
