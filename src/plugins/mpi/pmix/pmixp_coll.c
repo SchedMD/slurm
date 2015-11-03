@@ -247,7 +247,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	}
 	/* just in case, shouldn't be needed */
 	hostlist_uniq(coll->ch_hosts);
-	xfree(ch_nodeids[i]);
+	xfree(ch_nodeids);
 
 	if (parent_id == -1) {
 		/* if we are the root of the tree:
