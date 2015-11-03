@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix creation of advanced reservation of cores on nodes which are DOWN.
  -- Return permission denied if regular user tries to release job held by an
     administrator.
+ -- MYSQL - Fix rollups for multiple jobs running by the same association
+    in an hour counting multiple times.
 
 * Changes in Slurm 15.08.2
 ==========================
