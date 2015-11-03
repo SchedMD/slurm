@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix rollups for multiple jobs running by the same association
     in an hour counting multiple times.
  -- Burstbuffer/Cray plugin - Fix for persistent burst buffer use.
+ -- Modifications to pam_slurm_adopt to work correctly for the "extern" step.
 
 * Changes in Slurm 15.08.2
 ==========================
