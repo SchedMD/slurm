@@ -274,7 +274,7 @@ msg_thr_create(stepd_step_rec_t *job)
  * This gives connection threads a chance to complete any pending
  * RPCs before the slurmstepd exits.
  */
-static void _wait_for_connections()
+static void _wait_for_connections(void)
 {
 	struct timespec ts = {0, 0};
 	int rc = 0;
