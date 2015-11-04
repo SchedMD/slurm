@@ -39,7 +39,7 @@ proc inc22_1_3 { } {
 
 	global sreport exit_code node0_down_start node0_down_end node0_cpus
 	global node1_cpus cluster my_pid accounts users cluster_cpus
-	global job1_start job1_end job1_cpus job1_alloc job2_start
+	global job0_start job1_end job1_cpus job1_alloc job2_start
 	global job2_end job2_cpus job2_alloc job2_elig job3_start
 	global job3_end job3_cpus job3_alloc job3_elig acct1_alloc acct2_alloc
 	global acct3_alloc total_alloc wckey1_alloc user1_wckey1_alloc
@@ -59,7 +59,7 @@ proc inc22_1_3 { } {
 
 	set reported [expr ($period_end - $period_start) * $cluster_cpus]
 	set down [expr ($node0_down_end - $node0_down_start) * $node0_cpus]
-	set alloc_sec [expr ($job1_end-$job1_start) * $job1_cpus]
+	set alloc_sec [expr ($job1_end-$job0_start) * $job1_cpus]
 	set alloc_sec [expr $alloc_sec + (($job2_end-$job2_start) * $job2_cpus)]
 	set alloc_sec [expr $alloc_sec + (($job3_end-$job3_start) * $job3_cpus)]
 	set wckey_alloc_sec1 [expr $job1_alloc + $job3_alloc]

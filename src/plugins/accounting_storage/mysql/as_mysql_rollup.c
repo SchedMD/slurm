@@ -307,6 +307,21 @@ static void _add_tres_2_list(List tres_list, char *tres_str, int seconds)
 	return;
 }
 
+/* This will destroy the *loc_tres given after it is transfered */
+static void _transfer_loc_tres(List *loc_tres, local_id_usage_t *usage)
+{
+	if (!usage)
+		return;
+
+	if (!usage->loc_tres) {
+		usage->loc_tres = *loc_tres;
+		*loc_tres = NULL;
+	} else {
+		_add_job_alloc_time_to_cluster(usage->loc_tres, *loc_tres);
+		FREE_NULL_LIST(*loc_tres);
+	}
+}
+
 static void _add_tres_time_2_list(List tres_list, char *tres_str,
 				  int type, int seconds, int suspend_seconds,
 				  bool times_count)
@@ -1243,15 +1258,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			/* do the cluster allocated calculation */
 		calc_cluster:
 
-			if (!a_usage)
-				loc_tres = list_create(
-					_destroy_local_tres_usage);
-			else {
-				if (!a_usage->loc_tres)
-					a_usage->loc_tres = list_create(
-						_destroy_local_tres_usage);
-				loc_tres = a_usage->loc_tres;
-			}
+			/* We need to have this clean for each job
+			 * since we add the time to the cluster
+			 * individually.
+			 */
+			loc_tres = list_create(_destroy_local_tres_usage);
 
 			_add_tres_time_2_list(loc_tres, row[JOB_REQ_TRES],
 					      TIME_ALLOC, seconds,
@@ -1300,8 +1311,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			/* first figure out the reservation */
 			if (resv_id) {
 				if (seconds <= 0) {
-					if (!a_usage)
-						FREE_NULL_LIST(loc_tres);
+					_transfer_loc_tres(&loc_tres, a_usage);
 					continue;
 				}
 				/* Since we have already added the
@@ -1346,8 +1356,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							loc_tres, TIME_ALLOC,
 							loc_seconds, 1);
 				}
-				if (!a_usage)
-					FREE_NULL_LIST(loc_tres);
+
+				_transfer_loc_tres(&loc_tres, a_usage);
 				continue;
 			}
 
@@ -1356,8 +1366,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   ever happen.
 			*/
 			if (!c_usage) {
-				if (!a_usage)
-					FREE_NULL_LIST(loc_tres);
+				_transfer_loc_tres(&loc_tres, a_usage);
 				continue;
 			}
 
@@ -1378,9 +1387,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_tres);
 			}
 
-			/* The loc_tres isn't needed after this */
-			if (!a_usage)
-				FREE_NULL_LIST(loc_tres);
+			/* The loc_tres isn't needed after this so
+			 * transfer to the association and go on our
+			 * merry way. */
+			_transfer_loc_tres(&loc_tres, a_usage);
 
 			/* now reserved time */
 			if (!row_start || (row_start >= c_usage->start)) {

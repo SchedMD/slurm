@@ -37,7 +37,7 @@
 
 proc inc22_1_1 {} {
 
-	global account1 accounts users cluster_cpus job1_start user1
+	global account1 accounts users cluster_cpus job0_start user1
 	global node0_down_start node0_cpus node1_cpus cluster sreport
 	global exit_code wc_key_track wckey1 sql_rem
 
@@ -53,7 +53,7 @@ proc inc22_1_1 {} {
 	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 	set reported [expr ($period_end - $period_start) * $cluster_cpus]
 	set down [expr ($period_end-$node0_down_start) * $node0_cpus]
-	set alloc_sec [expr ($period_end-$job1_start) * $node1_cpus]
+	set alloc_sec [expr ($period_end-$job0_start) * $node1_cpus]
 	set wckey_alloc_sec $alloc_sec
 	set resv 0
 	set idle [expr $reported - ($down + $alloc_sec + $resv)]

@@ -93,7 +93,7 @@ _slurm_authorized_user()
  * Should be called when a connect() to a socket returns ECONNREFUSED.
  * Presumably the ECONNREFUSED means that nothing is attached to the listening
  * side of the unix domain socket.
- * If the socket is at least five minutes old, go ahead an unlink it.
+ * If the socket is at least 10 minutes old, then unlink it.
  */
 static void
 _handle_stray_socket(const char *socket_name)
@@ -120,7 +120,7 @@ _handle_stray_socket(const char *socket_name)
 	}
 
 	now = time(NULL);
-	if ((now - buf.st_mtime) > 300) {
+	if ((now - buf.st_mtime) > 600) {
 		/* remove the socket */
 		if (unlink(socket_name) == -1) {
 			if (errno != ENOENT) {
@@ -165,14 +165,15 @@ _step_connect(const char *directory, const char *nodename,
 	xstrfmtcat(name, "%s/%s_%u.%u", directory, nodename, jobid, stepid);
 
 	strcpy(addr.sun_path, name);
-	len = strlen(addr.sun_path)+1 + sizeof(addr.sun_family);
+	len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
 
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
-		error("%s: connect() failed dir %s node %s job %u step %u %m",
+		/* Can indicate race condition at step termination */
+		debug("%s: connect() failed dir %s node %s step %u.%u %m",
 		      __func__, directory, nodename, jobid, stepid);
 		if (errno == ECONNREFUSED) {
 			_handle_stray_socket(name);
-			if (stepid == NO_VAL)
+			if (stepid == SLURM_BATCH_SCRIPT)
 				_handle_stray_script(directory, jobid);
 		}
 		xfree(name);
@@ -186,7 +187,7 @@ _step_connect(const char *directory, const char *nodename,
 
 
 static char *
-_guess_nodename()
+_guess_nodename(void)
 {
 	char host[256];
 	char *nodename = NULL;
