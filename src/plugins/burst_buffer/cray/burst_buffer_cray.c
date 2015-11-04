@@ -249,7 +249,7 @@ static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_out(struct job_record *job_ptr);
 static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
-				 int new_state);
+				 int new_state, uint64_t buf_size);
 static void	_save_bb_state(void);
 static void	_set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
@@ -514,6 +514,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].size = tmp_cnt;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
+				bb_job->persist_add += tmp_cnt;
 			} else if (!strncmp(tok, "destroy_persistent", 17) ||
 				   !strncmp(tok, "delete_persistent", 16)) {
 				have_bb = true;
@@ -1980,6 +1981,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 
 	xassert(bb_job);
 	add_space = bb_job->total_size + bb_job->persist_add;
+	if (add_space > bb_state.total_space)
+		return 1;
 
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
@@ -1994,9 +1997,11 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 			resv_space += resv_bb_ptr->used_space;
 		}
 	}
+	if ((add_space + resv_space) > bb_state.total_space)
+		return 1;
 
 	add_total_space_needed = bb_state.used_space + add_space + resv_space -
-		bb_state.total_space;
+				 bb_state.total_space;
 	needed_gres_ptr = xmalloc(sizeof(needed_gres_t) * bb_job->gres_cnt);
 	for (i = 0; i < bb_job->gres_cnt; i++) {
 		needed_gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
@@ -3512,6 +3517,13 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 				info("Attempt by job %u to create duplicate "
 				     "persistent burst buffer named %s",
 				     job_ptr->job_id, buf_ptr->name);
+				if (bb_job->persist_add >= bb_alloc->size) {
+					bb_job->persist_add -= bb_alloc->size;
+				} else {
+					error("%s: Persistent buffer size underflow for job %u",
+					      __func__, job_ptr->job_id);
+					bb_job->persist_add = 0;
+				}
 				continue;
 			}
 			rc++;
@@ -3646,8 +3658,16 @@ static bool _test_persistent_use_ready(bb_job_t *bb_job,
 	return true;
 }
 
+/* Reset data structures based upon a change in buffer state
+ * IN user_id - User effected
+ * IN job_id - Job effected
+ * IN name - Buffer name
+ * IN new_state - New buffer state
+ * IN buf_size - Size of created burst buffer only, used to decrement remaining
+ *               space requirement for the job
+ */
 static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
-			     int new_state)
+			     int new_state, uint64_t buf_size)
 {
 	bb_buf_t *buf_ptr;
 	bb_job_t *bb_job;
@@ -3673,6 +3693,17 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		if ((old_state == BB_STATE_DELETING) &&
 		    (new_state == BB_STATE_PENDING))
 			bb_limit_rem(user_id, buf_ptr->size, &bb_state);
+		if ((old_state == BB_STATE_ALLOCATING) &&
+		    (new_state == BB_STATE_ALLOCATED)  &&
+		    ((name[0] < '0') || (name[0] > '9'))) {
+			if (bb_job->persist_add >= buf_size) {
+				bb_job->persist_add -= buf_size;
+			} else {
+				error("%s: Persistent buffer size underflow for job %u",
+				      __func__, job_id);
+				bb_job->persist_add = 0;
+			}
+		}
 		break;
 	}
 
@@ -3766,9 +3797,8 @@ static void *_create_persistent(void *x)
 			resp_msg = NULL;
 		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		_reset_buf_state(create_args->user_id,
-				 create_args->job_id,
-				 create_args->name, BB_STATE_PENDING);
+		_reset_buf_state(create_args->user_id, create_args->job_id,
+				 create_args->name, BB_STATE_PENDING, 0);
 		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
@@ -3783,9 +3813,9 @@ static void *_create_persistent(void *x)
 			      __func__, create_args->job_id);
 		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		_reset_buf_state(create_args->user_id,
-				 create_args->job_id, create_args->name,
-				 BB_STATE_ALLOCATED);
+		_reset_buf_state(create_args->user_id, create_args->job_id,
+				 create_args->name, BB_STATE_ALLOCATED,
+				 create_args->size);
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
@@ -3910,9 +3940,8 @@ static void *_destroy_persistent(void *x)
 				   plugin_type, __func__, resp_msg);
 		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		_reset_buf_state(destroy_args->user_id,
-				 destroy_args->job_id, destroy_args->name,
-				 BB_STATE_PENDING);
+		_reset_buf_state(destroy_args->user_id, destroy_args->job_id,
+				 destroy_args->name, BB_STATE_PENDING, 0);
 		bb_state.last_update_time = time(NULL);
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
@@ -3921,9 +3950,8 @@ static void *_destroy_persistent(void *x)
 			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 			  NO_LOCK, NO_LOCK, NO_LOCK };
 		pthread_mutex_lock(&bb_state.bb_mutex);
-		_reset_buf_state(destroy_args->user_id,
-				 destroy_args->job_id, destroy_args->name,
-				 BB_STATE_DELETED);
+		_reset_buf_state(destroy_args->user_id, destroy_args->job_id,
+				 destroy_args->name, BB_STATE_DELETED, 0);
 
 		/* Modify internal buffer record for purging */
 		if (bb_alloc) {
