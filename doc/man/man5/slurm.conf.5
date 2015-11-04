@@ -616,9 +616,6 @@ in the database.
 \fBDB_WCKEY\fR
 SQL statements/queries when dealing with wckeys in the database.
 .TP
-\fBElasticsearch\fR
-Elasticsearch debug info
-.TP
 \fBEnergy\fR
 AcctGatherEnergy debug info
 .TP
@@ -1107,9 +1104,7 @@ Also see \fBDefaultStorageHost\fR.
 The fully qualified file name where job completion records are written
 when the \fBJobCompType\fR is "jobcomp/filetxt" or the database where
 job completion records are stored when the \fBJobCompType\fR is a
-database or an url with format http://yourelasticserver:port where job
-completion records are indexed when the \fBJobCompType\fR is
-"jobcomp/elasticsearch".
+database.
 Also see \fBDefaultStorageLoc\fR.
 
 .TP
@@ -1129,7 +1124,7 @@ Also see \fBDefaultStoragePort\fR.
 \fBJobCompType\fR
 The job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/filetxt",
-"jobcomp/mysql", "jobcomp/elasticsearch" and "jobcomp/script"".
+"jobcomp/mysql", and "jobcomp/script"".
 The default value is "jobcomp/none", which means that upon job completion
 the record of the job is purged from the system.  If using the accounting
 infrastructure this plugin may not be of interest since the information
@@ -1139,9 +1134,6 @@ written to a text file specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/mysql" indicates that a record of the job should be
 written to a MySQL or MariaDB database specified by the \fBJobCompLoc\fR
 parameter.
-The value "jobcomp/elasticsearch" indicates that a record of the job
-should be written to an Elasticsearch server specified by the
-\fBJobCompLoc\fR parameter.
 The value "jobcomp/script" indicates that a script specified by the
 \fBJobCompLoc\fR parameter is to be executed with environment variables
 indicating the job information.
