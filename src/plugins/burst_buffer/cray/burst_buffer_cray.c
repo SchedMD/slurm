@@ -213,6 +213,7 @@ static void *	_destroy_persistent(void *x);
 static void	_free_create_args(create_buf_data_t *create_args);
 static void	_free_script_argv(char **script_argv);
 static bb_job_t *_get_bb_job(struct job_record *job_ptr);
+static bool	_have_dw_cmd_opts(bb_job_t *bb_job);
 static void	_job_queue_del(void *x);
 static bb_configs_t *_json_parse_configs_array(json_object *jobj, char *key,
 					       int *num);
@@ -2802,6 +2803,25 @@ fini:	xfree(data_buf);
 	close(path_fd);
 }
 
+/* Return true if #DW options (excludes #BB options) */
+static bool _have_dw_cmd_opts(bb_job_t *bb_job)
+{
+	int i;
+	bb_buf_t *bb_buf;
+
+	xassert(bb_job);
+	if (bb_job->total_size)
+		return true;
+
+	for (i = 0, bb_buf = bb_job->buf_ptr; i < bb_job->buf_cnt;
+	     i++, bb_buf++) {
+		if (!bb_buf->create && !bb_buf->destroy)
+			return true;
+	}
+
+	return false;
+}
+
 /*
  * Secondary validation of a job submit request with respect to burst buffer
  * options. Performed after establishing job ID and creating script file.
@@ -2846,6 +2866,11 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_job = _get_bb_job(job_ptr);
 	if (bb_job == NULL) {
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+		return rc;
+	}
+
+	if (!_have_dw_cmd_opts(bb_job)) {
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		return rc;
 	}
