@@ -137,6 +137,7 @@ static void _free_options(void);
 static void _remove_empty_output(void);
 static int _list_items(void);
 static int _fields_intersection(hid_t fid_job, List tables, List fields);
+static bool _has_batch_step(char *, char *);
 
 
 static void _help_msg(void)
@@ -543,8 +544,16 @@ static int _merge_step_files(void)
 	int	jobid, stepid;
 	bool found_files = false;
 	int rc = SLURM_SUCCESS;
+	char batch_step[PATH_MAX];
+	char batch_node[MAXHOSTNAMELEN];
+	int has_batch;
 
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
+	batch_step[0] = 0;
+	has_batch = 0;
+
+	if (_has_batch_step(batch_step, batch_node))
+		has_batch = 1;
 
 	while (max_step == -1 || stepx <= max_step) {
 
@@ -581,6 +590,10 @@ static int _merge_step_files(void)
 			}
 			*pos_char = 0;
 
+			if (strcmp(stepno, "batch") == 0) {
+				continue;
+			}
+
 			stepid = strtol(stepno, NULL, 10);
 			if (stepid > max_step)
 				max_step = stepid;
@@ -590,6 +603,7 @@ static int _merge_step_files(void)
 			step_node = pos_char + 1;
 
 			if (!found_files) {
+
 				fid_job = H5Fcreate(params.output,
 				                    H5F_ACC_TRUNC,
 				                    H5P_DEFAULT,
@@ -604,6 +618,35 @@ static int _merge_step_files(void)
 				if (jgid_steps < 0) {
 					error("Failed to create group %s", GRP_STEPS);
 					continue;
+				}
+				if (has_batch) {
+
+					sprintf(jgrp_step_name, "/%s/batch", GRP_STEPS);
+					jgid_step = make_group(fid_job, jgrp_step_name);
+					if (jgid_step < 0) {
+						error("Failed to create %s", jgrp_step_name);
+						continue;
+					}
+
+					sprintf(jgrp_nodes_name,"%s/%s",
+						jgrp_step_name,
+						GRP_NODES);
+					jgid_nodes = make_group(jgid_step,
+								jgrp_nodes_name);
+					if (jgid_nodes < 0) {
+						error("Failed to create %s", jgrp_nodes_name);
+						continue;
+					}
+
+					sprintf(step_path, "%s/%s", step_dir, batch_step);
+					rc = _merge_node_step_data(step_path,
+								   batch_node,
+								   jgid_nodes,
+								   jgid_tasks);
+					H5Gclose(jgid_tasks);
+					H5Gclose(jgid_nodes);
+					H5Gclose(jgid_step);
+					has_batch = 0;
 				}
 			}
 
@@ -628,7 +671,6 @@ static int _merge_step_files(void)
 					error("Failed to create %s", jgrp_nodes_name);
 					continue;
 				}
-
 				/*
 				sprintf(jgrp_tasks_name,"%s/%s",
 				        jgrp_step_name,
@@ -1683,4 +1725,61 @@ static int _list_items(void)
 	H5Fclose(fid_job);
 
 	return SLURM_SUCCESS;
+}
+
+static bool
+_has_batch_step(char *batch_step, char *batch_node)
+{
+	DIR *dir;
+	struct  dirent *de;
+	char file_name[MAX_PROFILE_PATH+1];
+	char step_dir[MAX_PROFILE_PATH+1];
+	char *pos_char;
+	char *stepno;
+	int jobid;
+
+	sprintf(step_dir, "%s/%s", params.dir, params.user);
+
+	if (!(dir = opendir(step_dir))) {
+		error("\
+%s: Cannot open %s job profile directory: %m", __func__, step_dir);
+		return -1;
+	}
+
+	while ((de = readdir(dir))) {
+
+		strcpy(file_name, de->d_name);
+		if (file_name[0] == '.')
+			continue;
+
+		pos_char = strstr(file_name,".h5");
+		if (!pos_char)
+			continue;
+		*pos_char = 0;
+
+		pos_char = strchr(file_name,'_');
+		if (!pos_char)
+			continue;
+		*pos_char = 0;
+
+		jobid = strtol(file_name, NULL, 10);
+		if (jobid != params.job_id)
+			continue;
+
+		stepno = pos_char + 1;
+		pos_char = strchr(stepno,'_');
+		if (!pos_char) {
+			continue;
+		}
+		*pos_char = 0;
+
+		if (strcmp(stepno, "batch") == 0) {
+			strcpy(batch_step, de->d_name);
+			strcpy(batch_node, pos_char + 1);
+			closedir(dir);
+			return true;
+		}
+	}
+	closedir(dir);
+	return false;
 }

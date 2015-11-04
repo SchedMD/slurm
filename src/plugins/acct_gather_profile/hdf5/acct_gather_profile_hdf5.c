@@ -142,7 +142,6 @@ static void _reset_slurm_profile_conf(void)
 static uint32_t _determine_profile(void)
 {
 	uint32_t profile;
-
 	xassert(g_job);
 
 	if (g_profile_running != ACCT_GATHER_PROFILE_NOT_SET)
@@ -308,11 +307,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	g_job = job;
 
-	if (g_job->stepid == NO_VAL) {
-		g_profile_running = ACCT_GATHER_PROFILE_NONE;
-		return rc;
-	}
-
 	xassert(hdf5_conf.dir);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -328,10 +322,22 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	_create_directories();
 
-	profile_file_name = xstrdup_printf(
-		"%s/%s/%u_%u_%s.h5",
-		hdf5_conf.dir, g_job->user_name,
-		g_job->jobid, g_job->stepid, g_job->node_name);
+	/* Use a more user friendly string "batch" rather
+	 * then 4294967294.
+	 */
+	if (g_job->stepid == NO_VAL) {
+		profile_file_name = xstrdup_printf("%s/%s/%u_%s_%s.h5",
+						   hdf5_conf.dir,
+						   g_job->user_name,
+						   g_job->jobid,
+						   "batch",
+						   g_job->node_name);
+	} else {
+		profile_file_name = xstrdup_printf(
+			"%s/%s/%u_%u_%s.h5",
+			hdf5_conf.dir, g_job->user_name,
+			g_job->jobid, g_job->stepid, g_job->node_name);
+	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		profile_str = acct_gather_profile_to_string(g_profile_running);
@@ -395,9 +401,6 @@ extern int acct_gather_profile_p_node_step_end(void)
 
 	xassert(_run_in_daemon());
 
-	if (g_job->stepid == NO_VAL)
-		return rc;
-
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	// No check for --profile as we always want to close the HDF5 file
@@ -441,9 +444,6 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
-
-	if (g_job->stepid == NO_VAL)
-		return rc;
 
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
@@ -597,8 +597,6 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	/* ensure that we have to record something */
 	xassert(_run_in_daemon());
 	xassert(g_job);
-	if (g_job->stepid == NO_VAL)
-		return SLURM_SUCCESS;
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)

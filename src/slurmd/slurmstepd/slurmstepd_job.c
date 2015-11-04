@@ -457,6 +457,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	job->batch   = true;
 	job->node_name  = xstrdup(conf->node_name);
+	job->user_name  = xstrdup(msg->user_name);
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.
 	*/
@@ -470,7 +471,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->overcommit = (bool) msg->overcommit;
 
 	job->uid     = (uid_t) msg->uid;
-	job->user_name  = xstrdup(msg->user_name);
 	job->gid     = (gid_t) msg->gid;
 	job->cwd     = xstrdup(msg->work_dir);
 

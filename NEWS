@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     drained.
  -- Add ValidateTimeout and OtherTimeout to "scontrol show burst" output.
  -- Increase default sbcast buffer size from 512KB to 8MB.
+ -- Enable the hdf5 profiling of the batch step.
 
 * Changes in Slurm 15.08.3
 ==========================
