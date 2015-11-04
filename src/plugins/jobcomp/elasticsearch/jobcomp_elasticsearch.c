@@ -324,7 +324,7 @@ static int _index_job(const char *jobcomp)
 	static int error_cnt = 0;
 
 	if (log_url == NULL) {
-		if (((error_cnt++) % 100) == 0) {
+		if (((++error_cnt) % 100) == 0) {
 	                /* Periodically log errors */
                         error("%s: Unable to save job state for %d "
                                "jobs, caching data",
@@ -406,7 +406,7 @@ static int _index_job(const char *jobcomp)
 	curl_global_cleanup();
 
 	if (rc == SLURM_ERROR) {
-		if (((error_cnt++) % 100) == 0) {
+		if (((++error_cnt) % 100) == 0) {
                         /* Periodically log errors */
                         error("%s: Unable to save job state for %d "
                                "jobs, caching data",
