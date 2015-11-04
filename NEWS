@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
  -- Increase default sbcast buffer size from 512KB to 8MB.
  -- Enable the hdf5 profiling of the batch step.
 
+* Changes in Slurm 15.08.4
+==========================
+
 * Changes in Slurm 15.08.3
 ==========================
  -- Correct Slurm's RPM build if Munge is not installed.
