@@ -8,6 +8,7 @@ Type=forking
 EnvironmentFile=/etc/default/slurmd
 ExecStart=@sbindir@/slurmd $SLURMD_OPTIONS
 PIDFile=/var/run/slurm/slurmd.pid
+KillMode=process
 
 [Install]
 WantedBy=multi-user.target
