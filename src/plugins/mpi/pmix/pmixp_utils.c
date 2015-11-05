@@ -442,13 +442,13 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 		snprintf(nested_path, sizeof(nested_path), "%s/%s", path,
 				ent->d_name);
 		if (_is_dir(nested_path)) {
-			if( rc = _file_fix_rights(nested_path, uid, mode) ){
+			if( (rc = _file_fix_rights(nested_path, uid, mode)) ){
 				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
 				return -1;
 			}
 			pmixp_rmdir_recursively(nested_path);
 		} else {
-			if( rc = _file_fix_rights(nested_path, uid, mode) ){
+			if( (rc = _file_fix_rights(nested_path, uid, mode)) ){
 				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
 				return -1;
 			}
