@@ -731,13 +731,27 @@ static void _sort_hostlist(List sinfo_list)
 	list_iterator_destroy(i);
 }
 
+/* Return false of this node's data needs to be added to sinfo's table of
+ * data to print. Return true if it is duplicate/redundant data. */
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint32_t tmp = 0;
 
-	if (params.match_flags.hostnames_flag ||
-	    params.match_flags.node_addr_flag)
-		return false;
+	if (params.match_flags.partition_flag) {
+		if (params.match_flags.hostnames_flag ||
+		    params.match_flags.node_addr_flag)
+			return false;
+	} else {
+		if (params.match_flags.hostnames_flag &&
+		    (hostlist_find(sinfo_ptr->hostnames,
+				   node_ptr->node_hostname) == -1))
+			return false;
+
+		if (params.match_flags.node_addr_flag &&
+		    (hostlist_find(sinfo_ptr->node_addr,
+				   node_ptr->node_addr) == -1))
+			return false;
+	}
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
