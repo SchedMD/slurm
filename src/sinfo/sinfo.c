@@ -532,9 +532,8 @@ static int _build_sinfo_data(List sinfo_list,
 	}
 
 	/* make sinfo_list entries for every node in every partition */
-	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
-		part_ptr = &(partition_msg->partition_array[j]);
-
+	for (j = 0, part_ptr = partition_msg->partition_array;
+	     j < partition_msg->record_count; j++, part_ptr++) {
 		if (params.filtering && params.part_list &&
 		    !list_find_first(params.part_list,
 				     _find_part_list,

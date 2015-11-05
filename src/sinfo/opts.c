@@ -604,7 +604,7 @@ _parse_format( char* format )
 			format_add_nodes_ai( params.format_list,
 					field_size,
 					right_justify,
-					     suffix );
+					suffix );
 		} else if (field[0] == 'B') {
 			params.match_flags.max_cpus_per_node_flag = true;
 			format_add_max_cpus_per_node( params.format_list,
