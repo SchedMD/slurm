@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2015" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2015" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2341,7 +2341,11 @@ consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
 and preserve all of the job's environment variables (i.e. and not over\-write
 them with the job step's allocation information).
 
-For Cray systems, add \-\-gres=craynetwork:0. e.g.:
+For systems with generic resources (GRES) defined, the \fBSallocDefaultCommand\fR
+value should explicitly specify a zero count for the configured GRES.
+Failure to do so will result in the launched shell consuming those GRES and
+preventing subsequent srun commands from using them.
+For example, on Cray systems add "\-\-gres=craynetwork:0" as shown below:
 .nf
     SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=craynetwork:0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
