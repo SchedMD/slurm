@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.4
 ==========================
+ -- Fix typo for the "devices" cgroup subsystem in pam_slurm_adopt.c
 
 * Changes in Slurm 15.08.3
 ==========================
