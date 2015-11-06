@@ -81,8 +81,7 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 static bool _filter_out(node_info_t *node_ptr);
 static int  _get_info(bool clear_old);
 static void _sinfo_list_delete(void *data);
-static bool _match_node_data(sinfo_data_t *sinfo_ptr,
-			     node_info_t *node_ptr);
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 			     partition_info_t* part_ptr);
 static int  _multi_cluster(List clusters);
@@ -731,27 +730,20 @@ static void _sort_hostlist(List sinfo_list)
 	list_iterator_destroy(i);
 }
 
-/* Return false of this node's data needs to be added to sinfo's table of
+/* Return false if this node's data needs to be added to sinfo's table of
  * data to print. Return true if it is duplicate/redundant data. */
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint32_t tmp = 0;
 
-	if (params.match_flags.partition_flag) {
-		if (params.match_flags.hostnames_flag ||
-		    params.match_flags.node_addr_flag)
-			return false;
-	} else {
-		if (params.match_flags.hostnames_flag &&
-		    (hostlist_find(sinfo_ptr->hostnames,
-				   node_ptr->node_hostname) == -1))
-			return false;
+	if (params.match_flags.hostnames_flag &&
+	    (hostlist_find(sinfo_ptr->hostnames,
+			   node_ptr->node_hostname) == -1))
+		return false;
 
-		if (params.match_flags.node_addr_flag &&
-		    (hostlist_find(sinfo_ptr->node_addr,
-				   node_ptr->node_addr) == -1))
-			return false;
-	}
+	if (params.match_flags.node_addr_flag &&
+	    (hostlist_find(sinfo_ptr->node_addr, node_ptr->node_addr) == -1))
+		return false;
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
@@ -836,7 +828,6 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.match_flags.version_flag &&
 	    (node_ptr->version     != sinfo_ptr->version))
 		return false;
-
 
 	return true;
 }
@@ -1008,10 +999,13 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			sinfo_ptr->max_free_mem = node_ptr->free_mem;
 	}
 
-	hostlist_push_host(sinfo_ptr->nodes, node_ptr->name);
-	if (params.match_flags.node_addr_flag)
+	if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) == -1)
+		hostlist_push_host(sinfo_ptr->nodes, node_ptr->name);
+	if (params.match_flags.node_addr_flag &&
+	    (hostlist_find(sinfo_ptr->node_addr, node_ptr->node_addr) == -1))
 		hostlist_push_host(sinfo_ptr->node_addr, node_ptr->node_addr);
-	if (params.match_flags.hostnames_flag)
+	if (params.match_flags.hostnames_flag &&
+	    (hostlist_find(sinfo_ptr->hostnames, node_ptr->node_hostname) == -1))
 		hostlist_push_host(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
 	total_cpus = node_ptr->cpus;
