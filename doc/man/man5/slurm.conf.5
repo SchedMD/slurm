@@ -4086,44 +4086,6 @@ Partition name of alternate partition to be used if the state of this partition
 is "DRAIN" or "INACTIVE."
 
 .TP
-\fBTRESBillingWeights\fR
-TRESBillingWeights is used to define the billing weights of each TRES type that
-will be used in calcuating the usage of a job.
-
-Billing weights are specified as a comma-separated list of
-\fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
-
-Any TRES Type is available for billing. Note that base the unit for memory and
-burst buffers is megabytes.
-
-By default the billing of TRES is calculated as the sum of all TRES types
-multiplied by their corresponding billing weight.
-
-The weighted amount of a resource can be adjusted by adding a suffix of K,M,G,T
-or P after the billing weight. For example, a memory weight of "mem=.25" on a
-job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
-"mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
-
-When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
-TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
-(1*1.0) + (8*0.25) + (0*2.0) = 3.0.
-
-If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
-MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
-global TRES' (e.g. licenses). Using the same example above the billable TRES
-will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
-
-If TRESBillingWeights is not defined then the job is billed against the total
-number of allocated CPUs.
-
-\fBNOTE:\fR TRESBillingWeights is only used when calcuating fairshare and
-doesn't affect job priority directly as it is currently not used for the size of
-the job. If you want TRES' to play a role in the job's priority then refer to
-the PriorityWeightTRES option.
-
-.RE
-
-.TP
 \fBDefault\fR
 If this keyword is set, jobs submitted without a partition
 specification will utilize this partition.
@@ -4461,6 +4423,44 @@ See also the "Alternate" partition specification.
 Designates that no new jobs may be queued on the partition,
 and jobs already queued may not be allocated nodes and run.
 See also the "Alternate" partition specification.
+.RE
+
+.TP
+\fBTRESBillingWeights\fR
+TRESBillingWeights is used to define the billing weights of each TRES type that
+will be used in calcuating the usage of a job.
+
+Billing weights are specified as a comma-separated list of
+\fI<TRES Type>\fR=\fI<TRES Billing Weight>\fR pairs.
+
+Any TRES Type is available for billing. Note that base the unit for memory and
+burst buffers is megabytes.
+
+By default the billing of TRES is calculated as the sum of all TRES types
+multiplied by their corresponding billing weight.
+
+The weighted amount of a resource can be adjusted by adding a suffix of K,M,G,T
+or P after the billing weight. For example, a memory weight of "mem=.25" on a
+job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
+"mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
+
+When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
+TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
+(1*1.0) + (8*0.25) + (0*2.0) = 3.0.
+
+If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
+MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
+global TRES' (e.g. licenses). Using the same example above the billable TRES
+will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
+
+If TRESBillingWeights is not defined then the job is billed against the total
+number of allocated CPUs.
+
+\fBNOTE:\fR TRESBillingWeights is only used when calcuating fairshare and
+doesn't affect job priority directly as it is currently not used for the size of
+the job. If you want TRES' to play a role in the job's priority then refer to
+the PriorityWeightTRES option.
+
 .RE
 
 .SH "Prolog and Epilog Scripts"
