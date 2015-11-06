@@ -844,10 +844,13 @@ extern void bb_set_use_time(bb_state_t *state_ptr)
 			    ((bb_alloc->state == BB_STATE_STAGING_IN) ||
 			     (bb_alloc->state == BB_STATE_STAGED_IN))) {
 				job_ptr = find_job_record(bb_alloc->job_id);
-				if (!job_ptr) {
-					error("%s: job %u with allocated burst "
-					      "buffers not found",
+				if (!job_ptr && !bb_alloc->orphaned) {
+					bb_alloc->orphaned = true;
+					error("%s: Job %u not found for "
+					      "allocated burst buffer",
 					      __func__, bb_alloc->job_id);
+					bb_alloc->use_time = now + 24 * 60 * 60;
+				} else if (!job_ptr) {
 					bb_alloc->use_time = now + 24 * 60 * 60;
 				} else if (job_ptr->start_time) {
 					bb_alloc->end_time = job_ptr->end_time;

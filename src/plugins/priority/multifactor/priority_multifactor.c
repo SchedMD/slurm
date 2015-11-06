@@ -778,23 +778,21 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 
 	billing_weights = part_ptr->billing_weights;
 	for (i = 0; i < slurmctld_tres_cnt; i++) {
-		bool   is_mem      = false;
 		double tres_weight = billing_weights[i];
 		char  *tres_type   = assoc_mgr_tres_array[i]->type;
-		char  *tres_name   = assoc_mgr_tres_array[i]->name;
 		double tres_value  = job_ptr->tres_alloc_cnt[i];
 
 		if (priority_debug)
-			info("BillingWeight: %s%s%s = %f * %f = %f", tres_type,
-			     (tres_name) ? ":" : "",
-			     (tres_name) ? tres_name : "",
+			info("BillingWeight: %s = %f * %f = %f",
+			     assoc_mgr_tres_name_array[i],
 			     tres_value, tres_weight, tres_value * tres_weight);
 
 		tres_value *= tres_weight;
 
 		if ((flags & PRIORITY_FLAGS_MAX_TRES) &&
-		    ((is_mem) ||
-		     (!strcasecmp(tres_type, "cpu")) ||
+		    ((i == TRES_ARRAY_CPU) ||
+		     (i == TRES_ARRAY_MEM) ||
+		     (i == TRES_ARRAY_NODE) ||
 		     (!strcasecmp(tres_type, "gres"))))
 			to_bill_node = MAX(to_bill_node, tres_value);
 		else

@@ -64,7 +64,7 @@ array set node_info {
 array set part_info {
 	State              available
 	MaxCPUsPerNode     maxcpuspernode
-	Nodes              nodehost
+	Nodes              nodelist
 	TotalNodes         nodes
 	PreemptMode        preemptmode
 	Priority           priority

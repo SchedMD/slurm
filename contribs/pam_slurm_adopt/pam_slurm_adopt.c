@@ -120,7 +120,7 @@ static int _adopt_process(pid_t pid, uint32_t job_id, uid_t uid)
 	xcgroup_ns_t ns;
 	int i, rc, cgroup_type_count = 5;
 	char *cgroup_types[] =
-		{ "memory", "cpuset", "cpuacct", "freezer", "device" };
+		{ "memory", "cpuset", "cpuacct", "freezer", "devices" };
 	char path[PATH_MAX];
 
 	/* Set default return code based on settings */
