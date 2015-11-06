@@ -106,6 +106,7 @@ typedef struct bb_alloc {
 	uint32_t magic;
 	char *name;		/* For persistent burst buffers */
 	struct bb_alloc *next;
+	bool orphaned;		/* Job is purged, could not stage-out data */
 	char *partition;	/* Associated partition (for limits) */
 	char *qos;		/* Associated QOS (for limits) */
 	slurmdb_qos_rec_t *qos_ptr;
