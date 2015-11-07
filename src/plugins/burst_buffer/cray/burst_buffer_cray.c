@@ -852,8 +852,11 @@ static void _recover_bb_state(void)
 			bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
 			bb_alloc->id = id;
 			last_persistent_id = MAX(last_persistent_id, id);
-			if (name && (name[0] >='0') && (name[0] <='9'))
+			if (name && (name[0] >='0') && (name[0] <='9')) {
 				bb_alloc->job_id = strtol(name, &end_ptr, 10);
+				bb_alloc->array_job_id = bb_alloc->job_id;
+				bb_alloc->array_task_id = NO_VAL;
+			}
 			bb_alloc->seen_time = time(NULL);
 			bb_alloc->size = size;
 		} else {
