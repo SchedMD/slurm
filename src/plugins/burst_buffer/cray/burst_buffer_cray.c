@@ -1589,11 +1589,19 @@ static void *_start_stage_in(void *x)
 		job_ptr->priority = 0;	/* Hold job */
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
-			bb_alloc->state = BB_STATE_TEARDOWN;
 			bb_alloc->state_time = time(NULL);
 			bb_state.last_update_time = time(NULL);
+			if (bb_state.bb_config.flags &
+			    BB_FLAG_TEARDOWN_FAILURE) {
+				bb_alloc->state = BB_STATE_TEARDOWN;
+				_queue_teardown(job_ptr->job_id,
+						job_ptr->user_id, true);
+			} else {
+				bb_alloc->state = BB_STATE_ALLOCATED;
+			}
+		} else {
+			_queue_teardown(job_ptr->job_id, job_ptr->user_id,true);
 		}
-		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
 	unlock_slurmctld(job_write_lock);
 
@@ -1741,6 +1749,9 @@ static void *_start_stage_out(void *x)
 				   plugin_type, op, resp_msg);
 		}
 		pthread_mutex_lock(&bb_state.bb_mutex);
+		bb_job = _get_bb_job(job_ptr);
+		if (bb_job)
+			bb_job->state = BB_STATE_TEARDOWN;
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 		if (bb_alloc) {
 			if (rc == SLURM_SUCCESS) {
@@ -1752,18 +1763,25 @@ static void *_start_stage_out(void *x)
 				/* bb_alloc->state = BB_STATE_STAGED_OUT; */
 				bb_alloc->state = BB_STATE_TEARDOWN;
 				bb_alloc->state_time = time(NULL);
-			} else if (bb_state.bb_config.debug_flag) {
-				info("%s: Stage-out failed for job %u",
-				     __func__, stage_args->job_id);
+			} else {
+				if (bb_state.bb_config.flags &
+				    BB_FLAG_TEARDOWN_FAILURE) {
+					bb_alloc->state = BB_STATE_TEARDOWN;
+					_queue_teardown(stage_args->job_id,
+							stage_args->user_id,
+							false);
+				} else
+					bb_alloc->state = BB_STATE_STAGED_IN;
+				if (bb_state.bb_config.debug_flag) {
+					info("%s: Stage-out failed for job %u",
+					     __func__, stage_args->job_id);
+				}
 			}
 			bb_state.last_update_time = time(NULL);
 		} else {
 			error("%s: unable to find bb record for job %u",
 			      __func__, stage_args->job_id);
 		}
-		bb_job = _get_bb_job(job_ptr);
-		if (bb_job)
-			bb_job->state = BB_STATE_TEARDOWN;
 		if (rc == SLURM_SUCCESS) {
 			_queue_teardown(stage_args->job_id, stage_args->user_id,
 					false);
@@ -2642,8 +2660,10 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
-	if ((bb_state.bb_config.flags & BB_FLAG_PRIVATE_DATA) == 0)
-		uid = 0;	/* Any user can see all data */
+
+	if (((bb_state.bb_config.flags & BB_FLAG_PRIVATE_DATA) == 0) ||
+	    validate_operator(uid))
+		uid = 0;	/* User can see all data */
 	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
 	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
 	if (bb_state.bb_config.debug_flag) {

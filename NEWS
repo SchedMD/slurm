@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix typo for the "devices" cgroup subsystem in pam_slurm_adopt.c
  -- Fix TRES_MAX flag to work correctly.
  -- Improve the systemd startup files.
+ -- Added burst_buffer.conf flag parameter of "TeardownFailure" which will
+    teardown and remove a burst buffer after failed stage-in or stage-out.
+    By default, the buffer will be preserved for analysis and manual teardown.
 
 * Changes in Slurm 15.08.3
 ==========================

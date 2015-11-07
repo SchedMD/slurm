@@ -4188,6 +4188,11 @@ slurm_bb_flags2str(uint32_t bb_flags)
 			strcat(bb_str, ",");
 		strcat(bb_str, "PrivateData");
 	}
+	if (bb_flags & BB_FLAG_TEARDOWN_FAILURE) {
+		if (bb_str[0])
+			strcat(bb_str, ",");
+		strcat(bb_str, "TeardownFailure");
+	}
 
 	return bb_str;
 }
@@ -4205,6 +4210,8 @@ slurm_bb_str2flags(char *bb_str)
 		bb_flags |= BB_FLAG_ENABLE_PERSISTENT;
 	if (bb_str && strstr(bb_str, "PrivateData"))
 		bb_flags |= BB_FLAG_PRIVATE_DATA;
+	if (bb_str && strstr(bb_str, "TeardownFailure"))
+		bb_flags |= BB_FLAG_TEARDOWN_FAILURE;
 
 	return bb_flags;
 }

@@ -76,6 +76,15 @@ Emulating a Cray DataWarp system using the dw_wlm_cli script in the burst_buffer
 Enables regular users to create and destroy persistent burst buffers.
 By default, only privileged users (Slurm operators and administrators) can
 create or destroy persistent burst buffers.
+.TP
+\fBPrivateData\fR
+If set, then only Slurm operators and the burst buffer owner can see burst
+buffer data.
+.TP
+\fBTeardownFailure\fR
+If set, then teardown a burst buffer after file staging error. Otherwise
+preserve the burst buffer for analysis and manual teardown.
+If set,
 .RE
 
 .TP
