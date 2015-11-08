@@ -121,10 +121,13 @@ BuildRequires: lua-devel
 BuildRequires: fdupes
 Requires(pre): pwdutils
 %{?systemd_requires}
-%if 0%{?suse_version} >= 1320
+%if 0%{?suse_version} >= 1315
 BuildRequires: hwloc-devel
 BuildRequires: dmtcp-devel
 BuildRequires: libjson-c-devel
+%else
+BuildRequires: libdmtcpaware-devel
+BuildRequires: libjson-devel
 %endif
 %endif
 %endif
@@ -500,9 +503,9 @@ mv ${RPM_BUILD_ROOT}/%{_prefix}/`perl -e 'use Config; $T=$Config{installsitearch
    mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
 %else
 %if %systemd_avail
-    install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service
-    install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service      
-    install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service
+    install -D -m644 etc/slurmctld.service $RPM_BUILD_ROOT/%{_unitdir}/slurmctld.service
+    install -D -m644 etc/slurmd.service    $RPM_BUILD_ROOT/%{_unitdir}/slurmd.service
+    install -D -m644 etc/slurmdbd.service  $RPM_BUILD_ROOT/%{_unitdir}/slurmdbd.service
 
     install -D -m644 etc/slurm-ctld.conf   $RPM_BUILD_ROOT/%_tmpfilesdir/slurm-ctld.conf
     install -D -m644 etc/slurm-d.conf      $RPM_BUILD_ROOT/%_tmpfilesdir/slurm-d.conf
@@ -655,18 +658,11 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm && echo /etc/init.d/slurm >> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm && echo /usr/sbin/rcslurm >> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service &&
-    echo /usr/lib/systemd/system/slurmctld.service >> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmd.service    &&
-    echo /usr/lib/systemd/system/slurmd.service    >> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/tmpfiles.d/slurm-ctld.conf &&
-    echo /usr/lib/tmpfiles.d/slurm-ctld.conf >> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/tmpfiles.d/slurm-d.conf    &&
-    echo /usr/lib/tmpfiles.d/slurm-d.conf    >> $LIST
-test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology      &&
-    echo %{_bindir}/netloc_to_topology       >> $LIST
-
-
+test -f $RPM_BUILD_ROOT/%{_unitdir}/slurmctld.service && echo %{_unitdir}/slurmctld.service >> $LIST
+test -f $RPM_BUILD_ROOT/%{_unitdir}/slurmd.service    && echo %{_unitdir}/slurmd.service    >> $LIST
+test -f $RPM_BUILD_ROOT/%{_tmpfilesdir}/slurm-ctld.conf && echo %{_tmpfilesdir}/slurm-ctld.conf >> $LIST
+test -f $RPM_BUILD_ROOT/%{_tmpfilesdir}/slurm-d.conf    && echo %{_tmpfilesdir}/slurm-d.conf    >> $LIST
+test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology   && echo %{_bindir}/netloc_to_topology   >> $LIST
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
   echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
@@ -736,8 +732,7 @@ LIST=./slurmdbd.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd && echo /etc/init.d/slurmdbd >> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd && echo /usr/sbin/rcslurmdbd >> $LIST
-test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmdbd.service &&
-    echo /usr/lib/systemd/system/slurmdbd.service >> $LIST
+test -f $RPM_BUILD_ROOT/%{_unitdir}/slurmdbd.service && echo %{_unitdir}/slurmdbd.service >> $LIST
 
 LIST=./sql.files
 touch $LIST
@@ -1149,6 +1144,7 @@ if [ -x /sbin/ldconfig ]; then
 fi
 %if %systemd_avail
     %service_add_post slurmd.service slurmctld.service
+    systemd-tmpfiles --create slurm-d.conf slurm-ctld.conf
 %else
     if [ $1 = 1 ]; then
         [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm

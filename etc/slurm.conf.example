@@ -75,9 +75,9 @@ FastSchedule=1
 #
 # LOGGING
 SlurmctldDebug=3
-#SlurmctldLogFile=/var/log/slurmctld.log
+SlurmctldLogFile=/var/log/slurmctld.log
 SlurmdDebug=3
-#SlurmdLogFile=/var/log/slurmd.log
+SlurmdLogFile=/var/log/slurmd.log
 JobCompType=jobcomp/none
 #JobCompLoc=
 #
