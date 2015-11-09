@@ -3464,7 +3464,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 	}
-	bb_job = _get_bb_job(job_ptr);
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
 	if (!bb_job) {
 		/* No job buffers. Assuming use of persistent buffers only */
 		verbose("%s: %s bb job record not found", __func__,
