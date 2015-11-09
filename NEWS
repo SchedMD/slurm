@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Burst_buffer/cray: Fix to purge terminated jobs with burst buffer errors.
  -- Burst_buffer/cray: Don't stall scheduling of other jobs while a stage-in
     is in progress.
+ -- Make it possible to query 'extern' step with sstat.
 
 * Changes in Slurm 15.08.3
 ==========================
