@@ -728,7 +728,11 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls = ctx->launch_state;
+	struct step_launch_state *sls;
+	if ( !ctx )
+		return;
+
+	sls = ctx->launch_state;
 
 	pthread_mutex_lock(&sls->lock);
 	sls->abort = true;
