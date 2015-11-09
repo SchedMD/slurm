@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
-		if (selected_step->stepid == INFINITE) {
+		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
 			hostlist_t hl;

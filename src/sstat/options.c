@@ -188,9 +188,9 @@ static int _addto_job_list(List job_list, char *names)
 						*dot++ = 0;
 						/* can't use NO_VAL
 						 * since that means all */
-						if (!strcmp(dot, "batch"))
+						if (!strcasecmp(dot, "batch"))
 							selected_step->stepid =
-								INFINITE;
+								SSTAT_EXTERN_STEP;
 						else
 							selected_step->stepid =
 								atoi(dot);
@@ -256,8 +256,9 @@ static int _addto_job_list(List job_list, char *names)
 			} else {
 				*dot++ = 0;
 				/* can't use NO_VAL since that means all */
-				if (!strcmp(dot, "batch"))
-					selected_step->stepid = INFINITE;
+				if (!strcasecmp(dot, "batch"))
+					selected_step->stepid =
+						SSTAT_BATCH_STEP;
 				else
 					selected_step->stepid = atoi(dot);
 			}
