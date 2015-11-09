@@ -195,7 +195,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	memset(&launch, 0, sizeof(launch));
 
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
-		error("Not a valid slurm_step_ctx_t!");
+		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
@@ -403,7 +403,7 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	memset(&launch, 0, sizeof(launch));
 
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
-		error("Not a valid slurm_step_ctx_t!");
+		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
