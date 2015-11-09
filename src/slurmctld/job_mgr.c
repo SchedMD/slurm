@@ -9491,6 +9491,10 @@ static bool _top_priority(struct job_record *job_ptr)
 				top = false;
 				break;
 			}
+
+			if (bb_g_job_test_stage_in(job_ptr2, true) != 1)
+				continue;	/* Waiting for buffer */
+
 			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
 				/* same partition */
 				if (job_ptr2->priority <= job_ptr->priority)

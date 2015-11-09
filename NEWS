@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't fail job if multiple prolog operations in progress at slurmctld
     restart time.
  -- Burst_buffer/cray: Fix to purge terminated jobs with burst buffer errors.
+ -- Burst_buffer/cray: Don't stall scheduling of other jobs while a stage-in
+    is in progress.
 
 * Changes in Slurm 15.08.3
 ==========================
