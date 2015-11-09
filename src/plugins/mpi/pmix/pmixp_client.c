@@ -48,6 +48,18 @@
 #include <sys/types.h>
 #include <pmix_server.h>
 
+#define PMIXP_ALLOC_KEY(kvp, key_str)				\
+{								\
+	char *key = key_str;					\
+	kvp = (pmix_info_t *)xmalloc(sizeof(pmix_info_t));	\
+	(void)strncpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
+}
+
+#define PMIXP_FREE_KEY(kvp)				\
+{								\
+	xfree(kvp);						\
+}
+
 static int client_connected(const pmix_proc_t *proc, void *server_object)
 {
 	/* we don't do anything by now */
@@ -147,6 +159,7 @@ int pmixp_libpmix_init(void)
 {
 	int rc;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) | (S_IRGRP | S_IWGRP | S_IXGRP);
+	pmix_info_t *kvp;
 
 	/* NOTE: we need user who owns the job to access PMIx usock
 	 * file. According to 'man 7 unix':
@@ -177,16 +190,22 @@ int pmixp_libpmix_init(void)
 	
 	setenv(PMIXP_PMIXLIB_TMPDIR, pmixp_info_tmpdir_lib(), 1);
 
+	PMIXP_ALLOC_KEY(kvp, PMIX_USERID);
+	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_jobuid());
+
 	/* setup the server library */
-	if (PMIX_SUCCESS != (rc = PMIx_server_init(&_slurm_pmix_cb))) {
+	if (PMIX_SUCCESS != (rc = PMIx_server_init(&_slurm_pmix_cb, kvp, 1))) {
 		PMIXP_ERROR_STD("PMIx_server_init failed with error %d\n", rc);
 		return SLURM_ERROR;
 	}
+
+	PMIXP_FREE_KEY(kvp);
 	
-	if( pmixp_fixrights(pmixp_info_tmpdir_lib(), 
+	/*
+	if( pmixp_fixrights(pmixp_info_tmpdir_lib(),
 		(uid_t) pmixp_info_jobuid(), rights) ){
-		
 	}
+	*/
 
 	/* register the errhandler */
 	PMIx_Register_errhandler(NULL, 0, errhandler, errhandler_reg_callbk,
@@ -224,13 +243,6 @@ static void errhandler(pmix_status_t status,
 			status, (int) nproc);
 	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
 }
-
-#define PMIXP_ALLOC_KEY(kvp, key_str)				\
-{								\
-	char *key = key_str;					\
-	kvp = (pmix_info_t *)xmalloc(sizeof(pmix_info_t));	\
-	(void)strncpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
-	}
 
 /*
  * general proc-level attributes
