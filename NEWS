@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Added burst_buffer.conf flag parameter of "TeardownFailure" which will
     teardown and remove a burst buffer after failed stage-in or stage-out.
     By default, the buffer will be preserved for analysis and manual teardown.
+ -- Prevent a core dump in srun if the signal handler runs during the job
+    allocation causing the step context to be NULL.
 
 * Changes in Slurm 15.08.3
 ==========================
