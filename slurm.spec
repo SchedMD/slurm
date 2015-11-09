@@ -38,7 +38,7 @@
 #
 %define slurm_with() %{expand:%%{?slurm_with_%{1}:1}%%{!?slurm_with_%{1}:0}}
 
-%define systemd_avail %{expand:0%{?suse_version}>=1310}
+
 
 #  Options that are off by default (enable with --with <opt>)
 %slurm_without_opt auth_none
@@ -102,35 +102,60 @@ URL: http://slurm.schedmd.com/
 Requires: slurm-plugins
 
 %ifos linux
-BuildRequires: python
-%if %systemd_avail
 BuildRequires: systemd
-BuildRequires: systemd-rpm-macros
-%endif
-%if 0%{?suse_version} >= 1310
-BuildRequires: pkg-config
+%{?systemd_requires}
+BuildRequires: python
 BuildRequires: ncurses-devel
+BuildRequires: glib2-devel
+BuildRequires: gtk2-devel
+    %if 0%{?suse_version} >= 1310
+BuildRequires: lua-devel
 BuildRequires: rrdtool-devel
 BuildRequires: freeipmi-devel
+BuildRequires: systemd-rpm-macros
+BuildRequires: pkg-config
 BuildRequires: hdf5-devel
-BuildRequires: glib2-devel
 BuildRequires: libnuma-devel
-BuildRequires: gtk2-devel
 BuildRequires: libmysqlclient-devel
-BuildRequires: lua-devel
 BuildRequires: fdupes
 Requires(pre): pwdutils
-%{?systemd_requires}
-%if 0%{?suse_version} >= 1315
+        %if 0%{?suse_version} >= 1315
 BuildRequires: hwloc-devel
 BuildRequires: dmtcp-devel
 BuildRequires: libjson-c-devel
-%else
+        %else
 BuildRequires: libdmtcpaware-devel
 BuildRequires: libjson-devel
+        %endif
+    %else
+BuildRequires: mariadb-devel
+BuildRequires: numactl-devel
+    %endif
+%endif
+
+
+
+
+%define systemd_avail %{defined systemd_requires}
+%if %systemd_avail
+%if (! %{defined service_add_pre}) && %{defined systemd_pre}
+    %define service_add_pre %{expand:%%{systemd_pre %*}}
+%else
+    %define service_add_pre() %{nil}
+%endif
+%if (! %{defined service_add_post})
+    %define service_add_post() %{expand:%%{systemd_post %*}}
+%endif
+%if (! %{defined service_del_preun})
+    %define service_del_preun() %{expand:%%{systemd_preun %*}}
+%endif
+%if (! %{defined service_del_postun})
+    %define service_del_postun() %{expand:%%{systemd_postun %*}}
 %endif
 %endif
-%endif
+
+
+
 
 %ifos solaris
 Requires:         SUNWgnome-base-libs
@@ -258,7 +283,12 @@ scheduling and accounting modules
 
 # First we remove $prefix/local and then just prefix to make
 # sure we get the correct installdir
+
+%if 0%{?suse_version}
 %define _perlarch %(perl -e 'use Config; $T=$Config{installvendorarch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+%else
+%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
+%endif
 
 # AIX doesn't always give the correct install prefix here for mans
 %ifos aix5.3
@@ -494,10 +524,10 @@ rm -rf "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" %__make install
 DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
 
-mkdir -p `dirname ${RPM_BUILD_ROOT}/%_perldir`
-
-mv ${RPM_BUILD_ROOT}/%{_prefix}/`perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;'` ${RPM_BUILD_ROOT}/%_perldir
-
+%if 0%{?suse_version}
+    mkdir -p `dirname ${RPM_BUILD_ROOT}/%_perldir`
+    mv ${RPM_BUILD_ROOT}/%{_prefix}/`perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;'` ${RPM_BUILD_ROOT}/%_perldir
+%endif
 
 %ifos aix5.3
    mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
@@ -510,11 +540,11 @@ mv ${RPM_BUILD_ROOT}/%{_prefix}/`perl -e 'use Config; $T=$Config{installsitearch
     install -D -m644 etc/slurm-ctld.conf   $RPM_BUILD_ROOT/%_tmpfilesdir/slurm-ctld.conf
     install -D -m644 etc/slurm-d.conf      $RPM_BUILD_ROOT/%_tmpfilesdir/slurm-d.conf
     
-%if %{?suse_version}
-    ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmd
-    ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmctld
-    ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
-%endif
+    %if 0%{?suse_version}
+        ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmd
+        ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmctld
+        ln -s service $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
+    %endif
 %else
    if [ -d /etc/init.d ]; then
       install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
@@ -522,6 +552,7 @@ mv ${RPM_BUILD_ROOT}/%{_prefix}/`perl -e 'use Config; $T=$Config{installsitearch
       mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
       ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
       ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
+      
    fi
 %endif
 %endif
@@ -656,13 +687,16 @@ ${RPM_BUILD_ROOT}%{_bindir}/sjstat --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjst
 # Build conditional file list for main package
 LIST=./slurm.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/etc/init.d/slurm && echo /etc/init.d/slurm >> $LIST
-test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm && echo /usr/sbin/rcslurm >> $LIST
+test -f $RPM_BUILD_ROOT/etc/init.d/slurm        && echo /etc/init.d/slurm       >> $LIST
+test -f $RPM_BUILD_ROOT/%{_sbindir}/rcslurm     && echo %{_sbindir}/rcslurm     >> $LIST
+test -f $RPM_BUILD_ROOT/%{_sbindir}/rcslurmd    && echo %{_sbindir}/rcslurmd    >> $LIST
+test -f $RPM_BUILD_ROOT/%{_sbindir}/rcslurmctld && echo %{_sbindir}/rcslurmctld >> $LIST
 test -f $RPM_BUILD_ROOT/%{_unitdir}/slurmctld.service && echo %{_unitdir}/slurmctld.service >> $LIST
 test -f $RPM_BUILD_ROOT/%{_unitdir}/slurmd.service    && echo %{_unitdir}/slurmd.service    >> $LIST
 test -f $RPM_BUILD_ROOT/%{_tmpfilesdir}/slurm-ctld.conf && echo %{_tmpfilesdir}/slurm-ctld.conf >> $LIST
 test -f $RPM_BUILD_ROOT/%{_tmpfilesdir}/slurm-d.conf    && echo %{_tmpfilesdir}/slurm-d.conf    >> $LIST
 test -f $RPM_BUILD_ROOT/%{_bindir}/netloc_to_topology   && echo %{_bindir}/netloc_to_topology   >> $LIST
+
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/%{version}-%{release} &&
   echo /opt/modulefiles/slurm/%{version}-%{release} >> $LIST
@@ -839,8 +873,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%{_sbindir}/rcslurmd
-%{_sbindir}/rcslurmctld
 %ifos aix5.3
 %{_sbindir}/srun
 %endif
@@ -953,7 +985,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -f slurmdbd.files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
-%{_sbindir}/rcslurmdbd
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
