@@ -1,6 +1,7 @@
 [Unit]
 Description=Slurm DBD accounting daemon
 After=network.target
+Wants=munge.service
 ConditionPathExists=@sysconfdir@/slurmdbd.conf
 
 [Service]
