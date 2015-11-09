@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     By default, the buffer will be preserved for analysis and manual teardown.
  -- Prevent a core dump in srun if the signal handler runs during the job
     allocation causing the step context to be NULL.
+ -- Don't fail job if multiple prolog operations in progress at slurmctld
+    restart time.
 
 * Changes in Slurm 15.08.3
 ==========================

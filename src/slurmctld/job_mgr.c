@@ -2415,7 +2415,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		      job_ptr->job_id, requeue, overcommit);
 		goto unpack_error;
 	}
-	if (prolog_running > 1) {
+	if (prolog_running > 4) {
 		error("Invalid data for job %u: prolog_running=%u",
 		      job_ptr->job_id, prolog_running);
 		goto unpack_error;
