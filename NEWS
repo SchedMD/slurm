@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     is in progress.
  -- Make it possible to query 'extern' step with sstat.
  -- Make 'extern' step show up in the database.
+ -- MYSQL - Quote assoc table name in mysql query.
 
 * Changes in Slurm 15.08.3
 ==========================
