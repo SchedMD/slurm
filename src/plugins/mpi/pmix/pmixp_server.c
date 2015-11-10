@@ -339,12 +339,43 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 	hsize = _send_pack_hdr(&hdr, nhdr);
 	memcpy(data, nhdr, hsize);
 
-	rc = pmixp_stepd_send(hostlist, addr, data, size);
+	rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
 	if (SLURM_SUCCESS != rc) {
 		PMIXP_ERROR(
 				"Cannot send message to %s, size = %u, hostlist:\n%s",
 				addr, (uint32_t) size, hostlist);
 	}
+	return rc;
+}
+
+int pmixp_server_health_chk(char *hostlist,  const char *addr)
+{
+	send_header_t hdr;
+	char nhdr[sizeof(send_header_t)];
+	size_t hsize;
+	Buf buf = pmixp_server_new_buf();
+	char *data = get_buf_data(buf);
+	int rc;
+
+	hdr.magic = PMIX_SERVER_MSG_MAGIC;
+	hdr.type = PMIXP_MSG_HEALTH_CHK;
+	hdr.msgsize = 1;
+	hdr.seq = 0;
+	/* Store global nodeid that is
+	 *  independent from exact collective */
+	hdr.nodeid = pmixp_info_nodeid_job();
+	hsize = _send_pack_hdr(&hdr, nhdr);
+	memcpy(data, nhdr, hsize);
+
+	grow_buf(buf, sizeof(char));
+	pack8('\n', buf);
+
+	rc = pmixp_stepd_send(hostlist, addr, data, get_buf_offset(buf), 4, 14, 1);
+	if (SLURM_SUCCESS != rc) {
+		PMIXP_ERROR("Was unable to wait for the parent %s to become alive on addr %s",
+			    hostlist, addr);
+	}
+
 	return rc;
 }
 
@@ -406,6 +437,13 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 	}
 	case PMIXP_MSG_DMDX: {
 		pmixp_dmdx_process(buf, nodename, hdr->seq);
+		break;
+	}
+	case PMIXP_MSG_HEALTH_CHK: {
+		/* this is just health ping.
+		 * TODO: can we do something more sophisticated?
+		 */
+		free_buf(buf);
 		break;
 	}
 	default:

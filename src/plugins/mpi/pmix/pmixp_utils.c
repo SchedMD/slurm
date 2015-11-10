@@ -51,8 +51,6 @@
 #include "pmixp_utils.h"
 #include "pmixp_debug.h"
 
-#define PMIXP_MAX_RETRY 7
-
 void pmixp_xfree_xmalloced(void *x)
 {
 	xfree(x);
@@ -314,26 +312,29 @@ static int _send_to_stepds(hostlist_t hl, const char *addr, uint32_t len,
 }
 
 int pmixp_stepd_send(char *nodelist, const char *address, char *data,
-		uint32_t len)
+		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
+		     int silent)
 {
 
 	int retry = 0, rc;
-	unsigned int delay = 500; /* in milliseconds */
+	unsigned int delay = start_delay; /* in milliseconds */
 	hostlist_t hl;
 
 	hl = hostlist_create(nodelist);
 	while (1) {
-		if (retry == 1) {
-			PMIXP_ERROR("send failed, rc=%d, retrying", rc);
+		if (!silent && retry >= 1) {
+			PMIXP_ERROR("send failed, rc=%d, try #%d", rc, retry);
 		}
 
 		rc = _send_to_stepds(hl, address, len, data);
 
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS){
 			break;
+		}
 		retry++;
-		if (retry >= PMIXP_MAX_RETRY)
+		if (retry >= retry_cnt){
 			break;
+		}
 		/* wait with constantly increasing delay */
 		struct timespec ts =
 			{(delay / 1000), ((delay % 1000) * 1000000)};

@@ -41,6 +41,7 @@
 #include "pmixp_common.h"
 
 typedef enum {
+	PMIXP_MSG_HEALTH_CHK,
 	PMIXP_MSG_FAN_IN,
 	PMIXP_MSG_FAN_OUT,
 	PMIXP_MSG_DMDX
@@ -52,6 +53,8 @@ int pmix_srun_init(const mpi_plugin_client_info_t *job, char ***env);
 void pmix_server_new_conn(int fd);
 int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 		const char *addr, void *data, size_t size);
+int pmixp_server_health_chk(char *hostlist,  const char *addr);
+
 
 Buf pmixp_server_new_buf(void);
 
