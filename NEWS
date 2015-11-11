@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Quote assoc table name in mysql query.
  -- Make SLURM_ARRAY_TASK_MIN, SLURM_ARRAY_TASK_MAX, and SLURM_ARRAY_TASK_STEP
     environment variables available to PrologSlurmctld and EpilogSlurmctld.
+ -- Support taking node out of FUTURE state with "scontrol reconfig" command.
 
 * Changes in Slurm 15.08.3
 ==========================

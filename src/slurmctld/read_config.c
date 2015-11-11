@@ -1197,7 +1197,7 @@ static int _restore_node_state(int recover,
 
 	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
 	     i++, old_node_ptr++) {
-		uint32_t drain_flag = false, down_flag = false;
+		bool drain_flag = false, down_flag = false;
 		dynamic_plugin_data_t *tmp_select_nodeinfo;
 
 		node_ptr  = find_node_record(old_node_ptr->name);
@@ -1209,7 +1209,17 @@ static int _restore_node_state(int recover,
 			down_flag = true;
 		if (IS_NODE_DRAIN(node_ptr))
 			drain_flag = true;
-		node_ptr->node_state = old_node_ptr->node_state;
+		if ( IS_NODE_FUTURE(old_node_ptr) &&
+		    !IS_NODE_FUTURE(node_ptr)) {
+			/* Replace FUTURE state with new state, but preserve
+			 * state flags (e.g. POWER) */
+			node_ptr->node_state =
+				(node_ptr->node_state     & NODE_STATE_BASE) |
+				(old_node_ptr->node_state & NODE_STATE_FLAGS);
+		} else {
+			node_ptr->node_state = old_node_ptr->node_state;
+		}
+
 		if (down_flag) {
 			node_ptr->node_state &= NODE_STATE_FLAGS;
 			node_ptr->node_state |= NODE_STATE_DOWN;
