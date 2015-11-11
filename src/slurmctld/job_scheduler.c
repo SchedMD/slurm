@@ -3008,10 +3008,8 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 
 static char **_build_env(struct job_record *job_ptr)
 {
-	char **my_env, *name;
-	char buf[32];
-	int exit_code;
-	int signal;
+	char **my_env, *name, *eq, buf[32];
+	int exit_code, i, signal;
 
 	my_env = xmalloc(sizeof(char *));
 	my_env[0] = NULL;
@@ -3070,6 +3068,22 @@ static char **_build_env(struct job_record *job_ptr)
 			job_ptr->array_job_id);
 		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u",
 			job_ptr->array_task_id);
+		if (job_ptr->details && job_ptr->details->env_sup &&
+		    job_ptr->details->env_cnt) {
+			for (i = 0; i < job_ptr->details->env_cnt; i++) {
+				if (strncmp(job_ptr->details->env_sup[i],
+					    "SLURM_ARRAY_TASK", 16))
+					continue;
+				eq = strchr(job_ptr->details->env_sup[i], '=');
+				if (!eq)
+					continue;
+				eq[0] = '\0';
+				setenvf(&my_env,
+					job_ptr->details->env_sup[i],
+				        "%s", eq + 1);
+				eq[0] = '=';
+			}
+		}
 	}
 
 	if (slurmctld_cluster_name) {

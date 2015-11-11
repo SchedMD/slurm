@@ -39,6 +39,21 @@ documents those changes that are of interest to users and administrators.
  -- Fix typo for the "devices" cgroup subsystem in pam_slurm_adopt.c
  -- Fix TRES_MAX flag to work correctly.
  -- Improve the systemd startup files.
+ -- Added burst_buffer.conf flag parameter of "TeardownFailure" which will
+    teardown and remove a burst buffer after failed stage-in or stage-out.
+    By default, the buffer will be preserved for analysis and manual teardown.
+ -- Prevent a core dump in srun if the signal handler runs during the job
+    allocation causing the step context to be NULL.
+ -- Don't fail job if multiple prolog operations in progress at slurmctld
+    restart time.
+ -- Burst_buffer/cray: Fix to purge terminated jobs with burst buffer errors.
+ -- Burst_buffer/cray: Don't stall scheduling of other jobs while a stage-in
+    is in progress.
+ -- Make it possible to query 'extern' step with sstat.
+ -- Make 'extern' step show up in the database.
+ -- MYSQL - Quote assoc table name in mysql query.
+ -- Make SLURM_ARRAY_TASK_MIN, SLURM_ARRAY_TASK_MAX, and SLURM_ARRAY_TASK_STEP
+    environment variables available to PrologSlurmctld and EpilogSlurmctld.
 
 * Changes in Slurm 15.08.3
 ==========================

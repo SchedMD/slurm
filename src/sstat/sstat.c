@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
-		if (selected_step->stepid == INFINITE) {
+		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
 			hostlist_t hl;
@@ -249,6 +249,20 @@ int main(int argc, char **argv)
 			nodelist = hostlist_pop(hl);
 			free_nodelist = true;
 			hostlist_destroy(hl);
+			slurm_free_job_info_msg(job_ptr);
+		} else if (selected_step->stepid == SSTAT_EXTERN_STEP) {
+			/* get the extern step info */
+			job_info_msg_t *job_ptr = NULL;
+
+			if (slurm_load_job(
+				    &job_ptr, selected_step->jobid, SHOW_ALL)) {
+				error("couldn't get info for job %u",
+				      selected_step->jobid);
+				continue;
+			}
+
+			stepid = INFINITE;
+			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
 		} else if (selected_step->stepid != NO_VAL) {
 			stepid = selected_step->stepid;

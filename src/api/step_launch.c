@@ -195,7 +195,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	memset(&launch, 0, sizeof(launch));
 
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
-		error("Not a valid slurm_step_ctx_t!");
+		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
@@ -396,17 +396,18 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 
 	debug("Entering slurm_step_launch_add");
+
+	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
+		error("%s: Not a valid slurm_step_ctx_t", __func__);
+		slurm_seterrno(EINVAL);
+		return SLURM_ERROR;
+	}
+
 	if (!ctx->launch_state->user_managed_io)
 		fatal("slurm_step_launch_add has only been tested "
 		      "with user managed io");
 
 	memset(&launch, 0, sizeof(launch));
-
-	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
-		error("Not a valid slurm_step_ctx_t!");
-		slurm_seterrno(EINVAL);
-		return SLURM_ERROR;
-	}
 
 	/* Now, hack the step_layout struct if the following it true.
 	   This looks like an ugly hack to support LAM/MPI's lamboot.
@@ -600,10 +601,15 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls = ctx->launch_state;
+	struct step_launch_state *sls;
 	struct timespec ts = {0, 0};
 	bool time_set = false;
 	int errnum;
+
+	if (! ctx || ctx->magic != STEP_CTX_MAGIC)
+		return;
+
+	sls = ctx->launch_state;
 
 	/* Wait for all tasks to complete */
 	pthread_mutex_lock(&sls->lock);
@@ -728,7 +734,12 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls = ctx->launch_state;
+	struct step_launch_state *sls;
+
+	if (!ctx || ctx->magic != STEP_CTX_MAGIC)
+		return;
+
+	sls = ctx->launch_state;
 
 	pthread_mutex_lock(&sls->lock);
 	sls->abort = true;

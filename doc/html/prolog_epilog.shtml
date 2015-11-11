@@ -332,6 +332,24 @@ SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
+<li><b>SLURM_ARRAY_TASK_MAX</b>
+If this job is part of a job array, this will be set to the maximum
+task ID.
+Otherwise it will not be set.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_ARRAY_TASK_MIN</b>
+If this job is part of a job array, this will be set to the minimum
+task ID.
+Otherwise it will not be set.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_ARRAY_TASK_STEP</b>
+If this job is part of a job array, this will be set to the step
+size of task IDs.
+Otherwise it will not be set.
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
 <li><b>SLURM_CLUSTER_NAME</b>
 Name of the cluster executing the job.</li>
 
@@ -421,6 +439,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 18 February 2015</p>
+<p style="text-align:center;">Last modified 10 November 2015</p>
 
 <!--#include virtual="footer.txt"-->

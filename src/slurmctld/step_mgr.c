@@ -3252,6 +3252,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 				bit_copy(job_ptr->node_bitmap);
 		}
 		step_ptr->time_last_active = time(NULL);
+		step_set_alloc_tres(step_ptr, 1, false, false);
+
 		jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	}
 	if (step_ptr == NULL) {
@@ -3384,6 +3386,15 @@ extern void step_set_alloc_tres(
 		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
 			mem_count = step_ptr->job_ptr->job_resrcs->
 				memory_allocated[0];
+	} else if ((step_ptr->step_id == SLURM_EXTERN_CONT) &&
+	    step_ptr->job_ptr->tres_alloc_str) {
+		/* get the tres from the whole job */
+		step_ptr->tres_alloc_str =
+			xstrdup(step_ptr->job_ptr->tres_alloc_str);
+		if (make_formatted)
+			step_ptr->tres_fmt_alloc_str =
+				xstrdup(step_ptr->job_ptr->tres_fmt_alloc_str);
+		return;
 	} else {
 #ifdef HAVE_BG_L_P
 		/* Only L and P use this code */

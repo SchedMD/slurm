@@ -78,6 +78,9 @@
 #define SECONDS_IN_HOUR (60*SECONDS_IN_MINUTE)
 #define SECONDS_IN_DAY (24*SECONDS_IN_HOUR)
 
+#define SSTAT_BATCH_STEP  0xfffffffd
+#define SSTAT_EXTERN_STEP 0xfffffffc
+
 /* On output, use fields 12-37 from JOB_STEP */
 
 typedef enum {

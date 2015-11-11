@@ -4526,6 +4526,24 @@ SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
+\fBSLURM_ARRAY_TASK_MAX\fR
+If this job is part of a job array, this will be set to the maximum
+task ID.
+Otherwise it will not be set.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_ARRAY_TASK_MIN\fR
+If this job is part of a job array, this will be set to the minimum
+task ID.
+Otherwise it will not be set.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_ARRAY_TASK_STEP\fR
+If this job is part of a job array, this will be set to the step
+size of task IDs.
+Otherwise it will not be set.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster executing the job.
 .TP

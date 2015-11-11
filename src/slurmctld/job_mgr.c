@@ -2421,7 +2421,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		      job_ptr->job_id, requeue, overcommit);
 		goto unpack_error;
 	}
-	if (prolog_running > 1) {
+	if (prolog_running > 4) {
 		error("Invalid data for job %u: prolog_running=%u",
 		      job_ptr->job_id, prolog_running);
 		goto unpack_error;
@@ -9533,6 +9533,10 @@ static bool _top_priority(struct job_record *job_ptr)
 				top = false;
 				break;
 			}
+
+			if (bb_g_job_test_stage_in(job_ptr2, true) != 1)
+				continue;	/* Waiting for buffer */
+
 			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
 				/* same partition */
 				if (job_ptr2->priority <= job_ptr->priority)
