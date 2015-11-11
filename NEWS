@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Quote assoc table name in mysql query.
  -- Make SLURM_ARRAY_TASK_MIN, SLURM_ARRAY_TASK_MAX, and SLURM_ARRAY_TASK_STEP
     environment variables available to PrologSlurmctld and EpilogSlurmctld.
+ -- Fix slurmctld bug in which a pending job array could be canceled
+    by a user different from the owner or the administrator.
 
 * Changes in Slurm 15.08.3
 ==========================
