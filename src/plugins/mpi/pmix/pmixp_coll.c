@@ -99,6 +99,26 @@ static int _pack_ranges(pmixp_coll_t *coll)
 	return SLURM_SUCCESS;
 }
 
+static void _fan_in_finished(pmixp_coll_t *coll)
+{
+	xassert(PMIXP_COLL_FAN_IN == coll->state);
+	coll->state = PMIXP_COLL_FAN_OUT;
+	memset(coll->ch_contribs, 0, sizeof(int) * coll->children_cnt);
+	coll->contrib_cntr = 0;
+	coll->contrib_local = 0;
+	set_buf_offset(coll->buf, coll->serv_offs);
+	if (SLURM_SUCCESS != _pack_ranges(coll)) {
+		PMIXP_ERROR("Cannot pack ranges to coll message header!");
+	}
+}
+
+static void _fan_out_finished(pmixp_coll_t *coll)
+{
+	xassert( PMIXP_COLL_FAN_OUT == coll->state /* || fan_out_in */);
+	coll->state = PMIXP_COLL_SYNC;
+	coll->seq++; /* move to the next collective */
+}
+
 static void _reset_coll(pmixp_coll_t *coll)
 {
 	switch (coll->state) {
@@ -535,8 +555,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	}
 
 	/* transit to the next state */
-	coll->state = PMIXP_COLL_FAN_OUT;
-	set_buf_offset(coll->buf, 0);
+	_fan_in_finished(coll);
 
 	/* if we are root - push data to PMIx here.
 	 * Originally there was a homogenuous solution: root nodename was in the hostlist.
@@ -577,7 +596,7 @@ void _progres_fan_out(pmixp_coll_t *coll, Buf buf)
 				pmixp_free_Buf, (void *)buf);
 	}
 	/* Prepare for the next collective operation */
-	_reset_coll(coll);
+	_fan_out_finished(coll);
 
 	PMIXP_DEBUG("%s:%d: collective is prepared for the next use",
 			pmixp_info_namespace(), pmixp_info_nodeid());

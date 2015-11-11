@@ -411,16 +411,22 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 
-		PMIXP_DEBUG(
-				"FENCE collective message from node \"%s\", type = %s",
-				nodename,
-				(PMIXP_MSG_FAN_IN == hdr->type) ?
-						"fan-in" : "fan-out");
+		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s",
+			    nodename,
+			    (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out");
 
-		if (SLURM_SUCCESS
-				!= pmixp_coll_check_seq(coll, hdr->seq,
+		if (SLURM_SUCCESS != pmixp_coll_check_seq(coll, hdr->seq,
 						nodename)) {
-			/* stop processing discardig this message */
+			/* this is unexepable event: either something went
+			 * really wrong or the state machine is incorrect.
+			 * This will 100% lead to application hang.
+			 */
+			PMIXP_ERROR("Bad collective seq. #%d from %s, current is %d",
+				    hdr->seq, nodename, coll->seq);
+			pmixp_debug_hang(0); /* enable hang to debug this! */
+			slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(),
+					    SIGKILL);
+
 			break;
 		}
 

@@ -170,8 +170,6 @@ static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq,
 		 * want to discard this message */
 		return SLURM_ERROR;
 	}
-	PMIXP_ERROR("Bad collective seq. #%d from %s, current is %d", seq,
-			nodename, coll->seq);
 	/* maybe need more sophisticated handling in presence of
 	 * several steps. However maybe it's enough to just ignore */
 	/* slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL); */
