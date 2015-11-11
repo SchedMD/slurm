@@ -411,9 +411,10 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 
-		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s",
+		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s, seq = %d",
 			    nodename,
-			    (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out");
+			    (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
+			    hdr->seq);
 
 		if (SLURM_SUCCESS != pmixp_coll_check_seq(coll, hdr->seq,
 						nodename)) {

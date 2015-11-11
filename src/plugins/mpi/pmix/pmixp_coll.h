@@ -43,7 +43,8 @@
 typedef enum {
 	PMIXP_COLL_SYNC,
 	PMIXP_COLL_FAN_IN,
-	PMIXP_COLL_FAN_OUT
+	PMIXP_COLL_FAN_OUT,
+	PMIXP_COLL_FAN_OUT_IN
 } pmixp_coll_state_t;
 
 typedef enum {
@@ -91,7 +92,7 @@ typedef struct {
 	void *cbdata;
 
 	/* timestamp for stale collectives detection */
-	time_t ts;
+	time_t ts, ts_next;
 } pmixp_coll_t;
 
 static inline void pmixp_coll_sanity_check(pmixp_coll_t *coll)
@@ -156,12 +157,21 @@ static inline void pmixp_coll_set_callback(pmixp_coll_t *coll,
  *        our parent.
  *    (d) we won't be able to switch to SYNC since root will be busy dealing with
  *        previous DB broadcast.
+ *    (e) at FAN-OUT waiting for the fan-out msg while receiving next fan-in message
+ *        from one of our children (coll->seq + 1 == child_seq).
  */
 static inline int pmixp_coll_check_seq(pmixp_coll_t *coll, uint32_t seq,
 		char *nodename)
 {
 	if (coll->seq == seq) {
 		/* accept this message */
+		return SLURM_SUCCESS;
+	} else if( (coll->seq+1) == seq ){
+		/* practice shows that because of SLURM communication
+		 * infrastructure our child can switch to the next Fence
+		 * and send us the message before the current fan-out message
+		 * arrived. This is accounted in current state machine, so we
+		 * allow if we receive message with seq number grater by one */
 		return SLURM_SUCCESS;
 	} else if ((coll->seq - 1) == seq) {
 		/* his may be our child OR root of the tree that

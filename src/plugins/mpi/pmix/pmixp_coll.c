@@ -114,9 +114,22 @@ static void _fan_in_finished(pmixp_coll_t *coll)
 
 static void _fan_out_finished(pmixp_coll_t *coll)
 {
-	xassert( PMIXP_COLL_FAN_OUT == coll->state /* || fan_out_in */);
-	coll->state = PMIXP_COLL_SYNC;
 	coll->seq++; /* move to the next collective */
+	switch (coll->state) {
+	case PMIXP_COLL_FAN_OUT:
+		coll->state = PMIXP_COLL_SYNC;
+		break;
+	case PMIXP_COLL_FAN_OUT_IN:
+		/* we started to receive data for the new collective
+		 * switch to the fan-in stage */
+		coll->state = PMIXP_COLL_FAN_IN;
+		/* set the right timestamp */
+		coll->ts = coll->ts_next;
+		break;
+	default:
+		PMIXP_ERROR("Bad collective state = %d", coll->state);
+		xassert(PMIXP_COLL_FAN_OUT == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
+	}
 }
 
 static void _reset_coll(pmixp_coll_t *coll)
@@ -376,6 +389,7 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 	int nodeid;
 	char *data = NULL;
 	uint32_t size;
+	char *state = NULL;
 
 	PMIXP_DEBUG("%s:%d: get contribution from node %s",
 			pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
@@ -387,14 +401,20 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 
 	/* fix the collective status if need */
 	if (PMIXP_COLL_SYNC == coll->state) {
-		PMIXP_DEBUG(
-				"%s:%d: get contribution from node %s: switch to PMIXP_COLL_FAN_IN",
-				pmixp_info_namespace(), pmixp_info_nodeid(),
-				nodename);
+		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch to PMIXP_COLL_FAN_IN",
+			    pmixp_info_namespace(), pmixp_info_nodeid(),
+			    nodename);
 		coll->state = PMIXP_COLL_FAN_IN;
 		coll->ts = time(NULL);
+	} else if( PMIXP_COLL_FAN_OUT == coll->state) {
+		PMIXP_DEBUG("%s:%d: get contribution from node %s: switch to PMIXP_COLL_FAN_OUT_IN"
+			    " (next collective!)",
+			    pmixp_info_namespace(), pmixp_info_nodeid(),
+			    nodename);
+		coll->state = PMIXP_COLL_FAN_OUT_IN;
+		coll->ts_next = time(NULL);
 	}
-	xassert(PMIXP_COLL_FAN_IN == coll->state);
+	xassert(PMIXP_COLL_FAN_IN == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
 
 	/* Because of possible timeouts/delays in transmission we
 	 * can receive a contribution second time. Avoid duplications
@@ -408,9 +428,8 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 
 	if (0 < coll->ch_contribs[nodeid]) {
 		/* May be 0 or 1. If grater - transmission skew, ignore. */
-		PMIXP_DEBUG(
-				"Multiple contributions from child_id=%d, hostname=%s",
-				nodeid, nodename);
+		PMIXP_DEBUG("Multiple contributions from child_id=%d, hostname=%s",
+			    nodeid, nodename);
 		/* this is duplication, skip. */
 		goto proceed;
 	}
@@ -431,11 +450,29 @@ proceed:
 	/* unlock the structure */
 	pthread_mutex_unlock(&coll->lock);
 
-	/* make a progress */
-	_progress_fan_in(coll);
+	if( PMIXP_COLL_FAN_IN == coll->state ){
+		/* make a progress if we are in fan-in state */
+		_progress_fan_in(coll);
+	}
 
-	PMIXP_DEBUG("%s:%d: get contribution from node %s: finish",
-			pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
+	switch( coll->state ){
+	case PMIXP_COLL_SYNC:
+		state = "sync";
+		break;
+	case PMIXP_COLL_FAN_IN:
+		state = "fan-in";
+		break;
+	case PMIXP_COLL_FAN_OUT:
+		state = "fan-out";
+		break;
+	case PMIXP_COLL_FAN_OUT_IN:
+		state = "fan-out-in";
+		break;
+	}
+
+	PMIXP_DEBUG("%s:%d: get contribution from node %s: finish. State = %s",
+		    pmixp_info_namespace(), pmixp_info_nodeid(), nodename,
+		    state);
 
 	return SLURM_SUCCESS;
 }
@@ -451,6 +488,10 @@ void pmixp_coll_bcast(pmixp_coll_t *coll, Buf buf)
 
 	/* unlock the structure */
 	pthread_mutex_unlock(&coll->lock);
+
+	/* We may already start next collective. Try to progress!
+	 * its OK if we in SYNC - there will be no-op */
+	_progress_fan_in(coll);
 }
 
 static int _copy_payload(Buf inbuf, size_t offs, Buf *outbuf)
@@ -584,7 +625,7 @@ void _progres_fan_out(pmixp_coll_t *coll, Buf buf)
 
 	pmixp_coll_sanity_check(coll);
 
-	xassert(PMIXP_COLL_FAN_OUT == coll->state);
+	xassert(PMIXP_COLL_FAN_OUT == coll->state || PMIXP_COLL_FAN_OUT_IN == coll->state);
 
 	/* update the database */
 	if (NULL != coll->cbfunc) {
