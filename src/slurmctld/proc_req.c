@@ -5448,7 +5448,7 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	request_msg = (stats_info_request_msg_t *)msg->data;
 
 	if ((request_msg->command_id == STAT_COMMAND_RESET) &&
-	    !validate_slurm_user(uid)) {
+	    !validate_operator(uid)) {
 		error("Security violation: REQUEST_STATS_INFO reset "
 		      "from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
