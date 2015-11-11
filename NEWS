@@ -55,6 +55,12 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Quote assoc table name in mysql query.
  -- Make SLURM_ARRAY_TASK_MIN, SLURM_ARRAY_TASK_MAX, and SLURM_ARRAY_TASK_STEP
     environment variables available to PrologSlurmctld and EpilogSlurmctld.
+ -- Fix slurmctld bug in which a pending job array could be canceled
+    by a user different from the owner or the administrator.
+ -- Support taking node out of FUTURE state with "scontrol reconfig" command.
+ -- Sched/backfill: Fix to properly enforce SchedulerParameters of
+    bf_max_job_array_resv.
+ -- Enable operator to reset sdiag data.
 
 * Changes in Slurm 15.08.3
 ==========================

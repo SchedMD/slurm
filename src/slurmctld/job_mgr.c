@@ -4271,6 +4271,15 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	if (job_ptr && (job_ptr->user_id != uid)
+	    && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
+		error("Security violation, REQUEST_KILL_JOB RPC for "
+		      "jobID %u from uid %d", job_ptr->job_id, uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -4484,6 +4493,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			/* This is a job array */
 			job_ptr_done = job_ptr;
 			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
+			if (rc == ESLURM_ACCESS_DENIED)
+				return rc;
 			jobs_signalled++;
 			if (rc == ESLURM_ALREADY_DONE) {
 				jobs_done++;
