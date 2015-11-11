@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it possible to query 'extern' step with sstat.
  -- Make 'extern' step show up in the database.
  -- MYSQL - Quote assoc table name in mysql query.
+ -- Make SLURM_ARRAY_TASK_MIN, SLURM_ARRAY_TASK_MAX, and SLURM_ARRAY_TASK_STEP
+    environment variables available to PrologSlurmctld and EpilogSlurmctld.
 
 * Changes in Slurm 15.08.3
 ==========================
