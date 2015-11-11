@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld bug in which a pending job array could be canceled
     by a user different from the owner or the administrator.
  -- Support taking node out of FUTURE state with "scontrol reconfig" command.
+ -- Sched/backfill: Fix to properly enforce SchedulerParameters of
+    bf_max_job_array_resv.
 
 * Changes in Slurm 15.08.3
 ==========================

@@ -1535,7 +1535,7 @@ next_task:
 			/* Can start earlier in different partition */
 			job_ptr->start_time = orig_start_time;
 		}
-		if ((job_ptr->array_task_id != NO_VAL) && job_ptr->array_recs) {
+		if (job_ptr->array_recs) {
 			/* Try making reservation for next task of job array */
 			if (test_array_job_id != job_ptr->array_job_id) {
 				test_array_job_id = job_ptr->array_job_id;
