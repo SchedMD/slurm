@@ -451,6 +451,7 @@ static int _copy_payload(Buf inbuf, size_t offs, Buf *outbuf)
 	buf = init_buf(copy_size);
 	memcpy(get_buf_data(buf), ptr, copy_size);
 	*outbuf = buf;
+	set_buf_offset(inbuf, total_size);
 	return rc;
 }
 
@@ -460,6 +461,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	const char *addr = pmixp_info_srv_addr();
 	char *hostlist = NULL;
 	int rc;
+	Buf root_buf;
 
 	PMIXP_DEBUG("%s:%d: start, local=%d, child_cntr=%d",
 			pmixp_info_namespace(), pmixp_info_nodeid(),
@@ -486,6 +488,8 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	if (NULL != coll->parent_host) {
 		hostlist = xstrdup(coll->parent_host);
 		type = PMIXP_MSG_FAN_IN;
+		PMIXP_DEBUG("%s:%d: switch to PMIXP_COLL_FAN_OUT state",
+			    pmixp_info_namespace(), pmixp_info_nodeid());
 	} else {
 		if (0 < hostlist_count(coll->all_children)) {
 			hostlist = hostlist_ranged_string_xmalloc(
@@ -493,6 +497,10 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 			type = PMIXP_MSG_FAN_OUT;
 			pmixp_debug_hang(0);
 		}
+		rc = _copy_payload(coll->buf, coll->serv_offs, &root_buf);
+		xassert(0 == rc);
+		PMIXP_DEBUG("%s:%d: finish with this collective (I am the root)",
+			    pmixp_info_namespace(), pmixp_info_nodeid());
 	}
 
 	PMIXP_DEBUG("%s:%d: send data to %s", pmixp_info_namespace(),
@@ -528,6 +536,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 
 	/* transit to the next state */
 	coll->state = PMIXP_COLL_FAN_OUT;
+	set_buf_offset(coll->buf, 0);
 
 	/* if we are root - push data to PMIx here.
 	 * Originally there was a homogenuous solution: root nodename was in the hostlist.
@@ -537,21 +546,8 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 	 * Better not to do so. */
 	if (NULL == coll->parent_host) {
 		/* if I am the root - pass the data to PMIx and reset collective here */
-		PMIXP_DEBUG(
-				"%s:%d: finish with this collective (I am the root)",
-				pmixp_info_namespace(), pmixp_info_nodeid());
 		/* copy payload excluding reserved server header */
-		Buf buf;
-		int rc;
-		rc = _copy_payload(coll->buf, coll->serv_offs, &buf);
-		xassert(0 == rc);
-		_progres_fan_out(coll, buf);
-	} else {
-		/* if root is not me - wait for the data */
-		PMIXP_DEBUG("%s:%d: switch to PMIXP_COLL_FAN_OUT state",
-				pmixp_info_namespace(), pmixp_info_nodeid());
-		/* reset the old buffer */
-		set_buf_offset(coll->buf, 0);
+		_progres_fan_out(coll, root_buf);
 	}
 
 unlock:
