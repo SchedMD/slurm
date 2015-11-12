@@ -238,10 +238,13 @@ static int _resources_set(char ***env)
 	/* Determine job-wide node id and job-wide node count */
 	p = getenvp(*env, PMIXP_JOB_NODES_ENV);
 	if (p == NULL) {
-		/* shouldn't happen if we are under SLURM! */
-		PMIXP_ERROR_NO(ENOENT, "No %s environment variable found!",
-				PMIXP_JOB_NODES_ENV);
-		goto err_exit;
+		p = getenvp(*env, PMIXP_JOB_NODES_ENV_DEP);
+		if (p == NULL) {
+			/* shouldn't happen if we are under SLURM! */
+			PMIXP_ERROR_NO(ENOENT, "Neither of nodelist environment variables: %s OR %s was found!",
+					PMIXP_JOB_NODES_ENV, PMIXP_JOB_NODES_ENV_DEP);
+			goto err_exit;
+		}
 	}
 	hostlist_push(_pmixp_job_info.job_hl, p);
 	_pmixp_job_info.nnodes_job = hostlist_count(_pmixp_job_info.job_hl);
