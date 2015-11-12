@@ -795,7 +795,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		(float) 3600);
 	xstrcat(buffer, tmp);
 
-	if (job_ptr->array_task_id != NO_VAL)) {
+	if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
 			   (unsigned long) job_ptr->array_job_id);
 		xstrfmtcat(buffer, ",\"array_task_id\":%lu",
