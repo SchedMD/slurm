@@ -37,6 +37,9 @@ documents those changes that are of interest to users and administrators.
  -- Implemented the checking configuration functionality using the new -C
     options of slurmctld. To check for configuration errors in slurm.conf
     run: 'slurmctld -C'.
+ -- Stop searching sbatch scripts for #PBS directives after 100 lines of
+    non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
+    into a line. Required for decent perforamnce with huge scripts.
 
 * Changes in Slurm 15.08.4
 ==========================

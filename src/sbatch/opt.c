@@ -950,6 +950,7 @@ static char *_next_line(const void *buf, int size, void **state)
 {
 	char *line;
 	char *current, *ptr;
+	int len;
 
 	if (*state == NULL) /* initial state */
 		*state = (void *)buf;
@@ -961,7 +962,8 @@ static char *_next_line(const void *buf, int size, void **state)
 	while ((*ptr != '\n') && (ptr < ((char *)buf+size)))
 		ptr++;
 
-	line = xstrndup(current, (ptr-current));
+	len = MIN((ptr-current), 1024);
+	line = xstrndup(current, len);
 
 	/*
 	 *  Advance state past newline
@@ -1136,6 +1138,7 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 	char *ptr;
 	int skipped = 0;
 	int lineno = 0;
+	int non_comments = 0;
 	int i;
 
 	if (ignore_pbs)
@@ -1156,7 +1159,11 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 	while ((line = _next_line(body, size, &state)) != NULL) {
 		lineno++;
 		if (strncmp(line, magic_word, magic_word_len) != 0) {
+			if (line[0] != '#')
+				non_comments++;
 			xfree(line);
+			if (non_comments > 100)
+				break;
 			continue;
 		}
 
