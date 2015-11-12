@@ -795,6 +795,13 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		(float) 3600);
 	xstrcat(buffer, tmp);
 
+	if (job_ptr->array_task_id != NO_VAL)) {
+		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
+			   (unsigned long) job_ptr->array_job_id);
+		xstrfmtcat(buffer, ",\"array_task_id\":%lu",
+			   (unsigned long) job_ptr->array_task_id);
+	}
+
 	if (job_ptr->details && (job_ptr->details->submit_time != NO_VAL)) {
 		submit_time = job_ptr->details->submit_time;
 		_make_time_str(&submit_time, submit_str, sizeof(submit_str));

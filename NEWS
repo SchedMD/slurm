@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Sched/backfill: Fix to properly enforce SchedulerParameters of
     bf_max_job_array_resv.
  -- Enable operator to reset sdiag data.
+ -- jobcomp/elasticsearch plugin: Add array_job_id and array_task_id fields.
 
 * Changes in Slurm 15.08.3
 ==========================
