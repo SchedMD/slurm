@@ -6059,6 +6059,19 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
  * a denial of service attack due to memory demands by the slurmctld */
 static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 {
+	static int max_script = -1;
+	char *sched_params, *tmp_ptr;
+
+	if (max_script == -1) {
+		max_script = 4 * 1024 * 1024;
+		sched_params = slurm_get_sched_params();
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "max_script_size="))) {
+			max_script = atoi(tmp_ptr + 16);
+		}
+		xfree(sched_params);
+	}
+
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
 	    _test_strlen(job_desc->array_inx, "array_inx", 1024 * 4)	||
@@ -6081,7 +6094,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->qos, "qos", 1024)			||
 	    _test_strlen(job_desc->ramdiskimage, "ramdiskimage", 1024)	||
 	    _test_strlen(job_desc->reservation, "reservation", 1024)	||
-	    _test_strlen(job_desc->script, "script", 1024 * 1024 * 4)	||
+	    _test_strlen(job_desc->script, "script", max_script)	||
 	    _test_strlen(job_desc->std_err, "std_err", MAXPATHLEN)	||
 	    _test_strlen(job_desc->std_in, "std_in", MAXPATHLEN)	||
 	    _test_strlen(job_desc->std_out, "std_out", MAXPATHLEN)	||

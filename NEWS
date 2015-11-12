@@ -28,7 +28,8 @@ documents those changes that are of interest to users and administrators.
     bf_max_job_array_resv.
  -- Enable operator to reset sdiag data.
  -- jobcomp/elasticsearch plugin: Add array_job_id and array_task_id fields.
- -- Remove duplicate #define IS_NODE_POWER_UP
+ -- Remove duplicate #define IS_NODE_POWER_UP.
+ -- Added SchedulerParameters option of max_script_size.
 
 * Changes in Slurm 15.08.3
 ==========================
