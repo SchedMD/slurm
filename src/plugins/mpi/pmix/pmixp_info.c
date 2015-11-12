@@ -326,13 +326,13 @@ static int _env_set(char ***env)
 	}
 
 	/* ----------- Forward PMIX settings ------------- */
-	p = getenvp(*env, PMIXP_TIMEOUT);
+	p = getenvp(*env, PMIXP_PMIXLIB_DEBUG);
 	if (NULL != p) {
-		setenv("PMIX_DEBUG", p, 1);
+		setenv(PMIXP_PMIXLIB_DEBUG, p, 1);
 		/* output into the file since we are in slurmstepd
 		 * and stdout is muted.
 		 * One needs to check TMPDIR for the results */
-		setenv("PMIX_OUTPUT_REDIRECT", "file", 1);
+		setenv(PMIXP_PMIXLIB_DEBUG_REDIR, "file", 1);
 	}
 
 	return SLURM_SUCCESS;

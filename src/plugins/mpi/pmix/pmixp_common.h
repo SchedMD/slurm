@@ -70,20 +70,47 @@
 	((size_t) &(((struct sockaddr_un *)0 + 1)->sun_family) -	\
 	(size_t)&(((struct sockaddr_un *)0)->sun_path))
 
-/* Job/step resource description */
+/* ----------------------------------------------------------
+ * SLURM environment that influence us:
+ * Job/step resource description
+ * ---------------------------------------------------------- */
 #define PMIXP_STEP_NODES_ENV "SLURM_STEP_NODELIST"
-/* srun does not propagates SLURM_JOB_NODELIST so let use deprecated SLURM_NODELIST variable */
+/* srun does not propagates SLURM_JOB_NODELIST
+ * we need to check both of the variables:
+ * - SLURM_JOB_NODELIST - a new one
+ * - SLURM_NODELIST - a deprecated one */
 #define PMIXP_JOB_NODES_ENV "SLURM_NODELIST"
+#define PMIXP_JOB_NODES_ENV_NEW "SLURM_JOB_NODELIST"
 #define PMIXP_CPUS_PER_NODE_ENV "SLURM_JOB_CPUS_PER_NODE"
 #define PMIXP_CPUS_PER_TASK "SLURM_CPUS_PER_TASK"
 #define PMIXP_SLURM_MAPPING_ENV "SLURM_PMIX_MAPPING_SERV"
-/* Mode */
+
+/* ----------------------------------------------------------
+ * This variables can be used to adjust the plugin's behavior
+ * TODO: put their description to documentation
+ * ---------------------------------------------------------- */
+
+/* Setup communication timeout */
 #define PMIXP_TIMEOUT "SLURM_PMIX_TIMEOUT"
 #define PMIXP_TIMEOUT_DEFAULT 300
+
+/* setup path to the temp directory for usock files for:
+ * - inter-stepd comunication;
+ * - libpmix - client communication
+ */
 #define PMIXP_TMPDIR_SRV "SLURM_PMIX_SRV_TMPDIR"
 #define PMIXP_TMPDIR_CLI "SLURM_PMIX_TMPDIR"
 #define PMIXP_TMPDIR_DEFAULT "/tmp/"
 #define PMIXP_OS_TMPDIR_ENV "TMPDIR"
+/* This variable will be propagated to server-side
+ * part of libPMIx */
+#define PMIXP_DEBUG_LIB "SLURM_PMIX_SRV_DEBUG"
+
+/* ----------------------------------------------------------
+ * This is libPMIx variable that we need to control it
+ * ---------------------------------------------------------- */
 #define PMIXP_PMIXLIB_TMPDIR "PMIX_SERVER_TMPDIR"
+#define PMIXP_PMIXLIB_DEBUG "PMIX_DEBUG"
+#define PMIXP_PMIXLIB_DEBUG_REDIR "PMIX_OUTPUT_REDIRECT"
 
 #endif /* PMIXP_COMMON_H */
