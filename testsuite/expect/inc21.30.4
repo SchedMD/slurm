@@ -28,10 +28,14 @@
 # Test GrpSubmit
 proc inc21_30_4 {} {
 
-	global salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grsub_num
+	global salloc sbatch srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grsub_num
 
 	send_user "\nStarting GrpSubmit limit test (Within: inc21.30.4)\n\n"
 	set check_num $grsub_num
+	set file_in "in21.30.4_script"
+	set tmp_job_id 0
+
+	make_bash_script $file_in "sleep 5"
 
 	set jobmatch 0
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
@@ -78,5 +82,50 @@ proc inc21_30_4 {} {
 			cancel_job $job_id($inx)
 		}
 	}
+
+	set upper_lim [expr $check_num - 1]
+	# Test limit with job array
+	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set tmp_job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$tmp_job_id == 0} {
+		send_user "\nFAILURE: job was not submitted when it should have\n"
+		set exit_code 1
+	}
+
+	# Add one more job, and check for error message
+	set match 0
+	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
+	expect {
+		-re "Job violates accounting/QOS policy" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match == 0} {
+		send_user "\nFAILURE: job should not have been submitted\n"
+		set exit_code 1
+	}
+
+	cancel_job $tmp_job_id
+
 }
 

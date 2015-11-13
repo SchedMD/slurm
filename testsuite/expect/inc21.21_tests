@@ -293,9 +293,13 @@ proc inc21_21_submit_test { limit } {
 	make_bash_script $file_in "
 	$bin_sleep 10
 	"
+
+	# Test to make sure that the grpsubmit and maxsubmit
+	# are enforced with jobs
 	send_user "\n==== Test $limit (Within: inc21.21_tests function: "
 	send_user "inc21_21_submit_test) ====\n"
 
+	# Submit jobs to test the limit set in the association
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
 	    {incr inx} {
 		    set job_id($inx) 0
@@ -335,6 +339,7 @@ proc inc21_21_submit_test { limit } {
 
 	    }
 
+
 	if { $exit_code } {
 		return $exit_code
 	}
@@ -372,7 +377,7 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	if { $exit_code } {
-		#return $exit_code
+		return $exit_code
 	}
 
 	# sleep the Schedule cycle default is 4
@@ -411,6 +416,99 @@ proc inc21_21_submit_test { limit } {
 		}
 	}
 
+	# Test to make sure that the grpsubmit and maxsubmit
+	# are enforced with job arrays
+
+	send_user "\n==== Test $limit with job arrays(Within: inc21.21_tests function: "
+	send_user "inc21_21_submit_test) ====\n"
+
+	# Submit jobs to test the limit set in the association
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
+	    {incr inx} {
+		    set job_id($inx) 0
+		    set mypid [spawn $sbatch -N1 -a0 --account=$ta \
+				   --output=/dev/null \
+				   --error=/dev/null -t5 $file_in]
+		    expect {
+			    -re "Submitted batch job ($number)" {
+				    set job_id($inx) $expect_out(1,string)
+				    exp_continue
+			    }
+			    -re "Unable to contact" {
+				    send_user "\nFAILURE: slurm appears "
+				    send_user "to be down "
+				    print_err $limit "inc21_21_submit_test"
+				    set exit_code 1
+				    exp_continue
+			    }
+			    timeout {
+				    send_user "\nFAILURE: sbatch not "
+				    send_user "responding "
+				    print_err $limit "inc21_21_submit_test"
+				    slow_kill $mypid
+				    set exit_code 1
+			    }
+			    eof {
+				    wait
+			    }
+		    }
+
+		    if { !$job_id($inx) } {
+			    send_user "\nFAILURE: sbatch didn't return jobid "
+			    print_err $limit "inc21_21_submit_test"
+			    set exit_code 1
+			    break
+		    }
+
+	    }
+
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+	# then submit one more over the limit and it should fail
+	set mypid [spawn $sbatch -N1 -a0 --account=$ta --output=/dev/null \
+		       --error=/dev/null -t5 $file_in]
+	expect {
+		-re "Job violates accounting/QOS policy" {
+			send_user "\n\[Job array test\] This error is expected, not a problem"
+			print_err $limit "inc21_21_submit_test"
+			exp_continue
+		}
+		-re "Submitted batch job ($number)" {
+			send_user "\nFAILURE:\[Job array test\] this job should not have ran."
+			print_err $limit "inc21_21_submit_test"
+			set exit_code 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE:\[Job array test\] slurm appears to be down "
+			print_err $limit "inc21_21_submit_test"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE:\[Job array test\] sbatch not responding "
+			print_err $limit "inc21_21_submit_test"
+			slow_kill $mypid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+	spawn $scancel --quiet --account=$ta
+	expect {
+		eof {
+			wait
+		}
+	}
 
 	if { $matches != 4 } {
 		send_user "\nFAILURE: jobs are not in the expected state "
