@@ -13358,7 +13358,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 #endif
 
 	/* validate the request */
-	if ((uid != 0) && (uid != getuid())) {
+	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
 		      (int) uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -13435,7 +13435,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 	/* validate the request */
-	if ((uid != 0) && (uid != getuid())) {
+	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
 		      (int) uid);
 		rc = ESLURM_ACCESS_DENIED;
