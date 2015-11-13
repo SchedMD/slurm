@@ -62,6 +62,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/timers.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -78,6 +79,7 @@ static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint64_t debug_flags = 0;
 
 static void *_create_container_thread(void *args)
 {
@@ -125,6 +127,8 @@ static void _end_container_thread(void)
  */
 extern int init(void)
 {
+	debug_flags = slurm_get_debug_flags();
+
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -144,6 +148,8 @@ extern int fini(void)
 extern int proctrack_p_create(stepd_step_rec_t *job)
 {
 	pthread_attr_t attr;
+	DEF_TIMERS;
+	START_TIMER;
 
 	if (!libjob_handle)
 		init();
@@ -188,6 +194,10 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 	} else
 		error("proctrack_p_create: already have a cont_id");
 
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	return SLURM_SUCCESS;
 }
 
@@ -202,6 +212,8 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	char fname[64];
 	int fd;
 #endif
+	DEF_TIMERS;
+	START_TIMER;
 
 	// Attach to the job container
 	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
@@ -232,12 +244,17 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	}
 	TEMP_FAILURE_RETRY(close(fd));
 #endif
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
 
 int proctrack_p_signal(uint64_t id, int sig)
 {
+	DEF_TIMERS;
+	START_TIMER;
 	if (!threadid) {
 		if ((job_killjid((jid_t) id, sig) < 0)
 		    && (errno != ENODATA) && (errno != EBADF) )
@@ -248,12 +265,17 @@ int proctrack_p_signal(uint64_t id, int sig)
 	} else
 		error("Trying to send signal %d a container 0x%08lx "
 		      "that hasn't had anything added to it yet", sig, id);
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 	return (SLURM_SUCCESS);
 }
 
 int proctrack_p_destroy(uint64_t id)
 {
 	int status;
+	DEF_TIMERS;
+	START_TIMER;
 
 	debug("destroying 0x%08lx 0x%08lx", id, threadid);
 
@@ -263,15 +285,23 @@ int proctrack_p_destroy(uint64_t id)
 	/*  Assume any error means job doesn't exist. Therefore,
 	 *   return SUCCESS to slurmd so it doesn't retry continuously
 	 */
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 	return SLURM_SUCCESS;
 }
 
 uint64_t proctrack_p_find(pid_t pid)
 {
 	jid_t jid;
+	DEF_TIMERS;
+	START_TIMER;
 
 	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return ((uint64_t) 0);
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return ((uint64_t) jid);
 }
@@ -302,6 +332,8 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int pidcnt, bufsize;
 	pid_t *p;
+	DEF_TIMERS;
+	START_TIMER;
 
 	pidcnt = job_getpidcnt((jid_t)cont_id);
 	if (pidcnt > 0) {
@@ -337,6 +369,9 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		*pids = NULL;
 		*npids = 0;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }

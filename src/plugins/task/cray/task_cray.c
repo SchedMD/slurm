@@ -65,9 +65,9 @@
 
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_cn.h"
+#endif
 
 static uint64_t debug_flags = 0;
-#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -239,11 +239,16 @@ extern int task_p_slurmd_reserve_resources (uint32_t job_id,
  */
 extern int task_p_slurmd_suspend_job (uint32_t job_id)
 {
+	DEF_TIMERS;
+	START_TIMER;
 	debug("task_p_slurmd_suspend_job: %u", job_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	_step_epilogue();
 #endif
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
@@ -253,11 +258,16 @@ extern int task_p_slurmd_suspend_job (uint32_t job_id)
  */
 extern int task_p_slurmd_resume_job (uint32_t job_id)
 {
+	DEF_TIMERS;
+	START_TIMER;
 	debug("task_p_slurmd_resume_job: %u", job_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	_step_prologue();
 #endif
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
@@ -278,6 +288,8 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
  */
 extern int task_p_pre_setuid (stepd_step_rec_t *job)
 {
+	DEF_TIMERS;
+	START_TIMER;
 	debug("task_p_pre_setuid: %u.%u",
 	      job->jobid, job->stepid);
 
@@ -285,6 +297,9 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
 	if (!job->batch)
 		_step_prologue();
 #endif
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }
@@ -299,7 +314,9 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 #ifdef HAVE_NATIVE_CRAY
 	int rc;
 	uint64_t apid;
+	DEF_TIMERS;
 
+	START_TIMER;
 	apid = SLURM_ID_HASH(job->jobid, job->stepid);
 	debug("task_p_pre_launch: %u.%u, apid %"PRIu64", task %d",
 	      job->jobid, job->stepid, apid, job->envtp->procid);
@@ -345,6 +362,9 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		CRAY_ERR("Failed to set env variable %s",
 			 ALPS_APP_ID_ENV);
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -355,15 +375,23 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  */
 extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 {
+	int rc = SLURM_SUCCESS;
+	DEF_TIMERS;
+
+	START_TIMER;
+
 #ifdef HAVE_NATIVE_CRAY
 	debug("task_p_pre_launch_priv: %u.%u",
 	      job->jobid, job->stepid);
 
 	if (track_status) {
-		return _make_status_file(job);
+		rc = _make_status_file(job);
 	}
 #endif
-	return SLURM_SUCCESS;
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+	return rc;
 }
 
 /*
@@ -374,15 +402,23 @@ extern int task_p_pre_launch_priv (stepd_step_rec_t *job)
 extern int task_p_post_term (stepd_step_rec_t *job,
 			     stepd_step_task_info_t *task)
 {
+	int rc = SLURM_SUCCESS;
+	DEF_TIMERS;
+
+	START_TIMER;
+
 #ifdef HAVE_NATIVE_CRAY
 	debug("task_p_post_term: %u.%u, task %d",
 	      job->jobid, job->stepid, job->envtp->procid);
 
 	if (track_status) {
-		return _check_status_file(job, task);
+		rc = _check_status_file(job, task);
 	}
 #endif
-	return SLURM_SUCCESS;
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+	return rc;
 }
 
 /*
@@ -397,6 +433,9 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	char *err_msg = NULL, path[PATH_MAX];
 	int32_t *numa_nodes;
 	cpu_set_t *cpuMasks;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (track_status) {
 		// Get the lli file name
@@ -489,6 +528,9 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }

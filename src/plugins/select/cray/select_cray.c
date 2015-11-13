@@ -328,7 +328,8 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		      "status %u:%u took: %s",
 		      nhc_info->jobid, nhc_info->apid, WEXITSTATUS(status),
 		      WTERMSIG(status), TIME_STR);
-	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+	} else if (debug_flags &
+		   (DEBUG_FLAG_SELECT_TYPE | DEBUG_FLAG_TIME_CRAY)) {
 		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
 		     nhc_info->jobid, nhc_info->apid, TIME_STR);
 	}
@@ -467,6 +468,7 @@ static void *_aeld_event_loop(void *args)
 	alpsc_ev_session_t *session = NULL;
 	struct pollfd fds[1];
 	char *errmsg;
+	DEF_TIMERS;
 
 	debug("cray: %s", __func__);
 
@@ -483,6 +485,8 @@ static void *_aeld_event_loop(void *args)
 	fds[0].events = POLLIN | POLLPRI | POLLRDHUP;
 	while ((rv = TEMP_FAILURE_RETRY(poll(fds, 1, AELD_EVENT_INTERVAL)))
 	       != -1) {
+		START_TIMER;
+
 		// There was activity on the file descriptor, get state
 		if (rv > 0) {
 			rv = alpsc_ev_get_session_state(&errmsg, session);
@@ -524,6 +528,8 @@ static void *_aeld_event_loop(void *args)
 		} else {
 			pthread_mutex_unlock(&aeld_mutex);
 		}
+		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+			END_TIMER3("_aeld_event_loop: took", 20000);
 	}
 
 	error("%s: poll failed: %m", __func__);
@@ -543,6 +549,9 @@ static void _initialize_event(alpsc_ev_app_t *event,
 	hostlist_iterator_t hlit;
 	char *node;
 	int rv;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	event->apid = SLURM_ID_HASH(job_ptr->job_id, step_ptr->step_id);
 	event->uid = job_ptr->user_id;
@@ -583,6 +592,11 @@ static void _initialize_event(alpsc_ev_app_t *event,
 		hostlist_iterator_destroy(hlit);
 		hostlist_destroy(hl);
 	}
+
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	return;
 }
 
@@ -657,6 +671,9 @@ static void _update_app(struct job_record *job_ptr,
 	int32_t i;
 	alpsc_ev_app_t app;
 	int found;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	// If aeld thread isn't running, do nothing
 	if (aeld_running == 0) {
@@ -747,6 +764,11 @@ static void _update_app(struct job_record *job_ptr,
 	pthread_mutex_unlock(&aeld_mutex);
 
 	_free_event(&app);
+
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	return;
 }
 
@@ -1172,6 +1194,7 @@ unpack_error:
  */
 extern int init ( void )
 {
+	DEF_TIMERS;
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 #endif
@@ -1185,6 +1208,7 @@ extern int init ( void )
 	debug_flags = slurm_get_debug_flags();
 
 	if (!slurmctld_primary && run_in_daemon("slurmctld")) {
+		START_TIMER;
 		if (slurmctld_config.scheduling_disabled) {
 			info("Scheduling disabled on backup");
 			scheduling_disabled = true;
@@ -1197,6 +1221,9 @@ extern int init ( void )
 			      "the \"no_backup_scheduling\" "
 			      "SchedulerParameter.");
 #endif
+		END_TIMER;
+		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+			info("alpsc_get_topology call took: %s", TIME_STR);
 	}
 
 	verbose("%s loaded", plugin_name);
@@ -1560,9 +1587,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	struct node_record *node_rec;
 	int i, j;
 	uint64_t blade_id = 0;
+	DEF_TIMERS;
 
 	if (scheduling_disabled)
 		return other_node_init(node_ptr, node_cnt);
+
+	START_TIMER;
 
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	int nn, end_nn, last_nn = 0;
@@ -1572,6 +1602,10 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	if (!topology) {
 		if (alpsc_get_topology(&err_msg, &topology,
 				       &topology_num_nodes)) {
+			END_TIMER;
+			if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+				INFO_LINE("call took: %s", TIME_STR);
+
 			if (err_msg) {
 				error("(%s: %d: %s) Could not get system "
 				      "topology info: %s",
@@ -1677,6 +1711,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	xrealloc(blade_array, sizeof(blade_info_t) * blade_cnt);
 
 	slurm_mutex_unlock(&blade_mutex);
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return other_node_init(node_ptr, node_cnt);
 }
@@ -1857,15 +1894,20 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 #ifdef HAVE_NATIVE_CRAY
 	ListIterator i;
 	struct step_record *step_ptr = NULL;
+	DEF_TIMERS;
 
 	// Make an event for each job step
 	if (aeld_running) {
+		START_TIMER;
 		i = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)list_next(i))
 		       != NULL) {
 			_update_app(job_ptr, step_ptr, ALPSC_EV_SUSPEND);
 		}
 		list_iterator_destroy(i);
+		END_TIMER;
+		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+			INFO_LINE("call took: %s", TIME_STR);
 	}
 #endif
 
@@ -1877,15 +1919,20 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 #ifdef HAVE_NATIVE_CRAY
 	ListIterator i;
 	struct step_record *step_ptr = NULL;
+	DEF_TIMERS;
 
 	// Make an event for each job step
 	if (aeld_running) {
+		START_TIMER;
 		i = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)list_next(i))
 		       != NULL) {
 			_update_app(job_ptr, step_ptr, ALPSC_EV_RESUME);
 		}
 		list_iterator_destroy(i);
+		END_TIMER;
+		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+			INFO_LINE("call took: %s", TIME_STR);
 	}
 #endif
 
@@ -1898,7 +1945,9 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  bitstr_t **avail_nodes)
 {
 	select_jobinfo_t *jobinfo;
+	DEF_TIMERS;
 
+	START_TIMER;
 	xassert(avail_nodes);
 	xassert(!*avail_nodes);
 
@@ -1922,6 +1971,9 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 		bit_not(*avail_nodes);
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return other_step_pick_nodes(job_ptr, jobinfo, node_count, avail_nodes);
 }
@@ -1929,6 +1981,9 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 extern int select_p_step_start(struct step_record *step_ptr)
 {
 	select_jobinfo_t *jobinfo;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
@@ -1963,6 +2018,10 @@ extern int select_p_step_start(struct step_record *step_ptr)
 		}
 		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	return other_step_start(step_ptr);
 }
 
@@ -1970,6 +2029,9 @@ extern int select_p_step_start(struct step_record *step_ptr)
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 #ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
@@ -2009,6 +2071,10 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 		jobinfo->cleaning = 1;
 		_spawn_cleanup_thread(step_ptr, _step_fini);
 	}
+
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return SLURM_SUCCESS;
 }

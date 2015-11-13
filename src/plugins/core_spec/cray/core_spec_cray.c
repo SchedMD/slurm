@@ -101,6 +101,7 @@
 const char plugin_name[]       	= "Cray core specialization plugin";
 const char plugin_type[]       	= "core_spec/cray";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+static uint64_t debug_flags = 0;
 
 // If job_set_corespec fails, retry this many times to wait
 // for suspends to complete.
@@ -108,6 +109,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
+	debug_flags = slurm_get_debug_flags();
 	info("%s: init", plugin_type);
 	return SLURM_SUCCESS;
 }
@@ -125,6 +127,8 @@ extern int fini(void)
  */
 extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 {
+	DEF_TIMERS;
+	START_TIMER;
 #if _DEBUG
 	char *spec_type;
 	int spec_count;
@@ -210,6 +214,10 @@ extern int core_spec_p_set(uint64_t cont_id, uint16_t core_count)
 	}
 	job_detachpid(pid);
 #endif
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	// The code that was here is now performed by
 	// switch_p_job_step_{pre,post}_suspend()
 	return SLURM_SUCCESS;

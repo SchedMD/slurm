@@ -4618,12 +4618,16 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Task");
 	}
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "TimeCray");
+	}
 	if (debug_flags & DEBUG_FLAG_TRACE_JOBS) {
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "TraceJobs");
 	}
-
 	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4750,6 +4754,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
 		else if (strcasecmp(tok, "Power") == 0)
 			(*flags_out) |= DEBUG_FLAG_POWER;
+		else if (strcasecmp(tok, "TimeCray") == 0)
+			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			(*flags_out) = 0;

@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Stop searching sbatch scripts for #PBS directives after 100 lines of
     non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
     into a line. Required for decent perforamnce with huge scripts.
+ -- Add debug flag for timing Cray portions of the code.
 
 * Changes in Slurm 15.08.4
 ==========================

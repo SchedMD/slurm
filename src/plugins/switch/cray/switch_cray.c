@@ -186,6 +186,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	int rc, cnt = 0;
 	int32_t *nodes = NULL;
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("switch_job was NULL");
@@ -208,6 +211,11 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 	// Get cookies for network configuration
 	rc = lease_cookies(job, nodes, step_layout->node_cnt);
+
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
+
 	xfree(nodes);
 	if (rc != SLURM_SUCCESS) {
 		return rc;
@@ -223,6 +231,9 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
 	int i;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("switch_job was NULL");
@@ -253,6 +264,9 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	if (job->num_ptags)
 		xfree(job->ptags);
 	xfree(job);
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 
 	return;
 }
@@ -463,6 +477,9 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	char *npc = "none";
 	int access = ALPSC_NET_PERF_CTR_NONE;
 #endif
+	DEF_TIMERS;
+
+	START_TIMER;
 
 #ifdef HAVE_CRAY_NETWORK
 	/* No PAGG job containers; uid used instead to configure network */
@@ -642,7 +659,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	job_setapid(getpid(), sw_job->apid);
 #endif
 
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
+
 	return SLURM_SUCCESS;
 }
 
@@ -687,6 +708,9 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_ERR("jobinfo pointer was NULL");
@@ -728,6 +752,9 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	unlink_iaa_file(job);
 #endif
 
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -741,6 +768,9 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 #ifdef HAVE_NATIVE_CRAY
         int gpu_cnt = 0;
 #endif
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (!job->switch_job) {
 		CRAY_DEBUG("job->switch_job was NULL");
@@ -789,6 +819,9 @@ extern int switch_p_job_postfini(stepd_step_rec_t *job)
 			 rc);
 	}
 
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -874,6 +907,9 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) jobinfo;
 	int rc = 0;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (!job || (job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
 		CRAY_DEBUG("switch_job was NULL");
@@ -889,6 +925,9 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	if (rc != SLURM_SUCCESS) {
 		return rc;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -938,6 +977,9 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
 	char *err_msg = NULL;
 	int rc;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	rc = alpsc_pre_suspend(&err_msg, job->cont_id, jobinfo->ptags,
 			       jobinfo->num_ptags, SUSPEND_TIMEOUT_MSEC);
@@ -945,6 +987,9 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -958,12 +1003,18 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	rc = alpsc_post_suspend(&err_msg, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_post_suspend");
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -978,6 +1029,9 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 	slurm_cray_jobinfo_t *jobinfo = (slurm_cray_jobinfo_t *)job->switch_job;
 	char *err_msg = NULL;
 	int rc;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	rc = alpsc_pre_resume(&err_msg, job->cont_id, jobinfo->ptags,
 			       jobinfo->num_ptags);
@@ -985,6 +1039,9 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -998,12 +1055,18 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	rc = alpsc_post_resume(&err_msg, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_post_resume");
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 #endif
 	return SLURM_SUCCESS;
 }

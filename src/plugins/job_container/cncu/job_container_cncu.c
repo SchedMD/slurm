@@ -89,7 +89,7 @@ static uint32_t *job_id_array = NULL;
 static uint32_t  job_id_count = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *state_dir = NULL;
-static bool enable_debug = false;
+static uint64_t debug_flags = 0;
 
 static int _save_state(char *dir_name)
 {
@@ -185,6 +185,9 @@ static int _restore_state(char *dir_name)
 static void _stat_reservation(char *type, rid_t resv_id)
 {
 	struct job_resv_stat buf;
+	DEF_TIMERS;
+
+	START_TIMER;
 
 	if (job_stat_reservation(resv_id, &buf)) {
 		error("%s: stat(%"PRIu64"): %m", plugin_type, resv_id);
@@ -194,25 +197,15 @@ static void _stat_reservation(char *type, rid_t resv_id)
 		     plugin_type, type, resv_id, buf.flags, buf.num_jobs,
 		     buf.num_files, buf.num_ipc_objs);
 	}
+	END_TIMER;
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
+		INFO_LINE("call took: %s", TIME_STR);
 }
 #endif
 
-static bool _get_debug_flag(void)
-{
-	if (slurm_get_debug_flags() & DEBUG_FLAG_JOB_CONT)
-		return true;
-	return false;
-}
-
 extern void container_p_reconfig(void)
 {
-	bool new_debug_flag = _get_debug_flag();
-
-	if (enable_debug != new_debug_flag) {
-		debug("%s: JobContainer DebugFlag changed to %d",
-		      plugin_name, (int) new_debug_flag);
-	}
-	enable_debug = new_debug_flag;
+	debug_flags = slurm_get_debug_flags();
 }
 
 /*
@@ -221,8 +214,8 @@ extern void container_p_reconfig(void)
  */
 extern int init(void)
 {
-	enable_debug = _get_debug_flag();
-	if (enable_debug)
+	debug_flags = slurm_get_debug_flags();
+	if (debug_flags & DEBUG_FLAG_JOB_CONT)
 		info("%s loaded", plugin_name);
 	else
 		debug("%s loaded", plugin_name);
@@ -256,7 +249,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0)
 			continue;
-		if (enable_debug)
+		if (debug_flags & DEBUG_FLAG_JOB_CONT)
 			info("%s: %s job(%u)",
 			     plugin_type,
 			     recover ? "recovered" : "purging",
@@ -279,7 +272,7 @@ extern int container_p_create(uint32_t job_id)
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (enable_debug)
+	if (debug_flags & DEBUG_FLAG_JOB_CONT)
 		info("%s: creating(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
@@ -301,17 +294,27 @@ extern int container_p_create(uint32_t job_id)
 		_save_state(state_dir);
 	}
 	slurm_mutex_unlock(&context_lock);
-	END_TIMER3("container_p_create: saving state took", 3000000);
+
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		END_TIMER;
+		INFO_LINE("call took: %s", TIME_STR);
+	} else
+		END_TIMER3("container_p_create: saving state took", 3000000);
 #ifdef HAVE_NATIVE_CRAY
 	START_TIMER;
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
-	END_TIMER3("container_p_create: job_create_reservation took", 3000000);
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		END_TIMER;
+		INFO_LINE("call took: %s", TIME_STR);
+	} else
+		END_TIMER3("container_p_create: job_create_reservation took",
+			   3000000);
 	if ((rc == 0) || (errno == EEXIST)) {
 		if ((found == -1) && (rc != 0) && (errno == EEXIST)) {
 			error("%s: create(%u): Reservation already exists",
 			      plugin_type, job_id);
 		}
-		if (enable_debug)
+		if (debug_flags & DEBUG_FLAG_JOB_CONT)
 			_stat_reservation("create", resv_id);
 		return SLURM_SUCCESS;
 	}
@@ -332,7 +335,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 	DEF_TIMERS;
 #endif
 
-	if (enable_debug) {
+	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
 		info("%s: adding cont(%u.%"PRIu64")",
 		     plugin_type, job_id, cont_id);
 	}
@@ -340,10 +343,14 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 #ifdef HAVE_NATIVE_CRAY
 	START_TIMER;
 	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
-	END_TIMER3("container_p_add_cont: job_attach_reservation took",
-		   3000000);
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		END_TIMER;
+		INFO_LINE("call took: %s", TIME_STR);
+	} else
+		END_TIMER3("container_p_add_cont: job_attach_reservation took",
+			   3000000);
 	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
-		if (enable_debug)
+		if (debug_flags & DEBUG_FLAG_JOB_CONT)
 			info("%s: add(%u.%"PRIu64"): No reservation found, "
 			     "no big deal, this is probably the first time "
 			     "this was called.  We will just create a new one.",
@@ -351,9 +358,13 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 		START_TIMER;
 		rc = job_create_reservation(resv_id, CREATE_FLAGS);
 		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
-		END_TIMER3("container_p_add_cont: "
-			   "job_(create&attach)_reservation took",
-			   3000000);
+		if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+			END_TIMER;
+			INFO_LINE("call took: %s", TIME_STR);
+		} else
+			END_TIMER3("container_p_add_cont: "
+				   "job_(create&attach)_reservation took",
+				   3000000);
 	}
 
 	if ((rc == 0) || (errno == EBUSY)) {
@@ -362,7 +373,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 			 * Duplicate adds can be generated by prolog/epilog */
 			debug2("%s: add(%u.%"PRIu64"): %m",
 			       plugin_type, job_id, cont_id);
-		} else if (enable_debug)
+		} else if (debug_flags & DEBUG_FLAG_JOB_CONT)
 			_stat_reservation("add", resv_id);
 		return SLURM_SUCCESS;
 	}
@@ -377,8 +388,12 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 {
 	stepd_step_rec_t job;
+	int rc;
+	DEF_TIMERS;
 
-	if (enable_debug) {
+	START_TIMER;
+
+	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
 		info("%s: adding pid(%u.%u)",
 		     plugin_type, job_id, (uint32_t) pid);
 	}
@@ -392,7 +407,14 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 
 	proctrack_g_add(&job, pid);
 
-	return container_p_add_cont(job_id, job.cont_id);
+	rc = container_p_add_cont(job_id, job.cont_id);
+
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		END_TIMER;
+		INFO_LINE("call took: %s", TIME_STR);
+	}
+
+	return rc;
 }
 
 extern int container_p_delete(uint32_t job_id)
@@ -405,7 +427,7 @@ extern int container_p_delete(uint32_t job_id)
 	int i, found = -1;
 	bool job_id_change = false;
 
-	if (enable_debug)
+	if (debug_flags & DEBUG_FLAG_JOB_CONT)
 		info("%s: deleting(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
@@ -423,8 +445,12 @@ extern int container_p_delete(uint32_t job_id)
 #ifdef HAVE_NATIVE_CRAY
 	START_TIMER;
 	rc = job_end_reservation(resv_id, DELETE_FLAGS);
-	END_TIMER3("container_p_delete: job_end_reservation took",
-		   3000000);
+	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
+		END_TIMER;
+		INFO_LINE("call took: %s", TIME_STR);
+	} else
+		END_TIMER3("container_p_delete: job_end_reservation took",
+			   3000000);
 #endif
 	if (rc == 0)
 		return SLURM_SUCCESS;

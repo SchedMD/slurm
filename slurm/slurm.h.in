@@ -2463,7 +2463,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
 #define DEBUG_FLAG_CPU_FREQ     0x0000020000000000 /* --cpu_freq debug */
 #define DEBUG_FLAG_POWER        0x0000040000000000 /* Power plugin debug */
-//#define AVAILABLE		0x0000080000000000
+#define DEBUG_FLAG_TIME_CRAY    0x0000080000000000 /* Time Cray components */
 #define DEBUG_FLAG_DB_ARCHIVE	0x0000100000000000 /* DBD Archiving/Purging */
 #define DEBUG_FLAG_DB_TRES      0x0000200000000000 /* Database TRES debug */
 
