@@ -9625,6 +9625,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
+	if (IS_JOB_FINISHED(job_ptr)) {
+		error_code = ESLURM_JOB_FINISHED;
+		goto fini;
+	}
 
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
