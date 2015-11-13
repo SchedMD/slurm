@@ -78,7 +78,6 @@ typedef enum {
 	CALLERID_ACTION_ALLOW,
 	CALLERID_ACTION_IGNORE,
 	CALLERID_ACTION_DENY,
-	CALLERID_ACTION_USER
 } callerid_action_t;
 
 /* module options */
@@ -108,13 +107,9 @@ static void _init_opts(void)
 	opts.node_name = NULL;
 }
 
-/* Returns SLURM_SUCCESS if opts.action_adopt_failure == CALLERID_ACTION_ALLOW
- * or if the process can be adopted into any cgroup. The admin might not have
- * configured all the cgroups, so we'll assume that a success in one means they
- * were adopted into all the configured ones. A TODO item is to only attempt
- * adoption into the configured cgroups.
- *
- * If job_id==NO_VAL, the process will be adopted into the uid_%u cgroups only.
+/* Adopts a process into the given step. Returns SLURM_SUCCESS if
+ * opts.action_adopt_failure == CALLERID_ACTION_ALLOW or if the process was
+ * successfully adopted.
  */
 static int _adopt_process(pid_t pid, step_loc_t *stepd)
 {
@@ -156,7 +151,7 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 	uint16_t protocol_version;
 
 	fd = stepd_connect(stepd->directory, stepd->nodename,
-			stepd->jobid, stepd->stepid, &protocol_version);
+			   stepd->jobid, stepd->stepid, &protocol_version);
 	if (fd < 0) {
 		/* It's normal for a step to exit */
 		debug3("unable to connect to step %u.%u on %s: %m",
@@ -184,7 +179,7 @@ static time_t _cgroup_creation_time(char *uidcg, uint32_t job_id)
 
 	if (snprintf(path, PATH_MAX, "%s/job_%u", uidcg, job_id) >= PATH_MAX) {
 		info("snprintf: '%s/job_%u' longer than PATH_MAX of %d",
-			 uidcg, job_id, PATH_MAX);
+		     uidcg, job_id, PATH_MAX);
 		return 0;
 	}
 
@@ -213,10 +208,6 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 			      PAM_MODULE_NAME
 			      ": unable to determine source job");
 		return PAM_PERM_DENIED;
-	} else if (opts.action_unknown == CALLERID_ACTION_USER) {
-		debug("Using uid_%u cgroups due to action_unknown=user", uid);
-		*out_stepd = NULL;
-		return PAM_SUCCESS;
 	}
 
 	if (opts.node_name)
@@ -242,7 +233,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	while ((stepd = list_next(itr))) {
 		/* Only use container steps from this user */
 		if (stepd->stepid == SLURM_EXTERN_CONT &&
-			uid == _get_job_uid(stepd)) {
+		    (uid == _get_job_uid(stepd))) {
 			cgroup_time = _cgroup_creation_time(
 				uidcg, stepd->jobid);
 			/* Return the newest job_id, according to cgroup
@@ -267,7 +258,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 			rc = PAM_PERM_DENIED;
 		} else {
 			debug("uid %u owns no jobs but action_no_jobs=allow",
-					uid);
+			      uid);
 			rc = PAM_SUCCESS;
 		}
 	}
@@ -276,6 +267,10 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	return rc;
 }
 
+/* This is the action of last resort. If action_unknown=allow, allow it through
+ * without adoption. Otherwise, call _indeterminate_multiple to pick a job. If
+ * successful, adopt it into a process and use a return code based on success of
+ * the adoption and the action_adopt_failure setting. */
 static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, List steps)
 {
 	int rc;
@@ -291,13 +286,17 @@ static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, List steps)
 	rc = _indeterminate_multiple(pamh, steps, pwd->pw_uid, &stepd);
 	if (rc == PAM_SUCCESS) {
 		info("action_unknown: Picked job %u", stepd->jobid);
-		rc = _adopt_process(getpid(), stepd);
+		if (_adopt_process(getpid(), stepd) == SLURM_SUCCESS)
+			return PAM_SUCCESS;
+		if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
+			return PAM_SUCCESS;
+		else
+			return PAM_PERM_DENIED;
 	} else {
 		/* This pam module was worthless, apparently */
 		debug("_indeterminate_multiple failed to find a job to adopt this into");
+		return rc;
 	}
-
-	return rc;
 }
 
 /* _user_job_count returns the count of jobs owned by the user AND sets job_id
@@ -307,19 +306,14 @@ static int _user_job_count(List steps, uid_t uid, step_loc_t **out_stepd)
 	ListIterator itr = NULL;
 	int user_job_cnt = 0;
 	step_loc_t *stepd = NULL;
-	uint32_t last_job_id = NO_VAL;
 	*out_stepd = NULL;
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (uid == _get_job_uid(stepd)) {
-			/* We found a job from the user but we want to ignore
-			 * duplicates due to multiple steps from the same job */
-			if (last_job_id != stepd->jobid) {
-				user_job_cnt++;
-				last_job_id = stepd->jobid;
-				*out_stepd = stepd;
-			}
+		if ((stepd->stepid == SLURM_EXTERN_CONT) &&
+		    (uid == _get_job_uid(stepd))) {
+			user_job_cnt++;
+			*out_stepd = stepd;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -328,7 +322,7 @@ static int _user_job_count(List steps, uid_t uid, step_loc_t **out_stepd)
 }
 
 static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
-		uint32_t *job_id)
+				 uint32_t *job_id)
 {
 	network_callerid_msg_t req;
 	char ip_src_str[INET6_ADDRSTRLEN];
@@ -342,28 +336,32 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 
 	inet_ntop(req.af, &conn->ip_src, ip_src_str, INET6_ADDRSTRLEN);
 	if (slurm_network_callerid(req, job_id, node_name, MAXHOSTNAMELEN)
-			!= SLURM_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		debug("From %s port %d as %s: unable to retrieve callerid data from remote slurmd",
-		     ip_src_str,
-		     req.port_src,
-		     user_name);
+		      ip_src_str,
+		      req.port_src,
+		      user_name);
 		return SLURM_FAILURE;
 	} else if (*job_id == (uint32_t)NO_VAL) {
 		debug("From %s port %d as %s: job indeterminate",
-		     ip_src_str,
-		     req.port_src,
-		     user_name);
+		      ip_src_str,
+		      req.port_src,
+		      user_name);
 		return SLURM_FAILURE;
 	} else {
 		info("From %s port %d as %s: member of job %u",
-		      ip_src_str,
-		      req.port_src,
-		      user_name,
-		      *job_id);
+		     ip_src_str,
+		     req.port_src,
+		     user_name,
+		     *job_id);
 		return SLURM_SUCCESS;
 	}
 }
 
+/* Ask the slurmd at the source IP address of the network connection if it knows
+ * what job initiated this connection. If it can be determined, the process is
+ * adopted into that job's step_extern. In the event of any failure, it returns
+ * PAM_IGNORE so that it will fall through to the next action */
 static int _try_rpc(struct passwd *pwd)
 {
 	uint32_t job_id;
@@ -377,31 +375,43 @@ static int _try_rpc(struct passwd *pwd)
 	/* Check my fds for a network socket */
 	if (callerid_get_own_netinfo(&conn) != SLURM_SUCCESS) {
 		/* If this failed, the RPC will surely fail. If we continued
-		 * we'd have to fill in junk for lots of variables. Return so
-		 * that action_unknown will happen */
-		error("Unable to find network socket");
-		if (opts.action_generic_failure == CALLERID_ACTION_DENY)
-			return PAM_PERM_DENIED;
-		else
-			return PAM_IGNORE;
+		 * we'd have to fill in junk for lots of variables. Fall
+		 * through to next action. This is really odd and likely means
+		 * that the kernel doesn't provide the necessary mechanisms to
+		 * view this process' network info or that sshd did something
+		 * different with the arrangement of file descriptors */
+		error("callerid_get_own_netinfo unable to find network socket");
+		return PAM_IGNORE;
 	}
 
 	if (inet_ntop(conn.af, &conn.ip_src, ip_src_str, INET6_ADDRSTRLEN)
-			== NULL) {
-		/* This is really odd. If this failed, other functions are so
-		 * likely to fail that we might as well skip the RPC */
+	    == NULL) {
+		/* Somehow we successfully grabbed bad data. Fall through to
+		 * next action. */
 		error("inet_ntop failed");
-		if (opts.action_generic_failure == CALLERID_ACTION_DENY)
-			return PAM_PERM_DENIED;
-		else
-			return PAM_IGNORE;
+		return PAM_IGNORE;
 	}
 
 	/* Ask the slurmd at the source IP address about this connection */
 	rc = _rpc_network_callerid(&conn, pwd->pw_name, &job_id);
 	if (rc == SLURM_SUCCESS) {
-//		rc = _adopt_process(getpid(), job_id, pwd->pw_uid);
-		return rc;
+		step_loc_t stepd;
+		memset(&stepd, 0, sizeof(step_loc_t));
+		/* We only need the jobid and stepid filled in here
+		   all the rest isn't needed for the adopt.
+		*/
+		stepd.jobid = job_id;
+		stepd.stepid = SLURM_EXTERN_CONT;
+
+		/* Adopt the process. If the adoption succeeds, return SUCCESS.
+		 * If not, maybe the adoption failed because the user hopped
+		 * into one node and was adopted into a job there that isn't on
+		 * our node here. In that case we got a bad jobid so we'll fall
+		 * through to the next action */
+		if (_adopt_process(getpid(), &stepd) == SLURM_SUCCESS)
+			return PAM_SUCCESS;
+		else
+			return PAM_IGNORE;
 	}
 
 	info("From %s port %d as %s: unable to determine source job",
@@ -495,8 +505,6 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 				opts.action_unknown = CALLERID_ACTION_NEWEST;
 			else if (!strncasecmp(v, "deny", 4))
 				opts.action_unknown = CALLERID_ACTION_DENY;
-			else if (!strncasecmp(v, "user", 4))
-				opts.action_unknown = CALLERID_ACTION_USER;
 			else {
 				pam_syslog(pamh,
 					   LOG_ERR,
@@ -506,11 +514,14 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 		} else if (!strncasecmp(*argv,"action_generic_failure=",23)) {
 			v = (char *)(23 + *argv);
 			if (!strncasecmp(v, "allow", 5))
-				opts.action_generic_failure = CALLERID_ACTION_ALLOW;
+				opts.action_generic_failure =
+					CALLERID_ACTION_ALLOW;
 			else if (!strncasecmp(v, "ignore", 6))
-				opts.action_generic_failure = CALLERID_ACTION_IGNORE;
+				opts.action_generic_failure =
+					CALLERID_ACTION_IGNORE;
 			else if (!strncasecmp(v, "deny", 4))
-				opts.action_generic_failure = CALLERID_ACTION_DENY;
+				opts.action_generic_failure =
+					CALLERID_ACTION_DENY;
 			else {
 				pam_syslog(pamh,
 					   LOG_ERR,
@@ -556,11 +567,11 @@ static int _load_cgroup_config()
  * 		address, ask it which job I belong to. On success, pick that one
  *	3) Pick a job semi-randomly (default) or skip the adoption (if
  *		configured)
-*/
+ */
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
-		__attribute__((unused)), int argc, const char **argv)
+				__attribute__((unused)), int argc, const char **argv)
 {
-	int retval = PAM_IGNORE, rc, bufsize, user_jobs;
+	int retval = PAM_IGNORE, rc, slurmrc, bufsize, user_jobs;
 	char *user_name;
 	List steps = NULL;
 	step_loc_t *stepd = NULL;
@@ -572,18 +583,18 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	_log_init(opts.log_level);
 
 	switch (opts.action_generic_failure) {
-		case CALLERID_ACTION_DENY:
-			rc = PAM_PERM_DENIED;
-			break;
-		case CALLERID_ACTION_ALLOW:
-			rc = PAM_SUCCESS;
-			break;
-		case CALLERID_ACTION_IGNORE:
-			rc = PAM_IGNORE;
-			break;
+	case CALLERID_ACTION_DENY:
+		rc = PAM_PERM_DENIED;
+		break;
+	case CALLERID_ACTION_ALLOW:
+		rc = PAM_SUCCESS;
+		break;
+	case CALLERID_ACTION_IGNORE:
+		rc = PAM_IGNORE;
+		break;
 		/* Newer gcc versions warn if enum cases are missing */
-		default:
-			error("The code is broken!!!!");
+	default:
+		error("The code is broken!!!!");
 	}
 
 	retval = pam_get_item(pamh, PAM_USER, (void *) &user_name);
@@ -595,11 +606,11 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	/* Check for an unsafe config that might lock out root. This is a very
 	 * basic check that shouldn't be 100% relied on */
 	if (!opts.ignore_root &&
-			(opts.action_unknown == CALLERID_ACTION_DENY ||
-			opts.action_no_jobs != CALLERID_ACTION_ALLOW ||
-			opts.action_adopt_failure != CALLERID_ACTION_ALLOW ||
-			opts.action_generic_failure != CALLERID_ACTION_ALLOW
-			)) {
+	    (opts.action_unknown == CALLERID_ACTION_DENY ||
+	     opts.action_no_jobs != CALLERID_ACTION_ALLOW ||
+	     opts.action_adopt_failure != CALLERID_ACTION_ALLOW ||
+	     opts.action_generic_failure != CALLERID_ACTION_ALLOW
+		    )) {
 		/* Let's get verbose */
 		info("===============================");
 		info("Danger!!!");
@@ -664,7 +675,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			rc = PAM_PERM_DENIED;
 		} else {
 			debug("uid %u owns no jobs but action_no_jobs=ignore",
-					pwd.pw_uid);
+			      pwd.pw_uid);
 			rc = PAM_IGNORE;
 		}
 		goto cleanup;
@@ -673,7 +684,16 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			info("Connection by user %s: user has only one job %u",
 			     user_name,
 			     stepd->jobid);
-			rc = _adopt_process(getpid(), stepd);
+			slurmrc = _adopt_process(getpid(), stepd);
+			/* If adoption into the only job fails, it is time to
+			 * exit. Return code is based on the
+			 * action_adopt_failure setting */
+			if (slurmrc == SLURM_SUCCESS ||
+			    (opts.action_adopt_failure ==
+			     CALLERID_ACTION_ALLOW))
+				rc = PAM_SUCCESS;
+			else
+				rc = PAM_PERM_DENIED;
 			goto cleanup;
 		}
 	} else {
@@ -684,7 +704,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	 * to slurmd at source IP. If it can tell us the job, the function calls
 	 * _adopt_process */
 	rc = _try_rpc(&pwd);
-	if (rc == PAM_SUCCESS || rc == PAM_PERM_DENIED)
+	if (rc == PAM_SUCCESS)
 		goto cleanup;
 
 	/* The source of the connection either didn't reply or couldn't
@@ -701,12 +721,12 @@ cleanup:
 
 #ifdef PAM_STATIC
 struct pam_module _pam_slurm_adopt_modstruct = {
-	 PAM_MODULE_NAME,
-	 NULL,
-	 NULL,
-	 pam_sm_acct_mgmt,
-	 NULL,
-	 NULL,
-	 NULL,
+	PAM_MODULE_NAME,
+	NULL,
+	NULL,
+	pam_sm_acct_mgmt,
+	NULL,
+	NULL,
+	NULL,
 };
 #endif
