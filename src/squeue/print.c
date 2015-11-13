@@ -1908,6 +1908,9 @@ int _print_job_tres(job_info_t *job, int width,
 		if (job->tres_alloc_str)
 			_print_str(job->tres_alloc_str, width,
 				   right_justify, true);
+		else if (job->tres_req_str)
+			_print_str(job->tres_req_str, width,
+				   right_justify, true);
 		else
 			_print_str("N/A", width,
 				   right_justify, true);
