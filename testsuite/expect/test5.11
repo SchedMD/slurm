@@ -1,0 +1,383 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that job's node estimation is based off the biggest node
+#          in the partition
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          5.11
+set exit_code        0
+set node_list        ""
+set highest_cpu_cnt  0
+set default_part     [default_partition]
+set script           "test$test_id\_script"
+set job_id           0
+set node_l           ""
+set cpu_l_cnt        0
+set node_m           ""
+set cpu_m_cnt        0
+set node_h           ""
+set cpu_h_cnt        0
+set test_part        "test$test_id\_part"
+
+print_header $test_id
+
+make_bash_script $script "
+sleep 10
+"
+proc sub_job { cpu_cnt part } {
+
+	global sbatch script job_id number exit_code
+
+	set job_id 0
+	spawn $sbatch -t1 -H -p$part -n$cpu_cnt -o/dev/null $script
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$job_id} {
+		send_user "\nFAILURE: job was not submitted\n"
+	}
+}
+
+proc check_node_cnt { exp_nodes } {
+
+	global squeue exit_code
+
+	set match 0
+	spawn $squeue -h -o%D
+	expect {
+		-re "$exp_nodes" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$match} {
+		send_user "\nFAILURE: job did not make proper node estimationexpected = $exp_nodes\n"
+		set exit_code 1
+	}
+}
+
+proc update_job { job_id part } {
+
+	global scontrol exit_code
+
+	spawn $scontrol update jobid=$job_id partition=$part
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc test_and_check { job_id part exp_nodes } {
+	update_job $job_id $part
+	check_node_cnt $exp_nodes
+}
+
+
+# only works when job is in hold. should also work when jobs are waiting
+
+################## Test with existing default partition ##################
+spawn $bin_bash -c "$scontrol show partition $default_part | $bin_grep -w Nodes"
+expect {
+	-re "Nodes=($alpha_numeric_nodelist)" {
+		set node_list $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $bin_bash -c "$scontrol show nodes $node_list | grep CPUTot"
+expect {
+	-re "CPUTot=($number)" {
+		if { $expect_out(1,string) > $highest_cpu_cnt } {
+			set highest_cpu_cnt $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Choose a cpu count greater then highest cpu node (job should use 2 nodes)
+set cpu_test_cnt [expr $highest_cpu_cnt + 1]
+
+# Submit a job to the default partition
+sub_job $cpu_test_cnt $default_part
+
+set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
+check_node_cnt $exp_nodes
+cancel_job $job_id
+
+# Choose a cpu count greater then highest cpu node (job should use 1 node)
+set cpu_test_cnt $highest_cpu_cnt
+sub_job $cpu_test_cnt $default_part
+
+set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
+check_node_cnt $exp_nodes
+cancel_job $job_id
+
+# Choose a cpu count greater then highest cpu node (job should use 5 node)
+set cpu_test_cnt [expr $highest_cpu_cnt * 4 + 1]
+sub_job $cpu_test_cnt $default_part
+
+set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
+check_node_cnt $exp_nodes
+cancel_job $job_id
+
+
+################## Test with new parition ##################
+
+# Get the smallest node in the system
+log_user 0
+set tmp_cnt 99999
+set tmp_name ""
+set node_name ""
+spawn $sinfo -h -o%n=%c
+expect {
+	-re "($alpha_numeric_under)=($number)" {
+		if { $expect_out(2,string) < $tmp_cnt } {
+			set tmp_cnt $expect_out(2,string)
+			set node_name $expect_out(1,string)
+		}
+		exp_continue
+
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Set node to node with least CPUs
+set node_l $node_name
+set cpu_l_cnt $tmp_cnt
+set node_m $node_name
+set cpu_m_cnt $tmp_cnt
+set node_h $node_name
+set cpu_h_cnt $tmp_cnt
+
+# Get highest node of different
+spawn $sinfo -h -o%n=%c
+expect {
+	-re "($alpha_numeric_under)=($number)" {
+		if { $expect_out(2,string) > $cpu_l_cnt &&
+		     $expect_out(2,string) > $cpu_h_cnt } {
+			set cpu_h_cnt $expect_out(2,string)
+			set node_h $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Get node between highest and lowest
+spawn $sinfo -h -o%n=%c
+expect {
+	-re "($alpha_numeric_under)=($number)" {
+		if { $expect_out(2,string) > $cpu_l_cnt &&
+		     $expect_out(2,string) < $cpu_h_cnt } {
+			set cpu_m_cnt $expect_out(2,string)
+			set node_m $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+send_user "\nL:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt\n"
+if {$cpu_l_cnt == $cpu_h_cnt} {
+	send_user "The rest of this test expects to have three different nodes \
+		each with different cpu counts -- finishing test now."
+
+	exec $bin_rm -fr $script
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE\n"
+	}
+	exit $exit_code
+}
+
+# Create partition with the smallest node in the system
+spawn $scontrol create partitionname=$test_part nodes=$node_l
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set match 0
+spawn $sinfo -h -o%P
+expect {
+	-re "$test_part" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE scontrol is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {!$match} {
+	send_user "\nFAILURE: partition $test_part was not created\n"
+	exit 1
+}
+
+# Choose a cpu count greater then highest cpu node
+set cpu_test_cnt [expr $cpu_l_cnt + $cpu_m_cnt + $cpu_h_cnt]
+set exp_nodes [expr ($cpu_test_cnt - 1)/$cpu_l_cnt + 1]
+
+sub_job $cpu_test_cnt $default_part
+sleep 4
+test_and_check $job_id $test_part $exp_nodes
+
+sleep 4
+cancel_job $job_id
+
+# Update the partition with a new node
+spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set exp_nodes [expr ($cpu_test_cnt - 1)/$cpu_m_cnt + 1]
+
+sub_job $cpu_test_cnt $default_part
+sleep 4
+test_and_check $job_id $test_part $exp_nodes
+
+sleep 4
+cancel_job $job_id
+
+# Update the partition with a new node
+spawn $scontrol update partitionname=$test_part nodes=$node_l,$node_m,$node_h
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+set exp_nodes [expr ($cpu_test_cnt - 1)/$cpu_h_cnt + 1]
+
+sub_job $cpu_test_cnt $default_part
+sleep 4
+test_and_check $job_id $test_part $exp_nodes
+
+sleep 4
+cancel_job $job_id
+
+spawn $scontrol delete partition=$test_part
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+exec $bin_rm -fr $script
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+
+exit $exit_code
