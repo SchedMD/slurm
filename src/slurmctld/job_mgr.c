@@ -4270,15 +4270,6 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
-	if (job_ptr && (job_ptr->user_id != uid)
-	    && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
-		error("Security violation, REQUEST_KILL_JOB RPC for "
-		      "jobID %u from uid %d", job_ptr->job_id, uid);
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -4488,6 +4479,20 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return job_signal(job_id, signal, flags, uid, preempt);
 		}
 
+		if (job_ptr && (job_ptr->user_id != uid) &&
+		    !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account)) {
+			error("Security violation, REQUEST_KILL_JOB RPC for "
+			      "jobID %u from uid %d", job_ptr->job_id, uid);
+			return ESLURM_ACCESS_DENIED;
+		}
+
+		/* This will kill the meta record that holds all
+		 * pending jobs.  We want to kill this first so we
+		 * don't start jobs just to kill them as we are
+		 * killing other elements of the array.
+		 */
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
@@ -4511,14 +4516,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			if (job_ptr->array_job_id == job_id)
 				break;
 			job_ptr = job_ptr->job_array_next_j;
-		}
-		if (job_ptr && (job_ptr->user_id != uid) &&
-		    !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account)) {
-			error("Security violation, REQUEST_KILL_JOB RPC for "
-			      "jobID %u from uid %d", job_ptr->job_id, uid);
-			return ESLURM_ACCESS_DENIED;
 		}
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
