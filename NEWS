@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Add REQUEST_ADD_EXTERN_PID option to add pid to the slurmstepd's extern
     step.
  -- Add unique identifiers to anchor tags in HTML generated from the man pages.
+ -- Add with_freeipmi option to spec file.
 
 * Changes in Slurm 15.08.3
 ==========================
