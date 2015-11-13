@@ -198,7 +198,7 @@ if(defined($queueList)) {
 
 		$job->{'allocNodeList'} = $job->{'nodes'} || "--";
 		$job->{'stateCode'} = stateCode($job->{'job_state'});
-		$job->{'user_name'} = getpwuid($job->{'user_id'});
+		$job->{'user_name'} = getpwuid($job->{'user_id'}) || "nobody";
 		$job->{'name'} = "Allocation" if !$job->{'name'};
 
 		# Filter jobs according to options and arguments
