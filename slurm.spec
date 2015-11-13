@@ -447,7 +447,6 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 	%{!?slurm_with_readline:--without-readline} \
 	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?slurm_with_pmix:--with-pmix=%{?with_pmix_dir}} \
-	--with-hdf5=no \
 	%{?with_cflags}
 
 %__make %{?_smp_mflags}
