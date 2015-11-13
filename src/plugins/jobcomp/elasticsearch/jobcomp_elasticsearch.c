@@ -697,12 +697,10 @@ extern int slurm_jobcomp_set_location(char *location)
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	int nwritten, nparents, B_SIZE = 1024, rc = SLURM_SUCCESS;
+	int nwritten, B_SIZE = 1024, rc = SLURM_SUCCESS;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
 	char submit_str[32], *script, *cluster = NULL, *qos, *state_string;
 	char *script_str;
-	char *parent_accounts;
-	char **acc_aux;
 	time_t elapsed_time, submit_time, eligible_time;
 	enum job_states job_state;
 	uint32_t time_limit;
@@ -911,44 +909,40 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->assoc_ptr) {
-		slurmdb_assoc_rec_t assoc_rec, *assoc_ptr;
+		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   NO_LOCK, NO_LOCK, NO_LOCK };
+		slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+		char *parent_accounts = NULL;
+		char **acc_aux = NULL;
+		int nparents = 0;
 
-		parent_accounts = NULL;
-		acc_aux = NULL;
-		nparents = 0;
+		assoc_mgr_lock(&locks);
 
-		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-		assoc_rec.cluster = xstrdup(cluster);
-		assoc_rec.id =
-		    ((slurmdb_assoc_rec_t *) job_ptr->assoc_ptr)->parent_id;
-
-		do {
-			assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						accounting_enforce, &assoc_ptr,
-						false);
-			acc_aux = xrealloc(acc_aux,
-					   sizeof(char *) * (nparents + 1));
-			acc_aux[nparents] = xstrdup(assoc_ptr->acct);
-			nparents++;
-			assoc_rec.id = assoc_ptr->parent_id;
-			xfree(assoc_rec.cluster);
-			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-			assoc_rec.cluster = xstrdup(cluster);
-			assoc_rec.id = assoc_ptr->parent_id;
-
-		} while (xstrcmp(assoc_ptr->acct, "root") != 0);
-
-		for (i = nparents - 1; i >= 0; i--) {
-			xstrcat(parent_accounts, "/");
-			xstrcat(parent_accounts, acc_aux[i]);
-			xfree(acc_aux[i]);
+		/* Start at the first parent and go up.  When studying
+		 * this code it was slightly faster to do 2 loops on
+		 * the association linked list and only 1 xmalloc but
+		 * we opted for cleaner looking code and going with a
+		 * realloc. */
+		while (assoc_ptr) {
+			if (assoc_ptr->acct) {
+				acc_aux = xrealloc(acc_aux,
+						   sizeof(char *) *
+						   (nparents + 1));
+				acc_aux[nparents++] = assoc_ptr->acct;
+			}
+			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 		}
-	
+
+		for (i = nparents-1; i >= 0; i--)
+			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
+		xfree(acc_aux);
+
 		xstrfmtcat(buffer, ",\"parent_accounts\":\"%s\"",
 			   parent_accounts);
-		xfree(acc_aux);
-		xfree(assoc_rec.cluster);
+
 		xfree(parent_accounts);
+
+		assoc_mgr_unlock(&locks);
 	}
 
 	xstrcat(buffer, "}");

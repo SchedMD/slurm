@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     step.
  -- Add unique identifiers to anchor tags in HTML generated from the man pages.
  -- Add with_freeipmi option to spec file.
+ -- Minor elasticsearch code improvements
 
 * Changes in Slurm 15.08.3
 ==========================
