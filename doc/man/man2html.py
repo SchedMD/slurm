@@ -30,6 +30,7 @@ def insert_tag(html, lineIn):
         posEnd = lineIn.find("</H2>")
         if posEnd != -1:
             id_name = lineIn[4:posEnd]
+            id_name = id_name.replace(' ','-')
             if id_name in ids:
                 ids[id_name] += 1
                 id_name += "_" + str(ids[id_name])
@@ -51,6 +52,7 @@ def insert_tag(html, lineIn):
         return
 
     id_name = lineIn[posBgn:posEnd]
+    id_name = id_name.replace(' ','-')
     if id_name in ids:
         ids[id_name] += 1
         id_name += "_" + str(ids[id_name])
