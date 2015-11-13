@@ -324,7 +324,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	 * staging */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!job_ptr->burst_buffer || !job_ptr->array_recs ||
+		if (!IS_JOB_PENDING(job_ptr) ||
+		    !job_ptr->burst_buffer || !job_ptr->array_recs ||
 		    !job_ptr->array_recs->task_id_bitmap ||
 		    (job_ptr->array_task_id != NO_VAL))
 			continue;

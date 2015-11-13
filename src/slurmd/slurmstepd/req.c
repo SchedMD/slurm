@@ -87,6 +87,7 @@ static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, stepd_step_rec_t *job);
+static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -563,6 +564,10 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 	case REQUEST_JOB_NOTIFY:
 		debug("Handling REQUEST_JOB_NOTIFY");
 		rc = _handle_notify_job(fd, job, uid);
+		break;
+	case REQUEST_ADD_EXTERN_PID:
+		debug("Handling REQUEST_ADD_EXTERN_PID");
+		rc = _handle_add_extern_pid(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1198,6 +1203,43 @@ _handle_pid_in_container(int fd, stepd_step_rec_t *job)
 	safe_write(fd, &rc, sizeof(bool));
 
 	debug("Leaving _handle_pid_in_container");
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_FAILURE;
+}
+
+static int
+_handle_add_extern_pid(int fd, stepd_step_rec_t *job)
+{
+	int rc = SLURM_SUCCESS;
+	pid_t pid;
+	jobacct_id_t jobacct_id;
+
+	safe_read(fd, &pid, sizeof(pid_t));
+
+	if (job->stepid != SLURM_EXTERN_CONT) {
+		error("_handle_add_extern_pid: non-extern step (%u) given for job %u.",
+		      job->stepid, job->jobid);
+		rc = SLURM_FAILURE;
+		goto send_it;
+	}
+
+	debug("_handle_add_extern_pid for job %u.%u, pid %d",
+	      job->jobid, job->stepid, pid);
+
+
+	jobacct_id.taskid = job->nodeid;
+	jobacct_id.nodeid = job->nodeid;
+	jobacct_id.job = job;
+
+	proctrack_g_add(job, pid);
+	jobacct_gather_add_task(pid, &jobacct_id, 1);
+
+send_it:
+	/* Send the return code */
+	safe_write(fd, &rc, sizeof(int));
+
+	debug("Leaving _handle_add_extern_pid");
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;

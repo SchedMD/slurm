@@ -2554,6 +2554,11 @@ default value of 2 seconds.
 For example if MessageTimeout=10, the time limit will be 2 seconds
 (i.e. MIN(10/2, 2) = 2).
 .TP
+\fBmax_script_size=#\fR
+Specify the maximum size of a batch script, in bytes.
+The default value is 4 megabytes.
+Larger values may adversely impact system performance.
+.TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.

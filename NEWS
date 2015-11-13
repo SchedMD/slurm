@@ -68,6 +68,12 @@ documents those changes that are of interest to users and administrators.
  -- Sched/backfill: Fix to properly enforce SchedulerParameters of
     bf_max_job_array_resv.
  -- Enable operator to reset sdiag data.
+ -- jobcomp/elasticsearch plugin: Add array_job_id and array_task_id fields.
+ -- Remove duplicate #define IS_NODE_POWER_UP.
+ -- Added SchedulerParameters option of max_script_size.
+ -- Add REQUEST_ADD_EXTERN_PID option to add pid to the slurmstepd's extern
+    step.
+ -- Add unique identifiers to anchor tags in HTML generated from the man pages.
 
 * Changes in Slurm 15.08.3
 ==========================

@@ -73,6 +73,7 @@
 strong_alias(stepd_available, slurm_stepd_available);
 strong_alias(stepd_connect, slurm_stepd_connect);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
+strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 
 static bool
 _slurm_authorized_user()
@@ -726,6 +727,27 @@ stepd_pid_in_container(int fd, uint16_t protocol_version, pid_t pid)
 	return rc;
 rwfail:
 	return false;
+}
+
+/*
+ * Add a pid to the "extern" step of a job, meaning add it to the
+ * jobacct_gather and proctrack plugins.
+ */
+extern int stepd_add_extern_pid(int fd, uint16_t protocol_version, pid_t pid)
+{
+	int req = REQUEST_ADD_EXTERN_PID;
+	int rc;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_write(fd, &pid, sizeof(pid_t));
+
+	/* Receive the return code */
+	safe_read(fd, &rc, sizeof(int));
+
+	debug("Leaving stepd_add_extern_pid");
+	return rc;
+rwfail:
+	return SLURM_ERROR;
 }
 
 /*
