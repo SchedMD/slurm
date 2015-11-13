@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.11
 ===========================
  -- Fix systemd's slurmd service from killing slurmstepds on shutdown.
+ -- Fix the qstat wrapper when user is removed from the system but still
+    has running jobs.
 
 * Changes in Slurm 14.11.10
 ===========================
