@@ -53,7 +53,6 @@
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt blcr
-%slurm_without_opt openssl
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
@@ -297,11 +296,13 @@ Requires: slurm-plugins slurm-sql
 Slurm database daemon. Used to accept and process database RPCs and upload
 database changes to slurmctld daemons on each cluster
 
+%if %{slurm_with mysql}
 %package sql
 Summary: Slurm SQL support
 Group: System Environment/Base
 %description sql
 Slurm SQL support. Contains interfaces to MySQL.
+%endif
 
 %package plugins
 Summary: Slurm plugins (loadable shared objects)
@@ -791,6 +792,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f slurm.files
 %defattr(-,root,root,0755)
+%docdir %{_datadir}/doc
 %{_datadir}/doc
 %{_bindir}/s*
 %exclude %{_bindir}/seff
@@ -805,21 +807,21 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
-%{_mandir}/man1/*
-%{_mandir}/man5/acct_gather.*
-%{_mandir}/man5/burst_buffer.*
-%{_mandir}/man5/ext_sensors.*
-%{_mandir}/man5/cgroup.*
-%{_mandir}/man5/cray.*
-%{_mandir}/man5/gres.*
-%{_mandir}/man5/nonstop.*
-%{_mandir}/man5/slurm.*
-%{_mandir}/man5/topology.*
-%{_mandir}/man5/wiki.*
-%{_mandir}/man8/slurmctld.*
-%{_mandir}/man8/slurmd.*
-%{_mandir}/man8/slurmstepd*
-%{_mandir}/man8/spank*
+%doc %{_mandir}/man1/*
+%doc %{_mandir}/man5/acct_gather.*
+%doc %{_mandir}/man5/burst_buffer.*
+%doc %{_mandir}/man5/ext_sensors.*
+%doc %{_mandir}/man5/cgroup.*
+%doc %{_mandir}/man5/cray.*
+%doc %{_mandir}/man5/gres.*
+%doc %{_mandir}/man5/nonstop.*
+%doc %{_mandir}/man5/slurm.*
+%doc %{_mandir}/man5/topology.*
+%doc %{_mandir}/man5/wiki.*
+%doc %{_mandir}/man8/slurmctld.*
+%doc %{_mandir}/man8/slurmd.*
+%doc %{_mandir}/man8/slurmstepd*
+%doc %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
 %dir /etc/ld.so.conf.d
@@ -858,10 +860,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/include/slurm/*
 %{_libdir}/libslurm.la
 %{_libdir}/libslurmdb.la
-%{_mandir}/man3/slurm_*
+%doc %{_mandir}/man3/slurm_*
 %dir %{_libdir}/pkgconfig
 %{_libdir}/pkgconfig/slurm.pc
-#%{_mandir}/man3/slurmdb_*
+#%doc %{_mandir}/man3/slurmdb_*
 #############################################################################
 
 %if %{slurm_with auth_none}
@@ -882,7 +884,7 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with bluegene}
 %files -f bluegene.files bluegene
 %defattr(-,root,root)
-%{_mandir}/man5/bluegene.*
+%doc %{_mandir}/man5/bluegene.*
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
 %{_sbindir}/sfree
@@ -902,21 +904,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_perldir}/Slurmdb.pm
 %{_perldir}/auto/Slurmdb/Slurmdb.so
 %{_perldir}/auto/Slurmdb/autosplit.ix
-%{_perlman3dir}/Slurm*
+%doc %{_perlman3dir}/Slurm*
 
 #############################################################################
 
 %files -f slurmdbd.files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
-%{_mandir}/man5/slurmdbd.*
-%{_mandir}/man8/slurmdbd.*
+%doc %{_mandir}/man5/slurmdbd.*
+%doc %{_mandir}/man8/slurmdbd.*
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
+%if %{slurm_with mysql}
 %files -f sql.files sql
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
+%endif
 #############################################################################
 
 %files -f plugins.files plugins
@@ -1017,7 +1021,7 @@ rm -rf $RPM_BUILD_ROOT
 %files sjobexit
 %defattr(-,root,root)
 %{_bindir}/sjobexitmod
-%{_mandir}/man1/sjobexit*
+%doc %{_mandir}/man1/sjobexit*
 #############################################################################
 
 %files slurmdb-direct
@@ -1064,7 +1068,7 @@ rm -rf $RPM_BUILD_ROOT
 %files sjstat
 %defattr(-,root,root)
 %{_bindir}/sjstat
-%{_mandir}/man1/sjstat*
+%doc %{_mandir}/man1/sjstat*
 #############################################################################
 
 %if %{slurm_with pam}
@@ -1079,7 +1083,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/srun_cr
 %{_libexecdir}/slurm/cr_*
 %{_libdir}/slurm/checkpoint_blcr.so
-%{_mandir}/man1/srun_cr*
+%doc %{_mandir}/man1/srun_cr*
 %endif
 #############################################################################
 
