@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix systemd's slurmd service from killing slurmstepds on shutdown.
  -- Fix the qstat wrapper when user is removed from the system but still
     has running jobs.
+ -- Log the request to terminate a job at info level if DebugFlags includes
+    the Steps keyword.
 
 * Changes in Slurm 14.11.10
 ===========================
