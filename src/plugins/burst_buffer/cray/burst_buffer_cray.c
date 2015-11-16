@@ -1343,13 +1343,8 @@ static void *_start_setup(void *x)
 				 bb_state.bb_config.get_sys_state,
 				 setup_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: setup for job %u ran for %s",
-		     __func__, stage_args->job_id, TIME_STR);
-	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: setup for job %u ran for %s",
-		      __func__, stage_args->job_id, TIME_STR);
-	}
+	info("%s: setup for job %u ran for %s",
+	     __func__, stage_args->job_id, TIME_STR);
 	_log_script_argv(setup_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: setup for job %u status:%u response:%s",
@@ -1495,13 +1490,8 @@ static void *_start_stage_in(void *x)
 				 bb_state.bb_config.get_sys_state,
 				 setup_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
-		info("%s: setup for job %u ran for %s",
-		     __func__, stage_args->job_id, TIME_STR);
-	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: setup for job %u ran for %s",
-		      __func__, stage_args->job_id, TIME_STR);
-	}
+	info("%s: setup for job %u ran for %s",
+	     __func__, stage_args->job_id, TIME_STR);
 	_log_script_argv(setup_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: setup for job %u status:%u response:%s",
@@ -1540,13 +1530,8 @@ static void *_start_stage_in(void *x)
 					 bb_state.bb_config.get_sys_state,
 					 data_in_argv, timeout, &status);
 		END_TIMER;
-		if (DELTA_TIMER > 5000000) {	/* 5 secs */
-			info("%s: dws_data_in for job %u ran for %s",
-			     __func__, stage_args->job_id, TIME_STR);
-		} else if (bb_state.bb_config.debug_flag) {
-			debug("%s: dws_data_in for job %u ran for %s",
-			      __func__, stage_args->job_id, TIME_STR);
-		}
+		info("%s: dws_data_in for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
 		_log_script_argv(data_in_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 			error("%s: dws_data_in for job %u status:%u "
@@ -1697,13 +1682,8 @@ static void *_start_stage_out(void *x)
 				 bb_state.bb_config.get_sys_state,
 				 data_out_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 5000000) {	/* 5 secs */
-		info("%s: dws_data_out for job %u ran for %s",
-		     __func__, stage_args->job_id, TIME_STR);
-	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: dws_data_out for job %u ran for %s",
-		      __func__, stage_args->job_id, TIME_STR);
-	}
+	info("%s: dws_data_out for job %u ran for %s",
+	     __func__, stage_args->job_id, TIME_STR);
 	_log_script_argv(data_out_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: dws_data_out for job %u status:%u response:%s",
@@ -1723,12 +1703,10 @@ static void *_start_stage_out(void *x)
 					 bb_state.bb_config.get_sys_state,
 					 post_run_argv, timeout, &status);
 		END_TIMER;
-		if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+		if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+		    bb_state.bb_config.debug_flag) {
 			info("%s: dws_post_run for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
-		} else if (bb_state.bb_config.debug_flag) {
-			debug("%s: dws_post_run for job %u ran for %s",
-			      __func__, stage_args->job_id, TIME_STR);
 		}
 		_log_script_argv(post_run_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
@@ -1886,11 +1864,8 @@ static void *_start_teardown(void *x)
 				 bb_state.bb_config.get_sys_state,
 				 teardown_argv, timeout, &status);
 	END_TIMER;
-	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
-	    (bb_state.bb_config.debug_flag)) {
-		info("%s: teardown for job %u ran for %s",
-		     __func__, teardown_args->job_id, TIME_STR);
-	}
+	info("%s: teardown for job %u ran for %s",
+	     __func__, teardown_args->job_id, TIME_STR);
 	_log_script_argv(teardown_argv, resp_msg);
 	/* "Teardown" is run at every termination of every job that _might_
 	 * have a burst buffer, so an error of "token not found" should be
@@ -2931,10 +2906,9 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 				 bb_state.bb_config.get_sys_state,
 				 script_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 200000)	/* 0.2 secs */
+	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	    bb_state.bb_config.debug_flag)
 		info("%s: job_process ran for %s", __func__, TIME_STR);
-	else if (bb_state.bb_config.debug_flag)
-		debug("%s: job_process ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: job_process for job %u status:%u response:%s",
@@ -2964,10 +2938,9 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 				 bb_state.bb_config.get_sys_state,
 				 script_argv, timeout, &status);
 	END_TIMER;
-	if (DELTA_TIMER > 200000)	/* 0.2 secs */
+	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	    bb_state.bb_config.debug_flag)
 		info("%s: paths ran for %s", __func__, TIME_STR);
-	else if (bb_state.bb_config.debug_flag)
-		debug("%s: paths ran for %s", __func__, TIME_STR);
 	_log_script_argv(script_argv, resp_msg);
 #if 1
 	//FIXME: Cray API returning valid response, but exit 1 in some cases
@@ -3373,12 +3346,10 @@ static void *_start_pre_run(void *x)
 		snprintf(jobid_buf, sizeof(jobid_buf), "%u",
 			 pre_run_args->job_id);
 	}
-	if (DELTA_TIMER > 500000) {	/* 0.5 secs */
+	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	    bb_state.bb_config.debug_flag) {
 		info("%s: dws_pre_run for %s ran for %s", __func__,
 		     jobid_buf, TIME_STR);
-	} else if (bb_state.bb_config.debug_flag) {
-		debug("%s: dws_pre_run for %s ran for %s", __func__,
-		      jobid_buf, TIME_STR);
 	}
 	_log_script_argv(pre_run_args->args, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
