@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Prevent "scontrol update job" from updating jobs that have already finished.
  -- Show requested TRES in "squeue -O tres" when job is pending.
+ -- Backfill scheduler: Test association and QOS node limits before reserving
+    resources for pending job.
 
 * Changes in Slurm 15.08.4
 ==========================

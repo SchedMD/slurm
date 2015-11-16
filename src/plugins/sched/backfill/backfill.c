@@ -838,6 +838,7 @@ static int _attempt_backfill(void)
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
+	uint32_t acct_max_nodes, wait_reason = 0;
 	bool resv_overlap = false;
 
 	bf_sleep_usec = 0;
@@ -1133,6 +1134,15 @@ next_task:
 		if (min_nodes > max_nodes) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
 				info("backfill: job %u node count too high",
+				     job_ptr->job_id);
+			continue;
+		}
+		acct_max_nodes = acct_policy_get_max_nodes(job_ptr,
+							   &wait_reason);
+		if (acct_max_nodes < min_nodes) {
+			job_ptr->state_reason = wait_reason;
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: job %u acct policy node limit",
 				     job_ptr->job_id);
 			continue;
 		}
