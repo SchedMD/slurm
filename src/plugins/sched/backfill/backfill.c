@@ -68,6 +68,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -996,6 +997,58 @@ static int _attempt_backfill(void)
 			if (!job_ptr)	/* All task array elements started */
 				continue;
 		}
+
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			slurmdb_assoc_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+
+			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce,
+						    (slurmdb_assoc_rec_t **)
+						     &job_ptr->assoc_ptr,
+						     false)) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				xfree(job_ptr->state_desc);
+				job_ptr->assoc_id = assoc_rec.id;
+				last_job_update = now;
+			} else {
+				debug("backfill: JobId=%u has invalid association",
+				      job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				continue;
+			}
+		}
+
+		if (job_ptr->qos_id) {
+			slurmdb_assoc_rec_t *assoc_ptr;
+			assoc_ptr = (slurmdb_assoc_rec_t *)job_ptr->assoc_ptr;
+			if (assoc_ptr
+			    && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)
+			    && !bit_test(assoc_ptr->usage->valid_qos,
+					 job_ptr->qos_id)
+			    && !job_ptr->limit_set.qos) {
+				debug("backfill: JobId=%u has invalid QOS",
+				      job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = FAIL_QOS;
+				last_job_update = now;
+				continue;
+			} else if (job_ptr->state_reason == FAIL_QOS) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_NO_REASON;
+				last_job_update = now;
+			}
+		}
+
+		if (!acct_policy_job_runnable_state(job_ptr) &&
+		    !acct_policy_job_runnable_pre_select(job_ptr))
+			continue;
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
