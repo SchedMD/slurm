@@ -1333,7 +1333,7 @@ next_task:
 		    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
 			xfree(job_ptr->state_desc);
 			if (bb == -1) {
-				job_ptr->state_reason=
+				job_ptr->state_reason =
 					WAIT_BURST_BUFFER_RESOURCE;
 				job_ptr->start_time =
 					bb_g_job_get_est_start(job_ptr);
