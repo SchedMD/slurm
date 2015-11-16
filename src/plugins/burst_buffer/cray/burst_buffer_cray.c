@@ -1841,6 +1841,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 
 static void *_start_teardown(void *x)
 {
+	static uint32_t previous_job_id = 0;
 	stage_args_t *teardown_args;
 	char **teardown_argv, *resp_msg = NULL;
 	int status = 0, timeout;
@@ -1854,6 +1855,10 @@ static void *_start_teardown(void *x)
 
 	teardown_args = (stage_args_t *) x;
 	teardown_argv = teardown_args->args1;
+
+	if (previous_job_id == teardown_args->job_id)
+		sleep(5);
+	previous_job_id = teardown_args->job_id;
 
 	START_TIMER;
 	if (teardown_args->timeout)
@@ -1872,9 +1877,14 @@ static void *_start_teardown(void *x)
 	 * fairly common and not indicative of a problem. */
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 	    (!resp_msg || !strstr(resp_msg, "token not found"))) {
+		bool hurry = false;
 		error("%s: %s: teardown for job %u status:%u response:%s",
 		      plugin_name, __func__, teardown_args->job_id, status,
 		      resp_msg);
+		if (!xstrcmp(teardown_argv[7], "--hurry"))
+			hurry = true;
+		_queue_teardown(teardown_args->job_id, teardown_args->user_id,
+				hurry);
 	} else {
 		lock_slurmctld(job_write_lock);
 		pthread_mutex_lock(&bb_state.bb_mutex);

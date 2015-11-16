@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Show requested TRES in "squeue -O tres" when job is pending.
  -- Backfill scheduler: Test association and QOS node limits before reserving
     resources for pending job.
+ -- burst_buffer/cray: If teardown operations fails, sleep and retry.
 
 * Changes in Slurm 15.08.4
 ==========================
