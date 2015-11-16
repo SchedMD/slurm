@@ -534,8 +534,9 @@ int pmixp_libpmix_job_set(void)
 	int i, rc;
 	uid_t uid = pmixp_info_jobuid();
 	gid_t gid = pmixp_info_jobgid();
-	_register_caddy_t register_caddy;
+	_register_caddy_t *register_caddy;
 
+	register_caddy = xmalloc(sizeof(_register_caddy_t)*(pmixp_info_tasks_loc()+1));
 	pmixp_debug_hang(0);
 
 	/* Use list to safely expand/reduce key-value pairs. */
@@ -567,19 +568,10 @@ int pmixp_libpmix_job_set(void)
 	}
 	list_destroy(lresp);
 
-	register_caddy.active = 1;
+	register_caddy[0].active = 1;
 	rc = PMIx_server_register_nspace(pmixp_info_namespace(),
 			pmixp_info_tasks_loc(), info, ninfo, _release_cb,
-			&register_caddy);
-	if (PMIX_SUCCESS == rc) {
-		while (register_caddy.active) {
-			struct timespec ts;
-			ts.tv_sec = 0;
-			ts.tv_nsec = 100;
-			nanosleep(&ts, NULL);
-		}
-	}
-	PMIX_INFO_FREE(info, ninfo);
+			&register_caddy[0]);
 
 	if (PMIX_SUCCESS != rc) {
 		PMIXP_ERROR(
@@ -592,27 +584,39 @@ int pmixp_libpmix_job_set(void)
 	PMIXP_DEBUG("task initialization");
 	for (i = 0; i < pmixp_info_tasks_loc(); i++) {
 		pmix_proc_t proc;
-		register_caddy.active = 1;
+		register_caddy[i+1].active = 1;
 		strncpy(proc.nspace, pmixp_info_namespace(), PMIX_MAX_NSLEN);
 		proc.rank = pmixp_info_taskid(i);
 		rc = PMIx_server_register_client(&proc, uid, gid, NULL,
-				_release_cb, &register_caddy);
-		if (PMIX_SUCCESS == rc) {
-			while (register_caddy.active) {
-				struct timespec ts;
-				ts.tv_sec = 0;
-				ts.tv_nsec = 100;
-				nanosleep(&ts, NULL);
-			}
-		}
+				_release_cb, &register_caddy[i + 1]);
 		if (PMIX_SUCCESS != rc) {
-			PMIXP_ERROR(
-					"Cannot register client %d(%d) in namespace %s",
+			PMIXP_ERROR("Cannot register client %d(%d) in namespace %s",
 					pmixp_info_taskid(i), i,
 					pmixp_info_namespace());
 			return SLURM_ERROR;
 		}
 	}
+
+	/* wait for all registration actions to finish */
+	while( 1 ){
+		int exit_flag = 1;
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100;
+
+		for(i=0; i <  pmixp_info_tasks_loc() + 1; i++){
+			if( register_caddy[i].active ){
+				exit_flag = 0;
+			}
+		}
+		if( exit_flag ){
+			break;
+		}
+		nanosleep(&ts, NULL);
+	}
+	PMIX_INFO_FREE(info, ninfo);
+	xfree(register_caddy);
+
 	return SLURM_SUCCESS;
 }
 
