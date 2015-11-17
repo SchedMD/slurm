@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray: If teardown operations fails, sleep and retry.
  -- Clean up the external pids when using the PrologFlags=Contain feature
     and the job finishes.
+ -- burst_buffer/cray: Support file staging when job lacks job-specific buffer
+    (i.e. only persistent burst buffers).
 
 * Changes in Slurm 15.08.4
 ==========================

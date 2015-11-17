@@ -245,16 +245,14 @@ static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
 static void	_recover_bb_state(void);
-static int	_queue_setup(struct job_record *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
-static int	_queue_stage_out(struct job_record *job_ptr);
+static int	_queue_stage_out(bb_job_t *bb_job);
 static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 				 int new_state, uint64_t buf_size);
 static void	_save_bb_state(void);
 static void	_set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc);
 static void *	_start_pre_run(void *x);
-static void *	_start_setup(void *x);
 static void *	_start_stage_in(void *x);
 static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
@@ -389,21 +387,13 @@ static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 	    (_create_bufs(job_ptr, bb_job, job_ready) > 0))
 		return EAGAIN;
 
-	if (bb_job->total_size || bb_job->swap_size) {
-		if (bb_job->state < BB_STATE_STAGING_IN) {
-			bb_job->state = BB_STATE_STAGING_IN;
-			rc = _queue_stage_in(job_ptr, bb_job);
-			if (rc != SLURM_SUCCESS) {
-				bb_job->state = BB_STATE_TEARDOWN;
-				_queue_teardown(job_ptr->job_id,
-						job_ptr->user_id, true);
-			}
-		}
-	} else {
-		/* Job uses persistent burst buffer, just run setup */
-		if (bb_job->state < BB_STATE_STAGING_IN) {
-			bb_job->state = BB_STATE_STAGING_IN;
-			rc = _queue_setup(job_ptr, bb_job);
+	if (bb_job->state < BB_STATE_STAGING_IN) {
+		bb_job->state = BB_STATE_STAGING_IN;
+		rc = _queue_stage_in(job_ptr, bb_job);
+		if (rc != SLURM_SUCCESS) {
+			bb_job->state = BB_STATE_TEARDOWN;
+			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
+					true);
 		}
 	}
 
@@ -462,6 +452,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 		bb_job->qos = xstrdup(qos_ptr->name);
 	}
 	bb_job->state = BB_STATE_PENDING;
+	bb_job->user_id = job_ptr->user_id;
 	bb_specs = xstrdup(job_ptr->burst_buffer);
 	tok = strtok_r(bb_specs, "\n", &save_ptr);
 	while (tok) {
@@ -1248,140 +1239,6 @@ static int _write_file(char *file_name, char *buf)
 	return SLURM_SUCCESS;
 }
 
-static int _queue_setup(struct job_record *job_ptr, bb_job_t *bb_job)
-{
-	char *hash_dir = NULL, *job_dir = NULL;
-	char *client_nodes_file_nid = NULL;
-	char **setup_argv;
-	stage_args_t *stage_args;
-	int hash_inx = job_ptr->job_id % 10;
-	pthread_attr_t stage_attr;
-	pthread_t stage_tid = 0;
-	int rc = SLURM_SUCCESS;
-
-	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
-	(void) mkdir(hash_dir, 0700);
-	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	if (job_ptr->sched_nodes) {
-		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
-		if (_write_nid_file(client_nodes_file_nid,
-				    job_ptr->sched_nodes, job_ptr->job_id))
-			xfree(client_nodes_file_nid);
-	}
-	setup_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
-	setup_argv[0] = xstrdup("dw_wlm_cli");
-	setup_argv[1] = xstrdup("--function");
-	setup_argv[2] = xstrdup("setup");
-	setup_argv[3] = xstrdup("--token");
-	xstrfmtcat(setup_argv[4], "%u", job_ptr->job_id);
-	setup_argv[5] = xstrdup("--caller");
-	setup_argv[6] = xstrdup("SLURM");
-	setup_argv[7] = xstrdup("--user");
-	xstrfmtcat(setup_argv[8], "%d", job_ptr->user_id);
-	setup_argv[9] = xstrdup("--capacity");
-	xstrfmtcat(setup_argv[10], "%s:%s",
-		   bb_state.bb_config.default_pool,
-		   bb_get_size_str(bb_job->total_size));
-	setup_argv[11] = xstrdup("--job");
-	xstrfmtcat(setup_argv[12], "%s/script", job_dir);
-	if (client_nodes_file_nid) {
-#if defined(HAVE_NATIVE_CRAY)
-		setup_argv[13] = xstrdup("--nidlistfile");
-#else
-		setup_argv[13] = xstrdup("--nodehostnamefile");
-#endif
-		setup_argv[14] = xstrdup(client_nodes_file_nid);
-	}
-
-	stage_args = xmalloc(sizeof(stage_args_t));
-	stage_args->job_id  = job_ptr->job_id;
-	stage_args->timeout = bb_state.bb_config.stage_in_timeout;
-	stage_args->args1   = setup_argv;
-/*	stage_args->args2   = NULL;	Nothing to stage-in */
-
-	slurm_attr_init(&stage_attr);
-	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	while (pthread_create(&stage_tid, &stage_attr, _start_setup,
-			      stage_args)) {
-		if (errno != EAGAIN) {
-			error("%s: pthread_create: %m", __func__);
-			_start_setup(stage_args);	/* Do in-line */
-			break;
-		}
-		usleep(100000);
-	}
-	slurm_attr_destroy(&stage_attr);
-
-	xfree(hash_dir);
-	xfree(job_dir);
-	xfree(client_nodes_file_nid);
-	return rc;
-}
-
-static void *_start_setup(void *x)
-{
-	stage_args_t *stage_args;
-	char **setup_argv, *resp_msg = NULL, *op = NULL;
-	int rc = SLURM_SUCCESS, status = 0, timeout;
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	struct job_record *job_ptr;
-	bb_job_t *bb_job;
-	DEF_TIMERS;
-
-	stage_args = (stage_args_t *) x;
-	setup_argv   = stage_args->args1;
-
-	if (stage_args->timeout)
-		timeout = stage_args->timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
-	op = "setup";
-	START_TIMER;
-	resp_msg = bb_run_script("setup",
-				 bb_state.bb_config.get_sys_state,
-				 setup_argv, timeout, &status);
-	END_TIMER;
-	info("%s: setup for job %u ran for %s",
-	     __func__, stage_args->job_id, TIME_STR);
-	_log_script_argv(setup_argv, resp_msg);
-	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: setup for job %u status:%u response:%s",
-		      __func__, stage_args->job_id, status, resp_msg);
-		rc = SLURM_ERROR;
-	}
-	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(stage_args->job_id);
-	if (!job_ptr) {
-		error("%s: unable to find job record for job %u",
-		      __func__, stage_args->job_id);
-	} else if (rc == SLURM_SUCCESS) {
-		pthread_mutex_lock(&bb_state.bb_mutex);
-		bb_job = bb_job_find(&bb_state, stage_args->job_id);
-		if (bb_job)
-			bb_job->state = BB_STATE_STAGED_IN;
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-	} else {
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
-			   plugin_type, op, resp_msg);
-		job_ptr->priority = 0;	/* Hold job */
-		pthread_mutex_lock(&bb_state.bb_mutex);
-		bb_job = bb_job_find(&bb_state, stage_args->job_id);
-		if (bb_job)
-			bb_job->state = BB_STATE_COMPLETE;
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-	}
-	unlock_slurmctld(job_write_lock);
-
-	xfree(resp_msg);
-	_free_script_argv(setup_argv);
-	xfree(stage_args);
-	return NULL;
-}
-
 static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
@@ -1509,10 +1366,12 @@ static void *_start_stage_in(void *x)
 		} else if (!bb_job) {
 			error("%s: unable to find bb_job record for job %u",
 			      __func__, stage_args->job_id);
-		} else {
+		} else if (bb_job->total_size) {
 			bb_job->state = BB_STATE_STAGING_IN;
 			bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
 			bb_alloc->create_time = time(NULL);
+		} else {
+			bb_job->state = BB_STATE_STAGING_IN;
 		}
 		pthread_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_read_lock);
@@ -1557,7 +1416,8 @@ static void *_start_stage_in(void *x)
 				bb_alloc->state = BB_STATE_STAGED_IN;
 				bb_alloc->state_time = time(NULL);
 				if (bb_state.bb_config.debug_flag) {
-					info("%s: Stage-in complete for job %u",
+					info("%s: Setup/stage-in complete for "
+					     "job %u",
 					     __func__, stage_args->job_id);
 				}
 				queue_job_scheduler();
@@ -1600,24 +1460,24 @@ static void *_start_stage_in(void *x)
 	return NULL;
 }
 
-static int _queue_stage_out(struct job_record *job_ptr)
+static int _queue_stage_out(bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
 	char **post_run_argv, **data_out_argv;
 	stage_args_t *stage_args;
-	int hash_inx = job_ptr->job_id % 10, rc = SLURM_SUCCESS;
+	int hash_inx = bb_job->job_id % 10, rc = SLURM_SUCCESS;
 	pthread_attr_t stage_attr;
 	pthread_t stage_tid = 0;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
-	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, bb_job->job_id);
 
 	data_out_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	data_out_argv[0] = xstrdup("dw_wlm_cli");
 	data_out_argv[1] = xstrdup("--function");
 	data_out_argv[2] = xstrdup("data_out");
 	data_out_argv[3] = xstrdup("--token");
-	xstrfmtcat(data_out_argv[4], "%u", job_ptr->job_id);
+	xstrfmtcat(data_out_argv[4], "%u", bb_job->job_id);
 	data_out_argv[5] = xstrdup("--job");
 	xstrfmtcat(data_out_argv[6], "%s/script", job_dir);
 
@@ -1626,16 +1486,16 @@ static int _queue_stage_out(struct job_record *job_ptr)
 	post_run_argv[1] = xstrdup("--function");
 	post_run_argv[2] = xstrdup("post_run");
 	post_run_argv[3] = xstrdup("--token");
-	xstrfmtcat(post_run_argv[4], "%u", job_ptr->job_id);
+	xstrfmtcat(post_run_argv[4], "%u", bb_job->job_id);
 	post_run_argv[5] = xstrdup("--job");
 	xstrfmtcat(post_run_argv[6], "%s/script", job_dir);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
 	stage_args->args1   = data_out_argv;
 	stage_args->args2   = post_run_argv;
-	stage_args->job_id  = job_ptr->job_id;
+	stage_args->job_id  = bb_job->job_id;
 	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
-	stage_args->user_id = job_ptr->user_id;
+	stage_args->user_id = bb_job->user_id;
 
 	slurm_attr_init(&stage_attr);
 	if (pthread_attr_setdetachstate(&stage_attr, PTHREAD_CREATE_DETACHED))
@@ -1737,8 +1597,8 @@ static void *_start_stage_out(void *x)
 		if (bb_alloc) {
 			if (rc == SLURM_SUCCESS) {
 				if (bb_state.bb_config.debug_flag) {
-					info("%s: Stage-out complete for "
-					     "job %u",
+					info("%s: Stage-out/post-run complete "
+					     "for job %u",
 					     __func__, stage_args->job_id);
 				}
 				/* bb_alloc->state = BB_STATE_STAGED_OUT; */
@@ -1759,7 +1619,7 @@ static void *_start_stage_out(void *x)
 				}
 			}
 			bb_state.last_update_time = time(NULL);
-		} else {
+		} else if (bb_job && bb_job->total_size) {
 			error("%s: unable to find bb record for job %u",
 			      __func__, stage_args->job_id);
 		}
@@ -3411,12 +3271,9 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		/* No job buffers. Assuming use of persistent buffers only */
 		verbose("%s: %s bb job record not found", __func__,
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-	} else if (bb_job->total_size == 0) {
-		bb_job->state = BB_STATE_TEARDOWN;
-		_queue_teardown(job_ptr->job_id, job_ptr->user_id, false);
 	} else if (bb_job->state < BB_STATE_STAGING_OUT) {
 		bb_job->state = BB_STATE_STAGING_OUT;
-		_queue_stage_out(job_ptr);
+		_queue_stage_out(bb_job);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -3806,8 +3663,8 @@ static void *_create_persistent(void *x)
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: ran for %s", __func__, TIME_STR);
+	info("create_persistent of %s ran for %s",
+	     create_args->name, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: For JobID=%u Name=%s status:%u response:%s",
 		      __func__, create_args->job_id, create_args->name,
@@ -3948,8 +3805,8 @@ static void *_destroy_persistent(void *x)
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	END_TIMER;
-	if (bb_state.bb_config.debug_flag)
-		debug("%s: destroy_persistent ran for %s", __func__, TIME_STR);
+	info("destroy_persistent of %s ran for %s",
+	     destroy_args->name, TIME_STR);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: destroy_persistent for JobID=%u Name=%s "
 		      "status:%u response:%s",
