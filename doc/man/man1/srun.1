@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "November 2015" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -138,6 +138,16 @@ Also see \fB\-\-bbf\fR.
 Path of file containing burst buffer specification.
 The form of the specification is system dependent.
 Also see \fB\-\-bb\fR.
+
+.TP
+\fB\-\-bcast\fR[=<\fIdest_path\fR>]
+Copy executable file to allocated compute nodes.
+If a file name is specified, copy the executable to the specified destination
+file path. If no path is specified, copy the file to a file named
+"slurm_bcast_<job_id>.<step_id>" in the current working.
+For example, "srun \-\-bcast=/tmp/mine -N3 a.out" will copy the file "a.out"
+from your current directory to the file "/tmp/mine" on each of the three
+allocated compute nodes and execute that file.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -2125,6 +2135,9 @@ Same as \fB\-A, \-\-account\fR
 .TP
 \fBSLURM_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR
+.TP
+\fBSLURM_BCAST\fR
+Same as \fB\-\-bcast\fR
 .TP
 \fBSLURM_BLRTS_IMAGE\fR
 Same as \fB\-\-blrts\-image\fR

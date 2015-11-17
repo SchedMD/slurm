@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     and the job finishes.
  -- burst_buffer/cray: Support file staging when job lacks job-specific buffer
     (i.e. only persistent burst buffers).
+ -- Added srun option of --bcast to copy executable file to compute nodes.
 
 * Changes in Slurm 15.08.4
 ==========================

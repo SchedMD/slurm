@@ -149,15 +149,15 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
-	assoc_mgr.c assoc_mgr.h xmalloc.c xmalloc.h xassert.c \
-	xassert.h xstring.c xstring.h xsignal.c xsignal.h strnatcmp.c \
-	strnatcmp.h forward.c forward.h msg_aggr.c msg_aggr.h \
-	strlcpy.c strlcpy.h list.c list.h xtree.c xtree.h xhash.c \
-	xhash.h net.c net.h log.c log.h cbuf.c cbuf.h safeopen.c \
-	safeopen.h bitstring.c bitstring.h mpi.c slurm_mpi.h pack.c \
-	pack.h parse_config.c parse_config.h parse_value.c \
-	parse_value.h parse_spec.c parse_spec.h plugin.c plugin.h \
-	plugrack.c plugrack.h power.c power.h print_fields.c \
+	assoc_mgr.c assoc_mgr.h file_bcast.c file_bcast.h xmalloc.c \
+	xmalloc.h xassert.c xassert.h xstring.c xstring.h xsignal.c \
+	xsignal.h strnatcmp.c strnatcmp.h forward.c forward.h \
+	msg_aggr.c msg_aggr.h strlcpy.c strlcpy.h list.c list.h \
+	xtree.c xtree.h xhash.c xhash.h net.c net.h log.c log.h cbuf.c \
+	cbuf.h safeopen.c safeopen.h bitstring.c bitstring.h mpi.c \
+	slurm_mpi.h pack.c pack.h parse_config.c parse_config.h \
+	parse_value.c parse_value.h parse_spec.c parse_spec.h plugin.c \
+	plugin.h plugrack.c plugrack.h power.c power.h print_fields.c \
 	print_fields.h read_config.c read_config.h node_select.c \
 	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
 	slurm_errno.c slurm_ext_sensors.c slurm_ext_sensors.h \
@@ -196,10 +196,10 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	xcgroup_read_config.c xcgroup_read_config.h callerid.c \
 	callerid.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
-am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
-	xassert.lo xstring.lo xsignal.lo strnatcmp.lo forward.lo \
-	msg_aggr.lo strlcpy.lo list.lo xtree.lo xhash.lo net.lo log.lo \
-	cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
+am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo file_bcast.lo \
+	xmalloc.lo xassert.lo xstring.lo xsignal.lo strnatcmp.lo \
+	forward.lo msg_aggr.lo strlcpy.lo list.lo xtree.lo xhash.lo \
+	net.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
 	parse_config.lo parse_value.lo parse_spec.lo plugin.lo \
 	plugrack.lo power.lo print_fields.lo read_config.lo \
 	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
@@ -581,6 +581,7 @@ noinst_LTLIBRARIES = \
 libcommon_la_SOURCES = \
 	cpu_frequency.c cpu_frequency.h \
 	assoc_mgr.c assoc_mgr.h 	\
+	file_bcast.c file_bcast.h	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
@@ -798,6 +799,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/entity.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_bcast.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@

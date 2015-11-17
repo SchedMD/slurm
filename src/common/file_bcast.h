@@ -1,11 +1,7 @@
 /****************************************************************************\
- *  sbcast.h - definitions used for sbcast data functions
+ *  file_bcast.h - definitions used for file broadcast functions
  *****************************************************************************
- *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2015 SchedMD LLC.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
@@ -37,20 +33,31 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
 
-#ifndef _SBCAST_H
-#define _SBCAST_H
+#ifndef _FILE_BCAST_H
+#define _FILE_BCAST_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
 #include "slurm/slurm.h"
-#include "src/common/file_bcast.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
 
-extern struct bcast_parameters params;
+struct bcast_parameters {
+	uint32_t block_size;
+	bool compress;
+	int  fanout;
+	bool force;
+	uint32_t job_id;
+	uint32_t step_id;
+	bool preserve;
+	int  timeout;
+	int  verbose;
+	char *src_fname;
+	char *dst_fname;
+};
 
-extern void parse_command_line(int argc, char *argv[]);
+extern int bcast_file(struct bcast_parameters *params);
 
 #endif
