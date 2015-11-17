@@ -290,6 +290,10 @@ int _slurm_cgroup_destroy(void)
 	_move_current_to_root_cgroup(&freezer_ns);
 
 	if (jobstep_cgroup_path[0] != '\0') {
+
+		if (strstr(jobstep_cgroup_path, "step_extern"))
+			kill_extern_procs(step_freezer_cg.path);
+
 		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
 			debug("_slurm_cgroup_destroy: problem deleting step cgroup path %s: %m",
 			      step_freezer_cg.path);

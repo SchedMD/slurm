@@ -1034,10 +1034,15 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 	acct_gather_profile_g_task_end(pid);
 	step_complete.rank = job->nodeid;
-
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
 	acct_gather_profile_fini();
+	/* Call the other plugins to clean up
+	 * the cgroup hierarchy.
+	 */
+	task_g_post_step(job);
+	slurm_proctrack_fini();
+
 	_send_step_complete_msgs(job);
 
 	return SLURM_SUCCESS;

@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Backfill scheduler: Test association and QOS node limits before reserving
     resources for pending job.
  -- burst_buffer/cray: If teardown operations fails, sleep and retry.
+ -- Clean up the external pids when using the PrologFlags=Contain feature
+    and the job finishes.
 
 * Changes in Slurm 15.08.4
 ==========================

@@ -142,6 +142,9 @@ jobacct_gather_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 			memory_ns.mnt_point, jobstep_cgroup_path, cc);
 		cgroup.path = buf;
 
+		if (strstr(buf, "step_extern"))
+			kill_extern_procs(cgroup.path);
+
 		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
 			debug2("%s: failed to delete %s %m", __func__, buf);
 		}
