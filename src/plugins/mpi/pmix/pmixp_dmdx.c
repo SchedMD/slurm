@@ -259,6 +259,18 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	/* store cur seq. num and move to the next request */
 	seq = _dmdx_seq_num++;
 
+	/* track this request */
+	req = xmalloc(sizeof(dmdx_req_info_t));
+	req->seq_num = seq;
+	req->cbfunc = cbfunc;
+	req->cbdata = cbdata;
+	req->ts = time(NULL);
+#ifndef NDEBUG
+	strncpy(req->nspace, nspace, PMIX_MAX_NSLEN);
+	req->rank = rank;
+#endif
+	list_append(_dmdx_requests, req);
+
 	/* send the request */
 	rc = pmixp_server_send(host, PMIXP_MSG_DMDX, seq, addr,
 			get_buf_data(buf), get_buf_offset(buf));
@@ -274,17 +286,6 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 		return SLURM_ERROR;
 	}
 
-	/* track this request */
-	req = xmalloc(sizeof(dmdx_req_info_t));
-	req->seq_num = seq;
-	req->cbfunc = cbfunc;
-	req->cbdata = cbdata;
-	req->ts = time(NULL);
-#ifndef NDEBUG
-	strncpy(req->nspace, nspace, PMIX_MAX_NSLEN);
-	req->rank = rank;
-#endif
-	list_append(_dmdx_requests, req);
 	return rc;
 }
 
