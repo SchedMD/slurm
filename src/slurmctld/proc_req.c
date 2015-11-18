@@ -1320,13 +1320,13 @@ static void _slurm_rpc_dump_sicp(slurm_msg_t * msg)
 	/* Locks: Read config job, write partition (for hiding) */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SICP_INFO from uid=%d", uid);
 	lock_slurmctld(job_read_lock);
 	pack_all_sicp(&dump, &dump_size,
-		      g_slurm_auth_get_uid(msg->auth_cred, NULL),
+		      g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info()),
 		      msg->protocol_version);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_sicp");
@@ -3709,7 +3709,7 @@ static void _slurm_rpc_update_layout(slurm_msg_t * msg)
 	int shrink_size;
 
 	/* Locks: Write job and write node */
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_LAYOUT from uid=%d", uid);
@@ -3804,7 +3804,7 @@ static void _slurm_rpc_update_powercap(slurm_msg_t * msg)
 	/* Locks: write configuration, read node */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_POWERCAP from uid=%d", uid);
@@ -4306,7 +4306,7 @@ static void  _slurm_rpc_block_info(slurm_msg_t * msg)
 /* get node select info plugin */
 static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 {
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 	void *resp_buffer = NULL;
 	int resp_buffer_size = 0;
 	int error_code = SLURM_SUCCESS;
@@ -5824,7 +5824,7 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg)
 	char *dump = NULL;
 	int dump_size = 0;
 	slurm_msg_t response_msg;
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 
 	START_TIMER;
 	debug2("%s: Processing RPC: REQUEST_ASSOC_MGR_INFO uid=%d",
