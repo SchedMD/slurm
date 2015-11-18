@@ -129,13 +129,21 @@ static int _get_job_info(struct bcast_parameters *params)
 
 	rc = slurm_sbcast_lookup(params->job_id, params->step_id, &sbcast_cred);
 	if (rc != SLURM_SUCCESS) {
-		error("Slurm step ID %u.%u lookup error: %s",
-		      params->job_id, params->step_id,
-		      slurm_strerror(slurm_get_errno()));
+		if (params->step_id == NO_VAL) {
+			error("Slurm job ID %u lookup error: %s",
+			      params->job_id,
+			      slurm_strerror(slurm_get_errno()));
+		} else {
+			error("Slurm step ID %u.%u lookup error: %s",
+			      params->job_id, params->step_id,
+			      slurm_strerror(slurm_get_errno()));
+		}
 		return rc;
 	}
-
-	verbose("jobid      = %u.%u", params->job_id, params->step_id);
+	if (params->step_id == NO_VAL)
+		verbose("jobid      = %u", params->job_id);
+	else
+		verbose("stepid     = %u.%u", params->job_id, params->step_id);
 	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
 	verbose("node_list  = %s", sbcast_cred->node_list);
 	/* also see sbcast_cred->node_addr (array) */
