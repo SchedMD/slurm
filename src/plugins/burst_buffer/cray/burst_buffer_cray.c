@@ -2374,6 +2374,18 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	int pc, last_pc = 0;
+
+	bb_shutdown();
+	while ((pc = bb_proc_count()) > 0) {
+		if ((last_pc != 0) && (last_pc != pc)) {
+			info("%s: waiting for %d running processes",
+			     plugin_type, pc);
+		}
+		last_pc = pc;
+		usleep(100000);
+	}
+
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);

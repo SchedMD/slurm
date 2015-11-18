@@ -321,6 +321,9 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
 
+/* Return count of child processes */
+extern int bb_proc_count(void);
+
 /* Remove persistent burst buffer reservation for this job.
  * Call when job starts running or removed from pending state. */
 extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id);
@@ -332,6 +335,9 @@ extern void bb_set_tres_pos(bb_state_t *state_ptr);
 /* For each burst buffer record, set the use_time to the time at which its
  * use is expected to begin (i.e. each job's expected start time) */
 extern void bb_set_use_time(bb_state_t *state_ptr);
+
+/* Terminate any child processes */
+extern void bb_shutdown(void);
 
 /* Sleep function, also handles termination signal */
 extern void bb_sleep(bb_state_t *state_ptr, int add_secs);

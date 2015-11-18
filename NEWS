@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     (i.e. only persistent burst buffers).
  -- Added srun option of --bcast to copy executable file to compute nodes.
  -- Fix for advanced reservation of burst buffer space.
+ -- BurstBuffer/cray: Add logic to terminate dw_wlm_cli child processes at
+    shutdown.
 
 * Changes in Slurm 15.08.4
 ==========================
