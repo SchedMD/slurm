@@ -1349,8 +1349,8 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 	int i;
 
 	if (bb_job) {
-		xstrfmtcat(out_buf, "%s: Job:%u ",
-			   state_ptr->name, bb_job->job_id);
+		xstrfmtcat(out_buf, "%s: Job:%u UserID:%u ",
+			   state_ptr->name, bb_job->job_id, bb_job->user_id);
 		for (i = 0; i < bb_job->gres_cnt; i++) {
 			xstrfmtcat(out_buf, "Gres[%d]:%s:%"PRIu64" ",
 				   i, bb_job->gres_ptr[i].name,

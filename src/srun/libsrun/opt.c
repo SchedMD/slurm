@@ -127,6 +127,7 @@
 #define OPT_CORE_SPEC   0x1a
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
+#define OPT_BCAST       0x1e
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -135,6 +136,7 @@
 #define LONG_OPT_HELP        0x100
 #define LONG_OPT_USAGE       0x101
 #define LONG_OPT_XTO         0x102
+#define LONG_OPT_BCAST       0x103
 #define LONG_OPT_TIMEO       0x104
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
@@ -459,6 +461,8 @@ static void _opt_default(void)
 	opt.shared = (uint16_t)NO_VAL;
 	opt.exclusive = false;
 	opt.export_env = NULL;
+	opt.bcast_flag = false;
+	opt.bcast_file = NULL;
 	opt.no_kill = false;
 	opt.kill_bad_exit = NO_VAL;
 
@@ -568,6 +572,7 @@ env_vars_t env_vars[] = {
 {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL             },
 {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
+{"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
@@ -767,6 +772,14 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.export_env = xstrdup(val);
 		break;
 
+	case OPT_BCAST:
+		if (val) {
+			xfree(opt.bcast_file);
+			opt.bcast_file = xstrdup(val);
+		}
+		opt.bcast_flag = true;
+		break;
+
 	case OPT_RESV_PORTS:
 		if (val)
 			opt.resv_port_cnt = strtol(val, NULL, 10);
@@ -906,6 +919,7 @@ static void _set_options(const int argc, char **argv)
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
+		{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 		{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -1253,6 +1267,13 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.export_env);
 			opt.export_env = xstrdup(optarg);
 			break;
+                case LONG_OPT_BCAST:
+			if (optarg) {
+				xfree(opt.bcast_file);
+				opt.bcast_file = xstrdup(optarg);
+			}
+			opt.bcast_flag = true;
+                        break;
                 case LONG_OPT_CPU_BIND:
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
@@ -1848,9 +1869,9 @@ static void _opt_args(int argc, char **argv)
 	}
 #else
 	(void) launch_g_handle_multi_prog_verify(command_pos);
-	if (test_exec) {
+	if (test_exec || opt.bcast_flag) {
 		if ((fullpath = search_path(opt.cwd, opt.argv[command_pos],
-					    false, X_OK, test_exec))) {
+					    false, X_OK, true))) {
 			xfree(opt.argv[command_pos]);
 			opt.argv[command_pos] = fullpath;
 		} else {
@@ -2473,6 +2494,10 @@ static void _opt_list(void)
 	if (opt.gres)
 		info("gres           : %s", opt.gres);
 	info("exclusive      : %s", tf_(opt.exclusive));
+	if (opt.bcast_file)
+		info("bcast          : %s", opt.bcast_file);
+	else
+		info("bcast          : %s", tf_(opt.bcast_flag));
 	info("qos            : %s", opt.qos);
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("shared         : %u", opt.shared);
@@ -2637,7 +2662,7 @@ static void _usage(void)
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"            [--acctg-freq=<datatype>=<interval>\n"
+"            [--acctg-freq=<datatype>=<interval>} [--bcast=<dest_path>]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 
 }
@@ -2657,6 +2682,7 @@ static void _help(void)
 "                              network=<interval> filesystem=<interval>\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
+"      --bcast=<dest_path>     Copy executable file to compute nodes\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"

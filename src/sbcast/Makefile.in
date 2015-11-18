@@ -150,7 +150,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sbcast_OBJECTS = agent.$(OBJEXT) sbcast.$(OBJEXT) opts.$(OBJEXT)
+am_sbcast_OBJECTS = sbcast.$(OBJEXT) opts.$(OBJEXT)
 sbcast_OBJECTS = $(am_sbcast_OBJECTS)
 am__DEPENDENCIES_1 =
 sbcast_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
@@ -475,7 +475,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 sbcast_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 noinst_HEADERS = sbcast.h
-sbcast_SOURCES = agent.c sbcast.c opts.c
+sbcast_SOURCES = sbcast.c opts.c
 sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
@@ -570,7 +570,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sbcast.Po@am__quote@
 

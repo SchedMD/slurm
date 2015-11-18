@@ -51,6 +51,7 @@
 #include <sys/stat.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/file_bcast.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -65,17 +66,11 @@
 #include "src/common/xstring.h"
 
 /* global variables */
-int fd;					/* source file descriptor */
-struct sbcast_parameters params;	/* program parameters */
-struct stat f_stat;			/* source file stats */
-job_sbcast_cred_msg_t *sbcast_cred;	/* job alloc info and sbcast cred */
-
-static void _bcast_file(void);
-static void _get_job_info(void);
-
+struct bcast_parameters params;	/* program parameters */
 
 int main(int argc, char *argv[])
 {
+	int rc;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
@@ -94,152 +89,6 @@ int main(int argc, char *argv[])
 		log_alter(opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
-	/* validate the source file */
-	if ((fd = open(params.src_fname, O_RDONLY)) < 0) {
-		error("Can't open `%s`: %s", params.src_fname,
-			strerror(errno));
-		exit(1);
-	}
-	if (fstat(fd, &f_stat)) {
-		error("Can't stat `%s`: %s", params.src_fname,
-			strerror(errno));
-		exit(1);
-	}
-	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
-	verbose("uid      = %d", (int) f_stat.st_uid);
-	verbose("gid      = %d", (int) f_stat.st_gid);
-	verbose("atime    = %s", slurm_ctime2(&f_stat.st_atime));
-	verbose("mtime    = %s", slurm_ctime2(&f_stat.st_mtime));
-	verbose("ctime    = %s", slurm_ctime2(&f_stat.st_ctime));
-	verbose("size     = %ld", (long) f_stat.st_size);
-	verbose("-----------------------------");
-
-	/* identify the nodes allocated to the job */
-	_get_job_info();
-
-	/* transmit the file */
-	_bcast_file();
-/*	slurm_free_sbcast_cred_msg(sbcast_cred); */
-
-	exit(0);
-}
-
-/* get details about this slurm job: jobid and allocated node */
-static void _get_job_info(void)
-{
-	xassert(params.job_id != NO_VAL);
-
-	if (slurm_sbcast_lookup(params.job_id, params.step_id, &sbcast_cred)
-	    != SLURM_SUCCESS) {
-		if (params.step_id == NO_VAL) {
-			error("Slurm job ID %u lookup error: %s",
-			      params.job_id, slurm_strerror(slurm_get_errno()));
-		} else {
-			error("Slurm step ID %u.%u lookup error: %s",
-			      params.job_id, params.step_id,
-			      slurm_strerror(slurm_get_errno()));
-		}
-		exit(1);
-	}
-
-	if (params.step_id == NO_VAL)
-		verbose("jobid      = %u", params.job_id);
-	else
-		verbose("jobid      = %u.%u", params.job_id, params.step_id);
-	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
-	verbose("node_list  = %s", sbcast_cred->node_list);
-	/* also see sbcast_cred->node_addr (array) */
-
-	if (params.verbose)
-		print_sbcast_cred(sbcast_cred->sbcast_cred);
-
-	/* do not bother to release the return message,
-	 * we need to preserve and use most of the information later */
-}
-
-/* load a buffer with data from the file to broadcast,
- * return number of bytes read, zero on end of file */
-static ssize_t _get_block(char *buffer, size_t buf_size)
-{
-	static int fd = 0;
-	ssize_t buf_used = 0, rc;
-
-	if (!fd) {
-		fd = open(params.src_fname, O_RDONLY);
-		if (!fd) {
-			error("Can't open `%s`: %s",
-			      params.src_fname, strerror(errno));
-			exit(1);
-		}
-	}
-
-	while (buf_size) {
-		rc = read(fd, buffer, buf_size);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("Can't read `%s`: %s",
-			      params.src_fname, strerror(errno));
-			exit(1);
-		} else if (rc == 0) {
-			debug("end of file reached");
-			break;
-		}
-
-		buffer   += rc;
-		buf_size -= rc;
-		buf_used += rc;
-	}
-	return buf_used;
-}
-
-/* read and broadcast the file */
-static void _bcast_file(void)
-{
-	int buf_size;
-	ssize_t size_read = 0;
-	file_bcast_msg_t bcast_msg;
-	char *buffer;
-
-	if (params.block_size)
-		buf_size = MIN(params.block_size, f_stat.st_size);
-	else
-		buf_size = MIN((8 * 1024 * 1024), f_stat.st_size);
-
-	bcast_msg.fname		= params.dst_fname;
-	bcast_msg.block_no	= 1;
-	bcast_msg.last_block	= 0;
-	bcast_msg.force		= params.force;
-	bcast_msg.modes		= f_stat.st_mode;
-	bcast_msg.uid		= f_stat.st_uid;
-	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
-	bcast_msg.gid		= f_stat.st_gid;
-	buffer			= xmalloc(buf_size);
-	bcast_msg.block		= buffer;
-	bcast_msg.block_len	= 0;
-	bcast_msg.cred          = sbcast_cred->sbcast_cred;
-
-	if (params.preserve) {
-		bcast_msg.atime     = f_stat.st_atime;
-		bcast_msg.mtime     = f_stat.st_mtime;
-	} else {
-		bcast_msg.atime     = 0;
-		bcast_msg.mtime     = 0;
-	}
-
-	while (1) {
-		bcast_msg.block_len = _get_block(buffer, buf_size);
-		debug("block %d, size %u", bcast_msg.block_no,
-		      bcast_msg.block_len);
-		size_read += bcast_msg.block_len;
-		if (size_read >= f_stat.st_size)
-			bcast_msg.last_block = 1;
-
-		send_rpc(&bcast_msg, sbcast_cred);
-		if (bcast_msg.last_block)
-			break;	/* end of file */
-		bcast_msg.block_no++;
-	}
-	xfree(bcast_msg.user_name);
-	xfree(buffer);
+	rc = bcast_file(&params);
+	return rc;
 }

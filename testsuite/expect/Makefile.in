@@ -534,6 +534,7 @@ EXTRA_DIST = \
 	test1.97			\
 	test1.99			\
 	test1.100			\
+	test1.101			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
@@ -608,6 +609,7 @@ EXTRA_DIST = \
 	test5.8				\
 	test5.9				\
 	test5.10			\
+	test5.11			\
 	test6.1				\
 	test6.2				\
 	test6.3				\

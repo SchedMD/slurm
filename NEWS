@@ -42,6 +42,19 @@ documents those changes that are of interest to users and administrators.
     into a line. Required for decent perforamnce with huge scripts.
  -- Add debug flag for timing Cray portions of the code.
 
+* Changes in Slurm 15.08.5
+==========================
+ -- Prevent "scontrol update job" from updating jobs that have already finished.
+ -- Show requested TRES in "squeue -O tres" when job is pending.
+ -- Backfill scheduler: Test association and QOS node limits before reserving
+    resources for pending job.
+ -- burst_buffer/cray: If teardown operations fails, sleep and retry.
+ -- Clean up the external pids when using the PrologFlags=Contain feature
+    and the job finishes.
+ -- burst_buffer/cray: Support file staging when job lacks job-specific buffer
+    (i.e. only persistent burst buffers).
+ -- Added srun option of --bcast to copy executable file to compute nodes.
+
 * Changes in Slurm 15.08.4
 ==========================
  -- Fix typo for the "devices" cgroup subsystem in pam_slurm_adopt.c
@@ -74,6 +87,8 @@ documents those changes that are of interest to users and administrators.
  -- Add REQUEST_ADD_EXTERN_PID option to add pid to the slurmstepd's extern
     step.
  -- Add unique identifiers to anchor tags in HTML generated from the man pages.
+ -- Add with_freeipmi option to spec file.
+ -- Minor elasticsearch code improvements
 
 * Changes in Slurm 15.08.3
 ==========================

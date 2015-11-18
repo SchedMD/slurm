@@ -72,6 +72,7 @@
 #include <grp.h>
 
 #include "src/common/fd.h"
+#include "src/common/file_bcast.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -131,6 +132,7 @@ int sig_array[] = {
 /*
  * forward declaration of static funcs
  */
+static int   _file_bcast(void);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _set_node_alias(void);
@@ -192,6 +194,8 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
+	if (opt.bcast_flag)
+		_file_bcast();
 	if (opt.cpus_set)
 		env->cpus_per_task = opt.cpus_per_task;
 	if (opt.ntasks_per_node != NO_VAL)
@@ -286,6 +290,45 @@ relaunch:
 	fini_srun(job, got_alloc, &global_rc, 0);
 
 	return (int)global_rc;
+}
+
+static int _file_bcast(void)
+{
+	struct bcast_parameters *params;
+	int rc;
+
+	if ((opt.argc == 0) || (opt.argv[0] == NULL)) {
+		error("No command name to broadcast");
+		return SLURM_ERROR;
+	}
+	params = xmalloc(sizeof(struct bcast_parameters));
+	params->block_size = 8 * 1024 * 1024;
+	params->compress = 0;
+	if (opt.bcast_file) {
+		params->dst_fname = xstrdup(opt.bcast_file);
+	} else {
+		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
+			   opt.cwd, job->jobid, job->stepid);
+	}
+	params->fanout = 0;
+	params->job_id = job->jobid;
+	params->force = true;
+	params->preserve = true;
+	params->src_fname = opt.argv[0];
+	params->step_id = job->stepid;
+	params->timeout = 0;
+	params->verbose = 0;
+
+	rc = bcast_file(params);
+	if (rc == SLURM_SUCCESS) {
+		xfree(opt.argv[0]);
+		opt.argv[0] = params->dst_fname;
+	} else {
+		xfree(params->dst_fname);
+	}
+	xfree(params);
+
+	return rc;
 }
 
 static int _slurm_debug_env_val (void)

@@ -9647,6 +9647,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
+	if (IS_JOB_FINISHED(job_ptr)) {
+		error_code = ESLURM_JOB_FINISHED;
+		goto fini;
+	}
 
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
@@ -13380,7 +13384,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 #endif
 
 	/* validate the request */
-	if ((uid != 0) && (uid != getuid())) {
+	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
 		      (int) uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -13457,7 +13461,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 
 	/* validate the request */
-	if ((uid != 0) && (uid != getuid())) {
+	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
 		      (int) uid);
 		rc = ESLURM_ACCESS_DENIED;

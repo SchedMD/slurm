@@ -193,7 +193,7 @@ _xlate_state_name(const char *state_name, bool env_var)
 {
 	uint32_t i = job_state_num(state_name);
 
-	if (i >= 0)
+	if (i != NO_VAL)
 		return i;
 
 	if (env_var) {

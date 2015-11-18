@@ -2364,7 +2364,9 @@ nodes that are in use.
 This will tend to leave currently idle resources available for backfilling
 longer running jobs, but may result in allocations having less than optimal
 network topology.
-This option is currently only supported by the select/cons_res plugin.
+This option is currently only supported by the select/cons_res plugin
+(or select/cray with SelectTypeParameters set to "OTHER_CONS_RES",
+which layers the select/cray plugin over the select/cons_res plugin).
 .TP
 \fBbf_continue\fR
 The backfill scheduler periodically releases locks in order to permit other
