@@ -125,6 +125,7 @@ EXTRA_DIST = \
 	test1.97			\
 	test1.99			\
 	test1.100			\
+	test1.101			\
 	test2.1				\
 	test2.2				\
 	test2.3				\

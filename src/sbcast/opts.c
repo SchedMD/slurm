@@ -55,8 +55,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "src/common/xstring.h"
+#include "src/common/file_bcast.h"
 #include "src/common/proc_args.h"
+#include "src/common/xstring.h"
 
 #include "src/sbcast/sbcast.h"
 

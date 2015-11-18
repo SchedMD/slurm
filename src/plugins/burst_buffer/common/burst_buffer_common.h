@@ -151,7 +151,7 @@ typedef struct {
  * burst_buffer string field */
 #define BB_JOB_MAGIC		0xDEAD3412
 typedef struct bb_job {
-	char      *account;	 /* Associated account (for limits) */
+	char      *account;	/* Associated account (for limits) */
 	uint32_t   buf_cnt;	/* Number of records in buf_ptr */
 	bb_buf_t  *buf_ptr;	/* Buffer creation records */
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
@@ -168,6 +168,7 @@ typedef struct bb_job {
 	uint32_t   swap_nodes;	/* Number of nodes needed */
 	uint64_t   total_size;	/* Total bytes required for job (excludes
 				 * persistent buffers) */
+	uint32_t user_id;	/* user the job runs as */
 } bb_job_t;
 
 /* Persistent buffer requests which are pending */
