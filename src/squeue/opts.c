@@ -481,7 +481,7 @@ _parse_state( char* str, uint32_t* states )
 	uint32_t i;
 	char *state_names;
 
-	if ((i = job_state_num(str)) >= 0) {
+	if ((i = job_state_num(str)) != NO_VAL) {
 		*states = i;
 		return SLURM_SUCCESS;
 	}
