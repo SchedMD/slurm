@@ -800,12 +800,12 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 #ifndef SLURMSTEPD_MEMCHECK
 		i = read(to_slurmd[0], &rc, sizeof(int));
 		if (i < 0) {
-			error("\
-%s: Can not read return code from slurmstepd got %d: %m", __func__, i);
+			error("%s: Can not read return code from slurmstepd "
+			      "got %d: %m", __func__, i);
 			rc = SLURM_FAILURE;
 		} else if (i != sizeof(int)) {
-			error("\
-%s: slurmstepd failed to send return code got %d: %m", __func__, i);
+			error("%s: slurmstepd failed to send return code "
+			      "got %d: %m", __func__, i);
 			rc = SLURM_FAILURE;
 		} else {
 			int delta_time = time(NULL) - start_time;
@@ -814,6 +814,8 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 				     "possible file system problem or full "
 				     "memory", delta_time);
 			}
+			if (rc != SLURM_SUCCESS)
+				error("slurmstepd return code %d", rc);
 		}
 #endif
 	done:
