@@ -816,9 +816,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		else if ((last[0] == 'g') || (last[0] == 'G'))
 			tmp_uint64 *= (1024 * 1024 * 1024);
 		else if ((last[0] == 't') || (last[0] == 'T'))
-			tmp_uint64 *= (uint64_t)pow(1024, 4);
+			tmp_uint64 *= (1024 * 1024 * 1024 * 1024);
 		else if ((last[0] == 'p') || (last[0] == 'P'))
-			tmp_uint64 *= (uint64_t)pow(1024, 5);
+			tmp_uint64 *= (1024 * 1024 * 1024 * 1024 * 1024);
 		else if (last[0] != '\0') {
 			fatal("Invalid gres data for %s, Count=%s", p->name,
 			      tmp_str);
@@ -1507,9 +1507,9 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
 				tmp_gres_cnt *= (1024 * 1024 * 1024);
 			else if ((last_num[0] == 't') || (last_num[0] == 'T'))
-				tmp_gres_cnt *= (uint64_t)pow(1024, 4);
+				tmp_gres_cnt *= (1024 * 1024 * 1024 * 1024);
 			else if ((last_num[0] == 'p') || (last_num[0] == 'P'))
-				tmp_gres_cnt *= (uint64_t)pow(1024, 5);
+				tmp_gres_cnt *= (1024 * 1024 * 1024 * 1024 * 1024);
 			else {
 				error("Bad GRES configuration: %s", tok);
 				break;
