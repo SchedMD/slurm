@@ -9027,16 +9027,16 @@ void purge_old_job(void)
 			if (job_ptr->bit_flags & KILL_INV_DEP) {
 				_kill_dependent(job_ptr);
 			} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-				debug("\
-%s: %s job dependency condition never satisfied", __func__,
+				debug("%s: %s job dependency never satisfied",
+				      __func__,
 				      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 				job_ptr->state_reason = WAIT_DEP_INVALID;
 				xfree(job_ptr->state_desc);
 			} else if (kill_invalid_dep) {
 				_kill_dependent(job_ptr);
 			} else {
-				debug("\
-%s: %s dependency condition never satisfied", __func__,
+				debug("%s: %s job dependency never satisfied",
+				      __func__,
 				      jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 				job_ptr->state_reason = WAIT_DEP_INVALID;
 				xfree(job_ptr->state_desc);
@@ -12825,14 +12825,14 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 		if (job_ptr->bit_flags & KILL_INV_DEP) {
 			_kill_dependent(job_ptr);
 		} else if (job_ptr->bit_flags & NO_KILL_INV_DEP) {
-			debug("%s: %s job dependency condition never satisfied",
+			debug("%s: %s job dependency never satisfied",
 			      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 			job_ptr->state_reason = WAIT_DEP_INVALID;
 			xfree(job_ptr->state_desc);
 		} else if (kill_invalid_dep) {
 			_kill_dependent(job_ptr);
 		} else {
-			debug("%s: %s dependency condition never satisfied",
+			debug("%s: %s job dependency never satisfied",
 			      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
 			job_ptr->state_reason = WAIT_DEP_INVALID;
 			xfree(job_ptr->state_desc);
