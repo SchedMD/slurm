@@ -1856,7 +1856,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
 		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
-			if (xstrcmp(resv_bb_ptr->name, bb_state.name))
+			if (resv_bb_ptr->name &&
+			    xstrcmp(resv_bb_ptr->name, bb_state.name))
 				continue;
 			resv_bb_ptr->used_space =
 				bb_granularity(resv_bb_ptr->used_space,
