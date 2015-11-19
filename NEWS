@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- If job can't be launch or requeued, then terminate it.
  -- BurstBuffer/cray: Enable clearing of burst buffer string on completed job
     as a means of recovering from a failure mode.
+ -- Fix wrong memory free when parsing SrunPortRange=0-0 configuration.
 
 * Changes in Slurm 15.08.4
 ==========================
