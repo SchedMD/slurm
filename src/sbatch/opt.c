@@ -3076,7 +3076,7 @@ static void _help(void)
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -W, --wait                  wait for completion of submitted job\n"
 "      --wckey=wckey           wckey to run job under\n"
-"      --wrap[=command string] wrap commmand string in a sh script and submit\n"
+"      --wrap[=command string] wrap command string in a sh script and submit\n"
 
 "\n"
 "Constraint options:\n"

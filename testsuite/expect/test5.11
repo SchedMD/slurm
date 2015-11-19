@@ -143,9 +143,11 @@ expect {
 	}
 }
 
+set node_cnt 0
 spawn $bin_bash -c "$scontrol show nodes $node_list | grep CPUTot"
 expect {
 	-re "CPUTot=($number)" {
+		incr node_cnt
 		if { $expect_out(1,string) > $highest_cpu_cnt } {
 			set highest_cpu_cnt $expect_out(1,string)
 		}
@@ -160,31 +162,30 @@ expect {
 	}
 }
 
-# Choose a cpu count greater then highest cpu node (job should use 2 nodes)
-set cpu_test_cnt [expr $highest_cpu_cnt + 1]
-
-# Submit a job to the default partition
-sub_job $cpu_test_cnt $default_part
-
-set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
-check_node_cnt $exp_nodes
-cancel_job $job_id
-
-# Choose a cpu count greater then highest cpu node (job should use 1 node)
+# Choose a CPU count equal to the highest CPU node (job should use 1 node)
 set cpu_test_cnt $highest_cpu_cnt
 sub_job $cpu_test_cnt $default_part
-
 set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
 check_node_cnt $exp_nodes
 cancel_job $job_id
 
-# Choose a cpu count greater then highest cpu node (job should use 5 node)
-set cpu_test_cnt [expr $highest_cpu_cnt * 4 + 1]
-sub_job $cpu_test_cnt $default_part
+# Choose a CPU count greater then highest CPU node (job should use 2 nodes)
+if {$node_cnt >= 2} {
+	set cpu_test_cnt [expr $highest_cpu_cnt + 1]
+	sub_job $cpu_test_cnt $default_part
+	set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
+	check_node_cnt $exp_nodes
+	cancel_job $job_id
+}
 
-set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
-check_node_cnt $exp_nodes
-cancel_job $job_id
+# Choose a CPU count greater then highest CPU node (job should use 5 nodes)
+if {$node_cnt >= 5} {
+	set cpu_test_cnt [expr $highest_cpu_cnt * 4 + 1]
+	sub_job $cpu_test_cnt $default_part
+	set exp_nodes [expr ($cpu_test_cnt - 1)/$highest_cpu_cnt + 1]
+	check_node_cnt $exp_nodes
+	cancel_job $job_id
+}
 
 
 ################## Test with new parition ##################

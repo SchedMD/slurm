@@ -112,7 +112,7 @@ In the following L</"METHODS"> section, if a parameter is omitted, it will be li
     
 =head2 DATA STRUCTURES
     
-Typicaly, C structures are converted to (maybe blessed) Perl hash references, with field names as hash keys. Arrays in C are converted to arrays in Perl. For example, there is a structure C<job_info_msg_t>:
+Typically, C structures are converted to (maybe blessed) Perl hash references, with field names as hash keys. Arrays in C are converted to arrays in Perl. For example, there is a structure C<job_info_msg_t>:
 
     typedef struct job_info_msg {
         time_t last_update;     /* time of latest info */

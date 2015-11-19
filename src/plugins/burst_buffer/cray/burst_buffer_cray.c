@@ -1856,7 +1856,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
 		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
-			if (xstrcmp(resv_bb_ptr->name, bb_state.name))
+			if (resv_bb_ptr->name &&
+			    xstrcmp(resv_bb_ptr->name, bb_state.name))
 				continue;
 			resv_bb_ptr->used_space =
 				bb_granularity(resv_bb_ptr->used_space,
@@ -2373,6 +2374,18 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	int pc, last_pc = 0;
+
+	bb_shutdown();
+	while ((pc = bb_proc_count()) > 0) {
+		if ((last_pc != 0) && (last_pc != pc)) {
+			info("%s: waiting for %d running processes",
+			     plugin_type, pc);
+		}
+		last_pc = pc;
+		usleep(100000);
+	}
+
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
