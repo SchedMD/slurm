@@ -878,7 +878,8 @@ static bool _validate_tres_time_limits_for_qos(
 
 		if ((out_max_tres_array[i] != INFINITE64) ||
 		    (max_tres_array[i] == INFINITE64) ||
-		    (job_tres_array[i] == NO_VAL64))
+		    (job_tres_array[i] == NO_VAL64) ||
+		    (job_tres_array[i] == 0))
 			continue;
 
 		max_time_limit = (uint32_t)(max_tres_array[i] /
