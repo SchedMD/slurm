@@ -2085,6 +2085,11 @@ the default action is to propagate all limits.
 Only one of the parameters, either
 \fBPropagateResourceLimits\fR or \fBPropagateResourceLimitsExcept\fR,
 may be specified.
+The user limits can not exceed hard limits under which the slurmd daemon
+operates. If the user limits are not propagated, the limits from the slurmd
+daemon will be propagated to the user's job. The limits used for the Slurm
+daemons can be set in the /etc/sysconf/slurm file. For more information, see:
+http://slurm.schedmd.com/faq.html#memlock
 The following limit names are supported by Slurm (although some
 options may not be supported on some systems):
 .RS
@@ -2835,7 +2840,7 @@ use the least loaded nodes in selected partitions.
 If a job allocation contains more resources than will be used for launching
 tasks (e.g. if whole nodes are allocated to a job), then rather than
 distributing a job's tasks evenly across it's allocated nodes, pack them as
-tightly as possible on thsee nodes.
+tightly as possible on these nodes.
 For example, consider a job allocation containing two \fBentire\fR nodes with
 eight CPUs each.
 If the job starts ten tasks across those two nodes without this option, it will

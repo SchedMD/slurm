@@ -3353,8 +3353,10 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	}
 
 	bb_job = _get_bb_job(job_ptr);
-	if (!bb_job || (bb_job->state == BB_STATE_PENDING)) {
-		/* Nothing to clean up */
+	if (!bb_job) {
+		/* Nothing ever allocated, nothing to clean up */
+	} else if (bb_job->state == BB_STATE_PENDING) {
+		bb_job->state = BB_STATE_COMPLETE;  /* Nothing to clean up */
 	} else {
 		/* Note: Persistent burst buffer actions already completed
 		 * for the job are not reversed */

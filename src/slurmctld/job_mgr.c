@@ -9647,6 +9647,24 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
+
+	authorized = admin = validate_operator(uid);
+	if (job_specs->burst_buffer) {
+		/* burst_buffer contents are validated at job submit time and
+		 * data is possibly being staged at later times. It can not
+		 * be changed except to clear the value on a completed job and
+		 * purge the record in order to recover from a failure mode */
+		if (IS_JOB_COMPLETED(job_ptr) && authorized &&
+		    (job_specs->burst_buffer[0] == '\0')) {
+			xfree(job_ptr->burst_buffer);
+			last_job_update = now;
+		} else {
+			error_code = ESLURM_NOT_SUPPORTED;
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (IS_JOB_FINISHED(job_ptr)) {
 		error_code = ESLURM_JOB_FINISHED;
 		goto fini;
@@ -9666,13 +9684,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	admin = validate_operator(uid);
-
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 	acct_policy_limit_set.tres = tres;
 
-	if ((authorized = admin || assoc_mgr_is_user_acct_coord(
-		     acct_db_conn, uid, job_ptr->account))) {
+	if (authorized ||
+	    assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account)) {
 		/* set up the acct_policy if we are authorized */
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
 			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
@@ -9899,15 +9915,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     job_ptr->job_id);
 			}
 		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-	if (job_specs->burst_buffer) {
-		/* burst_buffer contents are validated at job submit time and
-		 * data is possibly being staged at later times. It can not
-		 * be changed. */
-		error_code = ESLURM_NOT_SUPPORTED;
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;

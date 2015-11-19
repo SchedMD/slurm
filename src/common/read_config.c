@@ -958,8 +958,6 @@ _parse_srun_ports(const char *str)
 
 	return v;
 hosed:
-	xfree(v[0]);
-	xfree(v[1]);
 	xfree(v);
 	xfree(p);
 
