@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- BurstBuffer/cray: Enable clearing of burst buffer string on completed job
     as a means of recovering from a failure mode.
  -- Fix wrong memory free when parsing SrunPortRange=0-0 configuration.
+ -- BurstBuffer/cray: Fix job record purging if cancelled from pending state.
 
 * Changes in Slurm 15.08.4
 ==========================
