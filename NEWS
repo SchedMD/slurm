@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- BurstBuffer/cray: Add logic to terminate dw_wlm_cli child processes at
     shutdown.
  -- If job can't be launch or requeued, then terminate it.
+ -- BurstBuffer/cray: Enable clearing of burst buffer string on completed job
+    as a means of recovering from a failure mode.
 
 * Changes in Slurm 15.08.4
 ==========================
