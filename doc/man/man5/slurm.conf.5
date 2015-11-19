@@ -2091,6 +2091,11 @@ the default action is to propagate all limits.
 Only one of the parameters, either
 \fBPropagateResourceLimits\fR or \fBPropagateResourceLimitsExcept\fR,
 may be specified.
+The user limits can not exceed hard limits under which the slurmd daemon
+operates. If the user limits are not propagated, the limits from the slurmd
+daemon will be propagated to the user's job. The limits used for the Slurm
+daemons can be set in the /etc/sysconf/slurm file. For more information, see:
+http://slurm.schedmd.com/faq.html#memlock
 The following limit names are supported by Slurm (although some
 options may not be supported on some systems):
 .RS
