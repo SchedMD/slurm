@@ -518,14 +518,6 @@ install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm
 install -D -m755 contribs/sgather/sgather ${RPM_BUILD_ROOT}%{_bindir}/sgather
 install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
-# Correct some file permissions
-test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la	&&
-	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
-test -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.la	&&
-	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurm.la
-test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la &&
-	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
-
 # Delete unpackaged files:
 test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs         ||
 rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
@@ -533,10 +525,8 @@ rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
 test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs     ||
 rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
 
-rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.a
-rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.a
-rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.a
-rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/*.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.la
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_submit_defaults.so
@@ -674,10 +664,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
 
 LIST=./devel.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la			&&
-  echo %{_libdir}/libpmi.la				>> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.la			&&
-  echo %{_libdir}/libpmi2.la				>> $LIST
 
 LIST=./percs.files
 touch $LIST
@@ -857,8 +843,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(0755,root,root)
 %dir %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
-%{_libdir}/libslurm.la
-%{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*
 %dir %{_libdir}/pkgconfig
 %{_libdir}/pkgconfig/slurm.pc
