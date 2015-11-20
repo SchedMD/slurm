@@ -539,7 +539,8 @@ struct job_details {
 					 * is enabled */
 	uint32_t usable_nodes;		/* node count needed by preemption */
 	uint8_t whole_node;		/* 1: --exclusive
-					 * 2: --exclusive=user */
+					 * 2: --exclusive=user
+					 * 3: --exclusive=mcs */
 	char *work_dir;			/* pathname of working directory */
 };
 
@@ -654,6 +655,7 @@ struct job_record {
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */
+	char *mcs_label;		/* mcs_label if mcs plugin in use */
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
 	uint32_t next_step_id;		/* next step id to be used */

@@ -210,6 +210,7 @@ enum {
 	ESLURM_POWER_NOT_AVAIL,
 	ESLURM_POWER_RESERVED,
 	ESLURM_INVALID_POWERCAP,
+	ESLURM_INVALID_MCS_LABEL,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

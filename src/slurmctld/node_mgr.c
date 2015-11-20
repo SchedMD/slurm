@@ -66,6 +66,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -103,7 +104,7 @@ static front_end_record_t * _front_end_reg(
 static bool	_is_cloud_hidden(struct node_record *node_ptr);
 static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
-static bool	_node_is_hidden(struct node_record *node_ptr);
+static bool	_node_is_hidden(struct node_record *node_ptr, uid_t uid);
 static int	_open_node_state_file(char **state_file);
 static void 	_pack_node(struct node_record *dump_node_ptr, Buf buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
@@ -229,6 +230,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
+	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
 					   dump_node_ptr->name);
 }
@@ -277,6 +279,7 @@ extern int load_all_node_state ( bool state_only )
 	char *comm_name = NULL, *node_hostname = NULL;
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
 	char *features = NULL, *gres = NULL, *cpu_spec_list = NULL;
+	char *mcs_label = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t core_spec_cnt = 0;
 	uint32_t node_state;
@@ -373,6 +376,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
 			safe_unpack16 (&obj_protocol_version, buffer);
+			safe_unpackstr_xmalloc (&mcs_label,&name_len, buffer);
 			if (gres_plugin_node_state_unpack(
 				    &gres_list, buffer, node_name,
 				    protocol_version) != SLURM_SUCCESS)
@@ -581,6 +585,9 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->mem_spec_limit = mem_spec_limit;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
+			xfree(node_ptr->mcs_label);
+			node_ptr->mcs_label	= mcs_label;
+			mcs_label		= NULL; /* Nothing to free */
 		}
 
 		if (node_ptr) {
@@ -655,10 +662,15 @@ static bool _is_cloud_hidden(struct node_record *node_ptr)
 	return false;
 }
 
-static bool _node_is_hidden(struct node_record *node_ptr)
+static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
 {
 	int i;
 	bool shown = false;
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
+	    && (slurm_mcs_get_privatedata() == 1)
+	    && !validate_operator(uid)
+	    && (mcs_g_check_mcs_label(uid, node_ptr->mcs_label) != 0))
+		return true;
 
 	for (i=0; i<node_ptr->part_cnt; i++) {
 		if (!(node_ptr->part_pptr[i]->flags & PART_FLAG_HIDDEN)) {
@@ -666,9 +678,9 @@ static bool _node_is_hidden(struct node_record *node_ptr)
 			break;
 		}
 	}
-
 	if (shown || (node_ptr->part_cnt == 0))
 		return false;
+
 	return true;
 }
 
@@ -724,7 +736,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 			 * with it. */
 			hidden = false;
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-			    (_node_is_hidden(node_ptr)))
+			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
@@ -810,7 +822,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 		if (node_ptr) {
 			hidden = false;
 			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-			    (_node_is_hidden(node_ptr)))
+			    (_node_is_hidden(node_ptr, uid)))
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr))
 				hidden = true;
@@ -889,6 +901,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 #ifndef HAVE_BG
 		}
 #endif
+		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
 		pack32(dump_node_ptr->mem_spec_limit, buffer);
@@ -2300,8 +2313,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			}
 			last_node_update = now;
 		}
-		if (IS_NODE_IDLE(node_ptr))
+		if (IS_NODE_IDLE(node_ptr)) {
 			node_ptr->owner = NO_VAL;
+			xfree(node_ptr->mcs_label);
+		}
 
 		select_g_update_node_config(node_inx);
 		select_g_update_node_state(node_ptr);
@@ -2643,8 +2658,10 @@ extern int validate_nodes_via_front_end(
 				      "with %u running jobs",
 				      node_ptr->name, reg_msg->job_count);
 			}
-			if (IS_NODE_IDLE(node_ptr))
+			if (IS_NODE_IDLE(node_ptr)) {
 				node_ptr->owner = NO_VAL;
+				xfree(node_ptr->mcs_label);
+			}
 
 			select_g_update_node_config(i);
 			select_g_update_node_state(node_ptr);
@@ -3126,6 +3143,11 @@ extern void make_node_alloc(struct node_record *node_ptr,
 		node_ptr->owner = job_ptr->user_id;
 	}
 
+	if (slurm_mcs_get_select(job_ptr) == 1) {
+		xfree(node_ptr->mcs_label);
+		node_ptr->mcs_label = xstrdup(job_ptr->mcs_label);
+	}
+
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	xfree(node_ptr->reason);
@@ -3215,6 +3237,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	node_ptr->owner = NO_VAL;
+	xfree(node_ptr->mcs_label);
 	bit_clear (avail_node_bitmap, inx);
 	bit_clear (cg_node_bitmap,    inx);
 	bit_set   (idle_node_bitmap,  inx);
@@ -3313,13 +3336,17 @@ void make_node_idle(struct node_record *node_ptr,
 	if (node_ptr->comp_job_cnt == 0) {
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		bit_clear(cg_node_bitmap, inx);
-		if (IS_NODE_IDLE(node_ptr))
+		if (IS_NODE_IDLE(node_ptr)) {
 			node_ptr->owner = NO_VAL;
+			xfree(node_ptr->mcs_label);
+		}
 	}
 
 	if (job_ptr && job_ptr->details && (job_ptr->details->whole_node == 2)){
-		if (--node_ptr->owner_job_cnt == 0)
+		if (--node_ptr->owner_job_cnt == 0) {
 			node_ptr->owner = NO_VAL;
+			xfree(node_ptr->mcs_label);
+		}
 	}
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;

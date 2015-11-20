@@ -70,6 +70,7 @@
 #include "src/common/power.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_route.h"
@@ -1143,6 +1144,10 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Sync select plugin with synchronized job/node/part data */
 	select_g_reconfigure();
+	if (reconfig) {
+		if (slurm_mcs_reconfig() != SLURM_SUCCESS)
+			fatal("Failed to reconfigure mcs plugin");
+	}
 
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");
@@ -1903,6 +1908,11 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		    (job_ptr->details->whole_node == 2)) {
 			node_ptr->owner_job_cnt++;
 			node_ptr->owner = job_ptr->user_id;
+		}
+
+		if (slurm_mcs_get_select(job_ptr) == 1) {
+			xfree(node_ptr->mcs_label);
+			node_ptr->mcs_label = xstrdup(job_ptr->mcs_label);
 		}
 
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;

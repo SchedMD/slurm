@@ -635,11 +635,11 @@ the Epilog parameter in slurm.conf.
 
 
 .TP
-\fB\-\-exclusive[=user]\fR
+\fB\-\-exclusive[=user|mcs]\fR
 This option has two slightly different meanings for job and job step
 allocations.
 When used to initiate a job, the job allocation cannot share nodes with
-other running jobs  (or just other users with the "=user" option).
+other running jobs  (or just other users with the "=user" option or "=mcs" option).
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBShared\fR option takes precedence over the job's option.
 
@@ -990,6 +990,12 @@ The user to be notified is indicated with \fB\-\-mail\-user\fR.
 User to receive email notification of state changes as defined by
 \fB\-\-mail\-type\fR.
 The default value is the submitting user.
+
+.TP
+\fB\-\-mcs\-label\fR=<\fImcs\fR>
+Used only when the mcs/group plugin is enabled.
+This parameter is a group among the groups of the user.
+Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
 \fB\-\-mem\fR=<\fIMB\fR>

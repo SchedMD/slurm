@@ -74,6 +74,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
@@ -1198,6 +1199,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
+	packstr(dump_job_ptr->mcs_label, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
 	packstr(dump_job_ptr->batch_host, buffer);
 	packstr(dump_job_ptr->burst_buffer, buffer);
@@ -1277,7 +1279,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
 	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
-	char *burst_buffer = NULL, *task_id_str = NULL;
+	char *burst_buffer = NULL, *task_id_str = NULL, *mcs_label = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
@@ -1429,6 +1431,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
 		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
@@ -1957,6 +1960,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->mail_user);
 	job_ptr->mail_user    = mail_user;
 	mail_user             = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->mcs_label);
+	job_ptr->mcs_label    = mcs_label;
+	mcs_label	      = NULL;   /* reused, nothing left to free */
 	xfree(job_ptr->name);		/* in case duplicate record */
 	job_ptr->name         = name;
 	name                  = NULL;	/* reused, nothing left to free */
@@ -2177,6 +2183,7 @@ unpack_error:
 	xfree(licenses);
 	xfree(limit_set.tres);
 	xfree(mail_user);
+	xfree(mcs_label);
 	xfree(name);
 	xfree(nodes);
 	xfree(nodes_completing);
@@ -3594,6 +3601,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->plane_size);
 	debug3("   array_inx=%s", job_specs->array_inx);
 	debug3("   burst_buffer=%s", job_specs->burst_buffer);
+	debug3("   mcs_label=%s", job_specs->mcs_label);
 
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -3753,6 +3761,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->license_list = license_job_copy(job_ptr->license_list);
 	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
+	job_ptr_pend->mcs_label = xstrdup(job_ptr->mcs_label);
 	job_ptr_pend->name = xstrdup(job_ptr->name);
 	job_ptr_pend->network = xstrdup(job_ptr->network);
 	job_ptr_pend->node_addr = NULL;
@@ -5852,6 +5861,16 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->qos_ptr = (void *) qos_ptr;
 	job_ptr->qos_id = qos_rec.id;
 
+	if (mcs_g_set_mcs_label(job_ptr,job_desc->mcs_label) != 0 ) {
+		if (job_desc->mcs_label == NULL)
+			error("Failed to create job : no valid mcs_label found");
+		else
+			error("Failed to create job : invalid mcs-label : %s",
+				job_desc->mcs_label);
+		error_code = ESLURM_INVALID_MCS_LABEL;
+		goto cleanup_fail;
+	}
+
 	if (launch_type_poe == -1) {
 		char *launch_type = slurm_get_launch_type();
 		if (!strcmp(launch_type, "launch/poe"))
@@ -6084,6 +6103,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
 	    _test_strlen(job_desc->linuximage, "linuximage", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
+	    _test_strlen(job_desc->mcs_label, "mcs_label", 1024) 	||
 	    _test_strlen(job_desc->mem_bind, "mem_bind", 1024)		||
 	    _test_strlen(job_desc->mloaderimage, "mloaderimage", 1024)	||
 	    _test_strlen(job_desc->name, "name", 1024)			||
@@ -6832,6 +6852,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
 	job_desc->spank_job_env_size = 0;         /* nothing left to free */
+	job_ptr->mcs_label = xstrdup(job_desc->mcs_label);
 
 	if (job_desc->wait_all_nodes == (uint16_t) NO_VAL)
 		job_ptr->wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
@@ -6883,6 +6904,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	} else if (job_desc->shared == 2) {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
 		detail_ptr->whole_node = 2;
+	} else if (job_desc->shared == 3) {
+		detail_ptr->share_res  = (uint8_t) NO_VAL;
+		detail_ptr->whole_node = 3;
 	} else {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
 		detail_ptr->whole_node = 0;
@@ -7684,6 +7708,7 @@ static void _list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->limit_set.tres);
 	xfree(job_ptr->mail_user);
+	xfree(job_ptr->mcs_label);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
 	xfree(job_ptr->node_addr);
@@ -7837,7 +7862,14 @@ static bool _all_parts_hidden(struct job_record *job_ptr)
 static bool _hide_job(struct job_record *job_ptr, uid_t uid)
 {
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (slurm_mcs_get_privatedata() == 0) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
+		return true;
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (slurm_mcs_get_privatedata() == 1) &&
+	    (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0) &&
+	    !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
 		return true;
 	return false;
@@ -8121,6 +8153,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
 		packstr(dump_job_ptr->resv_name, buffer);
+		packstr(dump_job_ptr->mcs_label, buffer);
 
 		pack32(dump_job_ptr->exit_code, buffer);
 		pack32(dump_job_ptr->derived_ec, buffer);
@@ -8511,6 +8544,8 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 		shared = 0;
 	else if (detail_ptr->whole_node == 2)	/* User --exclusive=user */
 		shared = 2;
+	else if (detail_ptr->whole_node == 3)   /* User --exclusive=mcs */
+		shared = 3;
 	else if (job_ptr->part_ptr) {
 		/* Report shared status based upon latest partition info */
 		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
@@ -12219,7 +12254,14 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (slurm_mcs_get_privatedata() == 0) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
+		return ESLURM_ACCESS_DENIED;
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (slurm_mcs_get_privatedata() == 1) &&
+	    (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0) &&
+	    !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
@@ -14561,6 +14603,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->licenses          = xstrdup(job_ptr->licenses);
 	job_desc->mail_type         = job_ptr->mail_type;
 	job_desc->mail_user         = xstrdup(job_ptr->mail_user);
+	job_desc->mcs_label	    = xstrdup(job_ptr->mcs_label);
 	job_desc->mem_bind          = xstrdup(details->mem_bind);
 	job_desc->mem_bind_type     = details->mem_bind_type;
 	job_desc->name              = xstrdup(job_ptr->name);
@@ -14590,6 +14633,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 		job_desc->shared     = 0;
 	else if (details->whole_node == 2)
 		job_desc->shared     = 2;
+	else if (details->whole_node == 3)
+		job_desc->shared     = 3;
 	else
 		job_desc->shared     = (uint16_t) NO_VAL;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;

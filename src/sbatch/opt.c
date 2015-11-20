@@ -191,6 +191,7 @@
 #define LONG_OPT_THREAD_SPEC     0x159
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_KILL_INV_DEP    0x161
+#define LONG_OPT_MCS_LABEL	 0x165
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -412,6 +413,8 @@ static void _opt_default()
 
 	opt.test_only   = false;
 	opt.kill_invalid_dep = 0;
+
+	opt.mcs_label		= NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -614,6 +617,8 @@ _process_env_var(env_vars_t *e, const char *val)
 			opt.shared = 0;
 		} else if (!strcasecmp(val, "user")) {
 			opt.shared = 2;
+		} else if (!strcasecmp(val, "mcs")) {
+			opt.shared = 3;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
@@ -751,6 +756,7 @@ static struct option long_options[] = {
 	{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
+	{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
@@ -1390,6 +1396,8 @@ static void _set_options(int argc, char **argv)
 				opt.shared = 0;
 			} else if (!strcasecmp(optarg, "user")) {
 				opt.shared = 2;
+			} else if (!strcasecmp(optarg, "mcs")) {
+				opt.shared = 3;
 			} else {
 				error("invalid exclusive option %s", optarg);
 				exit(error_exit);
@@ -1508,6 +1516,20 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
 			break;
+		case LONG_OPT_MCS_LABEL: {
+			char *plugin_name = slurm_get_mcs_plugin();
+			if (plugin_name && strcmp(plugin_name, "mcs/none")) {
+				xfree(opt.mcs_label);
+				opt.mcs_label = xstrdup(optarg);
+			} else {
+				error("--mcs_label=%s can't be used "
+				"with mcs/none plugin", optarg);
+				xfree(plugin_name);
+				exit(error_exit);
+			}
+			xfree(plugin_name);
+			break;
+		}
 		case LONG_OPT_BURST_BUFFER:
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = xstrdup(optarg);
@@ -2959,6 +2981,8 @@ static void _opt_list(void)
 	info("remote command    : `%s'", str);
 	info("power             : %s", power_flags_str(opt.power_flags));
 	info("wait              : %s", opt.wait ? "no" : "yes");
+	if (opt.mcs_label)
+		info("mcs-label         : %s",opt.mcs_label);
 	xfree(str);
 
 }
@@ -2994,7 +3018,7 @@ static void _usage(void)
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
-"              [--mem_bind=...] [--reservation=name]\n"
+"              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
@@ -3044,6 +3068,7 @@ static void _help(void)
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
+"      --mcs-label=mcs         mcs label if mcs plugin mcs/group is used\n"
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "      --nice[=value]          decrease scheduling priority by value\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
@@ -3094,6 +3119,9 @@ static void _help(void)
 "Consumable resources related options:\n"
 "      --exclusive[=user]      allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
+"      --exclusive[=mcs]       allocate nodes in exclusive mode when\n"
+"                              cpu consumable resource is enabled\n"
+"                              and mcs plugin is enabled\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"
 "                              --mem >= --mem-per-cpu if --mem is specified.\n"

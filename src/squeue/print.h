@@ -275,6 +275,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_wait4switch)
 #define job_format_add_tres(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_tres)
+#define job_format_add_mcs_label(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_mcs_label)
 
 
 /*****************************************************************************
@@ -461,6 +463,8 @@ int _print_job_wait4switch(job_info_t * job, int width,
 			   bool right_justify, char* suffix);
 int _print_job_tres(job_info_t * job, int width,
 		    bool right_justify, char *suffix);
+int _print_job_mcs_label(job_info_t * job, int width,
+			 bool right_justify, char* suffix);
 
 /*****************************************************************************
  * Step Print Format Functions

@@ -208,6 +208,7 @@
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
+#define LONG_OPT_MCS_LABEL	 0x165
 
 extern char **environ;
 
@@ -548,6 +549,7 @@ static void _opt_default(void)
 	opt.nice = 0;
 	opt.priority = 0;
 	opt.power_flags = 0;
+	opt.mcs_label = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -761,6 +763,8 @@ _process_env_var(env_vars_t *e, const char *val)
 			opt.shared = 0;
 		} else if (!strcasecmp(val, "user")) {
 			opt.shared = 2;
+		} else if (!strcasecmp(val, "mcs")) {
+			opt.shared = 3;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
@@ -948,6 +952,7 @@ static void _set_options(const int argc, char **argv)
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
+		{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
@@ -1258,6 +1263,8 @@ static void _set_options(const int argc, char **argv)
 				opt.shared = 0;
 			} else if (!strcasecmp(optarg, "user")) {
 				opt.shared = 2;
+			} else if (!strcasecmp(optarg, "mcs")) {
+				opt.shared = 3;
 			} else {
 				error("invalid exclusive option %s", optarg);
 				exit(error_exit);
@@ -1475,6 +1482,20 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
 			break;
+		case LONG_OPT_MCS_LABEL: {
+			char *plugin_name = slurm_get_mcs_plugin();
+			if (plugin_name && strcmp(plugin_name, "mcs/none")) {
+				xfree(opt.mcs_label);
+				opt.mcs_label = xstrdup(optarg);
+			} else {
+				error("--mcs_label=%s can't be used "
+				"with mcs/none plugin", optarg);
+				xfree(plugin_name);
+				exit(error_exit);
+			}
+			xfree(plugin_name);
+			break;
+		}
 		case LONG_OPT_TASK_PROLOG:
 			xfree(opt.task_prolog);
 			opt.task_prolog = xstrdup(optarg);
@@ -2569,6 +2590,8 @@ static void _opt_list(void)
 	info("power             : %s", power_flags_str(opt.power_flags));
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
+	if (opt.mcs_label)
+		info("mcs-label         : %s",opt.mcs_label);
 	xfree(str);
 
 }
@@ -2654,7 +2677,7 @@ static void _usage(void)
 "            [--mloader-image=path] [--ioload-image=path]\n"
 #endif
 #endif
-"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
+"            [--mail-type=type] [--mail-user=user] [--mcs-label=mcs] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
@@ -2718,6 +2741,7 @@ static void _help(void)
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
+"      --mcs-label=mcs         mcs label if mcs plugin mcs/group is used\n"
 "      --mpi=type              type of MPI being used\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
@@ -2779,6 +2803,10 @@ static void _help(void)
 "Consumable resources related options:\n"
 "      --exclusive[=user]      allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
+"                              or don't share CPUs for job steps\n"
+"      --exclusive[=mcs]       allocate nodes in exclusive mode when\n"
+"                              cpu consumable resource is enabled\n"
+"                              and mcs plugin is enabled\n"
 "                              or don't share CPUs for job steps\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"

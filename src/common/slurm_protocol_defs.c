@@ -614,6 +614,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->licenses);
 		xfree(msg->linuximage);
 		xfree(msg->mail_user);
+		xfree(msg->mcs_label);
 		xfree(msg->mem_bind);
 		xfree(msg->mloaderimage);
 		xfree(msg->name);
@@ -744,6 +745,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->features);
 		xfree(job->gres);
 		xfree(job->licenses);
+		xfree(job->mcs_label);
 		xfree(job->name);
 		xfree(job->network);
 		xfree(job->node_inx);
@@ -3057,6 +3059,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
+		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);
 		xfree(node->node_hostname);

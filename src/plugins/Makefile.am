@@ -16,6 +16,7 @@ SUBDIRS = \
 	job_container		\
 	job_submit		\
 	launch			\
+	mcs			\
 	mpi			\
 	power			\
 	preempt			\

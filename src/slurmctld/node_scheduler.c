@@ -65,6 +65,7 @@
 #include "src/common/node_select.h"
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/xassert.h"
@@ -111,6 +112,8 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     bool test_only);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
 static void _filter_by_node_owner(struct job_record *job_ptr,
+				  bitstr_t *usable_node_mask);
+static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 				  bitstr_t *usable_node_mask);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
@@ -781,6 +784,44 @@ static void _filter_by_node_owner(struct job_record *job_ptr,
 	}
 }
 
+/* Remove nodes from consideration for allocation based upon "mcs" by
+ * other users
+ * job_ptr IN - Job to be scheduled
+ * usable_node_mask IN/OUT - Nodes available for use by this job's mcs
+ */
+static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
+                                  bitstr_t *usable_node_mask)
+{
+        struct node_record *node_ptr;
+        int i;
+
+	if (mcs_select != 1)
+		return;
+	/* Need to filter out any nodes allocated with other mcs */
+	if (job_ptr->mcs_label != NULL) {
+		for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	             i++, node_ptr++) {
+			/* if there is a mcs_label -> OK if it's the same */
+			if ((node_ptr->mcs_label != NULL) &&
+			     strcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
+				bit_clear(usable_node_mask, i);
+			}
+			/* if no mcs_label -> OK if no jobs running */
+			if ((node_ptr->mcs_label == NULL) &&
+				(node_ptr->run_job_cnt  != 0)) {
+				bit_clear(usable_node_mask, i);
+			}
+		}
+	} else {
+		for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+		    i++, node_ptr++) {
+			 if (node_ptr->mcs_label != NULL) {
+				bit_clear(usable_node_mask, i);
+			}
+		}
+	}
+}
+
 /*
  * If the job has required feature counts, then accumulate those
  * required resources using multiple calls to _pick_best_nodes()
@@ -800,6 +841,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *saved_req_node_bitmap = NULL;
 	uint32_t saved_min_cpus, saved_req_nodes;
 	int rc, tmp_node_set_size;
+	int mcs_select = 0;
 	struct node_set *tmp_node_set_ptr;
 	int error_code = SLURM_SUCCESS, i;
 	bitstr_t *feature_bitmap, *accumulate_bitmap = NULL;
@@ -857,6 +899,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	_filter_by_node_owner(job_ptr, avail_node_bitmap);
+
+	/* get mcs_select */
+	mcs_select = slurm_mcs_get_select(job_ptr);
+	_filter_by_node_mcs(job_ptr, mcs_select, avail_node_bitmap);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;

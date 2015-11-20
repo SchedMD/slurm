@@ -1389,6 +1389,34 @@ on a single node. The default \fBMaxTasksPerNode\fR is 128.
 May not exceed 65533.
 
 .TP
+\fBMCSParameters\fR
+MCS = Multi-Category Security
+MCS Plugin Parameters.
+The supported parameters are specific to the \fBMCSPlugin\fR.
+Changes to this value take effect when the Slurm daemons are reconfigured.
+More information about MCS is available here
+<http://slurm.schedmd.com/mcs_Plugins.html>.
+
+.TP
+\fBMCSPlugin\fR
+MCS = Multi-Category Security : associate a security label to jobs and ensure
+that nodes can only be shared among jobs using the same security label.
+Acceptable values include:
+.RS
+.TP 12
+\fBmcs/none\fR
+is the default value.
+No security label associated to jobs,
+no particular security restriction when sharing nodes among jobs.
+.TP
+\fBmcs/group\fR
+only users with the same group can share the nodes.
+.TP
+\fBmcs/user\fR
+a node cannot be shared with other users.
+.RE
+
+.TP
 \fBMemLimitEnforce\fR
 If set to "no" then Slurm will not terminate the job or the job step
 if they exceeds the value requested using the \-\-mem\-per\-cpu option of

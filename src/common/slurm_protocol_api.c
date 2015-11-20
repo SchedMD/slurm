@@ -2241,6 +2241,38 @@ int slurm_set_launch_type(char *launch_type)
 	return 0;
 }
 
+/* slurm_get_mcs_plugin
+ * RET mcs_plugin name, must be xfreed by caller */
+char *slurm_get_mcs_plugin(void)
+{
+        char *mcs_plugin = NULL;
+        slurm_ctl_conf_t *conf;
+
+        if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mcs_plugin = xstrdup(conf->mcs_plugin);
+		slurm_conf_unlock();
+	}
+        return mcs_plugin;
+}
+
+/* slurm_get_mcs_plugin_params
+ * RET mcs_plugin_params name, must be xfreed by caller */
+char *slurm_get_mcs_plugin_params(void)
+{
+        char *mcs_plugin_params = NULL;
+        slurm_ctl_conf_t *conf;
+
+        if (slurmdbd_conf) {
+        } else {
+                conf = slurm_conf_lock();
+                mcs_plugin_params = xstrdup(conf->mcs_plugin_params);
+                slurm_conf_unlock();
+        }
+        return mcs_plugin_params;
+}
+
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
  * RET char *   - preempt type, MUST be xfreed by caller

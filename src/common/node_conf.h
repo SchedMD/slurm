@@ -178,6 +178,7 @@ struct node_record {
 	char *tres_str;                 /* tres this node has */
 	char *tres_fmt_str;		/* tres this node has */
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/
+	char *mcs_label;		/* mcs_label if mcs plugin in use */
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

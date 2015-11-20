@@ -1412,6 +1412,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *licenses;		/* licenses required by the job */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
+	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *mem_bind;		/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;	/* see mem_bind_type_t */
 	char *name;		/* name of the job, default "" */
@@ -1569,6 +1570,7 @@ typedef struct job_info {
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
+	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -1960,6 +1962,7 @@ typedef struct node_info {
 	char *gres;		/* list of a node's generic resources */
 	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
+	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint32_t mem_spec_limit; /* MB memory limit for specialization */
 	char *name;		/* node name to slurm */
 	char *node_addr;	/* communication name (optional) */
@@ -2611,6 +2614,8 @@ typedef struct slurm_ctl_conf {
 	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_step_cnt;	/* maximum number of steps per job */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
+	char *mcs_plugin; /* mcs plugin type */
+	char *mcs_plugin_params; /* mcs plugin parameters */
 	uint16_t mem_limit_enforce; /* Enforce mem limit at runtime y|n */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */

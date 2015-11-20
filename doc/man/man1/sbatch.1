@@ -446,9 +446,9 @@ replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
-\fB\-\-exclusive[=user]\fR
+\fB\-\-exclusive[=user|mcs]\fR
 The job allocation can not share nodes with other running jobs (or just other
-users with the "=user" option).
+users with the "=user" option or with the "=mcs" option).
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBShared\fR option takes precedence over the job's option.
 
@@ -779,6 +779,12 @@ rather than generating individual email messages for each task in the job array.
 User to receive email notification of state changes as defined by
 \fB\-\-mail\-type\fR.
 The default value is the submitting user.
+
+.TP
+\fB\-\-mcs\-label\fR=<\fImcs\fR>
+Used only when the mcs/group plugin is enabled.
+This parameter is a group among the groups of the user.
+Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
 \fB\-\-mem\fR=<\fIMB\fR>

@@ -862,6 +862,8 @@ job_desc_msg_create_from_opts (void)
 
 	if (opt.power_flags)
 		j->power_flags = opt.power_flags;
+	if (opt.mcs_label)
+		j->mcs_label = opt.mcs_label;
 
 	return j;
 }

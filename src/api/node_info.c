@@ -331,13 +331,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			 user_name, node_ptr->owner);
 		xfree(user_name);
 	}
+
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u "
-		 "Owner=%s",
+		 "Owner=%s MCS_label=%s",
 		 node_state_string(my_state),
 		 cloud_str, comp_str, drain_str, power_str,
 		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight,
-		 owner_str);
+		 owner_str,
+		 (node_ptr->mcs_label == NULL) ? "N/A" : node_ptr->mcs_label);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

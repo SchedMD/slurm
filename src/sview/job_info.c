@@ -147,6 +147,7 @@ enum {
 	SORTID_JOBID,
 	SORTID_JOBID_FORMATTED,
 	SORTID_LICENSES,
+	SORTID_MCS_LABEL,
 	SORTID_CPU_REQ,
 	SORTID_MEM_MIN,
 	SORTID_TMP_DISK,
@@ -413,6 +414,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_GRES, "Gres",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_LICENSES, "Licenses",
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_DEPENDENCY, "Dependency",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
@@ -1005,6 +1008,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_LICENSES:
 		job_msg->licenses = xstrdup(new_text);
 		type = "licenses";
+		break;
+	case SORTID_MCS_LABEL:
+		job_msg->mcs_label = xstrdup(new_text);
+		type = "mcs_label";
 		break;
 	case SORTID_ACCOUNT:
 		job_msg->account = xstrdup(new_text);
@@ -1659,6 +1666,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_LICENSES),
 				   job_ptr->licenses);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_MCS_LABEL),
+				   (job_ptr->mcs_label==NULL) ? "N/A" :
+						 job_ptr->mcs_label);
+
 	convert_num_unit((float)job_ptr->pn_min_cpus,
 			 tmp_char, sizeof(tmp_char), UNIT_NONE,
 			 working_sview_config.convert_flags);
@@ -1854,6 +1867,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 		sprintf(tmp_char, "no");
 	else if (job_ptr->shared == 2)
 		sprintf(tmp_char, "user");
+	else if (job_ptr->shared == 3)
+		sprintf(tmp_char, "mcs");
 	else
 		sprintf(tmp_char, "ok");
 	add_display_treestore_line(update, treestore, &iter,
@@ -2365,6 +2380,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_LICENSES,     job_ptr->licenses,
+				   SORTID_MCS_LABEL,	job_ptr->mcs_label,
 				   SORTID_MEM_MIN,      tmp_mem_min,
 				   SORTID_NAME,         job_ptr->name,
 				   SORTID_NICE,         tmp_nice,

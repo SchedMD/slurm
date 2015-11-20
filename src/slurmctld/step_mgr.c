@@ -64,6 +64,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
@@ -2928,7 +2929,16 @@ extern int pack_ctld_job_step_info_response_msg(
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (slurm_mcs_get_privatedata() == 0) &&
 		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
+		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						  job_ptr->account))
+			continue;
+
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
+		    (slurm_mcs_get_privatedata() == 1) &&
+		    (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0) &&
+		    !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 						  job_ptr->account))
 			continue;

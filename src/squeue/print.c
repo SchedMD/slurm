@@ -1933,6 +1933,18 @@ int _print_job_tres(job_info_t *job, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_mcs_label(job_info_t * job, int width,
+			bool right, char* suffix)
+{
+	if (job == NULL)
+		_print_str("MCSLABEL", width, right, true);
+	else
+		_print_str(job->mcs_label, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
 
 /*****************************************************************************
  * Job Step Print Functions

@@ -82,6 +82,7 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -543,6 +544,8 @@ int main(int argc, char *argv[])
 			fatal( "failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS )
 			fatal( "failed to initialize power management plugin");
+		if (slurm_mcs_init() != SLURM_SUCCESS)
+			fatal("failed to initialize mcs plugin");
 
 		/*
 		 * create attached thread to process RPCs
@@ -606,6 +609,7 @@ int main(int argc, char *argv[])
 		slurmctld_config.thread_id_save = (pthread_t) 0;
 		bb_g_fini();
 		power_g_fini();
+		slurm_mcs_fini();
 
 		if (running_cache) {
 			/* break out and end the association cache

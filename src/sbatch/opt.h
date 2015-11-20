@@ -187,6 +187,7 @@ typedef struct sbatch_options {
 	bool test_only;		/* --test-only			*/
 	char *burst_buffer;	/* -bb				*/
 	uint8_t power_flags;	/* Power management options	*/
+	char *mcs_label;	/* mcs label if mcs plugin in use */
 } opt_t;
 
 extern opt_t opt;

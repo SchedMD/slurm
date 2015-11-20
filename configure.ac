@@ -589,6 +589,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/launch/poe/Makefile
 		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile
+		 src/plugins/mcs/Makefile
+		 src/plugins/mcs/none/Makefile
+		 src/plugins/mcs/group/Makefile
+		 src/plugins/mcs/user/Makefile
 		 src/plugins/power/Makefile
 		 src/plugins/power/common/Makefile
 		 src/plugins/power/cray/Makefile

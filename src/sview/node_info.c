@@ -57,6 +57,7 @@ enum {
 	SORTID_GRES,
 	SORTID_IDLE_CPUS,
 	SORTID_LOWEST_JOULES,
+	SORTID_MCS_LABEL,
 	SORTID_NAME,
 	SORTID_NODE_ADDR,
 	SORTID_NODE_HOSTNAME,
@@ -110,6 +111,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_NODE_HOSTNAME, "NodeHostName", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_OWNER, "Owner", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_MCS_LABEL, "MCS_Label", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_STATE, "State", FALSE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -259,6 +262,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_OWNER), tmp_owner);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_MCS_LABEL),
+				   (node_ptr->mcs_label == NULL) ? "N/A" :
+						 node_ptr->mcs_label),
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE, working_sview_config.convert_flags);
@@ -627,6 +636,8 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_IDLE_CPUS, tmp_idle_cpus,
 			   SORTID_FEATURES,  node_ptr->features,
 			   SORTID_GRES,      node_ptr->gres,
+			   SORTID_MCS_LABEL, (node_ptr->mcs_label == NULL) ?
+				"N/A" : node_ptr->mcs_label,
 			   SORTID_REAL_MEMORY, tmp_mem,
 			   SORTID_NAME,      node_ptr->name,
 			   SORTID_NODE_ADDR, node_ptr->node_addr,

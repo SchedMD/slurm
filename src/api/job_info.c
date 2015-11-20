@@ -395,8 +395,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	user_name = uid_to_string((uid_t) job_ptr->user_id);
 	group_name = gid_to_string((gid_t) job_ptr->group_id);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "UserId=%s(%u) GroupId=%s(%u)",
-		 user_name, job_ptr->user_id, group_name, job_ptr->group_id);
+		 "UserId=%s(%u) GroupId=%s(%u) MCS_label=%s",
+		 user_name, job_ptr->user_id, group_name, job_ptr->group_id,
+			(job_ptr->mcs_label==NULL) ? "N/A" : job_ptr->mcs_label);
 	xfree(user_name);
 	xfree(group_name);
 	xstrcat(out, tmp_line);
@@ -956,6 +957,8 @@ line15:
 		tmp6_ptr = "1";
 	else if (job_ptr->shared == 2)
 		tmp6_ptr = "USER";
+	else if (job_ptr->shared == 3)
+		tmp6_ptr = "MCS";
 	else
 		tmp6_ptr = "OK";
 	snprintf(tmp_line, sizeof(tmp_line),

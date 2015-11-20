@@ -938,6 +938,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/layouts_power_cpufreq.so
 %{_libdir}/slurm/layouts_power_default.so
 %{_libdir}/slurm/layouts_unit_default.so
+%{_libdir}/slurm/mcs_group.so
+%{_libdir}/slurm/mcs_none.so
+%{_libdir}/slurm/mcs_user.so
 %if ! %{slurm_with bluegene}
 %{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
