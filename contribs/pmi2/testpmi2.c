@@ -1,6 +1,6 @@
 
 /*****************************************************************************\
- *  testpmi2.c
+ *  testpmi2.c - reservation creation function for scontrol.
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC
  *  Written by David Bigagli <david@schedmd.com>
