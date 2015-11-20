@@ -575,7 +575,8 @@ test17.39  Validate dependecy OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
 test17.42  Test of sbatch --wait option.
-
+test17.51  Validate that the mcs plugin (mcs/user) is OK with sbatch
+test17.52  Validate that the mcs plugin (mcs/group) is OK with sbatch
 
 test19.#   Testing of strigger options.
 =======================================
