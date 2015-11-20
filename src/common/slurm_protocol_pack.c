@@ -4031,7 +4031,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
@@ -4049,6 +4049,62 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpack32(&node->tmp_disk, buffer);
 
 		safe_unpackstr_xmalloc(&node->mcs_label, &uint32_tmp, buffer);
+		safe_unpack32(&node->owner, buffer);
+		safe_unpack16(&node->core_spec_cnt, buffer);
+		safe_unpack32(&node->mem_spec_limit, buffer);
+		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&node->cpu_load, buffer);
+		safe_unpack32(&node->free_mem, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->boot_time, buffer);
+		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
+
+		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
+						protocol_version);
+
+		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+		if (acct_gather_energy_unpack(&node->energy, buffer,
+					      protocol_version, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (power_mgmt_data_unpack(&node->power, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&node->tres_fmt_str, &uint32_tmp,
+				       buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
+		safe_unpack32(&node->node_state, buffer);
+		safe_unpackstr_xmalloc(&node->version, &uint32_tmp, buffer);
+
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->boards, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack32(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+
 		safe_unpack32(&node->owner, buffer);
 		safe_unpack16(&node->core_spec_cnt, buffer);
 		safe_unpack32(&node->mem_spec_limit, buffer);
@@ -5851,6 +5907,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->mcs_label,  &uint32_tmp, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
@@ -5998,7 +6055,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->mcs_label,  &uint32_tmp, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
@@ -7636,6 +7692,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->nice, buffer);
 		pack32(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
+		packstr(job_desc_ptr->mcs_label, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
@@ -7952,7 +8009,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->nice, buffer);
 		pack32(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
-		packstr(job_desc_ptr->mcs_label, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
@@ -8150,6 +8206,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->profile, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->mcs_label, &uint32_tmp,
+					buffer);
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
@@ -8452,8 +8510,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack32(&job_desc_ptr->profile, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->mcs_label, &uint32_tmp,
-					buffer);
+
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->acctg_freq,
