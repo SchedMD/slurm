@@ -1635,6 +1635,11 @@ next_task:
 		     slurmctld_diag_stats.bf_last_depth,
 		     job_test_count, TIME_STR);
 	}
+	if (slurmctld_config.server_thread_count >= 150) {
+		info("backfill: %d pending RPCs at cycle end, consider "
+		     "configuring max_rpc_cnt",
+		     slurmctld_config.server_thread_count);
+	}
 	return rc;
 }
 
