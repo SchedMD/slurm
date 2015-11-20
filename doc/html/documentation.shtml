@@ -46,6 +46,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="licenses.html">License Management</a></li>
+<li><a href="mcs.html">Multi-Category Security (MCS) Guide</a></li>
 <li><a href="power_mgmt.html">Power Management Guide (power capping)</a></li>
 <li><a href="power_save.html">Power Saving Guide (power down idle nodes)</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
@@ -121,6 +122,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="job_container_plugins.html">Slurm Job Container Plugin API</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
+<li><a href="mcs_plugins.html">Multi-Category Security (MCS) Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
 <li><a href="power_plugins.html">Power Management Plugin Programmer Guide</a></li>

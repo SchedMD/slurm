@@ -54,6 +54,8 @@ generated_html = \
 	man_index.html \
 	maui.html \
 	mc_support.html \
+	mcs.html \
+	mcs_plugins.html \
 	meetings.html \
 	moab.html \
 	mpi_guide.html \
