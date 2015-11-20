@@ -72,8 +72,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "mcs group plugin";
-const char plugin_type[]        = "mcs/group";
+const char plugin_name[]	= "mcs group plugin";
+const char plugin_type[]	= "mcs/group";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*********************** local variables *********************/
@@ -121,23 +121,23 @@ extern int fini(void)
  * Return 0 on success, -1 on failure
  */
 static int _get_user_groups(uint32_t user_id, uint32_t group_id,
-                            gid_t *groups, int max_groups, int *ngroups)
+			    gid_t *groups, int max_groups, int *ngroups)
 {
-        int rc = SLURM_ERROR;
-        char *user_name;
+	int rc = SLURM_ERROR;
+	char *user_name;
 
-        user_name = uid_to_string((uid_t) user_id);
-        *ngroups = max_groups;
-        rc = getgrouplist(user_name, (gid_t) group_id, groups, ngroups);
-        if (rc < 0) {
-                error("getgrouplist(%s): %m", user_name);
-                rc = SLURM_ERROR;
-        } else {
-                *ngroups = rc;
-                rc = SLURM_SUCCESS;
-        }
-        xfree(user_name);
-        return rc;
+	user_name = uid_to_string((uid_t) user_id);
+	*ngroups = max_groups;
+	rc = getgrouplist(user_name, (gid_t) group_id, groups, ngroups);
+	if (rc < 0) {
+		error("getgrouplist(%s): %m", user_name);
+		rc = SLURM_ERROR;
+	} else {
+		*ngroups = rc;
+		rc = SLURM_SUCCESS;
+	}
+	xfree(user_name);
+	return rc;
 }
 
 /*
@@ -256,41 +256,41 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
  */
 static int _check_mcs_label (struct job_record *job_ptr, char *label)
 {
-        int rc = SLURM_ERROR;
-        int i = 0;
-        gid_t gid;
-        uint32_t tmp_group ;
-        gid_t groups[MAX_GROUPS];
-        int ngroups = -1;
+	int rc = SLURM_ERROR;
+	int i = 0;
+	gid_t gid;
+	uint32_t tmp_group ;
+	gid_t groups[MAX_GROUPS];
+	int ngroups = -1;
 
-        /* test if real unix group */
-        if ( gid_from_string(label, &gid ) != 0 ) {
-                return rc;
-        }
-        /* test if this group is owned by the user */
-        rc = _get_user_groups(job_ptr->user_id,job_ptr->group_id,
-                 groups, MAX_GROUPS, &ngroups);
-        if (rc)         /* Failed to get groups */
-                return rc;
-        rc = SLURM_ERROR;
-        for (i = 0; i < ngroups; i++) {
-                tmp_group = (uint32_t) groups[i];
-                if (gid == tmp_group) {
-                        rc = SLURM_SUCCESS;
-                        break;
-                }
-        }
-        if (rc == SLURM_ERROR)
-                return rc;
-        rc = SLURM_ERROR;
-        /* test if mcs_label is in list of possible mcs_label */
-        for( i = 0 ; i < nb_mcs_groups ; i++) {
-                if (array_mcs_parameter[i] == gid ) {
-                        rc = SLURM_SUCCESS;
-                        return rc;
-                }
-        }
-        return rc;
+	/* test if real unix group */
+	if ( gid_from_string(label, &gid ) != 0 )
+		return rc;
+
+	/* test if this group is owned by the user */
+	rc = _get_user_groups(job_ptr->user_id,job_ptr->group_id,
+			      groups, MAX_GROUPS, &ngroups);
+	if (rc)	 /* Failed to get groups */
+		return rc;
+	rc = SLURM_ERROR;
+	for (i = 0; i < ngroups; i++) {
+		tmp_group = (uint32_t) groups[i];
+		if (gid == tmp_group) {
+			rc = SLURM_SUCCESS;
+			break;
+		}
+	}
+	if (rc == SLURM_ERROR)
+		return rc;
+	rc = SLURM_ERROR;
+	/* test if mcs_label is in list of possible mcs_label */
+	for( i = 0 ; i < nb_mcs_groups ; i++) {
+		if (array_mcs_parameter[i] == gid ) {
+			rc = SLURM_SUCCESS;
+			return rc;
+		}
+	}
+	return rc;
 }
 
 
@@ -356,7 +356,7 @@ extern int mcs_p_check_mcs_label (uint32_t user_id, char *mcs_label)
 		group_id = (uint32_t) slurm_user_gid;
 		rc = _get_user_groups(user_id, group_id,
 		      groups, MAX_GROUPS, &ngroups);
-		if (rc)         /* Failed to get groups */
+		if (rc)	/* Failed to get groups */
 			return rc;
 		rc = SLURM_ERROR;
 		for (i = 0; i < ngroups; i++) {

@@ -556,11 +556,11 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
-			opt.shared = 0;
+			opt.shared = JOB_SHARED_NONE;
 		} else if (!strcasecmp(val, "user")) {
-			opt.shared = 2;
+			opt.shared = JOB_SHARED_USER;
 		} else if (!strcasecmp(val, "mcs")) {
-			opt.shared = 3;
+			opt.shared = JOB_SHARED_MCS;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
@@ -928,11 +928,11 @@ void set_options(const int argc, char **argv)
 			break;
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
-				opt.shared = 0;
+				opt.shared = JOB_SHARED_NONE;
 			} else if (!strcasecmp(optarg, "user")) {
-				opt.shared = 2;
+				opt.shared = JOB_SHARED_USER;
 			} else if (!strcasecmp(optarg, "mcs")) {
-				opt.shared = 3;
+				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
 				exit(error_exit);
@@ -1042,17 +1042,8 @@ void set_options(const int argc, char **argv)
 			opt.mail_user = xstrdup(optarg);
 			break;
 		case LONG_OPT_MCS_LABEL: {
-			char *plugin_name = slurm_get_mcs_plugin();
-			if (plugin_name && strcmp(plugin_name, "mcs/none")) {
-				xfree(opt.mcs_label);
-				opt.mcs_label = xstrdup(optarg);
-			} else {
-				error("--mcs_label=%s can't be used "
-				"with mcs/none plugin", optarg);
-				xfree(plugin_name);
-				exit(error_exit);
-			}
-			xfree(plugin_name);
+			xfree(opt.mcs_label);
+			opt.mcs_label = xstrdup(optarg);
 			break;
 		}
 		case LONG_OPT_NICE:
@@ -1977,11 +1968,11 @@ static void _usage(void)
 "              [--mloader-image=path] [--ioload-image=path]\n"
 #endif
 #endif
-"              [--mail-type=type] [--mail-user=user][--mcs-label=mcs][--nice[=value]]\n"
+"              [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
-"              [--mem_bind=...] [--reservation=name]\n"
+"              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"

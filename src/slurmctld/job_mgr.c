@@ -6895,18 +6895,18 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
-	if ((job_desc->shared == 0) && (select_serial == 0)) {
+	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = 1;
-	} else if (job_desc->shared == 1) {
+	} else if (job_desc->shared == JOB_SHARED_OK) {
 		detail_ptr->share_res  = 1;
 		detail_ptr->whole_node = 0;
-	} else if (job_desc->shared == 2) {
+	} else if (job_desc->shared == JOB_SHARED_USER) {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
-		detail_ptr->whole_node = 2;
-	} else if (job_desc->shared == 3) {
+		detail_ptr->whole_node = JOB_SHARED_USER;
+	} else if (job_desc->shared == JOB_SHARED_MCS) {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
-		detail_ptr->whole_node = 3;
+		detail_ptr->whole_node = JOB_SHARED_MCS;
 	} else {
 		detail_ptr->share_res  = (uint8_t) NO_VAL;
 		detail_ptr->whole_node = 0;

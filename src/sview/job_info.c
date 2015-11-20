@@ -1861,13 +1861,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_ROTATE));
 
-	if (job_ptr->shared == 0)
+	if (job_ptr->shared == JOB_SHARED_NONE)
 		sprintf(tmp_char, "no");
-	else if (job_ptr->shared == 1)
+	else if (job_ptr->shared == JOB_SHARED_OK)
 		sprintf(tmp_char, "no");
-	else if (job_ptr->shared == 2)
+	else if (job_ptr->shared == JOB_SHARED_USER)
 		sprintf(tmp_char, "user");
-	else if (job_ptr->shared == 3)
+	else if (job_ptr->shared == JOB_SHARED_MCS)
 		sprintf(tmp_char, "mcs");
 	else
 		sprintf(tmp_char, "ok");

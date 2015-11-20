@@ -208,7 +208,7 @@
 #define LONG_OPT_EXPORT          0x158
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
-#define LONG_OPT_MCS_LABEL	 0x165
+#define LONG_OPT_MCS_LABEL       0x165
 
 extern char **environ;
 
@@ -760,11 +760,11 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
 			opt.exclusive = true;
-			opt.shared = 0;
+			opt.shared = JOB_SHARED_NONE;
 		} else if (!strcasecmp(val, "user")) {
-			opt.shared = 2;
+			opt.shared = JOB_SHARED_USER;
 		} else if (!strcasecmp(val, "mcs")) {
-			opt.shared = 3;
+			opt.shared = JOB_SHARED_MCS;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
@@ -1260,11 +1260,11 @@ static void _set_options(const int argc, char **argv)
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
 				opt.exclusive = true;
-				opt.shared = 0;
+				opt.shared = JOB_SHARED_NONE;
 			} else if (!strcasecmp(optarg, "user")) {
-				opt.shared = 2;
+				opt.shared = JOB_SHARED_USER;
 			} else if (!strcasecmp(optarg, "mcs")) {
-				opt.shared = 3;
+				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
 				exit(error_exit);
@@ -1483,17 +1483,8 @@ static void _set_options(const int argc, char **argv)
 			opt.mail_user = xstrdup(optarg);
 			break;
 		case LONG_OPT_MCS_LABEL: {
-			char *plugin_name = slurm_get_mcs_plugin();
-			if (plugin_name && strcmp(plugin_name, "mcs/none")) {
-				xfree(opt.mcs_label);
-				opt.mcs_label = xstrdup(optarg);
-			} else {
-				error("--mcs_label=%s can't be used "
-				"with mcs/none plugin", optarg);
-				xfree(plugin_name);
-				exit(error_exit);
-			}
-			xfree(plugin_name);
+			xfree(opt.mcs_label);
+			opt.mcs_label = xstrdup(optarg);
 			break;
 		}
 		case LONG_OPT_TASK_PROLOG:
@@ -2677,10 +2668,10 @@ static void _usage(void)
 "            [--mloader-image=path] [--ioload-image=path]\n"
 #endif
 #endif
-"            [--mail-type=type] [--mail-user=user] [--mcs-label=mcs] [--nice[=value]]\n"
+"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
-"            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--mcs-label=mcs]\n"
 "            [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"

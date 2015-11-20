@@ -951,13 +951,13 @@ line15:
 		xstrcat(out, "\n   ");
 
 	/****** Line 20 ******/
-	if (job_ptr->shared == 0)
+	if (job_ptr->shared == JOB_SHARED_NONE)
 		tmp6_ptr = "0";
-	else if (job_ptr->shared == 1)
+	else if (job_ptr->shared == JOB_SHARED_OK)
 		tmp6_ptr = "1";
-	else if (job_ptr->shared == 2)
+	else if (job_ptr->shared == JOB_SHARED_USER)
 		tmp6_ptr = "USER";
-	else if (job_ptr->shared == 3)
+	else if (job_ptr->shared == JOB_SHARED_MCS)
 		tmp6_ptr = "MCS";
 	else
 		tmp6_ptr = "OK";

@@ -3351,15 +3351,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			return SLURM_ERROR;
 		}
 	}
-	if  ((conf->mcs_plugin_params) &&
-		(strcmp(conf->mcs_plugin,"mcs/none")==0)) {
+	if (conf->mcs_plugin_params &&
+	    !strcmp(conf->mcs_plugin, "mcs/none")) {
 		/* plugin mcs none and a mcs plugin param */
 		info("WARNING: MCSParameters=%s can't be used with"
-			"MCSPlugin mcs/none ",
+			"MCSPlugin=mcs/none",
 			conf->mcs_plugin_params);
 	}
-	if ((!conf->mcs_plugin_params) &&
-		(strcmp(conf->mcs_plugin,"mcs/group")==0)) {
+	if (!conf->mcs_plugin_params &&
+	    !strcmp(conf->mcs_plugin, "mcs/group")) {
 		/* plugin mcs/group and no mcs plugin param */
 		 error("MCSPlugin is mcs/group and no MCSParameters");
 		 return SLURM_ERROR;

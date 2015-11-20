@@ -790,17 +790,17 @@ static void _filter_by_node_owner(struct job_record *job_ptr,
  * usable_node_mask IN/OUT - Nodes available for use by this job's mcs
  */
 static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
-                                  bitstr_t *usable_node_mask)
+				bitstr_t *usable_node_mask)
 {
-        struct node_record *node_ptr;
-        int i;
+	struct node_record *node_ptr;
+	int i;
 
 	if (mcs_select != 1)
 		return;
 	/* Need to filter out any nodes allocated with other mcs */
 	if (job_ptr->mcs_label != NULL) {
 		for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	             i++, node_ptr++) {
+		     i++, node_ptr++) {
 			/* if there is a mcs_label -> OK if it's the same */
 			if ((node_ptr->mcs_label != NULL) &&
 			     strcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
