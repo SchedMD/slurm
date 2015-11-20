@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          est of --bcast option.
+#          Test of --bcast option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
@@ -50,6 +50,11 @@ if {[test_alps]} {
 	exit 0
 } elseif { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
+	exit 0
+}
+
+if {[slurmd_user_root] == 0} {
+	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
 	exit 0
 }
 
