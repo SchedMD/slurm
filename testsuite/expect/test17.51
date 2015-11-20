@@ -108,6 +108,11 @@ proc copy_conf { } {
 	}
 }
 
+if {[is_super_user] == 0} {
+	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
+	exit 0
+}
+
 get_conf_path
 copy_conf
 
