@@ -4,7 +4,7 @@
 </a></h1>
 
 <h2> Overview</h2>
-<p> This document describes Slurm MCS plugins and the API that
+<p> This document describes Slurm's MCS plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
 their own Slurm MCS plugins.
 
@@ -24,7 +24,7 @@ The minor type can be any suitable name
 for the MCS. We recommend, for example :
 <ul>
 <li><b>none</b>&#151; Default. No category associated to jobs.
-<li><b>user</b>&#151; Use username as the category to associate jobs to.
+<li><b>user</b>&#151; Use user name as the category to associate jobs to.
 <li><b>group</b>&#151; Use a user group as the category to associate jobs to.
 </ul>
 
