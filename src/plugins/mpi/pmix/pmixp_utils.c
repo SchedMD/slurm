@@ -403,12 +403,12 @@ int pmixp_rmdir_recursively(char *path)
 static inline int _file_fix_rights(char *path, uid_t uid, mode_t mode)
 {
 	if (chmod(path, mode) < 0) {
-		error("chown(%s): %m", path);
+		PMIXP_ERROR("chown(%s): %m", path);
 		return errno;
 	}
 
 	if (chown(path, uid, (gid_t) -1) < 0) {
-		error("chown(%s): %m", path);
+		PMIXP_ERROR("chown(%s): %m", path);
 		return errno;
 	}
 	return 0;

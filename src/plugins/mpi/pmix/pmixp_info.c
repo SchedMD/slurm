@@ -73,6 +73,7 @@ int pmixp_info_srv_fd(void)
 int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 {
 	int i, rc;
+	size_t msize;
 	memset(&_pmixp_job_info, 0, sizeof(_pmixp_job_info));
 #ifndef NDEBUG
 	_pmixp_job_info.magic = PMIX_INFO_MAGIC;
@@ -90,15 +91,14 @@ int pmixp_info_set(const stepd_step_rec_t *job, char ***env)
 	/* Global info */
 	_pmixp_job_info.ntasks = job->ntasks;
 	_pmixp_job_info.nnodes = job->nnodes;
-	_pmixp_job_info.task_cnts = xmalloc(
-			sizeof(*_pmixp_job_info.task_cnts)
-					* _pmixp_job_info.nnodes);
-	for (i = 0; i < _pmixp_job_info.nnodes; i++) {
+	msize = sizeof(*_pmixp_job_info.task_cnts) * job->nnodes;
+	_pmixp_job_info.task_cnts = xmalloc(msize);
+	for (i = 0; i < job->nnodes; i++) {
 		_pmixp_job_info.task_cnts[i] = job->task_cnts[i];
 	}
 
-	_pmixp_job_info.gtids = xmalloc(
-			_pmixp_job_info.node_tasks * sizeof(uint32_t));
+	msize = _pmixp_job_info.node_tasks * sizeof(uint32_t);
+	_pmixp_job_info.gtids = xmalloc(msize);
 	for (i = 0; i < job->node_tasks; i++) {
 		_pmixp_job_info.gtids[i] = job->task[i]->gtid;
 	}
@@ -288,8 +288,14 @@ static int _env_set(char ***env)
 	char *p = NULL;
 
 	/* ----------- Temp directories settings ------------- */
-	/* set server temp directory - change
-	 * this process environment */
+
+	/*
+	 * FIXME: This is dangerous to set this from the user environment.
+	 * I was using this to debug in linux containers
+	 * On real hardware each node has it's own separate /tmp directory
+	 */
+
+	/* set server temp directory - change this process environment */
 	p = getenvp(*env, PMIXP_TMPDIR_SRV);
 	if (NULL != p) {
 		setenv(PMIXP_OS_TMPDIR_ENV, p, 1);
@@ -329,6 +335,9 @@ static int _env_set(char ***env)
 	}
 
 	/* ----------- Forward PMIX settings ------------- */
+	/* FIXME: this may be intrusive as well as PMIx library will create
+	 * lots of output files in /tmp by default.
+	 * somebody can use this or annoyance */
 	p = getenvp(*env, PMIXP_PMIXLIB_DEBUG);
 	if (NULL != p) {
 		setenv(PMIXP_PMIXLIB_DEBUG, p, 1);

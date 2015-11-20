@@ -341,9 +341,8 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 
 	rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
 	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR(
-				"Cannot send message to %s, size = %u, hostlist:\n%s",
-				addr, (uint32_t) size, hostlist);
+		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
+			    addr, (uint32_t) size, hostlist);
 	}
 	return rc;
 }
@@ -412,12 +411,10 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 		xfree(procs);
 
 		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s, seq = %d",
-			    nodename,
-			    (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
+			    nodename, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
 			    hdr->seq);
-
-		if (SLURM_SUCCESS != pmixp_coll_check_seq(coll, hdr->seq,
-						nodename)) {
+		rc = pmixp_coll_check_seq(coll, hdr->seq, nodename);
+		if (SLURM_SUCCESS != rc) {
 			/* this is unexepable event: either something went
 			 * really wrong or the state machine is incorrect.
 			 * This will 100% lead to application hang.

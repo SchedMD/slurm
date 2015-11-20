@@ -68,15 +68,14 @@ static int client_connected(const pmix_proc_t *proc, void *server_object)
 
 static void op_callbk(pmix_status_t status, void *cbdata)
 {
-	PMIXP_DEBUG("OP CALLBACK CALLED WITH STATUS %d", status);
+	PMIXP_DEBUG("op callback is called with status=%d", status);
 }
 
 static void errhandler_reg_callbk(pmix_status_t status, int errhandler_ref,
 		void *cbdata)
 {
-	PMIXP_DEBUG(
-			"ERRHANDLER REGISTRATION CALLBACK CALLED WITH STATUS %d, ref=%d",
-			status, errhandler_ref);
+	PMIXP_ERROR("Error handler registration calback is called with status=%d, ref=%d",
+		    status, errhandler_ref);
 }
 
 static pmix_status_t client_finalized(const pmix_proc_t *proc,
@@ -171,8 +170,7 @@ int pmixp_libpmix_init(void)
 	 * 2. Group ID corresponds to slurmstepd.
 	 * 3. Set 0770 access mode */
 	if (0 != mkdir(pmixp_info_tmpdir_lib(), rights) ) {
-		PMIXP_ERROR_STD("Cannot create directory \"%s\"",
-				pmixp_info_tmpdir_lib());
+		PMIXP_ERROR_STD("Cannot create directory \"%s\"", pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
@@ -235,7 +233,7 @@ int pmixp_libpmix_finalize(void)
 
 static void errhandler(pmix_status_t status,
 		       pmix_proc_t proc[], size_t nproc,
-		pmix_info_t info[], size_t ninfo)
+		       pmix_info_t info[], size_t ninfo)
 {
 	/* TODO: do something more sophisticated here */
 	/* FIXME: use proper specificator for nranges */
@@ -574,10 +572,9 @@ int pmixp_libpmix_job_set(void)
 			&register_caddy[0]);
 
 	if (PMIX_SUCCESS != rc) {
-		PMIXP_ERROR(
-				"Cannot register namespace %s, nlocalproc=%d, " "ninfo = %d",
-				pmixp_info_namespace(), pmixp_info_tasks_loc(),
-				ninfo);
+		PMIXP_ERROR("Cannot register namespace %s, nlocalproc=%d, "
+			    "ninfo = %d", pmixp_info_namespace(),
+			    pmixp_info_tasks_loc(), ninfo);
 		return SLURM_ERROR;
 	}
 
@@ -591,8 +588,8 @@ int pmixp_libpmix_job_set(void)
 				_release_cb, &register_caddy[i + 1]);
 		if (PMIX_SUCCESS != rc) {
 			PMIXP_ERROR("Cannot register client %d(%d) in namespace %s",
-					pmixp_info_taskid(i), i,
-					pmixp_info_namespace());
+				    pmixp_info_taskid(i), i,
+				    pmixp_info_namespace());
 			return SLURM_ERROR;
 		}
 	}

@@ -74,7 +74,7 @@ void pmixp_state_finalize(void)
 }
 
 static bool _compare_ranges(const pmix_proc_t *r1, const pmix_proc_t *r2,
-		size_t nprocs)
+			    size_t nprocs)
 {
 	int i;
 	for (i = 0; i < nprocs; i++) {
