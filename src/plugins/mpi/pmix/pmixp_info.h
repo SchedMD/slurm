@@ -50,25 +50,27 @@ typedef struct {
 	int magic;
 #endif
 	char nspace[PMIX_MAX_NSLEN];
-	uint32_t jobid; /* Current SLURM job id                         */
-	uint32_t stepid; /* Current step id (or NO_VAL)                  */
-	uint32_t nnodes; /* number of nodes in current step              */
-	uint32_t nnodes_job; /* number of nodes in current job               */
-	uint32_t ntasks; /* total number of tasks in current step        */
-	uint32_t ntasks_job; /* total possible number of tasks in job        */
-	uint32_t ncpus_job; /* total possible number of cpus in job         */
-	uint32_t *task_cnts; /* Number of tasks on each node in this step    */
-	int node_id; /* relative position of this node in this step  */
-	int node_id_job; /* relative position of this node in SLURM job  */
+	uint32_t jobid; /* Current SLURM job id */
+	uint32_t stepid; /* Current step id (or NO_VAL) */
+	uint32_t nnodes; /* number of nodes in current step */
+	uint32_t nnodes_job; /* number of nodes in current job */
+	uint32_t ntasks; /* total number of tasks in current step */
+	uint32_t ntasks_job; /* total possible number of tasks in job */
+	uint32_t ncpus_job; /* total possible number of cpus in job */
+	uint32_t *task_cnts; /* Number of tasks on each node in this step */
+	int node_id; /* relative position of this node in this step */
+	int node_id_job; /* relative position of this node in SLURM job */
 	hostlist_t job_hl;
 	hostlist_t step_hl;
 	char *hostname;
-	uint32_t node_tasks; /* number of tasks on *this* node               */
-	uint32_t *gtids; /* global ids of tasks located on *this* node   */
+	uint32_t node_tasks; /* number of tasks on *this* node */
+	uint32_t *gtids; /* global ids of tasks located on *this* node */
 	char *task_map_packed; /* string represents packed task mapping information */
 	int timeout;
 	char *cli_tmpdir;
 	char *lib_tmpdir;
+	uid_t uid;
+	gid_t gid;
 } pmix_jobinfo_t;
 
 extern pmix_jobinfo_t _pmixp_job_info;
@@ -109,6 +111,18 @@ eio_handle_t *pmixp_info_io();
 /* Job information */
 int pmixp_info_set(const stepd_step_rec_t *job, char ***env);
 int pmixp_info_free(void);
+
+static inline uint32_t pmixp_info_jobuid(void)
+{
+	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	return _pmixp_job_info.uid;
+}
+
+static inline uint32_t pmixp_info_jobgid(void)
+{
+	xassert(_pmixp_job_info.magic == PMIX_INFO_MAGIC);
+	return _pmixp_job_info.gid;
+}
 
 static inline uint32_t pmixp_info_jobid(void)
 {

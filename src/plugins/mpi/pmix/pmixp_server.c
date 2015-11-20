@@ -81,6 +81,7 @@ static int _recv_unpack_hdr(void *net, void *host);
 static bool _serv_readable(eio_obj_t *obj);
 static int _serv_read(eio_obj_t *obj, List objs);
 static void _process_server_request(recv_header_t *_hdr, void *payload);
+static int _process_message(pmixp_io_engine_t *me);
 
 static struct io_operations peer_ops = {
 	.readable = _serv_readable,
@@ -150,17 +151,17 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 	_was_initialized = 1;
 	return SLURM_SUCCESS;
 
-      err_job:
+err_job:
 	pmixp_libpmix_finalize();
-      err_lib:
+err_lib:
 	pmixp_dmdx_finalize();
-      err_dmdx:
+err_dmdx:
 	pmixp_state_finalize();
-      err_state:
+err_state:
 	pmixp_nspaces_finalize();
-	err_usock:
+err_usock:
 	xfree(path);
-      err_path:
+err_path:
 	pmixp_info_free();
 	return rc;
 }
@@ -190,6 +191,29 @@ int pmixp_stepd_finalize(void)
 	return SLURM_SUCCESS;
 }
 
+/* this routine tries to complete message processing on message
+ * engine (me). Return value:
+ * - 0: no progress was observed on the descriptor
+ * - 1: one more message was successfuly processed
+ * - 2: all messages are completed
+ */
+static int _process_message(pmixp_io_engine_t *me)
+{
+	int ret = 0;
+	pmix_io_rcvd(me);
+	if (pmix_io_rcvd_ready(me)) {
+		recv_header_t hdr;
+		void *msg = pmix_io_rcvd_extract(me, &hdr);
+		_process_server_request(&hdr, msg);
+		ret = 1;
+	}
+	if (pmix_io_finalized(me)) {
+		ret = 2;
+	}
+	return ret;
+}
+
+
 /*
  * TODO: we need to keep track of the "me"
  * structures created here, because we need to
@@ -211,10 +235,14 @@ void pmix_server_new_conn(int fd)
 	 */
 	pmix_io_rcvd_padding(me, sizeof(uint32_t));
 
-	/* TODO: in future try to process the request right here
-	 * use eio only in case of blocking operation
-	 * NOW: always defer to debug the blocking case
-	 */
+	if( 2 == _process_message(me) ){
+		/* connection was fully processed here */
+		xfree(me);
+		return;
+	}
+
+	/* If it is a blocking operation: create AIO object to
+	 * handle it */
 	obj = eio_obj_create(fd, &peer_ops, (void *)me);
 	eio_new_obj(pmixp_info_io(), obj);
 }
@@ -311,12 +339,42 @@ int pmixp_server_send(char *hostlist, pmixp_srv_cmd_t type, uint32_t seq,
 	hsize = _send_pack_hdr(&hdr, nhdr);
 	memcpy(data, nhdr, hsize);
 
-	rc = pmixp_stepd_send(hostlist, addr, data, size);
+	rc = pmixp_stepd_send(hostlist, addr, data, size, 500, 7, 0);
 	if (SLURM_SUCCESS != rc) {
-		PMIXP_ERROR(
-				"Cannot send message to %s, size = %u, hostlist:\n%s",
-				addr, (uint32_t) size, hostlist);
+		PMIXP_ERROR("Cannot send message to %s, size = %u, hostlist:\n%s",
+			    addr, (uint32_t) size, hostlist);
 	}
+	return rc;
+}
+
+int pmixp_server_health_chk(char *hostlist,  const char *addr)
+{
+	send_header_t hdr;
+	char nhdr[sizeof(send_header_t)];
+	size_t hsize;
+	Buf buf = pmixp_server_new_buf();
+	char *data = get_buf_data(buf);
+	int rc;
+
+	hdr.magic = PMIX_SERVER_MSG_MAGIC;
+	hdr.type = PMIXP_MSG_HEALTH_CHK;
+	hdr.msgsize = 1;
+	hdr.seq = 0;
+	/* Store global nodeid that is
+	 *  independent from exact collective */
+	hdr.nodeid = pmixp_info_nodeid_job();
+	hsize = _send_pack_hdr(&hdr, nhdr);
+	memcpy(data, nhdr, hsize);
+
+	grow_buf(buf, sizeof(char));
+	pack8('\n', buf);
+
+	rc = pmixp_stepd_send(hostlist, addr, data, get_buf_offset(buf), 4, 14, 1);
+	if (SLURM_SUCCESS != rc) {
+		PMIXP_ERROR("Was unable to wait for the parent %s to become alive on addr %s",
+			    hostlist, addr);
+	}
+
 	return rc;
 }
 
@@ -352,16 +410,21 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 		coll = pmixp_state_coll_get(type, procs, nprocs);
 		xfree(procs);
 
-		PMIXP_DEBUG(
-				"FENCE collective message from node \"%s\", type = %s",
-				nodename,
-				(PMIXP_MSG_FAN_IN == hdr->type) ?
-						"fan-in" : "fan-out");
+		PMIXP_DEBUG("FENCE collective message from node \"%s\", type = %s, seq = %d",
+			    nodename, (PMIXP_MSG_FAN_IN == hdr->type) ? "fan-in" : "fan-out",
+			    hdr->seq);
+		rc = pmixp_coll_check_seq(coll, hdr->seq, nodename);
+		if (SLURM_SUCCESS != rc) {
+			/* this is unexepable event: either something went
+			 * really wrong or the state machine is incorrect.
+			 * This will 100% lead to application hang.
+			 */
+			PMIXP_ERROR("Bad collective seq. #%d from %s, current is %d",
+				    hdr->seq, nodename, coll->seq);
+			pmixp_debug_hang(0); /* enable hang to debug this! */
+			slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(),
+					    SIGKILL);
 
-		if (SLURM_SUCCESS
-				!= pmixp_coll_check_seq(coll, hdr->seq,
-						nodename)) {
-			/* stop processing discardig this message */
 			break;
 		}
 
@@ -380,6 +443,13 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 		pmixp_dmdx_process(buf, nodename, hdr->seq);
 		break;
 	}
+	case PMIXP_MSG_HEALTH_CHK: {
+		/* this is just health ping.
+		 * TODO: can we do something more sophisticated?
+		 */
+		free_buf(buf);
+		break;
+	}
 	default:
 		PMIXP_ERROR("Unknown message type %d", hdr->type);
 		break;
@@ -389,27 +459,24 @@ static void _process_server_request(recv_header_t *_hdr, void *payload)
 
 static int _serv_read(eio_obj_t *obj, List objs)
 {
-
 	PMIXP_DEBUG("fd = %d", obj->fd);
 	pmixp_io_engine_t *me = (pmixp_io_engine_t *)obj->arg;
+	bool proceed = true;
 
 	pmixp_debug_hang(0);
 
 	/* Read and process all received messages */
-	while (1) {
-		pmix_io_rcvd(me);
-		if (pmix_io_finalized(me)) {
+	while (proceed) {
+		switch( _process_message(me) ){
+		case 2:
 			obj->shutdown = true;
 			PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
+			/* cleanup after this connection */
 			eio_remove_obj(obj, objs);
-			return 0;
-		}
-		if (pmix_io_rcvd_ready(me)) {
-			recv_header_t hdr;
-			void *msg = pmix_io_rcvd_extract(me, &hdr);
-			_process_server_request(&hdr, msg);
-		} else {
-			/* No more complete messages */
+			xfree(me);
+		case 0:
+			proceed = 0;
+		case 1:
 			break;
 		}
 	}

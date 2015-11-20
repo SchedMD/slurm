@@ -98,7 +98,8 @@ int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 		goto err_ext;
 	}
 	return SLURM_SUCCESS;
-	err_ext:
+
+err_ext:
 	/* Abort the whole job if error! */
 	slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
 	return ret;

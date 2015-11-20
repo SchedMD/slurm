@@ -259,6 +259,18 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	/* store cur seq. num and move to the next request */
 	seq = _dmdx_seq_num++;
 
+	/* track this request */
+	req = xmalloc(sizeof(dmdx_req_info_t));
+	req->seq_num = seq;
+	req->cbfunc = cbfunc;
+	req->cbdata = cbdata;
+	req->ts = time(NULL);
+#ifndef NDEBUG
+	strncpy(req->nspace, nspace, PMIX_MAX_NSLEN);
+	req->rank = rank;
+#endif
+	list_append(_dmdx_requests, req);
+
 	/* send the request */
 	rc = pmixp_server_send(host, PMIXP_MSG_DMDX, seq, addr,
 			get_buf_data(buf), get_buf_offset(buf));
@@ -274,17 +286,6 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 		return SLURM_ERROR;
 	}
 
-	/* track this request */
-	req = xmalloc(sizeof(dmdx_req_info_t));
-	req->seq_num = seq;
-	req->cbfunc = cbfunc;
-	req->cbdata = cbdata;
-	req->ts = time(NULL);
-#ifndef NDEBUG
-	strncpy(req->nspace, nspace, PMIX_MAX_NSLEN);
-	req->rank = rank;
-#endif
-	list_append(_dmdx_requests, req);
 	return rc;
 }
 
@@ -296,22 +297,19 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 	pmixp_namespace_t *nsptr;
 	dmdx_caddy_t *caddy = NULL;
 
-	if (SLURM_SUCCESS
-			!= (rc = _read_info(buf, &ns, &rank, &sender_ns,
-					&status))) {
+	rc = _read_info(buf, &ns, &rank, &sender_ns,&status);
+	if (SLURM_SUCCESS != rc) {
 		/* there is not much we can do here, but data corruption shouldn't happen */
-		PMIXP_ERROR(
-				"Fail to unpack header data in" " request from %s, rc = %d",
-				sender_host, rc);
+		PMIXP_ERROR("Fail to unpack header data in" " request from %s, rc = %d",
+			    sender_host, rc);
 		goto exit;
 	}
 
 	if (0 != strcmp(ns, pmixp_info_namespace())) {
 		/* request for namespase that is not controlled by this daemon
 		 * considered as error. This may change in future.  */
-		PMIXP_ERROR(
-				"Bad request from %s: asked for" " nspace = %s, mine is %s",
-				sender_host, ns, pmixp_info_namespace());
+		PMIXP_ERROR("Bad request from %s: asked for" " nspace = %s, mine is %s",
+			    sender_host, ns, pmixp_info_namespace());
 		_respond_with_error(seq_num, sender_host, sender_ns,
 				PMIX_ERR_INVALID_NAMESPACE);
 		goto exit;
@@ -319,9 +317,8 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 
 	nsptr = pmixp_nspaces_local();
 	if (nsptr->ntasks <= rank) {
-		PMIXP_ERROR(
-				"Bad request from %s: nspace \"%s\"" " has only %d ranks, asked for %d",
-				sender_host, ns, nsptr->ntasks, rank);
+		PMIXP_ERROR("Bad request from %s: nspace \"%s\"" " has only %d ranks, asked for %d",
+			    sender_host, ns, nsptr->ntasks, rank);
 		_respond_with_error(seq_num, sender_host, sender_ns,
 				PMIX_ERR_BAD_PARAM);
 		goto exit;
@@ -347,15 +344,14 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 	rc = PMIx_server_dmodex_request(&caddy->proc, _dmdx_pmix_cb,
 			(void *)caddy);
 	if (PMIX_SUCCESS != rc) {
-		PMIXP_ERROR(
-				"Can't request modex data from libpmix-server," "requesting host = %s, nspace = %s, rank = %d, rc = %d",
-				caddy->sender_host, caddy->proc.nspace,
-				caddy->proc.rank, rc);
+		PMIXP_ERROR("Can't request modex data from libpmix-server," "requesting host = %s, nspace = %s, rank = %d, rc = %d",
+			    caddy->sender_host, caddy->proc.nspace,
+			    caddy->proc.rank, rc);
 		_respond_with_error(seq_num, caddy->sender_host,
 				caddy->sender_ns, rc);
 		_dmdx_free_caddy(caddy);
 	}
-	exit:
+exit:
 	/* we don't need this buffer anymore */
 	free_buf(buf);
 
@@ -384,21 +380,18 @@ static void _dmdx_resp(Buf buf, char *sender_host, uint32_t seq_num)
 	req = (dmdx_req_info_t *)list_find(it, _dmdx_req_cmp, &seq_num);
 	if (NULL == req) {
 		/* We haven't sent this request! */
-		PMIXP_ERROR(
-				"Received DMDX response with bad " "seq_num=%d from %s!",
-				seq_num, sender_host);
+		PMIXP_ERROR("Received DMDX response with bad " "seq_num=%d from %s!",
+			    seq_num, sender_host);
 		list_iterator_destroy(it);
 		rc = SLURM_ERROR;
 		goto exit;
 	}
 
 	/* get the service data */
-	if (SLURM_SUCCESS
-			!= (rc = _read_info(buf, &ns, &rank, &sender_ns,
-					&status))) {
+	rc = _read_info(buf, &ns, &rank, &sender_ns, &status);
+	if (SLURM_SUCCESS != rc) {
 		/* notify libpmix about an error */
-		req->cbfunc(PMIX_ERR_UNPACK_FAILURE, NULL, 0, req->cbdata, NULL,
-				NULL);
+		req->cbfunc(PMIX_ERR_UNPACK_FAILURE, NULL, 0, req->cbdata, NULL, NULL);
 		goto exit;
 	}
 
@@ -418,7 +411,7 @@ static void _dmdx_resp(Buf buf, char *sender_host, uint32_t seq_num)
 	req = NULL;
 	list_delete_item(it);
 	list_iterator_destroy(it);
-      exit:
+exit:
 	if (SLURM_SUCCESS != rc) {
 		/* we are not expect libpmix to call the callback
 		 * to cleanup this buffer */
@@ -454,16 +447,15 @@ void pmixp_dmdx_timeout_cleanup(void)
 
 	/* run through all requests and discard stale one's */
 	while (NULL != (req = list_next(it))) {
-		if (ts - req->ts > pmixp_info_timeout()) {
+		if ((ts - req->ts) > pmixp_info_timeout()) {
 #ifndef NDEBUG
 			/* respond with the timeout to libpmix */
 			char *host = pmixp_nspace_resolve(req->nspace,
 					req->rank);
 			xassert(NULL != host);
-			PMIXP_ERROR(
-					"timeout: ns=%s, rank=%d," " host=%s, ts=%lu",
-					req->nspace, req->rank,
-					(NULL != host) ? host : "unknown", ts);
+			PMIXP_ERROR("timeout: ns=%s, rank=%d," " host=%s, ts=%lu",
+				    req->nspace, req->rank,
+				    (NULL != host) ? host : "unknown", ts);
 			if (NULL != host) {
 				free(host);
 			}

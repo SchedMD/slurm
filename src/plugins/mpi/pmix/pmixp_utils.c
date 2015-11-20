@@ -51,8 +51,6 @@
 #include "pmixp_utils.h"
 #include "pmixp_debug.h"
 
-#define PMIXP_MAX_RETRY 7
-
 void pmixp_xfree_xmalloced(void *x)
 {
 	xfree(x);
@@ -98,9 +96,9 @@ int pmixp_usock_create_srv(char *path)
 	}
 	return fd;
 
-      err_bind:
+err_bind:
 	unlink(path);
-      err_fd:
+err_fd:
 	close(fd);
 	return ret;
 }
@@ -192,17 +190,33 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
 	int rc;
+	struct timeval tv;
+	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLIN;
-
 	/* Drop shutdown before the check */
 	*shutdown = 0;
 
-	rc = poll(pfd, 1, 10);
-	if (rc < 0) {
-		*shutdown = -errno;
-		return false;
+	gettimeofday(&tv,NULL);
+	start = tv.tv_sec + 1E-6*tv.tv_usec;
+	cur = start;
+	while( cur - start < 0.01 ){
+		rc = poll(pfd, 1, 10);
+		
+		/* update current timestamp */
+		gettimeofday(&tv,NULL);
+		cur = tv.tv_sec + 1E-6*tv.tv_usec;
+		if( rc < 0 ){
+			if( errno == EINTR ){
+				continue;
+			} else {
+				*shutdown = -errno;
+				return false;
+			}
+		}
+		break;
 	}
+
 	bool ret = ((rc == 1) && (pfd[0].revents & POLLIN));
 	if (!ret && (pfd[0].revents & (POLLERR | POLLHUP | POLLNVAL))) {
 		if (pfd[0].revents & (POLLERR | POLLNVAL)) {
@@ -219,13 +233,31 @@ bool pmixp_fd_write_ready(int fd, int *shutdown)
 {
 	struct pollfd pfd[1];
 	int rc;
+	struct timeval tv;
+	double start, cur;
 	pfd[0].fd = fd;
 	pfd[0].events = POLLOUT;
-	rc = poll(pfd, 1, 10);
-	if (rc < 0) {
-		*shutdown = -errno;
-		return false;
+
+	gettimeofday(&tv,NULL);
+	start = tv.tv_sec + 1E-6*tv.tv_usec;
+	cur = start;
+	while( cur - start < 0.01 ){
+		rc = poll(pfd, 1, 10);
+		
+		/* update current timestamp */
+		gettimeofday(&tv,NULL);
+		cur = tv.tv_sec + 1E-6*tv.tv_usec;
+		if( rc < 0 ){
+			if( errno == EINTR ){
+				continue;
+			} else {
+				*shutdown = -errno;
+				return false;
+			}
+		}
+		break;
 	}
+
 	if (pfd[0].revents & (POLLERR | POLLHUP | POLLNVAL)) {
 		if (pfd[0].revents & (POLLERR | POLLNVAL)) {
 			*shutdown = -EBADF;
@@ -280,26 +312,29 @@ static int _send_to_stepds(hostlist_t hl, const char *addr, uint32_t len,
 }
 
 int pmixp_stepd_send(char *nodelist, const char *address, char *data,
-		uint32_t len)
+		     uint32_t len, unsigned int start_delay, unsigned int retry_cnt,
+		     int silent)
 {
 
 	int retry = 0, rc;
-	unsigned int delay = 100; /* in milliseconds */
+	unsigned int delay = start_delay; /* in milliseconds */
 	hostlist_t hl;
 
 	hl = hostlist_create(nodelist);
 	while (1) {
-		if (retry == 1) {
-			PMIXP_ERROR("send failed, rc=%d, retrying", rc);
+		if (!silent && retry >= 1) {
+			PMIXP_ERROR("send failed, rc=%d, try #%d", rc, retry);
 		}
 
 		rc = _send_to_stepds(hl, address, len, data);
 
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS){
 			break;
+		}
 		retry++;
-		if (retry >= PMIXP_MAX_RETRY)
+		if (retry >= retry_cnt){
 			break;
+		}
 		/* wait with constantly increasing delay */
 		struct timespec ts =
 			{(delay / 1000), ((delay % 1000) * 1000000)};
@@ -363,4 +398,63 @@ int pmixp_rmdir_recursively(char *path)
 		PMIXP_ERROR_STD("Cannot remove path=\"%s\"", path);
 	}
 	return rc;
+}
+
+static inline int _file_fix_rights(char *path, uid_t uid, mode_t mode)
+{
+	if (chmod(path, mode) < 0) {
+		PMIXP_ERROR("chown(%s): %m", path);
+		return errno;
+	}
+
+	if (chown(path, uid, (gid_t) -1) < 0) {
+		PMIXP_ERROR("chown(%s): %m", path);
+		return errno;
+	}
+	return 0;
+}
+
+int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
+{
+	char nested_path[PATH_MAX];
+	DIR *dp;
+	struct dirent *ent;
+	int rc;
+
+	/*
+	 * Make sure that "directory" exists and is a directory.
+	 */
+	if (1 != (rc = _is_dir(path))) {
+		PMIXP_ERROR("path=\"%s\" is not a directory", path);
+		return (rc == 0) ? -1 : rc;
+	}
+
+	if ((dp = opendir(path)) == NULL) {
+		PMIXP_ERROR_STD("cannot open path=\"%s\"", path);
+		return -1;
+	}
+
+	while ((ent = readdir(dp)) != NULL) {
+		if (0 == strcmp(ent->d_name, ".")
+				|| 0 == strcmp(ent->d_name, "..")) {
+			/* skip special dir's */
+			continue;
+		}
+		snprintf(nested_path, sizeof(nested_path), "%s/%s", path,
+				ent->d_name);
+		if (_is_dir(nested_path)) {
+			if( (rc = _file_fix_rights(nested_path, uid, mode)) ){
+				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
+				return -1;
+			}
+			pmixp_rmdir_recursively(nested_path);
+		} else {
+			if( (rc = _file_fix_rights(nested_path, uid, mode)) ){
+				PMIXP_ERROR_STD("cannot fix permissions for \"%s\"", nested_path);
+				return -1;
+			}
+		}
+	}
+	closedir(dp);
+	return 0;
 }
