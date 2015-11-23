@@ -224,12 +224,13 @@ proc submit_cpu {ntasks ncpus} {
 
 	global srun bin_printenv nodelist exit_code num_nodes tasks nodes
 	global bin_bash number alpha_numeric_nodelist wait_for_job
+	global bin_sort bin_uniq
 
 	# Wait awhile for the jobs to cleanup
 	sleep 2
 
 	set x 0
-	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | sort -V | uniq -c"
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | $bin_sort -V | $bin_uniq -c"
 	expect {
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
@@ -256,12 +257,13 @@ proc submit_tasks {ntasks ntaskpn} {
 
 	global srun bin_printenv nodelist exit_code num_nodes tasks nodes bin_bash
 	global number alpha_numeric_nodelist
+	global bin_sort bin_uniq
 
 	# Wait awhile for the jobs to clean up
 	sleep 2
 
 	set x 0
-	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | sort -V | uniq -c"
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | $bin_sort -V | $bin_uniq -c"
 	expect {
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
