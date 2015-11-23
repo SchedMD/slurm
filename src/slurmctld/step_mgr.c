@@ -2929,18 +2929,12 @@ extern int pack_ctld_job_step_info_response_msg(
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (slurm_mcs_get_privatedata() == 0) &&
 		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
-			continue;
-
-		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (slurm_mcs_get_privatedata() == 1) &&
-		    (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0) &&
-		    !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account))
+						  job_ptr->account) &&
+		    ((slurm_mcs_get_privatedata() == 0) ||
+		     ((slurm_mcs_get_privatedata() == 1) &&
+		      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
 			continue;
 
 		step_iterator = list_iterator_create(job_ptr->step_list);

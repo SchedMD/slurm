@@ -129,7 +129,7 @@ extern int mcs_p_check_mcs_label (uint32_t user_id, char *mcs_label)
 	int rc = SLURM_SUCCESS;
 	user = uid_to_string((uid_t) user_id);
 	if (mcs_label != NULL) {
-		if (strcmp(mcs_label,user) == 0) {
+		if (strcmp(mcs_label, user) == 0) {
 			rc = SLURM_SUCCESS;
 		} else {
 			rc = SLURM_ERROR;

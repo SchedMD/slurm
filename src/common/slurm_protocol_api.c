@@ -1724,8 +1724,8 @@ extern int slurm_get_auth_ttl(void)
 		return ttl;
 
 	auth_info = slurm_get_auth_info();
-        if (!auth_info)
-                return 0;
+	if (!auth_info)
+		return 0;
 
 	tmp = strstr(auth_info, "ttl=");
 	if (tmp) {
@@ -2245,32 +2245,32 @@ int slurm_set_launch_type(char *launch_type)
  * RET mcs_plugin name, must be xfreed by caller */
 char *slurm_get_mcs_plugin(void)
 {
-        char *mcs_plugin = NULL;
-        slurm_ctl_conf_t *conf;
+	char *mcs_plugin = NULL;
+	slurm_ctl_conf_t *conf;
 
-        if (slurmdbd_conf) {
+	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
 		mcs_plugin = xstrdup(conf->mcs_plugin);
 		slurm_conf_unlock();
 	}
-        return mcs_plugin;
+	return mcs_plugin;
 }
 
 /* slurm_get_mcs_plugin_params
  * RET mcs_plugin_params name, must be xfreed by caller */
 char *slurm_get_mcs_plugin_params(void)
 {
-        char *mcs_plugin_params = NULL;
-        slurm_ctl_conf_t *conf;
+	char *mcs_plugin_params = NULL;
+	slurm_ctl_conf_t *conf;
 
-        if (slurmdbd_conf) {
-        } else {
-                conf = slurm_conf_lock();
-                mcs_plugin_params = xstrdup(conf->mcs_plugin_params);
-                slurm_conf_unlock();
-        }
-        return mcs_plugin_params;
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mcs_plugin_params = xstrdup(conf->mcs_plugin_params);
+		slurm_conf_unlock();
+	}
+	return mcs_plugin_params;
 }
 
 /* slurm_get_preempt_type

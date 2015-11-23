@@ -63,9 +63,9 @@ char *mcs_params = NULL;
 char *mcs_params_common = NULL;
 char *mcs_params_specific = NULL;
 
-static int slurm_mcs_check_and_load_enforced(char *params);
-static int slurm_mcs_check_and_load_select(char *params);
-static int slurm_mcs_check_and_load_privatedata(char *params);
+static int _slurm_mcs_check_and_load_enforced(char *params);
+static int _slurm_mcs_check_and_load_select(char *params);
+static int _slurm_mcs_check_and_load_privatedata(char *params);
 
 /*
  * Initialize context for mcs plugin
@@ -100,9 +100,9 @@ extern int slurm_mcs_init(void)
 			*sep = '\0';
 		}
 	}
-	slurm_mcs_check_and_load_privatedata(mcs_params_common);
-	slurm_mcs_check_and_load_enforced(mcs_params_common);
-	slurm_mcs_check_and_load_select(mcs_params_common);
+	_slurm_mcs_check_and_load_privatedata(mcs_params_common);
+	_slurm_mcs_check_and_load_enforced(mcs_params_common);
+	_slurm_mcs_check_and_load_select(mcs_params_common);
 
 	g_mcs_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
@@ -153,17 +153,17 @@ extern char *slurm_mcs_get_params_specific(void)
 	return mcs_params_common_spec;
 }
 
-static int slurm_mcs_check_and_load_enforced(char *params)
+static int _slurm_mcs_check_and_load_enforced(char *params)
 {
 	enforced = 0;
 	if ((params != NULL) && strstr(params, "enforced"))
 		enforced = 1;
 	else
-		info("mcs: MCSParameters = %s. ondemand set.",params);
+		info("mcs: MCSParameters = %s. ondemand set.", params);
 	return SLURM_SUCCESS;
 }
 
-static int slurm_mcs_check_and_load_select(char *params)
+static int _slurm_mcs_check_and_load_select(char *params)
 {
 	select_enforced = 0;
 	if (params == NULL) {
@@ -176,12 +176,12 @@ static int slurm_mcs_check_and_load_select(char *params)
 	} else if (strstr(params, "select")) {
 		select_enforced = 1;
 	} else {
-		info("mcs: MCSParameters = %s. ondemandselect set.",params);
+		info("mcs: MCSParameters = %s. ondemandselect set.", params);
 	}
 	return SLURM_SUCCESS;
 }
 
-static int slurm_mcs_check_and_load_privatedata(char *params)
+static int _slurm_mcs_check_and_load_privatedata(char *params)
 {
 	if (params == NULL) {
 		private_data = 0;

@@ -799,8 +799,8 @@ static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 		return;
 	/* Need to filter out any nodes allocated with other mcs */
 	if (job_ptr->mcs_label != NULL) {
-		for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-		     i++, node_ptr++) {
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
 			/* if there is a mcs_label -> OK if it's the same */
 			if ((node_ptr->mcs_label != NULL) &&
 			     strcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
@@ -808,13 +808,13 @@ static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 			}
 			/* if no mcs_label -> OK if no jobs running */
 			if ((node_ptr->mcs_label == NULL) &&
-				(node_ptr->run_job_cnt  != 0)) {
+			    (node_ptr->run_job_cnt != 0)) {
 				bit_clear(usable_node_mask, i);
 			}
 		}
 	} else {
-		for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-		    i++, node_ptr++) {
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count;i++, node_ptr++) {
 			 if (node_ptr->mcs_label != NULL) {
 				bit_clear(usable_node_mask, i);
 			}

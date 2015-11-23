@@ -169,21 +169,25 @@ static int _check_and_load_params()
 				info("mcs: Only one invalid group : %s. "
 				"ondemand, ondemandselect set", groups_names);
 				nb_mcs_groups = 0;
-				array_mcs_parameter = xmalloc(nb_mcs_groups * sizeof(uint32_t));
+				array_mcs_parameter = xmalloc(nb_mcs_groups *
+							      sizeof(uint32_t));
 				slurm_mcs_reset_params();
 				return SLURM_ERROR;
 			} else {
 				nb_mcs_groups = 1;
-				array_mcs_parameter = xmalloc(nb_mcs_groups * sizeof(uint32_t));
+				array_mcs_parameter = xmalloc(nb_mcs_groups *
+							      sizeof(uint32_t));
 				array_mcs_parameter[0] = gid;
 				return SLURM_SUCCESS;
 			}
 		} else {
 			/* no group */
 			info("mcs: no group in MCSParameters : %s. "
-			    "ondemand, ondemandselect set", mcs_params_specific);
+			     "ondemand, ondemandselect set",
+			     mcs_params_specific);
 			nb_mcs_groups = 0;
-			array_mcs_parameter = xmalloc(nb_mcs_groups * sizeof(uint32_t));
+			array_mcs_parameter = xmalloc(nb_mcs_groups *
+						      sizeof(uint32_t));
 			slurm_mcs_reset_params();
 			return SLURM_ERROR;
 		}
@@ -198,7 +202,8 @@ static int _check_and_load_params()
 		if (i == (nb_mcs_groups - 1)) {
 			/* last group, test : */
 			if (strstr(groups_names, ":")) {
-				groups_names = strtok_r(groups_names, ":", &name_ptr2);
+				groups_names = strtok_r(groups_names, ":",
+							&name_ptr2);
 			}
 		}
 		if ( gid_from_string( groups_names, &gid ) != 0 ) {
@@ -354,8 +359,8 @@ extern int mcs_p_check_mcs_label (uint32_t user_id, char *mcs_label)
 		/* test if this group is owned by the user */
 		slurm_user_gid = gid_from_uid(user_id);
 		group_id = (uint32_t) slurm_user_gid;
-		rc = _get_user_groups(user_id, group_id,
-		      groups, MAX_GROUPS, &ngroups);
+		rc = _get_user_groups(user_id, group_id, groups, MAX_GROUPS,
+				      &ngroups);
 		if (rc)	/* Failed to get groups */
 			return rc;
 		rc = SLURM_ERROR;
