@@ -108,7 +108,9 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			if (shutdown) {
 				obj->shutdown = true;
 				if (shutdown < 0) {
-					PMIXP_ERROR_NO(shutdown, "sd=%d failure", obj->fd);
+					PMIXP_ERROR_NO(shutdown,
+							"sd=%d failure",
+							obj->fd);
 				}
 			}
 			return 0;
@@ -296,8 +298,7 @@ int pmixp_agent_start(void)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	while ((errno = pthread_create(&_agent_tid, &attr, _agent_thread, NULL))) {
 		if (++retries > MAX_RETRIES) {
-			PMIXP_ERROR_STD("pthread_create error");
-			slurm_attr_destroy(&attr);
+			PMIXP_ERROR_STD("pthread_create error"); slurm_attr_destroy(&attr);
 			return SLURM_ERROR;
 		}
 		sleep(1);
@@ -316,8 +317,7 @@ int pmixp_agent_start(void)
 	while ((errno = pthread_create(&_timer_tid, &attr, _pmix_timer_thread,
 			NULL))) {
 		if (++retries > MAX_RETRIES) {
-			PMIXP_ERROR_STD("pthread_create error");
-			slurm_attr_destroy(&attr);
+			PMIXP_ERROR_STD("pthread_create error"); slurm_attr_destroy(&attr);
 			return SLURM_ERROR;
 		}
 		sleep(1);

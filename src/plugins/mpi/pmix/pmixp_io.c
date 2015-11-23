@@ -174,8 +174,8 @@ static inline int _rcvd_swithch_to_body(pmixp_io_engine_t *eng)
 	eng->rcvd_payload = NULL;
 	if (eng->header.unpack_hdr_cb) {
 		/* If this is inter-node communication - unpack the buffer first */
-		rc = eng->header.unpack_hdr_cb(eng->rcvd_hdr, eng->rcvd_hdr_host);
-		if (0 != rc) {
+		if ((rc = eng->header.unpack_hdr_cb(eng->rcvd_hdr,
+				eng->rcvd_hdr_host))) {
 			PMIXP_ERROR_NO(rc, "Cannot unpack message header");
 			return rc;
 		}
@@ -255,7 +255,7 @@ void pmix_io_rcvd(pmixp_io_engine_t *eng)
 	}
 	/* we are receiving the body */
 	xassert(eng->rcvd_hdr_offs == eng->header.net_size);
-	if (0 == eng->rcvd_pay_size) {
+	if (eng->rcvd_pay_size == 0) {
 		/* zero-byte message. exit. next time we will hit pmix_nbmsg_rcvd_ready */
 		return;
 	}
@@ -381,7 +381,7 @@ bool pmix_io_send_pending(pmixp_io_engine_t *eng)
 	if (eng->send_current == NULL) {
 		/* Try next element */
 		int n = list_count(eng->send_queue);
-		if (0 == n) {
+		if (n == 0) {
 			/* Nothing to do */
 			return false;
 		}
@@ -439,7 +439,7 @@ void pmix_io_send_progress(pmixp_io_engine_t *eng)
 				pmix_io_finalize(eng, shutdown);
 				return;
 			}
-			if (0 == cnt) {
+			if (cnt == 0) {
 				break;
 			}
 			eng->send_pay_offs += cnt;
