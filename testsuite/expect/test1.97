@@ -42,7 +42,7 @@ set file_in      "test$test_id\_sc"
 array set nodes {}
 array set tasks {}
 
-# some systems take a while to run the | sort -n | uniq -c stuff
+# some systems take a while to run the | sort -V | uniq -c stuff
 set timeout 60
 
 print_header $test_id
@@ -229,7 +229,7 @@ proc submit_cpu {ntasks ncpus} {
 	sleep 2
 
 	set x 0
-	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | sort -n | uniq -c"
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | sort -V | uniq -c"
 	expect {
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
@@ -261,7 +261,7 @@ proc submit_tasks {ntasks ntaskpn} {
 	sleep 2
 
 	set x 0
-	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | sort -n | uniq -c"
+	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | sort -V | uniq -c"
 	expect {
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
