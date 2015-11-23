@@ -111,8 +111,6 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     int *node_set_size, char **err_msg,
 			     bool test_only);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
-static void _filter_by_node_owner(struct job_record *job_ptr,
-				  bitstr_t *usable_node_mask);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
 				 char **err_msg);
@@ -742,8 +740,8 @@ _resolve_shared_status(struct job_record *job_ptr, uint16_t part_max_share,
  * job_ptr IN - Job to be scheduled
  * usable_node_mask IN/OUT - Nodes available for use by this job's user
  */
-static void _filter_by_node_owner(struct job_record *job_ptr,
-				  bitstr_t *usable_node_mask)
+extern void filter_by_node_owner(struct job_record *job_ptr,
+				 bitstr_t *usable_node_mask)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr2;
@@ -897,7 +895,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	_filter_by_node_owner(job_ptr, avail_node_bitmap);
+	filter_by_node_owner(job_ptr, avail_node_bitmap);
 
 	/* get mcs_select */
 	mcs_select = slurm_mcs_get_select(job_ptr);

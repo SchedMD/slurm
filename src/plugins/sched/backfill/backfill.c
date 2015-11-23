@@ -1309,6 +1309,7 @@ next_task:
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		bit_and(avail_bitmap, non_cg_bitmap);
+		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		for (j=0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
