@@ -113,8 +113,6 @@ static int  _build_node_list(struct job_record *job_ptr,
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
 static void _filter_by_node_owner(struct job_record *job_ptr,
 				  bitstr_t *usable_node_mask);
-static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
-				  bitstr_t *usable_node_mask);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
 				 char **err_msg);
@@ -789,14 +787,15 @@ static void _filter_by_node_owner(struct job_record *job_ptr,
  * job_ptr IN - Job to be scheduled
  * usable_node_mask IN/OUT - Nodes available for use by this job's mcs
  */
-static void _filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
-				bitstr_t *usable_node_mask)
+extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
+			       bitstr_t *usable_node_mask)
 {
 	struct node_record *node_ptr;
 	int i;
 
 	if (mcs_select != 1)
 		return;
+
 	/* Need to filter out any nodes allocated with other mcs */
 	if (job_ptr->mcs_label != NULL) {
 		for (i = 0, node_ptr = node_record_table_ptr;
@@ -902,7 +901,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* get mcs_select */
 	mcs_select = slurm_mcs_get_select(job_ptr);
-	_filter_by_node_mcs(job_ptr, mcs_select, avail_node_bitmap);
+	filter_by_node_mcs(job_ptr, mcs_select, avail_node_bitmap);
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;

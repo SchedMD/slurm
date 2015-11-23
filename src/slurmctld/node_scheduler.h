@@ -68,6 +68,14 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc);
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		bool suspended, bool preempted);
 
+/* Remove nodes from consideration for allocation based upon "mcs" by
+ * other users
+ * job_ptr IN - Job to be scheduled
+ * usable_node_mask IN/OUT - Nodes available for use by this job's mcs
+ */
+extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
+			       bitstr_t *usable_node_mask);
+
 /*
  * re_kill_job - for a given job, deallocate its nodes for a second time,
  *	basically a cleanup for failed deallocate() calls

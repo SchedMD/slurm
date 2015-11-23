@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     into a line. Required for decent perforamnce with huge scripts.
  -- Add debug flag for timing Cray portions of the code.
  -- Remove all *.la files from RPMs.
+ -- Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
+    to specific users or groups.
 
 * Changes in Slurm 15.08.5
 ==========================

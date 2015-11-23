@@ -76,6 +76,7 @@
 #include "src/common/power.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -814,7 +815,7 @@ static int _attempt_backfill(void)
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	int bb, i, j, node_space_recs;
+	int bb, i, j, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
 	uint32_t end_time, end_reserve;
@@ -982,6 +983,7 @@ static int _attempt_backfill(void)
 		}
 
 		job_ptr  = job_queue_rec->job_ptr;
+		mcs_select = slurm_mcs_get_select(job_ptr);
 		/* With bf_continue configured, the original job could have
 		 * been cancelled and purged. Validate pointer here. */
 		if ((job_ptr->magic  != JOB_MAGIC) ||
@@ -1307,6 +1309,7 @@ next_task:
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		bit_and(avail_bitmap, non_cg_bitmap);
+		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		for (j=0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0))
