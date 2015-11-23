@@ -182,6 +182,7 @@ cset bin_touch  "touch"
 cset bin_uname	"uname"
 cset bin_wc	"wc"
 cset bin_printenv "printenv"
+cset bin_uniq   "uniq"
 
 #
 # Let the commands complete without expect timing out waiting for a
