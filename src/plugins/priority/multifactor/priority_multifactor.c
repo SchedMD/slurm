@@ -1832,9 +1832,9 @@ extern List priority_p_get_priority_factors_list(
 			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 			    (job_ptr->user_id != uid) &&
 			    !validate_operator(uid) &&
-			    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-							  job_ptr->account) &&
-			    ((slurm_mcs_get_privatedata() == 0) ||
+			    (((slurm_mcs_get_privatedata() == 0) &&
+			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+							    job_ptr->account))||
 			     ((slurm_mcs_get_privatedata() == 1) &&
 			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label)
 			       != 0))))

@@ -7863,8 +7863,9 @@ static bool _hide_job(struct job_record *job_ptr, uid_t uid)
 {
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account)&&
-	    ((slurm_mcs_get_privatedata() == 0) ||
+	    (((slurm_mcs_get_privatedata() == 0) &&
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					    job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
 		return true;
@@ -12251,8 +12252,9 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 		return ESLURM_INVALID_JOB_ID;
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account)&&
-	    ((slurm_mcs_get_privatedata() == 0) ||
+	    (((slurm_mcs_get_privatedata() == 0) &&
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					    job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
 	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
 		return ESLURM_ACCESS_DENIED;
