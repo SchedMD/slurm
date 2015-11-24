@@ -1053,8 +1053,11 @@ static char *_setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 	char *prefix = "t1";
 	char *extra = NULL;
 
+	/* Since this gets put in an SQL query we don't want it to be
+	 * NULL since it would print (null) instead of nothing.
+	 */
 	if (!assoc_cond)
-		return NULL;
+		return xstrdup("");
 
 	/* we need to check this first so we can update the
 	   with_sub_accts if needed since this the qos_list is a

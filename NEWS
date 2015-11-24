@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix wrong memory free when parsing SrunPortRange=0-0 configuration.
  -- BurstBuffer/cray: Fix job record purging if cancelled from pending state.
  -- BGQ - Handle database throw correctly when syncing users on blocks.
+ -- MySQL - Make sure we don't have a NULL string returned when not
+    requesting any specific association.
 
 * Changes in Slurm 15.08.4
 ==========================
