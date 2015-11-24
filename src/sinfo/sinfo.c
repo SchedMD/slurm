@@ -736,6 +736,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint32_t tmp = 0;
 
+	if (params.node_flag)
+		return false;
+
 	if (params.match_flags.hostnames_flag &&
 	    (hostlist_find(sinfo_ptr->hostnames,
 			   node_ptr->node_hostname) == -1))

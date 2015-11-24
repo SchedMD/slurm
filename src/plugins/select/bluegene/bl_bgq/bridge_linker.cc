@@ -1106,6 +1106,10 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 			"Block::getUsers",
 			err.getError().toValue(), bg_record);
 		return REMOVE_USER_ERR;
+	} catch (const bgsched::DatabaseException& err) {
+		bridge_handle_database_errors(
+			"Block::getUsers", err.getError().toValue());
+		return REMOVE_USER_ERR;
 	}
 
 	if (bg_record->job_ptr && (bg_record->job_ptr->magic == JOB_MAGIC)) {

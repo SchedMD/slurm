@@ -70,7 +70,7 @@ expect {
 		exit 0
 	}
 	-re $prompt {
-		send "$srun -l -c1 ./$file_bash | sort -n\r"
+		send "$srun -l -c1 ./$file_bash | $bin_sort -V\r"
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
@@ -135,7 +135,7 @@ if {$task_cnt < (2 * $node_cnt)} {
 set this_cnt  0
 set prev_node -1
 set this_node -1
-send "$srun -l -n $task_cnt -m block ./$file_bash | sort -n\r"
+send "$srun -l -n $task_cnt -m block ./$file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -185,7 +185,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m cyclic ./$file_bash | sort -n\r"
+send "$srun -l -n $task_cnt -m cyclic ./$file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -235,7 +235,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m plane=$block_size ./$file_bash | sort -n\r"
+send "$srun -l -n $task_cnt -m plane=$block_size ./$file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)

@@ -46,7 +46,7 @@ extern int bridge_handle_database_errors(
 
 	switch (err) {
 	case bgsched::DatabaseErrors::DatabaseError:
-		error("%s: Can't access to the database!", function);
+		error("%s: Can't access the database!", function);
 		break;
 	case bgsched::DatabaseErrors::OperationFailed:
 		error("%s: Database option Failed!", function);
