@@ -456,6 +456,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->burst_buffer = opt.burst_buffer;
 	if (opt.begin)
 		desc->begin_time = opt.begin;
+	if (opt.deadline)
+		desc->deadline = opt.deadline;
 	if (opt.account)
 		desc->account = xstrdup(opt.account);
 	if (opt.comment)

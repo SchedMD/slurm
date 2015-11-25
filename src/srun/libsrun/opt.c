@@ -209,6 +209,7 @@
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_ACCEL_BIND      0x161
 #define LONG_OPT_MCS_LABEL       0x165
+#define LONG_OPT_DEADLINE        0x166
 
 extern char **environ;
 
@@ -935,6 +936,7 @@ static void _set_options(const int argc, char **argv)
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
+		{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"exclusive",        optional_argument, 0, LONG_OPT_EXCLUSIVE},
@@ -1256,6 +1258,14 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
+			break;
+		case LONG_OPT_DEADLINE:
+			opt.deadline = parse_time(optarg, 0);
+			if (errno == ESLURM_INVALID_TIME_VALUE) {
+				error("Invalid deadline specification %s",
+				       optarg);
+				exit(error_exit);
+			}
 			break;
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
@@ -2244,7 +2254,10 @@ static bool _opt_verify(void)
 		if (opt.time_min == 0)
 			opt.time_min = INFINITE;
 	}
-
+	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
+		error("Incompatible begin and deadline time specification");
+		exit(error_exit);
+	}
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
 		if ((opt.ckpt_interval < 0) &&
@@ -2555,6 +2568,11 @@ static void _opt_list(void)
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
 		info("begin          : %s", time_str);
 	}
+	if (opt.deadline) {
+		char time_str[32];
+		slurm_make_time_str(&opt.deadline, time_str, sizeof(time_str));
+		info("deadline       : %s", time_str);
+	}
 	info("prolog         : %s", opt.prolog);
 	info("epilog         : %s", opt.epilog);
 	info("mail_type      : %s", print_mail_type(opt.mail_type));
@@ -2705,6 +2723,8 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"      --deadline=time         remove the job if no ending possible before\n"
+"                              this deadline (start > (deadline - time[-min]))\n"
 "  -D, --chdir=path            change remote current working directory\n"
 "      --export=env_vars|NONE  environment variables passed to launcher with\n"
 "                              optional values or NONE (pass no variables)\n"

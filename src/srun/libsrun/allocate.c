@@ -752,6 +752,8 @@ job_desc_msg_create_from_opts (void)
 		j->burst_buffer = opt.burst_buffer;
 	if (opt.begin)
 		j->begin_time = opt.begin;
+	if (opt.deadline)
+		j->deadline = opt.deadline;
 	if (opt.licenses)
 		j->licenses = opt.licenses;
 	if (opt.network)

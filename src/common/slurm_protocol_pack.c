@@ -6024,6 +6024,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack8 (&uint8_tmp,         buffer);	/* vestigial */
 		safe_unpack16(&job->restart_cnt,  buffer);
 		safe_unpack16(&job->show_flags,   buffer);
+		safe_unpack_time(&job->deadline, buffer);
 
 		safe_unpack32(&job->alloc_sid,    buffer);
 		safe_unpack32(&job->time_limit,   buffer);
@@ -8066,6 +8067,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->network, buffer);
 		pack_time(job_desc_ptr->begin_time, buffer);
 		pack_time(job_desc_ptr->end_time, buffer);
+		pack_time(job_desc_ptr->deadline, buffer);
 
 		packstr(job_desc_ptr->licenses, buffer);
 		pack16(job_desc_ptr->mail_type, buffer);
@@ -8581,6 +8583,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack_time(&job_desc_ptr->begin_time, buffer);
 		safe_unpack_time(&job_desc_ptr->end_time, buffer);
+		safe_unpack_time(&job_desc_ptr->deadline, buffer);
 
 		safe_unpackstr_xmalloc(&job_desc_ptr->licenses,
 				       &uint32_tmp, buffer);

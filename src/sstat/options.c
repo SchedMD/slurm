@@ -334,6 +334,8 @@ int decode_state_char(char *state)
 		return JOB_NODE_FAIL;
 	else if (!strcasecmp(state, "pr"))
 		return JOB_PREEMPTED;
+	else if (!strcasecmp(state, "dl"))
+		return JOB_DEADLINE;
 	else
 		return -1; // unknown
 }

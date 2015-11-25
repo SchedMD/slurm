@@ -1226,6 +1226,36 @@ next_task:
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
 
+		/* test of deadline */
+		time_t now = time(NULL);
+		char time_str_deadline[32];
+		uint32_t time_check;
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
+		     job_ptr->deadline < (now + (time_limit * 60))) {
+			slurm_make_time_str(&job_ptr->deadline, time_str_deadline,
+					    sizeof(time_str_deadline));
+			time_check = time_limit;
+			time_limit = job_ptr->time_limit = difftime(job_ptr->deadline,now)/60;
+			orig_time_limit = time_limit;
+			if ((!job_ptr->time_min) || (job_ptr->time_min &&
+			    (job_ptr->time_min < time_limit))) {
+				info("backfill: JobId %u exceeded deadline %s and time limit changed"
+				     " from %u to %u",
+				     job_ptr->job_id, time_str_deadline, time_check, time_limit);
+			} else {
+				last_job_update = now;
+				job_ptr->job_state = JOB_DEADLINE;
+				job_ptr->exit_code = 1;
+				job_ptr->state_reason = FAIL_DEADLINE;
+				xfree(job_ptr->state_desc);
+				job_ptr->start_time = job_ptr->end_time = now;
+				job_completion_logger(job_ptr, false);
+				info("backfill: JobId %u exceeded deadline %s and cancelled",
+				     job_ptr->job_id, time_str_deadline);
+				continue;
+			}
+		}
+
 		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:

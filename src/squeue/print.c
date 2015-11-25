@@ -855,7 +855,16 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
-
+int _print_job_deadline(job_info_t * job, int width, bool right, char* suffix)
+{
+	if (job == NULL)        /* Print the Header instead */
+		_print_str("DEADLINE", width, right, true);
+	else
+		_print_time(job->deadline, 0, width, right);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
 int _print_job_time_end(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
@@ -958,6 +967,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else if (!IS_JOB_COMPLETING(job)
 		   && (IS_JOB_PENDING(job)
 		       || IS_JOB_TIMEOUT(job)
+		       || IS_JOB_DEADLINE(job)
 		       || IS_JOB_FAILED(job))) {
 		char *reason_fmt = NULL, *reason = NULL;
 		if (job->state_desc)

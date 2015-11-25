@@ -274,6 +274,7 @@ enum job_states {
 	JOB_NODE_FAIL,		/* terminated on node failure */
 	JOB_PREEMPTED,		/* terminated due to preemption */
 	JOB_BOOT_FAIL,		/* terminated due to node boot failure */
+	JOB_DEADLINE,		/* terminated on deadline */
 	JOB_END			/* not a real state, last entry in table */
 };
 #define	JOB_STATE_BASE	  0x000000ff	/* Used for job_states above */
@@ -536,6 +537,7 @@ enum job_state_reason {
 				      * (burst buffer) */
 	WAIT_QOS_MIN_BB,           /* QOS MinTRESPerJob not reached
 				    * (burst buffer) */
+	FAIL_DEADLINE,              /* reached deadline */
 };
 
 enum job_acct_types {
@@ -1394,6 +1396,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
+	time_t deadline;	/* deadline */
 	char *dependency;	/* synchronize job execution with other jobs */
 	time_t end_time;	/* time by which job must complete, used for
 				 * job update only now, possible deadline
@@ -1557,6 +1560,7 @@ typedef struct job_info {
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
+	time_t deadline;	/* deadline */
 	char *dependency;	/* synchronize job execution with other jobs */
 	uint32_t derived_ec;	/* highest exit code of all job steps */
 	time_t eligible_time;	/* time job is eligible for running */

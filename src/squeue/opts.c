@@ -1475,7 +1475,12 @@ extern int parse_long_format( char* format_long )
 						    right_justify,
 						    suffix );
 			else if (!strcasecmp(token, "mcslabel"))
-				job_format_add_mcs_label( params.format_list,
+				job_format_add_mcs_label(params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
+			else if (!strcasecmp(token, "deadline"))
+				job_format_add_deadline(params.format_list,
 							field_size,
 							right_justify,
 							suffix );

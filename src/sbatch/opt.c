@@ -192,6 +192,7 @@
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_KILL_INV_DEP    0x161
 #define LONG_OPT_MCS_LABEL       0x165
+#define LONG_OPT_DEADLINE        0x166
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -743,6 +744,7 @@ static struct option long_options[] = {
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
+	{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
 	{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
@@ -1390,6 +1392,14 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
+			break;
+		case LONG_OPT_DEADLINE:
+			opt.deadline = parse_time(optarg, 0);
+			if (errno == ESLURM_INVALID_TIME_VALUE) {
+				error("Invalid deadline specification %s",
+				       optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
@@ -2591,6 +2601,10 @@ static bool _opt_verify(void)
 		if (opt.time_min == 0)
 			opt.time_min = INFINITE;
 	}
+	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
+		error("Incompatible begin and deadline time specification");
+		exit(error_exit);
+	}
 
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
@@ -2940,6 +2954,11 @@ static void _opt_list(void)
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
 		info("begin             : %s", time_str);
 	}
+	if (opt.deadline) {
+		char time_str[32];
+		slurm_make_time_str(&opt.deadline, time_str, sizeof(time_str));
+		info("deadline          : %s", time_str);
+	}
 	info("array             : %s",
 	     opt.array_inx == NULL ? "N/A" : opt.array_inx);
 	info("cpu_freq_min      : %u", opt.cpu_freq_min);
@@ -3037,6 +3056,8 @@ static void _help(void)
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"      --deadline=time         remove the job if no ending possible before\n"
+"                              this deadline (start > (deadline - time[-min]))\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"

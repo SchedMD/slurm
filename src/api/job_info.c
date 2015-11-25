@@ -562,11 +562,21 @@ line6:
 	xstrcat(out, tmp_line);
 	if ((job_ptr->time_limit == INFINITE) &&
 	    (job_ptr->end_time > time(NULL)))
-		sprintf(tmp_line, "Unknown");
+		sprintf(tmp_line, "Unknown ");
 	else {
 		slurm_make_time_str ((time_t *)&job_ptr->end_time, time_str,
 				     sizeof(time_str));
+		sprintf(tmp_line, "%s ", time_str);
+	}
+	xstrcat(out, tmp_line);
+	snprintf(tmp_line, sizeof(tmp_line), "Deadline=");
+	xstrcat(out, tmp_line);
+	if (job_ptr->deadline) {
+		slurm_make_time_str((time_t *)&job_ptr->deadline, time_str,
+				     sizeof(time_str));
 		sprintf(tmp_line, "%s", time_str);
+	} else {
+		sprintf(tmp_line, "N/A");
 	}
 	xstrcat(out, tmp_line);
 	if (one_liner)

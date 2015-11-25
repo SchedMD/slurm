@@ -1591,6 +1591,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "AssocMaxBBMinutesPerJob";
 	case WAIT_QOS_MIN_BB:
 		return "QOSMinBB";
+	case FAIL_DEADLINE:
+		return "DeadLine";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -1830,6 +1832,8 @@ extern char *job_state_string(uint32_t inx)
 		return "PREEMPTED";
 	case JOB_BOOT_FAIL:
 		return "BOOT_FAIL";
+	case JOB_DEADLINE:
+		return "DEADLINE";
 	default:
 		return "?";
 	}
@@ -1875,6 +1879,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "PR";
 	case JOB_BOOT_FAIL:
 		return "BF";
+	case JOB_DEADLINE:
+		return "DL";
 	default:
 		return "?";
 	}

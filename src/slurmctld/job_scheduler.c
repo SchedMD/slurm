@@ -64,6 +64,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather.h"
+#include "src/common/parse_time.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -1476,6 +1477,65 @@ next_task:
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason = WAIT_NO_REASON;
 				last_job_update = now;
+			}
+		}
+
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+			char time_str_deadline[32];
+			char time_str_inter[32];
+			time_t now = time(NULL);
+			time_t inter;
+			uint32_t time_check = 0;
+			uint32_t part_time_limit;
+
+			slurm_make_time_str(&job_ptr->deadline, time_str_deadline,
+					    sizeof(time_str_deadline));
+			if (job_ptr->part_ptr->max_time == INFINITE)
+				part_time_limit = YEAR_MINUTES;
+			else
+				part_time_limit = job_ptr->part_ptr->max_time;
+			if ((job_ptr->time_limit == NO_VAL) ||
+			    (job_ptr->time_limit == INFINITE)) {
+				time_check = part_time_limit;
+				job_ptr->limit_set.time = 1;
+			} else {
+				if (job_ptr->part_ptr->max_time == INFINITE)
+					time_check = job_ptr->time_limit;
+				else
+					time_check = MIN(job_ptr->time_limit,
+							 part_time_limit);
+			}
+
+			if ((job_ptr->time_min) && (job_ptr->time_min != NO_VAL)) {
+				inter = now + job_ptr->time_min * 60;
+				slurm_make_time_str(&inter, time_str_inter, sizeof(time_str_inter));
+				if (job_ptr->deadline < inter) {
+					info("sched: JobId %u with time_min %u exceeded deadline %s"
+					     " and cancelled ", job_ptr->job_id,
+					     job_ptr->time_min, time_str_deadline);
+				last_job_update = now;
+				job_ptr->job_state = JOB_DEADLINE;
+				job_ptr->exit_code = 1;
+				job_ptr->state_reason = FAIL_DEADLINE;
+				xfree(job_ptr->state_desc);
+				job_ptr->start_time = job_ptr->end_time = now;
+				job_completion_logger(job_ptr, false);
+				 continue;
+				}
+			}
+			if (time_check == 0) {
+				/* no time limit -> deadline is time limit */
+				job_ptr->time_limit = difftime(job_ptr->deadline,now)/60;
+				info("sched: JobId %u deadline %s changed time limit "
+				     "from %u to %u", job_ptr->job_id,
+				     time_str_deadline, time_check, job_ptr->time_limit);
+			} else if (job_ptr->deadline < (now + (time_check * 60))) {
+				last_job_update = now;
+				time_check = job_ptr->time_limit;
+				job_ptr->time_limit = difftime(job_ptr->deadline,now)/60;
+				info("sched: JobId %u exceeded deadline %s and time limit changed "
+				     "from %u to %u", job_ptr->job_id,
+				     time_str_deadline, time_check, job_ptr->time_limit);
 			}
 		}
 
