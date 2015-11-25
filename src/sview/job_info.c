@@ -319,7 +319,7 @@ static display_data_t display_data_job[] = {
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time End", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-	 {G_TYPE_STRING, SORTID_DEADLINE, "Deadline", FALSE,
+	{G_TYPE_STRING, SORTID_DEADLINE, "Deadline", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_SUSPEND, "Time Suspended", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},

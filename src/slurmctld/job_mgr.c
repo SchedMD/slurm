@@ -5360,9 +5360,10 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	/* test of deadline */
 	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL) &&
-	    (part_ptr->default_time == NO_VAL) && (job_desc->time_limit == NO_VAL)) {
+	    (part_ptr->default_time == NO_VAL) &&
+	    (job_desc->time_limit == NO_VAL)) {
 		time_t now = time(NULL);
-		job_desc->time_limit = difftime(job_desc->deadline,now)/60;
+		job_desc->time_limit = difftime(job_desc->deadline, now) / 60;
 		if ((part_ptr->max_time != NO_VAL) &&
 		    (job_desc->time_limit > part_ptr->max_time))
 			job_desc->time_limit = part_ptr->max_time;
@@ -5407,7 +5408,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		slurm_make_time_str(&job_desc->deadline, time_str_deadline,
 				    sizeof(time_str_deadline));
 		slurm_make_time_str(&now, time_str_now, sizeof(time_str_now));
-		if (job_desc->deadline < now ) {
+		if (job_desc->deadline < now) {
 			info("_valid_job_part: job's deadline smaller than now "
 			     "(%s < %s)",
 			     time_str_deadline, time_str_now);
@@ -5415,23 +5416,21 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			goto fini;
 		}
 		if ((job_desc->time_min) && (job_desc->time_min != NO_VAL) &&
-		    (job_desc->deadline < (now + job_desc->time_min*60))) {
-			info("_valid_job_part: job's min_time greater than deadline "
-			     "(%u > %s)",
+		    (job_desc->deadline < (now + job_desc->time_min * 60))) {
+			info("_valid_job_part: job's min_time greater than "
+			     "deadline (%u > %s)",
 			     job_desc->time_min, time_str_deadline);
 			rc = ESLURM_INVALID_TIME_LIMIT;
 			goto fini;
 		}
-		/* test if deadline is too small for time_limit */
-		if ((job_desc->time_limit) && (job_desc->time_limit != NO_VAL) &&
-		    (job_desc->deadline > now ) &&
-		    (job_desc->deadline < (now + job_desc->time_limit*60))) {
-			uint32_t old_time_limit;
-			old_time_limit = job_desc->time_limit;
-			job_desc->time_limit = difftime(job_desc->deadline,now) / 60;
-			info("_valid_job_part: job's time_limit greater than deadline "
-			     "%s change time_limit from %u to %u",
-			     time_str_deadline, old_time_limit, job_desc->time_limit);
+		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
+		    (job_desc->time_limit != NO_VAL) &&
+		    (job_desc->deadline < (now + job_desc->time_limit * 60))) {
+			info("_valid_job_part: job's time_limit greater than "
+			     "deadline (%u > %s)",
+			     job_desc->time_limit, time_str_deadline);
+			rc = ESLURM_INVALID_TIME_LIMIT;
+			goto fini;
 		}
 	}
 
@@ -10120,8 +10119,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_specs->time_min = job_ptr->time_min;
 		if (job_specs->time_limit == NO_VAL)
 			job_specs->time_limit = job_ptr->time_limit;
-		if (job_specs->deadline == NO_VAL)
-			job_specs->deadline = job_ptr->deadline;
 		if (!job_specs->reservation
 		    || job_specs->reservation[0] == '\0') {
 			resv_reset = true;
@@ -10625,8 +10622,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if ((job_specs->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
 		char time_str[32];
-		slurm_make_time_str(&job_ptr->deadline,time_str, sizeof(time_str));
-		if ( job_specs->deadline < now) {
+		slurm_make_time_str(&job_ptr->deadline,time_str,
+				    sizeof(time_str));
+		if (job_specs->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
 		} else if (authorized) {
 			/* update deadline */
@@ -10641,7 +10639,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			info("sched: Attempt to extend end time for job %u",
 			     job_specs->job_id);
-			 error_code = ESLURM_ACCESS_DENIED;
+			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
