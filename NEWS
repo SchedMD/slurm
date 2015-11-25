@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     has running jobs.
  -- Log the request to terminate a job at info level if DebugFlags includes
     the Steps keyword.
+ -- Patch slurmctld code to prevent memory corruption when running
+    _slurm_rpc_epilog_complete.
 
 * Changes in Slurm 14.11.10
 ===========================
