@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove all *.la files from RPMs.
  -- Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
     to specific users or groups.
+ -- Install the pmi2 unix sockets in slurmd spool directory instead of /tmp.
 
 * Changes in Slurm 15.08.5
 ==========================
