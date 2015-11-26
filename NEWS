@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- BGQ - Handle database throw correctly when syncing users on blocks.
  -- MySQL - Make sure we don't have a NULL string returned when not
     requesting any specific association.
+ -- sched/backfill: If max_rpc_cnt is configured and the backlog of RPCs has
+    not cleared after yielding locks, then continue to sleep.
 
 * Changes in Slurm 15.08.4
 ==========================

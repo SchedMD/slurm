@@ -759,13 +759,22 @@ static int _yield_locks(int usec)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	time_t job_update, node_update, part_update;
 	bool load_config = false;
+	int max_rpc_cnt;
 
+	max_rpc_cnt = MAX((defer_rpc_cnt / 10), 20);
 	job_update  = last_job_update;
 	node_update = last_node_update;
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
-	bf_sleep_usec += _my_sleep(usec);
+	while (!stop_backfill) {
+		bf_sleep_usec += _my_sleep(usec);
+		if ((defer_rpc_cnt == 0) ||
+		    (slurmctld_config.server_thread_count <= max_rpc_cnt))
+			break;
+		verbose("backfill: continuing to yield locks, %d RPCs pending",
+			slurmctld_config.server_thread_count);
+	}
 	lock_slurmctld(all_locks);
 	slurm_mutex_lock(&config_lock);
 	if (config_flag)
