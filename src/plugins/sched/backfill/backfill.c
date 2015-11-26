@@ -639,6 +639,9 @@ static void _load_config(void)
 
 	if (sched_params && (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
 		defer_rpc_cnt = atoi(tmp_ptr + 12);
+	else if (sched_params &&
+		 (tmp_ptr=strstr(sched_params, "max_rpc_count=")))
+		defer_rpc_cnt = atoi(tmp_ptr + 14);
 	if (defer_rpc_cnt < 0) {
 		error("Invalid SchedulerParameters max_rpc_cnt: %d",
 		      defer_rpc_cnt);
