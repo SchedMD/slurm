@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
     dependent to never run because of DependencyNeverSatisfied.
  -- Correct job task count calcuation if only node count and ntasks-per-node
     options supplied.
+ -- Make sure the association manager converts any string to be lower case
+    as all the associations from the database will be lower case.
 
 * Changes in Slurm 15.08.4
 ==========================

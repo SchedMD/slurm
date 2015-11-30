@@ -42,6 +42,7 @@
 #include <pwd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -84,7 +85,7 @@ static int _get_str_inx(char *name)
 		return 0;
 
 	for (j = 1; *name; name++, j++)
-		index += (int)*name * j;
+		index += (int)tolower(*name) * j;
 
 	return index;
 }
