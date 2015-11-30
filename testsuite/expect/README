@@ -180,10 +180,6 @@ test1.75   Test that --cpu-freq is enforced when using non-numeric values
 test1.76   Test that --cpu-freq sets min-max:gov
 test1.77   Test that job name specified at the command line overwrites
            the environment variable SLURM_JOB_NAME
-
-**NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
-	   The test will print "WARNING" and terminate with an exit code of
-	   zero if the cluster configuration does not permit proper testing.
 test1.80   Confirm that a job executes with the proper task distribution
 	   (--nodes and --distribution options).
 test1.81   Confirm that a job executes with the proper node count
@@ -213,7 +209,17 @@ test1.98   AVAILBLE...
 test1.99   Validate that SrunPortRange is enforced when using srun
 test1.100  Test of pack/nopack task distribution.
 test1.101  Test of --bcast option.
-**NOTE**   The above tests for multiple processor/partition systems only
+test1.102  Test of --deadline option too late
+test1.103  Test of --deadline option too short
+test1.104  Test of --deadline option and time limit partition
+test1.105  Test of --deadline option and no time
+test1.106  Test of --deadline option and time_min too long
+test1.107  Test of --deadline option and time_min and time too long
+test1.108  Test of --deadline option and --begin option too late
+test1.109  Test of --deadline and --begin option and --time_min too long
+test1.110  Test of --deadline and --begin option and --time_min OK
+test1.111  Test of --deadline and --begin option and time to be changed
+test1.112  Test of --deadline and --begin option and time not changed
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
@@ -506,6 +512,17 @@ test15.24  Test of --overcommit option.
 test15.25  Test of job account(--account option).
 test15.26  Test interruption of salloc while waiting for resource allocation.
 test15.27  Test salloc --exclusive allocates all cpus on node.
+test15.30  Test of --deadline option too late
+test15.31  Test of --deadline option too short
+test15.32  Test of --deadline option and time limit partition
+test15.33  Test of --deadline option and no time
+test15.34  Test of --deadline option and time_min too long
+test15.35  Test of --deadline option and time_min and time too long
+test15.36  Test of --deadline option and --begin option too late
+test15.37  Test of --deadline and --begin option and --time_min too long
+test15.38  Test of --deadline and --begin option and --time_min OK
+test15.39  Test of --deadline and --begin option and time to be changed
+test15.40  Test of --deadline and --begin option and time not changed
 
 test16.#   Testing of sattach options.
 ======================================
@@ -577,6 +594,18 @@ test17.41  Validate that sbatch, srun, salloc return partition error message.
 test17.42  Test of sbatch --wait option.
 test17.51  Validate that the mcs plugin (mcs/user) is OK with sbatch
 test17.52  Validate that the mcs plugin (mcs/group) is OK with sbatch
+test17.53  Test of --deadline option too late
+test17.54  Test of --deadline option too short
+test17.55  Test of --deadline option and time limit partition
+test17.56  Test of --deadline option and no time
+test17.57  Test of --deadline option and time_min too long
+test17.58  Test of --deadline option and time_min and time too long
+test17.59  Test of --deadline option and --begin option too late
+test17.60  Test of --deadline and --begin option and --time_min too long
+test17.61  Test of --deadline and --begin option and --time_min OK
+test17.62  Test of --deadline and --begin option and time to be changed
+test17.63  Test of --deadline and --begin option and time not changed
+
 
 test19.#   Testing of strigger options.
 =======================================

@@ -126,6 +126,17 @@ EXTRA_DIST = \
 	test1.99			\
 	test1.100			\
 	test1.101			\
+	test1.102			\
+	test1.103			\
+	test1.104			\
+	test1.105			\
+	test1.106			\
+	test1.107			\
+	test1.108			\
+	test1.109			\
+	test1.110			\
+	test1.111			\
+	test1.112			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
@@ -371,6 +382,17 @@ EXTRA_DIST = \
 	test15.25			\
 	test15.26			\
 	test15.27			\
+	test15.30			\
+	test15.31			\
+	test15.32			\
+	test15.33			\
+	test15.34			\
+	test15.35			\
+	test15.36			\
+	test15.37			\
+	test15.38			\
+	test15.39			\
+	test15.40			\
 	test16.1			\
 	test16.2			\
 	test16.3			\
@@ -420,6 +442,17 @@ EXTRA_DIST = \
 	test17.42			\
 	test17.51			\
 	test17.52			\
+	test17.53			\
+	test17.54			\
+	test17.55			\
+	test17.56			\
+	test17.57			\
+	test17.58			\
+	test17.59			\
+	test17.60			\
+	test17.61			\
+	test17.62			\
+	test17.63			\
 	test19.1			\
 	test19.2			\
 	test19.3			\
