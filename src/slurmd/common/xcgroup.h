@@ -349,12 +349,4 @@ int xcgroup_get_uint64_param(xcgroup_t* cg,char* param,uint64_t* value);
  */
 int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
 
-/* kill_extern_procs()
- *
- * Inovoked from the fini() call of the cgroup
- * to terminate external processes when a job
- * that has addopted them is finished.
- */
-void kill_extern_procs(const char *);
-
 #endif
