@@ -26,6 +26,9 @@ documents those changes that are of interest to users and administrators.
     requesting any specific association.
  -- sched/backfill: If max_rpc_cnt is configured and the backlog of RPCs has
     not cleared after yielding locks, then continue to sleep.
+ -- Preserve the job dependency description displayed in 'scontrol show job'
+    even if the dependee jobs was terminated and cleaned causing the
+    dependent to never run because of DependencyNeverSatisfied.
 
 * Changes in Slurm 15.08.4
 ==========================
