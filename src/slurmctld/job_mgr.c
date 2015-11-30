@@ -6179,10 +6179,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	}
 	if ((job_desc->ntasks_per_node != (uint16_t) NO_VAL) &&
 	    (job_desc->min_nodes       != NO_VAL) &&
-	    (job_desc->num_tasks       != NO_VAL)) {
-		uint32_t ntasks = job_desc->ntasks_per_node *
-				  job_desc->min_nodes;
-		job_desc->num_tasks = MAX(job_desc->num_tasks, ntasks);
+	    (job_desc->num_tasks       == NO_VAL)) {
+		job_desc->num_tasks = job_desc->ntasks_per_node *
+				      job_desc->min_nodes;
 	}
 	if ((job_desc->min_cpus  != NO_VAL) &&
 	    (job_desc->min_nodes != NO_VAL) &&

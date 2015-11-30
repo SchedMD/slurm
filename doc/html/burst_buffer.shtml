@@ -128,7 +128,14 @@ persistent burst buffer storage (NOTE: The "#BB" prefix is used since the
 command is interpreted by Slurm and not by the Cray Datawarp software).
 Interactive jobs (those submitted using the <i>salloc</i> and <i>srun</i>
 commands) can specify their burst buffer space requirements using the "--bb"
-or "--bbf" command line options, as described later in this document.</p>
+or "--bbf" command line options, as described later in this document.
+All of the "#SBATCH", "#DW" and "#BB" directives should be placed at the top
+of the script (before any non-comment lines).
+All of the persistent burst buffer creations and deletions happen before the
+job's compute portion happens.
+In a similar fashion, you can't stage files in/out at various points in the
+script execution. All file stage-in happens prior to the job's compute portion
+and all file stage-out happens after computation.</p>
 
 <p>A basic validation is performed on the job's burst buffer options at job
 submit time.
@@ -270,6 +277,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:20G
 </pre>
 
-<p style="text-align:center;">Last modified 29 October 2015</p>
+<p style="text-align:center;">Last modified 28 November 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1672,12 +1672,12 @@ next_task:
 			last_job_update = now;
 			reject_array_job_id = 0;
 			reject_array_part   = NULL;
-		
+
 			/* synchronize power layouts key/values */
 			if ((powercap_get_cluster_current_cap() != 0) &&
 			    (which_power_layout() == 2)) {
-				layouts_entity_pull_kv("power", 
-						       "Cluster", 
+				layouts_entity_pull_kv("power",
+						       "Cluster",
 						       "CurrentSumPower");
 			}
 #ifdef HAVE_BG
@@ -2192,9 +2192,11 @@ static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
 
 	if (job_ptr->details == NULL)
 		return;
-	xfree(job_ptr->details->dependency);
-	if (job_ptr->details->depend_list == NULL)
+
+	if (job_ptr->details->depend_list == NULL
+		|| list_count(job_ptr->details->depend_list) == 0)
 		return;
+	xfree(job_ptr->details->dependency);
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -2419,8 +2421,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		list_flush(job_ptr->details->depend_list);
 	if (rebuild_str)
 		_depend_list2str(job_ptr, false);
-	if (list_count(job_ptr->details->depend_list) == 0)
-		xfree(job_ptr->details->dependency);
 
 	if (failure)
 		results = 2;
