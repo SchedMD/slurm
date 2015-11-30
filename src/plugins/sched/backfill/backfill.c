@@ -1535,13 +1535,20 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
+		if ((job_ptr->start_time > now) &&
+		    (bf_min_age_reserve && job_ptr->details->begin_time)) {
+			pend_time = difftime(time(NULL),
+					     job_ptr->details->begin_time);
+			if (pend_time < bf_min_age_reserve)
+				continue;
+		}
+
 		start_time  = job_ptr->start_time;
 		end_reserve = job_ptr->start_time + (time_limit * 60);
 		start_time  = (start_time / backfill_resolution) *
 			      backfill_resolution;
 		end_reserve = (end_reserve / backfill_resolution) *
 			      backfill_resolution;
-
 		if (later_start && (start_time > later_start)) {
 			/* Try later when some nodes currently reserved for
 			 * pending jobs are free */
@@ -1590,12 +1597,6 @@ next_task:
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
-		if (bf_min_age_reserve && job_ptr->details->begin_time) {
-			pend_time = difftime(time(NULL),
-					     job_ptr->details->begin_time);
-			if (pend_time < bf_min_age_reserve)
-				continue;
-		}
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
 		xfree(job_ptr->sched_nodes);
