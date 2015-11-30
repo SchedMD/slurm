@@ -1133,7 +1133,7 @@ void print_fields(type_t type, void *object)
 				default:
 					break;
 				}
-				if (tmp_uint64 != (uint64_t)NO_VAL)
+				if (tmp_uint64 != (uint64_t)NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),
@@ -1211,7 +1211,7 @@ void print_fields(type_t type, void *object)
 				default:
 					break;
 				}
-				if (tmp_uint64 != (uint64_t)NO_VAL)
+				if (tmp_uint64 != (uint64_t)NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),
@@ -1287,11 +1287,11 @@ void print_fields(type_t type, void *object)
 					break;
 				case JOBCOMP:
 				default:
-					tmp_uint64 = (uint64_t)NO_VAL;
+					tmp_uint64 = (uint64_t)NO_VAL64;
 					break;
 				}
 
-				if (tmp_uint64 != (uint64_t)NO_VAL)
+				if (tmp_uint64 != (uint64_t)NO_VAL64)
 					convert_num_unit(
 						(double)tmp_uint64,
 						outbuf, sizeof(outbuf),

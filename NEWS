@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Make sure the association manager converts any string to be lower case
     as all the associations from the database will be lower case.
  -- Sanity check for xcgroup_delete() to verify incoming parameter is valid.
+ -- Fix formatting for sacct with variables that switched from uint32_t to
+    uint64_t.
 
 * Changes in Slurm 15.08.4
 ==========================
