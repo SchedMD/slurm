@@ -543,7 +543,7 @@ int xcgroup_delete(xcgroup_t* cg)
 	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
 	 *   exist, do not propagate error back to caller.
 	 */
-	if ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
+	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
 		verbose ("xcgroup: rmdir(%s): %m", cg->path);
 		return XCGROUP_ERROR;
 	}
