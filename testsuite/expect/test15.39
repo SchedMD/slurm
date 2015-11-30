@@ -70,7 +70,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch not submitted\n"
 	exit 1
@@ -108,7 +107,6 @@ expect {
 
 if {$not_support != 0} {
 	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
 }
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

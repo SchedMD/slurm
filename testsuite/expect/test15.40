@@ -61,7 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -69,9 +69,8 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	send_user "\nFAILURE: job not submitted\n"
 	exit 1
 }
 
@@ -104,7 +103,6 @@ expect {
 
 if {$not_support != 0} {
 	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
 }
 
 if {$exit_code == 0} {

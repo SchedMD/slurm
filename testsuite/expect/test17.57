@@ -68,9 +68,9 @@ expect {
 		wait
 	}
 }
-
 if {$job_id != 0} {
 	send_user "\nFAILURE: batch submitted despite the deadline\n"
+	[cancel_job $job_id]
 	exit 1
 }
 

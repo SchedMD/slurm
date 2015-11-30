@@ -36,7 +36,6 @@ set job_id      0
 
 print_header $test_id
 
-
 #
 # Spawn a job with a deadline and no time
 #
@@ -56,13 +55,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
 	exit 1
@@ -74,11 +71,9 @@ if {$job_id == 0} {
 spawn $scontrol show job $job_id
 expect {
 	-re "TimeLimit=01:00:00" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "TimeLimit=00:59:00" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "TimeLimit=" {
@@ -89,14 +84,11 @@ expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
 	}
 }
-
-
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

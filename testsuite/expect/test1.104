@@ -186,7 +186,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -215,7 +214,6 @@ if {$job_id == 0} {
 			timeout {
 				send_user "\nFAILURE: scontrol not responding\n"
 				set exit_code 1
-				exp_continue
 			}
 			eof {
 				wait
@@ -239,7 +237,6 @@ if {$job_id == 0} {
 		timeout {
 			send_user "\nFAILURE: scancel not responding\n"
 			set exit_code 1
-			exp_continue
 		}
 		eof {
 			wait

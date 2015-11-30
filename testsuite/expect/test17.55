@@ -172,7 +172,6 @@ expect {
 		set exit_code 0
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -186,7 +185,6 @@ expect {
 #
 # verify time limit
 #
-
 sleep 5
 set matches 0
 spawn $scontrol show job $job_id
@@ -204,31 +202,12 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
 	send_user "\nFAILURE: partition time limit not used \n"
 	set exit_code 1
 }
 
-#
-# delete job
-#
-
-spawn $scancel $job_id
-expect {
-	-re "error" {
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+[cancel_job $job_id]
 
 #
 # Now delete the partition
@@ -273,6 +252,7 @@ if {$found != 0} {
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

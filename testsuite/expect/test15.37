@@ -70,7 +70,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch not submitted with a deadline too short\n"
 	exit 1
@@ -124,6 +123,7 @@ if {$not_support != 0} {
 }
 if {$exit_code == 1} {
 	send_user "\nFAILURE: batch submitted with a deadline too short\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {

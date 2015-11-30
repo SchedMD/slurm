@@ -36,7 +36,6 @@ set job_id      0
 
 print_header $test_id
 
-
 #
 # Spawn a batch job with a deadline and no time
 #
@@ -52,9 +51,8 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-
 	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -64,7 +62,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	send_user "\nFAILURE: job not submitted\n"
 	exit 1
 }
 
@@ -95,8 +93,6 @@ expect {
 		wait
 	}
 }
-
-
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

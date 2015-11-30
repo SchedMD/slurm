@@ -108,7 +108,7 @@ expect {
 	}
 }
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	send_user "\nFAILURE: default partition seems to have no nodes\n"
 	exit 1
 }
 
@@ -221,27 +221,10 @@ if {$job_id == 0} {
 		}
 	}
 	if {$exit_code == 1} {
-		send_user "\nFAILURE: partition time limit not used \n"
+		send_user "\nFAILURE: partition time limit not used\n"
+		set exit_code 1
 	}
-#
-# delete job
-#
-
-	spawn $scancel $job_id
-	expect {
-		-re "error" {
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scancel not responding\n"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
+	[cancel_job $job_id]
 }
 
 #

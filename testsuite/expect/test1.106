@@ -55,7 +55,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -64,6 +63,7 @@ expect {
 
 if {$job_id != 0} {
 	send_user "\nFAILURE: job submitted despite the deadline\n"
+	[cancel_job $job_id]
 	exit 1
 }
 

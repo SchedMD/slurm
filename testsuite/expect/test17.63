@@ -71,7 +71,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch not submitted\n"
 	exit 1

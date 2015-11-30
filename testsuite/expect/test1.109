@@ -58,7 +58,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -67,6 +66,7 @@ expect {
 
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted with a deadline too short\n"
+	[cancel_job $job_id]
 	exit 1
 }
 
@@ -102,7 +102,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		timeout {
 			send_user "\nFAILURE: sacct not responding\n"
 			set exit_code 1
-			exp_continue
 		}
 		eof {
 			wait
@@ -113,12 +112,10 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		exit 0
 	}
 }
-if {$exit_code == 1} {
-	send_user "\nFAILURE: job not with DEADLINE status.\n"
-}
-
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE: job not with DEADLINE status.\n"
 }
 exit $exit_code

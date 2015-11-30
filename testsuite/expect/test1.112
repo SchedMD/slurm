@@ -63,15 +63,13 @@ expect {
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
 	}
 }
-
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	send_user "\nFAILURE: job not submitted\n"
 	exit 1
 }
 
@@ -95,7 +93,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: sacct not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait

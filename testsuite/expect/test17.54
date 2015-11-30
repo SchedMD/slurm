@@ -57,7 +57,6 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -74,7 +73,7 @@ if {$job_id != 0} {
 			send_user "\nTimelimit OK\n"
 		}
 		-re "TimeLimit=" {
-			send_user "\nFAILURE : Timelimit not OK with deadline\n"
+			send_user "\nFAILURE: Timelimit not OK with deadline\n"
 			set exit_code 1
 		}
 		timeout {

@@ -40,13 +40,13 @@ print_header $test_id
 # Spawn a job that deadline is too short
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 --deadline now+1hour -t120 $bin_sleep 1]
+set srun_pid [spawn $srun -v -N1 --deadline now+1hour -t120 --time-min=1 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
 		set exit_code 1
 		exp_continue
 	}
-	-re "launching ($number).0 on host" {
+	-re "launching ($number).($number) on host" {
 		set job_id $expect_out(1,string)
 		set exit_code 0
 		exp_continue
@@ -54,7 +54,6 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -67,14 +66,19 @@ if {$job_id != 0} {
 		-re "TimeLimit=01:00:00" {
 			send_user "\nTimelimit OK\n"
 		}
+		-re "TimeLimit=00:59:" {
+			send_user "\nTimelimit OK\n"
+		}
 		-re "TimeLimit=" {
-			send_user "\nFAILURE : Timelimit not OK with deadline\n"
+			send_user "\nFAILURE: Timelimit not OK with deadline\n"
 			set exit_code 1
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 			set exit_code 1
-			exp_continue
+		}
+		eof {
+			wait
 		}
 	}
 }

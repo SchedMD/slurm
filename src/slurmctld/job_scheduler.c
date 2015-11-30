@@ -1512,13 +1512,31 @@ next_task:
 					info("sched: JobId %u with time_limit "
 					     "%u exceeded deadline %s and "
 					     "cancelled ", job_ptr->job_id,
-					     job_ptr->time_min,
+					     job_ptr->time_limit,
 					     time_str_deadline);
 					fail_job = true;
 				}
+			}
+			if (fail_job) {
+				last_job_update = now;
+				job_ptr->job_state = JOB_DEADLINE;
+				job_ptr->exit_code = 1;
+				job_ptr->state_reason = FAIL_DEADLINE;
+				xfree(job_ptr->state_desc);
+				job_ptr->start_time = now;
+				job_ptr->end_time = now;
+				srun_allocate_abort(job_ptr);
+				job_completion_logger(job_ptr, false);
+				continue;
+			}
+
+			deadline_time_limit = job_ptr->deadline - now;
+			deadline_time_limit /= 60;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_ptr->time_limit != INFINITE)) {
+				deadline_time_limit = MIN(job_ptr->time_limit,
+							  deadline_time_limit);
 			} else {
-				deadline_time_limit = job_ptr->deadline - now;
-				deadline_time_limit /= 60;
 				if ((job_ptr->part_ptr->default_time != NO_VAL) &&
 				    (job_ptr->part_ptr->default_time != INFINITE)){
 					deadline_time_limit = MIN(
@@ -1530,17 +1548,6 @@ next_task:
 						job_ptr->part_ptr->max_time,
 						deadline_time_limit);
 				}
-			}
-			if (fail_job) {
-				last_job_update = now;
-				job_ptr->job_state = JOB_DEADLINE;
-				job_ptr->exit_code = 1;
-				job_ptr->state_reason = FAIL_DEADLINE;
-				xfree(job_ptr->state_desc);
-				job_ptr->start_time = now;
-				job_ptr->end_time = now;
-				job_completion_logger(job_ptr, false);
-				continue;
 			}
 		}
 

@@ -3984,6 +3984,15 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	return rc;
 }
 
+static inline bool _has_deadline(struct job_record *job_ptr)
+{
+	if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+		queue_job_scheduler();
+		return true;
+	}
+	return false;
+}
+
 /*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
@@ -4135,7 +4144,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	test_only = will_run || (allocate == 0);
 
-	no_alloc = test_only || too_fragmented ||
+	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
