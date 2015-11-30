@@ -558,6 +558,20 @@ there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
 
 .TP
+\fB\-\-deadline\fR=<\fIOPT\fR>
+remove the job if no ending is possible before
+this deadline (start > (deadline \- time[\-min])).
+Default is no deadline.  Valid time formats are:
+.br
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]]
+
+.TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
 satisfied completed. This option does not apply to job steps (executions of

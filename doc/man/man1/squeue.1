@@ -529,6 +529,10 @@ Prints the frequency of the allocated CPUs.
 Prints the number of CPUs per tasks allocated to the job.
 (Valid for jobs only)
 .TP
+\fBdeadline\fR
+Prints the deadline affected to the job
+(Valid for jobs only)
+.TP
 \fBdependency\fR
 Job dependency. This job will not begin execution until the dependent job
 completes.  A value of zero implies this job has no dependencies.
@@ -782,7 +786,7 @@ When \-\-sockets\-per\-node has not been set, "*" is displayed.
 Number of sockets per board allocated to the job.
 (Valid for jobs only)
 .TP
-\fBstartime\fR
+\fBstarttime\fR
 Actual or expected start time of the job or job step.
 (Valid for jobs and job steps)
 .TP
