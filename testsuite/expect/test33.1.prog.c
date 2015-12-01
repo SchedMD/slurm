@@ -347,6 +347,6 @@ int main(int argc, char *argv[])
 
 ouch:
 	_free_options();
-	return;
+	return 0;
 
 }

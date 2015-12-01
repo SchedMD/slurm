@@ -113,7 +113,7 @@ int slurm_spank_init(spank_t sp, int ac, char **av)
 int slurm_spank_init_post_opt(spank_t sp, int ac, char **av) */
 
 /* Called from srun only */
-slurm_spank_local_user_init(spank_t sp, int ac, char **av)
+int slurm_spank_local_user_init(spank_t sp, int ac, char **av)
 {
 	slurm_info("slurm_spank_local_user_init");
 

@@ -47,7 +47,7 @@
 #define OFFSET_1  1234
 #define OFFSET_2  5678
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	int i, j, rc;
 	int nprocs, procid;
