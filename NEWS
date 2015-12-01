@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Set up extern step to track any childern of an ssh if it leaves anything
     else behind.
  -- Prevent slurmdbd divide by zero if no associations defined at rollup time.
+ -- Multifactor - Add sanity check to make sure pending jobs are handled
+    correctly when PriorityFlags=CALCULATE_RUNNING is set.
 
 * Changes in Slurm 15.08.4
 ==========================
