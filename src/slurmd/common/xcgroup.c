@@ -550,30 +550,27 @@ int xcgroup_delete(xcgroup_t* cg)
 	return XCGROUP_SUCCESS;
 }
 
-static int cgroup_procs_readable (xcgroup_t *cg)
+static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
 {
 	struct stat st;
-	char *path = NULL;
-	int rc = 0;
+	// If possible use cgroup.procs to add the processes atomically
+	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
+	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode))) {
+		xfree(path);
+		path = xstrdup_printf(path, "%s/%s", cg->path, "tasks");
+	}
 
-	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
-	if ((stat (path, &st) >= 0) && (st.st_mode & S_IRUSR))
-		rc = 1;
-	xfree (path);
-	return (rc);
+	return path;
 }
 
-static int cgroup_procs_writable (xcgroup_t *cg)
+static char *_cgroup_procs_readable_path (xcgroup_t *cg)
 {
-	struct stat st;
-	char *path = NULL;
-	int rc = 0;
+	return _cgroup_procs_check(cg, S_IRUSR);
+}
 
-	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
-	if ((stat (path, &st) >= 0) && (st.st_mode & S_IWUSR))
-		rc = 1;
-	xfree (path);
-	return (rc);
+static char *_cgroup_procs_writable_path (xcgroup_t *cg)
+{
+	return _cgroup_procs_check(cg, S_IWUSR);
 }
 
 /* This call is not intended to be used to move thread pids
@@ -581,13 +578,7 @@ static int cgroup_procs_writable (xcgroup_t *cg)
 int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 {
 	int fstatus = XCGROUP_ERROR;
-	char* path = NULL;
-
-	// If possible use cgroup.procs to add the processes atomically
-	if (cgroup_procs_writable (cg))
-		xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
-	else
-		xstrfmtcat (path, "%s/%s", cg->path, "tasks");
+	char* path = _cgroup_procs_writable_path(cg);
 
 	fstatus = _file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
@@ -607,10 +598,7 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 	if (pids == NULL || npids == NULL)
 		return SLURM_ERROR;
 
-	if (cgroup_procs_readable (cg))
-		xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
-	else
-		xstrfmtcat (path, "%s/%s", cg->path, "tasks");
+	path = _cgroup_procs_readable_path(cg);
 
 	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
@@ -844,8 +832,12 @@ static int cgroup_move_process_by_task (xcgroup_t *cg, pid_t pid)
 
 int xcgroup_move_process (xcgroup_t *cg, pid_t pid)
 {
-	if (!cgroup_procs_writable (cg))
+	char *path = _cgroup_procs_writable_path(cg);
+
+	if (!path)
 		return cgroup_move_process_by_task (cg, pid);
+
+	xfree(path);
 
 	return xcgroup_set_uint32_param (cg, "cgroup.procs", pid);
 }
