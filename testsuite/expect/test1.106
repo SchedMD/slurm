@@ -40,10 +40,11 @@ print_header $test_id
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
+set time_error 0
 set srun_pid [spawn $srun -v -N1 --deadline now+1hour --time-min 120 $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
-		set exit_code 0
+	-re "Requested time limit is invalid" {
+		set time_error 1
 		exp_continue
 	}
 	-re "launching ($number).0 on host" {
@@ -51,7 +52,6 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
@@ -60,11 +60,16 @@ expect {
 		wait
 	}
 }
-
 if {$job_id != 0} {
 	send_user "\nFAILURE: job submitted despite the deadline\n"
 	[cancel_job $job_id]
 	exit 1
+}
+if {$time_error == 0} {
+	send_user "\nFAILURE: No time limit error\n"
+	set exit_code 1
+} else {
+	send_user "\nTime limit error expected, no worries\n"
 }
 
 if {$exit_code == 0} {

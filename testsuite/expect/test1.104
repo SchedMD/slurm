@@ -109,7 +109,7 @@ expect {
 	}
 }
 if {[string compare $def_node ""] == 0} {
-	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	send_user "\nFAILURE: default partition seems to have no nodes\n"
 	exit 1
 }
 
@@ -174,7 +174,6 @@ make_bash_script $file_in "
 bash -i ./$test_srun
 "
 
-
 set timeout $max_job_delay
 spawn bash -i $file_in
 expect {
@@ -182,7 +181,6 @@ expect {
 		set job_id $expect_out(1,string)
 		set exit_code 0
 	}
-
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code 1
@@ -195,7 +193,7 @@ expect {
 # verify time limit. Add a temporization to wait for update reason
 #
 if {$job_id == 0} {
-	send_user "\nFAILURE: job_id = 0 : salloc not OK \n"
+	send_user "\nFAILURE: job_id = 0 : salloc not OK\n"
 	set exit_code 1
 } else {
 	set cycle_count 8
@@ -225,23 +223,7 @@ if {$job_id == 0} {
 			send_user "\nFAILURE: partition time limit not used \n"
 		}
 	}
-#
-# delete job
-#
-	spawn $scancel $job_id
-	expect {
-		-re "error" {
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scancel not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 }
 
 #

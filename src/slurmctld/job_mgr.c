@@ -5367,17 +5367,6 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 	    (part_ptr->default_time != NO_VAL))
 		job_desc->time_limit = part_ptr->default_time;
 
-	/* test of deadline */
-	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL) &&
-	    (part_ptr->default_time == NO_VAL) &&
-	    (job_desc->time_limit == NO_VAL)) {
-		time_t now = time(NULL);
-		job_desc->time_limit = difftime(job_desc->deadline, now) / 60;
-		if ((part_ptr->max_time != NO_VAL) &&
-		    (job_desc->time_limit > part_ptr->max_time))
-			job_desc->time_limit = part_ptr->max_time;
-	}
-
 	if ((job_desc->time_min != NO_VAL) &&
 	    (job_desc->time_min >  max_time) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &

@@ -818,7 +818,7 @@ static int _attempt_backfill(void)
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
-	uint32_t end_time, end_reserve;
+	uint32_t end_time, end_reserve, deadline_time_limit;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
@@ -842,8 +842,6 @@ static int _attempt_backfill(void)
 	uint32_t test_array_count = 0;
 	uint32_t acct_max_nodes, wait_reason = 0;
 	bool resv_overlap = false;
-	char time_str_deadline[32];
-	uint32_t time_check;
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1204,6 +1202,16 @@ next_task:
 			continue;
 		}
 
+		/* test of deadline */
+		now = time(NULL);
+		deadline_time_limit = 0;
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+			if (!deadline_ok(job_ptr, "backfill"))
+				continue;
+
+			deadline_time_limit = (job_ptr->deadline - now) / 60;
+		}
+
 		/* Determine job's expected completion time */
 		if (part_ptr->max_time == INFINITE)
 			part_time_limit = YEAR_MINUTES;
@@ -1220,44 +1228,16 @@ next_task:
 				time_limit = MIN(job_ptr->time_limit,
 						 part_time_limit);
 		}
-		comp_time_limit = time_limit;
+		if (deadline_time_limit)
+			comp_time_limit = MIN(time_limit, deadline_time_limit);
+		else
+			comp_time_limit = time_limit;
 		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
-
-		/* test of deadline */
-		now = time(NULL);
-		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL) &&
-		    (job_ptr->deadline < (now + (time_limit * 60)))) {
-			slurm_make_time_str(&job_ptr->deadline,
-					    time_str_deadline,
-					    sizeof(time_str_deadline));
-			time_check = time_limit;
-			time_limit = difftime(job_ptr->deadline, now) / 60;
-			job_ptr->time_limit = orig_time_limit = time_limit;
-			if (job_ptr->time_min &&
-			    (job_ptr->time_min < time_limit)) {
-				info("backfill: JobId %u exceeded deadline %s "
-				     "and time limit changed from %u to %u",
-				     job_ptr->job_id, time_str_deadline,
-				     time_check, time_limit);
-			} else {
-				last_job_update = now;
-				job_ptr->job_state = JOB_DEADLINE;
-				job_ptr->exit_code = 1;
-				job_ptr->state_reason = FAIL_DEADLINE;
-				xfree(job_ptr->state_desc);
-				job_ptr->start_time = job_ptr->end_time = now;
-				job_completion_logger(job_ptr, false);
-				info("backfill: JobId %u exceeded deadline %s "
-				     "and cancelled",
-				     job_ptr->job_id, time_str_deadline);
-				continue;
-			}
-		}
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
