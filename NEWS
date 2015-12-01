@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix formatting for sacct with variables that switched from uint32_t to
     uint64_t.
  -- Fix a typo in sacct man page.
+ -- Set up extern step to track any childern of an ssh if it leaves anything
+    else behind.
 
 * Changes in Slurm 15.08.4
 ==========================
