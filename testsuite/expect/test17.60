@@ -46,7 +46,7 @@ make_bash_script $file_in "$bin_sleep 5"
 #
 # Spawn a batch job with a deadline and no time
 #
-set timeout $max_job_delay
+set timeout [expr $max_job_delay + 60]
 spawn $sbatch --output=/dev/null --error=/dev/null --begin now+60 --deadline now+600 --time-min 10 $file_in
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
@@ -62,11 +62,9 @@ expect {
 		set exit_code 0
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -78,9 +76,33 @@ if {$job_id == 0} {
 }
 
 #
-# test status deadline in sacct
+# test status deadline in scontrol and sacct
 #
-$bin_sleep 60
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: job failed to run to completion\n"
+	exit 1
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "JobState=DEADLINE" {
+		exp_continue
+	}
+	-re "JobState=" {
+		send_user "\nFAILURE: invalid job state\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
 set cycle_count 8
 set not_support 0
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
@@ -88,10 +110,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
-			break
+			exp_continue
 		}
 		-re "DEADLINE" {
-			set exit_code 0
 			break
 		}
 		-re "COMPLETED" {
@@ -101,7 +122,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		timeout {
 			send_user "\nFAILURE: sacct not responding\n"
 			set exit_code 1
-			exp_continue
 		}
 		eof {
 			wait
@@ -109,7 +129,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	sleep 10
 }
-
 if {$not_support != 0} {
 	send_user "\nWARNING: can not test without accounting enabled\n"
 	exit 0
@@ -117,10 +136,7 @@ if {$not_support != 0} {
 
 if {$exit_code == 1} {
 	send_user "\nFAILURE: batch submitted with a deadline too short\n"
-}
-
-
-if {$exit_code == 0} {
+} else {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }

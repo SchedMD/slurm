@@ -41,15 +41,15 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in
-make_bash_script $file_in "$bin_sleep 50"
+make_bash_script $file_in "$bin_sleep 1"
 
 #
 # Spawn a batch job that deadline is too late
 #
 set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour -t120 $file_in
+spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour $file_in
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
@@ -66,21 +66,39 @@ expect {
 		wait
 	}
 }
-if {$job_id != 0} {
-	spawn $scontrol show job $job_id
-	expect {
-		-re "TimeLimit=01:00:00" {
-			send_user "\nTimelimit OK\n"
-		}
-		-re "TimeLimit=" {
-			send_user "\nFAILURE: Timelimit not OK with deadline\n"
-			set exit_code 1
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exp_continue
-		}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job submission failed\n"
+	exit 1
+}
+
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: job failed to run to completion\n"
+	exit 1
+}
+
+#
+# verify time limit
+#
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=00:59:" {
+		exp_continue
+	}
+	-re "TimeLimit=01:00:00" {
+		exp_continue
+	}
+	-re "TimeLimit=" {
+		send_user "\nFAILURE: time limit is different from deadline\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 

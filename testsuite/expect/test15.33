@@ -73,7 +73,7 @@ if {$job_id != 0} {
 		-re "TimeLimit=00:10:00" {
 			send_user "\nTimelimit OK\n"
 		}
-		-re "TimeLimit=00:09:00" {
+		-re "TimeLimit=00:09:" {
 			send_user "\nTimelimit OK\n"
 		}
 		-re "TimeLimit=" {

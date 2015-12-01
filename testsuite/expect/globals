@@ -598,6 +598,7 @@ proc wait_for_job { job_id desired_state } {
 		switch $state {
 			"NOT_FOUND" -
 			"CANCELLED" -
+			"DEADLINE" -
 			"FAILED" -
 			"TIMEOUT" -
 			"NODE_FAIL" -

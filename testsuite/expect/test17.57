@@ -49,7 +49,7 @@ make_bash_script $file_in "$bin_sleep 5"
 set timeout $max_job_delay
 spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour --time-min 120 $file_in
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 0
 		exp_continue
 	}
@@ -58,7 +58,6 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -70,7 +69,7 @@ expect {
 }
 if {$job_id != 0} {
 	send_user "\nFAILURE: batch submitted despite the deadline\n"
-	[cancel_job $job_id]
+	cancel_job $job_id
 	exit 1
 }
 

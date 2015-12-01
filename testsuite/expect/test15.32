@@ -81,32 +81,7 @@ if {$found == 1} {
 #
 # Identify usable nodes in default partition
 #
-set def_name ""
-set def_node ""
-spawn $sinfo -h -o %32P
-expect {
-	-re "($alpha_numeric_under)(\\*)" {
-		set def_name $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {[string compare $def_name ""] == 0} {
-	send_user "\nFAILURE: failed to find default partition\n"
-	exit 1
-}
-spawn $sinfo -h -o "=%N=" -p $def_name
-expect {
-	-re "=(.+)=" {
-		set def_node $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set def_node [get_idle_node_in_part [default_partition]]
 if {[string compare $def_node ""] == 0} {
 	send_user "\nFAILURE: default partition seems to have no nodes\n"
 	exit 1
@@ -190,6 +165,7 @@ expect {
 		wait
 	}
 }
+
 #
 # verify time limit. Add a temporization to wait for update reason
 #
@@ -224,7 +200,7 @@ if {$job_id == 0} {
 		send_user "\nFAILURE: partition time limit not used\n"
 		set exit_code 1
 	}
-	[cancel_job $job_id]
+	cancel_job $job_id
 }
 
 #

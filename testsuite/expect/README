@@ -213,8 +213,8 @@ test1.102  Test of --deadline option too late
 test1.103  Test of --deadline option too short
 test1.104  Test of --deadline option and time limit partition
 test1.105  Test of --deadline option and no time
-test1.106  Test of --deadline option and time_min too long
-test1.107  Test of --deadline option and time_min and time too long
+test1.106  Test of --deadline option and --time_min too long
+test1.107  Test of --deadline option and --time_min and time too long
 test1.108  Test of --deadline option and --begin option too late
 test1.109  Test of --deadline and --begin option and --time_min too long
 test1.110  Test of --deadline and --begin option and --time_min OK
@@ -521,8 +521,6 @@ test15.35  Test of --deadline option and time_min and time too long
 test15.36  Test of --deadline option and --begin option too late
 test15.37  Test of --deadline and --begin option and --time_min too long
 test15.38  Test of --deadline and --begin option and --time_min OK
-test15.39  Test of --deadline and --begin option and time to be changed
-test15.40  Test of --deadline and --begin option and time not changed
 
 test16.#   Testing of sattach options.
 ======================================
@@ -603,8 +601,6 @@ test17.58  Test of --deadline option and time_min and time too long
 test17.59  Test of --deadline option and --begin option too late
 test17.60  Test of --deadline and --begin option and --time_min too long
 test17.61  Test of --deadline and --begin option and --time_min OK
-test17.62  Test of --deadline and --begin option and time to be changed
-test17.63  Test of --deadline and --begin option and time not changed
 
 
 test19.#   Testing of strigger options.

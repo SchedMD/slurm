@@ -49,7 +49,7 @@ make_bash_script $file_in "$bin_sleep 5"
 set timeout $max_job_delay
 spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+600 $file_in
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
@@ -58,7 +58,6 @@ expect {
 		set exit_code 0
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -70,31 +69,33 @@ expect {
 }
 
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted\n"
+	send_user "\nFAILURE: batch job not submitted\n"
 	exit 1
 }
 
-if {$job_id != 0} {
-	spawn $scontrol show job $job_id
-	expect {
-		-re "TimeLimit=00:10:00" {
-			send_user "\nTimelimit OK\n"
-		}
-		-re "TimeLimit=00:09:00" {
-			send_user "\nTimelimit OK\n"
-		}
-		-re "TimeLimit=" {
-			send_user "\nFAILURE : Timelimit not OK with deadline\n"
-			set exit_code 1
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: job failed to run to completion\n"
+	exit 1
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=00:10:00" {
+		send_user "\nTimelimit OK\n"
+	}
+	-re "TimeLimit=00:09:" {
+		send_user "\nTimelimit OK\n"
+	}
+	-re "TimeLimit=" {
+		send_user "\nFAILURE : Timelimit not OK with deadline\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
 	}
 }
 

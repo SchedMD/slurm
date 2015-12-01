@@ -42,7 +42,7 @@ print_header $test_id
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 --begin now+2hour --deadline now+1hour $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
@@ -50,7 +50,7 @@ expect {
 		set exit_code 0
 		exp_continue
 	}
-	-re "launching ($number).0 on host" {
+	-re "launching ($number).($number) on host" {
 		set job_id $expect_out(1,string)
 		set exit_code 1
 		exp_continue

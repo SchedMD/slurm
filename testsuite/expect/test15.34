@@ -42,7 +42,7 @@ print_header $test_id
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 --deadline now+1hour --time-min 120 $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 0
 		exp_continue
 	}
@@ -51,7 +51,6 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
 		set exit_code 1

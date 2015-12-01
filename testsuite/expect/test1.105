@@ -59,13 +59,10 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
 	exit 1
-}
-
-if {$job_id != 0} {
+} else {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "TimeLimit=00:10:" {

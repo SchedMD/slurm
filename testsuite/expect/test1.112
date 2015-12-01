@@ -42,7 +42,7 @@ print_header $test_id
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v --begin now+10 --deadline now+1hour -t 10 $bin_sleep 1 ]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
@@ -76,32 +76,22 @@ if {$job_id == 0} {
 #
 # test timelimit in job
 #
-set not_support 0
-spawn $sacct  -n -P -X -j $job_id -o Timelimit
+spawn $scontrol show job $job_id
 expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
+	-re "TimeLimit=00:10:" {
 		exp_continue
 	}
-	-re "00:10:00" {
-		set exit_code 0
-	}
-	-re "($number)" {
-		send_user "\nFAILURE: batch submitted with a time limit different than calculated (00:10:00)\n"
+	-re "TimeLimit=" {
+		send_user "\nFAILURE: job submitted with a time limit different than calculated (00:10:00)\n"
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
 }
 
 if {$exit_code == 0} {

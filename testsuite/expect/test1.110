@@ -40,9 +40,9 @@ print_header $test_id
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v --begin now+1 --deadline now+600 --time-min 5 $bin_sleep 1 ]
+set srun_pid [spawn $srun -v --begin now+5 --deadline now+600 --time-min 1 $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
@@ -72,47 +72,13 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: batch not submitted with a deadline and a time-min OK\n"
+	send_user "\nFAILURE: job not submitted with a deadline and a time-min OK\n"
 	exit 1
 }
 
-#
-# test status deadline in sacct
-#
-set cycle_count 8
-set not_support 0
-for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	spawn $sacct  -n -P -X -j $job_id -o State
-	expect {
-		-re "SLURM accounting storage is disabled" {
-			set not_support 1
-			exp_continue
-		}
-		-re "COMPLETED" {
-			set exit_code 0
-			break
-		}
-		-re "($alpha_numeric)" {
-			sleep 3
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacct not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$not_support != 0} {
-		send_user "\nWARNING: can not test without accounting enabled\n"
-		exit 0
-	}
-}
-if {$exit_code == 1} {
-	if {$cycle_count == 8}  {
-		send_user "\nFAILURE: job not with COMPLETED status. Find $expect_out(1,string) instead\n"
-	}
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: job failed to run to completion\n"
+	exit 1
 }
 
 if {$exit_code == 0} {

@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of --deadline and -- begin option and --time_min too long
+#          Test of --deadline and --begin option and --time_min too long
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -39,17 +39,17 @@ print_header $test_id
 #
 # Spawn a batch job with a deadline and no time
 #
-set timeout $max_job_delay
-set timeout 70
+set timeout [expr $max_job_delay + 60]
 set salloc_pid [spawn $salloc --begin now+60 --deadline now+600 --time-min 10 $bin_sleep 1 ]
 expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
+	-re "Requested time limit is invalid" {
 		set exit_code 1
 		exp_continue
 	}
 	-re "Job allocation ($number) has been revoked" {
 		set job_id $expect_out(1,string)
 		set exit_code 0
+		exp_continue
 	}
 	-re "job ($number) queued and waiting for resources" {
 		set job_id $expect_out(1,string)
@@ -75,9 +75,34 @@ if {$job_id == 0} {
 	exit 1
 }
 
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: job failed to run to completion\n"
+	exit 1
+}
+
 #
-# test status deadline in sacct
+# test job status in scontrol and sacct
 #
+spawn $scontrol show job $job_id
+expect {
+	-re "JobState=DEADLINE" {
+		exp_continue
+	}
+	-re "JobState=" {
+		send_user "\nFAILURE: invalid job state\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
 set cycle_count 8
 set not_support 0
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
