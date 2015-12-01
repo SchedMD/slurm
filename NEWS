@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix a typo in sacct man page.
  -- Set up extern step to track any childern of an ssh if it leaves anything
     else behind.
+ -- Prevent slurmdbd divide by zero if no associations defined at rollup time.
 
 * Changes in Slurm 15.08.4
 ==========================
