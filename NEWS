@@ -29,13 +29,14 @@ documents those changes that are of interest to users and administrators.
  -- Preserve the job dependency description displayed in 'scontrol show job'
     even if the dependee jobs was terminated and cleaned causing the
     dependent to never run because of DependencyNeverSatisfied.
- -- Correct job task count calcuation if only node count and ntasks-per-node
+ -- Correct job task count calculation if only node count and ntasks-per-node
     options supplied.
  -- Make sure the association manager converts any string to be lower case
     as all the associations from the database will be lower case.
  -- Sanity check for xcgroup_delete() to verify incoming parameter is valid.
  -- Fix formatting for sacct with variables that switched from uint32_t to
     uint64_t.
+ -- Fix a typo in sacct man page.
 
 * Changes in Slurm 15.08.4
 ==========================
