@@ -1,0 +1,11 @@
+--- slurm-llnl-15.08.4.orig/src/sacct/options.c
++++ slurm-llnl-15.08.4/src/sacct/options.c
+@@ -320,7 +320,7 @@
+      -j, --jobs:                                                            \n\
+ 	           Format is <job(.step)>. Display information about this   \n\
+                    job or comma-separated list of jobs. The default is all  \n\
+-                   jobs. Adding .step will display the specfic job step of  \n\
++                   jobs. Adding .step will display the specific job step of \n\
+                    that job. (A step id of 'batch' will display the         \n\
+                    information about the batch step.)                       \n\
+      -k, --timelimit-min:                                                   \n\
