@@ -48,7 +48,6 @@ expect {
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -60,7 +59,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: job not submitted\n"
 	exit 1
