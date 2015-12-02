@@ -132,6 +132,7 @@ libcommon_la_SOURCES = 			\
 	layouts_mgr.h layouts_mgr.c	\
 	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
+	xlua.c xlua.h			\
 	callerid.c callerid.h
 
 EXTRA_libcommon_la_SOURCES = 		\
