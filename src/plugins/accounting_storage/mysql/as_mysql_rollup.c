@@ -1450,7 +1450,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_tres->time_alloc;
 				char *assoc = NULL;
 				ListIterator tmp_itr = NULL;
-				int resv_unused_secs;
+				int assoc_cnt, resv_unused_secs;
 
 				if (idle <= 0)
 					break; /* since this will be
@@ -1459,8 +1459,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/* now divide that time by the number of
 				   associations in the reservation and add
 				   them to each association */
-				resv_unused_secs = idle /
-					list_count(r_usage->local_assocs);
+				resv_unused_secs = idle;
+				assoc_cnt = list_count(r_usage->local_assocs);
+				if (assoc_cnt)
+					resv_unused_secs /= assoc_cnt;
 				/* info("resv %d got %d seconds for TRES %u " */
 				/*      "for %d assocs", */
 				/*      r_usage->id, resv_unused_secs, */

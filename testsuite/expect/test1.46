@@ -68,7 +68,7 @@ puts $fd {
 #include <stdlib.h>
 #include <unistd.h>
 
-main()
+int main()
 {
     char *id = getenv("SLURM_PROCID");
     if (atoi(id) == 9) {

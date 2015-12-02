@@ -41,5 +41,5 @@ int main (int argc, char *argv[])
 	fflush(stdout);
 	buffer = (char *) 0;
 	buffer[1] = 'a';
-	return;
+	return 0;
 }

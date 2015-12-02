@@ -543,7 +543,7 @@ int xcgroup_delete(xcgroup_t* cg)
 	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
 	 *   exist, do not propagate error back to caller.
 	 */
-	if ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
+	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
 		verbose ("xcgroup: rmdir(%s): %m", cg->path);
 		return XCGROUP_ERROR;
 	}
@@ -1205,41 +1205,4 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 	close(fd);
 
 	return fstatus;
-}
-/* kill_extern_procs()
- *
- * Inovoked from the fini() call of the cgroup
- * to terminate external processes when a job
- * that has addopted them is finished.
- */
-void
-kill_extern_procs(const char *path)
-{
-	char buf[12];
-	FILE *fp;
-	pid_t pid;
-	int l;
-	char *p;
-
-	l = strlen(path) + strlen("/tasks") + 1;
-	p = xmalloc(l);
-	sprintf(p, "%s/tasks", path);
-
-	fp = fopen(p, "r");
-	if (fp == NULL) {
-		xfree(p);
-		return;
-	}
-
-	while (fgets(buf, sizeof(buf), fp)) {
-		pid = atoi(buf);
-		if (pid == getpid())
-			continue;
-		kill(pid, SIGTERM);
-		usleep(500000);
-		kill(pid, SIGKILL);
-	}
-
-	xfree(p);
-	fclose(fp);
 }

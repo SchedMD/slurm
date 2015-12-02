@@ -30,7 +30,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int i, rc = 0;
 	uint32_t job_id = 0, step_id = 0;

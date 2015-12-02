@@ -69,7 +69,7 @@ static unsigned long _mask_to_int(MY_MASK *mask)
 	return rc;
 }
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	char *task_str;
 	MY_MASK cpu_mask;

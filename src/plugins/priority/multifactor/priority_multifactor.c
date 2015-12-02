@@ -1879,7 +1879,7 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 
 	/* apply new usage */
 	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
-	     !IS_JOB_PENDING(job_ptr)) &&
+	     !IS_JOB_PENDING(job_ptr)) && job_ptr->tres_alloc_cnt &&
 	    job_ptr->start_time && job_ptr->assoc_ptr) {
 		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr, 0))
 			return false;

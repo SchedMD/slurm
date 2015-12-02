@@ -643,6 +643,7 @@ int main(int argc, char *argv[])
 	}
 
 	layouts_fini();
+	g_slurm_jobcomp_fini();
 
 	/* Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
@@ -692,7 +693,6 @@ int main(int argc, char *argv[])
 	gres_plugin_fini();
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
-	g_slurm_jobcomp_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
 	slurm_select_fini();

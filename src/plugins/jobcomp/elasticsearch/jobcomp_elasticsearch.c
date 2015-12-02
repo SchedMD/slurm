@@ -58,6 +58,7 @@
 #include <unistd.h>
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
+#include "src/common/list.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -139,24 +140,18 @@ struct http_response {
 	size_t size;
 };
 
-/* Type for jobcomp data pending to be indexed */
-typedef struct {
-	uint32_t nelems;
-	char **jobs;
-} pending_jobs_t;
-
-pending_jobs_t pend_jobs;
-
 char *save_state_file = "elasticsearch_state";
 char *index_type = "/slurm/jobcomp";
 char *log_url = NULL;
 
 static pthread_mutex_t save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t pend_jobs_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t job_handler_thread;
+static List jobslist = NULL;
+static bool thread_shutdown = false;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
-
 
 /* Get the user name for the give user_id */
 static void _get_user_name(uint32_t user_id, char *user_name, int buf_size)
@@ -253,17 +248,14 @@ static uint32_t _read_file(const char *file, char **data)
 /* Load jobcomp data from save state file */
 static int _load_pending_jobs(void)
 {
-	int rc = SLURM_SUCCESS;
-	char *saved_data = NULL;
-	char *state_file;
-	uint32_t data_size;
+	int i, rc = SLURM_SUCCESS;
+	char *saved_data = NULL, *state_file = NULL, *job_data = NULL;
+	uint32_t data_size, job_cnt = 0, tmp32 = 0;
 	Buf buffer;
-	pend_jobs.nelems = 0;
-	pend_jobs.jobs = NULL;
 
 	state_file = slurm_get_state_save_location();
 	if (state_file == NULL) {
-		debug("Could not retrieve StateSaveLocation from conf");
+		error("Could not retrieve StateSaveLocation from conf");
 		return SLURM_ERROR;
 	}
 
@@ -273,7 +265,7 @@ static int _load_pending_jobs(void)
 
 	slurm_mutex_lock(&save_lock);
 	data_size = _read_file(state_file, &saved_data);
-	if (data_size <= 0 || saved_data == NULL) {
+	if ((data_size <= 0) || (saved_data == NULL)) {
 		slurm_mutex_unlock(&save_lock);
 		xfree(saved_data);
 		xfree(state_file);
@@ -282,10 +274,14 @@ static int _load_pending_jobs(void)
 	slurm_mutex_unlock(&save_lock);
 
 	buffer = create_buf(saved_data, data_size);
-	safe_unpackstr_array(&pend_jobs.jobs, &pend_jobs.nelems, buffer);
-	if (pend_jobs.nelems > 0) {
-		debug("Loaded jobcomp pending data about %d jobs",
-		      pend_jobs.nelems);
+	safe_unpack32(&job_cnt, buffer);
+	for (i = 0; i < job_cnt; i++) {
+		safe_unpackstr_xmalloc(&job_data, &tmp32, buffer);
+		list_enqueue(jobslist, job_data);
+	}
+	if (job_cnt > 0) {
+		info("Loaded jobcomp/elasticsearch pending data about %u jobs",
+		     job_cnt);
 	}
 	free_buf(buffer);
 	xfree(state_file);
@@ -295,7 +291,8 @@ static int _load_pending_jobs(void)
 unpack_error:
 	error("Error unpacking file %s", state_file);
 	free_buf(buffer);
-	return SLURM_FAILURE;
+	xfree(state_file);
+	return SLURM_ERROR;
 }
 
 /* Callback to handle the HTTP response */
@@ -325,11 +322,11 @@ static int _index_job(const char *jobcomp)
 
 	if (log_url == NULL) {
 		if (((++error_cnt) % 100) == 0) {
-	                /* Periodically log errors */
-                        error("%s: Unable to save job state for %d "
+			/* Periodically log errors */
+			error("%s: Unable to save job state for %d "
 			      "jobs, caching data",
 			      plugin_type, error_cnt);
-                }
+		}
 		debug("JobCompLoc parameter not configured");
 		return SLURM_ERROR;
 	}
@@ -407,11 +404,11 @@ static int _index_job(const char *jobcomp)
 
 	if (rc == SLURM_ERROR) {
 		if (((++error_cnt) % 100) == 0) {
-                        /* Periodically log errors */
-                        error("%s: Unable to save job state for %d "
+			/* Periodically log errors */
+ 			error("%s: Unable to save job state for %d "
 			      "jobs, caching data",
 			      plugin_type, error_cnt);
-                }
+		}
 	}
 
 	return rc;
@@ -421,35 +418,58 @@ static int _index_job(const char *jobcomp)
 static char *_json_escape(const char *str)
 {
 	char *ret = NULL;
-	int i;
-	for (i = 0; i < strlen(str); ++i) {
+	int i, o, len;
+
+	len = strlen(str) * 2 + 128;
+	ret = xmalloc(len);
+	for (i = 0, o = 0; str[i]; ++i) {
+		if ((o + 8) >= len) {
+			len *= 2;
+			ret = xrealloc(ret, len);
+		}
 		switch (str[i]) {
 		case '\\':
-			xstrcat(ret, "\\\\");
+			ret[o++] = '\\';
+			ret[o++] = '\\';
 			break;
 		case '"':
-			xstrcat(ret, "\\\"");
+			ret[o++] = '\\';
+			ret[o++] = '\"';
 			break;
 		case '\n':
-			xstrcat(ret, "\\n");
+			ret[o++] = '\\';
+			ret[o++] = 'n';
 			break;
 		case '\b':
-			xstrcat(ret, "\\b");
+			ret[o++] = '\\';
+			ret[o++] = 'b';
 			break;
 		case '\f':
-			xstrcat(ret, "\\f");
+			ret[o++] = '\\';
+			ret[o++] = 'f';
 			break;
 		case '\r':
-			xstrcat(ret, "\\r");
+			ret[o++] = '\\';
+			ret[o++] = 'r';
 			break;
 		case '\t':
-			xstrcat(ret, "\\t");
+			ret[o++] = '\\';
+			ret[o++] = 't';
 			break;
 		case '<':
-			xstrcat(ret, "\\u003C");
+			ret[o++] = '\\';
+			ret[o++] = 'u';
+			ret[o++] = '0';
+			ret[o++] = '0';
+			ret[o++] = '3';
+			ret[o++] = 'C';
+			break;
+		case '/':
+			ret[o++] = '\\';
+			ret[o++] = '/';
 			break;
 		default:
-			xstrcatchar(ret, str[i]);
+			ret[o++] = str[i];
 		}
 	}
 	return ret;
@@ -459,17 +479,23 @@ static char *_json_escape(const char *str)
 static int _save_state(void)
 {
 	int fd, rc = SLURM_SUCCESS;
-	char *state_file, *new_file, *old_file;
+	char *state_file, *new_file, *old_file, *json_job;
+	ListIterator iter;
 	static int high_buffer_size = (1024 * 1024);
 	Buf buffer = init_buf(high_buffer_size);
+	uint32_t job_cnt;
 
-	slurm_mutex_lock(&pend_jobs_lock);
-	packstr_array(pend_jobs.jobs, pend_jobs.nelems, buffer);
-	slurm_mutex_unlock(&pend_jobs_lock);
+	job_cnt = list_count(jobslist);
+	pack32(job_cnt, buffer);
+	iter = list_iterator_create(jobslist);
+	while ((json_job = list_next(iter))) {
+		packstr(json_job, buffer);
+	}
+	list_iterator_destroy(iter);
 
 	state_file = slurm_get_state_save_location();
-	if (state_file == NULL || strlen(state_file) == 0) {
-		debug("Could not retrieve StateSaveLocation from conf");
+	if (state_file == NULL || state_file[0] == '\0') {
+		error("Could not retrieve StateSaveLocation from conf");
 		return SLURM_ERROR;
 	}
 
@@ -485,7 +511,7 @@ static int _save_state(void)
 	slurm_mutex_lock(&save_lock);
 	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		debug("Can't save jobcomp state, open file %s error %m",
+		error("Can't save jobcomp state, open file %s error %m",
 		      new_file);
 		rc = SLURM_ERROR;
 	} else {
@@ -498,7 +524,7 @@ static int _save_state(void)
 		while (nwrite > 0) {
 			amount = write(fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
-				debug("Error writing file %s, %m", new_file);
+				error("Error writing file %s, %m", new_file);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -537,71 +563,6 @@ static int _save_state(void)
 	return rc;
 }
 
-/* Add jobcomp data to the pending jobs structure */
-static void _push_pending_job(char *j)
-{
-	pend_jobs.jobs = xrealloc(pend_jobs.jobs,
-				  sizeof(char *) * (pend_jobs.nelems + 1));
-	pend_jobs.jobs[pend_jobs.nelems] = xstrdup(j);
-	pend_jobs.nelems++;
-}
-
-/* Updates pending jobs structure with the jobs that
- * failed to be indexed */
-static void _update_pending_jobs(int *m)
-{
-	int i;
-	pending_jobs_t aux;
-	aux.jobs = NULL;
-	aux.nelems = 0;
-
-	for (i = 0; i < pend_jobs.nelems; i++) {
-		if (!m[i]) {
-			aux.jobs = xrealloc(aux.jobs,
-					    sizeof(char *) * (aux.nelems + 1));
-			aux.jobs[aux.nelems] = xstrdup(pend_jobs.jobs[i]);
-			aux.nelems++;
-			xfree(pend_jobs.jobs[i]);
-		}
-	}
-
-	xfree(pend_jobs.jobs);
-	//pend_jobs.jobs = xmalloc(1);
-	//pend_jobs.jobs = xrealloc(pend_jobs.jobs, sizeof(char *) * (aux.nelems));
-	pend_jobs = aux;
-}
-
-/* Try to index all the jobcomp data for pending jobs */
-static int _index_retry(void)
-{
-	int i, rc = SLURM_SUCCESS, marks = 0;
-	int *pop_marks;
-
-	slurm_mutex_lock(&pend_jobs_lock);
-	pop_marks = xmalloc(sizeof(int) * pend_jobs.nelems);
-
-	for (i = 0; i < pend_jobs.nelems; i++) {
-		pop_marks[i] = 0;
-		if (_index_job(pend_jobs.jobs[i]) == SLURM_ERROR)
-			rc = SLURM_ERROR;
-		else {
-			marks = 1;
-			pop_marks[i] = 1;
-			xfree(pend_jobs.jobs[i]);
-		}
-	}
-
-	if (marks)
-		_update_pending_jobs(pop_marks);
-	xfree(pop_marks);
-
-	slurm_mutex_unlock(&pend_jobs_lock);
-	if (_save_state() == SLURM_ERROR)
-		rc = SLURM_ERROR;
-
-	return rc;
-}
-
 /* This is a variation of slurm_make_time_str() in src/common/parse_time.h
  * This version uses ISO8601 format by default. */
 static void _make_time_str(time_t * time, char *string, int size)
@@ -632,81 +593,17 @@ static void _make_time_str(time_t * time, char *string, int size)
 	}
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called. Put global initialization here.
- */
-extern int init(void)
-{
-	int rc;
-
-	slurm_mutex_lock(&pend_jobs_lock);
-	rc = _load_pending_jobs();
-	slurm_mutex_unlock(&pend_jobs_lock);
-
-	return rc;
-}
-
-extern int fini(void)
-{
-	xfree(log_url);
-	xfree(save_state_file);
-	xfree(index_type);
-	return SLURM_SUCCESS;
-}
-
-/*
- * The remainder of this file implements the standard SLURM job completion
- * logging API.
- */
-extern int slurm_jobcomp_set_location(char *location)
-{
-	int rc = SLURM_SUCCESS;
-	CURL *curl_handle;
-	CURLcode res;
-
-	if (location == NULL) {
-		debug("JobCompLoc parameter not configured");
-		return SLURM_ERROR;
-	}
-
-	log_url = xstrdup(location);
-
-	curl_global_init(CURL_GLOBAL_ALL);
-	curl_handle = curl_easy_init();
-	if (curl_handle) {
-		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
-		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			debug("Could not connect to: %s", log_url);
-			rc = SLURM_ERROR;
-		}
-		curl_easy_cleanup(curl_handle);
-	}
-	curl_global_cleanup();
-
-	if (rc == SLURM_SUCCESS && pend_jobs.nelems > 0) {
-		if (_index_retry() == SLURM_ERROR) {
-			debug("Could not index all jobcomp saved data");
-		}
-	}
-
-	return rc;
-}
-
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
-	int nwritten, B_SIZE = 1024, rc = SLURM_SUCCESS;
+	int nwritten, B_SIZE = 1024;
 	char usr_str[32], grp_str[32], start_str[32], end_str[32];
-	char submit_str[32], *script, *cluster = NULL, *qos, *state_string;
-	char *script_str;
+	char submit_str[32], *cluster = NULL, *qos, *state_string;
 	time_t elapsed_time, submit_time, eligible_time;
 	enum job_states job_state;
 	uint32_t time_limit;
 	uint16_t ntasks_per_node;
-	int i, tmp_size;
-	char *buffer, *tmp;
+	int i;
+	char *buffer, tmp_str[256], *script_str, *script;
 
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
@@ -781,17 +678,14 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 		if (nwritten >= B_SIZE) {
 			debug("Job completion data truncated and lost");
-			rc = SLURM_ERROR;
+			return SLURM_ERROR;
 		}
 	}
 
-	tmp_size = 256;
-	tmp = xmalloc(tmp_size * sizeof(char));
-
-	sprintf(tmp, ",\"cpu_hours\":%.6f",
-		((float) elapsed_time * (float) job_ptr->total_cpus) /
-		(float) 3600);
-	xstrcat(buffer, tmp);
+	snprintf(tmp_str, sizeof(tmp_str), ",\"cpu_hours\":%.6f",
+		 ((float) elapsed_time * (float) job_ptr->total_cpus) /
+		  (float) 3600);
+	xstrcat(buffer, tmp_str);
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(buffer, ",\"array_job_id\":%lu",
@@ -807,8 +701,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	if (job_ptr->details && (job_ptr->details->begin_time != NO_VAL)) {
-		eligible_time =
-			job_ptr->start_time - job_ptr->details->begin_time;
+		eligible_time = job_ptr->start_time -
+				job_ptr->details->begin_time;
 		xstrfmtcat(buffer, ",\"eligible_time\":%lu", eligible_time);
 	}
 
@@ -905,8 +799,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		script_str = _json_escape(script);
 		xstrfmtcat(buffer, ",\"script\":\"%s\"", script_str);
 		xfree(script_str);
-		xfree(script);
 	}
+	xfree(script);
 
 	if (job_ptr->assoc_ptr) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
@@ -933,7 +827,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 		}
 
-		for (i = nparents-1; i >= 0; i--)
+		for (i = nparents - 1; i >= 0; i--)
 			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
 		xfree(acc_aux);
 
@@ -946,20 +840,106 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	xstrcat(buffer, "}");
+	list_enqueue(jobslist, buffer);
 
-	if (rc == SLURM_SUCCESS) {
-		if (_index_job(buffer) == SLURM_ERROR) {
-			slurm_mutex_lock(&pend_jobs_lock);
-			_push_pending_job(buffer);
-			slurm_mutex_unlock(&pend_jobs_lock);
-			rc = _save_state();
-		} else {
-			rc = _index_retry();
+	return SLURM_SUCCESS;
+}
+
+
+
+extern void *_process_jobs(void *x)
+{
+	ListIterator iter;
+	char *json_job;
+
+	while (!thread_shutdown) {
+		int success_cnt = 0, fail_cnt = 0;
+		sleep(1);
+		iter = list_iterator_create(jobslist);
+		while ((json_job = list_next(iter)) && !thread_shutdown) {
+			if ((_index_job(json_job) == SLURM_SUCCESS)) {
+				list_delete_item(iter);
+				success_cnt++;
+			} else {
+				fail_cnt++;
+			}
+		}
+		list_iterator_destroy(iter);
+		if (success_cnt || fail_cnt) {
+			debug2("Elasticsearch index success:%d fail:%d",
+			       success_cnt, fail_cnt);
 		}
 	}
+	return NULL;
+}
 
-	xfree(tmp);
-	xfree(buffer);
+static void _jobslist_del(void *x)
+{
+	xfree(x);
+}
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called. Put global initialization here.
+ */
+extern int init(void)
+{
+	pthread_attr_t thread_attr;
+	int rc = SLURM_SUCCESS;
+
+	jobslist = list_create(_jobslist_del);
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&job_handler_thread, &thread_attr,
+			   _process_jobs, NULL))
+		fatal("pthread_create error %m");
+	slurm_mutex_lock(&pend_jobs_lock);
+	(void) _load_pending_jobs();
+	slurm_mutex_unlock(&pend_jobs_lock);
+
+	return rc;
+}
+
+extern int fini(void)
+{
+	thread_shutdown = true;
+	pthread_join(job_handler_thread, NULL);
+
+	_save_state();
+	list_destroy(jobslist);
+	xfree(log_url);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * The remainder of this file implements the standard SLURM job completion
+ * logging API.
+ */
+extern int slurm_jobcomp_set_location(char *location)
+{
+	int rc = SLURM_SUCCESS;
+	CURL *curl_handle;
+	CURLcode res;
+
+	if (location == NULL) {
+		debug("JobCompLoc parameter not configured");
+		return SLURM_ERROR;
+	}
+
+	log_url = xstrdup(location);
+
+	curl_global_init(CURL_GLOBAL_ALL);
+	curl_handle = curl_easy_init();
+	if (curl_handle) {
+		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
+		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
+		res = curl_easy_perform(curl_handle);
+		if (res != CURLE_OK) {
+			error("Could not connect to: %s", log_url);
+			rc = SLURM_ERROR;
+		}
+		curl_easy_cleanup(curl_handle);
+	}
+	curl_global_cleanup();
 
 	return rc;
 }
@@ -982,7 +962,7 @@ extern char *slurm_jobcomp_strerror(int errnum)
  */
 extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t * job_cond)
 {
-	info("This function is not implemented.");
+	debug("%s function is not implemented", __func__);
 	return NULL;
 }
 
@@ -991,6 +971,6 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t * job_cond)
  */
 extern int slurm_jobcomp_archive(slurmdb_archive_cond_t * arch_cond)
 {
-	info("This function is not implemented.");
+	debug("%s function is not implemented", __func__);
 	return SLURM_SUCCESS;
 }

@@ -30,7 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
 	char in_line[10];
 	int i;
