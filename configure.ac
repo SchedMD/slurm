@@ -448,6 +448,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/perlapi/libslurmdb/perl/Makefile.PL
 		 contribs/seff/Makefile
 		 contribs/torque/Makefile
+		 contribs/openlava/Makefile
 		 contribs/phpext/Makefile
 		 contribs/phpext/slurm_php/config.m4
 		 contribs/sgather/Makefile
