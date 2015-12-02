@@ -52,7 +52,7 @@ my ($help,
     $man);
 
 GetOptions(
-        'help|h' => \$help,
+        'h' => \$help,
         'man'    => \$man,
 	)
 	or pod2usage(2);
@@ -76,19 +76,29 @@ if ($man)
         pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
-# Use sole remaining argument as jobIds
-my @jobIds;
+# Use sole remaining argument as job_ids
+my @job_ids;
 if (@ARGV) {
-        @jobIds = @ARGV;
+        @job_ids = @ARGV;
 } else {
         pod2usage(2);
 }
 
+# OpenLava goes through the list beforehand verifying before it processes
+# and exits on first error.
+foreach my $jobid (@job_ids) {
+	if ($jobid !~ /^\d+$/) {
+		printf("%s: Illegal job ID.\n", $jobid);
+		exit 1;
+	}
+}
+
 my $rc = 0;
-foreach my $jobid (@jobIds) {
+foreach my $jobid (@job_ids) {
 	my $err = 0;
 	my $resp = 0;
-	for(my $i=0; $i<3; $i++) {
+
+	for (my $i=0; $i<3; $i++) {
 		$resp = Slurm->kill_job($jobid, SIGKILL);
 		$err = Slurm->get_errno();
 		if($resp == SLURM_SUCCESS
@@ -97,13 +107,9 @@ foreach my $jobid (@jobIds) {
 			last;
 		}
 	}
-	if($resp == SLURM_ERROR) {
+	if ($resp == SLURM_ERROR) {
 		$rc++;
-		if($err ne ESLURM_ALREADY_DONE &&
-		   $err ne ESLURM_INVALID_JOB_ID) {
-			printf("bkill: Kill job error on job id %u: %s\n",
-			       $jobid, Slurm->strerror($err));
-		}
+		printf("Job <%s>: %s\n", $jobid, Slurm->strerror($err));
 	}
 }
 exit $rc;
@@ -118,7 +124,7 @@ B<bkill> - deletes jobs in a familiar openlava format
 
 =head1 SYNOPSIS
 
-B<bkill> I<job_id>,...
+B<bkill> I<job_id>...
 
 =head1 DESCRIPTION
 
