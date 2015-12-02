@@ -265,3 +265,8 @@ slurmdb_qos_get(db_conn, conditions)
 	slurmdb_destroy_qos_cond(qos_cond);
     OUTPUT:
         RETVAL
+
+UV
+slurmdb_find_tres_count_in_string(tres_str_in, id)
+	char *tres_str_in
+	int id

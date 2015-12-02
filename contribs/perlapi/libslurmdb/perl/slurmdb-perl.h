@@ -31,6 +31,7 @@
 	    } \
 	} while (0)
 
+extern uint64_t slurmdb_find_tres_count_in_string(char *tres_str_in, int id);
 
 extern int av_to_cluster_grouping_list(AV* av, List grouping_list);
 extern int hv_to_assoc_cond(HV* hv, slurmdb_assoc_cond_t* assoc_cond);
