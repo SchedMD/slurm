@@ -5566,8 +5566,8 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	uid = g_slurm_auth_get_uid(msg->auth_cred, slurm_get_auth_info());
 
 	START_TIMER;
-	debug("%s: REQUEST_KILL_JOB job %s uid %d",
-	      __func__, kill->sjob_id, uid);
+	info("%s: REQUEST_KILL_JOB job %s uid %d",
+	     __func__, kill->sjob_id, uid);
 
 	lock_slurmctld(lock);
 
