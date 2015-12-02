@@ -94,6 +94,8 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * NO_VAL             0xfffffffe
 
+=item * NO_VAL64           0xfffffffffffffffe
+
 =item * MAX_TASKS_PER_NODE 128
 
 =item * SLURM_BATCH_SCRIPT 0xfffffffe
