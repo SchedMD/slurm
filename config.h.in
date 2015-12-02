@@ -187,6 +187,12 @@
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
+/* Compile with Lua 5.1 */
+#undef HAVE_LUA_5_1
+
+/* Compile with Lua 5.2 */
+#undef HAVE_LUA_5_2
+
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC

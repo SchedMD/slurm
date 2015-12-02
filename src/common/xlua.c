@@ -47,13 +47,17 @@ int xlua_dlopen(void)
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	if (
+#ifdef HAVE_LUA_5_2
 	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL)
+#elif HAVE_LUA_5_1
 	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
 	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
+	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)
+#endif
+	   ) {
 		error("Failed to open liblua.so: %s", dlerror());
 		return SLURM_ERROR;
 	}
