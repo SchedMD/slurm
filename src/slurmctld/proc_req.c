@@ -5581,9 +5581,9 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 		       __func__, kill->sjob_id,
 		       kill->signal, slurm_strerror(cc));
 	} else if (cc != SLURM_SUCCESS) {
-		error("%s: job_str_signal() job %s sig %d returned %s",
-		      __func__, kill->sjob_id,
-		      kill->signal, slurm_strerror(cc));
+		info("%s: job_str_signal() job %s sig %d returned %s",
+		     __func__, kill->sjob_id,
+		     kill->signal, slurm_strerror(cc));
 	} else {
 		slurmctld_diag_stats.jobs_canceled++;
 	}
