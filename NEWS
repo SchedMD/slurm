@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- Make lua dlopen() conditional on version found at build.
  -- When launching a task wait for the prolog to finish if it is still
     running.
+ -- sched/backfill - Delay backfill scheduler for completing jobs only if
+    CompleteWait configuration parameter is set (make code match documentation).
 
 * Changes in Slurm 15.08.4
 ==========================
