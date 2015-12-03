@@ -6,6 +6,8 @@ use Carp;
 my %const;
 my $got = 0;
 
+no warnings 'portable';
+
 sub _get_constants {
     seek(DATA, 0, 0);
     local $/=''; # paragraph mode
@@ -88,7 +90,11 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * INFINITE           0xffffffff
 
+=item * INFINITE64         0xffffffffffffffff
+
 =item * NO_VAL             0xfffffffe
+
+=item * NO_VAL64           0xfffffffffffffffe
 
 =item * MAX_TASKS_PER_NODE 128
 
@@ -750,6 +756,20 @@ This package export constants for use with Slurm. This includes enumerations and
 =item * JOBACCT_DATA_MIN_CPU_ID          13
 
 =item * JOBACCT_DATA_TOT_CPU             14
+
+=back
+
+=head3 TRES Records
+
+=over 2
+
+=item * TRES_CPU                        1
+
+=item * TRES_MEM                        2
+
+=item * TRES_ENERGY                     3
+
+=item * TRES_NODE                       4
 
 =back
 

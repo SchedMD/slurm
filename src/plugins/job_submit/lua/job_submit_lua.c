@@ -66,6 +66,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/xlua.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
@@ -1406,20 +1407,14 @@ static int _load_script(void)
  */
 int init(void)
 {
+	int rc = SLURM_SUCCESS;
+
 	/*
-	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
-	 *   ensure symbols from liblua are available to libs opened
-	 *   by any lua scripts.
+	 * Need to dlopen() the Lua library to ensure plugins see
+	 * appropriate symptoms
 	 */
-	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
-		return error("Failed to open liblua.so: %s", dlerror());
-	}
+	if ((rc = xlua_dlopen()) != SLURM_SUCCESS)
+		return rc;
 
 	return _load_script();
 }

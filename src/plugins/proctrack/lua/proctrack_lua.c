@@ -63,6 +63,7 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/xlua.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 
@@ -226,19 +227,11 @@ int init (void)
 	int rc = SLURM_SUCCESS;
 
 	/*
-	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
-	 *   ensure symbols from liblua are available to libs opened
-	 *   by any lua scripts.
+	 * Need to dlopen() the Lua library to ensure plugins see
+	 * appropriate symptoms
 	 */
-	if (!dlopen("liblua.so",      RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
-	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
-		return (error("Failed to open liblua.so: %s", dlerror()));
-	}
+	if ((rc = xlua_dlopen()) != SLURM_SUCCESS)
+		return rc;
 
 	/*
 	 *  Initilize lua
