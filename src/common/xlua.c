@@ -57,7 +57,7 @@ int xlua_dlopen(void)
 #elif HAVE_LUA_5_1
 	if (!dlopen("liblua-5.1.so", RTLD_NOW | RTLD_GLOBAL)
 	    && !dlopen("liblua5.1.so", RTLD_NOW | RTLD_GLOBAL)
-	    && !dlopen("liblua5.1.so.0", RTLD_NOW | RTLD_GLOBAL) {
+	    && !dlopen("liblua5.1.so.0", RTLD_NOW | RTLD_GLOBAL)) {
 		error("Failed to open liblua.so: %s", dlerror());
 		return SLURM_ERROR;
 	}
