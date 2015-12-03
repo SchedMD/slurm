@@ -480,10 +480,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			select_serial = 1;
 	}
 
-	license_job_return(job_ptr);
 	acct_policy_job_fini(job_ptr);
-	if (slurm_sched_g_freealloc(job_ptr) != SLURM_SUCCESS)
-		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
 	(void) epilog_slurmctld(job_ptr);

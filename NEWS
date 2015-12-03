@@ -89,6 +89,12 @@ documents those changes that are of interest to users and administrators.
     correctly when PriorityFlags=CALCULATE_RUNNING is set.
  -- Add slurmdb_find_tres_count_in_string() to slurm db perl api.
  -- Make lua dlopen() conditional on version found at build.
+ -- When launching a task wait for the prolog to finish if it is still
+    running.
+ -- sched/backfill - Delay backfill scheduler for completing jobs only if
+    CompleteWait configuration parameter is set (make code match documentation).
+ -- Release a job's allocated licenses only after epilog runs on all nodes
+    rather than at start of termination process.
 
 * Changes in Slurm 15.08.4
 ==========================

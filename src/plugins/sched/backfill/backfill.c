@@ -218,7 +218,6 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 /*
  * _job_is_completing - Determine if jobs are in the process of completing.
  *	This is a variant of job_is_completing in slurmctld/job_scheduler.c.
- *	It always gives completing jobs at least 5 secs to complete.
  * RET - True if any job is in the process of completing
  */
 static bool _job_is_completing(void)
@@ -229,7 +228,7 @@ static bool _job_is_completing(void)
 	uint16_t complete_wait = slurm_get_complete_wait();
 	time_t recent;
 
-	if (job_list == NULL)
+	if ((job_list == NULL) || (complete_wait == 0))
 		return completing;
 
 	recent = time(NULL) - MAX(complete_wait, 5);
