@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
     running.
  -- sched/backfill - Delay backfill scheduler for completing jobs only if
     CompleteWait configuration parameter is set (make code match documentation).
+ -- Release a job's allocated licenses only after epilog runs on all nodes
+    rather than at start of termination process.
 
 * Changes in Slurm 15.08.4
 ==========================
