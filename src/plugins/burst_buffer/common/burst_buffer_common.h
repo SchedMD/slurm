@@ -168,7 +168,7 @@ typedef struct bb_job {
 	uint32_t   swap_nodes;	/* Number of nodes needed */
 	uint64_t   total_size;	/* Total bytes required for job (excludes
 				 * persistent buffers) */
-	uint32_t user_id;	/* user the job runs as */
+	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 
 /* Persistent buffer requests which are pending */

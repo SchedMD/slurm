@@ -314,7 +314,8 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 		xstrcat(cmd_line, script_argv[i]);
 	}
 	info("%s", cmd_line);
-	info("%s", resp_msg);
+	if (resp_msg && resp_msg[0])
+		info("%s", resp_msg);
 	xfree(cmd_line);
 }
 
@@ -1535,42 +1536,58 @@ static void *_start_stage_out(void *x)
 	if (stage_args->timeout)
 		timeout = stage_args->timeout * 1000;
 	else
-		timeout = DEFAULT_STATE_OUT_TIMEOUT * 1000;
-	op = "dws_data_out";
+		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	op = "dws_post_run";
 	START_TIMER;
-	resp_msg = bb_run_script("dws_data_out",
+	resp_msg = bb_run_script("dws_post_run",
 				 bb_state.bb_config.get_sys_state,
-				 data_out_argv, timeout, &status);
+				 post_run_argv, timeout, &status);
 	END_TIMER;
-	info("%s: dws_data_out for job %u ran for %s",
-	     __func__, stage_args->job_id, TIME_STR);
-	_log_script_argv(data_out_argv, resp_msg);
+	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	    bb_state.bb_config.debug_flag) {
+		info("%s: dws_post_run for job %u ran for %s",
+		     __func__, stage_args->job_id, TIME_STR);
+	}
+	_log_script_argv(post_run_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dws_data_out for job %u status:%u response:%s",
+		error("%s: dws_post_run for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	}
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(stage_args->job_id);
+	if (!job_ptr) {
+		error("%s: unable to find job record for job %u",
+		      __func__, stage_args->job_id);
+	} else {
+		pthread_mutex_lock(&bb_state.bb_mutex);
+		bb_job = _get_bb_job(job_ptr);
+		if (bb_job)
+			bb_job->state = BB_STATE_STAGING_OUT;
+		pthread_mutex_unlock(&bb_state.bb_mutex);
+	}
+	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
 		if (stage_args->timeout)
 			timeout = stage_args->timeout * 1000;
 		else
-			timeout = DEFAULT_OTHER_TIMEOUT * 1000;
-		op = "dws_post_run";
+			timeout = DEFAULT_STATE_OUT_TIMEOUT * 1000;
+		op = "dws_data_out";
 		START_TIMER;
 		xfree(resp_msg);
-		resp_msg = bb_run_script("dws_post_run",
+		resp_msg = bb_run_script("dws_data_out",
 					 bb_state.bb_config.get_sys_state,
-					 post_run_argv, timeout, &status);
+					 data_out_argv, timeout, &status);
 		END_TIMER;
-		if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
 		    bb_state.bb_config.debug_flag) {
-			info("%s: dws_post_run for job %u ran for %s",
+			info("%s: dws_data_out for job %u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		}
-		_log_script_argv(post_run_argv, resp_msg);
+		_log_script_argv(data_out_argv, resp_msg);
 		if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-			error("%s: dws_post_run for job %u "
+			error("%s: dws_data_out for job %u "
 			      "status:%u response:%s",
 			      __func__, stage_args->job_id, status, resp_msg);
 			rc = SLURM_ERROR;
@@ -3284,13 +3301,55 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		/* No job buffers. Assuming use of persistent buffers only */
 		verbose("%s: %s bb job record not found", __func__,
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
-	} else if (bb_job->state < BB_STATE_STAGING_OUT) {
-		bb_job->state = BB_STATE_STAGING_OUT;
+	} else if (bb_job->state < BB_STATE_POST_RUN) {
+		bb_job->state = BB_STATE_POST_RUN;
 		_queue_stage_out(bb_job);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Determine if a job's burst buffer post_run operation is complete
+ *
+ * RET: 0 - post_run is underway
+ *      1 - post_run complete
+ *     -1 - fatal error
+ */
+extern int bb_p_job_test_post_run(struct job_record *job_ptr)
+{
+	bb_job_t *bb_job;
+	int rc = -1;
+	char jobid_buf[32];
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
+	if (!bb_job) {
+		/* No job buffers. Assuming use of persistent buffers only */
+		verbose("%s: %s bb job record not found", __func__,
+			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+		rc =  1;
+	} else {
+		if (bb_job->state < BB_STATE_POST_RUN) {
+			rc = -1;
+		} else if (bb_job->state > BB_STATE_POST_RUN) {
+			rc =  1;
+		} else {
+			rc =  0;
+		}
+	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*
@@ -3322,12 +3381,12 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		rc =  1;
 	} else {
-		if (bb_job->state < BB_STATE_STAGING_OUT) {
+		if (bb_job->state < BB_STATE_POST_RUN) {
 			rc = -1;
-		} else if (bb_job->state == BB_STATE_STAGING_OUT) {
-			rc =  0;
-		} else { /* bb_job->state > BB_STATE_STAGING_OUT) */
+		} else if (bb_job->state > BB_STATE_STAGING_OUT) {
 			rc =  1;
+		} else {
+			rc =  0;
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);

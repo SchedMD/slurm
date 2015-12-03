@@ -163,6 +163,15 @@ extern int bb_g_job_begin(struct job_record *job_ptr);
 extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
 
 /*
+ * Determine if a job's burst buffer post_run operation is complete
+ *
+ * RET: 0 - post_run is underway
+ *      1 - post_run complete
+ *     -1 - fatal error
+ */
+extern int bb_g_job_test_post_run(struct job_record *job_ptr);
+
+/*
  * Determine if a job's burst buffer stage-out is complete
  *
  * RET: 0 - stage-out is underway
