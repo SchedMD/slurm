@@ -1184,7 +1184,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	 *  Do not launch a new job step while prolog in progress:
 	 */
 	if (_prolog_is_running (req->job_id)) {
-		info("[job %u] prolog in progress", req->job_id);
+		info("[job %u] prolog in progress\n", req->job_id);
 		errnum = EINPROGRESS;
 		goto done;
 	}
@@ -5918,23 +5918,13 @@ static int _match_jobid(void *listentry, void *key)
 	return (*job0 == *job1);
 }
 
-static int _prolog_is_running(uint32_t jobid)
+static int _prolog_is_running (uint32_t jobid)
 {
-	time_t start;
-	uint16_t timeout;
-
-	timeout = slurm_get_prolog_timeout();
-	start = time(NULL);
-
-	while (time(NULL) - start < timeout) {
-		if (list_find_first (conf->prolog_running_jobs,
-				     (ListFindF) _match_jobid, &jobid)) {
-			sleep(1);
-			continue;
-		}
-		return 0;
-	}
-	return 1;
+	int rc = 0;
+	if (list_find_first (conf->prolog_running_jobs,
+	                     (ListFindF) _match_jobid, &jobid))
+		rc = 1;
+	return (rc);
 }
 
 /* Wait for the job's prolog to complete */
