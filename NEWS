@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
     CompleteWait configuration parameter is set (make code match documentation).
  -- Release a job's allocated licenses only after epilog runs on all nodes
     rather than at start of termination process.
+ -- Cray job NHC delayed until after burst buffer released and epilog completes
+    on all allocated nodes.
 
 * Changes in Slurm 15.08.4
 ==========================
