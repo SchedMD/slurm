@@ -1180,14 +1180,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req->envc = envcount(req->env);
 
 #ifndef HAVE_FRONT_END
-	/*
-	 *  Do not launch a new job step while prolog in progress:
-	 */
-	if (_prolog_is_running (req->job_id)) {
-		info("[job %u] prolog in progress\n", req->job_id);
-		errnum = EINPROGRESS;
-		goto done;
-	}
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 #endif
