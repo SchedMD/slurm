@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray job NHC delayed until after burst buffer released and epilog completes
     on all allocated nodes.
  -- Fix abort of srun if using PrologFlags=NoHold
+ -- Let devices step_extern cgroup inherit attributes of job cgroup.
 
 * Changes in Slurm 15.08.4
 ==========================

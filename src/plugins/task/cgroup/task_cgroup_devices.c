@@ -359,7 +359,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 
-	if (job->stepid != SLURM_BATCH_SCRIPT ) {
+	if (job->stepid != SLURM_BATCH_SCRIPT &&
+	    job->stepid != SLURM_EXTERN_CONT) {
 
 		gres_step_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
 
