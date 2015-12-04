@@ -70,6 +70,7 @@
 #include "src/slurmctld/state_save.h"
 
 #define USE_ISO8601 1
+#define MAX_STR_LEN 1048576	/* 1 MB */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -432,7 +433,9 @@ static char *_json_escape(const char *str)
 	len = strlen(str) * 2 + 128;
 	ret = xmalloc(len);
 	for (i = 0, o = 0; str[i]; ++i) {
-		if ((o + 8) >= len) {
+		if (o >= MAX_STR_LEN) {
+			break;
+		} else if ((o + 8) >= len) {
 			len *= 2;
 			ret = xrealloc(ret, len);
 		}
