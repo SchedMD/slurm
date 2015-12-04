@@ -68,6 +68,7 @@ typedef struct slurmd_task_ops {
 	int	(*post_term)		    (stepd_step_rec_t *job,
 					     stepd_step_task_info_t *task);
 	int	(*post_step)		    (stepd_step_rec_t *job);
+	int	(*add_pid)	    	    (pid_t pid);
 } slurmd_task_ops_t;
 
 /*
@@ -85,6 +86,7 @@ static const char *syms[] = {
 	"task_p_pre_launch",
 	"task_p_post_term",
 	"task_p_post_step",
+	"task_p_add_pid",
 };
 
 static slurmd_task_ops_t *ops = NULL;
@@ -415,6 +417,26 @@ extern int task_g_post_step(stepd_step_rec_t *job)
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].post_step))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
+}
+
+/*
+ * Keep track of a pid.
+ *
+ * RET - slurm error code
+ */
+extern int task_g_add_pid(pid_t pid)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (slurmd_task_init())
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].add_pid))(pid);
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);

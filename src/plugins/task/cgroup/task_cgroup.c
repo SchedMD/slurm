@@ -350,3 +350,23 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 
 	return pre;
 }
+
+/*
+ * Add pid to specific cgroup.
+ */
+extern int task_p_add_pid (pid_t pid)
+{
+	if (use_cpuset) {
+		task_cgroup_cpuset_add_pid(pid);
+	}
+
+	if (use_memory) {
+		task_cgroup_memory_add_pid(pid);
+	}
+
+	if (use_devices) {
+		task_cgroup_devices_add_pid(pid);
+	}
+
+	return SLURM_SUCCESS;
+}

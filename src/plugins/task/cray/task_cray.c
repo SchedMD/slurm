@@ -1012,4 +1012,12 @@ static int _step_epilogue(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Keep track a of a pid.
+ */
+extern int task_p_add_pid (pid_t pid)
+{
+	return SLURM_SUCCESS;
+}
+
 #endif

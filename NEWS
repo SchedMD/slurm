@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
     on all allocated nodes.
  -- Fix abort of srun if using PrologFlags=NoHold
  -- Let devices step_extern cgroup inherit attributes of job cgroup.
+ -- Add new hook to Task plugin to be able to put adopted processes in the
+    step_extern cgroups.
 
 * Changes in Slurm 15.08.4
 ==========================

@@ -533,3 +533,11 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 {
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Keep track a of a pid.
+ */
+extern int task_p_add_pid (pid_t pid)
+{
+	return SLURM_SUCCESS;
+}

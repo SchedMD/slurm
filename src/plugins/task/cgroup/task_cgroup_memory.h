@@ -58,4 +58,7 @@ extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job);
 /* detect if oom ran on a step or job and print notice of said event */
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job);
 
+/* add a pid to the cgroup */
+extern int task_cgroup_memory_add_pid(pid_t pid);
+
 #endif

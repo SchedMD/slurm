@@ -495,3 +495,9 @@ static int read_allowed_devices_file(char **allowed_devices)
 
 	return num_lines;
 }
+
+
+extern int task_cgroup_devices_add_pid(pid_t pid)
+{
+	return xcgroup_add_pids(&step_devices_cg, &pid, 1);
+}
