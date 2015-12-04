@@ -1058,24 +1058,30 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	if (priority_debug) {
 		info("job %u ran for %g seconds with TRES counts of",
 		     job_ptr->job_id, run_delta);
-		for (i=0; i<slurmctld_tres_cnt; i++) {
-			if (!job_ptr->tres_alloc_cnt[i])
-				continue;
-			info("TRES %s: %"PRIu64,
-			     assoc_mgr_tres_name_array[i],
-			     job_ptr->tres_alloc_cnt[i]);
-		}
+		if (job_ptr->tres_alloc_cnt) {
+			for (i=0; i<slurmctld_tres_cnt; i++) {
+				if (!job_ptr->tres_alloc_cnt[i])
+					continue;
+				info("TRES %s: %"PRIu64,
+				     assoc_mgr_tres_name_array[i],
+				     job_ptr->tres_alloc_cnt[i]);
+			}
+		} else
+			info("No alloced TRES, state is %s",
+			     job_state_string(job_ptr->job_state));
 	}
 	/* get the time in decayed fashion */
 	run_decay = run_delta * pow(decay_factor, run_delta);
 	/* clang needs these memset to avoid a warning */
 	memset(tres_run_decay, 0, sizeof(tres_run_decay));
 	memset(tres_run_delta, 0, sizeof(tres_run_delta));
-	for (i=0; i<slurmctld_tres_cnt; i++) {
-		tres_run_delta[i] = tres_time_delta *
-			job_ptr->tres_alloc_cnt[i];
-		tres_run_decay[i] = (long double)run_decay *
-			(long double)job_ptr->tres_alloc_cnt[i];
+	if (job_ptr->tres_alloc_cnt) {
+		for (i=0; i<slurmctld_tres_cnt; i++) {
+			tres_run_delta[i] = tres_time_delta *
+				job_ptr->tres_alloc_cnt[i];
+			tres_run_decay[i] = (long double)run_decay *
+				(long double)job_ptr->tres_alloc_cnt[i];
+		}
 	}
 
 	assoc_mgr_lock(&locks);
@@ -1875,7 +1881,7 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 
 	/* apply new usage */
 	if (((flags & PRIORITY_FLAGS_CALCULATE_RUNNING) ||
-	     !IS_JOB_PENDING(job_ptr)) && job_ptr->tres_alloc_cnt &&
+	     !IS_JOB_PENDING(job_ptr)) &&
 	    job_ptr->start_time && job_ptr->assoc_ptr) {
 		if (!_apply_new_usage(job_ptr, g_last_ran, *start_time_ptr, 0))
 			return false;
