@@ -119,7 +119,7 @@ Please refer to its documentation for help.</li>
 
 <p>This is typically due to non-killable processes associated with the job.
 Slurm will continue to attempt terminating the processes with SIGKILL, but
-some jobs may stuck performing I/O and non-killable.
+some jobs may be stuck performing I/O and non-killable.
 This is typically due to a file system problem and may be addressed in
 a couple of ways.</p>
 <ol>
