@@ -645,7 +645,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 					  rcred->core_array_size);
 	memcpy(rcred->sockets_per_node, cred->sockets_per_node,
 	       (sizeof(uint16_t) * rcred->core_array_size));
-	cred->sock_core_rep_count = xmalloc(sizeof(uint32_t) *
+	rcred->sock_core_rep_count = xmalloc(sizeof(uint32_t) *
 					    rcred->core_array_size);
 	memcpy(rcred->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * rcred->core_array_size));
