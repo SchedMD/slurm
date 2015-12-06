@@ -3185,6 +3185,9 @@ extern void slurm_free_assoc_mgr_info_request_msg PARAMS (
 #define KILL_JOB_ARRAY	0x0002	/* kill all elements of a job array */
 #define KILL_STEPS_ONLY	0x0004	/* Do not signal batch script */
 #define KILL_FULL_JOB	0x0008	/* Signal all steps, including batch script */
+/* use top bit to indicate signal has been sent to job previously */
+/* does not need to be passed to slurmd through 4-bit packing */
+#define WARN_SENT	0x8000  /* warn already sent, clear this on requeue */
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
