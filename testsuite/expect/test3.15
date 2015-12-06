@@ -60,7 +60,7 @@ proc submit_job { license_count } {
 	global script_name bin_sleep license_name sbatch number exit_code
 	set job_id 0
 	make_bash_script $script_name "$bin_sleep 300"
-	spawn $sbatch -n1 -t1 -o /dev/null -L $license_name:$license_count $script_name
+	spawn $sbatch -n1 -t1 -o /dev/null -L $license_name:$license_count --mem=10 $script_name
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)

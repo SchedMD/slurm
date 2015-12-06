@@ -71,7 +71,7 @@ make_bash_script $file_in "
 #
 # Submit a couple jobs so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=10 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -91,7 +91,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=10 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)

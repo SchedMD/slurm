@@ -80,8 +80,8 @@ proc check_state {id state} {
 	}
 }
 
-# Submit job 1 of 2
-spawn $sbatch -t3 -o/dev/null $slow_job
+# Submit job 1 of 3
+spawn $sbatch -t3 -o/dev/null --mem=10 $slow_job
 expect {
 	-re "Submitted batch job ($number)" {
 		set slow_id $expect_out(1,string)
@@ -100,8 +100,8 @@ if {$slow_id == 0} {
 	exit 1
 }
 
-# Submit job 2 of 2
-spawn $sbatch -t3 -o/dev/null $fast_job
+# Submit job 2 of 3
+spawn $sbatch -t3 -o/dev/null --mem=10 $fast_job
 expect {
 	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't test with less than two nodes\n"
@@ -124,8 +124,8 @@ if {$fast_id == 0} {
 	exit 1
 }
 
-# Submit dependency job
-spawn $sbatch --dependency=afterok:$slow_id?afterok:$fast_id -o/dev/null $slow_job
+# Submit dependency job, 3 of 3
+spawn $sbatch --dependency=afterok:$slow_id?afterok:$fast_id -o/dev/null --mem=10 $slow_job
 expect {
 	-re "Submitted batch job ($number)" {
 		set dep_id $expect_out(1,string)

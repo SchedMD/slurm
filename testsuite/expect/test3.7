@@ -151,15 +151,15 @@ exec $bin_chmod 700 $file_prog
 # Submit two jobs to the same node,.
 # The first job includes srun, second only the application
 #
-set srun_pid [spawn $sbatch -N1 -t2 --output=$file_out1 $file_prog_sh1]
+set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out1 --mem=10 $file_prog_sh1]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -167,7 +167,7 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	send_user "\nFAILURE: srun failed to report jobid\n"
+	send_user "\nFAILURE: sbatch failed to report jobid\n"
 	exit 1
 }
 # Get the job's allocate host name
@@ -200,14 +200,14 @@ if {[string compare $host_name ""] == 0} {
 	exit 1
 }
 # Submit another job to that same node
-set srun_pid [spawn $sbatch -N1 -t2 --output=$file_out2 $file_prog_sh2]
+set sbatch_pid [spawn $sbatch -N1 -t2 --output=$file_out2 --mem=10 $file_prog_sh2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
+		send_user "\nFAILURE: sbatch not responding\n"
 		slow_kill $srun_pid
 		exit 1
 	}
@@ -216,7 +216,7 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	send_user "\nFAILURE: srun failed to report jobid\n"
+	send_user "\nFAILURE: sbatch failed to report jobid\n"
 	cancel_job $job_id1
 	exit 1
 }
