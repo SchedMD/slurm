@@ -667,6 +667,7 @@ extern void *backfill_agent(void *args)
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	bool load_config;
+	bool short_sleep = false;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "slurmctld_bckfl", NULL, NULL, NULL) < 0) {
@@ -677,7 +678,10 @@ extern void *backfill_agent(void *args)
 	_load_config();
 	last_backfill_time = time(NULL);
 	while (!stop_backfill) {
-		_my_sleep(backfill_interval * 1000000);
+		if (short_sleep)
+			_my_sleep(1000000);
+		else
+			_my_sleep(backfill_interval * 1000000);
 		if (stop_backfill)
 			break;
 		slurm_mutex_lock(&config_lock);
@@ -694,14 +698,16 @@ extern void *backfill_agent(void *args)
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
 		    job_is_completing() || _many_pending_rpcs() ||
-		    !avail_front_end(NULL) || !_more_work(last_backfill_time))
+		    !avail_front_end(NULL) || !_more_work(last_backfill_time)) {
+			short_sleep = true;
 			continue;
-
+		}
 		lock_slurmctld(all_locks);
 		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
+		short_sleep = false;
 	}
 	return NULL;
 }
