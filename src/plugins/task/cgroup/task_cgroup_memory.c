@@ -531,3 +531,8 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 }
+
+extern int task_cgroup_memory_add_pid(pid_t pid)
+{
+	return xcgroup_add_pids(&step_memory_cg, &pid, 1);
+}

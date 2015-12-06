@@ -146,4 +146,11 @@ extern int task_g_post_term(stepd_step_rec_t *job,
  */
 extern int task_g_post_step(stepd_step_rec_t *job);
 
+/*
+ * Keep track of a pid.
+ *
+ * RET - slurm error code
+ */
+extern int task_g_add_pid(pid_t pid);
+
 #endif /* _SLURMD_TASK_PLUGIN_H_ */

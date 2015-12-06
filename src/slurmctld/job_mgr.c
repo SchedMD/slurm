@@ -3095,6 +3095,10 @@ extern int kill_job_by_front_end_name(char *node_name)
 						   "/%u", job_ptr->job_id);
 				}
 				job_ptr->restart_cnt++;
+
+				/* clear signal sent flag on requeue */
+				job_ptr->warn_flags &= ~WARN_SENT;
+
 				/* Since the job completion logger
 				 * removes the submit we need to add it
 				 * again. */
@@ -3332,6 +3336,10 @@ extern int kill_running_job_by_node_name(char *node_name)
 						   "/%u", job_ptr->job_id);
 				}
 				job_ptr->restart_cnt++;
+
+				/* clear signal sent flag on requeue */
+				job_ptr->warn_flags &= ~WARN_SENT;
+
 				/* Since the job completion logger
 				 * removes the submit we need to add it
 				 * again. */
@@ -4891,6 +4899,10 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		if (!use_cloud)
 			job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
+
+		/* clear signal sent flag on requeue */
+		job_ptr->warn_flags &= ~WARN_SENT;
+
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		/* Since the job completion logger removes the job submit
 		 * information, we need to add it again. */
@@ -7162,6 +7174,7 @@ void job_time_limit(void)
 		if (job_ptr->preempt_time &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 			if ((job_ptr->warn_time) &&
+			    (!(job_ptr->warn_flags & WARN_SENT)) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
 			     job_ptr->end_time)) {
 				debug("%s: preempt warning signal %u to job %u ",
@@ -7171,8 +7184,9 @@ void job_time_limit(void)
 						  job_ptr->warn_signal,
 						  job_ptr->warn_flags, 0,
 						  false);
-				job_ptr->warn_signal = 0;
-				job_ptr->warn_time = 0;
+
+				/* mark job as signalled */
+				job_ptr->warn_flags |= WARN_SENT;
 			}
 			if (job_ptr->end_time <= now) {
 				last_job_update = now;
@@ -7205,6 +7219,7 @@ void job_time_limit(void)
 		}
 		if (job_ptr->time_limit != INFINITE) {
 			if ((job_ptr->warn_time) &&
+			    (!(job_ptr->warn_flags & WARN_SENT)) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
 			     job_ptr->end_time)) {
 
@@ -7222,8 +7237,9 @@ void job_time_limit(void)
 						  job_ptr->warn_signal,
 						  job_ptr->warn_flags, 0,
 						  false);
-				job_ptr->warn_signal = 0;
-				job_ptr->warn_time = 0;
+
+				/* mark job as signalled */
+				job_ptr->warn_flags |= WARN_SENT;
 			}
 			if ((job_ptr->mail_type & MAIL_JOB_TIME100) &&
 			    (now >= job_ptr->end_time)) {
@@ -13777,6 +13793,10 @@ reply:
 	job_ptr->tot_sus_time = (time_t) 0;
 
 	job_ptr->restart_cnt++;
+
+	/* clear signal sent flag on requeue */
+	job_ptr->warn_flags &= ~WARN_SENT;
+
 	/* Since the job completion logger removes the submit we need
 	 * to add it again. */
 	acct_policy_add_job_submit(job_ptr);
@@ -14997,7 +15017,11 @@ extern void job_hold_requeue(struct job_record *job_ptr)
 	 */
 	flags = job_ptr->job_state & JOB_STATE_FLAGS;
 	job_ptr->job_state = JOB_PENDING | flags;
+
 	job_ptr->restart_cnt++;
+
+	/* clear signal sent flag on requeue */
+	job_ptr->warn_flags &= ~WARN_SENT;
 
 	/* Test if user wants to requeue the job
 	 * in hold or with a special exit value.

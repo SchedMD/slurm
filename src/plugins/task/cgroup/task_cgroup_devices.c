@@ -359,7 +359,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	}
 
 
-	if (job->stepid != SLURM_BATCH_SCRIPT ) {
+	if (job->stepid != SLURM_BATCH_SCRIPT &&
+	    job->stepid != SLURM_EXTERN_CONT) {
 
 		gres_step_bit_alloc = xmalloc ( sizeof (int) * (gres_conf_lines + 1));
 
@@ -493,4 +494,10 @@ static int read_allowed_devices_file(char **allowed_devices)
 		perror (cgroup_allowed_devices_file);
 
 	return num_lines;
+}
+
+
+extern int task_cgroup_devices_add_pid(pid_t pid)
+{
+	return xcgroup_add_pids(&step_devices_cg, &pid, 1);
 }

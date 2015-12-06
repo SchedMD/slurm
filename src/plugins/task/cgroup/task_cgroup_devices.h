@@ -55,4 +55,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job);
 /* create a task cgroup and attach the task to it */
 extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job);
 
+/* add a pid to the cgroup */
+extern int task_cgroup_devices_add_pid(pid_t pid);
+
 #endif

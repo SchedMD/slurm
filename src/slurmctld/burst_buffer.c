@@ -94,6 +94,7 @@ typedef struct slurm_bb_ops {
 					      bool test_only);
 	int		(*job_begin) (struct job_record *job_ptr);
 	int		(*job_start_stage_out) (struct job_record *job_ptr);
+	int		(*job_test_post_run) (struct job_record *job_ptr);
 	int		(*job_test_stage_out) (struct job_record *job_ptr);
 	int		(*job_cancel) (struct job_record *job_ptr);
 	char *		(*xlate_bb_2_tres_str) (char *burst_buffer);
@@ -115,6 +116,7 @@ static const char *syms[] = {
 	"bb_p_job_test_stage_in",
 	"bb_p_job_begin",
 	"bb_p_job_start_stage_out",
+	"bb_p_job_test_post_run",
 	"bb_p_job_test_stage_out",
 	"bb_p_job_cancel",
 	"bb_p_xlate_bb_2_tres_str"
@@ -564,6 +566,37 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr)
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_start_stage_out))(job_ptr);
 		rc = MAX(rc, rc2);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return rc;
+}
+
+/*
+ * Determine if a job's burst buffer post_run operation is complete
+ *
+ * RET: 0 - post_run is underway
+ *      1 - post_run complete
+ *     -1 - fatal error
+ */
+extern int bb_g_job_test_post_run(struct job_record *job_ptr)
+{
+	DEF_TIMERS;
+	int i, rc = 1, rc2;
+
+	START_TIMER;
+	if (bb_g_init() != SLURM_SUCCESS)
+		rc = -1;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return rc;	/* No burst buffers to stage out */
+
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		rc2 = (*(ops[i].job_test_post_run))(job_ptr);
+		rc = MIN(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);

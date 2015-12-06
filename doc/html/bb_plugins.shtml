@@ -94,7 +94,7 @@ Reread the burst buffer config file when it is updated.
 A Slurm errno
 
 <p class="commandline">
-uint64_t bb_p_get_systm_size(char *name)
+uint64_t bb_p_get_system_size(char *name)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Get the total burst buffer size in MB of a given plugin name.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -195,6 +195,18 @@ Trigger a job's burst buffer stage out to begin.
 A Slurm errno
 
 <p class="commandline">
+int bb_p_job_test_post_run(struct job_record *job_ptr)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Determine of jobs's post run operation is complete.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_ptr</span>
+(input) Job to check if post run operation is complete.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+0 - post run operation is underway<br>
+1 - post run operation complete<br>
+-1 - fatal error
+
+<p class="commandline">
 int bb_p_job_test_stage_out(struct job_record *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Determine of jobs's stage out is complete.
@@ -229,6 +241,6 @@ return value).
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 25 August 2015</p>
+<p style="text-align:center;">Last modified 3 December 2015</p>
 
 <!--#include virtual="footer.txt"-->

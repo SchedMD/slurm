@@ -75,6 +75,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
+#include "src/slurmd/common/task_plugin.h"
+
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid);
 static int _handle_state(int fd, stepd_step_rec_t *job);
@@ -1252,7 +1254,9 @@ static void *_wait_extern_pid(void *args)
 	jobacct_id.job = job;
 
 	proctrack_g_add(job, pid);
+	task_g_add_pid(pid);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
+
 	//info("waiting on pid %d", pid);
 	_block_on_pid(pid);
 	//info("done with pid %d %d: %m", pid, rc);

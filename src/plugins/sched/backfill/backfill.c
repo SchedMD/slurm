@@ -146,7 +146,6 @@ static int  _attempt_backfill(void);
 static void _clear_job_start_times(void);
 static int  _delta_tv(struct timeval *tv);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
-static bool _job_is_completing(void);
 static bool _job_part_valid(struct job_record *job_ptr,
 			    struct part_record *part_ptr);
 static void _load_config(void);
@@ -213,36 +212,6 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 			break;
 	}
 	info("=========================================");
-}
-
-/*
- * _job_is_completing - Determine if jobs are in the process of completing.
- *	This is a variant of job_is_completing in slurmctld/job_scheduler.c.
- * RET - True if any job is in the process of completing
- */
-static bool _job_is_completing(void)
-{
-	bool completing = false;
-	ListIterator job_iterator;
-	struct job_record *job_ptr = NULL;
-	uint16_t complete_wait = slurm_get_complete_wait();
-	time_t recent;
-
-	if ((job_list == NULL) || (complete_wait == 0))
-		return completing;
-
-	recent = time(NULL) - MAX(complete_wait, 5);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (IS_JOB_COMPLETING(job_ptr) &&
-		    (job_ptr->end_time >= recent)) {
-			completing = true;
-			break;
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	return completing;
 }
 
 static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
@@ -699,6 +668,7 @@ extern void *backfill_agent(void *args)
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	bool load_config;
+	bool short_sleep = false;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "slurmctld_bckfl", NULL, NULL, NULL) < 0) {
@@ -709,7 +679,10 @@ extern void *backfill_agent(void *args)
 	_load_config();
 	last_backfill_time = time(NULL);
 	while (!stop_backfill) {
-		_my_sleep(backfill_interval * 1000000);
+		if (short_sleep)
+			_my_sleep(1000000);
+		else
+			_my_sleep(backfill_interval * 1000000);
 		if (stop_backfill)
 			break;
 		slurm_mutex_lock(&config_lock);
@@ -725,15 +698,17 @@ extern void *backfill_agent(void *args)
 		now = time(NULL);
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
-		    _job_is_completing() || _many_pending_rpcs() ||
-		    !avail_front_end(NULL) || !_more_work(last_backfill_time))
+		    job_is_completing() || _many_pending_rpcs() ||
+		    !avail_front_end(NULL) || !_more_work(last_backfill_time)) {
+			short_sleep = true;
 			continue;
-
+		}
 		lock_slurmctld(all_locks);
 		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
+		short_sleep = false;
 	}
 	return NULL;
 }

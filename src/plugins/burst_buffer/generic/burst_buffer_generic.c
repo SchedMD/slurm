@@ -1251,6 +1251,48 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 }
 
 /*
+ * Determine if a job's burst buffer post_run operation is complete
+ *
+ * RET: 0 - post_run is underway
+ *      1 - post_run complete
+ *     -1 - fatal error
+ */
+extern int bb_p_job_test_post_run(struct job_record *job_ptr)
+{
+	bb_job_t *bb_job;
+	int rc = -1;
+	char jobid_buf[32];
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.debug_flag) {
+		info("%s: %s: %s", plugin_type, __func__,
+		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+	}
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
+	if (!bb_job) {
+		/* No job buffers. Assuming use of persistent buffers only */
+		verbose("%s: %s bb job record not found", __func__,
+			jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+		rc =  1;
+	} else {
+		if (bb_job->state < BB_STATE_POST_RUN) {
+			rc = -1;
+		} else if (bb_job->state > BB_STATE_POST_RUN) {
+			rc =  1;
+		} else {
+			rc =  0;
+		}
+	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
+}
+
+/*
  * Determine if a job's burst buffer stage-out is complete
  *
  * RET: 0 - stage-out is underway

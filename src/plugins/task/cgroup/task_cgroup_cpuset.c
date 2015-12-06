@@ -1603,4 +1603,13 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 #endif
 
 }
+
+/*
+ * Keep track a of a pid.
+ */
+extern int task_cgroup_cpuset_add_pid(pid_t pid)
+{
+	return xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
+}
+
 #endif

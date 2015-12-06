@@ -70,6 +70,7 @@
 #include "src/slurmctld/state_save.h"
 
 #define USE_ISO8601 1
+#define MAX_STR_LEN 1048576	/* 1 MB */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -104,6 +105,7 @@ const char plugin_name[] = "Job completion elasticsearch logging plugin";
 const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+#define INDEX_RETRY_INTERVAL 30
 #define JOBCOMP_DATA_FORMAT "{\"jobid\":%lu,\"username\":\"%s\","	\
 	"\"user_id\":%lu,\"groupname\":\"%s\",\"group_id\":%lu,"	\
 	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
@@ -138,6 +140,11 @@ static slurm_errtab_t slurm_errtab[] = {
 struct http_response {
 	char *message;
 	size_t size;
+};
+
+struct job_node {
+	time_t last_index_retry;
+	char * serialized_job;
 };
 
 char *save_state_file = "elasticsearch_state";
@@ -252,6 +259,7 @@ static int _load_pending_jobs(void)
 	char *saved_data = NULL, *state_file = NULL, *job_data = NULL;
 	uint32_t data_size, job_cnt = 0, tmp32 = 0;
 	Buf buffer;
+	struct job_node *jnode;
 
 	state_file = slurm_get_state_save_location();
 	if (state_file == NULL) {
@@ -277,7 +285,9 @@ static int _load_pending_jobs(void)
 	safe_unpack32(&job_cnt, buffer);
 	for (i = 0; i < job_cnt; i++) {
 		safe_unpackstr_xmalloc(&job_data, &tmp32, buffer);
-		list_enqueue(jobslist, job_data);
+		jnode = xmalloc(sizeof(struct job_node));
+		jnode->serialized_job = job_data;
+		list_enqueue(jobslist, jnode);
 	}
 	if (job_cnt > 0) {
 		info("Loaded jobcomp/elasticsearch pending data about %u jobs",
@@ -423,7 +433,9 @@ static char *_json_escape(const char *str)
 	len = strlen(str) * 2 + 128;
 	ret = xmalloc(len);
 	for (i = 0, o = 0; str[i]; ++i) {
-		if ((o + 8) >= len) {
+		if (o >= MAX_STR_LEN) {
+			break;
+		} else if ((o + 8) >= len) {
 			len *= 2;
 			ret = xrealloc(ret, len);
 		}
@@ -479,17 +491,18 @@ static char *_json_escape(const char *str)
 static int _save_state(void)
 {
 	int fd, rc = SLURM_SUCCESS;
-	char *state_file, *new_file, *old_file, *json_job;
+	char *state_file, *new_file, *old_file;
 	ListIterator iter;
 	static int high_buffer_size = (1024 * 1024);
 	Buf buffer = init_buf(high_buffer_size);
 	uint32_t job_cnt;
+	struct job_node *jnode;
 
 	job_cnt = list_count(jobslist);
 	pack32(job_cnt, buffer);
 	iter = list_iterator_create(jobslist);
-	while ((json_job = list_next(iter))) {
-		packstr(json_job, buffer);
+	while ((jnode = (struct job_node *)list_next(iter))) {
+		packstr(jnode->serialized_job, buffer);
 	}
 	list_iterator_destroy(iter);
 
@@ -604,6 +617,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	uint16_t ntasks_per_node;
 	int i;
 	char *buffer, tmp_str[256], *script_str, *script;
+	struct job_node *jnode;
 
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
@@ -840,7 +854,9 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	xstrcat(buffer, "}");
-	list_enqueue(jobslist, buffer);
+	jnode = xmalloc(sizeof(struct job_node));
+	jnode->serialized_job = xstrdup(buffer);
+	list_enqueue(jobslist, jnode);
 
 	return SLURM_SUCCESS;
 }
@@ -850,24 +866,34 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 extern void *_process_jobs(void *x)
 {
 	ListIterator iter;
-	char *json_job;
+	struct job_node *jnode = xmalloc(sizeof(struct job_node));
+	time_t now;
 
 	while (!thread_shutdown) {
-		int success_cnt = 0, fail_cnt = 0;
+		int success_cnt = 0, fail_cnt = 0, wait_retry_cnt = 0;
 		sleep(1);
 		iter = list_iterator_create(jobslist);
-		while ((json_job = list_next(iter)) && !thread_shutdown) {
-			if ((_index_job(json_job) == SLURM_SUCCESS)) {
-				list_delete_item(iter);
-				success_cnt++;
-			} else {
-				fail_cnt++;
-			}
+		while ((jnode = (struct job_node *)list_next(iter)) &&
+		       !thread_shutdown) {
+			now = time(NULL);
+			if ((jnode->last_index_retry == 0) ||
+			    (difftime(now, jnode->last_index_retry) >=
+					INDEX_RETRY_INTERVAL)) {
+				if ((_index_job(jnode->serialized_job) ==
+				     SLURM_SUCCESS)) {
+					list_delete_item(iter);
+					success_cnt++;
+				} else {
+					jnode->last_index_retry = now;
+					fail_cnt++;
+				}
+			} else
+				wait_retry_cnt++;
 		}
 		list_iterator_destroy(iter);
 		if (success_cnt || fail_cnt) {
-			debug2("Elasticsearch index success:%d fail:%d",
-			       success_cnt, fail_cnt);
+			debug2("Elasticsearch index success:%d fail/wait_retry"
+			       ":%d", success_cnt, fail_cnt + wait_retry_cnt);
 		}
 	}
 	return NULL;
@@ -875,7 +901,9 @@ extern void *_process_jobs(void *x)
 
 static void _jobslist_del(void *x)
 {
-	xfree(x);
+	struct job_node *jnode = (struct job_node *) x;
+	xfree(jnode->serialized_job);
+	xfree(jnode);
 }
 
 /*

@@ -60,6 +60,7 @@
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/pack.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/locks.h"
 #include "other_select.h"
 
@@ -972,6 +973,26 @@ static void _throttle_fini(void)
 	slurm_mutex_unlock(&throttle_mutex);
 }
 
+/* Wait until the epilog has completed on all nodes and burst buffer stage-out
+ * is complete */
+static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
+{
+	bool fini = false;
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	while (!fini) {
+		sleep(1);
+		lock_slurmctld(job_read_lock);
+		if ((job_ptr->magic  != JOB_MAGIC) ||
+		    (job_ptr->job_id != job_id)    ||
+		    (!IS_JOB_COMPLETING(job_ptr) &&
+		     (bb_g_job_test_post_run(job_ptr) != 0)))
+			fini = true;
+		unlock_slurmctld(job_read_lock);
+	}
+}
+
 static void *_job_fini(void *args)
 {
 	struct job_record *job_ptr = (struct job_record *)args;
@@ -997,6 +1018,8 @@ static void *_job_fini(void *args)
 	nhc_info.exit_code = 1; /* hard code to 1 to always run */
 	nhc_info.user_id = job_ptr->user_id;
 	unlock_slurmctld(job_read_lock);
+
+	_wait_job_completed(nhc_info.jobid, job_ptr);
 
 	/* run NHC */
 	_run_nhc(&nhc_info);
