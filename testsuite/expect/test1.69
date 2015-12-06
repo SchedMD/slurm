@@ -75,8 +75,8 @@ make_bash_script $test_srun "
 set -m
 for a in \{1..$run_timer\}
 do
-export a
-$srun -v -t1 ./$test_timer &
+  export a
+  $srun -v --mem=10 -t1 ./$test_timer &
 done
 "
 
