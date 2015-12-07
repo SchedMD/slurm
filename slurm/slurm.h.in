@@ -2478,6 +2478,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_SICP		0x0000080000000000 /* Slurm Inter-Cluster */
 #define DEBUG_FLAG_DB_ARCHIVE	0x0000100000000000 /* DBD Archiving/Purging */
 #define DEBUG_FLAG_DB_TRES      0x0000200000000000 /* Database TRES debug */
+#define DEBUG_FLAG_ESEARCH      0x0000400000000000 /* Elasticsearch debug */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
