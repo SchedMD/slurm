@@ -71,6 +71,7 @@
 
 #define USE_ISO8601 1
 #define MAX_STR_LEN 10240	/* 10 KB */
+#define MAX_JOBS 1000000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -618,6 +619,13 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	int i;
 	char *buffer, tmp_str[256], *script_str, *script;
 	struct job_node *jnode;
+
+	if (list_count(jobslist) > MAX_JOBS) {
+		error("%s: Limit of %d enqueued jobs in memory waiting to be "
+		      "indexed reached. Job %lu discarded", plugin_type,
+		      MAX_JOBS, (unsigned long)job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
