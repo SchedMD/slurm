@@ -42,14 +42,18 @@
  */
 int xlua_dlopen(void)
 {
+	char *lib1;
+	char *lib2;
+	char *lib3;
+
 #ifdef HAVE_LUA_5_2
-	char *lib1 = "liblua-5.2.so";
-	char *lib2 = "liblua5.2.so";
-	char *lib3 = "liblua5.2.so.0";
+	lib1 = "liblua-5.2.so";
+	lib2 = "liblua5.2.so";
+	lib3 = "liblua5.2.so.0";
 #elif HAVE_LUA_5_1
-	char *lib1 = "liblua-5.1.so";
-	char *lib2 = "liblua5.1.so";
-	char *lib3 = "liblua5.1.so.0";
+	lib1 = "liblua-5.1.so";
+	lib2 = "liblua5.1.so";
+	lib3 = "liblua5.1.so.0";
 #else
 	error("%s: Not compiled with lua support!  Please install a lua dev package.",
 	      __func__);
