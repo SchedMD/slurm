@@ -406,10 +406,12 @@ static int _index_job(const char *jobcomp)
 					(void)  strtok(token, ":");
 					token = strtok(NULL, ":");
 					if (slurm_get_debug_flags() &
-					    DEBUG_FLAG_ESEARCH)
-						info("%s: Job with jobid %s"
- 					      " indexed into elasticsearch",
-					      plugin_type, token);
+					    DEBUG_FLAG_ESEARCH) {
+						info("%s: Job with jobid %s "
+ 						     "indexed into "
+						     "elasticsearch",
+						     plugin_type, token);
+					}
 				}
 				xfree(response);
 			}
@@ -901,10 +903,11 @@ extern void *_process_jobs(void *x)
 				wait_retry_cnt++;
 		}
 		list_iterator_destroy(iter);
-		if (success_cnt || fail_cnt) {
-			info("%s: index success:%d "
-			     "fail/wait_retry:%d", plugin_type,
-			     success_cnt, fail_cnt + wait_retry_cnt);
+		if ((success_cnt || fail_cnt) &&
+		    (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)) {
+			info("%s: index success:%d fail:%d wait_retry:%d",
+			     plugin_type, success_cnt, fail_cnt,
+			     wait_retry_cnt);
 		}
 	}
 	return NULL;
