@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "October 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "December 2015" "burst_buffer.conf 15.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -12,7 +12,7 @@ DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable.
 The file will always be located in the same directory as the \fBslurm.conf\fP
 file.
-In order to support multiple configuration files for mutliple burst buffer
+In order to support multiple configuration files for multiple burst buffer
 plugins, the configuration file may alternately be given a name containing
 the plugin name.
 For example, if "burst_buffer.conf" is not found, the burst_buffer/generic
@@ -29,7 +29,7 @@ The configuration parameters available include:
 
 .TP
 \fBAllowUsers\fR
-Colon delimited list of user names and/or IDs permitted to use burst buffers.
+Comma separated list of user names and/or IDs permitted to use burst buffers.
 The options \fBAllowUsers\fR and \fBDenyUsers\fR can not both be specified.
 By default all users are permitted to use burst buffers.
 
@@ -110,9 +110,9 @@ This option is not used by the burst_buffer/cray plugin.
 .\ Generic resources associated with burst buffers.
 .\ This is a completely separate name space from the Gres defined in the slurm.conf
 .\ file.
-.\ The Gres value consistes of a comma separated list of generic resources,
+.\ The Gres value consists of a comma separated list of generic resources,
 .\ each of which includes a name separated by a colon and a numeric value.
-.\ The numeric value can include a suffic of "k", "m" or "g", which multiplies
+.\ The numeric value can include a suffix of "k", "m" or "g", which multiplies
 .\ the numeric value by 1,024, 1,048,576, or 1,073,741,824 respectively.
 .\ The numeric value is a 32-bit value.
 .\ See the example below.

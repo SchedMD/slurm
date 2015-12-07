@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- Let devices step_extern cgroup inherit attributes of job cgroup.
  -- Add new hook to Task plugin to be able to put adopted processes in the
     step_extern cgroups.
+ -- Fix AllowUsers documentation in burst_buffer.conf man page. Usernames are
+    comma separated, not colon delimited.
 
 * Changes in Slurm 15.08.4
 ==========================
