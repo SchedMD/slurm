@@ -166,13 +166,12 @@ static char *_copy_nodelist_no_dup(char *node_list);
 static struct job_record *_create_job_record(int *error_code,
 					     uint32_t num_jobs);
 static void _del_batch_list_rec(void *x);
-static int  _delete_job_desc_files(uint32_t job_id, bool normal_term);
+static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
-static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -491,7 +490,7 @@ void delete_job_details(struct job_record *job_entry)
 
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
 	if (IS_JOB_FINISHED(job_entry))
-		(void) _delete_job_desc_files(job_entry->job_id, true);
+		_delete_job_desc_files(job_entry->job_id);
 
 	xfree(job_entry->details->acctg_freq);
 	for (i=0; i<job_entry->details->argc; i++)
@@ -523,14 +522,13 @@ void delete_job_details(struct job_record *job_entry)
 }
 
 /* _delete_job_desc_files - delete job descriptor related files */
-static int _delete_job_desc_files(uint32_t job_id, bool normal_term)
+static void _delete_job_desc_files(uint32_t job_id)
 {
 	char *dir_name = NULL, *file_name = NULL;
 	struct stat sbuf;
 	int hash = job_id % 10, stat_rc;
 	DIR *f_dir;
 	struct dirent *dir_ent;
-	int file_cnt = 0;
 
 	dir_name = slurm_get_state_save_location();
 	xstrfmtcat(dir_name, "/hash.%d/job.%u", hash, job_id);
@@ -543,7 +541,7 @@ static int _delete_job_desc_files(uint32_t job_id, bool normal_term)
 		stat_rc = stat(dir_name, &sbuf);
 		if (stat_rc != 0) {
 			xfree(dir_name);
-			return file_cnt;
+			return;
 		}
 	}
 
@@ -557,18 +555,14 @@ static int _delete_job_desc_files(uint32_t job_id, bool normal_term)
 				   dir_ent->d_name);
 			(void) unlink(file_name);
 			xfree(file_name);
-			file_cnt++;
 		}
 		closedir(f_dir);
 	} else {
 		error("opendir(%s): %m", dir_name);
 	}
 
-	if (normal_term ||
-	    (difftime(time(NULL), sbuf.st_mtim.tv_sec) > 86400))  /* day old */
-		(void) rmdir(dir_name);
+	(void) rmdir(dir_name);
 	xfree(dir_name);
-	return file_cnt;
 }
 
 static uint32_t _max_switch_wait(uint32_t input_wait)
@@ -12380,74 +12374,69 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	closedir(f_dir);
 }
 
+static int _clear_state_dir_flag(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)x;
+	job_ptr->bit_flags &= ~HAS_STATE_DIR;
+	return 0;
+}
+
+static int _test_state_dir_flag(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)x;
+
+	if (job_ptr->bit_flags & HAS_STATE_DIR) {
+		job_ptr->bit_flags &= ~HAS_STATE_DIR;
+		return 0;
+	}
+
+	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr))
+		return 0;	/* No files expected */
+
+	error("Script for job %u lost, state set to FAILED", job_ptr->job_id);
+	job_ptr->job_state = JOB_FAILED;
+	job_ptr->exit_code = 1;
+	job_ptr->state_reason = FAIL_SYSTEM;
+	xfree(job_ptr->state_desc);
+	job_ptr->start_time = job_ptr->end_time = time(NULL);
+	job_completion_logger(job_ptr, false);
+	return 0;
+}
+
 /* All pending batch jobs must have a batch_dir entry,
  *	otherwise we flag it as FAILED and don't schedule
  * If the batch_dir entry exists for a PENDING or RUNNING batch job,
  *	remove it the list (of directories to be deleted) */
 static void _validate_job_files(List batch_dirs)
 {
-	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	struct job_record **array_job_ptr = NULL;
-	int array_job_ptr_size = 0, array_job_ptr_cnt = 0;
-	int del_cnt, i;
+	ListIterator batch_dir_iter;
+	uint32_t *job_id_ptr, array_job_id;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!job_ptr->batch_flag)
-			continue;
-		if (job_ptr->array_recs) {	/* Handle later */
-			if (array_job_ptr_cnt >= array_job_ptr_size)
-				array_job_ptr_size += 100;
-				array_job_ptr = xrealloc(array_job_ptr,
-					sizeof(struct job_record) *
-					array_job_ptr_size);
-				array_job_ptr[array_job_ptr_cnt++] = job_ptr;
-			continue;
+	list_for_each(job_list, _clear_state_dir_flag, NULL);
+
+	batch_dir_iter = list_iterator_create(batch_dirs);
+	while ((job_id_ptr = list_next(batch_dir_iter))) {
+		job_ptr = find_job_record(*job_id_ptr);
+		if (job_ptr) {
+			job_ptr->bit_flags |= HAS_STATE_DIR;
+			list_delete_item(batch_dir_iter);
 		}
-		if (job_ptr->array_task_id != NO_VAL)
-			continue;	/* Use array master's script */
-		/* Want to keep this job's files */
-		del_cnt = list_delete_all(batch_dirs, _find_batch_dir,
-					  &(job_ptr->job_id));
-		if ((del_cnt == 0) && IS_JOB_PENDING(job_ptr)) {
-			error("Script for job %u lost, state set to FAILED",
-			      job_ptr->job_id);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			xfree(job_ptr->state_desc);
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr, false);
+		if (job_ptr && job_ptr->array_recs) { /* Update all tasks */
+			array_job_id = job_ptr->array_job_id;
+			job_ptr = job_array_hash_j[JOB_HASH_INX(array_job_id)];
+			while (job_ptr) {
+				if (job_ptr->array_job_id == array_job_id)
+					job_ptr->bit_flags |= HAS_STATE_DIR;
+				job_ptr = job_ptr->job_array_next_j;
+			}
 		}
 	}
-	list_iterator_destroy(job_iterator);
+	list_iterator_destroy(batch_dir_iter);
 
-	for (i = 0; i < array_job_ptr_cnt; i++) {
-		job_ptr = array_job_ptr[i];
-		del_cnt = list_delete_all(batch_dirs, _find_batch_dir,
-					  &(job_ptr->job_id));
-		if ((del_cnt == 0) && IS_JOB_PENDING(job_ptr)) {
-			error("Script for job %u lost, state set to FAILED",
-			      job_ptr->job_id);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			xfree(job_ptr->state_desc);
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr, false);
-		}
-	}
-	xfree(array_job_ptr);
+	list_for_each(job_list, _test_state_dir_flag, NULL);
 }
 
-/* List matching function, see common/list.h */
-static int _find_batch_dir(void *x, void *key)
-{
-	uint32_t *key1 = x;
-	uint32_t *key2 = key;
-	return (int)(*key1 == *key2);
-}
 /* List entry deletion function, see common/list.h */
 static void _del_batch_list_rec(void *x)
 {
@@ -12460,15 +12449,12 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 {
 	ListIterator batch_dir_inx;
 	uint32_t *job_id_ptr;
-	int file_cnt;
 
 	batch_dir_inx = list_iterator_create(batch_dirs);
 	while ((job_id_ptr = list_next(batch_dir_inx))) {
-		file_cnt = _delete_job_desc_files(*job_id_ptr, false);
-		if (file_cnt) {
-			info("Purged files for defunct batch job %u",
-			     *job_id_ptr);
-		}
+		info("Purged files for defunct batch job %u",
+		     *job_id_ptr);
+		_delete_job_desc_files(*job_id_ptr);
 	}
 	list_iterator_destroy(batch_dir_inx);
 }
