@@ -70,7 +70,7 @@
 #include "src/slurmctld/state_save.h"
 
 #define USE_ISO8601 1
-#define MAX_STR_LEN 1048576	/* 1 MB */
+#define MAX_STR_LEN 10240	/* 10 KB */
 
 /*
  * These variables are required by the generic plugin interface.  If they
