@@ -70,7 +70,8 @@
 #include "src/slurmctld/state_save.h"
 
 #define USE_ISO8601 1
-#define MAX_STR_LEN 1048576	/* 1 MB */
+#define MAX_STR_LEN 10240	/* 10 KB */
+#define MAX_JOBS 1000000
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -217,11 +218,15 @@ static uint32_t _read_file(const char *file, char **data)
 
 	fd = open(file, O_RDONLY);
 	if (fd < 0) {
-		debug("Could not open jobcomp state file %s", file);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+			info("%s: Could not open state file %s", plugin_type,
+			     file);
 		return data_size;
 	}
 	if (fstat(fd, &f_stat)) {
-		debug("Could not stat jobcomp state file %s", file);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+			info("%s: Could not stat state file %s", plugin_type,
+			     file);
 		close(fd);
 		return data_size;
 	}
@@ -235,7 +240,8 @@ static uint32_t _read_file(const char *file, char **data)
 			if (errno == EINTR)
 				continue;
 			else {
-				debug("Read error on %s: %m", file);
+				error("%s: Read error on %s: %m", plugin_type,
+				      file);
 				break;
 			}
 		} else if (data_read == 0)	/* EOF */
@@ -246,8 +252,8 @@ static uint32_t _read_file(const char *file, char **data)
 	}
 	close(fd);
 	if (data_size != fsize) {
-		debug("Could not read entire jobcomp state file %s (%d of %d)",
-		      file, data_size, fsize);
+		error("%s: Could not read entire jobcomp state file %s (%d of"
+		      " %d)", plugin_type, file, data_size, fsize);
 	}
 	return data_size;
 }
@@ -263,7 +269,8 @@ static int _load_pending_jobs(void)
 
 	state_file = slurm_get_state_save_location();
 	if (state_file == NULL) {
-		error("Could not retrieve StateSaveLocation from conf");
+		error("%s: Could not retrieve StateSaveLocation from conf",
+		      plugin_type);
 		return SLURM_ERROR;
 	}
 
@@ -290,8 +297,9 @@ static int _load_pending_jobs(void)
 		list_enqueue(jobslist, jnode);
 	}
 	if (job_cnt > 0) {
-		info("Loaded jobcomp/elasticsearch pending data about %u jobs",
-		     job_cnt);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+			info("%s: Loaded %u jobs from state file", plugin_type,
+			     job_cnt);
 	}
 	free_buf(buffer);
 	xfree(state_file);
@@ -299,7 +307,7 @@ static int _load_pending_jobs(void)
 	return rc;
 
 unpack_error:
-	error("Error unpacking file %s", state_file);
+	error("%s: Error unpacking file %s", plugin_type, state_file);
 	free_buf(buffer);
 	xfree(state_file);
 	return SLURM_ERROR;
@@ -328,24 +336,17 @@ static int _index_job(const char *jobcomp)
 	CURLcode res;
 	struct http_response chunk;
 	int rc = SLURM_SUCCESS;
-	static int error_cnt = 0;
 
 	if (log_url == NULL) {
-		if (((++error_cnt) % 100) == 0) {
-			/* Periodically log errors */
-			error("%s: Unable to save job state for %d "
-			      "jobs, caching data",
-			      plugin_type, error_cnt);
-		}
-		debug("JobCompLoc parameter not configured");
+		error("%s: JobCompLoc parameter not configured", plugin_type);
 		return SLURM_ERROR;
 	}
 
 	if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-		debug("curl_global_init: %m");
+		error("%s: curl_global_init: %m", plugin_type);
 		rc = SLURM_ERROR;
 	} else if ((curl_handle = curl_easy_init()) == NULL) {
-		debug("curl_easy_init: %m");
+		error("%s: curl_easy_init: %m", plugin_type);
 		rc = SLURM_ERROR;
 	}
 
@@ -369,16 +370,19 @@ static int _index_job(const char *jobcomp)
 
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
-			debug2("Could not connect to: %s , reason: %s", url,
-			       curl_easy_strerror(res));
+			if (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)
+				info("%s: Could not connect to: %s , reason: %s"
+				     , plugin_type, url,
+				     curl_easy_strerror(res));
 			rc = SLURM_ERROR;
 		} else {
 			char *token, *response;
 			response = xstrdup(chunk.message);
 			token = strtok(chunk.message, " ");
 			if (token == NULL) {
-				debug("Could not receive the HTTP response "
-				      "status code from %s", url);
+				error("%s: Could not receive the HTTP response"
+				      " status code from %s", plugin_type, 
+					url);
 				rc = SLURM_ERROR;
 			} else {
 				token = strtok(NULL, " ");
@@ -388,20 +392,26 @@ static int _index_job(const char *jobcomp)
 				}
 				if ((xstrcmp(token, "200") != 0)
 				    && (xstrcmp(token, "201") != 0)) {
-					debug("HTTP status code %s received "
-					      "from %s", token, url);
-					debug("Check whether index writes and "
-					      "metadata changes are enabled on"
-					      " %s", url);
-					debug3("HTTP Response:\n%s", response);
+					if (slurm_get_debug_flags() &
+					    DEBUG_FLAG_ESEARCH) {
+						info("%s: HTTP status code %s "
+						     "received from %s",
+						     plugin_type, token, url);
+						info("%s: HTTP response:\n%s",
+						     plugin_type, response);
+					}
 					rc = SLURM_ERROR;
 				} else {
 					token = strtok((char *)jobcomp, ",");
 					(void)  strtok(token, ":");
 					token = strtok(NULL, ":");
-					debug("Jobcomp data related to jobid %s"
-					      " indexed into elasticsearch",
-					      token);
+					if (slurm_get_debug_flags() &
+					    DEBUG_FLAG_ESEARCH) {
+						info("%s: Job with jobid %s "
+ 						     "indexed into "
+						     "elasticsearch",
+						     plugin_type, token);
+					}
 				}
 				xfree(response);
 			}
@@ -411,15 +421,6 @@ static int _index_job(const char *jobcomp)
 		xfree(url);
 	}
 	curl_global_cleanup();
-
-	if (rc == SLURM_ERROR) {
-		if (((++error_cnt) % 100) == 0) {
-			/* Periodically log errors */
- 			error("%s: Unable to save job state for %d "
-			      "jobs, caching data",
-			      plugin_type, error_cnt);
-		}
-	}
 
 	return rc;
 }
@@ -508,7 +509,8 @@ static int _save_state(void)
 
 	state_file = slurm_get_state_save_location();
 	if (state_file == NULL || state_file[0] == '\0') {
-		error("Could not retrieve StateSaveLocation from conf");
+		error("%s: Could not retrieve StateSaveLocation from conf",
+		      plugin_type);
 		return SLURM_ERROR;
 	}
 
@@ -524,8 +526,8 @@ static int _save_state(void)
 	slurm_mutex_lock(&save_lock);
 	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
 	if (fd < 0) {
-		error("Can't save jobcomp state, open file %s error %m",
-		      new_file);
+		error("%s: Can't save jobcomp state, open file %s error %m",
+		      plugin_type, new_file);
 		rc = SLURM_ERROR;
 	} else {
 		int pos = 0, nwrite, amount, rc2;
@@ -537,7 +539,8 @@ static int _save_state(void)
 		while (nwrite > 0) {
 			amount = write(fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
+				error("%s: Error writing file %s, %m",
+				      plugin_type, new_file);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -553,14 +556,14 @@ static int _save_state(void)
 	else {
 		(void) unlink(old_file);
 		if (link(state_file, old_file)) {
-			debug("Unable to create link for %s -> %s: %m",
-			      state_file, old_file);
+			error("%s: Unable to create link for %s -> %s: %m",
+			      plugin_type, state_file, old_file);
 			rc = SLURM_ERROR;
 		}
 		(void) unlink(state_file);
 		if (link(new_file, state_file)) {
-			debug("Unable to create link for %s -> %s: %m",
-			      new_file, state_file);
+			error("%s: Unable to create link for %s -> %s: %m",
+			      plugin_type, new_file, state_file);
 			rc = SLURM_ERROR;
 		}
 		(void) unlink(new_file);
@@ -618,6 +621,13 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	int i;
 	char *buffer, tmp_str[256], *script_str, *script;
 	struct job_node *jnode;
+
+	if (list_count(jobslist) > MAX_JOBS) {
+		error("%s: Limit of %d enqueued jobs in memory waiting to be "
+		      "indexed reached. Job %lu discarded", plugin_type,
+		      MAX_JOBS, (unsigned long)job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
 	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
@@ -691,7 +701,8 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 				    state_string);
 
 		if (nwritten >= B_SIZE) {
-			debug("Job completion data truncated and lost");
+			error("%s: Job completion data truncated and lost",
+			      plugin_type);
 			return SLURM_ERROR;
 		}
 	}
@@ -891,9 +902,11 @@ extern void *_process_jobs(void *x)
 				wait_retry_cnt++;
 		}
 		list_iterator_destroy(iter);
-		if (success_cnt || fail_cnt) {
-			debug2("Elasticsearch index success:%d fail/wait_retry"
-			       ":%d", success_cnt, fail_cnt + wait_retry_cnt);
+		if ((success_cnt || fail_cnt) &&
+		    (slurm_get_debug_flags() & DEBUG_FLAG_ESEARCH)) {
+			info("%s: index success:%d fail:%d wait_retry:%d",
+			     plugin_type, success_cnt, fail_cnt,
+			     wait_retry_cnt);
 		}
 	}
 	return NULL;
@@ -949,7 +962,7 @@ extern int slurm_jobcomp_set_location(char *location)
 	CURLcode res;
 
 	if (location == NULL) {
-		debug("JobCompLoc parameter not configured");
+		error("%s: JobCompLoc parameter not configured", plugin_type);
 		return SLURM_ERROR;
 	}
 
@@ -962,7 +975,8 @@ extern int slurm_jobcomp_set_location(char *location)
 		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
-			error("Could not connect to: %s", log_url);
+			error("%s: Could not connect to: %s", plugin_type,
+			      log_url);
 			rc = SLURM_ERROR;
 		}
 		curl_easy_cleanup(curl_handle);
