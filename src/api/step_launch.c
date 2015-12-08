@@ -1568,8 +1568,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		_task_user_managed_io_handler(sls, msg);
 		break;
 	default:
-		error("received spurious message type: %u",
-		      msg->msg_type);
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 		break;
 	}
 	return;
