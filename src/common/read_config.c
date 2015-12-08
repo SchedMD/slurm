@@ -70,6 +70,7 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
+#include "src/common/knl.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
@@ -570,6 +571,60 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
+static void _add_knl_features(slurm_conf_node_t *n)
+{
+	static uint16_t avail_mcdram = 0, avail_numa = 0;
+	static uint16_t default_mcdram = 0, default_numa = 0;
+	static bool read_knl_conf = false;
+	bool has_knl = false, has_numa = false, has_mcdram = false;
+	char *tmp_str, *token, *last = NULL;
+	int i, j;
+
+	if (!n->feature)
+		return;
+
+	i = strlen(n->feature) + 1;	/* oversized */
+	tmp_str = xmalloc(i);
+	/* Remove white space from feature specification */
+	for (i = 0, j = 0; n->feature[i]; i++) {
+		if (!isspace(n->feature[i]))
+			tmp_str[j++] = n->feature[i];
+	}
+	strcpy(n->feature, tmp_str);
+
+	token = strtok_r(tmp_str, ",", &last);
+	while (token) {
+		if (!strcasecmp(token, "knl"))
+			has_knl = true;
+		if (knl_mcdram_token(token))
+			has_mcdram = true;
+		if (knl_numa_token(token))
+			has_numa = true;
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	if (!has_knl)
+		return;
+
+	if (!read_knl_conf) {
+		(void) knl_conf_read(&avail_mcdram, &avail_numa,
+				     &default_mcdram, &default_numa);
+	}
+
+	if (!has_mcdram) {
+		tmp_str = knl_mcdram_str(avail_mcdram);
+		xstrfmtcat(n->feature, ",%s", tmp_str);
+		xfree(tmp_str);
+	}
+
+	if (!has_numa) {
+		tmp_str = knl_numa_str(avail_numa);
+		xstrfmtcat(n->feature, ",%s", tmp_str);
+		xfree(tmp_str);
+	}
+}
+
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
@@ -673,6 +728,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&n->feature, "Feature", tbl))
 			s_p_get_string(&n->feature, "Feature", dflt);
+		_add_knl_features(n);
 
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);

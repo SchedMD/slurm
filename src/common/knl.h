@@ -64,6 +64,13 @@ extern int knl_mcdram_bits_cnt(uint16_t mcdram_num);
 extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep);
 
 /*
+ * Given a KNL MCDRAM token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET MCDRAM numeric value
+ */
+extern uint16_t knl_mcdram_token(char *token);
+
+/*
  * Translate KNL MCDRAM number to equivalent string value
  * Caller must free return value
  */
@@ -73,6 +80,13 @@ extern char *knl_mcdram_str(uint16_t mcdram_num);
  * Return the count of NUMA bits set
  */
 extern int knl_numa_bits_cnt(uint16_t numa_num);
+
+/*
+ * Given a KNL NUMA token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET NUMA numeric value
+ */
+extern uint16_t knl_numa_token(char *token);
 
 /*
  * Translate KNL NUMA string to equivalent numeric value

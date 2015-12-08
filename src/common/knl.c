@@ -161,12 +161,10 @@ extern int knl_conf_read(uint16_t *avail_mcdram, uint16_t *avail_numa,
 		fatal("knl.conf: DefaultNUMA(%s) not within AvailNUMA(%s)",
 		      default_numa_str, avail_numa_str);
 	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_KNL) {
-		info("AvailMCDRAM=%s DefaultMCDRAM=%s",
-		     avail_mcdram_str, default_mcdram_str);
-		info("AvailNUMA=%s DefaultNUMA=%s",
-		     avail_numa_str, default_numa_str);
-	}
+	debug("AvailMCDRAM=%s DefaultMCDRAM=%s",
+	     avail_mcdram_str, default_mcdram_str);
+	debug("AvailNUMA=%s DefaultNUMA=%s",
+	     avail_numa_str, default_numa_str);
 	xfree(avail_mcdram_str);
 	xfree(avail_numa_str);
 	xfree(default_mcdram_str);
@@ -208,6 +206,48 @@ extern int knl_numa_bits_cnt(uint16_t numa_num)
 }
 
 /*
+ * Given a KNL MCDRAM token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET MCDRAM numeric value
+ */
+extern uint16_t knl_mcdram_token(char *token)
+{
+	uint16_t mcdram_num = 0;
+
+	if (!strcasecmp(token, "cache"))
+		mcdram_num = KNL_CACHE;
+	else if (!strcasecmp(token, "flat"))
+		mcdram_num = KNL_FLAT;
+	else if (!strcasecmp(token, "hybrid"))
+		mcdram_num = KNL_HYBRID;
+
+	return mcdram_num;
+}
+
+/*
+ * Given a KNL NUMA token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET NUMA numeric value
+ */
+extern uint16_t knl_numa_token(char *token)
+{
+	uint16_t numa_num = 0;
+
+	if (!strcasecmp(token, "all2all"))
+		numa_num |= KNL_ALL2ALL;
+	else if (!strcasecmp(token, "snc2"))
+		numa_num |= KNL_SNC2;
+	else if (!strcasecmp(token, "snc4"))
+		numa_num |= KNL_SNC4;
+	else if (!strcasecmp(token, "hemi"))
+		numa_num |= KNL_HEMI;
+	else if (!strcasecmp(token, "quad"))
+		numa_num |= KNL_QUAD;
+
+	return numa_num;
+}
+
+/*
  * Translate KNL MCDRAM string to equivalent numeric value
  * mcdram_str IN - String to scan
  * sep IN - token separator to search for
@@ -224,12 +264,7 @@ extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep)
 	tmp = xstrdup(mcdram_str);
 	tok = strtok_r(tmp, sep, &save_ptr);
 	while (tok) {
-		if (!strcasecmp(tok, "cache"))
-			mcdram_num |= KNL_CACHE;
-		else if (!strcasecmp(tok, "flat"))
-			mcdram_num |= KNL_FLAT;
-		else if (!strcasecmp(tok, "hybrid"))
-			mcdram_num |= KNL_HYBRID;
+		mcdram_num |= knl_mcdram_token(tok);
 		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	xfree(tmp);
@@ -254,16 +289,7 @@ extern uint16_t knl_numa_parse(char *numa_str, char *sep)
 	tmp = xstrdup(numa_str);
 	tok = strtok_r(tmp, sep, &save_ptr);
 	while (tok) {
-		if (!strcasecmp(tok, "all2all"))
-			numa_num |= KNL_ALL2ALL;
-		else if (!strcasecmp(tok, "snc2"))
-			numa_num |= KNL_SNC2;
-		else if (!strcasecmp(tok, "snc4"))
-			numa_num |= KNL_SNC4;
-		else if (!strcasecmp(tok, "hemi"))
-			numa_num |= KNL_HEMI;
-		else if (!strcasecmp(tok, "quad"))
-			numa_num |= KNL_QUAD;
+		numa_num |= knl_numa_token(tok);
 		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	xfree(tmp);

@@ -696,7 +696,6 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 {
 	struct features_record *feature_ptr;
 	ListIterator feature_iter;
-	int i, j;
 	char *tmp_str, *token, *last = NULL;
 
 	/* Clear these nodes from the feature_list record,
@@ -711,15 +710,7 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 	bit_not(config_ptr->node_bitmap);
 
 	if (config_ptr->feature) {
-		i = strlen(config_ptr->feature) + 1;	/* oversized */
-		tmp_str = xmalloc(i);
-		/* Remove white space from feature specification */
-		for (i=0, j=0; config_ptr->feature[i]; i++) {
-			if (!isspace((int)config_ptr->feature[i]))
-				tmp_str[j++] = config_ptr->feature[i];
-		}
-		if (i != j)
-			strcpy(config_ptr->feature, tmp_str);
+		tmp_str = xstrdup(config_ptr->feature);
 		token = strtok_r(tmp_str, ",", &last);
 		while (token) {
 			_add_config_feature(token, config_ptr->node_bitmap);
