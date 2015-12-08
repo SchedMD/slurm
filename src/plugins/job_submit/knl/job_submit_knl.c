@@ -217,7 +217,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	if (mcdram_cnt > 1) {			/* Multiple MCDRAM options */
 		return ESLURM_INVALID_KNL;
 	} else if (mcdram_cnt == 0) {
-		if (job_desc->features)
+		if (job_desc->features && job_desc->features[0])
 			xstrcat(job_desc->features, "&");
 		tmp_str = knl_mcdram_str(default_mcdram);
 		xstrcat(job_desc->features, tmp_str);
@@ -231,7 +231,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	if (numa_cnt > 1) {			/* Multiple NUMA options */
 		return ESLURM_INVALID_KNL;
 	} else if (numa_cnt == 0) {
-		if (job_desc->features)
+		if (job_desc->features && job_desc->features[0])
 			xstrcat(job_desc->features, "&");
 		tmp_str = knl_numa_str(default_numa);
 		xstrcat(job_desc->features, tmp_str);
@@ -246,5 +246,42 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr, uint32_t submit_uid)
 {
+	uint16_t job_mcdram, job_numa;
+	int mcdram_cnt, numa_cnt;
+	char *tmp_str;
+
+	if (!job_desc->features)
+		return SLURM_SUCCESS;
+	if (!IS_JOB_PENDING(job_ptr))
+		return ESLURM_JOB_NOT_PENDING;
+
+	job_mcdram = knl_mcdram_parse(job_desc->features, "&");
+	mcdram_cnt = knl_mcdram_bits_cnt(job_mcdram);
+	if (mcdram_cnt > 1) {			/* Multiple MCDRAM options */
+		return ESLURM_INVALID_KNL;
+	} else if (mcdram_cnt == 0) {
+		if (job_desc->features && job_desc->features[0])
+			xstrcat(job_desc->features, "&");
+		tmp_str = knl_mcdram_str(default_mcdram);
+		xstrcat(job_desc->features, tmp_str);
+		xfree(tmp_str);
+	} else if ((job_mcdram & avail_mcdram) == 0) { /* Unavailable option */
+		return ESLURM_INVALID_KNL;
+	}
+
+	job_numa = knl_numa_parse(job_desc->features, "&");
+	numa_cnt = knl_numa_bits_cnt(job_numa);
+	if (numa_cnt > 1) {			/* Multiple NUMA options */
+		return ESLURM_INVALID_KNL;
+	} else if (numa_cnt == 0) {
+		if (job_desc->features && job_desc->features[0])
+			xstrcat(job_desc->features, "&");
+		tmp_str = knl_numa_str(default_numa);
+		xstrcat(job_desc->features, tmp_str);
+		xfree(tmp_str);
+	} else if ((job_numa & avail_numa) == 0) { /* Unavailable NUMA option */
+		return ESLURM_INVALID_KNL;
+	}
+
 	return SLURM_SUCCESS;
 }
