@@ -147,9 +147,9 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	if (gres_cpus != NO_VAL)
 		gres_cpus *= cpus_per_core;
 	if ((job_ptr->details) &&
-	    (gres_cpus < job_ptr->details->ntasks_per_node) ||
-	    ((job_ptr->details->cpus_per_task > 1) &&
-	     (gres_cpus < job_ptr->details->cpus_per_task)))
+	    ((gres_cpus < job_ptr->details->ntasks_per_node) ||
+	     ((job_ptr->details->cpus_per_task > 1) &&
+	      (gres_cpus < job_ptr->details->cpus_per_task))))
 		gres_cpus = 0;
 	if (gres_cpus < cpus)
 		cpus = gres_cpus;
