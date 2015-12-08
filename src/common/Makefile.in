@@ -149,20 +149,21 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
-	assoc_mgr.c assoc_mgr.h file_bcast.c file_bcast.h xmalloc.c \
-	xmalloc.h xassert.c xassert.h xstring.c xstring.h xsignal.c \
-	xsignal.h strnatcmp.c strnatcmp.h forward.c forward.h \
-	msg_aggr.c msg_aggr.h strlcpy.c strlcpy.h list.c list.h \
-	xtree.c xtree.h xhash.c xhash.h net.c net.h log.c log.h cbuf.c \
-	cbuf.h safeopen.c safeopen.h bitstring.c bitstring.h mpi.c \
-	slurm_mpi.h pack.c pack.h parse_config.c parse_config.h \
-	parse_value.c parse_value.h parse_spec.c parse_spec.h plugin.c \
-	plugin.h plugrack.c plugrack.h power.c power.h print_fields.c \
-	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
-	slurm_errno.c slurm_ext_sensors.c slurm_ext_sensors.h \
-	slurm_mcs.c slurm_mcs.h slurm_priority.c slurm_priority.h \
+am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
+	cpu_frequency.c cpu_frequency.h file_bcast.c file_bcast.h \
+	knl.c knl.h xmalloc.c xmalloc.h xassert.c xassert.h xstring.c \
+	xstring.h xsignal.c xsignal.h strnatcmp.c strnatcmp.h \
+	forward.c forward.h msg_aggr.c msg_aggr.h strlcpy.c strlcpy.h \
+	list.c list.h xtree.c xtree.h xhash.c xhash.h net.c net.h \
+	log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h bitstring.c \
+	bitstring.h mpi.c slurm_mpi.h pack.c pack.h parse_config.c \
+	parse_config.h parse_value.c parse_value.h parse_spec.c \
+	parse_spec.h plugin.c plugin.h plugrack.c plugrack.h power.c \
+	power.h print_fields.c print_fields.h read_config.c \
+	read_config.h node_select.c node_select.h env.c env.h fd.c \
+	fd.h slurm_cred.h slurm_cred.c slurm_errno.c \
+	slurm_ext_sensors.c slurm_ext_sensors.h slurm_mcs.c \
+	slurm_mcs.h slurm_priority.c slurm_priority.h \
 	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
 	slurm_protocol_util.c slurm_protocol_util.h \
@@ -198,15 +199,15 @@ am__libcommon_la_SOURCES_DIST = cpu_frequency.c cpu_frequency.h \
 	xcgroup_read_config.c xcgroup_read_config.h xlua.c xlua.h \
 	callerid.c callerid.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
-am_libcommon_la_OBJECTS = cpu_frequency.lo assoc_mgr.lo file_bcast.lo \
-	xmalloc.lo xassert.lo xstring.lo xsignal.lo strnatcmp.lo \
-	forward.lo msg_aggr.lo strlcpy.lo list.lo xtree.lo xhash.lo \
-	net.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
-	parse_config.lo parse_value.lo parse_spec.lo plugin.lo \
-	plugrack.lo power.lo print_fields.lo read_config.lo \
-	node_select.lo env.lo fd.lo slurm_cred.lo slurm_errno.lo \
-	slurm_ext_sensors.lo slurm_mcs.lo slurm_priority.lo \
-	slurm_protocol_api.lo slurm_protocol_pack.lo \
+am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo file_bcast.lo \
+	knl.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
+	strnatcmp.lo forward.lo msg_aggr.lo strlcpy.lo list.lo \
+	xtree.lo xhash.lo net.lo log.lo cbuf.lo safeopen.lo \
+	bitstring.lo mpi.lo pack.lo parse_config.lo parse_value.lo \
+	parse_spec.lo plugin.lo plugrack.lo power.lo print_fields.lo \
+	read_config.lo node_select.lo env.lo fd.lo slurm_cred.lo \
+	slurm_errno.lo slurm_ext_sensors.lo slurm_mcs.lo \
+	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo working_cluster.lo uid.lo \
@@ -584,9 +585,10 @@ noinst_LTLIBRARIES = \
 	libspank.la
 
 libcommon_la_SOURCES = \
-	cpu_frequency.c cpu_frequency.h \
 	assoc_mgr.c assoc_mgr.h 	\
+	cpu_frequency.c cpu_frequency.h \
 	file_bcast.c file_bcast.h	\
+	knl.c knl.h			\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
@@ -817,6 +819,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/knl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/layout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/layouts_mgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@

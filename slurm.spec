@@ -926,6 +926,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_cray.so
+%{_libdir}/slurm/job_submit_knl.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
 %{_libdir}/slurm/jobacct_gather_aix.so

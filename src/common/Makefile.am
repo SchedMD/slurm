@@ -31,9 +31,10 @@ noinst_LTLIBRARIES = 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
-	cpu_frequency.c cpu_frequency.h \
 	assoc_mgr.c assoc_mgr.h 	\
+	cpu_frequency.c cpu_frequency.h \
 	file_bcast.c file_bcast.h	\
+	knl.c knl.h			\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\

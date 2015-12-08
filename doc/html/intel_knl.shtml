@@ -1,0 +1,65 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Intel Knights Landing (KNL) User and Administrator Guide</h1>
+
+<h2>Overview</h2>
+
+<p>This document describes the unique features of Slurm on the computers with
+the Intel Knights Landing processor.
+You should be familiar with the Slurm's mode of operation on Linux clusters
+before studying the relatively few differences in Intel KNL system operation
+described in this document.</p>
+
+<h2>User Tools</h2>
+
+<p>TBD.</p>
+
+<h2>System Administration</h2>
+
+<p>Three unique components are required to use Slurm on an Intel KNL system.</p>
+<ol>
+<li>The "knl.conf" configuration file.
+This file identifies availble and default processor configuration.
+See the <a href="knl.conf.html">knl.conf</a> man page for more information.</li>
+
+<li>The job_submit/knl plugin validates user specified KNL-specific
+configuration options with respect to the knl.conf file.
+It makes sure the user-specified options are available on this computer and
+sets default options as needed.</li>
+
+<li>All nodes containing KNL processors should be identified with a feature
+of "knl" in the <a href="slurm.conf.html">slurm.conf</a> configuration file.
+The file can also identify specific NUMA and MCDRAM options for specific
+nodes. Unless otherwise specified, ever node will support every available
+configuration identified in <a href="knl.conf.html">knl.conf</a>.</li>
+</ol>
+
+<p>In addition, there is a DebugFlags option of "knl" which will generate
+detailed information about KNL operations.</p>
+
+<h3>Sample knl.conf File</h3>
+
+<pre>
+# knl.conf
+AvailNUMA=all2all,quad,hemi
+DefaultNUMA=all2all
+AvailMCDRAM=cache,flat,hybrid
+DefaultMCDRAM=cache
+</pre>
+
+<h3>Sample slurm.conf File</h3>
+
+<pre>
+# Select portions of slurm.conf
+JobSubmitPlugins=knl
+DebugFlags=knl
+..
+Nodename=default feature=knl Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000
+NodeName=tux[000-123] State=UNKNOWN
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 8 December 2015</p>
+
+<!--#include virtual="footer.txt"-->

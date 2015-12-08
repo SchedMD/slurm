@@ -5,6 +5,7 @@ SUBDIRS = \
 	cnode \
 	cray \
 	defaults \
+	knl \
 	logging \
 	lua \
 	partition \

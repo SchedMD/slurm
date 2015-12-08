@@ -41,6 +41,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="cray.conf.html">cray.conf</a></td><td>Slurm configuration file Cray systems.</td></tr>
 <tr><td><a href="ext_sensors.conf.html">ext_sensors.conf</a></td><td>Slurm configuration file for the external sensor support</td></tr>
 <tr><td><a href="gres.conf.html">gres.conf</a></td><td>Slurm configuration file for generic resource management.</td></tr>
+<tr><td><a href="knl.conf.html">knl.conf</a></td><td>Slurm configuration file for Intel Knights Landing management.</td></tr>
 <tr><td><a href="nonstop.conf.html">nonstop.conf</a></td><td>Slurm configuration file for failure management.</td></tr>
 <tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file</td></tr>
 <tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file</td></tr>
@@ -58,6 +59,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </table>
 
 
-<p style="text-align:center;">Last modified 26 March 2014</p>
+<p style="text-align:center;">Last modified 8 December 2015</p>
 
 <!--#include virtual="footer.txt"-->

@@ -147,12 +147,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested node configuration is not available"	},
 	{ ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
 	  "Requested partition configuration not available now" },
-	{ ESLURM_POWER_NOT_AVAIL,
-	  "Required power not available now"},
-	{ ESLURM_POWER_RESERVED,
-	  "Required power at least partially reserved"},
-	{ ESLURM_INVALID_POWERCAP,
-	  "Required powercap is not valid, check min/max values"},
 	{ ESLURM_NODES_BUSY,
 	  "Requested nodes are busy"				},
 	{ ESLURM_INVALID_JOB_ID,
@@ -323,6 +317,14 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Burst Buffer request invalid"			},
 	{ ESLURM_PRIO_RESET_FAIL,
 	  "Changes to job priority are not persistent, change nice instead" },
+	{ ESLURM_POWER_NOT_AVAIL,
+	  "Required power not available now"			},
+	{ ESLURM_POWER_RESERVED,
+	  "Required power at least partially reserved"		},
+	{ ESLURM_INVALID_POWERCAP,
+	  "Required powercap is not valid, check min/max values"},
+	{ ESLURM_INVALID_MCS_LABEL,
+	  "Invalid mcs_label specified"				},
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
@@ -429,13 +431,13 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_BAD_NAME,
 	  "Unacceptable name given. (No '.' in name allowed)"   },
 	{ ESLURM_OVER_ALLOCATE,
-	  "You can not allocate more than 100% of a resource"     },
+	  "You can not allocate more than 100% of a resource"	},
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,
-	  "Time limit specification required, but not provided"  },
-	{ ESLURM_INVALID_MCS_LABEL,
-	  "Invalid mcs_label specified"				}
+	  "Time limit specification required, but not provided"	},
+	{ ESLURM_INVALID_KNL,
+	  "Invalid KNL configuration (MCDRAM or NUMA option)"	}
 };
 
 /*
