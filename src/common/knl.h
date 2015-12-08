@@ -40,6 +40,17 @@
 #include "slurm/slurm.h"
 
 /*
+ * Parse knl.conf file and return available and default modes
+ * avail_mcdram IN - available MCDRAM modes
+ * avail_numa IN - available NUMA modes
+ * default_mcdram IN - default MCDRAM mode
+ * default_numa IN - default NUMA mode
+ * RET - Slurm error code
+ */
+extern int knl_conf_read(uint16_t *avail_mcdram, uint16_t *avail_numa,
+			 uint16_t *default_mcdram, uint16_t *default_numa);
+
+/*
  * Return the count of MCDRAM bits set
  */
 extern int knl_mcdram_bits_cnt(uint16_t mcdram_num);

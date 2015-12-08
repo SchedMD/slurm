@@ -65,7 +65,6 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/knl.h"
-#include "src/common/parse_config.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -97,108 +96,13 @@ const char plugin_name[]       	= "Job submit KNL plugin";
 const char plugin_type[]       	= "job_submit/knl";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static s_p_options_t knl_conf_file_options[] = {
-	{"AvailNUMA", S_P_STRING},
-	{"DefaultNUMA", S_P_STRING},
-	{"AvailMCDRAM", S_P_STRING},
-	{"DefaultMCDRAM", S_P_STRING},
-	{NULL}
-};
-
 static uint16_t avail_mcdram, avail_numa;
 static uint16_t default_mcdram, default_numa;
 
-static s_p_hashtbl_t *_config_make_tbl(char *filename)
-{
-	s_p_hashtbl_t *tbl = NULL;
-
-	xassert(filename);
-
-	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
-		error("%s: %s: s_p_hashtbl_create error: %m",
-		      plugin_name, __func__);
-		return tbl;
-	}
-
-	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
-		error("%s: %s: s_p_parse_file error: %m",
-		      plugin_name, __func__);
-		s_p_hashtbl_destroy(tbl);
-		tbl = NULL;
-	}
-
-	return tbl;
-}
-
 int init (void)
 {
-	char *avail_mcdram_str, *avail_numa_str;
-	char *default_mcdram_str, *default_numa_str;
-	char *knl_conf_file, *tmp_str = NULL;
-	s_p_hashtbl_t *tbl;
-
-	/* Set default values */
-	avail_mcdram = KNL_MCDRAM_FLAG;
-	avail_numa = KNL_NUMA_FLAG;
-	default_mcdram = KNL_CACHE;
-	default_numa = KNL_ALL2ALL;
-
-	knl_conf_file = get_extra_conf_path("knl.conf");
-	if ((tbl = _config_make_tbl(knl_conf_file))) {
-		if (s_p_get_string(&tmp_str, "AvailMCDRAM", tbl)) {
-			avail_mcdram = knl_mcdram_parse(tmp_str, ",");
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "AvailNUMA", tbl)) {
-			avail_numa = knl_numa_parse(tmp_str, ",");
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
-			default_mcdram = knl_mcdram_parse(tmp_str, ",");
-			if (knl_mcdram_bits_cnt(default_mcdram) != 1) {
-				fatal("%s: Invalid DefaultMCDRAM=%s",
-				      plugin_name, tmp_str);
-			}
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "DefaultNUMA", tbl)) {
-			default_numa = knl_numa_parse(tmp_str, ",");
-			if (knl_numa_bits_cnt(default_numa) != 1) {
-				fatal("%s: Invalid DefaultNUMA=%s",
-				      plugin_name, tmp_str);
-			}
-			xfree(tmp_str);
-		}
-	} else {
-		error("something wrong with opening/reading knl.conf");
-	}
-	xfree(knl_conf_file);
-	s_p_hashtbl_destroy(tbl);
-
-	avail_mcdram_str = knl_mcdram_str(avail_mcdram);
-	avail_numa_str = knl_numa_str(avail_numa);
-	default_mcdram_str = knl_mcdram_str(default_mcdram);
-	default_numa_str = knl_numa_str(default_numa);
-	if ((default_mcdram & avail_mcdram) == 0) {
-		fatal("%s: DefaultMCDRAM(%s) not within AvailMCDRAM(%s)",
-		      plugin_name, default_mcdram_str, avail_mcdram_str);
-	}
-	if ((default_numa & avail_numa) == 0) {
-		fatal("%s: DefaultNUMA(%s) not within AvailNUMA(%s)",
-		      plugin_name, default_numa_str, avail_numa_str);
-	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_KNL) {
-		info("AvailMCDRAM=%s DefaultMCDRAM=%s",
-		     avail_mcdram_str, default_mcdram_str);
-		info("AvailNUMA=%s DefaultNUMA=%s",
-		     avail_numa_str, default_numa_str);
-	}
-	xfree(avail_mcdram_str);
-	xfree(avail_numa_str);
-	xfree(default_mcdram_str);
-	xfree(default_numa_str);
-
-	return SLURM_SUCCESS;
+	return knl_conf_read(&avail_mcdram, &avail_numa,
+			     &default_mcdram, &default_numa);
 }
 
 int fini (void)

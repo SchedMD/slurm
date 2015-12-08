@@ -60,8 +60,120 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "slurm/slurm.h"
+#include "src/common/knl.h"
+#include "src/common/parse_config.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+static s_p_options_t knl_conf_file_options[] = {
+	{"AvailNUMA", S_P_STRING},
+	{"DefaultNUMA", S_P_STRING},
+	{"AvailMCDRAM", S_P_STRING},
+	{"DefaultMCDRAM", S_P_STRING},
+	{NULL}
+};
+
+static s_p_hashtbl_t *_config_make_tbl(char *filename)
+{
+	s_p_hashtbl_t *tbl = NULL;
+
+	xassert(filename);
+
+	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
+		error("knl.conf: %s: s_p_hashtbl_create error: %m", __func__);
+		return tbl;
+	}
+
+	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
+		error("knl.conf: %s: s_p_parse_file error: %m", __func__);
+		s_p_hashtbl_destroy(tbl);
+		tbl = NULL;
+	}
+
+	return tbl;
+}
+
+/*
+ * Parse knl.conf file and return available and default modes
+ * avail_mcdram IN - available MCDRAM modes
+ * avail_numa IN - available NUMA modes
+ * default_mcdram IN - default MCDRAM mode
+ * default_numa IN - default NUMA mode
+ * RET - Slurm error code
+ */
+extern int knl_conf_read(uint16_t *avail_mcdram, uint16_t *avail_numa,
+			 uint16_t *default_mcdram, uint16_t *default_numa)
+{
+	char *avail_mcdram_str, *avail_numa_str;
+	char *default_mcdram_str, *default_numa_str;
+	char *knl_conf_file, *tmp_str = NULL;
+	s_p_hashtbl_t *tbl;
+
+	/* Set default values */
+	*avail_mcdram = KNL_MCDRAM_FLAG;
+	*avail_numa = KNL_NUMA_FLAG;
+	*default_mcdram = KNL_CACHE;
+	*default_numa = KNL_ALL2ALL;
+
+	knl_conf_file = get_extra_conf_path("knl.conf");
+	if ((tbl = _config_make_tbl(knl_conf_file))) {
+		if (s_p_get_string(&tmp_str, "AvailMCDRAM", tbl)) {
+			*avail_mcdram = knl_mcdram_parse(tmp_str, ",");
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "AvailNUMA", tbl)) {
+			*avail_numa = knl_numa_parse(tmp_str, ",");
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
+			*default_mcdram = knl_mcdram_parse(tmp_str, ",");
+			if (knl_mcdram_bits_cnt(*default_mcdram) != 1) {
+				fatal("knl.conf: Invalid DefaultMCDRAM=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "DefaultNUMA", tbl)) {
+			*default_numa = knl_numa_parse(tmp_str, ",");
+			if (knl_numa_bits_cnt(*default_numa) != 1) {
+				fatal("knl.conf: Invalid DefaultNUMA=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
+	} else {
+		error("something wrong with opening/reading knl.conf");
+	}
+	xfree(knl_conf_file);
+	s_p_hashtbl_destroy(tbl);
+
+	avail_mcdram_str = knl_mcdram_str(*avail_mcdram);
+	avail_numa_str = knl_numa_str(*avail_numa);
+	default_mcdram_str = knl_mcdram_str(*default_mcdram);
+	default_numa_str = knl_numa_str(*default_numa);
+	if ((*default_mcdram & *avail_mcdram) == 0) {
+		fatal("knl.conf: DefaultMCDRAM(%s) not within AvailMCDRAM(%s)",
+		      default_mcdram_str, avail_mcdram_str);
+	}
+	if ((*default_numa & *avail_numa) == 0) {
+		fatal("knl.conf: DefaultNUMA(%s) not within AvailNUMA(%s)",
+		      default_numa_str, avail_numa_str);
+	}
+	if (slurm_get_debug_flags() & DEBUG_FLAG_KNL) {
+		info("AvailMCDRAM=%s DefaultMCDRAM=%s",
+		     avail_mcdram_str, default_mcdram_str);
+		info("AvailNUMA=%s DefaultNUMA=%s",
+		     avail_numa_str, default_numa_str);
+	}
+	xfree(avail_mcdram_str);
+	xfree(avail_numa_str);
+	xfree(default_mcdram_str);
+	xfree(default_numa_str);
+
+	return SLURM_SUCCESS;
+}
 
 /*
  * Return the count of MCDRAM bits set
