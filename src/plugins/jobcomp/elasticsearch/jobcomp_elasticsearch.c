@@ -878,7 +878,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 extern void *_process_jobs(void *x)
 {
 	ListIterator iter;
-	struct job_node *jnode = xmalloc(sizeof(struct job_node));
+	struct job_node *jnode = NULL;
 	time_t now;
 
 	while (!thread_shutdown) {
