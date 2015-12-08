@@ -4586,6 +4586,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobContainer");
 	}
+	if (debug_flags & DEBUG_FLAG_KNL) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "KNL");
+	}
 	if (debug_flags & DEBUG_FLAG_LICENSE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -4753,6 +4758,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (strcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
+		else if (strcasecmp(tok, "KNL") == 0)
+			(*flags_out) |= DEBUG_FLAG_KNL;
 		else if (strcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)

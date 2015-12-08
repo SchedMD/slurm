@@ -1,0 +1,104 @@
+.TH "knl.conf" "5" "Slurm Configuration File" "December 2015" "Slurm Configuration File"
+
+.SH "NAME"
+knl.conf \- Slurm configuration file for Intel Knights Landing processor.
+
+.SH "DESCRIPTION"
+\fBknl.conf\fP is an ASCII file which describes configuration information for
+Intel Knights Landing processors.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+This file is optional.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+The overall configuration parameters available include:
+
+.TP
+\fBAvailMCDRAM\fR
+Specify a comma delimited list of MCDRAM modes which can be used.
+.RS
+.TP 17
+\fBcache\fR
+All of MCDRAM to be used as cache.
+.TP
+\fBflat\fR
+MCDRAM to be combined with primary memory into a "flat" memory space.
+.TP
+\fBhybrid\fR
+MCDRAM to be used partly as cache and partly combined with primary memory.
+.RE
+
+\fBAvailNUMA\fR
+Specify a comma delimited list of NUMA modes which can be used.
+.RS
+.TP 17
+\fBall2all\fR
+All to all
+.TP
+\fBsnc2\fR
+Sub\-NUMA cluster 2
+.TP
+\fBsnc4\fR
+Sub\-NUMA cluster 4
+.TP
+\fBhemi\fR
+Hemisphere
+.TP
+\fBquad\fR
+Quadrant
+.RE
+
+.TP
+\fBDefaultMCDRAM\fR
+Specify the default MCDRAM modes for job's which do not specify a value.
+For a list of possible values, see \fBAvailMCDRAM\fR above.
+
+.TP
+\fBDefaultNUMA\fR
+Specify the default NUMA modes for job's which do not specify a value.
+For a list of possible values, see \fBAvailNUMA\fR above.
+
+.SH "EXAMPLE"
+.LP
+.br
+##################################################################
+.br
+# Slurm's configuration file for Intel Knights Landing
+.br
+##################################################################
+.br
+AvailMCDRAM=flat,cache,hybrid
+.br
+AvailNUMA=all2all,hemi,quad
+.br
+DefaultMCDRAM=flat
+.br
+DefaultNUMA=all2all
+
+.SH "COPYING"
+Copyright (C) 2015 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <http://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)
