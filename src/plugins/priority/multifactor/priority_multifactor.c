@@ -756,6 +756,10 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 	double *billing_weights = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 
+	/* We don't have any resources allocated, just return 0. */
+	if (!job_ptr->tres_alloc_cnt)
+		return 0;
+
 	/* Don't recalculate unless the job is new or resized */
 	if ((!fuzzy_equal(job_ptr->billable_tres, NO_VAL)) &&
 	    difftime(job_ptr->resize_time, start_time) < 0.0)
