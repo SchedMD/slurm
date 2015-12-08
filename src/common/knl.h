@@ -46,8 +46,11 @@ extern int knl_mcdram_bits_cnt(uint16_t mcdram_num);
 
 /*
  * Translate KNL MCDRAM string to equivalent numeric value
+ * mcdram_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET MCDRAM numeric value
  */
-extern uint16_t knl_mcdram_parse(char *mcdram_str);
+extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep);
 
 /*
  * Translate KNL MCDRAM number to equivalent string value
@@ -62,8 +65,11 @@ extern int knl_numa_bits_cnt(uint16_t numa_num);
 
 /*
  * Translate KNL NUMA string to equivalent numeric value
+ * numa_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET NUMA numeric value
  */
-extern uint16_t knl_numa_parse(char *numa_str);
+extern uint16_t knl_numa_parse(char *numa_str, char *sep);
 
 /*
  * Translate KNL NUMA number to equivalent string value

@@ -105,10 +105,8 @@ static s_p_options_t knl_conf_file_options[] = {
 	{NULL}
 };
 
-static uint16_t avail_mcdram;
-static uint16_t avail_numa;
-static uint16_t default_mcdram;
-static uint16_t default_numa;
+static uint16_t avail_mcdram, avail_numa;
+static uint16_t default_mcdram, default_numa;
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
 {
@@ -148,15 +146,15 @@ int init (void)
 	knl_conf_file = get_extra_conf_path("knl.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		if (s_p_get_string(&tmp_str, "AvailMCDRAM", tbl)) {
-			avail_mcdram = knl_mcdram_parse(tmp_str);
+			avail_mcdram = knl_mcdram_parse(tmp_str, ",");
 			xfree(tmp_str);
 		}
 		if (s_p_get_string(&tmp_str, "AvailNUMA", tbl)) {
-			avail_numa = knl_numa_parse(tmp_str);
+			avail_numa = knl_numa_parse(tmp_str, ",");
 			xfree(tmp_str);
 		}
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
-			default_mcdram = knl_mcdram_parse(tmp_str);
+			default_mcdram = knl_mcdram_parse(tmp_str, ",");
 			if (knl_mcdram_bits_cnt(default_mcdram) != 1) {
 				fatal("%s: Invalid DefaultMCDRAM=%s",
 				      plugin_name, tmp_str);
@@ -164,7 +162,7 @@ int init (void)
 			xfree(tmp_str);
 		}
 		if (s_p_get_string(&tmp_str, "DefaultNUMA", tbl)) {
-			default_numa = knl_numa_parse(tmp_str);
+			default_numa = knl_numa_parse(tmp_str, ",");
 			if (knl_numa_bits_cnt(default_numa) != 1) {
 				fatal("%s: Invalid DefaultNUMA=%s",
 				      plugin_name, tmp_str);
@@ -210,6 +208,38 @@ int fini (void)
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
+	uint16_t job_mcdram, job_numa;
+	int mcdram_cnt, numa_cnt;
+	char *tmp_str;
+
+	job_mcdram = knl_mcdram_parse(job_desc->features, "&");
+	mcdram_cnt = knl_mcdram_bits_cnt(job_mcdram);
+	if (mcdram_cnt > 1) {			/* Multiple MCDRAM options */
+		return ESLURM_INVALID_KNL;
+	} else if (mcdram_cnt == 0) {
+		if (job_desc->features)
+			xstrcat(job_desc->features, "&");
+		tmp_str = knl_mcdram_str(default_mcdram);
+		xstrcat(job_desc->features, tmp_str);
+		xfree(tmp_str);
+	} else if ((job_mcdram & avail_mcdram) == 0) { /* Unavailable option */
+		return ESLURM_INVALID_KNL;
+	}
+
+	job_numa = knl_numa_parse(job_desc->features, "&");
+	numa_cnt = knl_numa_bits_cnt(job_numa);
+	if (numa_cnt > 1) {			/* Multiple NUMA options */
+		return ESLURM_INVALID_KNL;
+	} else if (numa_cnt == 0) {
+		if (job_desc->features)
+			xstrcat(job_desc->features, "&");
+		tmp_str = knl_numa_str(default_numa);
+		xstrcat(job_desc->features, tmp_str);
+		xfree(tmp_str);
+	} else if ((job_numa & avail_numa) == 0) { /* Unavailable NUMA option */
+		return ESLURM_INVALID_KNL;
+	}
+
 	return SLURM_SUCCESS;
 }
 

@@ -97,61 +97,66 @@ extern int knl_numa_bits_cnt(uint16_t numa_num)
 
 /*
  * Translate KNL MCDRAM string to equivalent numeric value
+ * mcdram_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET MCDRAM numeric value
  */
-extern uint16_t knl_mcdram_parse(char *mcdram_str)
+extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep)
 {
 	char *save_ptr = NULL, *tmp, *tok;
-	uint16_t mcdram = 0;
+	uint16_t mcdram_num = 0;
+
+	if (!mcdram_str)
+		return mcdram_num;
 
 	tmp = xstrdup(mcdram_str);
-	tok = strtok_r(tmp, ",", &save_ptr);
+	tok = strtok_r(tmp, sep, &save_ptr);
 	while (tok) {
-		if (!strncasecmp(tok, "cache", 2))
-			mcdram |= KNL_CACHE;
-		else if (!strncasecmp(tok, "flat", 2))
-			mcdram |= KNL_FLAT;
-		else if (!strncasecmp(tok, "hybrid", 2))
-			mcdram |= KNL_HYBRID;
-		else
-			error("Invalid KNL MCDRAM value: %s", tok);
-		tok = strtok_r(NULL, ",", &save_ptr);
+		if (!strcasecmp(tok, "cache"))
+			mcdram_num |= KNL_CACHE;
+		else if (!strcasecmp(tok, "flat"))
+			mcdram_num |= KNL_FLAT;
+		else if (!strcasecmp(tok, "hybrid"))
+			mcdram_num |= KNL_HYBRID;
+		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	xfree(tmp);
 
-	return mcdram;
+	return mcdram_num;
 }
 
 /*
  * Translate KNL NUMA string to equivalent numeric value
+ * numa_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET NUMA numeric value
  */
-extern uint16_t knl_numa_parse(char *numa_str)
+extern uint16_t knl_numa_parse(char *numa_str, char *sep)
 {
 	char *save_ptr = NULL, *tmp, *tok;
-	uint16_t numa = 0;
+	uint16_t numa_num = 0;
+
+	if (!numa_str)
+		return numa_num;
 
 	tmp = xstrdup(numa_str);
-	tok = strtok_r(tmp, ",", &save_ptr);
+	tok = strtok_r(tmp, sep, &save_ptr);
 	while (tok) {
-		if (!strncasecmp(tok, "all2all", 3) ||
-		    !strcasecmp(tok, "a2a"))
-			numa |= KNL_ALL2ALL;
-		else if (!strcasecmp(tok, "snc2") ||
-			 !strcasecmp(tok, "snc-2"))
-			numa |= KNL_SNC2;
-		else if (!strcasecmp(tok, "snc4") ||
-			 !strcasecmp(tok, "snc-4"))
-			numa |= KNL_SNC4;
-		else if (!strncasecmp(tok, "hemi", 2))
-			numa |= KNL_HEMI;
-		else if (!strncasecmp(tok, "quad", 2))
-			numa |= KNL_QUAD;
-		else
-			error("Invalid KNL NUMA value: %s", tok);
-		tok = strtok_r(NULL, ",", &save_ptr);
+		if (!strcasecmp(tok, "all2all"))
+			numa_num |= KNL_ALL2ALL;
+		else if (!strcasecmp(tok, "snc2"))
+			numa_num |= KNL_SNC2;
+		else if (!strcasecmp(tok, "snc4"))
+			numa_num |= KNL_SNC4;
+		else if (!strcasecmp(tok, "hemi"))
+			numa_num |= KNL_HEMI;
+		else if (!strcasecmp(tok, "quad"))
+			numa_num |= KNL_QUAD;
+		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	xfree(tmp);
 
-	return numa;
+	return numa_num;
 }
 
 /*
