@@ -1958,8 +1958,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 				preempt_ptr->user_id = bb_ptr->user_id;
 				list_push(preempt_list, preempt_ptr);
 				add_total_space_avail += bb_ptr->size;
-				if (bb_ptr->user_id == job_ptr->user_id);
-				add_user_space_avail += bb_ptr->size;
+				if (bb_ptr->user_id == job_ptr->user_id)
+					add_user_space_avail += bb_ptr->size;
 				if (add_total_gres_needed<add_total_gres_avail)
 					j = bb_ptr->gres_cnt;
 				else
@@ -2636,7 +2636,7 @@ static void _update_job_env(struct job_record *job_ptr, char *file_path)
 	struct stat stat_buf;
 	char *data_buf = NULL, *start, *sep;
 	int path_fd, i, inx = 0, env_cnt = 0;
-	size_t read_size;
+	ssize_t read_size;
 
 	/* Read the DataWarp generated environment variable file */
 	path_fd = open(file_path, 0);
