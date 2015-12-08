@@ -101,8 +101,29 @@ static uint16_t default_mcdram, default_numa;
 
 int init (void)
 {
-	return knl_conf_read(&avail_mcdram, &avail_numa,
-			     &default_mcdram, &default_numa);
+	char *avail_mcdram_str, *avail_numa_str;
+	char *default_mcdram_str, *default_numa_str;
+	int rc;
+
+	rc = knl_conf_read(&avail_mcdram, &avail_numa,
+			   &default_mcdram, &default_numa);
+
+	if (slurm_get_debug_flags() & DEBUG_FLAG_KNL) {
+		avail_mcdram_str = knl_mcdram_str(avail_mcdram);
+		avail_numa_str = knl_numa_str(avail_numa);
+		default_mcdram_str = knl_mcdram_str(default_mcdram);
+		default_numa_str = knl_numa_str(default_numa);
+		info("AvailMCDRAM=%s DefaultMCDRAM=%s",
+		     avail_mcdram_str, default_mcdram_str);
+		info("AvailNUMA=%s DefaultNUMA=%s",
+		     avail_numa_str, default_numa_str);
+		xfree(avail_mcdram_str);
+		xfree(avail_numa_str);
+		xfree(default_mcdram_str);
+		xfree(default_numa_str);
+	}
+
+	return rc;
 }
 
 int fini (void)

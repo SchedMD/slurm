@@ -40,6 +40,7 @@ generated_html = \
 	high_throughput.html \
 	ibm.html \
 	ibm-pe.html \
+	intel_knl.html \
 	jobacct_gatherplugins.html \
 	job_array.html \
 	job_container_plugins.html \
