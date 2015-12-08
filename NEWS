@@ -101,6 +101,8 @@ documents those changes that are of interest to users and administrators.
     step_extern cgroups.
  -- Fix AllowUsers documentation in burst_buffer.conf man page. Usernames are
     comma separated, not colon delimited.
+ -- Fix issue with time limit not being set correctly from a QOS when a job
+    requests no time limit.
 
 * Changes in Slurm 15.08.4
 ==========================

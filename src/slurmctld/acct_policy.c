@@ -1053,14 +1053,11 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		}
 	}
 
-	/* If DenyOnLimit is set we do need to check
-	 * qos_ptr->max_tres_mins_pj as well as
-	 * qos_ptr->max_wall_pj and qos_ptr->grp_wall (at
-	 * least make sure it isn't above the grp limit)
-	 * otherwise you end up in PENDING on a QOSLimit.
+	/* Only check the time_limits if the admin didn't set the timelimit.
+	 * It is important we look at these even if strict_checking
+	 * isn't set so we get the correct time_limit from the job.
 	 */
-	if (strict_checking &&
-	    (acct_policy_limit_set->time != ADMIN_SET_LIMIT)) {
+	if (acct_policy_limit_set->time != ADMIN_SET_LIMIT) {
 		if (!_validate_tres_time_limits_for_qos(
 			    &tres_pos,
 			    &job_desc->time_limit,
@@ -1096,7 +1093,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					&acct_policy_limit_set->time);
 			qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
 
-			if (job_desc->time_limit > qos_ptr->max_wall_pj) {
+			if (strict_checking
+			    && job_desc->time_limit > qos_ptr->max_wall_pj) {
 				if (reason)
 					*reason = WAIT_QOS_MAX_WALL_PER_JOB;
 				debug2("job submit for user %s(%u): "
@@ -1119,7 +1117,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 
 			qos_out_ptr->grp_wall = qos_ptr->grp_wall;
 
-			if (job_desc->time_limit > qos_ptr->grp_wall) {
+			if (strict_checking
+			    && job_desc->time_limit > qos_ptr->grp_wall) {
 				if (reason)
 					*reason = WAIT_ASSOC_GRP_WALL;
 				debug2("job submit for user %s(%u): "

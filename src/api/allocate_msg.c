@@ -281,8 +281,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		_handle_suspend(msg_thr, msg);
 		break;
 	default:
-		error("received spurious message type: %d",
-		      msg->msg_type);
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 		break;
 	}
 	return;
