@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     old logic would skip the job and start other jobs, which could delay the
     higher priority job.
  -- select/cray: Prevent NHC from running more than once per job or step.
+ -- Fix fields not properly printed when adding an account through sacctmgr.
 
 * Changes in Slurm 15.08.4
 ==========================

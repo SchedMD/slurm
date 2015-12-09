@@ -1620,8 +1620,13 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 
 	if (assoc->shares_raw == INFINITE)
 		printf("  Fairshare     = NONE\n");
+	else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+		printf("  Fairshare     = parent\n");
 	else if (assoc->shares_raw != NO_VAL)
 		printf("  Fairshare     = %u\n", assoc->shares_raw);
+
+	if (assoc->parent_acct)
+		printf("  Parent        = %s\n", assoc->parent_acct);
 
 	if (assoc->grp_jobs == INFINITE)
 		printf("  GrpJobs       = NONE\n");
@@ -1718,6 +1723,15 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 			xfree(temp_char);
 		}
 	}
+
+	if (assoc->def_qos_id != NO_VAL) {
+		if (!g_qos_list)
+			g_qos_list =
+				acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		printf("  DefQOS        = %s\n",
+		       slurmdb_qos_str(g_qos_list, assoc->def_qos_id));
+	}
+
 }
 
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
