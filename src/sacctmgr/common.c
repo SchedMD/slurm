@@ -1625,9 +1625,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->shares_raw != NO_VAL)
 		printf("  Fairshare     = %u\n", assoc->shares_raw);
 
-	if (assoc->parent_acct)
-		printf("  Parent        = %s\n", assoc->parent_acct);
-
 	if (assoc->grp_jobs == INFINITE)
 		printf("  GrpJobs       = NONE\n");
 	else if (assoc->grp_jobs != NO_VAL)
@@ -1711,6 +1708,9 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall       = %s\n", time_buf);
 	}
+
+	if (assoc->parent_acct)
+		printf("  Parent        = %s\n", assoc->parent_acct);
 
 	if (assoc->qos_list) {
 		if (!g_qos_list)
