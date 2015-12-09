@@ -6,6 +6,41 @@
 
 <h2>Presentations</h2>
 
+<!--SC15 Slurm Booth + BOF-->
+<li><b>Presentations from Slurm Booth and Birds of a Feather, SC15, November 2015</b></li>
+<ul>
+<li>Booth: <a href="SC15/PMIx.pdf">PMIx - Enabling Application-driven Execution at Exascale </a>,
+Ralph H. Castain</li>
+
+<li>Booth: <a href="SC15/NASA_GSFC.pdf">NASA NCCS Site Update</a>,
+Bruce Pfaff, NASA</li>
+
+<li>Booth: <a href="SC15/BYU_SC15.pdf">Brigham Young University - Site Report</a>,
+Ryan Cox, BYU</li>
+
+<li>Booth: <a href="SC15/Slurm_Overview.pdf">Slurm Overview</a>
+Brian Christiansen and Danny Auble, SchedMD</li>
+
+<li>Booth: <a href="SLUG15/shifter.pdf">Never Port Your Code Again - Docker functionality with Shifter using SLURM</a>,
+Shane Canon, NERSC</li>
+
+<li>Booth: <a href="SC15/BB.pdf">Slurm Burst Buffer Support</a>,
+Tim Wickberg, SchedMD</li>
+
+<li>Booth: <a href="SC15/Slurm_Overview_Elasticsearch.pdf">Slurm Overview and Elasticsearch Plugin</a>
+Alejandro Sanchez, SchedMD</li>
+
+<li>Booth: <a href="SC15/TRES.pdf">All Things TRES</a>,
+Brian Christiansen, SchedMD</li>
+
+<li>BOF: <a href="SC15/Slurm_V15.08.pdf">Slurm Version 15.08</a>,
+Danny Auble, SchedMD</li>
+
+<li>BOF: <a href="SC15/SC15_BoF_Slurm.pdf">Improving Backfilling by using Machine Learning to Predict Running Times in SLURM</a>,
+David Glesser, Bull</li>
+
+</ul>
+
 <!--Slurm User Group Meeting 2015-->
 <li><b>Presentations from Slurm User Group Meeting, September 2015</b></li>
 <ul>
@@ -664,6 +699,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 25 September 2015</p>
+<p style="text-align:center;">Last modified 9 December 2015</p>
 
 <!--#include virtual="footer.txt"-->
