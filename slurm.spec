@@ -795,10 +795,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 %{_mandir}/man5/acct_gather.*
 %{_mandir}/man5/burst_buffer.*
-%{_mandir}/man5/ext_sensors.*
 %{_mandir}/man5/cgroup.*
 %{_mandir}/man5/cray.*
+%{_mandir}/man5/ext_sensors.*
 %{_mandir}/man5/gres.*
+%{_mandir}/man5/knl.*
 %{_mandir}/man5/nonstop.*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/topology.*
