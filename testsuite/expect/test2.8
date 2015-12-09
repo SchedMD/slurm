@@ -64,14 +64,14 @@ if {[test_launch_poe]} {
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun $bin_sleep 60 &
-  $srun $bin_sleep 60
+  $srun --mem=10 $bin_sleep 60 &
+  $srun --mem=10 $bin_sleep 60
 "
 
 #
 # Submit a couple jobs so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=10 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=20 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -91,7 +91,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=10 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t5 --mem=20 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -183,8 +183,6 @@ expect {
 		wait
 	}
 }
-
-
 if {$matches != 2} {
 	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 2)\n"
 	set exit_code 1
@@ -343,13 +341,9 @@ if {$matches != 1} {
 }
 
 #
-# Wait for job to start running then give the step a chance to start tasks
+# Wait for step to start
 #
-if {[wait_for_job $job_id1 RUNNING] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id1 to run\n"
-	set exit_code 1
-}
-exec $bin_sleep 10
+sleep 10
 
 #
 # Look at all job steps with scontrol
