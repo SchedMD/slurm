@@ -1010,6 +1010,7 @@ static int _schedule(uint32_t job_limit)
 	uint16_t reject_state_reason = WAIT_NO_REASON;
 	char job_id_buf[32];
 	char *unavail_node_str = NULL;
+	bool fail_by_part;
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
@@ -1325,6 +1326,7 @@ next_part:			part_ptr = (struct part_record *)
 				continue;	/* started in other partition */
 			job_ptr->part_ptr = part_ptr;
 		}
+
 		if (job_ptr->preempt_in_progress)
 			continue;	/* scheduled in another partition */
 
@@ -1569,6 +1571,7 @@ next_task:
 
 		error_code = select_nodes(job_ptr, false, NULL,
 					  unavail_node_str, NULL);
+		fail_by_part = false;
 		if ((error_code == ESLURM_NODES_BUSY) ||
 		    (error_code == ESLURM_POWER_NOT_AVAIL) ||
 		    (error_code == ESLURM_POWER_RESERVED)) {
@@ -1578,68 +1581,7 @@ next_task:
 			       job_state_string(job_ptr->job_state),
 			       job_reason_string(job_ptr->state_reason),
 			       job_ptr->priority, job_ptr->partition);
-			bool fail_by_part = true;
-#ifdef HAVE_BG
-			/* When we use static or overlap partitioning on
-			 * BlueGene, each job can possibly be scheduled
-			 * independently, without impacting other jobs of
-			 * different sizes. Therefore we sort and try to
-			 * schedule every pending job unless the backfill
-			 * scheduler is configured. */
-			if (!backfill_sched)
-				fail_by_part = false;
-#else
-			if (job_ptr->details &&
-			    job_ptr->details->req_node_bitmap &&
-			    (bit_set_count(job_ptr->details->
-					   req_node_bitmap)>=
-			     job_ptr->details->min_nodes)) {
-				fail_by_part = false;
-				/* Do not schedule more jobs on nodes required
-				 * by this job, but don't block the entire
-				 * queue/partition. */
-				bit_not(job_ptr->details->req_node_bitmap);
-				bit_and(avail_node_bitmap,
-					job_ptr->details->req_node_bitmap);
-				bit_not(job_ptr->details->req_node_bitmap);
-			}
-#endif
-
-			if (fail_by_part && job_ptr->resv_name) {
-		 		/* do not schedule more jobs in this
-				 * reservation, but other jobs in this partition
-				 * can be scheduled. */
-				fail_by_part = false;
-				if (failed_resv_cnt < MAX_FAILED_RESV) {
-					failed_resv[failed_resv_cnt++] =
-						job_ptr->resv_ptr;
-				}
-			}
-
-			if (fail_by_part && bf_min_age_reserve) {
-				/* Consider other jobs in this partition if
-				 * job has been waiting for less than
-				 * bf_min_age_reserve time */
-				if (job_ptr->details->begin_time == 0) {
-					fail_by_part = false;
-				} else {
-					pend_time = difftime(now,
-						job_ptr->details->begin_time);
-					if (pend_time < bf_min_age_reserve)
-						fail_by_part = false;
-				}
-			}
-
-			if (fail_by_part) {
-		 		/* do not schedule more jobs in this partition
-				 * or on nodes in this partition */
-				failed_parts[failed_part_cnt++] =
-						job_ptr->part_ptr;
-				bit_not(job_ptr->part_ptr->node_bitmap);
-				bit_and(avail_node_bitmap,
-					job_ptr->part_ptr->node_bitmap);
-				bit_not(job_ptr->part_ptr->node_bitmap);
-			}
+			fail_by_part = true;
 		} else if ((error_code == ESLURM_RESERVATION_BUSY) ||
 			   (error_code == ESLURM_RESERVATION_NOT_USABLE)) {
 			if (job_ptr->resv_ptr &&
@@ -1721,11 +1663,14 @@ next_task:
 			debug("JobId=%u non-runnable in partition %s: %s",
 			      job_ptr->job_id, job_ptr->part_ptr->name,
 			      slurm_strerror(error_code));
+		} else if (error_code == ESLURM_ACCOUNTING_POLICY) {
+			debug3("sched: JobId=%u delayed for accounting policy",
+			       job_ptr->job_id);
+			fail_by_part = true;
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
-			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)&&
-			   (error_code != ESLURM_ACCOUNTING_POLICY)) {
+			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
 			info("sched: schedule: %s non-runnable:%s",
 			     jobid2str(job_ptr, job_id_str, sizeof(job_id_str)),
 			     slurm_strerror(error_code));
@@ -1737,6 +1682,58 @@ next_task:
 				job_ptr->start_time = job_ptr->end_time = now;
 				job_ptr->priority = 0;
 			}
+		}
+
+#ifdef HAVE_BG
+		/* When we use static or overlap partitioning on BlueGene,
+		 * each job can possibly be scheduled independently, without
+		 * impacting other jobs of different sizes. Therefore we sort
+		 * and try to schedule every pending job unless the backfill
+		 * scheduler is configured. */
+		if (!backfill_sched)
+			fail_by_part = false;
+#else
+		if (job_ptr->details && job_ptr->details->req_node_bitmap &&
+		    (bit_set_count(job_ptr->details->req_node_bitmap) >=
+		     job_ptr->details->min_nodes)) {
+			fail_by_part = false;
+			/* Do not schedule more jobs on nodes required by this
+			 * job, but don't block the entire queue/partition. */
+			bit_not(job_ptr->details->req_node_bitmap);
+			bit_and(avail_node_bitmap,
+				job_ptr->details->req_node_bitmap);
+			bit_not(job_ptr->details->req_node_bitmap);
+		}
+#endif
+		if (fail_by_part && job_ptr->resv_name) {
+		 	/* do not schedule more jobs in this reservation, but
+			 * other jobs in this partition can be scheduled. */
+			fail_by_part = false;
+			if (failed_resv_cnt < MAX_FAILED_RESV) {
+				failed_resv[failed_resv_cnt++] =
+					job_ptr->resv_ptr;
+			}
+		}
+		if (fail_by_part && bf_min_age_reserve) {
+			/* Consider other jobs in this partition if job has been
+			 * waiting for less than bf_min_age_reserve time */
+			if (job_ptr->details->begin_time == 0) {
+				fail_by_part = false;
+			} else {
+				pend_time = difftime(now,
+					job_ptr->details->begin_time);
+				if (pend_time < bf_min_age_reserve)
+					fail_by_part = false;
+			}
+		}
+		if (fail_by_part) {
+		 	/* do not schedule more jobs in this partition or on
+			 * nodes in this partition */
+			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
+			bit_not(job_ptr->part_ptr->node_bitmap);
+			bit_and(avail_node_bitmap,
+				job_ptr->part_ptr->node_bitmap);
+			bit_not(job_ptr->part_ptr->node_bitmap);
 		}
 
 		if ((reject_array_job_id == job_ptr->array_job_id) &&
