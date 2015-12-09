@@ -1637,18 +1637,21 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		       assoc->grp_submit_jobs);
 
 	if (assoc->grp_tres) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres, g_tres_list);
 		printf("  GrpTRES       = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (assoc->grp_tres_mins) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_mins, g_tres_list);
 		printf("  GrpTRESMins   = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (assoc->grp_tres_run_mins) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_run_mins, g_tres_list);
 		printf("  GrpTRESRunMins= %s\n", tmp_char);
@@ -1676,24 +1679,28 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		       assoc->max_submit_jobs);
 
 	if (assoc->max_tres_pj) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pj, g_tres_list);
 		printf("  MaxTRES       = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (assoc->max_tres_pn) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pn, g_tres_list);
 		printf("  MaxTRESPerNode= %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (assoc->max_tres_mins_pj) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_mins_pj, g_tres_list);
 		printf("  MaxTRESMins   = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (assoc->max_tres_run_mins) {
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_run_mins, g_tres_list);
 		printf("  MaxTRESRUNMins= %s\n", tmp_char);
