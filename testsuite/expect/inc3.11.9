@@ -57,6 +57,7 @@ proc inc3_11_9 {} {
 
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+	set job_id 0
 
 	# Submit a batch job using half the threads on the nodes
 	set sbatch_pid [spawn $sbatch -w$nodes --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
