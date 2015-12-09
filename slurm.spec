@@ -319,6 +319,13 @@ Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
 
+%package openlava
+Summary: openlava/LSF wrappers for transitition from OpenLava/LSF to Slurm
+Group: Development/System
+Requires: slurm-perlapi
+%description openlava
+OpenLava wrapper scripts used for helping migrate from OpenLava/LSF to Slurm
+
 %package sjobexit
 Summary: Slurm job exit code management tools
 Group: Development/System
@@ -1002,6 +1009,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/generate_pbs_nodefile
 %{_libdir}/slurm/job_submit_pbs.so
 %{_libdir}/slurm/spank_pbs.so
+#############################################################################
+
+%files openlava
+%defattr(-,root,root)
+%{_bindir}/bjobs
+%{_bindir}/bkill
+%{_bindir}/bsub
+%{_bindir}/lsid
+
 #############################################################################
 
 %files sjobexit
