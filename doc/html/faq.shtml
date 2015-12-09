@@ -1769,7 +1769,7 @@ $ scontrol release &lt;jobid&gt;
 health check script for Slurm?</b></a></br>
 Probably the most comprehensive and lightweight health check tool out
 there is
-<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.
+<a href="https://github.com/mej/nhc">Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</p>
 
 <p><a name="add_nodes"><b>47. What process should I follow to add nodes to Slurm?</b></a></br>
@@ -2134,6 +2134,6 @@ session    include      password-auth
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 August 2015</p>
+<p style="text-align:center;">Last modified 8 December 2015</p>
 
 <!--#include virtual="footer.txt"-->

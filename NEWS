@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
     higher priority job.
  -- select/cray: Prevent NHC from running more than once per job or step.
  -- Fix fields not properly printed when adding an account through sacctmgr.
+ -- Update LBNL Node Health Check (NHC) link on FAQ.
 
 * Changes in Slurm 15.08.4
 ==========================
