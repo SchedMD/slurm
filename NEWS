@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
     account/qos limit, then don't start other jobs which could delay jobs. The
     old logic would skip the job and start other jobs, which could delay the
     higher priority job.
+ -- select/cray: Prevent NHC from running more than once per job or step.
 
 * Changes in Slurm 15.08.4
 ==========================
