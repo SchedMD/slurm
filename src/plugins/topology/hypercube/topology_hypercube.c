@@ -641,6 +641,7 @@ static int _parse_connected_switches(switch_data *sw_record)
 			fatal("Invalid switch speed of %s between switches "
 			      "%s and %s",
 			      sw_name, sw_record->name, ptr->name);
+			return 0; /* For CLANG false positive */
 		}
 
 		// creates final connection speed by dividing the 
