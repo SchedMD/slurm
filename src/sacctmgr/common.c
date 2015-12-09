@@ -1581,12 +1581,7 @@ extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 	int abs_len = abs(field->len);
 	char *print_this;
 
-	if (!g_tres_list) {
-		slurmdb_tres_cond_t tres_cond;
-		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-		tres_cond.with_deleted = 1;
-		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-	}
+	sacctmgr_initialize_g_tres_list();
 
 	print_this = slurmdb_make_tres_string_from_simple(
 		tres_simple_str, g_tres_list);

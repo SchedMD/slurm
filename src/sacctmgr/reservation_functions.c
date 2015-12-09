@@ -280,14 +280,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 					field_count);
 				break;
 			case PRINT_TRES:
-				if (!g_tres_list) {
-					slurmdb_tres_cond_t tres_cond;
-					memset(&tres_cond, 0,
-					       sizeof(slurmdb_tres_cond_t));
-					tres_cond.with_deleted = 1;
-					g_tres_list = slurmdb_tres_get(
-						db_conn, &tres_cond);
-				}
+				sacctmgr_initialize_g_tres_list();
 
 				tmp_char = slurmdb_make_tres_string_from_simple(
 					reservation->tres_str, g_tres_list);
