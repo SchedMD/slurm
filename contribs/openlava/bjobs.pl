@@ -46,41 +46,79 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
+use Slurmdb ':all'; # needed for getting the correct cluster dims
+use Switch;
 
-sub print_job_full
+################################################################################
+# $humanReadableTime = hr_time($epochTime)
+# Converts an epoch time into a human readable time
+################################################################################
+sub _job_state_str
 {
-	my ($job) = @_;
-	# Print the job attributes
-	printf("Job Id:\t%s\n", $job->{'job_id'});
-	printf("\tJob_Name = %s\n", $job->{'name'}) if $job->{'name'};
-	printf "\tinteractive = True\n" if !$job->{'batch_flag'};
 
-	printf("\tqueue = %s\n", $job->{'partition'});
+	my ($state) = @_;
 
-
-	printf("\tAccount_Name = %s\n", $job->{'account'}) if $job->{'account'};
-
-	printf("\tPriority = %u\n", $job->{'priority'});
-
-	# can't run getgrgid inside printf it appears the input gets set to
-	# x if ran there.
-	my $user_group = getgrgid($job->{'group_id'});
-	printf("\tegroup = %s(%d)\n", $user_group, $job->{'group_id'});
-
-	printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'})
-		if $job->{'num_nodes'};
-	printf("\tResource_List.ncpus = %s\n", $job->{'num_cpus'})
-		if $job->{'num_cpus'};
-
-	if ($job->{'reqNodes'}) {
-		my $nodeExpr = $job->{'reqNodes'};
-		$nodeExpr .= ":ppn=" . $job->{'ntasks_per_node'}
-		        if $job->{'ntasks_per_node'};
-
-		printf("\tResource_List.nodes = %s\n", $nodeExpr);
+	if(!defined($state)) {
+		return 'UNKN';
 	}
 
-	print "\n";
+	switch($state) {
+		case [JOB_COMPLETE,
+		      JOB_CANCELLED,
+		      JOB_TIMEOUT,
+		      JOB_FAILED]    { return 'COMP' }
+		case [JOB_RUNNING]   { return 'RUN' }
+		case [JOB_PENDING]   { return 'PEND' }
+		case [JOB_SUSPENDED] { return 'SUSP' }
+		else                 { return 'UNKN' }   # Unknown
+	}
+	return 'U';
+}
+
+sub _hr_time
+{
+	my ($epoch_time) = @_;
+
+	if ($epoch_time == INFINITE) {
+		return "Infinite";
+	}
+
+	my @abbr = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
+		localtime $epoch_time;
+
+	return sprintf("%s  %d %d:%d", $abbr[$mon], $mday, $hour, $min);
+}
+
+sub _shrink_char
+{
+	my ($str, $max_len) = @_;
+
+	$$str = '*' . substr($$str, -($max_len - 1))
+		if length($$str) > $max_len;
+}
+
+sub _print_job_brief
+{
+	my ($job, $line_num) = @_;
+
+	if (!$line_num) {
+		printf("%-7s %-7s %-5s %-10s %-11s %-11s %-10s %s",
+		       "JOBID", "USER", "STAT", "QUEUE",  "FROM_HOST",
+		       "EXEC_HOST", "JOB_NAME", "SUBMIT_TIME");
+	}
+
+	_shrink_char(\$job->{'user_name'}, 7);
+	_shrink_char(\$job->{'partition'}, 10);
+	_shrink_char(\$job->{'alloc_node'}, 11);
+	_shrink_char(\$job->{'nodes'}, 11);
+	_shrink_char(\$job->{'name'}, 10);
+
+	printf("\n%-7.7s %-7.7s %-5.5s %-10.10s %-11.11s %-11.11s %-10s %-12.12s",
+	       $job->{'job_id'}, $job->{'user_name'},
+	       _job_state_str($job->{'job_state'}),
+	       $job->{'partition'}, $job->{'alloc_node'}, $job->{'nodes'},
+	       $job->{'name'}, _hr_time($job->{'submit_time'}));
 }
 
 # Parse Command Line Arguments
@@ -128,17 +166,15 @@ my $line = 0;
 foreach my $job (@{$resp->{job_array}}) {
 	my $state = $job->{'job_state'};
 
-	$job->{'aWDuration'} = $job->{'statPSUtl'};
-
-	$job->{'allocNodeList'} = $job->{'nodes'} || "--";
 	$job->{'name'} = "Allocation" if !$job->{'name'};
+	$job->{'user_name'} = getpwuid($job->{'user_id'});
 
 	# Filter jobs according to options and arguments
 	if (@job_ids) {
 		next unless grep /^$job->{'job_id'}/, @job_ids;
 	}
 
-	print_job_full($job);
+	_print_job_brief($job, $line++);
 }
 
 exit 0;
