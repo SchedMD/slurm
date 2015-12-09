@@ -1943,3 +1943,14 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 
 	return rc;
 }
+
+
+extern void sacctmgr_initialize_g_tres_list(void)
+{
+	if (!g_tres_list) {
+		slurmdb_tres_cond_t tres_cond;
+		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
+		tres_cond.with_deleted = 1;
+		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
+	}
+}

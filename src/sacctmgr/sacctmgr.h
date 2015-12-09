@@ -337,6 +337,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
 extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	List wckey_list, char *user, char *name, char *cluster);
 
+extern void sacctmgr_initialize_g_tres_list(void);
 
 /* file_functions.c */
 extern int print_file_add_limits_to_line(char **line,

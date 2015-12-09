@@ -319,16 +319,6 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 	return set;
 }
 
-extern void initialize_tres_list(void)
-{
-	if (!g_tres_list) {
-		slurmdb_tres_cond_t tres_cond;
-		memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-		tres_cond.with_deleted = 1;
-		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-	}
-}
-
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				  char *type, char *value,
 				  int command_len, int option)
@@ -372,7 +362,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			set = 1;
 		}
 	} else if (!strncasecmp(type, "GrpCPUMins", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "GrpCPUMins") == SLURM_SUCCESS) {
@@ -386,7 +376,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCPURunMins", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "GrpCPURunMins") == SLURM_SUCCESS) {
@@ -399,7 +389,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpCpus", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "GrpCpus") == SLURM_SUCCESS) {
@@ -416,7 +406,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "GrpJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "GrpMemory", MAX(command_len, 4))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "GrpMemory") == SLURM_SUCCESS) {
@@ -429,7 +419,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpNodes", MAX(command_len, 4))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "GrpNodes") == SLURM_SUCCESS) {
@@ -447,7 +437,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "GrpSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "GrpTRES", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -458,7 +448,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpTRESMins", MAX(command_len, 8))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -469,7 +459,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpTRESRunMins", MAX(command_len, 8))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -490,7 +480,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		}
 	} else if (!strncasecmp(type, "MaxCPUMinsPerJob",
 				MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "MaxCPUMinsPerJob") == SLURM_SUCCESS) {
@@ -503,7 +493,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxCPURunMins", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "MaxCPURunMins") == SLURM_SUCCESS) {
@@ -516,7 +506,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxCpusPerJob", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "MaxCpusPerJob") == SLURM_SUCCESS) {
@@ -533,7 +523,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "MaxJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "MaxNodesPerJob", MAX(command_len, 4))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if (get_uint64(value, &tmp64,
 			       "MaxNodes") == SLURM_SUCCESS) {
@@ -550,7 +540,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "MaxTRESPerJob", MAX(command_len, 7))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -561,7 +551,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -573,7 +563,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		}
 	} else if (!strncasecmp(type, "MaxTRESMinsPerJob",
 				MAX(command_len, 8))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -584,7 +574,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxTRESRunMins", MAX(command_len, 8))) {
-		initialize_tres_list();
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
