@@ -104,6 +104,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with time limit not being set correctly from a QOS when a job
     requests no time limit.
  -- Various CLANG fixes.
+ -- In both sched/basic and backfill: If a job can not be started due to some
+    account/qos limit, then don't start other jobs which could delay jobs. The
+    old logic would skip the job and start other jobs, which could delay the
+    higher priority job.
 
 * Changes in Slurm 15.08.4
 ==========================
