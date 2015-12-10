@@ -1647,7 +1647,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
-			if (first_new == NULL);
+			if (first_new == NULL)
 				first_new = new_config_ptr;
 			/* Change weight for the given node */
 			new_config_ptr->weight      = weight;
@@ -1719,7 +1719,7 @@ static int _update_node_features(char *node_names, char *features)
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
-			if (first_new == NULL);
+			if (first_new == NULL)
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->feature);
 			if (features && features[0])
@@ -1793,7 +1793,7 @@ static int _update_node_gres(char *node_names, char *gres)
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
-			if (first_new == NULL);
+			if (first_new == NULL)
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->gres);
 			if (gres && gres[0])
