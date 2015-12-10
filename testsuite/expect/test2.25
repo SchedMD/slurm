@@ -179,7 +179,7 @@ if {[test_using_slurmdbd]} {
 	}
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
@@ -219,7 +219,7 @@ if {[test_using_slurmdbd]} {
 	mod_assoc_vals
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
@@ -260,7 +260,7 @@ if {[test_using_slurmdbd]} {
 
 	set match 0
 	set limit_match 0
-	spawn $bin_bash -c "exec $scontrol show assoc_mgr | $bin_grep Account=$test_acct -A1| $bin_grep UserName=$test_user -A1"
+	spawn $bin_bash -c "exec $scontrol show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
 	expect {
 		-re " Account=$test_acct" {
 			incr match
