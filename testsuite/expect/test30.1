@@ -76,6 +76,12 @@ if {[test_cray] || [test_alps]} {
 	exit $exit_code
 }
 
+if { [catch {exec which rpmbuild}]} {
+	send_user "Warning: This test requires rpmbuild to work.\n";
+	exit $exit_code
+}
+
+
 set timeout 1000
 exec $bin_rm -fr /tmp/slurm $tar_name /tmp/built_rpms
 spawn $bin_cp -L -R -v $src_dir /tmp/slurm
