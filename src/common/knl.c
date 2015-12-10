@@ -315,7 +315,7 @@ extern char *knl_mcdram_str(uint16_t mcdram_num)
 	}
 	if (mcdram_num & KNL_HYBRID) {
 		xstrfmtcat(mcdram_str, "%shybrid", sep);
-		sep = ",";
+//		sep = ",";	/* Remove to avoid CLANG error */
 	}
 
 	return mcdram_str;
@@ -347,7 +347,7 @@ extern char *knl_numa_str(uint16_t numa_num)
 	}
 	if (numa_num & KNL_QUAD) {
 		xstrfmtcat(numa_str, "%squad", sep);
-		sep = ",";
+//		sep = ",";	/* Remove to avoid CLANG error */
 	}
 
 	return numa_str;
