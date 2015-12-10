@@ -1373,6 +1373,49 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (!opt.nodelist) {
+		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			/* make sure the file being read in has a / in
+			   it to make sure it is a file in the
+			   valid_node_list function */
+			if (!strstr(opt.nodelist, "/")) {
+				char *add_slash = xstrdup("./");
+				xstrcat(add_slash, opt.nodelist);
+				xfree(opt.nodelist);
+				opt.nodelist = add_slash;
+			}
+			opt.distribution &= SLURM_DIST_STATE_FLAGS;
+			opt.distribution |= SLURM_DIST_ARBITRARY;
+			if (!_valid_node_list(&opt.nodelist)) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				exit(error_exit);
+			} else {
+				debug("loaded nodes (%s) from hostfile",
+				      opt.nodelist);
+			}
+		}
+	} else {
+		if (!_valid_node_list(&opt.nodelist))
+			exit(error_exit);
+	}
+
+	if (opt.nodelist) {
+		int hl_cnt;
+		hostlist_t hl = hostlist_create(opt.nodelist);
+		if (!hl) {
+			error("memory allocation failure");
+			exit(error_exit);
+		}
+		hostlist_uniq(hl);
+		hl_cnt = hostlist_count(hl);
+		if (opt.nodes_set)
+			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
+		else
+			opt.min_nodes = hl_cnt;
+	}
+
+
 	if (cluster_flags & CLUSTER_FLAG_BGQ)
 		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
 				      &opt.ntasks_per_node, &opt.ntasks_set,
@@ -1556,33 +1599,6 @@ static bool _opt_verify(void)
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */
-
-	if (!opt.nodelist) {
-		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
-			/* make sure the file being read in has a / in
-			   it to make sure it is a file in the
-			   valid_node_list function */
-			if (!strstr(opt.nodelist, "/")) {
-				char *add_slash = xstrdup("./");
-				xstrcat(add_slash, opt.nodelist);
-				xfree(opt.nodelist);
-				opt.nodelist = add_slash;
-			}
-			opt.distribution &= SLURM_DIST_STATE_FLAGS;
-			opt.distribution |= SLURM_DIST_ARBITRARY;
-			if (!_valid_node_list(&opt.nodelist)) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				exit(error_exit);
-			} else {
-				debug("loaded nodes (%s) from hostfile",
-				      opt.nodelist);
-			}
-		}
-	} else {
-		if (!_valid_node_list(&opt.nodelist))
-			exit(error_exit);
-	}
 
 	/* set up the proc and node counts based on the arbitrary list
 	   of nodes */

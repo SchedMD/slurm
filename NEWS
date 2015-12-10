@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
  -- Update LBNL Node Health Check (NHC) link on FAQ.
  -- Fix multifactor plugin to prevent slurmctld from getting segmentation fault
     should the tres_alloc_cnt be NULL.
+ -- sbatch/salloc - Move nodelist logic before the time min_nodes is used
+    so we can set it correctly before tasks are set.
 
 * Changes in Slurm 15.08.4
 ==========================
