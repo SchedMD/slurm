@@ -834,8 +834,6 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	gen_node_info->node_name = xstrdup(hostname);
 	if (getifaddrs(&if_array) == 0) {
 		for (if_rec = if_array; if_rec; if_rec = if_rec->ifa_next) {
-			if (!if_rec->ifa_addr->sa_data)
-				continue;
 #if !defined(__FreeBSD__)
 	   		if (if_rec->ifa_flags & IFF_LOOPBACK)
 				continue;

@@ -427,12 +427,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "GrpSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "GrpTRES", MAX(command_len, 7))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -443,12 +438,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpTRESMins", MAX(command_len, 8))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -459,12 +449,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "GrpTRESRunMins", MAX(command_len, 8))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -537,12 +522,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "MaxSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!strncasecmp(type, "MaxTRESPerJob", MAX(command_len, 7))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
+
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
@@ -552,12 +533,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
+
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
 			slurmdb_combine_tres_strings(
@@ -568,12 +545,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		}
 	} else if (!strncasecmp(type, "MaxTRESMinsPerJob",
 				MAX(command_len, 8))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {
@@ -584,12 +556,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			xfree(tmp_char);
 		}
 	} else if (!strncasecmp(type, "MaxTRESRunMins", MAX(command_len, 8))) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 
 		if ((tmp_char = slurmdb_format_tres_str(
 			     value, g_tres_list, 1))) {

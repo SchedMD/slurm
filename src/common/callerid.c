@@ -332,10 +332,6 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 		readdir_r(dirp, entryp, &result);
 		if (!result)
 			break;
-		/* This check is probably unnecessary due to the !result check
-		 * but better safe than sorry */
-		else if (!entryp->d_name)
-			continue;
 		/* We're only looking for /proc/[0-9]*  */
 		else if (!isdigit(entryp->d_name[0]))
 			continue;

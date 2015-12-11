@@ -1405,12 +1405,7 @@ extern int print_file_add_limits_to_line(char **line,
 		xstrfmtcat(*line, ":Fairshare=%u", assoc->shares_raw);
 
 	if (assoc->grp_tres_mins) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_mins, g_tres_list);
 		xstrfmtcat(*line, ":GrpTRESMins=%s", tmp_char);
@@ -1418,12 +1413,7 @@ extern int print_file_add_limits_to_line(char **line,
 	}
 
 	if (assoc->grp_tres_run_mins) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres_run_mins, g_tres_list);
 		xstrfmtcat(*line, ":GrpTRESRunMins=%s", tmp_char);
@@ -1431,12 +1421,7 @@ extern int print_file_add_limits_to_line(char **line,
 	}
 
 	if (assoc->grp_tres) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->grp_tres, g_tres_list);
 		xstrfmtcat(*line, ":GrpTRES=%s", tmp_char);
@@ -1453,12 +1438,7 @@ extern int print_file_add_limits_to_line(char **line,
 		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
 
 	if (assoc->max_tres_mins_pj) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_mins_pj, g_tres_list);
 		xstrfmtcat(*line, ":MaxTRESMinsPerJob=%s", tmp_char);
@@ -1466,12 +1446,7 @@ extern int print_file_add_limits_to_line(char **line,
 	}
 
 	if (assoc->max_tres_run_mins) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_run_mins, g_tres_list);
 		xstrfmtcat(*line, ":MaxTRESRunMins=%s", tmp_char);
@@ -1479,12 +1454,7 @@ extern int print_file_add_limits_to_line(char **line,
 	}
 
 	if (assoc->max_tres_pj) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pj, g_tres_list);
 		xstrfmtcat(*line, ":MaxTRESPerJob=%s", tmp_char);
@@ -1492,12 +1462,7 @@ extern int print_file_add_limits_to_line(char **line,
 	}
 
 	if (assoc->max_tres_pn) {
-		if (!g_tres_list) {
-			slurmdb_tres_cond_t tres_cond;
-			memset(&tres_cond, 0, sizeof(slurmdb_tres_cond_t));
-			tres_cond.with_deleted = 1;
-			g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
-		}
+		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			assoc->max_tres_pn, g_tres_list);
 		xstrfmtcat(*line, ":MaxTRESPerNode=%s", tmp_char);

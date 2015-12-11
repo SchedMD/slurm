@@ -828,7 +828,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid gres data for %s, Count does not match "
 			      "File value", p->name);
 		}
-		if ((tmp_uint64 < 0) || (tmp_uint64 >= NO_VAL)) {
+		if (tmp_uint64 >= NO_VAL64) {
 			fatal("Gres %s has invalid count value %"PRIu64,
 			      p->name, tmp_uint64);
 		}

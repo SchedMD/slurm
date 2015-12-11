@@ -1082,6 +1082,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	memset(tres_run_delta, 0, sizeof(tres_run_delta));
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
+			if (!job_ptr->tres_alloc_cnt[i])
+				continue;
 			tres_run_delta[i] = tres_time_delta *
 				job_ptr->tres_alloc_cnt[i];
 			tres_run_decay[i] = (long double)run_decay *

@@ -46,6 +46,9 @@ documents those changes that are of interest to users and administrators.
     to specific users or groups.
  -- Install the pmi2 unix sockets in slurmd spool directory instead of /tmp.
 
+* Changes in Slurm 15.08.6
+==========================
+
 * Changes in Slurm 15.08.5
 ==========================
  -- Prevent "scontrol update job" from updating jobs that have already finished.
@@ -108,6 +111,13 @@ documents those changes that are of interest to users and administrators.
     account/qos limit, then don't start other jobs which could delay jobs. The
     old logic would skip the job and start other jobs, which could delay the
     higher priority job.
+ -- select/cray: Prevent NHC from running more than once per job or step.
+ -- Fix fields not properly printed when adding an account through sacctmgr.
+ -- Update LBNL Node Health Check (NHC) link on FAQ.
+ -- Fix multifactor plugin to prevent slurmctld from getting segmentation fault
+    should the tres_alloc_cnt be NULL.
+ -- sbatch/salloc - Move nodelist logic before the time min_nodes is used
+    so we can set it correctly before tasks are set.
 
 * Changes in Slurm 15.08.4
 ==========================
