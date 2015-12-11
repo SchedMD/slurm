@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 15.08.6
+==========================
+
 * Changes in Slurm 15.08.5
 ==========================
  -- Prevent "scontrol update job" from updating jobs that have already finished.
