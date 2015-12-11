@@ -119,6 +119,11 @@ expect {
 set exec_cnt 0
 send "$srun -l --bcast=/tmp/test$test_id ./$file_in\r"
 expect {
+	-re "not supported" {
+		send_user "\nWARNING: srun --bcast option not supported on this system type (e.g. front-end)\n"
+		set exec_cnt $node_cnt
+		exp_continue
+	}
 	-re "($number): /tmp/test$test_id" {
 		incr exec_cnt
 		exp_continue

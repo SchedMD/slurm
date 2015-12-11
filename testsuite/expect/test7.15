@@ -83,7 +83,7 @@ expect {
 		}
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding"
+		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
 		set exit_code 1
 	}

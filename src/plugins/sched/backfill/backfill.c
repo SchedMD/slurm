@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  backfill.c - simple backfill scheduler plugin.
  *
- *  If a partition is does not have root only access and nodes are not shared
+ *  If a partition does not have root only access and nodes are not shared
  *  then raise the priority of pending jobs if doing so does not adversely
  *  effect the expected initiation of any higher priority job. We do not alter
  *  a job's required or excluded node list, so this is a conservative
@@ -164,7 +164,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
 static int  _yield_locks(int usec);
 
-/* Log recousrces to be allocated to a pending job */
+/* Log resources to be allocated to a pending job */
 static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
 			    bitstr_t *avail_bitmap)
 {
@@ -713,7 +713,7 @@ extern void *backfill_agent(void *args)
 	return NULL;
 }
 
-/* Clear the start_time for all pending jobs. This is used to insure that a job which
+/* Clear the start_time for all pending jobs. This is used to ensure that a job which
  * can run in multiple partitions has its start_time set to the smallest
  * value in any of those partitions. */
 static void _clear_job_start_times(void)

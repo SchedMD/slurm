@@ -1907,6 +1907,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
 	revoked = slurm_cred_revoked(conf->vctx, req->cred);
+	if (revoked)
+		_launch_complete_rm(req->job_id);
 	if (revoked && _is_batch_job_finished(req->job_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job sucessfully launched and do

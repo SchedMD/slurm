@@ -6443,7 +6443,7 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 		fd = open(file_name, 0);
 	}
 
-	/* Standard file location, version 14.11 and later */
+	/* Standard file location, versions 15.08 and 14.11 */
 	if (fd < 0) {
 		hash = job_ptr->job_id % 10;
 		sprintf(job_dir, "/hash.%d/job.%u/environment",
@@ -6454,7 +6454,14 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 		fd = open(file_name, 0);
 	}
 
-	/* Standard file location, version 14.3 and earlier */
+	/* Standard file location, version 14.3 and earlier
+	 * NOTE: Cannot remove this backwards compatibility as there is no
+	 * process to migrate jobs to the newer directory structure, and
+	 * sites may be jumping through multiple version to bring their
+	 * installation to current. E.g., going from v2.6 -> 14.03 -> 16.05
+	 * would update state files correctly, but leave pending jobs in
+	 * the old directory format.
+	 */
 	if (fd < 0) {
 		xfree(file_name);
 		file_name = slurm_get_state_save_location();
@@ -6502,7 +6509,7 @@ char *get_job_script(struct job_record *job_ptr)
 		fd = open(file_name, 0);
 	}
 
-	/* Standard file location, version 14.11 and later */
+	/* Standard file location, versions 15.08 and 14.11 */
 	if (fd < 0) {
 		hash = job_ptr->job_id % 10;
 		sprintf(job_dir, "/hash.%d/job.%u/script",
@@ -6513,7 +6520,14 @@ char *get_job_script(struct job_record *job_ptr)
 		fd = open(file_name, 0);
 	}
 
-	/* Standard file location, version 14.3 and earlier */
+	/* Standard file location, version 14.3 and earlier
+	 * NOTE: Cannot remove this backwards compatibility as there is no
+	 * process to migrate jobs to the newer directory structure, and
+	 * sites may be jumping through multiple version to bring their
+	 * installation to current. E.g., going from v2.6 -> 14.03 -> 16.05
+	 * would update state files correctly, but leave pending jobs in
+	 * the old directory format.
+	 */
 	if (fd < 0) {
 		xfree(file_name);
 		file_name = slurm_get_state_save_location();
