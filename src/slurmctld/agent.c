@@ -110,7 +110,8 @@ typedef enum {
 	DSH_ACTIVE,     /* Request in progress */
 	DSH_DONE,       /* Request completed normally */
 	DSH_NO_RESP,    /* Request timed out */
-	DSH_FAILED      /* Request resulted in error */
+	DSH_FAILED,     /* Request resulted in error */
+	DSH_DUP_JOBID	/* Request resulted in duplicate job ID error */
 } state_t;
 
 typedef struct thd_complete {
@@ -539,6 +540,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
 		thd_comp->retry_cnt++;
 		break;
 	case DSH_FAILED:
+	case DSH_DUP_JOBID:
 		thd_comp->fail_cnt++;
 		break;
 	}
@@ -739,6 +741,17 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Prolog/Epilog failure on nodes %s%s",
+				      node_names, down_msg);
+				break;
+			case DSH_DUP_JOBID:
+#ifdef HAVE_FRONT_END
+				down_msg = "";
+#else
+				drain_nodes(node_names,
+					    "Duplicate jobid", getuid());
+				down_msg = ", set to state DRAIN";
+#endif
+				error("Duplicate jobid on nodes %s%s",
 				      node_names, down_msg);
 				break;
 			case DSH_DONE:
@@ -1012,8 +1025,10 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_FAILED;
 			break;
 		case ESLURMD_PROLOG_FAILED:
-		case ESLURM_DUPLICATE_JOB_ID:
 			thread_state = DSH_FAILED;
+			break;
+		case ESLURM_DUPLICATE_JOB_ID:
+			thread_state = DSH_DUP_JOBID;
 			break;
 		case ESLURM_INVALID_JOB_ID:
 			/* Not indicative of a real error */
