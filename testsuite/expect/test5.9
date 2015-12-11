@@ -162,10 +162,15 @@ if {$got_node != 1} {
 	exit 0
 }
 
+set socket_cnt 1
 spawn $scontrol show node $test_node
 expect {
 	-re "CoresPerSocket=($number)" {
 		set sq_format(ntpersocket) $expect_out(1,string)
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		set socket_cnt $expect_out(1,string)
 		exp_continue
 	}
 	-re "ThreadsPerCore=($number)" {
@@ -179,6 +184,11 @@ expect {
 	eof {
 		wait
 	}
+}
+
+set core_cnt [expr $socket_cnt * $sq_format(ntpersocket)]
+if {$sq_format(ntpernode) > $core_cnt} {
+	set sq_format(ntpernode) $core_cnt
 }
 
 if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
