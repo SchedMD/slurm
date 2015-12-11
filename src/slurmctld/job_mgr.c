@@ -6453,32 +6453,46 @@ static int _write_data_to_file(char *file_name, char *data)
  */
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
-	char *file_name, **environment = NULL;
+	char *file_name, *file_name2, **environment = NULL;
 	int hash = job_ptr->job_id % 10;
-	int cc;
 
+	/* Read state from version 14.11 or newer location */
 	file_name = slurm_get_state_save_location();
 	xstrfmtcat(file_name, "/hash.%d/job.%u/environment",
 		   hash, job_ptr->job_id);
 
-	if (_read_data_array_from_file(file_name, &environment, env_size,
-				       job_ptr)) {
-		/* Read state from version 14.03 or earlier */
+	if (_read_data_array_from_file(file_name, &environment,
+					env_size, job_ptr) == SLURM_SUCCESS) {
 		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		xstrfmtcat(file_name, "/job.%u/environment", job_ptr->job_id);
-		cc = _read_data_array_from_file(file_name,
-						&environment,
-						env_size,
-						job_ptr);
-		if (cc < 0) {
-			xfree(file_name);
-			return NULL;
-		}
+		return environment;
 	}
 
+	/* Fall back to try to read from version 14.03 or earlier format.
+	 * NOTE: Cannot remove this backwards compatibility as there is no
+	 * process to migrate jobs to the newer directory structure, and
+	 * sites may be jumping through multiple version to bring their
+	 * installation to current. E.g., going from v2.6 -> 14.03 -> 16.05
+	 * would update state files correctly, but leave pending jobs in
+	 * the old directory format.
+	 */
+	file_name2 = slurm_get_state_save_location();
+	xstrfmtcat(file_name2, "/job.%u/environment", job_ptr->job_id);
+
+	if (_read_data_array_from_file(file_name2, &environment,
+					env_size, job_ptr) == SLURM_SUCCESS) {
+		debug("Found job environment in old directory format as %s",
+		      file_name2);
+		xfree(file_name);
+		xfree(file_name2);
+		return environment;
+	}
+
+	error("Error reading job environment from %s or %s",
+	      file_name, file_name2);
+
 	xfree(file_name);
-	return environment;
+	xfree(file_name2);
+	return NULL;
 }
 
 /*
@@ -6488,28 +6502,46 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  */
 char *get_job_script(struct job_record *job_ptr)
 {
-	char *file_name, job_dir[40], *script = NULL;
+	char *file_name, *file_name2, *script = NULL;
 	int hash;
 
 	if (!job_ptr->batch_flag)
 		return NULL;
 
+	/* Read state from version 14.11 or newer location */
 	hash = job_ptr->job_id % 10;
 	file_name = slurm_get_state_save_location();
-	sprintf(job_dir, "/hash.%d/job.%u/script", hash, job_ptr->job_id);
-	xstrcat(file_name, job_dir);
+	xstrfmtcat(file_name, "/hash.%d/job.%u/script", hash, job_ptr->job_id);
 
-	if (_read_data_from_file(file_name, &script)) {
-		/* Read version 14.03 or earlier state format */
+	if (_read_data_from_file(file_name, &script) == SLURM_SUCCESS) {
 		xfree(file_name);
-		file_name = slurm_get_state_save_location();
-		sprintf(job_dir, "/job.%u/script", job_ptr->job_id);
-		xstrcat(file_name, job_dir);
-		(void) _read_data_from_file(file_name, &script);
+		return script;
 	}
 
+	/* Fall back to try to read from version 14.03 or earlier format.
+	 * NOTE: Cannot remove this backwards compatibility as there is no
+	 * process to migrate jobs to the newer directory structure, and
+	 * sites may be jumping through multiple version to bring their
+	 * installation to current. E.g., going from v2.6 -> 14.03 -> 16.05
+	 * would update state files correctly, but leave pending jobs in
+	 * the old directory format.
+	 */
+	file_name2 = slurm_get_state_save_location();
+	xstrfmtcat(file_name2, "/job.%u/script", job_ptr->job_id);
+
+	if (_read_data_from_file(file_name2, &script) == SLURM_SUCCESS) {
+		debug("Found job script in old directory format as %s",
+		      file_name2);
+		xfree(file_name);
+		xfree(file_name2);
+		return script;
+	}
+
+	error("Error reading job script from %s or %s", file_name, file_name2);
+
 	xfree(file_name);
-	return script;
+	xfree(file_name2);
+	return NULL;
 }
 
 /*
@@ -6538,7 +6570,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 
 	fd = open(file_name, 0);
 	if (fd < 0) {
-		error("Error opening file %s, %m", file_name);
+		debug("Error opening file %s, %m", file_name);
 		return -1;
 	}
 
@@ -6666,7 +6698,7 @@ static int _read_data_from_file(char *file_name, char **data)
 
 	fd = open(file_name, 0);
 	if (fd < 0) {
-		error("Error opening file %s, %m", file_name);
+		debug("Error opening file %s, %m", file_name);
 		return -1;
 	}
 

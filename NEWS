@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     job ID from slurmd's record of active jobs in order to avoid generating a
     duplicate job ID error when launched for the second time (which would
     drain the node).
+ -- Cleanup messages when handling job script and environment variables in
+    older directory structure formats.
 
 * Changes in Slurm 15.08.5
 ==========================
