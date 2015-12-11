@@ -954,7 +954,6 @@ static char *_next_line(const void *buf, int size, void **state)
 {
 	char *line;
 	char *current, *ptr;
-	int len;
 
 	if (*state == NULL) /* initial state */
 		*state = (void *)buf;
@@ -966,8 +965,7 @@ static char *_next_line(const void *buf, int size, void **state)
 	while ((*ptr != '\n') && (ptr < ((char *)buf+size)))
 		ptr++;
 
-	len = MIN((ptr-current), 1024);
-	line = xstrndup(current, len);
+	line = xstrndup(current, ptr-current);
 
 	/*
 	 *  Advance state past newline
@@ -992,11 +990,17 @@ static char *
 _get_argument(const char *file, int lineno, const char *line, int *skipped)
 {
 	const char *ptr;
-	char argument[BUFSIZ];
+	char *argument;
 	char q_char = '\0';
 	bool escape_flag = false;
 	bool quoted = false;
 	int i;
+
+    argument = malloc(strlen(line) + 1);
+    if (argument == NULL) {
+		fatal("%s: line %d: Could not allocate memory for argument in line [%s]",
+		      file, lineno, q_char, line);
+    }
 
 	ptr = line;
 	*skipped = 0;
