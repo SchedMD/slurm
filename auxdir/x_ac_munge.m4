@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_MUNGE], [
   AC_ARG_WITH(
     [munge],
     AS_HELP_STRING(--with-munge=PATH,Specify path to munge installation),
-    [_x_ac_munge_dirs="$withval $_x_ac_munge_dirs"])
+    [_x_ac_munge_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for munge installation],

@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_PMIX],
   AC_ARG_WITH(
     [pmix],
     AS_HELP_STRING(--with-pmix=PATH,Specify path to pmix installation),
-    [_x_ac_pmix_dirs="$withval $_x_ac_pmix_dirs"])
+    [_x_ac_pmix_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for pmix installation],

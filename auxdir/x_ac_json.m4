@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_JSON], [
   AC_ARG_WITH(
     [json],
     AS_HELP_STRING(--with-json=PATH,Specify path to json-c installation),
-    [x_ac_json_dirs="$withval $x_ac_json_dirs"])
+    [x_ac_json_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for json installation],

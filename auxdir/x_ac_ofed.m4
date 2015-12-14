@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_OFED],
   AC_ARG_WITH(
     [ofed],
     AS_HELP_STRING(--with-ofed=PATH,Specify path to ofed installation),
-    [_x_ac_ofed_dirs="$withval $_x_ac_ofed_dirs"])
+    [_x_ac_ofed_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for ofed installation],
