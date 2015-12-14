@@ -2036,21 +2036,20 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
  */
 extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
 {
-	unsigned char buf[HOSTENT_SIZE];
-	struct hostent *hptr;
+	char hostname[NI_MAXHOST];
 	unsigned long addr = inet_addr(node_addr);
 	char *start_name, *ret_name = NULL, *dot_ptr;
 
-	if (!(hptr = get_host_by_addr((char *)&addr, sizeof(addr), AF_INET,
-				      buf, sizeof(buf), NULL))) {
-		error("No node found with addr %s", node_addr);
+	if (get_name_info((struct sockaddr *)&addr,
+			  sizeof(addr), hostname) != 0) {
+		error("%s: No node found with addr %s", __func__, node_addr);
 		return NULL;
 	}
 
-	if (!strcmp(hptr->h_name, "localhost")) {
+	if (!strcmp(hostname, "localhost")) {
 		start_name = xshort_hostname();
 	} else {
-		start_name = xstrdup(hptr->h_name);
+		start_name = xstrdup(hostname);
 		dot_ptr = strchr(start_name, '.');
 		if (dot_ptr)
 			dot_ptr[0] = '\0';

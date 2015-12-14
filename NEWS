@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
     to specific users or groups.
  -- Install the pmi2 unix sockets in slurmd spool directory instead of /tmp.
+ -- Implement the getaddrinfo and getnameinfo instead of gethostbyaddr and
+    gethostbyname.
 
 * Changes in Slurm 15.08.6
 ==========================
