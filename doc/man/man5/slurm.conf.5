@@ -1666,6 +1666,8 @@ not recommended.
 .TP
 \fBREQUEUE\fR
 preempts jobs by requeuing them (if possible) or canceling them.
+For jobs to be requeued they must have the --requeue sbatch option set
+or the cluster wide JobRequeue parameter in slurm.conf must be set to one.
 .TP
 \fBSUSPEND\fR
 If PreemptType=preempt/partition_prio is configured then suspend and
@@ -2842,7 +2844,7 @@ use the least loaded nodes in selected partitions.
 .TP
 \fBCR_Pack_Nodes\fR
 If a job allocation contains more resources than will be used for launching
-tasks (e.g. if whole nodes are allocated to a job), then rather than 
+tasks (e.g. if whole nodes are allocated to a job), then rather than
 distributing a job's tasks evenly across it's allocated nodes, pack them as
 tightly as possible on these nodes.
 For example, consider a job allocation containing two \fBentire\fR nodes with
