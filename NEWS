@@ -60,6 +60,9 @@ documents those changes that are of interest to users and administrators.
     older directory structure formats.
  -- Prevent triggering gang scheduling within a partition if configured with
     PreemptType=partition_prio and PreemptMode=suspend,gang.
+ -- Decrease parallelism in job cancel request to prevent denial of service
+    when cancelling huge numbers of jobs.
+ -- If all ephemeral ports are in use, try using other port numbers.
 
 * Changes in Slurm 15.08.5
 ==========================

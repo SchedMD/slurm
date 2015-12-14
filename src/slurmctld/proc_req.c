@@ -5442,6 +5442,7 @@ extern void free_rpc_stats(void)
 inline static void
 _slurm_rpc_kill_job2(slurm_msg_t *msg)
 {
+	static int active_rpc_cnt = 0;
 	DEF_TIMERS;
 	job_step_kill_msg_t *kill;
 	slurmctld_lock_t lock = {READ_LOCK, WRITE_LOCK,
@@ -5456,13 +5457,16 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 	info("%s: REQUEST_KILL_JOB job %s uid %d",
 	     __func__, kill->sjob_id, uid);
 
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(lock);
-
 	cc = job_str_signal(kill->sjob_id,
 			    kill->signal,
 			    kill->flags,
 			    uid,
 			    0);
+	unlock_slurmctld(lock);
+	_throttle_fini(&active_rpc_cnt);
+
 	if (cc == ESLURM_ALREADY_DONE) {
 		debug2("%s: job_str_signal() job %s sig %d returned %s",
 		       __func__, kill->sjob_id,
@@ -5477,7 +5481,6 @@ _slurm_rpc_kill_job2(slurm_msg_t *msg)
 
 	slurm_send_rc_msg(msg, cc);
 
-	unlock_slurmctld(lock);
 	END_TIMER2("_slurm_rpc_kill_job2");
 }
 
