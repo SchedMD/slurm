@@ -178,6 +178,7 @@ uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 bool     backfill_busy_nodes  = false;
 bool     have_dragonfly       = false;
 bool     pack_serial_at_end   = false;
+bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 uint64_t select_debug_flags   = 0;
 uint16_t select_fast_schedule = 0;
@@ -2025,11 +2026,15 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	xfree(sched_params);
 
 	preempt_type = slurm_get_preempt_type();
-	if (preempt_type && strstr(preempt_type, "qos"))
-		preempt_by_qos = true;
-	else
-		preempt_by_qos = false;
-	xfree(preempt_type);
+	preempt_by_part = false;
+	preempt_by_qos = false;
+	if (preempt_type) {
+		if (strstr(preempt_type, "partition"))
+			preempt_by_part = true;
+		if (strstr(preempt_type, "qos"))
+			preempt_by_qos = true;
+		xfree(preempt_type);
+	}
 
 	/* initial global core data structures */
 	select_state_initializing = true;

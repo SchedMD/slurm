@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     drain the node).
  -- Cleanup messages when handling job script and environment variables in
     older directory structure formats.
+ -- Prevent triggering gang scheduling within a partition if configured with
+    PreemptType=partition_prio and PreemptMode=suspend,gang.
 
 * Changes in Slurm 15.08.5
 ==========================

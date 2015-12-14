@@ -1688,6 +1688,8 @@ not recommended.
 .TP
 \fBREQUEUE\fR
 preempts jobs by requeuing them (if possible) or canceling them.
+For jobs to be requeued they must have the --requeue sbatch option set
+or the cluster wide JobRequeue parameter in slurm.conf must be set to one.
 .TP
 \fBSUSPEND\fR
 If PreemptType=preempt/partition_prio is configured then suspend and
