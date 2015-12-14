@@ -70,7 +70,7 @@
 #include "src/scancel/scancel.h"
 
 #define MAX_CANCEL_RETRY 10
-#define MAX_THREADS 20
+#define MAX_THREADS 2
 
 
 static int   _cancel_jobs (int filter_cnt);
