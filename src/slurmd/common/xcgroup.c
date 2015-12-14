@@ -218,12 +218,11 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 	}
 
 #if defined(__FreeBSD__)
-	if (mount("cgroup", cgns->mnt_point,
-		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
+	#define mount_group mount("cgroup", cgns->mnt_point, MS_NOSUID|MS_NOEXEC|MS_NODEV, options)
 #else
-	if (mount("cgroup", cgns->mnt_point, "cgroup",
-		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
+	#define mount_group mount("cgroup", cgns->mnt_point, "cgroup", MS_NOSUID|MS_NOEXEC|MS_NODEV, options)
 #endif
+	if (mount_group)
 		return XCGROUP_ERROR;
 	else {
 		/* FIXME: this only gets set when we aren't mounted at
