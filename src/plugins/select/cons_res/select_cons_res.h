@@ -109,6 +109,7 @@ struct node_use_record {
 extern bool     backfill_busy_nodes;
 extern bool     have_dragonfly;
 extern bool     pack_serial_at_end;
+extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
 extern uint64_t select_debug_flags;
 extern uint16_t select_fast_schedule;

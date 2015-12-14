@@ -3075,36 +3075,44 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_ERROR;	/* CLANG false positive */
 	}
 
-	/* remove existing allocations (jobs) from higher-priority partitions
-	 * from avail_cores */
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("cons_res: cr_job_test: looking for higher-priority or "
-		     "PREEMPT_MODE_OFF part's to remove from avail_cores");
-	}
-
-	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if ((p_ptr->part_ptr->priority <= jp_ptr->part_ptr->priority) &&
-		    (p_ptr->part_ptr->preempt_mode != PREEMPT_MODE_OFF)) {
-			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-				info("cons_res: cr_job_test: continuing on "
-				     "part: %s", p_ptr->part_ptr->name);
-			}
-			continue;
+	if (preempt_by_part) {
+		/* Remove from avail_cores resources allocated to jobs which
+		 * this job can not preempt */
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			info("cons_res: cr_job_test: looking for "
+			     "higher-priority or PREEMPT_MODE_OFF part's to "
+			     "remove from avail_cores");
 		}
-		if (!p_ptr->row)
-			continue;
-		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!p_ptr->row[i].row_bitmap)
+
+		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+			if ((p_ptr->part_ptr->priority <
+			     jp_ptr->part_ptr->priority) &&
+			    (p_ptr->part_ptr->preempt_mode !=
+			     PREEMPT_MODE_OFF)) {
+				if (select_debug_flags &
+				    DEBUG_FLAG_SELECT_TYPE) {
+					info("cons_res: cr_job_test: "
+					     "continuing on part: %s",
+					     p_ptr->part_ptr->name);
+				}
 				continue;
-			bit_copybits(tmpcore, p_ptr->row[i].row_bitmap);
-			bit_not(tmpcore); /* set bits now "free" resources */
-			bit_and(free_cores, tmpcore);
+			}
+			if (!p_ptr->row)
+				continue;
+			for (i = 0; i < p_ptr->num_rows; i++) {
+				if (!p_ptr->row[i].row_bitmap)
+					continue;
+				bit_copybits(tmpcore, p_ptr->row[i].row_bitmap);
+				bit_not(tmpcore); /* add to "free" resources */
+				bit_and(free_cores, tmpcore);
+			}
 		}
 	}
 	if (job_ptr->details->whole_node == 1)
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 	/* make these changes permanent */
 	bit_copybits(avail_cores, free_cores);
+
 	cpu_count = _select_nodes(job_ptr, min_nodes, max_nodes, req_nodes,
 				  node_bitmap, cr_node_cnt, free_cores,
 				  node_usage, cr_type, test_only,
