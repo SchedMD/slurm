@@ -18,7 +18,7 @@ AC_DEFUN([X_AC_HWLOC],
   AC_ARG_WITH(
     [hwloc],
     AS_HELP_STRING(--with-hwloc=PATH,Specify path to hwloc installation),
-    [_x_ac_hwloc_dirs="$withval $_x_ac_hwloc_dirs"])
+    [_x_ac_hwloc_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for hwloc installation],

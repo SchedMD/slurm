@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_BLCR], [
   AC_ARG_WITH(
     [blcr],
     AS_HELP_STRING(--with-blcr=PATH,Specify path to BLCR installation),
-    [_x_ac_blcr_dirs="$withval $_x_ac_blcr_dirs"])
+    [_x_ac_blcr_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for blcr installation],

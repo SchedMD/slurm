@@ -18,7 +18,7 @@ AC_DEFUN([X_AC_NETLOC],
   AC_ARG_WITH(
     [netloc],
     AS_HELP_STRING(--with-netloc=PATH,Specify path to netloc installation),
-    [_x_ac_netloc_dirs="$withval $_x_ac_netloc_dirs"])
+    [_x_ac_netloc_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for netloc installation],
