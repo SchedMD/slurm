@@ -2715,17 +2715,17 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
 {
 	slurm_fd_t cc;
 	slurm_addr_t addr;
-	int cnt;
+	int i;
 
-	cnt = 0;
-eagain:
 	slurm_setup_sockaddr(&addr, port);
 	cc = slurm_init_msg_engine(&addr);
-	if (cc < 0 && port == 0) {
-		++cnt;
-		if (cnt <= 5) {
-			usleep(5000);
-			goto eagain;
+	if ((cc < 0) && (port == 0) && (errno == EADDRINUSE)) {
+		/* All ephemeral ports are in use, test other ports */
+		for (i = 10001; i < 65536; i++) {
+			slurm_setup_sockaddr(&addr, i);
+			cc = slurm_init_msg_engine(&addr);
+			if (cc >= 0)
+				break;
 		}
 	}
 	return cc;
