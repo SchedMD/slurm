@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_FREEIPMI],
   AC_ARG_WITH(
     [freeipmi],
     AS_HELP_STRING(--with-freeipmi=PATH,Specify path to freeipmi installation),
-    [_x_ac_freeipmi_dirs="$withval $_x_ac_freeipmi_dirs"])
+    [_x_ac_freeipmi_dirs="$withval"])
 
   AC_CACHE_CHECK(
     [for freeipmi installation],

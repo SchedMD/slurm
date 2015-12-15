@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_RRDTOOL],
   AC_ARG_WITH([rrdtool],
     AS_HELP_STRING(--with-rrdtool=PATH,
       Specify path to rrdtool-devel installation),
-    [_x_ac_rrdtool_dirs="$withval $_x_ac_rrdtool_dirs"],
+    [_x_ac_rrdtool_dirs="$withval"],
     [with_rrdtool=check])
 
 #  echo with rrdtool $with_rrdtool
