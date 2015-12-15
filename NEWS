@@ -19,6 +19,12 @@ documents those changes that are of interest to users and administrators.
  -- Revert way lib lua is handled when doing a dlopen, fixing a regression in
     15.08.5.
  -- Set the debug level of the rmdir message in xcgroup_delete() to debug2.
+ -- Fix the qstat wrapper when user is removed from the system but still
+    has running jobs.
+ -- Log the request to terminate a job at info level if DebugFlags includes
+    the Steps keyword.
+ -- Fix potential memory corruption in _slurm_rpc_epilog_complete as well as
+    _slurm_rpc_complete_job_allocation.
 
 * Changes in Slurm 15.08.5
 ==========================
@@ -673,6 +679,12 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.11
 ===========================
  -- Fix systemd's slurmd service from killing slurmstepds on shutdown.
+ -- Fix the qstat wrapper when user is removed from the system but still
+    has running jobs.
+ -- Log the request to terminate a job at info level if DebugFlags includes
+    the Steps keyword.
+ -- Fix potential memory corruption in _slurm_rpc_epilog_complete as well as
+    _slurm_rpc_complete_job_allocation.
 
 * Changes in Slurm 14.11.10
 ===========================
