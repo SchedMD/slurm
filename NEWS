@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- Install the pmi2 unix sockets in slurmd spool directory instead of /tmp.
  -- Implement the getaddrinfo and getnameinfo instead of gethostbyaddr and
     gethostbyname.
+ -- Finished PMIx implementation.
+ -- Implemented the --without=package option for configure.
 
 * Changes in Slurm 15.08.6
 ==========================
