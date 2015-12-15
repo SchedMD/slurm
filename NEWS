@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     gethostbyname.
  -- Finished PMIx implementation.
  -- Implemented the --without=package option for configure.
+ -- Fix sshare to show each individual cluster with -M,--clusters option.
 
 * Changes in Slurm 15.08.6
 ==========================

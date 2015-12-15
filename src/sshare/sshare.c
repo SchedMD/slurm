@@ -49,6 +49,8 @@
 static int      _get_info(shares_request_msg_t *shares_req,
 			  shares_response_msg_t **shares_resp);
 static int      _addto_name_char_list(List char_list, char *names, bool gid);
+static int 	_single_cluster(shares_request_msg_t *req_msg);
+static int 	_multi_cluster(shares_request_msg_t *req_msg);
 static char *   _convert_to_name(int id, bool gid);
 static void     _print_version( void );
 static void	_usage(void);
@@ -59,17 +61,16 @@ int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of -v options */
 uint32_t my_uid = 0;
 List clusters = NULL;
+uint16_t options = 0;
 
 int main (int argc, char *argv[])
 {
-	int error_code = SLURM_SUCCESS, opt_char;
+	int opt_char;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	shares_request_msg_t req_msg;
-	shares_response_msg_t *resp_msg = NULL;
 	char *temp = NULL;
 	int option_index;
 	bool all_users = 0;
-	uint16_t options = 0;
 
 	static struct option long_options[] = {
 		{"accounts", 1, 0, 'A'},
@@ -239,22 +240,51 @@ int main (int argc, char *argv[])
 
 	}
 
-	error_code = _get_info(&req_msg, &resp_msg);
-
-	FREE_NULL_LIST(req_msg.acct_list);
-	FREE_NULL_LIST(req_msg.user_list);
-
-	if (error_code) {
-		slurm_perror("Couldn't get shares from controller");
-		exit(error_code);
-	}
-
-	/* do stuff with it */
-	process(resp_msg, options);
-
-	slurm_free_shares_response_msg(resp_msg);
+	if (clusters)
+		exit_code = _multi_cluster(&req_msg);
+	else
+		exit_code = _single_cluster(&req_msg);
 
 	exit(exit_code);
+}
+
+
+static int _single_cluster(shares_request_msg_t *req_msg)
+{
+	int rc = SLURM_SUCCESS;
+	shares_response_msg_t *resp_msg = NULL;
+
+	rc = _get_info(req_msg, &resp_msg);
+	if (rc) {
+		slurm_perror("Couldn't get shares from controller");
+		return rc;
+	}
+
+	process(resp_msg, options);
+	slurm_free_shares_response_msg(resp_msg);
+
+	return rc;
+}
+
+static int _multi_cluster(shares_request_msg_t *req_msg)
+{
+	ListIterator itr;
+	bool first = true;
+	int rc = 0, rc2;
+
+	itr = list_iterator_create(clusters);
+	while ((working_cluster_rec = list_next(itr))) {
+		if (first)
+			first = false;
+		else
+			printf("\n");
+		printf("CLUSTER: %s\n", working_cluster_rec->name);
+		rc2 = _single_cluster(req_msg);
+		rc  = MAX(rc, rc2);
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
 }
 
 static int _get_info(shares_request_msg_t *shares_req,
