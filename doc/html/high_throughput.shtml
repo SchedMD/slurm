@@ -54,6 +54,11 @@ of aproximately 180 seconds and is generally satisfactory.
 Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 128. The value should be raised substantially to support bursts of request.
 For example, to support a burst of 1024 requests, set somaxconn to 1024.</li>
+<li><b>/proc/sys/net/ipv4/ip_local_port_range</b>:
+Identify the ephermeral ports available, which are used for many Slurm
+communcations. The value may be raised to support a high volume of communcations.
+For example, write the value "32768 65535" into the ip_local_port_range file
+in order to make that range of ports available.</li>
 </ul>
 
 <p>The transmit queue length (<b>txqueuelen</b>) may also need to be modified
@@ -206,6 +211,6 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeSuspendAfter</b>=1month</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 15 December 2015</p>
 
 <!--#include virtual="footer.txt"-->
