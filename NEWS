@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Decrease parallelism in job cancel request to prevent denial of service
     when cancelling huge numbers of jobs.
  -- If all ephemeral ports are in use, try using other port numbers.
+ -- Revert way lib lua is handled when doing a dlopen, fixing a regression in
+    15.08.5.
 
 * Changes in Slurm 15.08.5
 ==========================

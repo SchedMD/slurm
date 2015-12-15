@@ -42,33 +42,19 @@
  */
 int xlua_dlopen(void)
 {
-	char *lib1;
-	char *lib2;
-	char *lib3;
-
-#ifdef HAVE_LUA_5_2
-	lib1 = "liblua-5.2.so";
-	lib2 = "liblua5.2.so";
-	lib3 = "liblua5.2.so.0";
-#elif HAVE_LUA_5_1
-	lib1 = "liblua-5.1.so";
-	lib2 = "liblua5.1.so";
-	lib3 = "liblua5.1.so.0";
-#else
-	error("%s: Not compiled with lua support!  Please install a lua dev package.",
-	      __func__);
-	return SLURM_ERROR;
-#endif
 	/*
 	 *  Need to dlopen() liblua.so with RTLD_GLOBAL in order to
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (dlopen(lib1, RTLD_NOW | RTLD_GLOBAL) ||
-	    dlopen(lib2, RTLD_NOW | RTLD_GLOBAL) ||
-	    dlopen(lib3, RTLD_NOW | RTLD_GLOBAL))
-		return SLURM_SUCCESS;
-
-	error("Failed to open liblua.so: %s", dlerror());
-	return SLURM_ERROR;
+	if (!dlopen("liblua.so",       RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua-5.2.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.2.so",    RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.2.so.0",  RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua-5.1.so",   RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.1.so",    RTLD_NOW | RTLD_GLOBAL) &&
+	    !dlopen("liblua5.1.so.0",  RTLD_NOW | RTLD_GLOBAL)) {
+		return error("Failed to open liblua.so: %s", dlerror());
+	}
+	return SLURM_SUCCESS;
 }
