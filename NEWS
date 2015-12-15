@@ -66,6 +66,24 @@ documents those changes that are of interest to users and administrators.
  -- Decrease parallelism in job cancel request to prevent denial of service
     when cancelling huge numbers of jobs.
  -- If all ephemeral ports are in use, try using other port numbers.
+ -- Revert way lib lua is handled when doing a dlopen, fixing a regression in
+    15.08.5.
+ -- Set the debug level of the rmdir message in xcgroup_delete() to debug2.
+ -- Fix the qstat wrapper when user is removed from the system but still
+    has running jobs.
+ -- Log the request to terminate a job at info level if DebugFlags includes
+    the Steps keyword.
+ -- Fix potential memory corruption in _slurm_rpc_epilog_complete as well as
+    _slurm_rpc_complete_job_allocation.
+ -- Fix cosmetic display of AccountingStorageEnforce option "nosteps" when
+    in use.
+ -- If a job can never be started due to unsatisfied job dependencies, report
+    the full original job dependency specification rather than the dependencies
+    remaining to be satisfied (typically NULL).
+ -- Refactor logic to synchronize active bach jobs and their script/environment
+    files, reducing overhead dramatically for large numbers of active jobs.
+ -- Avoid hard-link/copy of script/environment files for job arrays. Use the
+    master job record file for all tasks of the job array.
 
 * Changes in Slurm 15.08.5
 ==========================
@@ -720,6 +738,12 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.11
 ===========================
  -- Fix systemd's slurmd service from killing slurmstepds on shutdown.
+ -- Fix the qstat wrapper when user is removed from the system but still
+    has running jobs.
+ -- Log the request to terminate a job at info level if DebugFlags includes
+    the Steps keyword.
+ -- Fix potential memory corruption in _slurm_rpc_epilog_complete as well as
+    _slurm_rpc_complete_job_allocation.
 
 * Changes in Slurm 14.11.10
 ===========================

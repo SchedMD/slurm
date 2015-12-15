@@ -195,8 +195,11 @@ Time at which the job ended or is expected to end (based upon its time limit).
 (Valid for jobs only)
 .TP
 \fB%E\fR
-Job dependency. This job will not begin execution until the dependent job
-completes.  A value of zero implies this job has no dependencies.
+Job dependencies remaining. This job will not begin execution until these
+dependent jobs complete. In the case of a job that can not run due to job
+dependencies never being satisfied, the full original job dependency
+specification will be reported. A value of NULL implies this job has no
+dependencies.
 (Valid for jobs only)
 .TP
 \fB%f\fR
@@ -530,8 +533,11 @@ Prints the number of CPUs per tasks allocated to the job.
 (Valid for jobs only)
 .TP
 \fBdependency\fR
-Job dependency. This job will not begin execution until the dependent job
-completes.  A value of zero implies this job has no dependencies.
+Job dependencies remaining. This job will not begin execution until these
+dependent jobs complete. In the case of a job that can not run due to job
+dependencies never being satisfied, the full original job dependency
+specification will be reported. A value of NULL implies this job has no
+dependencies.
 (Valid for jobs only)
 .TP
 \fBderivedec\fR

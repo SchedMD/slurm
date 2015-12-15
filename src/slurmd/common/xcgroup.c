@@ -544,7 +544,7 @@ int xcgroup_delete(xcgroup_t* cg)
 	 *   exist, do not propagate error back to caller.
 	 */
 	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
-		verbose ("xcgroup: rmdir(%s): %m", cg->path);
+		debug2("xcgroup: rmdir(%s): %m", cg->path);
 		return XCGROUP_ERROR;
 	}
 	return XCGROUP_SUCCESS;

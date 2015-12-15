@@ -1671,13 +1671,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 	job_ptr = find_job_record(epilog_msg->job_id);
 
-	if (!running_composite) {
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
-	}
-
-	END_TIMER2("_slurm_rpc_epilog_complete");
-
 	if (epilog_msg->return_code)
 		error("%s: epilog error %s Node=%s Err=%s %s",
 		      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
@@ -1687,6 +1680,13 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 		debug2("%s: %s Node=%s %s",
 		       __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 		       epilog_msg->node_name, TIME_STR);
+
+	if (!running_composite) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
+
+	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	/* Functions below provide their own locking */
 	if (!running_composite && *run_scheduler) {
@@ -1844,15 +1844,24 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	       "uid=%u, JobId=%u rc=%d",
 	       uid, comp_msg->job_id, comp_msg->job_rc);
 
-	job_ptr = find_job_record(comp_msg->job_id);
-	trace_job(job_ptr, __func__, "enter");
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(comp_msg->job_id);
+	trace_job(job_ptr, __func__, "enter");
 
 	/* do RPC call */
 	/* Mark job and/or job step complete */
 	error_code = job_complete(comp_msg->job_id, uid,
 				  false, false, comp_msg->job_rc);
+	if (error_code)
+		info("%s: %s error %s ",
+		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		     slurm_strerror(error_code));
+	else
+		debug2("%s: %s %s", __func__,
+		       jobid2str(job_ptr, jbuf, sizeof(jbuf)),
+		       TIME_STR);
+
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
@@ -1865,14 +1874,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("%s: %s error %s ",
-		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: %s %s", __func__,
-		       jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		       TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		(void) schedule_job_save();	/* Has own locking */
