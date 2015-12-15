@@ -8641,7 +8641,11 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
-			packstr(detail_ptr->dependency, buffer);
+
+			if (job_ptr->state_reason == WAIT_DEP_INVALID)
+				packstr(detail_ptr->orig_dependency, buffer);
+			else
+				packstr(detail_ptr->dependency, buffer);
 
 			if (detail_ptr->argv) {
 				/* Determine size needed for a string
