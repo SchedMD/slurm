@@ -2483,7 +2483,7 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "nojobs"); //7 len
 	}
-	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS) {
+	if (enforce & ACCOUNTING_ENFORCE_NO_STEPS) {
 		if (str[0])
 			strcat(str, ",");
 		strcat(str, "nosteps"); //8 len

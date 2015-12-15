@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     the Steps keyword.
  -- Fix potential memory corruption in _slurm_rpc_epilog_complete as well as
     _slurm_rpc_complete_job_allocation.
+ -- Fix cosmetic display of AccountingStorageEnforce option "nosteps" when
+    in use.
 
 * Changes in Slurm 15.08.5
 ==========================
