@@ -1609,6 +1609,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		(epilog_complete_msg_t *) msg->data;
 	bool run_scheduler = false;
 	struct job_record  *job_ptr;
+	char jbuf[JBUFSIZ];
 
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%d", uid);
@@ -1635,17 +1636,15 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
-	if (epilog_msg->return_code) {
-		error("%s: JobId=%u array_id=%u Node=%s Err=%s %s", __func__,
-                      epilog_msg->job_id, job_ptr->array_task_id,
+	if (epilog_msg->return_code)
+		error("%s: epilog error %s Node=%s Err=%s %s",
+		      __func__, jobid2str(job_ptr, jbuf),
 		      epilog_msg->node_name,
-                      slurm_strerror(epilog_msg->return_code), TIME_STR);
-	} else {
-                debug2("%s: JobId=%u array_id=%u Node=%s %s", __func__,
-                       epilog_msg->job_id, job_ptr->array_task_id,
-		       epilog_msg->node_name,
-                       TIME_STR);
-	}
+		      slurm_strerror(epilog_msg->return_code), TIME_STR);
+	else
+		debug2("%s: %s Node=%s %s",
+		       __func__, jobid2str(job_ptr, jbuf),
+		       epilog_msg->node_name, TIME_STR);
 
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
