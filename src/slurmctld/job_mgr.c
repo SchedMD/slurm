@@ -159,7 +159,6 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
-static int _copy_job_file(const char *src, const char *dst);
 static job_desc_msg_t * _copy_job_record_to_job_desc(
 				struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
@@ -201,10 +200,10 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_missing_jobs(int node_inx, time_t now);
-static int  _read_data_array_from_file(char *file_name, char ***data,
+static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t * size,
 				       struct job_record *job_ptr);
-static int  _read_data_from_file(char *file_name, char **data);
+static int   _read_data_from_file(int fd, char *file_name, char **data);
 static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static void _remove_job_hash(struct job_record *job_ptr);
@@ -548,6 +547,9 @@ static void _delete_job_desc_files(uint32_t job_id)
 	f_dir = opendir(dir_name);
 	if (f_dir) {
 		while ((dir_ent = readdir(f_dir))) {
+			if (!strcmp(dir_ent->d_name, ".") ||
+			    !strcmp(dir_ent->d_name, ".."))
+				continue;
 			xstrfmtcat(file_name, "%s/%s", dir_name,
 				   dir_ent->d_name);
 			(void) unlink(file_name);
@@ -3682,8 +3684,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 		      __func__, job_ptr->job_id);
 	}
 	if (_copy_job_desc_files(job_ptr_pend->job_id, job_ptr->job_id)) {
-		/* Need to quit here to preserve job record integrity */
-		fatal("%s: failed to copy enviroment/script files for job %u",
+		error("%s: failed to create working directory for job %u",
 		      __func__, job_ptr->job_id);
 	}
 
@@ -6273,13 +6274,13 @@ static bool _dup_job_file_test(uint32_t job_id)
 	return false;
 }
 
-/* _copy_job_desc_files - create copies of a job script and environment files */
+/* _copy_job_desc_files - Create work directory for job array task.
+ * No longer copies environment/script files. */
 static int
 _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 {
 	int error_code = SLURM_SUCCESS, hash;
 	char *dir_name_src, *dir_name_dest, job_dir[40];
-	char *file_name_src, *file_name_dest;
 
 	/* Create state_save_location directory */
 	dir_name_src  = slurm_get_state_save_location();
@@ -6308,53 +6309,6 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 		return ESLURM_WRITING_TO_FILE;
 	}
 
-	/* Identify job_id_src specific directory */
-	hash = job_id_src % 10;
-	sprintf(job_dir, "/hash.%d", hash);
-	xstrcat(dir_name_src, job_dir);
-	(void) mkdir(dir_name_src, 0700);
-	sprintf(job_dir, "/job.%u", job_id_src);
-	xstrcat(dir_name_src, job_dir);
-
-	file_name_src  = xstrdup(dir_name_src);
-	file_name_dest = xstrdup(dir_name_dest);
-	xstrcat(file_name_src,  "/environment");
-	xstrcat(file_name_dest, "/environment");
-	error_code = link(file_name_src, file_name_dest);
-	if (error_code < 0) {
-		error("%s: link() failed %m copy files src %s dest %s",
-		      __func__, file_name_src, file_name_dest);
-		error_code = _copy_job_file(file_name_src, file_name_dest);
-		if (error_code < 0) {
-			error("%s: failed copy files %m src %s dst %s",
-			      __func__, file_name_src, file_name_dest);
-		}
-	}
-	xfree(file_name_src);
-	xfree(file_name_dest);
-
-	if (error_code == 0) {
-		file_name_src  = xstrdup(dir_name_src);
-		file_name_dest = xstrdup(dir_name_dest);
-		xstrcat(file_name_src,  "/script");
-		xstrcat(file_name_dest, "/script");
-		error_code = link(file_name_src, file_name_dest);
-		if (error_code < 0) {
-			error("%s: link() failed %m copy files src %s dest %s",
-			      __func__, file_name_src, file_name_dest);
-			error_code = _copy_job_file(file_name_src,
-						    file_name_dest);
-			if (error_code < 0) {
-				error("%s: failed copy files %m src %s dst %s",
-				      __func__, file_name_src, file_name_dest);
-			}
-		}
-		xfree(file_name_src);
-		xfree(file_name_dest);
-	}
-
-	xfree(dir_name_src);
-	xfree(dir_name_dest);
 	return error_code;
 }
 
@@ -6452,21 +6406,32 @@ static int _write_data_to_file(char *file_name, char *data)
  */
 char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
-	char *file_name, *file_name2, **environment = NULL;
-	int hash = job_ptr->job_id % 10;
+	char *file_name = NULL, job_dir[40], **environment = NULL;
+	int cc, fd = -1, hash;
 
-	/* Read state from version 14.11 or newer location */
-	file_name = slurm_get_state_save_location();
-	xstrfmtcat(file_name, "/hash.%d/job.%u/environment",
-		   hash, job_ptr->job_id);
-
-	if (_read_data_array_from_file(file_name, &environment,
-					env_size, job_ptr) == SLURM_SUCCESS) {
+	/* Standard file location for job arrays, version 16.05+ */
+	if (job_ptr->array_task_id != NO_VAL) {
+		hash = job_ptr->array_job_id % 10;
+		sprintf(job_dir, "/hash.%d/job.%u/environment",
+			hash, job_ptr->array_job_id);
 		xfree(file_name);
-		return environment;
+		file_name = slurm_get_state_save_location();
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
 	}
 
-	/* Fall back to try to read from version 14.03 or earlier format.
+	/* Standard file location, versions 15.08 and 14.11 */
+	if (fd < 0) {
+		hash = job_ptr->job_id % 10;
+		sprintf(job_dir, "/hash.%d/job.%u/environment",
+			hash, job_ptr->job_id);
+		xfree(file_name);
+		file_name = slurm_get_state_save_location();
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
+	}
+
+	/* Standard file location, version 14.3 and earlier
 	 * NOTE: Cannot remove this backwards compatibility as there is no
 	 * process to migrate jobs to the newer directory structure, and
 	 * sites may be jumping through multiple version to bring their
@@ -6474,24 +6439,27 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 	 * would update state files correctly, but leave pending jobs in
 	 * the old directory format.
 	 */
-	file_name2 = slurm_get_state_save_location();
-	xstrfmtcat(file_name2, "/job.%u/environment", job_ptr->job_id);
-
-	if (_read_data_array_from_file(file_name2, &environment,
-					env_size, job_ptr) == SLURM_SUCCESS) {
-		debug("Found job environment in old directory format as %s",
-		      file_name2);
+	if (fd < 0) {
 		xfree(file_name);
-		xfree(file_name2);
-		return environment;
+		file_name = slurm_get_state_save_location();
+		sprintf(job_dir, "/job.%u/environment", job_ptr->job_id);
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
 	}
 
-	error("Error reading job environment from %s or %s",
-	      file_name, file_name2);
+	if (fd >= 0) {
+		cc = _read_data_array_from_file(fd, file_name, &environment,
+						env_size, job_ptr);
+		if (cc < 0)
+			environment = NULL;
+		close(fd);
+	} else {
+		error("Could not open environment file for job %u",
+		      job_ptr->job_id);
+	}
 
 	xfree(file_name);
-	xfree(file_name2);
-	return NULL;
+	return environment;
 }
 
 /*
@@ -6501,23 +6469,35 @@ char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
  */
 char *get_job_script(struct job_record *job_ptr)
 {
-	char *file_name, *file_name2, *script = NULL;
-	int hash;
+	char *file_name = NULL, job_dir[40], *script = NULL;
+	int fd = -1, hash;
 
 	if (!job_ptr->batch_flag)
 		return NULL;
 
-	/* Read state from version 14.11 or newer location */
-	hash = job_ptr->job_id % 10;
-	file_name = slurm_get_state_save_location();
-	xstrfmtcat(file_name, "/hash.%d/job.%u/script", hash, job_ptr->job_id);
-
-	if (_read_data_from_file(file_name, &script) == SLURM_SUCCESS) {
+	/* Standard file location for job arrays, version 16.05+ */
+	if (job_ptr->array_task_id != NO_VAL) {
+		hash = job_ptr->array_job_id % 10;
+		sprintf(job_dir, "/hash.%d/job.%u/script",
+			hash, job_ptr->array_job_id);
 		xfree(file_name);
-		return script;
+		file_name = slurm_get_state_save_location();
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
 	}
 
-	/* Fall back to try to read from version 14.03 or earlier format.
+	/* Standard file location, versions 15.08 and 14.11 */
+	if (fd < 0) {
+		hash = job_ptr->job_id % 10;
+		sprintf(job_dir, "/hash.%d/job.%u/script",
+			hash, job_ptr->job_id);
+		xfree(file_name);
+		file_name = slurm_get_state_save_location();
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
+	}
+
+	/* Standard file location, version 14.3 and earlier
 	 * NOTE: Cannot remove this backwards compatibility as there is no
 	 * process to migrate jobs to the newer directory structure, and
 	 * sites may be jumping through multiple version to bring their
@@ -6525,26 +6505,28 @@ char *get_job_script(struct job_record *job_ptr)
 	 * would update state files correctly, but leave pending jobs in
 	 * the old directory format.
 	 */
-	file_name2 = slurm_get_state_save_location();
-	xstrfmtcat(file_name2, "/job.%u/script", job_ptr->job_id);
-
-	if (_read_data_from_file(file_name2, &script) == SLURM_SUCCESS) {
-		debug("Found job script in old directory format as %s",
-		      file_name2);
+	if (fd < 0) {
 		xfree(file_name);
-		xfree(file_name2);
-		return script;
+		file_name = slurm_get_state_save_location();
+		sprintf(job_dir, "/job.%u/script", job_ptr->job_id);
+		xstrcat(file_name, job_dir);
+		fd = open(file_name, 0);
 	}
 
-	error("Error reading job script from %s or %s", file_name, file_name2);
+	if (fd >= 0) {
+		_read_data_from_file(fd, file_name, &script);
+		close(fd);
+	} else {
+		error("Could not open script file for job %u", job_ptr->job_id);
+	}
 
 	xfree(file_name);
-	xfree(file_name2);
-	return NULL;
+	return script;
 }
 
 /*
  * Read a collection of strings from a file
+ * IN fd - file descriptor
  * IN file_name - file to read from
  * OUT data - pointer to array of pointers to strings (e.g. env),
  *	must be xfreed when no longer needed
@@ -6554,10 +6536,10 @@ char *get_job_script(struct job_record *job_ptr)
  * NOTE: The output format of this must be identical with _xduparray2()
  */
 static int
-_read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
-			   struct job_record *job_ptr)
+_read_data_array_from_file(int fd, char *file_name, char ***data,
+			    uint32_t * size, struct job_record *job_ptr)
 {
-	int fd, pos, buf_size, amount, i, j;
+	int pos, buf_size, amount, i, j;
 	char *buffer, **array_ptr;
 	uint32_t rec_cnt;
 
@@ -6567,33 +6549,24 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 	*data = NULL;
 	*size = 0;
 
-	fd = open(file_name, 0);
-	if (fd < 0) {
-		debug("Error opening file %s, %m", file_name);
-		return -1;
-	}
-
 	amount = read(fd, &rec_cnt, sizeof(uint32_t));
 	if (amount < sizeof(uint32_t)) {
 		if (amount != 0)	/* incomplete write */
 			error("Error reading file %s, %m", file_name);
 		else
 			verbose("File %s has zero size", file_name);
-		close(fd);
 		return -1;
 	}
 
 	if (rec_cnt >= INT_MAX) {
 		error("%s: unreasonable record counter %d in file %s",
 		      __func__, rec_cnt, file_name);
-		close(fd);
 		return -1;
 	}
 
 	if (rec_cnt == 0) {
 		*data = NULL;
 		*size = 0;
-		close(fd);
 		return 0;
 	}
 
@@ -6605,7 +6578,6 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 		if (amount < 0) {
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
-			close(fd);
 			return -1;
 		}
 		pos += amount;
@@ -6614,7 +6586,6 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 		buf_size += amount;
 		xrealloc(buffer, buf_size);
 	}
-	close(fd);
 
 	/* Allocate extra space for supplemental environment variables
 	 * as set by Moab */
@@ -6681,25 +6652,20 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size,
 
 /*
  * Read a string from a file
+ * IN fd - file descriptor to read from
  * IN file_name - file to read from
  * OUT data - pointer to  string
  *	must be xfreed when no longer needed
  * RET - 0 on success, -1 on error
  */
-static int _read_data_from_file(char *file_name, char **data)
+static int _read_data_from_file(int fd, char *file_name, char **data)
 {
-	int fd, pos, buf_size, amount;
+	int pos, buf_size, amount;
 	char *buffer;
 
 	xassert(file_name);
 	xassert(data);
 	*data = NULL;
-
-	fd = open(file_name, 0);
-	if (fd < 0) {
-		debug("Error opening file %s, %m", file_name);
-		return -1;
-	}
 
 	pos = 0;
 	buf_size = BUF_SIZE;
@@ -6720,7 +6686,6 @@ static int _read_data_from_file(char *file_name, char **data)
 	}
 
 	*data = buffer;
-	close(fd);
 	return 0;
 }
 
@@ -15271,58 +15236,6 @@ extern void job_array_post_sched(struct job_record *job_ptr)
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
 		}
 	}
-}
-
-/* _copy_job_file()
- *
- * This function is invoked in case the controller fails
- * to link the job array job files. If the link fails the
- * controller tries to copy the files instead.
- *
- */
-static int
-_copy_job_file(const char *src, const char *dst)
-{
-	struct stat stat_buf;
-	int fsrc;
-	int fdst;
-	int cc;
-	char buf[BUFSIZ];
-
-	if (stat(src, &stat_buf) < 0)
-		return -1;
-
-	fsrc = open(src, O_RDONLY);
-	if (fsrc < 0)
-		return -1;
-
-
-	fdst = creat(dst, stat_buf.st_mode);
-	if (fdst < 0) {
-		close(fsrc);
-		return -1;
-	}
-
-	while (1) {
-		cc = read(fsrc, buf, BUFSIZ);
-		if (cc == 0)
-			break;
-		if (cc < 0) {
-			close(fsrc);
-			close(fdst);
-			return -1;
-		}
-		if (write(fdst, buf, cc) != cc) {
-			close(fsrc);
-			close(fdst);
-			return -1;
-		}
-	}
-
-	close(fsrc);
-	close(fdst);
-
-	return 0;
 }
 
 /* _kill_dependent()

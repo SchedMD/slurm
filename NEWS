@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     remaining to be satisfied (typically NULL).
  -- Refactor logic to synchronize active bach jobs and their script/environment
     files, reducing overhead dramatically for large numbers of active jobs.
+ -- Avoid hard-link/copy of script/environment files for job arrays. Use the
+    master job record file for all tasks of the job array.
 
 * Changes in Slurm 15.08.5
 ==========================
