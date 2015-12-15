@@ -4638,8 +4638,12 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t rpc_version,
 			object_ptr->step_list =
 				list_create(slurmdb_destroy_selected_step);
 			for (i=0; i<count; i++) {
-				slurmdb_unpack_selected_step(
-					&job, rpc_version, buffer);
+				if (slurmdb_unpack_selected_step(
+					&job, rpc_version, buffer)
+				    != SLURM_SUCCESS) {
+					error("unpacking selected step");
+					goto unpack_error;
+				}
 				/* There is no such thing as jobid 0,
 				 * if we process it the database will
 				 * return all jobs. */
