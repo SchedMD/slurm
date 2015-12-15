@@ -172,7 +172,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code, bool locked);
 static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
-static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static time_t _get_last_state_write_time(void);
 static void _job_array_comp(struct job_record *job_ptr, bool was_running);
@@ -12357,44 +12356,69 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	closedir(f_dir);
 }
 
+static int _clear_state_dir_flag(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)x;
+	job_ptr->bit_flags &= ~HAS_STATE_DIR;
+	return 0;
+}
+
+static int _test_state_dir_flag(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)x;
+
+	if (job_ptr->bit_flags & HAS_STATE_DIR) {
+		job_ptr->bit_flags &= ~HAS_STATE_DIR;
+		return 0;
+	}
+
+	if (!job_ptr->batch_flag || !IS_JOB_PENDING(job_ptr))
+		return 0;	/* No files expected */
+
+	error("Script for job %u lost, state set to FAILED", job_ptr->job_id);
+	job_ptr->job_state = JOB_FAILED;
+	job_ptr->exit_code = 1;
+	job_ptr->state_reason = FAIL_SYSTEM;
+	xfree(job_ptr->state_desc);
+	job_ptr->start_time = job_ptr->end_time = time(NULL);
+	job_completion_logger(job_ptr, false);
+	return 0;
+}
+
 /* All pending batch jobs must have a batch_dir entry,
  *	otherwise we flag it as FAILED and don't schedule
  * If the batch_dir entry exists for a PENDING or RUNNING batch job,
  *	remove it the list (of directories to be deleted) */
 static void _validate_job_files(List batch_dirs)
 {
-	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	int del_cnt;
+	ListIterator batch_dir_iter;
+	uint32_t *job_id_ptr, array_job_id;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!job_ptr->batch_flag)
-			continue;
-		/* Want to keep this job's files */
-		del_cnt = list_delete_all(batch_dirs, _find_batch_dir,
-					  &(job_ptr->job_id));
-		if ((del_cnt == 0) && IS_JOB_PENDING(job_ptr)) {
-			error("Script for job %u lost, state set to FAILED",
-			      job_ptr->job_id);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			xfree(job_ptr->state_desc);
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr, false);
+	list_for_each(job_list, _clear_state_dir_flag, NULL);
+
+	batch_dir_iter = list_iterator_create(batch_dirs);
+	while ((job_id_ptr = list_next(batch_dir_iter))) {
+		job_ptr = find_job_record(*job_id_ptr);
+		if (job_ptr) {
+			job_ptr->bit_flags |= HAS_STATE_DIR;
+			list_delete_item(batch_dir_iter);
+		}
+		if (job_ptr && job_ptr->array_recs) { /* Update all tasks */
+			array_job_id = job_ptr->array_job_id;
+			job_ptr = job_array_hash_j[JOB_HASH_INX(array_job_id)];
+			while (job_ptr) {
+				if (job_ptr->array_job_id == array_job_id)
+					job_ptr->bit_flags |= HAS_STATE_DIR;
+				job_ptr = job_ptr->job_array_next_j;
+			}
 		}
 	}
-	list_iterator_destroy(job_iterator);
+	list_iterator_destroy(batch_dir_iter);
+
+	list_for_each(job_list, _test_state_dir_flag, NULL);
 }
 
-/* List matching function, see common/list.h */
-static int _find_batch_dir(void *x, void *key)
-{
-	uint32_t *key1 = x;
-	uint32_t *key2 = key;
-	return (int)(*key1 == *key2);
-}
 /* List entry deletion function, see common/list.h */
 static void _del_batch_list_rec(void *x)
 {
@@ -12410,7 +12434,7 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 
 	batch_dir_inx = list_iterator_create(batch_dirs);
 	while ((job_id_ptr = list_next(batch_dir_inx))) {
-		info("Purging files for defunct batch job %u",
+		info("Purged files for defunct batch job %u",
 		     *job_id_ptr);
 		_delete_job_desc_files(*job_id_ptr);
 	}
