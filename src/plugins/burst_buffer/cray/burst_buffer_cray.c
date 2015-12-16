@@ -1039,8 +1039,8 @@ static void _load_state(bool init_config)
 				= pools[i].quantity * pools[i].granularity;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			bb_state.used_space
-				= (pools[i].quantity - pools[i].free) *
+			bb_state.used_space =
+				(pools[i].quantity - pools[i].free) *
 				pools[i].granularity;
 
 			/* Everything else is a generic burst buffer resource */
@@ -1053,12 +1053,15 @@ static void _load_state(bool init_config)
 			gres_ptr = bb_state.bb_config.gres_ptr +
 				bb_state.bb_config.gres_cnt;
 			bb_state.bb_config.gres_cnt++;
-			gres_ptr->avail_cnt = pools[i].quantity;
+			gres_ptr->avail_cnt =
+				pools[i].quantity * pools[i].granularity;
 			gres_ptr->granularity = pools[i].granularity;
 			gres_ptr->name = xstrdup(pools[i].id);
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			gres_ptr->used_cnt = pools[i].quantity - pools[i].free;
+			gres_ptr->used_cnt =
+				(pools[i].quantity - pools[i].free) *
+				pools[i].granularity;
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
