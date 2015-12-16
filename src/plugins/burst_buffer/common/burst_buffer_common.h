@@ -174,12 +174,6 @@ typedef struct bb_job {
 	uint32_t   user_id;	/* user the job runs as */
 } bb_job_t;
 
-/* Persistent buffer requests which are pending */
-typedef struct {
-	uint32_t   job_id;
-	uint64_t   persist_add;	/* Persistent buffer space job adds, bytes */
-} bb_pend_persist_t;
-
 /* Used for building queue of jobs records for various purposes */
 typedef struct bb_job_queue_rec {
 	uint64_t bb_size;	/* Used by generic plugin only */
@@ -218,10 +212,6 @@ typedef struct bb_state {
 	int		tres_pos;	/* TRES index, for limits */
 	uint64_t	used_space;	/* units are bytes */
 } bb_state_t;
-
-/* Add persistent burst buffer reservation for this job, tests for duplicate */
-extern void bb_add_persist(bb_state_t *state_ptr,
-			   bb_pend_persist_t *bb_persist);
 
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr);
@@ -327,10 +317,6 @@ extern int bb_preempt_queue_sort(void *x, void *y);
 /* Return count of child processes */
 extern int bb_proc_count(void);
 
-/* Remove persistent burst buffer reservation for this job.
- * Call when job starts running or removed from pending state. */
-extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id);
-
 /* Set the bb_state's tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
 extern void bb_set_tres_pos(bb_state_t *state_ptr);
@@ -345,9 +331,6 @@ extern void bb_shutdown(void);
 /* Sleep function, also handles termination signal */
 extern void bb_sleep(bb_state_t *state_ptr, int add_secs);
 
-/* Return true of the identified job has burst buffer space already reserved */
-extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id);
-
 /* Execute a script, wait for termination and return its stdout.
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * script_path IN - Fully qualified pathname of the program to execute
@@ -360,12 +343,12 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			   char **script_argv, int max_wait, int *status);
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(
-	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr);
+extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
+			 bb_state_t *state_ptr);
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(
-	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr);
+extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
+			 bb_state_t *state_ptr);
 
 /* Log creation of a persistent burst buffer in the database
  * job_ptr IN - Point to job that created, could be NULL at startup

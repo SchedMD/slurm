@@ -83,8 +83,6 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void	_bb_job_del2(bb_job_t *bb_job);
 static uid_t *	_parse_users(char *buf);
-static int	_persist_match(void *x, void *key);
-static void	_persist_purge(void *x);
 static char *	_print_users(uid_t *buf);
 
 /* Translate comma delimitted list of users into a UID array,
@@ -1015,7 +1013,8 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
 	bb_alloc_t *bb_alloc;
 
 	bb_alloc = bb_alloc_job_rec(state_ptr, job_ptr, bb_job);
-	bb_limit_add(bb_alloc->user_id, bb_alloc->size, state_ptr);
+	bb_limit_add(bb_alloc->user_id, bb_alloc->size, bb_alloc->pool,
+		     state_ptr);
 
 	return bb_alloc;
 }
@@ -1254,82 +1253,6 @@ extern char *bb_run_script(char *script_type, char *script_path,
 	return resp;
 }
 
-static void _persist_purge(void *x)
-{
-	xfree(x);
-}
-
-static int _persist_match(void *x, void *key)
-{
-	bb_pend_persist_t *bb_pers_exist = (bb_pend_persist_t *) x;
-	bb_pend_persist_t *bb_pers_test  = (bb_pend_persist_t *) key;
-	if (bb_pers_exist->job_id == bb_pers_test->job_id)
-		return 1;
-	return 0;
-}
-
-/* Add persistent burst buffer reservation for this job, tests for duplicate */
-extern void bb_add_persist(bb_state_t *state_ptr,
-			   bb_pend_persist_t *bb_persist)
-{
-	bb_pend_persist_t *bb_pers_match;
-
-	xassert(state_ptr);
-	if (!state_ptr->persist_resv_rec) {
-		state_ptr->persist_resv_rec = list_create(_persist_purge);
-	} else {
-		bb_pers_match = list_find_first(state_ptr->persist_resv_rec,
-						_persist_match, bb_persist);
-		if (bb_pers_match)
-			return;
-	}
-
-	bb_pers_match = xmalloc(sizeof(bb_pend_persist_t));
-	bb_pers_match->job_id = bb_persist->job_id;
-	bb_pers_match->persist_add = bb_persist->persist_add;
-	list_append(state_ptr->persist_resv_rec, bb_pers_match);
-	state_ptr->persist_resv_sz += bb_persist->persist_add;
-}
-
-/* Remove persistent burst buffer reservation for this job.
- * Call when job starts running or removed from pending state. */
-extern void bb_rm_persist(bb_state_t *state_ptr, uint32_t job_id)
-{
-	bb_pend_persist_t  bb_persist;
-	bb_pend_persist_t *bb_pers_match;
-
-	xassert(state_ptr);
-	if (!state_ptr->persist_resv_rec)
-		return;
-	bb_persist.job_id = job_id;
-	bb_pers_match = list_find_first(state_ptr->persist_resv_rec,
-					_persist_match, &bb_persist);
-	if (!bb_pers_match)
-		return;
-	if (state_ptr->persist_resv_sz >= bb_pers_match->persist_add) {
-		state_ptr->persist_resv_sz -= bb_pers_match->persist_add;
-	} else {
-		state_ptr->persist_resv_sz = 0;
-		error("%s: Reserved persistent storage size underflow",
-		      __func__);
-	}
-}
-
-/* Return true of the identified job has burst buffer space already reserved */
-extern bool bb_test_persist(bb_state_t *state_ptr, uint32_t job_id)
-{
-	bb_pend_persist_t bb_pers_match;
-
-	xassert(state_ptr);
-	if (!state_ptr->persist_resv_rec)
-		return false;
-	bb_pers_match.job_id = job_id;
-	if (list_find_first(state_ptr->persist_resv_rec, _persist_match,
-			    &bb_pers_match))
-		return true;
-	return false;
-}
-
 /* Allocate a bb_job_t record, hashed by job_id, delete with bb_job_del() */
 extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
 {
@@ -1453,12 +1376,26 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 }
 
 /* Make claim against resource limit for a user */
-extern void bb_limit_add(
-	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
+			 bb_state_t *state_ptr)
 {
+	burst_buffer_gres_t *gres_ptr;
 	bb_user_t *bb_user;
+	int i;
 
-	state_ptr->used_space += bb_size;
+	if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
+		state_ptr->used_space += bb_size;
+	} else {
+		gres_ptr = state_ptr->bb_config.gres_ptr;
+		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++, gres_ptr++){
+			if (xstrcmp(pool, gres_ptr->name))
+				continue;
+			gres_ptr->used_cnt += bb_size;
+			break;
+		}
+		if (i >= state_ptr->bb_config.gres_cnt)
+			error("%s: Unable to located pool %s", __func__, pool);
+	}
 
 	bb_user = bb_find_user_rec(user_id, state_ptr);
 	xassert(bb_user);
@@ -1467,16 +1404,36 @@ extern void bb_limit_add(
 }
 
 /* Release claim against resource limit for a user */
-extern void bb_limit_rem(
-	uint32_t user_id, uint64_t bb_size, bb_state_t *state_ptr)
+extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
+			 bb_state_t *state_ptr)
 {
+	burst_buffer_gres_t *gres_ptr;
 	bb_user_t *bb_user;
+	int i;
 
-	if (state_ptr->used_space >= bb_size) {
-		state_ptr->used_space -= bb_size;
+	if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
+		if (state_ptr->used_space >= bb_size) {
+			state_ptr->used_space -= bb_size;
+		} else {
+			error("%s: used_space underflow", __func__);
+			state_ptr->used_space = 0;
+		}
 	} else {
-		error("%s: used_space underflow", __func__);
-		state_ptr->used_space = 0;
+		gres_ptr = state_ptr->bb_config.gres_ptr;
+		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++, gres_ptr++){
+			if (xstrcmp(pool, gres_ptr->name))
+				continue;
+			if (gres_ptr->used_cnt >= bb_size) {
+				gres_ptr->used_cnt -= bb_size;
+			} else {
+				error("%s: used_cnt underflow for pool %s",
+				      __func__, pool);
+				gres_ptr->used_cnt = 0;
+			}
+			break;
+		}
+		if (i >= state_ptr->bb_config.gres_cnt)
+			error("%s: Unable to located pool %s", __func__, pool);
 	}
 
 	bb_user = bb_find_user_rec(user_id, state_ptr);

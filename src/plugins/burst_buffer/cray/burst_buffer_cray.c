@@ -655,8 +655,8 @@ static void _apply_limits(void)
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
 			_set_assoc_mgr_ptrs(bb_alloc);
-			bb_limit_add(bb_alloc->user_id,
-				     bb_alloc->size, &bb_state);
+			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state);
 			bb_alloc = bb_alloc->next;
 		}
 	}
@@ -1175,8 +1175,8 @@ static void _load_state(bool init_config)
 
 		if (!init_config) {	/* Newly found buffer */
 			_pick_alloc_account(bb_alloc);
-			bb_limit_add(bb_alloc->user_id,
-				     bb_alloc->size, &bb_state);
+			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state);
 		}
 		if (bb_alloc->job_id == 0)
 			bb_post_persist_create(NULL, bb_alloc, &bb_state);
@@ -1831,8 +1831,8 @@ static void *_start_teardown(void *x)
 		_purge_bb_files(teardown_args->job_id, job_ptr);
 		if (job_ptr) {
 			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
-				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->size, &bb_state);
+				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+					     bb_alloc->pool, &bb_state);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
@@ -1847,8 +1847,8 @@ static void *_start_teardown(void *x)
 						    teardown_args->user_id,
 						    &bb_state);
 			if (bb_alloc) {
-				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->size, &bb_state);
+				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+					     bb_alloc->pool, &bb_state);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
 
@@ -2156,8 +2156,8 @@ static void _timeout_bb_rec(void)
 					     "purged",
 					     __func__, bb_alloc->job_id);
 				}
-				bb_limit_rem(bb_alloc->user_id,
-					     bb_alloc->size, &bb_state);
+				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+					     bb_alloc->pool, &bb_state);
 				bb_post_persist_delete(bb_alloc, &bb_state);
 				*bb_pptr = bb_alloc->next;
 				bb_free_alloc_buf(bb_alloc);
@@ -3577,20 +3577,19 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 				continue;
 			}
 			rc++;
-			bb_limit_add(job_ptr->user_id,
-				     buf_ptr->size, &bb_state);
+			if (!buf_ptr->pool) {
+				buf_ptr->pool =
+					xstrdup(bb_state.bb_config.default_pool);
+			}
+			bb_limit_add(job_ptr->user_id, buf_ptr->size,
+				     buf_ptr->pool, &bb_state);
 			bb_job->state = BB_STATE_ALLOCATING;
 			buf_ptr->state = BB_STATE_ALLOCATING;
 			create_args = xmalloc(sizeof(create_buf_data_t));
 			create_args->access = xstrdup(buf_ptr->access);
 			create_args->job_id = job_ptr->job_id;
 			create_args->name = xstrdup(buf_ptr->name);
-			if (buf_ptr->pool) {
-				create_args->pool = xstrdup(buf_ptr->pool);
-			} else {
-				create_args->pool =
-					xstrdup(bb_state.bb_config.default_pool);
-			}
+			create_args->pool = xstrdup(buf_ptr->pool);
 			create_args->size = buf_ptr->size;
 			create_args->type = xstrdup(buf_ptr->type);
 			create_args->user_id = job_ptr->user_id;
@@ -3744,11 +3743,15 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		old_state = buf_ptr->state;
 		buf_ptr->state = new_state;
 		if ((old_state == BB_STATE_ALLOCATING) &&
-		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, buf_ptr->size, &bb_state);
+		    (new_state == BB_STATE_PENDING)) {
+			bb_limit_rem(user_id, buf_ptr->size, buf_ptr->pool,
+				     &bb_state);
+		}
 		if ((old_state == BB_STATE_DELETING) &&
-		    (new_state == BB_STATE_PENDING))
-			bb_limit_rem(user_id, buf_ptr->size, &bb_state);
+		    (new_state == BB_STATE_PENDING)) {
+			bb_limit_rem(user_id, buf_ptr->size, buf_ptr->pool,
+				     &bb_state);
+		}
 		if ((old_state == BB_STATE_ALLOCATING) &&
 		    (new_state == BB_STATE_ALLOCATED)  &&
 		    ((name[0] < '0') || (name[0] > '9'))) {
@@ -4015,8 +4018,8 @@ static void *_destroy_persistent(void *x)
 			bb_alloc->state = BB_STATE_COMPLETE;
 			bb_alloc->job_id = destroy_args->job_id;
 			bb_alloc->state_time = time(NULL);
-			bb_limit_rem(bb_alloc->user_id,
-				     bb_alloc->size, &bb_state);
+			bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state);
 
 			assoc_mgr_lock(&assoc_locks);
 			(void) bb_post_persist_delete(bb_alloc, &bb_state);
