@@ -184,6 +184,7 @@ typedef struct create_buf_data {
 	uint32_t job_id;	/* Job ID to use */
 	char *job_script;	/* Path to job script */
 	char *name;		/* Name of the persistent burst buffer */
+	char *pool;		/* Name of pool in which to create the buffer */
 	uint64_t size;		/* Size in bytes */
 	char *type;		/* Access type */
 	uint32_t user_id;
@@ -429,7 +430,8 @@ static void *_bb_agent(void *args)
  * NOTE: delete return value using _del_bb_size() */
 static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 {
-	char *bb_specs, *bb_hurry, *bb_name, *bb_type, *bb_access;
+	char *bb_specs, *bb_hurry, *bb_name, *bb_type, *bb_access, *bb_pool;
+	char *job_pool = NULL;
 	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
 	uint64_t tmp_cnt;
@@ -465,6 +467,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				have_bb = true;
 				bb_access = NULL;
 				bb_name = NULL;
+				bb_pool = NULL;
 				bb_type = NULL;
 				if ((sub_tok = strstr(tok, "access_mode="))) {
 					bb_access = xstrdup(sub_tok + 12);
@@ -490,6 +493,12 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
+				if ((sub_tok = strstr(tok, "pool="))) {
+					bb_pool = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_pool, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
 				if ((sub_tok = strstr(tok, "type="))) {
 					bb_type = xstrdup(sub_tok + 5);
 					sub_tok = strchr(bb_type, ' ');
@@ -504,6 +513,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].create = true;
 				//bb_job->buf_ptr[inx].hurry = false;
 				bb_job->buf_ptr[inx].name = bb_name;
+				bb_job->buf_ptr[inx].pool = bb_pool;
 				bb_job->buf_ptr[inx].size = tmp_cnt;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
@@ -534,6 +544,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].destroy = true;
 				bb_job->buf_ptr[inx].hurry = (bb_hurry != NULL);
 				bb_job->buf_ptr[inx].name = xstrdup(bb_name);
+				//bb_job->buf_ptr[inx].pool = NULL;
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				//bb_job->buf_ptr[inx].type = NULL;
@@ -554,7 +565,15 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					tmp_cnt = 0;
 				}
 				bb_job->total_size += tmp_cnt;
+				if ((sub_tok = strstr(tok, "pool="))) {
+					xfree(job_pool);
+					job_pool = xstrdup(sub_tok + 5);
+					sub_tok = strchr(job_pool, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
 			} else if (!strncmp(tok, "persistentdw", 12)) {
+				/* Persistent buffer use */
 				have_bb = true;
 				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "name="))) {
@@ -593,6 +612,13 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				}
 				bb_job->total_size += (bb_job->swap_size *
 						       bb_job->swap_nodes);
+				if ((sub_tok = strstr(tok, "pool="))) {
+					xfree(job_pool);
+					job_pool = xstrdup(sub_tok + 5);
+					sub_tok = strchr(job_pool, ' ');
+					if (sub_tok)
+						sub_tok[0] = '\0';
+				}
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
 			}
@@ -673,6 +699,7 @@ static void _save_bb_state(void)
 					pack32(bb_alloc->id,		buffer);
 					packstr(bb_alloc->name,		buffer);
 					packstr(bb_alloc->partition,	buffer);
+					packstr(bb_alloc->pool,		buffer);
 					packstr(bb_alloc->qos,		buffer);
 					pack32(bb_alloc->user_id,	buffer);
 					if (bb_state.bb_config.flags &
@@ -786,7 +813,8 @@ static void _recover_bb_state(void)
 	uint32_t id = 0, user_id = 0;
 	uint64_t size;
 	int i, state_fd;
-	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
+	char *account = NULL, *name = NULL;
+	char *partition = NULL, *pool = NULL, *qos = NULL;
 	char *end_ptr = NULL;
 	time_t create_time = 0;
 	bb_alloc_t *bb_alloc;
@@ -830,15 +858,29 @@ static void _recover_bb_state(void)
 
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
-		safe_unpackstr_xmalloc(&account,   &name_len, buffer);
-		safe_unpack_time(&create_time, buffer);
-		safe_unpack32(&id, buffer);
-		safe_unpackstr_xmalloc(&name,      &name_len, buffer);
-		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
-		safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
-		safe_unpack32(&user_id, buffer);
-		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-			safe_unpack64(&size, buffer);
+		if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+			safe_unpack_time(&create_time, buffer);
+			safe_unpack32(&id, buffer);
+			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+			safe_unpackstr_xmalloc(&pool,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
+			safe_unpack32(&user_id, buffer);
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				safe_unpack64(&size, buffer);
+		} else {
+			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+			safe_unpack_time(&create_time, buffer);
+			safe_unpack32(&id, buffer);
+			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
+			safe_unpack32(&user_id, buffer);
+			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+				safe_unpack64(&size, buffer);
+			pool = xstrdup(bb_state.bb_config.default_pool);
+		}
 
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
 			bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
@@ -849,6 +891,8 @@ static void _recover_bb_state(void)
 				bb_alloc->array_job_id = bb_alloc->job_id;
 				bb_alloc->array_task_id = NO_VAL;
 			}
+			bb_alloc->pool = pool;
+			pool = NULL;
 			bb_alloc->seen_time = time(NULL);
 			bb_alloc->size = size;
 		} else {
@@ -866,6 +910,9 @@ static void _recover_bb_state(void)
 			xfree(bb_alloc->partition);
 			bb_alloc->partition = partition;
 			partition = NULL;
+			xfree(bb_alloc->pool);
+			bb_alloc->pool = pool;
+			pool = NULL;
 			xfree(bb_alloc->qos);
 			bb_alloc->qos = qos;
 			qos = NULL;
@@ -873,6 +920,7 @@ static void _recover_bb_state(void)
 		xfree(account);
 		xfree(name);
 		xfree(partition);
+		xfree(pool);
 		xfree(qos);
 	}
 
@@ -1006,6 +1054,7 @@ static void _load_state(bool init_config)
 	uint32_t timeout;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
+	bool found_pool;
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.other_timeout)
@@ -1045,24 +1094,34 @@ static void _load_state(bool init_config)
 
 			/* Everything else is a generic burst buffer resource */
 			bb_state.bb_config.gres_cnt = 0;
-		} else {
+			continue;
+		}
+
+		found_pool = false;
+		gres_ptr = bb_state.bb_config.gres_ptr;
+		for (j = 0; j < bb_state.bb_config.gres_cnt; j++, gres_ptr++) {
+			if (!xstrcmp(gres_ptr->name, pools[i].id)) {
+				found_pool = true;
+				break;
+			}
+		}
+		if (!found_pool) {
 			bb_state.bb_config.gres_ptr
 				= xrealloc(bb_state.bb_config.gres_ptr,
 					   sizeof(burst_buffer_gres_t) *
 					   (bb_state.bb_config.gres_cnt + 1));
 			gres_ptr = bb_state.bb_config.gres_ptr +
-				bb_state.bb_config.gres_cnt;
-			bb_state.bb_config.gres_cnt++;
-			gres_ptr->avail_cnt =
-				pools[i].quantity * pools[i].granularity;
-			gres_ptr->granularity = pools[i].granularity;
+				   bb_state.bb_config.gres_cnt;
 			gres_ptr->name = xstrdup(pools[i].id);
-			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
-				continue;
-			gres_ptr->used_cnt =
-				(pools[i].quantity - pools[i].free) *
-				pools[i].granularity;
+			bb_state.bb_config.gres_cnt++;
 		}
+
+		gres_ptr->avail_cnt = pools[i].quantity * pools[i].granularity;
+		gres_ptr->granularity = pools[i].granularity;
+		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
+			continue;
+		gres_ptr->used_cnt = (pools[i].quantity - pools[i].free) *
+				     pools[i].granularity;
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
@@ -1972,7 +2031,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 						needed_gres_ptr[j].avail_cnt;
 					if (d <= 0)
 						continue;
-					for (k = 0; k < bb_job->gres_cnt; k++){
+					for (k = 0; k < bb_job->gres_cnt; k++) {
 						if (strcmp(needed_gres_ptr[j].
 							   name,
 							   bb_job->gres_ptr[k].
@@ -2123,7 +2182,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			  uid_t submit_uid)
 {
 	char *bb_script, *save_ptr = NULL;
-	char *bb_name = NULL, *capacity;
+	char *bb_name = NULL, *bb_pool, *capacity;
 	char *end_ptr = NULL, *sub_tok, *tok;
 	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS, swap_cnt = 0;
@@ -2163,6 +2222,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			} else if (!strncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
 				bb_name = NULL;
+				bb_pool = NULL;
 				if ((sub_tok = strstr(tok, "capacity="))) {
 					tmp_cnt = bb_get_size_num(
 						sub_tok + 9,
@@ -2183,6 +2243,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				     (bb_name[0] <= '9')))
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				xfree(bb_name);
+				if ((sub_tok = strstr(tok, "pool="))) {
+					bb_pool = xstrdup(sub_tok + 5);
+					if ((sub_tok = strchr(bb_pool, ' ')))
+						sub_tok[0] = '\0';
+				}
+				if (!bb_valid_pool_test(&bb_state, bb_pool))
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				xfree(bb_pool);
 				if (rc != SLURM_SUCCESS)
 					break;
 			} else if (!strncmp(tok, "destroy_persistent", 17) &&
@@ -2207,6 +2275,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				tok++;
 			if (!strncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
+				bb_pool = NULL;
 				have_bb = true;
 				tmp_cnt = bb_get_size_num(
 					capacity + 9,
@@ -2216,9 +2285,18 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					break;
 				}
 				*bb_size += tmp_cnt;
+				if ((sub_tok = strstr(tok, "pool="))) {
+					bb_pool = xstrdup(sub_tok + 5);
+					if ((sub_tok = strchr(bb_pool, ' ')))
+						sub_tok[0] = '\0';
+				}
+				if (!bb_valid_pool_test(&bb_state, bb_pool))
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				xfree(bb_pool);
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				have_bb = true;
 			} else if (!strncmp(tok, "swap", 4)) {
+				bb_pool = NULL;
 				have_bb = true;
 				tok += 4;
 				while (isspace(tok[0]) && (tok[0] != '\0'))
@@ -2236,6 +2314,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 						job_desc->min_nodes;
 				}
 				*bb_size += swap_cnt * job_desc->max_nodes;
+				if ((sub_tok = strstr(tok, "pool="))) {
+					bb_pool = xstrdup(sub_tok + 5);
+					if ((sub_tok = strchr(bb_pool, ' ')))
+						sub_tok[0] = '\0';
+				}
+				if (!bb_valid_pool_test(&bb_state, bb_pool))
+					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				xfree(bb_pool);
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
@@ -3443,6 +3529,7 @@ static void _free_create_args(create_buf_data_t *create_args)
 		xfree(create_args->access);
 		xfree(create_args->job_script);
 		xfree(create_args->name);
+		xfree(create_args->pool);
 		xfree(create_args->type);
 		xfree(create_args);
 	}
@@ -3498,6 +3585,12 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			create_args->access = xstrdup(buf_ptr->access);
 			create_args->job_id = job_ptr->job_id;
 			create_args->name = xstrdup(buf_ptr->name);
+			if (buf_ptr->pool) {
+				create_args->pool = xstrdup(buf_ptr->pool);
+			} else {
+				create_args->pool =
+					xstrdup(bb_state.bb_config.default_pool);
+			}
 			create_args->size = buf_ptr->size;
 			create_args->type = xstrdup(buf_ptr->type);
 			create_args->user_id = job_ptr->user_id;
@@ -3713,9 +3806,9 @@ static void *_create_persistent(void *x)
 	script_argv[7] = xstrdup("-u");		/* user iD */
 	xstrfmtcat(script_argv[8], "%u", create_args->user_id);
 	script_argv[9] = xstrdup("-C");		/* configuration */
-	pthread_mutex_lock(&bb_state.bb_mutex);
 	xstrfmtcat(script_argv[10], "%s:%"PRIu64"",
-		   bb_state.bb_config.default_pool, create_args->size);
+		   create_args->pool, create_args->size);
+	pthread_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.other_timeout)
 		timeout = bb_state.bb_config.other_timeout * 1000;
 	else
@@ -3782,6 +3875,7 @@ static void *_create_persistent(void *x)
 		bb_alloc = bb_alloc_name_rec(&bb_state, create_args->name,
 					     create_args->user_id);
 		bb_alloc->size = create_args->size;
+		bb_alloc->pool = xstrdup(create_args->pool);
 		assoc_mgr_lock(&assoc_locks);
 		if (job_ptr) {
 			bb_alloc->account   = xstrdup(job_ptr->account);

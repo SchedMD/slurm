@@ -108,6 +108,7 @@ typedef struct bb_alloc {
 	struct bb_alloc *next;
 	bool orphaned;		/* Job is purged, could not stage-out data */
 	char *partition;	/* Associated partition (for limits) */
+	char *pool;		/* Resource (pool) used */
 	char *qos;		/* Associated QOS (for limits) */
 	slurmdb_qos_rec_t *qos_ptr;
 	time_t seen_time;	/* Time buffer last seen */
@@ -134,6 +135,7 @@ typedef struct {
 	bool     destroy;	/* Set if buffer destroy requested */
 	bool     hurry;		/* Fast buffer destroy */
 	char    *name;		/* Buffer name, non-numeric for persistent */
+	char    *pool;		/* Pool in which to create buffer */
 	uint64_t size;		/* Buffer size in bytes */
 	uint16_t state;		/* Buffer state, see BB_STATE_* in slurm.h.in */
 	char    *type;		/* Buffer type */
@@ -157,6 +159,7 @@ typedef struct bb_job {
 	uint32_t   gres_cnt;	/* number of records in gres_ptr */
 	bb_gres_t *gres_ptr;
 	uint32_t   job_id;
+	char      *job_pool;	/* Pool in which to create job buffers */
 	uint32_t   magic;
 	struct bb_job *next;
 	char      *partition;	/* Associated partition (for limits) */
@@ -374,4 +377,8 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 
 /* Log deletion of a persistent burst buffer in the database */
 extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
+
+/* Determine if the specified pool name is valid on this system */
+extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
+
 #endif	/* __BURST_BUFFER_COMMON_H__ */

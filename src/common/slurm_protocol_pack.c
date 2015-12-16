@@ -10464,6 +10464,9 @@ static int _unpack_burst_buffer_info_msg(
 					&bb_info_ptr->gres_ptr[j].avail_cnt,
 					     buffer);
 				safe_unpack64(
+					&bb_info_ptr->gres_ptr[j].granularity,
+					     buffer);
+				safe_unpack64(
 					&bb_info_ptr->gres_ptr[j].used_cnt,
 					buffer);
 			}
@@ -10513,6 +10516,8 @@ static int _unpack_burst_buffer_info_msg(
 				safe_unpackstr_xmalloc(&bb_resv_ptr->name,
 						       &uint32_tmp, buffer);
 				safe_unpackstr_xmalloc(&bb_resv_ptr->partition,
+						       &uint32_tmp, buffer);
+				safe_unpackstr_xmalloc(&bb_resv_ptr->pool,
 						       &uint32_tmp, buffer);
 				safe_unpackstr_xmalloc(&bb_resv_ptr->qos,
 						       &uint32_tmp, buffer);
