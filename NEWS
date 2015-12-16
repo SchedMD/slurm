@@ -50,6 +50,9 @@ documents those changes that are of interest to users and administrators.
  -- Finished PMIx implementation.
  -- Implemented the --without=package option for configure.
  -- Fix sshare to show each individual cluster with -M,--clusters option.
+ -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
+    completed by the user specified deadline will be terminated with a state of
+    "Deadline" or "DL".
 
 * Changes in Slurm 15.08.6
 ==========================
