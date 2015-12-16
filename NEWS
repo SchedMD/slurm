@@ -90,6 +90,7 @@ documents those changes that are of interest to users and administrators.
     NOTE: Job arrays submitted to Slurm version 15.08.6 or later will fail if
     the slurmctld daemon is downgraded to an earlier version of Slurm.
  -- Move slurmctld mail handler to separate thread for improved performance.
+ -- Fix containment of adopted processes from pam_slurm_adopt.
 
 * Changes in Slurm 15.08.5
 ==========================

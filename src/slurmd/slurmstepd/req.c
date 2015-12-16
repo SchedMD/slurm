@@ -1238,7 +1238,6 @@ static void *_wait_extern_pid(void *args)
 	pid_t pid = extern_pid->pid;
 
 	jobacctinfo_t *jobacct = NULL;
-	jobacct_id_t jobacct_id;
 	pid_t *pids = NULL;
 	int npids = 0, i;
 	char	proc_stat_file[256];	/* Allow ~20x extra length */
@@ -1248,14 +1247,6 @@ static void *_wait_extern_pid(void *args)
 	int num_read, ppid;
 
 	xfree(extern_pid);
-
-	jobacct_id.taskid = job->nodeid;
-	jobacct_id.nodeid = job->nodeid;
-	jobacct_id.job = job;
-
-	proctrack_g_add(job, pid);
-	task_g_add_pid(pid);
-	jobacct_gather_add_task(pid, &jobacct_id, 1);
 
 	//info("waiting on pid %d", pid);
 	_block_on_pid(pid);
@@ -1307,6 +1298,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	pthread_t thread_id;
 	pthread_attr_t attr;
 	extern_pid_t *extern_pid;
+	jobacct_id_t jobacct_id;
 	int retries = 0, rc = SLURM_SUCCESS;
 
 	if (job->stepid != SLURM_EXTERN_CONT) {
@@ -1321,6 +1313,17 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	extern_pid = xmalloc(sizeof(extern_pid_t));
 	extern_pid->job = job;
 	extern_pid->pid = pid;
+
+	/* track pid: add outside of the below thread so that the pam module
+	 * waits until the parent pid is added, before letting the parent spawn
+	 * any children. */
+	jobacct_id.taskid = job->nodeid;
+	jobacct_id.nodeid = job->nodeid;
+	jobacct_id.job = job;
+
+	proctrack_g_add(job, pid);
+	task_g_add_pid(pid);
+	jobacct_gather_add_task(pid, &jobacct_id, 1);
 
 	/* spawn a thread that will wait on the pid given */
 	slurm_attr_init(&attr);

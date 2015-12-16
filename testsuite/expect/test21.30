@@ -46,6 +46,7 @@ source ./inc21.30.13
 source ./inc21.30.14
 source ./inc21.30.15
 source ./inc21.30.16
+source ./inc21.30.17
 
 set test_id	"21.30"
 set exit_code	0
@@ -635,5 +636,18 @@ if {$exit_code != 0 } {
 	endit
 }
 set mod_qos_vals(MaxNodesPerUser) "-1"
+
+#
+# Test MaxWall is used as job's timelimit if job was requested
+# without --time option
+#
+set mod_qos_vals(MaxWall) $maxwall_num
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+inc21_30_17
+if {$exit_code != 0 } {
+	endit
+}
+set mod_qos_vals(MaxWall) "-1"
 
 endit
