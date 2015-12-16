@@ -40,6 +40,7 @@ source ./inc21.30.13
 source ./inc21.30.14
 source ./inc21.30.15
 source ./inc21.30.16
+source ./inc21.30.17
 
 ##########################################################
 #
@@ -321,6 +322,23 @@ proc part_test { } {
 	}
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
+
+	#
+	# QOS/Parent QOS MaxWall
+	#
+	set mod_job_qos(MaxWall) 1
+	set mod_part_qos(MaxWall) $maxwall_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_17
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxWall) "-1"
+	set mod_part_qos(MaxWall) "-1"
+
 }
 
 ##########################################################
@@ -606,5 +624,21 @@ proc qos_test { } {
 	}
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
+
+	#
+	# QOS/Parent QOS MaxWall
+	#
+	set mod_job_qos(MaxWall) $maxwall_num
+	set mod_part_qos(MaxWall) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_17
+	if {$exit_code != 0 } {
+		cleanup
+		exit 1
+	}
+	set mod_job_qos(MaxWall) "-1"
+	set mod_part_qos(MaxWall) "-1"
 
 }
