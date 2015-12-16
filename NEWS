@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
     master job record file for all tasks of the job array.
     NOTE: Job arrays submitted to Slurm version 15.08.6 or later will fail if
     the slurmctld daemon is downgraded to an earlier version of Slurm.
+ -- Move slurmctld mail handler to separate thread for improved performance.
 
 * Changes in Slurm 15.08.5
 ==========================
