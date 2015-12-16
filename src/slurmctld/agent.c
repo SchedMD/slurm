@@ -194,7 +194,7 @@ static void *_wdog(void *args);
 
 static mail_info_t *_mail_alloc(void);
 static void  _mail_free(void *arg);
-static void  _mail_proc(mail_info_t *mi);
+static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
 
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1250,7 +1250,7 @@ static void _list_delete_retry(void *retry_entry)
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
  * IN mail_too - Send pending email too, note this performed using a
- *	fork/waitpid, so it can take longer than just creating  a pthread
+ *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
  * RET count of queued requests remaining
  */
@@ -1261,6 +1261,9 @@ extern int agent_retry (int min_wait, bool mail_too)
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
 	ListIterator retry_iter;
+	pthread_t thread_mail = 0;
+	pthread_attr_t attr_mail;
+	mail_info_t *mi = NULL;
 
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
@@ -1362,13 +1365,30 @@ extern int agent_retry (int min_wait, bool mail_too)
 		} else
 			error("agent_retry found record with no agent_args");
 	} else if (mail_too) {
-		mail_info_t *mi = NULL;
+		slurm_mutex_lock(&agent_cnt_mutex);
 		slurm_mutex_lock(&mail_mutex);
-		if (mail_list)
+		while (mail_list && (agent_thread_cnt < MAX_SERVER_THREADS)) {
+			int retries = 0;
 			mi = (mail_info_t *) list_dequeue(mail_list);
+			if (!mi)
+				break;
+
+			agent_thread_cnt++;
+			slurm_attr_init(&attr_mail);
+			if (pthread_attr_setdetachstate
+			    (&attr_mail, PTHREAD_CREATE_DETACHED))
+				error("pthread_attr_setdetachstate error %m");
+			while (pthread_create(&thread_mail, &attr_mail,
+					      _mail_proc, (void *) mi)) {
+				error("pthread_create error %m");
+				if (++retries > MAX_RETRIES)
+					fatal("Can't create pthread");
+				usleep(10000);	/* sleep and retry */
+			}
+			slurm_attr_destroy(&attr_mail);
+		}
 		slurm_mutex_unlock(&mail_mutex);
-		if (mi)
-			_mail_proc(mi);
+		slurm_mutex_unlock(&agent_cnt_mutex);
 	}
 
 	return list_size;
@@ -1555,8 +1575,9 @@ static void _mail_free(void *arg)
 }
 
 /* process an email request and free the record */
-static void _mail_proc(mail_info_t *mi)
+static void *_mail_proc(void *arg)
 {
+	mail_info_t *mi = (mail_info_t *) arg;
 	pid_t pid;
 
 	pid = fork();
@@ -1581,7 +1602,14 @@ static void _mail_proc(mail_info_t *mi)
 		waitpid(pid, NULL, 0);
 	}
 	_mail_free(mi);
-	return;
+	slurm_mutex_lock(&agent_cnt_mutex);
+	if (agent_thread_cnt)
+		agent_thread_cnt--;
+	else
+		error("agent_thread_cnt underflow");
+	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	return (void *) NULL;
 }
 
 static char *_mail_type_str(uint16_t mail_type)
@@ -1762,11 +1790,8 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
-	if (!mail_list) {
+	if (!mail_list)
 		mail_list = list_create(_mail_free);
-		if (!mail_list)
-			fatal("list_create failed");
-	}
 	(void) list_enqueue(mail_list, (void *) mi);
 	slurm_mutex_unlock(&mail_mutex);
 	return;
