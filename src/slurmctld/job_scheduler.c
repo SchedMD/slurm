@@ -64,6 +64,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather.h"
+#include "src/common/parse_time.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -970,6 +971,60 @@ static void *_sched_agent(void *args)
 	return NULL;
 }
 
+/* Determine if job's deadline specification is still valid, kill job if not
+ * job_ptr IN - Job to test
+ * func IN - function named used for logging, "sched" or "backfill"
+ * RET - true of valid, false if invalid and job cancelled
+ */
+extern bool deadline_ok(struct job_record *job_ptr, char *func)
+{
+	time_t now;
+	char time_str_deadline[32];
+	bool fail_job = false;
+	time_t inter;
+
+	now = time(NULL);
+	if ((job_ptr->time_min) && (job_ptr->time_min != NO_VAL)) {
+		inter = now + job_ptr->time_min * 60;
+		if (job_ptr->deadline < inter) {
+			slurm_make_time_str(&job_ptr->deadline,
+					    time_str_deadline,
+					    sizeof(time_str_deadline));
+			info("%s: JobId %u with time_min %u exceeded deadline "
+			     "%s and cancelled ",
+			     func, job_ptr->job_id, job_ptr->time_min,
+			     time_str_deadline);
+			fail_job = true;
+		}
+	} else if ((job_ptr->time_limit != NO_VAL) &&
+		   (job_ptr->time_limit != INFINITE)) {
+		inter = now + job_ptr->time_limit * 60;
+		if (job_ptr->deadline < inter) {
+			slurm_make_time_str(&job_ptr->deadline,
+					   time_str_deadline,
+					   sizeof(time_str_deadline));
+			info("%s: JobId %u with time_limit %u exceeded "
+			     "deadline %s and cancelled ",
+			     func, job_ptr->job_id, job_ptr->time_limit,
+			    time_str_deadline);
+			fail_job = true;
+		}
+	}
+	if (fail_job) {
+		last_job_update = now;
+		job_ptr->job_state = JOB_DEADLINE;
+		job_ptr->exit_code = 1;
+		job_ptr->state_reason = FAIL_DEADLINE;
+		xfree(job_ptr->state_desc);
+		job_ptr->start_time = now;
+		job_ptr->end_time = now;
+		srun_allocate_abort(job_ptr);
+		job_completion_logger(job_ptr, false);
+		return false;
+	}
+	return true;
+}
+
 static int _schedule(uint32_t job_limit)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
@@ -1011,6 +1066,7 @@ static int _schedule(uint32_t job_limit)
 	char job_id_buf[32];
 	char *unavail_node_str = NULL;
 	bool fail_by_part;
+	uint32_t deadline_time_limit, save_time_limit;
 #if HAVE_SYS_PRCTL_H
 	char get_name[16];
 #endif
@@ -1484,6 +1540,32 @@ next_task:
 			}
 		}
 
+		deadline_time_limit = 0;
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+			if (!deadline_ok(job_ptr, "sched"))
+				continue;
+
+			deadline_time_limit = job_ptr->deadline - now;
+			deadline_time_limit /= 60;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_ptr->time_limit != INFINITE)) {
+				deadline_time_limit = MIN(job_ptr->time_limit,
+							  deadline_time_limit);
+			} else {
+				if ((job_ptr->part_ptr->default_time != NO_VAL) &&
+				    (job_ptr->part_ptr->default_time != INFINITE)){
+					deadline_time_limit = MIN(
+						job_ptr->part_ptr->default_time,
+						deadline_time_limit);
+				} else if ((job_ptr->part_ptr->max_time != NO_VAL) &&
+					   (job_ptr->part_ptr->max_time != INFINITE)){
+					deadline_time_limit = MIN(
+						job_ptr->part_ptr->max_time,
+						deadline_time_limit);
+				}
+			}
+		}
+
 		if (!acct_policy_job_runnable_state(job_ptr) &&
 		    !acct_policy_job_runnable_pre_select(job_ptr))
 			continue;
@@ -1569,9 +1651,15 @@ next_task:
 			continue;
 		}
 
+		if (deadline_time_limit) {
+			save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = deadline_time_limit;
+		}
 		error_code = select_nodes(job_ptr, false, NULL,
 					  unavail_node_str, NULL);
 		fail_by_part = false;
+		if ((error_code != SLURM_SUCCESS) && deadline_time_limit)
+			job_ptr->time_limit = save_time_limit;
 		if ((error_code == ESLURM_NODES_BUSY) ||
 		    (error_code == ESLURM_POWER_NOT_AVAIL) ||
 		    (error_code == ESLURM_POWER_RESERVED)) {

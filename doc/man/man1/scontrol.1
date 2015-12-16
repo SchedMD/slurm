@@ -314,7 +314,7 @@ Resuming a previously suspended job may result in multiple jobs being
 allocated the same CPUs, which could trigger gang scheduling with some
 configurations or severe degradation in performance with other configurations.
 Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
-job without releasing its CPUs for allocaiton to other jobs and would be a
+job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.
 Use with caution.
 
@@ -510,6 +510,23 @@ Possible values on are "MESH", "TORUS" and "NAV" (mesh else torus).
 \fIContiguous\fP=<yes|no>
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
+Only the Slurm administrator or root can change this parameter.
+.TP
+\fIDeadline\fP=<time_spec>
+It accepts times of the form \fIHH:MM:SS\fR to specify a deadline to a job at
+a specific time of day (seconds are optional).
+You may also specify \fImidnight\fR, \fInoon\fR, \fIfika\fR (3 PM) or
+\fIteatime\fR (4 PM) and you can have a time\-of\-day suffixed
+with \fIAM\fR or \fIPM\fR for a deadline in the morning or the evening.
+You can specify a deadline for the job with
+a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
+or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR.  You can also
+give times like \fInow + count time\-units\fR, where the time\-units
+can be \fIminutes\fR, \fIhours\fR, \fIdays\fR, or \fIweeks\fR
+and you can tell Slurm to put a deadline for tomorrow with the keyword
+\fItomorrow\fR.
+The specified deadline must be later than the current time.
+Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
 .TP
 \fIDependency\fP=<dependency_list>

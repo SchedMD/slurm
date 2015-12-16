@@ -1165,6 +1165,11 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			job_uid = (uint32_t) user_id;
 		}
+		else if (!strncasecmp(tag, "Deadline", MAX(taglen, 3))) {
+			if ((job_msg.deadline = parse_time(val, 0))) {
+				update_cnt++;
+			}
+		}
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Update of this parameter is not "

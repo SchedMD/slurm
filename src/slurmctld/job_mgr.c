@@ -1154,6 +1154,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 	pack_time(dump_job_ptr->resize_time, buffer);
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
+	pack_time(dump_job_ptr->deadline, buffer);
 
 	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack32(dump_job_ptr->job_state, buffer);
@@ -1260,7 +1261,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 	uint32_t job_state;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
-	time_t preempt_time = 0;
+	time_t preempt_time = 0, deadline = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0, power_flags = 0;
 	uint8_t uint8_tmp = 0;
@@ -1369,6 +1370,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&pre_sus_time, buffer);
 		safe_unpack_time(&resize_time, buffer);
 		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&deadline, buffer);
 
 		safe_unpack16(&direct_set_prio, buffer);
 		safe_unpack32(&job_state, buffer);
@@ -2014,6 +2016,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->state_desc   = state_desc;
 	state_desc            = NULL;	/* reused, nothing left to free */
 	job_ptr->suspend_time = suspend_time;
+	job_ptr->deadline     = deadline;
 	if (task_id_size != NO_VAL) {
 		if (!job_ptr->array_recs)
 			job_ptr->array_recs=xmalloc(sizeof(job_array_struct_t));
@@ -3612,6 +3615,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   array_inx=%s", job_specs->array_inx);
 	debug3("   burst_buffer=%s", job_specs->burst_buffer);
 	debug3("   mcs_label=%s", job_specs->mcs_label);
+	slurm_make_time_str(&job_specs->deadline, buf, sizeof(buf));
+	debug3("   deadline=%s", buf);
 
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -3816,6 +3821,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->tres_fmt_alloc_str = NULL;
 
 	job_ptr_pend->wckey = xstrdup(job_ptr->wckey);
+	job_ptr_pend->deadline = job_ptr->deadline;
 
 	job_details = job_ptr->details;
 	details_new = job_ptr_pend->details;
@@ -3988,6 +3994,15 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	return rc;
 }
 
+static inline bool _has_deadline(struct job_record *job_ptr)
+{
+	if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+		queue_job_scheduler();
+		return true;
+	}
+	return false;
+}
+
 /*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
@@ -4139,7 +4154,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	test_only = will_run || (allocate == 0);
 
-	no_alloc = test_only || too_fragmented ||
+	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
@@ -5397,6 +5412,38 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		     __func__, job_desc->time_min, job_desc->time_limit);
 		rc = ESLURM_INVALID_TIME_LIMIT;
 		goto fini;
+	}
+	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL)) {
+		char time_str_now[32];
+		char time_str_deadline[32];
+		time_t now = time(NULL);
+		slurm_make_time_str(&job_desc->deadline, time_str_deadline,
+				    sizeof(time_str_deadline));
+		slurm_make_time_str(&now, time_str_now, sizeof(time_str_now));
+		if (job_desc->deadline < now) {
+			info("_valid_job_part: job's deadline smaller than now "
+			     "(%s < %s)",
+			     time_str_deadline, time_str_now);
+			rc = ESLURM_INVALID_TIME_LIMIT;
+			goto fini;
+		}
+		if ((job_desc->time_min) && (job_desc->time_min != NO_VAL) &&
+		    (job_desc->deadline < (now + job_desc->time_min * 60))) {
+			info("_valid_job_part: job's min_time greater than "
+			     "deadline (%u > %s)",
+			     job_desc->time_min, time_str_deadline);
+			rc = ESLURM_INVALID_TIME_LIMIT;
+			goto fini;
+		}
+		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
+		    (job_desc->time_limit != NO_VAL) &&
+		    (job_desc->deadline < (now + job_desc->time_limit * 60))) {
+			info("_valid_job_part: job's time_limit greater than "
+			     "deadline (%u > %s)",
+			     job_desc->time_limit, time_str_deadline);
+			rc = ESLURM_INVALID_TIME_LIMIT;
+			goto fini;
+		}
 	}
 
 fini:
@@ -6844,6 +6891,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
+	job_ptr->deadline   = job_desc->deadline;
 	if (job_desc->time_min != NO_VAL)
 		job_ptr->time_min = job_desc->time_min;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
@@ -8109,6 +8157,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack8(dump_job_ptr->reboot,        buffer);
 		pack16(dump_job_ptr->restart_cnt,  buffer);
 		pack16(show_flags,  buffer);
+		pack_time(dump_job_ptr->deadline, buffer);
 
 		pack32(dump_job_ptr->alloc_sid, buffer);
 		if ((dump_job_ptr->time_limit == NO_VAL)
@@ -10607,6 +10656,29 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			info("sched: Attempt to extend end time for job %u",
 			     job_ptr->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+
+	if ((job_specs->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
+		char time_str[32];
+		slurm_make_time_str(&job_ptr->deadline,time_str,
+				    sizeof(time_str));
+		if (job_specs->deadline < now) {
+			error_code = ESLURM_INVALID_TIME_VALUE;
+		} else if (authorized) {
+			/* update deadline */
+			job_ptr->deadline = job_specs->deadline;
+			info("sched: update_job: setting deadline to %s for "
+			     "job_id %u", time_str,
+			     job_specs->job_id);
+			/* Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly */
+			job_ptr->limit_set.time = acct_policy_limit_set.time;
+			update_accounting = true;
+		} else {
+			info("sched: Attempt to extend end time for job %u",
+			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -14654,6 +14726,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->cpu_freq_min      = details->cpu_freq_min;
 	job_desc->cpu_freq_max      = details->cpu_freq_max;
 	job_desc->cpu_freq_gov      = details->cpu_freq_gov;
+	job_desc->deadline          = job_ptr->deadline;
 	job_desc->dependency        = xstrdup(details->dependency);
 	job_desc->end_time          = 0; /* Unused today */
 	job_desc->environment       = get_job_env(job_ptr,

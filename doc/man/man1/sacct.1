@@ -333,6 +333,9 @@ Job has been allocated resources, but are waiting for them to become ready for u
 \f3CG  COMPLETING\fP
 Job is in the process of completing. Some processes on some nodes may still be active.
 .TP
+\f3DL  DEADLINE\fP
+Job missed its deadline.
+.TP
 \f3F   FAILED\fP
 Job terminated with non\-zero exit code or other failure condition.
 .TP
@@ -773,7 +776,7 @@ Initiation time of the job in the same format as \f3End\fP.
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, PREEMPTED, BOOT_FAIL or NODE_FAIL.
+TIMEOUT, PREEMPTED, BOOT_FAIL, DEADLINE or NODE_FAIL.
 If more information is available on the job state
 than will fit into the current field width (for example, the uid that CANCELLED
 a job) the state will be followed by a "+".  You can increase the size of

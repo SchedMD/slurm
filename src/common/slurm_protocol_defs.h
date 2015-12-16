@@ -89,6 +89,8 @@
 	((_X->job_state & JOB_STATE_BASE) == JOB_TIMEOUT)
 #define IS_JOB_NODE_FAILED(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_NODE_FAIL)
+#define IS_JOB_DEADLINE(_X)		\
+	((_X->job_state & JOB_STATE_BASE) == JOB_DEADLINE)
 
 /* Derived job states */
 #define IS_JOB_COMPLETING(_X)		\

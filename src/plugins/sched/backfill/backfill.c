@@ -804,7 +804,7 @@ static int _attempt_backfill(void)
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr, **bf_part_ptr = NULL;
-	uint32_t end_time, end_reserve;
+	uint32_t end_time, end_reserve, deadline_time_limit;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
@@ -1188,6 +1188,16 @@ next_task:
 			continue;
 		}
 
+		/* test of deadline */
+		now = time(NULL);
+		deadline_time_limit = 0;
+		if ((job_ptr->deadline) && (job_ptr->deadline != NO_VAL)) {
+			if (!deadline_ok(job_ptr, "backfill"))
+				continue;
+
+			deadline_time_limit = (job_ptr->deadline - now) / 60;
+		}
+
 		/* Determine job's expected completion time */
 		if (part_ptr->max_time == INFINITE)
 			part_time_limit = YEAR_MINUTES;
@@ -1204,7 +1214,10 @@ next_task:
 				time_limit = MIN(job_ptr->time_limit,
 						 part_time_limit);
 		}
-		comp_time_limit = time_limit;
+		if (deadline_time_limit)
+			comp_time_limit = MIN(time_limit, deadline_time_limit);
+		else
+			comp_time_limit = time_limit;
 		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())

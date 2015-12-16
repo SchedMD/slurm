@@ -1,0 +1,95 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of --deadline option and time_min and time too long
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.107"
+set exit_code   0
+set job_id      0
+
+print_header $test_id
+
+#
+# Spawn a job with a deadline and no time
+#
+set timeout $max_job_delay
+set srun_pid [spawn $srun -v  -N1 --deadline now+1hour --time-min 20 -t180 $bin_sleep 1]
+expect {
+	-re "Requested time limit is invalid" {
+		send_user "\nFAILURE: time limit error\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "launching ($number).0 on host" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	exit 1
+}
+
+#
+# verify time limit
+#
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=01:00:00" {
+		exp_continue
+	}
+	-re "TimeLimit=00:59:" {
+		exp_continue
+	}
+	-re "TimeLimit=" {
+		send_user "\nFAILURE: time limit is different from deadline\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

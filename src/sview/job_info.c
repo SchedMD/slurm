@@ -127,6 +127,7 @@ enum {
 	SORTID_CPU_MAX,
 	SORTID_CPU_MIN,
 	SORTID_CPUS_PER_TASK,
+	SORTID_DEADLINE,
 	SORTID_DEPENDENCY,
 	SORTID_DERIVED_EC,
 	SORTID_EXIT_CODE,
@@ -318,6 +319,8 @@ static display_data_t display_data_job[] = {
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_END, "Time End", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_DEADLINE, "Deadline", FALSE,
+	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIME_SUSPEND, "Time Suspended", FALSE,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE,
@@ -1172,6 +1175,14 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (job_msg->begin_time < time(NULL))
 			job_msg->begin_time = time(NULL);
 		break;
+	case SORTID_DEADLINE:
+		type = "deadline";
+		job_msg->deadline = parse_time((char *)new_text, 0);
+		if (!job_msg->deadline)
+			goto return_error;
+		if (job_msg->deadline < time(NULL))
+			goto return_error;
+		break;
 	case SORTID_STD_OUT:
 		type = "StdOut";
 		job_msg->std_out = xstrdup(new_text);
@@ -1548,6 +1559,15 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CPUS_PER_TASK),
+				   tmp_char);
+	if (job_ptr->deadline)
+		slurm_make_time_str((time_t *)&job_ptr->deadline, tmp_char,
+				     sizeof(tmp_char));
+	else
+		sprintf(tmp_char, "N/A");
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_DEADLINE),
 				   tmp_char);
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -2020,7 +2040,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[400];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
-	char tmp_thread_spec[40];
+	char tmp_thread_spec[40], tmp_time_deadline[40];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -2294,6 +2314,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_time_submit,
 			    sizeof(tmp_time_submit));
 
+	if (job_ptr->deadline)
+		slurm_make_time_str((time_t *)&job_ptr->deadline, tmp_time_deadline,
+				     sizeof(tmp_time_deadline));
+	else
+		sprintf(tmp_time_deadline, "N/A");
+
 	slurm_get_job_stderr(tmp_std_err, sizeof(tmp_std_err), job_ptr);
 
 	slurm_get_job_stdin(tmp_std_in, sizeof(tmp_std_in), job_ptr);
@@ -2371,6 +2397,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_CPU_MIN,      tmp_cpu_cnt,
 				   SORTID_CPUS_PER_TASK,tmp_cpus_per_task,
 				   SORTID_CPU_REQ,      tmp_cpu_req,
+				   SORTID_DEADLINE,     tmp_time_deadline,
 				   SORTID_DEPENDENCY,   job_ptr->dependency,
 				   SORTID_DERIVED_EC,   tmp_derived_ec,
 				   SORTID_EXIT_CODE,    tmp_exit,
