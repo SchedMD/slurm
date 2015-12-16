@@ -638,7 +638,7 @@ if {$exit_code != 0 } {
 set mod_qos_vals(MaxNodesPerUser) "-1"
 
 #
-# Test if QOS/Parent QOS MaxWall is used as job's timelimit if job was requested
+# Test MaxWall is used as job's timelimit if job was requested
 # without --time option
 #
 set mod_qos_vals(MaxWall) $maxwall_num
