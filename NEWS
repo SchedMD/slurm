@@ -30,7 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- If a job can never be started due to unsatisfied job dependencies, report
     the full original job dependency specification rather than the dependencies
     remaining to be satisfied (typically NULL).
- -- Refactor logic to synchronize active bach jobs and their script/environment
+ -- Refactor logic to synchronize active batch jobs and their script/environment
     files, reducing overhead dramatically for large numbers of active jobs.
  -- Avoid hard-link/copy of script/environment files for job arrays. Use the
     master job record file for all tasks of the job array.
