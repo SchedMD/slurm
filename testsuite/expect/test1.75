@@ -142,7 +142,7 @@ proc sub_job { freq } {
 	return [array get this_freq]
 }
 
-make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 10"
+make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 30"
 make_bash_script $file_in "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
 
 # Identify a node that we can use and available governors
@@ -257,6 +257,7 @@ if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
 	send_user "\nFAILURE: CPU frequency values are not valid\n"
+	send_user "Test with smaller JobAcctGatherFrequency configuration or longer running jobs\n"
 	exit 1
 }
 
