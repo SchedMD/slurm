@@ -96,6 +96,8 @@ GetOptions(#'a=s'      => \$start_time,
 	   #'v=s'      => \$variable_list,
 	   #'V'        => \$export_env,
 	   #'W=s'      => \@additional_attributes,
+	   'W=s'      => \$time,
+	   'x'        => \$exclusive,
 	   'help|?'   => \$help,
 	   'man'      => \$man,
 	   )
@@ -104,6 +106,7 @@ GetOptions(#'a=s'      => \$start_time,
 # Display usage if necessary
 pod2usage(0) if $help;
 if ($man) {
+	#print "i man if";
         if ($< == 0) {   # Cannot invoke perldoc as root
 		my $id = eval { getpwnam("nobody") };
 		$id = eval { getpwnam("nouser") } unless defined $id;
@@ -124,6 +127,8 @@ if ($ARGV[0]) {
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
+
+	#print "script = $script"
 }
 
 my $command;
@@ -148,55 +153,68 @@ if ($interactive || !$script) {
 	$command .= " -e $err_path" if $err_path;
 	$command .= " -o $out_path" if $out_path;
 }
+#print " command = $command\n";
 
 #################################### HERE IS WHERE I LEFT OFF
 
-$command .= " -n$node_opts{task_cnt}" if $ntask_cnt};
-$command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
+#$command .= " -n$node_opts{task_cnt}" if $ntask_cnt;
 
-$command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
-$command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
-
-if($res_opts{walltime}) {
-	$command .= " -t$res_opts{walltime}";
-} elsif($res_opts{cput}) {
-	$command .= " -t$res_opts{cput}";
-} elsif($res_opts{pcput}) {
-	$command .= " -t$res_opts{pcput}";
+if ($node_list) {
+	$node_list_tmp = parse_node_opts($node_list);
+	$command .= " -w $node_list_tmp";
 }
 
-$command .= " --account='$group_list'" if $group_list;
-$command .= " --array='$array'" if $array;
-$command .= " --constraint='$res_opts{proc}'" if $res_opts{proc};
-$command .= " --dependency=$depend"   if $depend;
-$command .= " --tmp=$res_opts{file}"  if $res_opts{file};
-$command .= " --mem=$res_opts{mem}"   if $res_opts{mem};
-$command .= " --nice=$res_opts{nice}" if $res_opts{nice};
+# $command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
+# $command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
 
-$command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
+# if($res_opts{walltime}) {
+# 	$command .= " -t$res_opts{walltime}";
+# } elsif($res_opts{cput}) {
+# 	$command .= " -t$res_opts{cput}";
+# } elsif($res_opts{pcput}) {
+# 	$command .= " -t$res_opts{pcput}";
+# }
+
+#$command .= " --account='$group_list'" if $group_list;
+#$command .= " --array='$array'" if $array;
+#$command .= " --constraint='$res_opts{proc}'" if $res_opts{proc};
+#$command .= " --dependency=$depend"   if $depend;
+#$command .= " --tmp=$res_opts{file}"  if $res_opts{file};
+$command .= " --mem=$mem_limit"   if $mem_limit;
+#$command .= " --nice=$res_opts{nice}" if $res_opts{nice};
+
+#$command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
 
 # Cray-specific options
-$command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
-$command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
-$command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
+# $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
+# $command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
+# $command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
 
-$command .= " --begin=$start_time" if $start_time;
-$command .= " --account=$account" if $account;
-$command .= " -H" if $hold;
+# $command .= " --begin=$start_time" if $start_time;
+# $command .= " --account=$account" if $account;
+# $command .= " -H" if $hold;
 
-if($mail_options) {
-	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
-	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
-	$command .= " --mail-type=END" if $mail_options =~ /e/;
-}
-$command .= " --mail-user=$mail_user_list" if $mail_user_list;
+# if($mail_options) {
+# 	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
+# 	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
+# 	$command .= " --mail-type=END" if $mail_options =~ /e/;
+# }
+# $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
-$command .= " --nice=$priority" if $priority;
+# $command .= " --nice=$priority" if $priority;
+if ($min_proc) {
+	$min_proc_tmp = _parse_procs($min_proc);
+	$command .= " -n $min_proc_tmp";
+}
+$command .= " -t $time" if $time;
 $command .= " -p $partition" if $partition;
+$command .= " --exclusive" if $exclusive;
 $command .= " $script" if $script;
 
-print "$command\n";
-exit;
+#exit;
+
+
+#print "Command to run = $command\n";
 
 # Execute the command and capture its stdout, stderr, and exit status. Note
 # that if interactive mode was requested, the standard output and standard
@@ -212,14 +230,14 @@ if ($interactive) {
 	my @command_output = `$command 2>&1`;
 
 	# Save the command exit status.
-	my $command_exit_status = $CHILD_ERROR;
+        my $command_exit_status = $?;
 
 	# If available, extract the job ID from the command output and print
 	# it to stdout, as done in the PBS version of qsub.
 	if ($command_exit_status == 0) {
 		my @spcommand_output=split(" ", $command_output[$#command_output]);
 		$job_id= $spcommand_output[$#spcommand_output];
-		print "$job_id\n";
+		print "Submitted job $job_id\n";
 	} else {
 		print("There was an error running the SLURM sbatch command.\n" .
 		      "The command was:\n" .
@@ -229,195 +247,195 @@ if ($interactive) {
 	}
 
 	# If block is true wait for the job to finish
-	my($resp, $count);
+	# my($resp, $count);
 	my $slurm = Slurm::new();
-	if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
-		sleep 2;
-		my($job) = $slurm->load_job($job_id);
-		$resp = $$job{'job_array'}[0]->{job_state};
-		while ( $resp < JOB_COMPLETE ) {
-			$job = $slurm->load_job($job_id);
-			$resp = $$job{'job_array'}[0]->{job_state};
-			sleep 1;
-		}
-	}
+	# if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
+	# 	sleep 2;
+	# 	my($job) = $slurm->load_job($job_id);
+	# 	$resp = $$job{'job_array'}[0]->{job_state};
+	# 	while ( $resp < JOB_COMPLETE ) {
+	# 		$job = $slurm->load_job($job_id);
+	# 		$resp = $$job{'job_array'}[0]->{job_state};
+	# 		sleep 1;
+	# 	}
+	# }
 
 	# Exit with the command return code.
 	exit($command_exit_status >> 8);
 }
 
+# Get the process count
+sub _parse_procs {
+	my ($procs_range) = @_;
+
+	# Get the max process count it if exist
+	if ($procs_range =~ /,/) {
+		my @sub_parts = split(/,/, $procs_range);
+			return $sub_parts[1];
+	} else {
+		return $procs_range;
+	}
+}
+
 sub _check_script {
 	my ($script) = @_;
 
-	open my $file, '<', $script;
-	my $first_line = <$file>;
-	close $file;
+	if (open (my $file, "<$script")) {
+		my $first_line = <$file>;
+		close $file;
 
-	return ($first =~ /\#!/);
+		return ($first_line =~ /\#!/);
+	}
+
+	return "";
 }
 
-sub parse_resource_list {
-	my ($rl) = @_;
-	my %opt = ('accelerator' => "",
-		   'arch' => "",
-		   'block' => "",
-		   'cput' => "",
-		   'file' => "",
-		   'host' => "",
-		   'mem' => "",
-		   'mpiprocs' => "",
-		   'ncpus' => "",
-		   'nice' => "",
-		   'nodes' => "",
-		   'naccelerators' => "",
-		   'opsys' => "",
-		   'other' => "",
-		   'pcput' => "",
-		   'pmem' => "",
-		   'proc' => '',
-		   'pvmem' => "",
-		   'select' => "",
-		   'software' => "",
-		   'vmem' => "",
-		   'walltime' => "",
-		   # Cray-specific resources
-		   'mppwidth' => "",
-		   'mppdepth' => "",
-		   'mppnppn' => "",
-		   'mppmem' => "",
-		   'mppnodes' => ""
-		   );
-	my @keys = keys(%opt);
+# sub parse_resource_list {
+# 	my ($rl) = @_;
+# 	my %opt = ('accelerator' => "",
+# 		   'arch' => "",
+# 		   'block' => "",
+# 		   'cput' => "",
+# 		   'file' => "",
+# 		   'host' => "",
+# 		   'mem' => "",
+# 		   'mpiprocs' => "",
+# 		   'ncpus' => "",
+# 		   'nice' => "",
+# 		   'nodes' => "",
+# 		   'naccelerators' => "",
+# 		   'opsys' => "",
+# 		   'other' => "",
+# 		   'pcput' => "",
+# 		   'pmem' => "",
+# 		   'proc' => '',
+# 		   'pvmem' => "",
+# 		   'select' => "",
+# 		   'software' => "",
+# 		   'vmem' => "",
+# 		   'walltime' => "",
+# 		   # Cray-specific resources
+# 		   'mppwidth' => "",
+# 		   'mppdepth' => "",
+# 		   'mppnppn' => "",
+# 		   'mppmem' => "",
+# 		   'mppnodes' => ""
+# 		   );
+# 	my @keys = keys(%opt);
 
-#	The select option uses a ":" separator rather than ","
-#	This wrapper currently does not support multiple select options
+# #	The select option uses a ":" separator rather than ","
+# #	This wrapper currently does not support multiple select options
 
-#	Protect the colons used to separate elements in walltime=hh:mm:ss.
-#	Convert to NNhNNmNNs format.
-	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
+# #	Protect the colons used to separate elements in walltime=hh:mm:ss.
+# #	Convert to NNhNNmNNs format.
+# 	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
 
-	$rl =~ s/:/,/g;
-	foreach my $key (@keys) {
-		#print "$rl\n";
-		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
+# 	$rl =~ s/:/,/g;
+# 	foreach my $key (@keys) {
+# 		#print "$rl\n";
+# 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
 
-	}
+# 	}
 
-#	If needed, un-protect the walltime string.
-	if ($opt{walltime}) {
-		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
-#		Convert to minutes for SLURM.
-		$opt{walltime} = get_minutes($opt{walltime});
-	}
+# #	If needed, un-protect the walltime string.
+# 	if ($opt{walltime}) {
+# 		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
+# #		Convert to minutes for SLURM.
+# 		$opt{walltime} = get_minutes($opt{walltime});
+# 	}
 
-	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
-		$opt{naccelerators} = 1;
-	}
+# 	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
+# 		$opt{naccelerators} = 1;
+# 	}
 
-	if($opt{cput}) {
-		$opt{cput} = get_minutes($opt{cput});
-	}
+# 	if($opt{cput}) {
+# 		$opt{cput} = get_minutes($opt{cput});
+# 	}
 
-	if ($opt{mpiprocs} && (!$opt{mppnppn} || ($opt{mpiprocs} > $opt{mppnppn}))) {
-		$opt{mppnppn} = $opt{mpiprocs};
-	}
+# 	if ($opt{mpiprocs} && (!$opt{mppnppn} || ($opt{mpiprocs} > $opt{mppnppn}))) {
+# 		$opt{mppnppn} = $opt{mpiprocs};
+# 	}
 
-	if($opt{mppmem}) {
-		$opt{mem} = convert_mb_format($opt{mppmem});
-	} elsif($opt{mem}) {
-		$opt{mem} = convert_mb_format($opt{mem});
-	}
+# 	if($opt{mppmem}) {
+# 		$opt{mem} = convert_mb_format($opt{mppmem});
+# 	} elsif($opt{mem}) {
+# 		$opt{mem} = convert_mb_format($opt{mem});
+# 	}
 
-	if($opt{file}) {
-		$opt{file} = convert_mb_format($opt{file});
-	}
+# 	if($opt{file}) {
+# 		$opt{file} = convert_mb_format($opt{file});
+# 	}
 
-	return \%opt;
-}
+# 	return \%opt;
+# }
 
 sub parse_node_opts {
 	my ($node_string) = @_;
-	my %opt = ('node_cnt' => 0,
-		   'hostlist' => "",
-		   'task_cnt' => 0
-		   );
-	while($node_string =~ /ppn=(\d+)/g) {
-		$opt{task_cnt} += $1;
-	}
+	my $hostlist = "";
 
+	# Create the hostlist for formating
 	my $hl = Slurm::Hostlist::create("");
 
-	my @parts = split(/\+/, $node_string);
-	foreach my $part (@parts) {
-		my @sub_parts = split(/:/, $part);
-		foreach my $sub_part (@sub_parts) {
-			if($sub_part =~ /ppn=(\d+)/) {
-				next;
-			} elsif($sub_part =~ /^(\d+)/) {
-				$opt{node_cnt} += $1;
-			} else {
-				if(!Slurm::Hostlist::push($hl, $sub_part)) {
-					print "problem pushing host $sub_part onto hostlist\n";
-				}
-			}
+	my @sub_parts = split(/ /, $node_string);
+	foreach my $sub_part (@sub_parts) {
+		if(!Slurm::Hostlist::push($hl, $sub_part)) {
+			print "problem pushing host $sub_part onto hostlist\n";
 		}
 	}
 
-	$opt{hostlist} = Slurm::Hostlist::ranged_string($hl);
-
+        $hostlist = Slurm::Hostlist::ranged_string($hl);;
 	my $hl_cnt = Slurm::Hostlist::count($hl);
-	$opt{node_cnt} = $hl_cnt if $hl_cnt > $opt{node_cnt};
 
-	return \%opt;
+	return $hostlist;
 }
 
-sub get_minutes {
-    my ($duration) = @_;
-    $duration = 0 unless $duration;
-    my $minutes = 0;
+# sub get_minutes {
+#     my ($duration) = @_;
+#     $duration = 0 unless $duration;
+#     my $minutes = 0;
 
-    # Convert [[HH:]MM:]SS to duration in minutes
-    if ($duration =~ /^(?:(\d+):)?(\d*):(\d+)$/) {
-        my ($hh, $mm, $ss) = ($1 || 0, $2 || 0, $3);
-	$minutes += 1 if $ss > 0;
-        $minutes += $mm;
-        $minutes += $hh * 60;
-    } elsif ($duration =~ /^(\d+)$/) {  # Convert number in minutes to seconds
-	    my $mod = $duration % 60;
-	    $minutes = int($duration / 60);
-	    $minutes++ if $mod;
-    } else { # Unsupported format
-        die("Invalid time limit specified ($duration)\n");
-    }
+#     # Convert [[HH:]MM:]SS to duration in minutes
+#     if ($duration =~ /^(?:(\d+):)?(\d*):(\d+)$/) {
+#         my ($hh, $mm, $ss) = ($1 || 0, $2 || 0, $3);
+# 	$minutes += 1 if $ss > 0;
+#         $minutes += $mm;
+#         $minutes += $hh * 60;
+#     } elsif ($duration =~ /^(\d+)$/) {  # Convert number in minutes to seconds
+# 	    my $mod = $duration % 60;
+# 	    $minutes = int($duration / 60);
+# 	    $minutes++ if $mod;
+#     } else { # Unsupported format
+#         die("Invalid time limit specified ($duration)\n");
+#     }
 
-    return $minutes;
-}
+#     return $minutes;
+# }
 
-sub convert_mb_format {
-	my ($value) = @_;
-	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
-	return if !$amount;
-	$suffix = lc($suffix);
+# sub convert_mb_format {
+# 	my ($value) = @_;
+# 	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
+# 	return if !$amount;
+# 	$suffix = lc($suffix);
 
-	if (!$suffix) {
-		$amount /= 1048576;
-	} elsif ($suffix eq "k") {
-		$amount /= 1024;
-	} elsif ($suffix eq "m") {
-		#do nothing this is what we want.
-	} elsif ($suffix eq "g") {
-		$amount *= 1024;
-	} elsif ($suffix eq "t") {
-		$amount *= 1048576;
-	} else {
-		print "don't know what to do with suffix $suffix\n";
-		return;
-	}
+# 	if (!$suffix) {
+# 		$amount /= 1048576;
+# 	} elsif ($suffix eq "k") {
+# 		$amount /= 1024;
+# 	} elsif ($suffix eq "m") {
+# 		#do nothing this is what we want.
+# 	} elsif ($suffix eq "g") {
+# 		$amount *= 1024;
+# 	} elsif ($suffix eq "t") {
+# 		$amount *= 1048576;
+# 	} else {
+# 		print "don't know what to do with suffix $suffix\n";
+# 		return;
+# 	}
 
-	$amount .= "M";
+# 	$amount .= "M";
 
-	return $amount;
-}
+# 	return $amount;
+# }
 ##############################################################################
 
 __END__
@@ -428,19 +446,16 @@ B<bsub> - submit a batch job in a familiar OpenLava format
 
 =head1 SYNOPSIS
 
-bsub  [-a start_time]
-      [-A account]
-      [-e err_path]
-      [-I]
-      [-l resource_list]
-      [-m mail_options] [-M user_list]
-      [-N job_name]
-      [-o out_path]
-      [-p priority]
-      [-q Queue name]
-      [-v variable_list]
-      [-V]
-      [-W additional_attributes]
+bsub
+      [-e Error Path]
+      [-I Interactive Mode]
+      [-m Node List]
+      [-M Memory Limit]
+      [-n Min Process]
+      [-o Output Path]
+      [-q Queue Name]
+      [-W Time]
+      [-x Exclusive]
       [-h]
       [script]
 
@@ -452,15 +467,7 @@ The B<bsub> submits batch jobs. It is aimed to be feature-compatible with OpenLa
 
 =over 4
 
-=item B<-a>
-
-Earliest start time of job. Format: [HH:MM][MM/DD/YY]
-
-=item B<-A account>
-
-Specify the account to which the job should be charged.
-
-=item B<-e err_path>
+=item B<-e Error Path>
 
 Specify a new path to receive the standard error output for the job.
 
@@ -468,54 +475,37 @@ Specify a new path to receive the standard error output for the job.
 
 Interactive execution.
 
-=item B<-J job_array>
+=item B<-J Job Name>
 
-Job array index values. The -J and -t options are equivalent.
+Name if the job to be submitted.
 
-=item B<-l resource_list>
+=item B<-m Host List>
 
-Specify an additional list of resources to request for the job.
+Space seperated list of hosts that this job will run on.
 
-=item B<-m mail_options>
+=item B<-M Memory Limit>
 
-Specify a list of events on which email is to be generated.
+Memory limit of the job.
 
-=item B<-M user_list>
+=item B<-n Min Processes>
 
-Specify a list of email addresses to receive messages on specified events.
-
-=item B<-N job_name>
-
-Specify a name for the job.
+Minimum number of processes for the job.
 
 =item B<-o out_path>
 
 Specify the path to a file to hold the standard output from the job.
 
-=item B<-p priority>
+=item B<-q Queue>
 
-Specify the priority under which the job should run.
+The partition that this job will run on.
 
-=item B<-p priority>
+=item B<-W Time>
 
-Specify the priority under which the job should run.
+Run time of the job.
 
-=item B<-t job_array>
+=item B<-x Exclusive>
 
-Job array index values. The -J and -t options are equivalent.
-
-=item B<-v> [variable_list]
-
-Export only the specified environment variables. This option can also be used
-with the -V option to add newly defined environment variables to the existing
-environment. The variable_list is a comma delimited list of existing environment
-variable names and/or newly defined environment variables using a name=value
-format.
-
-=item B<-V>
-
-The -V option to exports the current environment, which is the default mode of
-options unless the -v option is used.
+Run this job in exclusive mode. Job will not share nodes with other jobs.
 
 =item B<-?> | B<--help>
 
