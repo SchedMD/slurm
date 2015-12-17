@@ -557,7 +557,7 @@ static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
 	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
 	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode))) {
 		xfree(path);
-		path = xstrdup_printf(path, "%s/%s", cg->path, "tasks");
+		path = xstrdup_printf("%s/%s", cg->path, "tasks");
 	}
 
 	return path;
