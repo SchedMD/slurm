@@ -54,6 +54,9 @@ documents those changes that are of interest to users and administrators.
     completed by the user specified deadline will be terminated with a state of
     "Deadline" or "DL".
 
+* Changes in Slurm 15.08.7
+==========================
+
 * Changes in Slurm 15.08.6
 ==========================
  -- In slurmctld log file, log duplicate job ID found by slurmd. Previously was
