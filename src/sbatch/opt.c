@@ -954,7 +954,6 @@ static char *_next_line(const void *buf, int size, void **state)
 {
 	char *line;
 	char *current, *ptr;
-	int len;
 
 	if (*state == NULL) /* initial state */
 		*state = (void *)buf;
@@ -966,8 +965,7 @@ static char *_next_line(const void *buf, int size, void **state)
 	while ((*ptr != '\n') && (ptr < ((char *)buf+size)))
 		ptr++;
 
-	len = MIN((ptr-current), 1024);
-	line = xstrndup(current, len);
+	line = xstrndup(current, ptr-current);
 
 	/*
 	 *  Advance state past newline
@@ -992,7 +990,7 @@ static char *
 _get_argument(const char *file, int lineno, const char *line, int *skipped)
 {
 	const char *ptr;
-	char argument[BUFSIZ];
+	char *argument = NULL;
 	char q_char = '\0';
 	bool escape_flag = false;
 	bool quoted = false;
@@ -1012,7 +1010,6 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 	/* copy argument into "argument" buffer, */
 	i = 0;
 	while ((quoted || !isspace(*ptr)) && *ptr != '\n' && *ptr != '\0') {
-
 		if (escape_flag) {
 			escape_flag = false;
 		} else if (*ptr == '\\') {
@@ -1034,9 +1031,10 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 			break;
 		}
 
+		if (!argument)
+			argument = xmalloc(strlen(line) + 1);
 		argument[i++] = *(ptr++);
 	}
-	argument[i] = '\0';
 
 	if (quoted) /* Unmatched quote */
 		fatal("%s: line %d: Unmatched `%c` in [%s]",
@@ -1044,7 +1042,7 @@ _get_argument(const char *file, int lineno, const char *line, int *skipped)
 
 	*skipped = ptr - line;
 
-	return (i > 0 ? xstrdup (argument) : NULL);
+	return argument;
 }
 
 /*

@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill: If a job can not be started within the configured
     backfill_window, set it's start time to 0 (unknown) rather than the end
     of the backfill_window.
+ -- Remove the 1024-character limit on lines in batch scripts.
 
 * Changes in Slurm 15.08.6
 ==========================
