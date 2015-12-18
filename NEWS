@@ -1,6 +1,10 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 15.08.7
+==========================
+
+
 * Changes in Slurm 15.08.6
 ==========================
  -- In slurmctld log file, log duplicate job ID found by slurmd. Previously was
