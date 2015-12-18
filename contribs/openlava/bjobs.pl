@@ -50,31 +50,9 @@ use Slurmdb ':all'; # needed for getting the correct cluster dims
 use Switch;
 
 ################################################################################
-# $humanReadableTime = hr_time($epochTime)
+# $humanReadableTime = _hr_time($epochTime)
 # Converts an epoch time into a human readable time
 ################################################################################
-sub _job_state_str
-{
-
-	my ($state) = @_;
-
-	if(!defined($state)) {
-		return 'UNKN';
-	}
-
-	switch($state) {
-		case [JOB_COMPLETE,
-		      JOB_CANCELLED,
-		      JOB_TIMEOUT,
-		      JOB_FAILED]    { return 'COMP' }
-		case [JOB_RUNNING]   { return 'RUN' }
-		case [JOB_PENDING]   { return 'PEND' }
-		case [JOB_SUSPENDED] { return 'SUSP' }
-		else                 { return 'UNKN' }   # Unknown
-	}
-	return 'U';
-}
-
 sub _hr_time
 {
 	my ($epoch_time) = @_;
@@ -87,7 +65,7 @@ sub _hr_time
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
 		localtime $epoch_time;
 
-	return sprintf("%s  %d %d:%d", $abbr[$mon], $mday, $hour, $min);
+	return sprintf("%s %d %d:%d", $abbr[$mon], $mday, $hour, $min);
 }
 
 sub _shrink_char
@@ -116,7 +94,7 @@ sub _print_job_brief
 
 	printf("\n%-7.7s %-7.7s %-5.5s %-10.10s %-11.11s %-11.11s %-10s %-12.12s",
 	       $job->{'job_id'}, $job->{'user_name'},
-	       _job_state_str($job->{'job_state'}),
+	       $job->{'job_state_str'},
 	       $job->{'partition'}, $job->{'alloc_node'}, $job->{'nodes'},
 	       $job->{'name'}, _hr_time($job->{'submit_time'}));
 }
@@ -166,6 +144,14 @@ my $line = 0;
 foreach my $job (@{$resp->{job_array}}) {
 	my $state = $job->{'job_state'};
 
+	switch($state) {
+		case [JOB_RUNNING]   { $job->{job_state_str} = 'RUN' }
+		case [JOB_PENDING]   { $job->{job_state_str} = 'PEND' }
+		case [JOB_SUSPENDED] { $job->{job_state_str} = 'SUSP' }
+	}
+
+	next unless $job->{job_state_str};
+
 	$job->{'name'} = "Allocation" if !$job->{'name'};
 	$job->{'user_name'} = getpwuid($job->{'user_id'});
 
@@ -175,6 +161,10 @@ foreach my $job (@{$resp->{job_array}}) {
 	}
 
 	_print_job_brief($job, $line++);
+}
+
+if (!$line) {
+	print "No unfinished job found\n";
 }
 
 exit 0;
