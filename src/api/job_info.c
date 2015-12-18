@@ -338,7 +338,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char time_str[32], *group_name, *spec_name, *user_name;
 	char tmp1[128], tmp2[128], tmp3[128], tmp4[128], tmp5[128], tmp6[128];
 	char *tmp6_ptr;
-	char tmp_line[1024];
+	char tmp_line[1024 * 128];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
