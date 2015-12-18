@@ -167,44 +167,9 @@ if ($node_list) {
 	$command .= " -w $node_list_tmp";
 }
 
-# $command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
-# $command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
-
-# if($res_opts{walltime}) {
-# 	$command .= " -t$res_opts{walltime}";
-# } elsif($res_opts{cput}) {
-# 	$command .= " -t$res_opts{cput}";
-# } elsif($res_opts{pcput}) {
-# 	$command .= " -t$res_opts{pcput}";
-# }
-
-#$command .= " --account='$group_list'" if $group_list;
-#$command .= " --array='$array'" if $array;
-#$command .= " --constraint='$res_opts{proc}'" if $res_opts{proc};
-#$command .= " --dependency=$depend"   if $depend;
-#$command .= " --tmp=$res_opts{file}"  if $res_opts{file};
 $command .= " --mem=$mem_limit"   if $mem_limit;
-#$command .= " --nice=$res_opts{nice}" if $res_opts{nice};
-
-#$command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
-
-# Cray-specific options
-# $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
-# $command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
-# $command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
-
-# $command .= " --begin=$start_time" if $start_time;
-# $command .= " --account=$account" if $account;
-# $command .= " -H" if $hold;
-
-# if($mail_options) {
-# 	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
-# 	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
-# 	$command .= " --mail-type=END" if $mail_options =~ /e/;
-# }
-# $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
-# $command .= " --nice=$priority" if $priority;
+
 if ($min_proc) {
 	$min_proc_tmp = _parse_procs($min_proc);
 	$command .= " -n $min_proc_tmp";
@@ -222,9 +187,6 @@ $command .= " $script" if $script;
 # Execute the command and capture its stdout, stderr, and exit status. Note
 # that if interactive mode was requested, the standard output and standard
 # error are _not_ captured.
-
-# Capture stderr from the command to the stdout stream.
-#$command .= ' 2>&1';
 
 # Execute the command and capture the combined stdout and stderr.
 if ($base_command eq $srun) { #srun
@@ -260,8 +222,6 @@ if ($base_command eq $srun) { #srun
 		}
 	}
 	close(PH);
-#	my $command_exit_status = $?;
-#	exit($command_exit_status >> 8);
 } elsif ($base_command eq $sbatch) {
 	my @command_output = `$command 2>&1`;
 
@@ -339,85 +299,6 @@ sub _check_script {
 	return "";
 }
 
-# sub parse_resource_list {
-# 	my ($rl) = @_;
-# 	my %opt = ('accelerator' => "",
-# 		   'arch' => "",
-# 		   'block' => "",
-# 		   'cput' => "",
-# 		   'file' => "",
-# 		   'host' => "",
-# 		   'mem' => "",
-# 		   'mpiprocs' => "",
-# 		   'ncpus' => "",
-# 		   'nice' => "",
-# 		   'nodes' => "",
-# 		   'naccelerators' => "",
-# 		   'opsys' => "",
-# 		   'other' => "",
-# 		   'pcput' => "",
-# 		   'pmem' => "",
-# 		   'proc' => '',
-# 		   'pvmem' => "",
-# 		   'select' => "",
-# 		   'software' => "",
-# 		   'vmem' => "",
-# 		   'walltime' => "",
-# 		   # Cray-specific resources
-# 		   'mppwidth' => "",
-# 		   'mppdepth' => "",
-# 		   'mppnppn' => "",
-# 		   'mppmem' => "",
-# 		   'mppnodes' => ""
-# 		   );
-# 	my @keys = keys(%opt);
-
-# #	The select option uses a ":" separator rather than ","
-# #	This wrapper currently does not support multiple select options
-
-# #	Protect the colons used to separate elements in walltime=hh:mm:ss.
-# #	Convert to NNhNNmNNs format.
-# 	$rl =~ s/walltime=(\d{1,2}):(\d{2}):(\d{2})/walltime=$1h$2m$3s/;
-
-# 	$rl =~ s/:/,/g;
-# 	foreach my $key (@keys) {
-# 		#print "$rl\n";
-# 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
-
-# 	}
-
-# #	If needed, un-protect the walltime string.
-# 	if ($opt{walltime}) {
-# 		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
-# #		Convert to minutes for SLURM.
-# 		$opt{walltime} = get_minutes($opt{walltime});
-# 	}
-
-# 	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
-# 		$opt{naccelerators} = 1;
-# 	}
-
-# 	if($opt{cput}) {
-# 		$opt{cput} = get_minutes($opt{cput});
-# 	}
-
-# 	if ($opt{mpiprocs} && (!$opt{mppnppn} || ($opt{mpiprocs} > $opt{mppnppn}))) {
-# 		$opt{mppnppn} = $opt{mpiprocs};
-# 	}
-
-# 	if($opt{mppmem}) {
-# 		$opt{mem} = convert_mb_format($opt{mppmem});
-# 	} elsif($opt{mem}) {
-# 		$opt{mem} = convert_mb_format($opt{mem});
-# 	}
-
-# 	if($opt{file}) {
-# 		$opt{file} = convert_mb_format($opt{file});
-# 	}
-
-# 	return \%opt;
-# }
-
 sub _parse_node_list {
 	my ($node_string) = @_;
 	my $hostlist = "";
@@ -438,53 +319,6 @@ sub _parse_node_list {
 	return $hostlist;
 }
 
-# sub get_minutes {
-#     my ($duration) = @_;
-#     $duration = 0 unless $duration;
-#     my $minutes = 0;
-
-#     # Convert [[HH:]MM:]SS to duration in minutes
-#     if ($duration =~ /^(?:(\d+):)?(\d*):(\d+)$/) {
-#         my ($hh, $mm, $ss) = ($1 || 0, $2 || 0, $3);
-# 	$minutes += 1 if $ss > 0;
-#         $minutes += $mm;
-#         $minutes += $hh * 60;
-#     } elsif ($duration =~ /^(\d+)$/) {  # Convert number in minutes to seconds
-# 	    my $mod = $duration % 60;
-# 	    $minutes = int($duration / 60);
-# 	    $minutes++ if $mod;
-#     } else { # Unsupported format
-#         die("Invalid time limit specified ($duration)\n");
-#     }
-
-#     return $minutes;
-# }
-
-# sub convert_mb_format {
-# 	my ($value) = @_;
-# 	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
-# 	return if !$amount;
-# 	$suffix = lc($suffix);
-
-# 	if (!$suffix) {
-# 		$amount /= 1048576;
-# 	} elsif ($suffix eq "k") {
-# 		$amount /= 1024;
-# 	} elsif ($suffix eq "m") {
-# 		#do nothing this is what we want.
-# 	} elsif ($suffix eq "g") {
-# 		$amount *= 1024;
-# 	} elsif ($suffix eq "t") {
-# 		$amount *= 1048576;
-# 	} else {
-# 		print "don't know what to do with suffix $suffix\n";
-# 		return;
-# 	}
-
-# 	$amount .= "M";
-
-# 	return $amount;
-# }
 ##############################################################################
 
 __END__
