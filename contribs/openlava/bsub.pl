@@ -160,7 +160,7 @@ if ($interactive || !$script) {
 #$command .= " -n$node_opts{task_cnt}" if $ntask_cnt;
 
 if ($node_list) {
-	$node_list_tmp = parse_node_opts($node_list);
+	$node_list_tmp = _parse_node_list($node_list);
 	$command .= " -w $node_list_tmp";
 }
 
@@ -369,7 +369,7 @@ sub _check_script {
 # 	return \%opt;
 # }
 
-sub parse_node_opts {
+sub _parse_node_list {
 	my ($node_string) = @_;
 	my $hostlist = "";
 
