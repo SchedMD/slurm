@@ -132,27 +132,31 @@ if ($ARGV[0]) {
 }
 
 my $command;
+my $base_command;
 
-if ($interactive || !$script) {
-	$command = "$salloc";
-
-#	Always want at least one node in the allocation
-	if (!$node_opts{node_cnt}) {
-		$node_opts{node_cnt} = 1;
-	}
-} else {
-	if (!$script) {
+if (!$script) {
+	if ($interactive) {
+		print "Full interactive mode is not currently possible.  Please give me a command to run.\n";
+		exit 1;
+	} else {
 		pod2usage(2);
 	}
-	if (_check_script($script)) {
-		$command = "$sbatch";
-	} else {
-		$command = "$srun";
-	}
-
-	$command .= " -e $err_path" if $err_path;
-	$command .= " -o $out_path" if $out_path;
 }
+
+if (_check_script($script)) {
+	$command = $base_command = "$sbatch";
+} else {
+	$command = $base_command = "$srun";
+
+	# We need to find out the jobid we got
+	$command .= " -v";
+
+	$interactive = 1;
+}
+
+$command .= " -e $err_path" if $err_path;
+$command .= " -o $out_path" if $out_path;
+
 #print " command = $command\n";
 
 
@@ -218,49 +222,95 @@ $command .= " $script" if $script;
 # Execute the command and capture its stdout, stderr, and exit status. Note
 # that if interactive mode was requested, the standard output and standard
 # error are _not_ captured.
-if ($interactive) {
-	my $ret = system($command);
-	exit ($ret >> 8);
-} else {
-	# Capture stderr from the command to the stdout stream.
-	$command .= ' 2>&1';
 
-	# Execute the command and capture the combined stdout and stderr.
+# Capture stderr from the command to the stdout stream.
+#$command .= ' 2>&1';
+
+# Execute the command and capture the combined stdout and stderr.
+if ($base_command eq $srun) { #srun
+	my $job_id = 0;
+	my $dispatch_printed = 0;
+	my $launch_printed = 0;
+	open(PH, "$command 2>&1 |");              # or with an open pipe
+	while (<PH>) {
+		$line = $_;
+		if ($_ !~ "srun:") {
+			print $line;
+		} elsif (!$dispatch_printed && ($_ =~ /srun: jobid \d/)) {
+			my @line_words=split(" ", $_);
+			$job_id = $line_words[2];
+			chop($job_id);
+			$dispatch_printed = 2;
+		} elsif (!$dispatch_printed && ($_ =~ /srun: job \d/)) {
+			my @line_words=split(" ", $_);
+			$job_id = $line_words[2];
+			$dispatch_printed = 2;
+		} elsif (!$launch_printed && ($_ =~ /srun: launching \d/)) {
+			my @line_words=split(" ", $_);
+			my $node_name = $line_words[5];
+			chop($node_name);
+			print "<<Starting on $node_name>>\n";
+			$launch_printed = 1;
+		}
+
+		if ($dispatch_printed == 2) {
+			_print_job_submitted($job_id);
+			print "<<Waiting for dispatch ...>>\n";
+			$dispatch_printed = 1;
+		}
+	}
+	close(PH);
+#	my $command_exit_status = $?;
+#	exit($command_exit_status >> 8);
+} elsif ($base_command eq $sbatch) {
 	my @command_output = `$command 2>&1`;
 
-	# Save the command exit status.
-        my $command_exit_status = $?;
+	#Save the command exit status.
+	my $command_exit_status = $?;
 
 	# If available, extract the job ID from the command output and print
-	# it to stdout, as done in the PBS version of qsub.
+	# it to stdout, as done in the OpenLava version of bsub.
 	if ($command_exit_status == 0) {
-		my @spcommand_output=split(" ", $command_output[$#command_output]);
-		$job_id= $spcommand_output[$#spcommand_output];
-		print "Submitted job $job_id\n";
+		my @spcommand_output=split(" ",
+					   $command_output[$#command_output]);
+		my $job_id = $spcommand_output[$#spcommand_output];
+		_print_job_submitted($job_id);
 	} else {
-		print("There was an error running the SLURM sbatch command.\n" .
+		print("There was an error running the Slurm sbatch command.\n" .
 		      "The command was:\n" .
 		      "'$command'\n" .
 		      "and the output was:\n" .
 		      "'@command_output'\n");
 	}
-
-	# If block is true wait for the job to finish
-	# my($resp, $count);
-	my $slurm = Slurm::new();
-	# if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
-	# 	sleep 2;
-	# 	my($job) = $slurm->load_job($job_id);
-	# 	$resp = $$job{'job_array'}[0]->{job_state};
-	# 	while ( $resp < JOB_COMPLETE ) {
-	# 		$job = $slurm->load_job($job_id);
-	# 		$resp = $$job{'job_array'}[0]->{job_state};
-	# 		sleep 1;
-	# 	}
-	# }
-
 	# Exit with the command return code.
 	exit($command_exit_status >> 8);
+}
+
+sub _get_default_partition_name {
+
+	my $resp = Slurm->load_partitions(0, SHOW_ALL);
+	if(!$resp) {
+		die "Problem loading partitions.\n";
+	}
+
+	foreach my $part (@{$resp->{partition_array}}) {
+
+		if ($part->{flags} & PART_FLAG_DEFAULT) { # Default
+			return $part->{name};
+		}
+	}
+	return "Unknown";
+}
+
+sub _print_job_submitted {
+	my ($job_id) = @_;
+
+	print "Job <$job_id> is submitted to ";
+	if (!$partition) {
+		print "default queue <" . _get_default_partition_name() . ">\n";
+	} else {
+		print "queue <$partition>\n";
+	}
 }
 
 # Get the process count
