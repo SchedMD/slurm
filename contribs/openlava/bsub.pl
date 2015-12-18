@@ -155,7 +155,6 @@ if ($interactive || !$script) {
 }
 #print " command = $command\n";
 
-#################################### HERE IS WHERE I LEFT OFF
 
 #$command .= " -n$node_opts{task_cnt}" if $ntask_cnt;
 
@@ -210,7 +209,7 @@ $command .= " -t $time" if $time;
 $command .= " -p $partition" if $partition;
 $command .= " --exclusive" if $exclusive;
 $command .= " $script" if $script;
-
+#print " command = $command\n";
 #exit;
 
 
