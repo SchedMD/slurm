@@ -1,0 +1,88 @@
+############################################################################
+# Purpose: Test of SLURM functionality
+#          to be called from test21.30
+#          Tests if the QOS/Parent QOS MaxWall limit is used as
+#          job's TimeLimit if the job did't request --time
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+# Checks the timelimit of the job
+proc check_timelimit { job } {
+
+	global scontrol job_id exit_code maxwall_num
+
+	set timelimit_match 0
+	spawn $scontrol show job $job
+	expect {
+		-re "TimeLimit=00:0$maxwall_num:00" {
+			incr timelimit_match
+		}
+		timeout {
+			send_user "\nFAILURE scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$timelimit_match != 1} {
+		send_user "\nFAILURE job should have as TimeLimit the QOS MaxWall\n"
+		set exit_code 1
+	}
+}
+
+proc inc21_30_17 { } {
+	global salloc srun acct bin_sleep number maxwall_num exit_code
+
+	send_user "\nStarting Qos/Parent MaxWall applied to job without -t test (Within: inc21.31.17)\n"
+	set job_id 0
+
+	spawn $salloc --account=$acct -N1 $srun $bin_sleep 10
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send_user "\nJob $job_id has been submitted\n"
+			check_timelimit $job_id
+		}
+		-re "Pending job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			send_user "\nFAILURE: job $job_id should not be waiting for resources (Within: inc21.30.17)\n"
+			set exit_code 1
+		}
+		-re "error" {
+			send_user "\nFAILURE: Job allocation should not have failed. (Within: inc21.30.17)\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding (Within: inc21.30.17)\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Cancel job
+        cancel_job $job_id
+}

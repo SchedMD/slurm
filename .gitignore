@@ -54,3 +54,5 @@ Makefile
 /src/sstat/sstat
 /src/strigger/strigger
 /src/sview/sview
+testsuite/expect/globals.local
+TAGS
