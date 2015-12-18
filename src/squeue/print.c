@@ -178,6 +178,25 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 	return SLURM_SUCCESS;
 }
 
+/* Combine a job array's task "reason" into the master job array record
+ * reason as needed */
+static void _merge_job_reason(job_info_t *job_ptr, job_info_t *task_ptr)
+{
+	char *task_desc;
+
+	if (job_ptr->state_reason == task_ptr->state_reason)
+		return;
+
+	if (!job_ptr->state_desc) {
+		job_ptr->state_desc =
+			xstrdup(job_reason_string(job_ptr->state_reason));
+	}
+	task_desc = job_reason_string(task_ptr->state_reason);
+	if (strstr(job_ptr->state_desc, task_desc))
+		return;
+	xstrfmtcat(job_ptr->state_desc, ",%s", task_desc);
+}
+
 /* Combine pending tasks of a job array into a single record.
  * The tasks may have been split into separate job records because they were
  * modified or started, but the records can be re-combined if pending. */
@@ -218,6 +237,8 @@ static void _combine_pending_array_tasks(List job_list)
 				continue;	/* Different partition */
 			/* Combine this task into master job array record */
 			update_cnt++;
+			_merge_job_reason(job_rec_ptr->job_ptr,
+					  task_rec_ptr->job_ptr);
 			bit_set(task_bitmap,
 				task_rec_ptr->job_ptr->array_task_id);
 			list_delete_item(task_iterator);

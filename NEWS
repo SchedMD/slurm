@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     the slurmctld daemon is downgraded to an earlier version of Slurm.
  -- Move slurmctld mail handler to separate thread for improved performance.
  -- Fix containment of adopted processes from pam_slurm_adopt.
+ -- If a pending job array has multiple reasons for being in a pending state,
+    then print all reasons in a comma separated list.
 
 * Changes in Slurm 15.08.5
 ==========================
