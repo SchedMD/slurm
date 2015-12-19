@@ -1100,7 +1100,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 
-	/* NOTE: Run loadd_all_resv_state() before _restore_job_dependencies */
+	/* NOTE: Run load_all_resv_state() before _restore_job_dependencies */
 	_restore_job_dependencies();
 
 	/* sort config_list by weight for scheduling */
