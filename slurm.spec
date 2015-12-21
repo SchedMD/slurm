@@ -5,28 +5,31 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
-# --enable-multiple-slurmd %_with_multiple_slurmd 1 build with the multiple slurmd option.  Typically used to simulate a larger system than one has access to.
-# --enable-salloc-background %_with_salloc_background 1 on a cray system alloc salloc to execute as a background process.
-# --prefix           %_prefix        path    install path for commands, libraries, etc.
-# --with aix         %_with_aix         1    build aix RPM
-# --with auth_none   %_with_auth_none   1    build auth-none RPM
-# --with blcr        %_with_blcr        1    require blcr support
-# --with bluegene    %_with_bluegene    1    build bluegene RPM
-# --with cray        %_with_cray        1    build for a Cray system without ALPS
-# --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
-# --with cray_network %_with_cray_network 1  build for a non-Cray system with a Cray network
-# --without debug    %_without_debug    1    don't compile with debugging symbols
-# --with pmix        %_with_pmix        1    build pmix support
-# --with lua         %_with_lua         1    build Slurm lua bindings (proctrack only for now)
-# --without munge    %_without_munge    1    don't build auth-munge RPM
-# --with mysql       %_with_mysql       1    require mysql/mariadb support
-# --without netloc   %_without_netloc  path  require netloc support
-# --with openssl     %_with_openssl     1    require openssl RPM to be installed
-# --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
-# --with percs       %_with_percs       1    build percs RPM
-# --without readline %_without_readline 1    don't require readline-devel RPM to be installed
-# --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
-# --with sun_const   %_with_sun_const   1    build for Sun Constellation system
+# --enable-multiple-slurmd %_with_multiple_slurmd 1  build with the multiple slurmd
+#                                               option.  Typically used to simulate a
+#                                               larger system than one has access to.
+# --enable-salloc-background %_with_salloc_background 1  on a cray system alloc salloc
+#                                               to execute as a background process.
+# --prefix           %_prefix             path  install path for commands, libraries, etc.
+# --with aix         %_with_aix           1     build aix RPM
+# --with auth_none   %_with_auth_none     1     build auth-none RPM
+# --with blcr        %_with_blcr          1     require blcr support
+# --with bluegene    %_with_bluegene      1     build bluegene RPM
+# --with cray        %_with_cray          1     build for a Cray system without ALPS
+# --with cray_alps   %_with_cray_alps     1     build for a Cray system with ALPS
+# --with cray_network %_with_cray_network 1     build for a non-Cray system with a Cray network
+# --without debug    %_without_debug      1     don't compile with debugging symbols
+# --with pmix        %_with_pmix          1     build pmix support
+# --with lua         %_with_lua           1     build Slurm lua bindings (proctrack only for now)
+# --without munge    %_without_munge      path  don't build auth-munge RPM
+# --with mysql       %_with_mysql         1     require mysql/mariadb support
+# --without netloc   %_without_netloc     path  require netloc support
+# --with openssl     %_with_openssl       1     require openssl RPM to be installed
+# --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
+# --with percs       %_with_percs         1     build percs RPM
+# --without readline %_without_readline   1     don't require readline-devel RPM to be installed
+# --with sgijob      %_with_sgijob        1     build proctrack-sgi-job RPM
+# --with sun_const   %_with_sun_const     1     build for Sun Constellation system
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
