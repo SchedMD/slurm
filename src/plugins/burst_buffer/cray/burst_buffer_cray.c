@@ -431,7 +431,6 @@ static void *_bb_agent(void *args)
 static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 {
 	char *bb_specs, *bb_hurry, *bb_name, *bb_type, *bb_access, *bb_pool;
-	char *job_pool = NULL;
 	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
 	uint64_t tmp_cnt;
@@ -566,9 +565,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				}
 				bb_job->total_size += tmp_cnt;
 				if ((sub_tok = strstr(tok, "pool="))) {
-					xfree(job_pool);
-					job_pool = xstrdup(sub_tok + 5);
-					sub_tok = strchr(job_pool, ' ');
+					xfree(bb_job->job_pool);
+					bb_job->job_pool = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_job->job_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
@@ -613,9 +612,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->total_size += (bb_job->swap_size *
 						       bb_job->swap_nodes);
 				if ((sub_tok = strstr(tok, "pool="))) {
-					xfree(job_pool);
-					job_pool = xstrdup(sub_tok + 5);
-					sub_tok = strchr(job_pool, ' ');
+					xfree(bb_job->job_pool);
+					bb_job->job_pool = xstrdup(sub_tok + 5);
+					sub_tok = strchr(bb_job->job_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
 				}
@@ -639,6 +638,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 		bb_job_del(&bb_state, job_ptr->job_id);
 		return NULL;
 	}
+	if (!bb_job->job_pool)
+		bb_job->job_pool = xstrdup(bb_state.bb_config.default_pool);
 	if (bb_state.bb_config.debug_flag)
 		bb_job_log(&bb_state, bb_job);
 	return bb_job;
@@ -676,7 +677,7 @@ static void _save_bb_state(void)
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	int i, count_offset, offset, state_fd;
 	int error_code = 0;
-	uint16_t protocol_version = SLURM_15_08_PROTOCOL_VERSION;
+	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
 	if ((bb_state.last_update_time <= last_save_time) &&
 	    !bb_state.term_flag)
@@ -891,8 +892,6 @@ static void _recover_bb_state(void)
 				bb_alloc->array_job_id = bb_alloc->job_id;
 				bb_alloc->array_task_id = NO_VAL;
 			}
-			bb_alloc->pool = pool;
-			pool = NULL;
 			bb_alloc->seen_time = time(NULL);
 			bb_alloc->size = size;
 		} else {
@@ -1930,6 +1929,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	if (add_space > bb_state.total_space)
 		return 1;
 
+//FIXME: Needs work for multiple pools
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
 		burst_buffer_info_t *resv_bb_ptr;
@@ -1961,7 +1961,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 					       granularity);
 			bb_job->gres_ptr[i].count = tmp_g;
 			if (tmp_g > bb_state.bb_config.gres_ptr[j].avail_cnt) {
-				debug("%s: %s requests more %s GRES than"
+				debug("%s: %s requests more in pool %s than"
 				      "configured", __func__,
 				      jobid2fmt(job_ptr, jobid_buf,
 						sizeof(jobid_buf)),
@@ -1982,7 +1982,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 			break;
 		}
 		if (j >= bb_state.bb_config.gres_cnt) {
-			debug("%s: %s requests %s GRES which are undefined",
+			debug("%s: %s requests resources in undefined pool %s",
 			      __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
 			      bb_job->gres_ptr[i].name);
@@ -2361,7 +2361,7 @@ static int _xlate_batch(struct job_descriptor *job_desc)
  * burst_buffer options in a batch script file */
 static int _xlate_interactive(struct job_descriptor *job_desc)
 {
-	char *access = NULL, *type = NULL;
+	char *access = NULL, *pool = NULL, *type = NULL;
 	char *end_ptr = NULL, *tok;
 	uint64_t buf_size = 0, swap_cnt = 0;
 	int rc = SLURM_SUCCESS;
@@ -2387,6 +2387,17 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 		}
 	}
 
+
+	if ((tok = strstr(job_desc->burst_buffer, "pool="))) {
+		pool = xstrdup(tok + 5);
+		tok = strchr(pool, ',');
+		if (tok)
+			tok[0] = '\0';
+		tok = strchr(pool, ' ');
+		if (tok)
+			tok[0] = '\0';
+	}
+
 	if ((tok = strstr(job_desc->burst_buffer, "swap=")))
 		swap_cnt = strtol(tok + 5, &end_ptr, 10);
 
@@ -2405,9 +2416,15 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 	if ((rc == SLURM_SUCCESS) && (swap_cnt || buf_size)) {
 		if (swap_cnt) {
 			xstrfmtcat(job_desc->burst_buffer,
-				   "#DW swap %"PRIu64"GiB\n", swap_cnt);
+				   "#DW swap %"PRIu64"GiB", swap_cnt);
+			if (pool) {
+				xstrfmtcat(job_desc->burst_buffer,
+					   " pool=%s", pool);
+			}
 		}
 		if (buf_size) {
+			if (job_desc->burst_buffer)
+				xstrfmtcat(job_desc->burst_buffer, "\n");
 			xstrfmtcat(job_desc->burst_buffer,
 				   "#DW jobdw capacity=%s",
 				   bb_get_size_str(buf_size));
@@ -2415,15 +2432,19 @@ static int _xlate_interactive(struct job_descriptor *job_desc)
 				xstrfmtcat(job_desc->burst_buffer,
 					   " access_mode=%s", access);
 			}
+			if (pool) {
+				xstrfmtcat(job_desc->burst_buffer,
+					   " pool=%s", pool);
+			}
 			if (type) {
 				xstrfmtcat(job_desc->burst_buffer,
 					   " type=%s", type);
 			}
-			xstrfmtcat(job_desc->burst_buffer, "\n");
 		}
 	}
 
 fini:	xfree(access);
+	xfree(pool);
 	xfree(type);
 	return rc;
 }
@@ -3570,7 +3591,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 				if (bb_job->persist_add >= bb_alloc->size) {
 					bb_job->persist_add -= bb_alloc->size;
 				} else {
-					error("%s: Persistent buffer size underflow for job %u",
+					error("%s: Persistent buffer size "
+					      "underflow for job %u",
 					      __func__, job_ptr->job_id);
 					bb_job->persist_add = 0;
 				}

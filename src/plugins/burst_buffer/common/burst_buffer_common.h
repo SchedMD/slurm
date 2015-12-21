@@ -299,7 +299,7 @@ extern int bb_job_queue_sort(void *x, void *y);
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
-/* Pack individual burst buffer records into a  buffer */
+/* Pack individual burst buffer records into a buffer */
 extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 			uint16_t protocol_version);
 

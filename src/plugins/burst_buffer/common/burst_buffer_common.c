@@ -993,6 +993,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	xstrfmtcat(bb_alloc->name, "%u", job_ptr->job_id);
 	bb_alloc->next = state_ptr->bb_ahash[i];
 	bb_alloc->partition = xstrdup(bb_job->partition);
+	bb_alloc->pool = xstrdup(bb_job->job_pool);
 	bb_alloc->qos = xstrdup(bb_job->qos);
 	state_ptr->bb_ahash[i] = bb_alloc;
 	bb_alloc->size = bb_job->total_size;
@@ -1035,6 +1036,7 @@ extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 		xfree(bb_alloc->gres_ptr);
 		xfree(bb_alloc->name);
 		xfree(bb_alloc->partition);
+		xfree(bb_alloc->pool);
 		xfree(bb_alloc->qos);
 		xfree(bb_alloc);
 	}
