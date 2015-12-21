@@ -283,6 +283,10 @@ $ scontrol create reservation starttime=now duration=60 \
 $ scontrol create reservation StartTime=noon duration=60 \
   users=brenda NodeCnt=8 \
   BurstBuffer=cray:20G
+
+$ scontrol create reservation StartTime=16:00 duration=60 \
+  users=joseph flags=any_nodes \
+  BurstBuffer=cray:pool_test:4G
 </pre>
 
 <p style="text-align:center;">Last modified 21 December 2015</p>
