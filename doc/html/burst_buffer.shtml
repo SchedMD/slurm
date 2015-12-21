@@ -160,13 +160,20 @@ SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
 <u>burst_buffer/generic</u> plugins to create and delete persistent burst
 buffers, which have a lifetime independent of the job.</p>
 <ul>
-<li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt; [access=&lt;access&gt;] [type=&lt;type&gt;]</li>
+<li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt;
+[access=&lt;access&gt;] [pool=&lt;pool&gt; [type=&lt;type&gt;]</li>
 <li>#BB destroy_persistent name=&lt;name&gt; [hurry]</li>
 </ul>
 <p>The persistent burst buffer name may not start with a numeric value (numeric
 names are reserved for job-specific burst buffers).
-The size specification can include a suffix of M, G, T, P, etc. for megabytes,
-gigabytes, terabytes, petabytes, etc.
+The <b>capacity</b> (size) specification can include a suffix of M, G, T, P, etc.
+for megabytes, gigabytes, terabytes, petabytes, etc.
+The <b>access</b> parameter identifies the buffer access mode. Supported access
+modes for the burst_buffer/cray plugin include: striped, private, and ldbalance.
+The <b>pool</b> parameter identifies the resource pool from in the burst buffer
+should be created. The default and available pools are configuration dependent.
+The <b>type</b> parameter identifies the buffer type. Supported type
+modes for the burst_buffer/cray plugin include: cache and scratch.
 Multiple persistent burst buffers may be created or deleted within a single
 job.
 A sample batch script follows:</p>
@@ -205,6 +212,7 @@ Multiple directives should be space separated.</p>
 <li>capacity=&lt;number&gt;</li>
 <li>swap=&lt;number&gt;</li>
 <li>type=&lt;type&gt;</li>
+<li>pool=&lt;name&gt;</li>
 </ul>
 <p>If a swap option is specified, the job must also specify the required
 node count.
@@ -240,9 +248,9 @@ Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
   StopStageIn=/usr/local/slurm/15.08/sbin/PSI
   StopStageIn=/usr/local/slurm/15.08/sbin/PSO
   Allocated Buffers:
-    JobID=18 CreateTime=2015-08-19T16:46:05 Size=10T State=allocated UserID=alan(1000)
-    JobID=20 CreateTime=2015-08-19T16:46:45 Size=10T State=allocated UserID=alan(1000)
-    Name=DB1 CreateTime=2015-08-19T16:46:45 Size=22T State=allocated UserID=brenda(1001)
+    JobID=18 CreateTime=2015-08-19T16:46:05 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
+    JobID=20 CreateTime=2015-08-19T16:46:45 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
+    Name=DB1 CreateTime=2015-08-19T16:46:45 Pool=dwcache Size=22T State=allocated UserID=brenda(1001)
   Per User Buffer Use:
     UserID=alan(1000) Used=20T
     UserID=brenda(1001) Used=22T
@@ -253,11 +261,11 @@ Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
 <p>Burst buffer resources can be placed in an advanced reservation using the
 <i>BurstBuffer</i> option.
 The argument consists of four elements:<br>
-[plugin:][type:]#[units]<br><br>
+[plugin:][pool:]#[units]<br><br>
 <i>plugin</i> is the burst buffer plugin name, currently either "cray" or "generic".
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.<br><br>
-<i>type</i> specifies a Cray generic burst buffer resource, for example "nodes".
+<i>pool</i> specifies a Cray generic burst buffer resource pool.
 if "type" is not specified, the number is a measure of storage space.<br><br>
 <i>units</i> may be "N" (nodes), "M" (megabytes), "G" (gigabytes),
 "T" (terabytes), "P" (petabytes), etc. with the default units being bytes for
@@ -277,6 +285,6 @@ $ scontrol create reservation StartTime=noon duration=60 \
   BurstBuffer=cray:20G
 </pre>
 
-<p style="text-align:center;">Last modified 28 November 2015</p>
+<p style="text-align:center;">Last modified 21 December 2015</p>
 
 <!--#include virtual="footer.txt"-->
