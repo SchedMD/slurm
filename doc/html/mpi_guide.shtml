@@ -64,6 +64,10 @@ the OMPI jobs can be launched directly using the srun command. This is
 the preferred way. If the pmi2 support is enabled then the command line
 options '--mpi=pmi2' has to be specified on the srun command line.
 
+<p>Starting from Open MPI version 2.0 PMIx is natively supported. To launch
+Open MPI application using PMIx the '--mpi=pmix' option has to be
+specified on the srun command line.
+
 <p>
 For older versions of OMPI not compiled with the pmi support
 the system administrator must specify the range of ports to be reserved
@@ -96,6 +100,12 @@ $ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 
 <pre>
 &gt; srun --mpi=pmi2 -n 4 a.out
+</pre>
+
+<p>or using the pmix support</p>
+
+<pre>
+&gt; srun --mpi=pmix -n 4 a.out
 </pre>
 
 <p>If the ports reserved for a job step are found by the Open MPI library
