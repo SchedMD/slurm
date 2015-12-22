@@ -1166,6 +1166,22 @@ interface implemented. The \-\-mpi=pmi2 will load the library
 lib/slurm/mpi_pmi2.so which provides the server side functionality but
 the client side must implement PMI2_Init() and the other interface calls.
 .TP
+.B pmix
+To enable PMIx support (http://pmix.github.io/master). The PMIx support
+in Slurm can be used to launch parallel applications (e.g. MPI) if it
+supports PMIx, PMI2 or PMI1. Slurm must be configured with pmix support
+by passing "--with-pmix=<PMIx installation path>" option to its 
+"./configure" script.
+
+At the time of writing PMIx is supported in Open MPI starting from version 2.0.
+PMIx also supports backward compatibility with PMI1 and PMI2 and can be 
+used if MPI was configured with PMI2/PMI1 support pointing to the PMIx library
+("libpmix").
+If MPI supports PMI1/PMI2 but doesn't provide the way to point to a specific 
+implementation, a hack'ish solution leveraging LD_PRELOAD can be used to 
+force "libpmix" usage.
+
+.TP
 .B none
 No special MPI processing. This is the default and works with
 many other versions of MPI.
