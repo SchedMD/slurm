@@ -19,7 +19,6 @@ documents those changes that are of interest to users and administrators.
  -- Add "NumTasks" to job information visible to Slurm commands.
  -- Add mail wrapper script "smail" that will include job statistics in email
     notification messages.
- -- Add a PIMX plugin for fast wire up of MPI jobs.
  -- Remove vestigial "SICP" job option (inter-cluster job option). Completely
     different logic will be forthcoming.
  -- Fix case where the primary and backup dbds would both be performing rollup.
@@ -53,6 +52,8 @@ documents those changes that are of interest to users and administrators.
  -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
     completed by the user specified deadline will be terminated with a state of
     "Deadline" or "DL".
+ -- Implemented and documented PMIX protocol which is used to bootstrap an
+    MPI job. PMIX is an alternative to PMI and PMI2.
 
 * Changes in Slurm 15.08.7
 ==========================
