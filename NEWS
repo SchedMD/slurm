@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     backfill_window, set it's start time to 0 (unknown) rather than the end
     of the backfill_window.
  -- Remove the 1024-character limit on lines in batch scripts.
+ -- burst_buffer/cray: Round up swap size by configured granularity.
 
 * Changes in Slurm 15.08.6
 ==========================
