@@ -72,6 +72,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
+#define _DEBUG 0	/* Detailed debugging information */
 #define TIME_SLOP 5	/* time allowed to synchronize operations between
 			 * threads */
 /*
@@ -497,6 +498,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					sub_tok = strchr(bb_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
+				} else {
+					bb_pool = xstrdup(
+						bb_state.bb_config.default_pool);
 				}
 				if ((sub_tok = strstr(tok, "type="))) {
 					bb_type = xstrdup(sub_tok + 5);
@@ -570,6 +574,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					sub_tok = strchr(bb_job->job_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
+				} else {
+					bb_job->job_pool = xstrdup(
+						bb_state.bb_config.default_pool);
 				}
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				/* Persistent buffer use */
@@ -609,14 +616,19 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				} else {
 					bb_job->swap_nodes = 1;
 				}
-				bb_job->total_size += (bb_job->swap_size *
-						       bb_job->swap_nodes);
+				tmp_cnt = bb_job->swap_size *
+					  bb_job->swap_nodes;
+				bb_job->total_size += bb_granularity(tmp_cnt,
+					 bb_state.bb_config.granularity);
 				if ((sub_tok = strstr(tok, "pool="))) {
 					xfree(bb_job->job_pool);
 					bb_job->job_pool = xstrdup(sub_tok + 5);
 					sub_tok = strchr(bb_job->job_pool, ' ');
 					if (sub_tok)
 						sub_tok[0] = '\0';
+				} else {
+					bb_job->job_pool = xstrdup(
+						bb_state.bb_config.default_pool);
 				}
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
@@ -1862,42 +1874,6 @@ static void *_start_teardown(void *x)
 	return NULL;
 }
 
-static void _free_needed_gres_struct(needed_gres_t *needed_gres_ptr,
-				     int gres_cnt)
-{
-	int i;
-	if (needed_gres_ptr == NULL)
-		return;
-
-	for (i = 0; i < gres_cnt; i++)
-		xfree(needed_gres_ptr->name);
-	xfree(needed_gres_ptr);
-}
-
-static uint64_t _get_bb_resv(char *gres_name, burst_buffer_info_msg_t *resv_bb)
-{
-	burst_buffer_info_t *bb_array;
-	burst_buffer_gres_t *gres_ptr;
-	uint64_t resv_gres = 0;
-	int i, j;
-
-	if (!resv_bb)
-		return resv_gres;
-
-	for (i = 0, bb_array = resv_bb->burst_buffer_array;
-	     i < resv_bb->record_count; i++, bb_array++) {
-		if (bb_array->name && xstrcmp(bb_array->name, bb_state.name))
-			continue;
-		for (j = 0, gres_ptr = bb_array->gres_ptr;
-		     j < bb_array->gres_cnt; j++, gres_ptr++) {
-			if (!xstrcmp(gres_name, gres_ptr->name))
-				resv_gres += gres_ptr->used_cnt;
-		}
-	}
-
-	return resv_gres;
-}
-
 /* Test if a job can be allocated a burst buffer.
  * This may preempt currently active stage-in for higher priority jobs.
  *
@@ -1908,99 +1884,120 @@ static uint64_t _get_bb_resv(char *gres_name, burst_buffer_info_msg_t *resv_bb)
  */
 static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 {
-	burst_buffer_info_msg_t *resv_bb;
-	needed_gres_t *needed_gres_ptr = NULL;
+	int64_t *add_space = NULL, *avail_space = NULL, *granularity = NULL;
+	int64_t *preempt_space = NULL, *resv_space = NULL, *total_space = NULL;
+	burst_buffer_info_msg_t *resv_bb = NULL;
 	struct preempt_bb_recs *preempt_ptr = NULL;
-	List preempt_list;
-	ListIterator preempt_iter;
-	int64_t tmp_g, tmp_r;
-	int64_t add_space, resv_space = 0;
-	int64_t tmp_f;	/* Could go negative due to reservations */
-	int64_t add_total_space_needed = 0, add_user_space_needed = 0;
-	int64_t add_total_space_avail  = 0, add_user_space_avail  = 0;
-	int64_t add_total_gres_needed  = 0, add_total_gres_avail  = 0;
-	time_t now = time(NULL);
+	char **pool_name, *my_pool;
+	int ds_len;
+	burst_buffer_gres_t *gres_ptr;
+	bb_buf_t *buf_ptr;
 	bb_alloc_t *bb_ptr = NULL;
-	int d, i, j, k;
+	int i, j, rc = 0;
+	bool avail_ok, do_preempt, preempt_ok;
+	time_t now = time(NULL);
+	List preempt_list = NULL;
+	ListIterator preempt_iter;
 	char jobid_buf[32];
 
+//FIXME: THERE IS A RACE CONDITION. Decision can be made here to start a job and
+// before it's resources are allocated (in the used_space info), a second job
+// can be tested and find available resources. We need to update the used space
+// info immediately rather than after the setup happens.
 	xassert(bb_job);
-	add_space = bb_job->total_size + bb_job->persist_add;
-	if (add_space > bb_state.total_space)
-		return 1;
 
-//FIXME: Needs work for multiple pools
+	/* Initialize data structure */
+	ds_len = bb_state.bb_config.gres_cnt + 1;
+	add_space = xmalloc(sizeof(int64_t) * ds_len);
+	avail_space = xmalloc(sizeof(int64_t) * ds_len);
+	granularity = xmalloc(sizeof(int64_t) * ds_len);
+	pool_name = xmalloc(sizeof(char *)  * ds_len);
+	preempt_space = xmalloc(sizeof(int64_t) * ds_len);
+	resv_space = xmalloc(sizeof(int64_t) * ds_len);
+	total_space = xmalloc(sizeof(int64_t) * ds_len);
+	for (i = 0, gres_ptr = bb_state.bb_config.gres_ptr;
+	     i < bb_state.bb_config.gres_cnt; i++, gres_ptr++) {
+		if (gres_ptr->avail_cnt >= gres_ptr->used_cnt)
+			avail_space[i] = gres_ptr->avail_cnt-gres_ptr->used_cnt;
+		granularity[i] = gres_ptr->granularity;
+		pool_name[i] = gres_ptr->name;
+		total_space[i] = gres_ptr->avail_cnt;
+	}
+	if (bb_state.total_space - bb_state.used_space)
+		avail_space[i] = bb_state.total_space - bb_state.used_space;
+	granularity[i] = bb_state.bb_config.granularity;
+	pool_name[i] = bb_state.bb_config.default_pool;
+	total_space[i] = bb_state.total_space;
+
+	/* Determine job size requirements by pool */
+	if (bb_job->total_size) {
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(bb_job->job_pool, pool_name[j])) {
+				add_space[j] += bb_granularity(
+							bb_job->total_size,
+							granularity[j]);
+				break;
+			}
+		}
+	}
+	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
+	     i++, buf_ptr++) {
+		if (!buf_ptr->create || (buf_ptr->state >= BB_STATE_ALLOCATING))
+			continue;
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(buf_ptr->pool, pool_name[j])) {
+				add_space[j] += bb_granularity(buf_ptr->size,
+							       granularity[j]);
+				break;
+			}
+		}
+	}
+
+	/* Account for reserved resources. We don't know how much of the
+	 * reserved burst buffer resources are currently allocated. */
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
 		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
-			if (resv_bb_ptr->name &&
-			    xstrcmp(resv_bb_ptr->name, bb_state.name))
-				continue;
-			resv_bb_ptr->used_space =
-				bb_granularity(resv_bb_ptr->used_space,
-					       bb_state.bb_config.granularity);
-			resv_space += resv_bb_ptr->used_space;
-		}
-	}
-	if ((add_space + resv_space) > bb_state.total_space)
-		return 1;
-
-	add_total_space_needed = bb_state.used_space + add_space + resv_space -
-				 bb_state.total_space;
-	needed_gres_ptr = xmalloc(sizeof(needed_gres_t) * bb_job->gres_cnt);
-	for (i = 0; i < bb_job->gres_cnt; i++) {
-		needed_gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
-		for (j = 0; j < bb_state.bb_config.gres_cnt; j++) {
-			if (strcmp(bb_job->gres_ptr[i].name,
-				   bb_state.bb_config.gres_ptr[j].name))
-				continue;
-			tmp_g = bb_granularity(bb_job->gres_ptr[i].count,
-					       bb_state.bb_config.gres_ptr[j].
-					       granularity);
-			bb_job->gres_ptr[i].count = tmp_g;
-			if (tmp_g > bb_state.bb_config.gres_ptr[j].avail_cnt) {
-				debug("%s: %s requests more in pool %s than"
-				      "configured", __func__,
-				      jobid2fmt(job_ptr, jobid_buf,
-						sizeof(jobid_buf)),
-				      bb_job->gres_ptr[i].name);
-				_free_needed_gres_struct(needed_gres_ptr,
-							 bb_job->gres_cnt);
-				if (resv_bb)
-					slurm_free_burst_buffer_info_msg(
-						resv_bb);
-				return 1;
+			if (resv_bb_ptr->name)
+				my_pool = resv_bb_ptr->name;
+			else
+				my_pool = bb_state.bb_config.default_pool;
+			for (j = 0; j < ds_len; j++) {
+				if (xstrcmp(my_pool, pool_name[j]))
+					continue;
+				resv_space[j] += bb_granularity(
+							resv_bb_ptr->used_space,
+							granularity[j]);
+				break;
 			}
-			tmp_r = _get_bb_resv(bb_job->gres_ptr[i].name,resv_bb);
-			tmp_f = bb_state.bb_config.gres_ptr[j].avail_cnt -
-				bb_state.bb_config.gres_ptr[j].used_cnt - tmp_r;
-			if (tmp_g > tmp_f)
-				needed_gres_ptr[i].add_cnt = tmp_g - tmp_f;
-			add_total_gres_needed += needed_gres_ptr[i].add_cnt;
-			break;
-		}
-		if (j >= bb_state.bb_config.gres_cnt) {
-			debug("%s: %s requests resources in undefined pool %s",
-			      __func__,
-			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
-			      bb_job->gres_ptr[i].name);
-			_free_needed_gres_struct(needed_gres_ptr,
-						 bb_job->gres_cnt);
-			if (resv_bb)
-				slurm_free_burst_buffer_info_msg(resv_bb);
-			return 1;
 		}
 	}
 
-	if (resv_bb)
-		slurm_free_burst_buffer_info_msg(resv_bb);
+#if _DEBUG
+	info("TEST_SIZE_LIMIT for job %u", job_ptr->job_id);
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     resv_space[j], total_space[j]);
+	}
+#endif
 
-	if ((add_total_space_needed <= 0) &&
-	    (add_user_space_needed  <= 0) && (add_total_gres_needed <= 0)) {
-		_free_needed_gres_struct(needed_gres_ptr, bb_job->gres_cnt);
-		return 0;
+	/* Determine if resources currently are available for the job */
+	avail_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if (add_space[j] > total_space[j]) {
+			rc = 1;
+			goto fini;
+		}
+		if ((add_space[j] + resv_space[j]) > avail_space[j])
+			avail_ok = false;
+	}
+	if (avail_ok) {
+		rc = 0;
+		goto fini;
 	}
 
 	/* Identify candidate burst buffers to revoke for higher priority job */
@@ -2008,117 +2005,108 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_ptr = bb_state.bb_ahash[i];
 		while (bb_ptr) {
-			if (bb_ptr->job_id &&
+			if ((bb_ptr->job_id != 0) &&
+			    ((bb_ptr->name == NULL) ||
+			     ((bb_ptr->name[0] >= '0') &&
+			      (bb_ptr->name[0] <= '9'))) &&
 			    (bb_ptr->use_time > now) &&
 			    (bb_ptr->use_time > job_ptr->start_time)) {
-				preempt_ptr = xmalloc(
-					sizeof(struct preempt_bb_recs));
+				if (!bb_ptr->pool) {
+					bb_ptr->name = xstrdup(
+						bb_state.bb_config.default_pool);
+				}
+				preempt_ptr = xmalloc(sizeof(
+						struct preempt_bb_recs));
 				preempt_ptr->bb_ptr = bb_ptr;
 				preempt_ptr->job_id = bb_ptr->job_id;
+				preempt_ptr->pool = bb_ptr->name;
 				preempt_ptr->size = bb_ptr->size;
 				preempt_ptr->use_time = bb_ptr->use_time;
 				preempt_ptr->user_id = bb_ptr->user_id;
 				list_push(preempt_list, preempt_ptr);
-				add_total_space_avail += bb_ptr->size;
-				if (bb_ptr->user_id == job_ptr->user_id)
-					add_user_space_avail += bb_ptr->size;
-				if (add_total_gres_needed<add_total_gres_avail)
-					j = bb_ptr->gres_cnt;
-				else
-					j = 0;
-				for ( ; j < bb_ptr->gres_cnt; j++) {
-					d = needed_gres_ptr[j].add_cnt -
-						needed_gres_ptr[j].avail_cnt;
-					if (d <= 0)
+
+				for (j = 0; j < ds_len; j++) {
+					if (xstrcmp(my_pool, pool_name[j]))
 						continue;
-					for (k = 0; k < bb_job->gres_cnt; k++) {
-						if (strcmp(needed_gres_ptr[j].
-							   name,
-							   bb_job->gres_ptr[k].
-							   name))
-							continue;
-						if (bb_job->gres_ptr[k].count <
-						    d) {
-							d = bb_job->gres_ptr[k].
-								count;
-						}
-						add_total_gres_avail += d;
-						needed_gres_ptr[j].avail_cnt+=d;
-					}
+					preempt_ptr->size = bb_granularity(
+								bb_ptr->size,
+								granularity[j]);
+					preempt_space[j] += preempt_ptr->size;
+					break;
 				}
 			}
 			bb_ptr = bb_ptr->next;
 		}
 	}
 
-	if ((add_total_space_avail >= add_total_space_needed) &&
-	    (add_user_space_avail  >= add_user_space_needed)  &&
-	    (add_total_gres_avail  >= add_total_gres_needed)) {
-		list_sort(preempt_list, bb_preempt_queue_sort);
-		preempt_iter = list_iterator_create(preempt_list);
-		while ((preempt_ptr = list_next(preempt_iter)) &&
-		       (add_total_space_needed || add_user_space_needed ||
-			add_total_gres_needed)) {
-			bool do_preempt = false;
-			if (add_user_space_needed &&
-			    (preempt_ptr->user_id == job_ptr->user_id)) {
+#if _DEBUG
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" PREEMPT:%"PRIu64
+		     " RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     preempt_space[j], resv_space[j], total_space[j]);
+	}
+#endif
+
+	/* Determine if sufficient resources available after preemption */
+	rc = 2;
+	preempt_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if ((add_space[j] + resv_space[j]) >
+		    (avail_space[j] + preempt_space[j])) {
+			preempt_ok = false;
+			break;
+		}
+	}
+	if (!preempt_ok)
+		goto fini;
+
+	/* Now preempt/teardown the most appropriate buffers */
+	list_sort(preempt_list, bb_preempt_queue_sort);
+	preempt_iter = list_iterator_create(preempt_list);
+	while ((preempt_ptr = list_next(preempt_iter))) {
+		do_preempt = false;
+		for (j = 0; j < ds_len; j++) {
+			if (xstrcmp(preempt_ptr->pool, pool_name[j]))
+				continue;
+			if ((add_space[j] + resv_space[j]) > avail_space[j]) {
+				avail_space[j] += preempt_ptr->size;
+				preempt_space[j] -= preempt_ptr->size;
 				do_preempt = true;
-				add_user_space_needed  -= preempt_ptr->size;
-				add_total_space_needed -= preempt_ptr->size;
 			}
-			if ((add_total_space_needed > add_user_space_needed) &&
-			    (preempt_ptr->user_id != job_ptr->user_id)) {
-				do_preempt = true;
-				add_total_space_needed -= preempt_ptr->size;
-			}
-			if (add_total_gres_needed) {
-				for (j = 0; j < bb_job->gres_cnt; j++) {
-					d = needed_gres_ptr[j].add_cnt;
-					if (d <= 0)
-						continue;
-					for (k = 0;
-					     k < preempt_ptr->bb_ptr->gres_cnt;
-					     k++) {
-						if (strcmp(needed_gres_ptr[j].
-							   name,
-							   preempt_ptr->bb_ptr->
-							   gres_ptr[k].name))
-							continue;
-						if (preempt_ptr->bb_ptr->
-						    gres_ptr[k].used_cnt < d) {
-							d = preempt_ptr->
-								bb_ptr->
-								gres_ptr[k].
-								used_cnt;
-						}
-						add_total_gres_needed -= d;
-						needed_gres_ptr[j].add_cnt -= d;
-						do_preempt = true;
-					}
-				}
-			}
-			if (do_preempt) {
-				preempt_ptr->bb_ptr->cancelled = true;
-				preempt_ptr->bb_ptr->end_time = 0;
-				preempt_ptr->bb_ptr->state = BB_STATE_TEARDOWN;
-				preempt_ptr->bb_ptr->state_time = time(NULL);
-				_queue_teardown(preempt_ptr->job_id,
-						preempt_ptr->user_id, true);
-				if (bb_state.bb_config.debug_flag) {
-					info("%s: %s: Preempting stage-in of "
-					     "job %u for %s", plugin_type,
-					     __func__, preempt_ptr->job_id,
-					     jobid2fmt(job_ptr, jobid_buf,
-						       sizeof(jobid_buf)));
-				}
+			break;
+		}
+		if (do_preempt) {
+			preempt_ptr->bb_ptr->cancelled = true;
+			preempt_ptr->bb_ptr->end_time = 0;
+			preempt_ptr->bb_ptr->state = BB_STATE_TEARDOWN;
+			preempt_ptr->bb_ptr->state_time = time(NULL);
+			_queue_teardown(preempt_ptr->job_id,
+					preempt_ptr->user_id, true);
+			if (bb_state.bb_config.debug_flag) {
+				info("%s: %s: Preempting stage-in of job %u "
+				     "for %s", plugin_type,
+				     __func__, preempt_ptr->job_id,
+				     jobid2fmt(job_ptr, jobid_buf,
+					       sizeof(jobid_buf)));
 			}
 		}
-		list_iterator_destroy(preempt_iter);
-	}
-	FREE_NULL_LIST(preempt_list);
-	_free_needed_gres_struct(needed_gres_ptr, bb_job->gres_cnt);
 
-	return 2;
+	}
+	list_iterator_destroy(preempt_iter);
+	
+fini:	xfree(add_space);
+	xfree(avail_space);
+	xfree(granularity);
+	xfree(pool_name);
+	xfree(preempt_space);
+	xfree(resv_space);
+	xfree(total_space);
+	if (resv_bb)
+		slurm_free_burst_buffer_info_msg(resv_bb);
+	FREE_NULL_LIST(preempt_list);
+	return rc;
 }
 
 /* Handle timeout of burst buffer events:
@@ -2313,7 +2301,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					job_desc->max_nodes =
 						job_desc->min_nodes;
 				}
-				*bb_size += swap_cnt * job_desc->max_nodes;
+				tmp_cnt = swap_cnt * job_desc->max_nodes;
+				*bb_size += bb_granularity(tmp_cnt,
+					    bb_state.bb_config.granularity);
 				if ((sub_tok = strstr(tok, "pool="))) {
 					bb_pool = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_pool, ' ')))
@@ -3588,6 +3578,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 				info("Attempt by job %u to create duplicate "
 				     "persistent burst buffer named %s",
 				     job_ptr->job_id, buf_ptr->name);
+				buf_ptr->create = false; /* Creation complete */
 				if (bb_job->persist_add >= bb_alloc->size) {
 					bb_job->persist_add -= bb_alloc->size;
 				} else {
@@ -3777,10 +3768,12 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 		if ((old_state == BB_STATE_ALLOCATING) &&
 		    (new_state == BB_STATE_ALLOCATED)  &&
 		    ((name[0] < '0') || (name[0] > '9'))) {
+			buf_ptr->create = false;  /* Buffer creation complete */
 			if (bb_job->persist_add >= buf_size) {
 				bb_job->persist_add -= buf_size;
 			} else {
-				error("%s: Persistent buffer size underflow for job %u",
+				error("%s: Persistent buffer size underflow "
+				      "for job %u",
 				      __func__, job_id);
 				bb_job->persist_add = 0;
 			}

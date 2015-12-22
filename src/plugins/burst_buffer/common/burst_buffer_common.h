@@ -185,6 +185,7 @@ typedef struct bb_job_queue_rec {
 struct preempt_bb_recs {
 	bb_alloc_t *bb_ptr;
 	uint32_t job_id;
+	char *pool;
 	uint64_t size;
 	time_t   use_time;
 	uint32_t user_id;
