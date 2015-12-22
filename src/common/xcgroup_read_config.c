@@ -57,7 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define DEFAULT_CGROUP_BASEDIR "/cgroup"
+#define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
 slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
 

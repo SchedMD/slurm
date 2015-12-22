@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
     "Deadline" or "DL".
  -- Implemented and documented PMIX protocol which is used to bootstrap an
     MPI job. PMIX is an alternative to PMI and PMI2.
+ -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
+    "/sys/fs/cgroup" to match current standard.
 
 * Changes in Slurm 15.08.7
 ==========================
