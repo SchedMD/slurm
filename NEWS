@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove the 1024-character limit on lines in batch scripts.
  -- burst_buffer/cray: Round up swap size by configured granularity.
  -- select/cray: Log repeated aeld reconnects.
+ -- task/affinity: Disable core-level task binding if more CPUs required than
+    available cores.
 
 * Changes in Slurm 15.08.6
 ==========================

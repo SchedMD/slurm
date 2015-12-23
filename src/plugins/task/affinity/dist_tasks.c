@@ -1128,12 +1128,19 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	size = bit_size(avail_map);
 
+	if ((req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) &&
+	    (max_cpus > (hw_sockets * hw_cores))) {
+		/* More CPUs requested than available cores,
+		 * disable core-level binding */
+		req->cpu_bind_type &= (~CPU_BIND_ONE_THREAD_PER_CORE);
+	}
+
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
 	/* block distribution with oversubsciption */
 	c = 0;
-	while(taskcount < max_tasks) {
+	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount) {
 			fatal("_task_layout_lllp_block infinite loop");
 		}
@@ -1154,7 +1161,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 			/* skip unrequested threads */
 			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				i += hw_threads-1;
+				i += hw_threads - 1;
 
 			if (++c < req->cpus_per_task)
 				continue;
