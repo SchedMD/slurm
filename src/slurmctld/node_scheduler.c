@@ -1023,12 +1023,12 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 }
 #endif
 
-	/* 
+	/*
 	 * PowerCapping logic : now that we have the list of selected nodes
-	 * we need to ensure that using this nodes respects the amount of 
+	 * we need to ensure that using this nodes respects the amount of
 	 * available power as returned by the capping logic.
-	 * If it is not the case, then ensure that the job stays pending 
-	 * by returning a relevant error code : 
+	 * If it is not the case, then ensure that the job stays pending
+	 * by returning a relevant error code:
 	 *  ESLURM_POWER_NOT_AVAIL : if the current capping is blocking
 	 *  ESLURM_POWER_RESERVED  : if the current capping and the power
 	 *                           reservations are blocking
@@ -1051,7 +1051,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bitstr_t *tmp_bitmap;
 		int k = 1, *allowed_freqs;
 		float ratio = 0;
-		
+
 		/*
 		 *centralized synchronization of all key/values
 		 */
@@ -1078,10 +1078,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bit_and(tmp_bitmap, *select_bitmap);
 		bit_not(*select_bitmap);
 		if (layout_power == 1)
-			tmp_max_watts = 
+			tmp_max_watts =
 				 powercap_get_node_bitmap_maxwatts(tmp_bitmap);
 		else if (layout_power == 2) {
-			allowed_freqs = 
+			allowed_freqs =
 				 powercap_get_job_nodes_numfreq(*select_bitmap,
 					  job_ptr->details->cpu_freq_min,
 					  job_ptr->details->cpu_freq_max);
@@ -1097,7 +1097,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					tmp_bitmap, *select_bitmap,
 					tmp_max_watts_dvfs, allowed_freqs,
 					cpus_per_node);
-		}			
+		}
 		bit_free(tmp_bitmap);
 
 		/* get job cap based on power reservation on the system,
@@ -1106,13 +1106,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * select the return code based on the impact of
 		 * reservations on the failure */
 		job_cap = powercap_get_job_cap(job_ptr, time(NULL));
-		
+
 		if ((layout_power == 1) ||
 		    ((layout_power == 2) && (allowed_freqs[0] == 0))) {
 			if (tmp_max_watts > job_cap) {
 				FREE_NULL_BITMAP(*select_bitmap);
 				if ((job_cap < powercap) &&
-			    		 (tmp_max_watts <= powercap))
+				    (tmp_max_watts <= powercap))
 					error_code = ESLURM_POWER_RESERVED;
 				else
 					error_code = ESLURM_POWER_NOT_AVAIL;
@@ -1121,17 +1121,17 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			if (((tmp_max_watts > job_cap) ||
 			    (job_cap < powercap) ||
 			    (powercap < max_watts)) && (tmp_max_watts_dvfs)) {
-		
+
 			/* Calculation of the CPU Frequency to set for the job:
-		 	 * The optimal CPU Frequency is the maximum allowed 
-		 	 * CPU Frequency that all idle nodes could run so that 
-		 	 * the total power consumption of the cluster is below 
-		 	 * the powercap value.since the number of Idle nodes 
-		 	 * may change in every schedule the optimal CPU 
-		 	 * Frequency may also change from one job to another.*/
-				k = powercap_get_job_optimal_cpufreq(job_cap, 
+			 * The optimal CPU Frequency is the maximum allowed
+			 * CPU Frequency that all idle nodes could run so that
+			 * the total power consumption of the cluster is below
+			 * the powercap value.since the number of Idle nodes
+			 * may change in every schedule the optimal CPU
+			 * Frequency may also change from one job to another.*/
+				k = powercap_get_job_optimal_cpufreq(job_cap,
 							  allowed_freqs);
-				while ((tmp_max_watts_dvfs[k] > job_cap) && 
+				while ((tmp_max_watts_dvfs[k] > job_cap) &&
 				       (k < allowed_freqs[0] + 1)) {
 					k++;
 				}
@@ -1151,16 +1151,16 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 							*select_bitmap,
 							allowed_freqs[k]);
 				}
-	
+
 				job_ptr->details->cpu_freq_min = tmp_pcap_cpu_freq;
 				job_ptr->details->cpu_freq_max = tmp_pcap_cpu_freq;
 				job_ptr->details->cpu_freq_gov = 0x10;
 
 			/* Since we alter the DVFS of jobs we need to deal with
-			 * their time_limit to calculate the extra time needed 
-			 * for them to complete the execution without getting 
-			 * killed there should be a parameter to declare the 
-			 * effect of cpu frequency on execution time for the 
+			 * their time_limit to calculate the extra time needed
+			 * for them to complete the execution without getting
+			 * killed there should be a parameter to declare the
+			 * effect of cpu frequency on execution time for the
 			 * moment we use time_limit and time_min
 			 * This has to be done to allow backfilling */
 
@@ -1754,7 +1754,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 		*error_code = ESLURM_NODES_BUSY;
 }
 
-/* Return true if this job record is 
+/* Return true if this job record is
  * 1) not a job array OR
  * 2) the first task of a job array to begin execution */
 static bool _first_array_task(struct job_record *job_ptr)
