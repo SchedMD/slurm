@@ -136,6 +136,14 @@
   page for details.
 </p>
 
+<li>SlurmctldPort, SlurmdPort, SrunPortRange</li>
+<p>
+  Realm-Specific IP Addressing (RSIP) will automatically try to interact with
+  anything opened on ports 8192 to 60000. Configure SlurmctldPort, SlurmdPort,
+  and SrunPortRange to use ports above 60000. In the case of SrunPortRange,
+  making 1000 or more ports available is recommended.
+</p>
+
 <li>Switch</li>
 <p>
   Set <b><i>SwitchType=switch/cray</i></b> to use.
@@ -201,6 +209,6 @@ is down and prevents any new jobs from being started.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 February 2015</p>
+<p style="text-align:center;">Last modified 23 December 2015</p>
 
 <!--#include virtual="footer.txt"-->
