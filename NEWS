@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     of the backfill_window.
  -- Remove the 1024-character limit on lines in batch scripts.
  -- burst_buffer/cray: Round up swap size by configured granularity.
+ -- select/cray: Log repeated aeld reconnects.
 
 * Changes in Slurm 15.08.6
 ==========================

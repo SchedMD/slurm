@@ -429,6 +429,9 @@ static void _clear_event_list(alpsc_ev_app_t *list, int32_t *size)
  */
 static void _start_session(alpsc_ev_session_t **session, int *sessionfd)
 {
+	static time_t start_time = (time_t) 0;
+	static int start_count = 0;
+	time_t now;
 	int rv;
 	char *errmsg;
 
@@ -461,6 +464,15 @@ static void _start_session(alpsc_ev_session_t **session, int *sessionfd)
 		sleep(AELD_SESSION_INTERVAL);
 	}
 
+	now = time(NULL);
+	if (start_time != now) {
+		start_time = now;
+		start_count = 1;
+	} else if (++start_count == 3) {
+		error("%s: aeld connection restart exceed threshold, find and "
+		      "remove other program using the aeld socket, likely "
+		      "another slurmctld instance", __func__);
+	}
 	debug("%s: Created aeld session fd %d", __func__, *sessionfd);
 	return;
 }
