@@ -3441,8 +3441,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       min_cpus, job_specs->max_cpus, pn_min_cpus,
 	       spec_type, spec_count);
 
-	debug3("   -N min-[max]: %u-[%u]:%u:%u:%u",
-	       job_specs->min_nodes,   job_specs->max_nodes,
+	debug3("   Nodes=%u-[%u] Sock/Node=%u Core/Sock=%u Thread/Core=%u",
+	       job_specs->min_nodes, job_specs->max_nodes,
 	       job_specs->sockets_per_node, job_specs->cores_per_socket,
 	       job_specs->threads_per_core);
 
