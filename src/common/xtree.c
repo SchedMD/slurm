@@ -473,7 +473,7 @@ xtree_node_t** xtree_get_parents(xtree_t* tree,
 	if (parents_count != 0) {
 		parents_list = (xtree_node_t**)xrealloc(parents_list,
 				sizeof(xtree_node_t*)*(parents_count+1));
-		/* safety mesure, can be used as strlen if users assumes it */
+		/* safety measure, can be used as strlen if users assumes it */
 		parents_list[parents_count] = NULL;
 	}
 	else {
@@ -567,7 +567,7 @@ xtree_node_t** xtree_get_leaves(xtree_t* tree,
 	if (st.list_count != 0) {
 		st.list = (xtree_node_t**)xrealloc(st.list,
 				sizeof(xtree_node_t*)*(st.list_count+1));
-		/* safety mesure, can be used as strlen if users assumes it */
+		/* safety measure, can be used as strlen if users assumes it */
 		st.list[st.list_count] = NULL;
 	}
 	else {

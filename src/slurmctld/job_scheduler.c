@@ -1851,7 +1851,8 @@ next_task:
 	}
 	xfree(sched_part_ptr);
 	xfree(sched_part_jobs);
-	if (slurmctld_config.server_thread_count >= 150) {
+	if ((slurmctld_config.server_thread_count >= 150) &&
+	    (defer_rpc_cnt == 0)) {
 		info("sched: %d pending RPCs at cycle end, consider "
 		     "configuring max_rpc_cnt",
 		     slurmctld_config.server_thread_count);

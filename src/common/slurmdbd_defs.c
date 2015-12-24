@@ -2129,7 +2129,7 @@ static void *_agent(void *x)
 						      &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
-		} else if ((cnt > 0) && ((cnt % 50) == 0))
+		} else if ((cnt > 0) && ((cnt % 100) == 0))
 			info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {

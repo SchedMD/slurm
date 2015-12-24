@@ -591,8 +591,10 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				} else {
 					bb_job->swap_nodes = 1;
 				}
-				bb_job->total_size += (bb_job->swap_size *
-						       bb_job->swap_nodes);
+				tmp_cnt = bb_job->swap_size *
+					  bb_job->swap_nodes;
+				bb_job->total_size += bb_granularity(tmp_cnt,
+					 bb_state.bb_config.granularity);
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
 			}
@@ -2235,7 +2237,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					job_desc->max_nodes =
 						job_desc->min_nodes;
 				}
-				*bb_size += swap_cnt * job_desc->max_nodes;
+				tmp_cnt = swap_cnt * job_desc->max_nodes;
+				*bb_size += bb_granularity(tmp_cnt,
+					    bb_state.bb_config.granularity);
 			}
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
