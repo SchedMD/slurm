@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Preemption/gang scheduling: If a job is suspended at slurmctld restart or
     reconfiguration time, then leave it suspended rather than resume+suspend.
  -- Don't use lower weight nodes for job allocation when topology/tree used.
+ -- BGQ - If a cable goes into error state remove the under lying block on
+    a dynamic system and mark the block in error on a static/overlap system.
 
 * Changes in Slurm 15.08.6
 ==========================
