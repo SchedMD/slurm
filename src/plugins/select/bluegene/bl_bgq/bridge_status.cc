@@ -1136,7 +1136,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		if (initial_poll && bg_conf->sub_mp_sys)
 			delete_it = 1;
 
-		free_block_list(NO_VAL, delete_list, 1, 0);
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
 	}
 }
