@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     available cores.
  -- Preemption/gang scheduling: If a job is suspended at slurmctld restart or
     reconfiguration time, then leave it suspended rather than resume+suspend.
+ -- Don't use lower weight nodes for job allocation when topology/tree used.
 
 * Changes in Slurm 15.08.6
 ==========================
