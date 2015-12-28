@@ -242,10 +242,10 @@ static void *mpich1_thr(void *arg)
 	}
 
 done:
-	pthread_mutex_lock(&shutdown_lock);
+	slurm_mutex_lock(&shutdown_lock);
 	shutdown_complete = true;
 	pthread_cond_signal(&shutdown_cond);
-	pthread_mutex_unlock(&shutdown_lock);
+	slurm_mutex_unlock(&shutdown_lock);
 	return NULL;
 }
 

@@ -127,11 +127,11 @@ extern int cleanup_lease_extender(void)
 
 	lease_extender_running = false;
 
-	pthread_mutex_lock(&cookie_id_mutex);
+	slurm_mutex_lock(&cookie_id_mutex);
 	xfree(cookie_id_list);
 	cookie_id_list_size = 0;
 	cookie_id_list_capacity = 0;
-	pthread_mutex_unlock(&cookie_id_mutex);
+	slurm_mutex_unlock(&cookie_id_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -249,12 +249,12 @@ static void _add_cookie(int32_t cookie_id)
 	int32_t i;
 
 	// Lock the mutex
-	pthread_mutex_lock(&cookie_id_mutex);
+	slurm_mutex_lock(&cookie_id_mutex);
 
 	// If the cookie is already in the list, skip
 	for (i = 0; i < cookie_id_list_size; i++) {
 		if (cookie_id_list[i] == cookie_id) {
-			pthread_mutex_unlock(&cookie_id_mutex);
+			slurm_mutex_unlock(&cookie_id_mutex);
 			CRAY_INFO("Duplicate cookie %"PRId32" found in tracked"
 				  " cookie list", cookie_id);
 			return;
@@ -278,7 +278,7 @@ static void _add_cookie(int32_t cookie_id)
 	cookie_id_list_size++;
 
 	// Unlock the mutex
-	pthread_mutex_unlock(&cookie_id_mutex);
+	slurm_mutex_unlock(&cookie_id_mutex);
 }
 
 /*
@@ -290,7 +290,7 @@ static void _remove_cookie(int32_t cookie_id)
 	int found = 0;
 
 	// Lock the mutex
-	pthread_mutex_lock(&cookie_id_mutex);
+	slurm_mutex_lock(&cookie_id_mutex);
 
 	// Find a match in the list
 	for (i = 0; i < cookie_id_list_size; i++) {
@@ -312,7 +312,7 @@ static void _remove_cookie(int32_t cookie_id)
 	}
 
 	// Unlock the mutex
-	pthread_mutex_unlock(&cookie_id_mutex);
+	slurm_mutex_unlock(&cookie_id_mutex);
 }
 
 static void *_lease_extender(void *args)
@@ -327,7 +327,7 @@ static void *_lease_extender(void *args)
 
 	while (lease_extender_running) {
 		// Lock the mutex
-		pthread_mutex_lock(&cookie_id_mutex);
+		slurm_mutex_lock(&cookie_id_mutex);
 
 		// If there are cookies, extend their leases
 		if (cookie_id_list_size > 0) {
@@ -344,7 +344,7 @@ static void *_lease_extender(void *args)
 		}
 
 		// Unlock the mutex
-		pthread_mutex_unlock(&cookie_id_mutex);
+		slurm_mutex_unlock(&cookie_id_mutex);
 
 		// Wait until we want to extend leases again
 		sleep(COOKIE_LEASE_INTERVAL);

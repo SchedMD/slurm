@@ -342,7 +342,7 @@ _lock(void)
 	int err = 1;
 
 	while (err) {
-		err = pthread_mutex_lock(&global_lock);
+		err = slurm_mutex_lock(&global_lock);
 	}
 }
 
@@ -352,7 +352,7 @@ _unlock(void)
 	int err = 1;
 
 	while (err) {
-		err = pthread_mutex_unlock(&global_lock);
+		err = slurm_mutex_unlock(&global_lock);
 	}
 }
 

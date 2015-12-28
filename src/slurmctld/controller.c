@@ -780,7 +780,7 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_main = pthread_self();
 	slurmctld_config.scheduling_disabled = false;
 #ifdef WITH_PTHREADS
-	pthread_mutex_init(&slurmctld_config.thread_count_lock, NULL);
+	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
 	slurmctld_config.thread_id_sig     = (pthread_t) 0;
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;

@@ -448,10 +448,10 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 /* Terminate backfill_agent */
 extern void stop_backfill_agent(void)
 {
-	pthread_mutex_lock(&term_lock);
+	slurm_mutex_lock(&term_lock);
 	stop_backfill = true;
 	pthread_cond_signal(&term_cond);
-	pthread_mutex_unlock(&term_lock);
+	slurm_mutex_unlock(&term_lock);
 }
 
 /* Return the number of micro-seconds between now and argument "tv" */
@@ -485,10 +485,10 @@ static uint32_t _my_sleep(int usec)
 	nsec *= 1000;
 	ts.tv_sec  = tv1.tv_sec + (nsec / 1000000000);
 	ts.tv_nsec = nsec % 1000000000;
-	pthread_mutex_lock(&term_lock);
+	slurm_mutex_lock(&term_lock);
 	if (!stop_backfill)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
-	pthread_mutex_unlock(&term_lock);
+	slurm_mutex_unlock(&term_lock);
 	if (gettimeofday(&tv2, NULL))
 		return usec;
 	sleep_time = (tv2.tv_sec - tv1.tv_sec) * 1000000;
@@ -1781,13 +1781,13 @@ static bool _more_work (time_t last_backfill_time)
 {
 	bool rc = false;
 
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if ( (last_job_update  >= last_backfill_time ) ||
 	     (last_node_update >= last_backfill_time ) ||
 	     (last_part_update >= last_backfill_time ) ) {
 		rc = true;
 	}
-	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock( &thread_flag_mutex );
 	return rc;
 }
 

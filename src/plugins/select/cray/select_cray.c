@@ -380,14 +380,14 @@ static void _aeld_cleanup(void)
 	aeld_running = 0;
 
 	// Free any used memory
-	pthread_mutex_lock(&aeld_mutex);
+	slurm_mutex_lock(&aeld_mutex);
 	_clear_event_list(app_list, &app_list_size);
 	app_list_capacity = 0;
 	xfree(app_list);
 	_clear_event_list(event_list, &event_list_size);
 	event_list_capacity = 0;
 	xfree(event_list);
-	pthread_mutex_unlock(&aeld_mutex);
+	slurm_mutex_unlock(&aeld_mutex);
 }
 
 /*
@@ -437,13 +437,13 @@ static void _start_session(alpsc_ev_session_t **session, int *sessionfd)
 	char *errmsg;
 
 	while (1) {
-		pthread_mutex_lock(&aeld_mutex);
+		slurm_mutex_lock(&aeld_mutex);
 
 		// Create the session
 		rv = alpsc_ev_create_session(&errmsg, session, app_list,
 					     app_list_size);
 
-		pthread_mutex_unlock(&aeld_mutex);
+		slurm_mutex_unlock(&aeld_mutex);
 
 		if (rv) {
 			_handle_aeld_error("alpsc_ev_create_session",
@@ -528,7 +528,7 @@ static void *_aeld_event_loop(void *args)
 		}
 
 		// Process the event list
-		pthread_mutex_lock(&aeld_mutex);
+		slurm_mutex_lock(&aeld_mutex);
 		if (event_list_size > 0) {
 			// Send event list to aeld
 			rv = alpsc_ev_set_application_info(&errmsg, session,
@@ -537,7 +537,7 @@ static void *_aeld_event_loop(void *args)
 
 			// Clear the event list
 			_clear_event_list(event_list, &event_list_size);
-			pthread_mutex_unlock(&aeld_mutex);
+			slurm_mutex_unlock(&aeld_mutex);
 			if (rv > 0) {
 				_handle_aeld_error(
 					"alpsc_ev_set_application_info",
@@ -546,7 +546,7 @@ static void *_aeld_event_loop(void *args)
 				fds[0].fd = sessionfd;
 			}
 		} else {
-			pthread_mutex_unlock(&aeld_mutex);
+			slurm_mutex_unlock(&aeld_mutex);
 		}
 		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 			END_TIMER3("_aeld_event_loop: took", 20000);
@@ -711,7 +711,7 @@ static void _update_app(struct job_record *job_ptr,
 		return;
 	}
 
-	pthread_mutex_lock(&aeld_mutex);
+	slurm_mutex_lock(&aeld_mutex);
 
 	// Add it to the event list, only if aeld is up
 	if (aeld_running) {
@@ -781,7 +781,7 @@ static void _update_app(struct job_record *job_ptr,
 		break;
 	}
 
-	pthread_mutex_unlock(&aeld_mutex);
+	slurm_mutex_unlock(&aeld_mutex);
 
 	_free_event(&app);
 

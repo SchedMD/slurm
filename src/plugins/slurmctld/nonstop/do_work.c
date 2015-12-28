@@ -305,7 +305,7 @@ extern int save_nonstop_state(void)
 	pack_time(now, buffer);
 
 	/* write individual job records */
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	if (job_fail_list) {
 		job_cnt = list_count(job_fail_list);
 		pack32(job_cnt, buffer);
@@ -317,7 +317,7 @@ extern int save_nonstop_state(void)
 		pack32(job_cnt, buffer);
 	}
 	job_fail_save_time = now;
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 
 	/* write the buffer to file */
 	dir_path = slurm_get_state_save_location();
@@ -436,7 +436,7 @@ extern int restore_nonstop_state(void)
 	}
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32(&job_cnt, buffer);
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	for (i = 0; i < job_cnt; i++) {
 		error_code = _unpack_job_state(&job_fail_ptr, buffer);
 		if (error_code)
@@ -449,7 +449,7 @@ extern int restore_nonstop_state(void)
 		}
 		list_append(job_fail_list, job_fail_ptr);
 	}
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 	free_buf(buffer);
 	return error_code;
 
@@ -461,17 +461,17 @@ unpack_error:
 
 extern void init_job_db(void)
 {
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	if (!job_fail_list)
 		job_fail_list = list_create(_job_fail_del);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 extern void term_job_db(void)
 {
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	FREE_NULL_LIST(job_fail_list);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 static uint32_t _get_job_cpus(struct job_record *job_ptr, int node_inx)
@@ -517,7 +517,7 @@ static void _failing_node(struct node_record *node_ptr)
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;
 	node_inx = node_ptr - node_record_table_ptr;
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_iterator = list_iterator_create(job_fail_list);
 	while ((job_fail_ptr = (job_failures_t *) list_next(job_iterator))) {
 		if (!_valid_job_ptr(job_fail_ptr))
@@ -530,7 +530,7 @@ static void _failing_node(struct node_record *node_ptr)
 		job_fail_update_time = now;
 	}
 	list_iterator_destroy(job_iterator);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 extern void node_fail_callback(struct job_record *job_ptr,
@@ -551,7 +551,7 @@ extern void node_fail_callback(struct job_record *job_ptr,
 		event_flag |= SMD_EVENT_NODE_FAILED;
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find,
 				       &job_ptr->job_id);
 	if (!job_fail_ptr) {
@@ -575,7 +575,7 @@ extern void node_fail_callback(struct job_record *job_ptr,
 			xstrdup(node_ptr->name);
 	job_fail_ptr->time_extend_avail += time_limit_extend;
 	job_fail_update_time = time(NULL);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 extern void job_begin_callback(struct job_record *job_ptr)
@@ -588,7 +588,7 @@ extern void job_begin_callback(struct job_record *job_ptr)
 	if (!job_fail_list || !job_ptr->details ||
 	   !job_ptr->details->depend_list)
 		return;
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	depend_iterator = list_iterator_create(job_ptr->details->depend_list);
 	depend_ptr = (struct depend_spec *) list_next(depend_iterator);
 	if (depend_ptr && (depend_ptr->depend_type == SLURM_DEPEND_EXPAND)) {
@@ -602,16 +602,16 @@ extern void job_begin_callback(struct job_record *job_ptr)
 		      job_fail_ptr->callback_flags);
 	}
 	list_iterator_destroy(depend_iterator);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 extern void job_fini_callback(struct job_record *job_ptr)
 {
 	info("job_fini_callback for job:%u", job_ptr->job_id);
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	list_delete_all(job_fail_list, _job_fail_find, &job_ptr->job_id);
 	/* job_fail_update_time = time(NULL);	not critical */
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 /*
@@ -732,7 +732,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 	}
 	state_flags = atoi(sep1 + 12);
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_ptr = find_job_record(job_id);
 	if (!job_ptr) {
 		xstrfmtcat(resp, "%s EJOBID", SLURM_VERSION_STRING);
@@ -785,7 +785,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 		}
 	}
 
-fini:	pthread_mutex_unlock(&job_fail_mutex);
+fini:	slurm_mutex_unlock(&job_fail_mutex);
 	debug("%s: replying to library: %s", __func__, resp);
 	return resp;
 }
@@ -824,7 +824,7 @@ extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
 	sep1 = strstr(sep1, "PORT:");
 	if (sep1)
 		port_id = atoi(sep1 + 5);
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	if ((sep1 == NULL) || (port_id <= 0)) {
 		xstrfmtcat(resp, "%s EPORT", SLURM_VERSION_STRING);
 		goto fini;
@@ -856,7 +856,7 @@ extern char *register_callback(char *cmd_ptr, uid_t cmd_uid,
 	job_fail_ptr->callback_port = port_id;
 	xstrfmtcat(resp, "%s ENOERROR", SLURM_VERSION_STRING);
 
-fini:	pthread_mutex_unlock(&job_fail_mutex);
+fini:	slurm_mutex_unlock(&job_fail_mutex);
 	debug("%s: replying to library: %s", __func__, resp);
 	return resp;
 }
@@ -934,7 +934,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 	}
 	node_name = sep1 + 5;
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find, &job_id);
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
@@ -1093,7 +1093,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 
 fini:	job_fail_update_time = time(NULL);
 	debug("%s: replying to library: %s", __func__, resp);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 	return resp;
 }
 
@@ -1131,7 +1131,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	}
 	node_name = sep1 + 5;
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find, &job_id);
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
 		job_ptr = find_job_record(job_id);
@@ -1266,7 +1266,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 
 	/* Without unlock, the job_begin_callback() function will deadlock.
 	 * Not a great solution, but perhaps the least bad solution. */
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 
 	job_alloc_req.user_id	= job_ptr->user_id;
 	/* Ignore default wckey (it starts with '*') */
@@ -1356,7 +1356,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	xfree(job_alloc_req.qos);
 	xfree(job_alloc_req.wckey);
 
-	pthread_mutex_lock(&job_fail_mutex);	/* Resume lock */
+	slurm_mutex_lock(&job_fail_mutex);	/* Resume lock */
 
 	if (rc != SLURM_SUCCESS) {
 		if (will_run_time) {
@@ -1400,7 +1400,7 @@ merge:
 
 	/* Without unlock, the job_fini_callback() function will deadlock.
 	 * Not a great solution, but perhaps the least bad solution. */
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 
 	if (rc) {
 		info("slurmctld/nonstop: can not shrink job %u: %s",
@@ -1409,11 +1409,11 @@ merge:
 		xstrfmtcat(resp, "%s ENODEREPLACEFAIL %s:",
 			   SLURM_VERSION_STRING,
 			   slurm_strerror(rc));
-		pthread_mutex_lock(&job_fail_mutex);	/* Resume lock */
+		slurm_mutex_lock(&job_fail_mutex);	/* Resume lock */
 		goto fini;
 	}
 	_kill_job(new_job_ptr->job_id, cmd_uid);
-	pthread_mutex_lock(&job_fail_mutex);	/* Resume lock */
+	slurm_mutex_lock(&job_fail_mutex);	/* Resume lock */
 
 	/* Grow the size of the old job to include the new node */
 	slurm_init_job_desc_msg(&job_alloc_req);
@@ -1486,7 +1486,7 @@ merge:
 	}
 
 fini:	job_fail_update_time = time(NULL);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 	if (new_node_name)
 		free(new_node_name);
 	debug("%s: replying to library: %s", __func__, resp);
@@ -1557,7 +1557,7 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	sep1 = cmd_ptr + 15;
 	job_id = atoi(sep1);
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 
 	job_fail_ptr = list_find_first(job_fail_list, _job_fail_find, &job_id);
 	if (!job_fail_ptr || !_valid_job_ptr(job_fail_ptr)) {
@@ -1626,7 +1626,7 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	xstrfmtcat(resp, "TIME_EXTEND_AVAIL %u",
 		   job_fail_ptr->time_extend_avail);
 
-fini:	pthread_mutex_unlock(&job_fail_mutex);
+fini:	slurm_mutex_unlock(&job_fail_mutex);
 	debug("%s: replying to library: %s", __func__, resp);
 	return resp;
 }
@@ -1650,7 +1650,7 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	sep1 = cmd_ptr + 16;
 	job_id = atoi(sep1);
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	sep1 = strstr(cmd_ptr + 16, "MINUTES:");
 	if (!sep1) {
 		xstrfmtcat(resp, "%s ECMD", SLURM_VERSION_STRING);
@@ -1700,7 +1700,7 @@ extern char *time_incr(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	}
 
 fini:	job_fail_update_time = time(NULL);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 	debug("%s: replying to library: %s", __func__, resp);
 	return resp;
 }
@@ -1720,7 +1720,7 @@ static void _send_event_callbacks(void)
 	if (!job_fail_list)
 		return;
 
-	pthread_mutex_lock(&job_fail_mutex);
+	slurm_mutex_lock(&job_fail_mutex);
 	job_iterator = list_iterator_create(job_fail_list);
 	while ((job_fail_ptr = (job_failures_t *) list_next(job_iterator))) {
 		if (job_fail_ptr->callback_flags == 0)
@@ -1741,7 +1741,7 @@ static void _send_event_callbacks(void)
 			job_fail_ptr->callback_flags = 0;
 			callback_jobid = job_fail_ptr->job_id;
 			/* Release locks for I/O, which could be slow */
-			pthread_mutex_unlock(&job_fail_mutex);
+			slurm_mutex_unlock(&job_fail_mutex);
 			fd = slurm_open_msg_conn(&callback_addr);
 			sent = 0;
 			if (fd < 0) {
@@ -1760,7 +1760,7 @@ static void _send_event_callbacks(void)
 				}
 			}
 			/* Reset locks and clean-up as needed */
-io_fini:		pthread_mutex_lock(&job_fail_mutex);
+io_fini:		slurm_mutex_lock(&job_fail_mutex);
 			if ((sent != sizeof(uint32_t)) &&
 			    (job_fail_ptr->magic == FAILURE_MAGIC) &&
 			    (callback_jobid == job_fail_ptr->job_id)) {
@@ -1772,7 +1772,7 @@ io_fini:		pthread_mutex_lock(&job_fail_mutex);
 	}
 	list_iterator_destroy(job_iterator);
 	job_fail_save_time = time(NULL);
-	pthread_mutex_unlock(&job_fail_mutex);
+	slurm_mutex_unlock(&job_fail_mutex);
 }
 
 static void *_state_thread(void *no_data)
@@ -1805,9 +1805,9 @@ extern int spawn_state_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
 
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -1817,7 +1817,7 @@ extern int spawn_state_thread(void)
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -1825,7 +1825,7 @@ extern int spawn_state_thread(void)
 /* Terminate thread used to periodically save nonstop plugin state to disk */
 extern void term_state_thread(void)
 {
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		thread_shutdown = true;
 		pthread_join(msg_thread_id, NULL);
@@ -1833,5 +1833,5 @@ extern void term_state_thread(void)
 		thread_shutdown = false;
 		thread_running = false;
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 }

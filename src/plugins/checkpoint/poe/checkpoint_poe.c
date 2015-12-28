@@ -172,10 +172,10 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	pthread_mutex_lock(&ckpt_agent_mutex);
+	slurm_mutex_lock(&ckpt_agent_mutex);
 	ckpt_agent_stop = true;
 	pthread_cond_signal(&ckpt_agent_cond);
-	pthread_mutex_unlock(&ckpt_agent_mutex);
+	slurm_mutex_unlock(&ckpt_agent_mutex);
 
 	if (ckpt_agent_tid && pthread_join(ckpt_agent_tid, NULL)) {
 		error("Could not kill checkpoint pthread");
@@ -483,10 +483,10 @@ static void _my_sleep(int secs)
 	gettimeofday(&now, NULL);
 	ts.tv_sec = now.tv_sec + secs;
 	ts.tv_nsec = now.tv_usec * 1000;
-	pthread_mutex_lock(&ckpt_agent_mutex);
+	slurm_mutex_lock(&ckpt_agent_mutex);
 	if (!ckpt_agent_stop)
 		pthread_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
-	pthread_mutex_unlock(&ckpt_agent_mutex);
+	slurm_mutex_unlock(&ckpt_agent_mutex);
 }
 
 /* Checkpoint processing pthread

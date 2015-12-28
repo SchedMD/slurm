@@ -318,10 +318,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, const pmix_proc_t *procs,
 	coll->cbfunc = NULL;
 
 	/* init fine grained lock */
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutex_init(&coll->lock, &attr);
-	pthread_mutexattr_destroy(&attr);
+	slurm_mutex_init(&coll->lock);
 
 	return SLURM_SUCCESS;
 err_exit:
@@ -354,7 +351,7 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 	pmixp_coll_sanity_check(coll);
 
 	/* lock the structure */
-	pthread_mutex_lock(&coll->lock);
+	slurm_mutex_lock(&coll->lock);
 
 	/* change the collective state if need */
 	if (PMIXP_COLL_SYNC == coll->state) {
@@ -373,7 +370,7 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, char *data, size_t size)
 	set_buf_offset(coll->buf, get_buf_offset(coll->buf) + size);
 
 	/* unlock the structure */
-	pthread_mutex_unlock(&coll->lock);
+	slurm_mutex_unlock(&coll->lock);
 
 	/* check if the collective is ready to progress */
 	_progress_fan_in(coll);
@@ -395,7 +392,7 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 			pmixp_info_namespace(), pmixp_info_nodeid(), nodename);
 
 	/* lock the structure */
-	pthread_mutex_lock(&coll->lock);
+	slurm_mutex_lock(&coll->lock);
 
 	pmixp_coll_sanity_check(coll);
 
@@ -448,7 +445,7 @@ int pmixp_coll_contrib_node(pmixp_coll_t *coll, char *nodename, Buf buf)
 
 proceed:
 	/* unlock the structure */
-	pthread_mutex_unlock(&coll->lock);
+	slurm_mutex_unlock(&coll->lock);
 
 	if( PMIXP_COLL_FAN_IN == coll->state ){
 		/* make a progress if we are in fan-in state */
@@ -482,12 +479,12 @@ void pmixp_coll_bcast(pmixp_coll_t *coll, Buf buf)
 	PMIXP_DEBUG("%s:%d: start", pmixp_info_namespace(), pmixp_info_nodeid());
 
 	/* lock the structure */
-	pthread_mutex_lock(&coll->lock);
+	slurm_mutex_lock(&coll->lock);
 
 	_progres_fan_out(coll, buf);
 
 	/* unlock the structure */
-	pthread_mutex_unlock(&coll->lock);
+	slurm_mutex_unlock(&coll->lock);
 
 	/* We may already start next collective. Try to progress!
 	 * its OK if we in SYNC - there will be no-op */
@@ -529,7 +526,7 @@ static void _progress_fan_in(pmixp_coll_t *coll)
 			coll->contrib_local, coll->contrib_cntr);
 
 	/* lock the collective */
-	pthread_mutex_lock(&coll->lock);
+	slurm_mutex_lock(&coll->lock);
 
 	pmixp_coll_sanity_check(coll);
 
@@ -616,7 +613,7 @@ unlock:
 	}
 
 	/* lock the */
-	pthread_mutex_unlock(&coll->lock);
+	slurm_mutex_unlock(&coll->lock);
 }
 
 void _progres_fan_out(pmixp_coll_t *coll, Buf buf)
@@ -646,7 +643,7 @@ void _progres_fan_out(pmixp_coll_t *coll, Buf buf)
 void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 {
 	/* lock the */
-	pthread_mutex_lock(&coll->lock);
+	slurm_mutex_lock(&coll->lock);
 
 	if (PMIXP_COLL_SYNC == coll->state) {
 		goto unlock;
@@ -663,5 +660,5 @@ void pmixp_coll_reset_if_to(pmixp_coll_t *coll, time_t ts)
 	}
 unlock:
 	/* unlock the structure */
-	pthread_mutex_unlock(&coll->lock);
+	slurm_mutex_unlock(&coll->lock);
 }

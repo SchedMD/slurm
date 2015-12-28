@@ -784,11 +784,11 @@ extern int bridge_status_init(void)
 	if (!kill_job_list)
 		kill_job_list = bg_status_create_kill_job_list();
 
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (block_thread) {
 		debug2("Bluegene threads already running, not starting "
 		       "another");
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -800,7 +800,7 @@ extern int bridge_status_init(void)
 	/* since we do a join on this later we don't make it detached */
 	if (pthread_create(&state_thread, &attr, _mp_state_agent, NULL))
 		error("Failed to create state_agent thread");
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
@@ -809,7 +809,7 @@ extern int bridge_status_init(void)
 extern int bridge_status_fini(void)
 {
 	bridge_status_inited = false;
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if ( block_thread ) {
 		verbose("Bluegene select plugin shutting down");
 		pthread_join(block_thread, NULL);
@@ -819,7 +819,7 @@ extern int bridge_status_fini(void)
 		pthread_join(state_thread, NULL);
 		state_thread = 0;
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
 }

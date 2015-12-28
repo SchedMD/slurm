@@ -1230,10 +1230,10 @@ static void _my_sleep(int add_secs)
 
 	ts.tv_sec  = tv.tv_sec + add_secs;
 	ts.tv_nsec = tv.tv_usec * 1000;
-	pthread_mutex_lock(&term_lock);
+	slurm_mutex_lock(&term_lock);
 	if (!stop_power)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
-	pthread_mutex_unlock(&term_lock);
+	slurm_mutex_unlock(&term_lock);
 }
 
 /* Periodically attempt to re-balance power caps across nodes */
@@ -1672,10 +1672,10 @@ static void _set_power_caps(void)
 /* Terminate power thread */
 static void _stop_power_agent(void)
 {
-	pthread_mutex_lock(&term_lock);
+	slurm_mutex_lock(&term_lock);
 	stop_power = true;
 	pthread_cond_signal(&term_cond);
-	pthread_mutex_unlock(&term_lock);
+	slurm_mutex_unlock(&term_lock);
 }
 
 /*
@@ -1689,10 +1689,10 @@ extern int init(void)
 	if (!run_in_daemon("slurmctld"))
 		return SLURM_SUCCESS;
 
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (power_thread) {
 		debug2("Power thread already running, not starting another");
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -1702,7 +1702,7 @@ extern int init(void)
 	if (pthread_create(&power_thread, &attr, _power_agent, NULL))
 		error("Unable to start power thread: %m");
 	slurm_attr_destroy(&attr);
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -1712,7 +1712,7 @@ extern int init(void)
  */
 extern void fini(void)
 {
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (power_thread) {
 		_stop_power_agent();
 		pthread_join(power_thread, NULL);
@@ -1720,15 +1720,15 @@ extern void fini(void)
 		xfree(capmc_path);
 		xfree(full_nid_string);
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
 /* Read the configuration file */
 extern void power_p_reconfig(void)
 {
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	_load_config();
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
 /* Note that a suspended job has been resumed */

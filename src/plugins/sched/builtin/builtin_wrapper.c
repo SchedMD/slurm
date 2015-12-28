@@ -69,11 +69,11 @@ int init( void )
 
 	verbose( "sched: Built-in scheduler plugin loaded" );
 
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if ( builtin_thread ) {
 		debug2( "Built-in scheduler thread already running, "
 			"not starting another" );
-		pthread_mutex_unlock( &thread_flag_mutex );
+		slurm_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}
 
@@ -81,7 +81,7 @@ int init( void )
 	/* since we do a join on this later we don't make it detached */
 	if (pthread_create( &builtin_thread, &attr, builtin_agent, NULL))
 		error("Unable to start built-in scheduler thread: %m");
-	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock( &thread_flag_mutex );
 	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
@@ -92,14 +92,14 @@ int init( void )
 /**************************************************************************/
 void fini( void )
 {
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if ( builtin_thread ) {
 		verbose( "Built-in scheduler plugin shutting down" );
 		stop_builtin_agent();
 		pthread_join(builtin_thread, NULL);
 		builtin_thread = 0;
 	}
-	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock( &thread_flag_mutex );
 }
 
 /**************************************************************************/

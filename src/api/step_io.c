@@ -516,9 +516,9 @@ again:
 	 */
 	s->out_msg->ref_count--;
 	if (s->out_msg->ref_count == 0) {
-		pthread_mutex_lock(&s->cio->ioservers_lock);
+		slurm_mutex_lock(&s->cio->ioservers_lock);
 		list_enqueue(s->cio->free_incoming, s->out_msg);
-		pthread_mutex_unlock(&s->cio->ioservers_lock);
+		slurm_mutex_unlock(&s->cio->ioservers_lock);
 	} else
 		debug3("  Could not free msg!!");
 	s->out_msg = NULL;
@@ -674,12 +674,12 @@ static bool _file_readable(eio_obj_t *obj)
 		info->eof = true;
 		return false;
 	}
-	pthread_mutex_lock(&info->cio->ioservers_lock);
+	slurm_mutex_lock(&info->cio->ioservers_lock);
 	if (_incoming_buf_free(info->cio)) {
-		pthread_mutex_unlock(&info->cio->ioservers_lock);
+		slurm_mutex_unlock(&info->cio->ioservers_lock);
 		return true;
 	}
-	pthread_mutex_unlock(&info->cio->ioservers_lock);
+	slurm_mutex_unlock(&info->cio->ioservers_lock);
 
 	debug3("  false");
 	return false;
@@ -695,15 +695,15 @@ static int _file_read(eio_obj_t *obj, List objs)
 	int len;
 
 	debug2("Entering _file_read");
-	pthread_mutex_lock(&info->cio->ioservers_lock);
+	slurm_mutex_lock(&info->cio->ioservers_lock);
 	if (_incoming_buf_free(info->cio)) {
 		msg = list_dequeue(info->cio->free_incoming);
 	} else {
 		debug3("  List free_incoming is empty, no file read");
-		pthread_mutex_unlock(&info->cio->ioservers_lock);
+		slurm_mutex_unlock(&info->cio->ioservers_lock);
 		return SLURM_SUCCESS;
 	}
-	pthread_mutex_unlock(&info->cio->ioservers_lock);
+	slurm_mutex_unlock(&info->cio->ioservers_lock);
 
 	ptr = msg->data + io_hdr_packed_size();
 
@@ -714,9 +714,9 @@ again:
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 				debug("_file_read returned %s",
 				      errno==EAGAIN?"EAGAIN":"EWOULDBLOCK");
-				pthread_mutex_lock(&info->cio->ioservers_lock);
+				slurm_mutex_lock(&info->cio->ioservers_lock);
 				list_enqueue(info->cio->free_incoming, msg);
-				pthread_mutex_unlock(&info->cio->ioservers_lock);
+				slurm_mutex_unlock(&info->cio->ioservers_lock);
 				return SLURM_SUCCESS;
 			}
 			/* Any other errors, we pretend we got eof */
@@ -857,7 +857,7 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 	cio->ioserver[msg.nodeid] = _create_server_eio_obj(fd, cio, msg.nodeid,
 							   msg.stdout_objs,
 							   msg.stderr_objs);
-	pthread_mutex_lock(&cio->ioservers_lock);
+	slurm_mutex_lock(&cio->ioservers_lock);
 	bit_set(cio->ioservers_ready_bits, msg.nodeid);
 	cio->ioservers_ready = bit_set_count(cio->ioservers_ready_bits);
 	/* Normally using eio_new_initial_obj while the eio mainloop
@@ -865,7 +865,7 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 	 * inside of the eio mainloop there should be no problem.
 	 */
 	eio_new_initial_obj(cio->eio, cio->ioserver[msg.nodeid]);
-	pthread_mutex_unlock(&cio->ioservers_lock);
+	slurm_mutex_unlock(&cio->ioservers_lock);
 
 	if (cio->sls)
 		step_launch_clear_questionable_state(cio->sls, msg.nodeid);
@@ -1128,7 +1128,7 @@ client_io_handler_create(slurm_step_io_fds_t fds,
 	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
 	cio->ioservers_ready_bits = bit_alloc(num_nodes);
 	cio->ioservers_ready = 0;
-	pthread_mutex_init(&cio->ioservers_lock, NULL);
+	slurm_mutex_init(&cio->ioservers_lock);
 
 	_init_stdio_eio_objs(fds, cio);
 	ports = slurm_get_srun_port_range();
@@ -1278,7 +1278,7 @@ client_io_handler_downnodes(client_io_t *cio,
 	if (cio == NULL)
 		return;
 
-	pthread_mutex_lock(&cio->ioservers_lock);
+	slurm_mutex_lock(&cio->ioservers_lock);
 	for (i = 0; i < num_node_ids; i++) {
 		node_id = node_ids[i];
 		if (node_id >= cio->num_nodes || node_id < 0)
@@ -1297,7 +1297,7 @@ client_io_handler_downnodes(client_io_t *cio,
 				bit_set_count(cio->ioservers_ready_bits);
 		}
 	}
-	pthread_mutex_unlock(&cio->ioservers_lock);
+	slurm_mutex_unlock(&cio->ioservers_lock);
 
 	eio_signal_wakeup(cio->eio);
 }
@@ -1311,7 +1311,7 @@ client_io_handler_abort(client_io_t *cio)
 
 	if (cio == NULL)
 		return;
-	pthread_mutex_lock(&cio->ioservers_lock);
+	slurm_mutex_lock(&cio->ioservers_lock);
 	for (i = 0; i < cio->num_nodes; i++) {
 		if (!bit_test(cio->ioservers_ready_bits, i)) {
 			bit_set(cio->ioservers_ready_bits, i);
@@ -1327,7 +1327,7 @@ client_io_handler_abort(client_io_t *cio)
 			cio->ioserver[i]->shutdown = true;
 		}
 	}
-	pthread_mutex_unlock(&cio->ioservers_lock);
+	slurm_mutex_unlock(&cio->ioservers_lock);
 }
 
 
@@ -1339,7 +1339,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	Buf packbuf;
 	struct server_io_info *server;
 	int rc = SLURM_SUCCESS;
-	pthread_mutex_lock(&cio->ioservers_lock);
+	slurm_mutex_lock(&cio->ioservers_lock);
 
 	if (sent_message)
 		*sent_message = false;
@@ -1395,6 +1395,6 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 		goto done;
 	}
 done:
-	pthread_mutex_unlock(&cio->ioservers_lock);
+	slurm_mutex_unlock(&cio->ioservers_lock);
 	return rc;
 }

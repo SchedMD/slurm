@@ -729,7 +729,7 @@ _wait_for_children_slurmstepd(stepd_step_rec_t *job)
 	int rc;
 	struct timespec ts = {0, 0};
 
-	pthread_mutex_lock(&step_complete.lock);
+	slurm_mutex_lock(&step_complete.lock);
 
 	/* wait an extra 3 seconds for every level of tree below this level */
 	if (step_complete.children > 0) {
@@ -761,7 +761,7 @@ _wait_for_children_slurmstepd(stepd_step_rec_t *job)
 	step_complete.step_rc = _get_exit_code(job);
 	step_complete.wait_children = false;
 
-	pthread_mutex_unlock(&step_complete.lock);
+	slurm_mutex_unlock(&step_complete.lock);
 }
 
 /*
@@ -932,7 +932,7 @@ _send_step_complete_msgs(stepd_step_rec_t *job)
 	int first = -1, last = -1;
 	bool sent_own_comp_msg = false;
 
-	pthread_mutex_lock(&step_complete.lock);
+	slurm_mutex_lock(&step_complete.lock);
 	start = 0;
 	size = bit_size(step_complete.bits);
 
@@ -940,7 +940,7 @@ _send_step_complete_msgs(stepd_step_rec_t *job)
 	if (size == 0) {
 		_one_step_complete_msg(job, step_complete.rank,
 				       step_complete.rank);
-		pthread_mutex_unlock(&step_complete.lock);
+		slurm_mutex_unlock(&step_complete.lock);
 		return;
 	}
 
@@ -962,7 +962,7 @@ _send_step_complete_msgs(stepd_step_rec_t *job)
 				       step_complete.rank);
 	}
 
-	pthread_mutex_unlock(&step_complete.lock);
+	slurm_mutex_unlock(&step_complete.lock);
 }
 
 /* This dummy function is provided so that the checkpoint functions can

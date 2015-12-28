@@ -89,10 +89,10 @@ extern int spawn_msg_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
 
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
 		error("Wiki thread already running, not starting another");
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -105,7 +105,7 @@ extern int spawn_msg_thread(void)
 	(void) event_notify(1235, "Slurm startup");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 	return SLURM_SUCCESS;
 }
 
@@ -114,7 +114,7 @@ extern int spawn_msg_thread(void)
 \*****************************************************************************/
 extern void term_msg_thread(void)
 {
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
 		int fd;
 		slurm_addr_t addr;
@@ -140,7 +140,7 @@ extern void term_msg_thread(void)
 		thread_running = false;
 		debug2("join of sched/wiki2 thread was successful");
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
 /*****************************************************************************\

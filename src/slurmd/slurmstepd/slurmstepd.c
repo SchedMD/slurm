@@ -413,7 +413,7 @@ _init_from_slurmd(int sock, char **argv,
 	debug3("step_type = %d", step_type);
 
 	/* receive reverse-tree info from slurmd */
-	pthread_mutex_lock(&step_complete.lock);
+	slurm_mutex_lock(&step_complete.lock);
 	safe_read(sock, &step_complete.rank, sizeof(int));
 	safe_read(sock, &step_complete.parent_rank, sizeof(int));
 	safe_read(sock, &step_complete.children, sizeof(int));
@@ -422,7 +422,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr_t));
 	step_complete.bits = bit_alloc(step_complete.children);
 	step_complete.jobacct = jobacctinfo_create(NULL);
-	pthread_mutex_unlock(&step_complete.lock);
+	slurm_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
 	if ((conf = read_slurmd_conf_lite (sock)) == NULL)

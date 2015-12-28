@@ -71,11 +71,11 @@ int init( void )
 
 	verbose( "sched: Backfill scheduler plugin loaded" );
 
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
 		debug2( "Backfill thread already running, not starting "
 			"another" );
-		pthread_mutex_unlock( &thread_flag_mutex );
+		slurm_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}
 
@@ -83,7 +83,7 @@ int init( void )
 	/* since we do a join on this later we don't make it detached */
 	if (pthread_create( &backfill_thread, &attr, backfill_agent, NULL))
 		error("Unable to start backfill thread: %m");
-	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock( &thread_flag_mutex );
 	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
@@ -91,14 +91,14 @@ int init( void )
 
 void fini( void )
 {
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
 		stop_backfill_agent();
 		pthread_join(backfill_thread, NULL);
 		backfill_thread = 0;
 	}
-	pthread_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock( &thread_flag_mutex );
 }
 
 int slurm_sched_p_reconfig( void )

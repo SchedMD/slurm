@@ -4101,7 +4101,7 @@ _get_suspend_job_lock(uint32_t job_id)
 	static bool logged = false;
 	int i, empty_loc = -1, rc = 0;
 
-	pthread_mutex_lock(&suspend_mutex);
+	slurm_mutex_lock(&suspend_mutex);
 	for (i = 0; i < job_suspend_size; i++) {
 		if (job_suspend_array[i] == 0) {
 			empty_loc = i;
@@ -4109,7 +4109,7 @@ _get_suspend_job_lock(uint32_t job_id)
 		}
 		if (job_suspend_array[i] == job_id) {
 			/* another thread already a lock for this job ID */
-			pthread_mutex_unlock(&suspend_mutex);
+			slurm_mutex_unlock(&suspend_mutex);
 			return rc;
 		}
 	}
@@ -4128,7 +4128,7 @@ _get_suspend_job_lock(uint32_t job_id)
 		      NUM_PARALLEL_SUSP_JOBS);
 		logged = true;
 	}
-	pthread_mutex_unlock(&suspend_mutex);
+	slurm_mutex_unlock(&suspend_mutex);
 	return rc;
 }
 
@@ -4136,12 +4136,12 @@ static void
 _unlock_suspend_job(uint32_t job_id)
 {
 	int i;
-	pthread_mutex_lock(&suspend_mutex);
+	slurm_mutex_lock(&suspend_mutex);
 	for (i = 0; i < job_suspend_size; i++) {
 		if (job_suspend_array[i] == job_id)
 			job_suspend_array[i] = 0;
 	}
-	pthread_mutex_unlock(&suspend_mutex);
+	slurm_mutex_unlock(&suspend_mutex);
 }
 
 /* Add record for every launched job so we know they are ready for suspend */

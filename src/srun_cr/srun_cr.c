@@ -464,13 +464,13 @@ main(int argc, char **argv)
 	cr_leave_cs(cr_id); /* END CS */
 
 	while (1) {
-		pthread_mutex_lock(&step_launch_mutex);
+		slurm_mutex_lock(&step_launch_mutex);
 		while (step_launched) {
 			/* just avoid busy waiting */
 			pthread_cond_wait(&step_launch_cond,
 					  &step_launch_mutex);
 		}
-		pthread_mutex_unlock(&step_launch_mutex);
+		slurm_mutex_unlock(&step_launch_mutex);
 
 		if (_wait_for_srun_connect() < 0)
 			continue;

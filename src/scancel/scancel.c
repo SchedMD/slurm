@@ -489,13 +489,13 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 				continue;
 			}
 
-			pthread_mutex_lock(&num_active_threads_lock);
+			slurm_mutex_lock(&num_active_threads_lock);
 			num_active_threads++;
 			while (num_active_threads > MAX_THREADS) {
 				pthread_cond_wait(&num_active_threads_cond,
 						  &num_active_threads_lock);
 			}
-			pthread_mutex_unlock(&num_active_threads_lock);
+			slurm_mutex_unlock(&num_active_threads_lock);
 
 			cancel_info = (job_cancel_info_t *)
 				      xmalloc(sizeof(job_cancel_info_t));
@@ -528,12 +528,12 @@ static void _cancel_jobid_by_state(uint32_t job_state, int filter_cnt, int *rc)
 			if (opt.interactive) {
 				/* Print any error message for first job before
 				 * starting confirmation of next job */
-				pthread_mutex_lock(&num_active_threads_lock);
+				slurm_mutex_lock(&num_active_threads_lock);
 				while (num_active_threads > 0) {
 					pthread_cond_wait(&num_active_threads_cond,
 							  &num_active_threads_lock);
 				}
-				pthread_mutex_unlock(&num_active_threads_lock);
+				slurm_mutex_unlock(&num_active_threads_lock);
 			}
 		}
 	}
@@ -581,13 +581,13 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 		cancel_info->num_active_threads_cond =
 			&num_active_threads_cond;
 
-		pthread_mutex_lock(&num_active_threads_lock);
+		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
 			pthread_cond_wait(&num_active_threads_cond,
 					  &num_active_threads_lock);
 		}
-		pthread_mutex_unlock(&num_active_threads_lock);
+		slurm_mutex_unlock(&num_active_threads_lock);
 
 		err = pthread_create(&dummy, &attr, _cancel_job_id,cancel_info);
 		if (err)   /* Run in-line if thread create fails */
@@ -597,12 +597,12 @@ _cancel_jobs_by_state(uint32_t job_state, int filter_cnt, int *rc)
 		if (opt.interactive) {
 			/* Print any error message for first job before
 			 * starting confirmation of next job */
-			pthread_mutex_lock(&num_active_threads_lock);
+			slurm_mutex_lock(&num_active_threads_lock);
 			while (num_active_threads > 0) {
 				pthread_cond_wait(&num_active_threads_cond,
 						  &num_active_threads_lock);
 			}
-			pthread_mutex_unlock(&num_active_threads_lock);
+			slurm_mutex_unlock(&num_active_threads_lock);
 		}
 	}
 }
@@ -626,21 +626,21 @@ static int _cancel_jobs(int filter_cnt)
 	 * cancellation of running jobs so that we don't have a race condition
 	 * with pending jobs getting scheduled while running jobs are also
 	 * being cancelled. */
-	pthread_mutex_lock( &num_active_threads_lock );
+	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
 		pthread_cond_wait(&num_active_threads_cond,
 				  &num_active_threads_lock);
 	}
-	pthread_mutex_unlock(&num_active_threads_lock);
+	slurm_mutex_unlock(&num_active_threads_lock);
 
 	_cancel_jobs_by_state(JOB_END, filter_cnt, &rc);
 	/* Wait for any spawned threads that have not finished */
-	pthread_mutex_lock( &num_active_threads_lock );
+	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
 		pthread_cond_wait(&num_active_threads_cond,
 				  &num_active_threads_lock);
 	}
-	pthread_mutex_unlock(&num_active_threads_lock);
+	slurm_mutex_unlock(&num_active_threads_lock);
 
 	slurm_attr_destroy(&attr);
 	slurm_mutex_destroy(&num_active_threads_lock);
@@ -725,11 +725,11 @@ _cancel_job_id (void *ci)
 	/* Purposely free the struct passed in here, so the caller doesn't have
 	 * to keep track of it, but don't destroy the mutex and condition
 	 * variables contained. */
-	pthread_mutex_lock(cancel_info->num_active_threads_lock);
+	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
 	pthread_cond_signal(cancel_info->num_active_threads_cond);
-	pthread_mutex_unlock(cancel_info->num_active_threads_lock);
+	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
 	xfree(cancel_info);
@@ -806,11 +806,11 @@ _cancel_step_id (void *ci)
 	/* Purposely free the struct passed in here, so the caller doesn't have
 	 * to keep track of it, but don't destroy the mutex and condition
 	 * variables contained. */
-	pthread_mutex_lock(cancel_info->num_active_threads_lock);
+	slurm_mutex_lock(cancel_info->num_active_threads_lock);
 	*(cancel_info->rc) = MAX(*(cancel_info->rc), error_code);
 	(*(cancel_info->num_active_threads))--;
 	pthread_cond_signal(cancel_info->num_active_threads_cond);
-	pthread_mutex_unlock(cancel_info->num_active_threads_lock);
+	slurm_mutex_unlock(cancel_info->num_active_threads_lock);
 
 	xfree(cancel_info->job_id_str);
 	xfree(cancel_info);
@@ -868,13 +868,13 @@ static int _signal_job_by_str(void)
 		cancel_info->num_active_threads_cond =
 			&num_active_threads_cond;
 
-		pthread_mutex_lock(&num_active_threads_lock);
+		slurm_mutex_lock(&num_active_threads_lock);
 		num_active_threads++;
 		while (num_active_threads > MAX_THREADS) {
 			pthread_cond_wait(&num_active_threads_cond,
 					  &num_active_threads_lock);
 		}
-		pthread_mutex_unlock(&num_active_threads_lock);
+		slurm_mutex_unlock(&num_active_threads_lock);
 
 		err = pthread_create(&dummy, &attr, _cancel_job_id,cancel_info);
 		if (err)	/* Run in-line if thread create fails */
@@ -882,12 +882,12 @@ static int _signal_job_by_str(void)
 	}
 
 	/* Wait all spawned threads to finish */
-	pthread_mutex_lock( &num_active_threads_lock );
+	slurm_mutex_lock( &num_active_threads_lock );
 	while (num_active_threads > 0) {
 		pthread_cond_wait(&num_active_threads_cond,
 				  &num_active_threads_lock);
 	}
-	pthread_mutex_unlock(&num_active_threads_lock);
+	slurm_mutex_unlock(&num_active_threads_lock);
 
 	slurm_attr_destroy(&attr);
 

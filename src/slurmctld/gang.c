@@ -1166,11 +1166,11 @@ static void _spawn_timeslicer_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
 
-	pthread_mutex_lock( &thread_flag_mutex );
+	slurm_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
 		error("timeslicer thread already running, not starting "
 		      "another");
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return;
 	}
 
@@ -1181,7 +1181,7 @@ static void _spawn_timeslicer_thread(void)
 
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
 /* Initialize data structures and start the gang scheduling thread */
@@ -1201,11 +1201,11 @@ extern int gs_init(void)
 	/* load the physical resource count data */
 	_load_phys_res_cnt();
 
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 	_build_parts();
 	/* load any currently running jobs */
 	_scan_slurm_job_list();
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 
 	/* spawn the timeslicer thread */
 	_spawn_timeslicer_thread();
@@ -1220,25 +1220,25 @@ extern int gs_fini(void)
 	/* terminate the timeslicer thread */
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_fini");
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
-		pthread_mutex_lock(&term_lock);
+		slurm_mutex_lock(&term_lock);
 		thread_shutdown = true;
 		pthread_cond_signal(&term_cond);
-		pthread_mutex_unlock(&term_lock);
+		slurm_mutex_unlock(&term_lock);
 		usleep(120000);
 		if (timeslicer_thread_id)
 			error("gang: timeslicer pthread still running");
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	FREE_NULL_LIST(preempt_job_list);
 
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 	FREE_NULL_LIST(gs_part_list);
 	gs_part_list = NULL;
 	xfree(gs_bits_per_node);
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: leaving gs_fini");
 
@@ -1259,7 +1259,7 @@ extern int gs_job_start(struct job_record *job_ptr)
 		part_name = job_ptr->part_ptr->name;
 	else
 		part_name = job_ptr->partition;
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 	p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 	if (p_ptr) {
 		job_sig_state = _add_job_to_part(p_ptr, job_ptr);
@@ -1267,7 +1267,7 @@ extern int gs_job_start(struct job_record *job_ptr)
 		if (job_sig_state == GS_RESUME)
 			_update_all_active_rows();
 	}
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 
 	if (!p_ptr) {
 		/* No partition was found for this job, so let it run
@@ -1290,9 +1290,9 @@ extern int gs_job_scan(void)
 {
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_scan");
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 	_scan_slurm_job_list();
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 
 	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -1333,10 +1333,10 @@ extern int gs_job_fini(struct job_record *job_ptr)
 		part_name = job_ptr->part_ptr->name;
 	else
 		part_name = job_ptr->partition;
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 	p_ptr = list_find_first(gs_part_list, _find_gs_part, part_name);
 	if (!p_ptr) {
-		pthread_mutex_unlock(&data_mutex);
+		slurm_mutex_unlock(&data_mutex);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: leaving gs_job_fini");
 		return SLURM_SUCCESS;
@@ -1347,7 +1347,7 @@ extern int gs_job_fini(struct job_record *job_ptr)
 	/* this job may have preempted other jobs, so
 	 * check by updating all active rows */
 	_update_all_active_rows();
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: leaving gs_job_fini");
 
@@ -1392,7 +1392,7 @@ extern int gs_reconfig(void)
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_reconfig");
-	pthread_mutex_lock(&data_mutex);
+	slurm_mutex_lock(&data_mutex);
 
 	old_part_list = gs_part_list;
 	gs_part_list = NULL;
@@ -1467,7 +1467,7 @@ extern int gs_reconfig(void)
 	_scan_slurm_job_list();
 
 	FREE_NULL_LIST(old_part_list);
-	pthread_mutex_unlock(&data_mutex);
+	slurm_mutex_unlock(&data_mutex);
 
 	_preempt_job_dequeue();	/* MUST BE OUTSIDE OF data_mutex lock */
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
@@ -1605,10 +1605,10 @@ static void _slice_sleep(void)
 	gettimeofday(&now, NULL);
 	ts.tv_sec = now.tv_sec + timeslicer_seconds;
 	ts.tv_nsec = now.tv_usec * 1000;
-	pthread_mutex_lock(&term_lock);
+	slurm_mutex_lock(&term_lock);
 	if (!thread_shutdown)
 		pthread_cond_timedwait(&term_cond, &term_lock, &ts);
-	pthread_mutex_unlock(&term_lock);
+	slurm_mutex_unlock(&term_lock);
 }
 
 /* The timeslicer thread */
@@ -1628,7 +1628,7 @@ static void *_timeslicer_thread(void *arg)
 			break;
 
 		lock_slurmctld(job_write_lock);
-		pthread_mutex_lock(&data_mutex);
+		slurm_mutex_lock(&data_mutex);
 		list_sort(gs_part_list, _sort_partitions);
 
 		/* scan each partition... */
@@ -1647,7 +1647,7 @@ static void *_timeslicer_thread(void *arg)
 			}
 		}
 		list_iterator_destroy(part_iterator);
-		pthread_mutex_unlock(&data_mutex);
+		slurm_mutex_unlock(&data_mutex);
 
 		/* Preempt jobs that were formerly only suspended */
 		_preempt_job_dequeue();	/* MUST BE OUTSIDE data_mutex lock */

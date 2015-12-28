@@ -439,12 +439,12 @@ int main(int argc, char *argv[])
 
 	env_array_set_environment(env);
 	env_array_free(env);
-	pthread_mutex_lock(&allocation_state_lock);
+	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
 		error("Allocation was revoked for job %u before command could "
 		      "be run", alloc->job_id);
 		pthread_cond_broadcast(&allocation_state_cond);
-		pthread_mutex_unlock(&allocation_state_lock);
+		slurm_mutex_unlock(&allocation_state_lock);
 		if (slurm_complete_job(alloc->job_id, status) != 0) {
 			error("Unable to clean up allocation for job %u: %m",
 			      alloc->job_id);
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
  	}
 	allocation_state = GRANTED;
 	pthread_cond_broadcast(&allocation_state_cond);
-	pthread_mutex_unlock(&allocation_state_lock);
+	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*  Ensure that salloc has initial terminal foreground control.  */
 	if (is_interactive) {
@@ -470,12 +470,12 @@ int main(int argc, char *argv[])
 
 		tcsetpgrp(STDIN_FILENO, pid);
 	}
-	pthread_mutex_lock(&allocation_state_lock);
+	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
 		pthread_cond_wait(&allocation_state_cond, &allocation_state_lock);
 	command_pid = _fork_command(command_argv);
 	pthread_cond_broadcast(&allocation_state_cond);
-	pthread_mutex_unlock(&allocation_state_lock);
+	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
@@ -504,20 +504,20 @@ int main(int argc, char *argv[])
 	 * Relinquish the job allocation (if not already revoked).
 	 */
 relinquish:
-	pthread_mutex_lock(&allocation_state_lock);
+	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
-		pthread_mutex_unlock(&allocation_state_lock);
+		slurm_mutex_unlock(&allocation_state_lock);
 
 		info("Relinquishing job allocation %u", alloc->job_id);
 		if ((slurm_complete_job(alloc->job_id, status) != 0) &&
 		    (slurm_get_errno() != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %u: %m",
 			      alloc->job_id);
-		pthread_mutex_lock(&allocation_state_lock);
+		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
 	pthread_cond_broadcast(&allocation_state_cond);
-	pthread_mutex_unlock(&allocation_state_lock);
+	slurm_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_allocation_msg_thr_destroy(msg_thr);
@@ -868,7 +868,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 	}
 
 	if (comp->step_id == NO_VAL) {
-		pthread_mutex_lock(&allocation_state_lock);
+		slurm_mutex_lock(&allocation_state_lock);
 		if (allocation_state != REVOKED) {
 			/* If the allocation_state is already REVOKED, then
 			 * no need to print this message.  We probably
@@ -885,7 +885,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		}
 		allocation_state = REVOKED;
 		pthread_cond_broadcast(&allocation_state_cond);
-		pthread_mutex_unlock(&allocation_state_lock);
+		slurm_mutex_unlock(&allocation_state_lock);
 		/*
 		 * Clean up child process: only if the forked process has not
 		 * yet changed state (waitpid returning 0).

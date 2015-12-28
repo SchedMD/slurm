@@ -2562,12 +2562,12 @@ extern int mvapich_thr_destroy(mvapich_state_t *st)
 
 void mvapich_thr_exit(mvapich_state_t *st)
 {
-	pthread_mutex_lock(&st->shutdown_lock);
+	slurm_mutex_lock(&st->shutdown_lock);
 
 	st->shutdown_complete = true;
 
 	pthread_cond_signal(&st->shutdown_cond);
-	pthread_mutex_unlock(&st->shutdown_lock);
+	slurm_mutex_unlock(&st->shutdown_lock);
 
 	pthread_exit(NULL);
 }

@@ -523,7 +523,7 @@ static void * _script_agent (void *args)
 	while (1) {
 		struct jobcomp_info *job;
 
-		pthread_mutex_lock(&comp_list_mutex);
+		slurm_mutex_lock(&comp_list_mutex);
 
 		if (list_is_empty(comp_list) && !agent_exit)
 			pthread_cond_wait(&comp_list_cond, &comp_list_mutex);
@@ -532,7 +532,7 @@ static void * _script_agent (void *args)
 		 * It is safe to unlock list mutex here. List has its
 		 *  own internal mutex that protects the comp_list itself
 		 */
-		pthread_mutex_unlock(&comp_list_mutex);
+		slurm_mutex_unlock(&comp_list_mutex);
 
 		if ((job = list_pop(comp_list))) {
 			_jobcomp_exec_child (script, job);
@@ -559,18 +559,18 @@ extern int init (void)
 
 	verbose("jobcomp/script plugin loaded init");
 
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 
 	if (comp_list)
 		error("Creating duplicate comp_list, possible memory leak");
 	if (!(comp_list = list_create((ListDelF) _jobcomp_info_destroy))) {
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
 	if (script_thread) {
 		debug2( "Script thread already running, not starting another");
-		pthread_mutex_unlock(&thread_flag_mutex);
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -578,7 +578,7 @@ extern int init (void)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	pthread_create(&script_thread, &attr, _script_agent, NULL);
 
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 	slurm_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
@@ -610,10 +610,10 @@ int slurm_jobcomp_log_record (struct job_record *record)
 	if (!(job = _jobcomp_info_create (record)))
 		return error ("jobcomp/script: Failed to create job info!");
 
-	pthread_mutex_lock(&comp_list_mutex);
+	slurm_mutex_lock(&comp_list_mutex);
 	list_append(comp_list, job);
 	pthread_cond_broadcast(&comp_list_cond);
-	pthread_mutex_unlock(&comp_list_mutex);
+	slurm_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -650,20 +650,20 @@ extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
-	pthread_mutex_lock(&thread_flag_mutex);
+	slurm_mutex_lock(&thread_flag_mutex);
 	if (script_thread) {
 		verbose("Script Job Completion plugin shutting down");
 		agent_exit = 1;
 		rc = _wait_for_thread(script_thread);
 		script_thread = 0;
 	}
-	pthread_mutex_unlock(&thread_flag_mutex);
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	xfree(script);
 	if (rc == SLURM_SUCCESS) {
-		pthread_mutex_lock(&comp_list_mutex);
+		slurm_mutex_lock(&comp_list_mutex);
 		FREE_NULL_LIST(comp_list);
-		pthread_mutex_unlock(&comp_list_mutex);
+		slurm_mutex_unlock(&comp_list_mutex);
 	}
 
 	return rc;

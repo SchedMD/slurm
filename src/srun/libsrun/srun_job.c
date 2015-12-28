@@ -711,13 +711,13 @@ cleanup:
 void
 update_job_state(srun_job_t *job, srun_job_state_t state)
 {
-	pthread_mutex_lock(&job->state_mutex);
+	slurm_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
 		job->state = state;
 		pthread_cond_signal(&job->state_cond);
 
 	}
-	pthread_mutex_unlock(&job->state_mutex);
+	slurm_mutex_unlock(&job->state_mutex);
 	return;
 }
 

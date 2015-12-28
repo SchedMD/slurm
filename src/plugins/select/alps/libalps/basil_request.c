@@ -197,7 +197,7 @@ static void *_timer_func(void *raw_data)
 	debug2("This is a timer thread for process: %d (slurmctld)--"
 	       "timeout: %d, apbasil pid: %d\n", getpid(), time_out, child);
 
-	pthread_mutex_lock(&timer_lock);
+	slurm_mutex_lock(&timer_lock);
 	gettimeofday(&now, NULL);
 	ts.tv_sec = now.tv_sec + time_out;
 	ts.tv_nsec = now.tv_usec * 1000;
@@ -207,7 +207,7 @@ static void *_timer_func(void *raw_data)
 		kill(child, SIGKILL);
 		debug2("Exiting timer thread, apbasil pid had been: %d", child);
 	}
-	pthread_mutex_unlock(&timer_lock);
+	slurm_mutex_unlock(&timer_lock);
 	pthread_exit(NULL);
 }
 
@@ -321,9 +321,9 @@ int basil_request(struct basil_parse_data *bp)
 	if (time_it_out) {
 		slurm_attr_destroy(&attr);
 		debug2("Killing the timer thread.");
-		pthread_mutex_lock(&timer_lock);
+		slurm_mutex_lock(&timer_lock);
 		pthread_cond_broadcast(&timer_cond);
-		pthread_mutex_unlock(&timer_lock);
+		slurm_mutex_unlock(&timer_lock);
 	}
 
 	END_TIMER;

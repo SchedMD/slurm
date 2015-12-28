@@ -133,7 +133,7 @@ extern int	event_notify(int event_code, char *desc)
 		return -1;
 	}
 
-	pthread_mutex_lock(&event_mutex);
+	slurm_mutex_lock(&event_mutex);
 	while (retry) {
 		if ((event_fd == -1) && ((rc = _open_fd(now)) == -1)) {
 			/* Can't even open socket.
@@ -171,7 +171,7 @@ extern int	event_notify(int event_code, char *desc)
 			break;
 		}
 	}
-	pthread_mutex_unlock(&event_mutex);
+	slurm_mutex_unlock(&event_mutex);
 	END_TIMER2("event_notify");
 
 	return rc;

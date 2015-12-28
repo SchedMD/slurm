@@ -86,9 +86,9 @@ static void *_msg_thr_internal(void *arg)
 
 	debug("Entering _msg_thr_internal");
 	xsignal_block(signals);
-	pthread_mutex_lock(&msg_thr_start_lock);
+	slurm_mutex_lock(&msg_thr_start_lock);
 	pthread_cond_signal(&msg_thr_start_cond);
-	pthread_mutex_unlock(&msg_thr_start_lock);
+	slurm_mutex_unlock(&msg_thr_start_lock);
 	eio_handle_mainloop((eio_handle_t *)arg);
 	debug("Leaving _msg_thr_internal");
 
@@ -145,7 +145,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 		return NULL;
 	}
 	eio_new_initial_obj(msg_thr->handle, obj);
-	pthread_mutex_lock(&msg_thr_start_lock);
+	slurm_mutex_lock(&msg_thr_start_lock);
 	slurm_attr_init(&attr);
 	if (pthread_create(&msg_thr->id, &attr,
 			   _msg_thr_internal, (void *)msg_thr->handle) != 0) {
@@ -160,7 +160,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	/* Wait until the message thread has blocked signals
 	   before continuing. */
 	pthread_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
-	pthread_mutex_unlock(&msg_thr_start_lock);
+	slurm_mutex_unlock(&msg_thr_start_lock);
 
 	return (allocation_msg_thread_t *)msg_thr;
 }
