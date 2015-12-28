@@ -2503,18 +2503,12 @@ The default value is 2,000,000 microseconds (2 seconds).
 .TP
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
-running job completes or other routine actions occur. The full queue will be
-tested on a less frequent basis as defined by the \fBsched_interval\fR option
-described below. The default value is 100.
+running job completes or other routine actions occur, however the frequency
+with which the scheduler is run may be limited by using the \fBdefer\fR or
+\fBsched_min_interval\fR parameters described below.
+The full queue will be tested on a less frequent basis as defined by the
+\fBsched_interval\fR option described below. The default value is 100.
 See the \fBpartition_job_depth\fR option to limit depth by partition.
-In the case of large clusters (more than 1000 nodes), configuring a relatively
-small value may be desirable.
-Specifying a large value (say 1000 or higher) can be expected to result in
-poor system responsiveness since this scheduling logic will not release
-locks for other events to occur.
-It would be better to let the backfill scheduler process a larger number of jobs
-(see \fBbf_max_job_test\fR, \fBbf_continue\fR  and other options here for more
-information).
 .TP
 \fBdefer\fR
 Setting this option will avoid attempting to schedule each job
