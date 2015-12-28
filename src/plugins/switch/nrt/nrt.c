@@ -303,7 +303,6 @@ static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 				       hostlist_t hl, win_state_t state);
 static int	_load_min_window_id(char *adapter_name,
 				    nrt_adapter_t adapter_type);
-static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer,
 			       uint16_t protocol_version);
@@ -314,7 +313,6 @@ static char *	_state_str(win_state_t state);
 static int	_unload_window_all_jobs(char *adapter_name,
 					nrt_adapter_t adapter_type,
 					nrt_window_id_t window_id);
-static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 				 bool believe_window_status,
@@ -332,29 +330,6 @@ static int	_wait_job(nrt_job_key_t job_key,preemption_state_t want_state,
 static char *	_win_state_str(win_state_t state);
 static int	_window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname,
 				  win_state_t state);
-/* The _lock() and _unlock() functions are used to lock/unlock a
- * global mutex.  Used to serialize access to the global library
- * state variable nrt_state.
- */
-static void
-_lock(void)
-{
-	int err = 1;
-
-	while (err) {
-		err = slurm_mutex_lock(&global_lock);
-	}
-}
-
-static void
-_unlock(void)
-{
-	int err = 1;
-
-	while (err) {
-		err = slurm_mutex_unlock(&global_lock);
-	}
-}
 
 /* The lid caching functions were created to avoid unnecessary
  * function calls each time we need to load network tables on a node.
@@ -656,13 +631,13 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		return SLURM_SUCCESS;
 
 	hi = hostlist_iterator_create(hl);
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	while ((host = hostlist_next(hi))) {
 		err = _window_state_set(jp, host, state);
 		rc = MAX(rc, err);
 		free(host);
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 	hostlist_iterator_destroy(hi);
 
 	return rc;
@@ -1929,10 +1904,10 @@ nrt_init(void)
 	slurm_nrt_libstate_t *tmp;
 
 	tmp = _alloc_libstate();
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	xassert(!nrt_state);
 	nrt_state = tmp;
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -2392,9 +2367,9 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 	xassert(name);
 
 	strncpy(n->name, name, NRT_HOSTLEN);
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	err = _get_adapters(n);
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return err;
 }
@@ -2818,9 +2793,9 @@ nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, uint16_t protocol_version)
 {
 	int rc;
 
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	rc = _unpack_nodeinfo(n, buf, false, protocol_version);
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 	return rc;
 }
 
@@ -2888,7 +2863,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 	hostlist_uniq(uniq_hl);
 	hi = hostlist_iterator_create(uniq_hl);
 
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	if (nrt_state != NULL) {
 		while ((node_name = hostlist_next(hi)) != NULL) {
 			_free_resources_by_job(jp, node_name);
@@ -2902,7 +2877,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 		 */
 		debug("nrt_job_step_complete called when nrt_state == NULL");
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	hostlist_iterator_destroy(hi);
 	hostlist_destroy(uniq_hl);
@@ -2949,12 +2924,12 @@ _next_key(void)
 
 	xassert(nrt_state);
 
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	key = nrt_state->key_index;
 	if (key == 0)
 		key++;
 	nrt_state->key_index = (nrt_job_key_t) (key + 1);
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return key;
 }
@@ -3073,7 +3048,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	 */
 	hi = hostlist_iterator_create(hl);
 	host = hostlist_next(hi);
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	node = _find_node(nrt_state, host);
 	if (host != NULL)
 		free(host);
@@ -3125,7 +3100,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		jp->tables_per_task = 0;
 		info("switch/nrt: no adapter found for job");
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 	if (jp->tables_per_task == 0) {
 		hostlist_iterator_destroy(hi);
 		return SLURM_FAILURE;
@@ -3196,7 +3171,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	}
 
 	if (jp->tables_per_task) {
-		_lock();
+		slurm_mutex_lock(&global_lock);
 		for  (i = 0; i < nnodes; i++) {
 			host = hostlist_next(hi);
 			if (!host)
@@ -3221,13 +3196,13 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 								instances, j);
 				}
 				if (rc != SLURM_SUCCESS) {
-					_unlock();
+					slurm_mutex_unlock(&global_lock);
 					goto fail;
 				}
 			}
 			free(host);
 		}
-		_unlock();
+		slurm_mutex_unlock(&global_lock);
 	}
 
 
@@ -4039,7 +4014,7 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer, uint16_t protocol_version)
 extern void
 nrt_libstate_save(Buf buffer, bool free_flag)
 {
-	_lock();
+	slurm_mutex_lock(&global_lock);
 
 	if (nrt_state != NULL)
 		_pack_libstate(nrt_state, buffer, SLURM_PROTOCOL_VERSION);
@@ -4050,7 +4025,7 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 		_free_libstate(nrt_state);
 		nrt_state = NULL;	/* freed above */
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 }
 
 /* Used by: slurmctld */
@@ -4112,17 +4087,17 @@ nrt_libstate_restore(Buf buffer)
 {
 	int rc;
 
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	xassert(!nrt_state);
 
 	nrt_state = _alloc_libstate();
 	if (!nrt_state) {
 		error("nrt_libstate_restore nrt_state is NULL");
-		_unlock();
+		slurm_mutex_unlock(&global_lock);
 		return SLURM_FAILURE;
 	}
 	rc = _unpack_libstate(nrt_state, buffer);
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return rc;
 }
@@ -4141,10 +4116,10 @@ nrt_libstate_clear(void)
 	else
 		debug3("Clearing state on all windows in global NRT state");
 
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	if (!nrt_state || !nrt_state->node_list) {
 		error("nrt_state or node_list not initialized!");
-		_unlock();
+		slurm_mutex_unlock(&global_lock);
 		return SLURM_ERROR;
 	}
 
@@ -4164,7 +4139,7 @@ nrt_libstate_clear(void)
 			}
 		}
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -4476,7 +4451,7 @@ extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 	hi = hostlist_iterator_create(hl);
 	host = hostlist_next(hi);
 	hostlist_iterator_destroy(hi);
-	_lock();
+	slurm_mutex_lock(&global_lock);
 	node = _find_node(nrt_state, host);
 	if (host)
 		free(host);
@@ -4488,7 +4463,7 @@ extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 			break;
 		}
 	}
-	_unlock();
+	slurm_mutex_unlock(&global_lock);
 
 	return name_found;
 }
