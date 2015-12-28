@@ -1532,14 +1532,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			tried_sched = false;	/* need to test these nodes */
-			if ((switch_record_cnt > 1) &&
-			    ((i+1) < node_set_size) &&
-			    (min_feature == max_feature)) {
-				/* Keep accumulating to optimize topology */
-				continue;
-			}
 
-			if ((shared || preempt_flag)	 &&
+			if ((shared || preempt_flag ||
+			    (switch_record_cnt > 1))     &&
 			    ((i+1) < node_set_size)	 &&
 			    (min_feature == max_feature) &&
 			    (node_set_ptr[i].weight ==

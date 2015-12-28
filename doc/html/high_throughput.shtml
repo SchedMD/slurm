@@ -138,11 +138,18 @@ scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs.</li>
-<li>A variation of <b>defer</b> would be to configure <b>default_queue_depth</b>
-to a relatively small number to avoid attempting to schedule large numbers of
-jobs every time some job completes or another routine action occurs. (NOTE:
-the default value of <b>default_queue_depth</b> should be fine in most
-cases).</li>
+<li><b>sched_min_interval</b> is yet another configuration parameter to control
+how frequently the scheduling logic runs. It can still be triggered on each
+job submit, job terminiation, or other state change which could permit a new
+job to be started. However that triggering does not cause the scheduling logic
+to be started immediately, but only within the configured <b>sched_interval</b>.
+For example, if sched_min_interval=2 (seconds) and 100 jobs are submitted within
+a 2 second time window, then the scheduling logic will be executed one time
+rather than 100 times (with the default configuration).</li>
+<li>Besides controlling how frequently the scheduling logic is executed, the
+<b>default_queue_depth</b> configuration parameter controls how many jobs are
+considered to be started in each scheduler iteration. The default value of
+default_queue_depth is 100 (jobs), which should be fine in most cases.</li>
 <li>The <i>sched/backfill</i> plugin has relatively high overhead if used with
 large numbers of job. Configuring <b>bf_max_job_test</b> to a modest size (say 100
 jobs or less) and <b>bf_interval</b> to 30 seconds or more will limit the
@@ -211,6 +218,6 @@ speedup can be achieved by setting the CommitDelay option in the
 <li><b>PurgeSuspendAfter</b>=1month</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 December 2015</p>
+<p style="text-align:center;">Last modified 28 December 2015</p>
 
 <!--#include virtual="footer.txt"-->
