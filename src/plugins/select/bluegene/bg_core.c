@@ -120,6 +120,14 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		return SLURM_SUCCESS;
 	}
 
+	/* The reason restore is used on the entire list is if this
+	 * was for a bunch of small blocks.  If we record is marked to
+	 * be destroyed and it is bigger than 1 midplane destroy it
+	 * even if restore is true.
+	 */
+	 if (restore && bg_record->destroy && (bg_record->mp_count > 1))
+		restore = false;
+
 	/* If we are here we are done with the destroy so just reset it. */
 	bg_record->destroy = 0;
 

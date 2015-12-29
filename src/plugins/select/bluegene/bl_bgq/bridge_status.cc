@@ -700,6 +700,14 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 			if (!*delete_list)
 				*delete_list = list_create(NULL);
 
+			/* If a cable goes bad we have to destroy the block or
+			 * the next job will fail on the block.
+			 */
+			if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+				bg_record->destroy = 1;
+			else
+				bg_record->state |= BG_BLOCK_ERROR_FLAG;
+
 			debug("_handle_cable_change: going to "
 			      "remove block %s, bad underlying cable.",
 			      bg_record->bg_block_id);
@@ -1128,7 +1136,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		if (initial_poll && bg_conf->sub_mp_sys)
 			delete_it = 1;
 
-		free_block_list(NO_VAL, delete_list, 1, 0);
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
 	}
 }
