@@ -42,6 +42,11 @@ set iterations       50
 
 print_header $test_id
 
+if {![test_accting_steps]} {
+	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
+	send_user "(AccoutingStorageEnforce)\n"
+	exit 0
+}
 #
 # Test is incompatible with proctrack/aix, proctrack/rms, proctrack/sgi_job,
 # proctrack/cray, and switch/elan
