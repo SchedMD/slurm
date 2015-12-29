@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
     "/sys/fs/cgroup" to match current standard.
  -- Add #BSUB options to sbatch to read in from the batch script.
+ -- HDF: Change group name of node from nodename to nodeid.
 
 * Changes in Slurm 15.08.7
 ==========================
