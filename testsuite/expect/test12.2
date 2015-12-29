@@ -54,6 +54,11 @@ if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
 }
+if {![test_accting_steps]} {
+	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
+	send_user "(AccountingStorageEnforce)\n"
+	exit 0
+}
 
 if {[test_launch_poe]} {
 #	Allow extra time and memory for the POE process

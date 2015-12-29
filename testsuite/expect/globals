@@ -3560,3 +3560,40 @@ proc available_nodes_hostnames { partition } {
 	log_user 1
 	return $idle_nodelist
 }
+
+#####################################################################
+#
+# Proc: test_accting_steps
+#
+# Purpose: Determine if nostep or nojobs is set for
+#          AccoutingStorageEnforce
+#
+# Returns: 1 if set else 0
+#
+#####################################################################
+
+proc test_accting_steps { } {
+
+	global scontrol alpha_numeric_comma
+	log_user 0
+	set enforce_limits 1
+	spawn $scontrol show config
+	expect {
+		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+			if {[string first "nosteps" $expect_out(1,string)] != -1 } {
+				set enforce_limits 0
+			}
+			if {[string first "nojobs" $expect_out(1,string)] != -1 } {
+				set enforce_limits 0
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+
+	}
+	log_user 1
+
+	return $enforce_limits
+}

@@ -73,6 +73,11 @@ if {[test_cpu_affinity_or_cgroup] == 0} {
 	send_user "\nWARNING: This test requires some form of task affinity\n"
 	exit 0
 }
+if {![test_accting_steps]} {
+	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
+	send_user "(AccountingStorageEnforce)\n"
+	exit 0
+}
 
 proc sub_job { freq } {
 
