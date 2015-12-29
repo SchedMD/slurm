@@ -279,8 +279,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].granularity);
 		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
-			      (burst_buffer_ptr->pool_ptr[i].avail_space +
-			       burst_buffer_ptr->pool_ptr[i].used_space));
+			      burst_buffer_ptr->pool_ptr[i].total_space);
 		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].used_space);
 		snprintf(tmp_line, sizeof(tmp_line),

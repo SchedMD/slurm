@@ -10461,7 +10461,7 @@ static int _unpack_burst_buffer_info_msg(
 					&bb_info_ptr->pool_ptr[j].name,
 					&uint32_tmp, buffer);
 				safe_unpack64(
-					&bb_info_ptr->pool_ptr[j].avail_space,
+					&bb_info_ptr->pool_ptr[j].total_space,
 					     buffer);
 				safe_unpack64(
 					&bb_info_ptr->pool_ptr[j].granularity,
@@ -10555,7 +10555,7 @@ static int _unpack_burst_buffer_info_msg(
 					&bb_info_ptr->pool_ptr[j].name,
 					&uint32_tmp, buffer);
 				safe_unpack64(
-					&bb_info_ptr->pool_ptr[j].avail_space,
+					&bb_info_ptr->pool_ptr[j].total_space,
 					     buffer);
 				safe_unpack64(
 					&bb_info_ptr->pool_ptr[j].used_space,

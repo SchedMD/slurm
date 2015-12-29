@@ -1146,7 +1146,8 @@ static void _load_state(bool init_config)
 			bb_state.bb_config.pool_cnt++;
 		}
 
-		pool_ptr->avail_space = pools[i].quantity * pools[i].granularity;
+		pool_ptr->total_space = pools[i].quantity *
+				        pools[i].granularity;
 		pool_ptr->granularity = pools[i].granularity;
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 			continue;
@@ -1936,12 +1937,12 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	total_space = xmalloc(sizeof(int64_t) * ds_len);
 	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
 	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
-		if (pool_ptr->avail_space >= pool_ptr->used_space)
-			avail_space[i] = pool_ptr->avail_space -
+		if (pool_ptr->total_space >= pool_ptr->used_space)
+			avail_space[i] = pool_ptr->total_space -
 					 pool_ptr->used_space;
 		granularity[i] = pool_ptr->granularity;
 		pool_name[i] = pool_ptr->name;
-		total_space[i] = pool_ptr->avail_space;
+		total_space[i] = pool_ptr->total_space;
 	}
 	if (bb_state.total_space - bb_state.used_space)
 		avail_space[i] = bb_state.total_space - bb_state.used_space;
