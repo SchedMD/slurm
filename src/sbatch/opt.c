@@ -93,6 +93,13 @@
 
 #include "src/sbatch/opt.h"
 
+enum wrappers {
+	WRPR_START,
+	WRPR_BSUB,
+	WRPR_PBS,
+	WRPR_CNT
+};
+
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -212,8 +219,12 @@ static void _opt_default(void);
 static void _opt_batch_script(const char *file, const void *body, int size);
 
 /* set options from pbs batch script */
-static void _opt_pbs_batch_script(const char *file, const void *body, int size,
-				  int argc, char **argv);
+static bool _opt_wrpr_batch_script(const char *file, const void *body, int size,
+				  int argc, char **argv, int magic);
+
+/* Wrapper functions */
+static void _set_pbs_options(int argc, char **argv);
+static void _set_bsub_options(int argc, char **argv);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
@@ -230,9 +241,8 @@ static void _process_env_var(env_vars_t *e, const char *val);
 static uint16_t _parse_pbs_mail_type(const char *arg);
 
 static void  _usage(void);
-static  void _fullpath(char **filename, const char *cwd);
+static void _fullpath(char **filename, const char *cwd);
 static void _set_options(int argc, char **argv);
-static void _set_pbs_options(int argc, char **argv);
 static void _parse_pbs_resource_list(char *rl);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -918,11 +928,21 @@ char *process_options_first_pass(int argc, char **argv)
 int process_options_second_pass(int argc, char *argv[], const char *file,
 				const void *script_body, int script_size)
 {
+	int i;
+
 	/* set options from batch script */
 	_opt_batch_script(file, script_body, script_size);
 
-	/* set options from pbs batch script */
-	_opt_pbs_batch_script(file, script_body, script_size, argc, argv);
+	for (i = WRPR_START + 1; i < WRPR_CNT; i++) {
+		/* Convert command from batch script to sbatch command */
+		bool stop = _opt_wrpr_batch_script(file, script_body,
+						   script_size, argc, argv, i);
+
+		if (stop) {
+			break;
+		}
+
+	}
 
 	/* set options from env vars */
 	_opt_env();
@@ -1126,15 +1146,17 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 }
 
 /*
- * set pbs options from batch script
+ * set wrapper (ie. pbs, bsub) options from batch script
  *
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
  */
-static void _opt_pbs_batch_script(const char *file, const void *body, int size,
-				  int cmd_argc, char **cmd_argv)
+static bool _opt_wrpr_batch_script(const char *file, const void *body,
+				     int size, int cmd_argc, char **cmd_argv,
+				     int magic)
 {
-	char *magic_word = "#PBS";
+	char *magic_word;
+	void (*wrp_func) (int,char**) = NULL;
 	int magic_word_len;
 	int argc;
 	char **argv;
@@ -1146,14 +1168,30 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 	int lineno = 0;
 	int non_comments = 0;
 	int i;
+	bool found = false;
 
 	if (ignore_pbs)
-		return;
+		return false;
 	if (getenv("SBATCH_IGNORE_PBS"))
-		return;
+		return false;
 	for (i = 0; i < cmd_argc; i++) {
 		if (!strcmp(cmd_argv[i], "--ignore-pbs"))
-			return;
+			return false;
+	}
+
+	/* Check what command it is */
+	switch (magic) {
+	case WRPR_BSUB:
+		magic_word = "#BSUB";
+		wrp_func = _set_bsub_options;
+		break;
+	case WRPR_PBS:
+		magic_word = "#PBS";
+		wrp_func = _set_pbs_options;
+		break;
+
+	default:
+		return false;
 	}
 
 	magic_word_len = strlen(magic_word);
@@ -1173,6 +1211,8 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 			continue;
 		}
 
+		/* Set found to be true since we found a valid command */
+		found = true;
 		/* this line starts with the magic word */
 		ptr = line + magic_word_len;
 		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
@@ -1185,12 +1225,14 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size,
 		xfree(line);
 	}
 
-	if (argc > 0)
-		_set_pbs_options(argc, argv);
+	if (argc > 0 && wrp_func != NULL)
+		wrp_func(argc, argv);
 
 	for (i = 1; i < argc; i++)
 		xfree(argv[i]);
 	xfree(argv);
+
+	return found;
 }
 
 static void _set_options(int argc, char **argv)
@@ -1756,7 +1798,7 @@ static void _set_options(int argc, char **argv)
 			opt.export_file = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_FREQ:
-		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
+			if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
 					&opt.cpu_freq_max, &opt.cpu_freq_gov))
 				error("Invalid --cpu-freq argument: %s. "
 						"Ignored", optarg);
@@ -1827,6 +1869,85 @@ static void _proc_get_user_env(char *optarg)
 		opt.get_user_env_mode = 1;
 	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
 		opt.get_user_env_mode = 2;
+}
+static void _set_bsub_options(int argc, char **argv) {
+
+	int opt_char, option_index = 0;
+	char *bsub_opt_string = "+e:J:m:M:o:q:W:x";
+	char *tmp_str, *char_ptr;
+
+	struct option bsub_long_options[] = {
+		{"error_file", required_argument, 0, 'e'},
+		{"job_name", required_argument, 0, 'J'},
+		{"hostname", required_argument, 0, 'm'},
+		{"memory_limit", required_argument, 0, 'M'},
+		{"output_file", required_argument, 0, 'o'},
+		{"queue_name", required_argument, 0, 'q'},
+		{"time", required_argument, 0, 'W'},
+		{"exclusive", no_argument, 0, 'x'},
+		{NULL, 0, 0, 0}
+	};
+
+	optind = 0;
+	while ((opt_char = getopt_long(argc, argv, bsub_opt_string,
+				       bsub_long_options, &option_index))
+	       != -1) {
+		switch (opt_char) {
+		case 'e':
+			xfree(opt.efname);
+			if (strcasecmp(optarg, "none") == 0)
+				opt.efname = xstrdup("/dev/null");
+			else
+				opt.efname = xstrdup(optarg);
+			break;
+		case 'J':
+			opt.job_name = xstrdup(optarg);
+			break;
+		case 'm':
+			/* Since BSUB requires a list of space
+			   sperated host we need to replace the spaces
+			   with , */
+			tmp_str = xstrdup(optarg);
+			char_ptr = strstr(tmp_str, " ");
+
+			while (char_ptr != NULL) {
+				*char_ptr = ',';
+				char_ptr = strstr(tmp_str, " ");
+			}
+			opt.nodelist = xstrdup(tmp_str);
+			xfree(tmp_str);
+			break;
+		case 'M':
+			opt.mem_per_cpu = xstrntol(optarg,
+						   NULL, sizeof(optarg), 10);
+			break;
+		case 'o':
+			xfree(opt.ofname);
+			opt.ofname = xstrdup(optarg);
+			break;
+		case 'q':
+			opt.partition = xstrdup(optarg);
+			break;
+		case 'W':
+			opt.time_limit = xstrntol(optarg, NULL,
+						  sizeof(optarg), 10);
+			break;
+		case 'x':
+			opt.shared = 0;
+			break;
+		default:
+			error("Unrecognized command line parameter %c",
+			      opt_char);
+			exit(error_exit);
+		}
+	}
+
+
+	if (optind < argc) {
+		error("Invalid argument: %s", argv[optind]);
+		exit(error_exit);
+	}
+
 }
 
 static void _set_pbs_options(int argc, char **argv)
