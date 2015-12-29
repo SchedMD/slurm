@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- BGQ - Fix regression in 9cc4ae8add7f where blocks would be deleted on
     static/overlap systems when some hardware issue happens when restarting
     the slurmctld.
+ -- Log if CLOUD node configured without a resume/suspend program or suspend
+    time.
 
 * Changes in Slurm 15.08.6
 ==========================
