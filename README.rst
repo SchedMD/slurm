@@ -14,13 +14,15 @@ monitoring work (normally a parallel job) on the set of allocated
 nodes. Finally, it arbitrates conflicting requests for resources by
 managing a queue of pending work.
 
-Slurm is provided "as is" and with no warranty. This software is
-distributed under the GNU General Public License, please see the files
-COPYING, DISCLAIMER, and LICENSE.OpenSSL for details.
+NOTES FOR GITHUB DEVELOPERS
+---------------------------
 
-This README presents an introduction to compiling, installing, and
-using Slurm.
+The official issue tracker for Slurm is at
+  http://bugs.schedmd.com/
 
+We welcome code contributions and patches, but **we do not accept Pull Requests
+through Github at this time.** Please submit patches as attachments to new
+bugs under "Contributions" category.
 
 SOURCE DISTRIBUTION HIERARCHY
 -----------------------------
@@ -75,3 +77,10 @@ PROBLEMS
 
 If you experience problems compiling, installing, or running Slurm, see
    http://slurm.schedmd.com/help.html
+
+LEGAL
+-----
+
+Slurm is provided "as is" and with no warranty. This software is
+distributed under the GNU General Public License, please see the files
+COPYING, DISCLAIMER, and LICENSE.OpenSSL for details.
