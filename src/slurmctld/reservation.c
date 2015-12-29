@@ -4426,7 +4426,7 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 			 char *type, uint64_t cnt)
 {
 	burst_buffer_info_t *bb_array;
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	int i;
 
 	if (*bb_resv == NULL)
@@ -4452,19 +4452,19 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 		return;
 	}
 
-	for (i = 0, gres_ptr = bb_array->gres_ptr; i < bb_array->gres_cnt; i++){
-		if ((gres_ptr->name == NULL) || !strcmp(type, gres_ptr->name))
+	for (i = 0, pool_ptr = bb_array->pool_ptr; i < bb_array->pool_cnt; i++){
+		if ((pool_ptr->name == NULL) || !strcmp(type, pool_ptr->name))
 			break;
 	}
-	if (i >= bb_array->gres_cnt) {
-		bb_array->gres_cnt++;
-		bb_array->gres_ptr = xrealloc(bb_array->gres_ptr,
-					      sizeof(burst_buffer_gres_t) *
-					      bb_array->gres_cnt);
-		gres_ptr = bb_array->gres_ptr + bb_array->gres_cnt - 1;
-		gres_ptr->name = xstrdup(type);
+	if (i >= bb_array->pool_cnt) {
+		bb_array->pool_cnt++;
+		bb_array->pool_ptr = xrealloc(bb_array->pool_ptr,
+					      sizeof(burst_buffer_pool_t) *
+					      bb_array->pool_cnt);
+		pool_ptr = bb_array->pool_ptr + bb_array->pool_cnt - 1;
+		pool_ptr->name = xstrdup(type);
 	}
-	gres_ptr->used_cnt += cnt;
+	pool_ptr->used_space += cnt;
 }
 
 static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)

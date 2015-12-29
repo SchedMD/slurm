@@ -274,19 +274,19 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
-	/* Gres includes "nodes" on Cray systems */
-	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
+	/* Alternate pool information */
+	for (i = 0; i < burst_buffer_ptr->pool_cnt; i++) {
 		_get_size_str(g_sz_buf, sizeof(g_sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].granularity);
+			      burst_buffer_ptr->pool_ptr[i].granularity);
 		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
-			      (burst_buffer_ptr->gres_ptr[i].avail_cnt +
-			       burst_buffer_ptr->gres_ptr[i].used_cnt));
+			      (burst_buffer_ptr->pool_ptr[i].avail_space +
+			       burst_buffer_ptr->pool_ptr[i].used_space));
 		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].used_cnt);
+			      burst_buffer_ptr->pool_ptr[i].used_space);
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "  AltPoolName[%d]=%s Granularity=%s TotalSpace=%s "
 			 "UsedSpace=%s",
-			 i, burst_buffer_ptr->gres_ptr[i].name,
+			 i, burst_buffer_ptr->pool_ptr[i].name,
 			 g_sz_buf, t_sz_buf, u_sz_buf);
 		xstrcat(out_buf, tmp_line);
 		if (!one_liner)

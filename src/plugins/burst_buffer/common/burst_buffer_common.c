@@ -72,7 +72,7 @@
 #include "burst_buffer_common.h"
 
 /* For possible future use by burst_buffer/generic */
-#define _SUPPORT_GRES 0
+#define _SUPPORT_ALT_POOL 0
 
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
@@ -216,13 +216,13 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->get_sys_state);
 	config_ptr->granularity = 1;
 	if (fini) {
-		for (i = 0; i < config_ptr->gres_cnt; i++)
-			xfree(config_ptr->gres_ptr[i].name);
-		xfree(config_ptr->gres_ptr);
-		config_ptr->gres_cnt = 0;
+		for (i = 0; i < config_ptr->pool_cnt; i++)
+			xfree(config_ptr->pool_ptr[i].name);
+		xfree(config_ptr->pool_ptr);
+		config_ptr->pool_cnt = 0;
 	} else {
-		for (i = 0; i < config_ptr->gres_cnt; i++)
-			config_ptr->gres_ptr[i].avail_cnt = 0;
+		for (i = 0; i < config_ptr->pool_cnt; i++)
+			config_ptr->pool_ptr[i].avail_space = 0;
 	}
 	config_ptr->other_timeout = 0;
 	config_ptr->stage_in_timeout = 0;
@@ -323,7 +323,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 	return user_ptr;
 }
 
-#if _SUPPORT_GRES
+#if _SUPPORT_ALT_POOL
 static uint64_t _atoi(char *tok)
 {
 	char *end_ptr = NULL;
@@ -375,13 +375,16 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
 	char *bb_conf, *tmp = NULL, *value;
-#if _SUPPORT_GRES
+#if _SUPPORT_ALT_POOL
 	char *colon, *save_ptr = NULL, *tok;
-	uint32_t gres_cnt;
+	uint32_t pool_cnt;
 #endif
 	int fd, i;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
+#if _SUPPORT_ALT_POOL
+		{"AltPool", S_P_STRING},
+#endif
 		{"CreateBuffer", S_P_STRING},
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
@@ -389,7 +392,6 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"Flags", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"Granularity", S_P_STRING},
-/*		{"Gres", S_P_STRING},	*/
 		{"OtherTimeout", S_P_UINT32},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
@@ -474,27 +476,27 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 			state_ptr->bb_config.granularity = 1;
 		}
 	}
-#if _SUPPORT_GRES
-	if (s_p_get_string(&tmp, "Gres", bb_hashtbl)) {
+#if _SUPPORT_ALT_POOL
+	if (s_p_get_string(&tmp, "AltPool", bb_hashtbl)) {
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			colon = strchr(tok, ':');
 			if (colon) {
 				colon[0] = '\0';
-				gres_cnt = _atoi(colon+1);
+				pool_cnt = _atoi(colon + 1);
 			} else
-				gres_cnt = 1;
-			state_ptr->bb_config.gres_ptr = xrealloc(
-				state_ptr->bb_config.gres_ptr,
-				sizeof(burst_buffer_gres_t) *
-				(state_ptr->bb_config.gres_cnt + 1));
+				pool_cnt = 1;
+			state_ptr->bb_config.pool_ptr = xrealloc(
+				state_ptr->bb_config.pool_ptr,
+				sizeof(burst_buffer_pool_t) *
+				(state_ptr->bb_config.pool_cnt + 1));
 			state_ptr->bb_config.
-				gres_ptr[state_ptr->bb_config.gres_cnt].name =
+				pool_ptr[state_ptr->bb_config.pool_cnt].name =
 				xstrdup(tok);
 			state_ptr->bb_config.
-				gres_ptr[state_ptr->bb_config.gres_cnt].
-				avail_cnt = gres_cnt;
-			state_ptr->bb_config.gres_cnt++;
+				pool_ptr[state_ptr->bb_config.pool_cnt].
+				avail_space = pool_cnt;
+			state_ptr->bb_config.pool_cnt++;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
@@ -549,10 +551,10 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		     state_ptr->bb_config.get_sys_state);
 		info("%s: Granularity:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.granularity);
-		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++) {
-			info("%s: Gres[%d]:%s:%"PRIu64"", __func__, i,
-			     state_ptr->bb_config.gres_ptr[i].name,
-			     state_ptr->bb_config.gres_ptr[i].avail_cnt);
+		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++) {
+			info("%s: AltPoolName[%d]:%s:%"PRIu64"", __func__, i,
+			     state_ptr->bb_config.pool_ptr[i].name,
+			     state_ptr->bb_config.pool_ptr[i].avail_space);
 		}
 		info("%s: OtherTimeout:%u", __func__,
 		     state_ptr->bb_config.other_timeout);
@@ -590,12 +592,11 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 		pack16(bb_alloc->state,         buffer);
 		pack32(bb_alloc->user_id,       buffer);
 	} else {
-		uint32_t gres_cnt = 0;
 		packstr(bb_alloc->account,      buffer);
 		pack32(bb_alloc->array_job_id,  buffer);
 		pack32(bb_alloc->array_task_id, buffer);
 		pack_time(bb_alloc->create_time, buffer);
-		pack32(gres_cnt, buffer);
+		pack32((uint32_t)0, buffer);
 		pack32(bb_alloc->job_id,        buffer);
 		packstr(bb_alloc->name,         buffer);
 		packstr(bb_alloc->partition,    buffer);
@@ -656,12 +657,12 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 		pack32(config_ptr->flags,            buffer);
 		packstr(config_ptr->get_sys_state,   buffer);
 		pack64(config_ptr->granularity,      buffer);
-		pack32(config_ptr->gres_cnt,         buffer);
-		for (i = 0; i < config_ptr->gres_cnt; i++) {
-			packstr(config_ptr->gres_ptr[i].name, buffer);
-			pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
-			pack64(config_ptr->gres_ptr[i].granularity, buffer);
-			pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
+		pack32(config_ptr->pool_cnt,         buffer);
+		for (i = 0; i < config_ptr->pool_cnt; i++) {
+			packstr(config_ptr->pool_ptr[i].name, buffer);
+			pack64(config_ptr->pool_ptr[i].avail_space, buffer);
+			pack64(config_ptr->pool_ptr[i].granularity, buffer);
+			pack64(config_ptr->pool_ptr[i].used_space, buffer);
 		}
 		pack32(config_ptr->other_timeout,    buffer);
 		packstr(config_ptr->start_stage_in,  buffer);
@@ -682,11 +683,11 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 		pack32(config_ptr->flags,            buffer);
 		packstr(config_ptr->get_sys_state,   buffer);
 		pack64(config_ptr->granularity,      buffer);
-		pack32(config_ptr->gres_cnt,         buffer);
-		for (i = 0; i < config_ptr->gres_cnt; i++) {
-			packstr(config_ptr->gres_ptr[i].name, buffer);
-			pack64(config_ptr->gres_ptr[i].avail_cnt, buffer);
-			pack64(config_ptr->gres_ptr[i].used_cnt, buffer);
+		pack32(config_ptr->pool_cnt,         buffer);
+		for (i = 0; i < config_ptr->pool_cnt; i++) {
+			packstr(config_ptr->pool_ptr[i].name, buffer);
+			pack64(config_ptr->pool_ptr[i].avail_space, buffer);
+			pack64(config_ptr->pool_ptr[i].used_space, buffer);
 		}
 		packstr(config_ptr->start_stage_in,  buffer);
 		packstr(config_ptr->start_stage_out, buffer);
@@ -1350,21 +1351,21 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
 			 bb_state_t *state_ptr)
 {
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	bb_user_t *bb_user;
 	int i;
 
 	if (!pool || !xstrcmp(pool, state_ptr->bb_config.default_pool)) {
 		state_ptr->used_space += bb_size;
 	} else {
-		gres_ptr = state_ptr->bb_config.gres_ptr;
-		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++, gres_ptr++){
-			if (xstrcmp(pool, gres_ptr->name))
+		pool_ptr = state_ptr->bb_config.pool_ptr;
+		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++, pool_ptr++){
+			if (xstrcmp(pool, pool_ptr->name))
 				continue;
-			gres_ptr->used_cnt += bb_size;
+			pool_ptr->used_space += bb_size;
 			break;
 		}
-		if (i >= state_ptr->bb_config.gres_cnt)
+		if (i >= state_ptr->bb_config.pool_cnt)
 			error("%s: Unable to located pool %s", __func__, pool);
 	}
 
@@ -1378,7 +1379,7 @@ extern void bb_limit_add(uint32_t user_id, uint64_t bb_size, char *pool,
 extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 			 bb_state_t *state_ptr)
 {
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	bb_user_t *bb_user;
 	int i;
 
@@ -1390,20 +1391,20 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 			state_ptr->used_space = 0;
 		}
 	} else {
-		gres_ptr = state_ptr->bb_config.gres_ptr;
-		for (i = 0; i < state_ptr->bb_config.gres_cnt; i++, gres_ptr++){
-			if (xstrcmp(pool, gres_ptr->name))
+		pool_ptr = state_ptr->bb_config.pool_ptr;
+		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++, pool_ptr++){
+			if (xstrcmp(pool, pool_ptr->name))
 				continue;
-			if (gres_ptr->used_cnt >= bb_size) {
-				gres_ptr->used_cnt -= bb_size;
+			if (pool_ptr->used_space >= bb_size) {
+				pool_ptr->used_space -= bb_size;
 			} else {
-				error("%s: used_cnt underflow for pool %s",
+				error("%s: used_space underflow for pool %s",
 				      __func__, pool);
-				gres_ptr->used_cnt = 0;
+				pool_ptr->used_space = 0;
 			}
 			break;
 		}
-		if (i >= state_ptr->bb_config.gres_cnt)
+		if (i >= state_ptr->bb_config.pool_cnt)
 			error("%s: Unable to located pool %s", __func__, pool);
 	}
 
@@ -1585,7 +1586,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 {
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	int i;
 
 	xassert(state_ptr);
@@ -1593,9 +1594,9 @@ extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 		return true;
 	if (!xstrcmp(pool_name, state_ptr->bb_config.default_pool))
 		return true;
-	gres_ptr = state_ptr->bb_config.gres_ptr;
-	for (i = 0; i < state_ptr->bb_config.gres_cnt; i++, gres_ptr++) {
-		if (!xstrcmp(pool_name, gres_ptr->name))
+	pool_ptr = state_ptr->bb_config.pool_ptr;
+	for (i = 0; i < state_ptr->bb_config.pool_cnt; i++, pool_ptr++) {
+		if (!xstrcmp(pool_name, pool_ptr->name))
 			return true;
 	}
 	info("%s: Invalid pool requested (%s)", __func__, pool_name);

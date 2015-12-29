@@ -73,7 +73,7 @@ enum {
 /*these are the settings to apply for the user
  * on the first startup after a fresh slurm install.
  * s/b a const probably*/
-static char *_initial_page_opts = "Plugin,Name/JobID,Pool,Size,State,StateTime,UserID";
+static char *_initial_page_opts = "Name/JobID,Pool,Size,State,StateTime,UserID";
 
 static display_data_t display_data_bb[] = {
 	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE,

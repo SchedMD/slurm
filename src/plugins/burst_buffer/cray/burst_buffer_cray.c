@@ -173,12 +173,6 @@ typedef struct {
 	uint32_t user_id;
 } stage_args_t;
 
-typedef struct {		/* Used for scheduling */
-	char *   name;		/* BB GRES name, e.g. "nodes" */
-	uint64_t add_cnt;	/* Additional GRES required */
-	uint64_t avail_cnt;	/* Additional GRES available */
-} needed_gres_t;
-
 typedef struct create_buf_data {
 	char *access;		/* Access mode */
 	bool hurry;		/* Set to destroy in a hurry (no stage-out) */
@@ -1052,7 +1046,7 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
  */
 static void _load_state(bool init_config)
 {
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	bb_configs_t *configs;
 	bb_instances_t *instances;
 	bb_pools_t *pools;
@@ -1104,35 +1098,35 @@ static void _load_state(bool init_config)
 				pools[i].granularity;
 
 			/* Everything else is a generic burst buffer resource */
-			bb_state.bb_config.gres_cnt = 0;
+			bb_state.bb_config.pool_cnt = 0;
 			continue;
 		}
 
 		found_pool = false;
-		gres_ptr = bb_state.bb_config.gres_ptr;
-		for (j = 0; j < bb_state.bb_config.gres_cnt; j++, gres_ptr++) {
-			if (!xstrcmp(gres_ptr->name, pools[i].id)) {
+		pool_ptr = bb_state.bb_config.pool_ptr;
+		for (j = 0; j < bb_state.bb_config.pool_cnt; j++, pool_ptr++) {
+			if (!xstrcmp(pool_ptr->name, pools[i].id)) {
 				found_pool = true;
 				break;
 			}
 		}
 		if (!found_pool) {
-			bb_state.bb_config.gres_ptr
-				= xrealloc(bb_state.bb_config.gres_ptr,
-					   sizeof(burst_buffer_gres_t) *
-					   (bb_state.bb_config.gres_cnt + 1));
-			gres_ptr = bb_state.bb_config.gres_ptr +
-				   bb_state.bb_config.gres_cnt;
-			gres_ptr->name = xstrdup(pools[i].id);
-			bb_state.bb_config.gres_cnt++;
+			bb_state.bb_config.pool_ptr
+				= xrealloc(bb_state.bb_config.pool_ptr,
+					   sizeof(burst_buffer_pool_t) *
+					   (bb_state.bb_config.pool_cnt + 1));
+			pool_ptr = bb_state.bb_config.pool_ptr +
+				   bb_state.bb_config.pool_cnt;
+			pool_ptr->name = xstrdup(pools[i].id);
+			bb_state.bb_config.pool_cnt++;
 		}
 
-		gres_ptr->avail_cnt = pools[i].quantity * pools[i].granularity;
-		gres_ptr->granularity = pools[i].granularity;
+		pool_ptr->avail_space = pools[i].quantity * pools[i].granularity;
+		pool_ptr->granularity = pools[i].granularity;
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 			continue;
-		gres_ptr->used_cnt = (pools[i].quantity - pools[i].free) *
-				     pools[i].granularity;
+		pool_ptr->used_space = (pools[i].quantity - pools[i].free) *
+					pools[i].granularity;
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
@@ -1890,7 +1884,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	struct preempt_bb_recs *preempt_ptr = NULL;
 	char **pool_name, *my_pool;
 	int ds_len;
-	burst_buffer_gres_t *gres_ptr;
+	burst_buffer_pool_t *pool_ptr;
 	bb_buf_t *buf_ptr;
 	bb_alloc_t *bb_ptr = NULL;
 	int i, j, rc = 0;
@@ -1907,7 +1901,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	xassert(bb_job);
 
 	/* Initialize data structure */
-	ds_len = bb_state.bb_config.gres_cnt + 1;
+	ds_len = bb_state.bb_config.pool_cnt + 1;
 	add_space = xmalloc(sizeof(int64_t) * ds_len);
 	avail_space = xmalloc(sizeof(int64_t) * ds_len);
 	granularity = xmalloc(sizeof(int64_t) * ds_len);
@@ -1915,13 +1909,14 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	preempt_space = xmalloc(sizeof(int64_t) * ds_len);
 	resv_space = xmalloc(sizeof(int64_t) * ds_len);
 	total_space = xmalloc(sizeof(int64_t) * ds_len);
-	for (i = 0, gres_ptr = bb_state.bb_config.gres_ptr;
-	     i < bb_state.bb_config.gres_cnt; i++, gres_ptr++) {
-		if (gres_ptr->avail_cnt >= gres_ptr->used_cnt)
-			avail_space[i] = gres_ptr->avail_cnt-gres_ptr->used_cnt;
-		granularity[i] = gres_ptr->granularity;
-		pool_name[i] = gres_ptr->name;
-		total_space[i] = gres_ptr->avail_cnt;
+	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
+	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
+		if (pool_ptr->avail_space >= pool_ptr->used_space)
+			avail_space[i] = pool_ptr->avail_space -
+					 pool_ptr->used_space;
+		granularity[i] = pool_ptr->granularity;
+		pool_name[i] = pool_ptr->name;
+		total_space[i] = pool_ptr->avail_space;
 	}
 	if (bb_state.total_space - bb_state.used_space)
 		avail_space[i] = bb_state.total_space - bb_state.used_space;

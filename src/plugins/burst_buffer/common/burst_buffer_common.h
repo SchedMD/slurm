@@ -75,8 +75,8 @@ typedef struct bb_config {
 	char    *get_sys_state;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
-	uint32_t gres_cnt;		/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;	/* Type is defined in slurm.h */
+	uint32_t pool_cnt;		/* Count of records in gres_ptr */
+	burst_buffer_pool_t *pool_ptr;	/* Type is defined in slurm.h */
 	uint32_t other_timeout;
 	uint32_t stage_in_timeout;
 	uint32_t stage_out_timeout;

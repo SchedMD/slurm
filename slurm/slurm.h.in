@@ -4715,12 +4715,12 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 
 /* Information about alternate pools or other burst buffer resources */
 typedef struct {
-	uint64_t avail_cnt;	/* Total count of available resources, unused
+	uint64_t avail_space;	/* Total size of available resources, unused
 				 * by burst_buffer_resv_t */
 	uint64_t granularity;	/* Granularity of resource allocation size */
 	char *name;		/* Resource (pool) name */
-	uint64_t used_cnt;	/* Count of used resources */
-} burst_buffer_gres_t;
+	uint64_t used_space;	/* Size of used resources */
+} burst_buffer_pool_t;
 
 typedef struct {
 	char *account;		/* Associated account (for limits) */
@@ -4751,8 +4751,8 @@ typedef struct {
 	uint32_t flags;			/* See BB_FLAG_* above */
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
-	uint32_t gres_cnt;		/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
+	uint32_t pool_cnt;		/* Count of records in gres_ptr */
+	burst_buffer_pool_t *pool_ptr;
 	char *name;			/* Plugin name */
 	uint32_t other_timeout;		/* Seconds or zero */
 	uint32_t stage_in_timeout;	/* Seconds or zero */
