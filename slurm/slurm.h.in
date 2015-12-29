@@ -4727,8 +4727,6 @@ typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	time_t create_time;	/* Time of creation */
-	uint32_t gres_cnt;	/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
 	char *partition;	/* Associated partition (for limits) */

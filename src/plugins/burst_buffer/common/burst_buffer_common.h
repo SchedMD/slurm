@@ -99,8 +99,6 @@ typedef struct bb_alloc {
 	bool cancelled;
 	time_t create_time;	/* Time of creation */
 	time_t end_time;	/* Expected time when use will end */
-	uint32_t gres_cnt;	/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
 	uint32_t id;		/* ID for reservation/accounting */
 	uint32_t job_id;
 	uint32_t magic;
@@ -156,8 +154,6 @@ typedef struct bb_job {
 	char      *account;	/* Associated account (for limits) */
 	uint32_t   buf_cnt;	/* Number of records in buf_ptr */
 	bb_buf_t  *buf_ptr;	/* Buffer creation records */
-	uint32_t   gres_cnt;	/* number of records in gres_ptr */
-	bb_gres_t *gres_ptr;
 	uint32_t   job_id;
 	char      *job_pool;	/* Pool in which to create job buffers */
 	uint32_t   magic;

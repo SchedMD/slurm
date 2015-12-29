@@ -166,7 +166,6 @@ static void _print_burst_buffer_resv(FILE *out,
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
 	char *out_buf = NULL;
-	int i;
 
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->job_id &&
@@ -211,19 +210,6 @@ static void _print_burst_buffer_resv(FILE *out,
 			 burst_buffer_ptr->user_id);
 	}
 	xstrcat(out_buf, tmp_line);
-
-	/* Gres includes "nodes" on Cray systems */
-	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
-		if (i == 0)
-			xstrcat(out_buf, " Gres=");
-		else
-			xstrcat(out_buf, ",");
-		_get_size_str(sz_buf, sizeof(sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].used_cnt);
-		snprintf(tmp_line, sizeof(tmp_line), "%s:%s",
-			 burst_buffer_ptr->gres_ptr[i].name, sz_buf);
-		xstrcat(out_buf, tmp_line);
-	}
 
 	xstrcat(out_buf, "\n");
 	fprintf(out, "%s", out_buf);

@@ -576,18 +576,11 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 			uint16_t protocol_version)
 {
-	int i;
-
 	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(bb_alloc->account,      buffer);
 		pack32(bb_alloc->array_job_id,  buffer);
 		pack32(bb_alloc->array_task_id, buffer);
 		pack_time(bb_alloc->create_time, buffer);
-		pack32(bb_alloc->gres_cnt, buffer);
-		for (i = 0; i < bb_alloc->gres_cnt; i++) {
-			packstr(bb_alloc->gres_ptr[i].name, buffer);
-			pack64(bb_alloc->gres_ptr[i].used_cnt, buffer);
-		}
 		pack32(bb_alloc->job_id,        buffer);
 		packstr(bb_alloc->name,         buffer);
 		packstr(bb_alloc->partition,    buffer);
@@ -597,15 +590,12 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 		pack16(bb_alloc->state,         buffer);
 		pack32(bb_alloc->user_id,       buffer);
 	} else {
+		uint32_t gres_cnt = 0;
 		packstr(bb_alloc->account,      buffer);
 		pack32(bb_alloc->array_job_id,  buffer);
 		pack32(bb_alloc->array_task_id, buffer);
 		pack_time(bb_alloc->create_time, buffer);
-		pack32(bb_alloc->gres_cnt, buffer);
-		for (i = 0; i < bb_alloc->gres_cnt; i++) {
-			packstr(bb_alloc->gres_ptr[i].name, buffer);
-			pack64(bb_alloc->gres_ptr[i].used_cnt, buffer);
-		}
+		pack32(gres_cnt, buffer);
 		pack32(bb_alloc->job_id,        buffer);
 		packstr(bb_alloc->name,         buffer);
 		packstr(bb_alloc->partition,    buffer);
@@ -978,15 +968,6 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc->array_job_id = job_ptr->array_job_id;
 	bb_alloc->array_task_id = job_ptr->array_task_id;
 	bb_alloc->assoc_ptr = job_ptr->assoc_ptr;
-	bb_alloc->gres_cnt = bb_job->gres_cnt;
-	if (bb_alloc->gres_cnt) {
-		bb_alloc->gres_ptr = xmalloc(sizeof(burst_buffer_gres_t) *
-					     bb_alloc->gres_cnt);
-	}
-	for (i = 0; i < bb_alloc->gres_cnt; i++) {
-		bb_alloc->gres_ptr[i].used_cnt = bb_job->gres_ptr[i].count;
-		bb_alloc->gres_ptr[i].name = xstrdup(bb_job->gres_ptr[i].name);
-	}
 	bb_alloc->job_id = job_ptr->job_id;
 	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
 	i = job_ptr->user_id % BB_HASH_SIZE;
@@ -1024,16 +1005,11 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
  * maintaining linked list */
 extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)
 {
-	int i;
-
 	if (bb_alloc) {
 		xassert(bb_alloc->magic == BB_ALLOC_MAGIC);
 		bb_alloc->magic = 0;
 		xfree(bb_alloc->account);
 		xfree(bb_alloc->assocs);
-		for (i = 0; i < bb_alloc->gres_cnt; i++)
-			xfree(bb_alloc->gres_ptr[i].name);
-		xfree(bb_alloc->gres_ptr);
 		xfree(bb_alloc->name);
 		xfree(bb_alloc->partition);
 		xfree(bb_alloc->pool);
@@ -1329,9 +1305,6 @@ static void _bb_job_del2(bb_job_t *bb_job)
 			xfree(bb_job->buf_ptr[i].type);
 		}
 		xfree(bb_job->buf_ptr);
-		for (i = 0; i < bb_job->gres_cnt; i++)
-			xfree(bb_job->gres_ptr[i].name);
-		xfree(bb_job->gres_ptr);
 		xfree(bb_job->job_pool);
 		xfree(bb_job->partition);
 		xfree(bb_job->qos);
@@ -1349,11 +1322,6 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 	if (bb_job) {
 		xstrfmtcat(out_buf, "%s: Job:%u UserID:%u ",
 			   state_ptr->name, bb_job->job_id, bb_job->user_id);
-		for (i = 0; i < bb_job->gres_cnt; i++) {
-			xstrfmtcat(out_buf, "Gres[%d]:%s:%"PRIu64" ",
-				   i, bb_job->gres_ptr[i].name,
-				   bb_job->gres_ptr[i].count);
-		}
 		xstrfmtcat(out_buf, "Swap:%ux%u ", bb_job->swap_size,
 			   bb_job->swap_nodes);
 		xstrfmtcat(out_buf, "TotalSize:%"PRIu64"", bb_job->total_size);
@@ -1362,10 +1330,11 @@ extern void bb_job_log(bb_state_t *state_ptr, bb_job_t *bb_job)
 		for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
 		     i++, buf_ptr++) {
 			if (buf_ptr->create) {
-				info("  Create  Name:%s Size:%"PRIu64
+				info("  Create  Name:%s Pool:%s Size:%"PRIu64
 				     " Access:%s Type:%s State:%s",
-				     buf_ptr->name, buf_ptr->size,
-				     buf_ptr->access, buf_ptr->type,
+				     buf_ptr->name, buf_ptr->pool,
+				     buf_ptr->size, buf_ptr->access,
+				     buf_ptr->type,
 				     bb_state_string(buf_ptr->state));
 			} else if (buf_ptr->destroy) {
 				info("  Destroy Name:%s Hurry:%d",

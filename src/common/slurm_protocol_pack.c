@@ -10500,18 +10500,6 @@ static int _unpack_burst_buffer_info_msg(
 					      buffer);
 				safe_unpack_time(&bb_resv_ptr->create_time,
 						 buffer);
-				safe_unpack32(&bb_resv_ptr->gres_cnt, buffer);
-				bb_resv_ptr->gres_ptr =
-					xmalloc(bb_resv_ptr->gres_cnt *
-						sizeof(burst_buffer_gres_t));
-				for (k = 0; k < bb_resv_ptr->gres_cnt; k++) {
-					safe_unpackstr_xmalloc(
-						&bb_resv_ptr->gres_ptr[k].name,
-						&uint32_tmp, buffer);
-					safe_unpack64(
-						&bb_resv_ptr->gres_ptr[k].
-						used_cnt, buffer);
-				}
 				safe_unpack32(&bb_resv_ptr->job_id, buffer);
 				safe_unpackstr_xmalloc(&bb_resv_ptr->name,
 						       &uint32_tmp, buffer);
@@ -10538,6 +10526,9 @@ static int _unpack_burst_buffer_info_msg(
 			}
 		}
 	} else {
+		uint32_t gres_cnt = 0;
+		uint64_t used_cnt = 0;
+		char *gres_name = NULL;
 		for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
 		     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 			safe_unpackstr_xmalloc(&bb_info_ptr->name, &uint32_tmp,
@@ -10598,17 +10589,11 @@ static int _unpack_burst_buffer_info_msg(
 					      buffer);
 				safe_unpack_time(&bb_resv_ptr->create_time,
 						 buffer);
-				safe_unpack32(&bb_resv_ptr->gres_cnt, buffer);
-				bb_resv_ptr->gres_ptr =
-					xmalloc(bb_resv_ptr->gres_cnt *
-						sizeof(burst_buffer_gres_t));
-				for (k = 0; k < bb_resv_ptr->gres_cnt; k++) {
-					safe_unpackstr_xmalloc(
-						&bb_resv_ptr->gres_ptr[k].name,
+				safe_unpack32(&gres_cnt, buffer);
+				for (k = 0; k < gres_cnt; k++) {
+					safe_unpackmem_ptr(&gres_name,
 						&uint32_tmp, buffer);
-					safe_unpack64(
-						&bb_resv_ptr->gres_ptr[k].
-						used_cnt, buffer);
+					safe_unpack64(&used_cnt, buffer);
 				}
 				safe_unpack32(&bb_resv_ptr->job_id, buffer);
 				safe_unpackstr_xmalloc(&bb_resv_ptr->name,
