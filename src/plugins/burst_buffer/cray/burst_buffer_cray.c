@@ -420,6 +420,32 @@ static void *_bb_agent(void *args)
 	return NULL;
 }
 
+/* Given a request size and a pool name (or NULL name for default pool),
+ * return the required buffer size (rounded up by granularity) */
+static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
+{
+	burst_buffer_pool_t *pool_ptr;
+	uint64_t new_size;
+	int i;
+
+	if (!bb_pool || !xstrcmp(bb_pool, bb_state.bb_config.default_pool)) {
+		new_size = bb_granularity(orig_size,
+					  bb_state.bb_config.granularity);
+		return new_size;
+	}
+
+	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
+	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
+		if (!xstrcmp(bb_pool, pool_ptr->name)) {
+			new_size = bb_granularity(orig_size,
+						  pool_ptr->granularity);
+			return new_size;
+		}
+	}
+	debug("Could not find pool %s", bb_pool);
+	return orig_size;
+}
+
 /* Return the burst buffer size specification of a job
  * RET size data structure or NULL of none found
  * NOTE: delete return value using _del_bb_size() */
@@ -475,9 +501,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 						sub_tok[0] = '\0';
 				}
 				if ((sub_tok = strstr(tok, "capacity="))) {
-					tmp_cnt = bb_get_size_num(
-						sub_tok + 9,
-						bb_state.bb_config.granularity);
+					tmp_cnt = bb_get_size_num(sub_tok+9, 1);
 				} else {
 					tmp_cnt = 0;
 				}
@@ -511,6 +535,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].hurry = false;
 				bb_job->buf_ptr[inx].name = bb_name;
 				bb_job->buf_ptr[inx].pool = bb_pool;
+				tmp_cnt = _set_granularity(tmp_cnt, bb_pool);
 				bb_job->buf_ptr[inx].size = tmp_cnt;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
@@ -555,13 +580,10 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			if (!strncmp(tok, "jobdw", 5)) {
 				have_bb = true;
 				if ((sub_tok = strstr(tok, "capacity="))) {
-					tmp_cnt = bb_get_size_num(
-						sub_tok + 9,
-						bb_state.bb_config.granularity);
+					tmp_cnt = bb_get_size_num(sub_tok+9, 1);
 				} else {
 					tmp_cnt = 0;
 				}
-				bb_job->total_size += tmp_cnt;
 				if ((sub_tok = strstr(tok, "pool="))) {
 					xfree(bb_job->job_pool);
 					bb_job->job_pool = xstrdup(sub_tok + 5);
@@ -572,6 +594,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					bb_job->job_pool = xstrdup(
 						bb_state.bb_config.default_pool);
 				}
+				tmp_cnt = _set_granularity(tmp_cnt,
+							   bb_job->job_pool);
+				bb_job->total_size += tmp_cnt;
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				/* Persistent buffer use */
 				have_bb = true;
@@ -612,8 +637,6 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				}
 				tmp_cnt = bb_job->swap_size *
 					  bb_job->swap_nodes;
-				bb_job->total_size += bb_granularity(tmp_cnt,
-					 bb_state.bb_config.granularity);
 				if ((sub_tok = strstr(tok, "pool="))) {
 					xfree(bb_job->job_pool);
 					bb_job->job_pool = xstrdup(sub_tok + 5);
@@ -624,6 +647,9 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 					bb_job->job_pool = xstrdup(
 						bb_state.bb_config.default_pool);
 				}
+				tmp_cnt = _set_granularity(tmp_cnt,
+							   bb_job->job_pool);
+				bb_job->total_size += tmp_cnt;
 			} else {
 				/* Ignore stage-in, stage-out, etc. */
 			}
@@ -1087,10 +1113,9 @@ static void _load_state(bool init_config)
 	for (i = 0; i < num_pools; i++) {
 		/* ID: "bytes" */
 		if (strcmp(pools[i].id, bb_state.bb_config.default_pool) == 0) {
-			bb_state.bb_config.granularity
-				= pools[i].granularity;
-			bb_state.total_space
-				= pools[i].quantity * pools[i].granularity;
+			bb_state.bb_config.granularity = pools[i].granularity;
+			bb_state.total_space = pools[i].quantity *
+					       pools[i].granularity;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
 			bb_state.used_space =
@@ -2207,10 +2232,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				bb_name = NULL;
 				bb_pool = NULL;
 				if ((sub_tok = strstr(tok, "capacity="))) {
-					tmp_cnt = bb_get_size_num(
-						sub_tok + 9,
-						bb_state.bb_config.granularity);
-					*bb_size += tmp_cnt;
+					tmp_cnt = bb_get_size_num(sub_tok+9, 1);
 				}
 				if (tmp_cnt == 0)
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -2233,6 +2255,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				}
 				if (!bb_valid_pool_test(&bb_state, bb_pool))
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				*bb_size += _set_granularity(tmp_cnt, bb_pool);
 				xfree(bb_pool);
 				if (rc != SLURM_SUCCESS)
 					break;
@@ -2260,14 +2283,11 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			    (capacity = strstr(tok, "capacity="))) {
 				bb_pool = NULL;
 				have_bb = true;
-				tmp_cnt = bb_get_size_num(
-					capacity + 9,
-					bb_state.bb_config.granularity);
+				tmp_cnt = bb_get_size_num(capacity + 9, 1);
 				if (tmp_cnt == 0) {
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 					break;
 				}
-				*bb_size += tmp_cnt;
 				if ((sub_tok = strstr(tok, "pool="))) {
 					bb_pool = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_pool, ' ')))
@@ -2275,6 +2295,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				}
 				if (!bb_valid_pool_test(&bb_state, bb_pool))
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				*bb_size += _set_granularity(tmp_cnt, bb_pool);
 				xfree(bb_pool);
 			} else if (!strncmp(tok, "persistentdw", 12)) {
 				have_bb = true;
@@ -2297,8 +2318,6 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 						job_desc->min_nodes;
 				}
 				tmp_cnt = swap_cnt * job_desc->max_nodes;
-				*bb_size += bb_granularity(tmp_cnt,
-					    bb_state.bb_config.granularity);
 				if ((sub_tok = strstr(tok, "pool="))) {
 					bb_pool = xstrdup(sub_tok + 5);
 					if ((sub_tok = strchr(bb_pool, ' ')))
@@ -2306,6 +2325,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				}
 				if (!bb_valid_pool_test(&bb_state, bb_pool))
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				*bb_size += _set_granularity(tmp_cnt, bb_pool);
 				xfree(bb_pool);
 			}
 		}
