@@ -1913,7 +1913,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	burst_buffer_pool_t *pool_ptr;
 	bb_buf_t *buf_ptr;
 	bb_alloc_t *bb_ptr = NULL;
-	int i, j, rc = 0;
+	int i, j, k, rc = 0;
 	bool avail_ok, do_preempt, preempt_ok;
 	time_t now = time(NULL);
 	List preempt_list = NULL;
@@ -1981,17 +1981,36 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 		burst_buffer_info_t *resv_bb_ptr;
 		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
 		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
-			if (resv_bb_ptr->name)
-				my_pool = resv_bb_ptr->name;
-			else
+			if (xstrcmp(resv_bb_ptr->name, bb_state.name))
+				continue;
+			for (j = 0, pool_ptr = resv_bb_ptr->pool_ptr;
+			     j < resv_bb_ptr->pool_cnt; j++, pool_ptr++) {
+				if (pool_ptr->name) {
+					my_pool = pool_ptr->name;
+				} else {
+					my_pool =
+						bb_state.bb_config.default_pool;
+				}
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
+							pool_ptr->used_space,
+							granularity[k]);
+					break;
+				}
+			}
+			if (resv_bb_ptr->used_space) {
+				/* Pool not specified, use default */
 				my_pool = bb_state.bb_config.default_pool;
-			for (j = 0; j < ds_len; j++) {
-				if (xstrcmp(my_pool, pool_name[j]))
-					continue;
-				resv_space[j] += bb_granularity(
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
 							resv_bb_ptr->used_space,
-							granularity[j]);
-				break;
+							granularity[k]);
+					break;
+				}
 			}
 		}
 	}
@@ -2047,7 +2066,7 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 				list_push(preempt_list, preempt_ptr);
 
 				for (j = 0; j < ds_len; j++) {
-					if (xstrcmp(my_pool, pool_name[j]))
+					if (xstrcmp(bb_ptr->name, pool_name[j]))
 						continue;
 					preempt_ptr->size = bb_granularity(
 								bb_ptr->size,
