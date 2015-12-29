@@ -2395,7 +2395,7 @@ static void _parse_pbs_resource_list(char *rl)
 			_parse_pbs_nodes_opts(temp);
 			xfree(temp);
 		} else if (!strncmp(rl+i, "opsys=", 6)) {
- 			i+=6;
+			i+=6;
 			_get_next_pbs_option(rl, &i);
 		} else if (!strncmp(rl+i, "other=", 6)) {
 			i+=6;
@@ -3134,7 +3134,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
- 	printf(
+	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [--parsable] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
