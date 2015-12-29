@@ -41,7 +41,7 @@ static int failed;
 static int untest;
 static int unresolve;
 static int xfailed;
-static int xpassed;
+//static int xpassed;
 
 static char buffer[512];
 
