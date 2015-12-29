@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
     completed by the user specified deadline will be terminated with a state of
     "Deadline" or "DL".
+ -- Burst buffer advanced reservation units treated as bytes (per documentation)
+    rather than GB.
 
 * Changes in Slurm 15.08.6
 ==========================

@@ -4510,8 +4510,6 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 			cnt *= ((uint64_t) 1024 * 1024 * 1024 * 1024);
 		} else if ((end_ptr2[0] == 'p') || (end_ptr2[0] == 'P')) {
 			cnt *= ((uint64_t) 1024 * 1024 * 1024 * 1024 * 1024);
-		} else {	/* Default GB */
-			cnt *= ((uint64_t) 1024 * 1024 * 1024);
 		}
 
 		if (cnt)
