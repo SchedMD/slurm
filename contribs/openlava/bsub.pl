@@ -143,8 +143,16 @@ if (!$script) {
 	}
 }
 
+if (_check_script($script)) {
+	$command = $base_command = "$sbatch";
+} else {
+	$command = $base_command = "$srun";
 
-$command = $base_command = "$sbatch";
+	# We need to find out the jobid we got
+	$command .= " -v";
+
+	$interactive = 1;
+}
 
 $command .= " -e $err_path" if $err_path;
 $command .= " -o $out_path" if $out_path;
@@ -276,6 +284,19 @@ sub _parse_procs {
 	} else {
 		return $procs_range;
 	}
+}
+
+sub _check_script {
+	my ($script) = @_;
+
+	if (open (my $file, "<$script")) {
+		my $first_line = <$file>;
+		close $file;
+
+		return ($first_line =~ /\#!/);
+	}
+
+	return "";
 }
 
 sub _parse_node_list {
