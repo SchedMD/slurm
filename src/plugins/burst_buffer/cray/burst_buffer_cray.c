@@ -1906,6 +1906,39 @@ static void *_start_teardown(void *x)
 	return NULL;
 }
 
+/* Reduced burst buffer space in advanced reservation for resources already
+ * allocated to jobs. What's left is space reserved for future jobs */
+static void _rm_active_job_bb(char *resv_name, char **pool_name,
+			      int64_t *resv_space, int ds_len)
+{
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+	bb_job_t *bb_job;
+	int i;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0') ||
+		    (xstrcmp(job_ptr->resv_name, resv_name) == 0))
+			continue;
+		bb_job = bb_job_find(&bb_state,job_ptr->job_id);
+		if (!bb_job || (bb_job->state <= BB_STATE_PENDING) ||
+		    (bb_job->state >= BB_STATE_COMPLETE))
+			continue;
+		for (i = 0; i < ds_len; i++) {
+			if (xstrcmp(bb_job->job_pool, pool_name[i]))
+				continue;
+			if (resv_space[i] >= bb_job->total_size)
+				resv_space[i] -= bb_job->total_size;
+			else
+				resv_space[i] = 0;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+}
+
 /* Test if a job can be allocated a burst buffer.
  * This may preempt currently active stage-in for higher priority jobs.
  *
@@ -1982,8 +2015,8 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 		}
 	}
 
-	/* Account for reserved resources. We don't know how much of the
-	 * reserved burst buffer resources are currently allocated. */
+	/* Account for reserved resources. Reduce reservation size for
+	 * resources already claimed from the reservation. */
 	resv_bb = job_test_bb_resv(job_ptr, now);
 	if (resv_bb) {
 		burst_buffer_info_t *resv_bb_ptr;
@@ -2020,6 +2053,11 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 					break;
 				}
 			}
+#if 1
+			/* Is any of this reserved space already taken? */
+			_rm_active_job_bb(job_ptr->resv_name,
+					  pool_name, resv_space, ds_len);
+#endif
 		}
 	}
 
