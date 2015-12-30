@@ -1335,7 +1335,7 @@ static int _write_file(char *file_name, char *buf)
 
 static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 {
-	char *hash_dir = NULL, *job_dir = NULL;
+	char *hash_dir = NULL, *job_dir = NULL, *job_pool;
 	char *client_nodes_file_nid = NULL;
 	char **setup_argv, **data_in_argv;
 	stage_args_t *stage_args;
@@ -1364,9 +1364,12 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	setup_argv[7] = xstrdup("--user");
 	xstrfmtcat(setup_argv[8], "%d", job_ptr->user_id);
 	setup_argv[9] = xstrdup("--capacity");
+	if (bb_job->job_pool)
+		job_pool = bb_job->job_pool;
+	else
+		job_pool = bb_state.bb_config.default_pool;
 	xstrfmtcat(setup_argv[10], "%s:%s",
-		   bb_state.bb_config.default_pool,
-		   bb_get_size_str(bb_job->total_size));
+		   job_pool, bb_get_size_str(bb_job->total_size));
 	setup_argv[11] = xstrdup("--job");
 	xstrfmtcat(setup_argv[12], "%s/script", job_dir);
 	if (client_nodes_file_nid) {
