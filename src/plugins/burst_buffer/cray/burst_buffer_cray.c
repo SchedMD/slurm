@@ -1932,10 +1932,6 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 	ListIterator preempt_iter;
 	char jobid_buf[32];
 
-//FIXME: THERE IS A RACE CONDITION. Decision can be made here to start a job and
-// before it's resources are allocated (in the used_space info), a second job
-// can be tested and find available resources. We need to update the used space
-// info immediately rather than after the setup happens.
 	xassert(bb_job);
 
 	/* Initialize data structure */
