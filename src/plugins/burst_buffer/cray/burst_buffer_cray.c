@@ -168,7 +168,9 @@ typedef struct {
 typedef struct {
 	char   **args1;
 	char   **args2;
+	uint64_t bb_size;
 	uint32_t job_id;
+	char    *pool;
 	uint32_t timeout;
 	uint32_t user_id;
 } stage_args_t;
@@ -1380,6 +1382,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 #endif
 		setup_argv[14] = xstrdup(client_nodes_file_nid);
 	}
+	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state);
 
 	data_in_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	data_in_argv[0] = xstrdup("dw_wlm_cli");
@@ -1391,8 +1394,11 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	xstrfmtcat(data_in_argv[6], "%s/script", job_dir);
 
 	stage_args = xmalloc(sizeof(stage_args_t));
+	stage_args->bb_size = bb_job->total_size;
 	stage_args->job_id  = job_ptr->job_id;
+	stage_args->pool    = xstrdup(job_pool);
 	stage_args->timeout = bb_state.bb_config.stage_in_timeout;
+	stage_args->user_id = job_ptr->user_id;
 	stage_args->args1   = setup_argv;
 	stage_args->args2   = data_in_argv;
 
@@ -1447,13 +1453,15 @@ static void *_start_stage_in(void *x)
 	info("%s: setup for job %u ran for %s",
 	     __func__, stage_args->job_id, TIME_STR);
 	_log_script_argv(setup_argv, resp_msg);
+	lock_slurmctld(job_read_lock);
+	pthread_mutex_lock(&bb_state.bb_mutex);
+	bb_limit_rem(stage_args->user_id, stage_args->bb_size, stage_args->pool,
+		     &bb_state);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: setup for job %u status:%u response:%s",
 		      __func__, stage_args->job_id, status, resp_msg);
 		rc = SLURM_ERROR;
 	} else {
-		lock_slurmctld(job_read_lock);
-		pthread_mutex_lock(&bb_state.bb_mutex);
 		job_ptr = find_job_record(stage_args->job_id);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
 		if (!job_ptr) {
@@ -1470,9 +1478,9 @@ static void *_start_stage_in(void *x)
 		} else {
 			bb_job->state = BB_STATE_STAGING_IN;
 		}
-		pthread_mutex_unlock(&bb_state.bb_mutex);
-		unlock_slurmctld(job_read_lock);
 	}
+	pthread_mutex_unlock(&bb_state.bb_mutex);
+	unlock_slurmctld(job_read_lock);
 
 	if (rc == SLURM_SUCCESS) {
 		if (stage_args->timeout)
@@ -1553,6 +1561,7 @@ static void *_start_stage_in(void *x)
 	xfree(resp_msg);
 	_free_script_argv(setup_argv);
 	_free_script_argv(data_in_argv);
+	xfree(stage_args->pool);
 	xfree(stage_args);
 	return NULL;
 }
