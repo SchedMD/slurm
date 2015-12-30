@@ -933,10 +933,11 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id)
 {
 	bb_alloc_t *bb_alloc = NULL;
+	time_t now = time(NULL);
 	int i;
 
 	xassert(state_ptr->bb_ahash);
-	state_ptr->last_update_time = time(NULL);
+	state_ptr->last_update_time = now;
 	bb_alloc = xmalloc(sizeof(bb_alloc_t));
 	i = user_id % BB_HASH_SIZE;
 	xassert((bb_alloc->magic = BB_ALLOC_MAGIC));	/* Sets value */
@@ -944,8 +945,8 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 	state_ptr->bb_ahash[i] = bb_alloc;
 	bb_alloc->name = xstrdup(name);
 	bb_alloc->state = BB_STATE_ALLOCATED;
-	bb_alloc->state_time = time(NULL);
-	bb_alloc->seen_time = time(NULL);
+	bb_alloc->state_time = now;
+	bb_alloc->seen_time = now;
 	bb_alloc->user_id = user_id;
 
 	return bb_alloc;
