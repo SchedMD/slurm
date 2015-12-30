@@ -211,7 +211,7 @@ sleep 10"
 
 	set pending 0
 	set running 0
-	spawn $squeue -h -o "\%t \%r"
+	spawn $squeue -A $ta -h -o "\%t \%r"
 	expect {
 		-re "PD." {
 			incr pending
@@ -384,7 +384,7 @@ proc inc21_21_submit_test { limit } {
 	sleep 4
 
 	set matches 0
-	set mypid [spawn $squeue -h -o "\%i \%t \%r"]
+	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]
 	expect {
 		-re "($job_id(2)|$job_id(3)).PD.AssocMaxJobsLimit" {
 			incr matches
