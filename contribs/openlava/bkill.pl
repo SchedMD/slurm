@@ -111,7 +111,7 @@ foreach my $jobid (@job_ids) {
 		$rc++;
 		printf("Job <%s>: %s\n", $jobid, Slurm->strerror($err));
 	} else {
-	    printf("Job <%s> is being terminated\n", $jobid);
+		printf("Job <%s> is being terminated\n", $jobid);
 	}
 }
 exit $rc;

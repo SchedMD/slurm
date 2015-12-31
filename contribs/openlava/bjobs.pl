@@ -164,9 +164,9 @@ foreach my $job (@{$resp->{job_array}}) {
 }
 
 if (!$line) {
-    print "No unfinished job found\n";
+	print "No unfinished job found\n";
 } else {
-    print "\n";
+	print "\n";
 }
 
 exit 0;
