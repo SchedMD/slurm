@@ -988,7 +988,7 @@ static int _schedule(uint32_t job_limit)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	char job_id_str[32];
+	char jbuf[JBUFSIZ];
 	bool is_job_array_head;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
@@ -1672,7 +1672,7 @@ next_task:
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
 			info("sched: schedule: %s non-runnable:%s",
-			     jobid2str(job_ptr, job_id_str, sizeof(job_id_str)),
+			     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 			     slurm_strerror(error_code));
 			if (!wiki_sched) {
 				last_job_update = now;
