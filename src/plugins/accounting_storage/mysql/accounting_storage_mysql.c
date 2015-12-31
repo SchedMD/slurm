@@ -222,6 +222,8 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = xstrdup_printf("select MAX(id) from %s", qos_table);
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -239,7 +241,9 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 	   possible as an id we add 1 to the total to burn 0 and
 	   start at the 1 bit.
 	*/
+	assoc_mgr_lock(&locks);
 	g_qos_count = slurm_atoul(row[0]) + 1;
+	assoc_mgr_unlock(&locks);
 	mysql_free_result(result);
 
 	return SLURM_SUCCESS;

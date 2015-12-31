@@ -498,6 +498,9 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	int added = 0;
 	char *added_preempt = NULL;
+	uint32_t qos_cnt;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -505,8 +508,13 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
+	assoc_mgr_lock(&locks);
+	qos_cnt = g_qos_count;
+	assoc_mgr_unlock(&locks);
+
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
+
 	while ((object = list_next(itr))) {
 		if (!object->name || !object->name[0]) {
 			error("We need a qos name to add.");
@@ -521,7 +529,7 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		_setup_qos_limits(object, &cols, &vals,
 				  &extra, &added_preempt, 1);
 		if (added_preempt) {
-			object->preempt_bitstr = bit_alloc(g_qos_count);
+			object->preempt_bitstr = bit_alloc(qos_cnt);
 			bit_unfmt(object->preempt_bitstr, added_preempt+1);
 			xfree(added_preempt);
 		}
@@ -612,6 +620,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *tmp_char1=NULL, *tmp_char2=NULL;
 	bitstr_t *preempt_bitstr = NULL;
 	char *added_preempt = NULL;
+	uint32_t qos_cnt;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!qos_cond || !qos) {
 		error("we need something to change");
@@ -676,8 +687,13 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	_setup_qos_limits(qos, &tmp_char1, &tmp_char2,
 			  &vals, &added_preempt, 0);
+
+	assoc_mgr_lock(&locks);
+	qos_cnt = g_qos_count;
+	assoc_mgr_unlock(&locks);
+
 	if (added_preempt) {
-		preempt_bitstr = bit_alloc(g_qos_count);
+		preempt_bitstr = bit_alloc(qos_cnt);
 		bit_unfmt(preempt_bitstr, added_preempt+1);
 		xfree(added_preempt);
 	}
@@ -779,7 +795,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			char *new_preempt = NULL;
 			bool cleared = 0;
 
-			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
+			qos_rec->preempt_bitstr = bit_alloc(qos_cnt);
+
 			if (row[MQOS_PREEMPT] && row[MQOS_PREEMPT][0])
 				bit_unfmt(qos_rec->preempt_bitstr,
 					  row[MQOS_PREEMPT]+1);
@@ -797,7 +814,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 						bit_nclear(
 							qos_rec->preempt_bitstr,
 							0,
-							g_qos_count-1);
+							qos_cnt-1);
 					}
 
 					bit_set(qos_rec->preempt_bitstr,
@@ -1041,6 +1058,9 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	uint32_t qos_cnt;
+	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+				   NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *qos_req_inx[] = {
@@ -1181,6 +1201,10 @@ empty:
 
 	qos_list = list_create(slurmdb_destroy_qos_rec);
 
+	assoc_mgr_lock(&locks);
+	qos_cnt = g_qos_count;
+	assoc_mgr_unlock(&locks);
+
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 		list_append(qos_list, qos);
@@ -1250,7 +1274,7 @@ empty:
 
 		if (row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
 			if (!qos->preempt_bitstr)
-				qos->preempt_bitstr = bit_alloc(g_qos_count);
+				qos->preempt_bitstr = bit_alloc(qos_cnt);
 			bit_unfmt(qos->preempt_bitstr, row[QOS_REQ_PREE]+1);
 		}
 		if (row[QOS_REQ_PREEM])
