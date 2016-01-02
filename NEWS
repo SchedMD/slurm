@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     time.
  -- MYSQL - Better locking around g_qos_count which was previously unprotected.
  -- Correct size of buffer used for jobid2str to avoid truncation.
+ -- Fix allocation/distribution of tasks across multiple nodes when
+    --hint=nomultithread is requested.
 
 * Changes in Slurm 15.08.6
 ==========================
