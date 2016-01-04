@@ -435,3 +435,34 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
+				  slurmdb_tres_rec_t **tres_rec,
+				  List cluster_tres_list, List tres_list,
+				  slurmdb_tres_rec_t *tres_rec_in)
+{
+	if (!(*cluster_tres_rec = list_find_first(cluster_tres_list,
+						  slurmdb_find_tres_in_list,
+						  &tres_rec_in->id))) {
+		debug2("No cluster TRES %s%s%s(%d)",
+		       tres_rec_in->type,
+		       tres_rec_in->name ? "/" : "",
+		       tres_rec_in->name ? tres_rec_in->name : "",
+		       tres_rec_in->id);
+	}
+
+	if (!(*tres_rec = list_find_first(tres_list,
+					  slurmdb_find_tres_in_list,
+					  &tres_rec_in->id))) {
+		debug2("No TRES %s%s%s(%d)",
+		       tres_rec_in->type,
+		       tres_rec_in->name ? "/" : "",
+		       tres_rec_in->name ? tres_rec_in->name : "",
+		       tres_rec_in->id);
+	} else if (!(*tres_rec)->alloc_secs) {
+		debug2("No TRES %s%s%s(%d) usage",
+		       tres_rec_in->type,
+		       tres_rec_in->name ? "/" : "",
+		       tres_rec_in->name ? tres_rec_in->name : "",
+		       tres_rec_in->id);
+	}
+}

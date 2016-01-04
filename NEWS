@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- If a reservation's nodes value is "all" then track the current nodes in the
     system, even if those nodes change.
  -- Fix formatting if using "tree" option with sreport.
+ -- Make it so sreport prints out a line for non-existent TRES instead of
+    error message.
 
 * Changes in Slurm 15.08.6
 ==========================
