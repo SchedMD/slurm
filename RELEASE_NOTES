@@ -1,5 +1,5 @@
-RELEASE NOTES FOR SLURM VERSION 15.08
-12 May 2015
+RELEASE NOTES FOR SLURM VERSION 16.05
+4 January 2016
 
 IMPORTANT NOTES:
 ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
@@ -32,445 +32,95 @@ upgrading Slurm to a new major release.
 
 HIGHLIGHTS
 ==========
- -- Added TRES (Trackable resources) to track utilization of memory, GRES,
-    burst buffer, license, and any other configurable resources in the
-    accounting database.
- -- Add configurable billing weight that takes into consideration any TRES when
-    calculating a job's resource utilization.
- -- Add configurable prioritization factor that takes into consideration any
-    TRES when calculating a job's resource utilization.
- -- Add burst buffer support infrastructure. Currently available plugin include
-    burst_buffer/generic (uses administrator supplied programs to manage file
-    staging) and burst_buffer/cray (uses Cray APIs to manage buffers).
- -- Add power capping support for Cray systems with automatic rebalancing of
-    power allocation between nodes.
- -- Modify slurmctld outgoing RPC logic to support more parallel tasks (up to
-    85 RPCs and 256 pthreads; the old logic supported up to 21 RPCs and 256
-    threads).
- -- Add support for job dependencies joined with OR operator (e.g.
-    "--depend=afterok:123?afternotok:124").
- -- Add advance reservation flag of "replace" that causes allocated resources
-    to be replaced with idle resources. This maintains a pool of available
-    resources that maintains a constant size (to the extent possible).
- -- Permit PreemptType=qos and PreemptMode=suspend,gang to be used together.
-    A high-priority QOS job will now oversubscribe resources and gang schedule,
-    but only if there are insufficient resources for the job to be started
-    without preemption. NOTE: That with PreemptType=qos, the partition's
-    Shared=FORCE:# configuration option will permit one job more per resource
-    to be run than than specified, but only if started by preemption.
- -- A partition can now have an associated QOS.  This will allow a partition
-    to have all the limits a QOS has.  If a limit is set in both QOS
-    the partition QOS will override the job's QOS unless the job's QOS has the
-    'OverPartQOS' flag set.
- -- Expanded --cpu-freq parameters to include min-max:governor specifications.
-    --cpu-freq now supported on salloc and sbatch.
- -- Add support for optimized job allocations with respect to SGI Hypercube
-    topology.
-    NOTE: Only supported with select/linear plugin.
-    NOTE: The program contribs/sgi/netloc_to_topology can be used to build
-    Slurm's topology.conf file.
- -- Add the ability for a compute node to be allocated to multiple jobs, but
-    restricted to a single user. Added "--exclusive=user" option to salloc,
-    the scontrol and sview commands. Added new partition configuration parameter
-    "ExclusiveUser=yes|no".
- -- Verify that all plugin version numbers are identical to the component
-    attempting to load them. Without this verification, the plugin can reference
-    Slurm functions in the caller which differ (e.g. the underlying function's
-    arguments could have changed between Slurm versions).
-    NOTE: All plugins (except SPANK) must be built against the identical
-    version of Slurm in order to be used by any Slurm command or daemon. This
-    should eliminate some very difficult to diagnose problems due to use of old
-    plugins.
- -- Optimize resource allocation for systems with dragonfly networks.
- -- Added plugin to record job completion information using Elasticsearch.
-    Libcurl is required for build. Configure slurm.conf as follows
-    JobCompType=jobcomp/elasticsearch
-    JobCompLoc=http://YOUR_ELASTICSEARCH_SERVER:9200
- -- DATABASE SCHEME HAS CHANGED.  WHEN UPDATING THE MIGRATION PROCESS MAY TAKE
-    SOME AMOUNT OF TIME DEPENDING ON HOW LARGE YOUR DATABASE IS.  WHILE UPDATING
-    NO RECORDS WILL BE LOST, BUT THE SLURMDBD MAY NOT BE RESPONSIVE DURING THE
-    UPDATE. IT WILL ALSO NOT BE POSSIBLE TO AUTOMATICALLY REVERT THE DATABASE
-    TO THE FORMAT FOR AN EARLIER VERSION OF SLURM. PLAN ACCORDINGLY.
- -- The performance of Profiling with HDF5 is improved. In addition, internal
-    structures are changed to make it easier to add new profile types,
-    particularly energy sensors. This has introduced an operational issue. See
-    OTHER CHANGES.
- -- MPI/MVAPICH plugin now requires Munge for authentication.
- -- In order to support inter-cluster job dependencies, the MaxJobID
-    configuration parameter default value has been reduced from 4,294,901,760
-    to 2,147,418,112 and it's maximum value is now 2,147,463,647.
-    ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
-    UPGRADED FROM AN OLDER VERSION!
+ -- Implemented and documented PMIX protocol which is used to bootstrap an
+    MPI job. PMIX is an alternative to PMI and PMI2.
+ -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
+    "/sys/fs/cgroup" to match current standard.
+ -- Add Multi-Category Security (MCS) infrastructure to permit nodes to be bound
+    to specific users or groups.
+ -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
+    completed by the user specified deadline will be terminated with a state of
+    "Deadline" or "DL".
+ -- Stop searching sbatch scripts for #PBS directives after 100 lines of
+    non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
+    into a line. Required for decent perforamnce with huge scripts.
 
 RPMBUILD CHANGES
 ================
-
+ -- Remove all *.la files from RPMs.
+ -- Implemented the --without=package option for configure.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Remove DynAllocPort configuration parameter.
- -- Added new configuration parameters to support burst buffers:
-    BurstBufferParameters, and BurstBufferType.
- -- Added SchedulerParameters option of "bf_busy_nodes". When selecting
-    resources for pending jobs to reserve for future execution (i.e. the job
-    can not be started immediately), then preferentially select nodes that are
-    in use. This will tend to leave currently idle resources available for
-    backfilling longer running jobs, but may result in allocations having less
-    than optimal network topology. This option is currently only supported by
-    the select/cons_res plugin.
- -- Added "EioTimeout" parameter to slurm.conf. It is the number of seconds srun
-    waits for slurmstepd to close the TCP/IP connection used to relay data
-    between the user application and srun when the user application terminates.
- -- Remove the CR_ALLOCATE_FULL_SOCKET configuration option.  It is now the
-    default.
- -- Added DebugFlags values of "CpuFrequency", "Power" and "SICP".
- -- Added CpuFreqGovernors which lists governors allowed to be set with
-    --cpu-freq on salloc, sbatch, and srun.
- -- Interpret a partition configuration of "Nodes=ALL" in slurm.conf as
-    including all nodes defined in the cluster.
- -- Added new configuration parameters PowerParameters and PowerPlugin.
- -- Add AuthInfo option of "cred_expire=#" to specify the lifetime of a job
-    step credential. The default value was changed from 1200 to 120 seconds.
-    This value also controls how long a requeued job must wait before it can
-    be started again.
- -- Added LaunchParameters configuration parameter.
- -- Added new partition configuration parameter "ExclusiveUser=yes|no".
- -- Add TopologyParam configuration parameter. Optional value of "dragonfly"
-    is supported.
- -- Added a slurm.conf parameter "PrologEpilogTimeout" to control how long
-    prolog/epilog can run.
- -- Add PrologFlags option of "Contain" to create a proctrack container at
-    job resource allocation time.
-
-DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
-====================================================================
-
+ -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
+    "/sys/fs/cgroup" to match current standard.
+ -- Introduce a new parameter "requeue_setup_env_fail" in SchedulerParameters.
+    If set, a job that fails to setup the environment will be requeued and the
+    node drained.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Added "--cpu_freq" option to salloc and sbatch.
- -- Add sbcast support for file transfer to resources allocated to a job step
-    rather than a job allocation (e.g. "sbcast -j 123.4 ...").
- -- Added new job state of STOPPED indicating processes have been stopped with a
-    SIGSTOP (using scancel or sview), but retain its allocated CPUs. Job state
-    returns to RUNNING when SIGCONT is sent (also using scancel or sview).
- -- The task_dist_states variable has been split into "flags" and "base"
-    components. Added SLURM_DIST_PACK_NODES and SLURM_DIST_NO_PACK_NODES values
-    to give user greater control over task distribution. The srun --dist options
-    has been modified to accept a "Pack" and "NoPack" option. These options can
-    be used to override the CR_PACK_NODE configuration option.
- -- Added BurstBuffer specification to advanced reservation.
- -- For advanced reservation, replace flag "License_only" with flag "Any_Nodes".
-    It can be used to indicate the advanced reservation resources (licenses
-    and/or burst buffers) can be used with any compute nodes.
- -- Add "--sicp" (available for inter-cluster dependencies) and "--power"
-    (specify power management options) to salloc, sbatch and srun commands.
- -- Added "--mail=stage_out" option to job submission commands to notify user
-    when burst buffer state out is complete.
- -- Require a "Reason" when using scontrol to set a node state to DOWN.
- -- Mail notifications on job BEGIN, END and FAIL now apply to a job array as a
-    whole rather than generating individual email messages for each task in the
-    job array.
- -- Remove srun --max-launch-time option. The option has not been functional
-    or documented since Slurm version 2.0.
- -- Add "--thread-spec" option to salloc, sbatch and srun commands. This is
-    the count of threads reserved for system use per node.
- -- Introduce new sbatch option '--kill-on-invalid-dep=yes|no' which allows
-    users to specify which behavior they want if a job dependency is not
-    satisfied.
- -- Add scontrol options to view and modify layouts tables.
- -- Add srun --accel-bind option to control how tasks are bound to GPUs and NIC
-    Generic RESources (GRES).
- -- Add sreport -T/--tres option to identify Trackable RESources (TRES) to
-    report.
+ -- sbatch to read OpenLava/LSF/#BSUB options from the batch script.
+ -- Add sbatch "--wait" option that waits for job completion before exiting.
+    Exit code will match that of spawned job.
+ -- Job output and error files can now contain "%" character by specifying
+    a file name with two consecutive "%" characters. For example,
+    "sbatch -o "slurm.%%.%j" for job ID 123 will generate an output file named
+    "slurm.%.123".
+ -- Increase default sbcast buffer size from 512KB to 8MB.
+ -- Add "ValidateTimeout" and "OtherTimeout" to "scontrol show burst" output.
+ -- Implemented the checking configuration functionality using the new -C
+    options of slurmctld. To check for configuration errors in slurm.conf
+    run: 'slurmctld -C'.
 
 OTHER CHANGES
 =============
- -- SPANK naming changes: For environment variables set using the
-    spank_job_control_setenv() function, the values were available in the
-    slurm_spank_job_prolog() and slurm_spank_job_epilog() functions using
-    getenv where the name was given a prefix of "SPANK_". That prefix has
-    been removed for consistency with the environment variables available in
-    the Prolog and Epilog scripts.
- -- job_submit/lua: Enable reading and writing job environment variables.
-    For example: if (job_desc.environment.LANGUAGE == "en_US") then ...
- -- The format of HDF5 node-step files has changed, so the sh5util program that
-    merges them into job files has changed. The command line options to sh5util
-    have not changed and will continue to service both versions for the next
-    few releases of Slurm.
- -- Add environment variables SLURM_ARRAY_TASK_MAX, SLURM_ARRAY_TASK_MIN,
-    SLURM_ARRAY_TASK_STEP for job arrays.
+ -- Add mail wrapper script "smail" that will include job statistics in email
+    notification messages.
+ -- Removed support for authd. authd has not been developed and supported since
+    several years.
+ -- Enable the hdf5 profiling of the batch step.
+ -- Eliminate redundant environment and script files for job arrays. This
+    greatly reduces the number of files involved in managing job arrays.
 
 API CHANGES
 ===========
 
 Changed members of the following structs
 ========================================
- -- Changed the following fields in struct struct job_descriptor:
-    cpu_freq renamed cpu_freq_max.
-    task_dist changed from 16 to 32 bit.
- -- Changed the following fields in struct job_info:
-    cpu_freq renamed cpu_freq_max.
-    job_state changed from 16 to 32 bit.
- -- Changed the following fields in struct slurm_ctl_conf:
-    min_job_age, task_plugin_param changed from 16 to 32 bit.
-    bf_cycle_sum changed from 32 to 64 bit.
- -- Changed the following fields in struct slurm_step_ctx_params_t:
-    cpu_freq renamed cpu_freq_max.
-    task_dist changed from 16 to 32 bit.
- -- Changed the following fields in struct slurm_step_launch_params_t:
-    cpu_freq renamed cpu_freq_max.
-    task_dist changed from 16 to 32 bit.
- -- Changed the following fields in struct slurm_step_layout_t:
-    task_dist changed from 16 to 32 bit.
- -- Changed the following fields in struct job_step_info_t:
-    cpu_freq renamed cpu_freq_max.
-    state changed from 16 to 32 bit.
- -- Changed the following fields in struct resource_allocation_response_msg_t:
-    cpu_freq renamed cpu_freq_max.
- -- Changed the following fields in struct stats_info_response_msg:
-    bf_cycle_sum changed from 32 to 64 bits.
- -- Changed the following fields in struct acct_gather_energy:
-    base_consumed_energy, consumed_energy, previous_consumed_energy
-    changed from 32 to 64 bits.
- -- Changed the following fields in struct ext_sensors_data:
-    consumed_energy changed from 32 to 64 bits.
 
 Added members to the following struct definitions
 =================================================
- -- Added the following fields to struct acct_gather_node_resp_msg:
-    sensor_cnt
- -- Added the following fields to struct slurm_ctl_conf:
-    accounting_storage_tres, bb_type, cpu_freq_govs,
-    eio_timeout, launch_params, msg_aggr_params, power_parameters,
-    power_plugin, priority_weight_tres, prolog_epilog_timeout
-    topology_param.
- -- Added the following fields to struct job_descriptor:
-    bit_flags, burst_buffer, clusters, cpu_freq_min,
-    cpu_freq_gov, power_flags, sicp_mode
-    tres_req_cnt.
- -- Added the following fields to struct job_info:
-    bitflags, burst_buffer, cpu_freq_min, cpu_freq_gov,
-    billable_tres, power_flags, sicp_mode tres_req_str, tres_alloc_str.
- -- Added the following fields to struct slurm_step_ctx_params_t:
-    cpu_freq_min, cpu_freq_gov.
- -- Added the following fields to struct slurm_step_launch_params_t:
-    accel_bind_type, cpu_freq_min, cpu_freq_gov.
- -- Added the following fields to struct job_step_info_t:
-    cpu_freq_min, cpu_freq_gov task_dist, tres_alloc_str.
- -- Added the following fields to struct resource_allocation_response_msg_t:
-    account, cpu_freq_min, cpu_freq_gov, env_size, environment, qos
-    resv_name.
- -- Added the following fields to struct reserve_info_t:
-    burst_buffer, core_cnt, resv_watts, tres_str.
- -- Added the following fields to struct resv_desc_msg_t:
-    burst_buffer, core_cnt, resv_watts, tres_str.
- -- Added the following fields to struct node_info_t:
-    free_mem, power, owner, tres_fmt_str.
- -- Added the following fields to struct partition_info:
-    billing_weights_str, qos_char, tres_fmt_str
 
 Added the following struct definitions
 ======================================
- -- Added power_mgmt_data_t: Power managment data stucture
- -- Added sicp_info_t: sicp data structure
- -- Added sicp_info_msg_t: sicp data structure message
- -- Added layout_info_msg_t: layout message data structure
- -- Added update_layout_msg_t: layout update message data structure
- -- Added step_alloc_info_msg_t: Step allocation message data structure.
- -- Added powercap_info_msg_t: Powercap information data structure.
- -- Added update_powercap_msg_t: Update message for powercap info
-    data structure.
- -- Added will_run_response_msg_t: Data structure to test if a job can run.
- -- Added assoc_mgr_info_msg_t: Association manager information data structure.
- -- Added assoc_mgr_info_request_msg_t: Association manager request message.
- -- Added network_callerid_msg_t: Network callerid data structure.
- -- Added burst_buffer_gres_t: Burst buffer gres data structure.
- -- Added burst_buffer_resv_t: Burst buffer reservation data structure.
- -- Added burst_buffer_use_t: Burst buffer user information.
- -- Added burst_buffer_info_t: Burst buffer information data structure.
- -- Added burst_buffer_info_msg_t: Burst buffer message data structure.
 
 Changed the following enums and #defines
 ========================================
- -- Added INFINITE64: 64 bit infinite value.
- -- Added NO_VAL: 64 bit no val value.
- -- Added SLURM_EXTERN_CONT: Job step id of external process container.
- -- Added DEFAULT_EIO_SHUTDOWN_WAIT: Time to wait after eio shutdown signal.
- -- Added MAIL_JOB_STAGE_OUT: Mail job stage out flag.
- -- Added CPU_FREQ_GOV_MASK: Mask for all defined cpu-frequency governors.
- -- Added JOB_LAUNCH_FAILED: Job launch failed state.
- -- Added JOB_STOPPED: Job stopped state.
- -- Added SLURM_DIST*: Slurm distribution flags.
- -- Added CPU_FREQ_GOV_MASK: Cpu frequency gov mask
- -- Added CPU_FREQ_*_OLD: Vestigial values for transition from v14.11 systems.
- -- Added PRIORITY_FLAGS_MAX_TRES: Flag for max tres limit.
- -- Added KILL_INV_DEP and NO_KILL_INV_DEP: Invalid dependency flags.
- -- Added CORE_SPEC_THREAD: Flag for thread count
- -- Changed WAIT_QOS/ASSOC_*: changed to tres values.
- -- Added WAIT_ASSOC/QOS_GRP/MAX_*: Association tres states.
- -- Added ENERGY_DATA_*: sensor count and node energy added to
-    jobacct_data_type enum
- -- Added accel_bind_type: enum for accel bind type
- -- Added SLURM_POWER_FLAGS_LEVEL: Slurm power cap flag.
- -- Added PART_FLAG_EXCLUSIVE_USER: mask for exclusive allocation of nodes.
- -- Added PART_FLAG_EXC_USER_CLR: mask to clear exclusive allocation of nodes.
- -- Added RESERVE_FLAG_ANY_NODES: mask to allow usage for any compute node.
- -- Added RESERVE_FLAG_NO_ANY_NODES: mask to clear any compute node flag.
- -- Added RESERVE_FLAG_REPLACE: Replace job resources flag.
- -- Added DEBUG_FLAG_*: Debug flags for burst buffer, cpu freq, power
-    managment, sicp, DB archive, and tres.
- -- Added PROLOG_FLAG_CONTAIN: Proctrack plugin container flag
- -- Added ASSOC_MGR_INFO_FLAG_*: Association manager info flags for
-    association, user, and qos.
- -- Added BB_FLAG_DISABLE_PERSISTENT: Disable peristant burst buffers.
- -- Added BB_FLAG_ENABLE_PERSISTENT: Enable peristant burst buffers.
- -- Added BB_FLAG_EMULATE_CRAY: Using dw_wlm_cli emulator flag
- -- Added BB_FLAG_PRIVATE_DATA: Flag to allow buffer to be seen by owner.
- -- Added BB_STATE_*: Burst buffer state masks
 
 Added the following API's
 =========================
- -- Added slurm_job_will_run2 to determine of a job could execute immediately.
- -- Added APIs to load, print, and update layouts:
-    slurm_print_layout_info, slurm_load_layout, slurm_update_layout.
- -- Added APIs to free and get association manager information:
-    slurm_load_assoc_mgr_info, slurm_free_assoc_mgr_info_msg,
-    slurm_free_assoc_mgr_info_request_msg
- -- Added APIs to get cpu allocation from node name or id:
-    slurm_job_cpus_allocated_str_on_node_id,
-    slurm_job_cpus_allocated_str_on_node
- -- Added APIs to load, free, print, and update powercap information
-    slurm_load_powercap, slurm_free_powercap_info_msg,
-    slurm_print_powercap_info_msg, slurm_update_powercap
- -- Added slurm_burst_buffer_state_string to translate state number to string
-    equivalent
- -- Added APIs to load, free, and print burst buffer information
-    slurm_load_burst_buffer_info, slurm_free_burst_buffer_info_msg,
-    slurm_print_burst_buffer_info_msg, slurm_print_burst_buffer_record
- -- Added slurm_network_callerid to get the job id of a job based upon network
-    socket information.
 
 Changed the following API's
 ============================
- -- slurm_get_node_energy - Changed argument
-    acct_gather_energy_t **acct_gather_energy to uint16_t *sensors_cnt
-    and acct_gather_energy_t **energy
- -- slurm_sbcast_lookup - Added step_id argument
 
 DBD API Changes
 ===============
 
 Changed members of the following structs
 ========================================
- -- Changed slurmdb_association_cond_t to slurmdb_assoc_cond_t:
- -- Changed the following fields in struct slurmdb_account_cond_t:
-    slurmdb_association_cond_t *assoc_cond changed to
-    slurmdb_assoc_cond_t *assoc_cond
- -- Changed the following fields in struct slurmdb_assoc_rec:
-    slurmdb_association_rec *assoc_next to
-    slurmdb_assoc_rec *assoc_next
-    slurmdb_association_rec *assoc_next_id to
-    slurmdb_assoc_rec *assoc_next_id
-    assoc_mgr_association_usage_t *usage to
-    slurmdb_assoc_usage_t *usage
- -- Changed the following fields in struct slurmdb_cluster_rec_t:
-    slurmdb_association_rec_t *root_assoc to
-    slurmdb_assoc_rec_t *root_assoc
- -- Changed the following fields in struct slurmdb_job_rec_t:
-    state changed from 16 to 32 bit
- -- Changed the following fields in struct slurmdb_qos_rec_t:
-    assoc_mgr_qos_usage_t *usage to slurmdb_qos_usage_t *usage
- -- Changed the following fields in struct slurmdb_step_rec_t:
-    task_dist was changed from 16 to 32 bit
- -- Changed the following fields in struct slurmdb_wckey_cond_t:
-    slurmdb_association_cond_t *assoc_cond to slurmdb_assoc_cond_t *assoc_cond
- -- Changed the following fields in struct slurmdb_hierarchical_rec_t:
-    slurmdb_association_cond_t *assoc_cond to slurmdb_assoc_cond_t *assoc_cond
 
 Added the following struct definitions
 ======================================
- -- Added slurmdb_tres_rec_t: Tres data structure for the slurmdbd.
- -- Added slurmdb_assoc_cond_t: Slurmdbd association condition.
- -- Added slurmdb_tres_cond_t: Tres condition data structure.
- -- Added slurmdb_assoc_usage: Slurmdbd association usage limits.
- -- Added slurmdbd_qos_usage_t: slurmdbd qos usage data structure.
 
 Added members to the following struct definitions
 =================================================
- -- Added the following fields to struct slurmdb_accounting_rec_t:
-    tres_rec
- -- Added the following fields to struct slurmdb_assoc_rec_t:
-    accounting_list, grp_tres, grp_tre_ctld, grp_tres_mins, grp_tres_mins_ctld,
-    grp_tres_run_mins, grp_tres_run_mins_ctld, max_tres_mins_pj,
-    max_tres_mins_ctld, max_tres_run_mins, max_tres_run_mins_ctld,
-    max_tres_pj, max_tres_ctld, max_tres_pn, max_tres_pn_ctld
- -- Added the following fields to struct slurmdb_cluser_rec_t:
-    tres_str
- -- Added the following fields to struct slurmdb_cluster_accounting_rec_t:
-    tres_rec
- -- Added the following fields to struct slurmdb_event_rec_t:
-    tres_str
- -- Added the following fields to struct slurmdb_job_rec_t:
-    tres_alloc_str, tres_req_str
- -- Added the following fields to struct slurmdb_qos_rec_t:
-    grp_tres, grp_tres_ctld, grp_tres_mins, grp_tres_mins_ctld,
-    grp_tres_run_mins, grp_tres_run_mins_ctld, max_tres_mins_pj,
-    max_tres_mins_pj_ctld, max_tres_pj, max_tres_pj_ctld, max_tres_pn,
-    max_tres_pn_ctld, max_tres_pn, max_tres_pn_ctld, max_tres_pu,
-    max_tres_pu_ctld, max_tres_run_mins_pu, max_tres_run_mins_pu_ctld,
-    min_tres_pj, min_tres_pj_ctld
- -- Added the following fields to struct slurmdb_reservation_rec_t:
-    tres_str, tres_list
- -- Added the following fields to struct slurmdb_step_rec_t:
-    req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov, tres_alloc_str
- -- Added the following fields to struct slurmdb_used_limits_t:
-    tres, tres_run_mins
- -- Added the following fields to struct slurmdb_report_assoc_rec_t:
-    tres_list
- -- Added the following fields to struct slurmdb_report_user_rec_t:
-    tres_list
- -- Added the following fields to struct slurmdb_report_cluster_rec_t:
-    accounting_list, tres_list
- -- Added the following fields to struct slurmdb_report_job_grouping_t:
-    tres_list
- -- Added the following fields to struct slurmdb_report_acct_grouping_t:
-    tres_list
- -- Added the following fields to struct slurmdb_report_cluster_grouping_t:
-    tres_list
 
 Added the following enums and #defines
 ========================================
--- Added QOS_FLAG_PART_QOS: partition qos flag
 
 Added the following API's
 =========================
- -- slurmdb_get_first_avail_cluster() - Get the first cluster that will run
-    a job
- -- slurmdb_destroy_assoc_usage() - Helper function
- -- slurmdb_destroy_qos_usage() - Helper function
- -- slurmdb_free_assoc_mgr_state_msg() - Helper function
- -- slurmdb_free_assoc_rec_members() - Helper function
- -- slurmdb_destroy_assoc_rec() - Helper function
- -- slurmdb_free_qos_rec_members() - Helper function
- -- slurmdb_destroy_tres_rec_noalloc() - Helper function
- -- slurmdb_destroy_tres_rec() - Helper function
- -- slurmdb_destroy_tres_cond() - Helper function
- -- slurmdb_destroy_assoc_cond() - Helper function
- -- slurmdb_init_assoc_rec() - Helper function
- -- slurmdb_init_tres_cond() - Helper function
- -- slurmdb_tres_add() - Add tres to accounting
- -- slurmdb_tres_get() - Get tres info from accounting
 
 Changed the following API's
 ============================
- -- slurmdb_associations_get() - Changed assoc_cond arg type to
-    slurmdb_assoc_cond_t
- -- slurmdb_associations_modify() - Changed assoc_cond arg type to
-    slurmdb_assoc_cond_t and assoc arg type to slurmdb_assoc_rec_t
- -- slurmdb_associations_remove() - Changed assoc_cond arg type to
-    slurmdb_assoc_cond_t
- -- slurmdb_report_cluster_account_by_user(),
-    slurmdb_report_cluster_user_by_account(), slurmdb_problems_get() - Changed
-    assoc_cond arg type to slurmdb_assoc_cond_t
- -- slurmdb_init_qos_rec() - added init_val argument
