@@ -2357,6 +2357,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 							 * relative */
 #define RESERVE_FLAG_REPLACE		0x00040000	/* Replace resources
 							 * as assigned to jobs */
+#define RESERVE_FLAG_ALL_NODES		0x00080000	/* Use all compute
+							 * nodes */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

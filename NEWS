@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct size of buffer used for jobid2str to avoid truncation.
  -- Fix allocation/distribution of tasks across multiple nodes when
     --hint=nomultithread is requested.
+ -- If a reservation's nodes value is "all" then track the current nodes in the
+    system, even if those nodes change.
 
 * Changes in Slurm 15.08.6
 ==========================
