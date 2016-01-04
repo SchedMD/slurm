@@ -214,7 +214,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
-	uint16_t ntasks_per_core = 0xffff;
+	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
@@ -226,18 +226,20 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		if (mc_ptr->sockets_per_node != (uint16_t) NO_VAL) {
 			min_sockets = mc_ptr->sockets_per_node;
 		}
-		if (mc_ptr->ntasks_per_core) {
-			ntasks_per_core = mc_ptr->ntasks_per_core;
+		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
+		    (mc_ptr->ntasks_per_core)) {
+			ncpus_per_core = mc_ptr->ntasks_per_core;
+			ncpus_per_core *= cpus_per_task;
 		}
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
-		    (mc_ptr->threads_per_core <  ntasks_per_core)) {
-			ntasks_per_core = mc_ptr->threads_per_core;
+		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
+			ncpus_per_core = mc_ptr->threads_per_core;
 		}
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
-		if ((ntasks_per_core != (uint16_t) NO_VAL) &&
-		    (ntasks_per_core != (uint16_t) INFINITE) &&
-		    (ntasks_per_core > threads_per_core)) {
+		if ((ncpus_per_core != (uint16_t) NO_VAL) &&
+		    (ncpus_per_core != (uint16_t) INFINITE) &&
+		    (ncpus_per_core > threads_per_core)) {
 			goto fini;
 		}
 		threads_per_socket = threads_per_core * cores_per_socket;
@@ -282,7 +284,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 * Step 2: For core-level and socket-level: apply sockets_per_node
 	 *         and cores_per_socket to the "free" cores.
 	 *
-	 * Step 3: Compute task-related data: ntasks_per_core,
+	 * Step 3: Compute task-related data: ncpus_per_core,
 	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
 	 *         and determine the number of tasks to run on this node
 	 *
@@ -381,15 +383,12 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
 	 *         to determine the number of tasks to run on this node
 	 *
-	 * Note: cpus_per_task and ntasks_per_core need to play nice
+	 * Note: cpus_per_task and ncpus_per_core need to play nice
 	 *       2 tasks_per_core vs. 2 cpus_per_task
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	if (ntasks_per_core != 0xffff) {
-		threads_per_core = MIN(threads_per_core,
-				       (ntasks_per_core * cpus_per_task));
-	}
+	threads_per_core = MIN(threads_per_core, ncpus_per_core);
 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;

@@ -2063,6 +2063,11 @@ extern char *reservation_flags_string(uint32_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "SPEC_NODES");
 	}
+	if (flags & RESERVE_FLAG_ALL_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "ALL_NODES");
+	}
 	if (flags & RESERVE_FLAG_ANY_NODES) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
