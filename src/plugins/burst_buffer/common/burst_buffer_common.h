@@ -75,7 +75,7 @@ typedef struct bb_config {
 	char    *get_sys_state;
 	uint64_t granularity;		/* space allocation granularity,
 					 * units are GB */
-	uint32_t pool_cnt;		/* Count of records in gres_ptr */
+	uint32_t pool_cnt;		/* Count of records in pool_ptr */
 	burst_buffer_pool_t *pool_ptr;	/* Type is defined in slurm.h */
 	uint32_t other_timeout;
 	uint32_t stage_in_timeout;
@@ -138,14 +138,6 @@ typedef struct {
 	uint16_t state;		/* Buffer state, see BB_STATE_* in slurm.h.in */
 	char    *type;		/* Buffer type */
 } bb_buf_t;
-
-/* Generic burst buffer resources. Information about this is found in the Cray
- * documentation, but the logic in Slurm is untested and the functionality may
- * never be used. */
-typedef struct {
-	char *   name;		/* Generic burst buffer resource, e.g. "nodes" */
-	uint64_t count;		/* Count of required resources */
-} bb_gres_t;
 
 /* Burst buffer resources required for a job, based upon a job record's
  * burst_buffer string field */

@@ -4751,7 +4751,7 @@ typedef struct {
 	uint32_t flags;			/* See BB_FLAG_* above */
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
-	uint32_t pool_cnt;		/* Count of records in gres_ptr */
+	uint32_t pool_cnt;		/* Count of records in pool_ptr */
 	burst_buffer_pool_t *pool_ptr;
 	char *name;			/* Plugin name */
 	uint32_t other_timeout;		/* Seconds or zero */
