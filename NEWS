@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix formatting if using "tree" option with sreport.
  -- Make it so sreport prints out a line for non-existent TRES instead of
     error message.
+ -- Set job's reason to "Priority" when higher priority job in that partition
+    (or reservation) can not start rather than leaving the reason set to
+    "Resources".
 
 * Changes in Slurm 15.08.6
 ==========================

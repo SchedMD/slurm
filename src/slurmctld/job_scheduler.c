@@ -1407,10 +1407,8 @@ next_task:
 				}
 			}
 			if (found_resv) {
-				if (job_ptr->state_reason == WAIT_NO_REASON) {
-					job_ptr->state_reason = WAIT_PRIORITY;
-					xfree(job_ptr->state_desc);
-				}
+				job_ptr->state_reason = WAIT_PRIORITY;
+				xfree(job_ptr->state_desc);
 				debug3("sched: JobId=%u. State=PENDING. "
 				       "Reason=%s(Priority). Priority=%u, "
 				       "Resv=%s.",
@@ -1421,12 +1419,9 @@ next_task:
 			}
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
 					     failed_part_cnt)) {
-			if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) ||
-			    (job_ptr->state_reason == WAIT_NO_REASON)) {
-				job_ptr->state_reason = WAIT_PRIORITY;
-				xfree(job_ptr->state_desc);
-				last_job_update = now;
-			}
+			job_ptr->state_reason = WAIT_PRIORITY;
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
 			debug("sched: JobId=%u. State=PENDING. "
 			       "Reason=%s(Priority), Priority=%u, "
 			       "Partition=%s.",
