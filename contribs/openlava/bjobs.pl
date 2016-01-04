@@ -81,7 +81,7 @@ sub _print_job_brief
 	my ($job, $line_num) = @_;
 
 	if (!$line_num) {
-		printf("%-7s %-7s %-5s %-10s %-11s %-11s %-10s %s",
+		printf("%-7s %-7s %-5s %-10s %-11s %-11s %-10s %s\n",
 		       "JOBID", "USER", "STAT", "QUEUE",  "FROM_HOST",
 		       "EXEC_HOST", "JOB_NAME", "SUBMIT_TIME");
 	}
@@ -92,7 +92,7 @@ sub _print_job_brief
 	_shrink_char(\$job->{'nodes'}, 11);
 	_shrink_char(\$job->{'name'}, 10);
 
-	printf("\n%-7.7s %-7.7s %-5.5s %-10.10s %-11.11s %-11.11s %-10s %-12.12s",
+	printf("%-7.7s %-7.7s %-5.5s %-10.10s %-11.11s %-11.11s %-10s %-12.12s\n",
 	       $job->{'job_id'}, $job->{'user_name'},
 	       $job->{'job_state_str'},
 	       $job->{'partition'}, $job->{'alloc_node'}, $job->{'nodes'},
@@ -165,8 +165,6 @@ foreach my $job (@{$resp->{job_array}}) {
 
 if (!$line) {
 	print "No unfinished job found\n";
-} else {
-	print "\n";
 }
 
 exit 0;
