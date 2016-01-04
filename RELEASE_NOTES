@@ -57,6 +57,15 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Introduce a new parameter "requeue_setup_env_fail" in SchedulerParameters.
     If set, a job that fails to setup the environment will be requeued and the
     node drained.
+ -- The partition-specific SelectTypeParameters parameter can now be used to
+    change the memory allocation tracking specification in the global
+    SelectTypeParameters configuration parameter. Supported partition-specific
+    values are CR_Core, CR_Core_Memory, CR_Socket and CR_Socket_Memory. If the
+    global SelectTypeParameters value includes memory allocation management and
+    the partition-specific value does not, then memory allocation management for
+    that partition will NOT be supported (i.e. memory can be over-allocated).
+    Likewise the global SelectTypeParameters might not include memory management
+    while the partition-specific value does.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

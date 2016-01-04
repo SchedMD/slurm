@@ -1125,7 +1125,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
-		{"SelectTypeParameters", S_P_STRING}, /* CR_Socket, CR_Core */
+		{"SelectTypeParameters", S_P_STRING},
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{NULL}
@@ -1344,10 +1344,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			p->qos_char = NULL;
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
-			if (strncasecmp(tmp, "CR_Socket", 9) == 0)
-				p->cr_type = CR_SOCKET;
+			if (strncasecmp(tmp, "CR_Core_Memory", 14) == 0)
+				p->cr_type = CR_CORE | CR_MEMORY;
 			else if (strncasecmp(tmp, "CR_Core", 7) == 0)
 				p->cr_type = CR_CORE;
+			else if (strncasecmp(tmp, "CR_Socket_Memory", 16) == 0)
+				p->cr_type = CR_SOCKET | CR_MEMORY;
+			else if (strncasecmp(tmp, "CR_Socket", 9) == 0)
+				p->cr_type = CR_SOCKET;
 			else {
 				error("Bad value for SelectTypeParameters: %s",
 				      tmp);

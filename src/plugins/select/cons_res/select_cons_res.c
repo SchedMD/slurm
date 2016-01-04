@@ -1473,7 +1473,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->part_ptr->cr_type) {
 		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
 			info("cons_res: Can't use Partition SelectType unless "
@@ -1529,7 +1529,7 @@ top:	orig_map = bit_copy(save_bitmap);
 
 	if (job_ptr->part_ptr->cr_type) {
 		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
 			info("cons_res: Can't use Partition SelectType unless "
@@ -1737,7 +1737,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->part_ptr->cr_type) {
 		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
 			info("cons_res: Can't use Partition SelectType unless "

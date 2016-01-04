@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -50,6 +50,7 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -386,12 +387,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	sprintf(tmp_line, " TotalNodes=%s", tmp2);
 	xstrcat(out, tmp_line);
 
-	if (part_ptr->cr_type & CR_CORE)
-		sprintf(tmp_line, " SelectTypeParameters=CR_CORE");
-	else if (part_ptr->cr_type & CR_SOCKET)
-		sprintf(tmp_line, " SelectTypeParameters=CR_SOCKET");
-	else
-		sprintf(tmp_line, " SelectTypeParameters=N/A");
+	sprintf(tmp_line, " SelectTypeParameters=%s",
+		select_type_param_string(part_ptr->cr_type));
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

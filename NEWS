@@ -58,6 +58,15 @@ documents those changes that are of interest to users and administrators.
     "/sys/fs/cgroup" to match current standard.
  -- Add #BSUB options to sbatch to read in from the batch script.
  -- HDF: Change group name of node from nodename to nodeid.
+ -- The partition-specific SelectTypeParameters parameter can now be used to
+    change the memory allocation tracking specification in the global
+    SelectTypeParameters configuration parameter. Supported partition-specific
+    values are CR_Core, CR_Core_Memory, CR_Socket and CR_Socket_Memory. If the
+    global SelectTypeParameters value includes memory allocation management and
+    the partition-specific value does not, then memory allocation management for
+    that partition will NOT be supported (i.e. memory can be over-allocated).
+    Likewise the global SelectTypeParameters might not include memory management
+    while the partition-specific value does.
 
 * Changes in Slurm 15.08.7
 ==========================
