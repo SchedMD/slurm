@@ -76,7 +76,7 @@
 #define TIME_SLOP 5	/* time allowed to synchronize operations between
 			 * threads */
 /*
- * These variables are required by the generic plugin interface.  If they
+ * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
  *
  * plugin_name - a string giving a human-readable description of the
@@ -1085,6 +1085,7 @@ static void _load_state(bool init_config)
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
+	uint64_t used_space;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 	bool found_pool;
@@ -1120,11 +1121,14 @@ static void _load_state(bool init_config)
 					       pools[i].granularity;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			bb_state.used_space =
-				(pools[i].quantity - pools[i].free) *
-				pools[i].granularity;
+			/* Don't decrease used_space in case buffer allocation
+			 * in progress */
+			used_space = pools[i].quantity - pools[i].free;
+			used_space *= pools[i].granularity;
+			bb_state.used_space = MAX(bb_state.used_space,
+						  used_space);
 
-			/* Everything else is a generic burst buffer resource */
+			/* Everything else is an alternate pool */
 			bb_state.bb_config.pool_cnt = 0;
 			continue;
 		}
@@ -1153,8 +1157,11 @@ static void _load_state(bool init_config)
 		pool_ptr->granularity = pools[i].granularity;
 		if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 			continue;
-		pool_ptr->used_space = (pools[i].quantity - pools[i].free) *
-					pools[i].granularity;
+		/* Don't decrease used_space in case buffer allocation
+		 * in progress */
+		used_space = pools[i].quantity - pools[i].free;
+		used_space *= pools[i].granularity;
+		pool_ptr->used_space = MAX(pool_ptr->used_space, used_space);
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
@@ -2544,11 +2551,14 @@ extern int init(void)
 {
 	pthread_attr_t attr;
 
+	pthread_mutex_init(&bb_state.bb_mutex, NULL);
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
+	if (!state_save_loc)
+		state_save_loc = slurm_get_state_save_location();
 	bb_alloc_cache(&bb_state);
 	slurm_attr_init(&attr);
 	while (pthread_create(&bb_state.bb_thread, &attr, _bb_agent, NULL)) {
@@ -2559,8 +2569,6 @@ extern int init(void)
 		usleep(100000);
 	}
 	slurm_attr_destroy(&attr);
-	if (!state_save_loc)
-		state_save_loc = slurm_get_state_save_location();
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
