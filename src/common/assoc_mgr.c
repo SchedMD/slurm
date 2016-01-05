@@ -4612,7 +4612,7 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	slurmdb_tres_rec_t *object = NULL;
 
 	ListIterator itr = NULL;
-	List tmp_list = assoc_mgr_tres_list;
+	List tmp_list;
 	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
@@ -4620,9 +4620,15 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	if (!tmp_list) {
+	if (!assoc_mgr_tres_list) {
 		tmp_list = list_create(slurmdb_destroy_tres_rec);
 		freeit = true;
+	} else {
+		/* Since assoc_mgr_tres_list gets freed later we need
+		 * to swap things out to avoid memory corruption.
+		 */
+		tmp_list = assoc_mgr_tres_list;
+		assoc_mgr_tres_list = NULL;
 	}
 
 	itr = list_iterator_create(tmp_list);

@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Set job's reason to "Priority" when higher priority job in that partition
     (or reservation) can not start rather than leaving the reason set to
     "Resources".
+ -- Fix memory corruption when a new non-generic TRES is added to the
+    DBD for the first time.  The corruption is only noticed at shutdown.
 
 * Changes in Slurm 15.08.6
 ==========================
