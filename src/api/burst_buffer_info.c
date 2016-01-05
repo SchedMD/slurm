@@ -166,7 +166,6 @@ static void _print_burst_buffer_resv(FILE *out,
 {
 	char sz_buf[32], time_buf[64], tmp_line[512];
 	char *out_buf = NULL;
-	int i;
 
 	/****** Line 1 ******/
 	if (burst_buffer_ptr->job_id &&
@@ -194,35 +193,23 @@ static void _print_burst_buffer_resv(FILE *out,
 	}
 	if (verbose) {
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "Account=%s CreateTime=%s Partition=%s QOS=%s "
+			 "Account=%s CreateTime=%s Partition=%s Pool=%s QOS=%s "
 			 "Size=%s State=%s UserID=%s(%u)",
-			 burst_buffer_ptr->account,  time_buf,
-			 burst_buffer_ptr->partition, burst_buffer_ptr->qos,
+			 burst_buffer_ptr->account, time_buf,
+			 burst_buffer_ptr->partition, burst_buffer_ptr->pool,
+			 burst_buffer_ptr->qos,
 			 sz_buf, bb_state_string(burst_buffer_ptr->state),
 			 uid_to_string(burst_buffer_ptr->user_id),
 			 burst_buffer_ptr->user_id);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "CreateTime=%s Size=%s State=%s UserID=%s(%u)",
-			 time_buf, sz_buf,
+			 "CreateTime=%s Pool=%s Size=%s State=%s UserID=%s(%u)",
+			 time_buf, burst_buffer_ptr->pool, sz_buf,
 			 bb_state_string(burst_buffer_ptr->state),
 			 uid_to_string(burst_buffer_ptr->user_id),
 			 burst_buffer_ptr->user_id);
 	}
 	xstrcat(out_buf, tmp_line);
-
-	/* Gres includes "nodes" on Cray systems */
-	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
-		if (i == 0)
-			xstrcat(out_buf, " Gres=");
-		else
-			xstrcat(out_buf, ",");
-		_get_size_str(sz_buf, sizeof(sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].used_cnt);
-		snprintf(tmp_line, sizeof(tmp_line), "%s:%s",
-			 burst_buffer_ptr->gres_ptr[i].name, sz_buf);
-		xstrcat(out_buf, tmp_line);
-	}
 
 	xstrcat(out_buf, "\n");
 	fprintf(out, "%s", out_buf);
@@ -271,7 +258,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	int i;
 
 	/****** Line ******/
-	_get_size_str(g_sz_buf, sizeof(t_sz_buf),
+	_get_size_str(g_sz_buf, sizeof(g_sz_buf),
 		      burst_buffer_ptr->granularity);
 	_get_size_str(t_sz_buf, sizeof(t_sz_buf),
 		      burst_buffer_ptr->total_space);
@@ -287,16 +274,19 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
-	/* Gres includes "nodes" on Cray systems */
-	for (i = 0; i < burst_buffer_ptr->gres_cnt; i++) {
+	/* Alternate pool information */
+	for (i = 0; i < burst_buffer_ptr->pool_cnt; i++) {
+		_get_size_str(g_sz_buf, sizeof(g_sz_buf),
+			      burst_buffer_ptr->pool_ptr[i].granularity);
 		_get_size_str(t_sz_buf, sizeof(t_sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].avail_cnt);
+			      burst_buffer_ptr->pool_ptr[i].total_space);
 		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
-			      burst_buffer_ptr->gres_ptr[i].used_cnt);
+			      burst_buffer_ptr->pool_ptr[i].used_space);
 		snprintf(tmp_line, sizeof(tmp_line),
-			 "  Gres[%d] Name=%s AvailCount=%s UsedCount=%s",
-			 i, burst_buffer_ptr->gres_ptr[i].name,
-			 t_sz_buf, u_sz_buf);
+			 "  AltPoolName[%d]=%s Granularity=%s TotalSpace=%s "
+			 "UsedSpace=%s",
+			 i, burst_buffer_ptr->pool_ptr[i].name,
+			 g_sz_buf, t_sz_buf, u_sz_buf);
 		xstrcat(out_buf, tmp_line);
 		if (!one_liner)
 			xstrcat(out_buf, "\n");

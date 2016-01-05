@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 16.05
-4 January 2016
+5 January 2016
 
 IMPORTANT NOTES:
 ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
@@ -81,6 +81,8 @@ COMMAND CHANGES (see man pages for details)
  -- Implemented the checking configuration functionality using the new -C
     options of slurmctld. To check for configuration errors in slurm.conf
     run: 'slurmctld -C'.
+ -- Burst buffer advanced reservation units treated as bytes (per documentation)
+    rather than GB.
 
 OTHER CHANGES
 =============
@@ -91,6 +93,8 @@ OTHER CHANGES
  -- Enable the hdf5 profiling of the batch step.
  -- Eliminate redundant environment and script files for job arrays. This
     greatly reduces the number of files involved in managing job arrays.
+ -- Burst buffer/cray - Add support for multiple buffer pools including support
+    for different resource granularity by pool.
 
 API CHANGES
 ===========

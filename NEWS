@@ -67,6 +67,10 @@ documents those changes that are of interest to users and administrators.
     that partition will NOT be supported (i.e. memory can be over-allocated).
     Likewise the global SelectTypeParameters might not include memory management
     while the partition-specific value does.
+ -- Burst buffer/cray - Add support for multiple buffer pools including support
+    for different resource granularity by pool.
+ -- Burst buffer advanced reservation units treated as bytes (per documentation)
+    rather than GB.
 
 * Changes in Slurm 15.08.7
 ==========================

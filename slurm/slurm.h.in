@@ -4715,24 +4715,24 @@ void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 #define BB_STATE_TEARDOWN	0x0041		/* Cray: bbs_teardown started */
 #define BB_STATE_COMPLETE	0x0042		/* Cray: bbs_teardown complete */
 
+/* Information about alternate pools or other burst buffer resources */
 typedef struct {
-	uint64_t avail_cnt;	/* Total count of available resources, unused
+	uint64_t total_space;	/* Total size of available resources, unused
 				 * by burst_buffer_resv_t */
 	uint64_t granularity;	/* Granularity of resource allocation size */
-	char *name;		/* Generic burst buffer resource, e.g. "nodes" */
-	uint64_t used_cnt;	/* Count of used resources */
-} burst_buffer_gres_t;
+	char *name;		/* Resource (pool) name */
+	uint64_t used_space;	/* Size of used resources */
+} burst_buffer_pool_t;
 
 typedef struct {
 	char *account;		/* Associated account (for limits) */
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	time_t create_time;	/* Time of creation */
-	uint32_t gres_cnt;	/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
 	uint32_t job_id;
 	char *name;		/* Name of persistent burst buffer */
 	char *partition;	/* Associated partition (for limits) */
+	char *pool;		/* Resource (pool) name */
 	char *qos;		/* Associated QOS (for limits) */
 	uint64_t size;		/* In bytes by default */
 	uint16_t state;		/* See BB_STATE_* */
@@ -4753,8 +4753,8 @@ typedef struct {
 	uint32_t flags;			/* See BB_FLAG_* above */
 	char *get_sys_state;
 	uint64_t granularity;		/* Granularity of resource allocation */
-	uint32_t gres_cnt;		/* Count of records in gres_ptr */
-	burst_buffer_gres_t *gres_ptr;
+	uint32_t pool_cnt;		/* Count of records in pool_ptr */
+	burst_buffer_pool_t *pool_ptr;
 	char *name;			/* Plugin name */
 	uint32_t other_timeout;		/* Seconds or zero */
 	uint32_t stage_in_timeout;	/* Seconds or zero */
