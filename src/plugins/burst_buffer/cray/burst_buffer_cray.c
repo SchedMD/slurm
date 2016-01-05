@@ -75,7 +75,7 @@
 #define TIME_SLOP 5	/* time allowed to synchronize operations between
 			 * threads */
 /*
- * These variables are required by the generic plugin interface.  If they
+ * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
  *
  * plugin_name - a string giving a human-readable description of the
@@ -1006,6 +1006,7 @@ static void _load_state(bool init_config)
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
+	uint64_t used_space;
 	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1041,11 +1042,14 @@ static void _load_state(bool init_config)
 				= pools[i].quantity * pools[i].granularity;
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			bb_state.used_space =
-				(pools[i].quantity - pools[i].free) *
-				pools[i].granularity;
+			/* Don't decrease used_space in case buffer allocation
+			 * in progress */
+			used_space = pools[i].quantity - pools[i].free;
+			used_space *= pools[i].granularity;
+			bb_state.used_space = MAX(bb_state.used_space,
+						  used_space);
 
-			/* Everything else is a generic burst buffer resource */
+			/* Everything else is an alternate pool */
 			bb_state.bb_config.gres_cnt = 0;
 		} else {
 			bb_state.bb_config.gres_ptr
@@ -1061,9 +1065,11 @@ static void _load_state(bool init_config)
 			gres_ptr->name = xstrdup(pools[i].id);
 			if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
 				continue;
-			gres_ptr->used_cnt =
-				(pools[i].quantity - pools[i].free) *
-				pools[i].granularity;
+			/* Don't decrease used_space in case buffer allocation
+			 * in progress */
+			used_space = pools[i].quantity - pools[i].free;
+			used_space *= pools[i].granularity;
+			gres_ptr->used_cnt = MAX(gres_ptr->used_cnt, used_space);
 		}
 	}
 	pthread_mutex_unlock(&bb_state.bb_mutex);
@@ -2370,6 +2376,7 @@ extern int init(void)
 {
 	pthread_attr_t attr;
 
+	pthread_mutex_init(&bb_state.bb_mutex, NULL);
 	pthread_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();

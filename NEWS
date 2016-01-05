@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     "Resources".
  -- Fix memory corruption when a new non-generic TRES is added to the
     DBD for the first time.  The corruption is only noticed at shutdown.
+ -- burst_buffer/cray - Improve tracking of allocated resources to handle race
+    condition when reading state while buffer allocation is in progress.
 
 * Changes in Slurm 15.08.6
 ==========================
