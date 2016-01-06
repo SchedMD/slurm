@@ -79,6 +79,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray: Not running the Node Health Check after every job and step is now the
     default. Configure SelectTypeParameters with the NHC and/or NHC_STEP to
     run them.
+ -- Remove deprecated job_submit/cnode plugin.
 
 * Changes in Slurm 15.08.7
 ==========================

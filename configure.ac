@@ -576,7 +576,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_container/none/Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
-		 src/plugins/job_submit/cnode/Makefile
 		 src/plugins/job_submit/cray/Makefile
 		 src/plugins/job_submit/defaults/Makefile
 		 src/plugins/job_submit/knl/Makefile

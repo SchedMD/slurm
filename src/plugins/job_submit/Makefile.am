@@ -2,7 +2,6 @@
 
 SUBDIRS = \
 	all_partitions \
-	cnode \
 	cray \
 	defaults \
 	knl \

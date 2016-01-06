@@ -465,7 +465,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = \
 	all_partitions \
-	cnode \
 	cray \
 	defaults \
 	knl \
