@@ -10311,53 +10311,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->num_tasks != NO_VAL) {
-		if (!IS_JOB_PENDING(job_ptr))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_specs->num_tasks < 1)
-			error_code = ESLURM_BAD_TASK_COUNT;
-		else {
-#ifdef HAVE_BG
-			uint32_t node_cnt = job_specs->num_tasks;
-			if (cpus_per_node)
-				node_cnt /= cpus_per_node;
-			/* This is only set up so accounting is set up
-			   correctly */
-			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
-						    SELECT_JOBDATA_NODE_CNT,
-						    &node_cnt);
-#endif
-			detail_ptr->num_tasks = job_specs->num_tasks;
-			info("update_job: setting num_tasks to %u for "
-			     "job_id %u", job_specs->num_tasks,
-			     job_ptr->job_id);
-			if (detail_ptr->cpus_per_task) {
-				uint32_t new_cpus = detail_ptr->num_tasks
-					/ detail_ptr->cpus_per_task;
-				if ((new_cpus < detail_ptr->min_cpus) ||
-				    (!detail_ptr->overcommit &&
-				     (new_cpus > detail_ptr->min_cpus))) {
-					detail_ptr->min_cpus = new_cpus;
-					detail_ptr->max_cpus = new_cpus;
-					info("update_job: setting "
-					     "min_cpus to %u for "
-					     "job_id %u", detail_ptr->min_cpus,
-					     job_ptr->job_id);
-					/* Always use the
-					 * acct_policy_limit_set.*
-					 * since if set by a
-					 * super user it be set correctly */
-					job_ptr->limit_set.
-						tres[TRES_ARRAY_CPU] =
-						acct_policy_limit_set.
-						tres[TRES_ARRAY_CPU];
-				}
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
 	/* Reset min and max node counts as needed, insure consistency */
 	if (job_specs->min_nodes != NO_VAL) {
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
@@ -10431,6 +10384,92 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
 	}
+
+	/* This also needs to be updated to make sure we are kosher
+	   after messing with the cpus and nodes. */
+	if (detail_ptr->pn_min_cpus) {
+		uint16_t pn_min_cpus =
+			(uint16_t)(job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
+				   job_ptr->tres_req_cnt[TRES_ARRAY_NODE]);
+		if (detail_ptr->pn_min_cpus != pn_min_cpus) {
+			info("update_job: setting pn_min_cpus from "
+			     "%u to %u for job_id %u",
+			     detail_ptr->pn_min_cpus, pn_min_cpus,
+			     job_ptr->job_id);
+			detail_ptr->pn_min_cpus = pn_min_cpus;
+		}
+	}
+
+	/* This has to be figured out before num_tasks is */
+	if (detail_ptr->cpus_per_task) {
+		uint16_t cpus_per_task;
+		/* Use the new value if given else use the current tasks */
+		uint32_t num_tasks = (job_specs->num_tasks != NO_VAL) ?
+			job_specs->num_tasks : detail_ptr->num_tasks;
+
+		if (num_tasks)
+			cpus_per_task = job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
+				num_tasks;
+		else if (detail_ptr->cpus_per_task > detail_ptr->pn_min_cpus)
+			cpus_per_task = detail_ptr->pn_min_cpus;
+		else
+			cpus_per_task = detail_ptr->cpus_per_task;
+
+		if (cpus_per_task != detail_ptr->cpus_per_task) {
+			info("update_job: setting cpus_per_task from "
+			     "%u to %u for job_id %u",
+			     detail_ptr->cpus_per_task, cpus_per_task,
+			     job_ptr->job_id);
+			detail_ptr->cpus_per_task = cpus_per_task;
+		}
+	}
+
+	if (job_specs->num_tasks != NO_VAL) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (job_specs->num_tasks < 1)
+			error_code = ESLURM_BAD_TASK_COUNT;
+		else {
+#ifdef HAVE_BG
+			uint32_t node_cnt = job_specs->num_tasks;
+			if (cpus_per_node)
+				node_cnt /= cpus_per_node;
+			/* This is only set up so accounting is set up
+			   correctly */
+			select_g_select_jobinfo_set(job_ptr->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &node_cnt);
+#endif
+			detail_ptr->num_tasks = job_specs->num_tasks;
+			info("update_job: setting num_tasks to %u for "
+			     "job_id %u", job_specs->num_tasks,
+			     job_ptr->job_id);
+			if (detail_ptr->cpus_per_task) {
+				uint32_t new_cpus = detail_ptr->num_tasks
+					/ detail_ptr->cpus_per_task;
+				if ((new_cpus < detail_ptr->min_cpus) ||
+				    (!detail_ptr->overcommit &&
+				     (new_cpus > detail_ptr->min_cpus))) {
+					detail_ptr->min_cpus = new_cpus;
+					detail_ptr->max_cpus = new_cpus;
+					info("update_job: setting "
+					     "min_cpus to %u for "
+					     "job_id %u", detail_ptr->min_cpus,
+					     job_ptr->job_id);
+					/* Always use the
+					 * acct_policy_limit_set.*
+					 * since if set by a
+					 * super user it be set correctly */
+					job_ptr->limit_set.
+						tres[TRES_ARRAY_CPU] =
+						acct_policy_limit_set.
+						tres[TRES_ARRAY_CPU];
+				}
+			}
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if (job_specs->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
