@@ -44,6 +44,9 @@ HIGHLIGHTS
  -- Add an "scontrol top <jobid>" command to re-order the priorities of a user's
     pending jobs. May be disabled with the "disable_user_top" option in the
     SchedulerParameters configuration parameter.
+ -- Cray: Not running the Node Health Check after every job and step is now the
+    default. Configure SelectTypeParameters with the NHC and/or NHC_STEP to
+    run them.
 
 RPMBUILD CHANGES
 ================
