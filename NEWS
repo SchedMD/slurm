@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     condition when reading state while buffer allocation is in progress.
  -- If a job is submitted only with -c option and numcpus is updated before
     the job starts update the cpus_per_task appropriately.
+ -- Update salloc/sbatch/srun documentation to mention time granularity.
 
 * Changes in Slurm 15.08.6
 ==========================
