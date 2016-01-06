@@ -1742,10 +1742,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_NETWORK),
 				   job_ptr->network);
 
-	if (job_ptr->nice > 0)
-		sprintf(tmp_char, "%u", job_ptr->nice - NICE_OFFSET);
-	else
-		sprintf(tmp_char, " ");
+	snprintf(tmp_char, sizeof(tmp_char), "%"PRIi64,
+		 (((int64_t)job_ptr->nice) - NICE_OFFSET));
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_NICE),
@@ -2244,7 +2242,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	else
 		tmp_shared = "no";
 
-	sprintf(tmp_nice, "%u", job_ptr->nice - NICE_OFFSET);
+	snprintf(tmp_nice, sizeof(tmp_nice), "%"PRIi64,
+		 (((int64_t)job_ptr->nice) - NICE_OFFSET));
 
 	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
 	    !strcasecmp(job_ptr->nodes,"waiting...")) {

@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- Add an "scontrol top <jobid>" command to re-order the priorities of a user's
     pending jobs. May be disabled with the "disable_user_top" option in the
     SchedulerParameters configuration parameter.
+ -- Modify sview to display negative job nice values.
 
 * Changes in Slurm 15.08.7
 ==========================
