@@ -502,7 +502,7 @@ struct job_details {
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
 	uint32_t min_cpus;		/* minimum number of cpus */
 	uint32_t min_nodes;		/* minimum number of nodes */
-	uint16_t nice;			/* requested priority change,
+	uint32_t nice;			/* requested priority change,
 					 * NICE_OFFSET == no change */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
 	uint32_t num_tasks;		/* number of tasks to start */

@@ -2233,7 +2233,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->core_spec, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
-	pack16(detail_ptr->nice, buffer);
+	pack32(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
 	pack32(detail_ptr->task_dist, buffer);
@@ -2294,9 +2294,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
-	uint32_t cpu_freq_gov = NO_VAL;
+	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0, task_dist;
-	uint16_t contiguous, core_spec = (uint16_t) NO_VAL, nice;
+	uint16_t contiguous, core_spec = (uint16_t) NO_VAL;
 	uint16_t ntasks_per_node, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
@@ -2306,7 +2306,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2317,7 +2317,64 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&nice, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		uint16_t old_nice = 0;
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&old_nice, buffer);
+		nice = xlate_nice_old2new(old_nice);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
 		safe_unpack32(&task_dist, buffer);
@@ -2363,6 +2420,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
 		uint16_t old_task_dist = 0;
+		uint16_t old_nice = 0;
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2373,7 +2431,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&nice, buffer);
+		safe_unpack16(&old_nice, buffer);
+		nice = xlate_nice_old2new(old_nice);
 		safe_unpack16(&ntasks_per_node, buffer);
 		safe_unpack16(&requeue, buffer);
 		safe_unpack16(&old_task_dist, buffer);
@@ -3567,7 +3626,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->num_tasks : -1L;
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
-	nice = (job_specs->nice != (uint16_t) NO_VAL) ?
+	nice = (job_specs->nice != NO_VAL) ?
 		(job_specs->nice - NICE_OFFSET) : 0;
 	debug3("   mail_type=%u mail_user=%s nice=%ld num_tasks=%ld "
 	       "open_mode=%u overcommit=%ld acctg_freq=%s",
@@ -7645,7 +7704,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	}
 
 
-	if (job_desc_msg->nice == (uint16_t) NO_VAL)
+	if (job_desc_msg->nice == NO_VAL)
 		job_desc_msg->nice = NICE_OFFSET;
 
 	if (job_desc_msg->pn_min_memory == NO_VAL) {
@@ -8168,12 +8227,12 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->time_min, buffer);
 
 		if (dump_job_ptr->details) {
-			pack16(dump_job_ptr->details->nice,  buffer);
+			pack32(dump_job_ptr->details->nice,  buffer);
 			pack_time(dump_job_ptr->details->submit_time, buffer);
 			/* Earliest possible begin time */
 			begin_time = dump_job_ptr->details->begin_time;
 		} else {   /* Some job details may be purged after completion */
-			pack16(NICE_OFFSET, buffer);	/* Best guess */
+			pack32(NICE_OFFSET, buffer);	/* Best guess */
 			pack_time((time_t) 0, buffer);
 		}
 
@@ -8280,6 +8339,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		uint16_t old_nice;
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
@@ -8321,12 +8381,15 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->time_min, buffer);
 
 		if (dump_job_ptr->details) {
-			pack16(dump_job_ptr->details->nice,  buffer);
+			old_nice = xlate_nice_new2old(
+					dump_job_ptr->details->nice);
+			pack16(old_nice,  buffer);
 			pack_time(dump_job_ptr->details->submit_time, buffer);
 			/* Earliest possible begin time */
 			begin_time = dump_job_ptr->details->begin_time;
 		} else {   /* Some job details may be purged after completion */
-			pack16(NICE_OFFSET, buffer);	/* Best guess */
+			old_nice = xlate_nice_new2old(NICE_OFFSET);
+			pack16(old_nice, buffer);	/* Best guess */
 			pack_time((time_t) 0, buffer);
 		}
 
@@ -8432,6 +8495,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 	} else if (protocol_version >= SLURM_14_11_PROTOCOL_VERSION) {
+		uint16_t old_nice;
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
 		pack32(dump_job_ptr->array_task_id, buffer);
@@ -8465,12 +8529,15 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->time_min, buffer);
 
 		if (dump_job_ptr->details) {
-			pack16(dump_job_ptr->details->nice,  buffer);
+			old_nice = xlate_nice_new2old(
+					dump_job_ptr->details->nice);
+			pack16(old_nice,  buffer);
 			pack_time(dump_job_ptr->details->submit_time, buffer);
 			/* Earliest possible begin time */
 			begin_time = dump_job_ptr->details->begin_time;
 		} else {
-			pack16(0, buffer);
+			old_nice = xlate_nice_new2old(NICE_OFFSET);
+			pack16(old_nice, buffer);	/* Best guess */
 			pack_time((time_t) 0, buffer);
 		}
 
@@ -9550,7 +9617,7 @@ extern void set_job_prio(struct job_record *job_ptr)
 
 	relative_prio = job_ptr->priority;
 	if (job_ptr->details && (job_ptr->details->nice != NICE_OFFSET)) {
-		int offset = job_ptr->details->nice;
+		int64_t offset = job_ptr->details->nice;
 		offset -= NICE_OFFSET;
 		relative_prio += offset;
 	}
@@ -10822,7 +10889,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->nice != (uint16_t) NO_VAL) {
+	if (job_specs->nice != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || (job_ptr->details == NULL))
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->details &&
@@ -14103,7 +14170,7 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 {
 	ListIterator job_iterator;
 	struct job_record *job_test_ptr, **job_adj_list;
-	uint32_t adj_prio, high_prio = 0, delta_nice;
+	uint32_t adj_prio, high_prio = 0, delta_nice, max_delta;
 	int i, high_prio_job_cnt = 0, max_adj_jobs = 1024;
 
 	xassert(job_list);
@@ -14140,12 +14207,15 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 			continue;
 		high_prio = MAX(job_test_ptr->priority, high_prio);
 		job_adj_list[high_prio_job_cnt++] = job_test_ptr;
-		if (high_prio_job_cnt >= max_adj_jobs)
-			break;
+		if (high_prio_job_cnt >= max_adj_jobs) {
+			max_adj_jobs *= 2;
+			job_adj_list = xrealloc(job_adj_list,
+						sizeof(struct job_record *) *
+						max_adj_jobs);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 
-/* FIXME: Make nice 32-bits, add range check, modify sview display */
 	/* Now adjust nice values and priorities of effected jobs */
 	if (high_prio > job_ptr->priority) {
 		delta_nice = high_prio - job_ptr->priority;
@@ -14156,6 +14226,9 @@ static int _set_top(struct job_record *job_ptr, uid_t uid)
 			adj_prio = delta_nice / (high_prio_job_cnt - i);
 			job_test_ptr = job_adj_list[i];
 			adj_prio = MIN(job_test_ptr->priority, adj_prio);
+			max_delta = (uint32_t) 0xffffffff -
+				    job_test_ptr->details->nice;
+			adj_prio = MIN(max_delta, adj_prio);
 			job_test_ptr->priority -= adj_prio;
 			job_test_ptr->details->nice += adj_prio;
 			delta_nice -= adj_prio;

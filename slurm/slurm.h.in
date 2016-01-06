@@ -309,7 +309,7 @@ enum job_states {
 #define MAIL_JOB_STAGE_OUT 0x0100	/* Notify on completion of burst buffer
 					 * stage out */
 
-#define NICE_OFFSET 10000	/* offset for job's nice value */
+#define NICE_OFFSET 0x80000000		/* offset for job's nice value */
 
 /* Reason for job to be pending rather than executing or reason for job
  * failure. If multiple reasons exists, only one is given for the sake of
@@ -1438,7 +1438,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t mem_bind_type;	/* see mem_bind_type_t */
 	char *name;		/* name of the job, default "" */
 	char *network;		/* network use spec */
-	uint16_t nice;		/* requested priority change,
+	uint32_t nice;		/* requested priority change,
 				 * NICE_OFFSET == no change */
 	uint32_t num_tasks;	/* number of tasks to be started,
 				 * for batch only */
@@ -1596,7 +1596,7 @@ typedef struct job_info {
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
-	uint16_t nice;	  	/* requested priority change */
+	uint32_t nice;	  	/* requested priority change */
 	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */

@@ -350,7 +350,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char *host;
 	int sock_inx, sock_reps, last;
 	int abs_node_inx, rel_node_inx;
-	int nice;
+	int64_t nice;
 	int bit_inx, bit_reps;
 	uint32_t *last_mem_alloc_ptr = NULL;
 	uint32_t last_mem_alloc = NO_VAL;
@@ -407,10 +407,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
-	nice  = job_ptr->nice;
-	nice -= NICE_OFFSET;
+	nice  = ((int64_t)job_ptr->nice) - NICE_OFFSET;
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Priority=%u Nice=%d Account=%s QOS=%s",
+		 "Priority=%u Nice=%"PRIi64" Account=%s QOS=%s",
 		 job_ptr->priority, nice, job_ptr->account, job_ptr->qos);
 	xstrcat(out, tmp_line);
 	if (slurm_get_track_wckey()) {

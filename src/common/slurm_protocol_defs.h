@@ -542,7 +542,7 @@ typedef struct priority_factors_object {
 	char    **tres_names;	/* packed as assoc_mgr_tres_names[] */
 	double   *tres_weights; /* PriorityWeightTRES weights as an array */
 
-	uint16_t nice;
+	uint32_t nice;
 } priority_factors_object_t;
 
 typedef struct priority_factors_request_msg {

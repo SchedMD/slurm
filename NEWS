@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
     pending jobs. May be disabled with the "disable_user_top" option in the
     SchedulerParameters configuration parameter.
  -- Modify sview to display negative job nice values.
+ -- Increase job's nice value field from 16 to 32 bits.
 
 * Changes in Slurm 15.08.7
 ==========================

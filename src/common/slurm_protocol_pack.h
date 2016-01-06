@@ -171,4 +171,11 @@ extern int slurm_unpack_block_info_msg(
 extern uint16_t task_dist_new2old(uint32_t new_task_dist);
 /* Translate task_dist value from v14.11- format to v15.08+ format */
 extern uint32_t task_dist_old2new(uint16_t old_task_dist);
+
+/* Translate 32-bit nice value to equivalent 16-bit value.
+ * Remove when version 15.08 support is no longer required. */
+extern uint16_t xlate_nice_new2old(uint32_t new_nice);
+/* Translate 16-bit nice value to equivalent 32-bit value.
+ * Remove when version 15.08 support is no longer required. */
+extern uint32_t xlate_nice_old2new(uint16_t old_nice);
 #endif

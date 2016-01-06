@@ -1062,11 +1062,6 @@ void set_options(const int argc, char **argv)
 				opt.nice = strtol(optarg, NULL, 10);
 			else
 				opt.nice = 100;
-			if (abs(opt.nice) > NICE_OFFSET) {
-				error("Invalid nice value, must be between "
-				       "-%d and %d", NICE_OFFSET, NICE_OFFSET);
-				exit(error_exit);
-			}
 			if (opt.nice < 0) {
 				uid_t my_uid = getuid();
 				if ((my_uid != 0) &&
