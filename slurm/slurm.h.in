@@ -557,6 +557,12 @@ enum job_acct_types {
 #define PARTITION_DRAIN		(PARTITION_SCHED)
 #define PARTITION_INACTIVE	0x00
 
+/* Partition enforce flags for jobs */
+#define PARTITION_ENFORCE_NONE 0
+#define PARTITION_ENFORCE_ALL  1 /* job limit must be valid for ALL
+				  * partitions */
+#define PARTITION_ENFORCE_ANY  2 /* job limit must be valid for ANY
+				  * partition */
 enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
 	SELECT_TORUS, 		/* nodes wired in torus */

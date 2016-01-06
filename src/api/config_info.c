@@ -569,7 +569,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 	key_pair->name = xstrdup("EnforcePartLimits");
 	key_pair->value = xstrdup(
-		slurm_ctl_conf_ptr->enforce_part_limits ? "Yes" : "No");
+		parse_part_enforce_type_2str(
+			slurm_ctl_conf_ptr->enforce_part_limits));
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("Epilog");

@@ -4449,3 +4449,45 @@ extern void slurm_free_assoc_mgr_info_request_msg(
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);
 }
+
+extern int parse_part_enforce_type(char *enforce_part_type, uint16_t *param)
+{
+	int rc = SLURM_SUCCESS;
+
+	char *value = xstrdup(enforce_part_type);
+
+	if (!strcasecmp(value, "yes")
+		|| !strcasecmp(value, "up")
+		|| !strcasecmp(value, "true")
+		|| !strcasecmp(value, "1") || !strcasecmp(value, "any")) {
+		*param = PARTITION_ENFORCE_ANY;
+	} else if (!strcasecmp(value, "no")
+		   || !strcasecmp(value, "down")
+		   || !strcasecmp(value, "false")
+		   || !strcasecmp(value, "0")) {
+		*param = PARTITION_ENFORCE_NONE;
+	} else if (!strcasecmp(value, "all")) {
+		*param = PARTITION_ENFORCE_ALL;
+	} else {
+		error("Bad EnforcePartLimits: %s\n", value);
+		rc = SLURM_FAILURE;
+	}
+
+	xfree(value);
+	return rc;
+}
+
+extern char * parse_part_enforce_type_2str (uint16_t type)
+{
+	static char type_str[1024];
+
+	if (type == PARTITION_ENFORCE_NONE) {
+		strcpy(type_str, "NO");
+	} else if (type == PARTITION_ENFORCE_ANY) {
+		strcpy(type_str, "ANY");
+	} else if (type == PARTITION_ENFORCE_ALL) {
+		strcpy(type_str, "ALL");
+	}
+
+	return type_str;
+}

@@ -208,7 +208,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
-	{"EnforcePartLimits", S_P_BOOLEAN},
+	{"EnforcePartLimits", S_P_STRING},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"EpilogSlurmctld", S_P_STRING},
@@ -3153,9 +3153,18 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
 
-	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits,
-			     "EnforcePartLimits", hashtbl))
+	if (s_p_get_string(&temp_str,
+			   "EnforcePartLimits", hashtbl)) {
+		uint16_t enforce_param;
+		if (parse_part_enforce_type(temp_str, &enforce_param) < 0) {
+			error("Bad EnforcePartLimits: %s", temp_str);
+			xfree(temp_str);
+			return SLURM_ERROR;
+		}
+		conf->enforce_part_limits = enforce_param;
+	} else {
 		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;
+	}
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
 
