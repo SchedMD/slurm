@@ -272,6 +272,30 @@ slurm_update_step (step_update_request_msg_t * step_msg)
 	return _slurm_update ((void *) step_msg, REQUEST_UPDATE_JOB_STEP);
 }
 
+/*
+ * Move the specified job ID to the top of the queue for a given user ID,
+ *	partition, account, and QOS.
+ * IN job_id_str - a job id
+ * RET 0 or -1 on error */
+extern int
+slurm_top_job(char *job_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	top_job_msg_t top_job_req;
+	slurm_msg_t req_msg;
+
+	slurm_msg_t_init(&req_msg);
+	top_job_req.job_id_str = job_id_str;
+	req_msg.msg_type       = REQUEST_TOP_JOB;
+	req_msg.data           = &top_job_req;
+
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+		return SLURM_ERROR;
+
+	slurm_seterrno(rc);
+	return rc;
+}
+
 /* _slurm_update - issue RPC for all update requests */
 static int
 _slurm_update (void *data, slurm_msg_type_t msg_type)

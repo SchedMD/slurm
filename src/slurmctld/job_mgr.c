@@ -14099,6 +14099,159 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
 	return rc;
 }
 
+static int _set_top(struct job_record *job_ptr, uid_t uid)
+{
+	ListIterator job_iterator;
+	struct job_record *job_test_ptr, **job_adj_list;
+	uint32_t adj_prio, high_prio = 0, delta_nice;
+	int i, high_prio_job_cnt = 0, max_adj_jobs = 1024;
+
+	xassert(job_list);
+
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error("Security violation: REQUEST_TOP_JOB for job %u "
+		      "from uid=%d", job_ptr->job_id, uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (!IS_JOB_PENDING(job_ptr) || (job_ptr->details == NULL))
+		return ESLURM_JOB_NOT_PENDING;
+
+	if (job_ptr->part_ptr_list)
+		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+
+	if (job_ptr->priority == 0)
+		return ESLURM_JOB_HELD;
+
+	/* Identify the jobs which we can adjust the nice value of */
+	job_adj_list = xmalloc(sizeof(struct job_record *) * max_adj_jobs);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_test_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_test_ptr == job_ptr) ||
+		    (job_test_ptr->details == NULL) ||
+		    (job_test_ptr->part_ptr_list) ||
+		    (job_test_ptr->priority == 0) ||
+		    (job_test_ptr->assoc_ptr != job_ptr->assoc_ptr) ||
+		    (job_test_ptr->part_ptr  != job_ptr->part_ptr)  ||
+		    (job_test_ptr->priority  <  job_ptr->priority)  ||
+		    (job_test_ptr->qos_ptr   != job_ptr->qos_ptr)   ||
+		    (job_test_ptr->user_id   != job_ptr->user_id)   ||
+		    (!IS_JOB_PENDING(job_test_ptr)))
+			continue;
+		high_prio = MAX(job_test_ptr->priority, high_prio);
+		job_adj_list[high_prio_job_cnt++] = job_test_ptr;
+		if (high_prio_job_cnt >= max_adj_jobs)
+			break;
+	}
+	list_iterator_destroy(job_iterator);
+
+/* FIXME: Make nice 32-bits, add range check, modify sview display */
+	/* Now adjust nice values and priorities of effected jobs */
+	if (high_prio > job_ptr->priority) {
+		delta_nice = high_prio - job_ptr->priority;
+		delta_nice = MIN(job_ptr->details->nice, delta_nice);
+		job_ptr->priority += delta_nice;
+		job_ptr->details->nice -= delta_nice;
+		for (i = 0; i < high_prio_job_cnt; i++) {
+			adj_prio = delta_nice / (high_prio_job_cnt - i);
+			job_test_ptr = job_adj_list[i];
+			adj_prio = MIN(job_test_ptr->priority, adj_prio);
+			job_test_ptr->priority -= adj_prio;
+			job_test_ptr->details->nice += adj_prio;
+			delta_nice -= adj_prio;
+		}
+		last_job_update = time(NULL);
+	}
+	xfree(job_adj_list);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * job_set_top - Move the specified job to the top of the queue (at least
+ *	for that user ID, partition, account, and QOS).
+ *
+ * IN top_ptr - user request
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply,
+ *              -1 if none
+ * IN protocol_version - slurm protocol version of client
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, slurm_fd_t conn_fd,
+		       uint16_t protocol_version)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr = NULL;
+	long int long_id;
+	uint32_t job_id = 0, task_id = 0;
+	char *end_ptr = NULL;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+
+	if (validate_operator(uid)) {
+		uid = 0;
+	} else {
+		char *sched_params;
+		bool disable_user_top = false;
+		sched_params = slurm_get_sched_params();
+		if (sched_params && strstr(sched_params, "disable_user_top"))
+			disable_user_top = true;
+		xfree(sched_params);
+		if (disable_user_top) {
+			rc = ESLURM_ACCESS_DENIED;
+			goto reply;
+		}
+	}
+
+	long_id = strtol(top_ptr->job_id_str, &end_ptr, 10);
+	if ((long_id <= 0) || (long_id == LONG_MAX) ||
+	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
+		info("%s: invalid job id %s", __func__, top_ptr->job_id_str);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	job_id = (uint32_t) long_id;
+	if ((end_ptr[0] == '\0') ||	/* Single job (or full job array) */
+	    ((end_ptr[0] == '_') && (end_ptr[1] == '*') &&
+	     (end_ptr[2] == '\0'))) {
+		job_ptr = find_job_record(job_id);
+		if (!job_ptr) {
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		rc = _set_top(job_ptr, uid);
+		goto reply;
+	}
+	if (end_ptr[0] != '_') {	/* Invalid job ID specification */
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	task_id = strtol(end_ptr + 1, &end_ptr, 10);
+	if (end_ptr[0] != '\0') {	/* Invalid job ID specification */
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	job_ptr = find_job_array_rec(job_id, task_id);
+	if (!job_ptr) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	rc = _set_top(job_ptr, uid);
+
+    reply:
+	if (conn_fd >= 0) {
+		slurm_msg_t_init(&resp_msg);
+		resp_msg.protocol_version = protocol_version;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		rc_msg.return_code = rc;
+		resp_msg.data      = &rc_msg;
+		slurm_send_node_msg(conn_fd, &resp_msg);
+	}
+
+	return rc;
+}
+
 /*
  * job_end_time - Process JOB_END_TIME
  * IN time_req_msg - job end time request

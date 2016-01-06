@@ -41,9 +41,9 @@ HIGHLIGHTS
  -- Added --deadline option to salloc, sbatch and srun. Jobs which can not be
     completed by the user specified deadline will be terminated with a state of
     "Deadline" or "DL".
- -- Stop searching sbatch scripts for #PBS directives after 100 lines of
-    non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
-    into a line. Required for decent perforamnce with huge scripts.
+ -- Add an "scontrol top <jobid>" command to re-order the priorities of a user's
+    pending jobs. May be disabled with the "disable_user_top" option in the
+    SchedulerParameters configuration parameter.
 
 RPMBUILD CHANGES
 ================
@@ -95,6 +95,9 @@ OTHER CHANGES
     greatly reduces the number of files involved in managing job arrays.
  -- Burst buffer/cray - Add support for multiple buffer pools including support
     for different resource granularity by pool.
+ -- Stop searching sbatch scripts for #PBS directives after 100 lines of
+    non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
+    into a line. Required for decent perforamnce with huge scripts.
 
 API CHANGES
 ===========

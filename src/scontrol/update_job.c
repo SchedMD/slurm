@@ -683,6 +683,31 @@ scontrol_requeue_hold(uint32_t state_flag, char *job_str)
 }
 
 /*
+ * scontrol_top_job - Move the specified job ID to the top of the queue for
+ *	a given user ID, partition, account, and QOS.
+ * IN job_str - a job id
+ */
+extern void
+scontrol_top_job(char *job_id_str)
+{
+	int rc;
+
+	if (strncasecmp(job_id_str, "jobid=", 6) == 0)
+		job_id_str += 6;
+	if (strncasecmp(job_id_str, "job=", 4) == 0)
+		job_id_str += 4;
+
+	rc = slurm_top_job(job_id_str);
+	if (rc != SLURM_SUCCESS) {
+		exit_code = 1;
+		if (quiet_flag != 1) {
+			fprintf(stderr, "%s for job %s\n",
+				slurm_strerror(slurm_get_errno()), job_id_str);
+		}
+	}
+}
+
+/*
  * scontrol_update_job - update the slurm job configuration per the supplied
  *	arguments
  * IN argc - count of arguments

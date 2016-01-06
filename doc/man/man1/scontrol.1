@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "September 2015" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2016" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -432,6 +432,17 @@ fail\-over mechanism when the primary node is down.
 This can be used to minimize disruption if the computer executing the
 primary Slurm controller is scheduled down.
 (Note: Slurm's primary controller will take the control back at startup.)
+
+.TP
+\fBtop\fP \fIjob_id\fP
+Move the specified job ID to the top of the queue of jobs belonging to the
+identical user ID, partition name, account, and QOS.
+Any job not matching \fBall\fP of those fields will not be effected.
+Only jobs submitted to a single partition will be effected.
+This operation changes the order of jobs by adjusting job nice values.
+The net effect on that user's throughput will be negligible to slightly negative.
+This operation may be disabled by the system administrator by including the
+option "disable_user_top" in the SchedulerParameters configuration parameter.
 
 .TP
 \fBuhold\fP \fIjob_list\fP
@@ -1817,7 +1828,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2015 SchedMD LLC.
+Copyright (C) 2010-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

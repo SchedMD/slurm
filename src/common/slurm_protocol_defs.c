@@ -4271,6 +4271,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_NETWORK_CALLERID";
 	case REQUEST_STEP_COMPLETE_AGGR:
 		return "REQUEST_STEP_COMPLETE_AGGR";
+	case REQUEST_TOP_JOB:
+		return "REQUEST_TOP_JOB";
 
 	case REQUEST_LAUNCH_TASKS:				/* 6001 */
 		return "REQUEST_LAUNCH_TASKS";

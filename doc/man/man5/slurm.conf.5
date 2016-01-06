@@ -2540,6 +2540,9 @@ This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .TP
+\fBdisable_user_top\fB
+Disable use of the "scontrol top" command by non-privileged users.
+.TP
 \fBIgnore_NUMA\fR
 Some processors (e.g. AMD Opteron 6000 series) contain multiple NUMA nodes per
 socket. This is a configuration which does not map into the hardware entities

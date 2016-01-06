@@ -567,6 +567,11 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 				    uint16_t protocol_version);
 
+static void _pack_top_job_msg(top_job_msg_t *msg, Buf buffer,
+			       uint16_t protocol_version);
+static int  _unpack_top_job_msg(top_job_msg_t **msg_ptr, Buf buffer,
+				uint16_t protocol_version);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer,
@@ -1428,7 +1433,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_suspend_int_msg((suspend_int_msg_t *)msg->data, buffer,
 				      msg->protocol_version);
 		break;
-
+	case REQUEST_TOP_JOB:
+		_pack_top_job_msg((top_job_msg_t *)msg->data, buffer,
+				  msg->protocol_version);
+		break;
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
@@ -2105,7 +2113,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_suspend_int_msg((suspend_int_msg_t **) &msg->data,
 					     buffer, msg->protocol_version);
 		break;
-
+	case REQUEST_TOP_JOB:
+		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
+					 msg->protocol_version);
+		break;
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
@@ -11728,6 +11739,41 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 unpack_error:
 	*msg_ptr = NULL;
 	slurm_free_suspend_int_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_top_job_msg(top_job_msg_t *msg, Buf buffer,
+			      uint16_t protocol_version)
+{
+	xassert ( msg != NULL );
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(msg -> op, buffer);
+		pack32(msg->job_id,  buffer);
+		packstr(msg->job_id_str, buffer);
+	}
+}
+
+static int  _unpack_top_job_msg(top_job_msg_t **msg_ptr, Buf buffer,
+				uint16_t protocol_version)
+{
+	top_job_msg_t * msg;
+	uint32_t uint32_tmp = 0;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (top_job_msg_t) );
+	*msg_ptr = msg ;
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->op,      buffer);
+		safe_unpack32(&msg->job_id , buffer);
+		safe_unpackstr_xmalloc(&msg->job_id_str, &uint32_tmp, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_top_job_msg(msg);
 	return SLURM_ERROR;
 }
 

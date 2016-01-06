@@ -1780,6 +1780,13 @@ typedef struct suspend_msg {
 	char *   job_id_str;	/* slurm job ID (string) */
 } suspend_msg_t;
 
+/* NOTE: Set either job_id_str (NULL by default) or job_id */
+typedef struct top_job_msg {
+	uint16_t op;		/* suspend operation, see enum suspend_opts */
+	uint32_t job_id;	/* slurm job ID (number) */
+	char *   job_id_str;	/* slurm job ID (string) */
+} top_job_msg_t;
+
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t cpu_count;	/* number of required processors */
@@ -4846,6 +4853,12 @@ extern int slurm_network_callerid PARAMS(
 		(network_callerid_msg_t req, uint32_t *job_id,
 		char *node_name, int node_name_size));
 
+/*
+ * Move the specified job ID to the top of the queue for a given user ID,
+ *	partition, account, and QOS.
+ * IN job_id_str - a job id
+ * RET 0 or -1 on error */
+extern int slurm_top_job PARAMS((char *job_id_str));
 
 END_C_DECLS
 

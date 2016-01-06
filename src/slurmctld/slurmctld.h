@@ -1470,6 +1470,20 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr,
                        bool preempt);
 
 /*
+ * job_set_top - Move the specified job to the top of the queue (at least
+ *	for that user ID, partition, account, and QOS).
+ *
+ * IN top_ptr - user request
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply,
+ *              -1 if none
+ * IN protocol_version - slurm protocol version of client
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, slurm_fd_t conn_fd,
+		       uint16_t protocol_version);
+
+/*
  * job_step_complete - note normal completion the specified job step
  * IN job_id - id of the job to be completed
  * IN step_id - id of the job step to be completed
