@@ -1582,7 +1582,7 @@ extern int select_p_job_init(List job_list)
 				jobinfo->used_blades = bit_realloc(
 					jobinfo->used_blades, blade_cnt);
 
-			if ((slurmctld_conf.select_type_param & CR_NHC_STEP)
+			if (!(slurmctld_conf.select_type_param & CR_NHC_STEP_NO)
 			    && job_ptr->step_list
 			    && list_count(job_ptr->step_list)) {
 				ListIterator itr_step = list_iterator_create(
@@ -1598,7 +1598,7 @@ extern int select_p_job_init(List job_list)
 				list_iterator_destroy(itr_step);
 			}
 
-			if (slurmctld_conf.select_type_param & CR_NHC) {
+			if (!(slurmctld_conf.select_type_param & CR_NHC_NO)) {
 				jobinfo = job_ptr->select_jobinfo->data;
 				if (jobinfo && IS_CLEANING(jobinfo)) {
 					_spawn_cleanup_thread(
@@ -1913,8 +1913,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
 
-	if (!(slurmctld_conf.select_type_param & CR_NHC)) {
-		debug3("NHC not set, not running NHC after allocations");
+	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
+		debug3("NHC_No set, not running NHC after allocations");
 		other_job_fini(job_ptr);
 		return SLURM_SUCCESS;
 	}
@@ -2083,8 +2083,8 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	}
 #endif
 
-	if (!(slurmctld_conf.select_type_param & CR_NHC_STEP)) {
-		debug3("NHC_Steps not set not running NHC on steps.");
+	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
+		debug3("NHC_No_Steps set not running NHC on steps.");
 		other_step_finish(step_ptr);
 		/* free resources on the job */
 		post_job_step(step_ptr);

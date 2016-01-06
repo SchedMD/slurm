@@ -76,9 +76,6 @@ documents those changes that are of interest to users and administrators.
     SchedulerParameters configuration parameter.
  -- Modify sview to display negative job nice values.
  -- Increase job's nice value field from 16 to 32 bits.
- -- Cray: Not running the Node Health Check after every job and step is now the
-    default. Configure SelectTypeParameters with the NHC and/or NHC_STEP to
-    run them.
  -- Remove deprecated job_submit/cnode plugin.
  -- Enhance slurm.conf option EnforcePartLimit to include options like "ANY" and
     "ALL".  "Any" is equivalent to "Yes" and "All" will check all partitions
