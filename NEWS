@@ -80,6 +80,10 @@ documents those changes that are of interest to users and administrators.
     default. Configure SelectTypeParameters with the NHC and/or NHC_STEP to
     run them.
  -- Remove deprecated job_submit/cnode plugin.
+ -- Enhance slurm.conf option EnforcePartLimit to include options like "ANY" and
+    "ALL".  "Any" is equivalent to "Yes" and "All" will check all partitions
+    a job is submitted to and if any partition limit is violated the job will
+    be rejected even if it could possibly run on another partition.
 
 * Changes in Slurm 15.08.7
 ==========================
