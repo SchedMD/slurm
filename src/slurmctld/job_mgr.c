@@ -5381,17 +5381,13 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 							qos_ptr, assoc_ptr ?
 							assoc_ptr->acct : NULL);
 
-
-
-
 			if (rc != SLURM_SUCCESS) {
 				fail_rc = rc;
 				if (slurmctld_conf.enforce_part_limits ==
 				    PARTITION_ENFORCE_ALL) {
 					break;
 				}
-			}
-			else {
+			} else {
 				any_check = true;
 			}
 
@@ -7772,9 +7768,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->pn_min_memory =
 					slurmctld_conf.def_mem_per_cpu;
 		}
-	} else if (!_validate_min_mem_partition(job_desc_msg, part_ptr, part_list)) {
+	} else if (!_validate_min_mem_partition(
+			   job_desc_msg, part_ptr, part_list))
 		return ESLURM_INVALID_TASK_MEMORY;
-	}
+
 	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
 		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */
 		job_desc_msg->pn_min_memory = 0;
@@ -7811,27 +7808,32 @@ _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 	struct part_record *part;
 	bool cc;
 
+	/* no reason to check them here as we aren't enforcing them */
+	if (!slurmctld_conf.enforce_part_limits)
+		return true;
+
 	if (part_list == NULL)
 		return _valid_pn_min_mem(job_desc_msg, part_ptr);
 
 	cc = false;
 	iter = list_iterator_create(part_list);
 	while ((part = list_next(iter))) {
-		if (!(cc = _valid_pn_min_mem(job_desc_msg, part))) {
-			printf("mem is bad\n");
-			if (slurmctld_conf.enforce_part_limits ==
-			    PARTITION_ENFORCE_ALL) {
-				break;
-			} else if (slurmctld_conf.enforce_part_limits ==
-				   PARTITION_ENFORCE_ANY) {
-				info("%s: Job requested for (%u)MB is invalid"
-				     " for partition %s",
-				     __func__, job_desc_msg->pn_min_memory, part->name);
-			}
-		} else if ((cc = _valid_pn_min_mem(job_desc_msg, part))) {
-			break;
-		}
+		cc = _valid_pn_min_mem(job_desc_msg, part);
 
+		/* for ALL we have to test them all */
+		if (slurmctld_conf.enforce_part_limits ==
+		    PARTITION_ENFORCE_ALL) {
+			if (!cc)
+				break;
+		} else if (cc) /* break, we found one! */
+			break;
+		else if (slurmctld_conf.enforce_part_limits ==
+			 PARTITION_ENFORCE_ANY) {
+			debug("%s: Job requested for (%u)MB is invalid"
+			      " for partition %s",
+			      __func__, job_desc_msg->pn_min_memory,
+			      part->name);
+		}
 	}
 	list_iterator_destroy(iter);
 
