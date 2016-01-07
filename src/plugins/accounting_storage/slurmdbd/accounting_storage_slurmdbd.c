@@ -1607,7 +1607,7 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 }
 
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
-					slurmdb_account_cond_t *cluster_cond)
+					slurmdb_cluster_cond_t *cluster_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
