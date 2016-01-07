@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Update salloc/sbatch/srun documentation to mention time granularity.
  -- Fixed memory leak when freeing assoc_mgr_info_msg_t.
  -- Prevent possible use of empty reservation core bitmap, causing abort.
+ -- Remove unneeded pack32's from qos_rec when qos_rec is NULL.
 
 * Changes in Slurm 15.08.6
 ==========================
