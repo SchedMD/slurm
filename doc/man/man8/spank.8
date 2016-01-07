@@ -182,6 +182,14 @@ are (int *, char ***).
 See \fBspank.h\fR for more details, and \fBEXAMPLES\fR below for an example
 of \fBspank_get_item\fR usage.
 .LP
+In order to modify these values, the \fBspank_set_item\fR function call has to be employed.
+.nf
+
+  spank_err_t \fBspank_set_item\fR (spank_t spank, spank_item_t item, ...);
+
+.fi
+The usage and parameters are analog to the ones in \fBspank_get_item\fR.
+.LP
 \fBSPANK\fR functions in the \fBlocal\fB and \fBallocator\fR environment should
 use the \fBgetenv\fR, \fBsetenv\fR, and \fBunsetenv\fR functions to view and
 modify the job's environment.

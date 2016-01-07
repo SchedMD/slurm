@@ -2156,6 +2156,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2vers = va_arg(vargs, char  **);
 		*p2vers = SLURM_MICRO;
 		break;
+	case S_CHECKPOINT_DIR:
+		p2str = va_arg(vargs, char  **);
+		*p2str = slurmd_job->ckpt_dir;
+		break;
 	default:
 		rc = ESPANK_BAD_ARG;
 		break;
@@ -2163,6 +2167,88 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	va_end(vargs);
 	return (rc);
 }
+
+
+
+spank_err_t spank_set_item(spank_t spank, spank_item_t item, ...)
+{
+	int *p2int;
+	char ***p2argv;
+	char **p2str;
+
+	slurm_error("Starting set item");
+
+	stepd_step_task_info_t *task;
+	stepd_step_rec_t  *slurmd_job = NULL;
+	struct spank_launcher_job_info *launcher_job = NULL;
+	struct job_script_info *s_job_info = NULL;
+	va_list vargs;
+	spank_err_t rc = ESPANK_SUCCESS;
+
+	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
+		return (ESPANK_BAD_ARG);
+
+	if (spank->stack->type == S_TYPE_LOCAL)
+		launcher_job = spank->job;
+	else if (spank->stack->type == S_TYPE_REMOTE)
+		slurmd_job = spank->job;
+	else if (spank->stack->type == S_TYPE_JOB_SCRIPT)
+		s_job_info = spank->job;
+
+	/*
+	 *  Check for validity of the given item in the current context
+	 */
+	rc = _check_spank_item_validity (spank, item);
+	if (rc != ESPANK_SUCCESS)
+		return (rc);
+
+	va_start(vargs, item);
+	switch (item) {
+
+	case S_JOB_ARGV:
+		p2int = va_arg(vargs, int *);
+		p2argv = va_arg(vargs, char ***);
+		int count = 0;
+
+		//This modifies both spank->job and spank->task.
+		if (spank->stack->type == S_TYPE_LOCAL) {
+			launcher_job->argc = *p2int;
+			launcher_job->argv = xmalloc (sizeof(char*) * (launcher_job->argc + 1));
+			for (count = 0; count < launcher_job->argc; count ++){
+				launcher_job->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
+				strcpy(launcher_job->argv[count], *p2argv[count]);
+				}
+		} else if (slurmd_job) {
+			slurmd_job->argc = *p2int;
+			slurmd_job->argv = xmalloc (sizeof(char*) * (slurmd_job->argc + 1));
+			for (count = 0; count < slurmd_job->argc; count ++){
+				slurmd_job->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
+				strcpy(slurmd_job->argv[count], *p2argv[count]);
+				}
+		} else {
+			rc=ESPANK_ERROR;
+		}
+
+		task = spank->task;
+		task->argc = *p2int;
+		task->argv = xmalloc (sizeof(char*) * (task->argc + 1));
+		for (count = 0; count < task->argc; count ++){
+			task->argv[count] = xmalloc( strlen (*p2argv[count])+1 );
+			strcpy(task->argv[count], *p2argv[count]);
+			}
+
+		task->argv[task->argc] = NULL;
+		break;
+	default:
+		rc = ESPANK_ERROR;
+		break;
+	}
+	va_end(vargs);
+
+	return (rc);
+}
+
+
 
 spank_err_t spank_env_access_check (spank_t spank)
 {
