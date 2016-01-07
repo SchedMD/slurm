@@ -1799,6 +1799,12 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpWall        = %s\n", time_buf);
 	}
 
+	if (qos->max_jobs_pu == INFINITE)
+		printf("  MaxJobsPerUser = NONE\n");
+	else if (qos->max_jobs_pu != NO_VAL)
+		printf("  MaxJobsPerUser = %u\n",
+		       qos->max_jobs_pu);
+
 	if (qos->max_submit_jobs_pu == INFINITE)
 		printf("  MaxSubmitJobs  = NONE\n");
 	else if (qos->max_submit_jobs_pu != NO_VAL)
