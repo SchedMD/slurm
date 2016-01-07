@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent possible use of empty reservation core bitmap, causing abort.
  -- Remove unneeded pack32's from qos_rec when qos_rec is NULL.
  -- Make sacctmgr print MaxJobsPerUser when adding/altering a QOS.
+ -- Correct dependency formatting to print array task ids if set.
 
 * Changes in Slurm 15.08.6
 ==========================
@@ -737,6 +738,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.12
 ===========================
+ -- Correct dependency formatting to print array task ids if set.
 
 * Changes in Slurm 14.11.11
 ===========================
