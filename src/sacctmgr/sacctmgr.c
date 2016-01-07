@@ -911,21 +911,19 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list qos           - Descriptions=, Format=, Id=, Names=,           \n\
                             PreemptMode=, and WithDeleted                  \n\
-       add qos            - Description=, Flags=, GraceTime=, GrpCPUMins=, \n\
-                            GGrpCPUs=, GrpJobs=, GrpMemory=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxCPUs=,\n\
-                            MaxCPUsPerUser=, MaxJobs=, MaxNodesPerUser=,   \n\
-                            MaxCPUsPerUser=, MaxNodes=, MaxSubmitJobs=,    \n\
+       add qos            - Description=, Flags=, GraceTime=, GrpJobs=,    \n\
+                            GrpSubmitJob=, GrpTRES=, GrpTRESMins=, GrpWall=,\n\
+                            MaxJobs=, MaxSubmitJobsPerUser=, MaxTRESMins=, \n\
+                            MaxTRESPerJob=, MaxTRESPerNode=, MaxTRESPerUser=,\n\
                             MaxWall=, Names=, Preempt=, PreemptMode=,      \n\
                             Priority=, UsageFactor=, and UsageThreshold=   \n\
        modify qos         - (set options) Description=, Flags=, GraceTime=,\n\
-                            GrpCPUMins=, GrpCPURunMins=, GrpCPUs=, GrpJobs=,\n\
-                            GrpMemory=, GrpNodes=, GrpSubmitJob=, GrpWall=,\n\
-                            MaxCPUMins=, MaxCPUs=,                         \n\
-                            MaxCPUsPerUser=, MaxJobs=, MaxNodes=,          \n\
-                            MaxNodesPerUser=, MaxSubmitJobs=, MaxWall=,    \n\
-                            Names=, Preempt=, PreemptMode=, Priority=,     \n\
-                            RawUsage= (with admin privileges only),        \n\
+                            GrpJobs=, GrpSubmitJob=, GrpTRES=, GrpTRESMins=,\n\
+                            GrpWall=,\n\
+                            MaxJobs=, MaxSubmitJobsPerUser=, MaxTRESMins=, \n\
+                            MaxTRESPerJob=, MaxTRESPerNode=, MaxTRESPerUser=,\n\
+                            MaxWall=, Names=, Preempt=, PreemptMode=,      \n\
+                            Priority=, RawUsage= (admin only),             \n\
                             UsageFactor=, and UsageThreshold=              \n\
                             (where options) Descriptions=, ID=, Names=     \n\
                             and PreemptMode=                               \n\
@@ -1005,18 +1003,16 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Event, EventRaw, NodeName, Reason, Start,      \n\
                             State, StateRaw, TRES, User                    \n\
                                                                            \n\
-       QOS                - Description, Flags, GraceTime, GrpCPUMins,     \n\
-                            GrpCPURunMins, GrpCPUs, GrpJobs, GrpMemory,    \n\
-                            GrpNodes, GrpSubmitJob, GrpWall, ID, MaxCPUMins,\n\
-                            MaxCPUs, MaxCPUsPerUser,                       \n\
-                            MaxJobs, MaxNodes, MaxNodesPerUser,            \n\
-                            MaxSubmitJobs, MaxWall, Name,                  \n\
-                            Preempt, PreemptMode, Priority, UsageFactor,   \n\
-                            UsageThreshold                                 \n\
+       QOS                - Description, Flags, GraceTime, GrpJobs,        \n\
+                            GrpSubmitJob, GrpTRES, GrpTRESMins, GrpWall,   \n\
+                            MaxJobs, MaxSubmitJobsPerUser, MaxTRESMins,    \n\
+                            MaxTRESPerJob, MaxTRESPerNode, MaxTRESPerUser, \n\
+                            MaxWall, Name, Preempt, PreemptMode,           \n\
+                            Priority, UsageFactor, UsageThreshold          \n\
                                                                            \n\
        Resource           - Cluster, Count, CountAllowed, CountUsed,       \n\
                             Description, Flags, Manager, Name,             \n\
-                            PercentAllowed, PercentUsed, Server, and Type  \n\
+                            PercentAllowed, PercentUsed, Server, Type      \n\
                                                                            \n\
        Reservation        - Assoc, Cluster, End, Flags, ID, Name,          \n\
                             NodeNames, Start, TRES                         \n\

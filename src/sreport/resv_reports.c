@@ -405,8 +405,11 @@ static void _resv_tres_report(slurmdb_tres_rec_t *tres,
 	    !(tres_rec = list_find_first(tot_resv->tres_list,
 					 slurmdb_find_tres_in_list,
 					 &tres->id))) {
-		debug("error, no %s(%d) TRES in reservation %s",
-		      tres->type, tres->id, tot_resv->name);
+		debug2("error, no %s%s%s(%d) TRES in reservation %s",
+		       tres->type,
+		       tres->name ? "/" : "",
+		       tres->name ? tres->name : "",
+		       tres->id, tot_resv->name);
 	} else {
 		tres_alloc = tres_rec->count;
 		tres_alloc_secs = tres_rec->alloc_secs;

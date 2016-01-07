@@ -116,4 +116,13 @@ extern int sort_reservations_dec(void *, void *);
 
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 
+/* Fills in cluster_tres_rec and tres_rec and validates tres_rec has
+ * allocated seconds.  As we still want to print a line if the usage
+ * is zero NULLs must be handled after the function is called.
+ */
+extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
+				  slurmdb_tres_rec_t **tres_rec,
+				  List cluster_tres_list, List tres_list,
+				  slurmdb_tres_rec_t *tres_rec_in);
+
 #endif /* HAVE_SREPORT_H */
