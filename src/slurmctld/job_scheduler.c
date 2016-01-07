@@ -2017,7 +2017,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
-	char *array_task_id, *dep_str;
+	char *dep_str;
 
 	info("Dependency information for job %u", job_ptr->job_id);
 	if ((job_ptr->details == NULL) ||
@@ -2043,11 +2043,14 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			dep_str = "expand";
 		else
 			dep_str = "unknown";
+
 		if (dep_ptr->array_task_id == INFINITE)
-			array_task_id = "_*";
+			info("  %s:%u_*", dep_str, dep_ptr->job_id);
+		else if (dep_ptr->array_task_id == NO_VAL)
+			info("  %s:%u", dep_str, dep_ptr->job_id);
 		else
-			array_task_id = "";
-		info("  %s:%u%s", dep_str, dep_ptr->job_id, array_task_id);
+			info("  %s:%u_%u", dep_str, dep_ptr->job_id,
+				dep_ptr->array_task_id);
 	}
 	list_iterator_destroy(depend_iter);
 }
@@ -2056,7 +2059,7 @@ static void _depend_list2str(struct job_record *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
-	char *array_task_id, *dep_str, *sep = "";
+	char *dep_str, *sep = "";
 
 	if (job_ptr->details == NULL)
 		return;
@@ -2085,12 +2088,18 @@ static void _depend_list2str(struct job_record *job_ptr)
 			dep_str = "expand";
 		else
 			dep_str = "unknown";
+
 		if (dep_ptr->array_task_id == INFINITE)
-			array_task_id = "_*";
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_*",
+					sep, dep_str, dep_ptr->job_id);
+		else if (dep_ptr->array_task_id == NO_VAL)
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u",
+					sep, dep_str, dep_ptr->job_id);
 		else
-			array_task_id = "";
-		xstrfmtcat(job_ptr->details->dependency, "%s%s:%u%s",
-			   sep, dep_str, dep_ptr->job_id, array_task_id);
+			xstrfmtcat(job_ptr->details->dependency, "%s%s:%u_%u",
+					sep, dep_str, dep_ptr->job_id,
+					dep_ptr->array_task_id);
+
 		sep = ",";
 	}
 	list_iterator_destroy(depend_iter);

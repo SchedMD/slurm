@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 14.11.12
 ===========================
+ -- Correct dependency formatting to print array task ids if set.
 
 * Changes in Slurm 14.11.11
 ===========================
