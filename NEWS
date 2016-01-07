@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove unneeded pack32's from qos_rec when qos_rec is NULL.
  -- Make sacctmgr print MaxJobsPerUser when adding/altering a QOS.
  -- Correct dependency formatting to print array task ids if set.
+ -- Update sacctmgr help with current QOS options.
 
 * Changes in Slurm 15.08.6
 ==========================
