@@ -426,6 +426,14 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxTRESRunMinsPerAccount", object,
+				MAX(command_len, 18)) ||
+		   !strncasecmp("MaxTRESRunMinsPA", object,
+				MAX(command_len, 15))) {
+		field->type = PRINT_MAXTRMA;
+		field->name = xstrdup("MaxTRESRunMinsPA");
+		field->len = 15;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESRunMinsPerUser", object,
 				MAX(command_len, 8)) ||
 		   !strncasecmp("MaxTRESRunMinsPU", object,
@@ -433,6 +441,14 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
+		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxTRESPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPA", object,
+				MAX(command_len, 9))) {
+		field->type = PRINT_MAXTA;
+		field->name = xstrdup("MaxTRESPA");
+		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESPerUser", object,
 				MAX(command_len, 11))) {
@@ -444,6 +460,14 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
 		field->len = 7;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxJobsPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxJobsPA", object,
+				MAX(command_len, 9))) {
+		field->type = PRINT_MAXJA;
+		field->name = xstrdup("MaxJobsPA");
+		field->len = 9;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxJobsPerUser", object,
 				MAX(command_len, 8)) ||
@@ -471,6 +495,14 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXS;
 		field->name = xstrdup("MaxSubmit");
 		field->len = 9;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxSubmitJobsPerAccount", object,
+				MAX(command_len, 17)) ||
+		   !strncasecmp("MaxSubmitJobsPA", object,
+				MAX(command_len, 15))) {
+		field->type = PRINT_MAXSA;
+		field->name = xstrdup("MaxSubmitPA");
+		field->len = 11;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxSubmitJobsPerUser", object,
 				MAX(command_len, 10)) ||
@@ -1799,18 +1831,35 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpWall        = %s\n", time_buf);
 	}
 
+	if (qos->max_jobs_pa == INFINITE)
+		printf("  MaxJobsPerAccount        = NONE\n");
+	else if (qos->max_jobs_pa != NO_VAL)
+		printf("  MaxJobsPerAccount        = %u\n",
+		       qos->max_jobs_pa);
 	if (qos->max_jobs_pu == INFINITE)
 		printf("  MaxJobsPerUser = NONE\n");
 	else if (qos->max_jobs_pu != NO_VAL)
 		printf("  MaxJobsPerUser = %u\n",
 		       qos->max_jobs_pu);
 
+	if (qos->max_submit_jobs_pa == INFINITE)
+		printf("  MaxSubmitJobsPerAccount  = NONE\n");
+	else if (qos->max_submit_jobs_pa != NO_VAL)
+		printf("  MaxSubmitJobsPerAccount  = %u\n",
+		       qos->max_submit_jobs_pa);
 	if (qos->max_submit_jobs_pu == INFINITE)
 		printf("  MaxSubmitJobs  = NONE\n");
 	else if (qos->max_submit_jobs_pu != NO_VAL)
 		printf("  MaxSubmitJobs  = %u\n",
 		       qos->max_submit_jobs_pu);
 
+	if (qos->max_tres_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_pa, g_tres_list);
+		printf("  MaxTRESPerAccount        = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 	if (qos->max_tres_pj) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
@@ -1837,6 +1886,13 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_mins_pj, g_tres_list);
 		printf("  MaxTRESMins   = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_run_mins_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_run_mins_pa, g_tres_list);
+		printf("  MaxTRESRUNMinsPerAccount = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->max_tres_run_mins_pu) {
