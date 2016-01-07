@@ -468,7 +468,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			   !strncasecmp (argv[i], "MaxJobsPU",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &qos->max_jobs_pu,
-			    "MaxJobs") == SLURM_SUCCESS)
+			    "MaxJobsPU") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
@@ -508,7 +508,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			   !strncasecmp (argv[i], "MaxSubmitJobsPU",
 					 MAX(command_len, 4))) {
 			if (get_uint(argv[i]+end, &qos->max_submit_jobs_pu,
-			    "MaxSubmitJobs") == SLURM_SUCCESS)
+			    "MaxSubmitJobsPU") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp(argv[i], "MaxTRESPerAccount",
 					MAX(command_len, 11)) ||
