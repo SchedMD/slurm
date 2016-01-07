@@ -59,7 +59,7 @@ enum {
 	ACCT_POLICY_JOB_FINI
 };
 
-static int get_tres_state_reason(int tres_pos, int unk_reason)
+static int _get_tres_state_reason(int tres_pos, int unk_reason)
 {
 	switch (tres_pos) {
 	case TRES_ARRAY_CPU:
@@ -994,7 +994,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		if (job_desc->tres_req_cnt[tres_pos] >
 		    qos_ptr->max_tres_pu_ctld[tres_pos]) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 
 			debug2("job submit for user %s(%u): "
@@ -1011,7 +1011,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		} else if (job_desc->tres_req_cnt[tres_pos] >
 			   qos_ptr->grp_tres_ctld[tres_pos]) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_GRP_UNK);
 
 			debug2("job submit for user %s(%u): "
@@ -1068,7 +1068,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			    &acct_policy_limit_set->time,
 			    strict_checking)) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 			debug2("job submit for user %s(%u): "
 			       "tres(%s) time limit request %"PRIu64" "
@@ -1142,7 +1142,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   acct_policy_limit_set->tres,
 					   strict_checking, 1)) {
 		if (reason)
-			*reason = get_tres_state_reason(
+			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 
 		debug2("job submit for user %s(%u): "
@@ -1169,7 +1169,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   acct_policy_limit_set->tres,
 					   strict_checking, 1)) {
 		if (reason)
-			*reason = get_tres_state_reason(
+			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
 
 		debug2("job submit for user %s(%u): "
@@ -1228,7 +1228,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 					   acct_policy_limit_set->tres,
 					   strict_checking, 0)) {
 		if (reason)
-			*reason = get_tres_state_reason(
+			*reason = _get_tres_state_reason(
 				tres_pos, WAIT_QOS_MIN_UNK);
 
 		debug2("job submit for user %s(%u): "
@@ -1480,7 +1480,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	switch (i) {
 	case 1:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "QOS %s group max tres(%s) minutes limit "
@@ -1495,7 +1495,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "the job is requesting more than allowed with QOS %s's "
@@ -1518,7 +1518,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * being killed
 		 */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_MIN);
 		debug2("Job %u being held, "
 		       "the job is at or exceeds QOS %s's "
@@ -1560,7 +1560,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) request %"PRIu64" exceeds "
@@ -1575,7 +1575,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 3:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
@@ -1608,7 +1608,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 2:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
 		debug2("job %u is being held, "
 		       "QOS %s group max running tres(%s) minutes "
@@ -1623,7 +1623,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	case 3:
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
@@ -1656,7 +1656,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_MINS_PER_JOB);
 		debug2("Job %u being held, "
 		       "the job is requesting more than allowed with QOS %s's "
@@ -1680,7 +1680,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 1)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) per job "
@@ -1706,7 +1706,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   1, 1)) {
 		uint64_t req_per_node;
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_NODE);
 		req_per_node = tres_req_cnt[tres_pos];
 		if (tres_req_cnt[TRES_ARRAY_NODE] > 1)
@@ -1733,7 +1733,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 					   job_ptr->limit_set.tres,
 					   1, 0)) {
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MIN_UNK);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) per job "
@@ -1762,7 +1762,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * TRES limit for the given QOS
 		 */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) "
@@ -1781,7 +1781,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * the QOS per-user TRES limit with their
 		 * current usage */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
@@ -2106,7 +2106,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_GRP_UNK);
 
 			debug2("job submit for user %s(%u): "
@@ -2169,7 +2169,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
 
 			debug2("job submit for user %s(%u): "
@@ -2194,7 +2194,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos,
 					WAIT_ASSOC_MAX_UNK_PER_NODE);
 
@@ -2623,7 +2623,7 @@ extern bool acct_policy_job_runnable_post_select(
 		switch (i) {
 		case 1:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "assoc %u(%s/%s/%s) group max tres(%s) "
@@ -2640,7 +2640,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "the job is requesting more than allowed "
@@ -2665,7 +2665,7 @@ extern bool acct_policy_job_runnable_post_select(
 			 * being killed
 			 */
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_MIN);
 			debug2("Job %u being held, "
 			       "the job is at or exceeds assoc %u(%s/%s/%s) "
@@ -2705,7 +2705,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK);
 			debug2("job %u is being held, "
 			       "assoc %u(%s/%s/%s) min tres(%s) "
@@ -2722,7 +2722,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 3:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK);
 			debug2("job %u being held, "
 			       "if allowed the job request will exceed "
@@ -2757,7 +2757,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 2:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
 			debug2("job %u is being held, "
 			       "assoc %u(%s/%s/%s) group max running "
@@ -2774,7 +2774,7 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		case 3:
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_GRP_UNK_RUN_MIN);
 			debug2("job %u being held, "
 			       "if allowed the job request will exceed "
@@ -2818,7 +2818,7 @@ extern bool acct_policy_job_runnable_post_select(
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_MAX_UNK_MINS_PER_JOB);
 			debug2("Job %u being held, "
 			       "the job is requesting more than allowed "
@@ -2841,7 +2841,7 @@ extern bool acct_policy_job_runnable_post_select(
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_MAX_UNK_PER_JOB);
 			debug2("job %u is being held, "
 			       "the job is requesting more than allowed "
@@ -2865,7 +2865,7 @@ extern bool acct_policy_job_runnable_post_select(
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
 			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = get_tres_state_reason(
+			job_ptr->state_reason = _get_tres_state_reason(
 				tres_pos, WAIT_ASSOC_MAX_UNK_PER_NODE);
 			debug2("job %u is being held, "
 			       "the job is requesting more than allowed "
