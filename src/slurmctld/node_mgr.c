@@ -950,6 +950,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
+		packstr(dump_node_ptr->features_act, buffer);
 		if (dump_node_ptr->gres)
 			packstr(dump_node_ptr->gres, buffer);
 		else
@@ -1293,11 +1294,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 					  node_ptr->node_hostname);
 		}
 
-		if (update_node_msg->features) {
+		if (update_node_msg->featureS) {
 			xfree(node_ptr->features);
-			if (update_node_msg->features[0])
-				node_ptr->features = xstrdup(update_node_msg->
-							     features);
+			if (update_node_msg->featureS[0])
+				node_ptr->features =
+					xstrdup(update_node_msg->featureS);
+			/* _update_node_features() logs and updates config */
+		}
+
+		if (update_node_msg->features_act) {
+			xfree(node_ptr->features_act);
+			if (update_node_msg->features_act[0])
+				node_ptr->features_act =
+					xstrdup(update_node_msg->features_act);
 			/* _update_node_features() logs and updates config */
 		}
 
@@ -1549,9 +1558,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
-	if ((error_code == 0) && (update_node_msg->features)) {
+	if ((error_code == 0) && (update_node_msg->featureS)) {
 		error_code = _update_node_features(update_node_msg->node_names,
-						   update_node_msg->features);
+						   update_node_msg->featureS);
 	}
 	if ((error_code == 0) && (update_node_msg->gres)) {
 		error_code = _update_node_gres(update_node_msg->node_names,

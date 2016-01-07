@@ -86,6 +86,10 @@ COMMAND CHANGES (see man pages for details)
     run: 'slurmctld -C'.
  -- Burst buffer advanced reservation units treated as bytes (per documentation)
     rather than GB.
+ -- Add "features_act" field (currently active features) to the node
+    information. Output of scontrol, sinfo, and sview changed accordingly.
+    The field previously displayed as "Features" is now "AvailableFeatures"
+    while the new field is displayed as "ActiveFeatures".
 
 OTHER CHANGES
 =============

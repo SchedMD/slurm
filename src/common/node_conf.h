@@ -137,7 +137,10 @@ struct node_record {
 					 * set, ignore if no reason is set. */
 	uint32_t reason_uid;		/* User that set the reason, ignore if
 					 * no reason is set. */
-	char *features;			/* node's features, used only
+	char *features;			/* node's available features, used only
+					 * for state save/restore, DO NOT
+					 * use for scheduling purposes */
+	char *features_act;		/* node's active features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
 	char *gres;			/* node's generic resources, used only

@@ -3326,12 +3326,23 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		packstr(msg->node_addr, buffer);
 		packstr(msg->node_hostname, buffer);
 		packstr(msg->node_names, buffer);
 		pack32(msg->node_state, buffer);
-		packstr(msg->features, buffer);
+		packstr(msg->featureS, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->weight, buffer);
+		pack32(msg->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->featureS, buffer);
 		packstr(msg->gres, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->weight, buffer);
@@ -3354,7 +3365,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->node_addr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_hostname,
@@ -3362,7 +3373,22 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->node_state, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->featureS, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features_act, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->node_addr,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_hostname,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_names,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->featureS, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
@@ -4174,7 +4200,10 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 						protocol_version);
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->featureS, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features_act, &uint32_tmp, buffer);
+		if (!node->features_act)
+			node->features_act = xstrdup(node->featureS);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
@@ -4230,7 +4259,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 						protocol_version);
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->featureS, &uint32_tmp, buffer);
+		node->features_act = xstrdup(node->featureS);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
@@ -4284,7 +4314,8 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 						protocol_version);
 
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->featureS, &uint32_tmp, buffer);
+		node->features_act = xstrdup(node->featureS);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);

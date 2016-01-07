@@ -88,6 +88,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_disk)
 #define format_add_features(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_features)
+#define format_add_features_act(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_features_act)
 #define format_add_groups(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_groups)
 #define format_add_gres(list,wid,right,suffix) \
@@ -176,6 +178,8 @@ int _print_threads(sinfo_data_t * sinfo_data, int width,
 int _print_disk(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_features(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_features_act(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_groups(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

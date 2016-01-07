@@ -618,9 +618,22 @@ int _print_features(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	if (sinfo_data)
-		_print_str(sinfo_data->features, width, right_justify, true);
+		_print_str(sinfo_data->featureS, width, right_justify, true);
 	else
-		_print_str("FEATURES", width, right_justify, true);
+		_print_str("AVAIL_FEATURES", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_features_act(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix)
+{
+	if (sinfo_data)
+		_print_str(sinfo_data->features_act, width, right_justify, true);
+	else
+		_print_str("ACTIVE_FEATURES", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

@@ -605,6 +605,11 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'b') {
+			format_add_features_act( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'B') {
 			params.match_flags.max_cpus_per_node_flag = true;
 			format_add_max_cpus_per_node( params.format_list,

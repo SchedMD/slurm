@@ -822,7 +822,8 @@ extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->features);
+		xfree(msg->featureS);
+		xfree(msg->features_act);
 		xfree(msg->gres);
 		xfree(msg->node_addr);
 		xfree(msg->node_hostname);
@@ -3075,7 +3076,8 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		acct_gather_energy_destroy(node->energy);
 		ext_sensors_destroy(node->ext_sensors);
 		power_mgmt_data_free(node->power);
-		xfree(node->features);
+		xfree(node->featureS);
+		xfree(node->features_act);
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);

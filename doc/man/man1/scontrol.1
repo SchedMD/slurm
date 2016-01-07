@@ -970,15 +970,31 @@ current time limit, the \fIStepId\fP specification must precede the
 \fINodeName\fP=<name>
 Identify the node(s) to be updated. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]"). This specification is required.
+
 .TP
-\fIFeatures\fP=<features>
-Identify feature(s) to be associated with the specified node.  Any
-previously defined feature(s) will be overwritten with the new value.
-Features assigned via \fBscontrol\fR will only persist across the restart
-of the slurmctld daemon with the \fI\-R\fR option and state files
+\fIActiveFeatures\fP=<features>
+Identify the feature(s) currently active on the specified node.
+Any previously active feature specification will be overwritten with the new
+value.
+Also see \fIAvailableFeatures\fP.
+Typically \fIActiveFeatures\fP will be identical to \fIAvailableFeatures\fP;
+however \fIActiveFeatures\fP may be configured as a subset of the
+\fIAvailableFeatures\fP. For example, a node may be booted in mulitple
+configurations. In that case, all possible configurations may be identified as
+\fIAvailableFeatures\fP, while \fIActiveFeatures\fP would identify the current
+node configuration.
+
+.TP
+\fIAvailableFeatures\fP=<features>
+Identify the feature(s) available on the specified node.
+Any previously defined available feature specification will be overwritten with
+the new value.
+AvailableFeatures assigned via \fBscontrol\fR will only persist across the
+restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+Also see \fIActiveFeatures\fP.
 
 .TP
 \fIGres\fP=<gres>

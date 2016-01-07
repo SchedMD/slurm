@@ -213,7 +213,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 2 ******/
+	/****** Line ******/
 	if (node_ptr->cpu_load == NO_VAL)
 		strcpy(load_str, "N/A");
 	else {
@@ -221,9 +221,18 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			 (node_ptr->cpu_load / 100.0));
 	}
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "CPUAlloc=%u CPUErr=%u CPUTot=%u CPULoad=%s Features=%s",
-		 alloc_cpus, err_cpus, node_ptr->cpus, load_str,
-		 node_ptr->features);
+		 "CPUAlloc=%u CPUErr=%u CPUTot=%u CPULoad=%s",
+		 alloc_cpus, err_cpus, node_ptr->cpus, load_str);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "AvailableFeatures=%s ActiveFeatures=%s",
+		 node_ptr->featureS, node_ptr->features_act);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

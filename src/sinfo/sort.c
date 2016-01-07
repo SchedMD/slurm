@@ -62,6 +62,7 @@ static int _sort_by_cores(void *void1, void *void2);
 static int _sort_by_threads(void *void1, void *void2);
 static int _sort_by_disk(void *void1, void *void2);
 static int _sort_by_features(void *void1, void *void2);
+static int _sort_by_features_act(void *void1, void *void2);
 static int _sort_by_groups(void *void1, void *void2);
 static int _sort_by_hostnames(void *void1, void *void2);
 static int _sort_by_job_size(void *void1, void *void2);
@@ -112,6 +113,8 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_avail);
 		else if (params.sort[i] == 'A')
 			list_sort(sinfo_list, _sort_by_nodes_ai);
+		else if (params.sort[i] == 'b')
+			list_sort(sinfo_list, _sort_by_features_act);
 		else if (params.sort[i] == 'c')
 			list_sort(sinfo_list, _sort_by_cpus);
 		else if (params.sort[i] == 'd')
@@ -354,10 +357,30 @@ static int _sort_by_features(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	if (sinfo1->features)
-		val1 = sinfo1->features;
-	if (sinfo2->features)
-		val2 = sinfo2->features;
+	if (sinfo1->featureS)
+		val1 = sinfo1->featureS;
+	if (sinfo2->featureS)
+		val2 = sinfo2->featureS;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_features_act(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1;
+	sinfo_data_t *sinfo2;
+	char *val1 = "", *val2 = "";
+
+	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
+
+	if (sinfo1->features_act)
+		val1 = sinfo1->features_act;
+	if (sinfo2->features_act)
+		val2 = sinfo2->features_act;
 	diff = strcmp(val1, val2);
 
 	if (reverse_order)

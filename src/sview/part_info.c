@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -43,7 +43,8 @@ typedef struct {
 	uint32_t cpu_error_cnt;
 	uint32_t cpu_idle_cnt;
 	uint32_t disk_total;
-	char *features;
+	char *featureS;
+	char *features_act;
 	hostlist_t hl;
 	uint32_t mem_total;
 	uint32_t node_cnt;
@@ -91,6 +92,7 @@ enum {
 	SORTID_DENY_QOS,
 	SORTID_EXCLUSIVE_USER,
 	SORTID_FEATURES,
+	SORTID_FEATURES_ACT,
 	SORTID_GRACE_TIME,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
@@ -191,7 +193,9 @@ static display_data_t display_data_part[] = {
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
@@ -259,9 +263,11 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES, "Available Features", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	{G_TYPE_STRING, SORTID_FEATURES_ACT, "Active Features", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_NONE, SORTID_REASON, "Reason", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, SORTID_NODELIST, "MidplaneList", FALSE,
@@ -983,7 +989,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_FEATURES:
 			if (sview_part_sub)
-				temp_char = sview_part_sub->features;
+				temp_char = sview_part_sub->featureS;
 			else
 				temp_char = "";
 			break;
@@ -1346,6 +1352,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_CPUS,       tmp_cpu_cnt,
 			   SORTID_DEFAULT,    tmp_default,
 			   SORTID_FEATURES,   "",
+			   SORTID_FEATURES_ACT, "",
 			   SORTID_GRACE_TIME, tmp_grace,
 			   SORTID_QOS_CHAR,   tmp_qos_char,
 			   SORTID_ALLOW_ACCOUNTS, tmp_accounts,
@@ -1488,7 +1495,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_CPUS,           tmp_cpus,
-			   SORTID_FEATURES,       sview_part_sub->features,
+			   SORTID_FEATURES,       sview_part_sub->featureS,
+			   SORTID_FEATURES_ACT,   sview_part_sub->features_act,
 			   SORTID_MEM,            tmp_mem,
 			   SORTID_NAME,           part_ptr->name,
 			   SORTID_NODE_STATE_NUM, sview_part_sub->node_state,
@@ -1594,7 +1602,8 @@ static void _destroy_part_sub(void *object)
 	sview_part_sub_t *sview_part_sub = (sview_part_sub_t *)object;
 
 	if (sview_part_sub) {
-		xfree(sview_part_sub->features);
+		xfree(sview_part_sub->featureS);
+		xfree(sview_part_sub->features_act);
 		xfree(sview_part_sub->reason);
 		if (sview_part_sub->hl)
 			hostlist_destroy(sview_part_sub->hl);
@@ -1619,9 +1628,10 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 	xassert(sview_part_sub->hl);
 
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
-		sview_part_sub->node_state = node_ptr->node_state;
-		sview_part_sub->features   = xstrdup(node_ptr->features);
-		sview_part_sub->reason     = xstrdup(node_ptr->reason);
+		sview_part_sub->node_state   = node_ptr->node_state;
+		sview_part_sub->featureS     = xstrdup(node_ptr->featureS);
+		sview_part_sub->features_act = xstrdup(node_ptr->features_act);
+		sview_part_sub->reason       = xstrdup(node_ptr->reason);
 	} else if (hostlist_find(sview_part_sub->hl, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
@@ -1898,11 +1908,13 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				sview_part_sub->disk_total;
 			sview_part_info->sub_part_total.mem_total +=
 				sview_part_sub->mem_total;
-			if (!sview_part_info->sub_part_total.features) {
+			if (!sview_part_info->sub_part_total.featureS) {
 				/* store features and reasons
 				   in the others group */
-				sview_part_info->sub_part_total.features
-					= sview_part_sub->features;
+				sview_part_info->sub_part_total.featureS
+					= sview_part_sub->featureS;
+				sview_part_info->sub_part_total.features_act
+					= sview_part_sub->features_act;
 				sview_part_info->sub_part_total.reason
 					= sview_part_sub->reason;
 			}
@@ -3122,8 +3134,8 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		else
 			gtk_tree_model_get(model, iter, SORTID_FEATURES,
 					   &old_features, -1);
-		update_features_node(GTK_DIALOG(popup),
-				     nodelist, old_features);
+		update_avail_features_node(GTK_DIALOG(popup),
+					   nodelist, old_features);
 		if (got_features_edit_signal) {
 			got_features_edit_signal = NULL;
 			xfree(old_features);

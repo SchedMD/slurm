@@ -41,7 +41,9 @@ int g_node_scaling = 1;
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ACTIVE_FEATURES,
 	SORTID_ARCH,
+	SORTID_AVAIL_FEATURES,
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_CAP_WATTS,
@@ -52,7 +54,6 @@ enum {
 	SORTID_CORES,
 	SORTID_CURRENT_WATTS,
 	SORTID_ERR_CPUS,
-	SORTID_FEATURES,
 	SORTID_FREE_MEM,
 	SORTID_GRES,
 	SORTID_IDLE_CPUS,
@@ -142,21 +143,21 @@ static display_data_t display_data_node[] = {
 	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", FALSE, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
-	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
-	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_ACTIVE_FEATURES, "Active Features", FALSE,
+	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ARCH, "Arch", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
-	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
+	{G_TYPE_STRING, SORTID_AVAIL_FEATURES, "Available Features", FALSE,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_BOOT_TIME, "BootTime", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE,
-	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_GRES, "Gres", FALSE,
+	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_LOWEST_JOULES, "Lowest Joules", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -168,6 +169,8 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_VERSION, "Version", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
+	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -191,7 +194,8 @@ static display_data_t options_data_node[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Set Node(s) Down", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Make Node(s) Idle", TRUE, ADMIN_PAGE},
 #endif
-	{G_TYPE_STRING, NODE_PAGE, "Update Features", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Active Features", TRUE, ADMIN_PAGE},
+	{G_TYPE_STRING, NODE_PAGE, "Update Available Features", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Update Gres", TRUE, ADMIN_PAGE},
 	{G_TYPE_STRING, JOB_PAGE,  "Jobs", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
@@ -413,8 +417,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   node_ptr->arch);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
-						 SORTID_FEATURES),
-				   node_ptr->features);
+						 SORTID_AVAIL_FEATURES),
+				   node_ptr->featureS);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_ACTIVE_FEATURES),
+				   node_ptr->features_act);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_GRES),
@@ -617,7 +625,9 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
+			   SORTID_ACTIVE_FEATURES, node_ptr->features_act,
 			   SORTID_ARCH,      node_ptr->arch,
+			   SORTID_AVAIL_FEATURES,  node_ptr->featureS,
 			   SORTID_LOWEST_JOULES, tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
@@ -634,7 +644,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_TMP_DISK,  tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
 			   SORTID_IDLE_CPUS, tmp_idle_cpus,
-			   SORTID_FEATURES,  node_ptr->features,
 			   SORTID_GRES,      node_ptr->gres,
 			   SORTID_MCS_LABEL, (node_ptr->mcs_label == NULL) ?
 				"N/A" : node_ptr->mcs_label,
@@ -1118,8 +1127,8 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	return error_code;
 }
 
-extern int update_features_node(GtkDialog *dialog, const char *nodelist,
-				const char *old_features)
+extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
+				       const char *old_features)
 {
 	char tmp_char[100];
 	char *edit = NULL;
@@ -1132,12 +1141,12 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 
 
 	if (_DEBUG)
-		g_print("update_features_node:global_row_count: %d "
+		g_print("update_active_features_node:global_row_count: %d "
 			"node_names %s\n",
 			global_row_count, nodelist);
 	if (!dialog) {
 		snprintf(tmp_char, sizeof(tmp_char),
-			 "Update Features for Node(s) %s?",
+			 "Update Acitve Features for Node(s) %s?",
 			 nodelist);
 
 		dialog = GTK_DIALOG(
@@ -1159,7 +1168,7 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 	node_msg->node_names = xstrdup(nodelist);
 
 	snprintf(tmp_char, sizeof(tmp_char),
-		 "Features for Node(s) %s?", nodelist);
+		 "Active Features for Node(s) %s?", nodelist);
 	label = gtk_label_new(tmp_char);
 	gtk_box_pack_start(GTK_BOX(dialog->vbox),
 			   label, FALSE, FALSE, 0);
@@ -1176,9 +1185,99 @@ extern int update_features_node(GtkDialog *dialog, const char *nodelist,
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK) {
-		node_msg->features =
+		node_msg->features_act =
 			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
-		if (!node_msg->features) {
+		if (!node_msg->features_act) {
+			edit = g_strdup_printf("No features given.");
+			display_edit_note(edit);
+			g_free(edit);
+			goto end_it;
+		}
+		if ((rc = slurm_update_node(node_msg) == SLURM_SUCCESS)) {
+			edit = g_strdup_printf(
+				"Node(s) %s updated successfully.",
+				nodelist);
+			display_edit_note(edit);
+			g_free(edit);
+
+		} else {
+			edit = g_strdup_printf(
+				"Problem updating node(s) %s: %s",
+				nodelist, slurm_strerror(rc));
+			display_edit_note(edit);
+			g_free(edit);
+		}
+	}
+
+end_it:
+	slurm_free_update_node_msg(node_msg);
+	if (no_dialog)
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+
+	return rc;
+}
+
+extern int update_avail_features_node(GtkDialog *dialog, const char *nodelist,
+				      const char *old_features)
+{
+	char tmp_char[100];
+	char *edit = NULL;
+	GtkWidget *entry = NULL;
+	GtkWidget *label = NULL;
+	update_node_msg_t *node_msg = xmalloc(sizeof(update_node_msg_t));
+	int response = 0;
+	int no_dialog = 0;
+	int rc = SLURM_SUCCESS;
+
+
+	if (_DEBUG)
+		g_print("update_avail_features_node:global_row_count: %d "
+			"node_names %s\n",
+			global_row_count, nodelist);
+	if (!dialog) {
+		snprintf(tmp_char, sizeof(tmp_char),
+			 "Update Available Features for Node(s) %s?",
+			 nodelist);
+
+		dialog = GTK_DIALOG(
+			gtk_dialog_new_with_buttons(
+				tmp_char,
+				GTK_WINDOW(main_window),
+				GTK_DIALOG_MODAL
+				| GTK_DIALOG_DESTROY_WITH_PARENT,
+				NULL));
+		no_dialog = 1;
+	}
+	label = gtk_dialog_add_button(dialog,
+				      GTK_STOCK_YES, GTK_RESPONSE_OK);
+	gtk_window_set_default(GTK_WINDOW(dialog), label);
+	gtk_dialog_add_button(dialog,
+			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+
+	slurm_init_update_node_msg(node_msg);
+	node_msg->node_names = xstrdup(nodelist);
+
+	snprintf(tmp_char, sizeof(tmp_char),
+		 "Available Features for Node(s) %s?", nodelist);
+	label = gtk_label_new(tmp_char);
+	gtk_box_pack_start(GTK_BOX(dialog->vbox),
+			   label, FALSE, FALSE, 0);
+
+	entry = create_entry();
+	if (!entry)
+		goto end_it;
+
+	if (old_features)
+		gtk_entry_set_text(GTK_ENTRY(entry), old_features);
+
+	gtk_box_pack_start(GTK_BOX(dialog->vbox), entry, TRUE, TRUE, 0);
+	gtk_widget_show_all(GTK_WIDGET(dialog));
+
+	response = gtk_dialog_run(dialog);
+	if (response == GTK_RESPONSE_OK) {
+		node_msg->featureS =
+			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
+		if (!node_msg->featureS) {
 			edit = g_strdup_printf("No features given.");
 			display_edit_note(edit);
 			g_free(edit);
@@ -2010,7 +2109,7 @@ extern void select_admin_nodes(GtkTreeModel *model,
 
 		if (!strcasecmp("Update Features", display_data->name)) {
 			/* get old features */
-			gtk_tree_model_get(model, iter, SORTID_FEATURES,
+			gtk_tree_model_get(model, iter, SORTID_AVAIL_FEATURES,
 					   &old_value, -1);
 		} else if (!strcasecmp("Update Gres", display_data->name)) {
 			/* get old gres */
@@ -2036,11 +2135,13 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
-	if (!strcasecmp("Update Features", type)
+	if (!strcasecmp("Update Available Features", type)
 	    || !strcasecmp("Update Node Features", type)
 	    || !strcasecmp("Update Midplane Features",
 			   type)) { /* update features */
-		update_features_node(GTK_DIALOG(popup), name, old_value);
+		update_avail_features_node(GTK_DIALOG(popup), name, old_value);
+	} else if (!strcasecmp("Update Active Features", type)) {
+		update_active_features_node(GTK_DIALOG(popup), name, old_value);
 	} else if (!strcasecmp("Update Gres", type)) { /* update gres */
 		update_gres_node(GTK_DIALOG(popup), name, old_value);
 	} else /* something that has to deal with a node state change */

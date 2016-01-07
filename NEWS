@@ -84,6 +84,10 @@ documents those changes that are of interest to users and administrators.
     "ALL".  "Any" is equivalent to "Yes" and "All" will check all partitions
     a job is submitted to and if any partition limit is violated the job will
     be rejected even if it could possibly run on another partition.
+ -- Add "features_act" field (currently active features) to the node
+    information. Output of scontrol, sinfo, and sview changed accordingly.
+    The field previously displayed as "Features" is now "AvailableFeatures"
+    while the new field is displayed as "ActiveFeatures".
 
 * Changes in Slurm 15.08.7
 ==========================
