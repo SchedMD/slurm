@@ -145,7 +145,7 @@ if (!$script) {
 	}
 }
 
-if (_check_script($script)) {
+if (_check_script($ARGV[0])) {
 	$command = $base_command = "$sbatch";
 } else {
 	$command = $base_command = "$srun";
