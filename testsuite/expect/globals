@@ -886,6 +886,35 @@ proc test_limits_enforced { } {
 
 ################################################################
 #
+# Proc: test_enforce_part_limits
+#
+# Purpose: Return value of EnforcePartLimits
+#
+# Returns EnforcePartLimits value (ALL, ANY, or NO)
+#
+################################################################
+proc test_enforce_part_limits { } {
+	global alpha scontrol
+
+	log_user 0
+	set enforced "UNKNOWN"
+	spawn $scontrol show config
+	expect {
+		-re "EnforcePartLimits *= ($alpha)" {
+			set enforced $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $enforced
+}
+
+################################################################
+#
 # Proc: test_gang
 #
 # Purpose: Determine if gang scheduling is configured

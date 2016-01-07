@@ -42,6 +42,12 @@ set delay       1
 
 print_header $test_id
 
+set enforce [test_enforce_part_limits]
+if {![string compare $enforce "NO"]} {
+	send_user "\nWARNING: This test is incompatible EnforcePartLimits = $enforce\n"
+	exit 0
+}
+
 make_bash_script $file_in "
 #SBATCH --job-name=$job_name
 $bin_sleep $delay
