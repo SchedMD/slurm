@@ -81,6 +81,7 @@ extern char *cluster_day_table;
 extern char *cluster_hour_table;
 extern char *cluster_month_table;
 extern char *cluster_table;
+extern char *federation_table;
 extern char *event_table;
 extern char *job_table;
 extern char *last_ran_table;

@@ -150,6 +150,9 @@ typedef enum {
 	DBD_GOT_STATS,		/* Got daemon statistics data */
 	DBD_CLEAR_STATS,	/* Clear daemon statistics */
 	DBD_SHUTDOWN,		/* Shutdown daemon */
+	DBD_ADD_FEDERATIONS,    /* Add new federation to the mix        */
+	DBD_GET_FEDERATIONS,	/* Get federation information		*/
+	DBD_GOT_FEDERATIONS,	/* Response to DBD_GET_FEDERATIONS 	*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

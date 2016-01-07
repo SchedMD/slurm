@@ -632,6 +632,16 @@ typedef struct {
 	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;
 
+typedef struct {
+	List federation_list; 	/* list of char * */
+	uint16_t with_deleted;
+} slurmdb_federation_cond_t;
+
+typedef struct {
+	char     *name;		/* Name of federation */
+	uint32_t  flags; 	/* flags for various things */
+} slurmdb_federation_rec_t;
+
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 
@@ -1499,6 +1509,7 @@ extern void slurmdb_destroy_coord_rec(void *object);
 extern void slurmdb_destroy_clus_res_rec(void *object);
 extern void slurmdb_destroy_cluster_accounting_rec(void *object);
 extern void slurmdb_destroy_cluster_rec(void *object);
+extern void slurmdb_destroy_federation_rec(void *object);
 extern void slurmdb_destroy_accounting_rec(void *object);
 extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
@@ -1522,6 +1533,7 @@ extern void slurmdb_destroy_report_cluster_rec(void *object);
 extern void slurmdb_destroy_user_cond(void *object);
 extern void slurmdb_destroy_account_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
+extern void slurmdb_destroy_federation_cond(void *object);
 extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
@@ -1552,6 +1564,8 @@ extern void slurmdb_init_clus_res_rec(slurmdb_clus_res_rec_t *clus_res,
 				      bool free_it);
 extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
+extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
+					bool free_it);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
 				 bool free_it,
 				 uint32_t init_val);
@@ -1563,6 +1577,8 @@ extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
 				   bool free_it);
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 				      bool free_it);
+extern void slurmdb_init_federation_cond(slurmdb_federation_cond_t *federation,
+					 bool free_it);
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 				  bool free_it);
 

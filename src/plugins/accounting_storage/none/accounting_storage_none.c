@@ -123,6 +123,12 @@ extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_add_tres(void *db_conn,
 				     uint32_t uid, List tres_list)
 {
@@ -290,6 +296,12 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 
 extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_federations(void *db_conn, uid_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
 {
 	return NULL;
 }

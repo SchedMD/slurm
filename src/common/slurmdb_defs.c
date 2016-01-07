@@ -82,6 +82,13 @@ static void _free_cluster_rec_members(slurmdb_cluster_rec_t *cluster)
 	}
 }
 
+static void _free_federation_rec_members(slurmdb_federation_rec_t *federation)
+{
+	if (federation) {
+		xfree(federation->name);
+	}
+}
+
 static void _free_wckey_rec_members(slurmdb_wckey_rec_t *wckey)
 {
 	if (wckey) {
@@ -96,6 +103,13 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 {
 	if (cluster_cond) {
 		FREE_NULL_LIST(cluster_cond->cluster_list);
+	}
+}
+
+static void _free_federation_cond_members(slurmdb_federation_cond_t *fed_cond)
+{
+	if (fed_cond) {
+		FREE_NULL_LIST(fed_cond->federation_list);
 	}
 }
 
@@ -735,6 +749,17 @@ extern void slurmdb_destroy_cluster_rec(void *object)
 	}
 }
 
+extern void slurmdb_destroy_federation_rec(void *object)
+{
+	slurmdb_federation_rec_t *slurmdb_federation =
+		(slurmdb_federation_rec_t *)object;
+
+	if (slurmdb_federation) {
+		_free_federation_rec_members(slurmdb_federation);
+		xfree(slurmdb_federation);
+	}
+}
+
 extern void slurmdb_destroy_accounting_rec(void *object)
 {
 	slurmdb_accounting_rec_t *slurmdb_accounting =
@@ -1037,6 +1062,17 @@ extern void slurmdb_destroy_cluster_cond(void *object)
 	if (slurmdb_cluster) {
 		_free_cluster_cond_members(slurmdb_cluster);
 		xfree(slurmdb_cluster);
+	}
+}
+
+extern void slurmdb_destroy_federation_cond(void *object)
+{
+	slurmdb_federation_cond_t *slurmdb_federation =
+		(slurmdb_federation_cond_t *)object;
+
+	if (slurmdb_federation) {
+		_free_federation_cond_members(slurmdb_federation);
+		xfree(slurmdb_federation);
 	}
 }
 
@@ -1424,6 +1460,17 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 	cluster->flags = NO_VAL;
 }
 
+extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
+					bool free_it)
+{
+	if (!federation)
+		return;
+
+	if (free_it)
+		_free_federation_rec_members(federation);
+	memset(federation, 0, sizeof(slurmdb_federation_rec_t));
+}
+
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 				 uint32_t init_val)
 {
@@ -1514,6 +1561,17 @@ extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
 		_free_cluster_cond_members(cluster);
 	memset(cluster, 0, sizeof(slurmdb_cluster_cond_t));
 	cluster->flags = NO_VAL;
+}
+
+extern void slurmdb_init_federation_cond(slurmdb_federation_cond_t *federation,
+					 bool free_it)
+{
+	if (!federation)
+		return;
+
+	if (free_it)
+		_free_federation_cond_members(federation);
+	memset(federation, 0, sizeof(slurmdb_federation_cond_t));
 }
 
 extern void slurmdb_init_res_cond(slurmdb_res_cond_t *res,

@@ -747,6 +747,44 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_federation_rec(void *in, uint16_t rpc_version, Buf buffer)
+{
+	slurmdb_federation_rec_t *object = (slurmdb_federation_rec_t *)in;
+
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			packnull(buffer);
+			pack32(0, buffer);
+			return;
+		}
+		packstr(object->name, buffer);
+		pack32(object->flags, buffer);
+	}
+}
+
+extern int slurmdb_unpack_federation_rec(void **object, uint16_t rpc_version,
+					 Buf buffer)
+{
+	uint32_t uint32_tmp;
+	slurmdb_federation_rec_t *object_ptr =
+		xmalloc(sizeof(slurmdb_federation_rec_t));
+
+	*object = object_ptr;
+
+	slurmdb_init_federation_rec(object_ptr, 0);
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_federation_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 					Buf buffer)
 {
@@ -2856,6 +2894,70 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 
 unpack_error:
 	slurmdb_destroy_cluster_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+extern void slurmdb_pack_federation_cond(void *in, uint16_t rpc_version, Buf
+					 buffer)
+{
+	char *tmp_info = NULL;
+	ListIterator itr = NULL;
+	slurmdb_federation_cond_t *object = (slurmdb_federation_cond_t *)in;
+	uint32_t count = NO_VAL;
+
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);
+			return;
+		}
+
+		if (object->federation_list)
+			count = list_count(object->federation_list);
+
+		pack32(count, buffer);
+
+		if (count && count != NO_VAL) {
+			itr = list_iterator_create(object->federation_list);
+			while ((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+	}
+}
+
+extern int slurmdb_unpack_federation_cond(void **object, uint16_t rpc_version,
+					  Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	slurmdb_federation_cond_t *object_ptr =
+		xmalloc(sizeof(slurmdb_federation_cond_t));
+	char *tmp_info = NULL;
+
+	*object = object_ptr;
+
+	slurmdb_init_federation_cond(object_ptr, 0);
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count && count != NO_VAL) {
+			object_ptr->federation_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->federation_list, tmp_info);
+			}
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_federation_cond(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }

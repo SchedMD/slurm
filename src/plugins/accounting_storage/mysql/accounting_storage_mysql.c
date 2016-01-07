@@ -51,6 +51,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_convert.h"
+#include "as_mysql_federation.h"
 #include "as_mysql_fix_runaway_jobs.h"
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
@@ -129,6 +130,7 @@ char *cluster_day_table = "usage_day_table";
 char *cluster_hour_table = "usage_hour_table";
 char *cluster_month_table = "usage_month_table";
 char *cluster_table = "cluster_table";
+char *federation_table = "federation_table";
 char *event_table = "event_table";
 char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
@@ -540,6 +542,15 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "cluster", "tinytext not null" },
 		{ "res_id", "int not null" },
 		{ "percent_allowed", "int unsigned default 0" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t federation_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "name", "tinytext not null" },
+		{ "flags", "int unsigned default 0" },
 		{ NULL, NULL}
 	};
 
@@ -976,6 +987,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	/* This must be ran after create_cluster_tables() */
 	if (mysql_db_create_table(mysql_conn, user_table, user_table_fields,
+				  ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if (mysql_db_create_table(mysql_conn, federation_table,
+				  federation_table_fields,
 				  ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -2593,6 +2609,12 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_clusters(mysql_conn, uid, cluster_list);
 }
 
+extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
+					  List federation_list)
+{
+	return as_mysql_add_federations(mysql_conn, uid, federation_list);
+}
+
 extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,
 				   uint32_t uid, List tres_list_in)
 {
@@ -2771,6 +2793,12 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 					slurmdb_cluster_cond_t *cluster_cond)
 {
 	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_p_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
+{
+	return as_mysql_get_federations(mysql_conn, uid, fed_cond);
 }
 
 extern List acct_storage_p_get_tres(

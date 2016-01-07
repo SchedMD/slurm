@@ -570,6 +570,8 @@ static void _add_it (int argc, char *argv[])
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Coordinator", MAX(command_len, 2))) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
+	} else if (!strncasecmp(argv[0], "Federation", MAX(command_len, 1))) {
+		error_code = sacctmgr_add_federation((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "QOS", MAX(command_len, 1))) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 1))) {

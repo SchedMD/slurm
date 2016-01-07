@@ -120,6 +120,14 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list);
 
 /*
+ * add federations to accounting system
+ * IN:  cluster_list List of slurmdb_federation_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list);
+
+/*
  * add tres to accounting system
  * IN:  tres_list List of slurmdb_tres_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -357,6 +365,16 @@ extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
  */
 extern List acct_storage_g_get_clusters(
 	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+
+/*
+ * get info from the storage
+ * IN:  slurmdb_federation_cond_t *
+ * IN:  params void *
+ * returns List of slurmdb_federation_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
+					   slurmdb_federation_cond_t *fed_cond);
 
 /*
  * get info from the storage

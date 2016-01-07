@@ -64,6 +64,8 @@ static int   _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			      Buf *out_buffer, uint32_t *uid);
 static int   _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_res(slurmdbd_conn_t *slurmdbd_conn,
@@ -92,6 +94,8 @@ static int   _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			      Buf *out_buffer, uint32_t *uid);
 static int   _get_config(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_events(slurmdbd_conn_t *slurmdbd_conn,
@@ -264,6 +268,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _add_clusters(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
 			break;
+		case DBD_ADD_FEDERATIONS:
+			rc = _add_federations(slurmdbd_conn, in_buffer,
+					      out_buffer, uid);
+			break;
 		case DBD_ADD_QOS:
 			rc = _add_qos(slurmdbd_conn,
 				      in_buffer, out_buffer, uid);
@@ -316,6 +324,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_GET_CLUSTERS:
 			rc = _get_clusters(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_FEDERATIONS:
+			rc = _get_federations(slurmdbd_conn, in_buffer,
+					      out_buffer, uid);
 			break;
 		case DBD_GET_CONFIG:
 			rc = _get_config(slurmdbd_conn,
@@ -829,6 +841,38 @@ end_it:
 	return rc;
 }
 
+static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			    Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_list_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_FEDERATIONS: called");
+
+	if (slurmdbd_unpack_list_msg(&get_msg, slurmdbd_conn->rpc_version,
+				     DBD_ADD_FEDERATIONS, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_FEDERATIONS message";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	rc = acct_storage_g_add_federations(slurmdbd_conn->db_conn, *uid,
+					 get_msg->my_list);
+	if (rc == ESLURM_ACCESS_DENIED)
+		comment = "Your user doesn't have privilege to perform this action";
+	else if (rc != SLURM_SUCCESS)
+		comment = "Failed to add cluster.";
+
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+				      rc, comment, DBD_ADD_FEDERATIONS);
+	return rc;
+}
+
 static int _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 		    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1306,6 +1350,50 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_cond_msg(get_msg, DBD_GET_CLUSTERS);
+	FREE_NULL_LIST(list_msg.my_list);
+
+	return rc;
+}
+
+static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			    Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
+
+	debug2("DBD_GET_FEDERATIONS: called");
+	if (slurmdbd_unpack_cond_msg(&get_msg, slurmdbd_conn->rpc_version,
+				     DBD_GET_FEDERATIONS, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_FEDERATIONS message";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      SLURM_ERROR, comment,
+					      DBD_GET_FEDERATIONS);
+		return SLURM_ERROR;
+	}
+
+	list_msg.my_list = acct_storage_g_get_federations(
+		slurmdbd_conn->db_conn, *uid, get_msg->cond);
+
+	if (!errno) {
+		if (!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_FEDERATIONS, *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
+				       DBD_GOT_FEDERATIONS,
+				       *out_buffer);
+	} else {
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      errno, slurm_strerror(errno),
+					      DBD_GET_FEDERATIONS);
+		rc = SLURM_ERROR;
+	}
+
+	slurmdbd_free_cond_msg(get_msg, DBD_GET_FEDERATIONS);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;

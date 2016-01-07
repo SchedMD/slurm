@@ -18,6 +18,7 @@ sacctmgr_SOURCES =	\
 	cluster_functions.c	\
 	common.c                \
 	event_functions.c	\
+	federation_functions.c	\
 	file_functions.c	\
 	runaway_job_functions.c \
 	job_functions.c		\

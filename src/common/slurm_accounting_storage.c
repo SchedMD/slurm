@@ -75,6 +75,8 @@ typedef struct slurm_acct_storage_ops {
 				    List acct_list);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
 				    List cluster_list);
+	int  (*add_federations)    (void *db_conn, uint32_t uid,
+				    List federation_list);
 	int  (*add_tres)           (void *db_conn, uint32_t uid,
 				    List tres_list_in);
 	int  (*add_assocs)         (void *db_conn, uint32_t uid,
@@ -138,6 +140,8 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_account_cond_t *acct_cond);
 	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
+	List (*get_federations)    (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond);
 	List (*get_config)         (void *db_conn, char *config_name);
 	List (*get_tres)           (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
@@ -216,6 +220,7 @@ static const char *syms[] = {
 	"acct_storage_p_add_coord",
 	"acct_storage_p_add_accts",
 	"acct_storage_p_add_clusters",
+	"acct_storage_p_add_federations",
 	"acct_storage_p_add_tres",
 	"acct_storage_p_add_assocs",
 	"acct_storage_p_add_qos",
@@ -243,6 +248,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_users",
 	"acct_storage_p_get_accts",
 	"acct_storage_p_get_clusters",
+	"acct_storage_p_get_federations",
 	"acct_storage_p_get_config",
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
@@ -406,6 +412,14 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.add_clusters))(db_conn, uid, cluster_list);
+}
+
+extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+					  List federation_list)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.add_federations))(db_conn, uid, federation_list);
 }
 
 extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
@@ -633,6 +647,14 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(ops.get_clusters))(db_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_g_get_federations(void *db_conn, uint32_t uid,
+					   slurmdb_federation_cond_t *fed_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.get_federations))(db_conn, uid, fed_cond);
 }
 
 extern List acct_storage_g_get_config(void *db_conn, char *config_name)

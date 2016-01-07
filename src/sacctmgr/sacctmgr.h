@@ -225,6 +225,7 @@ extern int sacctmgr_add_assoc(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
 extern int sacctmgr_add_account(int argc, char *argv[]);
 extern int sacctmgr_add_cluster(int argc, char *argv[]);
+extern int sacctmgr_add_federation(int argc, char *argv[]);
 extern int sacctmgr_add_coord(int argc, char *argv[]);
 extern int sacctmgr_add_qos(int argc, char *argv[]);
 extern int sacctmgr_add_res(int argc, char *argv[]);
