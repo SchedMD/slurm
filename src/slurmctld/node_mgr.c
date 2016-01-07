@@ -2510,6 +2510,16 @@ static front_end_record_t * _front_end_reg(
 	return front_end_ptr;
 }
 
+static char *_build_step_id(char *buf, int buf_len,
+			    uint32_t job_id, uint32_t step_id)
+{
+	if (step_id == SLURM_BATCH_SCRIPT)
+		snprintf(buf, buf_len, "%u.batch", job_id);
+	else
+		snprintf(buf, buf_len, "%u.%u", job_id, step_id);
+	return buf;
+}
+
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
@@ -2535,6 +2545,7 @@ extern int validate_nodes_via_front_end(
 	char *host_str = NULL, *reason_down = NULL;
 	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
+	char step_str[64];
 
 	if (reg_msg->up_time > now) {
 		error("Node up_time on %s is invalid: %u>%u",
@@ -2564,8 +2575,10 @@ extern int validate_nodes_via_front_end(
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate job %u.%u reported",
-				reg_msg->job_id[i], reg_msg->step_id[i]);
+			info("NoAllocate job %s reported",
+			     _build_step_id(step_str, sizeof(step_str),
+					    reg_msg->job_id[i],
+					    reg_msg->step_id[i]));
 			continue;
 		}
 
@@ -2576,8 +2589,10 @@ extern int validate_nodes_via_front_end(
 			node_ptr += j;
 
 		if (job_ptr == NULL) {
-			error("Orphan job %u.%u reported on %s",
-			      reg_msg->job_id[i], reg_msg->step_id[i],
+			error("Orphan job %s reported on node %s",
+			     _build_step_id(step_str, sizeof(step_str),
+					    reg_msg->job_id[i],
+					    reg_msg->step_id[i]),
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i],
 					  job_ptr, front_end_ptr->name);
@@ -2590,8 +2605,10 @@ extern int validate_nodes_via_front_end(
 
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered job %u.%u on %s",
-			       reg_msg->job_id[i], reg_msg->step_id[i],
+			debug3("Registered job %s on %s",
+			      _build_step_id(step_str, sizeof(step_str),
+					     reg_msg->job_id[i],
+					     reg_msg->step_id[i]),
 			       front_end_ptr->name);
 			if (job_ptr->batch_flag) {
 				/* NOTE: Used for purging defunct batch jobs */
@@ -2609,8 +2626,10 @@ extern int validate_nodes_via_front_end(
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING job %u.%u on %s",
-			      reg_msg->job_id[i], reg_msg->step_id[i],
+			error("Registered PENDING job %s on %s",
+			      _build_step_id(step_str, sizeof(step_str),
+					     reg_msg->job_id[i],
+					     reg_msg->step_id[i]),
 			      front_end_ptr->name);
 			abort_job_on_node(reg_msg->job_id[i], job_ptr,
 					  front_end_ptr->name);
@@ -2618,16 +2637,20 @@ extern int validate_nodes_via_front_end(
 
 		else if (difftime(now, job_ptr->end_time) <
 			 slurm_get_msg_timeout()) {	/* Race condition */
-			debug("Registered newly completed job %u.%u on %s",
-				reg_msg->job_id[i], reg_msg->step_id[i],
-				front_end_ptr->name);
+			debug("Registered newly completed job %s on %s",
+			      _build_step_id(step_str, sizeof(step_str),
+					     reg_msg->job_id[i],
+					     reg_msg->step_id[i]),
+			      front_end_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered job %u.%u in state %s on %s",
-				reg_msg->job_id[i], reg_msg->step_id[i],
-				job_state_string(job_ptr->job_state),
-				front_end_ptr->name);
+			error("Registered job %s in state %s on %s",
+			      _build_step_id(step_str, sizeof(step_str),
+					     reg_msg->job_id[i],
+					     reg_msg->step_id[i]),
+			      job_state_string(job_ptr->job_state),
+			      front_end_ptr->name);
 			kill_job_on_node(reg_msg->job_id[i], job_ptr,
 					 node_ptr);
 		}
