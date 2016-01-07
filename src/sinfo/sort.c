@@ -357,10 +357,10 @@ static int _sort_by_features(void *void1, void *void2)
 
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
-	if (sinfo1->featureS)
-		val1 = sinfo1->featureS;
-	if (sinfo2->featureS)
-		val2 = sinfo2->featureS;
+	if (sinfo1->features)
+		val1 = sinfo1->features;
+	if (sinfo2->features)
+		val2 = sinfo2->features;
 	diff = strcmp(val1, val2);
 
 	if (reverse_order)

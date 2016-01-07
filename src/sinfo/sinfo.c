@@ -750,7 +750,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
-	    (xstrcmp(node_ptr->featureS, sinfo_ptr->featureS)))
+	    (xstrcmp(node_ptr->features, sinfo_ptr->features)))
 		return false;
 
 	if (sinfo_ptr->nodes &&
@@ -925,7 +925,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
-		sinfo_ptr->featureS   = node_ptr->featureS;
+		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->features_act = node_ptr->features_act;
 		sinfo_ptr->gres       = node_ptr->gres;
 		sinfo_ptr->reason     = node_ptr->reason;

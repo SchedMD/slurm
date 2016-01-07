@@ -107,7 +107,7 @@ typedef struct {
 	uint32_t alloc_memory;
 
 	char *version;
-	char *featureS;
+	char *features;
 	char *features_act;
 	char *gres;
 	char *reason;

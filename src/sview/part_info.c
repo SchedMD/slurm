@@ -43,7 +43,7 @@ typedef struct {
 	uint32_t cpu_error_cnt;
 	uint32_t cpu_idle_cnt;
 	uint32_t disk_total;
-	char *featureS;
+	char *features;
 	char *features_act;
 	hostlist_t hl;
 	uint32_t mem_total;
@@ -989,7 +989,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_FEATURES:
 			if (sview_part_sub)
-				temp_char = sview_part_sub->featureS;
+				temp_char = sview_part_sub->features;
 			else
 				temp_char = "";
 			break;
@@ -1495,7 +1495,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_CPUS,           tmp_cpus,
-			   SORTID_FEATURES,       sview_part_sub->featureS,
+			   SORTID_FEATURES,       sview_part_sub->features,
 			   SORTID_FEATURES_ACT,   sview_part_sub->features_act,
 			   SORTID_MEM,            tmp_mem,
 			   SORTID_NAME,           part_ptr->name,
@@ -1602,7 +1602,7 @@ static void _destroy_part_sub(void *object)
 	sview_part_sub_t *sview_part_sub = (sview_part_sub_t *)object;
 
 	if (sview_part_sub) {
-		xfree(sview_part_sub->featureS);
+		xfree(sview_part_sub->features);
 		xfree(sview_part_sub->features_act);
 		xfree(sview_part_sub->reason);
 		if (sview_part_sub->hl)
@@ -1629,7 +1629,7 @@ static void _update_sview_part_sub(sview_part_sub_t *sview_part_sub,
 
 	if (sview_part_sub->node_cnt == 0) {	/* first node added */
 		sview_part_sub->node_state   = node_ptr->node_state;
-		sview_part_sub->featureS     = xstrdup(node_ptr->featureS);
+		sview_part_sub->features     = xstrdup(node_ptr->features);
 		sview_part_sub->features_act = xstrdup(node_ptr->features_act);
 		sview_part_sub->reason       = xstrdup(node_ptr->reason);
 	} else if (hostlist_find(sview_part_sub->hl, node_ptr->name) != -1) {
@@ -1908,11 +1908,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				sview_part_sub->disk_total;
 			sview_part_info->sub_part_total.mem_total +=
 				sview_part_sub->mem_total;
-			if (!sview_part_info->sub_part_total.featureS) {
+			if (!sview_part_info->sub_part_total.features) {
 				/* store features and reasons
 				   in the others group */
-				sview_part_info->sub_part_total.featureS
-					= sview_part_sub->featureS;
+				sview_part_info->sub_part_total.features
+					= sview_part_sub->features;
 				sview_part_info->sub_part_total.features_act
 					= sview_part_sub->features_act;
 				sview_part_info->sub_part_total.reason

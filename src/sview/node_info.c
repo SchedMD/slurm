@@ -418,7 +418,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_AVAIL_FEATURES),
-				   node_ptr->featureS);
+				   node_ptr->features);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_ACTIVE_FEATURES),
@@ -627,7 +627,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ACTIVE_FEATURES, node_ptr->features_act,
 			   SORTID_ARCH,      node_ptr->arch,
-			   SORTID_AVAIL_FEATURES,  node_ptr->featureS,
+			   SORTID_AVAIL_FEATURES,  node_ptr->features,
 			   SORTID_LOWEST_JOULES, tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
@@ -1275,9 +1275,9 @@ extern int update_avail_features_node(GtkDialog *dialog, const char *nodelist,
 
 	response = gtk_dialog_run(dialog);
 	if (response == GTK_RESPONSE_OK) {
-		node_msg->featureS =
+		node_msg->features =
 			xstrdup(gtk_entry_get_text(GTK_ENTRY(entry)));
-		if (!node_msg->featureS) {
+		if (!node_msg->features) {
 			edit = g_strdup_printf("No features given.");
 			display_edit_note(edit);
 			g_free(edit);

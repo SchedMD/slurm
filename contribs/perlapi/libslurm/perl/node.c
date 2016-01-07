@@ -39,9 +39,11 @@ node_info_to_hv(node_info_t *node_info, uint16_t node_scaling, HV *hv)
 	STORE_FIELD(hv, node_info, cores, uint16_t);
 	STORE_FIELD(hv, node_info, cpu_load, uint32_t);
 	STORE_FIELD(hv, node_info, cpus, uint16_t);
-	if(node_info->features)
+	if (node_info->features)
 		STORE_FIELD(hv, node_info, features, charp);
-	if(node_info->gres)
+	if (node_info->features_act)
+		STORE_FIELD(hv, node_info, features_act, charp);
+	if (node_info->gres)
 		STORE_FIELD(hv, node_info, gres, charp);
 	if (node_info->name)
 		STORE_FIELD(hv, node_info, name, charp);
@@ -106,6 +108,7 @@ hv_to_node_info(HV *hv, node_info_t *node_info)
 	FETCH_FIELD(hv, node_info, cpu_load, uint32_t, TRUE);
 	FETCH_FIELD(hv, node_info, cpus, uint16_t, TRUE);
 	FETCH_FIELD(hv, node_info, features, charp, FALSE);
+	FETCH_FIELD(hv, node_info, features_act, charp, FALSE);
 	FETCH_FIELD(hv, node_info, gres, charp, FALSE);
 	FETCH_FIELD(hv, node_info, name, charp, TRUE);
 	FETCH_FIELD(hv, node_info, node_state, uint32_t, TRUE);
@@ -209,6 +212,7 @@ hv_to_update_node_msg(HV *hv, update_node_msg_t *update_msg)
 	FETCH_FIELD(hv, update_msg, node_state, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, reason, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, features, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, features_act, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, weight, uint32_t, FALSE);
 	return 0;
 }

@@ -88,8 +88,7 @@ if {$matches != 1} {
 #
 # Build input script file
 #
-make_bash_script $file_in "
-#SBATCH -N1000000k
+make_bash_script $file_in "#SBATCH -N1000000k
 $bin_sleep $delay
 "
 set match 0
@@ -105,7 +104,7 @@ expect {
 		send_user "\nFAILURE: Test B was supposed to fail submission\n"
 		set exit_code 1
 		cancel_job $job_id
-	    exit 1
+		exit 1
 	}
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"

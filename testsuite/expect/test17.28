@@ -95,8 +95,7 @@ cancel_job $job_id
 #   to occur before contending with a multitude of job step creations.
 #   This is especially important on very slow systems (e.g. AIX).
 #
-make_bash_script $file_in "
-#SBATCH -N1000000k
+make_bash_script $file_in "#SBATCH -N1000000k
 $bin_sleep $delay
 "
 set job_id  0

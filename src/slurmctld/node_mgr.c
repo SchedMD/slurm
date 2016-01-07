@@ -1294,11 +1294,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 					  node_ptr->node_hostname);
 		}
 
-		if (update_node_msg->featureS) {
+		if (update_node_msg->features) {
 			xfree(node_ptr->features);
-			if (update_node_msg->featureS[0])
+			if (update_node_msg->features[0])
 				node_ptr->features =
-					xstrdup(update_node_msg->featureS);
+					xstrdup(update_node_msg->features);
 			/* _update_node_features() logs and updates config */
 		}
 
@@ -1558,9 +1558,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
-	if ((error_code == 0) && (update_node_msg->featureS)) {
+	if ((error_code == 0) && (update_node_msg->features)) {
 		error_code = _update_node_features(update_node_msg->node_names,
-						   update_node_msg->featureS);
+						   update_node_msg->features);
 	}
 	if ((error_code == 0) && (update_node_msg->gres)) {
 		error_code = _update_node_gres(update_node_msg->node_names,

@@ -87,7 +87,7 @@ scontrol_update_node (int argc, char *argv[])
 		} else if (!strncasecmp(tag, "Features", MAX(tag_len, 1)) ||
 			   !strncasecmp(tag, "AvailableFeatures",
 					MAX(tag_len,3))) {
-			node_msg.featureS = val;
+			node_msg.features = val;
 			update_cnt++;
 		} else if (strncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;

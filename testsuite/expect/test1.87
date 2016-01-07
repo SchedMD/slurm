@@ -80,7 +80,7 @@ expect {
 		exec $bin_rm -f $file_in
 		exit $exit_code
 	}
-	-re "configuration not available" {
+	-re "configuration is not available" {
 		send_user "WARNING: partition too small for test\n"
 		slow_kill $srun_pid
 		exit 0

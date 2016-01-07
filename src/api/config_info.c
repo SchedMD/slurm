@@ -211,9 +211,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		        xstrfmtcat(tmp_str, " Weight=%u",
 				   node_info_ptr->node_array[i].weight);
 
-		if (node_info_ptr->node_array[i].featureS != NULL)
+		if (node_info_ptr->node_array[i].features != NULL)
 		        xstrfmtcat(tmp_str, " Feature=%s",
-				   node_info_ptr->node_array[i].featureS);
+				   node_info_ptr->node_array[i].features);
 
 		/* check for duplicate records */
 		for (crp = rp; crp != NULL; crp = crp->next) {
