@@ -39,7 +39,7 @@
 #
 ###############################################################################
 
-#use strict;
+use strict;
 use FindBin;
 use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
 use lib "${FindBin::Bin}/../lib/perl";
@@ -53,6 +53,7 @@ my (#$start_time,
     #$array,
     $err_path,
     #$export_env,
+    $exclusive,
     $interactive,
     #$hold,
     #$resource_list,
@@ -65,6 +66,7 @@ my (#$start_time,
     $out_path,
     #$priority,
     $partition,
+    $time,
     #$variable_list,
     #@additional_attributes,
     $help,
@@ -163,7 +165,7 @@ $command .= " -o $out_path" if $out_path;
 #$command .= " -n$node_opts{task_cnt}" if $ntask_cnt;
 
 if ($node_list) {
-	$node_list_tmp = _parse_node_list($node_list);
+	my $node_list_tmp = _parse_node_list($node_list);
 	$command .= " -w $node_list_tmp";
 }
 
@@ -171,7 +173,7 @@ $command .= " --mem=$mem_limit"   if $mem_limit;
 $command .= " -J $job_name" if $job_name;
 
 if ($min_proc) {
-	$min_proc_tmp = _parse_procs($min_proc);
+	my $min_proc_tmp = _parse_procs($min_proc);
 	$command .= " -n $min_proc_tmp";
 }
 $command .= " -t $time" if $time;
@@ -195,7 +197,7 @@ if ($base_command eq $srun) { #srun
 	my $launch_printed = 0;
 	open(PH, "$command 2>&1 |");              # or with an open pipe
 	while (<PH>) {
-		$line = $_;
+		my $line = $_;
 		if ($_ !~ "srun:") {
 			print $line;
 		} elsif (!$dispatch_printed && ($_ =~ /srun: jobid \d/)) {
