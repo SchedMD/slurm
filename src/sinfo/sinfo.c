@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2011 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -751,6 +751,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (sinfo_ptr->nodes &&
 	    params.match_flags.features_flag &&
 	    (xstrcmp(node_ptr->features, sinfo_ptr->features)))
+		return false;
+
+	if (sinfo_ptr->nodes &&
+	    params.match_flags.features_act_flag &&
+	    (xstrcmp(node_ptr->features_act, sinfo_ptr->features_act)))
 		return false;
 
 	if (sinfo_ptr->nodes &&

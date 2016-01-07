@@ -571,7 +571,8 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-static void _add_knl_features(slurm_conf_node_t *n)
+/* Expand a feature of "knl" to all appropriate KNL options */
+extern void add_knl_features(char **features)
 {
 	static uint16_t avail_mcdram = 0, avail_numa = 0;
 	static uint16_t default_mcdram = 0, default_numa = 0;
@@ -580,17 +581,17 @@ static void _add_knl_features(slurm_conf_node_t *n)
 	char *tmp_str, *token, *last = NULL;
 	int i, j;
 
-	if (!n->feature)
+	if ((features == NULL) || (features[0] ==  NULL))
 		return;
 
-	i = strlen(n->feature) + 1;	/* oversized */
+	i = strlen(features[0]) + 1;	/* oversized */
 	tmp_str = xmalloc(i);
 	/* Remove white space from feature specification */
-	for (i = 0, j = 0; n->feature[i]; i++) {
-		if (!isspace(n->feature[i]))
-			tmp_str[j++] = n->feature[i];
+	for (i = 0, j = 0; features[0][i]; i++) {
+		if (!isspace(features[0][i]))
+			tmp_str[j++] = features[0][i];
 	}
-	strcpy(n->feature, tmp_str);
+	strcpy(*features, tmp_str);
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
@@ -614,13 +615,13 @@ static void _add_knl_features(slurm_conf_node_t *n)
 
 	if (!has_mcdram) {
 		tmp_str = knl_mcdram_str(avail_mcdram);
-		xstrfmtcat(n->feature, ",%s", tmp_str);
+		xstrfmtcat(*features, ",%s", tmp_str);
 		xfree(tmp_str);
 	}
 
 	if (!has_numa) {
 		tmp_str = knl_numa_str(avail_numa);
-		xstrfmtcat(n->feature, ",%s", tmp_str);
+		xstrfmtcat(*features, ",%s", tmp_str);
 		xfree(tmp_str);
 	}
 }
@@ -639,6 +640,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"CPUs", S_P_UINT16},
 		{"CPUSpecList", S_P_STRING},
 		{"Feature", S_P_STRING},
+		{"Features", S_P_STRING},
 		{"Gres", S_P_STRING},
 		{"MemSpecLimit", S_P_UINT32},
 		{"NodeAddr", S_P_STRING},
@@ -726,9 +728,11 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl))
 			s_p_get_string(&n->cpu_spec_list, "CPUSpecList", dflt);
 
-		if (!s_p_get_string(&n->feature, "Feature", tbl))
-			s_p_get_string(&n->feature, "Feature", dflt);
-		_add_knl_features(n);
+		if (!s_p_get_string(&n->feature, "Feature",  tbl) &&
+		    !s_p_get_string(&n->feature, "Features", tbl) &&
+		    !s_p_get_string(&n->feature, "Feature",  dflt))
+			s_p_get_string(&n->feature, "Features", dflt);
+		add_knl_features(&n->feature);
 
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);

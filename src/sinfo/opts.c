@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -606,6 +606,7 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (field[0] == 'b') {
+			params.match_flags.features_act_flag = true;
 			format_add_features_act( params.format_list,
 					field_size,
 					right_justify,
@@ -937,6 +938,12 @@ static int _parse_long_format (char* format_long)
 					     field_size,
 					     right_justify,
 					     suffix );
+		} else if (!strcasecmp(token, "features_act")) {
+			params.match_flags.features_act_flag = true;
+			format_add_features_act( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (!strcasecmp(token, "groups")) {
 			params.match_flags.groups_flag = true;
 			format_add_groups( params.format_list,
@@ -1240,6 +1247,8 @@ void _print_options( void )
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
 			"true" : "false");
 	printf("features_flag   = %s\n", params.match_flags.features_flag ?
+			"true" : "false");
+	printf("features_flag_act = %s\n", params.match_flags.features_act_flag?
 			"true" : "false");
 	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
 					"true" : "false");

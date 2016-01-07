@@ -1200,6 +1200,41 @@ _equivalent_node_state(struct node_record *node_ptr, uint32_t new_state)
 	return false;
 }
 
+/* Confirm that the selected ActiveFeatures are a subset of AvailableFeatures */
+static bool _valid_features_act(char *features_act, char *features)
+{
+	bool valid_subset = true;
+	char *tmp_act, *last_act = NULL, *tok_act;
+	char *tmp_avail, *last_avail = NULL, *tok_avail;
+
+	if (!features_act || (features_act[0] == '\0'))
+		return true;
+	if (!features || (features[0] == '\0'))
+		return false;
+
+	tmp_act = xstrdup(features_act);
+        tok_act = strtok_r(tmp_act, ",", &last_act);
+        while (tok_act) {
+		last_avail = NULL;
+		tmp_avail = xstrdup(features);
+		tok_avail = strtok_r(tmp_avail, ",", &last_avail);
+		while (tok_avail) {
+			if (!xstrcmp(tok_act, tok_avail))
+				break;
+		        tok_avail = strtok_r(NULL, ",", &last_avail);
+		}
+		xfree(tmp_avail);
+		if (!tok_avail) {	/* No match found */
+			valid_subset = false;
+			break;
+		}
+                tok_act = strtok_r(NULL, ",", &last_act);
+	}
+	xfree(tmp_act);
+
+	return valid_subset;
+}
+
 /*
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
@@ -1263,6 +1298,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 	}
 
+	add_knl_features(&update_node_msg->features);
+
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 
@@ -1296,17 +1333,26 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		if (update_node_msg->features) {
 			xfree(node_ptr->features);
-			if (update_node_msg->features[0])
+			if (update_node_msg->features[0]) {
 				node_ptr->features =
 					xstrdup(update_node_msg->features);
+			}
 			/* _update_node_features() logs and updates config */
 		}
 
-		if (update_node_msg->features_act) {
+		if (update_node_msg->features_act &&
+		    !_valid_features_act(update_node_msg->features_act,
+					 node_ptr->features)) {
+			info("Invalid node ActiveFeatures (%s not subset of %s)",
+			     update_node_msg->features_act,
+			     node_ptr->features);
+			error_code = ESLURM_INVALID_FEATURE;
+		} else if (update_node_msg->features_act) {
 			xfree(node_ptr->features_act);
-			if (update_node_msg->features_act[0])
+			if (update_node_msg->features_act[0]) {
 				node_ptr->features_act =
 					xstrdup(update_node_msg->features_act);
+			}
 			/* _update_node_features() logs and updates config */
 		}
 

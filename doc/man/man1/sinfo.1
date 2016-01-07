@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "Janury 2016" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "January 2016" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -325,7 +325,10 @@ Default time for any job in the format "days\-hours:minutes:seconds".
 Size of temporary disk space per node in megabytes.
 .TP
 \fBfeatures\fR
-Features associated with the nodes.
+Features available on the nodes. Also see \fBfeatures_act\fR.
+.TP
+\fBfeatures_act\fR
+Features currently active on the nodes. Also see \fBfeatures\fR.
 .TP
 \fBgroups\fR
 Groups which may use the nodes.

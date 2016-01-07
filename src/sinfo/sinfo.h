@@ -137,6 +137,7 @@ struct sinfo_match_flags {
 	bool sct_flag;
 	bool disk_flag;
 	bool features_flag;
+	bool features_act_flag;
 	bool groups_flag;
 	bool gres_flag;
 	bool hostnames_flag;

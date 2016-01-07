@@ -231,8 +231,16 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 
 	/****** Line ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "AvailableFeatures=%s ActiveFeatures=%s",
-		 node_ptr->features, node_ptr->features_act);
+		 "AvailableFeatures=%s", node_ptr->features);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "ActiveFeatures=%s", node_ptr->features_act);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

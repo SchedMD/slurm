@@ -578,4 +578,8 @@ extern char *get_extra_conf_path(char *conf_name);
  */
 extern bool run_in_daemon(char *daemons);
 
+/* Expand a feature of "knl" to all appropriate KNL options
+ * features IN/OUT - Expand string as appropriate, must be xmalloc'ed */
+extern void add_knl_features(char **features);
+
 #endif /* !_READ_CONFIG_H */
