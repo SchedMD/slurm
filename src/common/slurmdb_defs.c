@@ -752,8 +752,12 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->grp_tres_run_mins_ctld);
 		xfree(qos->max_tres_mins_pj);
 		xfree(qos->max_tres_mins_pj_ctld);
+		xfree(qos->max_tres_run_mins_pa);
+		xfree(qos->max_tres_run_mins_pa_ctld);
 		xfree(qos->max_tres_run_mins_pu);
 		xfree(qos->max_tres_run_mins_pu_ctld);
+		xfree(qos->max_tres_pa);
+		xfree(qos->max_tres_pa_ctld);
 		xfree(qos->max_tres_pj);
 		xfree(qos->max_tres_pj_ctld);
 		xfree(qos->max_tres_pn);
@@ -1356,10 +1360,14 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	qos->grp_wall = init_val;
 
 	/* qos->max_tres_mins_pj = NULL; */
+	/* qos->max_tres_run_mins_pa = NULL; */
 	/* qos->max_tres_run_mins_pu = NULL; */
+	/* qos->max_tres_pa = NULL; */
 	/* qos->max_tres_pj = NULL; */
 	/* qos->max_tres_pu = NULL; */
+	qos->max_jobs_pa = init_val;
 	qos->max_jobs_pu = init_val;
+	qos->max_submit_jobs_pa = init_val;
 	qos->max_submit_jobs_pu = init_val;
 	qos->max_wall_pj = init_val;
 
@@ -2800,16 +2808,22 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->grp_tres_run_mins = xstrdup(in->grp_tres_run_mins);
 	out->grp_wall = in->grp_wall;
 
+	out->max_jobs_pa = in->max_jobs_pa;
 	out->max_jobs_pu = in->max_jobs_pu;
+	out->max_submit_jobs_pa = in->max_submit_jobs_pa;
 	out->max_submit_jobs_pu = in->max_submit_jobs_pu;
 	xfree(out->max_tres_mins_pj);
 	out->max_tres_mins_pj =	xstrdup(in->max_tres_mins_pj);
+	xfree(out->max_tres_pa);
+	out->max_tres_pa = xstrdup(in->max_tres_pa);
 	xfree(out->max_tres_pj);
 	out->max_tres_pj = xstrdup(in->max_tres_pj);
 	xfree(out->max_tres_pn);
 	out->max_tres_pn = xstrdup(in->max_tres_pn);
 	xfree(out->max_tres_pu);
 	out->max_tres_pu = xstrdup(in->max_tres_pu);
+	xfree(out->max_tres_run_mins_pa);
+	out->max_tres_run_mins_pa = xstrdup(in->max_tres_run_mins_pa);
 	xfree(out->max_tres_run_mins_pu);
 	out->max_tres_run_mins_pu = xstrdup(in->max_tres_run_mins_pu);
 	out->max_wall_pj = in->max_wall_pj;

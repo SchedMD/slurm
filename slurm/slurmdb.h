@@ -782,8 +782,12 @@ typedef struct {
 					   * (DON'T PACK) */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
+	uint32_t max_jobs_pa;	/* max number of jobs an account can
+				 * run with this qos at one time */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can
 				 * run with this qos at one time */
+	uint32_t max_submit_jobs_pa; /* max number of jobs an account can
+					submit with this qos at once */
 	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
 					submit with this qos at once */
 	char *max_tres_mins_pj;    /* max number of tres seconds this
@@ -792,6 +796,12 @@ typedef struct {
 					  * based off the ordering of the
 					  * total number of TRES in the system
 					  * (DON'T PACK) */
+	char *max_tres_pa;         /* max number of tres this
+				    * QOS can allocate per account */
+	uint64_t *max_tres_pa_ctld;   /* max_tres_pa broken out in an array
+				       * based off the ordering of the
+				       * total number of TRES in the system
+				       * (DON'T PACK) */
 	char *max_tres_pj;         /* max number of tres this
 				    * qos can allocate per job */
 	uint64_t *max_tres_pj_ctld;   /* max_tres_pj broken out in an array
@@ -810,6 +820,18 @@ typedef struct {
 				       * based off the ordering of the
 				       * total number of TRES in the system
 				       * (DON'T PACK) */
+	char *max_tres_run_mins_pa;   /* max number of tres minutes this
+				       * qos can having running at one
+				       * time per account, currently
+				       * this doesn't do anything.
+				       */
+	uint64_t *max_tres_run_mins_pa_ctld; /* max_tres_run_mins_pa
+					      * broken out in an array
+					      * based off the ordering
+					      * of the total number of TRES in
+					      * the system, currently
+					      * this doesn't do anything.
+					      * (DON'T PACK) */
 	char *max_tres_run_mins_pu;   /* max number of tres minutes this
 				       * qos can having running at one
 				       * time, currently this doesn't
