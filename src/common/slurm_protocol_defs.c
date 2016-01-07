@@ -4232,7 +4232,8 @@ slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *msg)
 	if (msg->tres_names) {
 		int i;
 		for (i=0; i<msg->tres_cnt; i++)
-			xfree(msg->tres_names);
+			xfree(msg->tres_names[i]);
+		xfree(msg->tres_names);
 	}
 	FREE_NULL_LIST(msg->user_list);
 	xfree(msg);

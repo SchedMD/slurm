@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- If a job is submitted only with -c option and numcpus is updated before
     the job starts update the cpus_per_task appropriately.
  -- Update salloc/sbatch/srun documentation to mention time granularity.
+ -- Fixed memory leak when freeing assoc_mgr_info_msg_t.
 
 * Changes in Slurm 15.08.6
 ==========================
