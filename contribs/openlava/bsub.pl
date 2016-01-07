@@ -51,6 +51,7 @@ use Switch;
 my (#$start_time,
     #$account,
     #$array,
+    $workdir,
     $err_path,
     #$export_env,
     $exclusive,
@@ -78,6 +79,7 @@ my $srun = "${FindBin::Bin}/srun";
 
 GetOptions(#'a=s'      => \$start_time,
 	   #'A=s'      => \$account,
+	   'cwd=s'    => \$workdir,
 	   'e=s'      => \$err_path,
 	   #'h'        => \$hold,
 	   'I'        => \$interactive,
@@ -158,6 +160,8 @@ if (_check_script($ARGV[0])) {
 
 $command .= " -e $err_path" if $err_path;
 $command .= " -o $out_path" if $out_path;
+
+$command .= " -D $workdir" if $workdir;
 
 #print " command = $command\n";
 
@@ -332,6 +336,7 @@ B<bsub> - submit a batch job in a familiar OpenLava format
 =head1 SYNOPSIS
 
 bsub
+      [-cwd Working Directory Path]
       [-e Error Path]
       [-I Interactive Mode]
       [-m Node List]
@@ -351,6 +356,10 @@ The B<bsub> submits batch jobs. It is aimed to be feature-compatible with OpenLa
 =head1 OPTIONS
 
 =over 4
+
+=item B<-cwd Working Directory Path>
+
+Specify the working directory path for the job.
 
 =item B<-e Error Path>
 
