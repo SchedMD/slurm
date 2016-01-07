@@ -4937,7 +4937,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				info("job_test_resv: reservation %s uses "
 				     "partial nodes", resv_ptr->name);
 #endif
-				if (*exc_core_bitmap == NULL) {
+				if (resv_ptr->core_bitmap == NULL) {
+					;
+				} else if (*exc_core_bitmap == NULL) {
 					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
 				} else {
