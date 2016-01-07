@@ -9855,7 +9855,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if ((job_specs->req_nodes[0] == '\0') ||
 		    node_name2bitmap(job_specs->req_nodes,false, &req_bitmap) ||
 		    !bit_super_set(req_bitmap, job_ptr->node_bitmap) ||
-		    job_ptr->details->expanding_jobid) {
+		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
 			info("sched: Invalid node list (%s) for job %u update",
 			     job_specs->req_nodes, job_ptr->job_id);
 			error_code = ESLURM_INVALID_NODE_NAME;
@@ -10387,7 +10387,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	/* This also needs to be updated to make sure we are kosher
 	   after messing with the cpus and nodes. */
-	if (detail_ptr->pn_min_cpus) {
+	if (detail_ptr && detail_ptr->pn_min_cpus) {
 		uint16_t pn_min_cpus =
 			(uint16_t)(job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
 				   job_ptr->tres_req_cnt[TRES_ARRAY_NODE]);
@@ -10401,7 +10401,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 
 	/* This has to be figured out before num_tasks is */
-	if (detail_ptr->cpus_per_task) {
+	if (detail_ptr && detail_ptr->cpus_per_task) {
 		uint16_t cpus_per_task;
 		/* Use the new value if given else use the current tasks */
 		uint32_t num_tasks = (job_specs->num_tasks != NO_VAL) ?
