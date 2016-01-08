@@ -3599,7 +3599,7 @@ extern void prolog_running_decr(struct job_record *job_ptr)
  */
 extern List feature_list_copy(List feature_list_src)
 {
-	struct feature_record *feat_src, *feat_dest;
+	job_feature_t *feat_src, *feat_dest;
 	ListIterator iter;
 	List feature_list_dest = NULL;
 
@@ -3608,9 +3608,9 @@ extern List feature_list_copy(List feature_list_src)
 
 	feature_list_dest = list_create(_feature_list_delete);
 	iter = list_iterator_create(feature_list_src);
-	while ((feat_src = (struct feature_record *) list_next(iter))) {
-		feat_dest = xmalloc(sizeof(struct feature_record));
-		memcpy(feat_dest, feat_src, sizeof(struct feature_record));
+	while ((feat_src = (job_feature_t *) list_next(iter))) {
+		feat_dest = xmalloc(sizeof(job_feature_t));
+		memcpy(feat_dest, feat_src, sizeof(job_feature_t));
 		feat_dest->name = xstrdup(feat_src->name);
 		list_append(feature_list_dest, feat_dest);
 	}
@@ -3630,7 +3630,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 	char *tmp_requested, *str_ptr, *feature = NULL;
 	int bracket = 0, count = 0, i;
 	bool have_count = false, have_or = false;
-	struct feature_record *feat;
+	job_feature_t *feat;
 
 	if (!detail_ptr || !detail_ptr->features)	/* no constraints */
 		return SLURM_SUCCESS;
@@ -3659,7 +3659,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 				xfree(tmp_requested);
 				return ESLURM_INVALID_FEATURE;
 			}
-			feat = xmalloc(sizeof(struct feature_record));
+			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
 			feat->count = count;
 			if (bracket)
@@ -3678,7 +3678,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 				xfree(tmp_requested);
 				return ESLURM_INVALID_FEATURE;
 			}
-			feat = xmalloc(sizeof(struct feature_record));
+			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
 			feat->count = count;
 			if (bracket)
@@ -3708,7 +3708,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 			bracket = 0;
 		} else if (tmp_requested[i] == '\0') {
 			if (feature) {
-				feat = xmalloc(sizeof(struct feature_record));
+				feat = xmalloc(sizeof(job_feature_t));
 				feat->name = xstrdup(feature);
 				feat->count = count;
 				feat->op_code = FEATURE_OP_END;
@@ -3736,7 +3736,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 
 static void _feature_list_delete(void *x)
 {
-	struct feature_record *feature = (struct feature_record *)x;
+	job_feature_t *feature = (job_feature_t *)x;
 	xfree(feature->name);
 	xfree(feature);
 }
@@ -3744,7 +3744,7 @@ static void _feature_list_delete(void *x)
 static int _valid_feature_list(uint32_t job_id, List feature_list)
 {
 	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
+	job_feature_t *feat_ptr;
 	char *buf = NULL, tmp[16];
 	int bracket = 0;
 	int rc = SLURM_SUCCESS;
@@ -3755,7 +3755,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 	}
 
 	feat_iter = list_iterator_create(feature_list);
-	while ((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
+	while ((feat_ptr = (job_feature_t *)list_next(feat_iter))) {
 		if ((feat_ptr->op_code == FEATURE_OP_XOR) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
 			if (bracket == 0)
@@ -3794,14 +3794,13 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 static int _valid_node_feature(char *feature)
 {
 	int rc = ESLURM_INVALID_FEATURE;
-	struct features_record *feature_ptr;
+	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
-	feature_iter = list_iterator_create(feature_list);
-	while ((feature_ptr = (struct features_record *)
-			list_next(feature_iter))) {
+	feature_iter = list_iterator_create(avail_feature_list);
+	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
 		if (strcmp(feature_ptr->name, feature))
 			continue;
 		rc = SLURM_SUCCESS;

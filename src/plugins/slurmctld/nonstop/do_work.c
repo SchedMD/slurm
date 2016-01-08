@@ -869,8 +869,8 @@ fini:	slurm_mutex_unlock(&job_fail_mutex);
 static char *_job_node_features(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
-	struct features_record *node_feat_ptr;
-	struct feature_record  *job_feat_ptr;
+	node_feature_t *node_feat_ptr;
+	job_feature_t *job_feat_ptr;
 	ListIterator job_iter, node_iter;
 	char *req_feat = NULL;
 	int node_inx;
@@ -881,9 +881,9 @@ static char *_job_node_features(struct job_record *job_ptr,
 
 	node_inx = node_ptr - node_record_table_ptr;
 	job_iter = list_iterator_create(job_ptr->details->feature_list);
-	while ((job_feat_ptr = (struct feature_record *) list_next(job_iter))) {
-		node_iter = list_iterator_create(feature_list);
-		while ((node_feat_ptr = (struct features_record *)
+	while ((job_feat_ptr = (job_feature_t *) list_next(job_iter))) {
+		node_iter = list_iterator_create(avail_feature_list);
+		while ((node_feat_ptr = (node_feature_t *)
 					list_next(node_iter))) {
 			if (!job_feat_ptr->name  ||
 			    !node_feat_ptr->name ||

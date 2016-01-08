@@ -8,6 +8,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -81,7 +82,8 @@
 
 /* Global variables */
 List config_list  = NULL;	/* list of config_record entries */
-List feature_list = NULL;	/* list of features_record entries */
+List active_feature_list;	/* list of currently active features_records */
+List avail_feature_list;	/* list of available features_records */
 List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
@@ -110,14 +112,13 @@ static int	_list_find_feature (void *feature_entry, void *key);
 
 static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 {
-	struct features_record *feature_ptr;
+	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 	bool match = false;
 
-	/* If feature already exists in feature_list, just update the bitmap */
-	feature_iter = list_iterator_create(feature_list);
-	while ((feature_ptr = (struct features_record *)
-			list_next(feature_iter))) {
+	/* If feature already in avail_feature_list, just update the bitmap */
+	feature_iter = list_iterator_create(avail_feature_list);
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
 		if (strcmp(feature, feature_ptr->name))
 			continue;
 		bit_or(feature_ptr->node_bitmap, node_bitmap);
@@ -126,12 +127,12 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 	}
 	list_iterator_destroy(feature_iter);
 
-	if (!match) {	/* Need to create new feature_list record */
-		feature_ptr = xmalloc(sizeof(struct features_record));
+	if (!match) {	/* Need to create new avail_feature_list record */
+		feature_ptr = xmalloc(sizeof(node_feature_t));
 		feature_ptr->magic = FEATURE_MAGIC;
 		feature_ptr->name = xstrdup(feature);
 		feature_ptr->node_bitmap = bit_copy(node_bitmap);
-		list_append(feature_list, feature_ptr);
+		list_append(avail_feature_list, feature_ptr);
 	}
 }
 
@@ -317,9 +318,10 @@ cleanup:
 static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all (config_list,    &_list_find_config,  NULL);
-	(void) list_delete_all (feature_list,   &_list_find_feature, NULL);
-	(void) list_delete_all (front_end_list, &list_find_frontend, NULL);
+	(void) list_delete_all(config_list,    &_list_find_config,  NULL);
+	(void) list_delete_all(active_feature_list,  &_list_find_feature, NULL);
+	(void) list_delete_all(avail_feature_list,   &_list_find_feature, NULL);
+	(void) list_delete_all(front_end_list, &list_find_frontend, NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -420,7 +422,7 @@ static void _list_delete_config (void *config_entry)
 	xfree(config_ptr->cpu_spec_list);
 	xfree(config_ptr->feature);
 	xfree(config_ptr->gres);
-	build_config_feature_list(config_ptr);
+	build_avail_feature_list(config_ptr);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
 	xfree (config_ptr);
@@ -430,8 +432,7 @@ static void _list_delete_config (void *config_entry)
  *	see list.h for documentation */
 static void _list_delete_feature (void *feature_entry)
 {
-	struct features_record *feature_ptr = (struct features_record *)
-					     feature_entry;
+	node_feature_t *feature_ptr = (node_feature_t *) feature_entry;
 
 	xassert(feature_ptr);
 	xassert(feature_ptr->magic == FEATURE_MAGIC);
@@ -530,12 +531,12 @@ char * bitmap2node_name (bitstr_t *bitmap)
  */
 static int _list_find_feature (void *feature_entry, void *key)
 {
-	struct features_record *feature_ptr;
+	node_feature_t *feature_ptr;
 
 	if (key == NULL)
 		return 1;
 
-	feature_ptr = (struct features_record *) feature_entry;
+	feature_ptr = (node_feature_t *) feature_entry;
 	if (strcmp(feature_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
@@ -691,19 +692,19 @@ extern int build_all_nodeline_info (bool set_bitmap)
 	return max_rc;
 }
 
-/* Given a config_record with it's bitmap already set, update feature_list */
-extern void  build_config_feature_list(struct config_record *config_ptr)
+/* Given a config_record with it's bitmap already set,
+ * build avail_feature_list */
+extern void  build_avail_feature_list(struct config_record *config_ptr)
 {
-	struct features_record *feature_ptr;
+	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 	char *tmp_str, *token, *last = NULL;
 
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
-	feature_iter = list_iterator_create(feature_list);
+	feature_iter = list_iterator_create(avail_feature_list);
 	bit_not(config_ptr->node_bitmap);
-	while ((feature_ptr = (struct features_record *)
-			list_next(feature_iter))) {
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
 		bit_and(feature_ptr->node_bitmap, config_ptr->node_bitmap);
 	}
 	list_iterator_destroy(feature_iter);
@@ -922,7 +923,8 @@ extern int init_node_conf (void)
 		(void) _delete_config_record ();
 	else {
 		config_list    = list_create (_list_delete_config);
-		feature_list   = list_create (_list_delete_feature);
+		active_feature_list = list_create (_list_delete_feature);
+		avail_feature_list = list_create (_list_delete_feature);
 		front_end_list = list_create (destroy_frontend);
 	}
 
@@ -938,7 +940,8 @@ extern void node_fini2 (void)
 
 	if (config_list) {
 		FREE_NULL_LIST(config_list);
-		FREE_NULL_LIST(feature_list);
+		FREE_NULL_LIST(active_feature_list);
+		FREE_NULL_LIST(avail_feature_list);
 		FREE_NULL_LIST(front_end_list);
 	}
 

@@ -449,11 +449,11 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define FEATURE_OP_XOR  2
 #define FEATURE_OP_XAND 3
 #define FEATURE_OP_END  4		/* last entry lacks separator */
-struct feature_record {
+typedef struct job_feature {
 	char *name;			/* name of feature */
 	uint16_t count;			/* count of nodes with this feature */
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
-};
+} job_feature_t;
 
 /* job_details - specification of a job's constraints,
  * can be purged after initiation */

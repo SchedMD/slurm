@@ -628,12 +628,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
  */
 static int _match_feature(char *seek, struct node_set *node_set_ptr)
 {
-	struct features_record *feat_ptr;
+	node_feature_t *feat_ptr;
 
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
 
-	feat_ptr = list_find_first(feature_list, list_find_feature,
+	feat_ptr = list_find_first(avail_feature_list, list_find_feature,
 				   (void *) seek);
 	if (feat_ptr == NULL)
 		return 0;	/* no such feature */
@@ -920,11 +920,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (job_ptr->details->feature_list &&
 	    (job_ptr->details->req_node_layout == NULL)) {
 		ListIterator feat_iter;
-		struct feature_record *feat_ptr;
+		job_feature_t *feat_ptr;
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
-		while ((feat_ptr = (struct feature_record *)
-				list_next(feat_iter))) {
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			if (feat_ptr->count == 0)
 				continue;
 			tmp_node_set_size = 0;
@@ -2495,12 +2494,12 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
  */
 extern int list_find_feature(void *feature_entry, void *key)
 {
-	struct features_record *feature_ptr;
+	node_feature_t *feature_ptr;
 
 	if (key == NULL)
 		return 1;
 
-	feature_ptr = (struct features_record *) feature_entry;
+	feature_ptr = (node_feature_t *) feature_entry;
 	if (strcmp(feature_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
@@ -2517,8 +2516,8 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor)
 {
 	ListIterator job_feat_iter;
-	struct feature_record *job_feat_ptr;
-	struct features_record *feat_ptr;
+	job_feature_t *job_feat_ptr;
+	node_feature_t *node_feat_ptr;
 	int have_count = false, last_op = FEATURE_OP_AND;
 	bitstr_t *feature_bitmap, *tmp_bitmap;
 	bool rc = true;
@@ -2533,18 +2532,21 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 
 	feature_bitmap = bit_copy(node_bitmap);
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
-	while ((job_feat_ptr = (struct feature_record *)
-			list_next(job_feat_iter))) {
-		feat_ptr = list_find_first(feature_list, list_find_feature,
-					   (void *) job_feat_ptr->name);
-		if (feat_ptr) {
-			if (last_op == FEATURE_OP_AND)
-				bit_and(feature_bitmap, feat_ptr->node_bitmap);
-			else if (last_op == FEATURE_OP_OR)
-				bit_or(feature_bitmap, feat_ptr->node_bitmap);
-			else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
+	while ((job_feat_ptr = (job_feature_t *) list_next(job_feat_iter))) {
+		node_feat_ptr = list_find_first(avail_feature_list,
+					list_find_feature,
+					(void *) job_feat_ptr->name);
+		if (node_feat_ptr) {
+			if (last_op == FEATURE_OP_AND) {
+				bit_and(feature_bitmap,
+					node_feat_ptr->node_bitmap);
+			} else if (last_op == FEATURE_OP_OR) {
+				bit_or(feature_bitmap,
+				       node_feat_ptr->node_bitmap);
+			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
-				bit_or(feature_bitmap, feat_ptr->node_bitmap);
+				bit_or(feature_bitmap,
+				       node_feat_ptr->node_bitmap);
 			}
 		} else {	/* feature not found */
 			if (last_op == FEATURE_OP_AND) {
@@ -2561,19 +2563,19 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 	if (have_count) {
 		job_feat_iter = list_iterator_create(detail_ptr->
 						     feature_list);
-		while ((job_feat_ptr = (struct feature_record *)
+		while ((job_feat_ptr = (job_feature_t *)
 				list_next(job_feat_iter))) {
 			if (job_feat_ptr->count == 0)
 				continue;
-			feat_ptr = list_find_first(feature_list,
-						   list_find_feature,
-						   (void *)job_feat_ptr->name);
-			if (!feat_ptr) {
+			node_feat_ptr = list_find_first(avail_feature_list,
+						list_find_feature,
+						(void *)job_feat_ptr->name);
+			if (!node_feat_ptr) {
 				rc = false;
 				break;
 			}
 			tmp_bitmap = bit_copy(feature_bitmap);
-			bit_and(tmp_bitmap, feat_ptr->node_bitmap);
+			bit_and(tmp_bitmap, node_feat_ptr->node_bitmap);
 			if (bit_set_count(tmp_bitmap) < job_feat_ptr->count)
 				rc = false;
 			FREE_NULL_BITMAP(tmp_bitmap);
@@ -3198,8 +3200,8 @@ static bitstr_t *_valid_features(struct job_details *details_ptr,
 {
 	bitstr_t *result_bits = (bitstr_t *) NULL;
 	ListIterator feat_iter;
-	struct feature_record *job_feat_ptr;
-	struct features_record *feat_ptr;
+	job_feature_t *job_feat_ptr;
+	node_feature_t *node_feat_ptr;
 	int last_op = FEATURE_OP_AND, position = 0;
 
 	result_bits = bit_alloc(MAX_FEATURES);
@@ -3209,18 +3211,17 @@ static bitstr_t *_valid_features(struct job_details *details_ptr,
 	}
 
 	feat_iter = list_iterator_create(details_ptr->feature_list);
-	while ((job_feat_ptr = (struct feature_record *)
-			list_next(feat_iter))) {
+	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
 		    (last_op == FEATURE_OP_XAND) ||
 		    (last_op == FEATURE_OP_XOR)) {
-			feat_ptr = list_find_first(feature_list,
+			node_feat_ptr = list_find_first(avail_feature_list,
 						   list_find_feature,
 						   (void *)job_feat_ptr->name);
-			if (feat_ptr &&
+			if (node_feat_ptr &&
 			    bit_super_set(config_ptr->node_bitmap,
-					  feat_ptr->node_bitmap)) {
+					  node_feat_ptr->node_bitmap)) {
 				bit_set(result_bits, position);
 			}
 			position++;

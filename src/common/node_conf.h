@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2016 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -88,12 +89,13 @@ extern List config_list;	/* list of config_record entries */
 
 extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
 
-struct features_record {
+typedef struct node_features {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	char *name;		/* name of a feature */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
-};
-extern List feature_list;	/* list of features_record entries */
+} node_feature_t;
+extern List active_feature_list;/* list of currently active node features */
+extern List avail_feature_list;	/* list of available node features */
 
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -238,8 +240,9 @@ extern int build_all_nodeline_info (bool set_bitmap);
  */
 extern int build_all_frontend_info (bool is_slurmd_context);
 
-/* Given a config_record with it's bitmap already set, update feature_list */
-extern void  build_config_feature_list (struct config_record *config_ptr);
+/* Given a config_record with it's bitmap already set,
+ * build avail_feature_list */
+extern void  build_avail_feature_list(struct config_record *config_ptr);
 
 /*
  * create_config_record - create a config_record entry and set is values to

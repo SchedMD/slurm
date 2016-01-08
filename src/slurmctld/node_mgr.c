@@ -1762,7 +1762,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
-			build_config_feature_list(new_config_ptr);
+			build_avail_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
@@ -1823,7 +1823,7 @@ static int _update_node_features(char *node_names, char *features)
 			xfree(config_ptr->feature);
 			if (features && features[0])
 				config_ptr->feature = xstrdup(features);
-			build_config_feature_list(config_ptr);
+			build_avail_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
@@ -1835,7 +1835,7 @@ static int _update_node_features(char *node_names, char *features)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
-			build_config_feature_list(new_config_ptr);
+			build_avail_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */

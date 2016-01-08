@@ -369,7 +369,7 @@ static int _build_bitmaps(void)
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
-		build_config_feature_list(config_ptr);
+		build_avail_feature_list(config_ptr);
 	}
 	list_iterator_destroy(config_iterator);
 

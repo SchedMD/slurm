@@ -243,13 +243,13 @@ static int _num_feature_count(struct job_record *job_ptr, bool *has_xor)
 	struct job_details *detail_ptr = job_ptr->details;
 	int rc = 0;
 	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
+	job_feature_t *feat_ptr;
 
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
 		return rc;
 
 	feat_iter = list_iterator_create(detail_ptr->feature_list);
-	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
+	while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
 		if (feat_ptr->op_code == FEATURE_OP_XOR)
@@ -278,7 +278,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 	List preemptee_candidates = NULL;
 	List preemptee_job_list = NULL;
 	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
+	job_feature_t *feat_ptr;
 
 	if (feat_cnt) {
 		/* Ideally schedule the job feature by feature,
@@ -295,8 +295,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		list_size = list_count(detail_ptr->feature_list);
 		feat_cnt_orig = xmalloc(sizeof(uint16_t) * list_size);
 		feat_iter = list_iterator_create(detail_ptr->feature_list);
-		while ((feat_ptr =
-			(struct feature_record *) list_next(feat_iter))) {
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			high_cnt = MAX(high_cnt, feat_ptr->count);
 			feat_cnt_orig[i++] = feat_ptr->count;
 			feat_ptr->count = 0;
@@ -322,8 +321,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		/* Restore the feature counts */
 		i = 0;
 		feat_iter = list_iterator_create(detail_ptr->feature_list);
-		while ((feat_ptr =
-			(struct feature_record *) list_next(feat_iter))) {
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			feat_ptr->count = feat_cnt_orig[i++];
 		}
 		list_iterator_destroy(feat_iter);
@@ -331,7 +329,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 	} else if (has_xor) {
 		/* Cache the feature information and test the individual
 		 * features, one at a time */
-		struct feature_record feature_base;
+		job_feature_t feature_base;
 		List feature_cache = detail_ptr->feature_list;
 		time_t low_start = 0;
 
@@ -342,8 +340,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		feat_iter = list_iterator_create(feature_cache);
-		while ((feat_ptr =
-		       (struct feature_record *) list_next(feat_iter))) {
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			feature_base.name = feat_ptr->name;
 			if ((job_req_node_filter(job_ptr, *avail_bitmap) ==
 			      SLURM_SUCCESS) &&

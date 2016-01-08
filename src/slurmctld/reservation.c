@@ -3813,7 +3813,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		char *features = xstrdup(resv_desc_ptr->features);
 		char *sep_ptr, *token = features;
 		bitstr_t *feature_bitmap = bit_copy(node_bitmap);
-		struct features_record *feature_ptr;
+		node_feature_t *feature_ptr;
 		ListIterator feature_iter;
 		bool match;
 
@@ -3837,8 +3837,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			}
 
 			match = false;
-			feature_iter = list_iterator_create(feature_list);
-			while ((feature_ptr = (struct features_record *)
+			feature_iter = list_iterator_create(avail_feature_list);
+			while ((feature_ptr = (node_feature_t *)
 					list_next(feature_iter))) {
 				if (strcmp(token, feature_ptr->name))
 					continue;

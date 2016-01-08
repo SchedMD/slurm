@@ -934,9 +934,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	bit_and (nodes_avail, up_node_bitmap);
 	if (step_spec->features) {
 		/* We only select for a single feature name here.
-		 * Add support for AND, OR, etc. here if desired */
-		struct features_record *feat_ptr;
-		feat_ptr = list_find_first(feature_list, list_find_feature,
+		 * FIXME: Add support for AND, OR, etc. here if desired */
+		node_feature_t *feat_ptr;
+		feat_ptr = list_find_first(avail_feature_list,
+					   list_find_feature,
 					   (void *) step_spec->features);
 		if (feat_ptr && feat_ptr->node_bitmap)
 			bit_and(nodes_avail, feat_ptr->node_bitmap);
