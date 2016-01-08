@@ -562,6 +562,7 @@ extern void slurmdb_destroy_qos_usage(void *object)
 		(slurmdb_qos_usage_t *)object;
 
 	if (usage) {
+		FREE_NULL_LIST(usage->acct_limit_list);
 		FREE_NULL_LIST(usage->job_list);
 		FREE_NULL_LIST(usage->user_limit_list);
 		xfree(usage->grp_used_tres_run_secs);

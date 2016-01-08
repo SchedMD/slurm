@@ -725,6 +725,8 @@ typedef struct {
 } slurmdb_job_rec_t;
 
 typedef struct {
+	List acct_limit_list; /* slurmdb_used_limits_t's (DON'T PACK
+			       * for state file) */
 	List job_list; /* list of job pointers to submitted/running
 			  jobs (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
@@ -1001,7 +1003,7 @@ typedef struct {
 } slurmdb_txn_rec_t;
 
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
- * user_limit_list. */
+ * user_limit_list and acct_limit_list. */
 typedef struct {
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t submit_jobs; /* count of jobs pending or running */

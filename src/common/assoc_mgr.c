@@ -414,21 +414,20 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
-static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
+static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
 	ListIterator itr = NULL;
 	int i;
 
-	if (!qos_ptr->usage->user_limit_list
-	    || !list_count(qos_ptr->usage->user_limit_list))
+	if (!used_limit_list || !list_count(used_limit_list))
 		return;
 
-	itr = list_iterator_create(qos_ptr->usage->user_limit_list);
+	itr = list_iterator_create(used_limit_list);
 	while ((used_limits = list_next(itr))) {
 		used_limits->jobs = 0;
 		used_limits->submit_jobs = 0;
-		for (i=0; i<qos_ptr->usage->tres_cnt; i++) {
+		for (i=0; i<tres_cnt; i++) {
 			used_limits->tres[i] = 0;
 			used_limits->tres_run_mins[i] = 0;
 		}
@@ -436,6 +435,20 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 	list_iterator_destroy(itr);
 
 	return;
+}
+
+
+
+static void _clear_qos_acct_limit_info(slurmdb_qos_rec_t *qos_ptr)
+{
+	_clear_qos_used_limit_list(qos_ptr->usage->acct_limit_list,
+				   qos_ptr->usage->tres_cnt);
+}
+
+static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
+{
+	_clear_qos_used_limit_list(qos_ptr->usage->user_limit_list,
+				   qos_ptr->usage->tres_cnt);
 }
 
 static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
@@ -456,6 +469,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	 * else where since sometimes we call this and do not want
 	 * shares reset */
 
+	_clear_qos_acct_limit_info(qos);
 	_clear_qos_user_limit_info(qos);
 
 	return SLURM_SUCCESS;
@@ -2548,6 +2562,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* Don't send any usage info since we don't know if the usage
 	   is really in existance here, if they really want it they can
 	   use the pointer that is returned. */
+
+	/* if (!qos->usage->acct_limit_list) */
+	/* 	qos->usage->acct_limit_list = found_qos->usage->acct_limit_list; */
 
 	/* qos->usage->grp_used_tres   = found_qos->usage->grp_used_tres; */
 	/* qos->usage->grp_used_tres_run_mins  = */

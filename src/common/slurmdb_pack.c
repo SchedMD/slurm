@@ -2483,27 +2483,74 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr;
 	void *used_limits;
 
-	pack32(usage->grp_used_jobs, buffer);
-	pack32(usage->grp_used_submit_jobs, buffer);
-	pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
-	pack64_array(usage->grp_used_tres_run_secs, usage->tres_cnt, buffer);
-	packdouble(usage->grp_used_wall, buffer);
-	packdouble(usage->norm_priority, buffer);
-	packlongdouble(usage->usage_raw, buffer);
-	packlongdouble_array(usage->usage_tres_raw, usage->tres_cnt, buffer);
+	if (rpc_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (!usage->acct_limit_list ||
+		    !(count = list_count(usage->acct_limit_list)))
+			count = NO_VAL;
 
-	if (!usage->user_limit_list ||
-	    !(count = list_count(usage->user_limit_list)))
-		count = NO_VAL;
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(usage->acct_limit_list);
+			while ((used_limits = list_next(itr)))
+				slurmdb_pack_used_limits(
+					used_limits, usage->tres_cnt,
+					rpc_version, buffer);
+			list_iterator_destroy(itr);
+		}
+		pack32(usage->grp_used_jobs, buffer);
+		pack32(usage->grp_used_submit_jobs, buffer);
+		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
+		pack64_array(usage->grp_used_tres_run_secs,
+			     usage->tres_cnt, buffer);
+		packdouble(usage->grp_used_wall, buffer);
+		packdouble(usage->norm_priority, buffer);
+		packlongdouble(usage->usage_raw, buffer);
+		packlongdouble_array(usage->usage_tres_raw,
+				     usage->tres_cnt, buffer);
 
-	pack32(count, buffer);
-	if (count != NO_VAL) {
-		itr = list_iterator_create(usage->user_limit_list);
-		while ((used_limits = list_next(itr)))
-			slurmdb_pack_used_limits(used_limits, usage->tres_cnt,
-						 rpc_version, buffer);
-		list_iterator_destroy(itr);
+		if (!usage->user_limit_list ||
+		    !(count = list_count(usage->user_limit_list)))
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(usage->user_limit_list);
+			while ((used_limits = list_next(itr)))
+				slurmdb_pack_used_limits(
+					used_limits, usage->tres_cnt,
+					rpc_version, buffer);
+			list_iterator_destroy(itr);
+		}
+	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		pack32(usage->grp_used_jobs, buffer);
+		pack32(usage->grp_used_submit_jobs, buffer);
+		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
+		pack64_array(usage->grp_used_tres_run_secs,
+			     usage->tres_cnt, buffer);
+		packdouble(usage->grp_used_wall, buffer);
+		packdouble(usage->norm_priority, buffer);
+		packlongdouble(usage->usage_raw, buffer);
+		packlongdouble_array(usage->usage_tres_raw,
+				     usage->tres_cnt, buffer);
+
+		if (!usage->user_limit_list ||
+		    !(count = list_count(usage->user_limit_list)))
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(usage->user_limit_list);
+			while ((used_limits = list_next(itr)))
+				slurmdb_pack_used_limits(
+					used_limits, usage->tres_cnt,
+					rpc_version, buffer);
+			list_iterator_destroy(itr);
+		}
+	} else {
+		error("%s: version too old %u", __func__, rpc_version);
+		return;
 	}
+
 }
 
 extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
@@ -2517,30 +2564,80 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	safe_unpack32(&object_ptr->grp_used_jobs, buffer);
-	safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
-	safe_unpack64_array(&object_ptr->grp_used_tres,
-			    &object_ptr->tres_cnt, buffer);
-	safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
-			    &object_ptr->tres_cnt, buffer);
-	safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
-	safe_unpackdouble(&object_ptr->norm_priority, buffer);
-	safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
-	safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
-				    &count, buffer);
-
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		object_ptr->user_limit_list =
-			list_create(slurmdb_destroy_used_limits);
-		for (i = 0; i < count; i++) {
-			if (slurmdb_unpack_used_limits(&used_limits,
-						       object_ptr->tres_cnt,
-						       rpc_version, buffer)
-			    != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(object_ptr->user_limit_list, used_limits);
+	if (rpc_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->acct_limit_list =
+				list_create(slurmdb_destroy_used_limits);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_used_limits(
+					    &used_limits,
+					    object_ptr->tres_cnt,
+					    rpc_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->acct_limit_list,
+					    used_limits);
+			}
 		}
+		safe_unpack32(&object_ptr->grp_used_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
+		safe_unpack64_array(&object_ptr->grp_used_tres,
+				    &object_ptr->tres_cnt, buffer);
+		safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
+				    &object_ptr->tres_cnt, buffer);
+		safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
+		safe_unpackdouble(&object_ptr->norm_priority, buffer);
+		safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+		safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+					    &count, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->user_limit_list =
+				list_create(slurmdb_destroy_used_limits);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_used_limits(
+					    &used_limits,
+					    object_ptr->tres_cnt,
+					    rpc_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->user_limit_list,
+					    used_limits);
+			}
+		}
+	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->grp_used_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
+		safe_unpack64_array(&object_ptr->grp_used_tres,
+				    &object_ptr->tres_cnt, buffer);
+		safe_unpack64_array(&object_ptr->grp_used_tres_run_secs,
+				    &object_ptr->tres_cnt, buffer);
+		safe_unpackdouble(&object_ptr->grp_used_wall, buffer);
+		safe_unpackdouble(&object_ptr->norm_priority, buffer);
+		safe_unpacklongdouble(&object_ptr->usage_raw, buffer);
+		safe_unpacklongdouble_array(&object_ptr->usage_tres_raw,
+					    &count, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->user_limit_list =
+				list_create(slurmdb_destroy_used_limits);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_used_limits(
+					    &used_limits,
+					    object_ptr->tres_cnt,
+					    rpc_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->user_limit_list,
+					    used_limits);
+			}
+		}
+	} else {
+		error("%s: version too old %u", __func__, rpc_version);
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
@@ -2606,6 +2703,7 @@ extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t rpc_version,
 
 	} else {
 		error("%s: version too old %u", __func__, rpc_version);
+		return;
 	}
 
 	slurmdb_pack_qos_usage(object->usage,
