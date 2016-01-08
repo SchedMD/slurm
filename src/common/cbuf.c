@@ -166,14 +166,6 @@ static int cbuf_is_valid (cbuf_t cb);
  *  Macros  *
  ************/
 
-#ifndef MAX
-#  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
-#endif /* !MAX */
-
-#ifndef MIN
-#  define MIN(x,y) (((x) <= (y)) ? (x) : (y))
-#endif /* !MIN */
-
 #ifdef WITH_PTHREADS
 
 #  define cbuf_mutex_init(cb)                                                 \
