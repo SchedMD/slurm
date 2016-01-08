@@ -215,6 +215,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->node_hostname, buffer);
 	packstr (dump_node_ptr->reason, buffer);
 	packstr (dump_node_ptr->features, buffer);
+	packstr (dump_node_ptr->features_act, buffer);
 	packstr (dump_node_ptr->gres, buffer);
 	packstr (dump_node_ptr->cpu_spec_list, buffer);
 	pack32  (dump_node_ptr->node_state, buffer);
@@ -278,7 +279,8 @@ extern int load_all_node_state ( bool state_only )
 {
 	char *comm_name = NULL, *node_hostname = NULL;
 	char *node_name = NULL, *reason = NULL, *data = NULL, *state_file;
-	char *features = NULL, *gres = NULL, *cpu_spec_list = NULL;
+	char *features = NULL, *features_act = NULL;
+	char *gres = NULL, *cpu_spec_list = NULL;
 	char *mcs_label = NULL;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t core_spec_cnt = 0;
@@ -360,6 +362,7 @@ extern int load_all_node_state ( bool state_only )
 							    &name_len, buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
 			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&features_act,&name_len,buffer);
 			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
 			safe_unpackstr_xmalloc (&cpu_spec_list,
 							    &name_len, buffer);
@@ -559,6 +562,9 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_time = reason_time;
 				node_ptr->reason_uid = reason_uid;
 			}
+			xfree(node_ptr->features_act);
+			node_ptr->features_act	= features_act;
+			features_act		= NULL;	/* Nothing to free */
 			node_ptr->gres_list	= gres_list;
 			gres_list		= NULL;	/* Nothing to free */
 		} else {
@@ -594,6 +600,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->features);
 			node_ptr->features	= features;
 			features		= NULL;	/* Nothing to free */
+			xfree(node_ptr->features_act);
+			node_ptr->features_act	= features_act;
+			features_act		= NULL;	/* Nothing to free */
 			xfree(node_ptr->gres);
 			node_ptr->gres 		= gres;
 			gres			= NULL;	/* Nothing to free */
@@ -631,6 +640,7 @@ extern int load_all_node_state ( bool state_only )
 		}
 
 		xfree(features);
+		xfree(features_act);
 		xfree(gres);
 		FREE_NULL_LIST(gres_list);
 		xfree (comm_name);

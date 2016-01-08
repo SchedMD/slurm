@@ -1319,6 +1319,11 @@ static int _restore_node_state(int recover,
 			node_ptr->arch = old_node_ptr->arch;
 			old_node_ptr->arch = NULL;
 		}
+		if (old_node_ptr->features_act) {
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = old_node_ptr->features_act;
+			old_node_ptr->features_act = NULL;
+		}
 		if (old_node_ptr->os) {
 			xfree(node_ptr->os);
 			node_ptr->os = old_node_ptr->os;
