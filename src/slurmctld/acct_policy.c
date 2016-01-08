@@ -347,6 +347,17 @@ static void _set_qos_order(struct job_record *job_ptr,
 	return;
 }
 
+static int _find_used_limits_for_acct(void *x, void *key)
+{
+	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
+	char *account = (char *)key;
+
+	if (!xstrcmp(account, used_limits->acct))
+		return 1;
+
+	return 0;
+}
+
 static int _find_used_limits_for_user(void *x, void *key)
 {
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
@@ -1023,6 +1034,7 @@ static int _validate_tres_usage_limits_for_qos(
 }
 
 static int _qos_policy_validate(job_desc_msg_t *job_desc,
+				slurmdb_assoc_rec_t *assoc_ptr,
 				struct part_record *part_ptr,
 				slurmdb_qos_rec_t *qos_ptr,
 				slurmdb_qos_rec_t *qos_out_ptr,
@@ -1042,6 +1054,34 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	/* for validation we don't need to look at
 	 * qos_ptr->grp_tres_mins.
 	 */
+
+	if (!_validate_tres_limits_for_qos(&tres_pos,
+					   job_desc->tres_req_cnt, 0,
+					   NULL,
+					   qos_ptr->max_tres_pa_ctld,
+					   NULL,
+					   qos_out_ptr->max_tres_pa_ctld,
+					   acct_policy_limit_set->tres,
+					   strict_checking, 1)) {
+		if (job_desc->tres_req_cnt[tres_pos] >
+		    qos_ptr->max_tres_pa_ctld[tres_pos]) {
+			if (reason)
+				*reason = get_tres_state_reason(
+					tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
+
+			debug2("job submit for user %s(%u): "
+			       "min tres(%s) request %"PRIu64" exceeds "
+			       "per-acct max tres limit %"PRIu64" for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       job_desc->tres_req_cnt[tres_pos],
+			       qos_ptr->max_tres_pa_ctld[tres_pos],
+			       qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
+	}
 
 	if (!_validate_tres_limits_for_qos(&tres_pos,
 					   job_desc->tres_req_cnt, 0,
@@ -1250,6 +1290,34 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	 * qos_ptr->max_jobs.
 	 */
 
+	if ((qos_out_ptr->max_submit_jobs_pa == INFINITE) &&
+	    (qos_ptr->max_submit_jobs_pa != INFINITE)) {
+		slurmdb_used_limits_t *used_limits = NULL;
+
+		if (qos_ptr->usage->user_limit_list)
+			used_limits = list_find_first(
+				qos_ptr->usage->acct_limit_list,
+				_find_used_limits_for_acct,
+				&job_desc->user_id);
+
+		qos_out_ptr->max_submit_jobs_pa = qos_ptr->max_submit_jobs_pa;
+
+		if ((!used_limits &&
+		     qos_ptr->max_submit_jobs_pa == 0) ||
+		    (used_limits &&
+		     ((used_limits->submit_jobs + job_cnt) >
+		      qos_ptr->max_submit_jobs_pa))) {
+			if (reason)
+				*reason = WAIT_QOS_MAX_SUB_JOB_PER_ACCT;
+			debug2("job submit for account %s: "
+			       "qos max submit job limit exceeded %u",
+			       assoc_ptr->acct,
+			       qos_ptr->max_submit_jobs_pa);
+			rc = false;
+			goto end_it;
+		}
+	}
+
 	if ((qos_out_ptr->max_submit_jobs_pu == INFINITE) &&
 	    (qos_ptr->max_submit_jobs_pu != INFINITE)) {
 		slurmdb_used_limits_t *used_limits = NULL;
@@ -1309,17 +1377,18 @@ end_it:
 }
 
 static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
-					 slurmdb_qos_rec_t *qos_ptr,
-					 slurmdb_qos_rec_t *qos_out_ptr)
+					slurmdb_qos_rec_t *qos_ptr,
+					slurmdb_qos_rec_t *qos_out_ptr)
 {
 	uint32_t wall_mins;
 	uint32_t time_limit = NO_VAL;
 	int rc = true;
-	slurmdb_used_limits_t *used_limits = NULL;
-	bool free_used_limits = false;
+	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
+	bool free_used_limits = false, free_used_limits_a = false;
 	bool safe_limits = false;
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
-	if (!qos_ptr || !qos_out_ptr)
+	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
 		return rc;
 
 	/* check to see if we should be using safe limits, if so we
@@ -1329,6 +1398,20 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		safe_limits = true;
 
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
+
+	/*
+	 * Try to get the used limits for the account or initialise a local
+	 * nullified one if not available.
+	 */
+	if (!qos_ptr->usage->acct_limit_list ||
+	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
+					      _find_used_limits_for_acct,
+					      &assoc_ptr->acct))) {
+		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits_a->acct = assoc_ptr->acct; /* Just point to
+							  it, don't copy. */
+		free_used_limits_a = true;
+	}
 
 	/*
 	 * Try to get the used limits for the user or initialise a local
@@ -1424,7 +1507,31 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	/* we don't need to check min_tres_pj here */
 
+	/* we don't need to check max_tres_pa here */
+
 	/* we don't need to check max_tres_pu here */
+
+	if ((qos_out_ptr->max_jobs_pa == INFINITE)
+	    && (qos_ptr->max_jobs_pa != INFINITE)) {
+
+		qos_out_ptr->max_jobs_pa = qos_ptr->max_jobs_pa;
+
+		if (used_limits_a->jobs >= qos_ptr->max_jobs_pa) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason =
+				WAIT_QOS_MAX_JOB_PER_ACCT;
+			debug2("job %u being held, "
+			       "the job is at or exceeds "
+			       "max jobs per-acct (%s) limit "
+			       "%u with %u for QOS %s",
+			       job_ptr->job_id,
+			       used_limits_a->acct,
+			       qos_ptr->max_jobs_pa,
+			       used_limits_a->jobs, qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
+	}
 
 	if ((qos_out_ptr->max_jobs_pu == INFINITE)
 	    && (qos_ptr->max_jobs_pu != INFINITE)) {
@@ -1446,6 +1553,8 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			goto end_it;
 		}
 	}
+
+	/* we don't need to check submit_jobs_pa here */
 
 	/* we don't need to check submit_jobs_pu here */
 
@@ -1483,6 +1592,9 @@ end_it:
 	if (free_used_limits)
 		xfree(used_limits);
 
+	if (free_used_limits_a)
+		xfree(used_limits_a);
+
 	return rc;
 }
 
@@ -1494,13 +1606,14 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 {
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
-	slurmdb_used_limits_t *used_limits = NULL;
-	bool free_used_limits = false;
+	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
+	bool free_used_limits = false, free_used_limits_a = false;
 	bool safe_limits = false;
 	int rc = true;
 	int i, tres_pos = 0;
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
-	if (!qos_ptr || !qos_out_ptr)
+	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
 		return rc;
 
 	/* check to see if we should be using safe limits, if so we
@@ -1518,6 +1631,21 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		tres_usage_mins[i] =
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	}
+
+	/*
+	 * Try to get the used limits for the account or initialise a local
+	 * nullified one if not available.
+	 */
+	if (!qos_ptr->usage->acct_limit_list ||
+	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
+					      _find_used_limits_for_acct,
+					      &assoc_ptr->acct))) {
+		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits_a->acct = assoc_ptr->acct; /* Just point to
+							  it, don't copy. */
+		free_used_limits_a = true;
+	}
+
 
 	/*
 	 * Try to get the used limits for the user or initialize a local
@@ -1810,6 +1938,61 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
+		qos_ptr->max_tres_pa_ctld, qos_out_ptr->max_tres_pa_ctld,
+		tres_req_cnt, used_limits_a->tres,
+		NULL, job_ptr->limit_set.tres, 1);
+	switch (i) {
+	case 1:
+		/* not possible because the curr_usage sent in is NULL */
+		break;
+	case 2:
+		/* Hold the job if it exceeds the per-acct
+		 * TRES limit for the given QOS
+		 */
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
+		debug2("job %u is being held, "
+		       "QOS %s min tres(%s) "
+		       "request %"PRIu64" exceeds "
+		       "max tres per account (%s) limit %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       tres_req_cnt[tres_pos],
+		       used_limits_a->acct,
+		       qos_ptr->max_tres_pa_ctld[tres_pos]);
+		rc = false;
+		goto end_it;
+		break;
+	case 3:
+		/* Hold the job if the user has exceeded
+		 * the QOS per-user TRES limit with their
+		 * current usage */
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = get_tres_state_reason(
+			tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
+		debug2("job %u being held, "
+		       "if allowed the job request will exceed "
+		       "QOS %s max tres(%s) per account (%s) limit "
+		       "%"PRIu64" with already used %"PRIu64" + "
+		       "requested %"PRIu64,
+		       job_ptr->job_id,
+		       qos_ptr->name,
+		       assoc_mgr_tres_name_array[tres_pos],
+		       used_limits_a->acct,
+		       qos_ptr->max_tres_pa_ctld[tres_pos],
+		       used_limits_a->tres[tres_pos],
+		       tres_req_cnt[tres_pos]);
+		rc = false;
+		goto end_it;
+	default:
+		/* all good */
+		break;
+	}
+
+	i = _validate_tres_usage_limits_for_qos(
+		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
 		tres_req_cnt, used_limits->tres,
 		NULL, job_ptr->limit_set.tres, 1);
@@ -1861,15 +2044,22 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	}
 
+	/* We do not need to check max_jobs_pa here */
+
 	/* We do not need to check max_jobs_pu here */
 
 end_it:
+	/* we don't need to check submit_jobs_pa here */
+
 	/* we don't need to check submit_jobs_pu here */
 
 	/* we don't need to check max_wall_pj here */
 
 	if (free_used_limits)
 		xfree(used_limits);
+
+	if (free_used_limits_a)
+		xfree(used_limits_a);
 
 	return rc;
 }
@@ -2139,12 +2329,14 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				qos_ptr_2->flags & QOS_FLAG_DENY_LIMIT;
 
 		if (!(rc = _qos_policy_validate(
-			      job_desc, part_ptr, qos_ptr_1, &qos_rec,
+			      job_desc, assoc_ptr, part_ptr,
+			      qos_ptr_1, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
 			      user_name, job_cnt, strict_checking)))
 			goto end_it;
 		if (!(rc = _qos_policy_validate(
-			      job_desc, part_ptr, qos_ptr_2, &qos_rec,
+			      job_desc, assoc_ptr,
+			      part_ptr, qos_ptr_2, &qos_rec,
 			      reason, acct_policy_limit_set, update_call,
 			      user_name, job_cnt, strict_checking)))
 			goto end_it;
@@ -2277,7 +2469,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->max_jobs.
 		 */
 
-		if ((qos_rec.max_submit_jobs_pu == INFINITE) &&
+		if ((qos_rec.max_submit_jobs_pa == INFINITE) &&
+		    (qos_rec.max_submit_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
 		    ((assoc_ptr->usage->used_submit_jobs + job_cnt)
 		     > assoc_ptr->max_submit_jobs)) {
@@ -2517,7 +2710,8 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 
 		/* we don't need to check max_cpus_pj here */
 
-		if ((qos_rec.max_jobs_pu == INFINITE) &&
+		if ((qos_rec.max_jobs_pa == INFINITE) &&
+		    (qos_rec.max_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_jobs != INFINITE) &&
 		    (assoc_ptr->usage->used_jobs >= assoc_ptr->max_jobs)) {
 			xfree(job_ptr->state_desc);
@@ -2986,10 +3180,15 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 			qos_ptr_1->max_tres_pj_ctld[TRES_ARRAY_NODE];
 		uint64_t max_nodes_pu =
 			qos_ptr_1->max_tres_pu_ctld[TRES_ARRAY_NODE];
+		uint64_t max_nodes_pa =
+			qos_ptr_1->max_tres_pa_ctld[TRES_ARRAY_NODE];
 
 		grp_nodes = qos_ptr_1->grp_tres_ctld[TRES_ARRAY_NODE];
 
 		if (qos_ptr_2) {
+			if (max_nodes_pa == INFINITE64)
+				max_nodes_pa = qos_ptr_2->max_tres_pa_ctld[
+					TRES_ARRAY_NODE];
 			if (max_nodes_pj == INFINITE64)
 				max_nodes_pj = qos_ptr_2->max_tres_pj_ctld[
 					TRES_ARRAY_NODE];
@@ -3001,10 +3200,17 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 					TRES_ARRAY_NODE];
 		}
 
-		if (max_nodes_pj < max_nodes_pu) {
+		if (max_nodes_pa < max_nodes_limit) {
+			max_nodes_limit = max_nodes_pa;
+			*wait_reason = WAIT_QOS_MAX_NODE_PER_ACCT;
+		}
+
+		if (max_nodes_pj < max_nodes_limit) {
 			max_nodes_limit = max_nodes_pj;
 			*wait_reason = WAIT_QOS_MAX_NODE_PER_JOB;
-		} else if (max_nodes_pu != INFINITE64) {
+		}
+
+		if (max_nodes_pu < max_nodes_limit) {
 			max_nodes_limit = max_nodes_pu;
 			*wait_reason = WAIT_QOS_MAX_NODE_PER_USER;
 		}
