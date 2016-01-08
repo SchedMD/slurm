@@ -240,8 +240,17 @@ extern int build_all_nodeline_info (bool set_bitmap);
  */
 extern int build_all_frontend_info (bool is_slurmd_context);
 
-/* Given a config_record with it's bitmap already set,
- * build avail_feature_list */
+/* Rebuild active_feature_list for given node bitmap */
+extern void  build_active_feature_list(bitstr_t *node_bitmap,
+				       char *active_features);
+
+/* Rebuild active_feature_list for given node index,
+ * IN node_inx - Node index, if -1 then copy alloc_feature_list into
+ *		 acitve_feature_list, if -2 then log state
+ */
+extern void  build_active_feature_list2(int node_inx, char *active_features);
+
+/* Rebuild avail_feature_list for given node configuration structure */
 extern void  build_avail_feature_list(struct config_record *config_ptr);
 
 /*

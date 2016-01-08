@@ -89,13 +89,17 @@ time_t last_node_update = (time_t) 0;	/* time of last update */
 struct node_record *node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
 int node_record_count = 0;		/* count in node_record_table_ptr */
-
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 
-static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
+/* Local function defiitions */
+static void	_add_config_feature(List feature_list, char *feature,
+				    bitstr_t *node_bitmap);
+static void	_add_config_feature_inx(List feature_list, char *feature,
+					int node_inx);
 static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 					    struct config_record *config_ptr);
+static void	_copy_feature_list(void);
 static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
@@ -110,14 +114,15 @@ static int	_list_find_config (void *config_entry, void *key);
 static int	_list_find_feature (void *feature_entry, void *key);
 
 
-static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
+static void	_add_config_feature(List feature_list, char *feature,
+				    bitstr_t *node_bitmap)
 {
 	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 	bool match = false;
 
 	/* If feature already in avail_feature_list, just update the bitmap */
-	feature_iter = list_iterator_create(avail_feature_list);
+	feature_iter = list_iterator_create(feature_list);
 	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
 		if (strcmp(feature, feature_ptr->name))
 			continue;
@@ -132,10 +137,37 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 		feature_ptr->magic = FEATURE_MAGIC;
 		feature_ptr->name = xstrdup(feature);
 		feature_ptr->node_bitmap = bit_copy(node_bitmap);
-		list_append(avail_feature_list, feature_ptr);
+		list_append(feature_list, feature_ptr);
 	}
 }
 
+static void	_add_config_feature_inx(List feature_list, char *feature,
+					int node_inx)
+{
+	node_feature_t *feature_ptr;
+	ListIterator feature_iter;
+	bool match = false;
+
+	/* If feature already in avail_feature_list, just update the bitmap */
+	feature_iter = list_iterator_create(feature_list);
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+		if (strcmp(feature, feature_ptr->name))
+			continue;
+		bit_set(feature_ptr->node_bitmap, node_inx);
+		match = true;
+		break;
+	}
+	list_iterator_destroy(feature_iter);
+
+	if (!match) {	/* Need to create new avail_feature_list record */
+		feature_ptr = xmalloc(sizeof(node_feature_t));
+		feature_ptr->magic = FEATURE_MAGIC;
+		feature_ptr->name = xstrdup(feature);
+		feature_ptr->node_bitmap = bit_alloc(node_record_count);
+		bit_set(feature_ptr->node_bitmap, node_inx);
+		list_append(feature_list, feature_ptr);
+	}
+}
 
 /*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
@@ -692,8 +724,111 @@ extern int build_all_nodeline_info (bool set_bitmap)
 	return max_rc;
 }
 
-/* Given a config_record with it's bitmap already set,
- * build avail_feature_list */
+/* Rebuild active_feature_list for given node bitmap */
+extern void  build_active_feature_list(bitstr_t *node_bitmap,
+				       char *active_features)
+{
+	node_feature_t *feature_ptr;
+	ListIterator feature_iter;
+	char *tmp_str, *token, *last = NULL;
+
+	/* Clear these nodes from the feature_list record,
+	 * then restore as needed */
+	feature_iter = list_iterator_create(active_feature_list);
+	bit_not(node_bitmap);
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+		bit_and(feature_ptr->node_bitmap, node_bitmap);
+	}
+	list_iterator_destroy(feature_iter);
+	bit_not(node_bitmap);
+
+	if (active_features) {
+		tmp_str = xstrdup(active_features);
+		token = strtok_r(tmp_str, ",", &last);
+		while (token) {
+			_add_config_feature(active_feature_list, token,
+					    node_bitmap);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_str);
+	}
+}
+
+/* Clear active_feature_list,
+ * then copy avail_feature_list into active_feature_list */
+static void _copy_feature_list(void)
+{
+	node_feature_t *active_feature_ptr, *avail_feature_ptr;
+	ListIterator feature_iter;
+
+	(void) list_delete_all(active_feature_list, &_list_find_feature, NULL);
+
+	feature_iter = list_iterator_create(avail_feature_list);
+	while ((avail_feature_ptr = (node_feature_t *)list_next(feature_iter))){
+		active_feature_ptr = xmalloc(sizeof(node_feature_t));
+		active_feature_ptr->magic = FEATURE_MAGIC;
+		active_feature_ptr->name = xstrdup(avail_feature_ptr->name);
+		active_feature_ptr->node_bitmap =
+			bit_copy(avail_feature_ptr->node_bitmap);
+		list_append(active_feature_list, active_feature_ptr);
+	}
+	list_iterator_destroy(feature_iter);
+}
+
+/* Rebuild active_feature_list for given node index,
+ * IN node_inx - Node index, if -1 then copy alloc_feature_list into
+ *		 acitve_feature_list, if -2 then log state
+ */
+extern void  build_active_feature_list2(int node_inx, char *active_features)
+{
+	node_feature_t *feature_ptr;
+	ListIterator feature_iter;
+	char *tmp_str, *token, *last = NULL;
+
+	if (node_inx == -1) {
+		_copy_feature_list();
+		return;
+	}
+	if (node_inx == -2) {
+#if _DEBUG
+		feature_iter = list_iterator_create(active_feature_list);
+		while ((feature_ptr = (node_feature_t *)
+		        list_next(feature_iter))) {
+			info("ACTIVE FEATURE: NAME:%s CNT:%d",
+			     feature_ptr->name,
+			     bit_set_count(feature_ptr->node_bitmap));
+		}
+		list_iterator_destroy(feature_iter);
+#endif
+		return;
+	}
+
+	if ((node_inx < 0) || (node_inx >= node_record_count)) {
+		error("%s: Invalid node_inx:%d", __func__, node_inx);
+		return;
+	}
+
+	/* Clear this node from the feature_list record,
+	 * then restore as needed */
+	feature_iter = list_iterator_create(active_feature_list);
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+		bit_clear(feature_ptr->node_bitmap, node_inx);
+	}
+	list_iterator_destroy(feature_iter);
+
+	if (active_features) {
+		tmp_str = xstrdup(active_features);
+		token = strtok_r(tmp_str, ",", &last);
+		while (token) {
+			_add_config_feature_inx(active_feature_list, token,
+						node_inx);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_str);
+	}
+}
+
+/* Rebuild avail_feature_list for given node configuration structure */
 extern void  build_avail_feature_list(struct config_record *config_ptr)
 {
 	node_feature_t *feature_ptr;
@@ -714,7 +849,8 @@ extern void  build_avail_feature_list(struct config_record *config_ptr)
 		tmp_str = xstrdup(config_ptr->feature);
 		token = strtok_r(tmp_str, ",", &last);
 		while (token) {
-			_add_config_feature(token, config_ptr->node_bitmap);
+			_add_config_feature(avail_feature_list, token,
+					    config_ptr->node_bitmap);
 			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);

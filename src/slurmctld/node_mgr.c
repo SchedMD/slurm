@@ -111,7 +111,10 @@ static void 	_pack_node(struct node_record *dump_node_ptr, Buf buffer,
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
-static int	_update_node_features(char *node_names, char *features);
+static int	_update_node_active_features(char *node_names,
+				char *active_features);
+static int	_update_node_avail_features(char *node_names,
+				char *avail_features);
 static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
@@ -1347,7 +1350,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->features =
 					xstrdup(update_node_msg->features);
 			}
-			/* _update_node_features() logs and updates config */
+			/* _update_node_avail_features() logs and updates
+			 * avail_feature_list */
 		}
 
 		if (update_node_msg->features_act &&
@@ -1363,7 +1367,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->features_act =
 					xstrdup(update_node_msg->features_act);
 			}
-			/* _update_node_features() logs and updates config */
+			/* _update_node_active_features() logs and updates
+			 * active_feature_list */
 		}
 
 		if (update_node_msg->gres) {
@@ -1614,9 +1619,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
+	if ((error_code == 0) && (update_node_msg->features_act)) {
+		error_code = _update_node_active_features(
+					update_node_msg->node_names,
+					update_node_msg->features_act);
+	}
 	if ((error_code == 0) && (update_node_msg->features)) {
-		error_code = _update_node_features(update_node_msg->node_names,
-						   update_node_msg->features);
+		error_code = _update_node_avail_features(
+					update_node_msg->node_names,
+					update_node_msg->features);
 	}
 	if ((error_code == 0) && (update_node_msg->gres)) {
 		error_code = _update_node_gres(update_node_msg->node_names,
@@ -1668,8 +1679,8 @@ extern void restore_node_features(int recover)
 			error("Node %s Features(%s) differ from slurm.conf",
 			      node_ptr->name, node_ptr->features);
 			if (recover == 2) {
-				_update_node_features(node_ptr->name,
-						      node_ptr->features);
+				_update_node_avail_features(node_ptr->name,
+							    node_ptr->features);
 			} else {
 				xfree(node_ptr->features);
 				node_ptr->features = xstrdup(node_ptr->
@@ -1677,7 +1688,7 @@ extern void restore_node_features(int recover)
 							     feature);
 			}
 		}
-
+//FIXME ??
 		/* We lose the gres information updated manually and always
 		 * use the information from slurm.conf */
 		(void) gres_plugin_node_reconfig(node_ptr->name,
@@ -1762,7 +1773,6 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
-			build_avail_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
@@ -1783,13 +1793,37 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 }
 
 /*
- * _update_node_features - Update features associated with nodes
- *	build new config list records as needed
+ * _update_node_active_features - Update active features associated with nodes
  * IN node_names - List of nodes to update
- * IN features - New features value
+ * IN active_features - New active features value
  * RET: SLURM_SUCCESS or error code
  */
-static int _update_node_features(char *node_names, char *features)
+static int _update_node_active_features(char *node_names, char *active_features)
+{
+	bitstr_t *node_bitmap = NULL;
+	int rc;
+
+	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	if (rc) {
+		info("%s: invalid node_name (%s)", __func__, node_names);
+		return rc;
+	}
+	build_active_feature_list(node_bitmap, active_features);
+	FREE_NULL_BITMAP(node_bitmap);
+
+	info("%s: nodes %s active features set to: %s",
+	     __func__, node_names, active_features);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _update_node_avail_features - Update available features associated with
+ *	nodes, build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN avail_features - New available features value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_avail_features(char *node_names, char *avail_features)
 {
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
 	ListIterator config_iterator;
@@ -1799,7 +1833,7 @@ static int _update_node_features(char *node_names, char *features)
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
-		info("_update_node_features: invalid node_name");
+		info("%s: invalid node_name (%s)", __func__, node_names);
 		return rc;
 	}
 
@@ -1821,8 +1855,8 @@ static int _update_node_features(char *node_names, char *features)
 		} else if (tmp_cnt == config_cnt) {
 			/* all nodes changed, update in situ */
 			xfree(config_ptr->feature);
-			if (features && features[0])
-				config_ptr->feature = xstrdup(features);
+			if (avail_features && avail_features[0])
+				config_ptr->feature = xstrdup(avail_features);
 			build_avail_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
@@ -1830,8 +1864,10 @@ static int _update_node_features(char *node_names, char *features)
 			if (first_new == NULL)
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->feature);
-			if (features && features[0])
-				new_config_ptr->feature = xstrdup(features);
+			if (avail_features && avail_features[0]) {
+				new_config_ptr->feature =
+					xstrdup(avail_features);
+			}
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
 
@@ -1850,8 +1886,8 @@ static int _update_node_features(char *node_names, char *features)
 	list_iterator_destroy(config_iterator);
 	FREE_NULL_BITMAP(node_bitmap);
 
-	info("_update_node_features: nodes %s features set to: %s",
-		node_names, features);
+	info("%s: nodes %s available features set to: %s",
+	     __func__, node_names, avail_features);
 	return SLURM_SUCCESS;
 }
 

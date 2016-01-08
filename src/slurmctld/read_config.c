@@ -339,8 +339,8 @@ static int _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (i=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
 		uint32_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
@@ -366,12 +366,20 @@ static int _build_bitmaps(void)
 			bit_set(node_ptr->config_ptr->node_bitmap, i);
 	}
 
+	/* Build active and available feature lists used for scheduling */
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
 		build_avail_feature_list(config_ptr);
 	}
 	list_iterator_destroy(config_iterator);
+	build_active_feature_list2(-1, NULL);	/* Copy avail list to active */
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->features_act)
+			build_active_feature_list2(i, node_ptr->features_act);
+	}
+	build_active_feature_list2(-2, NULL);	/* Log active list */
 
 	return error_code;
 }
