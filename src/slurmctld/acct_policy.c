@@ -414,9 +414,10 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	if (!qos_ptr->usage->acct_limit_list)
 		qos_ptr->usage->acct_limit_list =
 			list_create(slurmdb_destroy_used_limits);
-	if (!(used_limits = list_find_first(qos_ptr->usage->acct_limit_list,
+
+	if (!(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
 					    _find_used_limits_for_acct,
-					    &assoc_ptr->acct))) {
+					    assoc_ptr->acct))) {
 		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
 		used_limits_a->acct = xstrdup(assoc_ptr->acct);
 
@@ -1298,7 +1299,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			used_limits = list_find_first(
 				qos_ptr->usage->acct_limit_list,
 				_find_used_limits_for_acct,
-				&job_desc->user_id);
+				assoc_ptr->acct);
 
 		qos_out_ptr->max_submit_jobs_pa = qos_ptr->max_submit_jobs_pa;
 
@@ -1406,7 +1407,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	if (!qos_ptr->usage->acct_limit_list ||
 	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
 					      _find_used_limits_for_acct,
-					      &assoc_ptr->acct))) {
+					      assoc_ptr->acct))) {
 		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
 		used_limits_a->acct = assoc_ptr->acct; /* Just point to
 							  it, don't copy. */
@@ -1639,7 +1640,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	if (!qos_ptr->usage->acct_limit_list ||
 	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
 					      _find_used_limits_for_acct,
-					      &assoc_ptr->acct))) {
+					      assoc_ptr->acct))) {
 		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
 		used_limits_a->acct = assoc_ptr->acct; /* Just point to
 							  it, don't copy. */
