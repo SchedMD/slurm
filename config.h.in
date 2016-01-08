@@ -338,9 +338,6 @@
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
-/* define if Sun Constellation system */
-#undef HAVE_SUN_CONST
-
 /* Define to 1 if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 

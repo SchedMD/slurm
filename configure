@@ -1001,7 +1001,6 @@ with_pam_dir
 enable_iso8601
 enable_load_env_no_login
 with_json
-enable_sun_const
 with_dimensions
 with_ofed
 with_hdf5
@@ -1705,7 +1704,6 @@ Optional Features:
   --enable-load-env-no-login
                           enable --get-user-env option to load user
                           environment without .login
-  --enable-sun-const      enable Sun Constellation system support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
@@ -19420,7 +19418,7 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 # Check whether --with-json was given.
 if test "${with_json+set}" = set; then :
-  withval=$with_json; x_ac_json_dirs="$withval $x_ac_json_dirs"
+  withval=$with_json; x_ac_json_dirs="$withval"
 fi
 
 
@@ -20213,39 +20211,6 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Sun Constellation system" >&5
-$as_echo_n "checking for Sun Constellation system... " >&6; }
-  # Check whether --enable-sun-const was given.
-if test "${enable_sun_const+set}" = set; then :
-  enableval=$enable_sun_const;  case "$enableval" in
-        yes) x_ac_sun_const=yes ;;
-         no) x_ac_sun_const=no ;;
-          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-sun-const" "$LINENO" 5 ;;
-      esac
-
-else
-  x_ac_sun_const=no
-
-fi
-
-
-  if test "$x_ac_sun_const" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define SYSTEM_DIMENSIONS 4" >>confdefs.h
-
-
-$as_echo "#define HAVE_SUN_CONST 1" >>confdefs.h
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-  fi
-
-
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking System dimensions" >&5
 $as_echo_n "checking System dimensions... " >&6; }
 
@@ -20294,7 +20259,7 @@ $as_echo "not set" >&6; };
 
 # Check whether --with-ofed was given.
 if test "${with_ofed+set}" = set; then :
-  withval=$with_ofed; _x_ac_ofed_dirs="$withval $_x_ac_ofed_dirs"
+  withval=$with_ofed; _x_ac_ofed_dirs="$withval"
 fi
 
 
@@ -20743,7 +20708,7 @@ $as_echo "#define H5_NO_DEPRECATED_SYMBOLS 1" >>confdefs.h
 
 # Check whether --with-hwloc was given.
 if test "${with_hwloc+set}" = set; then :
-  withval=$with_hwloc; _x_ac_hwloc_dirs="$withval $_x_ac_hwloc_dirs"
+  withval=$with_hwloc; _x_ac_hwloc_dirs="$withval"
 fi
 
 
@@ -20845,7 +20810,7 @@ $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
 
 # Check whether --with-pmix was given.
 if test "${with_pmix+set}" = set; then :
-  withval=$with_pmix; _x_ac_pmix_dirs="$withval $_x_ac_pmix_dirs"
+  withval=$with_pmix; _x_ac_pmix_dirs="$withval"
 fi
 
 
@@ -20979,7 +20944,7 @@ fi
 
 # Check whether --with-freeipmi was given.
 if test "${with_freeipmi+set}" = set; then :
-  withval=$with_freeipmi; _x_ac_freeipmi_dirs="$withval $_x_ac_freeipmi_dirs"
+  withval=$with_freeipmi; _x_ac_freeipmi_dirs="$withval"
 fi
 
 
@@ -21117,7 +21082,7 @@ fi
 
 # Check whether --with-rrdtool was given.
 if test "${with_rrdtool+set}" = set; then :
-  withval=$with_rrdtool; _x_ac_rrdtool_dirs="$withval $_x_ac_rrdtool_dirs"
+  withval=$with_rrdtool; _x_ac_rrdtool_dirs="$withval"
 else
   with_rrdtool=check
 fi
@@ -23415,7 +23380,7 @@ fi
 
 # Check whether --with-netloc was given.
 if test "${with_netloc+set}" = set; then :
-  withval=$with_netloc; _x_ac_netloc_dirs="$withval $_x_ac_netloc_dirs"
+  withval=$with_netloc; _x_ac_netloc_dirs="$withval"
 fi
 
 
@@ -24053,7 +24018,7 @@ fi
 
 # Check whether --with-munge was given.
 if test "${with_munge+set}" = set; then :
-  withval=$with_munge; _x_ac_munge_dirs="$withval $_x_ac_munge_dirs"
+  withval=$with_munge; _x_ac_munge_dirs="$withval"
 fi
 
 
@@ -24218,7 +24183,7 @@ LIBS="$savedLIBS"
 
 # Check whether --with-blcr was given.
 if test "${with_blcr+set}" = set; then :
-  withval=$with_blcr; _x_ac_blcr_dirs="$withval $_x_ac_blcr_dirs"
+  withval=$with_blcr; _x_ac_blcr_dirs="$withval"
 fi
 
 
