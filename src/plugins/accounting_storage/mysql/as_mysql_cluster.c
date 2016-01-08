@@ -445,6 +445,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn,
 				 "didn't effect anything\n%s", query);
+		xfree(name_char);
 		xfree(vals);
 		xfree(query);
 		return ret_list;
