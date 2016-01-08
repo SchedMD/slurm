@@ -82,6 +82,81 @@ endit:
 	printf("%s", new_line_char);
 }
 
+static int _print_used_acct_limit(slurmdb_used_limits_t *used_limit,
+				  slurmdb_qos_rec_t *qos_rec)
+{
+	char *new_line_char = one_liner ? " " : "\n        ";
+
+	printf("%s", one_liner ? " " : "      ");
+	printf("Account %s%s", used_limit->acct, new_line_char);
+
+	printf("MaxJobsPA=");
+	if (qos_rec->max_jobs_pa != INFINITE)
+		printf("%u", qos_rec->max_jobs_pa);
+	else
+		printf("N");
+	printf("(%u)%s", used_limit->jobs, new_line_char);
+
+	printf("MaxSubmitJobsPA=");
+	if (qos_rec->max_submit_jobs_pa != INFINITE)
+		printf("%u", qos_rec->max_submit_jobs_pa);
+	else
+		printf("N");
+	printf("(%u)%s", used_limit->submit_jobs, new_line_char);
+
+	_print_tres_line("MaxTRESPA",
+			 qos_rec->max_tres_pa_ctld,
+			 used_limit->tres, 0, 1);
+
+	/* MaxTRESRunMinsPA doesn't do anything yet, if/when it does
+	 * change the last param in the print_tres_line to 0. */
+
+	/* printf("%s", one_liner ? "" : "    "); */
+	/* _print_tres_line("MaxTRESRunMinsPA", */
+	/* 		 qos_rec->max_tres_run_mins_pa_ctld, */
+	/* 		 used_limit->tres_run_mins, 60, 1); */
+
+
+	return SLURM_SUCCESS;
+}
+
+static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
+				  slurmdb_qos_rec_t *qos_rec)
+{
+	char *new_line_char = one_liner ? " " : "\n        ";
+
+	printf("%s", one_liner ? " " : "      ");
+	printf("User %d%s", used_limit->uid, new_line_char);
+
+	printf("MaxJobsPU=");
+	if (qos_rec->max_jobs_pu != INFINITE)
+		printf("%u", qos_rec->max_jobs_pu);
+	else
+		printf("N");
+	printf("(%u)%s", used_limit->jobs, new_line_char);
+
+	printf("MaxSubmitJobsPU=");
+	if (qos_rec->max_submit_jobs_pu != INFINITE)
+		printf("%u", qos_rec->max_submit_jobs_pu);
+	else
+		printf("N");
+	printf("(%u)%s", used_limit->submit_jobs, new_line_char);
+
+	_print_tres_line("MaxTRESPU",
+			 qos_rec->max_tres_pu_ctld,
+			 used_limit->tres, 0, 1);
+
+	/* MaxTRESRunMinsPU doesn't do anything yet, if/when it does
+	 * change the last param in the print_tres_line to 0. */
+
+	/* printf("%s", one_liner ? "" : "    "); */
+	/* _print_tres_line("MaxTRESRunMinsPU", */
+	/* 		 qos_rec->max_tres_run_mins_pu_ctld, */
+	/* 		 used_limit->tres_run_mins, 60, 1); */
+
+	return SLURM_SUCCESS;
+}
+
 static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 {
 	ListIterator itr;
@@ -316,20 +391,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 					 qos_rec->usage->
 					 grp_used_tres_run_secs, 60, 0);
 
-			if (qos_rec->max_jobs_pu != INFINITE)
-				printf("MaxJobsPU=%u(%u) ",
-				       qos_rec->max_jobs_pu,
-				       qos_rec->usage->grp_used_jobs);
-			else
-				printf("MaxJobs= ");
-
-			if (qos_rec->max_submit_jobs_pu != INFINITE)
-				printf("MaxSubmitJobs=%u(%u) ",
-				       qos_rec->max_submit_jobs_pu,
-				       qos_rec->usage->grp_used_submit_jobs);
-			else
-				printf("MaxSubmitJobs= ");
-
 			if (qos_rec->max_wall_pj != INFINITE)
 				printf("MaxWallPJ=%u",
 				       qos_rec->max_wall_pj);
@@ -347,22 +408,41 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 					 qos_rec->max_tres_pn_ctld,
 					 NULL, 0, 0);
 
-			_print_tres_line("MaxTRESPU",
-					 qos_rec->max_tres_pu_ctld,
-					 NULL, 0, 0);
-
 			_print_tres_line("MaxTRESMinsPJ",
 					 qos_rec->max_tres_mins_pj_ctld,
 					 NULL, 0, 0);
 
 			/* Doesn't do anything yet */
+			/* _print_tres_line("MaxTRESRunMinsPA", */
+			/* 		 qos_rec->max_tres_mins_pa_ctld, */
+			/* 		 NULL, 0); */
+
 			/* _print_tres_line("MaxTRESRunMinsPU", */
 			/* 		 qos_rec->max_tres_mins_pu_ctld, */
 			/* 		 NULL, 0); */
 
 			_print_tres_line("MinTRESPJ",
 					 qos_rec->min_tres_pj_ctld,
-					 NULL, 0, 1);
+					 NULL, 0,
+					 (qos_rec->usage->acct_limit_list ||
+					  qos_rec->usage->user_limit_list) ?
+					 0 : 1);
+
+			if (qos_rec->usage->acct_limit_list) {
+				printf("Account Limits%s",
+				       one_liner ? "" : "\n");
+				list_for_each(qos_rec->usage->acct_limit_list,
+					      (ListForF)_print_used_acct_limit,
+					      qos_rec);
+			}
+			if (qos_rec->usage->user_limit_list) {
+				printf("%sUser Limits%s",
+				       one_liner ? "" : "    ",
+				       one_liner ? "" : "\n");
+				list_for_each(qos_rec->usage->user_limit_list,
+					      (ListForF)_print_used_user_limit,
+					      qos_rec);
+			}
 		}
 	}
 }
