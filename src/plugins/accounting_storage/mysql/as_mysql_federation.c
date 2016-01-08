@@ -76,7 +76,7 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *extra = NULL,
+	char *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -93,8 +93,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
-		xstrcat(cols, "creation_time, mod_time");
-		xstrfmtcat(vals, "%ld, %ld", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, name) "
@@ -110,8 +108,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add federation %s", object->name);
 			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			added = 0;
 			break;
 		}
@@ -121,8 +117,6 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
 			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			continue;
 		}
 
