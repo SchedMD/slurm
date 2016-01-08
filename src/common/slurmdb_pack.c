@@ -2520,19 +2520,6 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer)
 	void *used_limits;
 
 	if (rpc_version >= SLURM_16_05_PROTOCOL_VERSION) {
-		if (!usage->acct_limit_list ||
-		    !(count = list_count(usage->acct_limit_list)))
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count != NO_VAL) {
-			itr = list_iterator_create(usage->acct_limit_list);
-			while ((used_limits = list_next(itr)))
-				slurmdb_pack_used_limits(
-					used_limits, usage->tres_cnt,
-					rpc_version, buffer);
-			list_iterator_destroy(itr);
-		}
 		pack32(usage->grp_used_jobs, buffer);
 		pack32(usage->grp_used_submit_jobs, buffer);
 		pack64_array(usage->grp_used_tres, usage->tres_cnt, buffer);
@@ -2548,9 +2535,26 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t rpc_version, Buf buffer)
 		    !(count = list_count(usage->user_limit_list)))
 			count = NO_VAL;
 
+		/* We have to pack anything that is verified by
+		 * tres_cnt after this.  It is used in the unpack,
+		 * that is the reason it isn't alpha.
+		 */
 		pack32(count, buffer);
 		if (count != NO_VAL) {
 			itr = list_iterator_create(usage->user_limit_list);
+			while ((used_limits = list_next(itr)))
+				slurmdb_pack_used_limits(
+					used_limits, usage->tres_cnt,
+					rpc_version, buffer);
+			list_iterator_destroy(itr);
+		}
+		if (!usage->acct_limit_list ||
+		    !(count = list_count(usage->acct_limit_list)))
+			count = NO_VAL;
+
+		pack32(count, buffer);
+		if (count != NO_VAL) {
+			itr = list_iterator_create(usage->acct_limit_list);
 			while ((used_limits = list_next(itr)))
 				slurmdb_pack_used_limits(
 					used_limits, usage->tres_cnt,
@@ -2601,21 +2605,6 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	if (rpc_version >= SLURM_16_05_PROTOCOL_VERSION) {
-		safe_unpack32(&count, buffer);
-		if (count != NO_VAL) {
-			object_ptr->acct_limit_list =
-				list_create(slurmdb_destroy_used_limits);
-			for (i = 0; i < count; i++) {
-				if (slurmdb_unpack_used_limits(
-					    &used_limits,
-					    object_ptr->tres_cnt,
-					    rpc_version, buffer)
-				    != SLURM_SUCCESS)
-					goto unpack_error;
-				list_append(object_ptr->acct_limit_list,
-					    used_limits);
-			}
-		}
 		safe_unpack32(&object_ptr->grp_used_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_used_submit_jobs, buffer);
 		safe_unpack64_array(&object_ptr->grp_used_tres,
@@ -2640,6 +2629,22 @@ extern int slurmdb_unpack_qos_usage(void **object, uint16_t rpc_version,
 				    != SLURM_SUCCESS)
 					goto unpack_error;
 				list_append(object_ptr->user_limit_list,
+					    used_limits);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->acct_limit_list =
+				list_create(slurmdb_destroy_used_limits);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_used_limits(
+					    &used_limits,
+					    object_ptr->tres_cnt,
+					    rpc_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->acct_limit_list,
 					    used_limits);
 			}
 		}
