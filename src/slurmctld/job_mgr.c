@@ -6841,29 +6841,39 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
  */
 static int _read_data_from_file(int fd, char *file_name, char **data)
 {
-	int pos, buf_size, amount;
+	struct stat stat_buf;
+	int pos, buf_size, amount, count;
 	char *buffer;
 
 	xassert(file_name);
 	xassert(data);
 	*data = NULL;
 
+	if (fstat(fd, &stat_buf)) {
+		error("%s: Unable to stat file %s", __func__, file_name);
+		return -1;
+	}
+
 	pos = 0;
-	buf_size = BUF_SIZE;
+	buf_size = stat_buf.st_size;
 	buffer = xmalloc(buf_size);
-	while (1) {
-		amount = read(fd, &buffer[pos], BUF_SIZE);
+	while (pos < buf_size) {
+		count = buf_size - pos;
+		amount = read(fd, &buffer[pos], count);
 		if (amount < 0) {
-			error("Error reading file %s, %m", file_name);
+			if (errno == EINTR)
+				continue;
+			error("%s: Error reading file %s, %m",
+			      __func__, file_name);
 			xfree(buffer);
 			close(fd);
 			return -1;
 		}
-		if (amount < BUF_SIZE)	/* end of file */
+		if (amount < count) {	/* end of file */
+			error("%s: File %s shortened??", __func__, file_name);
 			break;
+		}
 		pos += amount;
-		buf_size += amount;
-		xrealloc(buffer, buf_size);
 	}
 
 	*data = buffer;
