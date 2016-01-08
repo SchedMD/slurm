@@ -51,6 +51,7 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_mpi.h"
@@ -114,6 +115,8 @@ main (int argc, char *argv[])
 	init_setproctitle(argc, argv);
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+		fatal( "failed to initialize authentication plugin" );
 
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
