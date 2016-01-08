@@ -393,11 +393,28 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 				    uint64_t *used_tres_run_secs,
 				    uint32_t job_cnt)
 {
-	slurmdb_used_limits_t *used_limits = NULL;
+	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 	int i;
 
-	if (!qos_ptr)
+	if (!qos_ptr || !assoc_ptr)
 		return;
+
+	if (!qos_ptr->usage->acct_limit_list)
+		qos_ptr->usage->acct_limit_list =
+			list_create(slurmdb_destroy_used_limits);
+	if (!(used_limits = list_find_first(qos_ptr->usage->acct_limit_list,
+					    _find_used_limits_for_acct,
+					    &assoc_ptr->acct))) {
+		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits_a->acct = xstrdup(assoc_ptr->acct);
+
+		i = sizeof(uint64_t) * slurmctld_tres_cnt;
+		used_limits_a->tres = xmalloc(i);
+		used_limits_a->tres_run_mins = xmalloc(i);
+
+		list_append(qos_ptr->usage->acct_limit_list, used_limits_a);
+	}
 
 	if (!qos_ptr->usage->user_limit_list)
 		qos_ptr->usage->user_limit_list =
@@ -419,6 +436,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	case ACCT_POLICY_ADD_SUBMIT:
 		qos_ptr->usage->grp_used_submit_jobs += job_cnt;
 		used_limits->submit_jobs += job_cnt;
+		used_limits_a->submit_jobs += job_cnt;
 		break;
 	case ACCT_POLICY_REM_SUBMIT:
 		if (qos_ptr->usage->grp_used_submit_jobs)
@@ -435,11 +453,20 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			       "used_submit_jobs underflow for "
 			       "qos %s user %d",
 			       qos_ptr->name, used_limits->uid);
+
+		if (used_limits_a->submit_jobs)
+			used_limits_a->submit_jobs -= job_cnt;
+		else
+			debug2("acct_policy_remove_job_submit: "
+			       "used_submit_jobs underflow for "
+			       "qos %s account %s",
+			       qos_ptr->name, used_limits_a->acct);
 		break;
 	case ACCT_POLICY_JOB_BEGIN:
 		qos_ptr->usage->grp_used_jobs++;
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			used_limits->tres[i] += job_ptr->tres_alloc_cnt[i];
+			used_limits_a->tres[i] += job_ptr->tres_alloc_cnt[i];
 
 			qos_ptr->usage->grp_used_tres[i] +=
 				job_ptr->tres_alloc_cnt[i];
@@ -456,6 +483,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 		}
 
 		used_limits->jobs++;
+		used_limits_a->jobs++;
 		break;
 	case ACCT_POLICY_JOB_FINI:
 		qos_ptr->usage->grp_used_jobs--;
@@ -488,15 +516,33 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			} else
 				used_limits->tres[i] -=
 					job_ptr->tres_alloc_cnt[i];
+
+			if (job_ptr->tres_alloc_cnt[i] >
+			    used_limits_a->tres[i]) {
+				used_limits_a->tres[i] = 0;
+				debug2("acct_policy_job_fini: "
+				       "used_limits->tres(%s) "
+				       "underflow for qos %s account %s",
+				       assoc_mgr_tres_name_array[i],
+				       qos_ptr->name, used_limits_a->acct);
+			} else
+				used_limits_a->tres[i] -=
+					job_ptr->tres_alloc_cnt[i];
 		}
 
-		used_limits->jobs--;
-		if ((int32_t)used_limits->jobs < 0) {
-			used_limits->jobs = 0;
+		if (used_limits->jobs)
+			used_limits->jobs--;
+		else
 			debug2("acct_policy_job_fini: used_jobs "
 			       "underflow for qos %s user %d",
 			       qos_ptr->name, used_limits->uid);
-		}
+
+		if (used_limits_a->jobs)
+			used_limits_a->jobs--;
+		else
+			debug2("acct_policy_job_fini: used_jobs "
+			       "underflow for qos %s account %s",
+			       qos_ptr->name, used_limits_a->acct);
 
 		break;
 	default:
