@@ -293,6 +293,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Federation", object, MAX(command_len, 2))) {
+		field->type = PRINT_FEDERATION;
+		field->name = xstrdup("Federation");
+		field->len = 10;
+		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
 		field->type = PRINT_FLAGS;
 		field->name = xstrdup("Flags");

@@ -77,6 +77,7 @@ typedef enum {
 	PRINT_COORDS,
 	PRINT_CPUS,
 	PRINT_DESC,
+	PRINT_FEDERATION,
 	PRINT_FLAGS,
 	PRINT_NAME,
 	PRINT_PART,
@@ -236,6 +237,7 @@ extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
 extern int sacctmgr_list_config(bool have_db_conn);
 extern int sacctmgr_list_event(int argc, char *argv[]);
+extern int sacctmgr_list_federation(int argc, char *argv[]);
 extern int sacctmgr_list_problem(int argc, char *argv[]);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_res(int argc, char *argv[]);

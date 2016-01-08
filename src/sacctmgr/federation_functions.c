@@ -36,7 +36,70 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-#include "src/common/assoc_mgr.h"
+
+static int _set_cond(int *start, int argc, char *argv[],
+		     slurmdb_federation_cond_t *federation_cond,
+		     List format_list)
+{
+	int i;
+	int c_set = 0;
+	int a_set = 0;
+	int end = 0;
+	int command_len = 0;
+
+	for (i=(*start); i<argc; i++) {
+		end = parse_option_end(argv[i]);
+		if (!end)
+			command_len=strlen(argv[i]);
+		else {
+			command_len=end-1;
+			if (argv[i][end] == '=') {
+				end++;
+			}
+		}
+
+		if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+			i--;
+			break;
+		} else if (!end && !strncasecmp(argv[i], "where",
+					       MAX(command_len, 5))) {
+			continue;
+		} else if (!end &&
+			   !strncasecmp(argv[i], "WithDeleted",
+					 MAX(command_len, 5))) {
+			federation_cond->with_deleted = 1;
+		} else if (!end || !strncasecmp(argv[i], "Names",
+						MAX(command_len, 1))
+			  || !strncasecmp(argv[i], "Federations",
+					   MAX(command_len, 3))) {
+			if (!federation_cond->federation_list)
+				federation_cond->federation_list =
+					list_create(slurm_destroy_char);
+			if (slurm_addto_char_list(federation_cond->federation_list,
+						 argv[i]+end))
+				a_set = 1;
+		} else if (!strncasecmp(argv[i], "Format",
+					 MAX(command_len, 2))) {
+			if (format_list)
+				slurm_addto_char_list(format_list, argv[i]+end);
+		} else {
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
+				" Use keyword 'set' to modify value\n",
+				argv[i]);
+			break;
+		}
+	}
+	(*start) = i;
+
+	if (c_set && a_set)
+		return 3;
+	else if (a_set) {
+		return 2;
+	} else if (c_set)
+		return 1;
+	return 0;
+}
 
 extern int sacctmgr_add_federation(int argc, char *argv[])
 {
@@ -164,6 +227,112 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 
 end_it:
 	FREE_NULL_LIST(federation_list);
+
+	return rc;
+}
+
+extern int sacctmgr_list_federation(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_federation_cond_t *federation_cond =
+		xmalloc(sizeof(slurmdb_federation_cond_t));
+	List federation_list;
+	int i=0;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	slurmdb_federation_rec_t *federation = NULL;
+	/*char *tmp_char = NULL;*/
+
+	int field_count = 0;
+
+	print_field_t *field = NULL;
+
+	List format_list = list_create(slurm_destroy_char);
+	List print_fields_list; /* types are of print_field_t */
+
+	slurmdb_init_federation_cond(federation_cond, 0);
+	federation_cond->federation_list = list_create(slurm_destroy_char);
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+			i++;
+		_set_cond(&i, argc, argv, federation_cond, format_list);
+	}
+
+	if (exit_code) {
+		slurmdb_destroy_federation_cond(federation_cond);
+		FREE_NULL_LIST(format_list);
+		return SLURM_ERROR;
+	}
+
+	if (!list_count(format_list)) {
+		slurm_addto_char_list(format_list, "Fe,Fl");
+	}
+
+	print_fields_list = sacctmgr_process_format_list(format_list);
+	FREE_NULL_LIST(format_list);
+
+	if (exit_code) {
+		slurmdb_destroy_federation_cond(federation_cond);
+		FREE_NULL_LIST(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	federation_list = acct_storage_g_get_federations(db_conn, my_uid,
+							 federation_cond);
+	slurmdb_destroy_federation_cond(federation_cond);
+
+	if (!federation_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		FREE_NULL_LIST(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(federation_list);
+	itr2 = list_iterator_create(print_fields_list);
+	print_fields_header(print_fields_list);
+
+	field_count = list_count(print_fields_list);
+
+	while ((federation = list_next(itr))) {
+		int curr_inx = 1;
+		while((field = list_next(itr2))) {
+			switch(field->type) {
+			case PRINT_FEDERATION:
+				field->print_routine(field,
+						     federation->name,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_FLAGS:
+			{
+/*
+				char *tmp_char = slurmdb_federation_flags_2_str(
+					federation->flags);
+				field->print_routine(
+					field,
+					tmp_char,
+					(curr_inx == field_count));
+				xfree(tmp_char);
+*/
+				break;
+			}
+			default:
+				field->print_routine(field, NULL,
+						     (curr_inx == field_count));
+				break;
+			}
+			curr_inx++;
+		}
+		list_iterator_reset(itr2);
+		printf("\n");
+	}
+
+	list_iterator_destroy(itr2);
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(federation_list);
+	FREE_NULL_LIST(print_fields_list);
 
 	return rc;
 }

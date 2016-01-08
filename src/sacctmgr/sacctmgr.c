@@ -701,6 +701,9 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Federation",
+				MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_list_federation((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
