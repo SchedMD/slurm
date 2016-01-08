@@ -88,6 +88,8 @@ documents those changes that are of interest to users and administrators.
     information. Output of scontrol, sinfo, and sview changed accordingly.
     The field previously displayed as "Features" is now "AvailableFeatures"
     while the new field is displayed as "ActiveFeatures".
+ -- Remove Sun Constellation, IBM Federation Switches (replaced by NRT switch
+    plugin) and long-defunct Quadrics Elan support.
 
 * Changes in Slurm 15.08.7
 ==========================

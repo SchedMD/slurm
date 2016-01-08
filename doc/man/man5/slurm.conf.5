@@ -3439,8 +3439,7 @@ Acceptable values include:
 .RS
 .TP 21
 \fBtopology/3d_torus\fR
-default for Sun Constellation
-systems, best\-fit logic over three\-dimensional topology
+best\-fit logic over three\-dimensional topology
 .TP
 \fBtopology/node_rank\fR
 orders nodes based upon information a node_rank field in the node record
@@ -4687,7 +4686,7 @@ User name of the job's owner.
 .SH "NETWORK TOPOLOGY"
 Slurm is able to optimize job allocations to minimize network contention.
 Special Slurm logic is used to optimize allocations on systems with a
-three\-dimensional interconnect (BlueGene, Sun Constellation, etc.)
+three\-dimensional interconnect (BlueGene, etc.)
 and information about configuring those systems are available on
 web pages available here: <http://slurm.schedmd.com/>.
 For a hierarchical network, Slurm needs to have detailed information
@@ -4701,7 +4700,7 @@ so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are
-"topology/3d_torus" (default for IBM BlueGene, Sun Constellation and
+"topology/3d_torus" (default for IBM BlueGene and
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
 "topology/none" (default for other systems,
 best\-fit logic over one\-dimensional topology),

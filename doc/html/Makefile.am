@@ -94,7 +94,6 @@ generated_html = \
 	slurmctld_plugstack.html \
 	slurm_ug_agenda.html \
 	slurm_ug_cfp.html \
-	sun_const.html \
 	switchplugins.html \
 	taskplugins.html \
 	team.html \

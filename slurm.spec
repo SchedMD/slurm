@@ -29,7 +29,6 @@
 # --with percs       %_with_percs         1     build percs RPM
 # --without readline %_without_readline   1     don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob        1     build proctrack-sgi-job RPM
-# --with sun_const   %_with_sun_const     1     build for Sun Constellation system
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
@@ -48,7 +47,6 @@
 %slurm_without_opt cray
 %slurm_without_opt cray_alps
 %slurm_without_opt cray_network
-%slurm_without_opt sun_const
 %slurm_without_opt salloc_background
 %slurm_without_opt multiple_slurmd
 %slurm_without_opt pmix
@@ -441,7 +439,6 @@ Gives the ability for Slurm to use Berkeley Lab Checkpoint/Restart
 %configure \
 	%{!?slurm_with_debug:--disable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
-	%{?slurm_with_sun_const:--enable-sun-const} \
 	%{?with_db2_dir:--with-db2-dir=%{?with_db2_dir}} \
 	%{?with_pam_dir:--with-pam_dir=%{?with_pam_dir}} \
 	%{?with_proctrack:--with-proctrack=%{?with_proctrack}}\

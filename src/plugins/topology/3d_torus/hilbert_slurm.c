@@ -59,14 +59,9 @@ extern void nodes_to_hilbert_curve(void)
 	struct node_record *node_ptr;
 	coord_t hilbert[3];
 	int dims = 3;
-#ifdef HAVE_SUN_CONST
-	int offset = 1;
-#else	/* !HAVE_SUN_CONST */
-	int offset = 0;
 #if 	(SYSTEM_DIMENSIONS != 3)
 		fatal("current logic only supports 3-dimensions");
 #endif	/* SYSTEM_DIMENSIONS != 3) */
-#endif	/* !HAVE_SUN_CONST */
 
 	/* We can only re-order the nodes once at slurmctld startup.
 	 * After that time, many bitmaps are created based upon the
@@ -79,11 +74,10 @@ extern void nodes_to_hilbert_curve(void)
 	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
 		j = strlen(node_ptr->name);
-		if (j < (dims + offset)) {
+		if (j < dims) {
 			fatal("hostname %s lacks numeric %d dimension suffix",
 			      node_ptr->name, dims);
 		}
-		j -= offset;
 		for (k=dims; k; k--) {
 			coords[coord_inx] = select_char2coord(
 				node_ptr->name[j-k]);

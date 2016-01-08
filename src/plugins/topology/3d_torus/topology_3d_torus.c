@@ -1,6 +1,6 @@
 /*****************************************************************************\
  *  topology_3d_torus.c - Support for 3-Dimension torus interconnect
- *	topology, default for Cray XT and Sun Constellation systems
+ *	topology, default for Cray XT systems
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
