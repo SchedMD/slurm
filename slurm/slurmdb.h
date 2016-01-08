@@ -1005,13 +1005,14 @@ typedef struct {
 /* Right now this is used in the slurmdb_qos_rec_t structure.  In the
  * user_limit_list and acct_limit_list. */
 typedef struct {
+	char *acct; /* If limits for an account this is the accounts name */
 	uint32_t jobs;	/* count of active jobs */
 	uint32_t submit_jobs; /* count of jobs pending or running */
 	uint64_t *tres; /* array of TRES allocated */
 	uint64_t *tres_run_mins; /* array of how many TRES mins are
 				  * allocated currently, currently this doesn't
 				  * do anything and isn't set up. */
-	uint32_t uid;
+	uint32_t uid; /* If limits for a user this is the users uid */
 } slurmdb_used_limits_t;
 
 typedef struct {
