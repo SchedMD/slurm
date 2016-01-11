@@ -936,7 +936,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* We only select for a single feature name here.
 		 * FIXME: Add support for AND, OR, etc. here if desired */
 		node_feature_t *feat_ptr;
-		feat_ptr = list_find_first(avail_feature_list,
+		feat_ptr = list_find_first(active_feature_list,
 					   list_find_feature,
 					   (void *) step_spec->features);
 		if (feat_ptr && feat_ptr->node_bitmap)

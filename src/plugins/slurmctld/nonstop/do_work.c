@@ -882,7 +882,7 @@ static char *_job_node_features(struct job_record *job_ptr,
 	node_inx = node_ptr - node_record_table_ptr;
 	job_iter = list_iterator_create(job_ptr->details->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(job_iter))) {
-		node_iter = list_iterator_create(avail_feature_list);
+		node_iter = list_iterator_create(active_feature_list);
 		while ((node_feat_ptr = (node_feature_t *)
 					list_next(node_iter))) {
 			if (!job_feat_ptr->name  ||
