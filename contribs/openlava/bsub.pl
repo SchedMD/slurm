@@ -131,12 +131,16 @@ if ($ARGV[0]) {
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
-
-	#print "script = $script"
+} else {
+	$interactive = 1;
+	foreach (<STDIN>) {
+		chomp($_);
+		$script .= "$_\n";
+	}
 }
+#print "script = $script";
 
-my $command;
-my $base_command;
+my $command = $sbatch;
 
 if (!$script) {
 	if ($interactive) {
@@ -145,17 +149,6 @@ if (!$script) {
 	} else {
 		pod2usage(2);
 	}
-}
-
-if (_check_script($ARGV[0])) {
-	$command = $base_command = "$sbatch";
-} else {
-	$command = $base_command = "$srun";
-
-	# We need to find out the jobid we got
-	$command .= " -v";
-
-	$interactive = 1;
 }
 
 $command .= " -e $err_path" if $err_path;
@@ -183,74 +176,41 @@ if ($min_proc) {
 $command .= " -t $time" if $time;
 $command .= " -p $partition" if $partition;
 $command .= " --exclusive" if $exclusive;
-$command .= " $script" if $script;
+
+if ($interactive || !_check_script($ARGV[0])) {
+	$command .=" --wrap=\"$script\"";
+} else {
+	$command .= " $script";
+}
 #print " command = $command\n";
 #exit;
-
-
-#print "Command to run = $command\n";
 
 # Execute the command and capture its stdout, stderr, and exit status. Note
 # that if interactive mode was requested, the standard output and standard
 # error are _not_ captured.
 
 # Execute the command and capture the combined stdout and stderr.
-if ($base_command eq $srun) { #srun
-	my $job_id = 0;
-	my $dispatch_printed = 0;
-	my $launch_printed = 0;
-	open(PH, "$command 2>&1 |");              # or with an open pipe
-	while (<PH>) {
-		my $line = $_;
-		if ($_ !~ "srun:") {
-			print $line;
-		} elsif (!$dispatch_printed && ($_ =~ /srun: jobid \d/)) {
-			my @line_words=split(" ", $_);
-			$job_id = $line_words[2];
-			chop($job_id);
-			$dispatch_printed = 2;
-		} elsif (!$dispatch_printed && ($_ =~ /srun: job \d/)) {
-			my @line_words=split(" ", $_);
-			$job_id = $line_words[2];
-			$dispatch_printed = 2;
-		} elsif (!$launch_printed && ($_ =~ /srun: launching \d/)) {
-			my @line_words=split(" ", $_);
-			my $node_name = $line_words[5];
-			chop($node_name);
-			print "<<Starting on $node_name>>\n";
-			$launch_printed = 1;
-		}
+my @command_output = `$command 2>&1`;
 
-		if ($dispatch_printed == 2) {
-			_print_job_submitted($job_id);
-			print "<<Waiting for dispatch ...>>\n";
-			$dispatch_printed = 1;
-		}
-	}
-	close(PH);
-} elsif ($base_command eq $sbatch) {
-	my @command_output = `$command 2>&1`;
+#Save the command exit status.
+my $command_exit_status = $?;
 
-	#Save the command exit status.
-	my $command_exit_status = $?;
-
-	# If available, extract the job ID from the command output and print
-	# it to stdout, as done in the OpenLava version of bsub.
-	if ($command_exit_status == 0) {
-		my @spcommand_output=split(" ",
-					   $command_output[$#command_output]);
-		my $job_id = $spcommand_output[$#spcommand_output];
-		_print_job_submitted($job_id);
-	} else {
-		print("There was an error running the Slurm sbatch command.\n" .
-		      "The command was:\n" .
-		      "'$command'\n" .
-		      "and the output was:\n" .
-		      "'@command_output'\n");
-	}
-	# Exit with the command return code.
-	exit($command_exit_status >> 8);
+# If available, extract the job ID from the command output and print
+# it to stdout, as done in the OpenLava version of bsub.
+if ($command_exit_status == 0) {
+	my @spcommand_output=split(" ",
+				   $command_output[$#command_output]);
+	my $job_id = $spcommand_output[$#spcommand_output];
+	_print_job_submitted($job_id);
+} else {
+	print("There was an error running the Slurm sbatch command.\n" .
+	      "The command was:\n" .
+	      "'$command'\n" .
+	      "and the output was:\n" .
+	      "'@command_output'\n");
 }
+# Exit with the command return code.
+exit($command_exit_status >> 8);
 
 sub _get_default_partition_name {
 
@@ -283,7 +243,7 @@ sub _print_job_submitted {
 sub _parse_procs {
 	my ($procs_range) = @_;
 
-	# Get the max process count it if exist
+	# Get the max process count if it exists
 	if ($procs_range =~ /,/) {
 		my @sub_parts = split(/,/, $procs_range);
 			return $sub_parts[1];
