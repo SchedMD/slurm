@@ -1131,6 +1131,19 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
+			/* Only check the even options here (they are
+			 * the - options) */
+			if (magic == WRPR_BSUB && !(argc%2)) {
+				/* Since Slurm doesn't allow long
+				 * names with a single '-' we must
+				 * translate before hand.
+				 */
+				if (!xstrcmp("-cwd", option)) {
+					xfree(option);
+					option = xstrdup("-c");
+				}
+			}
+
 			argv[argc-1] = option;
 			ptr += skipped;
 		}
@@ -1868,13 +1881,15 @@ static void _proc_get_user_env(char *optarg)
 static void _set_bsub_options(int argc, char **argv) {
 
 	int opt_char, option_index = 0;
-	char *bsub_opt_string = "+e:J:m:M:o:q:W:x";
+	char *bsub_opt_string = "+c:e:J:m:M:n:o:q:W:x";
 	char *tmp_str, *char_ptr;
 
 	struct option bsub_long_options[] = {
+		{"cwd", required_argument, 0, 'c'},
 		{"error_file", required_argument, 0, 'e'},
 		{"job_name", required_argument, 0, 'J'},
 		{"hostname", required_argument, 0, 'm'},
+		{"memory_limit", required_argument, 0, 'M'},
 		{"memory_limit", required_argument, 0, 'M'},
 		{"output_file", required_argument, 0, 'o'},
 		{"queue_name", required_argument, 0, 'q'},
@@ -1888,6 +1903,13 @@ static void _set_bsub_options(int argc, char **argv) {
 				       bsub_long_options, &option_index))
 	       != -1) {
 		switch (opt_char) {
+		case 'c':
+			xfree(opt.cwd);
+			if (is_full_path(optarg))
+				opt.cwd = xstrdup(optarg);
+			else
+				opt.cwd = make_full_path(optarg);
+			break;
 		case 'e':
 			xfree(opt.efname);
 			if (strcasecmp(optarg, "none") == 0)
@@ -1915,6 +1937,28 @@ static void _set_bsub_options(int argc, char **argv) {
 		case 'M':
 			opt.mem_per_cpu = xstrntol(optarg,
 						   NULL, sizeof(optarg), 10);
+			break;
+		case 'n':
+			opt.ntasks_set = true;
+			/* Since it is value in bsub to give a min and
+			 * max task count we will only read the max if
+			 * it exists.
+			 */
+			char_ptr = strstr(optarg, ",");
+			if (char_ptr) {
+				char_ptr++;
+				if (!char_ptr[0]) {
+					error("#BSUB -n format not correct "
+					      "given: '%s'",
+					      optarg);
+					exit(error_exit);
+				}
+			} else
+				char_ptr = optarg;
+
+			opt.ntasks =
+				_get_int(char_ptr, "number of tasks");
+
 			break;
 		case 'o':
 			xfree(opt.ofname);
