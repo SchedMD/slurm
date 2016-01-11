@@ -460,7 +460,7 @@ scontrol_print_step (char *job_step_id_str)
 		if (job_step_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
-				if (array_id == (uint16_t) NO_VAL) {
+				if (array_id == NO_VAL) {
 					printf ("Job step %u.%u not found\n",
 						job_id, step_id);
 				} else {
