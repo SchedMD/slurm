@@ -1857,7 +1857,8 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == res_table) || (table == clus_res_table))
+	    || (table == res_table) || (table == clus_res_table)
+	    || (table == federation_table))
 		cluster_centric = false;
 
 	if (vals && vals[1])
@@ -2681,6 +2682,14 @@ extern List acct_storage_p_modify_assocs(
 	slurmdb_assoc_rec_t *assoc)
 {
 	return as_mysql_modify_assocs(mysql_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_p_modify_federations(
+				mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
+{
+	return as_mysql_modify_federations(mysql_conn, uid, fed_cond, fed);
 }
 
 extern List acct_storage_p_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,

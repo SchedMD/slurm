@@ -138,6 +138,8 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+				 Buf *out_buffer, uint32_t *uid);
 static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
@@ -413,6 +415,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_MODIFY_CLUSTERS:
 			rc = _modify_clusters(slurmdbd_conn,
 					      in_buffer, out_buffer, uid);
+			break;
+		case DBD_MODIFY_FEDERATIONS:
+			rc = _modify_federations(slurmdbd_conn, in_buffer,
+						 out_buffer, uid);
 			break;
 		case DBD_MODIFY_JOB:
 			rc = _modify_job(slurmdbd_conn,
@@ -2389,6 +2395,66 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_CLUSTERS);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,
+			       DBD_GOT_LIST, *out_buffer);
+	FREE_NULL_LIST(list_msg.my_list);
+
+	return rc;
+}
+
+static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn, Buf in_buffer,
+			       Buf *out_buffer, uint32_t *uid)
+{
+	dbd_list_msg_t list_msg;
+	int rc = SLURM_SUCCESS;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_MODIFY_FEDERATIONS: called");
+
+	if (slurmdbd_unpack_modify_msg(&get_msg, slurmdbd_conn->rpc_version,
+				       DBD_MODIFY_FEDERATIONS,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_FEDERATIONS message";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      SLURM_ERROR,
+					      comment, DBD_MODIFY_FEDERATIONS);
+		return SLURM_ERROR;
+	}
+
+	if (!(list_msg.my_list = acct_storage_g_modify_federations(
+		      slurmdbd_conn->db_conn, *uid, get_msg->cond,
+		      get_msg->rec))) {
+		if (errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to perform "
+				  "this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if (errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else if (errno == ESLURM_DB_CONNECTION) {
+			comment = slurm_strerror(errno);
+			rc = errno;
+		} else {
+			rc = errno;
+			if (!(comment = slurm_strerror(errno)))
+				comment = "Unknown issue";
+		}
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_FEDERATIONS);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
+					      rc, comment,
+					      DBD_MODIFY_FEDERATIONS);
+		return rc;
+	}
+
+	slurmdbd_free_modify_msg(get_msg, DBD_MODIFY_FEDERATIONS);
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->rpc_version,

@@ -101,6 +101,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond,
 				    slurmdb_assoc_rec_t *assoc);
+	List (*modify_federations) (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond,
+				    slurmdb_federation_rec_t *fed);
 	List (*modify_job)         (void *db_conn, uint32_t uid,
 				    slurmdb_job_modify_cond_t *job_cond,
 				    slurmdb_job_rec_t *job);
@@ -231,6 +234,7 @@ static const char *syms[] = {
 	"acct_storage_p_modify_accts",
 	"acct_storage_p_modify_clusters",
 	"acct_storage_p_modify_assocs",
+	"acct_storage_p_modify_federations",
 	"acct_storage_p_modify_job",
 	"acct_storage_p_modify_qos",
 	"acct_storage_p_modify_res",
@@ -504,6 +508,16 @@ extern List acct_storage_g_modify_assocs(
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(ops.modify_assocs))(db_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_g_modify_federations(
+				void *db_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.modify_federations))(db_conn, uid, fed_cond, fed);
 }
 
 extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,

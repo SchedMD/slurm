@@ -422,3 +422,96 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 
 	return rc;
 }
+
+extern int sacctmgr_modify_federation(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	int i=0;
+	int cond_set = 0, prev_set = 0, rec_set = 0, set = 0;
+	List ret_list = NULL;
+	slurmdb_federation_cond_t *federation_cond =
+		xmalloc(sizeof(slurmdb_federation_cond_t));
+	slurmdb_federation_rec_t *federation =
+		xmalloc(sizeof(slurmdb_federation_rec_t));
+
+	slurmdb_init_federation_cond(federation_cond, 0);
+	slurmdb_init_federation_rec(federation, 0);
+
+	for (i=0; i<argc; i++) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+			i++;
+			prev_set = _set_cond(&i, argc, argv,
+					     federation_cond, NULL);
+			cond_set |= prev_set;
+		} else if (!strncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+			i++;
+			prev_set = _set_rec(&i, argc, argv, NULL, federation);
+			rec_set |= prev_set;
+		} else {
+			prev_set = _set_cond(&i, argc, argv,
+					     federation_cond, NULL);
+			cond_set |= prev_set;
+		}
+	}
+
+	if (!rec_set) {
+		exit_code=1;
+		fprintf(stderr, " You didn't give me anything to set\n");
+		rc = SLURM_ERROR;
+		goto end_it;
+	} else if (!cond_set) {
+		if (!commit_check("You didn't set any conditions "
+				  "with 'WHERE'.\n"
+				  "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			rc = SLURM_SUCCESS;
+			goto end_it;
+		}
+	} else if (exit_code) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	notice_thread_init();
+	ret_list = acct_storage_g_modify_federations(db_conn, my_uid,
+						     federation_cond,
+						     federation);
+
+	if (ret_list && list_count(ret_list)) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Modified federation...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		set = 1;
+	} else if (ret_list) {
+		printf(" Nothing modified\n");
+		rc = SLURM_ERROR;
+	} else {
+		exit_code=1;
+		fprintf(stderr, " Error with request: %s\n",
+			slurm_strerror(errno));
+		rc = SLURM_ERROR;
+	}
+
+	FREE_NULL_LIST(ret_list);
+
+	notice_thread_fini();
+
+	if (set) {
+		if (commit_check("Would you like to commit changes?"))
+			acct_storage_g_commit(db_conn, 1);
+		else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	}
+end_it:
+	slurmdb_destroy_federation_cond(federation_cond);
+	slurmdb_destroy_federation_rec(federation);
+
+	return rc;
+}

@@ -37,6 +37,18 @@
 
 #include "as_mysql_federation.h"
 
+char *fed_req_inx[] = {
+	"name",
+	"flags",
+	"priority",
+};
+enum {
+	FED_REQ_NAME,
+	FED_REQ_FLAGS,
+	FED_REQ_PRIO,
+	FED_REQ_COUNT
+};
+
 static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 					 char **extra)
 {
@@ -203,17 +215,6 @@ extern List as_mysql_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	slurmdb_federation_rec_t *federation = NULL;
 
-	/* if this changes you will need to edit the corresponding enum */
-	char *federation_req_inx[] = {
-		"name",
-		"flags",
-	};
-	enum {
-		FEDERATION_REQ_NAME,
-		FEDERATION_REQ_FLAGS,
-		FEDERATION_REQ_COUNT
-	};
-
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
@@ -229,9 +230,9 @@ empty:
 
 	xfree(tmp);
 	i=0;
-	xstrfmtcat(tmp, "%s", federation_req_inx[i]);
-	for(i=1; i<FEDERATION_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", federation_req_inx[i]);
+	xstrfmtcat(tmp, "%s", fed_req_inx[i]);
+	for(i = 1; i < FED_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", fed_req_inx[i]);
 	}
 
 	query = xstrdup_printf("select %s from %s%s",
@@ -254,10 +255,126 @@ empty:
 		federation = xmalloc(sizeof(slurmdb_federation_rec_t));
 		list_append(federation_list, federation);
 
-		federation->name = xstrdup(row[FEDERATION_REQ_NAME]);
-		federation->flags = slurm_atoul(row[FEDERATION_REQ_FLAGS]);
+		federation->name     = xstrdup(row[FED_REQ_NAME]);
+		federation->flags    = slurm_atoul(row[FED_REQ_FLAGS]);
+		federation->priority = slurm_atoul(row[FED_REQ_PRIO]);
 	}
 	mysql_free_result(result);
 
 	return federation_list;
+}
+
+extern List as_mysql_modify_federations(
+				mysql_conn_t *mysql_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed)
+{
+	List ret_list = NULL;
+	int rc = SLURM_SUCCESS;
+	int req_inx = 0;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL,
+	     *name_char = NULL, *fed_items = NULL;
+	char *tmp_char1 = NULL, *tmp_char2 = NULL;
+	time_t now = time(NULL);
+	char *user_name = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	if (!fed_cond || !fed) {
+		error("we need something to change");
+		return NULL;
+	}
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if (!is_user_min_admin_level(mysql_conn, uid,
+				     SLURMDB_ADMIN_SUPER_USER)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
+	/* force to only do non-deleted federations */
+	fed_cond->with_deleted = 0;
+	_setup_federation_cond_limits(fed_cond, &extra);
+	_setup_federation_rec_limits(fed, &tmp_char1, &tmp_char2, &vals);
+	xfree(tmp_char1);
+	xfree(tmp_char2);
+
+	if (!extra || !vals) {
+		xfree(extra);
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Nothing to change");
+		return NULL;
+	}
+
+	/* Select records that are going to get updated.
+	 * 1 - to be able to report what is getting updated
+	 * 2 - to create an update object to let the controller know.  */
+	xstrfmtcat(fed_items, "%s", fed_req_inx[req_inx]);
+	for(req_inx = 1; req_inx < FED_REQ_COUNT; req_inx++) {
+		xstrfmtcat(fed_items, ", %s", fed_req_inx[req_inx]);
+	}
+
+	xstrfmtcat(query, "select %s from %s%s;",
+		   fed_items, federation_table, extra);
+	xfree(fed_items);
+
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(
+		      mysql_conn, query, 0))) {
+		xfree(query);
+		xfree(vals);
+		error("no result given for %s", extra);
+		xfree(extra);
+		return NULL;
+	}
+	xfree(extra);
+
+	rc = 0;
+	ret_list = list_create(slurm_destroy_char);
+	while ((row = mysql_fetch_row(result))) {
+		object = xstrdup(row[0]);
+
+		list_append(ret_list, object);
+		if (!rc) {
+			xstrfmtcat(name_char, "(name='%s'", object);
+			rc = 1;
+		} else  {
+			xstrfmtcat(name_char, " || name='%s'", object);
+		}
+
+		/* TODO: build federation_rec and add to update list */
+	}
+	mysql_free_result(result);
+
+	if (!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		if (debug_flags & DEBUG_FLAG_DB_FEDR)
+			DB_DEBUG(mysql_conn->conn,
+				 "didn't effect anything\n%s", query);
+		xfree(vals);
+		xfree(name_char);
+		xfree(query);
+		return ret_list;
+	}
+	xfree(query);
+	xstrcat(name_char, ")");
+
+	user_name = uid_to_string((uid_t) uid);
+	rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
+			   user_name, federation_table,
+			   name_char, vals, NULL);
+	xfree(user_name);
+	xfree(name_char);
+	xfree(vals);
+	if (rc == SLURM_ERROR) {
+		error("Couldn't modify federation");
+		FREE_NULL_LIST(ret_list);
+		ret_list = NULL;
+	}
+
+	return ret_list;
 }

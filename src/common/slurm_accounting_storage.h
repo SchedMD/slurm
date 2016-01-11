@@ -217,6 +217,17 @@ extern List acct_storage_g_modify_assocs(
 	slurmdb_assoc_rec_t *assoc);
 
 /*
+ * modify existing clusters in the accounting system
+ * IN:  slurmdb_cluster_cond_t *cluster_cond
+ * IN:  slurmdb_cluster_rec_t *cluster
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_federations(
+				void *db_conn, uint32_t uid,
+				slurmdb_federation_cond_t *fed_cond,
+				slurmdb_federation_rec_t *fed);
+
+/*
  * modify existing job in the accounting system
  * IN:  slurmdb_job_modify_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job

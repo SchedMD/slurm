@@ -596,6 +596,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_FEDERATIONS:
 	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_RES:
@@ -791,6 +792,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_FEDERATIONS:
 	case DBD_MODIFY_JOB:
 	case DBD_MODIFY_QOS:
 	case DBD_MODIFY_RES:
@@ -954,6 +956,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_MODIFY_ASSOCS;
 	} else if (!xstrcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
+	} else if (!xstrcasecmp(msg_type, "Modify Federations")) {
+		return DBD_MODIFY_FEDERATIONS;
 	} else if (!xstrcasecmp(msg_type, "Modify Job")) {
 		return DBD_MODIFY_JOB;
 	} else if (!xstrcasecmp(msg_type, "Modify QOS")) {
@@ -1311,6 +1315,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_MODIFY_CLUSTERS";
 		} else
 			return "Modify Clusters";
+		break;
+	case DBD_MODIFY_FEDERATIONS:
+		if (get_enum) {
+			return "DBD_MODIFY_FEDERATIONS";
+		} else
+			return "Modify Federations";
 		break;
 	case DBD_MODIFY_JOB:
 		if (get_enum) {
@@ -2773,6 +2783,10 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			destroy_cond = slurmdb_destroy_cluster_cond;
 			destroy_rec = slurmdb_destroy_cluster_rec;
 			break;
+		case DBD_MODIFY_FEDERATIONS:
+			destroy_cond = slurmdb_destroy_federation_cond;
+			destroy_rec = slurmdb_destroy_federation_rec;
+			break;
 		case DBD_MODIFY_JOB:
 			destroy_cond = slurmdb_destroy_job_modify_cond;
 			destroy_rec = slurmdb_destroy_job_rec;
@@ -3744,6 +3758,10 @@ extern void slurmdbd_pack_modify_msg(dbd_modify_msg_t *msg,
 		my_cond = slurmdb_pack_cluster_cond;
 		my_rec = slurmdb_pack_cluster_rec;
 		break;
+	case DBD_MODIFY_FEDERATIONS:
+		my_cond = slurmdb_pack_federation_cond;
+		my_rec = slurmdb_pack_federation_rec;
+		break;
 	case DBD_MODIFY_JOB:
 		my_cond = slurmdb_pack_job_modify_cond;
 		my_rec = slurmdb_pack_job_rec;
@@ -3792,6 +3810,10 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 	case DBD_MODIFY_CLUSTERS:
 		my_cond = slurmdb_unpack_cluster_cond;
 		my_rec = slurmdb_unpack_cluster_rec;
+		break;
+	case DBD_MODIFY_FEDERATIONS:
+		my_cond = slurmdb_unpack_federation_cond;
+		my_rec = slurmdb_unpack_federation_rec;
 		break;
 	case DBD_MODIFY_JOB:
 		my_cond = slurmdb_unpack_job_modify_cond;
