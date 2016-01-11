@@ -38,13 +38,17 @@
 proc inc22_1_3 { } {
 
 	global sreport exit_code node0_down_start node0_down_end node0_cpus
-	global node1_cpus cluster my_pid accounts users cluster_cpus
+	global node1_cpus cluster1 cluster2 my_pid accounts users cluster_cpus
 	global job0_start job1_end job1_cpus job1_alloc job2_start
 	global job2_end job2_cpus job2_alloc job2_elig job3_start
 	global job3_end job3_cpus job3_alloc job3_elig acct1_alloc acct2_alloc
 	global acct3_alloc total_alloc wckey1_alloc user1_wckey1_alloc
 	global user2_wckey1_alloc user1 user2 account1 account2 account3
-	global sql_rem wckey1 wc_key_track
+	global sql_rem_clus1 wckey1 wc_key_track
+
+	#since there are 2 test clusters we will just use one
+	set cluster $cluster1
+	set sql_rm $sql_rem_clus1
 
 	# Mon Dec 31 23:00:00 2007
 	set start_time "Mon Dec 31 23:00:00 2007"
@@ -132,6 +136,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -178,6 +183,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -237,6 +243,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -278,6 +285,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -321,6 +329,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -364,6 +373,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -403,6 +413,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -438,6 +449,7 @@ proc inc22_1_3 { } {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -461,5 +473,18 @@ proc inc22_1_3 { } {
 		eof {
 			wait
 		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sreport didn't give good info 24 $matches. (Within: inc22.1.3)\n"
+		incr exit_code 1
+	}
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
+		exit $exit_code
 	}
 }

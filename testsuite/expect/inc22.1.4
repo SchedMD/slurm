@@ -40,15 +40,19 @@ proc inc22_1_4 {} {
 
 	global sacct job1_acct job2_acct job3_acct job1_start_str
 	global job1_end_str job2_start_str job2_end_str job3_start_str
-	global exit_code job3_end_str start_str end_str cluster
+	global exit_code job3_end_str start_str end_str cluster1 cluster2
+	global sql_rem_clus1 sql_rem_clus2 users accounts
+	global test_job1 test_job2 test_job3
 
+	#since there are 2 test clusters we will just use one
+	set cluster $cluster1
 
 	#Test for job 1
 	send_user "\nSearch for job1 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname
 	expect {
-		-re "$job1_acct" {
+		-re "$test_job1." {
 			incr usermatch
 			exp_continue
 		}
@@ -63,14 +67,29 @@ proc inc22_1_4 {} {
 			send_user"\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
+	}
+	# Job1 is submitted twice
+	if {$usermatch != 2} {
+		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		incr exit_code 1
+	}
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem_clus1]
+		incr exit_code [archive_load $sql_rem_clus2]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster1"
+		remove_cluster "$cluster2"
+		exit $exit_code
 	}
 
 	# Test for job2
 	send_user "\nSearch for job2 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname
 	expect {
-		-re "$job2_acct" {
+		-re "$test_job2." {
 			incr usermatch
 			exp_continue
 		}
@@ -86,13 +105,27 @@ proc inc22_1_4 {} {
 			set exit_code 1
 		}
 	}
+	if {$usermatch != 1} {
+		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		incr exit_code 1
+	}
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem_clus1]
+		incr exit_code [archive_load $sql_rem_clus2]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster1"
+		remove_cluster "$cluster2"
+		exit $exit_code
+	}
 
 	# Test for job3
 	send_user "\nSearch for job3 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=node,jobname,jobid
+	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname
 	expect {
-		-re "$job3_acct" {
+		-re "$test_job3." {
 			incr usermatch
 			exp_continue
 		}
@@ -107,5 +140,20 @@ proc inc22_1_4 {} {
 			send_user "\nFAILURE: sacct did not work (Within: inc21.1.4)\n"
 			set exit_code 1
 		}
+	}
+
+	if {$usermatch != 1} {
+		send_user "\nFAILURE:  sacct didn't give good info 25 $usermatch.\n"
+		incr exit_code 1
+	}
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem_clus1]
+		incr exit_code [archive_load $sql_rem_clus2]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster1"
+		remove_cluster "$cluster2"
+		exit $exit_code
 	}
 }

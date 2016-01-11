@@ -37,10 +37,14 @@
 
 proc inc22_1_2 {} {
 
-	global node0_down_end node0_cpus node1_cpus cluster sreport
-	global my_pid accounts users cluster_cpus
+	global node0_down_end node0_cpus node1_cpus cluster1 sreport
+	global cluster1 my_pid accounts users cluster_cpus
 	global job1_end job1_cpus job2_elig job2_cpus account1 user1
-	global sql_rem wckey1 wc_key_track exit_code
+	global sql_rem_clus1 wckey1 wc_key_track exit_code cluster2
+
+	#since there are 2 test clusters we will just use one
+	set cluster $cluster1
+	set sql_rm $sql_rem_clus1
 
 	# Tue Jan 1 00:00:00 2008
 	set start_time "Tue Jan 1 00:00:00 2008"
@@ -107,6 +111,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -150,6 +155,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -185,6 +191,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -224,6 +231,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -259,6 +267,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -294,6 +303,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 
@@ -329,6 +339,7 @@ proc inc22_1_2 {} {
 		remove_user "" "" $users
 		remove_acct "" $accounts
 		remove_cluster "$cluster"
+		remove_cluster "$cluster2"
 		exit $exit_code
 	}
 

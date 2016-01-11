@@ -1,7 +1,8 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test sreport cluster utilization.
+#          Test sreport cluster utilization. Also test for
+#          sreport -M option
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -43,10 +44,13 @@ set test_nu     "test22-1"
 set exit_code   0
 set matches     0
 set not_support 0
-set sql_in     "$test_id-in.sql"
-set sql_rem    "$test_id-rem.sql"
+set sql_in_clus1     "$test_id-clus1-in.sql"
+set sql_rem_clus1    "$test_id-clus1-rem.sql"
+set sql_in_clus2     "$test_id-clus2-in.sql"
+set sql_rem_clus2    "$test_id-clus2-rem.sql"
 set sql_out    "$test_id-out.sql"
-set cluster    [format "%s%s" $test_nu "clus"]
+set cluster1    [format "%s%s" $test_nu "clus1"]
+set cluster2    [format "%s%s" $test_nu "clus2"]
 set account1   [format "%s%s" $test_nu "acct1"]
 set account2   [format "%s%s" $test_nu "acct2"]
 set account3   [format "%s%s" $test_nu "acct3"]
@@ -55,11 +59,14 @@ set wckey1     [format "%s%s" $test_nu "wckey"]
 set user1      [format "%s%s" $test_nu "user1"]
 set user2      [format "%s%s" $test_nu "user2"]
 set users      [format "%s,%s" $user1 $user2]
-set node0      [format "%s%d" $cluster 0]
-set node1      [format "%s%d" $cluster 1]
-set node_list  [format "%s%s" $cluster "\[0-1\]"]
+set node0      [format "%s%d" $cluster1 0]
+set node1      [format "%s%d" $cluster1 1]
+set node_list  [format "%s%s" $cluster1 "\[0-1\]"]
 set node0_cpus 2
 set node1_cpus 2
+set test_job1  "$test_id\_job1"
+set test_job2  "$test_id\_job2"
+set test_job3  "$test_id\_job3"
 set cluster_cpus [expr $node0_cpus + $node1_cpus]
 set access_err  0
 set uid [get_my_uid]
@@ -69,18 +76,18 @@ set timeout 120
 # Cluster
 array set clus_req {}
 
-# Account 1
+# Account 1 Cluster 1
 array set acct_req1 {}
-set acct_req1(cluster) $cluster
+set acct_req1(cluster) "$cluster1,$cluster2"
 
-# Account 2
+# Account 2 Cluster 1
 array set acct_req2 {}
-set acct_req2(cluster) $cluster
+set acct_req2(cluster) "$cluster1,$cluster2"
 set acct_req2(parent) $account2
 
-# User
+# User Cluster 1
 array set user_req {}
-set user_req(cluster) $cluster
+set user_req(cluster) "$cluster1,$cluster2"
 set user_req(account) $accounts
 set user_req(wckey) $wckey1
 
@@ -90,7 +97,7 @@ print_header $test_id
 # Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
 set midnight_time "Thu Jan 31 00:00:00 2008"
 set midnight [exec date -d $midnight_time +%s]
- 
+
 # Mon Dec 31 23:00:00 2007
 set start_date "Mon Dec 31 23:00:00 2007"
 set period_start [exec date -d $start_date +%s]
@@ -131,7 +138,7 @@ set job2_end [expr $job2_start+$job2_run]
 set job2_diff_str "1-00:00:00"
 set job2_start_str [timestamp -format %Y-%m-%dT%X -seconds $job2_start]
 set job2_end_str [timestamp -format %Y-%m-%dT%X -seconds $job2_end]
-set job2_nodes [format "%s\[%s\]" $cluster "0-1"]
+set job2_nodes [format "%s\[%s\]" $cluster1 "0-1"]
 set job2_cpus [expr $node0_cpus + $node1_cpus]
 set job2_alloc [expr $job2_run * $job2_cpus]
 set job2_acct $account3
@@ -190,11 +197,14 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 
 remove_user "" "" $users
 remove_acct "" $accounts
-remove_cluster "$cluster"
+remove_cluster "$cluster1"
+remove_cluster "$cluster2"
 #add cluster
-incr exit_code [add_cluster $cluster [array get clus_req]]
+incr exit_code [add_cluster $cluster1 [array get clus_req]]
+incr exit_code [add_cluster $cluster2 [array get clus_req]]
 if { $exit_code } {
- 	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
 	exit $exit_code
 }
 
@@ -202,7 +212,8 @@ if { $exit_code } {
 incr exit_code [add_acct "$account1,$account2" [array get acct_req1]]
 if { $exit_code } {
 	remove_acct "" "$account1,$account2"
-	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
 	exit $exit_code
 }
 
@@ -210,7 +221,8 @@ if { $exit_code } {
 incr exit_code [add_acct $account3 [array get acct_req2]]
 if { $exit_code } {
 	remove_acct "" $accounts
-	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
 	exit $exit_code
 }
 
@@ -219,7 +231,8 @@ incr exit_code [add_user $users [array get user_req]]
 if { $exit_code } {
 	remove_user "" "" $users
 	remove_acct "" $accounts
-	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
 	exit $exit_code
 }
 
@@ -230,11 +243,11 @@ set user1acct3 0
 set user2acct1 0
 set user2acct2 0
 set user2acct3 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster format="User,account,id"]
+set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster2 format="User,account,id"]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "$user1.$account1.($number)." {
 		set user1acct1 $expect_out(1,string)
@@ -275,18 +288,18 @@ if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2
 	incr exit_code 1
 	remove_user "" "" $users
 	remove_acct "" $accounts
-	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
 #get the user association ids for the jobs we plan to add
 set user1wckey1 0
 set user2wckey1 0
-set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users wckeys=$wckey1 cluster=$cluster format="user,wckey,id"]
+set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users wckeys=$wckey1 cluster=$cluster1 format="user,wckey,id"]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
+		incr exit_code 1
 	}
 	-re "$user1.$wckey1.($number)." {
 		set user1wckey1 $expect_out(1,string)
@@ -311,204 +324,224 @@ if {!$user1wckey1 || !$user1wckey1} {
 	incr exit_code 1
 	remove_user "" "" $users
 	remove_acct "" $accounts
-	remove_cluster "$cluster"
+	remove_cluster "$cluster1"
 	exit $exit_code
 }
 
-exec $bin_rm -f $sql_in
-set file [open $sql_in "w"]
+proc create_sql {cluster sql_in sql_rem} {
+
+	global bin_rm cluster_cpus period_start period_end node_list exit_code
+	global node0 node0_cpus node0_down_start node0_down_end
+	global user1acct1 wckey1 user1wckey1 uid gid debug job1_acct job0_start job0_end
+	global job1_cpus job1_nodes job1_start job1_end user2acct3 user2wckey1
+	global job2_acct job2_elig job2_start job2_end job2_cpus job2_nodes
+	global user1acct2 job3_acct job3_elig job3_start job3_end job3_cpus
+	global job3_nodes sacct start_str end_str account1 job1_start_str
+	global job1_end_str job1_diff_str account3 job2_start_str
+	global job2_end_str job2_diff_str account2 job3_start_str
+	global job3_end_str job3_diff_str sacctmgr node0_start_str
+	global node0_end_str matches users accounts
+	global test_job1 test_job2 test_job3
 
 
-
-# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
-# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
-# JUST A FRIENDLY REMINDER ;)
-
-# put in the cluster for back in the day before accounting was made here for us we are using 'Tue Jan  1 00:00:00 2008' = 1199174400 as the start
-
-puts $file "insert into cluster_event_table (node_name, cluster, tres, period_start, period_end, reason, cluster_nodes) values"
-puts $file "('', '$cluster', '1=$cluster_cpus', $period_start, $period_end, 'Cluster processor count', '$node_list' )"
-
-#put a node down for 30 minutes starting at 45 minutes after the start to make sure our rollups work so we should get 15 minutes on one hour and 15 on the other
-puts $file ", ('$node0', '$cluster', '1=$node0_cpus', $node0_down_start, $node0_down_end, 'down','')"
-#puts $file ", ('$node1', '$cluster', '1=$node1_cpus', $period_start, $period_end, 'down')"
-puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
-
-#now we will put in a job running for an hour and 5 minutes
-puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65536', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job0_start, $job0_start, $job0_start, $job0_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
-puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
-close $file
-
-exec $bin_rm -f $sql_rem
-set file [open $sql_rem "w"]
-
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_event_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_step_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_day_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_hour_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_month_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_day_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_hour_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_month_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_day_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_hour_table\";"]
-puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_month_table\";"]
-close $file
-
-#
-# Use sacctmgr to load info
-#
-incr exit_code [archive_load $sql_in]
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
+	exec $bin_rm -f $sql_in
+	set file [open $sql_in "w"]
 
 
-#
-# Use sacct to see if the job loaded
-#
-set matches 0
-set my_pid [eval spawn $sacct -p -C $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
-expect {
-	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacct command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
-		send_user "got 1\n"
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account3.$user2acct3.$wckey1.$user2wckey1.$job2_start_str.$job2_end_str.$job2_diff_str." {
-		send_user "got 2\n"
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account2.$user1acct2.$wckey1.$user1wckey1.$job3_start_str.$job3_end_str.$job3_diff_str." {
-		send_user "got 3\n"
-		incr matches
-		exp_continue
+	# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
+	# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
+	# JUST A FRIENDLY REMINDER ;)
+
+	# put in the cluster for back in the day before accounting was made here for us we are using 'Tue Jan  1 00:00:00 2008' = 1199174400 as the start
+
+	puts $file "insert into cluster_event_table (node_name, cluster, tres, period_start, period_end, reason, cluster_nodes) values"
+	puts $file "('', '$cluster', '1=$cluster_cpus', $period_start, $period_end, 'Cluster processor count', '$node_list' )"
+
+	#put a node down for 30 minutes starting at 45 minutes after the start to make sure our rollups work so we should get 15 minutes on one hour and 15 on the other
+	puts $file ", ('$node0', '$cluster', '1=$node0_cpus', $node0_down_start, $node0_down_end, 'down','')"
+	#puts $file ", ('$node1', '$cluster', '1=$node1_cpus', $period_start, $period_end, 'down')"
+	puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
+
+	#now we will put in a job running for an hour and 5 minutes
+	puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+	puts $file "('65536', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job0_start, $job0_start, $job0_start, $job0_end, '0', '$test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
+	puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', '$test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
+	puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', '$test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
+	puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', '$test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
+	puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
+	close $file
+
+	exec $bin_rm -f $sql_rem
+	set file [open $sql_rem "w"]
+
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_event_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_step_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_month_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_month_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_month_table\";"]
+	close $file
+
+
+	#
+	# Use sacctmgr to load info
+	#
+	incr exit_code [archive_load $sql_in]
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster"
+		exit $exit_code
 	}
 
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
+	#
+	# Use sacct to see if the job loaded
+	#
+	set matches 0
+	set my_pid [eval spawn $sacct -p -C $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sacct command\n"
+			incr exit_code 1
+		}
+		-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
+			send_user "got 1\n"
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account3.$user2acct3.$wckey1.$user2wckey1.$job2_start_str.$job2_end_str.$job2_diff_str." {
+			send_user "got 2\n"
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account2.$user1acct2.$wckey1.$user1wckey1.$job3_start_str.$job3_end_str.$job3_diff_str." {
+			send_user "got 3\n"
+			incr matches
+			exp_continue
+		}
+
+		timeout {
+			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 3} {
+		send_user "\nFAILURE:  job wasn't loaded correctly with only $matches.\n"
 		incr exit_code 1
 	}
-	eof {
-		wait
+
+	if { $exit_code } {
+		#incr exit_code [archive_load $sql_rem]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster"
+		exit $exit_code
 	}
-}
 
-if {$matches != 3} {
-	send_user "\nFAILURE:  job wasn't loaded correctly with only $matches.\n"
-	incr exit_code 1
-}
+	#
+	# Use sacctmgr to see if node event loaded
+	#
 
-if { $exit_code } {
-	#incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
+	send_user "$cluster..$start_str.$end_str.$cluster_cpus.$node_list.\n"
 
-#
-# Use sacctmgr to see if node event loaded
-#
+	set matches 0
+	set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,noden,start,end,cpu --noheader start=$start_str end=$end_str]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "($cluster..$start_str.$end_str.$cluster_cpus.)" {
+			send_user "got 1\n"
+			incr matches
+			exp_continue
+		}
+		-re "($cluster.$node0.$node0_start_str.$node0_end_str.$node0_cpus.)" {
+			send_user "got 2\n"
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 
-send_user "$cluster..$start_str.$end_str.$cluster_cpus.$node_list.\n"
-
-set matches 0
-set my_pid [eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,noden,start,end,cpu --noheader start=$start_str end=$end_str]
-expect {
-	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	if {$matches != 2} {
+		send_user "\nFAILURE:  cluster env wasn't loaded correctly with only $matches.\n"
 		incr exit_code 1
 	}
-	-re "($cluster..$start_str.$end_str.$cluster_cpus.)" {
-		send_user "got 1\n"
-		incr matches
-		exp_continue
+
+	if { $exit_code } {
+		#incr exit_code [archive_load $sql_rem]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster"
+		exit $exit_code
 	}
-	-re "($cluster.$node0.$node0_start_str.$node0_end_str.$node0_cpus.)" {
-		send_user "got 2\n"
-		incr matches
-		exp_continue
+
+	#
+	# Use sacctmgr to roll up that time period
+	#
+	set matches 0
+	set my_pid [eval spawn $sacctmgr -i roll $start_str $end_str]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "$cluster" {
+			incr matches
+			exp_continue
+		}
+		-re "SUCCESS" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr archive load not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr wasn't able to roll data.\n"
 		incr exit_code 1
 	}
-	eof {
-		wait
+
+	if { $exit_code } {
+		incr exit_code [archive_load $sql_rem]
+		remove_user "" "" $users
+		remove_acct "" $accounts
+		remove_cluster "$cluster"
+		exit $exit_code
 	}
 }
 
-if {$matches != 2} {
-	send_user "\nFAILURE:  cluster env wasn't loaded correctly with only $matches.\n"
-	incr exit_code 1
-}
+create_sql $cluster1 $sql_in_clus1 $sql_rem_clus1
+create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
 
-if { $exit_code } {
-	#incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-#
-# Use sacctmgr to roll up that time period
-#
-set matches 0
-set my_pid [eval spawn $sacctmgr -i roll $start_str $end_str]
-expect {
-	-re "There was a problem" {
-		send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster" {
-		incr matches
-		exp_continue
-	}
-	-re "SUCCESS" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sacctmgr wasn't able to roll data.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
 
 #
 # Execute sub-test
@@ -521,27 +554,18 @@ inc22_1_3
 
 inc22_1_4
 
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 25 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
 if {$exit_code == 0} {
-	incr exit_code [archive_load $sql_rem]
+	incr exit_code [archive_load $sql_rem_clus1]
+	incr exit_code [archive_load $sql_rem_clus2]
 	incr exit_code [remove_user "" "" $users]
 	incr exit_code [remove_acct "" $accounts]
-	incr exit_code [remove_cluster "$cluster"]
+	incr exit_code [remove_cluster "$cluster1"]
+	incr exit_code [remove_cluster "$cluster2"]
 
- 	exec $bin_rm -f $sql_in
- 	exec $bin_rm -f $sql_rem
+	exec $bin_rm -f $sql_in_clus1
+	exec $bin_rm -f $sql_rem_clus1
+	exec $bin_rm -f $sql_in_clus2
+	exec $bin_rm -f $sql_rem_clus2
 	if {$exit_code == 0} {
 		send_user "\nSUCCESS\n"
 	} else {
