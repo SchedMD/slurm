@@ -1641,6 +1641,64 @@ extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
 		return NO_VAL;
 }
 
+extern char *slurmdb_federation_flags_str(uint32_t flags)
+{
+	char *federation_flags = NULL;
+
+	if (flags & FEDERATION_FLAG_NOTSET)
+		return xstrdup("NotSet");
+
+	if (flags & FEDERATION_FLAG_LLC)
+		xstrcat(federation_flags, "LLC,");
+
+	if (federation_flags)
+		federation_flags[strlen(federation_flags)-1] = '\0';
+
+	return federation_flags;
+}
+
+static uint32_t _str_2_federation_flags(char *flags)
+{
+	if (slurm_strcasestr(flags, "LLC"))
+		return FEDERATION_FLAG_LLC;
+
+	return 0;
+}
+
+extern uint32_t str_2_federation_flags(char *flags, int option)
+{
+	uint32_t federation_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	if (!flags) {
+		error("We need a federation flags string to translate");
+		return FEDERATION_FLAG_NOTSET;
+	} else if (atoi(flags) == -1) {
+		/* clear them all */
+		federation_flags = INFINITE;
+		federation_flags &= (~FEDERATION_FLAG_NOTSET &
+				     ~FEDERATION_FLAG_ADD);
+		return federation_flags;
+	}
+
+	my_flags = xstrdup(flags);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		federation_flags |= _str_2_federation_flags(token);
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	if (!federation_flags)
+		federation_flags = FEDERATION_FLAG_NOTSET;
+	else if (option == '+')
+		federation_flags |= FEDERATION_FLAG_ADD;
+	else if (option == '-')
+		federation_flags |= FEDERATION_FLAG_REMOVE;
+
+	return federation_flags;
+}
+
 extern char *slurmdb_qos_flags_str(uint32_t flags)
 {
 	char *qos_flags = NULL;
@@ -2987,6 +3045,15 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);
+}
+
+extern void slurmdb_copy_federation_rec_limits(slurmdb_federation_rec_t *out,
+					       slurmdb_federation_rec_t *in)
+{
+	xfree(out->name);
+	out->name     = xstrdup(in->name);
+	out->flags    = in->flags;
+	out->priority = in->priority;
 }
 
 extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,

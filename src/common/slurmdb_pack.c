@@ -755,10 +755,12 @@ extern void slurmdb_pack_federation_rec(void *in, uint16_t rpc_version, Buf buff
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
+			pack32(0, buffer);
 			return;
 		}
 		packstr(object->name, buffer);
 		pack32(object->flags, buffer);
+		pack32(object->priority, buffer);
 	}
 }
 
@@ -775,6 +777,7 @@ extern int slurmdb_unpack_federation_rec(void **object, uint16_t rpc_version,
 	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack32(&object_ptr->priority, buffer);
 	}
 
 	return SLURM_SUCCESS;

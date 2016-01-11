@@ -75,8 +75,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if (!federation_cond->federation_list)
 				federation_cond->federation_list =
 					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(federation_cond->federation_list,
-						 argv[i]+end))
+			if (slurm_addto_char_list(
+					federation_cond->federation_list,
+					argv[i]+end))
 				a_set = 1;
 		} else if (!strncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
@@ -101,34 +102,107 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return 0;
 }
 
+static int _set_rec(int *start, int argc, char *argv[],
+		    List name_list, slurmdb_federation_rec_t *fed)
+{
+	int i;
+	int set = 0;
+	int end = 0;
+	int command_len = 0;
+	int option = 0;
+
+	for (i=(*start); i<argc; i++) {
+		end = parse_option_end(argv[i]);
+		if (!end)
+			command_len=strlen(argv[i]);
+		else {
+			command_len=end-1;
+			if (argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
+
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
+			i--;
+			break;
+		} else if (!end && !strncasecmp(argv[i], "set",
+					       MAX(command_len, 3))) {
+			continue;
+		} else if (!end
+			  || !strncasecmp (argv[i], "Name",
+					   MAX(command_len, 1))) {
+			if (name_list)
+				slurm_addto_char_list(name_list, argv[i]+end);
+		} else if (!fed) {
+			continue;
+		} else if (!strncasecmp (argv[i], "Flags",
+					 MAX(command_len, 2))) {
+			fed->flags = str_2_federation_flags(argv[i]+end,
+								   option);
+			if (fed->flags == FEDERATION_FLAG_NOTSET) {
+				char *tmp_char = NULL;
+				fed->flags = INFINITE;
+				fed->flags &= (~FEDERATION_FLAG_NOTSET &
+					       ~FEDERATION_FLAG_ADD &
+					       ~FEDERATION_FLAG_REMOVE);
+				tmp_char =
+					slurmdb_federation_flags_str(
+							fed->flags);
+				printf(" Unknown federation flag used in:\n"
+				       " '%s'\n"
+				       " Valid federation flags are\n  '%s'\n",
+				       argv[i]+end, tmp_char);
+				xfree(tmp_char);
+				exit_code = 1;
+			} else
+				set = 1;
+		} else if (!strncasecmp (argv[i], "Priority",
+					 MAX(command_len, 3))) {
+			if (get_uint(argv[i]+end, &fed->priority,
+			    "Priority") == SLURM_SUCCESS)
+				set = 1;
+		} else {
+			exit_code = 1;
+			printf(" Unknown option: %s\n"
+			       " Use keyword 'where' to modify condition\n",
+			       argv[i]);
+		}
+	}
+
+	(*start) = i;
+
+	return set;
+}
+
 extern int sacctmgr_add_federation(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i = 0, command_len = 0;
-	slurmdb_federation_rec_t *federation = NULL;
+	int i = 0, limit_set = 0;
+	slurmdb_federation_rec_t *fed = NULL;
+	slurmdb_federation_rec_t *start_fed =
+		xmalloc(sizeof(slurmdb_federation_rec_t));
 	List name_list = list_create(slurm_destroy_char);
 	List federation_list;
 
 	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
 
+	slurmdb_init_federation_rec(start_fed, 0);
+
 	for (i=0; i<argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else
-			command_len=end-1;
-		if (!end
-		   || !strncasecmp(argv[i], "Names", MAX(command_len, 1))
-		   || !strncasecmp(argv[i], "Federations", MAX(command_len, 1))) {
-			if (!slurm_addto_char_list(name_list, argv[i]+end))
-				exit_code=1;
-		}
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp(argv[i], "Where", MAX(command_len, 5))
+		    || !strncasecmp(argv[i], "Set", MAX(command_len, 3)))
+			i++;
+		limit_set += _set_rec(&i, argc, argv, name_list, start_fed);
 	}
 	if (exit_code) {
 		FREE_NULL_LIST(name_list);
+		slurmdb_destroy_federation_rec(start_fed);
 		return SLURM_ERROR;
 	} else if (!list_count(name_list)) {
+		slurmdb_destroy_federation_rec(start_fed);
 		FREE_NULL_LIST(name_list);
 		exit_code=1;
 		fprintf(stderr, " Need name of federation to add.\n");
@@ -144,6 +218,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 							   &fed_cond);
 		if (!temp_list) {
 			exit_code=1;
+			slurmdb_destroy_federation_rec(start_fed);
 			fprintf(stderr,
 				" Problem getting federations from database.  "
 				"Contact your admin.\n");
@@ -171,6 +246,7 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 		FREE_NULL_LIST(temp_list);
 		if (!list_count(name_list)) {
 			FREE_NULL_LIST(name_list);
+			slurmdb_destroy_federation_rec(start_fed);
 			return SLURM_ERROR;
 		}
 	}
@@ -186,15 +262,21 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 			rc = SLURM_ERROR;
 			continue;
 		}
-		federation = xmalloc(sizeof(slurmdb_federation_rec_t));
-		slurmdb_init_federation_rec(federation, 0);
-
-		list_append(federation_list, federation);
-		federation->name = xstrdup(name);
-		printf("  Name          = %s\n", federation->name);
+		fed = xmalloc(sizeof(slurmdb_federation_rec_t));
+		slurmdb_init_federation_rec(fed, 0);
+		list_append(federation_list, fed);
+		slurmdb_copy_federation_rec_limits(fed, start_fed);
+		fed->name = xstrdup(name);
+		printf("  %s\n", fed->name);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(name_list);
+
+	if (limit_set) {
+		printf(" Settings\n");
+		sacctmgr_print_federation_limits(start_fed);
+	}
+	slurmdb_destroy_federation_rec(start_fed);
 
 	if (!list_count(federation_list)) {
 		printf(" Nothing new added.\n");
@@ -208,7 +290,8 @@ extern int sacctmgr_add_federation(int argc, char *argv[])
 	*/
 	if (commit_check("Would you like to commit changes?")) {
 		notice_thread_init();
-		rc = acct_storage_g_add_federations(db_conn, my_uid, federation_list);
+		rc = acct_storage_g_add_federations(db_conn, my_uid,
+						    federation_list);
 		notice_thread_fini();
 		if (rc == SLURM_SUCCESS) {
 			acct_storage_g_commit(db_conn, 1);
@@ -267,7 +350,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 	}
 
 	if (!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "Fe,Fl");
+		slurm_addto_char_list(format_list, "Federation,Flags,Priority");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -307,17 +390,20 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 				break;
 			case PRINT_FLAGS:
 			{
-/*
-				char *tmp_char = slurmdb_federation_flags_2_str(
+				char *tmp_char = slurmdb_federation_flags_str(
 					federation->flags);
 				field->print_routine(
 					field,
 					tmp_char,
 					(curr_inx == field_count));
 				xfree(tmp_char);
-*/
 				break;
 			}
+			case PRINT_PRIO:
+				field->print_routine(
+					field, federation->priority,
+					(curr_inx == field_count));
+				break;
 			default:
 				field->print_routine(field, NULL,
 						     (curr_inx == field_count));

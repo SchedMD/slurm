@@ -140,6 +140,14 @@ typedef enum {
 #define	SLURMDB_RES_FLAG_ADD         0x20000000
 #define	SLURMDB_RES_FLAG_REMOVE      0x40000000
 
+/* Define Federation flags */
+#define	FEDERATION_FLAG_BASE           0x0fffffff
+#define	FEDERATION_FLAG_NOTSET         0x10000000
+#define	FEDERATION_FLAG_ADD            0x20000000
+#define	FEDERATION_FLAG_REMOVE         0x40000000
+
+#define	FEDERATION_FLAG_LLC            0x00000001
+
 /* flags and types of resources */
 /* when we come up with some */
 
@@ -640,6 +648,7 @@ typedef struct {
 typedef struct {
 	char     *name;		/* Name of federation */
 	uint32_t  flags; 	/* flags for various things */
+	uint32_t  priority; 	/* Federation's priority */
 } slurmdb_federation_rec_t;
 
 /* slurmdb_job_cond_t is defined above alphabetical */

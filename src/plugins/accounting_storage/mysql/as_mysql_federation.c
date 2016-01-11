@@ -70,14 +70,49 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 	return set;
 }
 
+static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
+					char **cols, char **vals, char **extra)
+{
+	if (!fed)
+		return SLURM_ERROR;
+
+	if (fed->priority) {
+		xstrcat(*cols, ", priority");
+		xstrfmtcat(*vals, ", '%u'", fed->priority);
+		xstrfmtcat(*extra, ", priority='%u'", fed->priority);
+	}
+
+	if (!(fed->flags & FEDERATION_FLAG_NOTSET)) {
+		uint32_t flags;
+		xstrcat(*cols, ", flags");
+		if (fed->flags & FEDERATION_FLAG_REMOVE) {
+			flags = fed->flags & ~FEDERATION_FLAG_REMOVE;
+			xstrfmtcat(*vals, ", (flags & ~%u)", flags);
+			xstrfmtcat(*extra, ", flags=(flags & ~%u)", flags);
+		} else if (fed->flags & FEDERATION_FLAG_ADD) {
+			flags = fed->flags & ~FEDERATION_FLAG_ADD;
+			xstrfmtcat(*vals, ", (flags | %u)",
+				   fed->flags & ~FEDERATION_FLAG_ADD);
+			xstrfmtcat(*extra, ", flags=(flags | %u)",
+				   fed->flags & ~FEDERATION_FLAG_ADD);
+		} else {
+			flags = fed->flags;
+			xstrfmtcat(*vals, ", %u", flags);
+			xstrfmtcat(*extra, ", flags=%u", flags);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 				    List federation_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_federation_rec_t *object = NULL;
-	char *extra = NULL,
-		*query = NULL, *tmp_extra = NULL;
+	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL,
+	     *tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int affect_rows = 0;
@@ -93,14 +128,16 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
+		xstrcat(cols, "creation_time, mod_time, name");
+		xstrfmtcat(vals, "%ld, %ld, '%s'", now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
+
+		_setup_federation_rec_limits(object, &cols, &vals, &extra);
+
 		xstrfmtcat(query,
-			   "insert into %s (creation_time, mod_time, name) "
-			   "values (%ld, %ld, '%s') "
-			   "on duplicate key update deleted=0, mod_time=%ld, "
-			   "flags=0",
-			   federation_table,
-			   now, now, object->name, now);
+			   "insert into %s (%s) values (%s) "
+			   "on duplicate key update deleted=0%s",
+			   federation_table, cols, vals, extra);
 		if (debug_flags & DEBUG_FLAG_DB_FEDR)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -130,6 +167,8 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "values (%ld, %u, '%s', '%s', '%s');",
 			   txn_table, now, DBD_ADD_FEDERATIONS,
 			   object->name, user_name, tmp_extra);
+		xfree(cols);
+		xfree(vals);
 		xfree(tmp_extra);
 		xfree(extra);
 		debug4("%d(%s:%d) query\n%s",

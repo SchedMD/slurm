@@ -551,6 +551,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "flags", "int unsigned default 0" },
+		{ "priority", "int unsigned default 0" },
 		{ NULL, NULL}
 	};
 

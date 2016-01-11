@@ -1788,6 +1788,23 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 
 }
 
+extern void sacctmgr_print_federation_limits(slurmdb_federation_rec_t *fed)
+{
+	if (!fed)
+		return;
+
+	if (fed->name)
+		printf("  Name          = %s\n", fed->name);
+	if (fed->priority)
+		printf("  Priority      = %u\n", fed->priority);
+	if (fed->flags) {
+		 char *tmp_flags =
+			 slurmdb_federation_flags_str(fed->flags);
+		 printf("  Flags         = %s\n", tmp_flags);
+		 xfree(tmp_flags);
+	}
+}
+
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 {
 	char *tmp_char;
