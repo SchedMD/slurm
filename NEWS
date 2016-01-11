@@ -139,6 +139,8 @@ documents those changes that are of interest to users and administrators.
  -- Update sacctmgr help with current QOS options.
  -- Update slurmstepd to initialize authentication before task launch.
  -- burst_cray/cray: Eliminate need for dedicated nodes.
+ -- If no MsgAggregationParams is set don't set the internal string to
+    anything.  The slurmd will process things correctly after the fact.
 
 * Changes in Slurm 15.08.6
 ==========================

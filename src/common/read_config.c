@@ -3471,10 +3471,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #endif
 
-	if (!s_p_get_string(&conf->msg_aggr_params,
-			   "MsgAggregationParams", hashtbl))
-		conf->msg_aggr_params =
-			xstrdup(DEFAULT_MSG_AGGREGATION_PARAMS);
+	s_p_get_string(&conf->msg_aggr_params, "MsgAggregationParams", hashtbl);
 
 	if (!s_p_get_boolean((bool *)&conf->track_wckey,
 			    "TrackWCKey", hashtbl))
