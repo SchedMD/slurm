@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "November 2015" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "January 2016" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -145,7 +145,7 @@ Copy executable file to allocated compute nodes.
 If a file name is specified, copy the executable to the specified destination
 file path. If no path is specified, copy the file to a file named
 "slurm_bcast_<job_id>.<step_id>" in the current working.
-For example, "srun \-\-bcast=/tmp/mine -N3 a.out" will copy the file "a.out"
+For example, "srun \-\-bcast=/tmp/mine \-N3 a.out" will copy the file "a.out"
 from your current directory to the file "/tmp/mine" on each of the three
 allocated compute nodes and execute that file.
 
