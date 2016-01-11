@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- If no MsgAggregationParams is set don't set the internal string to
     anything.  The slurmd will process things correctly after the fact.
  -- Fix output from api when printing job step not found.
+ -- Don't allow user specified reservation names to disrupt the normal
+    reservation sequeuece numbering scheme.
 
 * Changes in Slurm 15.08.6
 ==========================

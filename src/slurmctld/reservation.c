@@ -3195,8 +3195,6 @@ static void _validate_all_reservations(void)
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	struct job_record *job_ptr;
-	char *tmp;
-	uint32_t res_num;
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
@@ -3208,11 +3206,7 @@ static void _validate_all_reservations(void)
 			list_delete_item(iter);
 		} else {
 			_set_assoc_list(resv_ptr);
-			tmp = strrchr(resv_ptr->name, '_');
-			if (tmp) {
-				res_num = atoi(tmp + 1);
-				top_suffix = MAX(top_suffix, res_num);
-			}
+			top_suffix = MAX(top_suffix, resv_ptr->resv_id);
 		}
 	}
 	list_iterator_destroy(iter);
