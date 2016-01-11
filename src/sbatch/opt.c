@@ -1131,19 +1131,6 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
-			/* Only check the even options here (they are
-			 * the - options) */
-			if (magic == WRPR_BSUB && !(argc%2)) {
-				/* Since Slurm doesn't allow long
-				 * names with a single '-' we must
-				 * translate before hand.
-				 */
-				if (!xstrcmp("-cwd", option)) {
-					xfree(option);
-					option = xstrdup("-c");
-				}
-			}
-
 			argv[argc-1] = option;
 			ptr += skipped;
 		}
@@ -1232,6 +1219,20 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
 			xrealloc(argv, sizeof(char*) * argc);
+
+			/* Only check the even options here (they are
+			 * the - options) */
+			if (magic == WRPR_BSUB && !(argc%2)) {
+				/* Since Slurm doesn't allow long
+				 * names with a single '-' we must
+				 * translate before hand.
+				 */
+				if (!xstrcmp("-cwd", option)) {
+					xfree(option);
+					option = xstrdup("-c");
+				}
+			}
+
 			argv[argc-1] = option;
 			ptr += skipped;
 		}
@@ -1957,7 +1958,7 @@ static void _set_bsub_options(int argc, char **argv) {
 				char_ptr = optarg;
 
 			opt.ntasks =
-				_get_int(char_ptr, "number of tasks");
+				parse_int("number of tasks", char_ptr, true);
 
 			break;
 		case 'o':
