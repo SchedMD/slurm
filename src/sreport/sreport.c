@@ -58,6 +58,7 @@ int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 char *tres_str = NULL;	/* --tres= value */
 List tres_list;		/* TRES to report, built from --tres= value */
 int all_clusters_flag = 0;
+char *cluster_flag = NULL;
 slurmdb_report_time_format_t time_format = SLURMDB_REPORT_TIME_MINS;
 char *time_format_string = "Minutes";
 void *db_conn = NULL;
@@ -87,6 +88,7 @@ main (int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"all_clusters", 0, 0, 'a'},
+		{"cluster",  1, 0, 'M'},
 		{"help",     0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
 		{"noheader", 0, 0, 'n'},
@@ -127,7 +129,7 @@ main (int argc, char *argv[])
 	if (temp)
 		tres_str = xstrdup(temp);
 
-	while ((opt_char = getopt_long(argc, argv, "ahnpPQs:t:T:vV",
+	while ((opt_char = getopt_long(argc, argv, "aM:hnpPQs:t:T:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -141,6 +143,9 @@ main (int argc, char *argv[])
 			break;
 		case (int)'a':
 			all_clusters_flag = 1;
+			break;
+		case (int) 'M':
+			cluster_flag = xstrdup(optarg);
 			break;
 		case (int)'n':
 			print_fields_have_header = 0;
@@ -213,6 +218,10 @@ main (int argc, char *argv[])
 	}
 	if (exit_flag == 2)
 		putchar('\n');
+
+	/* Free the cluster grabbed from the -M option */
+	xfree(cluster_flag);
+
 	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);

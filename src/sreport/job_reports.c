@@ -252,6 +252,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	if (!job_cond->cluster_list)
 		job_cond->cluster_list = list_create(slurm_destroy_char);
+	if (cluster_flag)
+		slurm_addto_char_list(job_cond->cluster_list,
+				      xstrdup(cluster_flag));
 
 	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -399,6 +402,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	(*start) = i;
 
 	if (!local_cluster_flag && !list_count(job_cond->cluster_list)) {
+		/* Get the default Cluster since no cluster is specified */
 		char *temp = slurm_get_cluster_name();
 		if (temp)
 			list_append(job_cond->cluster_list, temp);

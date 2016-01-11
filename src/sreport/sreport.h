@@ -103,6 +103,7 @@ extern void *db_conn;
 extern uint32_t my_uid;
 extern int all_clusters_flag;
 extern slurmdb_report_sort_t sort_flag;
+extern char *cluster_flag;
 
 extern void slurmdb_report_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last);

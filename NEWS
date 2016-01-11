@@ -90,6 +90,7 @@ documents those changes that are of interest to users and administrators.
     while the new field is displayed as "ActiveFeatures".
  -- Remove Sun Constellation, IBM Federation Switches (replaced by NRT switch
     plugin) and long-defunct Quadrics Elan support.
+ -- Add -M<clusters> option to sreport.
 
 * Changes in Slurm 15.08.7
 ==========================
