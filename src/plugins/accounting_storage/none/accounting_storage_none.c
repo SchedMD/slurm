@@ -266,6 +266,13 @@ extern List acct_storage_p_remove_assocs(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {

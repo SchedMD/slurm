@@ -260,6 +260,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 extern int sacctmgr_delete_coord(int argc, char *argv[]);
+extern int sacctmgr_delete_federation(int argc, char *argv[]);
 extern int sacctmgr_delete_qos(int argc, char *argv[]);
 extern int sacctmgr_delete_res(int argc, char *argv[]);
 

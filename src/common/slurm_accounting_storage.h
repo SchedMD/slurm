@@ -317,6 +317,15 @@ extern List acct_storage_g_remove_assocs(
 	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
 
 /*
+ * remove federations from accounting system
+ * IN:  slurmdb_federation_cond_t *fed_cond
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond);
+
+/*
  * remove qos from accounting system
  * IN:  slurmdb_qos_cond_t *qos_cond
  * RET: List containing (char *'s) else NULL on error

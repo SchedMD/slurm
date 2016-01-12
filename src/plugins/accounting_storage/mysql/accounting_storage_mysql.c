@@ -1931,7 +1931,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if ((table == cluster_table) || (table == acct_coord_table)
 	    || (table == acct_table) || (table == qos_table)
 	    || (table == txn_table) || (table == user_table)
-	    || (table == res_table) || (table == clus_res_table))
+	    || (table == res_table) || (table == clus_res_table)
+	    || (table == federation_table))
 		cluster_centric = false;
 
 	/* If we have jobs associated with this we do not want to
@@ -1939,7 +1940,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 * corner cases most of the time this won't matter.
 	 */
 	if ((table == acct_coord_table) || (table == res_table)
-	    || (table == clus_res_table)) {
+	    || (table == clus_res_table) || (table == federation_table)) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -2076,7 +2077,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	} else if ((table == acct_coord_table)
 		   || (table == wckey_table)
 		   || (table == clus_res_table)
-		   || (table == res_table))
+		   || (table == res_table)
+		   || (table == federation_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the accounting tables
@@ -2759,6 +2761,13 @@ extern List acct_storage_p_remove_assocs(
 	slurmdb_assoc_cond_t *assoc_cond)
 {
 	return as_mysql_remove_assocs(mysql_conn, uid, assoc_cond);
+}
+
+extern List acct_storage_p_remove_federations(
+					mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	return as_mysql_remove_federations(mysql_conn, uid, fed_cond);
 }
 
 extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,

@@ -378,3 +378,87 @@ extern List as_mysql_modify_federations(
 
 	return ret_list;
 }
+
+extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	List ret_list = NULL;
+	int rc = SLURM_SUCCESS;
+	char *extra = NULL, *query = NULL, *name_char = NULL;
+	time_t now = time(NULL);
+	char *user_name = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	bool jobs_running = 0;
+
+	if (!fed_cond) {
+		error("we need something to change");
+		return NULL;
+	}
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if (!is_user_min_admin_level(
+		    mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
+	/* force to only do non-deleted federations */
+	fed_cond->with_deleted = 0;
+	_setup_federation_cond_limits(fed_cond, &extra);
+
+	if (!extra) {
+		error("Nothing to remove");
+		return NULL;
+	}
+
+	query = xstrdup_printf("select name from %s%s;", federation_table,
+			       extra);
+	xfree(extra);
+	if (!(result = mysql_db_query_ret( mysql_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	rc = 0;
+	ret_list = list_create(slurm_destroy_char);
+
+	if (!mysql_num_rows(result)) {
+		mysql_free_result(result);
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		if (debug_flags & DEBUG_FLAG_DB_FEDR)
+			DB_DEBUG(mysql_conn->conn,
+				 "didn't effect anything\n%s", query);
+		xfree(query);
+		return ret_list;
+	}
+	xfree(query);
+
+	user_name = uid_to_string((uid_t) uid);
+	while ((row = mysql_fetch_row(result))) {
+		char *object = xstrdup(row[0]);
+		if (!jobs_running)
+			list_append(ret_list, object);
+
+		xfree(name_char);
+		xstrfmtcat(name_char, "name='%s'", object);
+		if (jobs_running)
+			xfree(object);
+		if ((rc = remove_common(mysql_conn, DBD_REMOVE_FEDERATIONS, now,
+					user_name, federation_table,
+					name_char, NULL, NULL, ret_list, NULL))
+		    != SLURM_SUCCESS)
+			break;
+	}
+	mysql_free_result(result);
+	xfree(user_name);
+	xfree(name_char);
+
+	if (rc != SLURM_SUCCESS) {
+		FREE_NULL_LIST(ret_list);
+		return NULL;
+	}
+
+	return ret_list;
+}

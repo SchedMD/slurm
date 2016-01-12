@@ -835,6 +835,9 @@ static void _delete_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Coordinators",
 				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "Federations",
+				MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_delete_federation((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "Resource", MAX(command_len, 1)) == 0) {

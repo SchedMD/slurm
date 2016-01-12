@@ -129,6 +129,8 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_cluster_cond_t *cluster_cond);
 	List (*remove_assocs)      (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
+	List (*remove_federations) (void *db_conn, uint32_t uid,
+				    slurmdb_federation_cond_t *fed_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond);
 	List (*remove_res)         (void *db_conn, uint32_t uid,
@@ -245,6 +247,7 @@ static const char *syms[] = {
 	"acct_storage_p_remove_accts",
 	"acct_storage_p_remove_clusters",
 	"acct_storage_p_remove_assocs",
+	"acct_storage_p_remove_federations",
 	"acct_storage_p_remove_qos",
 	"acct_storage_p_remove_res",
 	"acct_storage_p_remove_wckeys",
@@ -605,6 +608,15 @@ extern List acct_storage_g_remove_assocs(
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(ops.remove_assocs))(db_conn, uid, assoc_cond);
+}
+
+extern List acct_storage_g_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(ops.remove_federations))(db_conn, uid, fed_cond);
 }
 
 extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,

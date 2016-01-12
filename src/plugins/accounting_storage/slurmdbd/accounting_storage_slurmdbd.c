@@ -1465,6 +1465,51 @@ extern List acct_storage_p_remove_assocs(
 	return ret_list;
 }
 
+extern List acct_storage_p_remove_federations(
+					void *db_conn, uint32_t uid,
+					slurmdb_federation_cond_t *fed_cond)
+{
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc;
+	slurmdbd_msg_t resp;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+
+	memset(&get_msg, 0, sizeof(dbd_cond_msg_t));
+	get_msg.cond = fed_cond;
+
+	req.msg_type = DBD_REMOVE_FEDERATIONS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_REMOVE_FEDERATIONS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if (msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->return_code);
+			error("%s", msg->comment);
+		}
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		rc = got_msg->return_code;
+		slurmdbd_free_list_msg(got_msg);
+		errno = rc;
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_remove_qos(
 	void *db_conn, uint32_t uid,
 	slurmdb_qos_cond_t *qos_cond)
