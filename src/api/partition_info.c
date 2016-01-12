@@ -105,34 +105,26 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
-	char tmp1[16], tmp2[16];
-	char tmp_line[MAXHOSTRANGELEN];
+	char tmp[16];
 	char *out = NULL;
 	char *allow_deny, *value;
 	uint16_t force, preempt_mode, val;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
 
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "PartitionName=%s",
-		 part_ptr->name);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, "PartitionName=%s", part_ptr->name);
+	xstrcat(out, line_end);
 
 	/****** Line 2 ******/
 
 	if ((part_ptr->allow_groups == NULL) ||
 	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf(tmp_line, "AllowGroups=ALL");
+		xstrcat(out, "AllowGroups=ALL");
 	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "AllowGroups=%s", part_ptr->allow_groups);
+		xstrfmtcat(out, "AllowGroups=%s", part_ptr->allow_groups);
 	}
-	xstrcat(out, tmp_line);
 
 	if (part_ptr->allow_accounts || !part_ptr->deny_accounts) {
 		allow_deny = "Allow";
@@ -145,9 +137,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		allow_deny = "Deny";
 		value = part_ptr->deny_accounts;
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 " %sAccounts=%s", allow_deny, value);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, " %sAccounts=%s", allow_deny, value);
 
 	if (part_ptr->allow_qos || !part_ptr->deny_qos) {
 		allow_deny = "Allow";
@@ -160,287 +150,231 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		allow_deny = "Deny";
 		value = part_ptr->deny_qos;
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 " %sQos=%s", allow_deny, value);
-	xstrcat(out, tmp_line);
-
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, " %sQos=%s", allow_deny, value);
+	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
 	if (part_ptr->allow_alloc_nodes == NULL)
-		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
+		xstrcat(out, "AllocNodes=ALL");
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
-			 part_ptr->allow_alloc_nodes);
-	xstrcat(out, tmp_line);
+		xstrfmtcat(out, "AllocNodes=%s", part_ptr->allow_alloc_nodes);
 
 	if (part_ptr->alternate != NULL) {
-		snprintf(tmp_line, sizeof(tmp_line), " Alternate=%s",
-			 part_ptr->alternate);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, " Alternate=%s", part_ptr->alternate);
 	}
 
 	if (part_ptr->flags & PART_FLAG_DEFAULT)
-		sprintf(tmp_line, " Default=YES");
+		xstrcat(out, " Default=YES");
 	else
-		sprintf(tmp_line, " Default=NO");
-	xstrcat(out, tmp_line);
+		xstrcat(out, " Default=NO");
 
 	if (part_ptr->qos_char)
-		snprintf(tmp_line, sizeof(tmp_line), " QoS=%s",
-			 part_ptr->qos_char);
+		xstrfmtcat(out, " QoS=%s", part_ptr->qos_char);
 	else
-		sprintf(tmp_line, " QoS=N/A");
-	xstrcat(out, tmp_line);
+		xstrcat(out, " QoS=N/A");
 
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrcat(out, line_end);
 
 	/****** Line 4 added here for BG partitions only
 	 ****** to maintain alphabetized output ******/
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
-		snprintf(tmp_line, sizeof(tmp_line), "Midplanes=%s",
-			 part_ptr->nodes);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrfmtcat(out, "Midplanes=%s", part_ptr->nodes);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 5 ******/
 
 	if (part_ptr->default_time == INFINITE)
-		sprintf(tmp_line, "DefaultTime=UNLIMITED");
+		xstrcat(out, "DefaultTime=UNLIMITED");
 	else if (part_ptr->default_time == NO_VAL)
-		sprintf(tmp_line, "DefaultTime=NONE");
+		xstrcat(out, "DefaultTime=NONE");
 	else {
 		char time_line[32];
 		secs2time_str(part_ptr->default_time * 60, time_line,
 			sizeof(time_line));
-		sprintf(tmp_line, "DefaultTime=%s", time_line);
+		xstrfmtcat(out, "DefaultTime=%s", time_line);
 	}
-	xstrcat(out, tmp_line);
+
 	if (part_ptr->flags & PART_FLAG_NO_ROOT)
-		sprintf(tmp_line, " DisableRootJobs=YES");
+		xstrcat(out, " DisableRootJobs=YES");
 	else
-		sprintf(tmp_line, " DisableRootJobs=NO");
-	xstrcat(out, tmp_line);
+		xstrcat(out, " DisableRootJobs=NO");
+
 	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
-		sprintf(tmp_line, " ExclusiveUser=YES");
+		xstrcat(out, " ExclusiveUser=YES");
 	else
-		sprintf(tmp_line, " ExclusiveUser=NO");
-	xstrcat(out, tmp_line);
-	sprintf(tmp_line, " GraceTime=%u", part_ptr->grace_time);
-	xstrcat(out, tmp_line);
+		xstrcat(out, " ExclusiveUser=NO");
+
+	xstrfmtcat(out, " GraceTime=%u", part_ptr->grace_time);
+
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
-		sprintf(tmp_line, " Hidden=YES");
+		xstrcat(out, " Hidden=YES");
 	else
-		sprintf(tmp_line, " Hidden=NO");
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+		xstrcat(out, " Hidden=NO");
+
+	xstrcat(out, line_end);
 
 	/****** Line 6 ******/
 
 	if (part_ptr->max_nodes == INFINITE)
-		sprintf(tmp_line, "MaxNodes=UNLIMITED");
+		xstrcat(out, "MaxNodes=UNLIMITED");
 	else {
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)part_ptr->max_nodes,
-					 tmp1, sizeof(tmp1), UNIT_NONE,
+					 tmp, sizeof(tmp), UNIT_NONE,
 					 CONVERT_NUM_UNIT_EXACT);
-		else
-			snprintf(tmp1, sizeof(tmp1),"%u", part_ptr->max_nodes);
+			xstrfmtcat(out, "MaxNodes=%s", tmp);
+		} else
+			xstrfmtcat(out, "MaxNodes=%u", part_ptr->max_nodes);
 
-		sprintf(tmp_line, "MaxNodes=%s", tmp1);
 	}
-	xstrcat(out, tmp_line);
+
 	if (part_ptr->max_time == INFINITE)
-		sprintf(tmp_line, " MaxTime=UNLIMITED");
+		xstrcat(out, " MaxTime=UNLIMITED");
 	else {
 		char time_line[32];
 		secs2time_str(part_ptr->max_time * 60, time_line,
 			      sizeof(time_line));
-		sprintf(tmp_line, " MaxTime=%s", time_line);
+		xstrfmtcat(out, " MaxTime=%s", time_line);
 	}
-	xstrcat(out, tmp_line);
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
+
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)part_ptr->min_nodes, tmp, sizeof(tmp),
 				 UNIT_NONE,
 				 CONVERT_NUM_UNIT_EXACT);
-	else
-		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
-	sprintf(tmp_line, " MinNodes=%s", tmp1);
-	xstrcat(out, tmp_line);
-	if (part_ptr->flags & PART_FLAG_LLN)
-		sprintf(tmp_line, " LLN=YES");
-	else
-		sprintf(tmp_line, " LLN=NO");
-	xstrcat(out, tmp_line);
-	if (part_ptr->max_cpus_per_node == INFINITE)
-		sprintf(tmp_line, " MaxCPUsPerNode=UNLIMITED");
-	else {
-		sprintf(tmp_line, " MaxCPUsPerNode=%u",
-			part_ptr->max_cpus_per_node);
-	}
-	xstrcat(out, tmp_line);
+		xstrfmtcat(out, " MinNodes=%s", tmp);
+	} else
+		xstrfmtcat(out, " MinNodes=%u", part_ptr->min_nodes);
 
-	if (one_liner)
-		xstrcat(out, " ");
+	if (part_ptr->flags & PART_FLAG_LLN)
+		xstrcat(out, " LLN=YES");
 	else
-		xstrcat(out, "\n   ");
+		xstrcat(out, " LLN=NO");
+
+	if (part_ptr->max_cpus_per_node == INFINITE)
+		xstrcat(out, " MaxCPUsPerNode=UNLIMITED");
+	else {
+		xstrfmtcat(out, " MaxCPUsPerNode=%u",
+			   part_ptr->max_cpus_per_node);
+	}
+
+	xstrcat(out, line_end);
 
 	/****** Line added here for non BG nodes
 	 to keep with alphabetized output******/
 
 	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
-		snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s",
-			 part_ptr->nodes);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrfmtcat(out, "Nodes=%s", part_ptr->nodes);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 7 ******/
 
-	sprintf(tmp_line, "Priority=%u", part_ptr->priority);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "Priority=%u", part_ptr->priority);
+
 	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
-		sprintf(tmp_line, " RootOnly=YES");
+		xstrcat(out, " RootOnly=YES");
 	else
-		sprintf(tmp_line, " RootOnly=NO");
-	xstrcat(out, tmp_line);
+		xstrcat(out, " RootOnly=NO");
+
 	if (part_ptr->flags & PART_FLAG_REQ_RESV)
-		sprintf(tmp_line, " ReqResv=YES");
+		xstrcat(out, " ReqResv=YES");
 	else
-		sprintf(tmp_line, " ReqResv=NO");
-	xstrcat(out, tmp_line);
+		xstrcat(out, " ReqResv=NO");
 
 	force = part_ptr->max_share & SHARED_FORCE;
 	val = part_ptr->max_share & (~SHARED_FORCE);
 	if (val == 0)
 		xstrcat(out, " Shared=EXCLUSIVE");
 	else if (force) {
-		sprintf(tmp_line, " Shared=FORCE:%u", val);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, " Shared=FORCE:%u", val);
 	} else if (val == 1)
 		xstrcat(out, " Shared=NO");
 	else {
-		sprintf(tmp_line, " Shared=YES:%u", val);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, " Shared=YES:%u", val);
 	}
+
 	preempt_mode = part_ptr->preempt_mode;
 	if (preempt_mode == (uint16_t) NO_VAL)
 		preempt_mode = slurm_get_preempt_mode(); /* use cluster param */
-	snprintf(tmp_line, sizeof(tmp_line), " PreemptMode=%s",
-		 preempt_mode_string(preempt_mode));
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, " PreemptMode=%s", preempt_mode_string(preempt_mode));
+
+	xstrcat(out, line_end);
 
 	/****** Line 8 ******/
 
 	if (part_ptr->state_up == PARTITION_UP)
-		sprintf(tmp_line, "State=UP");
+		xstrcat(out, "State=UP");
 	else if (part_ptr->state_up == PARTITION_DOWN)
-		sprintf(tmp_line, "State=DOWN");
+		xstrcat(out, "State=DOWN");
 	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		sprintf(tmp_line, "State=INACTIVE");
+		xstrcat(out, "State=INACTIVE");
 	else if (part_ptr->state_up == PARTITION_DRAIN)
-		sprintf(tmp_line, "State=DRAIN");
+		xstrcat(out, "State=DRAIN");
 	else
-		sprintf(tmp_line, "State=UNKNOWN");
+		xstrcat(out, "State=UNKNOWN");
 
-	xstrcat(out, tmp_line);
-
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->total_cpus, tmp1,
-				 sizeof(tmp1), UNIT_NONE,
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)part_ptr->total_cpus, tmp,
+				 sizeof(tmp), UNIT_NONE,
 				 CONVERT_NUM_UNIT_EXACT);
-	else
-		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->total_cpus);
+		xstrfmtcat(out, " TotalCPUs=%s", tmp);
+	} else
+		xstrfmtcat(out, " TotalCPUs=%u", part_ptr->total_cpus);
 
-	sprintf(tmp_line, " TotalCPUs=%s", tmp1);
-	xstrcat(out, tmp_line);
 
-	if (cluster_flags & CLUSTER_FLAG_BG)
-		convert_num_unit((float)part_ptr->total_nodes, tmp2,
-				 sizeof(tmp2), UNIT_NONE,
+	if (cluster_flags & CLUSTER_FLAG_BG) {
+		convert_num_unit((float)part_ptr->total_nodes, tmp,
+				 sizeof(tmp), UNIT_NONE,
 				 CONVERT_NUM_UNIT_EXACT);
-	else
-		snprintf(tmp2, sizeof(tmp2), "%u", part_ptr->total_nodes);
+		xstrfmtcat(out, " TotalNodes=%s", tmp);
+	} else
+		xstrfmtcat(out, " TotalNodes=%u", part_ptr->total_nodes);
 
-	sprintf(tmp_line, " TotalNodes=%s", tmp2);
-	xstrcat(out, tmp_line);
 
 	if (part_ptr->cr_type & CR_CORE)
-		sprintf(tmp_line, " SelectTypeParameters=CR_CORE");
+		xstrcat(out, " SelectTypeParameters=CR_CORE");
 	else if (part_ptr->cr_type & CR_SOCKET)
-		sprintf(tmp_line, " SelectTypeParameters=CR_SOCKET");
+		xstrcat(out, " SelectTypeParameters=CR_SOCKET");
 	else
-		sprintf(tmp_line, " SelectTypeParameters=N/A");
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+		xstrcat(out, " SelectTypeParameters=N/A");
+
+	xstrcat(out, line_end);
 
 	/****** Line 9 ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->def_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, "DefMemPerCPU=UNLIMITED");
 		} else {
-			snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
-				part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, "DefMemPerCPU=%u",
+				   part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->def_mem_per_cpu == 0) {
 		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerNode=%u",
-			 part_ptr->def_mem_per_cpu);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, "DefMemPerNode=%u", part_ptr->def_mem_per_cpu);
 	}
 
 	if (part_ptr->max_mem_per_cpu & MEM_PER_CPU) {
 		if (part_ptr->max_mem_per_cpu == MEM_PER_CPU) {
 			xstrcat(out, " MaxMemPerCPU=UNLIMITED");
 		} else {
-			snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerCPU=%u",
-				part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, " MaxMemPerCPU=%u",
+				   part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 		}
 	} else if (part_ptr->max_mem_per_cpu == 0) {
 		xstrcat(out, " MaxMemPerNode=UNLIMITED");
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line), " MaxMemPerNode=%u",
-			 part_ptr->max_mem_per_cpu);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, " MaxMemPerNode=%u", part_ptr->max_mem_per_cpu);
 	}
 
 	/****** Line 10 ******/
 	if (part_ptr->billing_weights_str) {
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrcat(out, line_end);
 
-		snprintf(tmp_line, sizeof(tmp_line), "TRESBillingWeights=%s",
-			part_ptr->billing_weights_str);
-		xstrcat(out, tmp_line);
+		xstrfmtcat(out, "TRESBillingWeights=%s",
+			   part_ptr->billing_weights_str);
 	}
 
 	if (one_liner)

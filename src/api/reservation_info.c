@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  reseration_info.c - get/print the reservation state information of slurm
+ *  reservation_info.c - get/print the reservation state information of slurm
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -104,13 +104,13 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 				      int one_liner )
 {
 	char tmp1[32], tmp2[32], tmp3[32], *flag_str = NULL;
-	char tmp_line[MAXHOSTRANGELEN];
 	char *state="INACTIVE";
 	char *out = NULL;
 	uint32_t duration;
 	time_t now = time(NULL);
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	bool is_bluegene = cluster_flags & CLUSTER_FLAG_BG;
+	char *line_end = (one_liner) ? " " : "\n   ";
 
 	/****** Line 1 ******/
 	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
@@ -121,42 +121,28 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	} else {
 		snprintf(tmp3, sizeof(tmp3), "N/A");
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
+	xstrfmtcat(out,
 		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%s",
 		 resv_ptr->name, tmp1, tmp2, tmp3);
-	xstrcat(out, tmp_line);
-
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrcat(out, line_end);
 
 	/****** Line 2 ******/
 	flag_str = reservation_flags_string(resv_ptr->flags);
 
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "%s=%s %sCnt=%u %sCnt=%u Features=%s "
-		 "PartitionName=%s Flags=%s",
-		 is_bluegene ? "Midplanes" : "Nodes", resv_ptr->node_list,
-		 is_bluegene ? "Midplane" : "Node",
-		 (resv_ptr->node_cnt == NO_VAL) ? 0 : resv_ptr->node_cnt,
-		 is_bluegene ? "Cnode" : "Core", resv_ptr->core_cnt,
-		 resv_ptr->features,  resv_ptr->partition, flag_str);
+	xstrfmtcat(out, "%s=%s %sCnt=%u %sCnt=%u Features=%s "
+		   "PartitionName=%s Flags=%s",
+		   is_bluegene ? "Midplanes" : "Nodes", resv_ptr->node_list,
+		   is_bluegene ? "Midplane" : "Node",
+		   (resv_ptr->node_cnt == NO_VAL) ? 0 : resv_ptr->node_cnt,
+		   is_bluegene ? "Cnode" : "Core", resv_ptr->core_cnt,
+		   resv_ptr->features,  resv_ptr->partition, flag_str);
 	xfree(flag_str);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrcat(out, line_end);
+
 	/****** Line 3 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "TRES=%s", resv_ptr->tres_str);
-	xfree(flag_str);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out,
+		   "TRES=%s", resv_ptr->tres_str);
+	xstrcat(out, line_end);
 
 	/****** Line 4 ******/
 	if (resv_ptr->resv_watts != (time_t) NO_VAL) {
@@ -165,11 +151,11 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		snprintf(tmp1, 32, "n/a");
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "Users=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s " 
-		 "Watts=%s", resv_ptr->users, resv_ptr->accounts, 
-		  resv_ptr->licenses, state, resv_ptr->burst_buffer, tmp1);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out,
+		   "Users=%s Accounts=%s Licenses=%s State=%s BurstBuffer=%s "
+		   "Watts=%s", resv_ptr->users, resv_ptr->accounts,
+		   resv_ptr->licenses, state, resv_ptr->burst_buffer, tmp1);
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
