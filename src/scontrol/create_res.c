@@ -207,7 +207,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		*tres_corecnt = NULL, *tres_nodecnt = NULL,
 		*token, *type = NULL, *saveptr1 = NULL,
 		*value_str = NULL, *name = NULL, *compound = NULL,
-		*tmp;
+		*tmp = NULL;
 	bool discard, first;
 
 	*free_tres_license = 0;
