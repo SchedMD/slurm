@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
     reservation sequeuece numbering scheme.
  -- Fix scontrol to be able to accept TRES as an option when creating
     a reservation.
+ -- contrib/torque/qstat.pl - return exit code of zero even with no records
+    printed for 'qstat -u'.
 
 * Changes in Slurm 15.08.6
 ==========================

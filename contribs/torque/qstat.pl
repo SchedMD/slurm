@@ -227,8 +227,8 @@ if(defined($queueList)) {
 			print_job_brief($job, $line);
 			$line++;
 		}
-		$rc = 0;
 	}
+	$rc = 0;
 }
 
 # Exit with status code
