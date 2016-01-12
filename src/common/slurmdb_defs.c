@@ -3053,7 +3053,6 @@ extern void slurmdb_copy_federation_rec_limits(slurmdb_federation_rec_t *out,
 	xfree(out->name);
 	out->name     = xstrdup(in->name);
 	out->flags    = in->flags;
-	out->priority = in->priority;
 }
 
 extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,

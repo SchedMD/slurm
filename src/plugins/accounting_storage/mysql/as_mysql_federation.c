@@ -40,12 +40,10 @@
 char *fed_req_inx[] = {
 	"name",
 	"flags",
-	"priority",
 };
 enum {
 	FED_REQ_NAME,
 	FED_REQ_FLAGS,
-	FED_REQ_PRIO,
 	FED_REQ_COUNT
 };
 
@@ -87,12 +85,6 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
 {
 	if (!fed)
 		return SLURM_ERROR;
-
-	if (fed->priority) {
-		xstrcat(*cols, ", priority");
-		xstrfmtcat(*vals, ", '%u'", fed->priority);
-		xstrfmtcat(*extra, ", priority='%u'", fed->priority);
-	}
 
 	if (!(fed->flags & FEDERATION_FLAG_NOTSET)) {
 		uint32_t flags;
@@ -257,7 +249,6 @@ empty:
 
 		federation->name     = xstrdup(row[FED_REQ_NAME]);
 		federation->flags    = slurm_atoul(row[FED_REQ_FLAGS]);
-		federation->priority = slurm_atoul(row[FED_REQ_PRIO]);
 	}
 	mysql_free_result(result);
 

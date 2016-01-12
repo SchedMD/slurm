@@ -157,11 +157,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 			} else
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Priority",
-					 MAX(command_len, 3))) {
-			if (get_uint(argv[i]+end, &fed->priority,
-			    "Priority") == SLURM_SUCCESS)
-				set = 1;
 		} else {
 			exit_code = 1;
 			printf(" Unknown option: %s\n"
@@ -350,7 +345,7 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 	}
 
 	if (!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "Federation,Flags,Priority");
+		slurm_addto_char_list(format_list, "Federation,Flags");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -399,11 +394,6 @@ extern int sacctmgr_list_federation(int argc, char *argv[])
 				xfree(tmp_char);
 				break;
 			}
-			case PRINT_PRIO:
-				field->print_routine(
-					field, federation->priority,
-					(curr_inx == field_count));
-				break;
 			default:
 				field->print_routine(field, NULL,
 						     (curr_inx == field_count));

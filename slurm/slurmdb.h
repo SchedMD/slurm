@@ -648,7 +648,6 @@ typedef struct {
 typedef struct {
 	char     *name;		/* Name of federation */
 	uint32_t  flags; 	/* flags for various things */
-	uint32_t  priority; 	/* Federation's priority */
 } slurmdb_federation_rec_t;
 
 /* slurmdb_job_cond_t is defined above alphabetical */
