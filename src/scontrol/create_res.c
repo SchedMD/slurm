@@ -75,7 +75,7 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 }
 
 static int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				  bool from_tres)
+				bool from_tres)
 {
 	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
 	int node_inx = 0;
@@ -89,13 +89,11 @@ static int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 		if ((endptr != NULL) &&
 		    ((endptr[0] == 'k') ||
 		     (endptr[0] == 'K'))) {
-			resv_msg_ptr->node_cnt[node_inx] *=
-				1024;
+			resv_msg_ptr->node_cnt[node_inx] *= 1024;
 		} else if ((endptr != NULL) &&
 			   ((endptr[0] == 'm') ||
 			    (endptr[0] == 'M'))) {
-			resv_msg_ptr->node_cnt[node_inx] *=
-				1024 * 1024;
+			resv_msg_ptr->node_cnt[node_inx] *= 1024 * 1024;
 		} else if ((endptr == NULL) ||
 			   (endptr[0] != '\0') ||
 			   (tok[0] == '\0')) {
@@ -116,7 +114,7 @@ static int _parse_resv_node_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 }
 
 static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-				  bool from_tres)
+				bool from_tres)
 {
 
 	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
@@ -136,12 +134,12 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 			return SLURM_ERROR;
 		}
 	} else if (strcasestr(type, "cons_res") == NULL) {
-			error("CoreCnt or CPUCnt is only "
-			      "suported when "
-			      "SelectType includes "
-			      "select/cons_res");
-			xfree(type);
-			return SLURM_ERROR;
+		error("CoreCnt or CPUCnt is only "
+		      "suported when "
+		      "SelectType includes "
+		      "select/cons_res");
+		xfree(type);
+		return SLURM_ERROR;
 	}
 
 	xfree(type);
@@ -153,8 +151,8 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 		resv_msg_ptr->core_cnt[node_inx] =
 			strtol(tok, &endptr, 10);
 		if ((endptr == NULL) ||
-		   (endptr[0] != '\0') ||
-		   (tok[0] == '\0')) {
+		    (endptr[0] != '\0') ||
+		    (tok[0] == '\0')) {
 			exit_code = 1;
 			if (from_tres)
 				error("Invalid TRES core count %s", val);
@@ -206,10 +204,10 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 {
 	int i, ret, len;
 	char *tres_bb = NULL, *tres_license = NULL,
-	     *tres_corecnt = NULL, *tres_nodecnt = NULL,
-	     *token, *type = NULL, *saveptr1 = NULL,
-	     *value_str = NULL, *name = NULL, *compound = NULL,
-	     *tmp;
+		*tres_corecnt = NULL, *tres_nodecnt = NULL,
+		*token, *type = NULL, *saveptr1 = NULL,
+		*value_str = NULL, *name = NULL, *compound = NULL,
+		*tmp;
 	bool discard, first;
 
 	*free_tres_license = 0;
@@ -223,8 +221,8 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		compound = strtok_r(token, "=", &value_str);
 
 		if (!value_str || !*value_str) {
-			error("TRES component '%s' has an invalid value",
-			      token);
+			error("TRES component '%s' has an invalid value '%s'",
+			      type, token);
 			goto error;
 		}
 
@@ -239,7 +237,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 
 		if (!strcasecmp(type, "license")) {
 			if (tres_license && tres_license[0] != '\0')
-				 xstrcatchar(tres_license, ',');
+				xstrcatchar(tres_license, ',');
 			xstrfmtcat(tres_license, "%s:%s", name, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
 			if (tmp)
@@ -247,7 +245,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 
 		} else if (strcasecmp(type, "bb") == 0) {
 			if (tres_bb && tres_bb[0] != '\0')
-				 xstrcatchar(tres_bb, ',');
+				xstrcatchar(tres_bb, ',');
 			xstrfmtcat(tres_bb, "%s:%s", name, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
 			if (tmp)
@@ -267,14 +265,14 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 							goto error;
 						} else
 							discard = true;
-							break;
+						break;
 					}
 				}
 				first = false;
 				if (!discard) {
 					if (tres_corecnt && tres_corecnt[0]
 					    != '\0')
-						 xstrcatchar(tres_corecnt, ',');
+						xstrcatchar(tres_corecnt, ',');
 					xstrcat(tres_corecnt, value_str);
 
 					token = strtok_r(NULL, ",", &saveptr1);
@@ -284,7 +282,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 
 		} else if (strcasecmp(type, "node") == 0) {
 			if (tres_nodecnt && tres_nodecnt[0] != '\0')
-				 xstrcatchar(tres_nodecnt, ',');
+				xstrcatchar(tres_nodecnt, ',');
 			xstrcat(tres_nodecnt, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
 		} else {
@@ -296,17 +294,19 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 	}
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
-		*free_tres_corecnt = 1;
 		ret = _parse_resv_core_cnt(resv_msg_ptr, tres_corecnt, true);
-		if (ret < 0)
+		xfree(tres_corecnt);
+		if (ret != SLURM_SUCCESS)
 			goto error;
+		*free_tres_corecnt = 1;
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
 		ret = _parse_resv_node_cnt(resv_msg_ptr, tres_nodecnt, true);
-		*free_tres_nodecnt = 1;
-		if (ret < 0)
+		xfree(tres_nodecnt);
+		if (ret != SLURM_SUCCESS)
 			goto error;
+		*free_tres_nodecnt = 1;
 	}
 
 	if (tres_license && tres_license[0] != '\0') {
@@ -319,18 +319,11 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		*free_tres_bb = 1;
 	}
 
-	if (tres_corecnt);
-		xfree(tres_corecnt);
-	if (tres_nodecnt);
-		xfree(tres_nodecnt);
-
 	return SLURM_SUCCESS;
 
 error:
-	if (tres_nodecnt)
-		xfree(tres_nodecnt);
-	if (tres_corecnt)
-		xfree(tres_corecnt);
+	xfree(tres_nodecnt);
+	xfree(tres_corecnt);
 	exit_code = 1;
 	return SLURM_ERROR;
 }
@@ -338,7 +331,7 @@ error:
 
 /*
  * scontrol_parse_res_options   parse options for creating or updating a
-                                reservation
+ reservation
  * IN argc - count of arguments
  * IN argv - list of arguments
  * IN msg  - a string to append to any error message
@@ -520,7 +513,7 @@ scontrol_update_res(int argc, char *argv[])
 	resv_desc_msg_t   resv_msg;
 	int err, ret = 0;
 	int free_user_str = 0, free_acct_str = 0, free_tres_license = 0,
-	    free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
+		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
 	err = scontrol_parse_res_options(argc, argv, "No reservation update.",
@@ -576,7 +569,7 @@ scontrol_create_res(int argc, char *argv[])
 	resv_desc_msg_t resv_msg;
 	char *new_res_name = NULL;
 	int free_user_str = 0, free_acct_str = 0, free_tres_license = 0,
-	    free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
+		free_tres_bb = 0, free_tres_corecnt = 0, free_tres_nodecnt = 0;
 	int err, ret = 0;
 
 	slurm_init_resv_desc_msg (&resv_msg);
