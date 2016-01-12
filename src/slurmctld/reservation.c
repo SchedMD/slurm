@@ -2065,10 +2065,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			xfree(resv_desc_ptr->node_list);
 			resv_desc_ptr->node_list =
 				bitmap2node_name(node_bitmap);
-		} else if (node_name2bitmap(resv_desc_ptr->node_list,
+		} else {
+			if (node_name2bitmap(resv_desc_ptr->node_list,
 					    false, &node_bitmap)) {
-			rc = ESLURM_INVALID_NODE_NAME;
-			goto bad_parse;
+				rc = ESLURM_INVALID_NODE_NAME;
+				goto bad_parse;
+			}
+			xfree(resv_desc_ptr->node_list);
+			resv_desc_ptr->node_list = bitmap2node_name(node_bitmap);
 		}
 		if (bit_set_count(node_bitmap) == 0) {
 			info("Reservation node list is empty");
@@ -2564,8 +2568,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 				error_code = ESLURM_INVALID_NODE_NAME;
 				goto update_failure;
 			}
+			xfree(resv_desc_ptr->node_list);
 			xfree(resv_ptr->node_list);
-			resv_ptr->node_list = resv_desc_ptr->node_list;
+			resv_ptr->node_list = bitmap2node_name(node_bitmap);
 		}
 		resv_desc_ptr->node_list = NULL;  /* Nothing left to free */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);

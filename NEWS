@@ -57,6 +57,9 @@ documents those changes that are of interest to users and administrators.
     a reservation.
  -- contrib/torque/qstat.pl - return exit code of zero even with no records
     printed for 'qstat -u'.
+ -- When a reservation is created or updated, compress user provided node names
+    using hostlist functions (e.g. translate user input of "Nodes=tux1,tux2"
+    into "Nodes=tux[1-2]").
 
 * Changes in Slurm 15.08.6
 ==========================
