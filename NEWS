@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
  -- Backfill scheduling fix: If a job can't be started due to a "group" resource
     limit, rather than reserve resources for it when the next job ends, don't
     reserve any resources for it.
+ -- Avoid slurmstepd abort if malloc fails during accounting gather operation.
 
 * Changes in Slurm 15.08.6
 ==========================
