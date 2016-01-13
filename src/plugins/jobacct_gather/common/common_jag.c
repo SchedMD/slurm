@@ -479,7 +479,11 @@ static void _handle_stats(List prec_list, char *proc_stat_file, char *proc_io_fi
 	fd = fileno(stat_fp);
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 
-	prec = xmalloc(sizeof(jag_prec_t));
+	prec = try_xmalloc(sizeof(jag_prec_t));
+	if (prec == NULL) {	/* Avoid killing slurmstepd on malloc failure */
+		fclose(stat_fp);
+		return;
+	}
 	if (!_get_process_data_line(fd, prec)) {
 		xfree(prec);
 		fclose(stat_fp);
