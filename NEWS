@@ -153,6 +153,10 @@ documents those changes that are of interest to users and administrators.
     into "Nodes=tux[1-2]").
  -- Change output routines for scontrol show partition/reservation to handle
     unexpectedly large strings.
+ -- Add more partition fields to "scontrol write config" output file.
+ -- Backfill scheduling fix: If a job can't be started due to a "group" resource
+    limit, rather than reserve resources for it when the next job ends, don't
+    reserve any resources for it.
 
 * Changes in Slurm 15.08.6
 ==========================
