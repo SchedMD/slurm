@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     into "Nodes=tux[1-2]").
  -- Change output routines for scontrol show partition/reservation to handle
     unexpectedly large strings.
+ -- Add more partition fields to "scontrol write config" output file.
 
 * Changes in Slurm 15.08.6
 ==========================

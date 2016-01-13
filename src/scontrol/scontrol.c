@@ -120,7 +120,7 @@ main (int argc, char *argv[])
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (getenv ("SCONTROL_ALL"))
-		all_flag= 1;
+		all_flag = 1;
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
 		if (!(clusters = slurmdb_get_info_cluster(env_val))) {
 			print_db_notok(env_val, 1);
@@ -388,18 +388,23 @@ _write_config (void)
 
 
 	if (error_code == SLURM_SUCCESS) {
+		int save_all_flag = all_flag;
+		all_flag = 1;
+
 		/* now gather node info */
-		error_code = scontrol_load_nodes(&node_info_ptr, 0);
+		error_code = scontrol_load_nodes(&node_info_ptr, SHOW_ALL);
 
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				slurm_perror ("slurm_load_node error");
+			all_flag = save_all_flag;
 			return;
 		}
 
 		/* now gather partition info */
 		error_code = scontrol_load_partitions(&part_info_ptr);
+		all_flag = save_all_flag;
 		if (error_code) {
 			exit_code = 1;
 			if (quiet_flag != 1)

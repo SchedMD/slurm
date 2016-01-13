@@ -113,8 +113,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	char *base_path = NULL;
 	char *path = NULL;
 	void *ret_list = NULL;
+	uint16_t val, force;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	FILE *fp = NULL;
-	partition_info_t *part_ptr = NULL;
+	partition_info_t *p = NULL;
 	struct records {
 	  char *rec;
 	  hostlist_t hostlist;
@@ -255,17 +257,165 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 	_write_group_header (fp, "PARTITIONS");
 	/* now write partition info */
-	part_ptr = part_info_ptr->partition_array;
+	p = part_info_ptr->partition_array;
 	for (i = 0; i < part_info_ptr->record_count; i++) {
-		if (part_ptr[i].name == NULL)
+		if (p[i].name == NULL)
 			continue;
-		fprintf(fp, "PartitionName=%s", part_ptr[i].name);
-		if (part_ptr[i].nodes != NULL)
-			fprintf(fp, " Nodes=%s", part_ptr[i].nodes);
-		if (part_ptr[i].max_time != INFINITE)
-			fprintf(fp, " MaxTime=%u", part_ptr[i].max_time);
-		if (part_ptr[i].flags & PART_FLAG_DEFAULT)
-			fprintf(fp, " DEFAULT=YES");
+		fprintf(fp, "PartitionName=%s", p[i].name);
+
+		if (p[i].allow_alloc_nodes &&
+		    (strcasecmp(p[i].allow_alloc_nodes, "ALL") != 0))
+			fprintf(fp, " AllocNodes=%s",
+				p[i].allow_alloc_nodes);
+
+		if (p[i].allow_accounts &&
+		    (strcasecmp(p[i].allow_accounts, "ALL") != 0))
+			fprintf(fp, " AllowAccounts=%s", p[i].allow_accounts);
+
+		if (p[i].allow_groups &&
+		    (strcasecmp(p[i].allow_groups, "ALL") != 0))
+			fprintf(fp, " AllowGroups=%s", p[i].allow_groups);
+
+		if (p[i].allow_qos && (strcasecmp(p[i].allow_qos, "ALL") != 0))
+			fprintf(fp, " AllowQos=%s", p[i].allow_qos);
+
+		if (p[i].alternate != NULL)
+			fprintf(fp, " Alternate=%s", p[i].alternate);
+
+		if (p[i].flags & PART_FLAG_DEFAULT)
+			fprintf(fp, " Default=YES");
+
+		if (p[i].def_mem_per_cpu & MEM_PER_CPU) {
+        	        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
+        	                fprintf(fp, "DefMemPerCPU=%"PRIu32"",
+        	                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
+        	} else if (p[i].def_mem_per_cpu != 0)
+        	        fprintf(fp, "DefMemPerNode=%"PRIu32"",
+        	                p[i].def_mem_per_cpu);
+
+		if (!p[i].allow_accounts && p[i].deny_accounts)
+			fprintf(fp, "DenyAccounts=%s", p[i].deny_accounts);
+
+		if (!p[i].allow_qos && p[i].deny_qos)
+			fprintf(fp, "DenyQos=%s", p[i].deny_qos);
+
+		if (p[i].default_time != (uint32_t) NO_VAL) {
+			if (p[i].default_time == INFINITE)
+	                	fprintf(fp, "DefaultTime=UNLIMITED");
+	        	else {
+		                char time_line[32];
+		                secs2time_str(p[i].default_time * 60, time_line,
+					      sizeof(time_line));
+				fprintf(fp, "DefaultTime=%s", time_line);
+			}
+		}
+
+		if (p[i].flags & PART_FLAG_NO_ROOT)
+			fprintf(fp, " DisableRootJobs=YES");
+
+		if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
+			fprintf(fp, " ExclusiveUser=YES");
+
+		if (p[i].grace_time)
+			fprintf(fp, " GraceTime=%"PRIu32"", p[i].grace_time);
+
+		if (p[i].flags & PART_FLAG_HIDDEN)
+			fprintf(fp, " Hidden=YES");
+
+		if (p[i].flags & PART_FLAG_LLN)
+	                fprintf(fp, " LLN=YES");
+
+		if (p[i].max_cpus_per_node != INFINITE)
+                	fprintf(fp, " MaxCPUsPerNode=%"PRIu32"",
+				p[i].max_cpus_per_node);
+
+		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
+        	        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
+        	                fprintf(fp, " MaxMemPerCPU=%"PRIu32"",
+        	                        p[i].max_mem_per_cpu & (~MEM_PER_CPU));
+        	} else if (p[i].max_mem_per_cpu != 0)
+        	        fprintf(fp, " MaxMemPerNode=%"PRIu32"",
+				p[i].max_mem_per_cpu);
+
+		if (p[i].max_nodes != INFINITE) {
+			char tmp1[16];
+        	        if (cluster_flags & CLUSTER_FLAG_BG)
+        	                convert_num_unit((float)p[i].max_nodes, tmp1,
+        	                                 sizeof(tmp1), UNIT_NONE,
+        	                                 CONVERT_NUM_UNIT_EXACT);
+        	        else
+        	                snprintf(tmp1, sizeof(tmp1), "%u",
+					 p[i].max_nodes);
+
+        	        fprintf(fp, "MaxNodes=%s", tmp1);
+        	}
+
+		if (p[i].max_time != INFINITE) {
+                	char time_line[32];
+                	secs2time_str(p[i].max_time * 60, time_line,
+                	              sizeof(time_line));
+                	fprintf(fp, " MaxTime=%s", time_line);
+        	}
+
+		if (p[i].min_nodes != 1) {
+			char tmp1[16];
+			if (cluster_flags & CLUSTER_FLAG_BG)
+        		        convert_num_unit((float)p[i].min_nodes, tmp1,
+						 sizeof(tmp1), UNIT_NONE,
+        		                         CONVERT_NUM_UNIT_EXACT);
+        		else
+        		        snprintf(tmp1, sizeof(tmp1), "%u",
+					 p[i].min_nodes);
+        		fprintf(fp, " MinNodes=%s", tmp1);
+		}
+
+		if (p[i].nodes != NULL)
+			fprintf(fp, " Nodes=%s", p[i].nodes);
+
+        	if (p[i].preempt_mode != (uint16_t) NO_VAL)
+        		fprintf(fp, " PreemptMode=%s",
+				preempt_mode_string(p[i].preempt_mode));
+
+		if (p[i].priority != 1)
+			fprintf(fp, " Priority=%"PRIu16"", p[i].priority);
+
+		if (p[i].qos_char != NULL)
+			fprintf(fp, " QOS=%s", p[i].qos_char);
+
+		if (p[i].flags & PART_FLAG_REQ_RESV)
+	                fprintf(fp, " ReqResv=YES");
+
+		if (p[i].flags & PART_FLAG_ROOT_ONLY)
+	                fprintf(fp, " RootOnly=YES");
+
+		if (p[i].cr_type & CR_CORE)
+                	fprintf(fp, " SelectTypeParameters=CR_CORE");
+        	else if (p[i].cr_type & CR_SOCKET)
+                	fprintf(fp, " SelectTypeParameters=CR_SOCKET");
+
+		force = p[i].max_share & SHARED_FORCE;
+        	val = p[i].max_share & (~SHARED_FORCE);
+        	if (val == 0)
+        	        fprintf(fp, " Shared=EXCLUSIVE");
+        	else if (force) {
+        	        fprintf(fp, " Shared=FORCE:%u", val);
+        	} else if (val != 1)
+        	        fprintf(fp, " Shared=YES:%u", val);
+
+		if (p[i].state_up == PARTITION_UP)
+	                fprintf(fp, " State=UP");
+	        else if (p[i].state_up == PARTITION_DOWN)
+	                fprintf(fp, " State=DOWN");
+	        else if (p[i].state_up == PARTITION_INACTIVE)
+	                fprintf(fp, " State=INACTIVE");
+	        else if (p[i].state_up == PARTITION_DRAIN)
+	                fprintf(fp, " State=DRAIN");
+	        else
+	                fprintf(fp, " State=UNKNOWN");
+
+		if (p[i].billing_weights_str != NULL)
+                	fprintf(fp, " TRESBillingWeights=%s",
+                	        p[i].billing_weights_str);
 
 		fprintf(fp, "\n");
 	}
