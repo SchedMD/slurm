@@ -247,7 +247,7 @@ _run_script_and_set_env(const char *name, const char *path,
 	close(pfd[1]);
 	f = fdopen(pfd[0], "r");
 	if (f == NULL) {
-		error("Cannot open pipe device");
+		error("Cannot open pipe device: %m");
 		log_fini();
 		exit(1);
 	}
@@ -442,7 +442,7 @@ exec_task(stepd_step_rec_t *job, int i)
 
 	/* task plugin hook */
 	if (task_g_pre_launch(job)) {
-		error("Failed to invoke task plugins: one of task_p_pre_launch functions returned error");
+		error("Failed to invoke task plugins: task_p_pre_launch error");
 		exit(1);
 	}
 	if (!job->batch && job->accel_bind_type) {
@@ -457,9 +457,9 @@ exec_task(stepd_step_rec_t *job, int i)
 		env_array_free(tmp_env);
 	}
 
-	if (spank_user_task (job, i) < 0) {
-		error ("Failed to invoke spank plugin stack");
-		exit (1);
+	if (spank_user_task(job, i) < 0) {
+		error("Failed to invoke spank plugin stack");
+		exit(1);
 	}
 
 	if (conf->task_prolog) {
