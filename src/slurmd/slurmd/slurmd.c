@@ -1012,7 +1012,6 @@ _reconfigure(void)
 {
 	List steps;
 	ListIterator i;
-	slurm_ctl_conf_t *cf;
 	step_loc_t *stepd;
 	bool did_change;
 
@@ -1434,7 +1433,6 @@ static int
 _slurmd_init(void)
 {
 	struct rlimit rlim;
-	slurm_ctl_conf_t *cf;
 	struct stat stat_buf;
 	uint32_t cpu_cnt;
 

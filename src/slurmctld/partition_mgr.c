@@ -1695,7 +1695,17 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
  */
 extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 {
-	int i = 0;
+#if defined(_SC_GETPW_R_SIZE_MAX)
+	long ii;
+#endif
+	int i = 0, res;
+	size_t buflen;
+	struct passwd pwd, *pwd_result;
+	char *buf;
+	char *grp_buffer;
+	struct group grp, *grp_result;
+	char *groups, *saveptr, *one_group_name;
+	int ret = 0;
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
@@ -1724,16 +1734,15 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	 * sssd/nscd/etc. so should be fast.  */
 
 	/* First figure out the primary GID.  */
-	size_t buflen = PW_BUF_SIZE;
+	buflen = PW_BUF_SIZE;
 #if defined(_SC_GETPW_R_SIZE_MAX)
-	long ii = sysconf(_SC_GETPW_R_SIZE_MAX);
+	ii = sysconf(_SC_GETPW_R_SIZE_MAX);
 	buflen = MAX(buflen, ii);
 #endif
-	struct passwd pwd, *pwd_result;
-	char *buf = xmalloc(buflen);
+	buf = xmalloc(buflen);
 	while (1) {
-	        slurm_seterrno(0);
-	        int res = getpwuid_r(run_uid, &pwd, buf, buflen, &pwd_result);
+		slurm_seterrno(0);
+		res = getpwuid_r(run_uid, &pwd, buf, buflen, &pwd_result);
 		/* We need to check for !pwd_result, since it appears some
 		 * versions of this function do not return an error on
 		 * failure.
@@ -1745,24 +1754,22 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 				continue;
 			}
 			error("%s: Could not find passwd entry for uid %ld",
-		        __func__, (long) run_uid);
+			      __func__, (long) run_uid);
 			xfree(buf);
 			return 0;
 		}
 		break;
 	}
 
-        /* Then use the primary GID to figure out the name of the
+	/* Then use the primary GID to figure out the name of the
 	 * group with that GID.  */
 #ifdef _SC_GETGR_R_SIZE_MAX
 	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
 	buflen = MAX(PW_BUF_SIZE, ii);
 #endif
-	char *grp_buffer = xmalloc(buflen);
-	struct group grp, *grp_result;
 	while (1) {
 		slurm_seterrno(0);
-		int res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
+		res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
 				 &grp_result);
 
 		/* We need to check for !grp_result, since it appears some
@@ -1785,10 +1792,9 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 
 	/* And finally check the name of the primary group against the
 	 * list of allowed group names.  */
-	char *groups = xstrdup(part_ptr->allow_groups);
-	char *saveptr;
-	int ret = 0;
-	char *one_group_name = strtok_r(groups, ",", &saveptr);
+	groups = xstrdup(part_ptr->allow_groups);
+	saveptr;
+	one_group_name = strtok_r(groups, ",", &saveptr);
 	while (one_group_name) {
 		if (strcmp (one_group_name, grp.gr_name) == 0) {
 			ret = 1;

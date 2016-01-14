@@ -5558,10 +5558,12 @@ _gids_cache_lookup(char *user, gid_t gid)
 	int idx;
 	gids_cache_t *p;
 	bool found_but_old = false;
+	time_t now = 0;
+	int ngroups = 0;
+	gid_t *groups;
 
 	idx = _gids_hashtbl_idx(user);
 	p = gids_hashtbl[idx];
-	time_t now = 0;
 	while (p) {
 		if (strcmp(p->user, user) == 0 && p->gid == gid) {
 			slurm_ctl_conf_t *cf = slurm_conf_lock();
@@ -5581,9 +5583,8 @@ _gids_cache_lookup(char *user, gid_t gid)
 	}
 	/* Cache lookup failed or cached value was too old, fetch new
 	 * value and insert it into cache.  */
-	int ngroups = 0;
 	getgrouplist(user, gid, NULL, &ngroups);
-	gid_t *groups = xmalloc(ngroups * sizeof(gid_t));
+	groups = xmalloc(ngroups * sizeof(gid_t));
 	if (getgrouplist(user, gid, groups, &ngroups) == -1)
 		error("getgrouplist failed");
 	if (found_but_old) {
