@@ -5381,12 +5381,15 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 							qos_ptr, assoc_ptr ?
 							assoc_ptr->acct : NULL);
 
-			if (rc != SLURM_SUCCESS) {
+			if ((rc != SLURM_SUCCESS) &&
+			    ((rc == ESLURM_ACCESS_DENIED) ||
+			     (rc == ESLURM_USER_ID_MISSING) ||
+			     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
+			     (slurmctld_conf.enforce_part_limits ==
+			      PARTITION_ENFORCE_ALL))) {
+				break;
+			} else if (rc != SLURM_SUCCESS) {
 				fail_rc = rc;
-				if (slurmctld_conf.enforce_part_limits ==
-				    PARTITION_ENFORCE_ALL) {
-					break;
-				}
 			} else {
 				any_check = true;
 			}
@@ -5427,10 +5430,12 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
 					submit_uid, qos_ptr,
 					assoc_ptr ? assoc_ptr->acct : NULL);
-
-		if (rc != SLURM_SUCCESS && slurmctld_conf.enforce_part_limits)
+		if ((rc != SLURM_SUCCESS) &&
+		    ((rc == ESLURM_ACCESS_DENIED) ||
+		     (rc == ESLURM_USER_ID_MISSING) ||
+		     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
+		     slurmctld_conf.enforce_part_limits))
 			goto fini;
-
 		// Enforce Part Limit = no
 		rc = SLURM_SUCCESS;
 	}
