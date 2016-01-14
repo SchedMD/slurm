@@ -761,6 +761,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 14.11.12
 ===========================
  -- Correct dependency formatting to print array task ids if set.
+ -- Fix for configuration of "AuthType=munge" and "AuthInfo=socket=..." with
+    alternate munge socket path.
 
 * Changes in Slurm 14.11.11
 ===========================
