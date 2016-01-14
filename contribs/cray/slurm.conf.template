@@ -13,7 +13,6 @@ ControlMachine=sdb
 #BackupAddr=
 #
 AuthType=auth/munge
-CacheGroups=0
 #CheckpointType=checkpoint/none
 CoreSpecPlugin=cray
 CryptoType=crypto/munge

@@ -109,7 +109,6 @@ function displayfile()
    get_field("BackupAddr",document.config.backup_addr) + "<br>" +
    "# <br>" +
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
-   "CacheGroups=" + get_radio_value(document.config.cache_groups) + "<br>" +
    "#CheckpointType=checkpoint/none <br>" +
    "CryptoType=crypto/" + get_radio_value(document.config.crypto_type) + "<br>" +
    "#DisableRootJobs=NO <br>" +
@@ -419,25 +418,6 @@ purposes any user name can be used.
 <input type="text" name="slurm_user" value="slurm"> <B>SlurmUser</B>
 <P>
 
-<H2>Group ID Caching</H2>
-
-If you have a slow NIS environment, big parallel jobs take a long time
-to start up (and may eventually time-out) because the NIS server(s)
-may not be able to quickly respond to simultaneous requests from
-multiple slurmd's.  You can instruct slurmd to cache /etc/groups
-entries to prevent this from happening by setting
-<B>CacheGroups</B>=1.  Reconfiguring ("scontrol reconfig") with
-<B>CacheGroups</B>=0 will cause slurmd to purge the cache.  Select one
-value for <B>CacheGroups</B>:<BR>
-<input type="radio" name="cache_groups" value="0" checked>
-<B>0</B>: for normal environment.<BR>
-<input type="radio" name="cache_groups" value="1">
-<B>1</B>: for slow NIS environment.
-<P>
-WARNING: The group ID cache does not try to keep itself in sync with
-the system.  You MUST run "scontrol reconfig" to update the cache
-after making any changes to system password or group databases.
-<P>
 
 <H2>Slurm Port Numbers</H2>
 The Slurm controller (slurmctld) requires a unique port for communications

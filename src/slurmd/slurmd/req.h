@@ -50,7 +50,7 @@ void slurmd_req(slurm_msg_t *msg);
 
 void destroy_starting_step(void *x);
 
-int init_gids_cache(int cache);
+void gids_cache_purge(void);
 
 /* Add record for every launched job so we know they are ready for suspend */
 extern void record_launched_jobs(void);

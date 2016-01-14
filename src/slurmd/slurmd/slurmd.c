@@ -1050,14 +1050,9 @@ _reconfigure(void)
 	slurm_cred_ctx_key_update(conf->vctx, conf->pubkey);
 
 	/*
-	 * Reinitialize the groups cache
+	 * Purge the username -> grouplist cache.
 	 */
-	cf = slurm_conf_lock();
-	if (cf->group_info & GROUP_CACHE)
-		init_gids_cache(1);
-	else
-		init_gids_cache(0);
-	slurm_conf_unlock();
+	gids_cache_purge();
 
 	/* send reconfig to each stepd so they can refresh their log
 	 * file handle
@@ -1111,11 +1106,6 @@ _print_conf(void)
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("TopoAddr    = %s",       conf->node_topo_addr);
 	debug3("TopoPattern = %s",       conf->node_topo_pattern);
-	if (cf->group_info & GROUP_CACHE)
-		i = 1;
-	else
-		i = 0;
-	debug3("CacheGroups = %d",       i);
 	debug3("ClusterName = %s",       conf->cluster_name);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
@@ -1600,16 +1590,6 @@ _slurmd_init(void)
 				info("chdir to /var/tmp");
 		}
 	}
-
-	/*
-	 * Cache the group access list
-	 */
-	cf = slurm_conf_lock();
-	if (cf->group_info & GROUP_CACHE)
-		init_gids_cache(1);
-	else
-		init_gids_cache(0);
-	slurm_conf_unlock();
 
 	if ((devnull = open_cloexec("/dev/null", O_RDWR)) < 0) {
 		error("Unable to open /dev/null: %m");

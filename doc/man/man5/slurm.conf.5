@@ -369,13 +369,6 @@ Acceptable values at present include "burst_buffer/none".
 More information later...
 
 .TP
-\fBCacheGroups\fR
-If set to 1, the slurmd daemon will cache /etc/groups entries.
-This can improve performance for highly parallel jobs if NIS servers
-are used and unable to respond very quickly.
-The default value is 0 to disable caching group data.
-
-.TP
 \fBCheckpointType\fR
 The system\-initiated checkpoint method to be used for user jobs.
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR
@@ -920,13 +913,14 @@ of groups allowed to use a partition will be updated periodically, even when
 there have been no changes to the /etc/group file.
 Otherwise group member information will be updated periodically only after the
 /etc/group file is updated
-The default value is 0.
+The default value is 1.
 Also see the \fBGroupUpdateTime\fR parameter.
 
 .TP
 \fBGroupUpdateTime\fR
-Controls how frequently information about which users are members of groups
-allowed to use a partition will be updated.
+Controls how frequently information about which users are members of
+groups allowed to use a partition will be updated, and how long user
+group membership lists will be cached.
 The time interval is given in seconds with a default value of 600 seconds and
 a maximum value of 4095 seconds.
 A value of zero will prevent periodic updating of group membership information.

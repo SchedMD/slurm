@@ -158,6 +158,11 @@ extern uid_t *get_group_members(char *group_name)
 		group_uids[j++] = my_uid;
 	}
 
+	/* Note that in environments where user/group enumeration has
+	 * been disabled (typically necessary for large user/group
+	 * databases), the rest of this function essentially does
+	 * nothing.  */
+
 #ifdef HAVE_AIX
 	setgrent_r(&fp);
 	while (1) {

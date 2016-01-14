@@ -91,6 +91,11 @@ documents those changes that are of interest to users and administrators.
  -- Remove Sun Constellation, IBM Federation Switches (replaced by NRT switch
     plugin) and long-defunct Quadrics Elan support.
  -- Add -M<clusters> option to sreport.
+ -- Rework group caching to work better in environments with
+    enumeration disabled. Removed CacheGroups config directive, group
+    membership lists are now always cached, controlled by
+    GroupUpdateTime parameter. GroupUpdateForce parameter default
+    value changed to 1.
 
 * Changes in Slurm 15.08.7
 ==========================

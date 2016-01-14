@@ -53,6 +53,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <grp.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
@@ -1707,8 +1708,98 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
-	return 0;		/* not in this group's list */
 
+	/* The allow_uids list is built from the allow_groups list,
+	 * and if user/group enumeration has been disabled, it's
+	 * possible that the users primary group is not returned as a
+	 * member of a group.  Enumeration is problematic if the
+	 * user/group database is large (think university-wide central
+	 * account database or such), as in such environments
+	 * enumeration would load the directory servers a lot, so the
+	 * recommendation is to have it disabled (e.g. enumerate=False
+	 * in sssd.conf).  So check explicitly whether the primary
+	 * group is allowed as a final resort.  This should
+	 * (hopefully) not happen that often, and anyway the
+	 * getpwuid_r and getgrgid_r calls should be cached by
+	 * sssd/nscd/etc. so should be fast.  */
+
+	/* First figure out the primary GID.  */
+	size_t buflen = PW_BUF_SIZE;
+#if defined(_SC_GETPW_R_SIZE_MAX)
+	long ii = sysconf(_SC_GETPW_R_SIZE_MAX);
+	buflen = MAX(buflen, ii);
+#endif
+	struct passwd pwd, *pwd_result;
+	char *buf = xmalloc(buflen);
+	while (1) {
+	        slurm_seterrno(0);
+	        int res = getpwuid_r(run_uid, &pwd, buf, buflen, &pwd_result);
+		/* We need to check for !pwd_result, since it appears some
+		 * versions of this function do not return an error on
+		 * failure.
+		 */
+		if (res != 0 || !pwd_result) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(buf, buflen);
+				continue;
+			}
+			error("%s: Could not find passwd entry for uid %ld",
+		        __func__, (long) run_uid);
+			xfree(buf);
+			return 0;
+		}
+		break;
+	}
+
+        /* Then use the primary GID to figure out the name of the
+	 * group with that GID.  */
+#ifdef _SC_GETGR_R_SIZE_MAX
+	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
+	buflen = MAX(PW_BUF_SIZE, ii);
+#endif
+	char *grp_buffer = xmalloc(buflen);
+	struct group grp, *grp_result;
+	while (1) {
+		slurm_seterrno(0);
+		int res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
+				 &grp_result);
+
+		/* We need to check for !grp_result, since it appears some
+		 * versions of this function do not return an error on
+		 * failure.
+		 */
+		if (res != 0 || !grp_result) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(grp_buffer, buflen);
+				continue;
+			}
+			error("%s: Could not find group with gid %ld",
+			      __func__, (long) pwd.pw_gid);
+			xfree(grp_buffer);
+			return 0;
+		}
+		break;
+	}
+
+	/* And finally check the name of the primary group against the
+	 * list of allowed group names.  */
+	char *groups = xstrdup(part_ptr->allow_groups);
+	char *saveptr;
+	int ret = 0;
+	char *one_group_name = strtok_r(groups, ",", &saveptr);
+	while (one_group_name) {
+		if (strcmp (one_group_name, grp.gr_name) == 0) {
+			ret = 1;
+			break;
+		}
+		one_group_name = strtok_r(NULL, ",", &saveptr);
+	}
+	xfree(groups);
+	xfree(buf);
+	xfree(grp_buffer);
+	return ret;
 }
 
 /*

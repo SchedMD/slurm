@@ -1124,15 +1124,6 @@ file is telling the plugin to use an old plugin (say from the
 previous version of Slurm). Restart the daemon in verbose mode
 for more information (e.g. &quot;slurmctld -Dvvvvv&quot;).
 
-<p><a name="sigpipe"><b>7. Why are user tasks intermittently dying
-at launch with SIGPIPE error messages?</b></a><br>
-If you are using LDAP or some other remote name service for
-username and groups lookup, chances are that the underlying
-libc library functions are triggering the SIGPIPE.  You can likely
-work around this problem by setting <i>CacheGroups=1</i> in your slurm.conf
-file.  However, be aware that you will need to run &quot;scontrol
-reconfigure &quot; any time your groups database is updated.
-
 <p><a name="maint_time"><b>8. How can I dry up the workload for a
 maintenance period?</b></a><br>
 Create a resource reservation as described b. Slurm's
@@ -1845,11 +1836,16 @@ The plugin will be installed in<br>
 See the SPANK man page for configuration details.</p>
 
 <p><a name="sssd"><b>52. I am having trouble using SSSD with Slurm.</b></a></br>
-SSSD or System Security Services Deamon does not allow enumeration of group
-members by default.
-SSSD is also case sensitive, which could possible raise other issues.
-Add the following lines to <i>/etc/ssd/ssd.conf</i> on your head node to
-address these issues:</p>
+SSSD or System Security Services Deamon does not allow enumeration of
+group members by default. Note that enabling enumeration in large
+environments might not be feasible. However, as of version 15.08 slurm
+does not need enumeration, except for some specific quirky
+configurations (multiple groups with the same GID), so probably it's
+perfectly safe to leave enumeration disabled.  SSSD is also case
+sensitive by default for some configurations, which could possibly
+raise other issues.  Add the following lines
+to <i>/etc/sssd/sssd.conf</i> on your head node to address these
+issues:</p>
 <pre>
 enumerate = True
 case_sensitive = False

@@ -29,7 +29,6 @@ SlurmctldPidFile=/var/run/slurmctld.pid
 SlurmdPidFile=/var/run/slurmd.pid
 ProctrackType=proctrack/pgid
 #PluginDir=
-CacheGroups=0
 #FirstJobId=
 ReturnToService=0
 #MaxJobCount=

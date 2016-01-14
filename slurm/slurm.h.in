@@ -2512,8 +2512,7 @@ typedef struct reservation_name_msg {
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
 					 * /etc/group file */
-#define GROUP_CACHE		0x4000	/* if set, cache /etc/groups to avoid
-					 * initgroups(2) */
+#define GROUP_CACHE		0x4000	/* UNUSED, kept for backwards compatibility. */
 #define GROUP_TIME_MASK		0x0fff	/* group membership update interval
 					 * in seconds */
 

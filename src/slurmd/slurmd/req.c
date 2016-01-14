@@ -49,6 +49,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/param.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
@@ -5452,12 +5453,13 @@ _run_epilog(job_env_t *job_env)
 
 
 /**********************************************************************/
-/* Because calling initgroups(2) in Linux 2.4/2.6 looks very costly,  */
-/* we cache the group access list and call setgroups(2).              */
+/* Because calling initgroups(2)/getgrouplist(3) can be expensive and */
+/* is not cached by sssd or nscd, we cache the group access list.     */
 /**********************************************************************/
 
 typedef struct gid_cache_s {
 	char *user;
+	time_t timestamp;
 	gid_t gid;
 	gids_t *gids;
 	struct gid_cache_s *next;
@@ -5492,6 +5494,7 @@ _alloc_gids_cache(char *user, gid_t gid, gids_t *gids, gids_cache_t *next)
 
 	p = (gids_cache_t *)xmalloc(sizeof(gids_cache_t));
 	p->user = xstrdup(user);
+	p->timestamp = time(NULL);
 	p->gid = gid;
 	p->gids = gids;
 	p->next = next;
@@ -5519,8 +5522,8 @@ _gids_hashtbl_idx(char *user)
 	return x % GIDS_HASH_LEN;
 }
 
-static void
-_gids_cache_purge(void)
+void
+gids_cache_purge(void)
 {
 	int i;
 	gids_cache_t *p, *q;
@@ -5534,23 +5537,6 @@ _gids_cache_purge(void)
 		}
 		gids_hashtbl[i] = NULL;
 	}
-}
-
-static gids_t *
-_gids_cache_lookup(char *user, gid_t gid)
-{
-	int idx;
-	gids_cache_t *p;
-
-	idx = _gids_hashtbl_idx(user);
-	p = gids_hashtbl[idx];
-	while (p) {
-		if (strcmp(p->user, user) == 0 && p->gid == gid) {
-			return p->gids;
-		}
-		p = p->next;
-	}
-	return NULL;
 }
 
 static void
@@ -5567,99 +5553,57 @@ _gids_cache_register(char *user, gid_t gid, gids_t *gids)
 }
 
 static gids_t *
-_getgroups(void)
+_gids_cache_lookup(char *user, gid_t gid)
 {
-	int n;
-	gid_t *gg;
+	int idx;
+	gids_cache_t *p;
+	bool found_but_old = false;
 
-	if ((n = getgroups(0, NULL)) < 0) {
-		error("getgroups:_getgroups: %m");
-		return NULL;
+	idx = _gids_hashtbl_idx(user);
+	p = gids_hashtbl[idx];
+	time_t now = 0;
+	while (p) {
+		if (strcmp(p->user, user) == 0 && p->gid == gid) {
+			slurm_ctl_conf_t *cf = slurm_conf_lock();
+			int group_ttl = cf->group_info & GROUP_TIME_MASK;
+			slurm_conf_unlock();
+			if (!group_ttl)
+				return p->gids;
+			now = time(NULL);
+			if (difftime(now, p->timestamp) < group_ttl)
+				return p->gids;
+			else {
+				found_but_old = true;
+				break;
+			}
+		}
+		p = p->next;
 	}
-	gg = (gid_t *)xmalloc(n * sizeof(gid_t));
-	if (getgroups(n, gg) == -1) {
-		error("_getgroups: couldn't get %d groups: %m", n);
-		xfree(gg);
-		return NULL;
+	/* Cache lookup failed or cached value was too old, fetch new
+	 * value and insert it into cache.  */
+	int ngroups = 0;
+	getgrouplist(user, gid, NULL, &ngroups);
+	gid_t *groups = xmalloc(ngroups * sizeof(gid_t));
+	if (getgrouplist(user, gid, groups, &ngroups) == -1)
+		error("getgrouplist failed");
+	if (found_but_old) {
+		xfree(p->gids->gids);
+		p->gids->gids = groups;
+		p->gids->ngids = ngroups;
+		p->timestamp = now;
+		return p->gids;
+	} else {
+		gids_t *gids = _alloc_gids(ngroups, groups);
+		_gids_cache_register(user, gid, gids);
+		return gids;
 	}
-	return _alloc_gids(n, gg);
 }
+
 
 extern void
 destroy_starting_step(void *x)
 {
 	xfree(x);
-}
-
-
-
-extern void
-init_gids_cache(int cache)
-{
-	struct passwd *pwd;
-	int ngids;
-	gid_t *orig_gids;
-	gids_t *gids;
-#ifdef HAVE_AIX
-	FILE *fp = NULL;
-#elif defined (__APPLE__) || defined (__CYGWIN__)
-#else
-	struct passwd pw;
-	char buf[BUF_SIZE];
-#endif
-
-	if (!cache) {
-		_gids_cache_purge();
-		return;
-	}
-
-	if ((ngids = getgroups(0, NULL)) < 0) {
-		error("getgroups: init_gids_cache: %m");
-		return;
-	}
-	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
-	if (getgroups(ngids, orig_gids) == -1) {
-		error("init_gids_cache: couldn't get %d groups: %m", ngids);
-		xfree(orig_gids);
-		return;
-	}
-
-#ifdef HAVE_AIX
-	setpwent_r(&fp);
-	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
-		pwd = &pw;
-#else
-	setpwent();
-#if defined (__sun)
-	while ((pwd = getpwent_r(&pw, buf, BUF_SIZE)) != NULL) {
-#elif defined (__APPLE__) || defined (__CYGWIN__)
-	while ((pwd = getpwent()) != NULL) {
-#else
-
-	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
-#endif
-#endif
-		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
-			continue;
-		if (initgroups(pwd->pw_name, pwd->pw_gid)) {
-			if ((errno == EPERM) && (getuid() != (uid_t) 0))
-				debug("initgroups:init_gids_cache: %m");
-			else
-				error("initgroups:init_gids_cache: %m");
-			continue;
-		}
-		if ((gids = _getgroups()) == NULL)
-			continue;
-		_gids_cache_register(pwd->pw_name, pwd->pw_gid, gids);
-	}
-#ifdef HAVE_AIX
-	endpwent_r(&fp);
-#else
-	endpwent();
-#endif
-
-	setgroups(ngids, orig_gids);
-	xfree(orig_gids);
 }
 
 
