@@ -1145,7 +1145,7 @@ chmod 600 /etc/ssh/allowed_users
 <p><b>NOTE:</b> root is not necessarily listed on the allowed_users, but I
 feel somewhat safe if it's on the list.</p>
 
-<p><b>Step 3.</b> On /etc/pam.d/sshd, add pam_listfile.so with sufficient flag 
+<p><b>Step 3.</b> On /etc/pam.d/sshd, add pam_listfile.so with sufficient flag
 before pam_slurm.so (e.g. my /etc/pam.d/sshd looks like this):</p>
 <pre>
 #%PAM-1.0

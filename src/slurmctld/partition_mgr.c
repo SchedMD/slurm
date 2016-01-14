@@ -1767,6 +1767,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
 	buflen = MAX(PW_BUF_SIZE, ii);
 #endif
+	grp_buffer = xmalloc(buflen);
 	while (1) {
 		slurm_seterrno(0);
 		res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
@@ -1784,6 +1785,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 			}
 			error("%s: Could not find group with gid %ld",
 			      __func__, (long) pwd.pw_gid);
+			xfree(buf);
 			xfree(grp_buffer);
 			return 0;
 		}
@@ -1793,7 +1795,6 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	/* And finally check the name of the primary group against the
 	 * list of allowed group names.  */
 	groups = xstrdup(part_ptr->allow_groups);
-	saveptr;
 	one_group_name = strtok_r(groups, ",", &saveptr);
 	while (one_group_name) {
 		if (strcmp (one_group_name, grp.gr_name) == 0) {
