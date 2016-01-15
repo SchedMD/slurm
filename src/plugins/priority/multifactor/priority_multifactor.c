@@ -100,6 +100,7 @@ time_t last_job_update __attribute__((weak_import)) = (time_t) 0;
 uint16_t part_max_priority __attribute__((weak_import)) = 0;
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 int slurmctld_tres_cnt __attribute__((weak_import)) = 0;
+int accounting_enforce __attribute__((weak_import)) = 0;
 #else
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
@@ -108,6 +109,7 @@ time_t last_job_update = (time_t) 0;
 uint16_t part_max_priority = 0;
 slurm_ctl_conf_t slurmctld_conf;
 int slurmctld_tres_cnt = 0;
+int accounting_enforce = 0;
 #endif
 
 /*
@@ -822,7 +824,7 @@ static void _handle_qos_tres_run_secs(long double *tres_run_decay,
 {
 	int i;
 
-	if (!qos)
+	if (!qos || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
@@ -866,7 +868,7 @@ static void _handle_assoc_tres_run_secs(long double *tres_run_decay,
 {
 	int i;
 
-	if (!assoc)
+	if (!assoc || !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
 	for (i=0; i<slurmctld_tres_cnt; i++) {
