@@ -1039,6 +1039,7 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 		job->memory_used[i] = job->memory_used[i+1];
 	}
 
+	xfree(job->nodes);
 	job->nodes = bitmap2node_name(job->node_bitmap);
 	job->ncpus = build_job_resources_cpu_array(job);
 
