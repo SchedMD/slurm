@@ -165,6 +165,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid slurmstepd abort if malloc fails during accounting gather operation.
  -- Fix nodes from being overallocated when allocation straddles multiple nodes.
  -- Fix memory leak in slurmctld job array logic.
+ -- Prevent decrementing of TRESRunMins when AccountingStorageEnforce=limits is
+    not set.
 
 * Changes in Slurm 15.08.6
 ==========================
