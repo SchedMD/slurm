@@ -1880,7 +1880,7 @@ See the SPANK man page for configuration details.</p>
 <p><a name="sssd"><b>52. I am having trouble using SSSD with Slurm.</b></a></br>
 SSSD or System Security Services Deamon does not allow enumeration of
 group members by default. Note that enabling enumeration in large
-environments might not be feasible. However, as of version 15.08 slurm
+environments might not be feasible. However, as of version 16.05 slurm
 does not need enumeration, except for some specific quirky
 configurations (multiple groups with the same GID), so probably it's
 perfectly safe to leave enumeration disabled.  SSSD is also case
