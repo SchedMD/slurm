@@ -100,22 +100,19 @@ extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
 	char *user = NULL;
 	int rc = SLURM_SUCCESS;
 	user = uid_to_string((uid_t) job_ptr->user_id);
-	job_ptr->mcs_label = NULL;
+	xfree(job_ptr->mcs_label);
 	if (label != NULL) {
 		/* test label param */
-		if (strcmp(label,user) == 0) {
-			xfree(job_ptr->mcs_label);
+		if (strcmp(label, user) == 0) {
 			job_ptr->mcs_label = xstrdup(user);
 		} else {
-			xfree(job_ptr->mcs_label);
-			rc = SLURM_ERROR ;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		if ((slurm_mcs_get_enforced() == 0) &&
 		   job_ptr->details && (job_ptr->details->whole_node != 3)) {
-			xfree(job_ptr->mcs_label);
+			;
 		} else {
-			xfree(job_ptr->mcs_label);
 			job_ptr->mcs_label = xstrdup(user);
 		}
 	}

@@ -56,12 +56,12 @@ static slurm_mcs_ops_t ops;
 static plugin_context_t *g_mcs_context = NULL;
 static pthread_mutex_t g_mcs_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-uint32_t private_data = 0;
-uint32_t enforced = 0;
-uint32_t select_enforced = 0;
-char *mcs_params = NULL;
-char *mcs_params_common = NULL;
-char *mcs_params_specific = NULL;
+static uint32_t private_data = 0;
+static uint32_t enforced = 0;
+static uint32_t select_enforced = 0;
+static char *mcs_params = NULL;
+static char *mcs_params_common = NULL;
+static char *mcs_params_specific = NULL;
 
 static int _slurm_mcs_check_and_load_enforced(char *params);
 static int _slurm_mcs_check_and_load_select(char *params);

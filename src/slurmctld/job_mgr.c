@@ -6038,7 +6038,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->qos_ptr = (void *) qos_ptr;
 	job_ptr->qos_id = qos_rec.id;
 
-	if (mcs_g_set_mcs_label(job_ptr,job_desc->mcs_label) != 0 ) {
+	if (mcs_g_set_mcs_label(job_ptr, job_desc->mcs_label) != 0 ) {
 		if (job_desc->mcs_label == NULL)
 			error("Failed to create job : no valid mcs_label found");
 		else

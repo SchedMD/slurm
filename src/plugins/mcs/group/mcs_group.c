@@ -78,9 +78,9 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*********************** local variables *********************/
 
-uint32_t *array_mcs_parameter = NULL;
-uint32_t nb_mcs_groups = 0;
-char *mcs_params_specific = NULL;
+static uint32_t *array_mcs_parameter = NULL;
+static uint32_t nb_mcs_groups = 0;
+static char *mcs_params_specific = NULL;
 
 static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			    gid_t *groups, int max_groups, int *ngroups);
