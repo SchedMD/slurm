@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     reserve any resources for it.
  -- Avoid slurmstepd abort if malloc fails during accounting gather operation.
  -- Fix nodes from being overallocated when allocation straddles multiple nodes.
+ -- Fix memory leak in slurmctld job array logic.
 
 * Changes in Slurm 15.08.6
 ==========================

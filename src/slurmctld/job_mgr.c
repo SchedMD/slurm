@@ -6304,10 +6304,10 @@ _copy_job_desc_files(uint32_t job_id_src, uint32_t job_id_dest)
 			      job_id_dest);
 		}
 		error("mkdir(%s) error %m", dir_name_dest);
-		xfree(dir_name_src);
-		xfree(dir_name_dest);
-		return ESLURM_WRITING_TO_FILE;
+		error_code = ESLURM_WRITING_TO_FILE;
 	}
+	xfree(dir_name_src);
+	xfree(dir_name_dest);
 
 	return error_code;
 }
