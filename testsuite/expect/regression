@@ -71,6 +71,7 @@ for major in `seq 1 100`; do
 			echo "$TEST FAILURE"
 			grep "$TEST " README >& 2
 			echo "=============" >& 2
+			if [ -f ./slurm_status ]; then ./slurm_status; fi
 		fi
 		/bin/echo "============================================"
 	done
