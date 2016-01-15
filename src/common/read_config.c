@@ -3165,6 +3165,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			xfree(temp_str);
 			return SLURM_ERROR;
 		}
+		xfree(temp_str);
 		conf->enforce_part_limits = enforce_param;
 	} else {
 		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;

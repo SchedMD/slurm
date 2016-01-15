@@ -104,17 +104,20 @@ extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
 	if (label != NULL) {
 		/* test label param */
 		if (strcmp(label,user) == 0) {
+			xfree(job_ptr->mcs_label);
 			job_ptr->mcs_label = xstrdup(user);
 		} else {
-			job_ptr->mcs_label = NULL;
+			xfree(job_ptr->mcs_label);
 			rc = SLURM_ERROR ;
 		}
 	} else {
 		if ((slurm_mcs_get_enforced() == 0) &&
-		   job_ptr->details && (job_ptr->details->whole_node != 3))
-			job_ptr->mcs_label = NULL;
-		else
+		   job_ptr->details && (job_ptr->details->whole_node != 3)) {
+			xfree(job_ptr->mcs_label);
+		} else {
+			xfree(job_ptr->mcs_label);
 			job_ptr->mcs_label = xstrdup(user);
+		}
 	}
 	xfree(user);
 	return rc;

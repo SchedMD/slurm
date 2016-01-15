@@ -84,19 +84,20 @@ extern int slurm_mcs_init(void)
 	if (g_mcs_context)
 		goto done;
 
+	xfree(mcs_params);
+	xfree(mcs_params_common);
+	xfree(mcs_params_specific);
+
 	type = slurm_get_mcs_plugin();
 	mcs_params = slurm_get_mcs_plugin_params();
 	if (mcs_params == NULL) {
-		mcs_params_common = NULL;
-		mcs_params_specific = NULL;
 		info("No parameter for mcs plugin, default values set");
 	} else {
 		mcs_params_common = xstrdup(mcs_params);
-		mcs_params_specific = NULL;
 		sep = index(mcs_params_common, ':');
 		if (sep != NULL) {
 			if (sep[1] != '\0')
-				mcs_params_specific = xstrdup(sep+1);
+				mcs_params_specific = xstrdup(sep + 1);
 			*sep = '\0';
 		}
 	}
