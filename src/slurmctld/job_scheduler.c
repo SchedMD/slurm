@@ -1625,14 +1625,16 @@ next_task:
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
 
-			info("sched: Allocate %s MidplaneList=%s",
+			info("sched: Allocate %s MidplaneList=%s Partition=%s",
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     tmp_char);
+			     tmp_char, job_ptr->part_ptr->name);
 			xfree(ionodes);
 #else
-			info("sched: Allocate %s NodeList=%s #CPUs=%u",
+			info("sched: Allocate %s NodeList=%s #CPUs=%u "
+			     "Partition=%s",
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     job_ptr->nodes, job_ptr->total_cpus);
+			     job_ptr->nodes, job_ptr->total_cpus,
+			     job_ptr->part_ptr->name);
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
