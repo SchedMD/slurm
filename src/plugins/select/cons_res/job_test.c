@@ -535,8 +535,10 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 
-	if (!test_only && IS_NODE_COMPLETING(node_ptr)) {
-		/* Do not allocate more jobs to nodes with completing jobs */
+	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
+	    !test_only && IS_NODE_COMPLETING(node_ptr)) {
+		/* Do not allocate more jobs to nodes with completing jobs,
+		 * backfill scheduler independently handles completing nodes */
 		cpus = 0;
 		return cpus;
 	}
