@@ -2385,6 +2385,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 							 * as assigned to jobs */
 #define RESERVE_FLAG_ALL_NODES		0x00080000	/* Use all compute
 							 * nodes */
+#define RESERVE_FLAG_PURGE_COMP		0x00100000	/* Purge reservation
+							 * after last job done */
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

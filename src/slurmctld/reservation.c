@@ -2109,6 +2109,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_PART_NODES  |
 					RESERVE_FLAG_FIRST_CORES |
 					RESERVE_FLAG_TIME_FLOAT  |
+					RESERVE_FLAG_PURGE_COMP  |
 					RESERVE_FLAG_REPLACE;
 	}
 	if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) {
@@ -2574,6 +2575,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto update_failure;
 		}
+		if (resv_desc_ptr->flags & RESERVE_FLAG_PURGE_COMP)
+			resv_ptr->flags |= RESERVE_FLAG_PURGE_COMP;
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
@@ -5284,6 +5287,24 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
 		_free_script_arg(args);
 }
 
+/* Return the count of incomplete jobs associated with a given reservation */
+static int _resv_job_count(slurmctld_resv_t *resv_ptr)
+{
+	int cnt = 0;
+	ListIterator iter;
+	struct job_record *job_ptr;
+
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if (!IS_JOB_FINISHED(job_ptr) &&
+		    !xstrcmp(job_ptr->resv_name, resv_ptr->name))
+			cnt++;
+	}
+	list_iterator_destroy(iter);
+
+	return cnt;
+}
+
 /* Finish scan of all jobs for valid reservations
  *
  * Purge vestigial reservation records.
@@ -5293,7 +5314,7 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
 extern void fini_job_resv_check(void)
 {
 	ListIterator iter;
-	slurmctld_resv_t *resv_ptr;
+	slurmctld_resv_t *resv_backup, *resv_ptr;
 	time_t now = time(NULL);
 
 	if (!resv_list)
@@ -5301,6 +5322,19 @@ extern void fini_job_resv_check(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->start_time <= (now - 60)) &&
+		    (resv_ptr->end_time > now) &&
+		    (resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
+		    (_resv_job_count(resv_ptr) == 0)) {
+			info("Reservation %s has no more jobs, ending it",
+			     resv_ptr->name);
+			resv_backup = _copy_resv(resv_ptr);
+			resv_ptr->end_time = now;
+			_post_resv_update(resv_ptr, resv_backup); /* accounting */
+			_del_resv_rec(resv_backup);
+			last_resv_update = now;
+			schedule_resv_save();
+		}
 		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
 			continue;
 		if ((resv_ptr->end_time >= now) ||

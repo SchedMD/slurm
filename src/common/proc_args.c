@@ -1681,13 +1681,17 @@ parse_resv_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_STATIC;
 			else
 				outflags |= RESERVE_FLAG_STATIC;
-		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen,1))
+		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
+		} else if (strncasecmp(curr, "PURGE_COMP", MAX(taglen, 2))
+			   == 0) {
+			curr += taglen;
+			outflags |= RESERVE_FLAG_PURGE_COMP;
 		} else if (!strncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
 			   !flip) {
 			curr += taglen;

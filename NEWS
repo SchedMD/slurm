@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
     membership lists are now always cached, controlled by
     GroupUpdateTime parameter. GroupUpdateForce parameter default
     value changed to 1.
+ -- Add reservation flag of "purge_comp" which will purge an advanced
+    reservation once it has no more active (pending, suspended or running) jobs.
 
 * Changes in Slurm 15.08.7
 ==========================
