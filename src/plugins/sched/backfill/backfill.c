@@ -805,7 +805,7 @@ static int _attempt_backfill(void)
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
-	bitstr_t *exc_core_bitmap = NULL, *non_cg_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	time_t orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
@@ -877,9 +877,6 @@ static int _attempt_backfill(void)
 		_clear_job_start_times();
 
 	gettimeofday(&bf_time1, NULL);
-
-	non_cg_bitmap = bit_copy(cg_node_bitmap);
-	bit_not(non_cg_bitmap);
 
 	slurmctld_diag_stats.bf_queue_len = list_count(job_queue);
 	slurmctld_diag_stats.bf_queue_len_sum += slurmctld_diag_stats.
@@ -955,9 +952,6 @@ static int _attempt_backfill(void)
 				xfree(job_queue_rec);
 				break;
 			}
-			/* cg_node_bitmap may be changed */
-			bit_copybits(non_cg_bitmap, cg_node_bitmap);
-			bit_not(non_cg_bitmap);
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			gettimeofday(&start_tv, NULL);
@@ -1257,9 +1251,6 @@ next_task:
 				rc = 1;
 				break;
 			}
-			/* cg_node_bitmap may be changed */
-			bit_copybits(non_cg_bitmap, cg_node_bitmap);
-			bit_not(non_cg_bitmap);
 
 			/* With bf_continue configured, the original job could
 			 * have been scheduled or cancelled and purged.
@@ -1304,7 +1295,6 @@ next_task:
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
-		bit_and(avail_bitmap, non_cg_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		for (j=0; ; ) {
@@ -1372,11 +1362,12 @@ next_task:
 			slurmctld_diag_stats.bf_last_depth_try++;
 			already_counted = true;
 		}
-
 		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_job_test(job_ptr, avail_bitmap, start_res);
+		job_ptr->bit_flags |= BACKFILL_TEST;
 		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
 			       req_nodes, exc_core_bitmap);
+		job_ptr->bit_flags &= ~BACKFILL_TEST;
 
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
@@ -1391,6 +1382,12 @@ next_task:
 		if (start_res > job_ptr->start_time) {
 			job_ptr->start_time = start_res;
 			last_job_update = now;
+		}
+		if ((job_ptr->start_time <= now) &&
+		    (bit_overlap(avail_bitmap, cg_node_bitmap) > 0)) {
+			/* Need to wait for in-progress completion/epilog */
+			job_ptr->start_time = now + 1;
+			later_start = 0;
 		}
 		if ((job_ptr->start_time <= now) &&
 		    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
@@ -1620,7 +1617,6 @@ next_task:
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
-	FREE_NULL_BITMAP(non_cg_bitmap);
 
 	for (i=0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);

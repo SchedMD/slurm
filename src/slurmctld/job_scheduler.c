@@ -1466,11 +1466,10 @@ next_task:
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
 				debug3("sched: JobId=%u. State=PENDING. "
-				       "Reason=%s(Priority). Priority=%u, "
+				       "Reason=Priority. Priority=%u. "
 				       "Resv=%s.",
-				       job_ptr->job_id,
-				       job_reason_string(job_ptr->state_reason),
-				       job_ptr->priority, job_ptr->resv_name);
+				       job_ptr->job_id, job_ptr->priority,
+				       job_ptr->resv_name);
 				continue;
 			}
 		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
@@ -1479,11 +1478,9 @@ next_task:
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
 			debug("sched: JobId=%u. State=PENDING. "
-			       "Reason=%s(Priority), Priority=%u, "
-			       "Partition=%s.",
-			       job_ptr->job_id,
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority, job_ptr->partition);
+			       "Reason=Priority, Priority=%u. Partition=%s.",
+			       job_ptr->job_id, job_ptr->priority,
+			       job_ptr->partition);
 			continue;
 		}
 
@@ -1716,14 +1713,16 @@ next_task:
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
 
-			info("sched: Allocate %s MidplaneList=%s",
+			info("sched: Allocate %s MidplaneList=%s Partition=%s",
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     tmp_char);
+			     tmp_char, job_ptr->part_ptr->name);
 			xfree(ionodes);
 #else
-			info("sched: Allocate %s NodeList=%s #CPUs=%u",
+			info("sched: Allocate %s NodeList=%s #CPUs=%u "
+			     "Partition=%s",
 			     jobid2fmt(job_ptr, job_id_buf, sizeof(job_id_buf)),
-			     job_ptr->nodes, job_ptr->total_cpus);
+			     job_ptr->nodes, job_ptr->total_cpus,
+			     job_ptr->part_ptr->name);
 #endif
 			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);

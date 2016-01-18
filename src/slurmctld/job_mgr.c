@@ -1485,6 +1485,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			safe_unpack16(&step_flag, buffer);
 		}
 		safe_unpack32(&job_ptr->bit_flags, buffer);
+		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		safe_unpackstr_xmalloc(&tres_alloc_str,
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
@@ -7055,6 +7056,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->mail_type = job_desc->mail_type;
 	job_ptr->mail_user = xstrdup(job_desc->mail_user);
 	job_ptr->bit_flags = job_desc->bitflags;
+	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->ckpt_interval = job_desc->ckpt_interval;
 	job_ptr->spank_job_env = job_desc->spank_job_env;
 	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;

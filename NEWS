@@ -167,6 +167,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak in slurmctld job array logic.
  -- Prevent decrementing of TRESRunMins when AccountingStorageEnforce=limits is
     not set.
+ -- Fix backfill scheduling bug which could postpone the scheduling of jobs due
+    to avoidance of nodes in COMPLETING state.
 
 * Changes in Slurm 15.08.6
 ==========================
