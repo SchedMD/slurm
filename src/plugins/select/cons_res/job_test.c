@@ -217,6 +217,11 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
 
+	if (entire_sockets_only && job_ptr->details->whole_node &&
+	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
+		/* Ignore specialized cores when allocating "entire" socket */
+		entire_sockets_only = false;
+	}
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		uint32_t threads_per_socket;
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
