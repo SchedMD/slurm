@@ -284,7 +284,7 @@ typedef struct front_end_record {
 	uid_t *deny_uids;		/* zero terminated list of denied users */
 	char *deny_users;		/* denied user string */
 	uint32_t job_cnt_comp;		/* count of completing jobs on node */
-	uint16_t job_cnt_run;		/* count of running jobs on node */
+	uint16_t job_cnt_run;		/* count of running or suspended jobs */
 	time_t last_response;		/* Time of last communication */
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char *name;			/* frontend node name */

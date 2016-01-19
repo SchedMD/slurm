@@ -1955,7 +1955,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		}
 	}
 
-	if (IS_JOB_RUNNING(job_ptr) && job_ptr->front_end_ptr)
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		job_ptr->front_end_ptr->job_cnt_run++;
 
 	return cnt;

@@ -13144,9 +13144,10 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
-	if (job_ptr->front_end_ptr)
+	if (job_ptr->front_end_ptr) {
 		agent_args->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
+	}
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count = 1;
 #else
