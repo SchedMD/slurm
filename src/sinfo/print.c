@@ -1042,7 +1042,6 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 
 	if (sinfo_data && sinfo_data->nodes_total) {
 		my_state = sinfo_data->node_state;
-
 		upper_state = node_state_string_compact(my_state);
 		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
@@ -1065,11 +1064,6 @@ int _print_state_long(sinfo_data_t * sinfo_data, int width,
 
 	if (sinfo_data && sinfo_data->nodes_total) {
 		my_state = sinfo_data->node_state;
-		if (sinfo_data->cpus_alloc &&
-		    (sinfo_data->cpus_alloc != sinfo_data->cpus_total)) {
-			my_state &= NODE_STATE_FLAGS;
-			my_state |= NODE_STATE_MIXED;
-		}
 		upper_state = node_state_string(my_state);
 		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
