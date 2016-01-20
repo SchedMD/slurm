@@ -495,7 +495,11 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * JOB_NODE_FAIL      7        
 
-=item * JOB_END            8        
+=item * JOB_PREEMPTED      8
+
+=item * JOB_BOOT_FAIL      9
+
+=item * JOB_END           10
 
 =back
 

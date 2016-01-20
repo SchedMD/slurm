@@ -249,6 +249,9 @@ sub stateCode
 		case [JOB_COMPLETE,
 		      JOB_CANCELLED,
 		      JOB_TIMEOUT,
+		      JOB_NODE_FAIL,
+		      JOB_PREEMPTED,
+		      JOB_BOOT_FAIL,
 		      JOB_FAILED]    { return 'C' }
 		case [JOB_RUNNING]   { return 'R' }
 		case [JOB_PENDING]   { return 'Q' }
