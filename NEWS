@@ -3,6 +3,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.8
 ==========================
+ -- Backfill scheduling properly synchronized with Cray Node Health Check.
+    Prior logic could result in highest priority job getting improperly
+    postponed.
 
 * Changes in Slurm 15.08.7
 ==========================
