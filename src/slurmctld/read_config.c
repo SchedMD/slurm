@@ -1868,6 +1868,8 @@ static int _sync_nodes_to_comp_job(void)
 			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 				acct_policy_job_begin(job_ptr);
 
+			if (job_ptr->front_end_ptr)
+				job_ptr->front_end_ptr->job_cnt_run++;
 			deallocate_nodes(job_ptr, false, false, false);
 			/* The job in completing state at slurmctld restart or
 			 * reconfiguration, do not log completion again.

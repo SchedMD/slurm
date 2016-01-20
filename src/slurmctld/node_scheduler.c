@@ -532,11 +532,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			job_ptr->node_cnt = 0;
 		} else {
 			bool set_fe_comp = false;
-			if (front_end_ptr->job_cnt_run)
+			if (front_end_ptr->job_cnt_run) {
 				front_end_ptr->job_cnt_run--;
-			else {
-				error("front_end %s job_cnt_run underflow",
-				      front_end_ptr->name);
+			} else {
+				error("%s: front_end %s job_cnt_run underflow",
+				      __func__, front_end_ptr->name);
 			}
 			if (front_end_ptr->job_cnt_run == 0) {
 				uint32_t state_flags;
