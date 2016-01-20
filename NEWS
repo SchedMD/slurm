@@ -77,6 +77,7 @@ documents those changes that are of interest to users and administrators.
     while there is a suspended job. Previous logic would add the CPUs, but not
     memory or GPUs. This would result in underflow/overflow errors in select
     cons_res plugin.
+ -- Strip flags from a job state in qstat wrapper before evaluating.
 
 * Changes in Slurm 15.08.6
 ==========================

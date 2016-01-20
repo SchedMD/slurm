@@ -245,8 +245,7 @@ sub stateCode
 	if(!defined($state)) {
 		return 'U';
 	}
-
-	switch($state) {
+	switch($state & JOB_STATE_BASE) {
 		case [JOB_COMPLETE,
 		      JOB_CANCELLED,
 		      JOB_TIMEOUT,
