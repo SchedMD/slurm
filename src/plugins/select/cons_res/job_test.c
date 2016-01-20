@@ -217,6 +217,11 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
 
+	if (entire_sockets_only && job_ptr->details->whole_node &&
+	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
+		/* Ignore specialized cores when allocating "entire" socket */
+		entire_sockets_only = false;
+	}
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		uint32_t threads_per_socket;
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
@@ -2660,15 +2665,15 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 				    bitstr_t *core_map)
 {
 #if _DEBUG
-	char str[100];
+	char str[256];
 
 	if (node_map) {
 		bit_fmt(str, (sizeof(str) - 1), node_map);
-		info("%s nodemap: %s", loc, str);
+		info("%s nodemap[0-%d]: %s", loc, bit_size(node_map)-1, str);
 	}
 	if (core_map) {
 		bit_fmt(str, (sizeof(str) - 1), core_map);
-		info("%s coremap: %s", loc, str);
+		info("%s coremap[0-%d]: %s", loc, bit_size(core_map)-1, str);
 	}
 #endif
 }

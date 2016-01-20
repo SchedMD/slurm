@@ -981,7 +981,8 @@ extern void sync_front_end_state(void)
 				     job_ptr->batch_host);
 			} else if (IS_JOB_COMPLETING(job_ptr)) {
 				job_ptr->front_end_ptr->job_cnt_comp++;
-			} else if (IS_JOB_RUNNING(job_ptr)) {
+			} else if (IS_JOB_RUNNING(job_ptr) ||
+				   IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->front_end_ptr->job_cnt_run++;
 			}
 		} else {

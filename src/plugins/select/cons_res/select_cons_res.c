@@ -778,8 +778,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
  * - add 'struct job_resources' resources to 'struct part_res_record'
  * - add job's memory requirements to 'struct node_res_record'
  *
- * if action = 0 then add cores and memory (starting new job)
- * if action = 1 then only add memory (adding suspended job)
+ * if action = 0 then add cores, memory + GRES (starting new job)
+ * if action = 1 then add memory + GRES (adding suspended job)
  * if action = 2 then only add cores (suspended job is resumed)
  */
 static int _add_job_to_res(struct job_record *job_ptr, int action)
@@ -1125,8 +1125,8 @@ static int _job_expand(struct job_record *from_job_ptr,
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
- * if action = 0 then subtract cores and memory (running job was terminated)
- * if action = 1 then only subtract memory (suspended job was terminated)
+ * if action = 0 then subtract cores, memory + GRES (running job was terminated)
+ * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
  *
  */
@@ -2473,10 +2473,12 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+	if (IS_JOB_RUNNING(job_ptr))
+		rc = _add_job_to_res(job_ptr, 0);
+	else if (IS_JOB_SUSPENDED(job_ptr))
+		rc = _add_job_to_res(job_ptr, 1);
+	else
 		return SLURM_SUCCESS;
-
-	rc = _add_job_to_res(job_ptr, 0);
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
 	return rc;
@@ -2680,7 +2682,7 @@ extern int select_p_reconfigure(void)
 			_add_job_to_res(job_ptr, 0);
 		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
-			_add_job_to_res(job_ptr, 2);
+			_add_job_to_res(job_ptr, 1);
 		}
 	}
 	list_iterator_destroy(job_iterator);
