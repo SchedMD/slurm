@@ -1713,6 +1713,22 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	return end_time;
 }
 
+/* Return TRUE if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures. */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return true;
+	return false;
+}
+
 /* _will_run_test - determine when and where a pending job can start, removes
  *	jobs from node table at termination time and run _test_job() after
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
@@ -1778,7 +1794,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr))
+		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
+		    !_job_cleaning(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			error("Job %u has zero end_time", tmp_job_ptr->job_id);

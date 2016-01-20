@@ -99,6 +99,12 @@ documents those changes that are of interest to users and administrators.
  -- Add reservation flag of "purge_comp" which will purge an advanced
     reservation once it has no more active (pending, suspended or running) jobs.
 
+* Changes in Slurm 15.08.8
+==========================
+ -- Backfill scheduling properly synchronized with Cray Node Health Check.
+    Prior logic could result in highest priority job getting improperly
+    postponed.
+
 * Changes in Slurm 15.08.7
 ==========================
  -- sched/backfill: If a job can not be started within the configured
@@ -175,6 +181,8 @@ documents those changes that are of interest to users and administrators.
     while there is a suspended job. Previous logic would add the CPUs, but not
     memory or GPUs. This would result in underflow/overflow errors in select
     cons_res plugin.
+ -- Strip flags from a job state in qstat wrapper before evaluating.
+ -- Add missing job states from the qstat wrapper.
 
 * Changes in Slurm 15.08.6
 ==========================

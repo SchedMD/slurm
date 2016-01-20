@@ -245,11 +245,13 @@ sub stateCode
 	if(!defined($state)) {
 		return 'U';
 	}
-
-	switch($state) {
+	switch($state & JOB_STATE_BASE) {
 		case [JOB_COMPLETE,
 		      JOB_CANCELLED,
 		      JOB_TIMEOUT,
+		      JOB_NODE_FAIL,
+		      JOB_PREEMPTED,
+		      JOB_BOOT_FAIL,
 		      JOB_FAILED]    { return 'C' }
 		case [JOB_RUNNING]   { return 'R' }
 		case [JOB_PENDING]   { return 'Q' }

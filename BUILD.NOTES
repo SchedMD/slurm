@@ -233,6 +233,8 @@ For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
    ./slurmctld -Dc >valg.ctld.out 2>&1
  - valgrind --tool=memcheck --leak-check=yes --num-callers=8 --leak-resolution=med \
    ./slurmd -Dc >valg.slurmd.out 2>&1    (Probably only one one node of cluster)
+ - valgrind --tool=memcheck --leak-check=yes --num-callers=8 --leak-resolution=med \
+   ./slurmdbd -D >valg.dbd.out 2>&1
  - Run the regression test. In the globals.local file include:
    "set enable_memory_leak_debug 1"
  - Shutdown the daemons using "scontrol shutdown"
@@ -243,7 +245,11 @@ For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
    valgrind backtrace after shutdown. Rebuilding the daemons without the
    configure option of "--enable-memory-leak-debug" typically prevents the
    plugin from being unloaded so the symbols will be properly reported. However
-   many memory leaks will be reported due to not unloading plugins.
+   many memory leaks will be reported due to not unloading plugins. You will
+   need to match the call sequence from the first log (with
+   "--enable-memory-leak-debug") to the second log (without
+   "--enable-memory-leak-debug" and ignore memory leaks reported that are not
+   real leaks in the second log) to identify the full code path through plugins.
 
 Job profiling:
  - "export CFLAGS=-pg", then run "configure" and "make install" as usual.
