@@ -72,8 +72,11 @@ sub _shrink_char
 {
 	my ($str, $max_len) = @_;
 
-	$$str = '*' . substr($$str, -($max_len - 1))
-		if length($$str) > $max_len;
+	if (!defined($$str)) {
+		$$str = "";
+	} elsif (length($$str) > $max_len) {
+		$$str = '*' . substr($$str, -($max_len - 1));
+	}
 }
 
 sub _print_job_brief
