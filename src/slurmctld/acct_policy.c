@@ -1067,7 +1067,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		if (job_desc->tres_req_cnt[tres_pos] >
 		    qos_ptr->max_tres_pa_ctld[tres_pos]) {
 			if (reason)
-				*reason = get_tres_state_reason(
+				*reason = _get_tres_state_reason(
 					tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
 
 			debug2("job submit for user %s(%u): "
@@ -1951,7 +1951,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * TRES limit for the given QOS
 		 */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
 		debug2("job %u is being held, "
 		       "QOS %s min tres(%s) "
@@ -1971,7 +1971,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		 * the QOS per-user TRES limit with their
 		 * current usage */
 		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = get_tres_state_reason(
+		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
 		debug2("job %u being held, "
 		       "if allowed the job request will exceed "
