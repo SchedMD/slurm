@@ -6,7 +6,10 @@ documents those changes that are of interest to users and administrators.
  -- Backfill scheduling properly synchronized with Cray Node Health Check.
     Prior logic could result in highest priority job getting improperly
     postponed.
- -- Make it so daemons also support TopologyParam=NoInAddrAny
+ -- Make it so daemons also support TopologyParam=NoInAddrAny.
+ -- If scancel is operating on large number of jobs and RPC responses from
+    slurmctld daemon are slow then introduce a delay in sending the cancel job
+    requests from scancel in order to reduce load on slurmctld.
 
 * Changes in Slurm 15.08.7
 ==========================
