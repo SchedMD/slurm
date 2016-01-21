@@ -99,7 +99,6 @@ static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
 static bool  _is_port_ok(int, uint16_t);
-static void _slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port);
 
 #if _DEBUG
 static void _print_data(char *data, int len);
@@ -2809,26 +2808,11 @@ slurm_init_msg_engine_ports(uint16_t *ports)
 slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
 	slurm_addr_t addr;
-	static uint32_t bind_addr = NO_VAL;
-
-	if (bind_addr == NO_VAL) {
-#ifdef BIND_SPECIFIC_ADDR
-		bind_addr = 1;
-#else
-		char *topology_params = slurm_get_topology_param();
-		if (topology_params &&
-		    slurm_strcasestr(topology_params, "NoInAddrAny"))
-			bind_addr = 1;
-		else
-			bind_addr = 0;
-		xfree(topology_params);
-#endif
-	}
 
 	if (addr_name)
 		slurm_set_addr(&addr, port, addr_name);
 	else
-		_slurm_set_addr_any(&addr, port);
+		slurm_setup_sockaddr(&addr, port);
 
 	return slurm_init_msg_engine(&addr);
 }
@@ -3764,16 +3748,6 @@ size_t slurm_read_stream_timeout(slurm_fd_t open_fd, char *buffer,
 /**********************************************************************\
  * address conversion and management functions
 \**********************************************************************/
-
-/* slurm_set_addr_any
- * initialized the slurm_address with the supplied port on INADDR_ANY
- * OUT slurm_address	- slurm_addr_t to be filled in
- * IN port		- port in host order
- */
-static void _slurm_set_addr_any(slurm_addr_t * slurm_address, uint16_t port)
-{
-	slurm_set_addr_uint(slurm_address, port, SLURM_INADDR_ANY);
-}
 
 /* slurm_set_addr
  * initializes the slurm_address with the supplied port and host name

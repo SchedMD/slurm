@@ -710,15 +710,6 @@ static int _slurm_vfcntl(int fd, int cmd, va_list va )
 	}
 }
 
-/* sets the fields of a slurm_addr_t */
-extern void slurm_set_addr_uint (slurm_addr_t *addr, uint16_t port,
-				 uint32_t ipaddr)
-{
-	addr->sin_family      = AF_SLURM ;
-	addr->sin_port	= htons(port);
-	addr->sin_addr.s_addr = htonl(ipaddr);
-}
-
 extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 {
 	struct addrinfo *addrs;

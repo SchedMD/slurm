@@ -447,8 +447,8 @@ static struct job_record *_create_job_record(int *error_code, uint32_t num_jobs)
 	struct job_details *detail_ptr;
 
 	if ((job_count + num_jobs) >= slurmctld_conf.max_job_cnt) {
-		error("_create_job_record: MaxJobCount reached (%u)",
-		      slurmctld_conf.max_job_cnt);
+		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
+		      __func__, slurmctld_conf.max_job_cnt);
 	}
 
 	job_count += num_jobs;
@@ -4098,17 +4098,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 
-	if (job_specs->array_bitmap) {
+	if (job_specs->array_bitmap)
 		i = bit_set_count(job_specs->array_bitmap);
-		if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
-			info("%s: MaxJobCount limit reached (%d + %d >= %u)",
-			     __func__, job_count, i,
-			     slurmctld_conf.max_job_cnt);
-			return EAGAIN;
-		}
-	} else if (job_count >= slurmctld_conf.max_job_cnt) {
-		info("%s: MaxJobCount limit reached (%u)",
-		     __func__, slurmctld_conf.max_job_cnt);
+	else
+		i = 1;
+
+	if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
+		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
+		      __func__, slurmctld_conf.max_job_cnt);
 		return EAGAIN;
 	}
 
