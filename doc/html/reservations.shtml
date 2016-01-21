@@ -397,6 +397,13 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
    98     debug   tmp   foo  R  0:07      1 tux1
 </pre>
 
+<h2>Reservation Purging After Last Job</h2>
+
+<p>A reservation may be automatically purged after the last associated job
+completes. This is accomplished by using a "purge_comp" flag.
+Once the reservation has been created, it must be populated within 5 minutes
+of its start time or it will be purged before any jobs have been run.</p>
+
 <h2>Reservation Accounting</h2>
 
 <p>Jobs executed within a reservation are accounted for using the appropriate
@@ -422,7 +429,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 20 October 2015</p>
+<p style="text-align: center;">Last modified 21 January 2016</p>
 
 <!--#include virtual="footer.txt"-->
 

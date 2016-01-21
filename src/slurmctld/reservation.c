@@ -5322,7 +5322,7 @@ extern void fini_job_resv_check(void)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((resv_ptr->start_time <= (now - 60)) &&
+		if ((resv_ptr->start_time <= (now - 300)) &&
 		    (resv_ptr->end_time > now) &&
 		    (resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
 		    (_resv_job_count(resv_ptr) == 0)) {
