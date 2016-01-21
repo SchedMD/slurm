@@ -10443,28 +10443,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			info("update_job: setting num_tasks to %u for "
 			     "job_id %u", job_specs->num_tasks,
 			     job_ptr->job_id);
-			if (detail_ptr->cpus_per_task) {
-				uint32_t new_cpus = detail_ptr->num_tasks
-					/ detail_ptr->cpus_per_task;
-				if ((new_cpus < detail_ptr->min_cpus) ||
-				    (!detail_ptr->overcommit &&
-				     (new_cpus > detail_ptr->min_cpus))) {
-					detail_ptr->min_cpus = new_cpus;
-					detail_ptr->max_cpus = new_cpus;
-					info("update_job: setting "
-					     "min_cpus to %u for "
-					     "job_id %u", detail_ptr->min_cpus,
-					     job_ptr->job_id);
-					/* Always use the
-					 * acct_policy_limit_set.*
-					 * since if set by a
-					 * super user it be set correctly */
-					job_ptr->limit_set.
-						tres[TRES_ARRAY_CPU] =
-						acct_policy_limit_set.
-						tres[TRES_ARRAY_CPU];
-				}
-			}
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
