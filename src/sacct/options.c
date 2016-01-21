@@ -320,7 +320,7 @@ sacct [<OPTION>]                                                            \n \
      -j, --jobs:                                                            \n\
 	           Format is <job(.step)>. Display information about this   \n\
                    job or comma-separated list of jobs. The default is all  \n\
-                   jobs. Adding .step will display the specfic job step of  \n\
+                   jobs. Adding .step will display the specific job step of  \n\
                    that job. (A step id of 'batch' will display the         \n\
                    information about the batch step.)                       \n\
      -k, --timelimit-min:                                                   \n\
