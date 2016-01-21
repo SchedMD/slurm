@@ -1227,7 +1227,7 @@ static void _block_on_pid(pid_t pid)
 		sleep(1);
 }
 
-/* Wait for the pid given and when it ends get and childern it might
+/* Wait for the pid given and when it ends get and children it might
  * of left behind and wait on them instead.
  */
 static void *_wait_extern_pid(void *args)
@@ -1259,7 +1259,7 @@ static void *_wait_extern_pid(void *args)
 	}
 	acct_gather_profile_g_task_end(pid);
 
-	/* See if we have any childern of init left and add them to track. */
+	/* See if we have any children of init left and add them to track. */
 	proctrack_g_get_pids(job->cont_id, &pids, &npids);
 	for (i = 0; i < npids; i++) {
 		snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);

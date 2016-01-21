@@ -232,6 +232,9 @@ proc submit_cpu {ntasks ncpus} {
 	set x 0
 	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks -w$nodelist -c$ncpus --exclusive $bin_printenv SLURMD_NODENAME | $bin_sort -V | $bin_uniq -c"
 	expect {
+		-re "job ($number)" {
+			exp_continue
+		}
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
@@ -265,6 +268,9 @@ proc submit_tasks {ntasks ntaskpn} {
 	set x 0
 	spawn $bin_bash -c "$srun -N$num_nodes -n$ntasks --ntasks-per-node=$ntaskpn -w$nodelist --exclusive $bin_printenv SLURMD_NODENAME | $bin_sort -V | $bin_uniq -c"
 	expect {
+		-re "job ($number)" {
+			exp_continue
+		}
 		-re "($number) ($alpha_numeric_nodelist)" {
 			set tasks($x) $expect_out(1,string)
 			set nodes($x) $expect_out(2,string)
