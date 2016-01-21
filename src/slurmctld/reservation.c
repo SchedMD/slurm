@@ -2982,7 +2982,7 @@ static void _rebuild_core_bitmap(slurmctld_resv_t *resv_ptr)
 	ListIterator job_iterator;
 	struct job_record  *job_ptr;
 
-	info("Core_bitmap for reservation %s no longer valid, cores addded or removed, rebuilding",
+	info("Core_bitmap for reservation %s no longer valid, cores added or removed, rebuilding",
 	     resv_ptr->name);
 
 	core_cnt = bit_set_count(resv_ptr->core_bitmap);      /* Cores needed */
