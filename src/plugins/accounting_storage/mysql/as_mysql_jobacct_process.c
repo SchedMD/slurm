@@ -458,7 +458,15 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc "
 			       "left join \"%s_%s\" as t3 "
-			       " on t1.id_resv=t3.id_resv ",
+			       "on t1.id_resv=t3.id_resv && "
+			       "((t1.time_start && "
+			       "(t3.time_start < t1.time_start && "
+			       "(t3.time_end >= t1.time_start || "
+			       "t3.time_end = 0))) || "
+			       "((t3.time_start < t1.time_submit && "
+			       "(t3.time_end >= t1.time_submit || "
+			       "t3.time_end = 0)) || "
+			       "(t3.time_start > t1.time_submit)))",
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table,
 			       cluster_name, resv_table);
