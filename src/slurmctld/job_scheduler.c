@@ -2949,7 +2949,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 	else
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-	if (job_req_node_filter(job_ptr, avail_bitmap))
+	if (job_req_node_filter(job_ptr, avail_bitmap, true))
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
 		bitstr_t *exc_node_mask = NULL;

@@ -204,7 +204,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		return NULL;
 	}
 
-	if (job_req_node_filter(job_ptr, avail_bitmap) != SLURM_SUCCESS) {
+	if (job_req_node_filter(job_ptr, avail_bitmap, true) != SLURM_SUCCESS) {
 		/* Job probably has invalid feature list */
 		*err_code = -730;
 		*err_msg = "Job's required features not available "
@@ -493,7 +493,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		return NULL;
 	}
 
-	if (job_req_node_filter(job_ptr, avail_bitmap) != SLURM_SUCCESS) {
+	if (job_req_node_filter(job_ptr, avail_bitmap, true) != SLURM_SUCCESS) {
 		/* Job probably has invalid feature list */
 		*err_code = -730;
 		*err_msg = "Job's required features not available "

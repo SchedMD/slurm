@@ -1433,14 +1433,16 @@ extern bool job_independent(struct job_record *job_ptr, int will_run);
 
 /*
  * job_req_node_filter - job reqeust node filter.
- * clear from a bitmap the nodes which can not be used for a job
- * test memory size, required features, processor count, etc.
+ *	clear from a bitmap the nodes which can not be used for a job
+ *	test memory size, required features, processor count, etc.
+ * NOTE: Does not support exclusive OR of features.
+ *	It just matches first element of XOR and ignores count.
  * IN job_ptr - pointer to node to be scheduled
  * IN/OUT bitmap - set of nodes being considered for use
  * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)
  */
 extern int job_req_node_filter(struct job_record *job_ptr,
-			       bitstr_t *avail_bitmap);
+			       bitstr_t *avail_bitmap, bool test_only);
 
 /*
  * job_requeue - Requeue a running or pending batch job

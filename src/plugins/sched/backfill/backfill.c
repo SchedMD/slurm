@@ -302,7 +302,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		}
 		list_iterator_destroy(feat_iter);
 
-		if ((job_req_node_filter(job_ptr, *avail_bitmap) !=
+		if ((job_req_node_filter(job_ptr, *avail_bitmap, true) !=
 		     SLURM_SUCCESS) ||
 		    (bit_set_count(*avail_bitmap) < high_cnt)) {
 			rc = ESLURM_NODES_BUSY;
@@ -342,8 +342,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 			feature_base.name = feat_ptr->name;
-			if ((job_req_node_filter(job_ptr, *avail_bitmap) ==
-			      SLURM_SUCCESS) &&
+			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
+			     == SLURM_SUCCESS) &&
 			    (bit_set_count(*avail_bitmap) >= min_nodes)) {
 				preemptee_candidates =
 					slurm_find_preemptable_jobs(job_ptr);
@@ -381,7 +381,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		list_destroy(detail_ptr->feature_list);
 		detail_ptr->feature_list = feature_cache;
 	} else if (detail_ptr->feature_list) {
-		if ((job_req_node_filter(job_ptr, *avail_bitmap) !=
+		if ((job_req_node_filter(job_ptr, *avail_bitmap, true) !=
 		     SLURM_SUCCESS) ||
 		    (bit_set_count(*avail_bitmap) < min_nodes)) {
 			rc = ESLURM_NODES_BUSY;
@@ -410,7 +410,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 
 		if (exc_core_bitmap) {
 			bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
-			debug2(" _try_sched with exclude core bitmap: %s",str);
+			debug2("%s exclude core bitmap: %s", __func__, str);
 		}
 
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
@@ -1332,7 +1332,7 @@ next_task:
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
-		    (job_req_node_filter(job_ptr, avail_bitmap))) {
+		    (job_req_node_filter(job_ptr, avail_bitmap, true))) {
 			if (later_start) {
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
