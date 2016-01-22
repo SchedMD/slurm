@@ -92,6 +92,7 @@ static void   _dump_part_state(struct part_record *part_ptr,
 static uid_t *_get_groups_members(char *group_names);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
+static int    _match_part_ptr(void *part_ptr, void *key);
 static int    _open_part_state_file(char **state_file);
 static int    _uid_list_size(uid_t * uid_list_ptr);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap,
@@ -909,7 +910,10 @@ extern List get_part_list(char *name, char **err_part)
 			if (job_part_list == NULL) {
 				job_part_list = list_create(NULL);
 			}
-			list_append(job_part_list, part_ptr);
+			if (!list_find_first(job_part_list, &_match_part_ptr,
+					     part_ptr)) {
+				list_append(job_part_list, part_ptr);
+			}
 		} else {
 			FREE_NULL_LIST(job_part_list);
 			if (err_part) {
@@ -1053,6 +1057,20 @@ int list_find_part(void *part_entry, void *key)
 		return 1;
 
 	if (strcmp(((struct part_record *)part_entry)->name, (char *) key) == 0)
+		return 1;
+
+	return 0;
+}
+
+/*
+ * _match_part_ptr - find an entry in the partition list, see common/list.h
+ *	for documentation
+ * IN key - partition pointer
+ * RET 1 if partition pointer matches, 0 otherwise
+ */
+static int _match_part_ptr(void *part_ptr, void *key)
+{
+	if (part_ptr == key)
 		return 1;
 
 	return 0;
