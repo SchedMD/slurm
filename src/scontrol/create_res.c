@@ -220,7 +220,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 
 		compound = strtok_r(token, "=", &value_str);
 
-		if (!value_str || !*value_str) {
+		if (!compound || !value_str || !*value_str) {
 			error("TRES component '%s' has an invalid value '%s'",
 			      type, token);
 			goto error;

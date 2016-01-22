@@ -664,7 +664,7 @@ static void _add_delay(void)
 	static int delay_time = 10000, previous_delay = 0;
 	int my_delay;
 
-	pthread_mutex_lock(&max_delay_lock);
+	slurm_mutex_lock(&max_delay_lock);
 	if (target_resp_time < 0) {
 		target_resp_time = slurm_get_msg_timeout() / 4;
 		target_resp_time = MAX(target_resp_time, 3);
@@ -675,7 +675,7 @@ static void _add_delay(void)
 	}
 	if ((++request_count < MAX_THREADS) ||
 	    (max_resp_time <= target_resp_time)) {
-		pthread_mutex_unlock(&max_delay_lock);
+		slurm_mutex_unlock(&max_delay_lock);
 		return;
 	}
 
@@ -683,7 +683,7 @@ static void _add_delay(void)
 	my_delay = MIN((delay_time + previous_delay), 1000000);
 	previous_delay = delay_time;
 	delay_time = my_delay;
-	pthread_mutex_unlock(&max_delay_lock);
+	slurm_mutex_unlock(&max_delay_lock);
 
 	info("%s: adding delay in RPC send of %d usec", __func__, my_delay);
 	usleep(my_delay);
@@ -744,9 +744,9 @@ _cancel_job_id (void *ci)
 		error_code = slurm_kill_job2(cancel_info->job_id_str,
 					     cancel_info->sig, flags);
 		END_TIMER;
-		pthread_mutex_lock(&max_delay_lock);
+		slurm_mutex_lock(&max_delay_lock);
 		max_resp_time = MAX(max_resp_time, DELTA_TIMER);
-		pthread_mutex_unlock(&max_delay_lock);
+		slurm_mutex_unlock(&max_delay_lock);
 
 		if ((error_code == 0) ||
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
@@ -835,9 +835,9 @@ _cancel_step_id (void *ci)
 			error_code = slurm_signal_job_step(job_id, step_id,
 							   cancel_info->sig);
 		END_TIMER;
-		pthread_mutex_lock(&max_delay_lock);
+		slurm_mutex_lock(&max_delay_lock);
 		max_resp_time = MAX(max_resp_time, DELTA_TIMER);
-		pthread_mutex_unlock(&max_delay_lock);
+		slurm_mutex_unlock(&max_delay_lock);
 
 		if ((error_code == 0) ||
 		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&

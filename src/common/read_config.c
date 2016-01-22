@@ -2673,7 +2673,7 @@ static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
 	conf_ptr->plugindir = xstrdup(default_plugin_path);
 	/* unlock conf_lock and set as initialized before accessing it */
 	conf_initialized = true;
-	pthread_mutex_unlock(&conf_lock);
+	slurm_mutex_unlock(&conf_lock);
 	db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
 	if (db_conn == NULL)
 		goto end; /* plugin will out error itself */
@@ -2692,7 +2692,7 @@ static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
 
 end:
 	/* restore status quo now */
-	pthread_mutex_lock(&conf_lock);
+	slurm_mutex_lock(&conf_lock);
 	conf_initialized = false;
 	xfree(cluster);
 	xfree(conf_ptr->accounting_storage_type);
@@ -2775,10 +2775,10 @@ _destroy_slurm_conf(void)
 extern int
 slurm_conf_init(const char *file_name)
 {
-	pthread_mutex_lock(&conf_lock);
+	slurm_mutex_lock(&conf_lock);
 
 	if (conf_initialized) {
-		pthread_mutex_unlock(&conf_lock);
+		slurm_mutex_unlock(&conf_lock);
 		return SLURM_ERROR;
 	}
 
@@ -2787,7 +2787,7 @@ slurm_conf_init(const char *file_name)
 		fatal("Unable to process configuration file");
 	conf_initialized = true;
 
-	pthread_mutex_unlock(&conf_lock);
+	slurm_mutex_unlock(&conf_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -2830,9 +2830,9 @@ slurm_conf_reinit(const char *file_name)
 {
 	int rc;
 
-	pthread_mutex_lock(&conf_lock);
+	slurm_mutex_lock(&conf_lock);
 	rc = _internal_reinit(file_name);
-	pthread_mutex_unlock(&conf_lock);
+	slurm_mutex_unlock(&conf_lock);
 
 	return rc;
 }
@@ -2855,16 +2855,16 @@ slurm_conf_install_fork_handlers(void)
 extern int
 slurm_conf_destroy(void)
 {
-	pthread_mutex_lock(&conf_lock);
+	slurm_mutex_lock(&conf_lock);
 
 	if (!conf_initialized) {
-		pthread_mutex_unlock(&conf_lock);
+		slurm_mutex_unlock(&conf_lock);
 		return SLURM_SUCCESS;
 	}
 
 	_destroy_slurm_conf();
 
-	pthread_mutex_unlock(&conf_lock);
+	slurm_mutex_unlock(&conf_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -2872,7 +2872,7 @@ slurm_conf_destroy(void)
 extern slurm_ctl_conf_t *
 slurm_conf_lock(void)
 {
-	pthread_mutex_lock(&conf_lock);
+	slurm_mutex_lock(&conf_lock);
 
 	if (!conf_initialized) {
 		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
@@ -2893,7 +2893,7 @@ slurm_conf_lock(void)
 extern void
 slurm_conf_unlock(void)
 {
-	pthread_mutex_unlock(&conf_lock);
+	slurm_mutex_unlock(&conf_lock);
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

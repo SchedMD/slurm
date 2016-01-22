@@ -61,6 +61,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/knl.h"
+#include "src/common/macros.h"
 #include "src/common/parse_config.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"

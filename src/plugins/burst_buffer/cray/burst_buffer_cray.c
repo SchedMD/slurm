@@ -57,6 +57,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -411,9 +412,9 @@ static void *_bb_agent(void *args)
 		if (!bb_state.term_flag) {
 			_load_state(false);	/* Has own locking */
 			lock_slurmctld(job_write_lock);
-			pthread_mutex_lock(&bb_state.bb_mutex);
+			slurm_mutex_lock(&bb_state.bb_mutex);
 			_timeout_bb_rec();
-			pthread_mutex_unlock(&bb_state.bb_mutex);
+			slurm_mutex_unlock(&bb_state.bb_mutex);
 			unlock_slurmctld(job_write_lock);
 		}
 		_save_bb_state();	/* Has own locks excluding file write */
@@ -724,7 +725,7 @@ static void _save_bb_state(void)
 	count_offset = get_buf_offset(buffer);
 	pack32(rec_count, buffer);
 	if (bb_state.bb_ahash) {
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		for (i = 0; i < BB_HASH_SIZE; i++) {
 			bb_alloc = bb_state.bb_ahash[i];
 			while (bb_alloc) {
@@ -746,7 +747,7 @@ static void _save_bb_state(void)
 			}
 		}
 		save_time = time(NULL);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, count_offset);
 		pack32(rec_count, buffer);
@@ -1090,12 +1091,12 @@ static void _load_state(bool init_config)
 					 NO_LOCK, NO_LOCK, NO_LOCK };
 	bool found_pool;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.other_timeout)
 		timeout = bb_state.bb_config.other_timeout * 1000;
 	else
 		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/*
 	 * Load the pools information
@@ -1107,7 +1108,7 @@ static void _load_state(bool init_config)
 		return;
 	}
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (!bb_state.bb_config.default_pool && (num_pools > 0)) {
 		info("%s: Setting DefaultPool to %s", __func__, pools[0].id);
 		bb_state.bb_config.default_pool = xstrdup(pools[0].id);
@@ -1163,7 +1164,7 @@ static void _load_state(bool init_config)
 		used_space *= pools[i].granularity;
 		pool_ptr->used_space = MAX(pool_ptr->used_space, used_space);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_pools(pools, num_pools);
 
 	/*
@@ -1175,7 +1176,7 @@ static void _load_state(bool init_config)
 		num_instances = 0;	/* Redundant, but fixes CLANG bug */
 	}
 	sessions = _bb_get_sessions(&num_sessions, &bb_state, timeout);
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	assoc_mgr_lock(&assoc_locks);
 	bb_state.last_load_time = time(NULL);
 	for (i = 0; i < num_sessions; i++) {
@@ -1222,7 +1223,7 @@ static void _load_state(bool init_config)
 			bb_post_persist_create(NULL, bb_alloc, &bb_state);
 	}
 	assoc_mgr_unlock(&assoc_locks);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	_bb_free_sessions(sessions, num_sessions);
 	_bb_free_instances(instances, num_instances);
 
@@ -1461,7 +1462,7 @@ static void *_start_stage_in(void *x)
 	     __func__, stage_args->job_id, TIME_STR);
 	_log_script_argv(setup_argv, resp_msg);
 	lock_slurmctld(job_read_lock);
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_limit_rem(stage_args->user_id, stage_args->bb_size, stage_args->pool,
 		     &bb_state);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
@@ -1486,7 +1487,7 @@ static void *_start_stage_in(void *x)
 			bb_job->state = BB_STATE_STAGING_IN;
 		}
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_read_lock);
 
 	if (rc == SLURM_SUCCESS) {
@@ -1518,7 +1519,7 @@ static void *_start_stage_in(void *x)
 		error("%s: unable to find job record for job %u",
 		      __func__, stage_args->job_id);
 	} else if (rc == SLURM_SUCCESS) {
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
 		if (bb_job)
 			bb_job->state = BB_STATE_STAGED_IN;
@@ -1540,7 +1541,7 @@ static void *_start_stage_in(void *x)
 				      __func__, stage_args->job_id);
 			}
 		}
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	} else {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
@@ -1672,11 +1673,11 @@ static void *_start_stage_out(void *x)
 		error("%s: unable to find job record for job %u",
 		      __func__, stage_args->job_id);
 	} else {
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job)
 			bb_job->state = BB_STATE_STAGING_OUT;
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
 
@@ -1718,7 +1719,7 @@ static void *_start_stage_out(void *x)
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, op, resp_msg);
 		}
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
 		if (bb_job)
 			bb_job->state = BB_STATE_TEARDOWN;
@@ -1756,7 +1757,7 @@ static void *_start_stage_out(void *x)
 			_queue_teardown(stage_args->job_id, stage_args->user_id,
 					false);
 		}
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 	unlock_slurmctld(job_write_lock);
 
@@ -1876,7 +1877,7 @@ static void *_start_teardown(void *x)
 				hurry);
 	} else {
 		lock_slurmctld(job_write_lock);
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		job_ptr = find_job_record(teardown_args->job_id);
 		_purge_bb_files(teardown_args->job_id, job_ptr);
 		if (job_ptr) {
@@ -1903,7 +1904,7 @@ static void *_start_teardown(void *x)
 			}
 
 		}
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
 
@@ -2552,7 +2553,7 @@ extern int init(void)
 	pthread_attr_t attr;
 
 	pthread_mutex_init(&bb_state.bb_mutex, NULL);
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	_test_config();
 	if (bb_state.bb_config.debug_flag)
@@ -2569,7 +2570,7 @@ extern int init(void)
 		usleep(100000);
 	}
 	slurm_attr_destroy(&attr);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -2592,25 +2593,25 @@ extern int fini(void)
 		usleep(100000);
 	}
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 
-	pthread_mutex_lock(&bb_state.term_mutex);
+	slurm_mutex_lock(&bb_state.term_mutex);
 	bb_state.term_flag = true;
 	pthread_cond_signal(&bb_state.term_cond);
-	pthread_mutex_unlock(&bb_state.term_mutex);
+	slurm_mutex_unlock(&bb_state.term_mutex);
 
 	if (bb_state.bb_thread) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		pthread_join(bb_state.bb_thread, NULL);
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_state.bb_thread = 0;
 	}
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	xfree(state_save_loc);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -2644,9 +2645,9 @@ extern uint64_t bb_p_get_system_size(void)
 {
 	uint64_t size = 0;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	size = bb_state.total_space / (1024 * 1024);	/* bytes to MB */
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	return size;
 }
 
@@ -2669,10 +2670,10 @@ extern int bb_p_load_state(bool init_config)
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: %s", plugin_type,  __func__);
 	_load_state(init_config);	/* Has own locking */
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_set_tres_pos(&bb_state);
 	_purge_vestigial_bufs();
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	_save_bb_state();	/* Has own locks excluding file write */
 
@@ -2689,7 +2690,7 @@ extern int bb_p_reconfig(void)
 	char *old_default_pool;
 	int i;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 	old_default_pool = bb_state.bb_config.default_pool;
@@ -2700,7 +2701,7 @@ extern int bb_p_reconfig(void)
 	else
 		xfree(old_default_pool);
 	_test_config();
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* reconfig is the place we make sure the pointers are correct */
 	for (i = 0; i < BB_HASH_SIZE; i++) {
@@ -2724,7 +2725,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	packstr(bb_state.name, buffer);
 	bb_pack_state(&bb_state, buffer, protocol_version);
 
@@ -2737,7 +2738,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
 		debug("%s: %s: record_count:%u",
 		      plugin_type,  __func__, rec_count);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -2780,7 +2781,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		return ESLURM_BURST_BUFFER_PERMISSION;
 	}
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.allow_users) {
 		bool found_user = false;
 		for (i = 0; bb_state.bb_config.allow_users[i]; i++) {
@@ -2813,7 +2814,7 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 
 	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
 
-fini:	pthread_mutex_unlock(&bb_state.bb_mutex);
+fini:	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
 }
@@ -2949,15 +2950,15 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	}
 
 	/* Initialization */
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_job = _get_bb_job(job_ptr);
 	if (bb_job == NULL) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return rc;
 	}
 
 	if (!_have_dw_cmd_opts(bb_job)) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return rc;
 	}
 
@@ -2970,7 +2971,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	else
 		timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	hash_inx = job_ptr->job_id % 10;
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
@@ -3056,9 +3057,9 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 
 	/* Clean-up */
 	if (rc != SLURM_SUCCESS) {
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job_del(&bb_state, job_ptr->job_id);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 
 	xfree(hash_dir);
@@ -3087,12 +3088,12 @@ extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
 		      __func__, job_ptr->job_id);
 	}
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if ((bb_job = _get_bb_job(job_ptr))) {
 		tres_cnt[bb_state.tres_pos] =
 			bb_job->total_size / (1024 * 1024);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 }
 
 /*
@@ -3112,9 +3113,9 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 		return est_start;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if ((bb_job = _get_bb_job(job_ptr)) == NULL) {
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return est_start;
 	}
 
@@ -3141,7 +3142,7 @@ extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
 	} else {	/* Allocation or staging in progress */
 		est_start++;
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return est_start;
 }
@@ -3158,7 +3159,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	bb_job_t *bb_job;
 	int rc;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s", plugin_type,  __func__);
 
@@ -3205,7 +3206,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			break;
 	}
 	list_iterator_destroy(job_iter);
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	FREE_NULL_LIST(job_candidates);
 
 	return SLURM_SUCCESS;
@@ -3233,7 +3234,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 	if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
 		return -1;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s test_only:%d",
 		     plugin_type, __func__,
@@ -3263,7 +3264,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		rc = -1;
 	}
 
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
 }
@@ -3296,7 +3297,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s",
 		     plugin_type, __func__,
@@ -3311,7 +3312,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			xstrdup("Could not find burst buffer record");
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -3322,7 +3323,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			xstrdup("Error managing persistent burst buffers");
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -3331,7 +3332,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		   job_ptr->job_id);
 	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 	bb_job->state = BB_STATE_RUNNING;
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
 			    job_ptr->job_id)) {
@@ -3424,7 +3425,7 @@ static void *_start_pre_run(void *x)
 	END_TIMER;
 
 	lock_slurmctld(job_write_lock);
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
 	if (job_ptr) {
 		jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf));
@@ -3454,7 +3455,7 @@ static void *_start_pre_run(void *x)
 	} else {
 		prolog_running_decr(job_ptr);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	if (run_kill_job)
 		_kill_job(job_ptr);
 	unlock_slurmctld(job_write_lock);
@@ -3479,7 +3480,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return SLURM_SUCCESS;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -3493,7 +3494,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
 		bb_job->state = BB_STATE_POST_RUN;
 		_queue_stage_out(bb_job);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -3515,7 +3516,7 @@ extern int bb_p_job_test_post_run(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -3535,7 +3536,7 @@ extern int bb_p_job_test_post_run(struct job_record *job_ptr)
 			rc =  0;
 		}
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
 }
@@ -3557,7 +3558,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return 1;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -3577,7 +3578,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
 			rc =  0;
 		}
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
 }
@@ -3593,7 +3594,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 	bb_alloc_t *bb_alloc;
 	char jobid_buf[32];
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.debug_flag) {
 		info("%s: %s: %s", plugin_type, __func__,
 		     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -3617,7 +3618,7 @@ extern int bb_p_job_cancel(struct job_record *job_ptr)
 		}
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -3914,12 +3915,12 @@ static void *_create_persistent(void *x)
 	script_argv[9] = xstrdup("-C");		/* configuration */
 	xstrfmtcat(script_argv[10], "%s:%"PRIu64"",
 		   create_args->pool, create_args->size);
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (bb_state.bb_config.other_timeout)
 		timeout = bb_state.bb_config.other_timeout * 1000;
 	else
 		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	i = 11;
 	if (create_args->access) {
 		script_argv[i++] = xstrdup("-a");
@@ -3958,11 +3959,11 @@ static void *_create_persistent(void *x)
 				   plugin_type, __func__, resp_msg);
 			resp_msg = NULL;
 		}
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
 				 create_args->name, BB_STATE_PENDING, 0);
 		bb_state.last_update_time = time(NULL);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else if (resp_msg && strstr(resp_msg, "created")) {
 		assoc_mgr_lock_t assoc_locks =
@@ -3974,7 +3975,7 @@ static void *_create_persistent(void *x)
 			error("%s: unable to find job record for job %u",
 			      __func__, create_args->job_id);
 		}
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
 				 create_args->name, BB_STATE_ALLOCATED,
 				 create_args->size);
@@ -4029,7 +4030,7 @@ static void *_create_persistent(void *x)
 		(void) bb_post_persist_create(job_ptr, bb_alloc, &bb_state);
 		bb_state.last_update_time = time(NULL);
 		assoc_mgr_unlock(&assoc_locks);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	}
 	xfree(resp_msg);
@@ -4050,7 +4051,7 @@ static void *_destroy_persistent(void *x)
 	uint32_t timeout;
 	DEF_TIMERS;
 
-	pthread_mutex_lock(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
 				    &bb_state);
 	if (!bb_alloc) {
@@ -4062,7 +4063,7 @@ static void *_destroy_persistent(void *x)
 		timeout = bb_state.bb_config.other_timeout * 1000;
 	else
 		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
-	pthread_mutex_unlock(&bb_state.bb_mutex);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4102,17 +4103,17 @@ static void *_destroy_persistent(void *x)
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, __func__, resp_msg);
 		}
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id, destroy_args->job_id,
 				 destroy_args->name, BB_STATE_PENDING, 0);
 		bb_state.last_update_time = time(NULL);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		unlock_slurmctld(job_write_lock);
 	} else {
 		assoc_mgr_lock_t assoc_locks =
 			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 			  NO_LOCK, NO_LOCK, NO_LOCK };
-		pthread_mutex_lock(&bb_state.bb_mutex);
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(destroy_args->user_id, destroy_args->job_id,
 				 destroy_args->name, BB_STATE_DELETED, 0);
 
@@ -4131,7 +4132,7 @@ static void *_destroy_persistent(void *x)
 			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 		}
 		bb_state.last_update_time = time(NULL);
-		pthread_mutex_unlock(&bb_state.bb_mutex);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);

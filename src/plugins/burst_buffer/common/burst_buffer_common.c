@@ -917,7 +917,7 @@ extern void bb_sleep(bb_state_t *state_ptr, int add_secs)
 
 	ts.tv_sec  = tv.tv_sec + add_secs;
 	ts.tv_nsec = tv.tv_usec * 1000;
-	pthread_mutex_lock(&state_ptr->term_mutex);
+	slurm_mutex_lock(&state_ptr->term_mutex);
 	if (!state_ptr->term_flag) {
 		pthread_cond_timedwait(&state_ptr->term_cond,
 				       &state_ptr->term_mutex, &ts);
@@ -1074,7 +1074,7 @@ extern int bb_proc_count(void)
 {
 	int cnt;
 
-	pthread_mutex_lock(&proc_count_mutex);
+	slurm_mutex_lock(&proc_count_mutex);
 	cnt = child_proc_count;
 	pthread_mutex_unlock(&proc_count_mutex);
 
@@ -1125,7 +1125,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			return resp;
 		}
 	}
-	pthread_mutex_lock(&proc_count_mutex);
+	slurm_mutex_lock(&proc_count_mutex);
 	child_proc_count++;
 	pthread_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
@@ -1162,7 +1162,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 			close(pfd[1]);
 		}
 		error("%s: fork(): %m", __func__);
-		pthread_mutex_lock(&proc_count_mutex);
+		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		pthread_mutex_unlock(&proc_count_mutex);
 	} else if (max_wait != -1) {
@@ -1224,7 +1224,7 @@ extern char *bb_run_script(char *script_type, char *script_path,
 		killpg(cpid, SIGKILL);
 		waitpid(cpid, status, 0);
 		close(pfd[0]);
-		pthread_mutex_lock(&proc_count_mutex);
+		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		pthread_mutex_unlock(&proc_count_mutex);
 	} else {

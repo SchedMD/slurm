@@ -1755,7 +1755,8 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	buflen = PW_BUF_SIZE;
 #if defined(_SC_GETPW_R_SIZE_MAX)
 	ii = sysconf(_SC_GETPW_R_SIZE_MAX);
-	buflen = MAX(buflen, ii);
+	if (ii > buflen)
+		buflen = ii;
 #endif
 	buf = xmalloc(buflen);
 	while (1) {
