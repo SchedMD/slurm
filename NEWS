@@ -108,6 +108,9 @@ documents those changes that are of interest to users and administrators.
  -- If scancel is operating on large number of jobs and RPC responses from
     slurmctld daemon are slow then introduce a delay in sending the cancel job
     requests from scancel in order to reduce load on slurmctld.
+ -- If updating the number of cpus as well as tasks at the same time fix
+ -- Remove redundant logic when updating a job's task count.
+ -- MySQL - Fix querying jobs with reservations when the id's have rolled.
 
 * Changes in Slurm 15.08.7
 ==========================
