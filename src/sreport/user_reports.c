@@ -82,8 +82,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	if (!assoc_cond->cluster_list)
 		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	if (cluster_flag)
-		slurm_addto_char_list(assoc_cond->cluster_list,
-				      xstrdup(cluster_flag));
+		slurm_addto_char_list(assoc_cond->cluster_list, cluster_flag);
 
 	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i]);
