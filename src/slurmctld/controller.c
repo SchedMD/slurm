@@ -68,6 +68,7 @@
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
+#include "src/common/knl.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -452,6 +453,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize job_submit plugin");
 	if (ext_sensors_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize ext_sensors plugin");
+	if (slurm_knl_g_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize KNL plugin");	
 	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize switch plugin");
 
@@ -689,6 +692,7 @@ int main(int argc, char *argv[])
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	slurm_knl_g_fini();
 	ext_sensors_fini();
 	gres_plugin_fini();
 	job_submit_plugin_fini();

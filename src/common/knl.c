@@ -62,10 +62,31 @@
 #include "slurm/slurm.h"
 #include "src/common/knl.h"
 #include "src/common/parse_config.h"
+#include "src/common/plugin.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/*
+ * WARNING:  Do not change the order of these fields or add additional
+ * fields at the beginning of the structure.  If you do, KNL plugins will stop
+ * working.  If you need to add fields, add them to the end of the structure.
+ */
+typedef struct slurm_knl_ops {
+	int	(*status) (char *node_list);
+	int	(*boot)	  (char *node_list, char *mcdram_type, char *numa_type);
+} slurm_knl_ops_t;
+
+/*
+ * These strings must be kept in the same order as the fields
+ * declared for slurm_knl_ops_t.
+ */
+static const char *syms[] = {
+	"slurm_knl_g_status",
+	"slurm_knl_g_boot"
+};
 
 static s_p_options_t knl_conf_file_options[] = {
 	{"AvailNUMA", S_P_STRING},
@@ -74,6 +95,13 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"DefaultMCDRAM", S_P_STRING},
 	{NULL}
 };
+
+static int g_context_cnt = -1;
+static slurm_knl_ops_t *ops = NULL;
+static plugin_context_t **g_context = NULL;
+static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static char *knl_plugin_list = NULL;
+static bool init_run = false;
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
 {
@@ -354,22 +382,112 @@ extern char *knl_numa_str(uint16_t numa_num)
 
 }
 
-extern int slurm_knl_init(char *knl_type)
+extern int slurm_knl_g_init(void)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	char *last = NULL, *names;
+	char *plugin_type = "knl";
+	char *type;
+
+	if (init_run && (g_context_cnt >= 0))
+		return rc;
+
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt >= 0)
+		goto fini;
+
+	knl_plugin_list = slurm_get_knl_plugins();
+	g_context_cnt = 0;
+	if ((knl_plugin_list == NULL) || (knl_plugin_list[0] == '\0'))
+		goto fini;
+
+	names = knl_plugin_list;
+	while ((type = strtok_r(names, ",", &last))) {
+		xrealloc(ops, (sizeof(slurm_knl_ops_t) * (g_context_cnt + 1)));
+		xrealloc(g_context,
+			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
+		if (strncmp(type, "knl/", 4) == 0)
+			type += 4; /* backward compatibility */
+		type = xstrdup_printf("knl/%s", type);
+		g_context[g_context_cnt] = plugin_context_create(
+			plugin_type, type, (void **)&ops[g_context_cnt],
+			syms, sizeof(syms));
+		if (!g_context[g_context_cnt]) {
+			error("cannot create %s context for %s",
+			      plugin_type, type);
+			rc = SLURM_ERROR;
+			xfree(type);
+			break;
+		}
+
+		xfree(type);
+		g_context_cnt++;
+		names = NULL; /* for next strtok_r() iteration */
+	}
+	init_run = true;
+
+fini:
+	slurm_mutex_unlock(&g_context_lock);
+
+	if (rc != SLURM_SUCCESS)
+		slurm_knl_g_fini();
+
+	return rc;
 }
 
-extern int slurm_knl_fini(void)
+extern int slurm_knl_g_fini(void)
 {
-	return SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt < 0)
+		goto fini;
+
+	init_run = false;
+	for (i = 0; i < g_context_cnt; i++) {
+		if (g_context[i]) {
+			j = plugin_context_destroy(g_context[i]);
+			if (j != SLURM_SUCCESS)
+				rc = j;
+		}
+	}
+	xfree(ops);
+	xfree(g_context);
+	xfree(knl_plugin_list);
+	g_context_cnt = -1;
+
+fini:	slurm_mutex_unlock(&g_context_lock);
+	return rc;
 }
 
-extern int slurm_knl_status(char *node_list)
+extern int slurm_knl_g_status(char *node_list)
 {
-	return SLURM_SUCCESS;
+	DEF_TIMERS;
+	int i, rc;
+
+	START_TIMER;
+	rc = slurm_knl_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].status))(node_list);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("slurm_knl_g_status");
+
+	return rc;
 }
 
-extern int slurm_knl_boot(char *node_list, char *mcdram_type, char *numa_type)
+extern int slurm_knl_g_boot(char *node_list, char *mcdram_type, char *numa_type)
 {
-	return SLURM_SUCCESS;
+	DEF_TIMERS;
+	int i, rc;
+
+	START_TIMER;
+	rc = slurm_knl_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].boot))(node_list, mcdram_type, numa_type);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("slurm_knl_g_boot");
+
+	return rc;
 }

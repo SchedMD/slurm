@@ -110,12 +110,12 @@ extern char *knl_numa_str(uint16_t numa_num);
  *  KNL node management functions, uses plugin
 \*****************************************************************************/
 
-extern int slurm_knl_init(char *knl_type);
+extern int slurm_knl_g_init(void);
 
-extern int slurm_knl_fini(void);
+extern int slurm_knl_g_fini(void);
 
-extern int slurm_knl_status(char *node_list);
+extern int slurm_knl_g_status(char *node_list);
 
-extern int slurm_knl_boot(char *node_list, char *mcdram_type, char *numa_type);
+extern int slurm_knl_g_boot(char *node_list, char *mcdram_type,char *numa_type);
 
 #endif /* !_SLURM_COMMON_KNL_H */

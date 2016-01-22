@@ -144,7 +144,7 @@ extern int job_submit_plugin_init(void)
 
 		xfree(type);
 		g_context_cnt++;
-		names = NULL; /* for next iteration */
+		names = NULL; /* for next strtok_r() iteration */
 	}
 	init_run = true;
 
