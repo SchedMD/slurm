@@ -1417,6 +1417,24 @@ char *slurm_get_job_submit_plugins(void)
 	return job_submit_plugins;
 }
 
+/* slurm_get_knl_plugins
+ * get knl_plugins from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - knl_plugins, MUST be xfreed by caller
+ */
+char *slurm_get_knl_plugins(void)
+{
+	char *knl_plugins = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		knl_plugins = xstrdup(conf->knl_plugins);
+		slurm_conf_unlock();
+	}
+	return knl_plugins;
+}
+
 /* slurm_get_slurmctld_plugstack
  * get slurmctld_plugstack from slurmctld_conf object from
  * slurmctld_conf object

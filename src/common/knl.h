@@ -39,6 +39,10 @@
 
 #include "slurm/slurm.h"
 
+/*****************************************************************************\
+ *  KNL configuration file managment functions
+\*****************************************************************************/
+
 /*
  * Parse knl.conf file and return available and default modes
  * avail_mcdram IN - available MCDRAM modes
@@ -101,5 +105,17 @@ extern uint16_t knl_numa_parse(char *numa_str, char *sep);
  * Caller must free return value
  */
 extern char *knl_numa_str(uint16_t numa_num);
+
+/*****************************************************************************\
+ *  KNL node management functions, uses plugin
+\*****************************************************************************/
+
+extern int slurm_knl_init(char *knl_type);
+
+extern int slurm_knl_fini(void);
+
+extern int slurm_knl_status(char *node_list);
+
+extern int slurm_knl_boot(char *node_list, char *mcdram_type, char *numa_type);
 
 #endif /* !_SLURM_COMMON_KNL_H */

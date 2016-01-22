@@ -1244,6 +1244,18 @@ The default value is 30 seconds.
 The value may not exceed 65533.
 
 .TP
+\fBKNLPlugins\fR
+Identifies the plugins to be used for support of Intel Knights Landing
+processors (KNL). These plugins can status the processor for NUMA and MCDRAM
+mode, reboot the node into different modes, etc.
+Acceptable values at present include:
+.RS
+.TP 20
+\fBknl/cray\fR
+used only for Cray systems
+.RE
+
+.TP
 \fBLaunchParameters\fR
 Identifies options to the job launch plugin.
 Acceptable values include:

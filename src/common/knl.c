@@ -353,3 +353,23 @@ extern char *knl_numa_str(uint16_t numa_num)
 	return numa_str;
 
 }
+
+extern int slurm_knl_init(char *knl_type)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_knl_fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_knl_status(char *node_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_knl_boot(char *node_list, char *mcdram_type, char *numa_type)
+{
+	return SLURM_SUCCESS;
+}
