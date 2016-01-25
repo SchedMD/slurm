@@ -20244,15 +20244,6 @@ $as_echo "not set" >&6; };
 
 
 
-	# This is here to avoid a bug in the gcc compiler 3.4.6
-	# Without this flag there is a bug when pointing to other functions
-	# and then using them.  It is also advised to set the flag if there
-	# are goto statements you may get better performance.
-	if test "$GCC" = yes; then
-		CFLAGS="$CFLAGS -fno-gcse"
-	fi
-
-
   _x_ac_ofed_dirs="/usr /usr/local"
   _x_ac_ofed_libs="lib64 lib"
 
