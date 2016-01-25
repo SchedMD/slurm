@@ -3317,7 +3317,9 @@ static void *_wait_boot(void *arg)
 		unlock_slurmctld(job_write_lock);
 	} while (wait_node_cnt);
 
+	lock_slurmctld(job_write_lock);
 	prolog_running_decr(job_ptr);
+	unlock_slurmctld(job_write_lock);
 
 	return NULL;
 }
