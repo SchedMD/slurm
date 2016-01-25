@@ -286,12 +286,12 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " Default=YES");
 
 		if (p[i].def_mem_per_cpu & MEM_PER_CPU) {
-        	        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
-        	                fprintf(fp, "DefMemPerCPU=%"PRIu32"",
-        	                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
-        	} else if (p[i].def_mem_per_cpu != 0)
-        	        fprintf(fp, "DefMemPerNode=%"PRIu32"",
-        	                p[i].def_mem_per_cpu);
+		        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
+		                fprintf(fp, "DefMemPerCPU=%"PRIu32"",
+		                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
+		} else if (p[i].def_mem_per_cpu != 0)
+		        fprintf(fp, "DefMemPerNode=%"PRIu32"",
+		                p[i].def_mem_per_cpu);
 
 		if (!p[i].allow_accounts && p[i].deny_accounts)
 			fprintf(fp, "DenyAccounts=%s", p[i].deny_accounts);
@@ -301,8 +301,8 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].default_time != (uint32_t) NO_VAL) {
 			if (p[i].default_time == INFINITE)
-	                	fprintf(fp, "DefaultTime=UNLIMITED");
-	        	else {
+				fprintf(fp, "DefaultTime=UNLIMITED");
+			else {
 		                char time_line[32];
 		                secs2time_str(p[i].default_time * 60, time_line,
 					      sizeof(time_line));
@@ -326,54 +326,54 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	                fprintf(fp, " LLN=YES");
 
 		if (p[i].max_cpus_per_node != INFINITE)
-                	fprintf(fp, " MaxCPUsPerNode=%"PRIu32"",
+			fprintf(fp, " MaxCPUsPerNode=%"PRIu32"",
 				p[i].max_cpus_per_node);
 
 		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
-        	        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
-        	                fprintf(fp, " MaxMemPerCPU=%"PRIu32"",
-        	                        p[i].max_mem_per_cpu & (~MEM_PER_CPU));
-        	} else if (p[i].max_mem_per_cpu != 0)
-        	        fprintf(fp, " MaxMemPerNode=%"PRIu32"",
+		        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
+		                fprintf(fp, " MaxMemPerCPU=%"PRIu32"",
+		                        p[i].max_mem_per_cpu & (~MEM_PER_CPU));
+		} else if (p[i].max_mem_per_cpu != 0)
+		        fprintf(fp, " MaxMemPerNode=%"PRIu32"",
 				p[i].max_mem_per_cpu);
 
 		if (p[i].max_nodes != INFINITE) {
 			char tmp1[16];
-        	        if (cluster_flags & CLUSTER_FLAG_BG)
-        	                convert_num_unit((float)p[i].max_nodes, tmp1,
-        	                                 sizeof(tmp1), UNIT_NONE,
-        	                                 CONVERT_NUM_UNIT_EXACT);
-        	        else
-        	                snprintf(tmp1, sizeof(tmp1), "%u",
+		        if (cluster_flags & CLUSTER_FLAG_BG)
+		                convert_num_unit((float)p[i].max_nodes, tmp1,
+		                                 sizeof(tmp1), UNIT_NONE,
+		                                 CONVERT_NUM_UNIT_EXACT);
+		        else
+		                snprintf(tmp1, sizeof(tmp1), "%u",
 					 p[i].max_nodes);
 
-        	        fprintf(fp, "MaxNodes=%s", tmp1);
-        	}
+		        fprintf(fp, "MaxNodes=%s", tmp1);
+		}
 
 		if (p[i].max_time != INFINITE) {
-                	char time_line[32];
-                	secs2time_str(p[i].max_time * 60, time_line,
-                	              sizeof(time_line));
-                	fprintf(fp, " MaxTime=%s", time_line);
-        	}
+			char time_line[32];
+			secs2time_str(p[i].max_time * 60, time_line,
+			              sizeof(time_line));
+			fprintf(fp, " MaxTime=%s", time_line);
+		}
 
 		if (p[i].min_nodes != 1) {
 			char tmp1[16];
 			if (cluster_flags & CLUSTER_FLAG_BG)
-        		        convert_num_unit((float)p[i].min_nodes, tmp1,
+			        convert_num_unit((float)p[i].min_nodes, tmp1,
 						 sizeof(tmp1), UNIT_NONE,
-        		                         CONVERT_NUM_UNIT_EXACT);
-        		else
-        		        snprintf(tmp1, sizeof(tmp1), "%u",
+			                         CONVERT_NUM_UNIT_EXACT);
+			else
+			        snprintf(tmp1, sizeof(tmp1), "%u",
 					 p[i].min_nodes);
-        		fprintf(fp, " MinNodes=%s", tmp1);
+			fprintf(fp, " MinNodes=%s", tmp1);
 		}
 
 		if (p[i].nodes != NULL)
 			fprintf(fp, " Nodes=%s", p[i].nodes);
 
-        	if (p[i].preempt_mode != (uint16_t) NO_VAL)
-        		fprintf(fp, " PreemptMode=%s",
+		if (p[i].preempt_mode != (uint16_t) NO_VAL)
+			fprintf(fp, " PreemptMode=%s",
 				preempt_mode_string(p[i].preempt_mode));
 
 		if (p[i].priority != 1)
@@ -389,18 +389,18 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	                fprintf(fp, " RootOnly=YES");
 
 		if (p[i].cr_type & CR_CORE)
-                	fprintf(fp, " SelectTypeParameters=CR_CORE");
-        	else if (p[i].cr_type & CR_SOCKET)
-                	fprintf(fp, " SelectTypeParameters=CR_SOCKET");
+			fprintf(fp, " SelectTypeParameters=CR_CORE");
+		else if (p[i].cr_type & CR_SOCKET)
+			fprintf(fp, " SelectTypeParameters=CR_SOCKET");
 
 		force = p[i].max_share & SHARED_FORCE;
-        	val = p[i].max_share & (~SHARED_FORCE);
-        	if (val == 0)
-        	        fprintf(fp, " Shared=EXCLUSIVE");
-        	else if (force) {
-        	        fprintf(fp, " Shared=FORCE:%u", val);
-        	} else if (val != 1)
-        	        fprintf(fp, " Shared=YES:%u", val);
+		val = p[i].max_share & (~SHARED_FORCE);
+		if (val == 0)
+		        fprintf(fp, " Shared=EXCLUSIVE");
+		else if (force) {
+		        fprintf(fp, " Shared=FORCE:%u", val);
+		} else if (val != 1)
+		        fprintf(fp, " Shared=YES:%u", val);
 
 		if (p[i].state_up == PARTITION_UP)
 	                fprintf(fp, " State=UP");
@@ -414,8 +414,8 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	                fprintf(fp, " State=UNKNOWN");
 
 		if (p[i].billing_weights_str != NULL)
-                	fprintf(fp, " TRESBillingWeights=%s",
-                	        p[i].billing_weights_str);
+			fprintf(fp, " TRESBillingWeights=%s",
+			        p[i].billing_weights_str);
 
 		fprintf(fp, "\n");
 	}
@@ -851,7 +851,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_acct_gather_type);
 	list_append(ret_list, key_pair);
 
- 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("JobAcctGatherParams");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_acct_gather_params);
 	list_append(ret_list, key_pair);
