@@ -215,6 +215,10 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
+		/* These messages don't have a return message, but if
+		 * we got here things worked out so make note of the
+		 * list of nodes as success.
+		 */
 		if ((fwd_msg->header.msg_type == REQUEST_SHUTDOWN) ||
 		    (fwd_msg->header.msg_type == REQUEST_RECONFIGURE) ||
 		    (fwd_msg->header.msg_type == REQUEST_REBOOT_NODES)) {
