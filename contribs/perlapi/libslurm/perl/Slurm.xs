@@ -1564,7 +1564,7 @@ HV *
 slurm_job_step_get_pids(slurm_t self, uint32_t job_id, uint32_t step_id, char *nodelist=NULL)
 	PREINIT:
 		int rc;
-		job_step_pids_response_msg_t *resp_msg;
+		job_step_pids_response_msg_t *resp_msg = NULL;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
