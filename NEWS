@@ -112,6 +112,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove redundant logic when updating a job's task count.
  -- MySQL - Fix querying jobs with reservations when the id's have rolled.
  -- Perl - Fix use of uninitialized variable in slurm_job_step_get_pids.
+ -- Launch batch job requsting --reboot after the boot completes.
 
 * Changes in Slurm 15.08.7
 ==========================
