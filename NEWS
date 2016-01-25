@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
  -- Add reservation flag of "purge_comp" which will purge an advanced
     reservation once it has no more active (pending, suspended or running) jobs.
  -- Add new configuration parameter "KNLPlugins" and plugin infrastructure.
+ -- Add optional job "features" to node reboot RPC.
 
 * Changes in Slurm 15.08.8
 ==========================

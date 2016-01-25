@@ -651,6 +651,7 @@ static int _reboot_nodes(char *node_list)
 
 	slurm_msg_t_init(&msg);
 
+	bzero(&req, sizeof(reboot_msg_t));
 	req.node_list = node_list;
 	msg.msg_type = REQUEST_REBOOT_NODES;
 	msg.data = &req;

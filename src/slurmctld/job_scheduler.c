@@ -3306,11 +3306,13 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	pthread_t thread_id_prolog;
 	pthread_attr_t thread_attr_prolog;
 	agent_arg_t *reboot_agent_args = NULL;
+	reboot_msg_t *reboot_msg;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 
 	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
+	    (job_ptr->details == NULL) ||
 	    (slurmctld_conf.reboot_program == NULL) ||
 	    (slurmctld_conf.reboot_program[0] == '\0'))
 		return SLURM_SUCCESS;
@@ -3320,6 +3322,9 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_agent_args->retry = 0;
 	reboot_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	reboot_agent_args->hostlist = hostlist_create(NULL);
+	reboot_msg = xmalloc(sizeof(reboot_msg_t));
+	reboot_msg->features = xstrdup(job_ptr->details->features);
+	reboot_agent_args->msg_args = reboot_msg;
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))

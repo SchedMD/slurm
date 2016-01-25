@@ -680,6 +680,7 @@ typedef struct epilog_complete_msg {
 } epilog_complete_msg_t;
 
 typedef struct reboot_msg {
+	char *features;
 	char *node_list;
 } reboot_msg_t;
 

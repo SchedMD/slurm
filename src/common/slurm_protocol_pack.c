@@ -10328,10 +10328,20 @@ static void
 _pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
 		 uint16_t protocol_version)
 {
-	if (msg && msg->node_list)
-		packstr(msg->node_list, buffer);
-	else
-		packnull(buffer);
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		if (msg) {
+			packstr(msg->features, buffer);
+			packstr(msg->node_list, buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (msg)
+			packstr(msg->node_list, buffer);
+		else
+			packnull(buffer);
+	}
 }
 
 static int
@@ -10344,7 +10354,12 @@ _unpack_reboot_msg(reboot_msg_t ** msg_ptr, Buf buffer,
 	msg = xmalloc(sizeof(reboot_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

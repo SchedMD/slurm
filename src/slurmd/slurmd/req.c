@@ -2145,7 +2145,8 @@ _rpc_shutdown(slurm_msg_t *msg)
 static void
 _rpc_reboot(slurm_msg_t *msg)
 {
-	char *reboot_program, *sp;
+	char *reboot_program, *cmd = NULL, *sp;
+	reboot_msg_t *reboot_msg;
 	slurm_ctl_conf_t *cfg;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
 					     slurm_get_auth_info());
@@ -2163,13 +2164,20 @@ _rpc_reboot(slurm_msg_t *msg)
 				sp = xstrndup(reboot_program,
 					      (sp - reboot_program));
 			else
-			    sp = xstrdup(reboot_program);
+				sp = xstrdup(reboot_program);
+			reboot_msg = (reboot_msg_t *) msg->data;
+			if (reboot_msg && reboot_msg->features) {
+				xstrfmtcat(cmd, "%s %s",
+					   sp, reboot_msg->features);
+			} else
+				cmd = xstrdup(sp);
 			if (access(sp, R_OK | X_OK) < 0)
 				error("Cannot run RebootProgram [%s]: %m", sp);
-			else if ((exit_code = system(reboot_program)))
+			else if ((exit_code = system(cmd)))
 				error("system(%s) returned %d", reboot_program,
 				      exit_code);
 			xfree(sp);
+			xfree(cmd);
 		} else
 			error("RebootProgram isn't defined in config");
 		slurm_conf_unlock();
