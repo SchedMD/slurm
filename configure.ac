@@ -429,7 +429,6 @@ AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile
-		 config.xml
 		 auxdir/Makefile
 		 contribs/Makefile
 		 contribs/cray/Makefile
