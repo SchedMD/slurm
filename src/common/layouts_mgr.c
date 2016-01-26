@@ -630,10 +630,7 @@ int _layouts_entity_get_kv(layout_t* l, entity_t* e, char* key, void* value,
 		return SLURM_ERROR;
 	case L_T_STRING:
 		pstr = (char**) value;
-		if (data)
-			*pstr = xstrdup(data);
-		else
-			*pstr = NULL;
+		*pstr = xstrdup(data);
 		return SLURM_SUCCESS;
 	case L_T_CUSTOM:
 		/* TBD : add a custom_get call */
