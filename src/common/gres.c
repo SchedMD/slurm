@@ -3904,8 +3904,6 @@ extern void gres_plugin_job_clear(List job_gres_list)
 	(void) gres_plugin_init();
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		if (!job_gres_ptr)
-			continue;
 		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
 		for (i = 0; i < job_state_ptr->node_cnt; i++) {
 			if (job_state_ptr->gres_bit_alloc) {
