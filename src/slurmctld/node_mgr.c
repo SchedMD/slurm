@@ -2404,8 +2404,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		   || reg_msg->status == ESLURMD_SETUP_ENVIRONMENT_ERROR) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
 			char *reason;
-			error("\
-%s: Prolog or job env setup failure on node %s, draining the node",
+			error("%s: Prolog or job env setup failure on node %s, "
+			      "draining the node",
 			      __func__, reg_msg->node_name);
 			if (reg_msg->status == ESLURMD_PROLOG_FAILED)
 				reason = "Prolog error";
@@ -2490,11 +2490,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->reason = xstrdup(
 					"Node unexpectedly rebooted");
 			}
-			info("%s: Node %s unexpectedly rebooted boot_time %d "
-			     "last response %d",
+			info("%s: Node %s unexpectedly rebooted boot_time=%u "
+			     "last response=%u",
 			     __func__, reg_msg->node_name,
-			     (int)node_ptr->boot_time,
-			     (int)node_ptr->last_response);
+			     (uint32_t)node_ptr->boot_time,
+			     (uint32_t)node_ptr->last_response);
 			_make_node_down(node_ptr, now);
 			kill_running_job_by_node_name(reg_msg->node_name);
 			last_node_update = now;
@@ -3125,9 +3125,12 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	 * version or munge issue or whatever) so we don't kill
 	 * any running jobs.  RESPONSE_FORWARD_FAILED means we
 	 * couldn't contact the slurmd.
+	 * last_response could be in the future if boot in progress.
 	 */
-	if (resp_type != RESPONSE_FORWARD_FAILED)
+	if ((resp_type != RESPONSE_FORWARD_FAILED) &&
+	    (node_ptr->last_response < (msg_time - 1))) {
 		node_ptr->last_response = msg_time - 1;
+	}
 
 	if (!IS_NODE_DOWN(node_ptr)) {
 		/* Logged by node_no_resp_msg() on periodic basis */
