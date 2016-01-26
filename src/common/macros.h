@@ -150,77 +150,51 @@
 #  define __NORETURN_ATTR			((void)0)
 #endif /* __GNUC__ */
 
-/* the following is taken directly from glib 2.0, with minor changes */
-
-/* Provide simple macro statement wrappers (adapted from Perl):
- *  _STMT_START { statements; } _STMT_END;
- *  can be used as a single statement, as in
- *  if (x) _STMT_START { ... } _STMT_END; else ...
- *
- *  For gcc we will wrap the statements within `({' and `})' braces.
- *  For SunOS they will be wrapped within `if (1)' and `else (void) 0',
- *  and otherwise within `do' and `while (0)'.
- */
-#if !(defined (_STMT_START) && defined (_STMT_END))
-#  if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__cplusplus)
-#    define _STMT_START        (void)(
-#    define _STMT_END          )
-#  else
-#    if (defined (sun) || defined (__sun__))
-#      define _STMT_START      if (1)
-#      define _STMT_END        else (void)0
-#    else
-#      define _STMT_START      do
-#      define _STMT_END        while (0)
-#    endif
-#  endif
-#endif
-
 #ifdef WITH_PTHREADS
 
 #  define slurm_mutex_init(mutex)                                             \
-     _STMT_START {                                                            \
+     do {                                                                     \
          int err = pthread_mutex_init(mutex, NULL);                           \
          if (err) {                                                           \
              errno = err;                                                     \
              error("%s:%d %s: pthread_mutex_init(): %m",                      \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
          }                                                                    \
-     } _STMT_END
+     } while (0)
 
 #  define slurm_mutex_destroy(mutex)                                          \
-     _STMT_START {                                                            \
+     do {                                                                     \
          int err = pthread_mutex_destroy(mutex);                              \
          if (err) {                                                           \
              errno = err;                                                     \
              error("%s:%d %s: pthread_mutex_destroy(): %m",                   \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
          }                                                                    \
-     } _STMT_END
+     } while (0)
 
 #  define slurm_mutex_lock(mutex)                                             \
-     _STMT_START {                                                            \
+     do {                                                                     \
          int err = pthread_mutex_lock(mutex);                                 \
          if (err) {                                                           \
              errno = err;                                                     \
              error("%s:%d %s: pthread_mutex_lock(): %m",                      \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
          }                                                                    \
-     } _STMT_END
+     } while (0)
 
 #  define slurm_mutex_unlock(mutex)                                           \
-     _STMT_START {                                                            \
+     do {                                                                     \
          int err = pthread_mutex_unlock(mutex);                               \
          if (err) {                                                           \
              errno = err;                                                     \
              error("%s:%d %s: pthread_mutex_unlock(): %m",                    \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
          }                                                                    \
-     } _STMT_END
+     } while (0)
 
 #  ifdef PTHREAD_SCOPE_SYSTEM
 #  define slurm_attr_init(attr)                                               \
-     _STMT_START {                                                            \
+     do {                                                                     \
 	if (pthread_attr_init(attr))                                          \
 		fatal("pthread_attr_init: %m");                               \
 	/* we want 1:1 threads if there is a choice */                        \
@@ -228,22 +202,22 @@
 		error("pthread_attr_setscope: %m");                           \
 	if (pthread_attr_setstacksize(attr, 1024*1024))                       \
 		error("pthread_attr_setstacksize: %m");                       \
-     } _STMT_END
+     } while (0)
 #  else
 #  define slurm_attr_init(attr)                                               \
-     _STMT_START {                                                            \
+     do {                                                                     \
         if (pthread_attr_init(attr))                                          \
                 fatal("pthread_attr_init: %m");                               \
         if (pthread_attr_setstacksize(attr, 1024*1024))                       \
                 error("pthread_attr_setstacksize: %m");                       \
-     } _STMT_END
+     } while (0)
 #  endif
 
 #  define slurm_attr_destroy(attr)					      \
-     _STMT_START {                                                            \
+     do {                                                                     \
         if (pthread_attr_destroy(attr))                                       \
              error("pthread_attr_destroy failed, possible memory leak!: %m"); \
-     } _STMT_END
+     } while (0)
 
 #else /* !WITH_PTHREADS */
 
@@ -279,7 +253,7 @@
 /* Results strftime() are undefined if buffer too small
  * This variant returns a string of "####"... instead */
 #define slurm_strftime(s, max, format, tm)				\
-_STMT_START {								\
+do {									\
 	if (max > 0) {							\
 		char tmp_string[(max<256?256:max+1)];			\
 		if (strftime(tmp_string, sizeof(tmp_string), format, tm) == 0) \
@@ -287,7 +261,7 @@ _STMT_START {								\
 		tmp_string[max-1] = 0;					\
 		strncpy(s, tmp_string, max);				\
 	}								\
-} _STMT_END
+} while (0)
 
 /* There are places where we put NO_VAL or INFINITE into a float or double
  * Use fuzzy_equal below to test for those values rather than an comparision

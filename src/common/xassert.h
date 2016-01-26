@@ -53,10 +53,10 @@
 
 #else /* !NDEBUG */
 
-#  define xassert(__ex)  _STMT_START { \
+#  define xassert(__ex)  do { \
      (__ex) ? ((void)0) : \
      __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __CURRENT_FUNC__);\
-     } _STMT_END
+     } while (0)
 
 /*  This prints the assertion failed message to the slurm log facility
  *  (see log.h) and aborts the calling program

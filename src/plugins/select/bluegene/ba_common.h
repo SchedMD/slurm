@@ -46,13 +46,13 @@
 #define BUFSIZE 4096
 
 #define SWAP(a,b,t)				\
-	_STMT_START {				\
+	do {					\
 		(t) = (a);			\
 		(a) = (b);			\
 		(b) = (t);			\
-	} _STMT_END
+	} while (0)
 
-/* This is only used on L and P hense the 6 count */
+/* This is only used on L and P hence the 6 count */
 #define NUM_PORTS_PER_NODE 6
 
 extern int DIM_SIZE[HIGHEST_DIMENSIONS]; /* how many midplanes in
