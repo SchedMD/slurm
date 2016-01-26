@@ -100,6 +100,8 @@ documents those changes that are of interest to users and administrators.
     reservation once it has no more active (pending, suspended or running) jobs.
  -- Add new configuration parameter "KNLPlugins" and plugin infrastructure.
  -- Add optional job "features" to node reboot RPC.
+ -- Add slurmd "-b" option to report node rebooted at daemon start time. Used
+    for testing purposes.
 
 * Changes in Slurm 15.08.8
 ==========================

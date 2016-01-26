@@ -105,6 +105,7 @@
 #include "src/common/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 /* #define DEBUG_DETAIL	1 */	/* enable detailed debugging within SLURM */
 
@@ -308,17 +309,17 @@ extern int get_up_time(uint32_t *up_time)
 		*up_time = 0;
 		return errno;
 	}
-#if defined(_TEST_REBOOT)
-{
-	/* Make node look like it rebooted when slurmd started, for testing */
-	static uint32_t orig_uptime = 0;
-	if (orig_uptime == 0)
-		orig_uptime = info.uptime;
-	*up_time = info.uptime - orig_uptime;
-}
-#else
-	*up_time = info.uptime;
-#endif
+
+
+	if (conf->boot_time) {
+		/* Make node look like it rebooted when slurmd started */
+		static uint32_t orig_uptime = 0;
+		if (orig_uptime == 0)
+			orig_uptime = info.uptime;
+		*up_time = info.uptime - orig_uptime;
+	} else {
+		*up_time = info.uptime;
+	}
 #endif
 	return 0;
 }

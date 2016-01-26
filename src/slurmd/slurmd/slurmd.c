@@ -112,7 +112,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/slurmd_plugstack.h"
 
-#define GETOPT_ARGS	"cCd:Df:hL:Mn:N:vV"
+#define GETOPT_ARGS	"bcCd:Df:hL:Mn:N:vV"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -1297,6 +1297,9 @@ _process_cmdline(int ac, char **av)
 
 	while ((c = getopt(ac, av, GETOPT_ARGS)) > 0) {
 		switch (c) {
+		case 'b':
+			conf->boot_time = 1;
+			break;
 		case 'c':
 			conf->cleanstart = 1;
 			break;
@@ -1791,6 +1794,7 @@ _usage(void)
 {
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
+   -b          Report node reboot now.\n\
    -c          Force cleanup of slurmd shared memory.\n\
    -C          Print node configuration information and exit.\n\
    -d stepd    Pathname to the slurmstepd program.\n\
