@@ -929,7 +929,10 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				      "MaxTRES,MaxTRESPerN,MaxTRESMins,MaxW,"
 				      "MaxTRESPerUser,"
 				      "MaxJobsPerUser,"
-				      "MaxSubmitJobsPerUser,MinTRES");
+				      "MaxSubmitJobsPerUser,"
+				      "MaxTRESPerAcct,"
+				      "MaxJobsPerAcct,"
+				      "MaxSubmitJobsPerAcct,MinTRES");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
