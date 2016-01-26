@@ -2185,7 +2185,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
 	uint32_t node_flags;
-	time_t now = time(NULL);
+	time_t boot_req_time, now = time(NULL);
 	bool gang_flag = false;
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
@@ -2204,6 +2204,16 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	xfree(node_ptr->version);
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
+
+	if (IS_NODE_POWER_UP(node_ptr)) {
+		boot_req_time = node_ptr->last_response -
+				slurm_get_resume_timeout();
+		if (node_ptr->boot_time < boot_req_time) {
+			debug("Still waiting for boot of node %s",
+			      node_ptr->name);
+			return SLURM_SUCCESS;
+		}
+	}
 
 	if (cr_flag == NO_VAL) {
 		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
@@ -2379,12 +2389,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		last_node_update = now;
 	}
 
-	if (IS_NODE_NO_RESPOND(node_ptr)) {
-		if (IS_NODE_POWER_UP(node_ptr))
-			node_ptr->last_response = now;
+	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
+		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
-		last_node_update = time (NULL);
+		if (!is_node_in_maint_reservation(node_inx))
+			node_ptr->node_state &= (~NODE_STATE_MAINT);
+		last_node_update = now;
 	}
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
@@ -3004,8 +3015,9 @@ static void _node_did_resp(struct node_record *node_ptr)
 	node_inx = node_ptr - node_record_table_ptr;
 	/* Do not change last_response value (in the future) for nodes being
 	 *  booted so unexpected reboots are recognized */
-	if (IS_NODE_DOWN(node_ptr) &&
-	    !xstrcmp(node_ptr->reason, "Scheduled reboot")) {
+	if (IS_NODE_POWER_UP(node_ptr) ||
+	    (IS_NODE_DOWN(node_ptr) &&
+	     !xstrcmp(node_ptr->reason, "Scheduled reboot"))) {
 		boot_req_time = node_ptr->last_response -
 				slurm_get_resume_timeout();
 		if (node_ptr->boot_time < boot_req_time) {

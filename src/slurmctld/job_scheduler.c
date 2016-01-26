@@ -3336,6 +3336,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->last_response = now + resume_timeout;
 	}
