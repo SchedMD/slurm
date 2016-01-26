@@ -52,7 +52,9 @@
 #define xstrfmtcat(__p, __fmt, args...)	_xstrfmtcat(&(__p), __fmt, ## args)
 #define xmemcat(__p, __s, __e)          _xmemcat(&(__p), __s, __e)
 #define xstrsubstitute(__p, __pat, __rep) _xstrsubstitute(&(__p), __pat, __rep)
-#define xstrsubstituteall(__p, __pat, __rep) while (_xstrsubstitute(&(__p), __pat, __rep));
+#define xstrsubstituteall(__p, __pat, __rep)			\
+	while (_xstrsubstitute(&(__p), __pat, __rep))		\
+		;
 
 /*
 ** The following functions take a ptr to a string and expand the
