@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  node_info.c - get/print the node state information of slurm
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -128,13 +127,14 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 {
 	uint32_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
-	char load_str[32], mem_str[32], tmp_line[512], time_str[32], owner_str[32];
+	char time_str[32];
 	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
 	int total_used = node_ptr->cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t alloc_memory;
+	char *line_end = (one_liner) ? " " : "\n   ";
 
 	if (node_scaling)
 		cpus_per_node = node_ptr->cpus / node_scaling;
@@ -188,8 +188,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 
 	/****** Line 1 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "NodeName=%s ", node_ptr->name);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "NodeName=%s ", node_ptr->name);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 					  SELECT_NODEDATA_RACK_MP,
@@ -200,251 +199,179 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		}
 	}
 
-	if (node_ptr->arch) {
-		snprintf(tmp_line, sizeof(tmp_line), "Arch=%s ",
-			 node_ptr->arch);
-		xstrcat(out, tmp_line);
-	}
-	snprintf(tmp_line, sizeof(tmp_line), "CoresPerSocket=%u",
-		 node_ptr->cores);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	if (node_ptr->arch)
+		xstrfmtcat(out, "Arch=%s ", node_ptr->arch);
+
+	xstrfmtcat(out, "CoresPerSocket=%u", node_ptr->cores);
+
+	xstrcat(out, line_end);
 
 	/****** Line ******/
+	xstrfmtcat(out, "CPUAlloc=%u CPUErr=%u CPUTot=%u ",
+		   alloc_cpus, err_cpus, node_ptr->cpus);
+
 	if (node_ptr->cpu_load == NO_VAL)
-		strcpy(load_str, "N/A");
-	else {
-		snprintf(load_str, sizeof(load_str), "%.2f",
-			 (node_ptr->cpu_load / 100.0));
-	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "CPUAlloc=%u CPUErr=%u CPUTot=%u CPULoad=%s",
-		 alloc_cpus, err_cpus, node_ptr->cpus, load_str);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
+		xstrcat(out, "CPULoad=N/A");
 	else
-		xstrcat(out, "\n   ");
+		xstrfmtcat(out, "CPULoad=%.2f", (node_ptr->cpu_load / 100.0));
+
+	xstrcat(out, line_end);
 
 	/****** Line ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "AvailableFeatures=%s", node_ptr->features);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, "AvailableFeatures=%s", node_ptr->features);
+	xstrcat(out, line_end);
 
 	/****** Line ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "ActiveFeatures=%s", node_ptr->features_act);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, "ActiveFeatures=%s", node_ptr->features_act);
+	xstrcat(out, line_end);
 
-	/****** Line 3 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "Gres=%s", node_ptr->gres);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	/****** Line ******/
+	xstrfmtcat(out, "Gres=%s", node_ptr->gres);
+	xstrcat(out, line_end);
 
-	/****** Line 4 (optional) ******/
+	/****** Line (optional) ******/
 	if (node_ptr->gres_drain) {
-		snprintf(tmp_line, sizeof(tmp_line), "GresDrain=%s",
-			 node_ptr->gres_drain);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrfmtcat(out, "GresDrain=%s", node_ptr->gres_drain);
+		xstrcat(out, line_end);
 	}
 
-	/****** Line 5 (optional) ******/
+	/****** Line (optional) ******/
 	if (node_ptr->gres_used) {
-		snprintf(tmp_line, sizeof(tmp_line), "GresUsed=%s",
-			 node_ptr->gres_used);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrfmtcat(out, "GresUsed=%s", node_ptr->gres_used);
+		xstrcat(out, line_end);
 	}
 
-	/****** Line 6 (optional) ******/
+	/****** Line (optional) ******/
 	if (node_ptr->node_hostname || node_ptr->node_addr) {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "NodeAddr=%s NodeHostName=%s Version=%s",
-			 node_ptr->node_addr, node_ptr->node_hostname,
-			 node_ptr->version);
-		xstrcat(out, tmp_line);
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrfmtcat(out, "NodeAddr=%s NodeHostName=%s Version=%s",
+			   node_ptr->node_addr, node_ptr->node_hostname,
+			   node_ptr->version);
+		xstrcat(out, line_end);
 	}
 
-	/****** Line 7 ******/
-	if (node_ptr->os) {
-		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
-		xstrcat(out, tmp_line);
-	}
-	if (node_ptr->free_mem == NO_VAL)
-		strcpy(mem_str, "N/A");
-	else {
-		snprintf(mem_str, sizeof(mem_str), "%u", node_ptr->free_mem);
-	}
+	/****** Line ******/
+	if (node_ptr->os)
+		xstrfmtcat(out, "OS=%s ", node_ptr->os);
+
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_MEM_ALLOC,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_memory);
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "RealMemory=%u AllocMem=%u FreeMem=%s Sockets=%u Boards=%u",
-		 node_ptr->real_memory, alloc_memory, mem_str,
-		 node_ptr->sockets, node_ptr->boards);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
+	xstrfmtcat(out, "RealMemory=%u AllocMem=%u ",
+		   node_ptr->real_memory, alloc_memory);
+
+	if (node_ptr->free_mem == NO_VAL)
+		xstrcat(out, "FreeMem=N/A ");
 	else
-		xstrcat(out, "\n   ");
+		xstrfmtcat(out, "FreeMem=%u ", node_ptr->free_mem);
+
+	xstrfmtcat(out, "Sockets=%u Boards=%u",
+		   node_ptr->sockets, node_ptr->boards);
+
+	xstrcat(out, line_end);
 
 	/****** core & memory specialization Line (optional) ******/
 	if (node_ptr->core_spec_cnt || node_ptr->cpu_spec_list ||
 	    node_ptr->mem_spec_limit) {
 		if (node_ptr->core_spec_cnt) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "CoreSpecCount=%u ", node_ptr->core_spec_cnt);
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, "CoreSpecCount=%u ",
+				   node_ptr->core_spec_cnt);
 		}
 		if (node_ptr->cpu_spec_list) {
-			snprintf(tmp_line, sizeof(tmp_line), "CPUSpecList=%s ",
-				 node_ptr->cpu_spec_list);
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, "CPUSpecList=%s ",
+				   node_ptr->cpu_spec_list);
 		}
 		if (node_ptr->mem_spec_limit) {
-			snprintf(tmp_line, sizeof(tmp_line), "MemSpecLimit=%u",
-				 node_ptr->mem_spec_limit);
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, "MemSpecLimit=%u",
+				   node_ptr->mem_spec_limit);
 		}
-		if (one_liner)
-			xstrcat(out, " ");
-		else
-			xstrcat(out, "\n   ");
+		xstrcat(out, line_end);
 	}
 
-	/****** Line 8 ******/
+	/****** Line ******/
+	xstrfmtcat(out, "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u ",
+		   node_state_string(my_state),
+		   cloud_str, comp_str, drain_str, power_str,
+		   node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight);
+
 	if (node_ptr->owner == NO_VAL) {
-		snprintf(owner_str, sizeof(owner_str), "N/A");
+		xstrcat(out, "Owner=N/A ");
 	} else {
-		char *user_name;
-		user_name = uid_to_string((uid_t) node_ptr->owner);
-		snprintf(owner_str, sizeof(owner_str), "%s(%u)",
-			 user_name, node_ptr->owner);
+		char *user_name = uid_to_string((uid_t) node_ptr->owner);
+		xstrfmtcat(out, "Owner=%s(%u) ", user_name, node_ptr->owner);
 		xfree(user_name);
 	}
 
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u "
-		 "Owner=%s MCS_label=%s",
-		 node_state_string(my_state),
-		 cloud_str, comp_str, drain_str, power_str,
-		 node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight,
-		 owner_str,
-		 (node_ptr->mcs_label == NULL) ? "N/A" : node_ptr->mcs_label);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrfmtcat(out, "MCS_label=%s",
+		   (node_ptr->mcs_label == NULL) ? "N/A" : node_ptr->mcs_label);
 
-	/****** Line 9 ******/
+	xstrcat(out, line_end);
+
+	/****** Line ******/
 	if (node_ptr->boot_time) {
-		slurm_make_time_str ((time_t *)&node_ptr->boot_time,
-				     time_str, sizeof(time_str));
+		slurm_make_time_str((time_t *)&node_ptr->boot_time,
+				    time_str, sizeof(time_str));
+		xstrfmtcat(out, "BootTime=%s ", time_str);
 	} else {
-		strncpy(time_str, "None", sizeof(time_str));
+		xstrcat(out, "BootTime=None ");
 	}
-	snprintf(tmp_line, sizeof(tmp_line), "BootTime=%s ", time_str);
-	xstrcat(out, tmp_line);
 
 	if (node_ptr->slurmd_start_time) {
 		slurm_make_time_str ((time_t *)&node_ptr->slurmd_start_time,
 				     time_str, sizeof(time_str));
+		xstrfmtcat(out, "SlurmdStartTime=%s", time_str);
 	} else {
-		strncpy(time_str, "None", sizeof(time_str));
+		xstrcat(out, "SlurmdStartTime=None");
 	}
-	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+
+	xstrcat(out, line_end);
 
 	/****** Power Management Line ******/
-	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
-		snprintf(tmp_line, sizeof(tmp_line), "CapWatts=n/a");
-	} else {
-		snprintf(tmp_line, sizeof(tmp_line), "CapWatts=%u",
-			 node_ptr->power->cap_watts);
-	}
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
+	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL))
+		xstrcat(out, "CapWatts=n/a");
 	else
-		xstrcat(out, "\n   ");
+		xstrfmtcat(out, "CapWatts=%u", node_ptr->power->cap_watts);
+
+	xstrcat(out, line_end);
 
 	/****** Power Consumption Line ******/
 	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
-		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=n/s "
-				"LowestJoules=n/s ConsumedJoules=n/s");
+		xstrcat(out, "CurrentWatts=n/s LowestJoules=n/s ConsumedJoules=n/s");
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u "
+		xstrfmtcat(out, "CurrentWatts=%u "
 				"LowestJoules=%"PRIu64" "
 				"ConsumedJoules=%"PRIu64"",
 				node_ptr->energy->current_watts,
 				node_ptr->energy->base_consumed_energy,
 				node_ptr->energy->consumed_energy);
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+
+	xstrcat(out, line_end);
 
 	/****** external sensors Line ******/
 	if (!node_ptr->ext_sensors
 	    || node_ptr->ext_sensors->consumed_energy == NO_VAL)
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=n/s ");
+		xstrcat(out, "ExtSensorsJoules=n/s ");
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=%"PRIu64" ",
-			 node_ptr->ext_sensors->consumed_energy);
-	xstrcat(out, tmp_line);
+		xstrfmtcat(out, "ExtSensorsJoules=%"PRIu64" ",
+			   node_ptr->ext_sensors->consumed_energy);
+
 	if (!node_ptr->ext_sensors
 	    || node_ptr->ext_sensors->current_watts == NO_VAL)
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=n/s ");
+		xstrcat(out, "ExtSensorsWatts=n/s ");
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=%u ",
-			 node_ptr->ext_sensors->current_watts);
-	xstrcat(out, tmp_line);
+		xstrfmtcat(out, "ExtSensorsWatts=%u ",
+			   node_ptr->ext_sensors->current_watts);
+
 	if (!node_ptr->ext_sensors
 	    || node_ptr->ext_sensors->temperature == NO_VAL)
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=n/s");
+		xstrcat(out, "ExtSensorsTemp=n/s");
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=%u",
-			 node_ptr->ext_sensors->temperature);
-	xstrcat(out, tmp_line);
+		xstrfmtcat(out, "ExtSensorsTemp=%u",
+			   node_ptr->ext_sensors->temperature);
 
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
+	xstrcat(out, line_end);
 
-	/****** Line 12 ******/
+	/****** Line ******/
 	if (node_ptr->reason && node_ptr->reason[0])
 		xstrcat(reason_str, node_ptr->reason);
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
@@ -464,21 +391,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 			if (inx == 1) {
 				xstrcat(out, "Reason=");
 			} else {
-				if (one_liner)
-					xstrcat(out, " ");
-				else
-					xstrcat(out, "\n   ");
+				xstrcat(out, line_end);
 				xstrcat(out, "       ");
 			}
-			snprintf(tmp_line, sizeof(tmp_line), "%s", tok);
-			xstrcat(out, tmp_line);
+			xstrfmtcat(out, "%s", tok);
 			if ((inx++ == 1) && node_ptr->reason_time) {
 				user_name = uid_to_string(node_ptr->reason_uid);
 				slurm_make_time_str((time_t *)&node_ptr->reason_time,
-						    time_str,sizeof(time_str));
-				snprintf(tmp_line, sizeof(tmp_line),
-					 " [%s@%s]", user_name, time_str);
-				xstrcat(out, tmp_line);
+						    time_str, sizeof(time_str));
+				xstrfmtcat(out, " [%s@%s]", user_name, time_str);
 			}
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
