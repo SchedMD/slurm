@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/common/stepd_api.c - slurmstepd message API
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

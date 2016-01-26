@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  job_step_info.c - get/print the job step state information of slurm
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

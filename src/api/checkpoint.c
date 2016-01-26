@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  checkpoint.c - Process checkpoint related functions.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.

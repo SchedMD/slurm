@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  step_launch.h - launch a parallel job step
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

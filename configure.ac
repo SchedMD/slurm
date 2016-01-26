@@ -1,4 +1,3 @@
-# $Id$
 # This file is to be processed with autoconf to generate a configure script
 
 dnl Prologue

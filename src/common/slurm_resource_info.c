@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  slurm_resource_info.c - Functions to determine number of available resources
- *  $Id: slurm_resource_info.c,v 1.12 2006/10/04 21:52:24 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>

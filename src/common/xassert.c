@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  xassert.c - replacement for assert which sends error to log instead
  *		of stderr
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

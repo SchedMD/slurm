@@ -1,5 +1,3 @@
-# $Id$
-#
 # Note that this package is not relocatable
 
 #

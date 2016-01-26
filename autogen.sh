@@ -1,8 +1,5 @@
 #!/bin/sh
 #
-# $Id$
-# $Source$
-#
 # Run this script to generate aclocal.m4, config.h.in, 
 # Makefile.in's, and ./configure...
 # 

@@ -2,8 +2,6 @@
  *  parse_config.h - parse any slurm.conf-like configuration file
  *
  *  NOTE: when you see the prefix "s_p_", think "slurm parser".
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

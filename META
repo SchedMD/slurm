@@ -1,6 +1,4 @@
 ##
-# $Id$
-##
 # Metadata for RPM/TAR makefile targets
 ##
 # See src/api/Makefile.am for guidance on setting API_ values

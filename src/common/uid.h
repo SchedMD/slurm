@@ -1,6 +1,5 @@
 /*****************************************************************************\
  * src/common/uid.h - uid/gid lookup utility functions
- * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

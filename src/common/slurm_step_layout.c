@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  slurm_step_layout.c - functions to distribute tasks over nodes.
- *  $Id$
  *****************************************************************************
- *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Chris Holmes, <cholmes@hp.com>, who borrowed heavily
  *  from other parts of SLURM.

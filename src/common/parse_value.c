@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  parse_value.c - helper functions to simplify typed values management in
  *                  Slurm parser (see parse_config.{h,c})
- *
- *  $Id$
  *****************************************************************************
  *  Initially written by Francois Chevallier <chevallierfrancois@free.fr> @ BULL
  *  for slurm-2.6. Adapted by Matthieu Hautreux <matthieu.hautreux@cea.fr>, CEA,

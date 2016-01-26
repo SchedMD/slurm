@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  checkpoint.h - implementation-independent checkpoint API definitions.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.

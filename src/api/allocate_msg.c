@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  allocate_msg.c - Message handler for communication with with
  *                       the slurmctld during an allocation.
- *  $Id: allocate_msg.c 11641 2007-06-05 23:03:51Z jette $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

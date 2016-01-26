@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  pmi.h - Global PMI data as maintained within srun
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

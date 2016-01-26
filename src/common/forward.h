@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  forward.h - get/print the job state information of slurm
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,5 @@
 /*****************************************************************************
- *  $Id: list.c,v 1.28 2003/05/20 23:53:22 dun Exp $
- *****************************************************************************
- *  $LSDId: list.c,v 1.28 2003/05/20 23:53:22 dun Exp $
+ *  list.c
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

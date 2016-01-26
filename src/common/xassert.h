@@ -2,7 +2,6 @@
  *  xassert.h: assert type macro with configurable handling
  *             If NDEBUG is defined, do nothing.
  *             If not, and expression is zero, log an error message and abort.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

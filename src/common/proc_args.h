@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  proc_args.h - helper functions for command argument processing
- *  $Id: opt.h 11996 2007-08-10 20:36:26Z jette $
  *****************************************************************************
  *  Copyright (C) 2007 Hewlett-Packard Development Company, L.P.
  *  Written by Christopher Holmes <cholmes@hp.com>, who borrowed heavily
