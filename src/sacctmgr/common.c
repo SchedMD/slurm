@@ -428,6 +428,8 @@ static print_field_t *_get_print_field(char *object)
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESRunMinsPerAccount", object,
 				MAX(command_len, 18)) ||
+		   !strncasecmp("MaxTRESRunMinsPerAcct", object,
+				MAX(command_len, 18)) ||
 		   !strncasecmp("MaxTRESRunMinsPA", object,
 				MAX(command_len, 15))) {
 		field->type = PRINT_MAXTRMA;
@@ -443,6 +445,8 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 15;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPerAcct", object,
 				MAX(command_len, 11)) ||
 		   !strncasecmp("MaxTRESPA", object,
 				MAX(command_len, 9))) {
@@ -462,6 +466,8 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 7;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxJobsPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxJobsPerAcct", object,
 				MAX(command_len, 11)) ||
 		   !strncasecmp("MaxJobsPA", object,
 				MAX(command_len, 9))) {
@@ -497,6 +503,8 @@ static print_field_t *_get_print_field(char *object)
 		field->len = 9;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxSubmitJobsPerAccount", object,
+				MAX(command_len, 17)) ||
+		   !strncasecmp("MaxSubmitJobsPerAcct", object,
 				MAX(command_len, 17)) ||
 		   !strncasecmp("MaxSubmitJobsPA", object,
 				MAX(command_len, 15))) {
