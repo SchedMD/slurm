@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  as_mysql_resource.c - functions dealing with resources.
  *****************************************************************************
- *
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
@@ -1025,7 +1024,6 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *clus_extra = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int rc = SLURM_SUCCESS;
 	int query_clusters = 0;
 	bool send_update = 0;
 	bool res_added = 0;
@@ -1255,12 +1253,6 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(clus_char);
 	xfree(name_char);
 	xfree(user_name);
-
-	if (rc != SLURM_SUCCESS) {
-		error("Couldn't modify Resource");
-		FREE_NULL_LIST(ret_list);
-		errno = SLURM_ERROR;
-	}
 
 	return ret_list;
 }
