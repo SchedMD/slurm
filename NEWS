@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Move debug messages to debug3 notifying a gres_bit_alloc was NULL for
     gres types without a file.
  -- Sanity Check Patch to setup variables for RAPL if in a race for it.
+ -- GRES - Fix minor typecast issues.
 
 * Changes in Slurm 15.08.7
 ==========================
