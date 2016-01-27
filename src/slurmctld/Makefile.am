@@ -39,11 +39,10 @@ slurmctld_SOURCES =     \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
-	slurmctld_plugstack.c \
-	slurmctld_plugstack.h \
 	port_mgr.c	\
 	port_mgr.h	\
 	power_save.c	\
+	power_save.h	\
 	powercapping.c	\
 	powercapping.h	\
 	preempt.c	\
@@ -57,6 +56,8 @@ slurmctld_SOURCES =     \
 	sched_plugin.c	\
 	sched_plugin.h	\
 	slurmctld.h	\
+	slurmctld_plugstack.c \
+	slurmctld_plugstack.h \
 	srun_comm.c	\
 	srun_comm.h	\
 	state_save.c	\

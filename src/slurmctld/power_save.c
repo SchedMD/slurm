@@ -63,6 +63,7 @@
 #include "src/common/macros.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
 
 #if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
@@ -104,7 +105,7 @@ static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static int   _reap_procs(void);
 static void  _re_wake(void);
-static pid_t _run_prog(char *prog, char *arg);
+static pid_t _run_prog(char *prog, char *arg1, char *arg2);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
@@ -147,8 +148,8 @@ static void _do_power_work(time_t now)
 	last_work_scan = now;
 
 	/* Build bitmaps identifying each node which should change state */
-	for (i=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
 		susp_state = IS_NODE_POWER_SAVE(node_ptr);
 
 		if (susp_state)
@@ -238,6 +239,56 @@ static void _do_power_work(time_t now)
 	}
 }
 
+/* power_job_reboot - Reboot compute nodes for a job from the head node */
+extern int power_job_reboot(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	int i, i_first, i_last;
+	struct node_record *node_ptr;
+	bitstr_t *wake_node_bitmap = NULL;
+	time_t now = time(NULL);
+	char *nodes, *features = NULL;
+
+	wake_node_bitmap = bit_alloc(node_record_count);
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	i_last = bit_fls(job_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		resume_cnt++;
+		resume_cnt_f++;
+		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+		node_ptr->node_state |=   NODE_STATE_POWER_UP;
+		node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
+		bit_clear(power_node_bitmap, i);
+		bit_clear(avail_node_bitmap, i);
+		node_ptr->last_response = now + resume_timeout;
+		bit_set(wake_node_bitmap,    i);
+		bit_set(resume_node_bitmap,  i);
+	}
+
+	nodes = bitmap2node_name(wake_node_bitmap);
+	if (nodes) {
+#if _DEBUG
+		info("power_save: reboot nodes %s", nodes);
+#else
+		verbose("power_save: reboot nodes %s", nodes);
+#endif
+		if (job_ptr->details && job_ptr->details->features)
+			features = job_ptr->details->features;
+		_run_prog(resume_prog, nodes, features);
+	} else {
+		error("power_save: bitmap2nodename");
+		rc = SLURM_ERROR;
+	}
+	xfree(nodes);
+	FREE_NULL_BITMAP(wake_node_bitmap);
+	last_node_update = now;
+
+	return rc;
+}
+
 /* If slurmctld crashes, the node state that it recovers could differ
  * from the actual hardware state (e.g. ResumeProgram failed to complete).
  * To address that, when a node that should be powered up for a running
@@ -268,7 +319,7 @@ static void _re_wake(void)
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
 			info("power_save: rewaking nodes %s", nodes);
-			_run_prog(resume_prog, nodes);
+			_run_prog(resume_prog, nodes, NULL);
 		} else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
@@ -283,7 +334,7 @@ static void _do_resume(char *host)
 #else
 	verbose("power_save: waking nodes %s", host);
 #endif
-	_run_prog(resume_prog, host);
+	_run_prog(resume_prog, host, NULL);
 }
 
 static void _do_suspend(char *host)
@@ -293,31 +344,32 @@ static void _do_suspend(char *host)
 #else
 	verbose("power_save: suspending nodes %s", host);
 #endif
-	_run_prog(suspend_prog, host);
+	_run_prog(suspend_prog, host, NULL);
 }
 
 /* run a suspend or resume program
  * prog IN	- program to run
- * arg IN	- program arguments, the hostlist expression
+ * arg1 IN	- first program argument, the hostlist expression
+ * arg2 IN	- second program argumentor NULL
  */
-static pid_t _run_prog(char *prog, char *arg)
+static pid_t _run_prog(char *prog, char *arg1, char *arg2)
 {
 	int i;
-	char program[1024], arg0[1024], arg1[1024], *pname;
+	char *argv[4], *pname;
 	pid_t child;
 	slurm_ctl_conf_t *ctlconf;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
 
-	strncpy(program, prog, sizeof(program));
-	pname = strrchr(program, '/');
+	pname = strrchr(prog, '/');
 	if (pname == NULL)
-		pname = program;
+		argv[0] = prog;
 	else
-		pname++;
-	strncpy(arg0, pname, sizeof(arg0));
-	strncpy(arg1, arg, sizeof(arg1));
+		argv[0] = pname + 1;
+	argv[1] = arg1;
+	argv[2] = arg2;
+	argv[3] = NULL;
 
 	child = fork();
 	if (child == 0) {
@@ -331,13 +383,13 @@ static pid_t _run_prog(char *prog, char *arg)
 		ctlconf = slurm_conf_lock();
 		setenv("SLURM_CONF", ctlconf->slurm_conf, 1);
 		slurm_conf_unlock();
-		execl(program, arg0, arg1, NULL);
+		execv(prog, argv);
 		exit(1);
 	} else if (child < 0) {
 		error("fork: %m");
 	} else {
 		/* save the pid */
-		for (i=0; i<PID_CNT; i++) {
+		for (i = 0; i < PID_CNT; i++) {
 			if (child_pid[i])
 				continue;
 			child_pid[i]  = child;
@@ -606,6 +658,12 @@ extern void start_power_mgr(pthread_t *thread_id)
 		sleep(1);
 	}
 	slurm_attr_destroy(&thread_attr);
+}
+
+/* Report if node power saving is enabled */
+extern bool power_save_test(void)
+{
+	return power_save_enabled;
 }
 
 /*

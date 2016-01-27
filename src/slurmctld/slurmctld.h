@@ -2117,12 +2117,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
  */
 extern void step_list_purge(struct job_record *job_ptr);
 
-/* start_power_mgr - Start power management thread as needed. The thread
- *	terminates automatically at slurmctld shutdown time.
- * IN thread_id - pointer to thread ID of the started pthread.
- */
-extern void start_power_mgr(pthread_t *thread_id);
-
 /*
  * step_epilog_complete - note completion of epilog on some node and
  *	release it's switch windows if appropriate. can perform partition

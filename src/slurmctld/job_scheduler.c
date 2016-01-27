@@ -79,6 +79,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
@@ -3302,7 +3303,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 #else
 extern int reboot_job_nodes(struct job_record *job_ptr)
 {
-	int i, rc;
+	int i, i_first, i_last, rc;
 	pthread_t thread_id_prolog;
 	pthread_attr_t thread_attr_prolog;
 	agent_arg_t *reboot_agent_args = NULL;
@@ -3310,6 +3311,9 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
+
+	if (power_save_test())
+		return power_job_reboot(job_ptr);
 
 	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
 	    (job_ptr->details == NULL) ||
@@ -3325,14 +3329,17 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_msg = xmalloc(sizeof(reboot_msg_t));
 	reboot_msg->features = xstrdup(job_ptr->details->features);
 	reboot_agent_args->msg_args = reboot_msg;
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	i_last = bit_fls(job_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
+		node_ptr = node_record_table_ptr + i;
 		if (reboot_agent_args->protocol_version
-		    > node_ptr->protocol_version)
+		    > node_ptr->protocol_version) {
 			reboot_agent_args->protocol_version =
 				node_ptr->protocol_version;
+		}
 		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
 		reboot_agent_args->node_count++;
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
