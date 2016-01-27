@@ -207,11 +207,13 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 	while (assoc_ptr) {
 		if ((!assoc->user && (assoc->uid == NO_VAL))
 		    && (assoc_ptr->user || (assoc_ptr->uid != NO_VAL))) {
-			debug("we are looking for a nonuser association");
+			debug3("%s: we are looking for a nonuser association",
+				__func__);
 			goto next;
 		} else if ((!assoc_ptr->user && (assoc_ptr->uid == NO_VAL))
 			   && (assoc->user || (assoc->uid != NO_VAL))) {
-			debug("we are looking for a user association");
+			debug3("%s: we are looking for a user association",
+				__func__);
 			goto next;
 		} else if (assoc->user && assoc_ptr->user
 			   && ((assoc->uid == NO_VAL) ||
@@ -220,8 +222,8 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 			 * associations, so use the name instead
 			 */
 			if (strcasecmp(assoc->user, assoc_ptr->user)) {
-				debug("2 not the right user %u != %u",
-				      assoc->uid, assoc_ptr->uid);
+				debug3("%s: 2 not the right user %u != %u",
+				       __func__, assoc->uid, assoc_ptr->uid);
 				goto next;
 			}
 		} else if (assoc->uid != assoc_ptr->uid) {
@@ -233,8 +235,8 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		if (assoc->acct &&
 		    (!assoc_ptr->acct
 		     || strcasecmp(assoc->acct, assoc_ptr->acct))) {
-			debug("not the right account %s != %s",
-			       assoc->acct, assoc_ptr->acct);
+			debug3("%s: not the right account %s != %s",
+			       __func__, assoc->acct, assoc_ptr->acct);
 			goto next;
 		}
 
@@ -242,7 +244,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		if (!assoc_mgr_cluster_name && assoc->cluster
 		    && (!assoc_ptr->cluster
 			|| strcasecmp(assoc->cluster, assoc_ptr->cluster))) {
-			debug("not the right cluster");
+			debug3("%s: not the right cluster", __func__);
 			goto next;
 		}
 
@@ -250,7 +252,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		    && (!assoc_ptr->partition
 			|| strcasecmp(assoc->partition,
 				      assoc_ptr->partition))) {
-			debug("not the right partition");
+			debug3("%s: not the right partition", __func__);
 			goto next;
 		}
 
