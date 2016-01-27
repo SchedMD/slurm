@@ -139,6 +139,8 @@ static char hostname[MAXHOSTNAMELEN];
 
 static int nb_pkg = 0;
 
+extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
+
 static char *_msr_string(int which)
 {
 	if (which == MSR_RAPL_POWER_UNIT)
@@ -486,6 +488,12 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 
 	xassert(_run_in_daemon());
 
+	if (!local_energy) {
+		debug("%s: trying to get data %d, but no local_energy yet.",
+		      __func__, data_type);
+		acct_gather_energy_p_conf_set(NULL);
+	}
+
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
 	case ENERGY_DATA_NODE_ENERGY_UP:
@@ -549,6 +557,10 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	uint64_t result;
 
 	if (!_run_in_daemon())
+		return;
+
+	/* Already been here, we shouldn't need to visit again */
+	if (local_energy)
 		return;
 
 	_hardware();
