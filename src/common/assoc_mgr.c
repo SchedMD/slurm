@@ -3172,9 +3172,9 @@ no_assocs:
 		while ((tmp_char = list_next(qos_itr)))
 			if ((qos_rec = list_find_first(
 				     assoc_mgr_qos_list,
-				     slurmdb_find_tres_in_list,
-				     &tmp_char)))
-				list_append(ret_list, user_rec);
+				     slurmdb_find_qos_in_list_by_name,
+				     tmp_char)))
+				list_append(ret_list, qos_rec);
 		tmp_list = ret_list;
 	} else
 		tmp_list = assoc_mgr_qos_list;
@@ -3206,7 +3206,7 @@ no_qos:
 
 		if (user_itr) {
 			while ((tmp_char = list_next(user_itr)))
-				if (xstrcasecmp(tmp_char, user_rec->name))
+				if (!xstrcasecmp(tmp_char, user_rec->name))
 					break;
 			list_iterator_reset(user_itr);
 			/* not correct user */

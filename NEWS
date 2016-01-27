@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Launch batch job requsting --reboot after the boot completes.
  -- Move debug messages like "not the right user" from association manager
     to debug3 when trying to find the correct association.
+ -- Fix incorrect logic when querying assoc_mgr information.
 
 * Changes in Slurm 15.08.7
 ==========================
