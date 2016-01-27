@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
     gres types without a file.
  -- Sanity Check Patch to setup variables for RAPL if in a race for it.
  -- GRES - Fix minor typecast issues.
+ -- burst_buffer/cray - Increase size of intermediate variable used to store
+    buffer byte size read from DW instance from 32 to 64-bits to avoid overflow
+    and reporting invalid buffer sizes.
 
 * Changes in Slurm 15.08.7
 ==========================
