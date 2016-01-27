@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Move debug messages like "not the right user" from association manager
     to debug3 when trying to find the correct association.
  -- Fix incorrect logic when querying assoc_mgr information.
+ -- Move debug messages to debug3 notifying a gres_bit_alloc was NULL for
+    gres types without a file.
 
 * Changes in Slurm 15.08.7
 ==========================

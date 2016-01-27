@@ -4981,8 +4981,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			gres_cnt = NO_VAL64;
 	} else {
 		/* Note: We already validated the gres count above */
-		debug("gres/%s: %s %u.%u gres_bit_alloc is NULL",
-		      gres_name, __func__, job_id, step_id);
+		debug3("gres/%s: %s %u.%u gres_bit_alloc is NULL",
+		       gres_name, __func__, job_id, step_id);
 		gres_cnt = NO_VAL64;
 	}
 
@@ -5880,8 +5880,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 
 	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
 	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
-		debug("gres/%s: %s gres_bit_alloc for %u.%u is NULL",
-		      gres_name, __func__, job_id, step_id);
+		debug3("gres/%s: %s gres_bit_alloc for %u.%u is NULL",
+		       gres_name, __func__, job_id, step_id);
 		return SLURM_SUCCESS;
 	}
 
