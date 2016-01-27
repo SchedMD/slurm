@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Fix querying jobs with reservations when the id's have rolled.
  -- Perl - Fix use of uninitialized variable in slurm_job_step_get_pids.
  -- Launch batch job requsting --reboot after the boot completes.
+ -- Move "not the right user" debug message from association manager to debug3.
 
 * Changes in Slurm 15.08.7
 ==========================

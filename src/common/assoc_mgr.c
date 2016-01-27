@@ -225,8 +225,8 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 				goto next;
 			}
 		} else if (assoc->uid != assoc_ptr->uid) {
-			debug("not the right user %u != %u",
-			       assoc->uid, assoc_ptr->uid);
+			debug3("%s: not the right user %u != %u",
+			       __func__, assoc->uid, assoc_ptr->uid);
 			goto next;
 		}
 
