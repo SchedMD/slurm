@@ -56,6 +56,7 @@
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/xstring.h"
 #include "src/common/xtree.h"
@@ -268,17 +269,6 @@ static char* _cat(char* dest, const char* src, size_t n)
 	return r;
 }
 
-/* safer behavior than plain strncpy */
-static char* _cpy(char* dest, const char* src, size_t n)
-{
-	char* r;
-	if (n == 0)
-		return dest;
-	r = strncpy(dest, src, n - 1);
-	dest[n - 1] = 0;
-	return r;
-}
-
 static char* trim(char* str)
 {
 	char* str_modifier;
@@ -320,7 +310,7 @@ static void _normalize_keydef_keycore(char* buffer, uint32_t size,
 	if (cat) {
 		_cat(buffer, keytmp, size);
 	} else {
-		_cpy(buffer, keytmp, size);
+		strlcpy(buffer, keytmp, size);
 	}
 	_cat(buffer, ".", size);
 	for (i = 0; key[i] && i < PATHLEN - 1; ++i) {
@@ -339,7 +329,7 @@ static void _normalize_keydef_key(char* buffer, uint32_t size,
 static void _normalize_keydef_mgrkey(char* buffer, uint32_t size,
 				     const char* key, const char* plugtype)
 {
-	_cpy(buffer, "mgr.", size);
+	strlcpy(buffer, "mgr.", size);
 	_normalize_keydef_keycore(buffer, size, key, plugtype, true);
 }
 
@@ -962,7 +952,7 @@ static char* _conf_get_filename(const char* type)
 {
 	char path[PATHLEN];
 	char* final_path;
-	_cpy(path, "layouts.d/", PATHLEN);
+	strlcpy(path, "layouts.d/", PATHLEN);
 	_cat(path, type, PATHLEN);
 	_cat(path, ".conf", PATHLEN);
 	final_path = get_extra_conf_path(path);
