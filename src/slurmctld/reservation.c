@@ -3269,10 +3269,13 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
+		resv_desc.core_cnt    = xmalloc(sizeof(uint32_t) * 2);
+		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 		resv_desc.node_cnt    = xmalloc(sizeof(uint32_t) * 2);
 		resv_desc.node_cnt[0] = add_nodes;
 		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
 				  &core_bitmap);
+		xfree(resv_desc.core_cnt);
 		xfree(resv_desc.node_cnt);
 		xfree(resv_desc.node_list);
 		xfree(resv_desc.partition);
@@ -3328,6 +3331,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc_msg_t resv_desc;
 
 	if ((resv_ptr->node_bitmap == NULL) ||
+	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
@@ -3349,10 +3353,13 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
+	resv_desc.core_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.core_cnt[0]= resv_ptr->core_cnt;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
 			  &core_bitmap);
+	xfree(resv_desc.core_cnt);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -3685,8 +3692,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			    (end_relative   <= resv_desc_ptr->start_time))
 				continue;
 			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
-				error("Reservation has no core_bitmap and "
-				      "full_nodes is zero");
+				error("Reservation %s has no core_bitmap and "
+				      "full_nodes is zero", resv_ptr->name);
 				resv_ptr->full_nodes = 1;
 			}
 			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
@@ -4246,6 +4253,7 @@ extern void job_claim_resv(struct job_record *job_ptr)
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 			_find_resv_name, job_ptr->resv_name);
 	if (!resv_ptr ||
+	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
 	    !(resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
