@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     and reporting invalid buffer sizes.
  -- Allow an existing reservation with running jobs to be modified without
     Flags=IGNORE_JOBS.
+ -- srun - don't attempt to execve() a directory with a name matching the
+    requested command
 
 * Changes in Slurm 15.08.7
 ==========================

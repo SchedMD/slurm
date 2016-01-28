@@ -325,7 +325,8 @@ _build_path(char* fname, char **prog_env)
 	dir = strtok(path_env, ":");
 	while (dir) {
 		snprintf(file_path, len, "%s/%s", dir, file_name);
-		if (stat(file_path, &stat_buf) == 0)
+		if ((stat(file_path, &stat_buf) == 0)
+		    && (! S_ISDIR(stat_buf.st_mode)))
 			break;
 		dir = strtok(NULL, ":");
 	}
