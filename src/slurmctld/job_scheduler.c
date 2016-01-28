@@ -64,6 +64,7 @@
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather.h"
+#include "src/common/strlcpy.h"
 #include "src/common/parse_time.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
@@ -1079,7 +1080,7 @@ static int _schedule(uint32_t job_limit)
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, get_name, NULL, NULL, NULL) < 0) {
 		error("%s: cannot get my name %m", __func__);
-			strcpy(get_name, "slurmctld");
+		strlcpy(get_name, "slurmctld", sizeof(get_name));
 	}
 	if (prctl(PR_SET_NAME, "slurmctld_sched", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m",

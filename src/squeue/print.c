@@ -1096,7 +1096,7 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	char sockets[10];
 	char cores[10];
 	char threads[10];
-	char sct[(10+1)*3];
+	char *sct = NULL;
 	if (job) {
 		if (job->sockets_per_node == (uint16_t) NO_VAL)
 			strcpy(sockets, "*");
@@ -1116,13 +1116,9 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 			convert_num_unit((float)job->threads_per_core, threads,
 					sizeof(threads), UNIT_NONE,
 					params.convert_flags);
-		sct[0] = '\0';
-		strcat(sct, sockets);
-		strcat(sct, ":");
-		strcat(sct, cores);
-		strcat(sct, ":");
-		strcat(sct, threads);
+		xstrfmtcat(sct, "%s:%s:%s", sockets, cores, threads);
 		_print_str(sct, width, right_justify, true);
+		xfree(sct);
 	} else {
 		_print_str("S:C:T", width, right_justify, true);
 	}
@@ -1272,18 +1268,15 @@ int _print_pn_min_memory(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	char min_mem[10];
-	char tmp_char[21];
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
-	    	tmp_char[0] = '\0';
 		job->pn_min_memory &= (~MEM_PER_CPU);
 		convert_num_unit((float)job->pn_min_memory, min_mem,
 				 sizeof(min_mem), UNIT_MEGA,
 				 params.convert_flags);
-		strcat(tmp_char, min_mem);
-		_print_str(tmp_char, width, right_justify, true);
+		_print_str(min_mem, width, right_justify, true);
 	}
 
 	if (suffix)

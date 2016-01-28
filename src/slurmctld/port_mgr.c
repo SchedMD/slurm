@@ -270,10 +270,8 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 
 	if (step_ptr->resv_ports[0] == '[') {
 		/* Remove brackets from hostlist */
-		i = strlen(step_ptr->resv_ports);
 		step_ptr->resv_ports[i-1] = '\0';
-		tmp_str = xmalloc(i);
-		strcpy(tmp_str, step_ptr->resv_ports + 1);
+		tmp_str = xstrdup(step_ptr->resv_ports + 1);
 		xfree(step_ptr->resv_ports);
 		step_ptr->resv_ports = tmp_str;
 	}
