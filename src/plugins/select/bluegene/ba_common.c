@@ -73,16 +73,16 @@ static bool _check_deny_pass(int dim, uint16_t *deny_pass)
 		return true;
 
 	switch (dim) {
-	case A:
+	case 'A':
 		check = PASS_DENY_A;
 		break;
-	case X:
+	case 'X':
 		check = PASS_DENY_X;
 		break;
-	case Y:
+	case 'Y':
 		check = PASS_DENY_Y;
 		break;
-	case Z:
+	case 'Z':
 		check = PASS_DENY_Z;
 		break;
 	default:
