@@ -156,7 +156,7 @@ static uint32_t _get_job_duration(struct job_record *job_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint32_t flags,
-			 bitstr_t *node_bitmap);
+			 bitstr_t *node_bitmap, char *resv_name);
 static List _list_dup(List license_list);
 static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
@@ -1776,10 +1776,12 @@ unpack_error:
 
 /*
  * Test if a new/updated reservation request will overlap running jobs
+ * Ignore jobs already running in that specific reservation
+ * resv_name IN - Name of existing reservation or NULL
  * RET true if overlap
  */
 static bool _job_overlap(time_t start_time, uint32_t flags,
-			 bitstr_t *node_bitmap)
+			 bitstr_t *node_bitmap, char *resv_name)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1795,7 +1797,9 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
-		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0)) {
+		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0) &&
+		    ((resv_name == NULL) ||
+		     (xstrcmp(resv_name, job_ptr->resv_name) != 0))) {
 			overlap = true;
 			break;
 		}
@@ -2288,7 +2292,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    !resv_desc_ptr->core_cnt &&
 		    _job_overlap(resv_desc_ptr->start_time,
-				 resv_desc_ptr->flags, node_bitmap)) {
+				 resv_desc_ptr->flags, node_bitmap, NULL)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
@@ -2814,7 +2818,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto update_failure;
 	}
 	if (_job_overlap(resv_ptr->start_time, resv_ptr->flags,
-			 resv_ptr->node_bitmap)) {
+			 resv_ptr->node_bitmap, resv_desc_ptr->name)) {
 		info("Reservation %s request overlaps jobs",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_NODES_BUSY;
@@ -3374,10 +3378,13 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
+		resv_desc.core_cnt    = xmalloc(sizeof(uint32_t) * 2);
+		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 		resv_desc.node_cnt    = xmalloc(sizeof(uint32_t) * 2);
 		resv_desc.node_cnt[0] = add_nodes;
 		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
 				  &core_bitmap);
+		xfree(resv_desc.core_cnt);
 		xfree(resv_desc.node_cnt);
 		xfree(resv_desc.node_list);
 		xfree(resv_desc.partition);
@@ -3434,6 +3441,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc_msg_t resv_desc;
 
 	if ((resv_ptr->node_bitmap == NULL) ||
+	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
 		return;
@@ -3455,10 +3463,13 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
+	resv_desc.core_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.core_cnt[0]= resv_ptr->core_cnt;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
 			  &core_bitmap);
+	xfree(resv_desc.core_cnt);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -3793,8 +3804,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			    (end_relative   <= resv_desc_ptr->start_time))
 				continue;
 			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
-				error("Reservation has no core_bitmap and "
-				      "full_nodes is zero");
+				error("Reservation %s has no core_bitmap and "
+				      "full_nodes is zero", resv_ptr->name);
 				resv_ptr->full_nodes = 1;
 			}
 			if (resv_ptr->full_nodes || !resv_desc_ptr->core_cnt) {
@@ -4354,6 +4365,7 @@ extern void job_claim_resv(struct job_record *job_ptr)
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 			_find_resv_name, job_ptr->resv_name);
 	if (!resv_ptr ||
+	    (!resv_ptr->full_nodes && (resv_ptr->node_cnt > 1)) ||
 	    !(resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
 	    (resv_ptr->flags & RESERVE_FLAG_STATIC))

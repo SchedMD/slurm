@@ -4839,7 +4839,6 @@ extern int prolog_complete(uint32_t job_id,
 {
 	struct job_record *job_ptr;
 
-	debug("completing prolog for job %u", job_id);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("prolog_complete: invalid JobId=%u", job_id);

@@ -3892,8 +3892,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      char *gres_name, uint32_t job_id, char *node_name,
 		      bitstr_t *core_bitmap)
 {
-	int i, j, k, sz1, sz2;
-	uint32_t gres_cnt;
+	int j, k, sz1, sz2;
+	uint64_t gres_cnt, i;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	bool type_array_updated = false;
@@ -3938,7 +3938,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	i = node_gres_ptr->gres_cnt_alloc + gres_cnt;
 	i -= node_gres_ptr->gres_cnt_avail;
 	if (i > 0) {
-		error("gres/%s: job %u node %s overallocated resources by %d",
+		error("gres/%s: job %u node %s overallocated resources by %"
+		      PRIu64,
 		      gres_name, job_id, node_name, i);
 		/* proceed with request, give job what's available */
 	}
@@ -3962,9 +3963,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 			node_gres_ptr->gres_cnt_alloc +=
 				bit_set_count(node_gres_ptr->gres_bit_alloc);
 		} else if (node_gres_ptr->gres_bit_alloc) {
-			gres_cnt = MIN(bit_size(node_gres_ptr->gres_bit_alloc),
-				       bit_size(job_gres_ptr->
-						gres_bit_alloc[node_offset]));
+			gres_cnt = (uint64_t)MIN(
+				bit_size(node_gres_ptr->gres_bit_alloc),
+				bit_size(job_gres_ptr->
+					 gres_bit_alloc[node_offset]));
 			for (i = 0; i < gres_cnt; i++) {
 				if (bit_test(job_gres_ptr->
 					     gres_bit_alloc[node_offset], i) &&
@@ -3980,7 +3982,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		i = bit_size(node_gres_ptr->gres_bit_alloc);
 		if (i < node_gres_ptr->gres_cnt_avail) {
 			error("gres/%s: node %s gres bitmap size bad "
-			      "(%d < %"PRIu64")",
+			      "(%"PRIu64" < %"PRIu64")",
 			      gres_name, node_name,
 			      i, node_gres_ptr->gres_cnt_avail);
 			node_gres_ptr->gres_bit_alloc =
@@ -4196,10 +4198,11 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name)
 {
-	int i, j, k, len, gres_cnt, sz1, sz2;
+	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	bool type_array_updated = false;
+	uint64_t gres_cnt, k;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
@@ -4253,8 +4256,11 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		node_gres_ptr->gres_cnt_alloc -= job_gres_ptr->gres_cnt_alloc;
 	} else {
 		node_gres_ptr->gres_cnt_alloc = 0;
-		error("gres/%s: job %u node %s gres count underflow",
-		      gres_name, job_id, node_name);
+		error("gres/%s: job %u node %s gres count underflow "
+		      "(%"PRIu64" %"PRIu64")",
+		      gres_name, job_id, node_name,
+		      node_gres_ptr->gres_cnt_alloc,
+		      job_gres_ptr->gres_cnt_alloc);
 	}
 
 	if (job_gres_ptr->gres_bit_alloc &&
@@ -4262,21 +4268,25 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
-			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz1 = bit_size(
+				job_gres_ptr->gres_bit_alloc[node_offset]);
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
 			if (sz1 != sz2)
 				continue;
-			gres_cnt = bit_overlap(job_gres_ptr->
-					       gres_bit_alloc[node_offset],
-					       node_gres_ptr->
-					       topo_gres_bitmap[i]);
+			gres_cnt = (uint64_t)bit_overlap(
+				job_gres_ptr->gres_bit_alloc[node_offset],
+				node_gres_ptr->topo_gres_bitmap[i]);
 			if (node_gres_ptr->topo_gres_cnt_alloc[i] >= gres_cnt) {
 				node_gres_ptr->topo_gres_cnt_alloc[i] -=
 					gres_cnt;
 			} else {
 				error("gres/%s: job %u dealloc node %s topo "
-				      "gres count underflow", gres_name, job_id,
-				      node_name);
+				      "gres count underflow "
+				      "(%"PRIu64" %"PRIu64")",
+				      gres_name, job_id,
+				      node_name,
+				      node_gres_ptr->topo_gres_cnt_alloc[i],
+				      gres_cnt);
 				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
 			}
 			if ((node_gres_ptr->type_cnt == 0) ||
@@ -4294,9 +4304,12 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 						gres_cnt;
 				} else {
 					error("gres/%s: job %u dealloc node %s "
-					      "type %s gres count underflow",
+					      "type %s gres count underflow "
+					      "(%"PRIu64" %"PRIu64")",
 					      gres_name, job_id, node_name,
-					      node_gres_ptr->type_model[j]);
+					      node_gres_ptr->type_model[j],
+					      node_gres_ptr->type_cnt_alloc[i],
+					      gres_cnt);
 					node_gres_ptr->type_cnt_alloc[j] = 0;
 				}
 			}
@@ -4943,8 +4956,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			gres_cnt = NO_VAL64;
 	} else {
 		/* Note: We already validated the gres count above */
-		debug("gres/%s: %s %u.%u gres_bit_alloc is NULL",
-		      gres_name, __func__, job_id, step_id);
+		debug3("gres/%s: %s %u.%u gres_bit_alloc is NULL",
+		       gres_name, __func__, job_id, step_id);
 		gres_cnt = NO_VAL64;
 	}
 
@@ -5842,8 +5855,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 
 	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
 	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
-		debug("gres/%s: %s gres_bit_alloc for %u.%u is NULL",
-		      gres_name, __func__, job_id, step_id);
+		debug3("gres/%s: %s gres_bit_alloc for %u.%u is NULL",
+		       gres_name, __func__, job_id, step_id);
 		return SLURM_SUCCESS;
 	}
 

@@ -116,6 +116,26 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Fix querying jobs with reservations when the id's have rolled.
  -- Perl - Fix use of uninitialized variable in slurm_job_step_get_pids.
  -- Launch batch job requsting --reboot after the boot completes.
+ -- Move debug messages like "not the right user" from association manager
+    to debug3 when trying to find the correct association.
+ -- Fix incorrect logic when querying assoc_mgr information.
+ -- Move debug messages to debug3 notifying a gres_bit_alloc was NULL for
+    gres types without a file.
+ -- Sanity Check Patch to setup variables for RAPL if in a race for it.
+ -- GRES - Fix minor typecast issues.
+ -- burst_buffer/cray - Increase size of intermediate variable used to store
+    buffer byte size read from DW instance from 32 to 64-bits to avoid overflow
+    and reporting invalid buffer sizes.
+ -- Allow an existing reservation with running jobs to be modified without
+    Flags=IGNORE_JOBS.
+ -- srun - don't attempt to execve() a directory with a name matching the
+    requested command
+ -- Do not automatically relocate an advanced reservation for individual cores
+    that spans multiple nodes when nodes in that reservation go down (e.g.
+    a 1 core reservation on node "tux1" will be moved if node "tux1" goes
+    down, but a reservation containing 2 cores on node "tux1" and 3 cores on
+    "tux2" will not be moved node "tux1" goes down). Advanced reservations for
+    whole nodes will be moved by default for down nodes.
 
 * Changes in Slurm 15.08.7
 ==========================

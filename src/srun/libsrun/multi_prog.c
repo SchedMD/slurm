@@ -99,7 +99,8 @@ _build_path(char* fname)
 	dir = strtok_r(path_env, ":", &ptrptr);
 	while (dir) {
 		snprintf(file_path, sizeof(file_path), "%s/%s", dir, file_name);
-		if (stat(file_path, &buf) == 0)
+		if ((stat(file_path, &buf) == 0)
+		    && (! S_ISDIR(buf.st_mode)))
 			break;
 		dir = strtok_r(NULL, ":", &ptrptr);
 	}

@@ -135,7 +135,7 @@ typedef struct bb_configs {
  */
 typedef struct bb_instances {
 	uint32_t id;
-	uint32_t bytes;
+	uint64_t bytes;
 	char *label;
 } bb_instances_t;
 
@@ -4590,7 +4590,7 @@ _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
-	int x;
+	int64_t x;
 
 	json_object_object_foreachC(instance, iter) {
 		type = json_object_get_type(iter.val);

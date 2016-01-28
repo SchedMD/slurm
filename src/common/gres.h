@@ -60,7 +60,7 @@ typedef struct gres_slurmd_conf {
 	uint64_t count;
 
 	/* Specific CPUs associated with this configuration record */
-	uint16_t cpu_cnt;
+	uint32_t cpu_cnt;
 	char *cpus;
 	bitstr_t *cpus_bitmap;	/* Using LOCAL mapping */
 
