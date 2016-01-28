@@ -136,6 +136,10 @@ if {$found != 1} {
 
 set found 0
 
+# Check EnforcePartLimits value
+set enforcepartlimits [test_enforce_part_limits]
+send_user "\nEnforcePartLimits=$enforcepartlimits\n\n"
+
 #
 # Run a job in this new partition and validate the time limit
 #
@@ -150,57 +154,80 @@ bash -i ./$test_salloc
 
 set timeout $max_job_delay
 spawn bash -i $file_in
-expect {
-	-re "Pending job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		set exit_code 0
-	}
+if {[string compare $enforcepartlimits "NO"] == 0} {
+	expect {
+		-re "Pending job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			set exit_code 0
+		}
 
-	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# verify time limit. Add a temporization to wait for update reason
-#
-if {$job_id == 0} {
-	send_user "\nFAILURE: job_id = 0 : salloc not OK \n"
-	set exit_code 1
-} else {
-	set cycle_count 8
-	for {set inx 0} {$inx < $cycle_count} {incr inx} {
-		spawn $scontrol show job $job_id
-		expect {
-			-re "Reason=PartitionTimeLimit" {
-				set exit_code 0
-				break
-			}
-			-re "Reason=" {
-				set exit_code 1
-				sleep 5
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: scontrol not responding\n"
-				set exit_code 1
-				exp_continue
-			}
-			eof {
-				wait
-			}
+		timeout {
+			send_user "\nFAILURE: salloc not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
 		}
 	}
-	if {$exit_code == 1} {
-		send_user "\nFAILURE: partition time limit not used\n"
+
+	#
+	# verify time limit. Add a temporization to wait for update reason
+	#
+	if {$job_id == 0} {
+		send_user "\nFAILURE: job_id = 0 : salloc not OK \n"
 		set exit_code 1
+	} else {
+		set cycle_count 8
+		for {set inx 0} {$inx < $cycle_count} {incr inx} {
+			spawn $scontrol show job $job_id
+			expect {
+				-re "Reason=PartitionTimeLimit" {
+					set exit_code 0
+					break
+				}
+				-re "Reason=" {
+					set exit_code 1
+					sleep 5
+					exp_continue
+				}
+				timeout {
+					send_user "\nFAILURE: scontrol not responding\n"
+					set exit_code 1
+					exp_continue
+				}
+				eof {
+					wait
+				}
+			}
+		}
+		if {$exit_code == 1} {
+			send_user "\nFAILURE: partition time limit not used\n"
+			set exit_code 1
+		}
+		cancel_job $job_id
 	}
-	cancel_job $job_id
+} else {
+	#
+        # Job should be rejected at submit time
+        #
+        expect {
+                -re "Requested time limit is invalid (missing or exceeds some limit)" {
+                        set exit_code 0
+                        exp_continue
+                }
+                -re "unrecognized option '--deadline'" {
+                        set exit_code 1
+                        exp_continue
+                }
+                timeout {
+                        send_user "\nFAILURE: salloc not responding\n"
+                        set exit_code 1
+                }
+                eof {
+                        wait
+                }
+        }
 }
 
 #

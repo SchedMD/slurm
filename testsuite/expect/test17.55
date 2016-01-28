@@ -134,6 +134,10 @@ if {$found != 1} {
 
 set found 0
 
+# Check EnforcePartLimits value
+set enforcepartlimits [test_enforce_part_limits]
+send_user "\nEnforcePartLimits=$enforcepartlimits\n\n"
+
 #
 # Run a job in this new partition and validate the time limit
 #
@@ -141,45 +145,69 @@ exec $bin_rm -f $file_in
 make_bash_script $file_in "$bin_sleep 5"
 
 set srun_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t100 --deadline now+3hour -p $part_name $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		set exit_code 0
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
 
-#
-# verify time limit
-#
-sleep 5
-set matches 0
-spawn $scontrol show job $job_id
-expect {
-	-re "Reason=PartitionTimeLimit" {
-		incr matches
-		exp_continue
+if {[string compare $enforcepartlimits "NO"] == 0} {
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			set exit_code 0
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
+
+	#
+	# verify time limit
+	#
+	sleep 5
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Reason=PartitionTimeLimit" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: partition time limit not used \n"
 		set exit_code 1
-		exp_continue
 	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: partition time limit not used \n"
-	set exit_code 1
+} else {
+	#
+        # Job should be rejected at submit time
+        #
+        expect {
+                -re "Requested time limit is invalid (missing or exceeds some limit)" {
+                        set exit_code 0
+                        exp_continue
+                }
+                -re "unrecognized option '--deadline'" {
+                        set exit_code 1
+                        exp_continue
+                }
+                timeout {
+                        send_user "\nFAILURE: sbatch not responding\n"
+                        set exit_code 1
+                }
+                eof {
+                        wait
+                }
+        }
 }
 
 cancel_job $job_id
