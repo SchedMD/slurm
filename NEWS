@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - Increase size of intermediate variable used to store
     buffer byte size read from DW instance from 32 to 64-bits to avoid overflow
     and reporting invalid buffer sizes.
+ -- Allow an existing reservation with running jobs to be modified without
+    Flags=IGNORE_JOBS.
 
 * Changes in Slurm 15.08.7
 ==========================

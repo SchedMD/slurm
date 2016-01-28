@@ -155,7 +155,7 @@ static uint32_t _get_job_duration(struct job_record *job_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint32_t flags,
-			 bitstr_t *node_bitmap);
+			 bitstr_t *node_bitmap, char *resv_name);
 static List _list_dup(List license_list);
 static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
@@ -1581,10 +1581,12 @@ unpack_error:
 
 /*
  * Test if a new/updated reservation request will overlap running jobs
+ * Ignore jobs already running in that specific reservation
+ * resv_name IN - Name of existing reservation or NULL
  * RET true if overlap
  */
 static bool _job_overlap(time_t start_time, uint32_t flags,
-			 bitstr_t *node_bitmap)
+			 bitstr_t *node_bitmap, char *resv_name)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1600,7 +1602,9 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
-		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0)) {
+		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0) &&
+		    ((resv_name == NULL) ||
+		     (xstrcmp(resv_name, job_ptr->resv_name) != 0))) {
 			overlap = true;
 			break;
 		}
@@ -2092,7 +2096,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    !resv_desc_ptr->core_cnt &&
 		    _job_overlap(resv_desc_ptr->start_time,
-				 resv_desc_ptr->flags, node_bitmap)) {
+				 resv_desc_ptr->flags, node_bitmap, NULL)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
@@ -2614,7 +2618,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		goto update_failure;
 	}
 	if (_job_overlap(resv_ptr->start_time, resv_ptr->flags,
-			 resv_ptr->node_bitmap)) {
+			 resv_ptr->node_bitmap, resv_desc_ptr->name)) {
 		info("Reservation %s request overlaps jobs",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_NODES_BUSY;
