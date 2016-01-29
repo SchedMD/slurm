@@ -3387,11 +3387,13 @@ extern void slurm_free_trigger_msg(trigger_info_msg_t *msg)
 {
 	int i;
 
-	for (i=0; i<msg->record_count; i++) {
-		xfree(msg->trigger_array[i].res_id);
-		xfree(msg->trigger_array[i].program);
+	if (msg->trigger_array) {
+		for (i = 0; i < msg->record_count; i++) {
+			xfree(msg->trigger_array[i].res_id);
+			xfree(msg->trigger_array[i].program);
+		}
+		xfree(msg->trigger_array);
 	}
-	xfree(msg->trigger_array);
 	xfree(msg);
 }
 
