@@ -61,6 +61,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/power_save.h"
@@ -276,8 +277,9 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		verbose("power_save: reboot nodes %s", nodes);
 #endif
 		if (job_ptr->details && job_ptr->details->features)
-			features = job_ptr->details->features;
+			features = xlate_features(job_ptr->details->features);
 		_run_prog(resume_prog, nodes, features);
+		xfree(features);
 	} else {
 		error("power_save: bitmap2nodename");
 		rc = SLURM_ERROR;

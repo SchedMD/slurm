@@ -581,4 +581,8 @@ extern bool run_in_daemon(char *daemons);
  * features IN/OUT - Expand string as appropriate, must be xmalloc'ed */
 extern void add_knl_features(char **features);
 
+/* Translate a job constraint specification into a node feature specification
+ * RET - String MUST be xfreed */
+extern char *xlate_features(char *job_features);
+
 #endif /* !_READ_CONFIG_H */
