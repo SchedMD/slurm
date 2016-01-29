@@ -507,6 +507,8 @@ DESTDIR="$RPM_BUILD_ROOT" %__make install-contrib
    rm -f contribs/cray/opt_modulefiles_slurm
    rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/plugstack.conf.template
    rm -f $RPM_BUILD_ROOT/%{_sysconfdir}/slurm.conf.template
+   rm -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend
+   rm -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume
    rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurmconfgen.py
 %endif
 
@@ -615,6 +617,10 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
+test -f $RPM_BUILD_ROOT/usr/sbin/capmc_suspend			&&
+  echo /usr/sbin/capmc_suspend				>> $LIST
+test -f $RPM_BUILD_ROOT/usr/sbin/capmc_resume			&&
+  echo /usr/sbin/capmc_resume				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service	&&

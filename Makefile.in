@@ -92,8 +92,8 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/etc/slurmctld.service.in \
 	$(top_srcdir)/etc/slurmd.service.in \
 	$(top_srcdir)/etc/slurmdbd.service.in $(pkginclude_HEADERS) \
-	AUTHORS COPYING ChangeLog INSTALL NEWS \
-	$(top_srcdir)/auxdir/compile $(top_srcdir)/auxdir/config.guess \
+	AUTHORS COPYING INSTALL NEWS $(top_srcdir)/auxdir/compile \
+	$(top_srcdir)/auxdir/config.guess \
 	$(top_srcdir)/auxdir/config.sub \
 	$(top_srcdir)/auxdir/install-sh $(top_srcdir)/auxdir/ltmain.sh \
 	$(top_srcdir)/auxdir/missing

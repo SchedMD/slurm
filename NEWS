@@ -102,6 +102,7 @@ documents those changes that are of interest to users and administrators.
  -- Add optional job "features" to node reboot RPC.
  -- Add slurmd "-b" option to report node rebooted at daemon start time. Used
     for testing purposes.
+ -- contribs/cray: Add framework for powering nodes up and down.
 
 * Changes in Slurm 15.08.8
 ==========================
