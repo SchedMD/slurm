@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
     down, but a reservation containing 2 cores on node "tux1" and 3 cores on
     "tux2" will not be moved node "tux1" goes down). Advanced reservations for
     whole nodes will be moved by default for down nodes.
+ -- Avoid possible double free of memory (and likely abort) for slurmctld in
+    background mode.
 
 * Changes in Slurm 15.08.7
 ==========================
