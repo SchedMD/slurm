@@ -6,6 +6,7 @@
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import time
@@ -14,37 +15,37 @@ from jinja2 import Environment, FileSystemLoader
 
 NAME = 'slurmconfgen_smw.py'
 
+
 class Gres(object):
     """ A class for generic resources """
     def __init__(self, name, count):
         """ Initialize a gres with the given name and count """
-        self.Name = name
-        self.Count = count
+        self.name = name
+        self.count = count
         if name == 'gpu':
             if count == 1:
-                self.File = '/dev/nvidia0'
+                self.file = '/dev/nvidia0'
             else:
-                self.File = '/dev/nvidia[0-{0}]'.format(count - 1)
+                self.file = '/dev/nvidia[0-{0}]'.format(count - 1)
         elif name == 'mic':
             if count == 1:
-                self.File = '/dev/mic0'
+                self.file = '/dev/mic0'
             else:
-                self.File = '/dev/mic[0-{0}]'.format(count - 1)
+                self.file = '/dev/mic[0-{0}]'.format(count - 1)
         else:
-            self.File = None
+            self.file = None
 
     def __eq__(self, other):
         """ Check if two gres are equal """
-        return (self.Name == other.Name and self.Count == other.Count and
-                self.File == other.File)
+        return (self.name == other.name and self.count == other.count and
+                self.file == other.file)
 
     def __str__(self):
         """ Return a gres string suitable for slurm.conf """
-        if self.Count == 1:
-            return self.Name
+        if self.count == 1:
+            return self.name
         else:
-            return '{0}:{1}'.format(self.Name, self.Count)
-
+            return '{0}:{1}'.format(self.name, self.count)
 
 
 def parse_args():
@@ -64,7 +65,63 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_inventory(partition):
+def get_repurposed_computes(partition):
+    """ Gets a list of repurposed compute nodes for the given partition. """
+    print 'Getting list of repurposed compute nodes...'
+    try:
+        xtcliout = subprocess.check_output(['/opt/cray/hss/default/bin/xtcli',
+                                            'status', '-m', partition],
+                                           stderr=subprocess.STDOUT)
+        repurposed = []
+        for line in xtcliout.splitlines():
+            cname = re.match(
+                r'\s*(c\d+-\d+c[0-2]s(?:\d|1[0-5])n[0-3]):\s+service',
+                line)
+            if cname:
+                repurposed.append(cname.group(1))
+
+        return repurposed
+    except subprocess.CalledProcessError:
+        return []
+
+
+def get_node(nodexml):
+    """ Convert node XML into a node dictionary """
+    cores = int(nodexml.find('cores').text)
+    sockets = int(nodexml.find('sockets').text)
+    memory = int(nodexml.find('memory/sizeGB').text) * 1024
+
+    node = {'cname': nodexml.find('cname').text,
+            'nid': int(nodexml.find('nic').text),
+            'CoresPerSocket': cores / sockets,
+            'RealMemory': memory,
+            'Sockets': sockets,
+            'ThreadsPerCore': int(nodexml.find('hyper_threads').text)}
+
+    # Determine the generic resources
+    craynetwork = 4
+    gpu = 0
+    mic = 0
+    for accelxml in nodexml.findall(
+            'accelerator_list/accelerator/type'):
+        if accelxml.text == 'GPU':
+            gpu += 1
+        elif accelxml.text == 'MIC':
+            mic += 1
+            craynetwork = 2
+        else:
+            print ('WARNING: accelerator type {0} unknown'
+                   .format(accelxml.text))
+
+    node['Gres'] = [Gres('craynetwork', craynetwork)]
+    if gpu > 0:
+        node['Gres'].append(Gres('gpu', gpu))
+    if mic > 0:
+        node['Gres'].append(Gres('mic', mic))
+    return node
+
+
+def get_inventory(partition, repurposed):
     """ Gets a hardware inventory for the given partition.
         Returns the node dictionary """
     print 'Gathering hardware inventory...'
@@ -87,39 +144,14 @@ def get_inventory(partition):
 
         # Loop through nodes in this module
         for nodexml in modulexml.findall('node_list/node'):
-            nid = int(nodexml.find('nic').text)
-            cores = int(nodexml.find('cores').text)
-            sockets = int(nodexml.find('sockets').text)
-            memory = int(nodexml.find('memory/sizeGB').text) * 1024
-
-            node = {'CoresPerSocket': cores / sockets,
-                    'RealMemory': memory,
-                    'Sockets': sockets,
-                    'ThreadsPerCore': int(nodexml.find('hyper_threads').text)}
-
-            # Determine the generic resources
-            craynetwork = 4
-            gpu = 0
-            mic = 0
-            for accelxml in nodexml.findall(
-                    'accelerator_list/accelerator/type'):
-                if accelxml.text == 'GPU':
-                    gpu += 1
-                elif accelxml.text == 'MIC':
-                    mic += 1
-                    craynetwork = 2
-                else:
-                    print ('WARNING: accelerator type {0} unknown'
-                           .format(accelxml.text))
-
-            node['Gres'] = [Gres('craynetwork', craynetwork)]
-            if gpu > 0:
-                node['Gres'].append(Gres('gpu', gpu))
-            if mic > 0:
-                node['Gres'].append(Gres('mic', mic))
+            node = get_node(nodexml)
+            if node['cname'] in repurposed:
+                print ('Skipping repurposed compute node {}'
+                       .format(node['cname']))
+                continue
 
             # Add to output data structures
-            nodes[nid] = node
+            nodes[node['nid']] = node
 
     return nodes
 
@@ -227,7 +259,7 @@ def get_gres_types(nodes):
     """ Get a set of gres types """
     grestypes = set()
     for node in nodes.values():
-        grestypes.update([gres.Name for gres in node['Gres']])
+        grestypes.update([gres.name for gres in node['Gres']])
     return grestypes
 
 
@@ -235,8 +267,9 @@ def main():
     """ Get hardware info, format it, and write to slurm.conf and gres.conf """
     args = parse_args()
 
-    # Get info from xthwinv and xtcli
-    nodes = get_inventory(args.partition)
+    # Get info from cnode and xthwinv
+    repurposed = get_repurposed_computes(args.partition)
+    nodes = get_inventory(args.partition, repurposed)
     nodelist = rli_compress([int(nid) for nid in nodes])
     compact_nodes(nodes)
     defmem, maxmem = get_mem_per_cpu(nodes)
@@ -247,22 +280,22 @@ def main():
     print 'Writing Slurm configuration to {0}...'.format(conffile)
     with open(conffile, 'w') as outfile:
         outfile.write(jinjaenv.get_template('slurm.conf.j2').render(
-                script=sys.argv[0],
-                date=time.asctime(),
-                controlmachine=args.controlmachine,
-                grestypes=get_gres_types(nodes),
-                defmem=defmem,
-                maxmem=maxmem,
-                nodes=nodes,
-                nodelist=nodelist))
+            script=sys.argv[0],
+            date=time.asctime(),
+            controlmachine=args.controlmachine,
+            grestypes=get_gres_types(nodes),
+            defmem=defmem,
+            maxmem=maxmem,
+            nodes=nodes,
+            nodelist=nodelist))
 
     gresfilename = os.path.join(args.output, 'gres.conf')
     print 'Writing gres configuration to {0}...'.format(gresfilename)
     with open(gresfilename, 'w') as gresfile:
         gresfile.write(jinjaenv.get_template('gres.conf.j2').render(
-                script=sys.argv[0],
-                date=time.asctime(),
-                nodes=nodes))
+            script=sys.argv[0],
+            date=time.asctime(),
+            nodes=nodes))
 
     print 'Done.'
 

@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     whole nodes will be moved by default for down nodes.
  -- Avoid possible double free of memory (and likely abort) for slurmctld in
     background mode.
+ -- contribs/cray/csm/slurmconfgen_smw.py - avoid including repurposed compute
+    nodes in configs
 
 * Changes in Slurm 15.08.7
 ==========================
