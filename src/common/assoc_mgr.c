@@ -416,21 +416,20 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
-static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
+static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 {
 	slurmdb_used_limits_t *used_limits = NULL;
 	ListIterator itr = NULL;
 	int i;
 
-	if (!qos_ptr->usage->user_limit_list
-	    || !list_count(qos_ptr->usage->user_limit_list))
+	if (!used_limit_list || !list_count(used_limit_list))
 		return;
 
-	itr = list_iterator_create(qos_ptr->usage->user_limit_list);
+	itr = list_iterator_create(used_limit_list);
 	while ((used_limits = list_next(itr))) {
 		used_limits->jobs = 0;
 		used_limits->submit_jobs = 0;
-		for (i=0; i<qos_ptr->usage->tres_cnt; i++) {
+		for (i=0; i<tres_cnt; i++) {
 			used_limits->tres[i] = 0;
 			used_limits->tres_run_mins[i] = 0;
 		}
@@ -438,6 +437,20 @@ static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
 	list_iterator_destroy(itr);
 
 	return;
+}
+
+
+
+static void _clear_qos_acct_limit_info(slurmdb_qos_rec_t *qos_ptr)
+{
+	_clear_qos_used_limit_list(qos_ptr->usage->acct_limit_list,
+				   qos_ptr->usage->tres_cnt);
+}
+
+static void _clear_qos_user_limit_info(slurmdb_qos_rec_t *qos_ptr)
+{
+	_clear_qos_used_limit_list(qos_ptr->usage->user_limit_list,
+				   qos_ptr->usage->tres_cnt);
 }
 
 static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
@@ -458,6 +471,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	 * else where since sometimes we call this and do not want
 	 * shares reset */
 
+	_clear_qos_acct_limit_info(qos);
 	_clear_qos_user_limit_info(qos);
 
 	return SLURM_SUCCESS;
@@ -2514,15 +2528,21 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 	if (!qos->max_tres_mins_pj)
 		qos->max_tres_mins_pj = found_qos->max_tres_mins_pj;
+	if (!qos->max_tres_run_mins_pa)
+		qos->max_tres_run_mins_pa = found_qos->max_tres_run_mins_pa;
 	if (!qos->max_tres_run_mins_pu)
 		qos->max_tres_run_mins_pu = found_qos->max_tres_run_mins_pu;
+	if (!qos->max_tres_pa)
+		qos->max_tres_pa     = found_qos->max_tres_pa;
 	if (!qos->max_tres_pj)
 		qos->max_tres_pj     = found_qos->max_tres_pj;
 	if (!qos->max_tres_pn)
 		qos->max_tres_pn     = found_qos->max_tres_pn;
 	if (!qos->max_tres_pu)
 		qos->max_tres_pu     = found_qos->max_tres_pu;
+	qos->max_jobs_pa     = found_qos->max_jobs_pa;
 	qos->max_jobs_pu     = found_qos->max_jobs_pu;
+	qos->max_submit_jobs_pa = found_qos->max_submit_jobs_pa;
 	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
 	qos->max_wall_pj     = found_qos->max_wall_pj;
 
@@ -2544,6 +2564,9 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* Don't send any usage info since we don't know if the usage
 	   is really in existance here, if they really want it they can
 	   use the pointer that is returned. */
+
+	/* if (!qos->usage->acct_limit_list) */
+	/* 	qos->usage->acct_limit_list = found_qos->usage->acct_limit_list; */
 
 	/* qos->usage->grp_used_tres   = found_qos->usage->grp_used_tres; */
 	/* qos->usage->grp_used_tres_run_mins  = */
@@ -4209,6 +4232,18 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				rec->grp_wall = object->grp_wall;
 			}
 
+			if (object->max_tres_pa) {
+				update_jobs = true;
+				xfree(rec->max_tres_pa);
+				if (object->max_tres_pa[0]) {
+					rec->max_tres_pa = object->max_tres_pa;
+					object->max_tres_pa = NULL;
+				}
+				assoc_mgr_set_tres_cnt_array(
+					&rec->max_tres_pa_ctld,
+					rec->max_tres_pa, INFINITE64, 1);
+			}
+
 			if (object->max_tres_pj) {
 				update_jobs = true;
 				xfree(rec->max_tres_pj);
@@ -4257,6 +4292,19 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 					rec->max_tres_mins_pj, INFINITE64, 1);
 			}
 
+			if (object->max_tres_run_mins_pa) {
+				xfree(rec->max_tres_run_mins_pa);
+				if (object->max_tres_run_mins_pa[0]) {
+					rec->max_tres_run_mins_pa =
+						object->max_tres_run_mins_pa;
+					object->max_tres_run_mins_pa = NULL;
+				}
+				assoc_mgr_set_tres_cnt_array(
+					&rec->max_tres_run_mins_pa_ctld,
+					rec->max_tres_run_mins_pa,
+					INFINITE64, 1);
+			}
+
 			if (object->max_tres_run_mins_pu) {
 				xfree(rec->max_tres_run_mins_pu);
 				if (object->max_tres_run_mins_pu[0]) {
@@ -4270,11 +4318,20 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 					INFINITE64, 1);
 			}
 
+			if (object->max_jobs_pa != NO_VAL)
+				rec->max_jobs_pa = object->max_jobs_pa;
+
 			if (object->max_jobs_pu != NO_VAL)
 				rec->max_jobs_pu = object->max_jobs_pu;
+
+			if (object->max_submit_jobs_pa != NO_VAL)
+				rec->max_submit_jobs_pa =
+					object->max_submit_jobs_pa;
+
 			if (object->max_submit_jobs_pu != NO_VAL)
 				rec->max_submit_jobs_pu =
 					object->max_submit_jobs_pu;
+
 			if (object->max_wall_pj != NO_VAL) {
 				update_jobs = true;
 				rec->max_wall_pj = object->max_wall_pj;
@@ -5885,6 +5942,8 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 				     qos->grp_tres_mins, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_run_mins_ctld,
 				     qos->grp_tres_run_mins, INFINITE64, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pa_ctld,
+				     qos->max_tres_pa, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
 				     qos->max_tres_pj, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pn_ctld,
@@ -5893,6 +5952,8 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 				     qos->max_tres_pu, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,
 				     qos->max_tres_mins_pj, INFINITE64, 1);
+	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pa_ctld,
+				     qos->max_tres_run_mins_pa, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pu_ctld,
 				     qos->max_tres_run_mins_pu, INFINITE64, 1);
 	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,

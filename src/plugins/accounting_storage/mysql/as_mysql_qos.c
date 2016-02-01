@@ -47,7 +47,9 @@ static char *mqos_req_inx[] = {
 	"grp_tres_run_mins",
 	"grp_tres",
 	"max_tres_mins_pj",
+	"max_tres_run_mins_pa",
 	"max_tres_run_mins_pu",
+	"max_tres_pa",
 	"max_tres_pj",
 	"max_tres_pn",
 	"max_tres_pu",
@@ -62,7 +64,9 @@ enum {
 	MQOS_GTRM,
 	MQOS_GT,
 	MQOS_MTMPJ,
+	MQOS_MTRMA,
 	MQOS_MTRM,
+	MQOS_MTPA,
 	MQOS_MTPJ,
 	MQOS_MTPN,
 	MQOS_MTPU,
@@ -136,8 +140,12 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->grp_submit_jobs = INFINITE;
 		if (qos->grp_wall == NO_VAL)
 			qos->grp_wall = INFINITE;
+		if (qos->max_jobs_pa == NO_VAL)
+			qos->max_jobs_pa = INFINITE;
 		if (qos->max_jobs_pu == NO_VAL)
 			qos->max_jobs_pu = INFINITE;
+		if (qos->max_submit_jobs_pa == NO_VAL)
+			qos->max_submit_jobs_pa = INFINITE;
 		if (qos->max_submit_jobs_pu == NO_VAL)
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
@@ -225,6 +233,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", grp_wall=%u", qos->grp_wall);
 	}
 
+	if (qos->max_jobs_pa == INFINITE) {
+		xstrcat(*cols, ", max_jobs_pa");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_pa=NULL");
+	} else if ((qos->max_jobs_pa != NO_VAL)
+		   && ((int32_t)qos->max_jobs_pa >= 0)) {
+		xstrcat(*cols, ", max_jobs_pa");
+		xstrfmtcat(*vals, ", %u", qos->max_jobs_pa);
+		xstrfmtcat(*extra, ", max_jobs_pa=%u", qos->max_jobs_pa);
+	}
+
 	if (qos->max_jobs_pu == INFINITE) {
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrcat(*vals, ", NULL");
@@ -234,6 +253,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", max_jobs_per_user");
 		xstrfmtcat(*vals, ", %u", qos->max_jobs_pu);
 		xstrfmtcat(*extra, ", max_jobs_per_user=%u", qos->max_jobs_pu);
+	}
+
+	if (qos->max_submit_jobs_pa == INFINITE) {
+		xstrcat(*cols, ", max_submit_jobs_pa");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs_pa=NULL");
+	} else if ((qos->max_submit_jobs_pa != NO_VAL)
+		   && ((int32_t)qos->max_submit_jobs_pa >= 0)) {
+		xstrcat(*cols, ", max_submit_jobs_pa");
+		xstrfmtcat(*vals, ", %u", qos->max_submit_jobs_pa);
+		xstrfmtcat(*extra, ", max_submit_jobs_pa=%u",
+			   qos->max_submit_jobs_pa);
 	}
 
 	if (qos->max_submit_jobs_pu == INFINITE) {
@@ -405,6 +436,18 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			   qos->grp_tres_run_mins);
 	}
 
+	if (qos->max_tres_pa) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_pa");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_pa, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_pa);
+		xstrfmtcat(*extra, ", max_tres_pa='%s'", qos->max_tres_pa);
+	}
+
 	if (qos->max_tres_pj) {
 		if (!for_add) {
 			xstrcat(*extra, "");
@@ -452,6 +495,19 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*vals, ", '%s'", qos->max_tres_mins_pj);
 		xstrfmtcat(*extra, ", max_tres_mins_pj='%s'",
 			   qos->max_tres_mins_pj);
+	}
+
+	if (qos->max_tres_run_mins_pa) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", max_tres_run_mins_pa");
+		slurmdb_combine_tres_strings(
+			&qos->max_tres_run_mins_pa, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", qos->max_tres_run_mins_pa);
+		xstrfmtcat(*extra, ", max_tres_run_mins_pa='%s'",
+			   qos->max_tres_run_mins_pa);
 	}
 
 	if (qos->max_tres_run_mins_pu) {
@@ -761,6 +817,9 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
 
+		mod_tres_str(&qos_rec->max_tres_pa,
+			     qos->max_tres_pa, row[MQOS_MTPA],
+			     NULL, "max_tres_pa", &vals, qos_rec->id, 0);
 		mod_tres_str(&qos_rec->max_tres_pj,
 			     qos->max_tres_pj, row[MQOS_MTPJ],
 			     NULL, "max_tres_pj", &vals, qos_rec->id, 0);
@@ -773,12 +832,18 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		mod_tres_str(&qos_rec->max_tres_mins_pj,
 			     qos->max_tres_mins_pj, row[MQOS_MTMPJ],
 			     NULL, "max_tres_mins_pj", &vals, qos_rec->id, 0);
+		mod_tres_str(&qos_rec->max_tres_run_mins_pa,
+			     qos->max_tres_run_mins_pa, row[MQOS_MTRM],
+			     NULL, "max_tres_run_mins_pa", &vals,
+			     qos_rec->id, 0);
 		mod_tres_str(&qos_rec->max_tres_run_mins_pu,
 			     qos->max_tres_run_mins_pu, row[MQOS_MTRM],
 			     NULL, "max_tres_run_mins_pu", &vals,
 			     qos_rec->id, 0);
 
+		qos_rec->max_jobs_pa  = qos->max_jobs_pa;
 		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
+		qos_rec->max_submit_jobs_pa  = qos->max_submit_jobs_pa;
 		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
 		qos_rec->max_wall_pj = qos->max_wall_pj;
 
@@ -1076,11 +1141,15 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"grp_submit_jobs",
 		"grp_wall",
 		"max_tres_mins_pj",
+		"max_tres_run_mins_pa",
 		"max_tres_run_mins_pu",
+		"max_tres_pa",
 		"max_tres_pj",
 		"max_tres_pn",
 		"max_tres_pu",
+		"max_jobs_pa",
 		"max_jobs_per_user",
+		"max_submit_jobs_pa",
 		"max_submit_jobs_per_user",
 		"max_wall_duration_per_job",
 		"substr(preempt, 1, length(preempt) - 1)",
@@ -1103,11 +1172,15 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_GSJ,
 		QOS_REQ_GW,
 		QOS_REQ_MTMPJ,
+		QOS_REQ_MTRMA,
 		QOS_REQ_MTRM,
+		QOS_REQ_MTPA,
 		QOS_REQ_MTPJ,
 		QOS_REQ_MTPN,
 		QOS_REQ_MTPU,
+		QOS_REQ_MJPA,
 		QOS_REQ_MJPU,
+		QOS_REQ_MSJPA,
 		QOS_REQ_MSJPU,
 		QOS_REQ_MWPJ,
 		QOS_REQ_PREE,
@@ -1242,15 +1315,30 @@ empty:
 		else
 			qos->grp_wall = INFINITE;
 
+		if (row[QOS_REQ_MJPA])
+			qos->max_jobs_pa = slurm_atoul(row[QOS_REQ_MJPA]);
+		else
+			qos->max_jobs_pa = INFINITE;
+
 		if (row[QOS_REQ_MJPU])
 			qos->max_jobs_pu = slurm_atoul(row[QOS_REQ_MJPU]);
 		else
 			qos->max_jobs_pu = INFINITE;
+
+		if (row[QOS_REQ_MSJPA])
+			qos->max_submit_jobs_pa =
+				slurm_atoul(row[QOS_REQ_MSJPA]);
+		else
+			qos->max_submit_jobs_pa = INFINITE;
+
 		if (row[QOS_REQ_MSJPU])
 			qos->max_submit_jobs_pu =
 				slurm_atoul(row[QOS_REQ_MSJPU]);
 		else
 			qos->max_submit_jobs_pu = INFINITE;
+
+		if (row[QOS_REQ_MTPA][0])
+			qos->max_tres_pa = xstrdup(row[QOS_REQ_MTPA]);
 
 		if (row[QOS_REQ_MTPJ][0])
 			qos->max_tres_pj = xstrdup(row[QOS_REQ_MTPJ]);
@@ -1263,6 +1351,9 @@ empty:
 
 		if (row[QOS_REQ_MTMPJ][0])
 			qos->max_tres_mins_pj = xstrdup(row[QOS_REQ_MTMPJ]);
+
+		if (row[QOS_REQ_MTRMA][0])
+			qos->max_tres_run_mins_pa = xstrdup(row[QOS_REQ_MTRMA]);
 
 		if (row[QOS_REQ_MTRM][0])
 			qos->max_tres_run_mins_pu = xstrdup(row[QOS_REQ_MTRM]);

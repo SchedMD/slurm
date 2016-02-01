@@ -426,6 +426,16 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("MaxTRESMins");
 		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxTRESRunMinsPerAccount", object,
+				MAX(command_len, 18)) ||
+		   !strncasecmp("MaxTRESRunMinsPerAcct", object,
+				MAX(command_len, 18)) ||
+		   !strncasecmp("MaxTRESRunMinsPA", object,
+				MAX(command_len, 15))) {
+		field->type = PRINT_MAXTRMA;
+		field->name = xstrdup("MaxTRESRunMinsPA");
+		field->len = 15;
+		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESRunMinsPerUser", object,
 				MAX(command_len, 8)) ||
 		   !strncasecmp("MaxTRESRunMinsPU", object,
@@ -433,6 +443,16 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXTRM;
 		field->name = xstrdup("MaxTRESRunMinsPU");
 		field->len = 15;
+		field->print_routine = sacctmgr_print_tres;
+	} else if (!strncasecmp("MaxTRESPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPerAcct", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxTRESPA", object,
+				MAX(command_len, 9))) {
+		field->type = PRINT_MAXTA;
+		field->name = xstrdup("MaxTRESPA");
+		field->len = 13;
 		field->print_routine = sacctmgr_print_tres;
 	} else if (!strncasecmp("MaxTRESPerUser", object,
 				MAX(command_len, 11))) {
@@ -444,6 +464,16 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXJ;
 		field->name = xstrdup("MaxJobs");
 		field->len = 7;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxJobsPerAccount", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxJobsPerAcct", object,
+				MAX(command_len, 11)) ||
+		   !strncasecmp("MaxJobsPA", object,
+				MAX(command_len, 9))) {
+		field->type = PRINT_MAXJA;
+		field->name = xstrdup("MaxJobsPA");
+		field->len = 9;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxJobsPerUser", object,
 				MAX(command_len, 8)) ||
@@ -471,6 +501,16 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_MAXS;
 		field->name = xstrdup("MaxSubmit");
 		field->len = 9;
+		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("MaxSubmitJobsPerAccount", object,
+				MAX(command_len, 17)) ||
+		   !strncasecmp("MaxSubmitJobsPerAcct", object,
+				MAX(command_len, 17)) ||
+		   !strncasecmp("MaxSubmitJobsPA", object,
+				MAX(command_len, 15))) {
+		field->type = PRINT_MAXSA;
+		field->name = xstrdup("MaxSubmitPA");
+		field->len = 11;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("MaxSubmitJobsPerUser", object,
 				MAX(command_len, 10)) ||
@@ -1748,132 +1788,157 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 
 	if (qos->flags && (qos->flags != QOS_FLAG_NOTSET)) {
 		char *tmp_char = slurmdb_qos_flags_str(qos->flags);
-		printf("  Flags          = %s\n", tmp_char);
+		printf("  Flags                    = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 
 	if (qos->grace_time == INFINITE)
-		printf("  GraceTime      = NONE\n");
+		printf("  GraceTime                = NONE\n");
 	else if (qos->grace_time != NO_VAL)
-		printf("  GraceTime      = %d\n", qos->grace_time);
+		printf("  GraceTime                = %d\n", qos->grace_time);
 
 	if (qos->grp_jobs == INFINITE)
-		printf("  GrpJobs        = NONE\n");
+		printf("  GrpJobs                  = NONE\n");
 	else if (qos->grp_jobs != NO_VAL)
-		printf("  GrpJobs        = %u\n", qos->grp_jobs);
+		printf("  GrpJobs                  = %u\n", qos->grp_jobs);
 
 	if (qos->grp_submit_jobs == INFINITE)
-		printf("  GrpSubmitJobs  = NONE\n");
+		printf("  GrpSubmitJobs            = NONE\n");
 	else if (qos->grp_submit_jobs != NO_VAL)
-		printf("  GrpSubmitJobs  = %u\n",
+		printf("  GrpSubmitJobs            = %u\n",
 		       qos->grp_submit_jobs);
 
 	if (qos->grp_tres) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres, g_tres_list);
-		printf("  GrpTRES       = %s\n", tmp_char);
+		printf("  GrpTRES                  = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->grp_tres_mins) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres_mins, g_tres_list);
-		printf("  GrpTRESMins   = %s\n", tmp_char);
+		printf("  GrpTRESMins              = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->grp_tres_run_mins) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->grp_tres_run_mins, g_tres_list);
-		printf("  GrpTRESRunMins= %s\n", tmp_char);
+		printf("  GrpTRESRunMins           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 
 	if (qos->grp_wall == INFINITE)
-		printf("  GrpWall        = NONE\n");
+		printf("  GrpWall                  = NONE\n");
 	else if (qos->grp_wall != NO_VAL) {
 		char time_buf[32];
 		mins2time_str((time_t) qos->grp_wall,
 			      time_buf, sizeof(time_buf));
-		printf("  GrpWall        = %s\n", time_buf);
+		printf("  GrpWall                  = %s\n", time_buf);
 	}
 
+	if (qos->max_jobs_pa == INFINITE)
+		printf("  MaxJobsPerAccount        = NONE\n");
+	else if (qos->max_jobs_pa != NO_VAL)
+		printf("  MaxJobsPerAccount        = %u\n",
+		       qos->max_jobs_pa);
 	if (qos->max_jobs_pu == INFINITE)
 		printf("  MaxJobsPerUser = NONE\n");
 	else if (qos->max_jobs_pu != NO_VAL)
 		printf("  MaxJobsPerUser = %u\n",
 		       qos->max_jobs_pu);
 
+	if (qos->max_submit_jobs_pa == INFINITE)
+		printf("  MaxSubmitJobsPerAccount  = NONE\n");
+	else if (qos->max_submit_jobs_pa != NO_VAL)
+		printf("  MaxSubmitJobsPerAccount  = %u\n",
+		       qos->max_submit_jobs_pa);
+
 	if (qos->max_submit_jobs_pu == INFINITE)
-		printf("  MaxSubmitJobs  = NONE\n");
+		printf("  MaxSubmitJobsPerUser     = NONE\n");
 	else if (qos->max_submit_jobs_pu != NO_VAL)
-		printf("  MaxSubmitJobs  = %u\n",
+		printf("  MaxSubmitJobsPerUser     = %u\n",
 		       qos->max_submit_jobs_pu);
 
+	if (qos->max_tres_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_pa, g_tres_list);
+		printf("  MaxTRESPerAccount        = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 	if (qos->max_tres_pj) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pj, g_tres_list);
-		printf("  MaxTRESPerJob = %s\n", tmp_char);
+		printf("  MaxTRESPerJob            = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->max_tres_pn) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pn, g_tres_list);
-		printf("  MaxTRESPerNode= %s\n", tmp_char);
+		printf("  MaxTRESPerNode           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->max_tres_pu) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_pu, g_tres_list);
-		printf("  MaxTRESPerUser= %s\n", tmp_char);
+		printf("  MaxTRESPerUser           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->max_tres_mins_pj) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_mins_pj, g_tres_list);
-		printf("  MaxTRESMins   = %s\n", tmp_char);
+		printf("  MaxTRESMins              = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+	if (qos->max_tres_run_mins_pa) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->max_tres_run_mins_pa, g_tres_list);
+		printf("  MaxTRESRUNMinsPerAccount = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 	if (qos->max_tres_run_mins_pu) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
 			qos->max_tres_run_mins_pu, g_tres_list);
-		printf("  MaxTRESRUNMins= %s\n", tmp_char);
+		printf("  MaxTRESRUNMinsPerUser    = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
 
 	if (qos->max_wall_pj == INFINITE)
-		printf("  MaxWall        = NONE\n");
+		printf("  MaxWall                  = NONE\n");
 	else if (qos->max_wall_pj != NO_VAL) {
 		char time_buf[32];
 		mins2time_str((time_t) qos->max_wall_pj,
 			      time_buf, sizeof(time_buf));
-		printf("  MaxWall        = %s\n", time_buf);
+		printf("  MaxWall                  = %s\n", time_buf);
 	}
 
 	if (qos->preempt_list) {
 		char *temp_char = get_qos_complete_str(g_qos_list,
 						       qos->preempt_list);
 		if (temp_char) {
-			printf("  Preempt        = %s\n", temp_char);
+			printf("  Preempt          = %s\n", temp_char);
 			xfree(temp_char);
 		}
 	}
 
 	if (qos->preempt_mode && (qos->preempt_mode != (uint16_t)NO_VAL)) {
-		printf("  PreemptMode    = %s\n",
+		printf("  PreemptMode              = %s\n",
 		       preempt_mode_string(qos->preempt_mode));
 	}
 
 	if (qos->priority == INFINITE)
-		printf("  Priority       = NONE\n");
+		printf("  Priority                 = NONE\n");
 	else if (qos->priority != NO_VAL)
-		printf("  Priority       = %d\n", qos->priority);
+		printf("  Priority                 = %d\n", qos->priority);
 
 }
 

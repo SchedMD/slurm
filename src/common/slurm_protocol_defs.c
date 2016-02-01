@@ -1604,6 +1604,26 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSMinBB";
 	case FAIL_DEADLINE:
 		return "DeadLine";
+	case WAIT_QOS_MAX_BB_PER_ACCT:
+		return "MaxBBPerAccount";
+	case WAIT_QOS_MAX_CPU_PER_ACCT:
+		return "MaxCpuPerAccount";
+	case WAIT_QOS_MAX_ENERGY_PER_ACCT:
+		return "MaxEnergyPerAccount";
+	case WAIT_QOS_MAX_GRES_PER_ACCT:
+		return "MaxGRESPerAccount";
+	case WAIT_QOS_MAX_NODE_PER_ACCT:
+		return "MaxNodePerAccount";
+	case WAIT_QOS_MAX_LIC_PER_ACCT:
+		return "MaxLicensePerAccount";
+	case WAIT_QOS_MAX_MEM_PER_ACCT:
+		return "MaxMemoryPerAccount";
+	case WAIT_QOS_MAX_UNK_PER_ACCT:
+		return "MaxUnknownPerAccount";
+	case WAIT_QOS_MAX_JOB_PER_ACCT:
+		return "MaxJobsPerAccount";
+	case WAIT_QOS_MAX_SUB_JOB_PER_ACCT:
+		return "MaxSubmitJobsPerAccount";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;

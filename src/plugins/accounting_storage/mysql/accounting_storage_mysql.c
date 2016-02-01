@@ -553,12 +553,16 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "description", "text" },
 		{ "flags", "int unsigned default 0" },
 		{ "grace_time", "int unsigned default NULL" },
+		{ "max_jobs_pa", "int default NULL" },
 		{ "max_jobs_per_user", "int default NULL" },
+		{ "max_submit_jobs_pa", "int default NULL" },
 		{ "max_submit_jobs_per_user", "int default NULL" },
+		{ "max_tres_pa", "text not null default ''" },
 		{ "max_tres_pj", "text not null default ''" },
 		{ "max_tres_pn", "text not null default ''" },
 		{ "max_tres_pu", "text not null default ''" },
 		{ "max_tres_mins_pj", "text not null default ''" },
+		{ "max_tres_run_mins_pa", "text not null default ''" },
 		{ "max_tres_run_mins_pu", "text not null default ''" },
 		{ "min_tres_pj", "text not null default ''" },
 		{ "max_wall_duration_per_job", "int default NULL" },
@@ -2009,12 +2013,16 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			"update %s set "
 			"mod_time=%ld, deleted=1, "
 			"grace_time=DEFAULT, "
+			"max_jobs_pa=DEFAULT, "
 			"max_jobs_per_user=DEFAULT, "
+			"max_submit_jobs_pa=DEFAULT, "
 			"max_submit_jobs_per_user=DEFAULT, "
+			"max_tres_pa=DEFAULT, "
 			"max_tres_pj=DEFAULT, "
 			"max_tres_pn=DEFAULT, "
 			"max_tres_pu=DEFAULT, "
 			"max_tres_mins_pj=DEFAULT, "
+			"max_tres_run_mins_pa=DEFAULT, "
 			"max_tres_run_mins_pu=DEFAULT, "
 			"min_tres_pj=DEFAULT, "
 			"max_wall_duration_per_job=DEFAULT, "

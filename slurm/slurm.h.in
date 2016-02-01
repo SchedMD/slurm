@@ -538,6 +538,18 @@ enum job_state_reason {
 	WAIT_QOS_MIN_BB,           /* QOS MinTRESPerJob not reached
 				    * (burst buffer) */
 	FAIL_DEADLINE,              /* reached deadline */
+	/* QOS MaxTRESPerAccount */
+	WAIT_QOS_MAX_BB_PER_ACCT,     /* exceeded burst buffer */
+	WAIT_QOS_MAX_CPU_PER_ACCT,    /* exceeded CPUs */
+	WAIT_QOS_MAX_ENERGY_PER_ACCT, /* exceeded Energy */
+	WAIT_QOS_MAX_GRES_PER_ACCT,   /* exceeded GRES */
+	WAIT_QOS_MAX_NODE_PER_ACCT,   /* exceeded Nodes */
+	WAIT_QOS_MAX_LIC_PER_ACCT,    /* exceeded Licenses */
+	WAIT_QOS_MAX_MEM_PER_ACCT,    /* exceeded Memory */
+	WAIT_QOS_MAX_UNK_PER_ACCT,    /* exceeded Unknown */
+	/********************/
+	WAIT_QOS_MAX_JOB_PER_ACCT,    /* QOS MaxJobPerAccount exceeded */
+	WAIT_QOS_MAX_SUB_JOB_PER_ACCT,/* QOS MaxJobSubmitSPerAccount exceeded */
 };
 
 enum job_acct_types {
