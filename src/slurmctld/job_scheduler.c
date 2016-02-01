@@ -3651,6 +3651,10 @@ extern int build_feature_list(struct job_record *job_ptr)
 	if (detail_ptr->feature_list)		/* already processed */
 		return SLURM_SUCCESS;
 
+	/* Use of commas separator is a common error. Replace them with '&' */
+	while ((str_ptr = strstr(detail_ptr->features, ",")))
+		str_ptr[0] = '&';
+
 	tmp_requested = xstrdup(detail_ptr->features);
 	detail_ptr->feature_list = list_create(_feature_list_delete);
 	for (i=0; ; i++) {
