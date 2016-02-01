@@ -3313,12 +3313,12 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 
+	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
+	    (job_ptr->details == NULL))
+		return SLURM_SUCCESS;
 	if (power_save_test())
 		return power_job_reboot(job_ptr);
-
-	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
-	    (job_ptr->details == NULL) ||
-	    (slurmctld_conf.reboot_program == NULL) ||
+	if ((slurmctld_conf.reboot_program == NULL) ||
 	    (slurmctld_conf.reboot_program[0] == '\0'))
 		return SLURM_SUCCESS;
 
