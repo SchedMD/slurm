@@ -1289,7 +1289,9 @@ extern int slurm_set_tree_width(uint16_t tree_width)
  */
 extern uint16_t slurm_get_tree_width(void)
 {
-	uint16_t tree_width = 0;
+	/* initialize to 1 to silence later warnings
+	 * about potential division by zero */
+	uint16_t tree_width = 1;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {

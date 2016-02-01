@@ -184,7 +184,7 @@ static int
 _setup_stepd_tree_info(const stepd_step_rec_t *job, char ***env)
 {
 	hostlist_t hl;
-	char srun_host[64];
+	char *srun_host;
 	uint16_t port;
 	char *p;
 	int tree_width;
@@ -233,23 +233,22 @@ _setup_stepd_tree_info(const stepd_step_rec_t *job, char ***env)
 
 	tree_info.pmi_port = 0;	/* not used */
 
-	p = getenvp(*env, "SLURM_SRUN_COMM_HOST");
-	if (!p) {
+	srun_host = getenvp(*env, "SLURM_SRUN_COMM_HOST");
+	if (!srun_host) {
 		error("mpi/pmi2: unable to find srun comm ifhn in env");
 		return SLURM_ERROR;
-	} else {
-		strncpy(srun_host, p, 64);
 	}
 	p = getenvp(*env, PMI2_SRUN_PORT_ENV);
 	if (!p) {
 		error("mpi/pmi2: unable to find srun pmi2 port in env");
 		return SLURM_ERROR;
-	} else {
-		port = atoi(p);
-		unsetenvp(*env, PMI2_SRUN_PORT_ENV);
 	}
+	port = atoi(p);
+
 	tree_info.srun_addr = xmalloc(sizeof(slurm_addr_t));
 	slurm_set_addr(tree_info.srun_addr, port, srun_host);
+
+	unsetenvp(*env, PMI2_SRUN_PORT_ENV);
 
 	/* init kvs seq to 0. TODO: reduce array size */
 	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *

@@ -55,6 +55,7 @@
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
+#include "src/common/strlcpy.h"
 
 #define _RUN_STAND_ALONE 0
 
@@ -735,7 +736,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 				   (strlen(fmt) >= sizeof(fmt_buf))) {
 				error("invalid SLURM_TIME_FORMAT = '%s'", fmt);
 			} else {
-				strncpy(fmt_buf, fmt, sizeof(fmt_buf));
+				strlcpy(fmt_buf, fmt, sizeof(fmt_buf));
 				display_fmt = fmt_buf;
 			}
 		}
