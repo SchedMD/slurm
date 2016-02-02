@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
     nodes in configs.
  -- Support AuthInfo in slurmdbd.conf that is different from the value in
     slurm.conf.
+ -- Fix build on FreeBSD 10.
 
 * Changes in Slurm 15.08.7
 ==========================
