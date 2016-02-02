@@ -105,6 +105,8 @@ extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
 extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
+extern char *slurmdb_cluster_fed_states_str(uint32_t states);
+extern uint32_t str_2_cluster_fed_states(char *states);
 extern char *slurmdb_federation_flags_str(uint32_t flags);
 extern uint32_t str_2_federation_flags(char *flags, int option);
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);
@@ -170,8 +172,10 @@ extern char *slurmdb_get_selected_step_id(
  */
 extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 					  slurmdb_assoc_rec_t *in);
-extern void slurmdb_copy_federation_rec_limits(slurmdb_federation_rec_t *out,
-					       slurmdb_federation_rec_t *in);
+extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
+				     slurmdb_cluster_rec_t *in);
+extern void slurmdb_copy_federation_rec(slurmdb_federation_rec_t *out,
+					slurmdb_federation_rec_t *in);
 extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 					slurmdb_qos_rec_t *in);
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);

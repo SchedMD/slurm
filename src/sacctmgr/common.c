@@ -293,11 +293,21 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
-	} else if (!strncasecmp("Federation", object, MAX(command_len, 2))) {
+	} else if (!strncasecmp("Federation", object, MAX(command_len, 3))) {
 		field->type = PRINT_FEDERATION;
 		field->name = xstrdup("Federation");
 		field->len = 10;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("FedState", object, MAX(command_len, 4))) {
+		field->type = PRINT_FEDSTATE;
+		field->name = xstrdup("FedState");
+		field->len = 12;
+		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("FedStateRaw", object, MAX(command_len, 9))) {
+		field->type = PRINT_FEDSTATERAW;
+		field->name = xstrdup("FedStateRaw");
+		field->len = 11;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Flags", object, MAX(command_len, 2))) {
 		field->type = PRINT_FLAGS;
 		field->name = xstrdup("Flags");
@@ -369,6 +379,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("Index", object, MAX(command_len, 3))) {
+		field->type = PRINT_INDEX;
+		field->name = xstrdup("Index");
+		field->len = 6;
+		field->print_routine = print_fields_uint32;
 	} else if (!strncasecmp("Info", object, MAX(command_len, 2))) {
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");
@@ -698,6 +713,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("User");
 		field->len = 10;
 		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("Weight", object, MAX(command_len, 3))) {
+		field->type = PRINT_WEIGHT;
+		field->name = xstrdup("Weight");
+		field->len = 10;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("WCKeys", object, MAX(command_len, 2))) {
 		field->type = PRINT_WCKEYS;
 		field->name = xstrdup("WCKeys");
@@ -1788,7 +1808,29 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 
 }
 
-extern void sacctmgr_print_federation_limits(slurmdb_federation_rec_t *fed)
+extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster)
+{
+	if (!cluster)
+		return;
+
+	if (cluster->name)
+		printf("  Name           = %s\n", cluster->name);
+	if (cluster->classification)
+		printf("  Classification = %s\n",
+		       get_classification_str(cluster->classification));
+	if (cluster->federation)
+		printf("  Federation     = %s\n", cluster->federation);
+	if (cluster->fed_state != NO_VAL) {
+		char *tmp_str = slurmdb_cluster_fed_states_str(
+						cluster->fed_state);
+		printf("  FedState       = %s\n", tmp_str);
+		xfree(tmp_str);
+	}
+	if (cluster->fed_weight != NO_VAL)
+		printf("  Weight         = %u\n", cluster->fed_weight);
+}
+
+extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)
 {
 	if (!fed)
 		return;
@@ -1800,6 +1842,14 @@ extern void sacctmgr_print_federation_limits(slurmdb_federation_rec_t *fed)
 			 slurmdb_federation_flags_str(fed->flags);
 		 printf("  Flags         = %s\n", tmp_flags);
 		 xfree(tmp_flags);
+	}
+	if (fed->cluster_list) {
+		ListIterator itr = list_iterator_create(fed->cluster_list);
+		slurmdb_cluster_rec_t *cluster = NULL;
+		while ((cluster = list_next(itr))) {
+			printf("  Cluster       = %s\n", cluster->name);
+		}
+		list_iterator_destroy(itr);
 	}
 }
 

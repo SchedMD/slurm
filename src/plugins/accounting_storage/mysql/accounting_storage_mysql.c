@@ -532,6 +532,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "dimensions", "smallint unsigned default 1" },
 		{ "plugin_id_select", "smallint unsigned default 0" },
 		{ "flags", "int unsigned default 0" },
+		{ "federation", "tinytext not null" },
+		{ "fed_state", "smallint unsigned not null" },
+		{ "fed_inx", "int unsigned default 0 not null" },
+		{ "fed_weight", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 

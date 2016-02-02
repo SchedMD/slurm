@@ -44,6 +44,81 @@
 #include "as_mysql_wckey.h"
 #include "src/common/node_select.h"
 
+#define MAX_FED_CLUSTERS 63
+
+static int _get_fed_cluster_index(mysql_conn_t *mysql_conn, const char *cluster,
+				  const char *federation, int *ret_index)
+{
+	/* find index for cluster in federation.
+	 * don't do anything if cluster is already part of federation
+	 * get list of clusters that are part of the federration.
+	 * loop through each cluster and find the first index available.
+	 * report error if all are full in 63 slots. */
+
+	int        index  = 1;
+	char      *query  = NULL;
+	MYSQL_ROW  row;
+	MYSQL_RES *result = NULL;
+
+	xassert(cluster);
+	xassert(federation);
+	xassert(ret_index);
+
+	/* See if cluster is already part of federation */
+	xstrfmtcat(query, "SELECT name, fed_inx "
+			  "FROM %s "
+			  "WHERE deleted=0 AND name='%s' AND federation='%s';",
+		   cluster_table, cluster, federation);
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		error("no result given for %s", query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	while ((row = mysql_fetch_row(result))) {
+		int tmp_index = slurm_atoul(row[1]);
+		debug2("cluster '%s' already part of federation '%s', using "
+		       "existing index %d", cluster, federation, tmp_index);
+		mysql_free_result(result);
+		*ret_index = tmp_index;
+		return SLURM_SUCCESS;
+	}
+	mysql_free_result(result);
+
+	/* Get all other clusters in the federation and find an open index. */
+	xstrfmtcat(query, "SELECT name, federation, fed_inx "
+		   	  "FROM %s "
+		   	  "WHERE name!='%s' AND federation='%s' "
+			  "ORDER BY fed_inx;",
+			  cluster_table, cluster, federation);
+	if (debug_flags & DEBUG_FLAG_DB_FEDR)
+		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		error("no result given for %s", query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (index != slurm_atoul(row[2]))
+			break;
+		index++;
+	}
+	mysql_free_result(result);
+
+	if (index > MAX_FED_CLUSTERS) {
+		error("Too many clusters in this federation.");
+		errno = ESLURM_FED_CLUSTER_MAX_CNT;
+		return  ESLURM_FED_CLUSTER_MAX_CNT;
+	}
+
+	*ret_index = index;
+	return SLURM_SUCCESS;
+}
+
 static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 				      char **extra)
 {
@@ -68,6 +143,21 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if (cluster_cond->federation_list
+	    && list_count(cluster_cond->federation_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(cluster_cond->federation_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "federation='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -173,6 +263,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	*/
 	list_iterator_reset(itr);
 	while ((object = list_next(itr))) {
+		int fed_inx = 0;
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
@@ -180,16 +271,37 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			setup_assoc_limits(object->root_assoc, &cols,
 					   &vals, &extra,
 					   QOS_LEVEL_SET, 1);
+
+		if (object->federation) {
+			rc = _get_fed_cluster_index(mysql_conn,
+							 object->name,
+							 object->federation,
+							 &fed_inx);
+			if (rc) {
+				error("failed to get cluster index for "
+				      "federation");
+				xfree(extra);
+				xfree(cols);
+				xfree(vals);
+				added=0;
+				goto end_it;
+			}
+		}
+
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
-			   "name, classification) "
-			   "values (%ld, %ld, '%s', %u) "
+			   "name, classification, federation, fed_inx) "
+			   "values (%ld, %ld, '%s', %u, '%s', %d) "
 			   "on duplicate key update deleted=0, mod_time=%ld, "
 			   "control_host='', control_port=0, "
-			   "classification=%u, flags=0",
+			   "classification=%u, flags=0, federation='%s', "
+			   "fed_inx=%d",
 			   cluster_table,
 			   now, now, object->name, object->classification,
-			   now, object->classification);
+			   (object->federation) ? object->federation : "",
+			   fed_inx, now, object->classification,
+			   (object->federation) ? object->federation : "",
+			   fed_inx);
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -317,8 +429,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *vals = NULL, *extra = NULL, *query = NULL,
-		*name_char = NULL, *send_char = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
@@ -395,6 +506,18 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster->classification);
 	}
 
+	if (cluster->federation) {
+		xstrfmtcat(vals, ", federation='%s'", cluster->federation);
+	}
+
+	if (cluster->fed_state != NO_VAL) {
+		xstrfmtcat(vals, ", fed_state=%d", cluster->fed_state);
+	}
+
+	if (cluster->fed_weight != NO_VAL) {
+		xstrfmtcat(vals, ", fed_weight=%d", cluster->fed_weight);
+	}
+
 	if (!vals) {
 		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -408,7 +531,6 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		      "to register a cluster");
 		return NULL;
 	}
-
 
 	xstrfmtcat(query, "select name, control_port from %s%s;",
 		   cluster_table, extra);
@@ -425,20 +547,47 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(extra);
 
-	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
+	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {
+		char *tmp_vals = xstrdup(vals);
+
 		object = xstrdup(row[0]);
 
+		if (cluster->federation) {
+			int index;
+			rc = _get_fed_cluster_index(mysql_conn, object,
+						    cluster->federation,
+						    &index);
+			if (rc) {
+				error("failed to get cluster index for "
+				      "federation");
+				xfree(tmp_vals);
+				FREE_NULL_LIST(ret_list);
+				mysql_free_result(result);
+				goto end_it;
+			}
+
+			xstrfmtcat(tmp_vals, ", fed_inx=%d", index);
+		}
+
 		list_append(ret_list, object);
-		if (!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+		xstrfmtcat(name_char, "name='%s'", object);
+
+		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
+				   user_name, cluster_table,
+				   name_char, tmp_vals, NULL);
+		xfree(name_char);
+		xfree(tmp_vals);
+		if (rc == SLURM_ERROR) {
+			error("Couldn't modify cluster 1");
+			FREE_NULL_LIST(ret_list);
+			mysql_free_result(result);
+			goto end_it;
 		}
 	}
 	mysql_free_result(result);
+	xfree(user_name);
 
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -452,25 +601,9 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	if (vals) {
-		send_char = xstrdup_printf("(%s)", name_char);
-		user_name = uid_to_string((uid_t) uid);
-		rc = modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				   user_name, cluster_table,
-				   send_char, vals, NULL);
-		xfree(user_name);
-		if (rc == SLURM_ERROR) {
-			error("Couldn't modify cluster 1");
-			FREE_NULL_LIST(ret_list);
-			ret_list = NULL;
-			goto end_it;
-		}
-	}
-
 end_it:
-	xfree(name_char);
 	xfree(vals);
-	xfree(send_char);
+	xfree(user_name);
 
 	return ret_list;
 }
@@ -648,6 +781,10 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"classification",
 		"control_host",
 		"control_port",
+		"federation",
+		"fed_inx",
+		"fed_state",
+		"fed_weight",
 		"rpc_version",
 		"dimensions",
 		"flags",
@@ -658,6 +795,10 @@ extern List as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_REQ_CLASS,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
+		CLUSTER_REQ_FEDR,
+		CLUSTER_REQ_FEDINX,
+		CLUSTER_REQ_FEDSTATE,
+		CLUSTER_REQ_FEDWEIGHT,
 		CLUSTER_REQ_VERSION,
 		CLUSTER_REQ_DIMS,
 		CLUSTER_REQ_FLAGS,
@@ -724,6 +865,10 @@ empty:
 		cluster->classification = slurm_atoul(row[CLUSTER_REQ_CLASS]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = slurm_atoul(row[CLUSTER_REQ_CP]);
+		cluster->federation   = xstrdup(row[CLUSTER_REQ_FEDR]);
+		cluster->fed_inx      = slurm_atoul(row[CLUSTER_REQ_FEDINX]);
+		cluster->fed_state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
+		cluster->fed_weight   = slurm_atoul(row[CLUSTER_REQ_FEDWEIGHT]);
 		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
 		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);

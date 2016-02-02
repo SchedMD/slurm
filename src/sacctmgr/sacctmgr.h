@@ -132,11 +132,15 @@ typedef enum {
 	PRINT_CHOST = 3000,
 	PRINT_CPORT,
 	PRINT_CLASS,
+	PRINT_FEDSTATE,
+	PRINT_FEDSTATERAW,
+	PRINT_INDEX,
 	PRINT_TRES,
 	PRINT_NODECNT,
 	PRINT_CLUSTER_NODES,
 	PRINT_RPC_VERSION,
 	PRINT_SELECT,
+	PRINT_WEIGHT,
 
 	/* ACCT */
 	PRINT_ORG = 4000,
@@ -292,7 +296,8 @@ extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
 				int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
-extern void sacctmgr_print_federation_limits(slurmdb_federation_rec_t *fed);
+extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster);
+extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);
 extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond);
@@ -348,5 +353,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[]);
 
 /* runaway_jobs_functions.c */
 extern int sacctmgr_list_runaway_jobs(int argc, char *argv[]);
+
+/* federation_functions.c */
+extern int verify_federations_exist(List name_list);
 
 #endif

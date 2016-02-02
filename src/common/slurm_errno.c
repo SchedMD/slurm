@@ -433,6 +433,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_OVER_ALLOCATE,
 	  "You can not allocate more than 100% of a resource"	},
 
+	/* Federation Errors */
+	{ ESLURM_FED_CLUSTER_MAX_CNT,
+	  "Too many clusters in federation"			},
+	{ ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT,
+	  "Clusters can only be assigned to one federation" 	},
+
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,
 	  "Time limit specification required, but not provided"	},

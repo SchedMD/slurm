@@ -148,6 +148,12 @@ typedef enum {
 
 #define	FEDERATION_FLAG_LLC            0x00000001
 
+/* SLURM CLUSTER FEDERATION STATES */
+/* Action States */
+#define CLUSTER_FED_STATE_RESUME     0x0001
+#define CLUSTER_FED_STATE_DRAIN      0x0002
+#define CLUSTER_FED_STATE_REMOVE     0x0004
+
 /* flags and types of resources */
 /* when we come up with some */
 
@@ -557,6 +563,7 @@ struct slurmdb_assoc_usage {
 typedef struct {
 	uint16_t classification; /* how this machine is classified */
 	List cluster_list; /* list of char * */
+	List federation_list; /* list of char */
 	uint32_t flags;
 	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
@@ -578,6 +585,10 @@ typedef struct {
 			* Size of each dimension For now only on
 			* a bluegene cluster.  DOESN'T GET
 			* PACKED, is set up in slurmdb_get_info_cluster */
+	char    *federation; /* Federation name */
+	uint32_t fed_inx;    /* index of cluster in federation */
+	uint32_t fed_state;  /* state of cluster in federation */
+	uint32_t fed_weight; /* weight of cluster in federation */
 	uint32_t flags;      /* set of CLUSTER_FLAG_* */
 	char *name;
 	char *nodes;
@@ -648,6 +659,7 @@ typedef struct {
 typedef struct {
 	char     *name;		/* Name of federation */
 	uint32_t  flags; 	/* flags for various things */
+	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
 } slurmdb_federation_rec_t;
 
 /* slurmdb_job_cond_t is defined above alphabetical */

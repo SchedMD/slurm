@@ -258,6 +258,10 @@ enum {
 	ESLURM_BAD_NAME,
 	ESLURM_OVER_ALLOCATE,
 
+	/* Federation Errors */
+	ESLURM_FED_CLUSTER_MAX_CNT              = 7100,
+	ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT,
+
 	/* plugin and custom errors */
 	ESLURM_MISSING_TIME_LIMIT       = 8000,
 	ESLURM_INVALID_KNL

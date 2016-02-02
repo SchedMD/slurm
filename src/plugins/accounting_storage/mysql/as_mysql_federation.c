@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_federation.h"
+#include "as_mysql_cluster.h"
 
 char *fed_req_inx[] = {
 	"name",
@@ -95,10 +96,8 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
 			xstrfmtcat(*extra, ", flags=(flags & ~%u)", flags);
 		} else if (fed->flags & FEDERATION_FLAG_ADD) {
 			flags = fed->flags & ~FEDERATION_FLAG_ADD;
-			xstrfmtcat(*vals, ", (flags | %u)",
-				   fed->flags & ~FEDERATION_FLAG_ADD);
-			xstrfmtcat(*extra, ", flags=(flags | %u)",
-				   fed->flags & ~FEDERATION_FLAG_ADD);
+			xstrfmtcat(*vals, ", (flags | %u)", flags);
+			xstrfmtcat(*extra, ", flags=(flags | %u)", flags);
 		} else {
 			flags = fed->flags;
 			xstrfmtcat(*vals, ", %u", flags);
@@ -107,6 +106,56 @@ static int _setup_federation_rec_limits(slurmdb_federation_rec_t *fed,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
+					  uint32_t uid, char *federation,
+					  List cluster_list) {
+
+	int          rc       = SLURM_SUCCESS;
+	List         ret_list = NULL;
+	ListIterator itr      = NULL;
+	slurmdb_cluster_rec_t *tmp_cluster = NULL;
+	slurmdb_cluster_rec_t  rec;
+	slurmdb_cluster_cond_t cluster_cond;
+
+	if (!cluster_list || !federation) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	slurmdb_init_cluster_cond(&cluster_cond, 0);
+	cluster_cond.cluster_list = list_create(slurm_destroy_char);
+
+	itr = list_iterator_create(cluster_list);
+	while ((tmp_cluster = list_next(itr)))
+		list_append(cluster_cond.cluster_list,
+			    xstrdup(tmp_cluster->name));
+
+	slurmdb_init_cluster_rec(&rec, 0);
+	rec.federation = xstrdup(federation);
+
+	ret_list = as_mysql_modify_clusters(mysql_conn, uid,
+					    &cluster_cond, &rec);
+	xfree(rec.federation);
+	FREE_NULL_LIST(cluster_cond.cluster_list);
+	list_iterator_destroy(itr);
+
+	if (!ret_list) {
+		error("Couldn't assign clusters to federation %s", federation);
+		rc = SLURM_ERROR;
+		goto end_it;
+	} else if (!list_count(ret_list)) {
+		error("No clusters were assigned to the federation %s",
+		      federation);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+end_it:
+	FREE_NULL_LIST(ret_list);
+
+	return rc;
 }
 
 extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -132,6 +181,14 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	itr = list_iterator_create(federation_list);
 	while ((object = list_next(itr))) {
+		if (object->cluster_list &&
+		    (list_count(federation_list) > 1)) {
+			error("Clusters can only be assigned to one "
+			      "federation");
+			errno = ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT;
+			return  ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT;
+		}
+
 		xstrcat(cols, "creation_time, mod_time, name");
 		xstrfmtcat(vals, "%ld, %ld, '%s'", now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%ld", now);
@@ -148,17 +205,30 @@ extern int as_mysql_add_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add federation %s", object->name);
+			xfree(cols);
+			xfree(vals);
 			xfree(extra);
 			added = 0;
 			break;
 		}
 
 		affect_rows = last_affected_rows(mysql_conn);
-
 		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
+			xfree(cols);
+			xfree(vals);
 			xfree(extra);
 			continue;
+		}
+
+		if (object->cluster_list &&
+		    _assign_clusters_to_federation(mysql_conn, uid,
+						   object->name,
+						   object->cluster_list)) {
+			xfree(cols);
+			xfree(vals);
+			xfree(extra);
+			return SLURM_ERROR;
 		}
 
 		/* Add Transaction */
@@ -205,7 +275,7 @@ extern List as_mysql_get_federations(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	slurmdb_federation_rec_t *federation = NULL;
+	slurmdb_federation_rec_t *fed = NULL;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
@@ -244,11 +314,26 @@ empty:
 	federation_list = list_create(slurmdb_destroy_federation_rec);
 
 	while ((row = mysql_fetch_row(result))) {
-		federation = xmalloc(sizeof(slurmdb_federation_rec_t));
-		list_append(federation_list, federation);
+ 		slurmdb_cluster_cond_t clus_cond;
+ 		List tmp_list = NULL;
+ 		fed = xmalloc(sizeof(slurmdb_federation_rec_t));
+ 		list_append(federation_list, fed);
 
-		federation->name     = xstrdup(row[FED_REQ_NAME]);
-		federation->flags    = slurm_atoul(row[FED_REQ_FLAGS]);
+ 		fed->name  = xstrdup(row[FED_REQ_NAME]);
+ 		fed->flags = slurm_atoul(row[FED_REQ_FLAGS]);
+
+ 		/* clusters in federation */
+ 		slurmdb_init_cluster_cond(&clus_cond, 0);
+ 		clus_cond.federation_list = list_create(slurm_destroy_char);
+ 		list_append(clus_cond.federation_list, xstrdup(fed->name));
+
+ 		tmp_list = as_mysql_get_clusters(mysql_conn, uid, &clus_cond);
+ 		FREE_NULL_LIST(clus_cond.federation_list);
+ 		if (!tmp_list) {
+ 			error("Unable to get federation clusters");
+ 			continue;
+ 		}
+ 		fed->cluster_list = tmp_list;
 	}
 	mysql_free_result(result);
 
@@ -295,8 +380,19 @@ extern List as_mysql_modify_federations(
 
 	if (!extra || !vals) {
 		xfree(extra);
+		xfree(vals);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
+		return NULL;
+	}
+
+	if (fed->cluster_list &&
+	    fed_cond->federation_list &&
+	    (list_count(fed_cond->federation_list) > 1)) {
+		xfree(extra);
+		xfree(vals);
+		error("Clusters can only be assigned to one federation");
+		errno = ESLURM_FED_CLUSTER_MULTIPLE_ASSIGNMENT;
 		return NULL;
 	}
 
@@ -314,12 +410,11 @@ extern List as_mysql_modify_federations(
 
 	if (debug_flags & DEBUG_FLAG_DB_FEDR)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(
-		      mysql_conn, query, 0))) {
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		xfree(vals);
-		error("no result given for %s", extra);
 		xfree(extra);
+		error("no result given for %s", extra);
 		return NULL;
 	}
 	xfree(extra);
@@ -341,6 +436,15 @@ extern List as_mysql_modify_federations(
 	}
 	mysql_free_result(result);
 
+	if (fed->cluster_list &&
+	    (_assign_clusters_to_federation(mysql_conn, uid, object,
+					    fed->cluster_list))) {
+		xfree(vals);
+		xfree(name_char);
+		xfree(query);
+		return NULL;
+	}
+
 	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		if (debug_flags & DEBUG_FLAG_DB_FEDR)
@@ -358,9 +462,11 @@ extern List as_mysql_modify_federations(
 	rc = modify_common(mysql_conn, DBD_MODIFY_FEDERATIONS, now,
 			   user_name, federation_table,
 			   name_char, vals, NULL);
+
 	xfree(user_name);
 	xfree(name_char);
 	xfree(vals);
+
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify federation");
 		FREE_NULL_LIST(ret_list);
