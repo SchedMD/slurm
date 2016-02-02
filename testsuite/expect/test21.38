@@ -799,6 +799,14 @@ if {$exit_code || $matches != 4} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 $fed2 set flags+=LLC]
 expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Flags\\s+\\+=\\s+LLC$eol" {
+		incr matches
+		exp_continue
+	}
 	-re "^\\s+Modified federation...$eol" {
 		incr matches
 		exp_continue
@@ -820,7 +828,7 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 3} {
+if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it $exit_code
 }
@@ -906,6 +914,14 @@ if {$exit_code || $matches != 6} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 $fed2 set flags-=LLC]
 expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Flags\\s+-=\\s+LLC$eol" {
+		incr matches
+		exp_continue
+	}
 	-re "^\\s+Modified federation...$eol" {
 		incr matches
 		exp_continue
@@ -927,7 +943,7 @@ expect {
 		wait
 	}
 }
-if {$exit_code || $matches != 3} {
+if {$exit_code || $matches != 5} {
 	send_user "$matches FAILURE: unexpected error.\n"
 	end_it $exit_code
 }

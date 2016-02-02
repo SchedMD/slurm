@@ -721,6 +721,9 @@ extern int sacctmgr_modify_federation(int argc, char *argv[])
 		goto end_it;
 	}
 
+	printf(" Setting\n");
+	sacctmgr_print_federation(federation);
+
 	notice_thread_init();
 	ret_list = acct_storage_g_modify_federations(db_conn, my_uid,
 						     federation_cond,

@@ -1838,10 +1838,17 @@ extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed)
 	if (fed->name)
 		printf("  Name          = %s\n", fed->name);
 	if (fed->flags) {
-		 char *tmp_flags =
-			 slurmdb_federation_flags_str(fed->flags);
-		 printf("  Flags         = %s\n", tmp_flags);
-		 xfree(tmp_flags);
+		char *mode = NULL;
+		char *tmp_flags =
+			slurmdb_federation_flags_str(fed->flags);
+		if (fed->flags & FEDERATION_FLAG_ADD)
+			mode = "+";
+		else if (fed->flags & FEDERATION_FLAG_REMOVE)
+			mode = "-";
+		else
+			mode = " ";
+		printf("  Flags        %s= %s\n", mode, tmp_flags);
+		xfree(tmp_flags);
 	}
 	if (fed->cluster_list) {
 		ListIterator itr = list_iterator_create(fed->cluster_list);
