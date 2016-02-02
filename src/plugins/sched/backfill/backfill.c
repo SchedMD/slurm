@@ -804,8 +804,8 @@ static int _attempt_backfill(void)
 	uint32_t end_time, end_reserve, deadline_time_limit;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
-	bitstr_t *exc_core_bitmap = NULL;
+	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL, *resv_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res, resv_end, window_end;
 	time_t orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
@@ -825,6 +825,8 @@ static int _attempt_backfill(void)
 	uint32_t test_array_count = 0;
 	uint32_t acct_max_nodes, wait_reason = 0;
 	bool resv_overlap = false;
+	uint8_t save_share_res, save_whole_node;
+	int test_fini;
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1364,9 +1366,35 @@ next_task:
 		}
 		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_job_test(job_ptr, avail_bitmap, start_res);
+		test_fini = -1;
+		build_active_feature_bitmap(job_ptr, avail_bitmap,
+					    &active_bitmap);
 		job_ptr->bit_flags |= BACKFILL_TEST;
-		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
-			       req_nodes, exc_core_bitmap);
+		if (active_bitmap) {
+			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
+				       max_nodes, req_nodes, exc_core_bitmap);
+			if (j != SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_bitmap = active_bitmap;
+				active_bitmap = NULL;
+				test_fini = 1;
+			} else {
+				FREE_NULL_BITMAP(active_bitmap);
+				save_share_res  = job_ptr->details->share_res;
+				save_whole_node = job_ptr->details->whole_node;
+				job_ptr->details->share_res = 0;
+				job_ptr->details->whole_node = 1;
+				test_fini = 0;
+			}
+		}
+		if (test_fini != 1) {
+			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
+				       max_nodes, req_nodes, exc_core_bitmap);
+			if (test_fini == 0) {
+				job_ptr->details->share_res = save_share_res;
+				job_ptr->details->whole_node = save_whole_node;
+			}
+		}
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 
 		now = time(NULL);
