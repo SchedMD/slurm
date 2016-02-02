@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Support AuthInfo in slurmdbd.conf that is different from the value in
     slurm.conf.
  -- Fix build on FreeBSD 10.
+ -- Fix hdf5 build on ppc64 by using correct fprintf formatting for types.
 
 * Changes in Slurm 15.08.7
 ==========================

@@ -195,9 +195,9 @@ static int moffset; // General variable used by insert macros
  * 	var	variable name
  * 	prf	prefix for series (usually ','
  */
-#define PUT_UINT_SUM(fp, var, prfx)			\
-	fprintf(fp, "%s%ld,%ld,%ld,%ld", prfx,		\
-		var.min, var.ave, var.max, var.total);
+#define PUT_UINT_SUM(fp, var, prfx)					\
+	fprintf(fp, "%s%"PRIu64",%"PRIu64",%"PRIu64",%"PRIu64"",	\
+		prfx, var.min, var.ave, var.max, var.total);
 /* Macro to put an int min,ave,max,total for a variable to extract file
  *
  * Parameters
@@ -418,9 +418,10 @@ static void _energy_extract_series(
 	}
 	n_items = size_data / sizeof(profile_energy_t);
 	for (ix=0; ix < n_items; ix++) {
-		fprintf(fp, "%d,%d,%s,%s,%s,%ld,%ld,%ld\n", job, step, node,
-			series, energy_data[ix].tod, energy_data[ix].time,
-			energy_data[ix].power, energy_data[ix].cpu_freq);
+		fprintf(fp, "%d,%d,%s,%s,%s,%ld,%"PRIu64",%"PRIu64"\n",
+			job, step, node, series, energy_data[ix].tod,
+			energy_data[ix].time, energy_data[ix].power,
+			energy_data[ix].cpu_freq);
 	}
 	return;
 }
@@ -436,7 +437,7 @@ static void _energy_extract_total(
 			"Min_CPU Frequency,Ave_CPU Frequency,"
 			"Max_CPU Frequency,Total_CPU Frequency\n");
 	}
-	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
+	fprintf(fp, "%d,%d,%s,%s,%s,%"PRIu64"", job, step, node, series,
 		energy_data->start_time, energy_data->elapsed_time);
 	PUT_UINT_SUM(fp, energy_data->power, ",");
 	PUT_UINT_SUM(fp, energy_data->cpu_freq, ",");
@@ -723,8 +724,8 @@ static void _io_extract_series(
 	}
 	n_items = size_data / sizeof(profile_io_t);
 	for (ix=0; ix < n_items; ix++) {
-		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
-			job, step, node, series,
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%"PRIu64",%.3f,%"PRIu64
+			",%.3f\n", job, step, node, series,
 			io_data[ix].tod, io_data[ix].time,
 			io_data[ix].reads, io_data[ix].read_size,
 			io_data[ix].writes, io_data[ix].write_size);
@@ -746,7 +747,7 @@ static void _io_extract_total(
 			"Min_Write_Megabytes,Ave_Write_Megabytes,"
 			"Max_Write_Megabytes,Total_Write_Megabytes\n");
 	}
-	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
+	fprintf(fp, "%d,%d,%s,%s,%s,%"PRIu64"", job, step, node, series,
 		io_data->start_time, io_data->elapsed_time);
 	PUT_UINT_SUM(fp, io_data->reads, ",");
 	PUT_DBL_SUM(fp, io_data->read_size, ",");
@@ -1035,8 +1036,8 @@ static void _network_extract_series(
 	}
 	n_items = size_data / sizeof(profile_network_t);
 	for (ix=0; ix < n_items; ix++) {
-		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
-			job, step, node,series,
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%"PRIu64",%.3f,%"PRIu64
+			",%.3f\n", job, step, node, series,
 			network_data[ix].tod, network_data[ix].time,
 			network_data[ix].packets_in, network_data[ix].size_in,
 			network_data[ix].packets_out,
@@ -1061,7 +1062,7 @@ static void _network_extract_total(
 			"Min_Megabytes_Out,Ave_Megabytes_Out,"
 			"Max_Megabytes_Out,Total_Megabytes_Out\n");
 	}
-	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
+	fprintf(fp, "%d,%d,%s,%s,%s,%"PRIu64"", job, step, node, series,
 		network_data->start_time, network_data->elapsed_time);
 	PUT_UINT_SUM(fp, network_data->packets_in, ",");
 	PUT_DBL_SUM(fp, network_data->size_in, ",");
@@ -1428,14 +1429,15 @@ static void _task_extract_series(
 	}
 	n_items = size_data / sizeof(profile_task_t);
 	for (ix=0; ix < n_items; ix++) {
-		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%ld,%.3f",
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%"PRIu64",%"PRIu64",%.3f",
 			job, step, node, series,
 			task_data[ix].tod, task_data[ix].time,
 			task_data[ix].cpu_freq,
 			task_data[ix].cpu_time, task_data[ix].cpu_utilization);
-		fprintf(fp,",%ld,%ld,%ld,%.3f,%.3f\n",	task_data[ix].rss,
-			task_data[ix].vm_size, task_data[ix].pages,
-			task_data[ix].read_size, task_data[ix].write_size);
+		fprintf(fp,",%"PRIu64",%"PRIu64",%"PRIu64",%.3f,%.3f\n",
+			task_data[ix].rss, task_data[ix].vm_size,
+			task_data[ix].pages, task_data[ix].read_size,
+			task_data[ix].write_size);
 	}
 	return;
 }
@@ -1462,7 +1464,7 @@ static void _task_extract_total(
 			"Min_Write_Megabytes,Ave_Write_Megabytes,"
 			"Max_Write_Megabytes,Total_Write_Megabytes\n");
 	}
-	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
+	fprintf(fp, "%d,%d,%s,%s,%s,%"PRIu64"", job, step, node, series,
 		task_data->start_time, task_data->elapsed_time);
 	PUT_UINT_SUM(fp, task_data->cpu_freq, ",");
 	PUT_UINT_SUM(fp, task_data->cpu_time, ",");
