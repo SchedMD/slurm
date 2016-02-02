@@ -174,11 +174,9 @@ extern void *slurmctld_state_save(void *no_data)
 	double save_delay;
 	bool run_save;
 	int save_count;
-	int cc;
 
 #if HAVE_SYS_PRCTL_H
-	cc = prctl(PR_SET_NAME, "slurmctld_sstate", NULL, NULL, NULL);
-	if (cc < 0) {
+	if (prctl(PR_SET_NAME, "slurmctld_sstate", NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m",
 		      __func__, "slurmctld_sstate");
 	}
