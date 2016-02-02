@@ -924,7 +924,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bool has_xand = false;
 	bool resv_overlap = false;
 	uint32_t powercap;
-	int layout_power, highest_weight = 1;
+	int layout_power;
 
 	/* Mark nodes reserved for other jobs as off limit for this job.
 	 * If the job has a reservation, we've already limited the contents
@@ -992,9 +992,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	job_ptr->details->min_cpus = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size * 2);
 
-	for (i = 0; i < node_set_size; i++)
-		highest_weight = MAX(highest_weight, node_set_ptr[i].weight);
-
 	/* Accumulate nodes with required feature counts.
 	 * Ignored if job_ptr->details->req_node_layout is set (by wiki2).
 	 * Selected nodes become part of job's required node list. */
@@ -1048,7 +1045,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					real_memory =
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].weight =
-					node_set_ptr[i].weight + highest_weight;
+					INFINITE;
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -1604,6 +1601,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			} else {
 				total_bitmap = bit_copy(
 						node_set_ptr[i].my_bitmap);
+			}
+
+			if (node_set_ptr[i].weight == INFINITE) {
+				/* Node reboot required */
+				bit_and(node_set_ptr[i].my_bitmap,
+					idle_node_bitmap);
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
@@ -2837,7 +2840,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
-	int check_node_config, highest_weight = 1;
+	int check_node_config;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *power_up_bitmap = NULL, *usable_node_mask = NULL;
 	bitstr_t *inactive_bitmap = NULL;
@@ -2920,12 +2923,6 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-			list_next(config_iterator))) {
-		highest_weight = MAX(highest_weight, config_ptr->weight);
-	}
-
-	list_iterator_reset(config_iterator);
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
@@ -3032,8 +3029,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			node_set_ptr[node_set_inx].my_bitmap);
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;
-		node_set_ptr[node_set_inx].weight = config_ptr->weight +
-			highest_weight;
+		node_set_ptr[node_set_inx].weight = INFINITE;
 		bit_not(inactive_bitmap);
 		bit_and(node_set_ptr[node_set_inx-1].my_bitmap,inactive_bitmap);
 		node_set_ptr[node_set_inx-1].nodes -= bit_set_count(
@@ -3084,8 +3080,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].nodes) {
-			if (node_set_ptr[i].weight < highest_weight)
-				node_set_ptr[i].weight += highest_weight;
+			if (node_set_ptr[i].weight != INFINITE)
+				node_set_ptr[i].weight = INFINITE;
 			continue;	/* all nodes powered down */
 		}
 
@@ -3097,8 +3093,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].nodes = power_cnt;
 		node_set_ptr[i].nodes -= power_cnt;
 		node_set_ptr[node_set_inx].weight = node_set_ptr[i].weight;
-		if (node_set_ptr[node_set_inx].weight < highest_weight)
-			node_set_ptr[node_set_inx].weight += highest_weight;
+		if (node_set_ptr[node_set_inx].weight != INFINITE)
+			node_set_ptr[node_set_inx].weight = INFINITE;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
 		node_set_ptr[node_set_inx].feature_bits =

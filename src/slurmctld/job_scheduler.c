@@ -1755,7 +1755,7 @@ next_task:
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
 			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
-			info("sched: schedule: %s non-runnable:%s",
+			info("sched: schedule: %s non-runnable: %s",
 			     jobid2str(job_ptr, jbuf, sizeof(jbuf)),
 			     slurm_strerror(error_code));
 			if (!wiki_sched) {

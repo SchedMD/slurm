@@ -862,6 +862,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint32(&n->weight, "Weight", tbl)
 		    && !s_p_get_uint32(&n->weight, "Weight", dflt))
 			n->weight = 1;
+		else if (n->weight == INFINITE)
+			n->weight -= 1;
 
 		s_p_hashtbl_destroy(tbl);
 
