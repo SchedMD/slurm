@@ -145,14 +145,19 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			       "%u/%.2f/%u/%.2f%s",
 			       assoc_rec->shares_raw,
 			       assoc_rec->usage->shares_norm,
-			       assoc_rec->usage->level_shares,
+			       (assoc_rec->usage->level_shares == NO_VAL) ?
+			       1 : assoc_rec->usage->level_shares,
 			       assoc_rec->usage->fs_factor,
 			       new_line_char);
 
 			printf("UsageRaw/Norm/Efctv=%.2Lf/%.2Lf/%.2Lf%s",
 			       assoc_rec->usage->usage_raw,
-			       assoc_rec->usage->usage_norm,
-			       assoc_rec->usage->usage_efctv,
+			       (assoc_rec->usage->usage_norm ==
+				(long double)NO_VAL) ?
+			       1 : assoc_rec->usage->usage_norm,
+			       (assoc_rec->usage->usage_efctv ==
+				(long double)NO_VAL) ?
+			       1 : assoc_rec->usage->usage_efctv,
 			       new_line_char);
 
 			if (assoc_rec->parent_acct)
