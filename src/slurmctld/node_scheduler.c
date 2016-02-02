@@ -683,6 +683,7 @@ static int _match_feature2(char *seek, struct node_set *node_set_ptr,
  * IN node_set_ptr - Pointer to node_set being searched
  * OUT inactive_bitmap - Nodes with this as inactive feature
  * RET 1 if some nodes with this inactive feature, 0 no such inactive feature
+ * NOTE: Currently supports only simple AND of features
  */
 static int _match_feature3(struct job_record *job_ptr,
 			   struct node_set *node_set_ptr,
@@ -720,6 +721,61 @@ static int _match_feature3(struct job_record *job_ptr,
 	if (tmp_bitmap)
 		return 1;
 	return 0;
+}
+
+/* For a given job, if the available nodes differ from those with currently
+ *	active features, return a bitmap of nodes with the job's required
+ *	features currently active
+ * IN job_ptr - job requesting resource allocation
+ * IN avail_bitmap - nodes currently available for this job
+ * OUT active_bitmap - nodes with job's features currently active, NULL if
+ *	identical to avail_bitmap
+ * NOTE: Currently supports only simple AND of features
+ */
+extern void build_active_feature_bitmap(struct job_record *job_ptr,
+					bitstr_t *avail_bitmap,
+					bitstr_t **active_bitmap)
+{
+	struct job_details *details_ptr = job_ptr->details;
+	ListIterator feat_iter;
+	job_feature_t *job_feat_ptr;
+	node_feature_t *node_feat_ptr;
+	bitstr_t *tmp_bitmap = NULL;
+
+	*active_bitmap = NULL;
+	if (details_ptr->feature_list == NULL)
+		return;	/* nothing to look for */
+
+	feat_iter = list_iterator_create(details_ptr->feature_list);
+	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		node_feat_ptr = list_find_first(active_feature_list,
+						list_find_feature,
+						(void *)job_feat_ptr->name);
+		if ((node_feat_ptr == NULL) ||
+		    (node_feat_ptr->node_bitmap == NULL))
+			continue;
+		if (!tmp_bitmap) {
+			tmp_bitmap = bit_copy(node_feat_ptr->node_bitmap);
+			bit_not(tmp_bitmap);
+		} else {
+			bit_not(node_feat_ptr->node_bitmap);
+			bit_or(tmp_bitmap, node_feat_ptr->node_bitmap);
+			bit_not(node_feat_ptr->node_bitmap);
+		}
+	}
+	list_iterator_destroy(feat_iter);
+
+	if (tmp_bitmap) {
+		bit_not(tmp_bitmap);
+		if (bit_super_set(avail_bitmap, tmp_bitmap)) {
+			FREE_NULL_BITMAP(tmp_bitmap);
+		} else {
+			bit_and(tmp_bitmap, avail_bitmap);
+			*active_bitmap = tmp_bitmap;
+		}
+	}
+
+	return;
 }
 
 /*

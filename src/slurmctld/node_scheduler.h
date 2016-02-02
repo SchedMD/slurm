@@ -47,6 +47,19 @@
  */
 extern void allocate_nodes(struct job_record *job_ptr);
 
+/* For a given job, if the available nodes differ from those with currently
+ *	active features, return a bitmap of nodes with the job's required
+ *	features currently active
+ * IN job_ptr - job requesting resource allocation
+ * IN avail_bitmap - nodes currently available for this job
+ * OUT active_bitmap - nodes with job's features currently active, NULL if
+ *	identical to avail_bitmap
+ * NOTE: Currently supports only simple AND of features
+ */
+extern void build_active_feature_bitmap(struct job_record *job_ptr,
+					bitstr_t *avail_bitmap,
+					bitstr_t **active_bitmap);
+
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record

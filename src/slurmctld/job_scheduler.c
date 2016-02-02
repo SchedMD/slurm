@@ -2917,7 +2917,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 {
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
+	bitstr_t *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
@@ -2972,6 +2973,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		start_res = job_ptr->details->begin_time;
 	else
 		start_res = now;
+
 	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
 			  &exc_core_bitmap, &resv_overlap);
 	if (i != SLURM_SUCCESS)
@@ -2983,6 +2985,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	bit_and(avail_bitmap, avail_node_bitmap);
 
 	if (rc == SLURM_SUCCESS) {
+		int test_fini = -1;
+		uint8_t save_share_res, save_whole_node;
 		/* On BlueGene systems don't adjust the min/max node limits
 		   here.  We are working on midplane values. */
 		min_nodes = MAX(job_ptr->details->min_nodes,
@@ -3006,11 +3010,41 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		 * start time will almost certainly be earlier and not as
 		 * accurate, but this algorithm is much faster. */
 		orig_start_time = job_ptr->start_time;
-		rc = select_g_job_test(job_ptr, avail_bitmap,
-				       min_nodes, max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates,
-				       &preemptee_job_list, exc_core_bitmap);
+		build_active_feature_bitmap(job_ptr, avail_bitmap,
+					    &active_bitmap);
+		if (active_bitmap) {
+			rc = select_g_job_test(job_ptr, active_bitmap,
+					       min_nodes, max_nodes, req_nodes,
+					       SELECT_MODE_WILL_RUN,
+					       preemptee_candidates,
+					       &preemptee_job_list,
+					       exc_core_bitmap);
+			if (rc == SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_bitmap = active_bitmap;
+				active_bitmap = NULL;
+				test_fini = 1;
+			} else {
+				FREE_NULL_BITMAP(active_bitmap);
+				save_share_res  = job_ptr->details->share_res;
+				save_whole_node = job_ptr->details->whole_node;
+				job_ptr->details->share_res = 0;
+				job_ptr->details->whole_node = 1;
+				test_fini = 0;
+			}
+		}
+		if (test_fini != 1) {
+			rc = select_g_job_test(job_ptr, avail_bitmap,
+					       min_nodes, max_nodes, req_nodes,
+					       SELECT_MODE_WILL_RUN,
+					       preemptee_candidates,
+					       &preemptee_job_list,
+					       exc_core_bitmap);
+			if (test_fini == 0) {
+				job_ptr->details->share_res = save_share_res;
+				job_ptr->details->whole_node = save_whole_node;
+			}
+		}
 	}
 
 	if (rc == SLURM_SUCCESS) {
