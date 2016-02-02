@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix build on FreeBSD 10.
  -- Fix hdf5 build on ppc64 by using correct fprintf formatting for types.
  -- Fix cosmetic printing of NO_VALs in scontrol show assoc_mgr.
+ -- Fix perl api for newer perl versions.
 
 * Changes in Slurm 15.08.7
 ==========================
