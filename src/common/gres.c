@@ -67,6 +67,12 @@
 #  include <string.h>
 #endif /* HAVE_CONFIG_H */
 
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5584,13 +5590,16 @@ static bitstr_t * _get_usable_gres(int context_inx)
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
 
-
 	CPU_ZERO(&mask);
-#ifdef SCHED_GETAFFINITY_THREE_ARGS
+#ifdef __FreeBSD__
+	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, -1,
+				sizeof(mask), &mask);
+#elif defined SCHED_GETAFFINITY_THREE_ARGS
 	rc = sched_getaffinity(0, sizeof(mask), &mask);
 #else
 	rc = sched_getaffinity(0, &mask);
 #endif
+
 	if (rc) {
 		error("sched_getaffinity error: %m");
 		return usable_gres;

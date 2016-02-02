@@ -52,6 +52,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef __FreeBSD__
+#define POLLRDHUP POLLHUP
+#include <signal.h>
+#endif
+
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
