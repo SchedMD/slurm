@@ -1702,9 +1702,13 @@ extern char *slurm_get_auth_info(void)
 	char *auth_info;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	auth_info = xstrdup(conf->authinfo);
-	slurm_conf_unlock();
+	if (slurmdbd_conf) {
+		auth_info = xstrdup(slurmdbd_conf->auth_info);
+	} else {
+		conf = slurm_conf_lock();
+		auth_info = xstrdup(conf->authinfo);
+		slurm_conf_unlock();
+	}
 
 	return auth_info;
 }
