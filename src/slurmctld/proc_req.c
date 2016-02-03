@@ -684,7 +684,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->keep_alive_time     = conf->keep_alive_time;
 	conf_ptr->kill_wait           = conf->kill_wait;
 	conf_ptr->kill_on_bad_exit    = conf->kill_on_bad_exit;
-	conf_ptr->knl_plugins         = xstrdup(conf->knl_plugins);
 
 	conf_ptr->launch_params       = xstrdup(conf->launch_params);
 	conf_ptr->launch_type         = xstrdup(conf->launch_type);
@@ -710,6 +709,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->msg_timeout         = conf->msg_timeout;
 
 	conf_ptr->next_job_id         = get_next_job_id();
+	conf_ptr->node_features_plugins = xstrdup(conf->node_features_plugins);
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 
 	conf_ptr->over_time_limit     = conf->over_time_limit;

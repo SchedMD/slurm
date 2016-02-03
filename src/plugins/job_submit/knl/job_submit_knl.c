@@ -64,7 +64,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/knl.h"
+#include "src/common/node_features.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -108,7 +108,7 @@ int init (void)
 	rc = knl_conf_read(&avail_mcdram, &avail_numa,
 			   &default_mcdram, &default_numa);
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_KNL) {
+	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
 		avail_mcdram_str = knl_mcdram_str(avail_mcdram);
 		avail_numa_str = knl_numa_str(avail_numa);
 		default_mcdram_str = knl_mcdram_str(default_mcdram);

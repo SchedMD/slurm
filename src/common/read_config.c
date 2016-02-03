@@ -70,10 +70,10 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
-#include "src/common/knl.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
+#include "src/common/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
@@ -248,7 +248,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"KeepAliveTime", S_P_UINT16},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
-	{"KNLPlugins", S_P_STRING},
 	{"LaunchParameters", S_P_STRING},
 	{"LaunchType", S_P_STRING},
 	{"Layouts", S_P_STRING},
@@ -270,6 +269,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
 	{"MsgAggregationParams", S_P_STRING},
+	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
@@ -2450,7 +2450,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
-	xfree (ctl_conf_ptr->knl_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->layouts);
@@ -2462,6 +2461,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	xfree (ctl_conf_ptr->msg_aggr_params);
+	xfree (ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
@@ -2594,7 +2594,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->keep_alive_time		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
-	xfree(ctl_conf_ptr->knl_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->layouts);
@@ -2614,6 +2613,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->msg_aggr_params);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
+	xfree(ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
@@ -3400,8 +3400,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
 
-	s_p_get_string(&conf->knl_plugins, "KNLPlugins", hashtbl);
-
 	s_p_get_string(&conf->launch_params, "LaunchParameters", hashtbl);
 
 	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
@@ -3562,6 +3560,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
+
+	s_p_get_string(&conf->node_features_plugins, "NodeFeaturesPlugins",
+		       hashtbl);
 
 	if (!s_p_get_string(&conf->accounting_storage_tres,
 			    "AccountingStorageTRES", hashtbl))
@@ -4730,10 +4731,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobContainer");
 	}
-	if (debug_flags & DEBUG_FLAG_KNL) {
+	if (debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "KNL");
+		xstrcat(rc, "NodeFeatures");
 	}
 	if (debug_flags & DEBUG_FLAG_LICENSE) {
 		if (rc)
@@ -4902,12 +4903,12 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (strcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
-		else if (strcasecmp(tok, "KNL") == 0)
-			(*flags_out) |= DEBUG_FLAG_KNL;
 		else if (strcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_CONF_HASH;
+		else if (strcasecmp(tok, "NodeFeatures") == 0)
+			(*flags_out) |= DEBUG_FLAG_NODE_FEATURES;
 		else if (strcasecmp(tok, "NoRealTime") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_REALTIME;
 		else if (strcasecmp(tok, "Priority") == 0)

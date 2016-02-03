@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  knl.h - Infrastructure for Intel Knights Landing processor
+ *  node_features.h - Infrastructure for changing a node's features on user
+ *	demand
  *****************************************************************************
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -34,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_COMMON_KNL_H
-#define _SLURM_COMMON_KNL_H
+#ifndef _NODE_FEATURES_H
+#define _NODE_FEATURES_H
 
 #include "slurm/slurm.h"
 
@@ -110,12 +111,12 @@ extern char *knl_numa_str(uint16_t numa_num);
  *  KNL node management functions, uses plugin
 \*****************************************************************************/
 
-extern int slurm_knl_g_init(void);
+extern int node_features_g_init(void);
 
-extern int slurm_knl_g_fini(void);
+extern int node_features_g_fini(void);
 
-extern int slurm_knl_g_status(char *node_list);
+extern int node_features_g_reconfig(void);
 
-extern int slurm_knl_g_boot(char *node_list, char *mcdram_type,char *numa_type);
+extern int node_features_g_get_node(char *node_list);
 
-#endif /* !_SLURM_COMMON_KNL_H */
+#endif /* !_NODE_FEATURES_H */

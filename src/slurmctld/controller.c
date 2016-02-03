@@ -68,10 +68,10 @@
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
-#include "src/common/knl.h"
 #include "src/common/layouts_mgr.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/power.h"
@@ -454,8 +454,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize job_submit plugin");
 	if (ext_sensors_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize ext_sensors plugin");
-	if (slurm_knl_g_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize KNL plugin");	
+	if (node_features_g_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize node_features plugin");	
 	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize switch plugin");
 
@@ -550,6 +550,8 @@ int main(int argc, char *argv[])
 			fatal( "failed to initialize power management plugin");
 		if (slurm_mcs_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
+		if (node_features_g_get_node(NULL) != SLURM_SUCCESS)
+			error("failed to initialize node features");
 
 		/*
 		 * create attached thread to process RPCs

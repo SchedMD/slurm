@@ -259,11 +259,11 @@ char *slurm_get_gres_plugins(void);
  */
 char *slurm_get_job_submit_plugins(void);
 
-/* slurm_get_knl_plugins
- * get knl_plugins from slurmctld_conf object from slurmctld_conf object
+/* slurm_get_node_features_plugins
+ * get node_features_plugins from slurmctld_conf object
  * RET char *   - knl_plugins, MUST be xfreed by caller
  */
-char *slurm_get_knl_plugins(void);
+char *slurm_get_node_features_plugins(void);
 
 /* slurm_get_slurmctld_plugstack
  * get slurmctld_plugstack from slurmctld_conf object from

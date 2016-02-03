@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  knl.c - Infrastructure for Intel Knights Landing processor
+ *  node_features.c - Infrastructure for changing a node's features on user
+ *	demand
  *****************************************************************************
  *  Copyright (C) 2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -60,8 +61,8 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "slurm/slurm.h"
-#include "src/common/knl.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
@@ -72,21 +73,21 @@
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, KNL plugins will stop
+ * fields at the beginning of the structure.  If you do, this plugins will stop
  * working.  If you need to add fields, add them to the end of the structure.
  */
-typedef struct slurm_knl_ops {
-	int	(*status) (char *node_list);
-	int	(*boot)	  (char *node_list, char *mcdram_type, char *numa_type);
-} slurm_knl_ops_t;
+typedef struct node_features_ops {
+	int	(*get_node)	(char *node_list);
+	int	(*reconfig)	(void);
+} node_features_ops_t;
 
 /*
  * These strings must be kept in the same order as the fields
- * declared for slurm_knl_ops_t.
+ * declared for node_features_ops_t.
  */
 static const char *syms[] = {
-	"slurm_knl_g_status",
-	"slurm_knl_g_boot"
+	"node_features_p_get_node",
+	"node_features_p_reconfig"
 };
 
 static s_p_options_t knl_conf_file_options[] = {
@@ -98,10 +99,10 @@ static s_p_options_t knl_conf_file_options[] = {
 };
 
 static int g_context_cnt = -1;
-static slurm_knl_ops_t *ops = NULL;
+static node_features_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static char *knl_plugin_list = NULL;
+static char *node_features_plugin_list = NULL;
 static bool init_run = false;
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
@@ -383,7 +384,7 @@ extern char *knl_numa_str(uint16_t numa_num)
 
 }
 
-extern int slurm_knl_g_init(void)
+extern int node_features_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names;
@@ -397,19 +398,21 @@ extern int slurm_knl_g_init(void)
 	if (g_context_cnt >= 0)
 		goto fini;
 
-	knl_plugin_list = slurm_get_knl_plugins();
+	node_features_plugin_list = slurm_get_node_features_plugins();
 	g_context_cnt = 0;
-	if ((knl_plugin_list == NULL) || (knl_plugin_list[0] == '\0'))
+	if ((node_features_plugin_list == NULL) ||
+	    (node_features_plugin_list[0] == '\0'))
 		goto fini;
 
-	names = knl_plugin_list;
+	names = node_features_plugin_list;
 	while ((type = strtok_r(names, ",", &last))) {
-		xrealloc(ops, (sizeof(slurm_knl_ops_t) * (g_context_cnt + 1)));
+		xrealloc(ops,
+			 (sizeof(node_features_ops_t) * (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "knl/", 4) == 0)
+		if (strncmp(type, "node_features/", 4) == 0)
 			type += 4; /* backward compatibility */
-		type = xstrdup_printf("knl/%s", type);
+		type = xstrdup_printf("node_features/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_cnt],
 			syms, sizeof(syms));
@@ -431,12 +434,12 @@ fini:
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (rc != SLURM_SUCCESS)
-		slurm_knl_g_fini();
+		node_features_g_fini();
 
 	return rc;
 }
 
-extern int slurm_knl_g_fini(void)
+extern int node_features_g_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
@@ -454,39 +457,39 @@ extern int slurm_knl_g_fini(void)
 	}
 	xfree(ops);
 	xfree(g_context);
-	xfree(knl_plugin_list);
+	xfree(node_features_plugin_list);
 	g_context_cnt = -1;
 
 fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
-extern int slurm_knl_g_status(char *node_list)
+extern int node_features_g_reconfig(void)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = slurm_knl_g_init();
+	rc = node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].status))(node_list);
+		rc = (*(ops[i].reconfig))();
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("slurm_knl_g_status");
+	END_TIMER2("node_features_g_reconfig");
 
 	return rc;
 }
 
-extern int slurm_knl_g_boot(char *node_list, char *mcdram_type, char *numa_type)
+extern int node_features_g_get_node(char *node_list)
 {
 	DEF_TIMERS;
 	int i, rc;
 
 	START_TIMER;
-	rc = slurm_knl_g_init();
+	rc = node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].boot))(node_list, mcdram_type, numa_type);
+		rc = (*(ops[i].get_node))(node_list);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("slurm_knl_g_boot");
 

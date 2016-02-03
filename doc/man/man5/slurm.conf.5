@@ -630,11 +630,11 @@ Gang scheduling details
 \fBJobContainer\fR
 Job container plugin details
 .TP
-\fBKNL\fR
-Intel Knights Landking (KNL) debug info
-.TP
 \fBLicense\fR
 License management details
+.TP
+\fBNodeFeatures\fR
+Node Features plugin debug info
 .TP
 \fBNO_CONF_HASH\fR
 Do not log when the slurm.conf files differs between Slurm daemons
@@ -1244,15 +1244,16 @@ The default value is 30 seconds.
 The value may not exceed 65533.
 
 .TP
-\fBKNLPlugins\fR
-Identifies the plugins to be used for support of Intel Knights Landing
-processors (KNL). These plugins can status the processor for NUMA and MCDRAM
-mode, reboot the node into different modes, etc.
+\fNodeFeaturesPlugins\fR
+Identifies the plugins to be used for support of node features which can
+change through time. For example, a node which might be booted with various
+BIOS setting. This is supported through the use of a node's active_features
+and available_features information.
 Acceptable values at present include:
 .RS
 .TP 20
-\fBknl/cray\fR
-used only for Cray systems
+\fBnode_features/knl_cray\fR
+used only for Intel Knights Landing processors (KNL) on Cray systems
 .RE
 
 .TP
