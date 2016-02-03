@@ -1269,7 +1269,7 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 		if (group_mode) {
 			fprintf(output_file,
 			        "%s,%"PRIu64",%s %s,%"PRIu64",%s %s,"
-				"%"PRIu64",%"PRIu64",%lf,%"PRIu64,
+				"%"PRIu64",%"PRIu64",%lf,%zu",
 			        step_name, et,
 			        names[min_idx], nodes[min_idx], min_val,
 			        names[max_idx], nodes[max_idx], max_val,
@@ -1277,7 +1277,7 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
 		} else {
 			fprintf(output_file,
 			        "%s,%"PRIu64",%s,%"PRIu64",%s,%"PRIu64",%"
-				PRIu64",%lf,%"PRIu64,
+				PRIu64",%lf,%zu",
 			        step_name, et,
 			        nodes[min_idx], min_val,
 			        nodes[max_idx], max_val,
@@ -1366,7 +1366,7 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 		}
 
 		fprintf(output_file,
-			"%s,%"PRIu64",%s,%lf,%s,%lf,%lf,%lf,%"PRIu64,
+			"%s,%"PRIu64",%s,%lf,%s,%lf,%lf,%lf,%zu",
 		        step_name, et,
 		        names[min_idx], min_val, names[max_idx], max_val,
 		        sum, avg, nb_series_in_smp);

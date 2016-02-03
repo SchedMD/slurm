@@ -20,7 +20,7 @@ sub _get_constants {
 	} else {
 	    $val = int($val);
 	}
-	$const{$name} = sub () { $val };
+	$const{$name} = sub { $val };
     }
     $got = 1;
 }
