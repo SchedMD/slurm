@@ -117,6 +117,8 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 
 static bool _first_array_task(struct job_record *job_ptr);
 static void _launch_prolog(struct job_record *job_ptr);
+static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
+			  int node_set_size);
 static int  _match_feature(char *seek, struct node_set *node_set_ptr);
 static int  _match_feature2(char *seek, struct node_set *node_set_ptr,
 			    bitstr_t **inactive_bitmap);
@@ -1661,8 +1663,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 			if (node_set_ptr[i].weight == INFINITE) {
 				/* Node reboot required */
+				count1 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
+				count2 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
+				if (count1 != count2)
+					nodes_busy = true;
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
@@ -2088,6 +2096,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				      err_msg, test_only);
 	if (error_code)
 		return error_code;
+	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
 
 	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
@@ -3176,6 +3185,24 @@ static int _build_node_list(struct job_record *job_ptr,
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
 	return SLURM_SUCCESS;
+}
+
+static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
+			  int node_set_size)
+{
+/* Used for debugging purposes only */
+#if 0
+	char *node_list;
+	int i;
+
+	info("NodeSet for job %u", job_id);
+	for (i = 0; i < node_set_size; i++) {
+		node_list = bitmap2node_name(node_set_ptr[i].my_bitmap);
+		info("NodeSet[%d] Nodes:%s Weight:%u", i, node_list,
+		     node_set_ptr[i].weight);
+		xfree(node_list);
+	}
+#endif
 }
 
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
