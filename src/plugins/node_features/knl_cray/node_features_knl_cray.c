@@ -118,14 +118,38 @@ typedef struct mcdram_cfg {
 	char *mcdram_cfg;
 } mcdram_cfg_t;
 
+typedef struct numa_cap {
+	uint32_t nid;
+	char *numa_cfg;
+} numa_cap_t;
+
+typedef struct numa_cfg {
+	uint32_t nid;
+	char *numa_cfg;
+} numa_cfg_t;
+
 static void _free_script_argv(char **script_argv);
 static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 						  int *num);
-static void _json_parse_mcdram_cap_object(json_object *jobj,
-					  mcdram_cap_t *ent);
+static mcdram_cfg_t *_json_parse_mcdram_cfg_array(json_object *jobj, char *key,
+						  int *num);
+static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent);
+static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent);
+static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
+					      int *num);
+static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
+					      int *num);
+static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent);
+static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
+static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
+static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
+static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt);
+static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
+static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static char *_run_script(char **script_argv, int *status);
 static int  _tot_wait (struct timeval *start_time);
 
@@ -153,8 +177,7 @@ static void _free_script_argv(char **script_argv)
 	xfree(script_argv);
 }
 
-static void _json_parse_mcdram_cap_object(json_object *jobj,
-					  mcdram_cap_t *ent)
+static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 {
 	enum json_type type;
 	struct json_object_iter iter;
@@ -174,6 +197,90 @@ static void _json_parse_mcdram_cap_object(json_object *jobj,
 			p = json_object_get_string(iter.val);
 			if (strcmp(iter.key, "mcdram_cfg") == 0) {
 				ent->mcdram_cfg = xstrdup(p);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+		case json_type_int:
+			x = json_object_get_int64(iter.val);
+			if (strcmp(iter.key, "nid") == 0) {
+				ent->nid = x;
+			}
+			break;
+		case json_type_string:
+			p = json_object_get_string(iter.val);
+			if (strcmp(iter.key, "mcdram_cfg") == 0) {
+				ent->mcdram_cfg = xstrdup(p);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+		case json_type_int:
+			x = json_object_get_int64(iter.val);
+			if (strcmp(iter.key, "nid") == 0) {
+				ent->nid = x;
+			}
+			break;
+		case json_type_string:
+			p = json_object_get_string(iter.val);
+			if (strcmp(iter.key, "numa_cfg") == 0) {
+				ent->numa_cfg = xstrdup(p);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+		case json_type_int:
+			x = json_object_get_int64(iter.val);
+			if (strcmp(iter.key, "nid") == 0) {
+				ent->nid = x;
+			}
+			break;
+		case json_type_string:
+			p = json_object_get_string(iter.val);
+			if (strcmp(iter.key, "numa_cfg") == 0) {
+				ent->numa_cfg = xstrdup(p);
 			}
 			break;
 		default:
@@ -204,6 +311,72 @@ static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 	return ents;
 }
 
+static mcdram_cfg_t *_json_parse_mcdram_cfg_array(json_object *jobj, char *key,
+						  int *num)
+{
+	json_object *jarray;
+	json_object *jvalue;
+	mcdram_cfg_t *ents;
+	int i;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(mcdram_cfg_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_mcdram_cfg_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+static numa_cap_t *_json_parse_numa_cap_array(json_object *jobj, char *key,
+					      int *num)
+{
+	json_object *jarray;
+	json_object *jvalue;
+	numa_cap_t *ents;
+	int i;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(numa_cap_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_numa_cap_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
+static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
+					      int *num)
+{
+	json_object *jarray;
+	json_object *jvalue;
+	numa_cfg_t *ents;
+	int i;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	ents = xmalloc(*num * sizeof(numa_cfg_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_numa_cfg_object(jvalue, &ents[i]);
+	}
+
+	return ents;
+}
+
 /* Log a command's arguments. */
 static void _log_script_argv(char **script_argv, char *resp_msg)
 {
@@ -224,7 +397,6 @@ static void _log_script_argv(char **script_argv, char *resp_msg)
 	xfree(cmd_line);
 }
 
-
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt)
 {
 	int i;
@@ -242,6 +414,66 @@ static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt)
 	for (i = 0; i < mcdram_cap_cnt; i++) {
 		info("MCDRAM_CAP[%d]: nid:%u mcdram_cfg:%s",
 		     i, mcdram_cap[i].nid, mcdram_cap[i].mcdram_cfg);
+	}
+}
+
+static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
+{
+	int i;
+
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		xfree(mcdram_cfg[i].mcdram_cfg);
+	}
+	xfree(mcdram_cfg);
+}
+
+static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
+{
+	int i;
+
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		info("MCDRAM_CFG[%d]: nid:%u mcdram_cfg:%s",
+		     i, mcdram_cfg[i].nid, mcdram_cfg[i].mcdram_cfg);
+	}
+}
+
+static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt)
+{
+	int i;
+
+	for (i = 0; i < numa_cap_cnt; i++) {
+		xfree(numa_cap[i].numa_cfg);
+	}
+	xfree(numa_cap);
+}
+
+static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt)
+{
+	int i;
+
+	for (i = 0; i < numa_cap_cnt; i++) {
+		info("NUMA_CAP[%d]: nid:%u numa_cfg:%s",
+		     i, numa_cap[i].nid, numa_cap[i].numa_cfg);
+	}
+}
+
+static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
+{
+	int i;
+
+	for (i = 0; i < numa_cfg_cnt; i++) {
+		xfree(numa_cfg[i].numa_cfg);
+	}
+	xfree(numa_cfg);
+}
+
+static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
+{
+	int i;
+
+	for (i = 0; i < numa_cfg_cnt; i++) {
+		info("NUMA_CFG[%d]: nid:%u numa_cfg:%s",
+		     i, numa_cfg[i].nid, numa_cfg[i].numa_cfg);
 	}
 }
 
@@ -378,17 +610,23 @@ extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
 	json_object_iter iter;
-	int status = 0;
+	int status = 0, rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 	char *resp_msg;
 	char **script_argv;
-	mcdram_cap_t *mcdram_cap;
-	int mcdram_cap_cnt = 0;
+	mcdram_cap_t *mcdram_cap = NULL;
+	mcdram_cfg_t *mcdram_cfg = NULL;
+	numa_cap_t *numa_cap = NULL;
+	numa_cfg_t *numa_cfg = NULL;
+	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0;
+	int numa_cap_cnt = 0, numa_cfg_cnt = 0;
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	/*
+	 * Load available MCDRAM capabilities
+	 */
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_mcdram_capabilities");
-
 	START_TIMER;
 	resp_msg = _run_script(script_argv, &status);
 	END_TIMER;
@@ -405,18 +643,18 @@ extern int node_features_p_get_node(char *node_list)
 	if (resp_msg == NULL) {
 		info("%s: get_mcdram_capabilities returned no information",
 		     __func__);
-		_free_script_argv(script_argv);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto fini;
 	}
 
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
 		error("%s: json parser failed on %s", __func__, resp_msg);
 		xfree(resp_msg);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto fini;
 	}
 	xfree(resp_msg);
-
 	json_object_object_foreachC(j, iter) {
 		if (strcmp(iter.key, "nids"))
 			continue;
@@ -425,10 +663,143 @@ extern int node_features_p_get_node(char *node_list)
 		break;
 	}
 	json_object_put(j);	/* Frees json memory */
-	if (debug_flag)
+
+	/*
+	 * Load current MCDRAM configuration
+	 */
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("capmc");
+	script_argv[1] = xstrdup("get_mcdram_cfg");
+	START_TIMER;
+	resp_msg = _run_script(script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: get_mcdram_cfg ran for %s", __func__, TIME_STR);
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: get_mcdram_cfg status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
+		info("%s: get_mcdram_cfg returned no information", __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	j = json_tokener_parse(resp_msg);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	xfree(resp_msg);
+	json_object_object_foreachC(j, iter) {
+		if (strcmp(iter.key, "nids"))
+			continue;
+		mcdram_cfg = _json_parse_mcdram_cfg_array(j, iter.key,
+							  &mcdram_cfg_cnt);
+		break;
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	/*
+	 * Load available NUMA capabilities
+	 */
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("capmc");
+	script_argv[1] = xstrdup("get_numa_capabilities");
+	START_TIMER;
+	resp_msg = _run_script(script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: get_numa_capabilities ran for %s",
+		     __func__, TIME_STR);
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: get_numa_capabilities status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
+		info("%s: get_numa_capabilities returned no information",
+		     __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	j = json_tokener_parse(resp_msg);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	xfree(resp_msg);
+	json_object_object_foreachC(j, iter) {
+		if (strcmp(iter.key, "nids"))
+			continue;
+		numa_cap = _json_parse_numa_cap_array(j, iter.key,
+						      &numa_cap_cnt);
+		break;
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	/*
+	 * Load current NUMA configuration
+	 */
+	script_argv = xmalloc(sizeof(char *) * 4);	/* NULL terminated */
+	script_argv[0] = xstrdup("capmc");
+	script_argv[1] = xstrdup("get_numa_cfg");
+	START_TIMER;
+	resp_msg = _run_script(script_argv, &status);
+	END_TIMER;
+	if (debug_flag) {
+		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
+	}
+	_log_script_argv(script_argv, resp_msg);
+	_free_script_argv(script_argv);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: get_numa_cfg status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
+		info("%s: get_numa_cfg returned no information", __func__);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	j = json_tokener_parse(resp_msg);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", __func__, resp_msg);
+		xfree(resp_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	xfree(resp_msg);
+	json_object_object_foreachC(j, iter) {
+		if (strcmp(iter.key, "nids"))
+			continue;
+		numa_cfg = _json_parse_numa_cfg_array(j, iter.key,
+						      &numa_cfg_cnt);
+		break;
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	if (debug_flag) {
 		_mcdram_cap_log(mcdram_cap, mcdram_cap_cnt);
+		_mcdram_cfg_log(mcdram_cfg, mcdram_cfg_cnt);
+		_numa_cap_log(numa_cap, numa_cap_cnt);
+		_numa_cfg_log(numa_cfg, numa_cfg_cnt);
+	}
 
-	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
+fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
+	_mcdram_cfg_free(mcdram_cfg, mcdram_cfg_cnt);
+	_numa_cap_free(numa_cap, numa_cap_cnt);
+	_numa_cfg_free(numa_cfg, numa_cfg_cnt);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
