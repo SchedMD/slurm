@@ -3942,11 +3942,13 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 	 */
 	gres_cnt = job_gres_ptr->gres_cnt_alloc;
 	i = node_gres_ptr->gres_cnt_alloc + gres_cnt;
-	i -= node_gres_ptr->gres_cnt_avail;
-	if (i > 0) {
+
+	if (i > node_gres_ptr->gres_cnt_avail) {
 		error("gres/%s: job %u node %s overallocated resources by %"
-		      PRIu64,
-		      gres_name, job_id, node_name, i);
+		      PRIu64", (%"PRIu64" > %"PRIu64")",
+		      gres_name, job_id, node_name,
+		      i - node_gres_ptr->gres_cnt_avail,
+		      i, node_gres_ptr->gres_cnt_avail);
 		/* proceed with request, give job what's available */
 	}
 

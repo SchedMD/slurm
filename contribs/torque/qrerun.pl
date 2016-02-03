@@ -51,27 +51,27 @@ my (
 );
 
 GetOptions(
-        'help|?'    => \$help,
-        '--man'     => \$man,
-        ) or pod2usage(2);
+	'help|?'    => \$help,
+	'--man'     => \$man,
+	) or pod2usage(2);
 
 pod2usage(2) if $help;
 # Handle man page flag
 if ($man)
 {
-        if ($< == 0)    # Cannot invoke perldoc as root
-        {
-                my $id = eval { getpwnam("nobody") };
-                $id = eval { getpwnam("nouser") } unless defined $id;
-                $id = -2                          unless defined $id;
-                $<  = $id;
-        }
-        $> = $<;                         # Disengage setuid
-        $ENV{PATH} = "/bin:/usr/bin";    # Untaint PATH
-        delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
-        if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
-        else { die "Illegal characters were found in \$0 ($0)\n"; }
-        pod2usage(-exitstatus => 0, -verbose => 2);
+	if ($< == 0)    # Cannot invoke perldoc as root
+	{
+		my $id = eval { getpwnam("nobody") };
+		$id = eval { getpwnam("nouser") } unless defined $id;
+		$id = -2			  unless defined $id;
+		$<  = $id;
+	}
+	$> = $<;			 # Disengage setuid
+	$ENV{PATH} = "/bin:/usr/bin";    # Untaint PATH
+	delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
+	if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
+	else { die "Illegal characters were found in \$0 ($0)\n"; }
+	pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
 
@@ -79,7 +79,7 @@ if ($man)
 my $job_id = $ARGV[$#ARGV];
 
 if (@ARGV < 1) {
-	pod2usage(-message=>"Invalid Argument", -verbose=>1); 
+	pod2usage(-message=>"Invalid Argument", -verbose=>1);
 	exit(1);
 }
 
@@ -96,9 +96,9 @@ __END__
 =head1 NAME
 
 B<qrerun> -  To rerun a job is to terminate the job and return the job to the queued state in the execution queue in which the job currently resides.
-If a job is marked as not rerunable then the rerun request will fail for that job. 
+If a job is marked as not rerunable then the rerun request will fail for that job.
 
-See the option on the qsub and qalter commands. 
+See the option on the qsub and qalter commands.
 
 It is aimed to be feature-compatible with PBS' qsub.
 
@@ -108,7 +108,7 @@ B<qrerun> [-? | --help] [--man] [--verbose] <job_id>
 
 =head1 DESCRIPTION
 
-The B<qrerun> command directs that the specified job is to be rerun if possible. 
+The B<qrerun> command directs that the specified job is to be rerun if possible.
 
 =head1 OPTIONS
 

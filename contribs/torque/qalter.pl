@@ -70,20 +70,20 @@ if ($man)
 # Check input arguments
 # ----------------------
 if (@ARGV < 1) {
-	pod2usage(-message=>"Missing Job ID", -verbose=>0); 
+	pod2usage(-message=>"Missing Job ID", -verbose=>0);
 } else {
 	$slurm = Slurm::new();
 	$resp = $slurm->get_end_time($job_id);
 	if (not defined($resp)) {
-		pod2usage(-message=>"Job id $job_id not valid!", -verbose=>0); 
+		pod2usage(-message=>"Job id $job_id not valid!", -verbose=>0);
 	}
 	if ((not defined($new_name)) and (not defined($rerun)) and (not defined($output))) {
-		pod2usage(-message=>"no argument given!", -verbose=>0); 
+		pod2usage(-message=>"no argument given!", -verbose=>0);
 	}
 }
 
 # --------------------------------------------
-# Use Slurm's Perl API to change name of a job 
+# Use Slurm's Perl API to change name of a job
 # --------------------------------------------
 if ($new_name) {
 	my %update = ();
@@ -186,14 +186,14 @@ B<qalter> - alter a job name, the job rerun flag or the job output file name.
 
 =head1 SYNOPSIS
 
-qalter [-N Name] 
+qalter [-N Name]
        [-r y|n]
        [-o output file]
        <job ID>
 
 =head1 DESCRIPTION
 
-The B<qalter> updates job name, job rerun flag or job output(stdout) log location. 
+The B<qalter> updates job name, job rerun flag or job output(stdout) log location.
 
 It is aimed to be feature-compatible with PBS' qsub.
 
@@ -211,7 +211,7 @@ Alter a job rerunnable flag. "y" will allow a qrerun to be issued. "n" disable q
 
 =item B<-o>
 
-Alter a job output log file name (stdout). 
+Alter a job output log file name (stdout).
 
 The job log will be move/rename after the job has B<terminated>.
 
@@ -219,7 +219,7 @@ The job log will be move/rename after the job has B<terminated>.
 
 brief help message
 
-=item B<-man> 
+=item B<-man>
 
 full documentation
 

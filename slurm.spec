@@ -403,7 +403,7 @@ Perl tool to print Slurm job state information. The output is designed to give
 information on the resource usage and availablilty, as well as information
 about jobs that are currently active on the machine. This output is built
 using the Slurm utilities, sinfo, squeue and scontrol, the man pages for these
-utilites will provide more information and greater depth of understanding
+utilities will provide more information and greater depth of understanding
 
 %if %{slurm_with pam}
 %package pam_slurm
