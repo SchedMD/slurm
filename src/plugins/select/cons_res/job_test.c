@@ -233,8 +233,9 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		}
 		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
 		    (mc_ptr->ntasks_per_core)) {
-			ncpus_per_core = mc_ptr->ntasks_per_core;
-			ncpus_per_core *= cpus_per_task;
+			ncpus_per_core = MIN(threads_per_core,
+					     (mc_ptr->ntasks_per_core *
+					      cpus_per_task));
 		}
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {

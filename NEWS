@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix hdf5 build on ppc64 by using correct fprintf formatting for types.
  -- Fix cosmetic printing of NO_VALs in scontrol show assoc_mgr.
  -- Fix perl api for newer perl versions.
+ -- Fix for jobs requesting cpus-per-task (eg. -c3) that exceed the number of
+    cpus on a core.
 
 * Changes in Slurm 15.08.7
 ==========================
