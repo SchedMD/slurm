@@ -180,6 +180,19 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
+/* Return count of node_feature plugins configured */
+extern int node_features_g_count(void)
+{
+	int rc;
+
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	rc = g_context_cnt;
+	slurm_mutex_unlock(&g_context_lock);
+
+	return rc;
+}
+
 /* Reset plugin configuration information */
 extern int node_features_g_reconfig(void)
 {
