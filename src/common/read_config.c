@@ -113,10 +113,6 @@ static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
-static uint16_t avail_mcdram = 0, avail_numa = 0;
-static uint16_t default_mcdram = 0, default_numa = 0;
-static bool read_knl_conf = false;
-
 inline static void _normalize_debug_level(uint16_t *level);
 static int _init_slurm_conf(const char *file_name);
 
@@ -576,124 +572,6 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-/* Expand a feature of "knl" to all appropriate KNL options */
-extern void add_knl_features(char **features)
-{
-	bool has_knl = false, has_numa = false, has_mcdram = false;
-	char *tmp_str, *token, *last = NULL;
-	int i, j;
-
-	if ((features == NULL) || (features[0] ==  NULL))
-		return;
-
-	i = strlen(features[0]) + 1;	/* oversized */
-	tmp_str = xmalloc(i);
-	/* Remove white space from feature specification */
-	for (i = 0, j = 0; features[0][i]; i++) {
-		if (!isspace(features[0][i]))
-			tmp_str[j++] = features[0][i];
-	}
-	strcpy(*features, tmp_str);
-
-	token = strtok_r(tmp_str, ",", &last);
-	while (token) {
-		if (!strcasecmp(token, "knl"))
-			has_knl = true;
-		if (knl_mcdram_token(token))
-			has_mcdram = true;
-		if (knl_numa_token(token))
-			has_numa = true;
-		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(tmp_str);
-
-	if (!has_knl)
-		return;
-
-	if (!read_knl_conf) {
-		(void) knl_conf_read(&avail_mcdram, &avail_numa,
-				     &default_mcdram, &default_numa);
-	}
-
-	if (!has_mcdram) {
-		tmp_str = knl_mcdram_str(avail_mcdram);
-		xstrfmtcat(*features, ",%s", tmp_str);
-		xfree(tmp_str);
-	}
-
-	if (!has_numa) {
-		tmp_str = knl_numa_str(avail_numa);
-		xstrfmtcat(*features, ",%s", tmp_str);
-		xfree(tmp_str);
-	}
-}
-
-
-/* Translate a job constraint specification into a node feature specification
- * RET - String MUST be xfreed */
-extern char *xlate_features(char *job_features)
-{
-	char *node_features = NULL;
-	char *tmp, *save_ptr = NULL, *sep = "", *tok;
-	bool has_knl = false, has_numa = false, has_mcdram = false;
-
-	if ((job_features == NULL) || (job_features[0] ==  '\0'))
-		return node_features;
-
-	if (!read_knl_conf) {
-		(void) knl_conf_read(&avail_mcdram, &avail_numa,
-				     &default_mcdram, &default_numa);
-	}
-
-	tmp = xstrdup(job_features);
-	tok = strtok_r(tmp, "&", &save_ptr);
-	while (tok) {
-		bool knl_opt = false;
-		if (!strcasecmp(tok, "knl")) {
-			if (!has_knl) {
-				has_knl = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_mcdram_token(tok)) {
-			if (!has_mcdram) {
-				has_mcdram = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_numa_token(tok)) {
-			if (!has_numa) {
-				has_numa = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_opt) {
-			xstrfmtcat(node_features, "%s%s", sep, tok);
-			sep = ",";
-		}
-		tok = strtok_r(NULL, "&", &save_ptr);
-	}
-	xfree(tmp);
-
-	if (node_features) {	/* Add default options */
-		if (!has_knl) {
-			xstrfmtcat(node_features, ",%s", "knl");
-		}
-		if (!has_mcdram) {
-			tmp = knl_mcdram_str(default_mcdram);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
-		if (!has_numa) {
-			tmp = knl_numa_str(default_numa);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
-	}
-
-	return node_features;
-}
-
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
@@ -800,7 +678,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_string(&n->feature, "Features", tbl) &&
 		    !s_p_get_string(&n->feature, "Feature",  dflt))
 			s_p_get_string(&n->feature, "Features", dflt);
-		add_knl_features(&n->feature);
 
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);

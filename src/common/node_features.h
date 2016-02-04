@@ -2,7 +2,7 @@
  *  node_features.h - Infrastructure for changing a node's features on user
  *	demand
  *****************************************************************************
- *  Copyright (C) 2015 SchedMD LLC.
+ *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
@@ -40,83 +40,21 @@
 
 #include "slurm/slurm.h"
 
-/*****************************************************************************\
- *  KNL configuration file managment functions
-\*****************************************************************************/
-
-/*
- * Parse knl.conf file and return available and default modes
- * avail_mcdram IN - available MCDRAM modes
- * avail_numa IN - available NUMA modes
- * default_mcdram IN - default MCDRAM mode
- * default_numa IN - default NUMA mode
- * RET - Slurm error code
- */
-extern int knl_conf_read(uint16_t *avail_mcdram, uint16_t *avail_numa,
-			 uint16_t *default_mcdram, uint16_t *default_numa);
-
-/*
- * Return the count of MCDRAM bits set
- */
-extern int knl_mcdram_bits_cnt(uint16_t mcdram_num);
-
-/*
- * Translate KNL MCDRAM string to equivalent numeric value
- * mcdram_str IN - String to scan
- * sep IN - token separator to search for
- * RET MCDRAM numeric value
- */
-extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep);
-
-/*
- * Given a KNL MCDRAM token, return its equivalent numeric value
- * token IN - String to scan
- * RET MCDRAM numeric value
- */
-extern uint16_t knl_mcdram_token(char *token);
-
-/*
- * Translate KNL MCDRAM number to equivalent string value
- * Caller must free return value
- */
-extern char *knl_mcdram_str(uint16_t mcdram_num);
-
-/*
- * Return the count of NUMA bits set
- */
-extern int knl_numa_bits_cnt(uint16_t numa_num);
-
-/*
- * Given a KNL NUMA token, return its equivalent numeric value
- * token IN - String to scan
- * RET NUMA numeric value
- */
-extern uint16_t knl_numa_token(char *token);
-
-/*
- * Translate KNL NUMA string to equivalent numeric value
- * numa_str IN - String to scan
- * sep IN - token separator to search for
- * RET NUMA numeric value
- */
-extern uint16_t knl_numa_parse(char *numa_str, char *sep);
-
-/*
- * Translate KNL NUMA number to equivalent string value
- * Caller must free return value
- */
-extern char *knl_numa_str(uint16_t numa_num);
-
-/*****************************************************************************\
- *  KNL node management functions, uses plugin
-\*****************************************************************************/
-
+/* Perform plugin initialization: read configuration files, etc. */
 extern int node_features_g_init(void);
 
+/* Perform plugin termination: save state, free memory, etc. */
 extern int node_features_g_fini(void);
 
+/* Reset plugin configuration information */
 extern int node_features_g_reconfig(void);
 
+/* Update active and available features on specified nodes, sets features on
+ * all nodes is node_list is NULL */
 extern int node_features_g_get_node(char *node_list);
+
+/* Translate a job's feature specification to node boot options
+ * RET node boot options, must be xfreed */
+extern char *node_features_g_job_xlate(char *job_features);
 
 #endif /* !_NODE_FEATURES_H */

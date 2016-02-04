@@ -63,7 +63,6 @@
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
-#include "src/common/parse_config.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -79,6 +78,7 @@
 typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
 	int	(*reconfig)	(void);
+	char *	(*job_xlate)	(char *job_features);
 } node_features_ops_t;
 
 /*
@@ -87,15 +87,8 @@ typedef struct node_features_ops {
  */
 static const char *syms[] = {
 	"node_features_p_get_node",
-	"node_features_p_reconfig"
-};
-
-static s_p_options_t knl_conf_file_options[] = {
-	{"AvailNUMA", S_P_STRING},
-	{"DefaultNUMA", S_P_STRING},
-	{"AvailMCDRAM", S_P_STRING},
-	{"DefaultMCDRAM", S_P_STRING},
-	{NULL}
+	"node_features_p_reconfig",
+	"node_features_p_job_xlate"
 };
 
 static int g_context_cnt = -1;
@@ -105,285 +98,7 @@ static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *node_features_plugin_list = NULL;
 static bool init_run = false;
 
-static s_p_hashtbl_t *_config_make_tbl(char *filename)
-{
-	s_p_hashtbl_t *tbl = NULL;
-
-	xassert(filename);
-
-	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
-		error("knl.conf: %s: s_p_hashtbl_create error: %m", __func__);
-		return tbl;
-	}
-
-	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
-		error("knl.conf: %s: s_p_parse_file error: %m", __func__);
-		s_p_hashtbl_destroy(tbl);
-		tbl = NULL;
-	}
-
-	return tbl;
-}
-
-/*
- * Parse knl.conf file and return available and default modes
- * avail_mcdram IN - available MCDRAM modes
- * avail_numa IN - available NUMA modes
- * default_mcdram IN - default MCDRAM mode
- * default_numa IN - default NUMA mode
- * RET - Slurm error code
- */
-extern int knl_conf_read(uint16_t *avail_mcdram, uint16_t *avail_numa,
-			 uint16_t *default_mcdram, uint16_t *default_numa)
-{
-	char *avail_mcdram_str, *avail_numa_str;
-	char *default_mcdram_str, *default_numa_str;
-	char *knl_conf_file, *tmp_str = NULL;
-	s_p_hashtbl_t *tbl;
-
-	/* Set default values */
-	*avail_mcdram = KNL_MCDRAM_FLAG;
-	*avail_numa = KNL_NUMA_FLAG;
-	*default_mcdram = KNL_CACHE;
-	*default_numa = KNL_ALL2ALL;
-
-	knl_conf_file = get_extra_conf_path("knl.conf");
-	if ((tbl = _config_make_tbl(knl_conf_file))) {
-		if (s_p_get_string(&tmp_str, "AvailMCDRAM", tbl)) {
-			*avail_mcdram = knl_mcdram_parse(tmp_str, ",");
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "AvailNUMA", tbl)) {
-			*avail_numa = knl_numa_parse(tmp_str, ",");
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
-			*default_mcdram = knl_mcdram_parse(tmp_str, ",");
-			if (knl_mcdram_bits_cnt(*default_mcdram) != 1) {
-				fatal("knl.conf: Invalid DefaultMCDRAM=%s",
-				      tmp_str);
-			}
-			xfree(tmp_str);
-		}
-		if (s_p_get_string(&tmp_str, "DefaultNUMA", tbl)) {
-			*default_numa = knl_numa_parse(tmp_str, ",");
-			if (knl_numa_bits_cnt(*default_numa) != 1) {
-				fatal("knl.conf: Invalid DefaultNUMA=%s",
-				      tmp_str);
-			}
-			xfree(tmp_str);
-		}
-	} else {
-		error("something wrong with opening/reading knl.conf");
-	}
-	xfree(knl_conf_file);
-	s_p_hashtbl_destroy(tbl);
-
-	avail_mcdram_str = knl_mcdram_str(*avail_mcdram);
-	avail_numa_str = knl_numa_str(*avail_numa);
-	default_mcdram_str = knl_mcdram_str(*default_mcdram);
-	default_numa_str = knl_numa_str(*default_numa);
-	if ((*default_mcdram & *avail_mcdram) == 0) {
-		fatal("knl.conf: DefaultMCDRAM(%s) not within AvailMCDRAM(%s)",
-		      default_mcdram_str, avail_mcdram_str);
-	}
-	if ((*default_numa & *avail_numa) == 0) {
-		fatal("knl.conf: DefaultNUMA(%s) not within AvailNUMA(%s)",
-		      default_numa_str, avail_numa_str);
-	}
-	debug("AvailMCDRAM=%s DefaultMCDRAM=%s",
-	     avail_mcdram_str, default_mcdram_str);
-	debug("AvailNUMA=%s DefaultNUMA=%s",
-	     avail_numa_str, default_numa_str);
-	xfree(avail_mcdram_str);
-	xfree(avail_numa_str);
-	xfree(default_mcdram_str);
-	xfree(default_numa_str);
-
-	return SLURM_SUCCESS;
-}
-
-/*
- * Return the count of MCDRAM bits set
- */
-extern int knl_mcdram_bits_cnt(uint16_t mcdram_num)
-{
-	int cnt = 0, i;
-	uint16_t tmp = 1;
-
-	for (i = 0; i < 16; i++) {
-		if ((mcdram_num & KNL_MCDRAM_FLAG) & tmp)
-			cnt++;
-		tmp = tmp << 1;
-	}
-	return cnt;
-}
-
-/*
- * Return the count of NUMA bits set
- */
-extern int knl_numa_bits_cnt(uint16_t numa_num)
-{
-	int cnt = 0, i;
-	uint16_t tmp = 1;
-
-	for (i = 0; i < 16; i++) {
-		if ((numa_num & KNL_NUMA_FLAG) & tmp)
-			cnt++;
-		tmp = tmp << 1;
-	}
-	return cnt;
-}
-
-/*
- * Given a KNL MCDRAM token, return its equivalent numeric value
- * token IN - String to scan
- * RET MCDRAM numeric value
- */
-extern uint16_t knl_mcdram_token(char *token)
-{
-	uint16_t mcdram_num = 0;
-
-	if (!strcasecmp(token, "cache"))
-		mcdram_num = KNL_CACHE;
-	else if (!strcasecmp(token, "flat"))
-		mcdram_num = KNL_FLAT;
-	else if (!strcasecmp(token, "hybrid"))
-		mcdram_num = KNL_HYBRID;
-
-	return mcdram_num;
-}
-
-/*
- * Given a KNL NUMA token, return its equivalent numeric value
- * token IN - String to scan
- * RET NUMA numeric value
- */
-extern uint16_t knl_numa_token(char *token)
-{
-	uint16_t numa_num = 0;
-
-	if (!strcasecmp(token, "all2all"))
-		numa_num |= KNL_ALL2ALL;
-	else if (!strcasecmp(token, "snc2"))
-		numa_num |= KNL_SNC2;
-	else if (!strcasecmp(token, "snc4"))
-		numa_num |= KNL_SNC4;
-	else if (!strcasecmp(token, "hemi"))
-		numa_num |= KNL_HEMI;
-	else if (!strcasecmp(token, "quad"))
-		numa_num |= KNL_QUAD;
-
-	return numa_num;
-}
-
-/*
- * Translate KNL MCDRAM string to equivalent numeric value
- * mcdram_str IN - String to scan
- * sep IN - token separator to search for
- * RET MCDRAM numeric value
- */
-extern uint16_t knl_mcdram_parse(char *mcdram_str, char *sep)
-{
-	char *save_ptr = NULL, *tmp, *tok;
-	uint16_t mcdram_num = 0;
-
-	if (!mcdram_str)
-		return mcdram_num;
-
-	tmp = xstrdup(mcdram_str);
-	tok = strtok_r(tmp, sep, &save_ptr);
-	while (tok) {
-		mcdram_num |= knl_mcdram_token(tok);
-		tok = strtok_r(NULL, sep, &save_ptr);
-	}
-	xfree(tmp);
-
-	return mcdram_num;
-}
-
-/*
- * Translate KNL NUMA string to equivalent numeric value
- * numa_str IN - String to scan
- * sep IN - token separator to search for
- * RET NUMA numeric value
- */
-extern uint16_t knl_numa_parse(char *numa_str, char *sep)
-{
-	char *save_ptr = NULL, *tmp, *tok;
-	uint16_t numa_num = 0;
-
-	if (!numa_str)
-		return numa_num;
-
-	tmp = xstrdup(numa_str);
-	tok = strtok_r(tmp, sep, &save_ptr);
-	while (tok) {
-		numa_num |= knl_numa_token(tok);
-		tok = strtok_r(NULL, sep, &save_ptr);
-	}
-	xfree(tmp);
-
-	return numa_num;
-}
-
-/*
- * Translate KNL MCDRAM number to equivalent string value
- * Caller must free return value
- */
-extern char *knl_mcdram_str(uint16_t mcdram_num)
-{
-	char *mcdram_str = NULL, *sep = "";
-
-	if (mcdram_num & KNL_CACHE) {
-		xstrfmtcat(mcdram_str, "%scache", sep);
-		sep = ",";
-	}
-	if (mcdram_num & KNL_FLAT) {
-		xstrfmtcat(mcdram_str, "%sflat", sep);
-		sep = ",";
-	}
-	if (mcdram_num & KNL_HYBRID) {
-		xstrfmtcat(mcdram_str, "%shybrid", sep);
-//		sep = ",";	/* Remove to avoid CLANG error */
-	}
-
-	return mcdram_str;
-}
-
-/*
- * Translate KNL NUMA number to equivalent string value
- * Caller must free return value
- */
-extern char *knl_numa_str(uint16_t numa_num)
-{
-	char *numa_str = NULL, *sep = "";
-
-	if (numa_num & KNL_ALL2ALL) {
-		xstrfmtcat(numa_str, "%sall2all", sep);
-		sep = ",";
-	}
-	if (numa_num & KNL_SNC2) {
-		xstrfmtcat(numa_str, "%ssnc2", sep);
-		sep = ",";
-	}
-	if (numa_num & KNL_SNC4) {
-		xstrfmtcat(numa_str, "%ssnc4", sep);
-		sep = ",";
-	}
-	if (numa_num & KNL_HEMI) {
-		xstrfmtcat(numa_str, "%shemi", sep);
-		sep = ",";
-	}
-	if (numa_num & KNL_QUAD) {
-		xstrfmtcat(numa_str, "%squad", sep);
-//		sep = ",";	/* Remove to avoid CLANG error */
-	}
-
-	return numa_str;
-
-}
-
+/* Perform plugin initialization: read configuration files, etc. */
 extern int node_features_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -439,6 +154,7 @@ fini:
 	return rc;
 }
 
+/* Perform plugin termination: save state, free memory, etc. */
 extern int node_features_g_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
@@ -464,6 +180,7 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
+/* Reset plugin configuration information */
 extern int node_features_g_reconfig(void)
 {
 	DEF_TIMERS;
@@ -480,6 +197,8 @@ extern int node_features_g_reconfig(void)
 	return rc;
 }
 
+/* Update active and available features on specified nodes, sets features on
+ * all nodes is node_list is NULL */
 extern int node_features_g_get_node(char *node_list)
 {
 	DEF_TIMERS;
@@ -491,7 +210,35 @@ extern int node_features_g_get_node(char *node_list)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].get_node))(node_list);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("slurm_knl_g_boot");
+	END_TIMER2("node_features_g_get_node");
 
 	return rc;
+}
+
+/* Translate a job's feature specification to node boot options
+ * RET node boot options, must be xfreed */
+extern char *node_features_g_job_xlate(char *job_features)
+{
+	DEF_TIMERS;
+	char *node_features = NULL, *tmp_str;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		tmp_str = (*(ops[i].job_xlate))(job_features);
+		if (tmp_str) {
+			if (node_features) {
+				xstrfmtcat(node_features, ",%s", tmp_str);
+				xfree(tmp_str);
+			} else {
+				node_features = tmp_str;
+			}
+		}
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_job_xlate");
+
+	return node_features;
 }

@@ -61,6 +61,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
@@ -276,8 +277,10 @@ extern int power_job_reboot(struct job_record *job_ptr)
 #else
 		verbose("power_save: reboot nodes %s", nodes);
 #endif
-		if (job_ptr->details && job_ptr->details->features)
-			features = xlate_features(job_ptr->details->features);
+		if (job_ptr->details && job_ptr->details->features) {
+			features = node_features_g_job_xlate(
+					job_ptr->details->features);
+		}
 		_run_prog(resume_prog, nodes, features);
 		xfree(features);
 	} else {

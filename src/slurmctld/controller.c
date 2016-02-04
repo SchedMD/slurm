@@ -552,6 +552,7 @@ int main(int argc, char *argv[])
 			fatal("failed to initialize mcs plugin");
 		if (node_features_g_get_node(NULL) != SLURM_SUCCESS)
 			error("failed to initialize node features");
+BUILD_FEATURE
 
 		/*
 		 * create attached thread to process RPCs

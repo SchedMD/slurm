@@ -96,34 +96,9 @@ const char plugin_name[]       	= "Job submit KNL plugin";
 const char plugin_type[]       	= "job_submit/knl";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static uint16_t avail_mcdram, avail_numa;
-static uint16_t default_mcdram, default_numa;
-
 int init (void)
 {
-	char *avail_mcdram_str, *avail_numa_str;
-	char *default_mcdram_str, *default_numa_str;
-	int rc;
-
-	rc = knl_conf_read(&avail_mcdram, &avail_numa,
-			   &default_mcdram, &default_numa);
-
-	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
-		avail_mcdram_str = knl_mcdram_str(avail_mcdram);
-		avail_numa_str = knl_numa_str(avail_numa);
-		default_mcdram_str = knl_mcdram_str(default_mcdram);
-		default_numa_str = knl_numa_str(default_numa);
-		info("AvailMCDRAM=%s DefaultMCDRAM=%s",
-		     avail_mcdram_str, default_mcdram_str);
-		info("AvailNUMA=%s DefaultNUMA=%s",
-		     avail_numa_str, default_numa_str);
-		xfree(avail_mcdram_str);
-		xfree(avail_numa_str);
-		xfree(default_mcdram_str);
-		xfree(default_numa_str);
-	}
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 int fini (void)
@@ -133,6 +108,8 @@ int fini (void)
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
+#if 0
+//FIXME: Move to new node feature plugin function
 	uint16_t job_mcdram, job_numa;
 	int mcdram_cnt, numa_cnt;
 	char *tmp_str;
@@ -164,13 +141,15 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	} else if ((job_numa & avail_numa) == 0) { /* Unavailable NUMA option */
 		return ESLURM_INVALID_KNL;
 	}
-
+#endif
 	return SLURM_SUCCESS;
 }
 
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr, uint32_t submit_uid)
 {
+#if 0
+//FIXME: Move to new node feature plugin function
 	uint16_t job_mcdram, job_numa;
 	int mcdram_cnt, numa_cnt;
 	char *tmp_str;
@@ -207,6 +186,6 @@ extern int job_modify(struct job_descriptor *job_desc,
 	} else if ((job_numa & avail_numa) == 0) { /* Unavailable NUMA option */
 		return ESLURM_INVALID_KNL;
 	}
-
+#endif
 	return SLURM_SUCCESS;
 }

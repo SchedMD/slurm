@@ -1311,8 +1311,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 	}
 
-	add_knl_features(&update_node_msg->features);
-
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 

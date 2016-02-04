@@ -637,18 +637,6 @@ enum select_nodedata_type {
 	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
 };
 
-/* Intel Knights Landing Configuration Modes */
-#define KNL_NUMA_FLAG	0x00ff
-#define KNL_ALL2ALL	0x0001
-#define KNL_SNC2	0x0002
-#define KNL_SNC4	0x0004
-#define KNL_HEMI	0x0008
-#define KNL_QUAD	0x0010
-#define KNL_MCDRAM_FLAG	0xff00
-#define KNL_CACHE	0x0100
-#define KNL_FLAT	0x0200
-#define KNL_HYBRID	0x0400
-
 enum select_print_mode {
 	SELECT_PRINT_HEAD,	/* Print just the header */
 	SELECT_PRINT_DATA,	/* Print just the data */

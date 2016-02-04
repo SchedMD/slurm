@@ -75,6 +75,18 @@
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
+/* Intel Knights Landing Configuration Modes */
+#define KNL_NUMA_FLAG	0x00ff
+#define KNL_ALL2ALL	0x0001
+#define KNL_SNC2	0x0002
+#define KNL_SNC4	0x0004
+#define KNL_HEMI	0x0008
+#define KNL_QUAD	0x0010
+#define KNL_MCDRAM_FLAG	0xff00
+#define KNL_CACHE	0x0100
+#define KNL_FLAT	0x0200
+#define KNL_HYBRID	0x0400
+
 /*
  * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -104,9 +116,20 @@ const char plugin_name[]        = "node_features knl_cray plugin";
 const char plugin_type[]        = "node_features/knl_cray";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
+/* Configuration Paramters */
 static char *capmc_path = NULL;
-static int   capmc_timeout = 0;		/* capmc command timeout in msec */
+static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
+static uint16_t default_mcdram = KNL_CACHE;
+static uint16_t default_numa = KNL_ALL2ALL;
+
+static s_p_options_t knl_conf_file_options[] = {
+	{"CapmcPath", S_P_STRING},
+	{"CapmcTimeout", S_P_UINT32},
+	{"DefaultNUMA", S_P_STRING},
+	{"DefaultMCDRAM", S_P_STRING},
+	{NULL}
+};
 
 typedef struct mcdram_cap {
 	uint32_t nid;
@@ -128,6 +151,7 @@ typedef struct numa_cfg {
 	char *numa_cfg;
 } numa_cfg_t;
 
+static s_p_hashtbl_t *_config_make_tbl(char *filename);
 static void _free_script_argv(char **script_argv);
 static mcdram_cap_t *_json_parse_mcdram_cap_array(json_object *jobj, char *key,
 						  int *num);
@@ -141,6 +165,14 @@ static numa_cfg_t *_json_parse_numa_cfg_array(json_object *jobj, char *key,
 					      int *num);
 static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent);
 static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent);
+static int  _knl_mcdram_bits_cnt(uint16_t mcdram_num);
+static uint16_t _knl_mcdram_parse(char *mcdram_str, char *sep);
+static char *_knl_mcdram_str(uint16_t mcdram_num);
+static uint16_t _knl_mcdram_token(char *token);
+static int _knl_numa_bits_cnt(uint16_t numa_num);
+static uint16_t _knl_numa_parse(char *numa_str, char *sep);
+static char *_knl_numa_str(uint16_t numa_num);
+static uint16_t _knl_numa_token(char *token);
 static void _log_script_argv(char **script_argv, char *resp_msg);
 static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
@@ -163,6 +195,208 @@ static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+
+
+static s_p_hashtbl_t *_config_make_tbl(char *filename)
+{
+	s_p_hashtbl_t *tbl = NULL;
+
+	xassert(filename);
+
+	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
+		error("knl.conf: %s: s_p_hashtbl_create error: %m", __func__);
+		return tbl;
+	}
+
+	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
+		error("knl.conf: %s: s_p_parse_file error: %m", __func__);
+		s_p_hashtbl_destroy(tbl);
+		tbl = NULL;
+	}
+
+	return tbl;
+}
+
+/*
+ * Return the count of MCDRAM bits set
+ */
+static int _knl_mcdram_bits_cnt(uint16_t mcdram_num)
+{
+	int cnt = 0, i;
+	uint16_t tmp = 1;
+
+	for (i = 0; i < 16; i++) {
+		if ((mcdram_num & KNL_MCDRAM_FLAG) & tmp)
+			cnt++;
+		tmp = tmp << 1;
+	}
+	return cnt;
+}
+
+/*
+ * Translate KNL MCDRAM string to equivalent numeric value
+ * mcdram_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET MCDRAM numeric value
+ */
+static uint16_t _knl_mcdram_parse(char *mcdram_str, char *sep)
+{
+	char *save_ptr = NULL, *tmp, *tok;
+	uint16_t mcdram_num = 0;
+
+	if (!mcdram_str)
+		return mcdram_num;
+
+	tmp = xstrdup(mcdram_str);
+	tok = strtok_r(tmp, sep, &save_ptr);
+	while (tok) {
+		mcdram_num |= _knl_mcdram_token(tok);
+		tok = strtok_r(NULL, sep, &save_ptr);
+	}
+	xfree(tmp);
+
+	return mcdram_num;
+}
+
+/*
+ * Translate KNL MCDRAM number to equivalent string value
+ * Caller must free return value
+ */
+static char *_knl_mcdram_str(uint16_t mcdram_num)
+{
+	char *mcdram_str = NULL, *sep = "";
+
+	if (mcdram_num & KNL_CACHE) {
+		xstrfmtcat(mcdram_str, "%scache", sep);
+		sep = ",";
+	}
+	if (mcdram_num & KNL_FLAT) {
+		xstrfmtcat(mcdram_str, "%sflat", sep);
+		sep = ",";
+	}
+	if (mcdram_num & KNL_HYBRID) {
+		xstrfmtcat(mcdram_str, "%shybrid", sep);
+//		sep = ",";	/* Remove to avoid CLANG error */
+	}
+
+	return mcdram_str;
+}
+
+/*
+ * Given a KNL MCDRAM token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET MCDRAM numeric value
+ */
+static uint16_t _knl_mcdram_token(char *token)
+{
+	uint16_t mcdram_num = 0;
+
+	if (!strcasecmp(token, "cache"))
+		mcdram_num = KNL_CACHE;
+	else if (!strcasecmp(token, "flat"))
+		mcdram_num = KNL_FLAT;
+	else if (!strcasecmp(token, "hybrid"))
+		mcdram_num = KNL_HYBRID;
+
+	return mcdram_num;
+}
+
+/*
+ * Return the count of NUMA bits set
+ */
+static int _knl_numa_bits_cnt(uint16_t numa_num)
+{
+	int cnt = 0, i;
+	uint16_t tmp = 1;
+
+	for (i = 0; i < 16; i++) {
+		if ((numa_num & KNL_NUMA_FLAG) & tmp)
+			cnt++;
+		tmp = tmp << 1;
+	}
+	return cnt;
+}
+
+/*
+ * Translate KNL NUMA string to equivalent numeric value
+ * numa_str IN - String to scan
+ * sep IN - token separator to search for
+ * RET NUMA numeric value
+ */
+static uint16_t _knl_numa_parse(char *numa_str, char *sep)
+{
+	char *save_ptr = NULL, *tmp, *tok;
+	uint16_t numa_num = 0;
+
+	if (!numa_str)
+		return numa_num;
+
+	tmp = xstrdup(numa_str);
+	tok = strtok_r(tmp, sep, &save_ptr);
+	while (tok) {
+		numa_num |= _knl_numa_token(tok);
+		tok = strtok_r(NULL, sep, &save_ptr);
+	}
+	xfree(tmp);
+
+	return numa_num;
+}
+
+/*
+ * Translate KNL NUMA number to equivalent string value
+ * Caller must free return value
+ */
+static char *_knl_numa_str(uint16_t numa_num)
+{
+	char *numa_str = NULL, *sep = "";
+
+	if (numa_num & KNL_ALL2ALL) {
+		xstrfmtcat(numa_str, "%sa2a", sep);
+		sep = ",";
+	}
+	if (numa_num & KNL_SNC2) {
+		xstrfmtcat(numa_str, "%ssnc2", sep);
+		sep = ",";
+	}
+	if (numa_num & KNL_SNC4) {
+		xstrfmtcat(numa_str, "%ssnc4", sep);
+		sep = ",";
+	}
+	if (numa_num & KNL_HEMI) {
+		xstrfmtcat(numa_str, "%shemi", sep);
+		sep = ",";
+	}
+	if (numa_num & KNL_QUAD) {
+		xstrfmtcat(numa_str, "%squad", sep);
+//		sep = ",";	/* Remove to avoid CLANG error */
+	}
+
+	return numa_str;
+
+}
+
+/*
+ * Given a KNL NUMA token, return its equivalent numeric value
+ * token IN - String to scan
+ * RET NUMA numeric value
+ */
+static uint16_t _knl_numa_token(char *token)
+{
+	uint16_t numa_num = 0;
+
+	if (!strcasecmp(token, "a2a"))
+		numa_num |= KNL_ALL2ALL;
+	else if (!strcasecmp(token, "snc2"))
+		numa_num |= KNL_SNC2;
+	else if (!strcasecmp(token, "snc4"))
+		numa_num |= KNL_SNC4;
+	else if (!strcasecmp(token, "hemi"))
+		numa_num |= KNL_HEMI;
+	else if (!strcasecmp(token, "quad"))
+		numa_num |= KNL_QUAD;
+
+	return numa_num;
+}
 
 /*
  * Return time in msec since "start time"
@@ -732,11 +966,59 @@ static void _update_node_features(struct node_record *node_ptr,
 /* Load configuration */
 extern int init(void)
 {
-//FIXME
-capmc_path = xstrdup("/home/jette/Desktop/SLURM/install.linux/sbin/capmc");
-capmc_timeout = 1000;	/* MSEC */
+	char *default_mcdram_str, *default_numa_str;
+	char *knl_conf_file, *tmp_str = NULL;
+	s_p_hashtbl_t *tbl;
+
+	/* Set default values */
+	xfree(capmc_path);
+	capmc_timeout = 0;
+	debug_flag = false;
+	default_mcdram = KNL_CACHE;
+	default_numa = KNL_ALL2ALL;
+
+	knl_conf_file = get_extra_conf_path("knl_cray.conf");
+	if ((tbl = _config_make_tbl(knl_conf_file))) {
+		s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
+			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
+			if (_knl_mcdram_bits_cnt(default_mcdram) != 1) {
+				fatal("knl_cray.conf: Invalid DefaultMCDRAM=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "DefaultNUMA", tbl)) {
+			default_numa = _knl_numa_parse(tmp_str, ",");
+			if (_knl_numa_bits_cnt(default_numa) != 1) {
+				fatal("knl_cray.conf: Invalid DefaultNUMA=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
+	} else {
+		error("something wrong with opening/reading knl.conf");
+	}
+	xfree(knl_conf_file);
+	s_p_hashtbl_destroy(tbl);
+	if (!capmc_path)
+		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
+	capmc_timeout = MAX(capmc_timeout, 500);
+
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
+
+	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
+		default_mcdram_str = _knl_mcdram_str(default_mcdram);
+		default_numa_str = _knl_numa_str(default_numa);
+		info("CapmcPath=%s", capmc_path);
+		info("CapmcTimeout=%u msec", capmc_timeout);
+		info("DefaultMCDRAM=%s DefaultNUMA=%s",
+		     default_mcdram_str, default_numa_str);
+		xfree(default_mcdram_str);
+		xfree(default_numa_str);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -753,6 +1035,7 @@ extern int fini(void)
 /* Reload configuration */
 extern int node_features_p_reconfig(void)
 {
+//FIXME add call
 	(void)fini();
 	(void)init();	/* SAFE?? ADD LOCKS? */
 	return SLURM_SUCCESS;
@@ -985,4 +1268,53 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_numa_cfg_free(numa_cfg, numa_cfg_cnt);
 
 	return rc;
+}
+
+extern char *node_features_p_job_xlate(char *job_features)
+{
+	char *node_features = NULL;
+	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+	bool has_numa = false, has_mcdram = false;
+
+	if ((job_features == NULL) || (job_features[0] ==  '\0'))
+		return node_features;
+
+	tmp = xstrdup(job_features);
+	tok = strtok_r(tmp, "&", &save_ptr);
+	while (tok) {
+		bool knl_opt = false;
+		if (_knl_mcdram_token(tok)) {
+			if (!has_mcdram) {
+				has_mcdram = true;
+				knl_opt = true;
+			}
+		}
+		if (_knl_numa_token(tok)) {
+			if (!has_numa) {
+				has_numa = true;
+				knl_opt = true;
+			}
+		}
+		if (knl_opt) {
+			xstrfmtcat(node_features, "%s%s", sep, tok);
+			sep = ",";
+		}
+		tok = strtok_r(NULL, "&", &save_ptr);
+	}
+	xfree(tmp);
+
+	if (node_features) {	/* Add default options */
+		if (!has_mcdram) {
+			tmp = _knl_mcdram_str(default_mcdram);
+			xstrfmtcat(node_features, ",%s", tmp);
+			xfree(tmp);
+		}
+		if (!has_numa) {
+			tmp = _knl_numa_str(default_numa);
+			xstrfmtcat(node_features, ",%s", tmp);
+			xfree(tmp);
+		}
+	}
+
+	return node_features;
 }
