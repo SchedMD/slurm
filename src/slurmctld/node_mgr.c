@@ -1660,7 +1660,6 @@ extern void restore_node_features(int recover)
 
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
-
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
@@ -1686,7 +1685,7 @@ extern void restore_node_features(int recover)
 							     feature);
 			}
 		}
-//FIXME ??
+
 		/* We lose the gres information updated manually and always
 		 * use the information from slurm.conf */
 		(void) gres_plugin_node_reconfig(node_ptr->name,
