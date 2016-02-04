@@ -186,6 +186,7 @@ static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static char *_run_script(char **script_argv, int *status);
+static void _strip_knl_opts(char **features);
 static int  _tot_wait (struct timeval *start_time);
 static void _update_all_node_features(
 				mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
@@ -398,6 +399,29 @@ static uint16_t _knl_numa_token(char *token)
 		numa_num |= KNL_QUAD;
 
 	return numa_num;
+}
+
+/* Remove all KNL feature names from the "features" string */
+static void _strip_knl_opts(char **features)
+{
+	char *save_ptr = NULL, *tok;
+	char *tmp_str, *result_str = NULL, *sep = "";
+
+	if (*features == NULL)
+		return;
+
+	tmp_str = xstrdup(*features);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if (!_knl_mcdram_token(tok) && !_knl_numa_token(tok)) {
+			xstrfmtcat(result_str, "%s%s", sep, tok);
+			sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+	xfree(*features);
+	*features = result_str;
 }
 
 /*
@@ -935,6 +959,11 @@ static void _update_node_features(struct node_record *node_ptr,
 		return;
 	}
 
+	_strip_knl_opts(&node_ptr->features);
+	if (node_ptr->features && !node_ptr->features_act)
+		node_ptr->features_act = xstrdup(node_ptr->features);
+	_strip_knl_opts(&node_ptr->features_act);
+
 	for (i = 0; i < mcdram_cap_cnt; i++) {
 		if (nid == mcdram_cap[i].nid) {
 			_merge_strings(&node_ptr->features,
@@ -1049,7 +1078,7 @@ extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
 	json_object_iter iter;
-	int status = 0, rc = SLURM_SUCCESS;
+	int i, status = 0, rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 	char *resp_msg, **script_argv;
 	mcdram_cap_t *mcdram_cap = NULL;
@@ -1261,6 +1290,17 @@ extern int node_features_p_get_node(char *node_list)
 		}
 		hostlist_destroy (host_list);
 	} else {
+		for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
+		     i++, node_ptr++) {
+			xfree(node_ptr->features_act);
+			_strip_knl_opts(&node_ptr->features);
+			if (node_ptr->features && !node_ptr->features_act) {
+				node_ptr->features_act =
+					xstrdup(node_ptr->features);
+			} else {
+				_strip_knl_opts(&node_ptr->features_act);
+			}
+		}
 		_update_all_node_features(mcdram_cap, mcdram_cap_cnt,
 					  mcdram_cfg, mcdram_cfg_cnt,
 					  numa_cap, numa_cap_cnt,
