@@ -1093,6 +1093,9 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
 	restore_node_features(recover);
+	if (node_features_g_get_node(NULL) != SLURM_SUCCESS)
+		error("failed to initialize node features");
+
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
@@ -1329,11 +1332,6 @@ static int _restore_node_state(int recover,
 			xfree(node_ptr->arch);
 			node_ptr->arch = old_node_ptr->arch;
 			old_node_ptr->arch = NULL;
-		}
-		if (old_node_ptr->features_act) {
-			xfree(node_ptr->features_act);
-			node_ptr->features_act = old_node_ptr->features_act;
-			old_node_ptr->features_act = NULL;
 		}
 		if (old_node_ptr->os) {
 			xfree(node_ptr->os);

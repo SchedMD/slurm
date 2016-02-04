@@ -1072,8 +1072,8 @@ extern int node_features_p_reconfig(void)
 	return SLURM_SUCCESS;
 }
 
-/* Update active and available features on specified nodes, sets features on
- * all nodes is node_list is NULL */
+/* Update active and available features on specified nodes,
+ * sets features on all nodes if node_list is NULL */
 extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
@@ -1320,6 +1320,8 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 
 	return rc;
 }
+
+//FIXME: Add function to validate incoming job feature request
 
 extern char *node_features_p_job_xlate(char *job_features)
 {
