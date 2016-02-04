@@ -122,6 +122,8 @@ static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
+static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool reconfig = false;
 
 static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcPath", S_P_STRING},
@@ -1035,12 +1037,14 @@ extern int fini(void)
 /* Reload configuration */
 extern int node_features_p_reconfig(void)
 {
-//FIXME add call
-	(void)fini();
-	(void)init();	/* SAFE?? ADD LOCKS? */
+	slurm_mutex_lock(&config_mutex);
+	reconfig = true;
+	slurm_mutex_unlock(&config_mutex);
 	return SLURM_SUCCESS;
 }
 
+/* Update active and available features on specified nodes, sets features on
+ * all nodes is node_list is NULL */
 extern int node_features_p_get_node(char *node_list)
 {
 	json_object *j;
@@ -1057,6 +1061,13 @@ extern int node_features_p_get_node(char *node_list)
 	struct node_record *node_ptr;
 	hostlist_t host_list;
 	char *node_name;
+
+	slurm_mutex_lock(&config_mutex);
+	if (reconfig) {
+		(void) init();
+		reconfig = true;
+	}
+	slurm_mutex_unlock(&config_mutex);
 
 	/*
 	 * Load available MCDRAM capabilities
