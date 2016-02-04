@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_features_knl_cray.c - Plugin for managing a Cray KNL state information
+ *  node_features_knl_cray.c - Plugin for managing Cray KNL state information
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -146,12 +146,23 @@ static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
+static void _merge_strings(char **node_features, char *node_cfg);
 static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static char *_run_script(char **script_argv, int *status);
 static int  _tot_wait (struct timeval *start_time);
+static void _update_all_node_features(
+				mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
+				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
+				numa_cap_t *numa_cap, int numa_cap_cnt,
+				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static void _update_node_features(struct node_record *node_ptr,
+				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
+				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
+				  numa_cap_t *numa_cap, int numa_cap_cnt,
+				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 
 /*
  * Return time in msec since "start time"
@@ -183,6 +194,7 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 	struct json_object_iter iter;
 	int64_t x;
 	const char *p;
+	char *tmp_str, *tok, *save_ptr = NULL, *sep = "";
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -196,7 +208,15 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 		case json_type_string:
 			p = json_object_get_string(iter.val);
 			if (strcmp(iter.key, "mcdram_cfg") == 0) {
-				ent->mcdram_cfg = xstrdup(p);
+				tmp_str = xstrdup(p);
+				tok = strtok_r(tmp_str, ",", &save_ptr);
+				while (tok) {
+					if ((tok[0] < '0') || (tok[0] > '9'))
+					xstrfmtcat(ent->mcdram_cfg, "%s%s",
+						   sep, tok);
+					sep = ",";
+					tok = strtok_r(NULL, ",", &save_ptr);
+				}
 			}
 			break;
 		default:
@@ -577,6 +597,138 @@ static char *_run_script(char **script_argv, int *status)
 	return resp;
 }
 
+static void _merge_strings(char **node_features, char *node_cfg)
+{
+	char *tmp_str1, *tok1, *save_ptr1 = NULL;
+	char *tmp_str2, *tok2, *save_ptr2 = NULL;
+
+	if ((node_cfg == NULL) || (node_cfg[0] == '\0'))
+		return;
+	if (*node_features == NULL) {
+		*node_features = xstrdup(node_cfg);
+		return;
+	}
+
+	/* Merge strings and avoid duplicates */
+	tmp_str1 = xstrdup(node_cfg);
+	tok1 = strtok_r(tmp_str1, ",", &save_ptr1);
+	while (tok1) {
+		bool match = false;
+		tmp_str2 = xstrdup(*node_features);
+		tok2 = strtok_r(tmp_str2, ",", &save_ptr2);
+		while (tok2) {
+			if (!strcmp(tok1, tok2)) {
+				match = true;
+				break;
+			}
+			tok2 = strtok_r(NULL, ",", &save_ptr2);
+		}
+		xfree(tmp_str2);
+		if (!match)
+			xstrfmtcat(*node_features, ",%s", tok1);
+		tok1 = strtok_r(NULL, ",", &save_ptr1);
+	}
+	xfree(tmp_str1);
+}
+
+/* Update features and features_act fields for ALL nodes based upon
+ * its current configuration provided by capmc */
+static void _update_all_node_features(
+				mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
+				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
+				numa_cap_t *numa_cap, int numa_cap_cnt,
+				numa_cfg_t *numa_cfg, int numa_cfg_cnt)
+{
+	struct node_record *node_ptr;
+	char node_name[32];
+	int i;
+
+	for (i = 0; i < mcdram_cap_cnt; i++) {
+		snprintf(node_name, sizeof(node_name),
+			 "nid%5.5d", mcdram_cap[i].nid);
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			_merge_strings(&node_ptr->features,
+				       mcdram_cap[i].mcdram_cfg);
+		}
+	}
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		snprintf(node_name, sizeof(node_name),
+			 "nid%5.5d", mcdram_cfg[i].nid);
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			_merge_strings(&node_ptr->features_act,
+				       mcdram_cfg[i].mcdram_cfg);
+		}
+	}
+	for (i = 0; i < numa_cap_cnt; i++) {
+		snprintf(node_name, sizeof(node_name),
+			 "nid%5.5d", numa_cap[i].nid);
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			_merge_strings(&node_ptr->features,
+				       numa_cap[i].numa_cfg);
+		}
+	}
+	for (i = 0; i < numa_cfg_cnt; i++) {
+		snprintf(node_name, sizeof(node_name),
+			 "nid%5.5d", numa_cfg[i].nid);
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			_merge_strings(&node_ptr->features_act,
+				       numa_cfg[i].numa_cfg);
+		}
+	}
+}
+
+/* Update a specific node's features and features_act fields based upon
+ * its current configuration provided by capmc */
+static void _update_node_features(struct node_record *node_ptr,
+				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
+				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
+				  numa_cap_t *numa_cap, int numa_cap_cnt,
+				  numa_cfg_t *numa_cfg, int numa_cfg_cnt)
+{
+	int i, nid;
+	char *end_ptr = "";
+
+	xassert(node_ptr);
+	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
+	if (end_ptr[0] != '\0') {
+		error("%s: Invalid node name (%s)", __func__, node_ptr->name);
+		return;
+	}
+
+	for (i = 0; i < mcdram_cap_cnt; i++) {
+		if (nid == mcdram_cap[i].nid) {
+			_merge_strings(&node_ptr->features,
+				       mcdram_cap[i].mcdram_cfg);
+			break;
+		}
+	}
+	for (i = 0; i < mcdram_cfg_cnt; i++) {
+		if (nid == mcdram_cfg[i].nid) {
+			_merge_strings(&node_ptr->features_act,
+				       mcdram_cfg[i].mcdram_cfg);
+			break;
+		}
+	}
+	for (i = 0; i < numa_cap_cnt; i++) {
+		if (nid == numa_cap[i].nid) {
+			_merge_strings(&node_ptr->features,
+				       numa_cap[i].numa_cfg);
+			break;
+		}
+	}
+	for (i = 0; i < numa_cfg_cnt; i++) {
+		if (nid == numa_cfg[i].nid) {
+			_merge_strings(&node_ptr->features_act,
+				       numa_cfg[i].numa_cfg);
+			break;
+		}
+	}
+}
+
 /* Load configuration */
 extern int init(void)
 {
@@ -612,14 +764,16 @@ extern int node_features_p_get_node(char *node_list)
 	json_object_iter iter;
 	int status = 0, rc = SLURM_SUCCESS;
 	DEF_TIMERS;
-	char *resp_msg;
-	char **script_argv;
+	char *resp_msg, **script_argv;
 	mcdram_cap_t *mcdram_cap = NULL;
 	mcdram_cfg_t *mcdram_cfg = NULL;
 	numa_cap_t *numa_cap = NULL;
 	numa_cfg_t *numa_cfg = NULL;
 	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0;
 	int numa_cap_cnt = 0, numa_cfg_cnt = 0;
+	struct node_record *node_ptr;
+	hostlist_t host_list;
+	char *node_name;
 
 	/*
 	 * Load available MCDRAM capabilities
@@ -673,9 +827,8 @@ extern int node_features_p_get_node(char *node_list)
 	START_TIMER;
 	resp_msg = _run_script(script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
+	if (debug_flag)
 		info("%s: get_mcdram_cfg ran for %s", __func__, TIME_STR);
-	}
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
@@ -757,9 +910,8 @@ extern int node_features_p_get_node(char *node_list)
 	START_TIMER;
 	resp_msg = _run_script(script_argv, &status);
 	END_TIMER;
-	if (debug_flag) {
+	if (debug_flag)
 		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
-	}
 	_log_script_argv(script_argv, resp_msg);
 	_free_script_argv(script_argv);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
@@ -795,6 +947,37 @@ extern int node_features_p_get_node(char *node_list)
 		_numa_cap_log(numa_cap, numa_cap_cnt);
 		_numa_cfg_log(numa_cfg, numa_cfg_cnt);
 	}
+
+	START_TIMER;
+	if (node_list) {
+		if ((host_list = hostlist_create(node_list)) == NULL) {
+			error ("hostlist_create error on %s: %m", node_list);
+			goto fini;
+		}
+		while ((node_name = hostlist_shift(host_list))) {
+			node_ptr = find_node_record(node_name);
+			if (node_ptr) {
+				_update_node_features(node_ptr,
+						      mcdram_cap,mcdram_cap_cnt,
+						      mcdram_cfg,mcdram_cfg_cnt,
+						      numa_cap, numa_cap_cnt,
+						      numa_cfg, numa_cfg_cnt);
+			}
+			xfree(node_name);
+		}
+		hostlist_destroy (host_list);
+	} else {
+		_update_all_node_features(mcdram_cap, mcdram_cap_cnt,
+					  mcdram_cfg, mcdram_cfg_cnt,
+					  numa_cap, numa_cap_cnt,
+					  numa_cfg, numa_cfg_cnt);
+	}
+	END_TIMER;
+	if (debug_flag)
+		info("%s: update_node_features ran for %s", __func__, TIME_STR);
+
+	last_node_update = time(NULL);
+//FIXME: Rebuild features list bitmaps
 
 fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_mcdram_cfg_free(mcdram_cfg, mcdram_cfg_cnt);
