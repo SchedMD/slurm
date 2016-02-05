@@ -900,12 +900,27 @@ static void _update_all_node_features(
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
 	struct node_record *node_ptr;
-	char node_name[32];
-	int i;
+	char node_name[32], *prefix;
+	int i, width = 5;
 
+	if ((node_record_table_ptr == NULL) ||
+	    (node_record_table_ptr->name == NULL)) {
+		prefix = xstrdup("nid");
+	} else {
+		prefix = xstrdup(node_record_table_ptr->name);
+		for (i = 0; prefix[i]; i++) {
+			if ((prefix[i] >= '0') && (prefix[i] <= '9')) {
+				prefix[i] = '\0';
+				width = 1;
+				for (i++ ; prefix[i]; i++)
+					width++;
+				break;
+			}
+		}
+	}
 	for (i = 0; i < mcdram_cap_cnt; i++) {
 		snprintf(node_name, sizeof(node_name),
-			 "nid%5.5d", mcdram_cap[i].nid);
+			 "%s%.*d", prefix, width, mcdram_cap[i].nid);
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			_merge_strings(&node_ptr->features,
@@ -914,7 +929,7 @@ static void _update_all_node_features(
 	}
 	for (i = 0; i < mcdram_cfg_cnt; i++) {
 		snprintf(node_name, sizeof(node_name),
-			 "nid%5.5d", mcdram_cfg[i].nid);
+			 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			_merge_strings(&node_ptr->features_act,
@@ -923,7 +938,7 @@ static void _update_all_node_features(
 	}
 	for (i = 0; i < numa_cap_cnt; i++) {
 		snprintf(node_name, sizeof(node_name),
-			 "nid%5.5d", numa_cap[i].nid);
+			 "%s%.*d", prefix, width, numa_cap[i].nid);
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			_merge_strings(&node_ptr->features,
@@ -932,13 +947,14 @@ static void _update_all_node_features(
 	}
 	for (i = 0; i < numa_cfg_cnt; i++) {
 		snprintf(node_name, sizeof(node_name),
-			 "nid%5.5d", numa_cfg[i].nid);
+			 "%s%.*d", prefix, width, numa_cfg[i].nid);
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			_merge_strings(&node_ptr->features_act,
 				       numa_cfg[i].numa_cfg);
 		}
 	}
+	xfree(prefix);
 }
 
 /* Update a specific node's features and features_act fields based upon
