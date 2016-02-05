@@ -67,4 +67,12 @@ extern int read_slurm_conf(int recover, bool reconfig);
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
 
+/* For a configuration where available_features == active_features,
+ * build new active and available feature lists */
+extern void build_feature_list_eq(void);
+
+/* For a configuration where available_features != active_features,
+ * build new active and available feature lists */
+extern void build_feature_list_ne(void);
+
 #endif /* !_HAVE_READ_CONFIG_H */
