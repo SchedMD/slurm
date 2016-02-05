@@ -235,14 +235,6 @@ uint32_t slurm_get_cpu_freq_govs(void)
 	return cpu_freq_govs;
 }
 
-/* update internal configuration data structure as needed.
- *	exit with lock set */
-/* static inline void _lock_update_config() */
-/* { */
-/* 	slurm_api_set_default_config(); */
-/* 	slurm_mutex_lock(&config_lock); */
-/* } */
-
 /* slurm_get_batch_start_timeout
  * RET BatchStartTimeout value from slurm.conf
  */
@@ -3468,14 +3460,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 		FREE_NULL_LIST(header.ret_list);
 		header.ret_list = NULL;
 	}
-	//info("ret_cnt = %d",header.ret_cnt);
-	/* if (header.ret_cnt > 0) { */
-/* 		while ((ret_data_info = list_pop(header.ret_list))) */
-/* 			list_push(msg->ret_list, ret_data_info); */
-/* 		header.ret_cnt = 0; */
-/* 		FREE_NULL_LIST(header.ret_list); */
-/* 		header.ret_list = NULL; */
-/* 	} */
+
 	/*
 	 * header.orig_addr will be set to where the first message
 	 * came from if this is a forward else we set the
