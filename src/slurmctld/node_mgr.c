@@ -74,6 +74,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -1805,7 +1806,7 @@ static int _update_node_active_features(char *node_names, char *active_features)
 		info("%s: invalid node_name (%s)", __func__, node_names);
 		return rc;
 	}
-	build_active_feature_list(node_bitmap, active_features);
+	update_feature_list(active_feature_list, active_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s active features set to: %s",
@@ -1854,7 +1855,6 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 			xfree(config_ptr->feature);
 			if (avail_features && avail_features[0])
 				config_ptr->feature = xstrdup(avail_features);
-			build_avail_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
@@ -1867,8 +1867,6 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 			}
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
-
-			build_avail_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
@@ -1881,6 +1879,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
+	update_feature_list(avail_feature_list, avail_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s available features set to: %s",

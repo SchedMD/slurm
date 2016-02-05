@@ -1335,6 +1335,38 @@ extern void build_feature_list_ne(void)
 	}
 }
 
+/* Update active_feature_list or avail_feature_list
+ * feature_list IN - List to update: active_feature_list or avail_feature_list
+ * new_features IN - New active_features
+ * node_bitmap IN - Nodes with the new active_features value */
+extern void update_feature_list(List feature_list, char *new_features,
+				bitstr_t *node_bitmap)
+{
+	node_feature_t *feature_ptr;
+	ListIterator feature_iter;
+	char *tmp_str, *token, *last = NULL;
+
+	/* Clear these nodes from the feature_list record,
+	 * then restore as needed */
+	feature_iter = list_iterator_create(feature_list);
+	bit_not(node_bitmap);
+	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+		bit_and(feature_ptr->node_bitmap, node_bitmap);
+	}
+	list_iterator_destroy(feature_iter);
+	bit_not(node_bitmap);
+
+	if (new_features) {
+		tmp_str = xstrdup(new_features);
+		token = strtok_r(tmp_str, ",", &last);
+		while (token) {
+			_add_config_feature(feature_list, token, node_bitmap);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_str);
+	}
+}
+
 static void _gres_reconfig(bool reconfig)
 {
 	struct node_record *node_ptr;

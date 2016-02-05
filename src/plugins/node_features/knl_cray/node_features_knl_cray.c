@@ -1311,7 +1311,6 @@ extern int node_features_p_get_node(char *node_list)
 		info("%s: update_node_features ran for %s", __func__, TIME_STR);
 
 	last_node_update = time(NULL);
-//FIXME: Rebuild features list bitmaps
 
 fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_mcdram_cfg_free(mcdram_cfg, mcdram_cfg_cnt);
