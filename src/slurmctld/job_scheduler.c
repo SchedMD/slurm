@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -3843,14 +3844,13 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 	return rc;
 }
 
+/* Validate that job's feature is available on some node(s) */
 static int _valid_node_feature(char *feature)
 {
 	int rc = ESLURM_INVALID_FEATURE;
 	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 
-	/* Clear these nodes from the feature_list record,
-	 * then restore as needed */
 	feature_iter = list_iterator_create(avail_feature_list);
 	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
 		if (strcmp(feature_ptr->name, feature))
