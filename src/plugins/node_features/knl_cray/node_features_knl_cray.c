@@ -1005,7 +1005,7 @@ extern int init(void)
 	xfree(capmc_path);
 	capmc_timeout = 0;
 	debug_flag = false;
-	default_mcdram = KNL_CACHE;
+	default_mcdram = KNL_FLAT;
 	default_numa = KNL_ALL2ALL;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
