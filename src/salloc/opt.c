@@ -385,7 +385,7 @@ static void _opt_default()
 	opt.req_switch      = -1;
 	opt.wait4switch     = -1;
 
-	opt.nice = 0;
+	opt.nice = NO_VAL;
 	opt.priority = 0;
 }
 
