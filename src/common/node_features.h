@@ -56,6 +56,9 @@ extern int node_features_g_reconfig(void);
  * all nodes is node_list is NULL */
 extern int node_features_g_get_node(char *node_list);
 
+/* Test if a job's feature specification is valid */
+extern int node_features_g_job_valid(char *job_features);
+
 /* Translate a job's feature specification to node boot options
  * RET node boot options, must be xfreed */
 extern char *node_features_g_job_xlate(char *job_features);

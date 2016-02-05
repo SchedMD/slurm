@@ -1424,7 +1424,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t env_size;	/* element count in environment */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
-	char *features;		/* comma separated list of required features,
+	char *features;		/* required feature specification,
 				 * default NONE */
 	char *gres;		/* comma separated list of required generic
 				 * resources, default NONE */

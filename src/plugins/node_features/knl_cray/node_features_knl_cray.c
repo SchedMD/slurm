@@ -85,7 +85,7 @@
 #define KNL_MCDRAM_FLAG	0xff00
 #define KNL_CACHE	0x0100
 #define KNL_FLAT	0x0200
-#define KNL_HYBRID	0x0400
+#define KNL_EQUAL	0x0400
 
 /*
  * These variables are required by the burst buffer plugin interface.  If they
@@ -277,8 +277,8 @@ static char *_knl_mcdram_str(uint16_t mcdram_num)
 		xstrfmtcat(mcdram_str, "%sflat", sep);
 		sep = ",";
 	}
-	if (mcdram_num & KNL_HYBRID) {
-		xstrfmtcat(mcdram_str, "%shybrid", sep);
+	if (mcdram_num & KNL_EQUAL) {
+		xstrfmtcat(mcdram_str, "%sequal", sep);
 //		sep = ",";	/* Remove to avoid CLANG error */
 	}
 
@@ -298,8 +298,8 @@ static uint16_t _knl_mcdram_token(char *token)
 		mcdram_num = KNL_CACHE;
 	else if (!strcasecmp(token, "flat"))
 		mcdram_num = KNL_FLAT;
-	else if (!strcasecmp(token, "hybrid"))
-		mcdram_num = KNL_HYBRID;
+	else if (!strcasecmp(token, "equal"))
+		mcdram_num = KNL_EQUAL;
 
 	return mcdram_num;
 }
@@ -1320,8 +1320,35 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	return rc;
 }
 
-//FIXME: Add function to validate incoming job feature request
+/* Test if a job's feature specification is valid */
+extern int node_features_p_job_valid(char *job_features)
+{
+	uint16_t job_mcdram, job_numa;
+	int mcdram_cnt, numa_cnt;
 
+	if ((job_features == NULL) || (job_features[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if (strchr(job_features, '[') ||	/* Unsupported operator */
+	    strchr(job_features, ']') ||
+	    strchr(job_features, '|') ||
+	    strchr(job_features, '*'))
+		return ESLURM_INVALID_KNL;
+	
+	job_mcdram = _knl_mcdram_parse(job_features, "&,");
+	mcdram_cnt = _knl_mcdram_bits_cnt(job_mcdram);
+	if (mcdram_cnt > 1)			/* Multiple MCDRAM options */
+		return ESLURM_INVALID_KNL;
+
+	job_numa = _knl_numa_parse(job_features, "&,");
+	numa_cnt = _knl_numa_bits_cnt(job_numa);
+	if (numa_cnt > 1)			/* Multiple NUMA options */
+		return ESLURM_INVALID_KNL;
+
+	return SLURM_SUCCESS;
+}
+
+/* Translate a job's feature request to the node features needed at boot time */
 extern char *node_features_p_job_xlate(char *job_features)
 {
 	char *node_features = NULL;

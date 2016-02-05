@@ -69,6 +69,7 @@
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/power.h"
@@ -6322,6 +6323,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	rc = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
+	rc = node_features_g_job_valid(job_desc->features);
+	if (rc != SLURM_SUCCESS)
+		return rc;
 
 	rc = _test_job_desc_fields(job_desc);
 	if (rc != SLURM_SUCCESS)
@@ -9952,6 +9956,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 	error_code = job_submit_plugin_modify(job_specs, job_ptr,
 					      (uint32_t) uid);
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
+	error_code = node_features_g_job_valid(job_specs->features);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 

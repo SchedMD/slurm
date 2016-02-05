@@ -78,6 +78,7 @@
 typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
 	int	(*reconfig)	(void);
+	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
 } node_features_ops_t;
 
@@ -88,6 +89,7 @@ typedef struct node_features_ops {
 static const char *syms[] = {
 	"node_features_p_get_node",
 	"node_features_p_reconfig",
+	"node_features_p_job_valid",
 	"node_features_p_job_xlate"
 };
 
@@ -224,6 +226,23 @@ extern int node_features_g_get_node(char *node_list)
 		rc = (*(ops[i].get_node))(node_list);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("node_features_g_get_node");
+
+	return rc;
+}
+
+/* Test if a job's feature specification is valid */
+extern int node_features_g_job_valid(char *job_features)
+{
+	DEF_TIMERS;
+	int i, rc;
+
+	START_TIMER;
+	rc = node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].job_valid))(job_features);
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_job_valid");
 
 	return rc;
 }
