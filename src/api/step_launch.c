@@ -286,6 +286,10 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.accel_bind_type	= params->accel_bind_type;
 	launch.multi_prog	= params->multi_prog ? 1 : 0;
 	launch.cpus_per_task	= params->cpus_per_task;
+	launch.ntasks_per_board = params->ntasks_per_board;
+	launch.ntasks_per_core  = params->ntasks_per_core;
+	launch.ntasks_per_socket= params->ntasks_per_socket;
+
 	launch.task_dist	= params->task_dist;
 	launch.partition	= params->partition;
 	launch.pty              = params->pty;

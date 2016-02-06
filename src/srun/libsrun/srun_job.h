@@ -89,6 +89,11 @@ typedef struct srun_job {
 	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */
 	uint32_t ntasks;	/* task count */
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on
+				    * each socket */
+
 	srun_job_state_t state;	/* job state	   	                  */
 	pthread_mutex_t state_mutex;
 	pthread_cond_t  state_cond;

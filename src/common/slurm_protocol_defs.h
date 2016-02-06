@@ -759,6 +759,10 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  job_step_id;
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
+	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t  ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t  ntasks_per_socket;/* number of tasks to invoke on
+				     * each socket */
 	uint32_t  uid;
 	char     *user_name;
 	uint32_t  gid;

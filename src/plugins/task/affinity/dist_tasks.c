@@ -1039,8 +1039,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			*/
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (slurm_get_select_type_param() &
-				    CR_ONE_TASK_PER_CORE))) {
+				|| (req->ntasks_per_core == 1))) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =
@@ -1174,8 +1173,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			*/
 			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
 			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (slurm_get_select_type_param() &
-				    CR_ONE_TASK_PER_CORE))) {
+				|| (req->ntasks_per_core == 1))) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =

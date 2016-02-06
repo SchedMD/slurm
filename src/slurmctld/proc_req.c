@@ -1095,8 +1095,23 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (job_ptr->details) {
 			alloc_msg.pn_min_memory = job_ptr->details->
 						  pn_min_memory;
+
+			if (job_ptr->details->mc_ptr) {
+				alloc_msg.ntasks_per_board =
+					job_ptr->details->mc_ptr->
+					ntasks_per_board;
+				alloc_msg.ntasks_per_core =
+					job_ptr->details->mc_ptr->
+					ntasks_per_core;
+				alloc_msg.ntasks_per_socket =
+					job_ptr->details->mc_ptr->
+					ntasks_per_socket;
+			}
 		} else {
 			alloc_msg.pn_min_memory = 0;
+			alloc_msg.ntasks_per_board = (uint16_t)NO_VAL;
+			alloc_msg.ntasks_per_core = (uint16_t)NO_VAL;
+			alloc_msg.ntasks_per_socket = (uint16_t)NO_VAL;
 		}
 		if (job_ptr->account)
 			alloc_msg.account = xstrdup(job_ptr->account);

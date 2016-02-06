@@ -93,6 +93,10 @@ typedef struct allocation_info {
 	uint32_t                jobid;
 	uint32_t                nnodes;
 	char                   *nodelist;
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on
+				    * each socket */
 	uint32_t                num_cpu_groups;
 	char                   *partition;
 	dynamic_plugin_data_t  *select_jobinfo;
@@ -369,6 +373,10 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->num_cpu_groups = resp->num_cpu_groups;
 	ai->cpus_per_node  = resp->cpus_per_node;
 	ai->cpu_count_reps = resp->cpu_count_reps;
+	ai->ntasks_per_board = resp->ntasks_per_board;
+	ai->ntasks_per_core = resp->ntasks_per_core;
+	ai->ntasks_per_socket = resp->ntasks_per_socket;
+
 	ai->partition = resp->partition;
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
@@ -401,6 +409,10 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
+	i->ntasks_per_board = resp->ntasks_per_board;
+	i->ntasks_per_core = resp->ntasks_per_core;
+	i->ntasks_per_socket = resp->ntasks_per_socket;
+
 	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
 	job = _job_create_structure(i);
@@ -880,6 +892,9 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->jobid   = ainfo->jobid;
 
 	job->ntasks  = opt.ntasks;
+	job->ntasks_per_board = ainfo->ntasks_per_board;
+	job->ntasks_per_core = ainfo->ntasks_per_core;
+	job->ntasks_per_socket = ainfo->ntasks_per_socket;
 
 	/* If cpus_per_task is set then get the exact count of cpus
 	   for the requested step (we might very well use less,

@@ -1855,6 +1855,10 @@ typedef struct {
 	char *cwd;
 	bool user_managed_io;
 	uint32_t msg_timeout; /* timeout set for sending message */
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on
+				    * each socket */
 
 	/* START - only used if user_managed_io is false */
 	bool buffered_stdio;
@@ -2210,6 +2214,10 @@ typedef struct resource_allocation_response_msg {
 	uint32_t error_code;	/* error code for warning message */
 	uint32_t node_cnt;	/* count of nodes */
 	char *node_list;	/* assigned list of nodes */
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on
+				    * each socket */
 	uint32_t num_cpu_groups;/* elements in below cpu arrays */
 	char *partition;	/* name of partition used to run job */
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
