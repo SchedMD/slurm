@@ -1075,15 +1075,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			       (sizeof(uint16_t) * job_ptr->job_resrcs->
 				cpu_array_cnt));
 		}
-		if (job_ptr->details->env_cnt) {
-			alloc_msg.env_size = job_ptr->details->env_cnt;
-			alloc_msg.environment = xmalloc(sizeof(char *) *
-							alloc_msg.env_size);
-			for (i = 0; i < alloc_msg.env_size; i++) {
-				alloc_msg.environment[i] =
-					xstrdup(job_ptr->details->env_sup[i]);
-			}
-		}
+
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_ptr->job_id;
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
@@ -1106,6 +1098,18 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 				alloc_msg.ntasks_per_socket =
 					job_ptr->details->mc_ptr->
 					ntasks_per_socket;
+			}
+
+			if (job_ptr->details->env_cnt) {
+				alloc_msg.env_size = job_ptr->details->env_cnt;
+				alloc_msg.environment =
+					xmalloc(sizeof(char *) *
+						alloc_msg.env_size);
+				for (i = 0; i < alloc_msg.env_size; i++) {
+					alloc_msg.environment[i] =
+						xstrdup(job_ptr->details->
+							env_sup[i]);
+				}
 			}
 		} else {
 			alloc_msg.pn_min_memory = 0;
