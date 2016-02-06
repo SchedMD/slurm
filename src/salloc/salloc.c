@@ -675,7 +675,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
 	desc->network = opt.network;
-	if (opt.nice)
+	if (opt.nice != NO_VAL)
 		desc->nice = NICE_OFFSET + opt.nice;
 	if (opt.priority)
 		desc->priority = opt.priority;

@@ -547,7 +547,7 @@ static void _opt_default(void)
 	opt.launcher_opts = NULL;
 	opt.launch_cmd = false;
 
-	opt.nice = 0;
+	opt.nice = NO_VAL;
 	opt.priority = 0;
 	opt.power_flags = 0;
 	opt.mcs_label = NULL;

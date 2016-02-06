@@ -419,7 +419,7 @@ static void _opt_default()
 	opt.ckpt_interval_str = NULL;
 	opt.ckpt_dir = slurm_get_checkpoint_dir();
 
-	opt.nice = 0;
+	opt.nice = NO_VAL;
 	opt.priority = 0;
 
 	opt.test_only   = false;

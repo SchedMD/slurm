@@ -3,7 +3,7 @@
  Example lua script demonstrating the SLURM job_submit/lua interface.
  This is only an example, not meant for use in its current form.
 
- Leave the function names, arguments, local varialbes and setmetatable
+ Leave the function names, arguments, local variables and setmetatable
  set up logic in each function unchanged. Change only the logic after
  the line containing "*** YOUR LOGIC GOES BELOW ***".
 

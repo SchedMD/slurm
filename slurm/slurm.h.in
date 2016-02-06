@@ -618,7 +618,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_CONFIRMED, /* data-> uint8_t ALPS reservation confirmed */
 	SELECT_JOBDATA_CLEANING, /* data-> uint16_t if the job is in
 				  * cleaning state or not. */
-	SELECT_JOBDATA_NETWORK, /* data-> char * network info */
+	SELECT_JOBDATA_NETWORK  /* data-> char * network info */
 };
 
 enum select_nodedata_type {
@@ -634,7 +634,7 @@ enum select_nodedata_type {
 				      * freed with xfree */
 	SELECT_NODEDATA_RACK_MP,     /* data-> char * needs to be
 				      * freed with xfree */
-	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
+	SELECT_NODEDATA_MEM_ALLOC    /* data-> uint32_t */
 };
 
 /* Intel Knights Landing Configuration Modes */
@@ -666,7 +666,7 @@ enum select_print_mode {
 	SELECT_PRINT_RAMDISK_IMAGE,/* Print just the RAMDISK IMAGE */
 	SELECT_PRINT_REBOOT,	/* Print just the REBOOT */
 	SELECT_PRINT_RESV_ID,	/* Print just Cray/BASIL reservation ID */
-	SELECT_PRINT_START_LOC,	/* Print just the start location */
+	SELECT_PRINT_START_LOC	/* Print just the start location */
 };
 
 enum select_node_cnt {
@@ -735,7 +735,7 @@ enum acct_energy_type {
 	ENERGY_DATA_LAST_POLL,
 	ENERGY_DATA_SENSOR_CNT,
 	ENERGY_DATA_NODE_ENERGY,
-	ENERGY_DATA_NODE_ENERGY_UP,
+	ENERGY_DATA_NODE_ENERGY_UP
 };
 
 /*
@@ -796,7 +796,7 @@ typedef enum task_dist_states {
 	SLURM_DIST_CORECFULL            = 0x0300,
 
 	SLURM_DIST_NO_LLLP              = 0x1000,
-	SLURM_DIST_UNKNOWN              = 0x2000,
+	SLURM_DIST_UNKNOWN              = 0x2000
 } task_dist_states_t;
 
 #define SLURM_DIST_STATE_BASE		0x00FFFF
@@ -883,7 +883,7 @@ typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */
 	ACCEL_BIND_VERBOSE         = 0x01, /* 'v' verbose */
 	ACCEL_BIND_CLOSEST_GPU     = 0x02, /* 'g' Use closest GPU to the CPU */
 	ACCEL_BIND_CLOSEST_MIC     = 0x04, /* 'm' Use closest NIC to CPU */
-	ACCEL_BIND_CLOSEST_NIC     = 0x08, /* 'n' Use closest NIC to CPU */
+	ACCEL_BIND_CLOSEST_NIC     = 0x08  /* 'n' Use closest NIC to CPU */
 } accel_bind_type_t;
 
 /* The last entry in node_states must be STATE_END, keep in sync with

@@ -444,7 +444,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->task_dist  = opt.distribution;
 
 	desc->network = opt.network;
-	if (opt.nice)
+	if (opt.nice != NO_VAL)
 		desc->nice = NICE_OFFSET + opt.nice;
 	if (opt.priority)
 		desc->priority = opt.priority;
