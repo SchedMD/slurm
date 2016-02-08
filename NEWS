@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix perl api for newer perl versions.
  -- Fix for jobs requesting cpus-per-task (eg. -c3) that exceed the number of
     cpus on a core.
+ -- Remove unneeded perl files from the .spec file.
 
 * Changes in Slurm 15.08.7
 ==========================
