@@ -38,7 +38,9 @@ This parameter is used only by the "knl_cray.conf" plugin.
 .TP
 \fBDefaultMCDRAM\fR
 Specify the default MCDRAM modes for job's which do not specify a value.
-The default value is "flat".
+This is only used when a node is booted and the job which has been allocated
+the node does not specify a desired MCDRAM mode.
+The default value is "cache".
 .RS
 .TP 17
 \fBcache\fR
@@ -54,6 +56,8 @@ MCDRAM to be combined with primary memory into a "flat" memory space.
 .TP
 \fBDefaultNUMA\fR
 Specify the default NUMA modes for job's which do not specify a value.
+This is only used when a node is booted and the job which has been allocated
+the node does not specify a desired NUMA mode.
 The default value is "a2a".
 .RS
 .TP 17
