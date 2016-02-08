@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for jobs requesting cpus-per-task (eg. -c3) that exceed the number of
     cpus on a core.
  -- Remove unneeded perl files from the .spec file.
+ -- Flesh out filters for scontrol show assoc_mgr
 
 * Changes in Slurm 15.08.7
 ==========================

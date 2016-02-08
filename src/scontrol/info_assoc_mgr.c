@@ -82,7 +82,7 @@ endit:
 	printf("%s", new_line_char);
 }
 
-static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
+static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 {
 	ListIterator itr;
 	slurmdb_user_rec_t *user_rec;
@@ -372,6 +372,15 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 	}
 }
 
+static void _free_req_lists(List acct, List flag, List qos, List user)
+{
+	FREE_NULL_LIST(acct);
+	FREE_NULL_LIST(flag);
+	FREE_NULL_LIST(qos);
+	FREE_NULL_LIST(user);
+	return;
+}
+
 /* scontrol_print_assoc_mgr_info()
  *
  * Retrieve and display the association manager information
@@ -379,24 +388,97 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
  *
  */
 
-extern void scontrol_print_assoc_mgr_info(const char *name)
+extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
 {
-	int cc;
+	char *tag = NULL, *val = NULL, *flag = NULL;
+	int cc, tag_len, i;
+	bool all_flags = true;
+	List flag_list;
+	ListIterator itr;
 	assoc_mgr_info_request_msg_t req;
 	assoc_mgr_info_msg_t *msg = NULL;
 
-	/* FIXME: add more filtering in the future */
 	memset(&req, 0, sizeof(assoc_mgr_info_request_msg_t));
-	req.flags = ASSOC_MGR_INFO_FLAG_ASSOC | ASSOC_MGR_INFO_FLAG_USERS |
-		ASSOC_MGR_INFO_FLAG_QOS;
-	if (name) {
-		req.user_list = list_create(NULL);
-		list_append(req.user_list, (char *)name);
+
+	for (i = 0; i < argc; ++i) {
+		tag = argv[i];
+		tag_len = strlen(tag);
+		val = strchr(argv[i], '=');
+		if (val) {
+			tag_len = val - argv[i];
+			val++;
+		}
+
+		/* We free every list before creating it. This way we ensure
+		 * we are just appending the last value if user repeats entity.
+		 */
+		if (val &&
+			strncasecmp(tag, "accounts", MAX(tag_len, 1)) == 0) {
+			FREE_NULL_LIST(req.acct_list);
+			req.acct_list = list_create(NULL);
+			slurm_addto_char_list(req.acct_list, val);
+
+		} else if (val &&
+			strncasecmp(tag, "qos", MAX(tag_len, 1)) == 0) {
+			FREE_NULL_LIST(req.qos_list);
+			req.qos_list = list_create(NULL);
+			slurm_addto_char_list(req.qos_list, val);
+
+		} else if (val &&
+			strncasecmp(tag, "users", MAX(tag_len, 1)) == 0) {
+			FREE_NULL_LIST(req.user_list);
+			req.user_list = list_create(NULL);
+			slurm_addto_char_list(req.user_list, val);
+
+		} else if (val &&
+			strncasecmp(tag, "flags", MAX(tag_len, 1)) == 0) {
+			FREE_NULL_LIST(flag_list);
+			req.flags = 0;
+			all_flags = false;
+			flag_list = list_create(NULL);
+			slurm_addto_char_list(flag_list, val);
+			itr = list_iterator_create(flag_list);
+			while ((flag = list_next(itr))) {
+				if (strcasecmp(flag, "users") == 0)
+					req.flags |= ASSOC_MGR_INFO_FLAG_USERS;
+				else if (strcasecmp(flag, "assoc") == 0)
+					req.flags |= ASSOC_MGR_INFO_FLAG_ASSOC;
+				else if (strcasecmp(flag, "qos") == 0)
+					req.flags |= ASSOC_MGR_INFO_FLAG_QOS;
+				else {
+					fprintf(stderr, "invalid flag %s\n",
+						flag);
+					list_iterator_destroy(itr);
+					_free_req_lists(req.acct_list,
+							flag_list,
+							req.qos_list,
+							req.user_list);
+					return;
+				}
+			}
+			list_iterator_destroy(itr);
+
+		} else {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, "invalid entity: %s for keyword"
+					":show assoc_mgr\n", tag);
+			_free_req_lists(req.acct_list, flag_list,
+					req.qos_list, req.user_list);
+			return;
+		}
 	}
+
+	if (all_flags)
+		req.flags = ASSOC_MGR_INFO_FLAG_ASSOC |
+			ASSOC_MGR_INFO_FLAG_USERS |
+			ASSOC_MGR_INFO_FLAG_QOS;
+
 	/* call the controller to get the meat */
 	cc = slurm_load_assoc_mgr_info(&req, &msg);
 
-	FREE_NULL_LIST(req.user_list);
+	_free_req_lists(req.acct_list, flag_list,
+			req.qos_list, req.user_list);
 
 	if (cc != SLURM_PROTOCOL_SUCCESS) {
 		/* Hosed, crap out. */
@@ -408,7 +490,7 @@ extern void scontrol_print_assoc_mgr_info(const char *name)
 
 	/* print the info
 	 */
-	_print_assoc_mgr_info(name, msg);
+	_print_assoc_mgr_info(msg);
 
 	/* free at last
 	 */
