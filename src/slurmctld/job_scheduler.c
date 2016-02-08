@@ -61,6 +61,7 @@
 #include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -3326,6 +3327,34 @@ static void *_run_epilog(void *arg)
 	return NULL;
 }
 
+/* Return a node bitmap identifying which nodes must be rebooted for a job
+ * to start. */
+extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
+{
+	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
+
+	if (job_ptr->reboot || (node_features_g_count() == 0)) {
+		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
+		return boot_node_bitmap;
+	}
+
+	build_active_feature_bitmap(job_ptr, job_ptr->node_bitmap,
+				    &active_bitmap);
+	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
+	if (active_bitmap == NULL) {
+		FREE_NULL_BITMAP(boot_node_bitmap);
+		return boot_node_bitmap;
+	}
+
+	bit_not(active_bitmap);	/* Change to INactive_bitmap */
+	bit_and(boot_node_bitmap, active_bitmap);
+	FREE_NULL_BITMAP(active_bitmap);
+	if (bit_set_count(boot_node_bitmap) == 0)
+		FREE_NULL_BITMAP(boot_node_bitmap);
+
+	return boot_node_bitmap;
+}
+
 /*
  * reboot_job_nodes - Reboot the compute nodes allocated to a job.
  * IN job_ptr - pointer to job that will be initiated
@@ -3347,14 +3376,18 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
+	bitstr_t *boot_node_bitmap = NULL;
 
-	if ((job_ptr->reboot == 0) || (job_ptr->node_bitmap == NULL) ||
-	    (job_ptr->details == NULL))
+	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
 		return SLURM_SUCCESS;
 	if (power_save_test())
 		return power_job_reboot(job_ptr);
 	if ((slurmctld_conf.reboot_program == NULL) ||
 	    (slurmctld_conf.reboot_program[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	boot_node_bitmap = node_features_reboot(job_ptr);
+	if (boot_node_bitmap == NULL)
 		return SLURM_SUCCESS;
 
 	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
@@ -3363,12 +3396,16 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	reboot_agent_args->hostlist = hostlist_create(NULL);
 	reboot_msg = xmalloc(sizeof(reboot_msg_t));
-	reboot_msg->features = xstrdup(job_ptr->details->features);
+	reboot_msg->features = node_features_g_job_xlate(
+				job_ptr->details->features);
 	reboot_agent_args->msg_args = reboot_msg;
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	i_last = bit_fls(job_ptr->node_bitmap);
+	i_first = bit_ffs(boot_node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(boot_node_bitmap);
+	else
+		i_last = i_first - 1;
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(boot_node_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr + i;
 		if (reboot_agent_args->protocol_version
@@ -3383,6 +3420,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->last_response = now + resume_timeout;
 	}
+	FREE_NULL_BITMAP(boot_node_bitmap);
 	agent_queue_request(reboot_agent_args);
 
 	if (job_ptr->details)

@@ -1398,17 +1398,18 @@ extern char *node_features_p_job_xlate(char *job_features)
 	}
 	xfree(tmp);
 
-	if (node_features) {	/* Add default options */
-		if (!has_mcdram) {
-			tmp = _knl_mcdram_str(default_mcdram);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
-		if (!has_numa) {
-			tmp = _knl_numa_str(default_numa);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
+	/* Add default options */
+	if (!has_mcdram) {
+		tmp = _knl_mcdram_str(default_mcdram);
+		xstrfmtcat(node_features, "%s%s", sep, tmp);
+		sep = ",";
+		xfree(tmp);
+	}
+	if (!has_numa) {
+		tmp = _knl_numa_str(default_numa);
+		xstrfmtcat(node_features, "%s%s", sep, tmp);
+		sep = ",";
+		xfree(tmp);
 	}
 
 	return node_features;

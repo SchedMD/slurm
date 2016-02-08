@@ -64,6 +64,7 @@
 #include "src/common/node_features.h"
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
@@ -247,15 +248,21 @@ extern int power_job_reboot(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
-	bitstr_t *wake_node_bitmap = NULL;
+	bitstr_t *boot_node_bitmap = NULL;
 	time_t now = time(NULL);
 	char *nodes, *features = NULL;
 
-	wake_node_bitmap = bit_alloc(node_record_count);
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	i_last = bit_fls(job_ptr->node_bitmap);
+	boot_node_bitmap = node_features_reboot(job_ptr);
+	if (boot_node_bitmap == NULL)
+		return SLURM_SUCCESS;
+
+	i_first = bit_ffs(boot_node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(boot_node_bitmap);
+	else
+		i_last = i_first - 1;
 	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(boot_node_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr + i;
 		resume_cnt++;
@@ -266,11 +273,10 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		bit_clear(power_node_bitmap, i);
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->last_response = now + resume_timeout;
-		bit_set(wake_node_bitmap,    i);
 		bit_set(resume_node_bitmap,  i);
 	}
 
-	nodes = bitmap2node_name(wake_node_bitmap);
+	nodes = bitmap2node_name(boot_node_bitmap);
 	if (nodes) {
 #if _DEBUG
 		info("power_save: reboot nodes %s", nodes);
@@ -288,7 +294,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		rc = SLURM_ERROR;
 	}
 	xfree(nodes);
-	FREE_NULL_BITMAP(wake_node_bitmap);
+	FREE_NULL_BITMAP(boot_node_bitmap);
 	last_node_update = now;
 
 	return rc;
