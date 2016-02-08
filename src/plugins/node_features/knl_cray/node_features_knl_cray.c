@@ -1414,3 +1414,41 @@ extern char *node_features_p_job_xlate(char *job_features)
 
 	return node_features;
 }
+
+/* Translate a node's new active feature specification as needed to preserve
+ * any available features
+ * RET node's new active features, must be xfreed */
+extern char *node_features_p_node_xlate(char *update_opt, char *avail_features)
+{
+	char *node_features = NULL;
+	char *tmp, *save_ptr = NULL, *sep = "", *tok;
+
+	if ((avail_features == NULL) || (avail_features[0] ==  '\0'))
+		return node_features;
+
+	tmp = xstrdup(avail_features);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		if ((_knl_mcdram_token(tok) == 0) &&
+		    (_knl_numa_token(tok)   == 0)) {
+			xstrfmtcat(node_features, "%s%s", sep, tok);
+			sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	tmp = xstrdup(update_opt);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		if ((_knl_mcdram_token(tok) != 0) ||
+		    (_knl_numa_token(tok)   != 0)) {
+			xstrfmtcat(node_features, "%s%s", sep, tok);
+			sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	return node_features;
+}

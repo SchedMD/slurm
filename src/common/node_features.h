@@ -63,4 +63,9 @@ extern int node_features_g_job_valid(char *job_features);
  * RET node boot options, must be xfreed */
 extern char *node_features_g_job_xlate(char *job_features);
 
+/* Translate a node's new active feature specification as needed to preserve
+ * any available features
+ * RET node's new active features, must be xfreed */
+extern char *node_features_g_node_xlate(char *update_opt, char *orig_features);
+
 #endif /* !_NODE_FEATURES_H */

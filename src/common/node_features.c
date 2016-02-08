@@ -77,9 +77,10 @@
  */
 typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
-	int	(*reconfig)	(void);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
+	char *	(*node_xlate)	(char *update_opt, char *avail_features);
+	int	(*reconfig)	(void);
 } node_features_ops_t;
 
 /*
@@ -88,9 +89,10 @@ typedef struct node_features_ops {
  */
 static const char *syms[] = {
 	"node_features_p_get_node",
-	"node_features_p_reconfig",
 	"node_features_p_job_valid",
-	"node_features_p_job_xlate"
+	"node_features_p_job_xlate",
+	"node_features_p_node_xlate",
+	"node_features_p_reconfig"
 };
 
 static int g_context_cnt = -1;
@@ -273,4 +275,33 @@ extern char *node_features_g_job_xlate(char *job_features)
 	END_TIMER2("node_features_g_job_xlate");
 
 	return node_features;
+}
+
+/* Translate a node's new active feature specification as needed to preserve
+ * any available features
+ * RET node's new active features, must be xfreed */
+extern char *node_features_g_node_xlate(char *update_opt, char *avail_features)
+{
+	DEF_TIMERS;
+	char *new_features = NULL, *tmp_str;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		if (new_features)
+			tmp_str = new_features;
+		else if (avail_features)
+			tmp_str = xstrdup(avail_features);
+		else
+			tmp_str = NULL;
+		new_features = (*(ops[i].node_xlate))(update_opt, tmp_str);
+		xfree(tmp_str);
+
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_node_xlate");
+
+	return new_features;
 }

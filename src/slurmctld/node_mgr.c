@@ -58,6 +58,7 @@
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/power.h"
@@ -1362,10 +1363,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 			error_code = ESLURM_INVALID_FEATURE;
 		} else if (update_node_msg->features_act) {
 			xfree(node_ptr->features_act);
-			if (update_node_msg->features_act[0]) {
-				node_ptr->features_act =
-					xstrdup(update_node_msg->features_act);
-			}
+			node_ptr->features_act =
+				node_features_g_node_xlate(
+					update_node_msg->features_act,
+					node_ptr->features);
 			/* _update_node_active_features() logs and updates
 			 * active_feature_list */
 		}
