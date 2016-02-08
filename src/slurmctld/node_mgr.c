@@ -1367,6 +1367,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_features_g_node_xlate(
 					update_node_msg->features_act,
 					node_ptr->features);
+			xfree(update_node_msg->features_act);
+			update_node_msg->features_act =
+				xstrdup(node_ptr->features_act);
 			/* _update_node_active_features() logs and updates
 			 * active_feature_list */
 		}
