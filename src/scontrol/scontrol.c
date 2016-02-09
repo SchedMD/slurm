@@ -1476,7 +1476,7 @@ _show_it (int argc, char *argv[])
 	}
 
 	if (strncasecmp (argv[1], "layouts", MAX(tag_len, 2)) == 0 ||
-		strncasecmp (argv[1], "assoc_mgr", MAX(tag_len, 2)) == 0)
+	    strncasecmp (argv[1], "assoc_mgr", MAX(tag_len, 2)) == 0)
 		allow_opt = true;
 
 	if (argc > 3 && !allow_opt) {
