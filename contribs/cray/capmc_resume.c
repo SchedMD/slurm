@@ -57,9 +57,11 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/hostlist.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -71,7 +73,9 @@
 
 /* Static variables */
 static char *capmc_path = NULL;
-static uint32_t capmc_timeout = 1000;	/* 1 seconds */
+static uint32_t capmc_timeout = 1000;	/* 1 second */
+static char *log_file = NULL;
+static char *prog_name = NULL;
 static char *mcdram_mode = NULL, *numa_mode = NULL;
 
 static pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -83,6 +87,7 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
+	{"LogFile", S_P_STRING},
 	{NULL}
 };
 
@@ -101,14 +106,14 @@ static s_p_hashtbl_t *_config_make_tbl(char *filename)
 	xassert(filename);
 
 	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
-		fprintf(stderr, "knl.conf: s_p_hashtbl_create error: %s",
-			slurm_strerror(slurm_get_errno()));
+		error("%s: s_p_hashtbl_create error: %s", log_file,
+		      slurm_strerror(slurm_get_errno()));
 		return tbl;
 	}
 
 	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
-		fprintf(stderr, "knl.conf: s_p_parse_file error: %s",
-			slurm_strerror(slurm_get_errno()));
+		error("%s: s_p_parse_file error: %s", log_file,
+		      slurm_strerror(slurm_get_errno()));
 		s_p_hashtbl_destroy(tbl);
 		tbl = NULL;
 	}
@@ -125,12 +130,15 @@ static void _read_config(void)
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		s_p_get_string(&log_file, "LogFile", tbl);
 	}
 	xfree(knl_conf_file);
 	s_p_hashtbl_destroy(tbl);
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
+	if (!log_file)
+		log_file = slurm_get_job_slurmctld_logfile();
 }
 
 /*
@@ -156,14 +164,14 @@ static char *_run_script(char **script_argv, int *status)
 	int pfd[2] = { -1, -1 };
 
 	if (access(capmc_path, R_OK | X_OK) < 0) {
-		fprintf(stderr, "Can not execute: %s", capmc_path);
+		error("%s: Can not execute: %s", log_file, capmc_path);
 		*status = 127;
 		resp = xstrdup("Slurm node_features/knl_cray configuration error");
 		return resp;
 	}
 	if (pipe(pfd) != 0) {
-		fprintf(stderr, "pipe(): %s",
-			slurm_strerror(slurm_get_errno()));
+		error("%s: pipe(): %s", log_file,
+		      slurm_strerror(slurm_get_errno()));
 		*status = 127;
 		resp = xstrdup("System error");
 		return resp;
@@ -183,14 +191,14 @@ static char *_run_script(char **script_argv, int *status)
 		setpgrp();
 #endif
 		execv(capmc_path, script_argv);
-		fprintf(stderr, "execv(): %s",
-			slurm_strerror(slurm_get_errno()));
+		error("%s: execv(): %s", log_file,
+		      slurm_strerror(slurm_get_errno()));
 		exit(127);
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);
-		fprintf(stderr, "fork(): %s",
-			slurm_strerror(slurm_get_errno()));
+		error("%s: fork(): %s", log_file,
+		      slurm_strerror(slurm_get_errno()));
 	} else {
 		struct pollfd fds;
 		struct timeval tstart;
@@ -204,8 +212,8 @@ static char *_run_script(char **script_argv, int *status)
 			fds.revents = 0;
 			new_wait = capmc_timeout - _tot_wait(&tstart);
 			if (new_wait <= 0) {
-				fprintf(stderr, "poll() timeout @ %d msec",
-					capmc_timeout);
+				error("%s: poll() timeout @ %d msec", log_file,
+				      capmc_timeout);
 				break;
 			}
 			new_wait = MIN(new_wait, MAX_POLL_WAIT);
@@ -213,8 +221,8 @@ static char *_run_script(char **script_argv, int *status)
 			if (i == 0) {
 				continue;
 			} else if (i < 0) {
-				fprintf(stderr, "poll(): %s",
-					slurm_strerror(slurm_get_errno()));
+				error("%s: poll(): %s", log_file,
+				      slurm_strerror(slurm_get_errno()));
 				break;
 			}
 			if ((fds.revents & POLLIN) == 0)
@@ -226,8 +234,8 @@ static char *_run_script(char **script_argv, int *status)
 			} else if (i < 0) {
 				if (errno == EAGAIN)
 					continue;
-				fprintf(stderr, "read(): %s",
-					slurm_strerror(slurm_get_errno()));
+				error("%s: read(): %s", log_file,
+				      slurm_strerror(slurm_get_errno()));
 				break;
 			} else {
 				resp_offset += i;
@@ -262,7 +270,7 @@ static void *_node_update(void *args)
 		}
 	}
 	if (nid < 0) {
-		fprintf(stderr, "No valid NID: %s\n", node_name);
+		error("%s: No valid NID: %s", log_file, node_name);
 		return NULL;
 	}
 	snprintf(nid_str, sizeof(nid_str), "%d", nid);
@@ -279,9 +287,9 @@ static void *_node_update(void *args)
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			fprintf(stderr, "capmc(%s,%s,%s,%s,%s): %d %s\n",
-				argv[1], argv[2], argv[3], argv[4], argv[5],
-				status, resp_msg);
+			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", log_file,
+			      argv[1], argv[2], argv[3], argv[4], argv[5],
+			      status, resp_msg);
 		}
 		xfree(resp_msg);
 	}
@@ -298,9 +306,9 @@ static void *_node_update(void *args)
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			fprintf(stderr, "capmc(%s,%s,%s,%s,%s): %d %s\n",
-				argv[1], argv[2], argv[3], argv[4], argv[5],
-				status, resp_msg);
+			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", log_file,
+			      argv[1], argv[2], argv[3], argv[4], argv[5],
+			      status, resp_msg);
 		}
 		xfree(resp_msg);
 	}
@@ -314,8 +322,8 @@ static void *_node_update(void *args)
 	argv[4] = NULL;
 	resp_msg = _run_script(argv, &status);
 	if (status != 0) {
-		fprintf(stderr, "capmc(%s,%s,%s): %d %s\n",
-			argv[1], argv[2], argv[3], status, resp_msg);
+		error("%s: capmc(%s,%s,%s): %d %s", log_file,
+		      argv[1], argv[2], argv[3], status, resp_msg);
 	}
 	xfree(resp_msg);
 
@@ -329,12 +337,13 @@ static void *_node_update(void *args)
 		argv[4] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			fprintf(stderr, "capmc(%s,%s,%s): %d %s\n",
+			error("%s: capmc(%s,%s,%s): %d %s", log_file,
 				argv[1], argv[2], argv[3], status, resp_msg);
 		}
 		j = json_tokener_parse(resp_msg);
 		if (j == NULL) {
-			fprintf(stderr, "json parser failed on %s", resp_msg);
+			error("%s: json parser failed on %s",
+			      log_file, resp_msg);
 			xfree(resp_msg);
 			continue;
 		}
@@ -360,7 +369,7 @@ static void *_node_update(void *args)
 	argv[4] = NULL;
 	resp_msg = _run_script(argv, &status);
 	if (status != 0) {
-		fprintf(stderr, "capmc(%s,%s,%s): %d %s\n",
+		error("%s: capmc(%s,%s,%s): %d %s", log_file,
 			argv[1], argv[2], argv[3], status, resp_msg);
 	}
 	xfree(resp_msg);
@@ -383,7 +392,7 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 	*num = 0;
         json_object_object_get_ex(jobj, key, &j_array);
 	if (!j_array) {
-		fprintf(stderr, "Unable to parse nid specification\n");
+		error("%s: Unable to parse nid specification", log_file);
 		return NULL;
 	}
 
@@ -393,7 +402,8 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 		j_value = json_object_array_get_idx(j_array, i);
 		j_type = json_object_get_type(j_value);
 		if (j_type != json_type_int) {
-			fprintf(stderr, "Unable to parse nid specification'n");
+			error("%s: Unable to parse nid specification",
+			      log_file);
 			break;
 		} else {
 			ents[i] = (uint32_t) json_object_get_int64(j_value);
@@ -405,6 +415,7 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 
 int main(int argc, char *argv[])
 {
+	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	char *features, *save_ptr = NULL, *tok;
 	update_node_msg_t node_msg;
 	int rc =  SLURM_SUCCESS;
@@ -413,7 +424,13 @@ int main(int argc, char *argv[])
 	pthread_attr_t attr_work;
 	pthread_t thread_work = 0;
 
+	prog_name = argv[0];
 	_read_config();
+	log_opts.stderr_level = LOG_LEVEL_QUIET;
+	log_opts.syslog_level = LOG_LEVEL_QUIET;
+	if (slurm_get_debug_flags() && DEBUG_FLAG_NODE_FEATURES)
+		log_opts.logfile_level += 3;
+	(void) log_init(argv[0], log_opts, LOG_DAEMON, log_file);
 
 	/* Parse the MCDRAM and NUMA boot options */
 	if (argc == 3) {
@@ -441,7 +458,7 @@ int main(int argc, char *argv[])
 
 	/* Spawn threads to change MCDRAM and NUMA states and reboot nodes */
 	if ((hl = hostlist_create(argv[1])) == NULL) {
-		fprintf(stderr, "Invalid hostlist (%s)\n", argv[1]);
+		error("%s: Invalid hostlist (%s)", prog_name, argv[1]);
 		exit(2);
 	}
 	while ((node_name = hostlist_pop(hl))) {
@@ -493,8 +510,9 @@ int main(int argc, char *argv[])
 	if (rc == SLURM_SUCCESS) {
 		exit(0);
 	} else {
-		fprintf(stderr, "slurm_update_node(\'%s\', \'%s\'): %s\n",
-			argv[1], argv[2], slurm_strerror(slurm_get_errno()));
+		error("%s: slurm_update_node(\'%s\', \'%s\'): %s\n",
+		      prog_name, argv[1], argv[2],
+		      slurm_strerror(slurm_get_errno()));
 		exit(1);
 	}
 }

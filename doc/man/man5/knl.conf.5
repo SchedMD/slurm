@@ -77,6 +77,11 @@ Hemisphere
 Quadrant
 .RE
 
+.TP
+\fBLogFile\fR
+Fully qualified path to a log file.
+The default value is SlurmctldLogFile from the slurm.conf configuration file.
+
 .SH "EXAMPLE"
 .LP
 .br
@@ -88,13 +93,15 @@ Quadrant
 .br
 ###################################################################
 .br
-CapmcPath=/home/jette/Desktop/SLURM/install.linux/sbin/capmc
+CapmcPath=/opt/cray/capmc/default/bin/capmc
 .br
 CapmcTimeout=600
 .br
 DefaultMCDRAM=flat
 .br
 DefaultNUMA=a2a
+.br
+LogFile=/var/tmp/slurm_node_feature.log
 
 .SH "COPYING"
 Copyright (C) 2015-2016 SchedMD LLC.
