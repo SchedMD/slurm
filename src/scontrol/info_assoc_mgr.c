@@ -414,7 +414,6 @@ extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
 			if (!req.acct_list)
 				req.acct_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.acct_list, val);
-			req.flags |= ASSOC_MGR_INFO_FLAG_ASSOC;
 		} else if (!strncasecmp(tag, "flags", MAX(tag_len, 1))) {
 			if (slurm_strcasestr(val, "users"))
 				req.flags |= ASSOC_MGR_INFO_FLAG_USERS;
@@ -434,12 +433,10 @@ extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
 			if (!req.qos_list)
 				req.qos_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.qos_list, val);
-			req.flags |= ASSOC_MGR_INFO_FLAG_QOS;
 		} else if (!strncasecmp(tag, "users", MAX(tag_len, 1))) {
 			if (!req.user_list)
 				req.user_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(req.user_list, val);
-			req.flags |= ASSOC_MGR_INFO_FLAG_USERS;
 		} else {
 			exit_code = 1;
 			if (quiet_flag != 1)
