@@ -60,6 +60,7 @@ char *assoc_req_inx[] = {
 	"max_tres_pj",
 	"max_tres_pn",
 	"max_jobs",
+	"max_resv_jobs",
 	"max_submit_jobs",
 	"max_wall_pj",
 	"parent_acct",
@@ -87,6 +88,7 @@ enum {
 	ASSOC_REQ_MTPJ,
 	ASSOC_REQ_MTPN,
 	ASSOC_REQ_MJ,
+	ASSOC_REQ_MRJ,
 	ASSOC_REQ_MSJ,
 	ASSOC_REQ_MWPJ,
 	ASSOC_REQ_PARENT,
@@ -98,13 +100,14 @@ enum {
 };
 
 static char *get_parent_limits_select =
-	"select @par_id, @mj, @msj, "
+	"select @par_id, @mj, @mrj, @msj, "
 	"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 	"@def_qos_id, @qos, @delta_qos;";
 
 enum {
 	ASSOC2_REQ_PARENT_ID,
 	ASSOC2_REQ_MJ,
+	ASSOC2_REQ_MRJ,
 	ASSOC2_REQ_MSJ,
 	ASSOC2_REQ_MWPJ,
 	ASSOC2_REQ_MTPJ,
@@ -714,6 +717,8 @@ static int _set_assoc_limits_for_add(
 
 	if (row[ASSOC2_REQ_MJ] && assoc->max_jobs == INFINITE)
 		assoc->max_jobs = slurm_atoul(row[ASSOC2_REQ_MJ]);
+	if (row[ASSOC2_REQ_MRJ] && assoc->max_resv_jobs == INFINITE)
+		assoc->max_resv_jobs = slurm_atoul(row[ASSOC2_REQ_MRJ]);
 	if (row[ASSOC2_REQ_MSJ] && assoc->max_submit_jobs == INFINITE)
 		assoc->max_submit_jobs = slurm_atoul(row[ASSOC2_REQ_MSJ]);
 	if (row[ASSOC2_REQ_MWPJ] && assoc->max_wall_pj == INFINITE)
@@ -803,6 +808,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"acct",
 		"`partition`",
 		"max_jobs",
+		"max_resv_jobs",
 		"max_submit_jobs",
 		"max_tres_pj",
 		"max_tres_pn",
@@ -822,6 +828,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_ACCT,
 		ASSOC_PART,
 		ASSOC_MJ,
+		ASSOC_MRJ,
 		ASSOC_MSJ,
 		ASSOC_MTPJ,
 		ASSOC_MTPN,
@@ -882,6 +889,11 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 		if (!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
+			modified = 1;
+		}
+
+		if (!row[ASSOC_MRJ] && assoc->max_resv_jobs != NO_VAL) {
+			mod_assoc->max_resv_jobs = assoc->max_resv_jobs;
 			modified = 1;
 		}
 
@@ -1421,6 +1433,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				    && row2[ASSOC2_REQ_MJ])
 					alt_assoc.max_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MJ]);
+				if ((assoc->max_resv_jobs == INFINITE)
+				    && row2[ASSOC2_REQ_MRJ])
+					alt_assoc.max_resv_jobs = slurm_atoul(
+						row2[ASSOC2_REQ_MRJ]);
 				if ((assoc->max_submit_jobs == INFINITE)
 				    && row2[ASSOC2_REQ_MSJ])
 					alt_assoc.max_submit_jobs = slurm_atoul(
@@ -1838,6 +1854,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	uint32_t parent_def_qos_id = 0;
 	uint32_t parent_mj = INFINITE;
+	uint32_t parent_mrj = INFINITE;
 	uint32_t parent_msj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
 	char *parent_mtpj = NULL;
@@ -2049,6 +2066,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				else
 					parent_mj = INFINITE;
 
+				if (row2[ASSOC2_REQ_MRJ])
+					parent_mrj = slurm_atoul(
+						row2[ASSOC2_REQ_MRJ]);
+				else
+					parent_mrj = INFINITE;
+
 				if (row2[ASSOC2_REQ_MSJ])
 					parent_msj = slurm_atoul(
 						row2[ASSOC2_REQ_MSJ]);
@@ -2106,6 +2129,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->max_jobs = slurm_atoul(row[ASSOC_REQ_MJ]);
 		else
 			assoc->max_jobs = parent_mj;
+
+		if (row[ASSOC_REQ_MRJ])
+			assoc->max_resv_jobs = slurm_atoul(row[ASSOC_REQ_MRJ]);
+		else
+			assoc->max_resv_jobs = parent_mrj;
 
 		if (row[ASSOC_REQ_MSJ])
 			assoc->max_submit_jobs = slurm_atoul(
