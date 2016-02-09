@@ -75,6 +75,7 @@
 static char *capmc_path = NULL;
 static uint32_t capmc_timeout = 1000;	/* 1 second */
 static char *log_file = NULL;
+static bitstr_t *node_bitmap = NULL;
 static char *prog_name = NULL;
 static char *mcdram_mode = NULL, *numa_mode = NULL;
 
@@ -413,6 +414,45 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 	return ents;
 }
 
+/* Wait for all identified computed nodes to enter "on" state */
+static void _wait_all_nodes_on(void)
+{
+	char *argv[10], *resp_msg;
+	int i, nid_cnt = 0, status = 0;
+	json_object *j;
+	uint32_t *nid_array;
+	time_t start_time = time(NULL);
+
+	while ((difftime(time(NULL), start_time) < (30 * 60)) &&
+	       (bit_set_count(node_bitmap) > 0)) {
+		sleep(20);
+		argv[0] = "capmc";
+		argv[1] = "node_status";
+		argv[2] = NULL;
+		resp_msg = _run_script(argv, &status);
+		if (status != 0) {
+			error("%s: capmc(%s,%s,%s): %d %s", log_file,
+				argv[1], argv[2], argv[3], status, resp_msg);
+			break;
+		}
+		j = json_tokener_parse(resp_msg);
+		if (j == NULL) {
+			error("%s: json parser failed on %s",
+			      log_file, resp_msg);
+			xfree(resp_msg);
+			break;
+		}
+		xfree(resp_msg);
+		nid_cnt = 0;
+		nid_array = _json_parse_nids(j, "on", &nid_cnt);
+		json_object_put(j);	/* Frees json memory */
+		for (i = 0; i < nid_cnt; i++) {
+			bit_clear(node_bitmap, nid_array[i]);
+		}
+		xfree(nid_array);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -456,11 +496,13 @@ int main(int argc, char *argv[])
 		xfree(features);
 	}
 
-	/* Spawn threads to change MCDRAM and NUMA states and reboot nodes */
+	/* Spawn threads to change MCDRAM and NUMA states and start node
+	 * reboot process */
 	if ((hl = hostlist_create(argv[1])) == NULL) {
 		error("%s: Invalid hostlist (%s)", prog_name, argv[1]);
 		exit(2);
 	}
+	node_bitmap = bit_alloc(100000);
 	while ((node_name = hostlist_pop(hl))) {
 		slurm_mutex_lock(&thread_cnt_mutex);
 		while (1) {
@@ -497,7 +539,8 @@ int main(int argc, char *argv[])
 	xfree(mcdram_mode);
 	xfree(numa_mode);
 
-//FIXME: Wait for all nodes "on"
+	/* Wait for all nodes to change state to "on" */
+	_wait_all_nodes_on();
 
 //FIXME: Change to use slurmd state info
 	if (argc == 3) {
