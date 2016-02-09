@@ -41,6 +41,7 @@
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <ctype.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -1019,7 +1020,7 @@ extern int init(void)
 
 	/* Set default values */
 	xfree(capmc_path);
-	capmc_timeout = 0;
+	capmc_timeout = 1000;
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
