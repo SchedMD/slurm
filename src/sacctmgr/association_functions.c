@@ -506,10 +506,6 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (get_uint(value, &assoc->max_jobs,
 			     "MaxJobs") == SLURM_SUCCESS)
 			set = 1;
-	} else if (!strncasecmp(type, "MaxResvJobs", MAX(command_len, 4))) {
-		if (get_uint(value, &assoc->max_resv_jobs,
-			     "MaxResvJobs") == SLURM_SUCCESS)
-			set = 1;
 	} else if (!strncasecmp(type, "MaxNodesPerJob", MAX(command_len, 4))) {
 		if (get_uint64(value, &tmp64,
 			       "MaxNodes") == SLURM_SUCCESS) {
@@ -743,9 +739,6 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_MAXJ:
 		field->print_routine(field, assoc->max_jobs, last);
-		break;
-	case PRINT_MAXRJ:
-		field->print_routine(field, assoc->max_resv_jobs, last);
 		break;
 	case PRINT_MAXN:
 		field->print_routine(field,

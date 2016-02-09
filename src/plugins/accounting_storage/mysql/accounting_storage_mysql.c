@@ -622,7 +622,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"begin "
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
-		"set @mrj = NULL; "
 		"set @msj = NULL; "
 		"set @mwpj = NULL; "
 		"set @mtpj = ''; "
@@ -635,7 +634,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @my_acct = acct; "
 		"if without_limits then "
 		"set @mj = 0; "
-		"set @mrj = 0; "
 		"set @msj = 0; "
 		"set @mwpj = 0; "
 		"set @def_qos_id = 0; "
@@ -648,9 +646,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
-		"end if; "
-		"if @mrj is NULL then set @s = CONCAT("
-		"@s, '@mrj := max_resv_jobs, '); "
 		"end if; "
 		"if @msj is NULL then set @s = CONCAT("
 		"@s, '@msj := max_submit_jobs, '); "
@@ -1099,7 +1094,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "rgt", "int not null" },
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
-		{ "max_resv_jobs", "int default NULL" },
 		{ "max_submit_jobs", "int default NULL" },
 		{ "max_tres_pj", "text not null default ''" },
 		{ "max_tres_pn", "text not null default ''" },
@@ -1556,8 +1550,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->grp_wall = INFINITE;
 		if (assoc->max_jobs == NO_VAL)
 			assoc->max_jobs = INFINITE;
-		if (assoc->max_resv_jobs == NO_VAL)
-			assoc->max_resv_jobs = INFINITE;
 		if (assoc->max_submit_jobs == NO_VAL)
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
@@ -1631,17 +1623,6 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_jobs");
 		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
 		xstrfmtcat(*extra, ", max_jobs=%u", assoc->max_jobs);
-	}
-
-	if (assoc->max_resv_jobs == INFINITE) {
-		xstrcat(*cols, ", max_resv_jobs");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", max_resv_jobs=NULL");
-	} else if ((assoc->max_resv_jobs != NO_VAL)
-		   && ((int32_t)assoc->max_resv_jobs >= 0)) {
-		xstrcat(*cols, ", max_resv_jobs");
-		xstrfmtcat(*vals, ", %u", assoc->max_resv_jobs);
-		xstrfmtcat(*extra, ", max_resv_jobs=%u", assoc->max_resv_jobs);
 	}
 
 	if (assoc->max_submit_jobs == INFINITE) {
@@ -2256,7 +2237,6 @@ just_update:
 	query = xstrdup_printf("update \"%s_%s\" as t1 set "
 			       "mod_time=%ld, deleted=1, def_qos_id=DEFAULT, "
 			       "shares=DEFAULT, max_jobs=DEFAULT, "
-			       "max_resv_jobs=DEFAULT, "
 			       "max_submit_jobs=DEFAULT, "
 			       "max_wall_pj=DEFAULT, "
 			       "max_tres_pj=DEFAULT, "

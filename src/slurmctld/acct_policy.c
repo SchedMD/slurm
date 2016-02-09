@@ -2549,46 +2549,6 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr)
 }
 
 /*
- * Check for a reserved job limit for this job
- */
-extern bool acct_policy_job_check_resv_lim(struct job_record *job_ptr)
-{
-	slurmdb_assoc_rec_t *assoc_ptr;
-	bool rc = false;
-	int parent = 0; /* flag to tell us if we are looking at the
-			 * parent or not
-			 */
-
-	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-	assoc_mgr_lock(&locks);
-	assoc_ptr = job_ptr->assoc_ptr;
-	while (assoc_ptr) {
-#if _DEBUG
-		info("acct_resv_job_limits: %u of %u",
-		     assoc_ptr->usage->used_jobs, assoc_ptr->max_resv_jobs);
-#endif
-
-		if ((assoc_ptr->max_resv_jobs != INFINITE) &&
-		    (assoc_ptr->usage->used_jobs >= assoc_ptr->max_resv_jobs)) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_MAX_RESV_JOBS;
-			debug2("job %u Not reserving slots in backfill, "
-			       "assoc %u is at or exceeds "
-			       "max reserved jobs limit %u with %u for account %s",
-			       job_ptr->job_id, assoc_ptr->id,
-			       assoc_ptr->max_resv_jobs,
-			       assoc_ptr->usage->used_jobs, assoc_ptr->acct);
-			rc = true;
-			break;
-		}
-		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-	}
-	assoc_mgr_unlock(&locks);
-	return rc;
-}
-
-/*
  * acct_policy_job_runnable_pre_select - Determine of the specified
  *	job can execute right now or not depending upon accounting
  *	policy (e.g. running job limit for this association). If the
@@ -2668,8 +2628,6 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr)
 #if _DEBUG
 		info("acct_job_limits: %u of %u",
 		     assoc_ptr->usage->used_jobs, assoc_ptr->max_jobs);
-		info("acct_job_resv_limits: %u of %u",
-		     assoc_ptr->usage->used_jobs, assoc_ptr->max_resv_jobs);
 #endif
 		/* we don't need to check grp_cpu_mins here */
 
@@ -2906,8 +2864,6 @@ extern bool acct_policy_job_runnable_post_select(
 #if _DEBUG
 		info("acct_job_limits: %u of %u",
 		     assoc_ptr->usage->used_jobs, assoc_ptr->max_jobs);
-		info("acct_job_resv_limits: %u of %u",
-		     assoc_ptr->usage->used_jobs, assoc_ptr->max_resv_jobs);
 #endif
 		/*
 		 * If the association has a GrpCPUMins limit set (and there

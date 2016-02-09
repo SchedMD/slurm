@@ -301,13 +301,6 @@ static void _print_assoc_mgr_info(const char *name, assoc_mgr_info_msg_t *msg)
 			else
 				printf("MaxJobs= ");
 
-			if (assoc_rec->max_resv_jobs != INFINITE)
-				printf("MaxResvJobs=%u(%u) ",
-				       assoc_rec->max_resv_jobs,
-				       assoc_rec->usage->used_jobs);
-			else
-				printf("MaxResvJobs= ");
-
 			if (assoc_rec->max_submit_jobs != INFINITE)
 				printf("MaxSubmitJobs=%u(%u) ",
 				       assoc_rec->max_submit_jobs,

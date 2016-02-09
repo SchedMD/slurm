@@ -827,7 +827,6 @@ static int _attempt_backfill(void)
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
-	bool acct_resv_limit = false;
 
 	bf_sleep_usec = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -1032,11 +1031,6 @@ static int _attempt_backfill(void)
 		    !acct_policy_job_runnable_pre_select(job_ptr))
 			continue;
 
-		/*
-		 * Check if reserved slot limits apply
-		 */
-		acct_resv_limit = acct_policy_job_check_resv_lim(job_ptr);
-
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
@@ -1218,7 +1212,7 @@ next_task:
 		else
 			comp_time_limit = time_limit;
 		qos_ptr = job_ptr->qos_ptr;
-		if (acct_resv_limit || (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) &&
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
@@ -1451,7 +1445,7 @@ next_task:
 			uint32_t hard_limit;
 			bool reset_time = false;
 			int rc = _start_job(job_ptr, resv_bitmap);
-			if (acct_resv_limit || (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))) {
+			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL) {
 					acct_policy_alter_job(
 						job_ptr, comp_time_limit);
@@ -1615,7 +1609,7 @@ next_task:
 		 */
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_job_sched(job_ptr, end_reserve, avail_bitmap);
-		if (acct_resv_limit || (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)))
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;

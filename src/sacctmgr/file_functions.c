@@ -554,18 +554,6 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.max_jobs);
 	}
 
-	if ((file_opts->assoc_rec.max_resv_jobs != NO_VAL)
-	    && (assoc->max_resv_jobs != file_opts->assoc_rec.max_resv_jobs)) {
-		mod_assoc.max_resv_jobs = file_opts->assoc_rec.max_resv_jobs;
-		changed = 1;
-		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxResvJobs",
-			   type, name,
-			   assoc->max_resv_jobs,
-			   file_opts->assoc_rec.max_resv_jobs);
-	}
-
 	if ((file_opts->assoc_rec.max_submit_jobs != NO_VAL)
 	    && (assoc->max_submit_jobs !=
 		file_opts->assoc_rec.max_submit_jobs)) {

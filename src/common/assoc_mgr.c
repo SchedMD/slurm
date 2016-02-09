@@ -2322,7 +2322,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->max_tres_pn)
 		assoc->max_tres_pn     = ret_assoc->max_tres_pn;
 	assoc->max_jobs        = ret_assoc->max_jobs;
-	assoc->max_resv_jobs   = ret_assoc->max_resv_jobs;
 	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
 	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
 
@@ -3568,8 +3567,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 			if (object->max_jobs != NO_VAL)
 				rec->max_jobs = object->max_jobs;
-			if (object->max_resv_jobs != NO_VAL)
-				rec->max_resv_jobs = object->max_resv_jobs;
 			if (object->max_submit_jobs != NO_VAL)
 				rec->max_submit_jobs = object->max_submit_jobs;
 			if (object->max_wall_pj != NO_VAL) {

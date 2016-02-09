@@ -1399,8 +1399,6 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "AssocGrpWallLimit";
 	case WAIT_ASSOC_MAX_JOBS:
 		return "AssocMaxJobsLimit";
-	case WAIT_ASSOC_MAX_RESV_JOBS:
-		return "AssocMaxResvJobsLimit";
 	case WAIT_ASSOC_MAX_CPU_PER_JOB:
 		return "AssocMaxCpuPerJobLimit";
 	case WAIT_ASSOC_MAX_CPU_MINS_PER_JOB:

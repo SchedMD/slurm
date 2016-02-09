@@ -462,8 +462,6 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
-	uint32_t max_resv_jobs;	   /* max number of jobs that can
-				    * reserve slots in the backfill */
 	uint32_t max_submit_jobs;  /* max number of jobs that can be
 				      submitted by association */
 	char *max_tres_mins_pj;    /* max number of cpu seconds this
