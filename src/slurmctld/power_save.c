@@ -278,15 +278,17 @@ extern int power_job_reboot(struct job_record *job_ptr)
 
 	nodes = bitmap2node_name(boot_node_bitmap);
 	if (nodes) {
-#if _DEBUG
-		info("power_save: reboot nodes %s", nodes);
-#else
-		verbose("power_save: reboot nodes %s", nodes);
-#endif
 		if (job_ptr->details && job_ptr->details->features) {
 			features = node_features_g_job_xlate(
 					job_ptr->details->features);
 		}
+#if _DEBUG
+		info("power_save: reboot nodes %s features %s",
+		     nodes, features);
+#else
+		verbose("power_save: reboot nodes %s features %s",
+			nodes, features);
+#endif
 		_run_prog(resume_prog, nodes, features);
 		xfree(features);
 	} else {
