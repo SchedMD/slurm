@@ -123,6 +123,7 @@ static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
+static char *dmidecode_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 
@@ -131,6 +132,8 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
+	{"DmidecodePath", S_P_STRING},
+	{"LogFile", S_P_STRING},
 	{NULL}
 };
 
@@ -186,7 +189,7 @@ static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
-static char *_run_script(char **script_argv, int *status);
+static char *_run_script(char *cmd_path, char **script_argv, int *status);
 static void _strip_knl_opts(char **features);
 static int  _tot_wait (struct timeval *start_time);
 static void _update_all_node_features(
@@ -759,15 +762,15 @@ static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 }
 
 /* Run a script and return its stdout plus exit status */
-static char *_run_script(char **script_argv, int *status)
+static char *_run_script(char *cmd_path, char **script_argv, int *status)
 {
 	int cc, i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
 	int pfd[2] = { -1, -1 };
 
-	if (access(capmc_path, R_OK | X_OK) < 0) {
-		error("%s: %s can not be executed: %m", __func__, capmc_path);
+	if (access(cmd_path, R_OK | X_OK) < 0) {
+		error("%s: %s can not be executed: %m", __func__, cmd_path);
 		*status = 127;
 		resp = xstrdup("Slurm node_features/knl_cray configuration error");
 		return resp;
@@ -792,7 +795,7 @@ static char *_run_script(char **script_argv, int *status)
 #else
 		setpgrp();
 #endif
-		execv(capmc_path, script_argv);
+		execv(cmd_path, script_argv);
 		error("%s: execv(%s): %m", __func__, capmc_path);
 		exit(127);
 	} else if (cpid < 0) {
@@ -1045,6 +1048,7 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
+		s_p_get_string(&dmidecode_path, "DmidecodePath", tbl);
 	} else {
 		error("something wrong with opening/reading knl.conf");
 	}
@@ -1053,6 +1057,8 @@ extern int init(void)
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
+	if (!dmidecode_path)
+		dmidecode_path = xstrdup("/usr/sbin/dmidecode");
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
@@ -1064,6 +1070,7 @@ extern int init(void)
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
+		info("DmidecodePath=%s", dmidecode_path);
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
@@ -1077,6 +1084,7 @@ extern int fini(void)
 	xfree(capmc_path);
 	capmc_timeout = 0;
 	debug_flag = false;
+	xfree(dmidecode_path);
 	return SLURM_SUCCESS;
 }
 
@@ -1122,7 +1130,7 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_mcdram_capabilities");
 	START_TIMER;
-	resp_msg = _run_script(script_argv, &status);
+	resp_msg = _run_script(capmc_path, script_argv, &status);
 	END_TIMER;
 	if (debug_flag) {
 		info("%s: get_mcdram_capabilities ran for %s",
@@ -1165,7 +1173,7 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_mcdram_cfg");
 	START_TIMER;
-	resp_msg = _run_script(script_argv, &status);
+	resp_msg = _run_script(capmc_path, script_argv, &status);
 	END_TIMER;
 	if (debug_flag)
 		info("%s: get_mcdram_cfg ran for %s", __func__, TIME_STR);
@@ -1205,7 +1213,7 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_numa_capabilities");
 	START_TIMER;
-	resp_msg = _run_script(script_argv, &status);
+	resp_msg = _run_script(capmc_path, script_argv, &status);
 	END_TIMER;
 	if (debug_flag) {
 		info("%s: get_numa_capabilities ran for %s",
@@ -1248,7 +1256,7 @@ extern int node_features_p_get_node(char *node_list)
 	script_argv[0] = xstrdup("capmc");
 	script_argv[1] = xstrdup("get_numa_cfg");
 	START_TIMER;
-	resp_msg = _run_script(script_argv, &status);
+	resp_msg = _run_script(capmc_path, script_argv, &status);
 	END_TIMER;
 	if (debug_flag)
 		info("%s: get_numa_cfg ran for %s", __func__, TIME_STR);
@@ -1335,6 +1343,31 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	_numa_cfg_free(numa_cfg, numa_cfg_cnt);
 
 	return rc;
+}
+
+/* Get this node's current MCDRAM and NUMA settings from BIOS.
+ * RET current node state, must be xfreed */
+extern char *node_features_p_node_state(void)
+{
+	char *resp_msg, *argv[10], *cur_state = NULL;
+	int status = 0;
+
+	argv[0] = "dmidecode";
+	argv[1] = NULL;
+	resp_msg = _run_script(dmidecode_path, argv, &status);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: dmidecode status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
+		info("%s: dmidecode returned no information", __func__);
+		return NULL;
+	}
+//FIXME: Find MCDRAM and NUMA modes, copy to cur_state
+cur_state = xstrdup("a2a,flat");
+	xfree(resp_msg);
+
+	return cur_state;
 }
 
 /* Test if a job's feature specification is valid */

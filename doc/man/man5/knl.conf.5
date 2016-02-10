@@ -78,9 +78,17 @@ Quadrant
 .RE
 
 .TP
+\fBDmidecodePath\fR
+Fully qualified path to the \fBdmidecode\fR program, which identifies current
+KNL configuration by viewing BIOS settings.
+The default value is "/usr/sbin/dmidecode".
+
+.TP
 \fBLogFile\fR
 Fully qualified path to a log file.
 The default value is SlurmctldLogFile from the slurm.conf configuration file.
+This is option is used only by the campc_resume program (which reboot nodes in
+the appropriate configuration).
 
 .SH "EXAMPLE"
 .LP
@@ -100,6 +108,8 @@ CapmcTimeout=600
 DefaultMCDRAM=flat
 .br
 DefaultNUMA=a2a
+.br
+DmidecodePath=/usr/sbin/dmidecode
 .br
 LogFile=/var/tmp/slurm_node_feature.log
 
