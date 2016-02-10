@@ -311,7 +311,7 @@ static void *_node_update(void *args)
 	}
 	if (nid < 0) {
 		error("%s: No valid NID: %s", log_file, node_name);
-		return NULL;
+		goto fini;
 	}
 	snprintf(nid_str, sizeof(nid_str), "%d", nid);
 
@@ -392,7 +392,7 @@ static void *_node_update(void *args)
 	}
 	xfree(resp_msg);
 
-	slurm_mutex_lock(&thread_cnt_mutex);
+fini:	slurm_mutex_lock(&thread_cnt_mutex);
 	thread_cnt--;
 	pthread_cond_signal(&thread_cnt_cond);
 	slurm_mutex_unlock(&thread_cnt_mutex);
@@ -541,7 +541,6 @@ int main(int argc, char *argv[])
 			_node_update((void *) node_name);
 		}
 		slurm_attr_destroy(&attr_work);
-		free(node_name);
 	}
 
 	/* Wait for work threads to complete */
