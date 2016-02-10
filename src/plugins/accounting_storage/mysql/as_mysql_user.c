@@ -1309,7 +1309,7 @@ empty:
 		assoc_itr = list_iterator_create(assoc_list);
 		while ((user = list_next(itr))) {
 			while ((assoc = list_next(assoc_itr))) {
-				if (strcmp(assoc->user, user->name))
+				if (xstrcmp(assoc->user, user->name))
 					continue;
 				/* Set up the default.  This is needed
 				 * for older versions primarily that
