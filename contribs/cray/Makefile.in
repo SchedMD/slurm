@@ -1041,7 +1041,7 @@ clean-generic:
 	rm -f opt_modulefiles_slurm slurmconfgen.py
 
 force:
-$(capmc_suspend_LDADD) $(capmc_resume_LDADD) : force
+$(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

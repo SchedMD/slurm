@@ -54,5 +54,5 @@ clean-generic:
 	rm -f opt_modulefiles_slurm slurmconfgen.py
 
 force:
-$(capmc_suspend_LDADD) $(capmc_resume_LDADD) : force
+$(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
