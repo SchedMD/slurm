@@ -437,7 +437,7 @@ Print all fields listed below.
 
 .TP
 \f3AllocCPUs\fP
-Count of allocated CPUs. Equivalant to \f3NCPUS\fP.
+Count of allocated CPUs. Equivalent to \f3NCPUS\fP.
 
 .TP
 \f3AllocGRES\fP
@@ -535,7 +535,7 @@ The format of this fields output is as follows:
 .RS
 .PD "0"
 .HP
-\f2[DD\-[hh:]]mm:ss\fP
+\f2[DD\-[HH:]]MM:SS\fP
 .PD
 .RE
 .IP
@@ -587,8 +587,8 @@ It is in the form:
 
 .TP
 \f3JobIDRaw\fP
-In case of job array print the jobId instead of the ArrayJobId.
-For non job arrays the output is the jobId in the format \f2job.jobstep\fP\c
+In case of job array print the JobId instead of the ArrayJobId.
+For non job arrays the output is the JobId in the format \f2job.jobstep\fP\c
 \&.
 
 .TP
@@ -679,7 +679,7 @@ The task ID where the mincpu occurred.
 
 .TP
 \f3NCPUS\fP
-Count of allocated CPUs. Equivalant to \f3AllocCPUS\fP
+Count of allocated CPUs. Equivalent to \f3AllocCPUS\fP
 
 Total number of CPUs allocated to the job.
 
@@ -952,8 +952,8 @@ option if the job ends after the specified time, otherwise it will be
 the jobs end time.
 
 NOTE: If no \-s (\-\-state) option is given sacct will
-display jobs that ran durning the specified time, otherwise it returns
-jobs that were in the state requested durning that period of time.
+display jobs that ran during the specified time, otherwise it returns
+jobs that were in the state requested during that period of time.
 
 Without \-T (normal operation) sacct output would be like this.
 .RS
@@ -975,7 +975,7 @@ By adding the \-T option the job's start and end times are truncated
 to reflect only the time requested.  If a job started after the start
 time requested or finished before the end time requested those times
 are not altered.  The \-T option
-is useful when determining exact run times durning any given period.
+is useful when determining exact run times during any given period.
 .RS
 .PP
 .nf
