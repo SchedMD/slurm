@@ -1285,7 +1285,7 @@ extern void *_power_agent(void *args)
 			continue;
 
 		wait_time = difftime(now, last_cap_read);
-		if (wait_time > 30) {		/* Every 5 minutes */
+		if (wait_time > 300) {		/* Every 5 minutes */
 			/* Read current power caps for every node */
 			_get_caps();		/* Has node write lock */
 			last_cap_read = time(NULL);
