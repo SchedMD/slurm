@@ -2225,6 +2225,15 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
 
+	if (reg_msg->features_act) {
+		xfree(node_ptr->features_act);
+		node_ptr->features_act = node_features_g_node_xlate(
+						reg_msg->features_act,
+						node_ptr->features);
+		(void) _update_node_active_features(node_ptr->name,
+						    node_ptr->features_act);
+	}
+
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 					   node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;

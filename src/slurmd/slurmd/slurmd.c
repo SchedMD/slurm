@@ -77,6 +77,7 @@
 #include "src/common/macros.h"
 #include "src/common/msg_aggr.h"
 #include "src/common/node_conf.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_spec.h"
@@ -339,6 +340,8 @@ main (int argc, char *argv[])
 		fatal("Unable to initialize core specialization plugin.");
 	if (switch_g_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
+	if (node_features_g_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize node_features plugin");	
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
@@ -686,19 +689,23 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		slurmd_start_time = time(NULL);
 	msg->slurmd_start_time = slurmd_start_time;
 
+	msg->features_act = node_features_g_node_state();
+
 	if (first_msg) {
 		first_msg = false;
 		info("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		     "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s",
+		     "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
+		     "FeaturesAct=%s",
 		     msg->cpus, msg->boards, msg->sockets, msg->cores,
 		     msg->threads, msg->real_memory, msg->tmp_disk,
-		     msg->up_time, msg->cpu_spec_list);
+		     msg->up_time, msg->cpu_spec_list, msg->features_act);
 	} else {
 		debug3("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
-		       "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s",
+		       "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
+		       "FeaturesAct=%s",
 		       msg->cpus, msg->boards, msg->sockets, msg->cores,
 		       msg->threads, msg->real_memory, msg->tmp_disk,
-		       msg->up_time, msg->cpu_spec_list);
+		       msg->up_time, msg->cpu_spec_list, msg->features_act);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
@@ -1661,6 +1668,7 @@ cleanup:
 static int
 _slurmd_fini(void)
 {
+	node_features_g_fini();
 	core_spec_g_fini();
 	switch_g_node_fini();
 	jobacct_gather_fini();

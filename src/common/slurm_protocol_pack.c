@@ -3554,7 +3554,48 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	uint32_t gres_info_size = 0;
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		pack_time(msg->timestamp, buffer);
+		pack_time(msg->slurmd_start_time, buffer);
+		pack32(msg->status, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->node_name, buffer);
+		packstr(msg->arch, buffer);
+		packstr(msg->cpu_spec_list, buffer);
+		packstr(msg->os, buffer);
+		pack16(msg->cpus, buffer);
+		pack16(msg->boards, buffer);
+		pack16(msg->sockets, buffer);
+		pack16(msg->cores, buffer);
+		pack16(msg->threads, buffer);
+		pack32(msg->real_memory, buffer);
+		pack32(msg->tmp_disk, buffer);
+		pack32(msg->up_time, buffer);
+		pack32(msg->hash_val, buffer);
+		pack32(msg->cpu_load, buffer);
+		pack32(msg->free_mem, buffer);
+
+		pack32(msg->job_count, buffer);
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->job_id[i], buffer);
+		}
+		for (i = 0; i < msg->job_count; i++) {
+			pack32(msg->step_id[i], buffer);
+		}
+		pack16(msg->startup, buffer);
+		if (msg->startup)
+			switch_g_pack_node_info(msg->switch_nodeinfo, buffer,
+						protocol_version);
+		if (msg->gres_info)
+			gres_info_size = get_buf_offset(msg->gres_info);
+		pack32(gres_info_size, buffer);
+		if (gres_info_size) {
+			packmem(get_buf_data(msg->gres_info), gres_info_size,
+				buffer);
+		}
+		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
+		packstr(msg->version, buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
@@ -3654,7 +3695,69 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	node_reg_ptr = xmalloc(sizeof(slurm_node_registration_status_msg_t));
 	*msg = node_reg_ptr;
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
+		/* unpack timestamp of snapshot */
+		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
+		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
+		/* load the data values */
+		safe_unpack32(&node_reg_ptr->status, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->features_act,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->node_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->arch,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->cpu_spec_list,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
+		safe_unpack16(&node_reg_ptr->cpus, buffer);
+		safe_unpack16(&node_reg_ptr->boards, buffer);
+		safe_unpack16(&node_reg_ptr->sockets, buffer);
+		safe_unpack16(&node_reg_ptr->cores, buffer);
+		safe_unpack16(&node_reg_ptr->threads, buffer);
+		safe_unpack32(&node_reg_ptr->real_memory, buffer);
+		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
+		safe_unpack32(&node_reg_ptr->up_time, buffer);
+		safe_unpack32(&node_reg_ptr->hash_val, buffer);
+		safe_unpack32(&node_reg_ptr->cpu_load, buffer);
+		safe_unpack32(&node_reg_ptr->free_mem, buffer);
+
+		safe_unpack32(&node_reg_ptr->job_count, buffer);
+		node_reg_ptr->job_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+		}
+		node_reg_ptr->step_id =
+			xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
+		for (i = 0; i < node_reg_ptr->job_count; i++) {
+			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
+		}
+
+		safe_unpack16(&node_reg_ptr->startup, buffer);
+		if (node_reg_ptr->startup
+		    &&  (switch_g_alloc_node_info(
+				 &node_reg_ptr->switch_nodeinfo)
+			 ||   switch_g_unpack_node_info(
+				 node_reg_ptr->switch_nodeinfo, buffer,
+				 protocol_version)))
+			goto unpack_error;
+
+		safe_unpack32(&gres_info_size, buffer);
+		if (gres_info_size) {
+			safe_unpackmem_xmalloc(&gres_info, &uint32_tmp, buffer);
+			if (gres_info_size != uint32_tmp)
+				goto unpack_error;
+			node_reg_ptr->gres_info = create_buf(gres_info,
+							     gres_info_size);
+		}
+		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
+					      protocol_version, 1)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&node_reg_ptr->version,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);

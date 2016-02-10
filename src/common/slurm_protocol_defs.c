@@ -798,6 +798,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->cpu_spec_list);
 		if (msg->energy)
 			acct_gather_energy_destroy(msg->energy);
+		xfree(msg->features_act);
 		if (msg->gres_info)
 			free_buf(msg->gres_info);
 		xfree(msg->job_id);

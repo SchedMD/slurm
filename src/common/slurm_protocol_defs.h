@@ -1126,6 +1126,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
+	char *features_act;	/* Currently active node features */
 	Buf gres_info;		/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */

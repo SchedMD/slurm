@@ -88,6 +88,16 @@
 #define KNL_FLAT	0x0200
 #define KNL_EQUAL	0x0400
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+slurmctld_config_t slurmctld_config __attribute__((weak_import));
+#else
+slurmctld_config_t slurmctld_config;
+#endif
+
 /*
  * These variables are required by the burst buffer plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -1363,8 +1373,13 @@ extern char *node_features_p_node_state(void)
 		info("%s: dmidecode returned no information", __func__);
 		return NULL;
 	}
-//FIXME: Find MCDRAM and NUMA modes, copy to cur_state
-cur_state = xstrdup("a2a,flat");
+//FIXME: Parse output for MCDRAM and NUMA modes, copy to cur_state
+//FIXME: For now our dmidecode is just running "sinfo -h -O features_act -n $hn"
+cur_state = strchr(resp_msg, '\n');
+if (cur_state) cur_state[0] = '\0';
+cur_state = strchr(resp_msg, ' ');
+if (cur_state) cur_state[0] = '\0';
+cur_state = xstrdup(resp_msg);
 	xfree(resp_msg);
 
 	return cur_state;
