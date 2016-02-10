@@ -69,12 +69,12 @@
 #  include <stdlib.h>	/* for abort() */
 #endif
 
-#include <sys/poll.h>
+#include <poll.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"

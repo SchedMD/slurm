@@ -972,12 +972,14 @@ stepd_stat_jobacct(int fd, uint16_t protocol_version,
 	int rc = SLURM_SUCCESS;
 	int tasks = 0;
 
+	/* NULL return indicates that accounting is disabled */
+	if (!(resp->jobacct = jobacctinfo_create(NULL)))
+		return rc;
+
 	debug("Entering stepd_stat_jobacct for job %u.%u",
 	      sent->job_id, sent->step_id);
-	safe_write(fd, &req, sizeof(int));
 
-	/* Receive the jobacct struct and return */
-	resp->jobacct = jobacctinfo_create(NULL);
+	safe_write(fd, &req, sizeof(int));
 
 	/* Do not attempt reading data until there is something to read.
 	 * Avoid locking the jobacct_gather plugin early and creating
@@ -985,6 +987,7 @@ stepd_stat_jobacct(int fd, uint16_t protocol_version,
 	if (wait_fd_readable(fd, 300))
 		goto rwfail;
 
+	/* Fill in the jobacct struct and return */
 	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd,
 				 protocol_version);
 

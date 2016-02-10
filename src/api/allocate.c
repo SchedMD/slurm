@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <time.h>
 #include <netinet/in.h> /* for ntohs() */

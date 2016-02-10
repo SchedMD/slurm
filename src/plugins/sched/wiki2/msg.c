@@ -42,7 +42,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/plugins/sched/wiki2/crypto.h"
 #include "src/plugins/sched/wiki2/msg.h"
-#include <sys/poll.h>
+#include <poll.h>
 
 #define _DEBUG 0
 

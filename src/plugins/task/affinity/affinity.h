@@ -52,7 +52,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>

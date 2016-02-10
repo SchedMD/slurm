@@ -1493,10 +1493,11 @@ _show_it (int argc, char *argv[])
 		return;
 	}
 
-	if (strncasecmp (argv[1], "layouts", MAX(tag_len, 2)) != 0)
+	if (strncasecmp (argv[1], "layouts", MAX(tag_len, 2)) == 0 ||
+	    strncasecmp (argv[1], "assoc_mgr", MAX(tag_len, 2)) == 0)
 		allow_opt = true;
 
-	if (argc > 3 && allow_opt) {
+	if (argc > 3 && !allow_opt) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr,
@@ -1528,7 +1529,7 @@ _show_it (int argc, char *argv[])
 		scontrol_print_burst_buffer ();
 	} else if (!strncasecmp(tag, "assoc_mgr", MAX(tag_len, 2)) ||
 		   !strncasecmp(tag, "cache", MAX(tag_len, 2))) {
-		scontrol_print_assoc_mgr_info(val);
+		scontrol_print_assoc_mgr_info(argc - 2, argv + 2);
 	} else if (strncasecmp (tag, "config", MAX(tag_len, 1)) == 0) {
 		_print_config (val);
 	} else if (strncasecmp (tag, "daemons", MAX(tag_len, 1)) == 0) {
