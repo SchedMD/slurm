@@ -77,7 +77,7 @@
 
 #define _DEBUG			0
 #define PID_CNT			10
-#define MAX_SHUTDOWN_DELAY	120	/* seconds to wait for child procs
+#define MAX_SHUTDOWN_DELAY	60	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
 
