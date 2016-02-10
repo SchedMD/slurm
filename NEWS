@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new PowerParameters options of get_timeout and set_timeout. The default
     set_timeout was increased from 5 seconds to 30 seconds. Also re-read current
     power caps periodically or after any failed "set" operation.
+ -- Fix slurmdbd segfault when listing users with blank user condition.
 
 * Changes in Slurm 15.08.7
 ==========================
