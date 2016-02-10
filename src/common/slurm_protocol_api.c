@@ -1391,7 +1391,6 @@ char *slurm_get_gres_plugins(void)
 	return gres_plugins;
 }
 
-
 /* slurm_get_job_submit_plugins
  * get job_submit_plugins from slurmctld_conf object from
  * slurmctld_conf object
@@ -1411,11 +1410,29 @@ char *slurm_get_job_submit_plugins(void)
 	return job_submit_plugins;
 }
 
-/* slurm_get_knl_plugins
- * get knl_plugins from slurmctld_conf object from slurmctld_conf object
+/* slurm_get_slurmctld_logfile
+ * get slurmctld_logfile from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - slurmctld_logfile, MUST be xfreed by caller
+ */
+char *slurm_get_job_slurmctld_logfile(void)
+{
+	char *slurmctld_logfile = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmctld_logfile = xstrdup(conf->slurmctld_logfile);
+		slurm_conf_unlock();
+	}
+	return slurmctld_logfile;
+}
+
+/* slurm_get_node_features_plugins
+ * get node_features_plugins from slurmctld_conf object
  * RET char *   - knl_plugins, MUST be xfreed by caller
  */
-char *slurm_get_knl_plugins(void)
+char *slurm_get_node_features_plugins(void)
 {
 	char *knl_plugins = NULL;
 	slurm_ctl_conf_t *conf;
@@ -1423,7 +1440,7 @@ char *slurm_get_knl_plugins(void)
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		knl_plugins = xstrdup(conf->knl_plugins);
+		knl_plugins = xstrdup(conf->node_features_plugins);
 		slurm_conf_unlock();
 	}
 	return knl_plugins;

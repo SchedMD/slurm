@@ -734,6 +734,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/mpi_mvapich.so              &&
    echo %{_libdir}/slurm/mpi_mvapich.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_cray.so   &&
+   echo %{_libdir}/slurm/node_features_knl_cray.so   >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray.so               &&
    echo %{_libdir}/slurm/power_cray.so               >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
@@ -933,7 +935,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_cray.so
-%{_libdir}/slurm/job_submit_knl.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
 %{_libdir}/slurm/jobacct_gather_aix.so
@@ -943,7 +944,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_script.so
-%{_libdir}/slurm/knl_cray.so
 %{_libdir}/slurm/layouts_power_cpufreq.so
 %{_libdir}/slurm/layouts_power_default.so
 %{_libdir}/slurm/layouts_unit_default.so

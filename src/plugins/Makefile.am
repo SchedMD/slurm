@@ -15,10 +15,10 @@ SUBDIRS = \
 	jobcomp			\
 	job_container		\
 	job_submit		\
-	knl			\
 	launch			\
 	mcs			\
 	mpi			\
+	node_features		\
 	power			\
 	preempt			\
 	priority		\

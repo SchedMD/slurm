@@ -12,54 +12,102 @@ described in this document.</p>
 
 <h2>User Tools</h2>
 
-<p>TBD.</p>
+<p>The desired NUMA and MCDRAM modes for a KNL processor should be specified
+using the -C or --constraints option of Slurm's job submission commands: salloc,
+sbatch, and srun. Currently available NUMA and MCDRAM modes are shown in the
+table below. Each node's available and current NUMA and MCDRAM modes are
+visible in the "available features" and "active features" fields respectively,
+which may be seen using the scontrol, sinfo, or sview commands.
+Note that a node may need to be rebooted to get the desired NUMA and MCDRAM
+modes and nodes may only be rebooted when they contain no running jobs
+(i.e. sufficient resources may be available to run a pending job, but until
+the node is idle and can be rebooted, the pending job may not be allocated
+resources). Also note that the job will be charged for resources from the time
+of resource allocation, which may include time to reboot a node into the
+desired NUMA and MCDRAM configuration.
+While Slurm generally supports a very rich set of options for the node
+constraint options (exclusive OR, node counts for each constraint, etc.),
+only a simple AND operation is supported for KNL systems (specified using a
+comma or ampersand separator between specified constraints).</p>
+
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+<tr>
+  <th width="15%">Type</th>
+  <th width="15%">Name</th>
+  <th width="70%">Description</th>
+</tr>
+<tr><td>MCDRAM</td><td>cache</td><td>All of MCDRAM to be used as cache</td></tr>
+<tr><td>MCDRAM</td><td>equal</td><td>MCDRAM to be used partly as cache and partly combined with primary memory</td></tr>
+<tr><td>MCDRAM</td><td>flat</td><td>MCDRAM to be combined with primary memory into a "flat" memory space</td></tr>
+<tr><td>NUMA</td><td>a2a</td><td>All to all</td></tr>
+<tr><td>NUMA</td><td>hemi</td><td>Hemisphere</td></tr>
+<tr><td>NUMA</td><td>snc2</td><td>Sub-NUMA cluster 2</td></tr>
+<tr><td>NUMA</td><td>snc4</td><td>Sub-NUMA cluster 4</td></tr>
+<tr><td>NUMA</td><td>quad</td><td>Quadrant</td></tr>
+</table>
+
+<h3>Sample Use Cases</h3>
+
+<pre>
+$ sbatch -C flat,a2a -N2 --exclusive my.script
+$ srun --constraint=hemi,cache -n36 a.out
+
+$ sinfo -o "%30N %20b %f"
+NODELIST                      ACTIVE_FEATURES  AVAIL_FEATURES
+nid[00010-00011,00016-00021]
+nid[00012-00035]              flat,a2a         flat,a2a,snc2,snc4,hemi,quad
+nid[00036-00043]              flat,a2a         flat,equal,cache,a2a,snc2,snc4,hemi,quad
+
+</pre>
 
 <h2>System Administration</h2>
 
-<p>Three unique components are required to use Slurm on an Intel KNL system.</p>
+<p>Two unique components are required to use Slurm on an Intel KNL system.</p>
 <ol>
-<li>The "knl.conf" configuration file.
-This file identifies availble and default processor configuration.
+<li>The NodeFeatures plugin manages the available and active features available
+for each KNL node. On Cray systems NodeFeaturesPlugins should be set to
+"knl_cray".</li>
+
+<li>A configuration file is used to define various timeouts, default
+configuration, etc. The configuration file name and contents will depend upon
+the NodeFeatures used. On Cray systems the file will be named "knl_cray.conf".
 See the <a href="knl.conf.html">knl.conf</a> man page for more information.</li>
 
-<li>The job_submit/knl plugin validates user specified KNL-specific
-configuration options with respect to the knl.conf file.
-It makes sure the user-specified options are available on this computer and
-sets default options as needed.</li>
-
-<li>All nodes containing KNL processors should be identified with a feature
-of "knl" in the <a href="slurm.conf.html">slurm.conf</a> configuration file.
-The file can also identify specific NUMA and MCDRAM options for specific
-nodes. Unless otherwise specified, ever node will support every available
-configuration identified in <a href="knl.conf.html">knl.conf</a>.</li>
+<li>BOOTING</li>
 </ol>
 
-<p>In addition, there is a DebugFlags option of "knl" which will generate
-detailed information about KNL operations.</p>
+<p>In addition, there is a DebugFlags option of "NodeFeatures" which will
+generate detailed information about KNL operations.</p>
 
-<h3>Sample knl.conf File</h3>
+<h3>Sample knl_cray.conf File</h3>
 
 <pre>
-# knl.conf
-AvailNUMA=all2all,quad,hemi
-DefaultNUMA=all2all
-AvailMCDRAM=cache,flat,hybrid
-DefaultMCDRAM=cache
+# knl_cray.conf
+CapmcPath=/opt/cray/capmc/default/bin/capmc
+CapmcTimeout=600	# msec
+DefaultNUMA=a2a         # NUMA=all2all
+DefaultMCDRAM=cache     # MCDRAM=cache
 </pre>
 
 <h3>Sample slurm.conf File</h3>
 
 <pre>
 # Select portions of slurm.conf
-JobSubmitPlugins=knl
-DebugFlags=knl
+NodeFeaturesPlugins=knl_cray
+DebugFlags=NodeFeatures
 ..
 Nodename=default feature=knl Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000
-NodeName=tux[000-123] State=UNKNOWN
+NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
+
+<p>When the slurmctld daemon starts, the configued NodeFeatures plugin will
+load available and active NUMA and MCDRAM modes on the KNL node. It will then
+add these values to any node <b>Features</b> for the node defined in slurm.conf.
+Separate active and available features for each node can be viewed with the
+scontrol, sinfo, and sview commands.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 December 2015</p>
+<p style="text-align:center;">Last modified 4 February 2016</p>
 
 <!--#include virtual="footer.txt"-->

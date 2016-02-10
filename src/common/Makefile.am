@@ -34,7 +34,7 @@ libcommon_la_SOURCES = 			\
 	assoc_mgr.c assoc_mgr.h 	\
 	cpu_frequency.c cpu_frequency.h \
 	file_bcast.c file_bcast.h	\
-	knl.c knl.h			\
+	node_features.c node_features.h	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\

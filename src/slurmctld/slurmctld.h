@@ -244,6 +244,15 @@ extern uint32_t total_cpus;		/* count of CPUs in the entire cluster */
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 extern bool want_nodes_reboot;		/* if set, check for idle nodes */
 
+typedef struct node_features {
+	uint32_t magic;		/* magic cookie to test data integrity */
+	char *name;		/* name of a feature */
+	bitstr_t *node_bitmap;	/* bitmap of nodes with this feature */
+} node_feature_t;
+
+extern List active_feature_list;/* list of currently active node features */
+extern List avail_feature_list;	/* list of available node features */
+
 /*****************************************************************************\
  *  NODE states and bitmaps
  *

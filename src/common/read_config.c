@@ -70,10 +70,10 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
-#include "src/common/knl.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
+#include "src/common/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_spec.h"
 #include "src/common/parse_time.h"
@@ -112,10 +112,6 @@ static bool conf_initialized = false;
 static s_p_hashtbl_t *default_frontend_tbl;
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
-
-static uint16_t avail_mcdram = 0, avail_numa = 0;
-static uint16_t default_mcdram = 0, default_numa = 0;
-static bool read_knl_conf = false;
 
 inline static void _normalize_debug_level(uint16_t *level);
 static int _init_slurm_conf(const char *file_name);
@@ -248,7 +244,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"KeepAliveTime", S_P_UINT16},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
-	{"KNLPlugins", S_P_STRING},
 	{"LaunchParameters", S_P_STRING},
 	{"LaunchType", S_P_STRING},
 	{"Layouts", S_P_STRING},
@@ -270,6 +265,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
 	{"MsgAggregationParams", S_P_STRING},
+	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
@@ -576,124 +572,6 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-/* Expand a feature of "knl" to all appropriate KNL options */
-extern void add_knl_features(char **features)
-{
-	bool has_knl = false, has_numa = false, has_mcdram = false;
-	char *tmp_str, *token, *last = NULL;
-	int i, j;
-
-	if ((features == NULL) || (features[0] ==  NULL))
-		return;
-
-	i = strlen(features[0]) + 1;	/* oversized */
-	tmp_str = xmalloc(i);
-	/* Remove white space from feature specification */
-	for (i = 0, j = 0; features[0][i]; i++) {
-		if (!isspace(features[0][i]))
-			tmp_str[j++] = features[0][i];
-	}
-	strcpy(*features, tmp_str);
-
-	token = strtok_r(tmp_str, ",", &last);
-	while (token) {
-		if (!strcasecmp(token, "knl"))
-			has_knl = true;
-		if (knl_mcdram_token(token))
-			has_mcdram = true;
-		if (knl_numa_token(token))
-			has_numa = true;
-		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(tmp_str);
-
-	if (!has_knl)
-		return;
-
-	if (!read_knl_conf) {
-		(void) knl_conf_read(&avail_mcdram, &avail_numa,
-				     &default_mcdram, &default_numa);
-	}
-
-	if (!has_mcdram) {
-		tmp_str = knl_mcdram_str(avail_mcdram);
-		xstrfmtcat(*features, ",%s", tmp_str);
-		xfree(tmp_str);
-	}
-
-	if (!has_numa) {
-		tmp_str = knl_numa_str(avail_numa);
-		xstrfmtcat(*features, ",%s", tmp_str);
-		xfree(tmp_str);
-	}
-}
-
-
-/* Translate a job constraint specification into a node feature specification
- * RET - String MUST be xfreed */
-extern char *xlate_features(char *job_features)
-{
-	char *node_features = NULL;
-	char *tmp, *save_ptr = NULL, *sep = "", *tok;
-	bool has_knl = false, has_numa = false, has_mcdram = false;
-
-	if ((job_features == NULL) || (job_features[0] ==  '\0'))
-		return node_features;
-
-	if (!read_knl_conf) {
-		(void) knl_conf_read(&avail_mcdram, &avail_numa,
-				     &default_mcdram, &default_numa);
-	}
-
-	tmp = xstrdup(job_features);
-	tok = strtok_r(tmp, "&", &save_ptr);
-	while (tok) {
-		bool knl_opt = false;
-		if (!strcasecmp(tok, "knl")) {
-			if (!has_knl) {
-				has_knl = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_mcdram_token(tok)) {
-			if (!has_mcdram) {
-				has_mcdram = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_numa_token(tok)) {
-			if (!has_numa) {
-				has_numa = true;
-				knl_opt = true;
-			}
-		}
-		if (knl_opt) {
-			xstrfmtcat(node_features, "%s%s", sep, tok);
-			sep = ",";
-		}
-		tok = strtok_r(NULL, "&", &save_ptr);
-	}
-	xfree(tmp);
-
-	if (node_features) {	/* Add default options */
-		if (!has_knl) {
-			xstrfmtcat(node_features, ",%s", "knl");
-		}
-		if (!has_mcdram) {
-			tmp = knl_mcdram_str(default_mcdram);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
-		if (!has_numa) {
-			tmp = knl_numa_str(default_numa);
-			xstrfmtcat(node_features, ",%s", tmp);
-			xfree(tmp);
-		}
-	}
-
-	return node_features;
-}
-
 static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover)
@@ -800,7 +678,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_string(&n->feature, "Features", tbl) &&
 		    !s_p_get_string(&n->feature, "Feature",  dflt))
 			s_p_get_string(&n->feature, "Features", dflt);
-		add_knl_features(&n->feature);
 
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
@@ -2450,7 +2327,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
-	xfree (ctl_conf_ptr->knl_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->layouts);
@@ -2462,6 +2338,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	xfree (ctl_conf_ptr->msg_aggr_params);
+	xfree (ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
@@ -2594,7 +2471,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->keep_alive_time		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
-	xfree(ctl_conf_ptr->knl_plugins);
 	xfree (ctl_conf_ptr->launch_params);
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->layouts);
@@ -2614,6 +2490,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->msg_aggr_params);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
+	xfree(ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
@@ -3400,8 +3277,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
 
-	s_p_get_string(&conf->knl_plugins, "KNLPlugins", hashtbl);
-
 	s_p_get_string(&conf->launch_params, "LaunchParameters", hashtbl);
 
 	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
@@ -3562,6 +3437,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
+
+	s_p_get_string(&conf->node_features_plugins, "NodeFeaturesPlugins",
+		       hashtbl);
 
 	if (!s_p_get_string(&conf->accounting_storage_tres,
 			    "AccountingStorageTRES", hashtbl))
@@ -4721,10 +4599,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobContainer");
 	}
-	if (debug_flags & DEBUG_FLAG_KNL) {
+	if (debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "KNL");
+		xstrcat(rc, "NodeFeatures");
 	}
 	if (debug_flags & DEBUG_FLAG_LICENSE) {
 		if (rc)
@@ -4893,12 +4771,12 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (strcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
-		else if (strcasecmp(tok, "KNL") == 0)
-			(*flags_out) |= DEBUG_FLAG_KNL;
 		else if (strcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_CONF_HASH;
+		else if (strcasecmp(tok, "NodeFeatures") == 0)
+			(*flags_out) |= DEBUG_FLAG_NODE_FEATURES;
 		else if (strcasecmp(tok, "NoRealTime") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_REALTIME;
 		else if (strcasecmp(tok, "Priority") == 0)

@@ -4,7 +4,6 @@ SUBDIRS = \
 	all_partitions \
 	cray \
 	defaults \
-	knl \
 	logging \
 	lua \
 	partition \

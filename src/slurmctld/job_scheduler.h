@@ -123,6 +123,10 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 			       struct job_record *job_ptr,
 			       uint16_t protocol_version);
 
+/* Return a node bitmap identifying which nodes must be rebooted for a job
+ * to start. */
+extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
+
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);
 

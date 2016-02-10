@@ -58,6 +58,7 @@
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
+#include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/power.h"
@@ -74,6 +75,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -1311,8 +1313,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 	}
 
-	add_knl_features(&update_node_msg->features);
-
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 
@@ -1363,10 +1363,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 			error_code = ESLURM_INVALID_FEATURE;
 		} else if (update_node_msg->features_act) {
 			xfree(node_ptr->features_act);
-			if (update_node_msg->features_act[0]) {
-				node_ptr->features_act =
-					xstrdup(update_node_msg->features_act);
-			}
+			node_ptr->features_act =
+				node_features_g_node_xlate(
+					update_node_msg->features_act,
+					node_ptr->features);
+			xfree(update_node_msg->features_act);
+			update_node_msg->features_act =
+				xstrdup(node_ptr->features_act);
 			/* _update_node_active_features() logs and updates
 			 * active_feature_list */
 		}
@@ -1662,7 +1665,6 @@ extern void restore_node_features(int recover)
 
 	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
 	     i++, node_ptr++) {
-
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
@@ -1688,7 +1690,7 @@ extern void restore_node_features(int recover)
 							     feature);
 			}
 		}
-//FIXME ??
+
 		/* We lose the gres information updated manually and always
 		 * use the information from slurm.conf */
 		(void) gres_plugin_node_reconfig(node_ptr->name,
@@ -1808,7 +1810,7 @@ static int _update_node_active_features(char *node_names, char *active_features)
 		info("%s: invalid node_name (%s)", __func__, node_names);
 		return rc;
 	}
-	build_active_feature_list(node_bitmap, active_features);
+	update_feature_list(active_feature_list, active_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s active features set to: %s",
@@ -1857,7 +1859,6 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 			xfree(config_ptr->feature);
 			if (avail_features && avail_features[0])
 				config_ptr->feature = xstrdup(avail_features);
-			build_avail_feature_list(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = _dup_config(config_ptr);
@@ -1870,8 +1871,6 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 			}
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
-
-			build_avail_feature_list(new_config_ptr);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
@@ -1884,6 +1883,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features)
 		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
+	update_feature_list(avail_feature_list, avail_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s available features set to: %s",
@@ -2224,6 +2224,15 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	}
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
 		gang_flag = true;
+
+	if (reg_msg->features_act) {
+		xfree(node_ptr->features_act);
+		node_ptr->features_act = node_features_g_node_xlate(
+						reg_msg->features_act,
+						node_ptr->features);
+		(void) _update_node_active_features(node_ptr->name,
+						    node_ptr->features_act);
+	}
 
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 					   node_ptr->name) != SLURM_SUCCESS) {
@@ -3727,6 +3736,8 @@ extern int send_nodes_to_accounting(time_t event_time)
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void)
 {
+	FREE_NULL_LIST(active_feature_list);
+	FREE_NULL_LIST(avail_feature_list);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);

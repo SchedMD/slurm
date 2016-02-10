@@ -574,15 +574,12 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
 		 src/plugins/job_submit/cray/Makefile
 		 src/plugins/job_submit/defaults/Makefile
-		 src/plugins/job_submit/knl/Makefile
 		 src/plugins/job_submit/logging/Makefile
 		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/job_submit/pbs/Makefile
 		 src/plugins/job_submit/require_timelimit/Makefile
 		 src/plugins/job_submit/throttle/Makefile
-		 src/plugins/knl/Makefile
-		 src/plugins/knl/cray/Makefile
 		 src/plugins/launch/Makefile
 		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
@@ -592,6 +589,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mcs/none/Makefile
 		 src/plugins/mcs/group/Makefile
 		 src/plugins/mcs/user/Makefile
+		 src/plugins/node_features/Makefile
+		 src/plugins/node_features/knl_cray/Makefile
 		 src/plugins/power/Makefile
 		 src/plugins/power/common/Makefile
 		 src/plugins/power/cray/Makefile

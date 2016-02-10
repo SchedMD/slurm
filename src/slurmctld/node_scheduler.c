@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010-2015 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -62,6 +62,7 @@
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/node_features.h"
 #include "src/common/node_select.h"
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -662,8 +663,9 @@ static int _match_feature2(char *seek, struct node_set *node_set_ptr,
 {
 	node_feature_t *feat_ptr;
 
-	if (seek == NULL)
-		return 0;	/* nothing to look for */
+	if ((seek == NULL) ||			/* nothing to look for */
+	    (node_features_g_count() == 0))	/* No inactive features */
+		return 0;
 
 	feat_ptr = list_find_first(active_feature_list, list_find_feature,
 				   (void *) seek);
@@ -697,8 +699,9 @@ static int _match_feature3(struct job_record *job_ptr,
 	node_feature_t *node_feat_ptr;
 	bitstr_t *tmp_bitmap = NULL;
 
-	if (details_ptr->feature_list == NULL)
-		return 0;	/* nothing to look for */
+	if ((details_ptr->feature_list == NULL) ||   /* nothing to look for */
+	    (node_features_g_count() == 0))	/* No inactive features */
+		return 0;
 
 	feat_iter = list_iterator_create(details_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
