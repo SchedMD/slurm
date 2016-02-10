@@ -67,8 +67,10 @@
 #define DEFAULT_CAPMC_PATH        "/opt/cray/capmc/default/bin/capmc"
 #define DEFAULT_CAP_WATTS         0
 #define DEFAULT_DECREASE_RATE     50
+#define DEFAULT_GET_TIMEOUT       5000
 #define DEFAULT_INCREASE_RATE     20
 #define DEFAULT_LOWER_THRESHOLD   90
+#define DEFAULT_SET_TIMEOUT       30000
 #define DEFAULT_UPPER_THRESHOLD   95
 #define DEFAULT_RECENT_JOB        300
 
@@ -139,10 +141,13 @@ static uint32_t decrease_rate = DEFAULT_DECREASE_RATE;
 static uint32_t increase_rate = DEFAULT_INCREASE_RATE;
 static uint32_t job_level = NO_VAL;
 static time_t last_cap_read = 0;
+static time_t last_limits_read = 0;
 static uint32_t lower_threshold = DEFAULT_LOWER_THRESHOLD;
 static uint32_t recent_job = DEFAULT_RECENT_JOB;
 static uint32_t upper_threshold = DEFAULT_UPPER_THRESHOLD;
 static bool stop_power = false;
+static int get_timeout = DEFAULT_GET_TIMEOUT;
+static int set_timeout = DEFAULT_SET_TIMEOUT;
 static pthread_t power_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -299,6 +304,17 @@ static void _load_config(void)
 	else
 		job_level = NO_VAL;
 
+	if ((tmp_ptr = strstr(sched_params, "get_timeout="))) {
+		get_timeout = atoi(tmp_ptr + 12);
+		if (get_timeout < 1) {
+			error("PowerParameters: get_timeout=%u invalid",
+			      get_timeout);
+			get_timeout = DEFAULT_GET_TIMEOUT;
+		}
+	} else {
+		get_timeout = DEFAULT_GET_TIMEOUT;
+	}
+
 	if ((tmp_ptr = strstr(sched_params, "lower_threshold="))) {
 		lower_threshold = atoi(tmp_ptr + 16);
 		if (lower_threshold < 1) {
@@ -319,6 +335,17 @@ static void _load_config(void)
 		}
 	} else {
 		recent_job = DEFAULT_RECENT_JOB;
+	}
+
+	if ((tmp_ptr = strstr(sched_params, "set_timeout="))) {
+		set_timeout = atoi(tmp_ptr + 12);
+		if (set_timeout < 1) {
+			error("PowerParameters: set_timeout=%u invalid",
+			      set_timeout);
+			set_timeout = DEFAULT_SET_TIMEOUT;
+		}
+	} else {
+		set_timeout = DEFAULT_SET_TIMEOUT;
 	}
 
 	if ((tmp_ptr = strstr(sched_params, "set_watts="))) {
@@ -352,15 +379,15 @@ static void _load_config(void)
 		else if (job_level == 1)
 			level_str = "job_level,";
 		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
-		     "cap_watts=%u,decrease_rate=%u,increase_rate=%u,%s"
-		     "lower_threashold=%u,recent_job=%u,set_watts=%u,"
-		     "upper_threshold=%u",
+		     "cap_watts=%u,decrease_rate=%u,get_timeout=%d,"
+		     "increase_rate=%u,%slower_threashold=%u,recent_job=%u,"
+		     "set_timeout=%d,set_watts=%u,upper_threshold=%u",
 		     balance_interval, capmc_path, cap_watts, decrease_rate,
-		     increase_rate, level_str, lower_threshold, recent_job,
-		     set_watts, upper_threshold);
+		     get_timeout, increase_rate, level_str, lower_threshold,
+		     recent_job, set_timeout, set_watts, upper_threshold);
 	}
 
-	last_cap_read = 0;	/* Read node power limits again */
+	last_limits_read = 0;	/* Read node power limits again */
 }
 
 static void _get_capabilities(void)
@@ -382,8 +409,8 @@ static void _get_capabilities(void)
 	script_argv[2] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    NULL, &status);
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+				    get_timeout, NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",
@@ -697,8 +724,8 @@ static void _get_caps(void)
 	script_argv[4] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    NULL, &status);
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+				    get_timeout, NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",
@@ -919,8 +946,8 @@ static void _get_nodes_ready(void)
 	script_argv[2] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    NULL, &status);
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+				    get_timeout, NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s: %s",  __func__, script_argv[1], cmd_resp);
@@ -1052,8 +1079,8 @@ static void _get_node_energy_counter(void)
 	script_argv[4] = NULL;
 
 	START_TIMER;
-	cmd_resp = power_run_script("capmc", capmc_path, script_argv, 5000,
-				    NULL, &status);
+	cmd_resp = power_run_script("capmc", capmc_path, script_argv,
+				    get_timeout, NULL, &status);
 	END_TIMER;
 	if (status != 0) {
 		error("%s: capmc %s %s %s: %s",  __func__,
@@ -1257,16 +1284,18 @@ extern void *_power_agent(void *args)
 		if (wait_time < balance_interval)
 			continue;
 
-		if (last_cap_read == 0) {	/* On first pass only */
-			/* Read initial power caps for every node */
+		wait_time = difftime(now, last_cap_read);
+		if (wait_time > 300) {		/* Every 5 minutes */
+			/* Read current power caps for every node */
 			_get_caps();		/* Has node write lock */
+			last_cap_read = time(NULL);
 		}
 
-		wait_time = difftime(now, last_cap_read);
+		wait_time = difftime(now, last_limits_read);
 		if (wait_time > 600) {		/* Every 10 minutes */
 			/* Read min/max power for every node */
 			_get_capabilities();	/* Has node write lock */
-			last_cap_read = time(NULL);
+			last_limits_read = time(NULL);
 		}
 		_get_node_energy_counter();	/* Has node write lock */
 		_get_nodes_ready();		/* Has node write lock */
@@ -1611,13 +1640,14 @@ static void _set_power_caps(void)
 		xstrcat(json, "\n ]\n}\n");
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    5000, json, &status);
+					    set_timeout, json, &status);
 		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
 			      cmd_resp);
 			xfree(cmd_resp);
+			last_cap_read = 0;	/* Read node caps again */
 			return;
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
 			info("%s: capmc %s %s %s",
@@ -1651,13 +1681,14 @@ static void _set_power_caps(void)
 		xstrcat(json, "\n ]\n}\n");
 		START_TIMER;
 		cmd_resp = power_run_script("capmc", capmc_path, script_argv,
-					    5000, json, &status);
+					    set_timeout, json, &status);
 		END_TIMER;
 		if (status != 0) {
 			error("%s: capmc %s %s: %s",
 			      __func__, script_argv[1], script_argv[2],
 			      cmd_resp);
 			xfree(cmd_resp);
+			last_cap_read = 0;	/* Read node caps again */
 			return;
 		} else if (debug_flag & DEBUG_FLAG_POWER) {
 			info("%s: capmc %s %s %s",

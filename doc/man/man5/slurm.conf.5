@@ -1602,6 +1602,12 @@ maximum power consumption.
 The default value is 50 percent.
 Supported by the power/cray plugin.
 .TP
+\fBget_timeout=#\fR
+Amount of time allowed to get power state information in milliseconds.
+The default value is 5,000 milliseconds or 5 seconds.
+Supported by the power/cray plugin and represents the time allowed for the
+capmc command to respond to various "get" options.
+.TP
 \fBincrease_rate=#\fR
 Specifies the maximum rate of change in the power cap for a node where the
 actual power usage is within \fBupper_threshold\fR (see below) of the power cap.
@@ -1634,6 +1640,12 @@ within this number of seconds from the current time, the node's power cap will
 be increased to the maximum.
 The default value is 300 seconds.
 Supported by the power/cray plugin.
+.TP
+\fBset_timeout=#\fR
+Amount of time allowed to set power state information in milliseconds.
+The default value is 30,000 milliseconds or 30 seconds.
+Supported by the power/cray plugin and represents the time allowed for the
+capmc command to respond to various "set" options.
 .TP
 \fBset_watts=#\fR
 Specifies the power limit to be set on every compute nodes managed by Slurm.
