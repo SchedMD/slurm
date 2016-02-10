@@ -62,7 +62,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>

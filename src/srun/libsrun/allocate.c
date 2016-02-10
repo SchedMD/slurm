@@ -43,7 +43,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/types.h>
 #include <pwd.h>
 
