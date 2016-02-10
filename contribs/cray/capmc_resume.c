@@ -256,14 +256,52 @@ static char *_run_script(char **script_argv, int *status)
 	return resp;
 }
 
+static bool _check_node_state(int nid, char *nid_str, char *state)
+{
+	bool node_state_ok = false;
+	char *argv[10], *resp_msg;
+	int i, nid_cnt, status = 0;
+	uint32_t *nid_array;
+	json_object *j;
+
+	argv[0] = "capmc";
+	argv[1] = "node_status";
+	argv[2] = "-n";
+	argv[3] = nid_str;
+	argv[4] = NULL;
+	resp_msg = _run_script(argv, &status);
+	if (status != 0) {
+		error("%s: capmc(%s,%s,%s): %d %s", log_file,
+			argv[1], argv[2], argv[3], status, resp_msg);
+	}
+	j = json_tokener_parse(resp_msg);
+	if (j == NULL) {
+		error("%s: json parser failed on %s", log_file, resp_msg);
+		xfree(resp_msg);
+		return node_state_ok;
+	}
+	xfree(resp_msg);
+
+	nid_cnt = 0;
+	nid_array = _json_parse_nids(j, "off", &nid_cnt);
+	json_object_put(j);	/* Frees json memory */
+	for (i = 0; i < nid_cnt; i++) {
+		if (nid_array[i] == nid) {
+			node_state_ok = true;
+			break;
+		}
+	}
+	xfree(nid_array);
+
+	return node_state_ok;
+}
+
 static void *_node_update(void *args)
 {
 	char *node_name = (char *) args;
 	char *argv[10], nid_str[32], *resp_msg;
-	int i, nid = -1, nid_cnt = 0, status = 0;
-	json_object *j;
+	int i, nid = -1, status = 0;
 	bool node_state_ok;
-	uint32_t *nid_array;
 
 	for (i = 0; node_name[i]; i++) {
 		if ((node_name[i] >= '0') && (node_name[i] <= '9')) {
@@ -315,51 +353,29 @@ static void *_node_update(void *args)
 		xfree(resp_msg);
 	}
 
+	/* Test if already in "off" state */
+	node_state_ok = _check_node_state(nid, nid_str, "off");
+
 	/* Request node power down.
 	 * Example: "capmc node_off –n 43" */
-	argv[0] = "capmc";
-	argv[1] = "node_off";
-	argv[2] = "-n";
-	argv[3] = nid_str;
-	argv[4] = NULL;
-	resp_msg = _run_script(argv, &status);
-	if (status != 0) {
-		error("%s: capmc(%s,%s,%s): %d %s", log_file,
-		      argv[1], argv[2], argv[3], status, resp_msg);
-	}
-	xfree(resp_msg);
-
-	/* Wait for node in "off" state */
-	node_state_ok = false;
-	while (!node_state_ok) {
+	if (!node_state_ok) {
 		argv[0] = "capmc";
-		argv[1] = "node_status";
+		argv[1] = "node_off";
 		argv[2] = "-n";
 		argv[3] = nid_str;
 		argv[4] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
 			error("%s: capmc(%s,%s,%s): %d %s", log_file,
-				argv[1], argv[2], argv[3], status, resp_msg);
-		}
-		j = json_tokener_parse(resp_msg);
-		if (j == NULL) {
-			error("%s: json parser failed on %s",
-			      log_file, resp_msg);
-			xfree(resp_msg);
-			continue;
+			      argv[1], argv[2], argv[3], status, resp_msg);
 		}
 		xfree(resp_msg);
-		nid_cnt = 0;
-		nid_array = _json_parse_nids(j, "off", &nid_cnt);
-		json_object_put(j);	/* Frees json memory */
-		for (i = 0; i < nid_cnt; i++) {
-			if (nid_array[i] == nid) {
-				node_state_ok = true;
-				break;
-			}
-		}
-		xfree(nid_array);
+	}
+
+	/* Wait for node in "off" state */
+	while (!node_state_ok) {
+		sleep(2);
+		node_state_ok = _check_node_state(nid, nid_str, "off");
 	}
 
 	/* Request node power up.
@@ -525,6 +541,7 @@ int main(int argc, char *argv[])
 			_node_update((void *) node_name);
 		}
 		slurm_attr_destroy(&attr_work);
+		free(node_name);
 	}
 
 	/* Wait for work threads to complete */
