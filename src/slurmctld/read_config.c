@@ -127,9 +127,6 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
-#ifdef 	HAVE_ELAN
-static void _validate_node_proc_count(void);
-#endif
 static int _compare_hostnames(struct node_record *old_node_table,
 							  int old_node_count,
 							  struct node_record *node_table,
@@ -1092,9 +1089,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* NOTE: Run restore_node_features before _restore_job_dependencies */
 	restore_node_features(recover);
-#ifdef 	HAVE_ELAN
-	_validate_node_proc_count();
-#endif
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
@@ -2001,46 +1995,6 @@ static void _sync_nodes_to_suspended_job(struct job_record *job_ptr)
 	}
 	return;
 }
-
-#ifdef 	HAVE_ELAN
-/* Every node in a given partition must have the same processor count
- * at present, ensured by this function. */
-static void _validate_node_proc_count(void)
-{
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
-	struct node_record *node_ptr;
-	int first_bit, last_bit, i, node_size, part_size;
-
-	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		first_bit = bit_ffs(part_ptr->node_bitmap);
-		last_bit = bit_fls(part_ptr->node_bitmap);
-		part_size = -1;
-		for (i = first_bit; i <= last_bit; i++) {
-			if (bit_test(part_ptr->node_bitmap, i) == 0)
-				continue;
-			node_ptr = node_record_table_ptr + i;
-
-			if (slurmctld_conf.fast_schedule)
-				node_size = node_ptr->config_ptr->cpus;
-			else if (node_ptr->cpus < node_ptr->config_ptr->cpus)
-				continue;    /* node too small, will be DOWN */
-			else if (IS_NODE_DOWN(node_ptr))
-				continue;
-			else
-				node_size = node_ptr->cpus;
-
-			if (part_size == -1)
-				part_size = node_size;
-			else if (part_size != node_size)
-				fatal("Partition %s has inconsistent "
-					"processor count", part_ptr->name);
-		}
-	}
-	list_iterator_destroy(part_iterator);
-}
-#endif
 
 /*
  * _restore_job_dependencies - Build depend_list and license_list for every job

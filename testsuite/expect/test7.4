@@ -142,10 +142,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "elan_init: No capability, can't continue" {
-		incr no_capability
-		exp_continue
-	}
 	-re "Process 1 has exited.*" {
 		incr matches
 		exec sleep 2
@@ -227,10 +223,6 @@ expect {
 	}
 	-re "I just received msg from Rank" {
 		incr matches
-		exp_continue
-	}
-	-re "elan_init: No capability, can't continue" {
-		incr no_capability
 		exp_continue
 	}
 	-re "Process 1 has exited.*" {

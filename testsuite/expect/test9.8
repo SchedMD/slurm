@@ -139,14 +139,7 @@ expect {
 # There could be hundreds of job steps, we don't want to see
 # the details, but want to make sure that we did start many
 #
-# Determine if this is AIX (for task count, federation switch
-# prevents each node from running more than 16 tasks)
-#
-if {[test_aix]} {
-	set desired_tasks 15
-} else {
-	set desired_tasks [expr $task_cnt * 2 / 3]
-}
+set desired_tasks [expr $task_cnt * 2 / 3]
 
 set job_count  0
 set step_count 0

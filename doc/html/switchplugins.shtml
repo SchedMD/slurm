@@ -333,7 +333,7 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Indicate if the switch plugin should
 process partial job step completions (i.e. switch_g_job_step_part_comp). Support
 of partition completions is compute intensive, so it should be avoided unless switch
-resources are in short supply (e.g. switch/federation).</p>
+resources are in short supply (e.g. former switch/nrt).</p>
 <p style="margin-left:.2in"><b>Returns</b>: True if partition step completions are
 to be recorded. False if only full job step completions are to be noted.</p>
 

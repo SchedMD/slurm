@@ -49,7 +49,6 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 	%_slurm_sysconfdir      /etc/slurm
 	%_with_debug            1
 	%_with_sgijob		1
-	%_with_elan		1   (ONLY ON SYSTEMS WITH ELAN SWITCH)
    NOTE: build will make a tar-ball based upon ALL of the files in your current
    local directory. If that includes scratch files, everyone will get those
    files in the tar-ball. For that reason, it is a good idea to clone a clean

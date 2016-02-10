@@ -514,7 +514,7 @@ SlurmdPort=7003
 SlurmdSpoolDir=/var/tmp/slurmd.spool
 SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
-SwitchType=switch/elan
+SwitchType=switch/none
 TreeWidth=50
 #
 # Node Configurations

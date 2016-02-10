@@ -3897,14 +3897,7 @@ _job_still_running(uint32_t job_id)
 static void
 _wait_state_completed(uint32_t jobid, int max_delay)
 {
-	char *switch_type = slurm_get_switch_type();
 	int i;
-
-	if (strcmp(switch_type, "switch/federation")) {
-		xfree(switch_type);
-		return;
-	}
-	xfree(switch_type);
 
 	for (i=0; i<max_delay; i++) {
 		if (_steps_completed_now(jobid))

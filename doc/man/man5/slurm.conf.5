@@ -1982,7 +1982,6 @@ can become a child of the init process (when the parent process
 terminates) or change their process group.
 To reliably track all processes, one of the other mechanisms
 utilizing kernel modifications is preferable.
-NOTE: "proctrack/linuxproc" is not compatible with "switch/elan."
 NOTE: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
@@ -3649,8 +3648,8 @@ through the host database (/etc/hosts) or DNS, depending on the resolver
 settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
-Only short hostname forms are compatible with the
-switch/elan, switch/federation and switch/nrt plugins at this time.
+Only short hostname forms are compatible with the switch/nrt plugin at
+this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
@@ -3673,8 +3672,8 @@ through the host database (/etc/hosts) or DNS, depending on the resolver
 settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
-Only short hostname forms are compatible with the
-switch/elan, switch/federation and switch/nrt plugins at this time.
+Only short hostname forms are compatible with the switch/nrt plugin at
+this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by
 \fBNodeHostname\fR on a line in the configuration file must
@@ -4819,7 +4818,7 @@ SlurmdSpoolDir=/usr/local/slurm/slurmd.spool
 .br
 StateSaveLocation=/usr/local/slurm/slurm.state
 .br
-SwitchType=switch/elan
+SwitchType=switch/none
 .br
 TmpFS=/tmp
 .br

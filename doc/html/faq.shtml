@@ -374,10 +374,10 @@ management within the job for the job steps.</p>
 <p><a name="orphan"><b>9. Why do I have job steps when my job has
 already COMPLETED?</b></a><br>
 NOTE: This only applies to systems configured with
-<i>SwitchType=switch/elan</i> or <i>SwitchType=switch/federation</i>.
+<i>SwitchType=switch/nrt</i>.
 All other systems will purge all job steps on job completion.</p>
 <p>Slurm maintains switch (network interconnect) information within
-the job step for Quadrics Elan and IBM Federation switches.
+the job step for IBM NRT switches.
 This information must be maintained until we are absolutely certain
 that the processes associated with the switch have been terminated
 to avoid the possibility of re-using switch resources for other
@@ -1263,17 +1263,14 @@ Just install the test version in a different location with a different
 The test system's <i>slurm.conf</i> should specify different
 pathnames and port numbers to avoid conflicts.
 The only problem is if more than one version of Slurm is configured
-with <i>switch/elan</i> or <i>switch/federation</i>.
-In that case, there can be conflicting switch window requests from
+with <i>switch/nrt</i> or <i>burst_buffer/*</i> plugins.
+In that case, there can be conflicting API requests from
 the different Slurm systems.
-This can be avoided by configuring the test system with <i>switch/none</i>.
-MPI jobs started on an Elan or Federation switch system without the
+This can be avoided by configuring the test system with <i>switch/none</i>
+and <i>burst_buffer/none</i>.
+MPI jobs started on an NRT switch system without the
 switch windows configured will not execute properly, but other jobs
 will run fine.
-Another option for testing on Elan or Federation systems is to use
-a different set of nodes for the different Slurm systems.
-That will permit both systems to allocate switch windows without
-conflicts.
 
 <p><a name="multi_slurmd"><b>14. Can Slurm emulate a larger cluster?</b></a><br>
 Yes, this can be useful for testing purposes.

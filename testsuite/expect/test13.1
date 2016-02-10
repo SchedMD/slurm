@@ -55,20 +55,6 @@ log_user 0
 set step_delay 0
 spawn $scontrol show config
 expect {
-	-re "switch/elan" {
-		set windows_per_node 2048
-		set windows_iterations 50
-		set windows_used 48
-		set step_delay 10
-		exp_continue
-	}
-	-re "switch/federation" {
-		set windows_per_node 16
-		set windows_iterations 32
-		set windows_used 2
-		set step_delay 10
-		exp_continue
-	}
 	-re "switch/none" {
 		set windows_per_node 0
 		set windows_iterations 5

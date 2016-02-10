@@ -3908,11 +3908,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
-		if (!strcmp(conf->switch_type,"switch/elan"))
-			conf->proctrack_type = xstrdup("proctrack/rms");
-		else
-			conf->proctrack_type =
-				xstrdup(DEFAULT_PROCTRACK_TYPE);
+		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
 #ifdef HAVE_NATIVE_CRAY
 	if (strcmp(conf->proctrack_type, "proctrack/cray")) {
@@ -3928,11 +3924,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #endif
 #endif
-	if ((!strcmp(conf->switch_type, "switch/elan"))
-	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc"))) {
-		error("proctrack/linuxproc is incompatible with switch/elan");
-		return SLURM_ERROR;
-	}
 
 	conf->private_data = 0; /* Set to default before parsing PrivateData */
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {

@@ -1347,27 +1347,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		if ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
 		    SLURM_DIST_ARBITRARY) {
-			/* if we are in arbitrary mode we need to make
-			 * sure we aren't running on an elan switch.
-			 * If we aren't change the number of nodes
-			 * available to the number we were given since
-			 * that is what the user wants to run on.
-			 */
-			if (!strcmp(slurmctld_conf.switch_type,
-				    "switch/elan")) {
-				info("Can't do an ARBITRARY task layout with "
-				     "switch type elan. Switching DIST type "
-				     "to BLOCK");
-				xfree(step_spec->node_list);
-				step_spec->task_dist &= SLURM_DIST_STATE_FLAGS;
-				step_spec->task_dist |= SLURM_DIST_BLOCK;
-				FREE_NULL_BITMAP(selected_nodes);
-				step_spec->min_nodes =
-					bit_set_count(nodes_avail);
-			} else {
-				step_spec->min_nodes =
-					bit_set_count(selected_nodes);
-			}
+			step_spec->min_nodes = bit_set_count(selected_nodes);
 		}
 		if (selected_nodes) {
 			int node_cnt = 0;
@@ -2204,11 +2184,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (task_dist != SLURM_DIST_PLANE) &&
 	    (task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
-
-	if ((task_dist == SLURM_DIST_ARBITRARY) &&
-	    (!strcmp(slurmctld_conf.switch_type, "switch/elan"))) {
-		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
-	}
 
 	if (_test_strlen(step_specs->ckpt_dir, "ckpt_dir", MAXPATHLEN)	||
 	    _test_strlen(step_specs->gres, "gres", 1024)		||
