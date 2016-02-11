@@ -952,6 +952,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->features);
+	xfree(node_ptr->features_act);
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
 	xfree(node_ptr->name);

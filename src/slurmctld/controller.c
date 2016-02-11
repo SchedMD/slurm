@@ -680,6 +680,7 @@ int main(int argc, char *argv[])
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
+	node_features_g_fini();
 	purge_front_end_state();
 	resv_fini();
 	trigger_fini();

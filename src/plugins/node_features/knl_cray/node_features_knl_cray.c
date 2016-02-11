@@ -491,6 +491,7 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 					sep = ",";
 					tok = strtok_r(NULL, ",", &save_ptr);
 				}
+				xfree(tmp_str);
 			}
 			break;
 		default:

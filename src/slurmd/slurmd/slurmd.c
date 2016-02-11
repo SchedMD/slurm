@@ -385,6 +385,7 @@ main (int argc, char *argv[])
 	_slurmd_fini();
 	_destroy_conf();
 	slurm_crypto_fini();	/* must be after _destroy_conf() */
+	gids_cache_purge();
 
 	info("Slurmd shutdown completing");
 	log_fini();
