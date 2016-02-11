@@ -24,11 +24,15 @@ modes and nodes may only be rebooted when they contain no running jobs
 the node is idle and can be rebooted, the pending job may not be allocated
 resources). Also note that the job will be charged for resources from the time
 of resource allocation, which may include time to reboot a node into the
-desired NUMA and MCDRAM configuration.
-While Slurm generally supports a very rich set of options for the node
+desired NUMA and MCDRAM configuration.</p>
+
+<p>While Slurm generally supports a very rich set of options for the node
 constraint options (exclusive OR, node counts for each constraint, etc.),
 only a simple AND operation is supported for KNL systems (specified using a
-comma or ampersand separator between specified constraints).</p>
+comma or ampersand separator between specified constraints).
+Jobs may specify their desired NUMA and/or MCDRAM configuration. If no
+NUMA and/or MCDRAM configuration is specified, then a node with any possible
+value for that configuration will be used.</p>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 <tr>
@@ -51,40 +55,94 @@ comma or ampersand separator between specified constraints).</p>
 <pre>
 $ sbatch -C flat,a2a -N2 --exclusive my.script
 $ srun --constraint=hemi,cache -n36 a.out
+$ srun --constraint=flat -n36 a.out
 
 $ sinfo -o "%30N %20b %f"
-NODELIST                      ACTIVE_FEATURES  AVAIL_FEATURES
-nid[00010-00011,00016-00021]
-nid[00012-00035]              flat,a2a         flat,a2a,snc2,snc4,hemi,quad
-nid[00036-00043]              flat,a2a         flat,equal,cache,a2a,snc2,snc4,hemi,quad
+NODELIST       ACTIVE_FEATURES  AVAIL_FEATURES
+nid000[10-11]
+nid000[12-35]  flat,a2a         flat,a2a,snc2,snc4,hemi,quad
+nid000[36-43]  cache,a2a        flat,equal,cache,a2a,snc2,snc4,hemi,quad
 
 </pre>
 
 <h2>System Administration</h2>
 
-<p>Two unique components are required to use Slurm on an Intel KNL system.</p>
+<p>Three important components are required to use Slurm on an Intel KNL system.</p>
 <ol>
-<li>The NodeFeatures plugin manages the available and active features available
-for each KNL node. On Cray systems NodeFeaturesPlugins should be set to
-"knl_cray".</li>
+<li>The node features plugin manages the available and active features
+information available for each KNL node.</li>
 
 <li>A configuration file is used to define various timeouts, default
 configuration, etc. The configuration file name and contents will depend upon
-the NodeFeatures used. On Cray systems the file will be named "knl_cray.conf".
-See the <a href="knl.conf.html">knl.conf</a> man page for more information.</li>
+the node features plugins used. See the <a href="knl.conf.html">knl.conf</a>
+man page for more information.</li>
 
-<li>BOOTING</li>
+<li>A mechanism is required to boot nodes in the desired configuration. This
+mechanism must be integrated with existing Slurm infrastructure for
+<a href="sbatch.html">rebooting nodes on user request (--reboot)</a> plus
+<a href="power_save.html">power saving</a> (powering down idle nodes and
+restarting them on demand).</li>
 </ol>
 
 <p>In addition, there is a DebugFlags option of "NodeFeatures" which will
 generate detailed information about KNL operations.</p>
 
+<p>Note that a node's KNL-specific available and active features are not
+included in the "slurm.conf" configuration file, but are set and the managed
+by the NodeFeatures plugin.
+Features which are not KNL-specific (e.g. rack number, "knl", etc.) will be
+copied from the node's "Features" configuration in "slurm.conf" to both the
+available and active feature fields and not modified by the NodeFeatures
+plugin.</p>
+
+<h3>Mode of Operation</h3>
+
+<ol>
+<li>The node's configured "Features" are copied to the available and active
+feature fields.</li>
+<li>The node features plugin determines the node's current MCDRAM and NUMA
+values as well as those which are available and adds those values to the node's
+active and available feature fields respectively. Note that these values may
+not be available until the node has booted and the slurmd daemon on the
+compute node sends that information to the slurmctld daemon.</li>
+<li>Jobs will be allocated nodes already in the requested MCDRAM and NUMA mode
+if possible. If insufficient resources are available with the requested
+configuration then other nodes will be selected and booted into the desired
+configuration once no other jobs are active on the node. Until a node is idle,
+its configuration can not be changed. Note that node reboot time is roughly
+on the order of 20 minutes.</li>
+</ol>
+
+<h3>Cray Configuration</h3>
+
+<p>On Cray systems NodeFeaturesPlugins should be set to "knl_cray".</p>
+
+<p>The configuration file will be named "knl_cray.conf".
+The file will include the path to the capmc program (CapmcPath), which is used
+to get a node's available MCDRAM and NUMA modes, change the modes, power the
+node down, reboot it, etc.
+The file will also include the path to the dmidecode program (DmidecodePath),
+which is used by the slurmd daemon to get current MCDRAM and NUMA modes from
+the BIOS settings on each compute node.
+Note the "CapmcTimeout" parameter is the time required for the capmc program
+to respond to a request and NOT the time for a boot operation to complete.</p>
+
+<p>Power saving mode is integrated with rebooting nodes in the desired mode.
+Programs named "capmc_resume" and "capmc_suspend" are provided to boot nodes in
+the desired mode. The programs are included in the main Slurm RPM and
+installed in the "sbin" directory.
+If powering down of idle nodes is not desired, then configure "ResumeProgram"
+in "slurm.conf" to the path of the "capmc_resume" file and configure
+"SuspendTime" to a huge value (e.g. "SuspendTime=30000000" will only power
+down a node which has been idle for about one year).</p>
+
 <h3>Sample knl_cray.conf File</h3>
 
 <pre>
-# knl_cray.conf
+# Sample knl_cray.conf
 CapmcPath=/opt/cray/capmc/default/bin/capmc
-CapmcTimeout=600	# msec
+DmidecodePath=/usrs/sbin/dmidecode
+CapmcTimeout=2000	# msec
 DefaultNUMA=a2a         # NUMA=all2all
 DefaultMCDRAM=cache     # MCDRAM=cache
 </pre>
@@ -92,22 +150,20 @@ DefaultMCDRAM=cache     # MCDRAM=cache
 <h3>Sample slurm.conf File</h3>
 
 <pre>
-# Select portions of slurm.conf
+# Sample slurm.conf
 NodeFeaturesPlugins=knl_cray
 DebugFlags=NodeFeatures
-..
-Nodename=default feature=knl Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000
+#
+ResumeProgram=/opt/slurm/default/sbin/capmc_resume
+SuspendTime=30000000
+ResumeTimeout=1800
+...
+Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
 NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
 
-<p>When the slurmctld daemon starts, the configued NodeFeatures plugin will
-load available and active NUMA and MCDRAM modes on the KNL node. It will then
-add these values to any node <b>Features</b> for the node defined in slurm.conf.
-Separate active and available features for each node can be viewed with the
-scontrol, sinfo, and sview commands.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 February 2016</p>
+<p style="text-align:center;">Last modified 11 February 2016</p>
 
 <!--#include virtual="footer.txt"-->
