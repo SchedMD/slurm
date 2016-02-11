@@ -807,7 +807,7 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 		setpgrp();
 #endif
 		execv(cmd_path, script_argv);
-		error("%s: execv(%s): %m", __func__, capmc_path);
+		error("%s: execv(%s): %m", __func__, cmd_path);
 		exit(127);
 	} else if (cpid < 0) {
 		close(pfd[0]);
