@@ -1,6 +1,5 @@
 /*****************************************************************************\
- ** mpichgm.c - srun support for MPICH-GM (GMPI)
- ** $Id$
+ *  mpichgm.c - srun support for MPICH-GM (GMPI)
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

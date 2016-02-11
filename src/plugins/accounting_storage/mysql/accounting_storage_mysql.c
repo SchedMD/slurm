@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  accounting_storage_mysql.c - accounting interface to as_mysql.
- *
- *  $Id: accounting_storage_mysql.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

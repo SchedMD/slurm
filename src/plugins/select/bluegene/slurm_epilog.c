@@ -2,8 +2,6 @@
  * slurm_ epilog.c - Wait until the specified partition is no longer ready and
  *      owned by this user. This is executed via SLURM to synchronize the
  *      user's job execution with slurmctld configuration of partitions.
- *
- * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

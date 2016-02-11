@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/plugins/task/affinity/affinity.c - task affinity plugin
- *  $Id: affinity.c,v 1.2 2005/11/04 02:46:51 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
  *

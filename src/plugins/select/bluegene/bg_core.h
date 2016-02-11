@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  bg_core.h - header for blue gene core functions processing module.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

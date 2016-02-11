@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  jobcomp_mysql.c - Store/Get all information in a mysql storage.
- *
- *  $Id: storage_mysql.c 10893 2007-01-29 21:53:48Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.

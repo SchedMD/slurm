@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  bg_record_functions.c - header for creating blocks in a static environment.
- *
- *  $Id: bg_record_functions.c 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

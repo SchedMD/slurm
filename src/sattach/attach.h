@@ -7,9 +7,6 @@
  *  http://www.etnus.com/
 \*****************************************************************************/
 
-/*  $Id$
- */
-
 /* This file contains support for bringing processes up stopped, so that
  * a debugger can attach to them     (done for TotalView)
  */

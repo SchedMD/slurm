@@ -1,6 +1,5 @@
 /*****************************************************************************\
  **  mpi_openmpi.c - Library routines for initiating openmpi jobs
- **  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

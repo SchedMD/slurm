@@ -1,7 +1,6 @@
 /*****************************************************************************\
- *  $Id$
+ *  pam_slurm_adopt/helper.c
  *****************************************************************************
- *
  *  Useful portions extracted from pam_slurm.c by Ryan Cox <ryan_cox@byu.edu>
  *
  *  Copyright (C) 2002-2007 The Regents of the University of California.

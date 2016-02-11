@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/plugins/task/affinity/schedutils.c - scheduling utilities
- *  $Id: schedutils.c,v 1.2 2005/11/04 02:46:51 palermo Exp $
  *****************************************************************************
  *  Routines in this file are taken from the taskset utility (schedutils pkg)
  *  Copyright (C) 2004 Robert Love

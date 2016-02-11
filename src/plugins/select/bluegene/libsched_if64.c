@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  libsched_if.c - here so mpirun can dynamically link to it to make
  *  sure it doesn't go try creating a block all crazy like outside of slurm.
- *
- *  $Id: bluegene.c 9169 2006-09-05 17:26:51Z jette $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.

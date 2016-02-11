@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  dynamic_block.h - header for creating blocks in a dynamic environment.
- *
- *  $Id: dynamic_block.h 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

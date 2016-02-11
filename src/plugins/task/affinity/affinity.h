@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/plugins/task/affinity/affinity.h - task affinity plugin
- *  $Id: affinity.h,v 1.2 2005/11/04 02:46:51 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *

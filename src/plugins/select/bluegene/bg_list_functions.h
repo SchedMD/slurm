@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  bg_list_functions.c - header for dealing with the lists that
  *                        contain bg_records.
- *
- *  $Id: bg_list_functions.c 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
  *  Copyright (C) 2011 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

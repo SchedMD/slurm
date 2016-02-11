@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/slurmd/slurmstepd/pam_ses.c - functions to manage pam session
- *  $Id: pam_ses.c $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

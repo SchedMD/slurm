@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  checkpoint_blcr.c - BLCR slurm checkpoint plugin.
- *  $Id: checkpoint_blcr.c 0001 2008-12-29 16:50:11Z hjcao $
  *****************************************************************************
  *  Derived from checkpoint_aix.c
  *  Copyright (C) 2007-2009 National University of Defense Technology, China.

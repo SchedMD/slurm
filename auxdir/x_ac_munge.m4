@@ -1,6 +1,4 @@
 ##*****************************************************************************
-## $Id$
-##*****************************************************************************
 #  AUTHOR:
 #    Chris Dunlap <cdunlap@llnl.gov> (originally for OpenSSL)
 #    Modified for munge by Christopher Morrone <morrone2@llnl.gov>

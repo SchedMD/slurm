@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  debugger.c - Definitions needed for parallel debugger
- *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

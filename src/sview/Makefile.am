@@ -1,5 +1,3 @@
-# $Id: Makefile.am 6669 2005-11-21 22:41:16Z da $
-#
 # Makefile for sview
 
 AUTOMAKE_OPTIONS = foreign

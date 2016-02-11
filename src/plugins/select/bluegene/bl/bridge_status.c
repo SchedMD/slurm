@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  bridge_status.c - bluegene block information from the db2 database.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  bg_core.c - blue gene node configuration processing module.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2011 Lawrence Livermore National Security.

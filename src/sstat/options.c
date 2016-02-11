@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  options.c - option functions for sstat
- *
- *  $Id: options.c 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

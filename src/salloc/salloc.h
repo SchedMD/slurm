@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  salloc.h - definitions for srun option processing
- *  $Id: opt.h 8700 2006-07-26 01:12:40Z morrone $
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.

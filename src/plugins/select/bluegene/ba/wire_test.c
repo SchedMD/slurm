@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  wire_test.c - used to debug and test wires on any given system.
- *
- *  $Id: block_allocator.c 17495 2009-05-14 16:49:52Z da $
  *****************************************************************************
  *  Copyright (C) 2004 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

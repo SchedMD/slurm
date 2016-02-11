@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  dist_tasks - Assign task count for each resources
- *
- *  $Id: dist_tasks.h,v 1.2 2006/10/31 19:31:31 palermo Exp $
  *****************************************************************************
  *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>

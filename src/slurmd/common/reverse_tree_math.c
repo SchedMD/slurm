@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/slurmd/slurmd/reverse_tree_math.c
- *  $Id: slurmd.c 7507 2006-03-15 00:57:30Z morrone $
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

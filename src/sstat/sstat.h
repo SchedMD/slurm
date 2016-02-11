@@ -1,7 +1,5 @@
 /*****************************************************************************\
  *  sstat.h - header file for sstat
- *
- *  $Id: sstat.h 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.

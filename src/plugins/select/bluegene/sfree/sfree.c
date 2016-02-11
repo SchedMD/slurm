@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  sfree.c - free specified block or all blocks.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
