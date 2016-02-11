@@ -125,6 +125,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
 <li><a href="mcs_plugins.html">Multi-Category Security (MCS) Plugin Programmer Guide</a></li>
+<li><a href="node_features_plugins.html">Node Features Plugin Programmer Guide</a></li>
 <li><a href="power_plugins.html">Power Management Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>

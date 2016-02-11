@@ -63,6 +63,7 @@ generated_html = \
 	mpiplugins.html \
 	multi_cluster.html \
 	news.html \
+	node_features_plugins.html \
 	overview.html \
 	platforms.html \
 	plugins.html \
