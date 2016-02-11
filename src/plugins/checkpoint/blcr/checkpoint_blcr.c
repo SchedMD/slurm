@@ -56,6 +56,7 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 
 #include "slurm/slurm.h"
@@ -83,8 +84,6 @@ void acct_policy_add_job_submit(struct job_record *job_ptr)
 #else
 void acct_policy_add_job_submit(struct job_record *job_ptr);
 #endif
-
-#define MAX_PATH_LEN 1024
 
 struct check_job_info {
 	uint16_t disabled;	/* counter, checkpointable only if zero */
@@ -453,7 +452,7 @@ extern int slurm_ckpt_stepd_prefork(stepd_step_rec_t *job)
 extern int slurm_ckpt_signal_tasks(stepd_step_rec_t *job, char *image_dir)
 {
 	char *argv[4];
-	char context_file[MAX_PATH_LEN];
+	char context_file[MAXPATHLEN];
 	char pid[16];
 	int status;
 	pid_t *children = NULL;
@@ -563,7 +562,7 @@ extern int slurm_ckpt_restart_task(stepd_step_rec_t *job,
 				   char *image_dir, int gtid)
 {
 	char *argv[3];
-	char context_file[MAX_PATH_LEN];
+	char context_file[MAXPATHLEN];
 
 	/* jobid and stepid must NOT be spelled here,
 	 * since it is a new job/step */
