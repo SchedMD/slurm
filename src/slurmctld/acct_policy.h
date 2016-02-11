@@ -82,6 +82,11 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 uint32_t *state_reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call);
+/*
+ * acct_policy_job_check_resv_lim - Determine if this job is over the
+ *      limit to continue reserving job slots in the backfill map
+ */
+extern bool acct_policy_job_check_resv_lim(struct job_record *job_ptr);
 
 /*
  * acct_policy_job_runnable_pre_select - Determine of the specified

@@ -383,6 +383,7 @@ enum job_state_reason {
 	WAIT_ASSOC_GRP_SUB_JOB,      /* ASSOC GrpSubmitJobs exceeded */
 	WAIT_ASSOC_GRP_WALL,         /* ASSOC GrpWall exceeded */
 	WAIT_ASSOC_MAX_JOBS,         /* ASSOC MaxJobs exceeded */
+	WAIT_ASSOC_MAX_RESV_JOBS,    /* ASSOC max reservable slots reached */
 	WAIT_ASSOC_MAX_CPU_PER_JOB,  /* ASSOC MaxTRESPerJob exceeded (CPU) */
 	WAIT_ASSOC_MAX_CPU_MINS_PER_JOB,/* ASSOC MaxTRESMinsPerJob
 					 * exceeded (CPU) */
