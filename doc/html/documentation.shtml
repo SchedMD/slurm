@@ -109,29 +109,29 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="plugins.html">Plugin Programmer Guide</a></li>
 <li>Plugin Interface Details</li>
 <ul>
+<li><a href="accounting_storageplugins.html">Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
 <li><a href="bb_plugins.html">Burst Buffer Plugin Programmer Guide</a></li>
 <li><a href="core_spec_plugins.html">Core Specialization Plugin Programmer Guide</a></li>
 <li><a href="crypto_plugins.html">Cryptographic Plugin Programmer Guide</a></li>
+<li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
 <li><a href="ext_sensorsplugins.html">External Sensors Plugin Programmer Guide</a></li>
-<li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
-<li><a href="accounting_storageplugins.html">Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>
+<li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
 <li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
-<li><a href="job_container_plugins.html">Slurm Job Container Plugin API</a></li>
+<li><a href="job_container_plugins.html">Job Container Plugin API</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
-<li><a href="mcs_plugins.html">Multi-Category Security (MCS) Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
-<li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
+<li><a href="mcs_plugins.html">Multi-Category Security (MCS) Plugin Programmer Guide</a></li>
 <li><a href="power_plugins.html">Power Management Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_profile_plugins.html">Profile Accounting Plugin Programmer Guide</a></li>
-<li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
+<li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.html">Task Plugin Programmer Guide</a></li>
@@ -139,6 +139,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 8 December 2015</p>
+<p style="text-align:center;">Last modified 11 February 2016</p>
 
 <!--#include virtual="footer.txt"-->
