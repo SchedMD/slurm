@@ -1666,6 +1666,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			cluster_name,
 			run_month ? assoc_day_table : assoc_hour_table,
 			curr_end, curr_start, now);
+
 		/* We group on deleted here so if there are no entries
 		   we don't get an error, just nothing is returned.
 		   Else we get a bunch of NULL's
@@ -1734,7 +1735,12 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_sec = 0;
 		start_tm.tm_min = 0;
 		start_tm.tm_hour = 0;
-		start_tm.tm_mday++;
+		if (run_month) {
+			start_tm.tm_mday = 1;
+			start_tm.tm_mon++;
+		} else {
+			start_tm.tm_mday++;
+		}
 		start_tm.tm_isdst = -1;
 		curr_end = slurm_mktime(&start_tm);
 	}

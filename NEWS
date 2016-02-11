@@ -58,6 +58,9 @@ documents those changes that are of interest to users and administrators.
  -- Save the ClusterName to a file in SaveStateLocation, and use that to
     verify the state directory belongs to the given cluster at startup to avoid
     corruption from multiple clusters attempting to share a state directory.
+ -- MYSQL - Fix issue when rerolling monthly data to work off correct time
+    period.  This would only hit you if you rerolled a 15.08 prior to this
+    commit.
 
 * Changes in Slurm 15.08.7
 ==========================
