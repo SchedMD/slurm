@@ -55,6 +55,9 @@ documents those changes that are of interest to users and administrators.
     set_timeout was increased from 5 seconds to 30 seconds. Also re-read current
     power caps periodically or after any failed "set" operation.
  -- Fix slurmdbd segfault when listing users with blank user condition.
+ -- Save the ClusterName to a file in SaveStateLocation, and use that to
+    verify the state directory belongs to the given cluster at startup to avoid
+    corruption from multiple clusters attempting to share a state directory.
 
 * Changes in Slurm 15.08.7
 ==========================
