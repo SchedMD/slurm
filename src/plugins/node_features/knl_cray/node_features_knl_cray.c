@@ -696,6 +696,8 @@ static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt)
 {
 	int i;
 
+	if (!mcdram_cap)
+		return;
 	for (i = 0; i < mcdram_cap_cnt; i++) {
 		xfree(mcdram_cap[i].mcdram_cfg);
 	}
@@ -706,6 +708,8 @@ static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt)
 {
 	int i;
 
+	if (!mcdram_cap)
+		return;
 	for (i = 0; i < mcdram_cap_cnt; i++) {
 		info("MCDRAM_CAP[%d]: nid:%u mcdram_cfg:%s",
 		     i, mcdram_cap[i].nid, mcdram_cap[i].mcdram_cfg);
@@ -716,6 +720,8 @@ static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 {
 	int i;
 
+	if (!mcdram_cfg)
+		return;
 	for (i = 0; i < mcdram_cfg_cnt; i++) {
 		xfree(mcdram_cfg[i].mcdram_cfg);
 	}
@@ -726,6 +732,8 @@ static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 {
 	int i;
 
+	if (!mcdram_cfg)
+		return;
 	for (i = 0; i < mcdram_cfg_cnt; i++) {
 		info("MCDRAM_CFG[%d]: nid:%u mcdram_cfg:%s",
 		     i, mcdram_cfg[i].nid, mcdram_cfg[i].mcdram_cfg);
@@ -736,6 +744,8 @@ static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt)
 {
 	int i;
 
+	if (!numa_cap)
+		return;
 	for (i = 0; i < numa_cap_cnt; i++) {
 		xfree(numa_cap[i].numa_cfg);
 	}
@@ -746,6 +756,8 @@ static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt)
 {
 	int i;
 
+	if (!numa_cap)
+		return;
 	for (i = 0; i < numa_cap_cnt; i++) {
 		info("NUMA_CAP[%d]: nid:%u numa_cfg:%s",
 		     i, numa_cap[i].nid, numa_cap[i].numa_cfg);
@@ -756,6 +768,8 @@ static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
 	int i;
 
+	if (!numa_cfg)
+		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
 		xfree(numa_cfg[i].numa_cfg);
 	}
@@ -766,6 +780,8 @@ static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt)
 {
 	int i;
 
+	if (!numa_cfg)
+		return;
 	for (i = 0; i < numa_cfg_cnt; i++) {
 		info("NUMA_CFG[%d]: nid:%u numa_cfg:%s",
 		     i, numa_cfg[i].nid, numa_cfg[i].numa_cfg);
@@ -933,40 +949,48 @@ static void _update_all_node_features(
 			}
 		}
 	}
-	for (i = 0; i < mcdram_cap_cnt; i++) {
-		snprintf(node_name, sizeof(node_name),
-			 "%s%.*d", prefix, width, mcdram_cap[i].nid);
-		node_ptr = find_node_record(node_name);
-		if (node_ptr) {
-			_merge_strings(&node_ptr->features,
-				       mcdram_cap[i].mcdram_cfg);
+	if (mcdram_cap) {
+		for (i = 0; i < mcdram_cap_cnt; i++) {
+			snprintf(node_name, sizeof(node_name),
+				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
+			node_ptr = find_node_record(node_name);
+			if (node_ptr) {
+				_merge_strings(&node_ptr->features,
+					       mcdram_cap[i].mcdram_cfg);
+			}
 		}
 	}
-	for (i = 0; i < mcdram_cfg_cnt; i++) {
-		snprintf(node_name, sizeof(node_name),
-			 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
-		node_ptr = find_node_record(node_name);
-		if (node_ptr) {
-			_merge_strings(&node_ptr->features_act,
-				       mcdram_cfg[i].mcdram_cfg);
+	if (mcdram_cfg) {
+		for (i = 0; i < mcdram_cfg_cnt; i++) {
+			snprintf(node_name, sizeof(node_name),
+				 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
+			node_ptr = find_node_record(node_name);
+			if (node_ptr) {
+				_merge_strings(&node_ptr->features_act,
+					       mcdram_cfg[i].mcdram_cfg);
+			}
 		}
 	}
-	for (i = 0; i < numa_cap_cnt; i++) {
-		snprintf(node_name, sizeof(node_name),
-			 "%s%.*d", prefix, width, numa_cap[i].nid);
-		node_ptr = find_node_record(node_name);
-		if (node_ptr) {
-			_merge_strings(&node_ptr->features,
-				       numa_cap[i].numa_cfg);
+	if (numa_cap) {
+		for (i = 0; i < numa_cap_cnt; i++) {
+			snprintf(node_name, sizeof(node_name),
+				 "%s%.*d", prefix, width, numa_cap[i].nid);
+			node_ptr = find_node_record(node_name);
+			if (node_ptr) {
+				_merge_strings(&node_ptr->features,
+					       numa_cap[i].numa_cfg);
+			}
 		}
 	}
-	for (i = 0; i < numa_cfg_cnt; i++) {
-		snprintf(node_name, sizeof(node_name),
-			 "%s%.*d", prefix, width, numa_cfg[i].nid);
-		node_ptr = find_node_record(node_name);
-		if (node_ptr) {
-			_merge_strings(&node_ptr->features_act,
-				       numa_cfg[i].numa_cfg);
+	if (numa_cfg) {
+		for (i = 0; i < numa_cfg_cnt; i++) {
+			snprintf(node_name, sizeof(node_name),
+				 "%s%.*d", prefix, width, numa_cfg[i].nid);
+			node_ptr = find_node_record(node_name);
+			if (node_ptr) {
+				_merge_strings(&node_ptr->features_act,
+					       numa_cfg[i].numa_cfg);
+			}
 		}
 	}
 	xfree(prefix);
@@ -995,32 +1019,40 @@ static void _update_node_features(struct node_record *node_ptr,
 		node_ptr->features_act = xstrdup(node_ptr->features);
 	_strip_knl_opts(&node_ptr->features_act);
 
-	for (i = 0; i < mcdram_cap_cnt; i++) {
-		if (nid == mcdram_cap[i].nid) {
-			_merge_strings(&node_ptr->features,
-				       mcdram_cap[i].mcdram_cfg);
-			break;
+	if (mcdram_cap) {
+		for (i = 0; i < mcdram_cap_cnt; i++) {
+			if (nid == mcdram_cap[i].nid) {
+				_merge_strings(&node_ptr->features,
+					       mcdram_cap[i].mcdram_cfg);
+				break;
+			}
 		}
 	}
-	for (i = 0; i < mcdram_cfg_cnt; i++) {
-		if (nid == mcdram_cfg[i].nid) {
-			_merge_strings(&node_ptr->features_act,
-				       mcdram_cfg[i].mcdram_cfg);
-			break;
+	if (mcdram_cfg) {
+		for (i = 0; i < mcdram_cfg_cnt; i++) {
+			if (nid == mcdram_cfg[i].nid) {
+				_merge_strings(&node_ptr->features_act,
+					       mcdram_cfg[i].mcdram_cfg);
+				break;
+			}
 		}
 	}
-	for (i = 0; i < numa_cap_cnt; i++) {
-		if (nid == numa_cap[i].nid) {
-			_merge_strings(&node_ptr->features,
-				       numa_cap[i].numa_cfg);
-			break;
+	if (numa_cap) {
+		for (i = 0; i < numa_cap_cnt; i++) {
+			if (nid == numa_cap[i].nid) {
+				_merge_strings(&node_ptr->features,
+					       numa_cap[i].numa_cfg);
+				break;
+			}
 		}
 	}
-	for (i = 0; i < numa_cfg_cnt; i++) {
-		if (nid == numa_cfg[i].nid) {
-			_merge_strings(&node_ptr->features_act,
-				       numa_cfg[i].numa_cfg);
-			break;
+	if (numa_cfg) {
+		for (i = 0; i < numa_cfg_cnt; i++) {
+			if (nid == numa_cfg[i].nid) {
+				_merge_strings(&node_ptr->features_act,
+					       numa_cfg[i].numa_cfg);
+				break;
+			}
 		}
 	}
 }
@@ -1041,8 +1073,8 @@ extern int init(void)
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
-		s_p_get_string(&capmc_path, "CapmcPath", tbl);
-		s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
 			default_mcdram = _knl_mcdram_parse(tmp_str, ",");
 			if (_knl_mcdram_bits_cnt(default_mcdram) != 1) {
@@ -1059,7 +1091,7 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
-		s_p_get_string(&dmidecode_path, "DmidecodePath", tbl);
+		(void) s_p_get_string(&dmidecode_path, "DmidecodePath", tbl);
 	} else {
 		error("something wrong with opening/reading knl.conf");
 	}
