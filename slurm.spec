@@ -675,9 +675,6 @@ touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
   echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
 
-LIST=./devel.files
-touch $LIST
-
 LIST=./percs.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
@@ -847,7 +844,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%files -f devel.files devel
+%files devel
 %defattr(-,root,root)
 %dir %attr(0755,root,root)
 %dir %{_prefix}/include/slurm
