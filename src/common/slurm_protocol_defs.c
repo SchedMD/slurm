@@ -193,7 +193,7 @@ static int _find_char_in_list(void *x, void *key)
 	char *char1 = (char *)x;
 	char *char2 = (char *)key;
 
-	if (!strcasecmp(char1, char2))
+	if (!xstrcasecmp(char1, char2))
 		return 1;
 
 	return 0;
@@ -1728,23 +1728,23 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	tmp_str = xstrdup(preempt_mode);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (strcasecmp(tok, "gang") == 0) {
+		if (xstrcasecmp(tok, "gang") == 0) {
 			mode_num |= PREEMPT_MODE_GANG;
-		} else if ((strcasecmp(tok, "off") == 0)
-			   || (strcasecmp(tok, "cluster") == 0)) {
+		} else if ((xstrcasecmp(tok, "off") == 0)
+			   || (xstrcasecmp(tok, "cluster") == 0)) {
 			mode_num += PREEMPT_MODE_OFF;
 			preempt_modes++;
-		} else if (strcasecmp(tok, "cancel") == 0) {
+		} else if (xstrcasecmp(tok, "cancel") == 0) {
 			mode_num += PREEMPT_MODE_CANCEL;
 			preempt_modes++;
-		} else if (strcasecmp(tok, "checkpoint") == 0) {
+		} else if (xstrcasecmp(tok, "checkpoint") == 0) {
 			mode_num += PREEMPT_MODE_CHECKPOINT;
 			preempt_modes++;
-		} else if (strcasecmp(tok, "requeue") == 0) {
+		} else if (xstrcasecmp(tok, "requeue") == 0) {
 			mode_num += PREEMPT_MODE_REQUEUE;
 			preempt_modes++;
-		} else if ((strcasecmp(tok, "on") == 0) ||
-			   (strcasecmp(tok, "suspend") == 0)) {
+		} else if ((xstrcasecmp(tok, "on") == 0) ||
+			   (xstrcasecmp(tok, "suspend") == 0)) {
 			mode_num += PREEMPT_MODE_SUSPEND;
 			preempt_modes++;
 		} else {
@@ -1800,25 +1800,25 @@ extern uint16_t log_string2num(char *name)
 	if ((name[0] >= '0') && (name[0] <= '9'))
 		return (uint16_t) atoi(name);
 
-	if (!strcasecmp(name, "quiet"))
+	if (!xstrcasecmp(name, "quiet"))
 		return (uint16_t) 0;
-	if (!strcasecmp(name, "fatal"))
+	if (!xstrcasecmp(name, "fatal"))
 		return (uint16_t) 1;
-	if (!strcasecmp(name, "error"))
+	if (!xstrcasecmp(name, "error"))
 		return (uint16_t) 2;
-	if (!strcasecmp(name, "info"))
+	if (!xstrcasecmp(name, "info"))
 		return (uint16_t) 3;
-	if (!strcasecmp(name, "verbose"))
+	if (!xstrcasecmp(name, "verbose"))
 		return (uint16_t) 4;
-	if (!strcasecmp(name, "debug"))
+	if (!xstrcasecmp(name, "debug"))
 		return (uint16_t) 5;
-	if (!strcasecmp(name, "debug2"))
+	if (!xstrcasecmp(name, "debug2"))
 		return (uint16_t) 6;
-	if (!strcasecmp(name, "debug3"))
+	if (!xstrcasecmp(name, "debug3"))
 		return (uint16_t) 7;
-	if (!strcasecmp(name, "debug4"))
+	if (!xstrcasecmp(name, "debug4"))
 		return (uint16_t) 8;
-	if (!strcasecmp(name, "debug5"))
+	if (!xstrcasecmp(name, "debug5"))
 		return (uint16_t) 9;
 
 	return (uint16_t) NO_VAL;
@@ -1921,8 +1921,8 @@ extern char *job_state_string_compact(uint32_t inx)
 
 static bool _job_name_test(uint32_t state_num, const char *state_name)
 {
-	if (!strcasecmp(state_name, job_state_string(state_num)) ||
-	    !strcasecmp(state_name, job_state_string_compact(state_num))) {
+	if (!xstrcasecmp(state_name, job_state_string(state_num)) ||
+	    !xstrcasecmp(state_name, job_state_string_compact(state_num))) {
 		return true;
 	}
 	return false;
@@ -2224,27 +2224,27 @@ extern char *bb_state_string(uint16_t state)
 /* Translate a burst buffer state string to its equivalant numeric value */
 extern uint16_t bb_state_num(char *tok)
 {
-	if (!strcasecmp(tok, "pending"))
+	if (!xstrcasecmp(tok, "pending"))
 		return BB_STATE_PENDING;
-	if (!strcasecmp(tok, "allocating"))
+	if (!xstrcasecmp(tok, "allocating"))
 		return BB_STATE_ALLOCATING;
-	if (!strcasecmp(tok, "allocated"))
+	if (!xstrcasecmp(tok, "allocated"))
 		return BB_STATE_ALLOCATED;
-	if (!strcasecmp(tok, "staging-in"))
+	if (!xstrcasecmp(tok, "staging-in"))
 		return BB_STATE_STAGING_IN;
-	if (!strcasecmp(tok, "staged-in"))
+	if (!xstrcasecmp(tok, "staged-in"))
 		return BB_STATE_STAGED_IN;
-	if (!strcasecmp(tok, "running"))
+	if (!xstrcasecmp(tok, "running"))
 		return BB_STATE_RUNNING;
-	if (!strcasecmp(tok, "suspend"))
+	if (!xstrcasecmp(tok, "suspend"))
 		return BB_STATE_SUSPEND;
-	if (!strcasecmp(tok, "staging-out"))
+	if (!xstrcasecmp(tok, "staging-out"))
 		return BB_STATE_STAGING_OUT;
-	if (!strcasecmp(tok, "staged-out"))
+	if (!xstrcasecmp(tok, "staged-out"))
 		return BB_STATE_STAGED_OUT;
-	if (!strcasecmp(tok, "teardown"))
+	if (!xstrcasecmp(tok, "teardown"))
 		return BB_STATE_TEARDOWN;
-	if (!strcasecmp(tok, "complete"))
+	if (!xstrcasecmp(tok, "complete"))
 		return BB_STATE_COMPLETE;
 	return 0;
 }
@@ -2522,7 +2522,7 @@ extern uint16_t power_flags_id(char *power_flags)
 	tmp = xstrdup(power_flags);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		if (!strcasecmp(tok, "level"))
+		if (!xstrcasecmp(tok, "level"))
 			rc |= SLURM_POWER_FLAGS_LEVEL;
 		else
 			error("Ignoring unrecognized power option (%s)", tok);
@@ -4498,17 +4498,17 @@ extern int parse_part_enforce_type(char *enforce_part_type, uint16_t *param)
 
 	char *value = xstrdup(enforce_part_type);
 
-	if (!strcasecmp(value, "yes")
-		|| !strcasecmp(value, "up")
-		|| !strcasecmp(value, "true")
-		|| !strcasecmp(value, "1") || !strcasecmp(value, "any")) {
+	if (!xstrcasecmp(value, "yes")
+		|| !xstrcasecmp(value, "up")
+		|| !xstrcasecmp(value, "true")
+		|| !xstrcasecmp(value, "1") || !xstrcasecmp(value, "any")) {
 		*param = PARTITION_ENFORCE_ANY;
-	} else if (!strcasecmp(value, "no")
-		   || !strcasecmp(value, "down")
-		   || !strcasecmp(value, "false")
-		   || !strcasecmp(value, "0")) {
+	} else if (!xstrcasecmp(value, "no")
+		   || !xstrcasecmp(value, "down")
+		   || !xstrcasecmp(value, "false")
+		   || !xstrcasecmp(value, "0")) {
 		*param = PARTITION_ENFORCE_NONE;
-	} else if (!strcasecmp(value, "all")) {
+	} else if (!xstrcasecmp(value, "all")) {
 		*param = PARTITION_ENFORCE_ALL;
 	} else {
 		error("Bad EnforcePartLimits: %s\n", value);

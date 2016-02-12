@@ -196,7 +196,8 @@ static int _addto_uid_char_list(List char_list, char *names)
 					name = _string_to_uid( name );
 
 					while ((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -224,7 +225,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 			name = _string_to_uid( name );
 
 			while ((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 
@@ -529,7 +530,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	uint32_t size = 0;
 	char *tmp_char = NULL, *tres_type;
 
-	if (!tres_str || !strcasecmp(tres_str, "cpu"))
+	if (!tres_str || !xstrcasecmp(tres_str, "cpu"))
 		tres_type = "CPUs";
 	else
 		tres_type = "TRES";

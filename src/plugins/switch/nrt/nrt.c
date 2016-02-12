@@ -704,8 +704,8 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 		/* Find the adapter that matches the one in tableinfo */
 		for (j = 0; j < node->adapter_count; j++) {
 			adapter = &node->adapter_list[j];
-			if (strcasecmp(adapter->adapter_name,
-				       tableinfo[i].adapter_name))
+			if (xstrcasecmp(adapter->adapter_name,
+					tableinfo[i].adapter_name))
 				continue;
 			for (task_id = 0; task_id < tableinfo[i].table_length;
 			     task_id++) {
@@ -1322,8 +1322,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		debug2("adapter %s at index %d",
 		       node->adapter_list[i].adapter_name, i);
 		if (adapter_name) {
-			if (!strcasecmp(node->adapter_list[i].adapter_name,
-					adapter_name)) {
+			if (!xstrcasecmp(node->adapter_list[i].adapter_name,
+					 adapter_name)) {
 				adapter = &node->adapter_list[i];
 				break;
 			}

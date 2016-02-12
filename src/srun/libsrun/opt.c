@@ -762,9 +762,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (val[0] == '\0') {
 			opt.exclusive = true;
 			opt.shared = JOB_SHARED_NONE;
-		} else if (!strcasecmp(val, "user")) {
+		} else if (!xstrcasecmp(val, "user")) {
 			opt.shared = JOB_SHARED_USER;
-		} else if (!strcasecmp(val, "mcs")) {
+		} else if (!xstrcasecmp(val, "mcs")) {
 			opt.shared = JOB_SHARED_MCS;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
@@ -1084,7 +1084,7 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.efname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -1106,7 +1106,7 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ifname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
@@ -1178,7 +1178,7 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ofname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
@@ -1253,7 +1253,7 @@ static void _set_options(const int argc, char **argv)
 		case (int)'Z':
 			opt.no_alloc = true;
 			uname(&name);
-			if (strcasecmp(name.sysname, "AIX") == 0)
+			if (xstrcasecmp(name.sysname, "AIX") == 0)
 				opt.network = xstrdup("ip");
 			break;
 		case LONG_OPT_CONT:
@@ -1271,9 +1271,9 @@ static void _set_options(const int argc, char **argv)
 			if (optarg == NULL) {
 				opt.exclusive = true;
 				opt.shared = JOB_SHARED_NONE;
-			} else if (!strcasecmp(optarg, "user")) {
+			} else if (!xstrcasecmp(optarg, "user")) {
 				opt.shared = JOB_SHARED_USER;
-			} else if (!strcasecmp(optarg, "mcs")) {
+			} else if (!xstrcasecmp(optarg, "mcs")) {
 				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
@@ -1694,8 +1694,8 @@ static void _set_options(const int argc, char **argv)
 			opt.time_min_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES:
-			if (!strcasecmp(optarg, "help") ||
-			    !strcasecmp(optarg, "list")) {
+			if (!xstrcasecmp(optarg, "help") ||
+			    !xstrcasecmp(optarg, "list")) {
 				print_gres_help();
 				exit(0);
 			}
@@ -2831,7 +2831,7 @@ static void _help(void)
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
-	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
+	    && xstrcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
 "      --cpu_bind=             Bind tasks to CPUs\n"
 "                              (see \"--cpu_bind=help\" for options)\n"

@@ -828,8 +828,8 @@ static int _get_tres_id(char *type, char *name)
 static int _get_tres_base_unit(char *tres_type)
 {
 	int ret_unit = UNIT_NONE;
-	if ((!strcasecmp(tres_type, "mem")) ||
-	    (!strcasecmp(tres_type, "bb"))) {
+	if ((!xstrcasecmp(tres_type, "mem")) ||
+	    (!xstrcasecmp(tres_type, "bb"))) {
 		ret_unit = UNIT_MEGA;
 	}
 
@@ -1690,10 +1690,10 @@ int slurm_get_is_association_based_accounting(void)
 		return 1;
 	} else {
 		conf = slurm_conf_lock();
-		if (!strcasecmp(conf->accounting_storage_type,
-			       "accounting_storage/slurmdbd") ||
-		    !strcasecmp(conf->accounting_storage_type,
-				"accounting_storage/mysql"))
+		if (!xstrcasecmp(conf->accounting_storage_type,
+				 "accounting_storage/slurmdbd") ||
+		    !xstrcasecmp(conf->accounting_storage_type,
+				 "accounting_storage/mysql"))
 			enforce = 1;
 		slurm_conf_unlock();
 	}
@@ -2506,7 +2506,7 @@ bool is_cray_select_type(void)
 	if (slurmdbd_conf) {
 	} else {
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		result = strcasecmp(conf->select_type, "select/cray") == 0;
+		result = xstrcasecmp(conf->select_type, "select/cray") == 0;
 		slurm_conf_unlock();
 	}
 	return result;

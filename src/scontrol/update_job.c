@@ -885,7 +885,7 @@ scontrol_update_job (int argc, char *argv[])
 			int min_nodes, max_nodes, rc;
 			if (xstrcmp(val, "0") == 0) {
 				job_msg.min_nodes = 0;
-			} else if (strcasecmp(val, "ALL") == 0) {
+			} else if (xstrcasecmp(val, "ALL") == 0) {
 				job_msg.min_nodes = INFINITE;
 			} else {
 				min_nodes = (int) job_msg.min_nodes;
@@ -1074,8 +1074,8 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
-			if (!strcasecmp(val, "help") ||
-			    !strcasecmp(val, "list")) {
+			if (!xstrcasecmp(val, "help") ||
+			    !xstrcasecmp(val, "list")) {
 				print_gres_help();
 			} else {
 				job_msg.gres = val;

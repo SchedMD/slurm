@@ -158,7 +158,7 @@ static s_p_values_t *_conf_hashtbl_lookup(
 
 	idx = _conf_hashtbl_index(key);
 	for (p = hashtbl[idx]; p != NULL; p = p->next) {
-		if (strcasecmp(p->key, key) == 0)
+		if (xstrcasecmp(p->key, key) == 0)
 			return p;
 	}
 	return NULL;

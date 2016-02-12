@@ -1090,7 +1090,7 @@ static void _run_srun_epilog (srun_job_t *job)
 {
 	int rc;
 
-	if (opt.epilog && strcasecmp(opt.epilog, "none") != 0) {
+	if (opt.epilog && xstrcasecmp(opt.epilog, "none") != 0) {
 		rc = _run_srun_script(job, opt.epilog);
 		debug("srun epilog rc = %d", rc);
 	}
@@ -1100,7 +1100,7 @@ static void _run_srun_prolog (srun_job_t *job)
 {
 	int rc;
 
-	if (opt.prolog && strcasecmp(opt.prolog, "none") != 0) {
+	if (opt.prolog && xstrcasecmp(opt.prolog, "none") != 0) {
 		rc = _run_srun_script(job, opt.prolog);
 		debug("srun prolog rc = %d", rc);
 	}

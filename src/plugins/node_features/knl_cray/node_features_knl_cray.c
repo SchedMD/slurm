@@ -308,11 +308,11 @@ static uint16_t _knl_mcdram_token(char *token)
 {
 	uint16_t mcdram_num = 0;
 
-	if (!strcasecmp(token, "cache"))
+	if (!xstrcasecmp(token, "cache"))
 		mcdram_num = KNL_CACHE;
-	else if (!strcasecmp(token, "flat"))
+	else if (!xstrcasecmp(token, "flat"))
 		mcdram_num = KNL_FLAT;
-	else if (!strcasecmp(token, "equal"))
+	else if (!xstrcasecmp(token, "equal"))
 		mcdram_num = KNL_EQUAL;
 
 	return mcdram_num;
@@ -401,15 +401,15 @@ static uint16_t _knl_numa_token(char *token)
 {
 	uint16_t numa_num = 0;
 
-	if (!strcasecmp(token, "a2a"))
+	if (!xstrcasecmp(token, "a2a"))
 		numa_num |= KNL_ALL2ALL;
-	else if (!strcasecmp(token, "snc2"))
+	else if (!xstrcasecmp(token, "snc2"))
 		numa_num |= KNL_SNC2;
-	else if (!strcasecmp(token, "snc4"))
+	else if (!xstrcasecmp(token, "snc4"))
 		numa_num |= KNL_SNC4;
-	else if (!strcasecmp(token, "hemi"))
+	else if (!xstrcasecmp(token, "hemi"))
 		numa_num |= KNL_HEMI;
-	else if (!strcasecmp(token, "quad"))
+	else if (!xstrcasecmp(token, "quad"))
 		numa_num |= KNL_QUAD;
 
 	return numa_num;

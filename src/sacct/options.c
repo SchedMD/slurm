@@ -140,7 +140,8 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 					name = _convert_to_id( name, gid );
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -168,7 +169,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 			name = _convert_to_id(name, gid);
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 
@@ -225,7 +226,8 @@ static int _addto_state_char_list(List char_list, char *names)
 					name = xstrdup_printf("%d", c);
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -257,7 +259,7 @@ static int _addto_state_char_list(List char_list, char *names)
 			name = xstrdup_printf("%d", c);
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 
@@ -580,7 +582,7 @@ void parse_command_line(int argc, char **argv)
 			   everything else.
 			*/
 		case 'M':
-			if (!strcasecmp(optarg, "-1")) {
+			if (!xstrcasecmp(optarg, "-1")) {
 				all_clusters = 1;
 				break;
 			}

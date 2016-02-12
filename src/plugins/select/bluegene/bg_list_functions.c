@@ -124,7 +124,7 @@ extern bg_record_t *find_bg_record_in_list(List my_list,
 	itr = list_iterator_create(my_list);
 	while ((bg_record = list_next(itr))) {
 		if (bg_record->bg_block_id && (bg_record->magic == BLOCK_MAGIC))
-			if (!strcasecmp(bg_record->bg_block_id, bg_block_id))
+			if (!xstrcasecmp(bg_record->bg_block_id, bg_block_id))
 				break;
 	}
 	list_iterator_destroy(itr);

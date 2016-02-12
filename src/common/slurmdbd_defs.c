@@ -859,171 +859,171 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
 	if (!msg_type) {
 		return NO_VAL;
-	} else if (!strcasecmp(msg_type, "Init")) {
+	} else if (!xstrcasecmp(msg_type, "Init")) {
 		return DBD_INIT;
-	} else if (!strcasecmp(msg_type, "Fini")) {
+	} else if (!xstrcasecmp(msg_type, "Fini")) {
 		return DBD_FINI;
-	} else if (!strcasecmp(msg_type, "Add Accounts")) {
+	} else if (!xstrcasecmp(msg_type, "Add Accounts")) {
 		return DBD_ADD_ACCOUNTS;
-	} else if (!strcasecmp(msg_type, "Add Account Coord")) {
+	} else if (!xstrcasecmp(msg_type, "Add Account Coord")) {
 		return DBD_ADD_ACCOUNT_COORDS;
-	} else if (!strcasecmp(msg_type, "Add TRES")) {
+	} else if (!xstrcasecmp(msg_type, "Add TRES")) {
 		return DBD_ADD_TRES;
-	} else if (!strcasecmp(msg_type, "Add Associations")) {
+	} else if (!xstrcasecmp(msg_type, "Add Associations")) {
 		return DBD_ADD_ASSOCS;
-	} else if (!strcasecmp(msg_type, "Add Clusters")) {
+	} else if (!xstrcasecmp(msg_type, "Add Clusters")) {
 		return DBD_ADD_CLUSTERS;
-	} else if (!strcasecmp(msg_type, "Add Resources")) {
+	} else if (!xstrcasecmp(msg_type, "Add Resources")) {
 		return DBD_ADD_RES;
-	} else if (!strcasecmp(msg_type, "Add Users")) {
+	} else if (!xstrcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
-	} else if (!strcasecmp(msg_type, "Cluster TRES")) {
+	} else if (!xstrcasecmp(msg_type, "Cluster TRES")) {
 		return DBD_CLUSTER_TRES;
-	} else if (!strcasecmp(msg_type, "Flush Jobs")) {
+	} else if (!xstrcasecmp(msg_type, "Flush Jobs")) {
 		return DBD_FLUSH_JOBS;
-	} else if (!strcasecmp(msg_type, "Get Accounts")) {
+	} else if (!xstrcasecmp(msg_type, "Get Accounts")) {
 		return DBD_GET_ACCOUNTS;
-	} else if (!strcasecmp(msg_type, "Get TRES")) {
+	} else if (!xstrcasecmp(msg_type, "Get TRES")) {
 		return DBD_GET_TRES;
-	} else if (!strcasecmp(msg_type, "Get Associations")) {
+	} else if (!xstrcasecmp(msg_type, "Get Associations")) {
 		return DBD_GET_ASSOCS;
-	} else if (!strcasecmp(msg_type, "Get Association Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Get Association Usage")) {
 		return DBD_GET_ASSOC_USAGE;
-	} else if (!strcasecmp(msg_type, "Get Clusters")) {
+	} else if (!xstrcasecmp(msg_type, "Get Clusters")) {
 		return DBD_GET_CLUSTERS;
-	} else if (!strcasecmp(msg_type, "Get Cluster Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Get Cluster Usage")) {
 		return DBD_GET_CLUSTER_USAGE;
-	} else if (!strcasecmp(msg_type, "Get Events")) {
+	} else if (!xstrcasecmp(msg_type, "Get Events")) {
 		return DBD_GET_EVENTS;
-	} else if (!strcasecmp(msg_type, "Reconfigure")) {
+	} else if (!xstrcasecmp(msg_type, "Reconfigure")) {
 		return DBD_RECONFIG;
-	} else if (!strcasecmp(msg_type, "Get Problems")) {
+	} else if (!xstrcasecmp(msg_type, "Get Problems")) {
 		return DBD_GET_PROBS;
-	} else if (!strcasecmp(msg_type, "Get Resources")) {
+	} else if (!xstrcasecmp(msg_type, "Get Resources")) {
 		return DBD_GET_RES;
-	} else if (!strcasecmp(msg_type, "Get Users")) {
+	} else if (!xstrcasecmp(msg_type, "Get Users")) {
 		return DBD_GET_USERS;
-	} else if (!strcasecmp(msg_type, "Got Accounts")) {
+	} else if (!xstrcasecmp(msg_type, "Got Accounts")) {
 		return DBD_GOT_ACCOUNTS;
-	} else if (!strcasecmp(msg_type, "Got TRES")) {
+	} else if (!xstrcasecmp(msg_type, "Got TRES")) {
 		return DBD_GOT_TRES;
-	} else if (!strcasecmp(msg_type, "Got Associations")) {
+	} else if (!xstrcasecmp(msg_type, "Got Associations")) {
 		return DBD_GOT_ASSOCS;
-	} else if (!strcasecmp(msg_type, "Got Association Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Got Association Usage")) {
 		return DBD_GOT_ASSOC_USAGE;
-	} else if (!strcasecmp(msg_type, "Got Clusters")) {
+	} else if (!xstrcasecmp(msg_type, "Got Clusters")) {
 		return DBD_GOT_CLUSTERS;
-	} else if (!strcasecmp(msg_type, "Got Cluster Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Got Cluster Usage")) {
 		return DBD_GOT_CLUSTER_USAGE;
-	} else if (!strcasecmp(msg_type, "Got Events")) {
+	} else if (!xstrcasecmp(msg_type, "Got Events")) {
 		return DBD_GOT_EVENTS;
-	} else if (!strcasecmp(msg_type, "Got Jobs")) {
+	} else if (!xstrcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
-	} else if (!strcasecmp(msg_type, "Got List")) {
+	} else if (!xstrcasecmp(msg_type, "Got List")) {
 		return DBD_GOT_LIST;
-	} else if (!strcasecmp(msg_type, "Got Problems")) {
+	} else if (!xstrcasecmp(msg_type, "Got Problems")) {
 		return DBD_GOT_PROBS;
-	} else if (!strcasecmp(msg_type, "Got Resources")) {
+	} else if (!xstrcasecmp(msg_type, "Got Resources")) {
 		return DBD_GOT_RES;
-	} else if (!strcasecmp(msg_type, "Got Users")) {
+	} else if (!xstrcasecmp(msg_type, "Got Users")) {
 		return DBD_GOT_USERS;
-	} else if (!strcasecmp(msg_type, "Job Complete")) {
+	} else if (!xstrcasecmp(msg_type, "Job Complete")) {
 		return DBD_JOB_COMPLETE;
-	} else if (!strcasecmp(msg_type, "Job Start")) {
+	} else if (!xstrcasecmp(msg_type, "Job Start")) {
 		return DBD_JOB_START;
-	} else if (!strcasecmp(msg_type, "ID RC")) {
+	} else if (!xstrcasecmp(msg_type, "ID RC")) {
 		return DBD_ID_RC;
-	} else if (!strcasecmp(msg_type, "Job Suspend")) {
+	} else if (!xstrcasecmp(msg_type, "Job Suspend")) {
 		return DBD_JOB_SUSPEND;
-	} else if (!strcasecmp(msg_type, "Modify Accounts")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Accounts")) {
 		return DBD_MODIFY_ACCOUNTS;
-	} else if (!strcasecmp(msg_type, "Modify Associations")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Associations")) {
 		return DBD_MODIFY_ASSOCS;
-	} else if (!strcasecmp(msg_type, "Modify Clusters")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
-	} else if (!strcasecmp(msg_type, "Modify Job")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Job")) {
 		return DBD_MODIFY_JOB;
-	} else if (!strcasecmp(msg_type, "Modify QOS")) {
+	} else if (!xstrcasecmp(msg_type, "Modify QOS")) {
 		return DBD_MODIFY_QOS;
-	} else if (!strcasecmp(msg_type, "Modify Resources")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Resources")) {
 		return DBD_MODIFY_RES;
-	} else if (!strcasecmp(msg_type, "Modify Users")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Users")) {
 		return DBD_MODIFY_USERS;
-	} else if (!strcasecmp(msg_type, "Node State")) {
+	} else if (!xstrcasecmp(msg_type, "Node State")) {
 		return DBD_NODE_STATE;
-	} else if (!strcasecmp(msg_type, "RC")) {
+	} else if (!xstrcasecmp(msg_type, "RC")) {
 		return DBD_RC;
-	} else if (!strcasecmp(msg_type, "Register Cluster")) {
+	} else if (!xstrcasecmp(msg_type, "Register Cluster")) {
 		return DBD_REGISTER_CTLD;
-	} else if (!strcasecmp(msg_type, "Remove Accounts")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Accounts")) {
 		return DBD_REMOVE_ACCOUNTS;
-	} else if (!strcasecmp(msg_type, "Remove Account Coords")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Account Coords")) {
 		return DBD_REMOVE_ACCOUNT_COORDS;
-	} else if (!strcasecmp(msg_type, "Archive Dump")) {
+	} else if (!xstrcasecmp(msg_type, "Archive Dump")) {
 		return DBD_ARCHIVE_DUMP;
-	} else if (!strcasecmp(msg_type, "Archive Load")) {
+	} else if (!xstrcasecmp(msg_type, "Archive Load")) {
 		return DBD_ARCHIVE_LOAD;
-	} else if (!strcasecmp(msg_type, "Remove Associations")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Associations")) {
 		return DBD_REMOVE_ASSOCS;
-	} else if (!strcasecmp(msg_type, "Remove Clusters")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Clusters")) {
 		return DBD_REMOVE_CLUSTERS;
-	} else if (!strcasecmp(msg_type, "Remove Resources")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Resources")) {
 		return DBD_REMOVE_RES;
-	} else if (!strcasecmp(msg_type, "Remove Users")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Users")) {
 		return DBD_REMOVE_USERS;
-	} else if (!strcasecmp(msg_type, "Roll Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Roll Usage")) {
 		return DBD_ROLL_USAGE;
-	} else if (!strcasecmp(msg_type, "Step Complete")) {
+	} else if (!xstrcasecmp(msg_type, "Step Complete")) {
 		return DBD_STEP_COMPLETE;
-	} else if (!strcasecmp(msg_type, "Step Start")) {
+	} else if (!xstrcasecmp(msg_type, "Step Start")) {
 		return DBD_STEP_START;
-	} else if (!strcasecmp(msg_type, "Get Jobs Conditional")) {
+	} else if (!xstrcasecmp(msg_type, "Get Jobs Conditional")) {
 		return DBD_GET_JOBS_COND;
-	} else if (!strcasecmp(msg_type, "Get Transations")) {
+	} else if (!xstrcasecmp(msg_type, "Get Transations")) {
 		return DBD_GET_TXN;
-	} else if (!strcasecmp(msg_type, "Got Transations")) {
+	} else if (!xstrcasecmp(msg_type, "Got Transations")) {
 		return DBD_GOT_TXN;
-	} else if (!strcasecmp(msg_type, "Add QOS")) {
+	} else if (!xstrcasecmp(msg_type, "Add QOS")) {
 		return DBD_ADD_QOS;
-	} else if (!strcasecmp(msg_type, "Get QOS")) {
+	} else if (!xstrcasecmp(msg_type, "Get QOS")) {
 		return DBD_GET_QOS;
-	} else if (!strcasecmp(msg_type, "Got QOS")) {
+	} else if (!xstrcasecmp(msg_type, "Got QOS")) {
 		return DBD_GOT_QOS;
-	} else if (!strcasecmp(msg_type, "Remove QOS")) {
+	} else if (!xstrcasecmp(msg_type, "Remove QOS")) {
 		return DBD_REMOVE_QOS;
-	} else if (!strcasecmp(msg_type, "Add WCKeys")) {
+	} else if (!xstrcasecmp(msg_type, "Add WCKeys")) {
 		return DBD_ADD_WCKEYS;
-	} else if (!strcasecmp(msg_type, "Get WCKeys")) {
+	} else if (!xstrcasecmp(msg_type, "Get WCKeys")) {
 		return DBD_GET_WCKEYS;
-	} else if (!strcasecmp(msg_type, "Got WCKeys")) {
+	} else if (!xstrcasecmp(msg_type, "Got WCKeys")) {
 		return DBD_GOT_WCKEYS;
-	} else if (!strcasecmp(msg_type, "Remove WCKeys")) {
+	} else if (!xstrcasecmp(msg_type, "Remove WCKeys")) {
 		return DBD_REMOVE_WCKEYS;
-	} else if (!strcasecmp(msg_type, "Get WCKey Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Get WCKey Usage")) {
 		return DBD_GET_WCKEY_USAGE;
-	} else if (!strcasecmp(msg_type, "Got WCKey Usage")) {
+	} else if (!xstrcasecmp(msg_type, "Got WCKey Usage")) {
 		return DBD_GOT_WCKEY_USAGE;
-	} else if (!strcasecmp(msg_type, "Add Reservation")) {
+	} else if (!xstrcasecmp(msg_type, "Add Reservation")) {
 		return DBD_ADD_RESV;
-	} else if (!strcasecmp(msg_type, "Remove Reservation")) {
+	} else if (!xstrcasecmp(msg_type, "Remove Reservation")) {
 		return DBD_REMOVE_RESV;
-	} else if (!strcasecmp(msg_type, "Modify Reservation")) {
+	} else if (!xstrcasecmp(msg_type, "Modify Reservation")) {
 		return DBD_MODIFY_RESV;
-	} else if (!strcasecmp(msg_type, "Get Reservations")) {
+	} else if (!xstrcasecmp(msg_type, "Get Reservations")) {
 		return DBD_GET_RESVS;
-	} else if (!strcasecmp(msg_type, "Got Reservations")) {
+	} else if (!xstrcasecmp(msg_type, "Got Reservations")) {
 		return DBD_GOT_RESVS;
-	} else if (!strcasecmp(msg_type, "Get Config")) {
+	} else if (!xstrcasecmp(msg_type, "Get Config")) {
 		return DBD_GET_CONFIG;
-	} else if (!strcasecmp(msg_type, "Got Config")) {
+	} else if (!xstrcasecmp(msg_type, "Got Config")) {
 		return DBD_GOT_CONFIG;
-	} else if (!strcasecmp(msg_type, "Send Multiple Job Starts")) {
+	} else if (!xstrcasecmp(msg_type, "Send Multiple Job Starts")) {
 		return DBD_SEND_MULT_JOB_START;
-	} else if (!strcasecmp(msg_type, "Got Multiple Job Starts")) {
+	} else if (!xstrcasecmp(msg_type, "Got Multiple Job Starts")) {
 		return DBD_GOT_MULT_JOB_START;
-	} else if (!strcasecmp(msg_type, "Send Multiple Messages")) {
+	} else if (!xstrcasecmp(msg_type, "Send Multiple Messages")) {
 		return DBD_SEND_MULT_MSG;
-	} else if (!strcasecmp(msg_type, "Got Multiple Message Returns")) {
+	} else if (!xstrcasecmp(msg_type, "Got Multiple Message Returns")) {
 		return DBD_GOT_MULT_MSG;
 	} else {
 		return NO_VAL;

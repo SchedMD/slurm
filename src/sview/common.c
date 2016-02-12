@@ -1248,10 +1248,10 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 
 			break;
 		case G_TYPE_STRING:
-			if (!strcasecmp(display_data[i].name, "Node Count")
-			    || !strcasecmp(display_data[i].name, "CPU Count")
-			    || !strcasecmp(display_data[i].name, "Real Memory")
-			    || !strcasecmp(display_data[i].name, "Tmp Disk")) {
+			if (!xstrcasecmp(display_data[i].name, "Node Count")
+			    || !xstrcasecmp(display_data[i].name, "CPU Count")
+			    || !xstrcasecmp(display_data[i].name, "Real Memory")
+			    || !xstrcasecmp(display_data[i].name, "Tmp Disk")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore),
 					display_data[i].id,
@@ -1259,8 +1259,8 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 					GINT_TO_POINTER(display_data[i].id),
 					NULL);
 				break;
-			} else if (!strcasecmp(display_data[i].name,
-					       "MidplaneList")) {
+			} else if (!xstrcasecmp(display_data[i].name,
+						"MidplaneList")) {
 				gtk_tree_sortable_set_sort_func(
 					GTK_TREE_SORTABLE(treestore),
 					display_data[i].id,

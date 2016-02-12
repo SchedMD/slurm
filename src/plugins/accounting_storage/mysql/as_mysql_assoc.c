@@ -1286,7 +1286,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
-				if (!strcasecmp(coord->name, account))
+				if (!xstrcasecmp(coord->name, account))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -1347,7 +1347,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				row[MASSOC_USER]);
 		} else {
 			if (assoc->parent_acct) {
-				if (!strcasecmp(row[MASSOC_ACCT],
+				if (!xstrcasecmp(row[MASSOC_ACCT],
 						assoc->parent_acct)) {
 					error("You can't make an account be a "
 					      "child of it's self");
@@ -1742,7 +1742,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 			}
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
-				if (!strcasecmp(coord->name,
+				if (!xstrcasecmp(coord->name,
 						row[RASSOC_ACCT]))
 					break;
 			}
@@ -2349,7 +2349,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				account = object->parent_acct;
 			list_iterator_reset(itr2);
 			while ((coord = list_next(itr2))) {
-				if (!strcasecmp(coord->name, account))
+				if (!xstrcasecmp(coord->name, account))
 					break;
 			}
 			if (!coord)
@@ -2496,8 +2496,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * while.
 			 */
 			if (!old_parent || !old_cluster
-			    || strcasecmp(parent, old_parent)
-			    || strcasecmp(object->cluster, old_cluster)) {
+			    || xstrcasecmp(parent, old_parent)
+			    || xstrcasecmp(object->cluster, old_cluster)) {
 				char *sel_query = xstrdup_printf(
 					"SELECT lft FROM \"%s_%s\" WHERE "
 					"acct = '%s' and user = '' "
@@ -2627,8 +2627,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			 */
 			assoc_id = slurm_atoul(row[AASSOC_ID]);
 			if (object->parent_acct
-			    && strcasecmp(object->parent_acct,
-					  row[AASSOC_PACCT])) {
+			    && xstrcasecmp(object->parent_acct,
+					   row[AASSOC_PACCT])) {
 
 				/* We need to move the parent! */
 				if (_move_parent(mysql_conn, uid,

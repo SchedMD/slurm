@@ -487,10 +487,10 @@ static char **_build_user_env(void)
 	tok = strtok_r(tmp_env, ",", &save_ptr);
 	while (tok) {
 
-		if (strcasecmp(tok, "ALL") == 0)
+		if (xstrcasecmp(tok, "ALL") == 0)
 			all = true;
 
-		if (!strcasecmp(tok, "NONE"))
+		if (!xstrcasecmp(tok, "NONE"))
 			break;
 		eq_ptr = strchr(tok, '=');
 		if (eq_ptr) {

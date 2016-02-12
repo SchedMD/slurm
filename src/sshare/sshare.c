@@ -364,7 +364,8 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 					}
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -397,7 +398,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			}
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 

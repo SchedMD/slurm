@@ -340,19 +340,19 @@ static double* _energy_get_series_values(char* data_name, void* data, int nsmp)
 		info("PROFILE: Failed to get memory for energy data");
 		return NULL;
 	}
-	if (strcasecmp(data_name,"Time") == 0) {
+	if (xstrcasecmp(data_name,"Time") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			energy_values[ix] = (double) energy_series[ix].time;
 
 		}
 		return energy_values;
-	} else if (strcasecmp(data_name,"Power") == 0) {
+	} else if (xstrcasecmp(data_name,"Power") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			energy_values[ix] = (double) energy_series[ix].power;
 
 		}
 		return energy_values;
-	} else if (strcasecmp(data_name,"CPU_Frequency") == 0) {
+	} else if (xstrcasecmp(data_name,"CPU_Frequency") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			energy_values[ix] = (double) energy_series[ix].cpu_freq;
 
@@ -619,31 +619,31 @@ static double* _io_get_series_values(char* data_name, void* data, int nsmp)
 		info("PROFILE: Failed to get memory for io data");
 		return NULL;
 	}
-	if (strcasecmp(data_name,"Time") == 0) {
+	if (xstrcasecmp(data_name,"Time") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			io_values[ix] = (double) io_series[ix].time;
 
 		}
 		return io_values;
-	} else if (strcasecmp(data_name,"Reads") == 0) {
+	} else if (xstrcasecmp(data_name,"Reads") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			io_values[ix] = (double) io_series[ix].reads;
 
 		}
 		return io_values;
-	} else if (strcasecmp(data_name,"Megabytes_Read") == 0) {
+	} else if (xstrcasecmp(data_name,"Megabytes_Read") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			io_values[ix] = io_series[ix].read_size;
 
 		}
 		return io_values;
-	} else if (strcasecmp(data_name,"Writes") == 0) {
+	} else if (xstrcasecmp(data_name,"Writes") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			io_values[ix] = (double) io_series[ix].writes;
 
 		}
 		return io_values;
-	} else if (strcasecmp(data_name,"Megabytes_Write") == 0) {
+	} else if (xstrcasecmp(data_name,"Megabytes_Write") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			io_values[ix] = io_series[ix].write_size;
 
@@ -940,33 +940,33 @@ static double* _network_get_series_values(char* data_name, void* data, int nsmp)
 		info("PROFILE: Failed to get memory for network data");
 		return NULL;
 	}
-	if (strcasecmp(data_name,"Time") == 0) {
+	if (xstrcasecmp(data_name,"Time") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			network_values[ix] = (double) network_series[ix].time;
 
 		}
 		return network_values;
-	} else if (strcasecmp(data_name,"Packets_In") == 0) {
+	} else if (xstrcasecmp(data_name,"Packets_In") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			network_values[ix] =
 					(double) network_series[ix].packets_in;
 
 		}
 		return network_values;
-	} else if (strcasecmp(data_name,"Megabytes_In") == 0) {
+	} else if (xstrcasecmp(data_name,"Megabytes_In") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			network_values[ix] = network_series[ix].size_in;
 
 		}
 		return network_values;
-	} else if (strcasecmp(data_name,"Packets_Out") == 0) {
+	} else if (xstrcasecmp(data_name,"Packets_Out") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			network_values[ix] =
 					(double) network_series[ix].packets_out;
 
 		}
 		return network_values;
-	} else if (strcasecmp(data_name,"Megabytes_Out") == 0) {
+	} else if (xstrcasecmp(data_name,"Megabytes_Out") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			network_values[ix] = network_series[ix].size_out;
 
@@ -1294,55 +1294,55 @@ static double* _task_get_series_values(char* data_name, void* data, int nsmp)
 		info("PROFILE: Failed to get memory for task data");
 		return NULL;
 	}
-	if (strcasecmp(data_name,"Time") == 0) {
+	if (xstrcasecmp(data_name,"Time") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].time;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"CPU_Frequency") == 0) {
+	} else if (xstrcasecmp(data_name,"CPU_Frequency") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].cpu_freq;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"CPU_Time") == 0) {
+	} else if (xstrcasecmp(data_name,"CPU_Time") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].cpu_time;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"CPU_Utilization") == 0) {
+	} else if (xstrcasecmp(data_name,"CPU_Utilization") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = task_series[ix].cpu_utilization;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"RSS") == 0) {
+	} else if (xstrcasecmp(data_name,"RSS") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].rss;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"VM_Size") == 0) {
+	} else if (xstrcasecmp(data_name,"VM_Size") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].vm_size;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"Pages") == 0) {
+	} else if (xstrcasecmp(data_name,"Pages") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = (double) task_series[ix].pages;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"Read_Megabytes") == 0) {
+	} else if (xstrcasecmp(data_name,"Read_Megabytes") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = task_series[ix].read_size;
 
 		}
 		return task_values;
-	} else if (strcasecmp(data_name,"Write_Megabytes") == 0) {
+	} else if (xstrcasecmp(data_name,"Write_Megabytes") == 0) {
 		for (ix=0; ix < nsmp; ix++) {
 			task_values[ix] = task_series[ix].write_size;
 

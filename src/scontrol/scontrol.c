@@ -557,7 +557,7 @@ _print_daemons (void)
 	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
 		if ((xstrcmp(b, me) == 0) ||
-		    (strcasecmp(b, "localhost") == 0))
+		    (xstrcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
 	if (conf->control_machine) {
@@ -566,7 +566,7 @@ _print_daemons (void)
 		token = strtok_r(c, ",", &save_ptr);
 		while (token) {
 			if ((xstrcmp(token, me) == 0) ||
-			    (strcasecmp(token, "localhost") == 0)) {
+			    (xstrcasecmp(token, "localhost") == 0)) {
 				ctld = 1;
 				break;
 			}
@@ -1126,7 +1126,7 @@ _process_command (int argc, char *argv[])
 				"debug5", NULL};
 			int index = 0;
 			while (levels[index]) {
-				if (strcasecmp(argv[1], levels[index]) == 0) {
+				if (xstrcasecmp(argv[1], levels[index]) == 0) {
 					level = index;
 					break;
 				}
@@ -1177,7 +1177,7 @@ _process_command (int argc, char *argv[])
 				"disable", "enable", NULL};
 			int index = 0;
 			while (levels[index]) {
-				if (strcasecmp(argv[1], levels[index]) == 0) {
+				if (xstrcasecmp(argv[1], levels[index]) == 0) {
 					level = index;
 					break;
 				}

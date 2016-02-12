@@ -347,13 +347,14 @@ static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 		send_reply(new_fd, send_buf);
 	} else {
 		//identify the cmd
-		if (0 == strcasecmp(msg, "get total nodes and slots")) {
+		if (0 == xstrcasecmp(msg, "get total nodes and slots")) {
 			get_total_nodes_slots(&nodes, &slots);
 			sprintf(send_buf, "total_nodes=%d total_slots=%d",
 				nodes, slots);
 			info("BBB: send to client: %s", send_buf);
 			send_reply(new_fd, send_buf);
-		} else if (0 == strcasecmp(msg, "get available nodes and slots")) {
+		} else if (0 == xstrcasecmp(msg,
+					    "get available nodes and slots")) {
 			get_free_nodes_slots(&nodes, &slots);
 			sprintf(send_buf, "avail_nodes=%d avail_slots=%d",
 				nodes, slots);

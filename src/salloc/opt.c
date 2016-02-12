@@ -496,7 +496,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		 */
 		if (val[0] == '\0') {
 			*((bool *)e->arg) = true;
-		} else if (strcasecmp(val, "yes") == 0) {
+		} else if (xstrcasecmp(val, "yes") == 0) {
 			*((bool *)e->arg) = true;
 		} else if ((strtol(val, &end, 10) != 0)
 			   && end != val) {
@@ -559,9 +559,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
 			opt.shared = JOB_SHARED_NONE;
-		} else if (!strcasecmp(val, "user")) {
+		} else if (!xstrcasecmp(val, "user")) {
 			opt.shared = JOB_SHARED_USER;
-		} else if (!strcasecmp(val, "mcs")) {
+		} else if (!xstrcasecmp(val, "mcs")) {
 			opt.shared = JOB_SHARED_MCS;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
@@ -940,9 +940,9 @@ void set_options(const int argc, char **argv)
                 case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
 				opt.shared = JOB_SHARED_NONE;
-			} else if (!strcasecmp(optarg, "user")) {
+			} else if (!xstrcasecmp(optarg, "user")) {
 				opt.shared = JOB_SHARED_USER;
-			} else if (!strcasecmp(optarg, "mcs")) {
+			} else if (!xstrcasecmp(optarg, "mcs")) {
 				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
@@ -1227,8 +1227,8 @@ void set_options(const int argc, char **argv)
 			opt.time_min_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES:
-			if (!strcasecmp(optarg, "help") ||
-			    !strcasecmp(optarg, "list")) {
+			if (!xstrcasecmp(optarg, "help") ||
+			    !xstrcasecmp(optarg, "list")) {
 				print_gres_help();
 				exit(0);
 			}
@@ -2109,7 +2109,7 @@ static void _help(void)
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
-	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
+	    && xstrcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"

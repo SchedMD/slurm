@@ -221,7 +221,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 			/* This means the uid isn't set in one of the
 			 * associations, so use the name instead
 			 */
-			if (strcasecmp(assoc->user, assoc_ptr->user)) {
+			if (xstrcasecmp(assoc->user, assoc_ptr->user)) {
 				debug3("%s: 2 not the right user %u != %u",
 				       __func__, assoc->uid, assoc_ptr->uid);
 				goto next;
@@ -234,7 +234,7 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 
 		if (assoc->acct &&
 		    (!assoc_ptr->acct
-		     || strcasecmp(assoc->acct, assoc_ptr->acct))) {
+		     || xstrcasecmp(assoc->acct, assoc_ptr->acct))) {
 			debug3("%s: not the right account %s != %s",
 			       __func__, assoc->acct, assoc_ptr->acct);
 			goto next;
@@ -243,15 +243,15 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 		/* only check for on the slurmdbd */
 		if (!assoc_mgr_cluster_name && assoc->cluster
 		    && (!assoc_ptr->cluster
-			|| strcasecmp(assoc->cluster, assoc_ptr->cluster))) {
+			|| xstrcasecmp(assoc->cluster, assoc_ptr->cluster))) {
 			debug3("%s: not the right cluster", __func__);
 			goto next;
 		}
 
 		if (assoc->partition
 		    && (!assoc_ptr->partition
-			|| strcasecmp(assoc->partition,
-				      assoc_ptr->partition))) {
+			|| xstrcasecmp(assoc->partition,
+				       assoc_ptr->partition))) {
 			debug3("%s: not the right partition", __func__);
 			goto next;
 		}
@@ -1058,7 +1058,7 @@ static int _post_res_list(List res_list)
 					/* only update the local clusters
 					 * res, only one per res
 					 * record, so throw the others away. */
-					if (!strcasecmp(object->clus_res_rec->
+					if (!xstrcasecmp(object->clus_res_rec->
 							cluster,
 							assoc_mgr_cluster_name))
 						break;
@@ -2132,11 +2132,10 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 			if (tres->id == found_tres->id)
 				break;
 		} else if ((tres->type
-			    && !strcasecmp(tres->type, found_tres->type))
+			    && !xstrcasecmp(tres->type, found_tres->type))
 			   && ((!tres->name && !found_tres->name)
 			       || ((tres->name && found_tres->name) &&
-				   !strcasecmp(tres->name,
-					       found_tres->name))))
+				   !xstrcasecmp(tres->name, found_tres->name))))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2408,7 +2407,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 			if (user->uid == found_user->uid)
 				break;
 		} else if (user->name
-			   && !strcasecmp(user->name, found_user->name))
+			   && !xstrcasecmp(user->name, found_user->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2492,7 +2491,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	while ((found_qos = list_next(itr))) {
 		if (qos->id == found_qos->id)
 			break;
-		else if (qos->name && !strcasecmp(qos->name, found_qos->name))
+		else if (qos->name && !xstrcasecmp(qos->name, found_qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2693,14 +2692,14 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 					       wckey->uid, found_wckey->uid);
 					continue;
 				}
-			} else if (wckey->user && strcasecmp(wckey->user,
-							     found_wckey->user))
+			} else if (wckey->user &&
+				   xstrcasecmp(wckey->user, found_wckey->user))
 				continue;
 
 			if (wckey->name
 			    && (!found_wckey->name
-				|| strcasecmp(wckey->name,
-					      found_wckey->name))) {
+				|| xstrcasecmp(wckey->name,
+					       found_wckey->name))) {
 				debug4("not the right name %s != %s",
 				       wckey->name, found_wckey->name);
 				continue;
@@ -2716,8 +2715,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				}
 
 				if (found_wckey->cluster
-				    && strcasecmp(wckey->cluster,
-						  found_wckey->cluster)) {
+				    && xstrcasecmp(wckey->cluster,
+						   found_wckey->cluster)) {
 					debug4("not the right cluster");
 					continue;
 				}
@@ -2909,7 +2908,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	while ((assoc = list_next(itr))) {
 		if (user_itr && assoc->user) {
 			while ((tmp_char = list_next(user_itr))) {
-				if (!strcasecmp(tmp_char, assoc->user))
+				if (!xstrcasecmp(tmp_char, assoc->user))
 					break;
 			}
 			list_iterator_reset(user_itr);
@@ -2920,7 +2919,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 		if (acct_itr) {
 			while ((tmp_char = list_next(acct_itr))) {
-				if (!strcasecmp(tmp_char, assoc->acct))
+				if (!xstrcasecmp(tmp_char, assoc->acct))
 					break;
 			}
 			list_iterator_reset(acct_itr);
@@ -2951,8 +2950,8 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 				itr = list_iterator_create(user.coord_accts);
 				while ((coord = list_next(itr))) {
-					if (!strcasecmp(coord->name,
-							assoc->acct))
+					if (!xstrcasecmp(coord->name,
+							 assoc->acct))
 						break;
 				}
 				list_iterator_destroy(itr);
@@ -3155,8 +3154,8 @@ extern void assoc_mgr_info_get_pack_msg(
 
 				itr = list_iterator_create(user.coord_accts);
 				while ((coord = list_next(itr))) {
-					if (!strcasecmp(coord->name,
-							assoc_rec->acct))
+					if (!xstrcasecmp(coord->name,
+							 assoc_rec->acct))
 						break;
 				}
 				list_iterator_destroy(itr);
@@ -3425,8 +3424,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		bool update_jobs = false;
 		if (object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
-			if (strcasecmp(object->cluster,
-				       assoc_mgr_cluster_name)) {
+			if (xstrcasecmp(object->cluster,
+					assoc_mgr_cluster_name)) {
 				slurmdb_destroy_assoc_rec(object);
 				continue;
 			}
@@ -3867,8 +3866,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 	while ((object = list_pop(update->objects))) {
 		if (object->cluster && assoc_mgr_cluster_name) {
 			/* only update the local clusters assocs */
-			if (strcasecmp(object->cluster,
-				       assoc_mgr_cluster_name)) {
+			if (xstrcasecmp(object->cluster,
+					assoc_mgr_cluster_name)) {
 				slurmdb_destroy_wckey_rec(object);
 				continue;
 			}
@@ -3893,8 +3892,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 
 				if (object->name
 				    && (!rec->name
-					|| strcasecmp(object->name,
-						      rec->name))) {
+					|| xstrcasecmp(object->name,
+						       rec->name))) {
 					debug4("not the right wckey");
 					continue;
 				}
@@ -3902,8 +3901,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				/* only check for on the slurmdbd */
 				if (!assoc_mgr_cluster_name && object->cluster
 				    && (!rec->cluster
-					|| strcasecmp(object->cluster,
-						      rec->cluster))) {
+					|| xstrcasecmp(object->cluster,
+						       rec->cluster))) {
 					debug4("not the right cluster");
 					continue;
 				}
@@ -3996,7 +3995,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				name = object->old_name;
 			else
 				name = object->name;
-			if (!strcasecmp(name, rec->name))
+			if (!xstrcasecmp(name, rec->name))
 				break;
 		}
 

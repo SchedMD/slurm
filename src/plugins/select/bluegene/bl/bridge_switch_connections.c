@@ -155,7 +155,7 @@ static int _get_switches_by_mpid(
 			continue;
 		}
 
-		if (!strcasecmp((char *)mpid, (char *)curr_mpid)) {
+		if (!xstrcasecmp((char *)mpid, (char *)curr_mpid)) {
 			coord_switch[found_mpid] = curr_switch;
 			found_mpid++;
 			if (found_mpid==SYSTEM_DIMENSIONS) {

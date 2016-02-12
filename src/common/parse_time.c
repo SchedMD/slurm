@@ -781,9 +781,9 @@ extern int time_str2secs(const char *string)
 	if ((string == NULL) || (string[0] == '\0'))
 		return NO_VAL;	/* invalid input */
 
-	if ((!strcasecmp(string, "-1"))
-	    || (!strcasecmp(string, "INFINITE"))
-	    || (!strcasecmp(string, "UNLIMITED"))) {
+	if ((!xstrcasecmp(string, "-1"))
+	    || (!xstrcasecmp(string, "INFINITE"))
+	    || (!xstrcasecmp(string, "UNLIMITED"))) {
 		return INFINITE;
 	}
 

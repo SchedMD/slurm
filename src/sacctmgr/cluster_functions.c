@@ -282,7 +282,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 			list_iterator_reset(itr);
 			while((cluster_rec = list_next(itr))) {
-				if (!strcasecmp(cluster_rec->name, name))
+				if (!xstrcasecmp(cluster_rec->name, name))
 					break;
 			}
 			if (cluster_rec) {

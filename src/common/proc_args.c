@@ -303,70 +303,70 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 		}
 
 		if (lllp_dist) {
-			if (strcasecmp(outstr, "cyclic:cyclic") == 0) {
+			if (xstrcasecmp(outstr, "cyclic:cyclic") == 0) {
 				result = SLURM_DIST_CYCLIC_CYCLIC;
-			} else if (strcasecmp(outstr, "cyclic:block") == 0) {
+			} else if (xstrcasecmp(outstr, "cyclic:block") == 0) {
 				result = SLURM_DIST_CYCLIC_BLOCK;
-			} else if (strcasecmp(outstr, "block:block") == 0) {
+			} else if (xstrcasecmp(outstr, "block:block") == 0) {
 				result = SLURM_DIST_BLOCK_BLOCK;
-			} else if (strcasecmp(outstr, "block:cyclic") == 0) {
+			} else if (xstrcasecmp(outstr, "block:cyclic") == 0) {
 				result = SLURM_DIST_BLOCK_CYCLIC;
-			} else if (strcasecmp(outstr, "block:fcyclic") == 0) {
+			} else if (xstrcasecmp(outstr, "block:fcyclic") == 0) {
 				result = SLURM_DIST_BLOCK_CFULL;
-			} else if (strcasecmp(outstr, "cyclic:fcyclic") == 0) {
+			} else if (xstrcasecmp(outstr, "cyclic:fcyclic") == 0) {
 				result = SLURM_DIST_CYCLIC_CFULL;
-			} else if (strcasecmp(outstr, "cyclic:cyclic:cyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:cyclic:cyclic")
 				   == 0) {
 				result = SLURM_DIST_CYCLIC_CYCLIC_CYCLIC;
-			} else if (strcasecmp(outstr, "cyclic:cyclic:block")
+			} else if (xstrcasecmp(outstr, "cyclic:cyclic:block")
 				   == 0) {
 				result = SLURM_DIST_CYCLIC_CYCLIC_BLOCK;
-			} else if (strcasecmp(outstr, "cyclic:cyclic:fcyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:cyclic:fcyclic")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_CYCLIC_CFULL;
-			} else if (strcasecmp(outstr, "cyclic:block:cyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:block:cyclic")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_BLOCK_CYCLIC;
-			} else if (strcasecmp(outstr, "cyclic:block:block")
+			} else if (xstrcasecmp(outstr, "cyclic:block:block")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_BLOCK_BLOCK;
-			} else if (strcasecmp(outstr, "cyclic:block:fcyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:block:fcyclic")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_BLOCK_CFULL;
-			} else if (strcasecmp(outstr, "cyclic:fcyclic:cyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:fcyclic:cyclic")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_CFULL_CYCLIC;
-			} else if (strcasecmp(outstr, "cyclic:fcyclic:block")
+			} else if (xstrcasecmp(outstr, "cyclic:fcyclic:block")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_CFULL_BLOCK;
-			} else if (strcasecmp(outstr, "cyclic:fcyclic:fcyclic")
+			} else if (xstrcasecmp(outstr, "cyclic:fcyclic:fcyclic")
 				== 0) {
 				result = SLURM_DIST_CYCLIC_CFULL_CFULL;
-			} else if (strcasecmp(outstr, "block:cyclic:cyclic")
+			} else if (xstrcasecmp(outstr, "block:cyclic:cyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CYCLIC_CYCLIC;
-			} else if (strcasecmp(outstr, "block:cyclic:block")
+			} else if (xstrcasecmp(outstr, "block:cyclic:block")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CYCLIC_BLOCK;
-			} else if (strcasecmp(outstr, "block:cyclic:fcyclic")
+			} else if (xstrcasecmp(outstr, "block:cyclic:fcyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CYCLIC_CFULL;
-			} else if (strcasecmp(outstr, "block:block:cyclic")
+			} else if (xstrcasecmp(outstr, "block:block:cyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_BLOCK_CYCLIC;
-			} else if (strcasecmp(outstr, "block:block:block")
+			} else if (xstrcasecmp(outstr, "block:block:block")
 				== 0) {
 				result = SLURM_DIST_BLOCK_BLOCK_BLOCK;
-			} else if (strcasecmp(outstr, "block:block:fcyclic")
+			} else if (xstrcasecmp(outstr, "block:block:fcyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_BLOCK_CFULL;
-			} else if (strcasecmp(outstr, "block:fcyclic:cyclic")
+			} else if (xstrcasecmp(outstr, "block:fcyclic:cyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CFULL_CYCLIC;
-			} else if (strcasecmp(outstr, "block:fcyclic:block")
+			} else if (xstrcasecmp(outstr, "block:fcyclic:block")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CFULL_BLOCK;
-			} else if (strcasecmp(outstr, "block:fcyclic:fcyclic")
+			} else if (xstrcasecmp(outstr, "block:fcyclic:fcyclic")
 				== 0) {
 				result = SLURM_DIST_BLOCK_CFULL_CFULL;
 			}
@@ -927,7 +927,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
-		if (strcasecmp(tok, "help") == 0) {
+		if (xstrcasecmp(tok, "help") == 0) {
 			printf(
 "Application hint options:\n"
 "    --hint=             Bind tasks according to application hints\n"
@@ -936,18 +936,18 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 "        [no]multithread [don't] use extra threads with in-core multi-threading\n"
 "        help            show this help message\n");
 			return 1;
-		} else if (strcasecmp(tok, "compute_bound") == 0) {
+		} else if (xstrcasecmp(tok, "compute_bound") == 0) {
 			*min_sockets = NO_VAL;
 			*min_cores   = NO_VAL;
 			*min_threads = 1;
 			if (cpu_bind_type)
 				*cpu_bind_type |= CPU_BIND_TO_CORES;
-		} else if (strcasecmp(tok, "memory_bound") == 0) {
+		} else if (xstrcasecmp(tok, "memory_bound") == 0) {
 			*min_cores   = 1;
 			*min_threads = 1;
 			if (cpu_bind_type)
 				*cpu_bind_type |= CPU_BIND_TO_CORES;
-		} else if (strcasecmp(tok, "multithread") == 0) {
+		} else if (xstrcasecmp(tok, "multithread") == 0) {
 			*min_threads = NO_VAL;
 			if (cpu_bind_type) {
 				*cpu_bind_type |= CPU_BIND_TO_THREADS;
@@ -956,7 +956,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 			}
 			if (*ntasks_per_core == NO_VAL)
 				*ntasks_per_core = INFINITE;
-		} else if (strcasecmp(tok, "nomultithread") == 0) {
+		} else if (xstrcasecmp(tok, "nomultithread") == 0) {
 			*min_threads = 1;
 			if (cpu_bind_type) {
 				*cpu_bind_type |= CPU_BIND_TO_THREADS;
@@ -988,29 +988,29 @@ uint16_t parse_mail_type(const char *arg)
 	buf = xstrdup(arg);
 	tok = strtok_r(buf, ",", &save_ptr);
 	while (tok) {
-		if (strcasecmp(tok, "NONE") == 0) {
+		if (xstrcasecmp(tok, "NONE") == 0) {
 			rc = 0;
 			break;
-		} else if (strcasecmp(tok, "BEGIN") == 0)
+		} else if (xstrcasecmp(tok, "BEGIN") == 0)
 			rc |= MAIL_JOB_BEGIN;
-		else if  (strcasecmp(tok, "END") == 0)
+		else if  (xstrcasecmp(tok, "END") == 0)
 			rc |= MAIL_JOB_END;
-		else if (strcasecmp(tok, "FAIL") == 0)
+		else if (xstrcasecmp(tok, "FAIL") == 0)
 			rc |= MAIL_JOB_FAIL;
-		else if (strcasecmp(tok, "REQUEUE") == 0)
+		else if (xstrcasecmp(tok, "REQUEUE") == 0)
 			rc |= MAIL_JOB_REQUEUE;
-		else if (strcasecmp(tok, "ALL") == 0)
+		else if (xstrcasecmp(tok, "ALL") == 0)
 			rc |= MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL |
 			      MAIL_JOB_REQUEUE | MAIL_JOB_STAGE_OUT;
-		else if (!strcasecmp(tok, "STAGE_OUT"))
+		else if (!xstrcasecmp(tok, "STAGE_OUT"))
 			rc |= MAIL_JOB_STAGE_OUT;
-		else if (strcasecmp(tok, "TIME_LIMIT") == 0)
+		else if (xstrcasecmp(tok, "TIME_LIMIT") == 0)
 			rc |= MAIL_JOB_TIME100;
-		else if (strcasecmp(tok, "TIME_LIMIT_90") == 0)
+		else if (xstrcasecmp(tok, "TIME_LIMIT_90") == 0)
 			rc |= MAIL_JOB_TIME90;
-		else if (strcasecmp(tok, "TIME_LIMIT_80") == 0)
+		else if (xstrcasecmp(tok, "TIME_LIMIT_80") == 0)
 			rc |= MAIL_JOB_TIME80;
-		else if (strcasecmp(tok, "TIME_LIMIT_50") == 0)
+		else if (xstrcasecmp(tok, "TIME_LIMIT_50") == 0)
 			rc |= MAIL_JOB_TIME50;
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
@@ -1401,7 +1401,7 @@ void print_db_notok(const char *cname, bool isenv)
 		      "%s or contact your admin to resolve the problem.",
 		      isenv ? "SLURM_CLUSTERS from your environment" :
 		      "--cluster from your command line");
-	else if (!strcasecmp("all", cname))
+	else if (!xstrcasecmp("all", cname))
 		error("No clusters can be reached now. "
 		      "Contact your admin to resolve the problem.");
 	else

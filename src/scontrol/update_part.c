@@ -100,8 +100,8 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		}
 		else if (strncasecmp(tag, "MaxCPUsPerNode", MAX(taglen, 4))
 			  == 0) {
-			if ((strcasecmp(val,"UNLIMITED") == 0) ||
-			    (strcasecmp(val,"INFINITE") == 0)) {
+			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
+			    (xstrcasecmp(val,"INFINITE") == 0)) {
 				part_msg_ptr->max_cpus_per_node =
 					(uint32_t) INFINITE;
 			} else if (parse_uint32(val, &part_msg_ptr->
@@ -112,8 +112,8 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (strncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
-			if ((strcasecmp(val,"UNLIMITED") == 0) ||
-			    (strcasecmp(val,"INFINITE") == 0))
+			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
+			    (xstrcasecmp(val,"INFINITE") == 0))
 				part_msg_ptr->max_nodes = (uint32_t) INFINITE;
 			else {
 				min = 1;
@@ -448,7 +448,7 @@ scontrol_create_part (int argc, char *argv[])
 		exit_code = 1;
 		error("PartitionName must be given.");
 		return 0;
-	} else if (strcasecmp(part_msg.name, "default") == 0) {
+	} else if (xstrcasecmp(part_msg.name, "default") == 0) {
 		exit_code = 1;
 		error("PartitionName cannot be \"DEFAULT\".");
 		return 0;

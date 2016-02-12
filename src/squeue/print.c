@@ -2437,7 +2437,7 @@ static int _filter_job(job_info_t * job)
 		iterator = list_iterator_create(params.account_list);
 		while ((account = list_next(iterator))) {
 			 if ((job->account != NULL) &&
-			     (strcasecmp(account, job->account) == 0)) {
+			     (xstrcasecmp(account, job->account) == 0)) {
 				filter = 0;
 				break;
 			}
@@ -2452,7 +2452,7 @@ static int _filter_job(job_info_t * job)
 		iterator = list_iterator_create(params.qos_list);
 		while ((qos = list_next(iterator))) {
 			 if ((job->qos != NULL) &&
-			     (strcasecmp(qos, job->qos) == 0)) {
+			     (xstrcasecmp(qos, job->qos) == 0)) {
 				filter = 0;
 				break;
 			}
@@ -2520,7 +2520,7 @@ static int _filter_job(job_info_t * job)
 		iterator = list_iterator_create(params.name_list);
 		while ((name = list_next(iterator))) {
 			if ((job->name != NULL) &&
-			     (strcasecmp(name, job->name) == 0)) {
+			     (xstrcasecmp(name, job->name) == 0)) {
 				filter = 0;
 				break;
 			}

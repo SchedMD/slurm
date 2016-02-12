@@ -261,9 +261,9 @@ static uint32_t _parse_watts(char * watts_str)
 	uint32_t watts_num = 0;
 	char *end_ptr = NULL;
 
-	if (!strcasecmp(watts_str, "n/a") || !strcasecmp(watts_str, "none"))
+	if (!xstrcasecmp(watts_str, "n/a") || !xstrcasecmp(watts_str, "none"))
 		return watts_num;
-	if (!strcasecmp(watts_str, "INFINITE"))
+	if (!xstrcasecmp(watts_str, "INFINITE"))
 		return INFINITE;
 	watts_num = strtol(watts_str, &end_ptr, 10);
 	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
@@ -300,7 +300,7 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		break;
 	case SORTID_ACTION:
 		xfree(got_edit_signal);
-		if (!strcasecmp(new_text, "None"))
+		if (!xstrcasecmp(new_text, "None"))
 			got_edit_signal = NULL;
 		else
 			got_edit_signal = xstrdup(new_text);
@@ -1603,7 +1603,7 @@ static void _admin_resv(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	resv_msg->name = xstrdup(resvid);
 
-	if (!strcasecmp("Remove Reservation", type)) {
+	if (!xstrcasecmp("Remove Reservation", type)) {
 		resv_name_msg.name = resvid;
 
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),

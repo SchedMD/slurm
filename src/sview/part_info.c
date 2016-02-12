@@ -408,9 +408,9 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 0;
 		break;
 	case SORTID_NODE_STATE:
-		if (!strcasecmp(temp_char, "drain"))
+		if (!xstrcasecmp(temp_char, "drain"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "resume"))
+		else if (!xstrcasecmp(temp_char, "resume"))
 			action = 1;
 		else
 			for(i = 0; i < NODE_STATE_END; i++) {
@@ -420,7 +420,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 					continue;
 				}
 
-				if (!strcasecmp(temp_char, upper)) {
+				if (!xstrcasecmp(temp_char, upper)) {
 					action = i + 2 - unknown_found;
 					break;
 				}
@@ -428,15 +428,15 @@ static void _set_active_combo_part(GtkComboBox *combo,
 
 		break;
 	case SORTID_PREEMPT_MODE:
-		if (!strcasecmp(temp_char, "cancel"))
+		if (!xstrcasecmp(temp_char, "cancel"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "checkpoint"))
+		else if (!xstrcasecmp(temp_char, "checkpoint"))
 			action = 1;
-		else if (!strcasecmp(temp_char, "off"))
+		else if (!xstrcasecmp(temp_char, "off"))
 			action = 2;
-		else if (!strcasecmp(temp_char, "requeue"))
+		else if (!xstrcasecmp(temp_char, "requeue"))
 			action = 3;
-		else if (!strcasecmp(temp_char, "suspend"))
+		else if (!xstrcasecmp(temp_char, "suspend"))
 			action = 4;
 		else
 			action = 2;	/* off */
@@ -514,20 +514,20 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->alternate = xstrdup(new_text);
 		break;
 	case SORTID_DEFAULT:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			part_msg->flags |= PART_FLAG_DEFAULT;
 			part_msg->flags &= (~PART_FLAG_DEFAULT_CLR);
-		} else if (!strcasecmp(new_text, "no")) {
+		} else if (!xstrcasecmp(new_text, "no")) {
 			part_msg->flags &= (~PART_FLAG_DEFAULT);
 			part_msg->flags |= PART_FLAG_DEFAULT_CLR;
 		}
 		type = "default";
 		break;
 	case SORTID_EXCLUSIVE_USER:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			part_msg->flags |= PART_FLAG_EXCLUSIVE_USER;
 			part_msg->flags &= (~PART_FLAG_EXC_USER_CLR);
-		} else if (!strcasecmp(new_text, "no")) {
+		} else if (!xstrcasecmp(new_text, "no")) {
 			part_msg->flags &= (~PART_FLAG_EXCLUSIVE_USER);
 			part_msg->flags |= PART_FLAG_EXC_USER_CLR;
 		}
@@ -542,17 +542,17 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->grace_time = (uint32_t)(temp_int * 60);
 		break;
 	case SORTID_HIDDEN:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			part_msg->flags |= PART_FLAG_HIDDEN;
 			part_msg->flags &= (~PART_FLAG_HIDDEN_CLR);
-		} else if (!strcasecmp(new_text, "no")) {
+		} else if (!xstrcasecmp(new_text, "no")) {
 			part_msg->flags &= (~PART_FLAG_HIDDEN);
 			part_msg->flags |= PART_FLAG_HIDDEN_CLR;
 		}
 		type = "hidden";
 		break;
 	case SORTID_TIMELIMIT:
-		if ((strcasecmp(new_text, "infinite") == 0))
+		if ((xstrcasecmp(new_text, "infinite") == 0))
 			temp_int = INFINITE;
 		else
 			temp_int = time_str2mins((char *)new_text);
@@ -563,15 +563,15 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->max_time = (uint32_t)temp_int;
 		break;
 	case SORTID_PREEMPT_MODE:
-		if (!strcasecmp(new_text, "cancel"))
+		if (!xstrcasecmp(new_text, "cancel"))
 			part_msg->preempt_mode = PREEMPT_MODE_CANCEL;
-		else if (!strcasecmp(new_text, "checkpoint"))
+		else if (!xstrcasecmp(new_text, "checkpoint"))
 			part_msg->preempt_mode = PREEMPT_MODE_CHECKPOINT;
-		else if (!strcasecmp(new_text, "off"))
+		else if (!xstrcasecmp(new_text, "off"))
 			part_msg->preempt_mode = PREEMPT_MODE_OFF;
-		else if (!strcasecmp(new_text, "requeue"))
+		else if (!xstrcasecmp(new_text, "requeue"))
 			part_msg->preempt_mode = PREEMPT_MODE_REQUEUE;
-		else if (!strcasecmp(new_text, "suspend"))
+		else if (!xstrcasecmp(new_text, "suspend"))
 			part_msg->preempt_mode = PREEMPT_MODE_SUSPEND;
 		type = "preempt_mode";
 		break;
@@ -601,7 +601,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->min_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_NODES_MAX:
-		if (!strcasecmp(new_text, "infinite")) {
+		if (!xstrcasecmp(new_text, "infinite")) {
 			temp_int = INFINITE;
 		} else {
 			temp_int = strtol(new_text, &temp_char, 10);
@@ -617,10 +617,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_ROOT:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			part_msg->flags |= PART_FLAG_ROOT_ONLY;
 			part_msg->flags &= (~PART_FLAG_ROOT_ONLY_CLR);
-		} else if (!strcasecmp(new_text, "no")) {
+		} else if (!xstrcasecmp(new_text, "no")) {
 			part_msg->flags &= (~PART_FLAG_ROOT_ONLY);
 			part_msg->flags |= PART_FLAG_ROOT_ONLY_CLR;
 		}
@@ -628,14 +628,14 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "root";
 		break;
 	case SORTID_SHARE:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			part_msg->max_share = _set_part_share_popup();
-		} else if (!strcasecmp(new_text, "exclusive")) {
+		} else if (!xstrcasecmp(new_text, "exclusive")) {
 			part_msg->max_share = 0;
-		} else if (!strcasecmp(new_text, "force")) {
+		} else if (!xstrcasecmp(new_text, "force")) {
 			part_msg->max_share =
 				_set_part_share_popup() | SHARED_FORCE;
-		} else if (!strcasecmp(new_text, "no"))
+		} else if (!xstrcasecmp(new_text, "no"))
 			part_msg->max_share = 1;
 		else
 			goto return_error;
@@ -670,13 +670,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "nodelist";
 		break;
 	case SORTID_PART_STATE:
-		if (!strcasecmp(new_text, "up"))
+		if (!xstrcasecmp(new_text, "up"))
 			part_msg->state_up = PARTITION_UP;
-		else if (!strcasecmp(new_text, "down"))
+		else if (!xstrcasecmp(new_text, "down"))
 			part_msg->state_up = PARTITION_DOWN;
-		else if (!strcasecmp(new_text, "inactive"))
+		else if (!xstrcasecmp(new_text, "inactive"))
 			part_msg->state_up = PARTITION_INACTIVE;
-		else if (!strcasecmp(new_text, "drain"))
+		else if (!xstrcasecmp(new_text, "drain"))
 			part_msg->state_up = PARTITION_DRAIN;
 		else
 			goto return_error;
@@ -3066,7 +3066,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 
 	part_msg->name = xstrdup(partid);
 
-	if (!strcasecmp("Change Partition State", type)) {
+	if (!xstrcasecmp("Change Partition State", type)) {
 		GtkCellRenderer *renderer = NULL;
 		GtkTreeModel *model2 = GTK_TREE_MODEL(
 			create_model_part(SORTID_PART_STATE));
@@ -3102,7 +3102,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			 partid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_PART_STATE;
-	} else if (!strcasecmp("Remove Partition", type)) {
+	} else if (!xstrcasecmp("Remove Partition", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -3114,7 +3114,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			 partid);
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_REMOVE_PART;
-	} else if (!strcasecmp("Edit Partition", type)) {
+	} else if (!xstrcasecmp("Edit Partition", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);

@@ -202,7 +202,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	xfree(query);
 	while ((row = mysql_fetch_row(result))) {
 		// row[2] is the key name
-		if (!strcasecmp(row[2], "PRIMARY"))
+		if (!xstrcasecmp(row[2], "PRIMARY"))
 			old_primary = 1;
 		else if (!old_index)
 			old_index = xstrdup(row[2]);

@@ -1003,9 +1003,9 @@ extern int state_str2int(const char *state_str, char *node_name)
 	int i;
 
 	for (i = 0; i <= NODE_STATE_END; i++) {
-		if (strcasecmp(node_state_string(i), "END") == 0)
+		if (xstrcasecmp(node_state_string(i), "END") == 0)
 			break;
-		if (strcasecmp(node_state_string(i), state_str) == 0) {
+		if (xstrcasecmp(node_state_string(i), state_str) == 0) {
 			state_val = i;
 			break;
 		}

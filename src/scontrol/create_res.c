@@ -186,7 +186,7 @@ static int _is_configured_tres(char *type)
 	}
 
 	for (i = 0; i < msg->tres_cnt; ++i) {
-		if (!strcasecmp(msg->tres_names[i], type)) {
+		if (!xstrcasecmp(msg->tres_names[i], type)) {
 			slurm_free_assoc_mgr_info_msg(msg);
 			return SLURM_SUCCESS;
 		}
@@ -235,7 +235,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		if (_is_configured_tres(compound) < 0)
 			goto error;
 
-		if (!strcasecmp(type, "license")) {
+		if (!xstrcasecmp(type, "license")) {
 			if (tres_license && tres_license[0] != '\0')
 				xstrcatchar(tres_license, ',');
 			xstrfmtcat(tres_license, "%s:%s", name, value_str);
@@ -243,7 +243,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 			if (tmp)
 				xfree(tmp);
 
-		} else if (strcasecmp(type, "bb") == 0) {
+		} else if (xstrcasecmp(type, "bb") == 0) {
 			if (tres_bb && tres_bb[0] != '\0')
 				xstrcatchar(tres_bb, ',');
 			xstrfmtcat(tres_bb, "%s:%s", name, value_str);
@@ -251,7 +251,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 			if (tmp)
 				xfree(tmp);
 
-		} else if (strcasecmp(type, "cpu") == 0) {
+		} else if (xstrcasecmp(type, "cpu") == 0) {
 			first = true;
 			discard = false;
 			do {
@@ -280,7 +280,7 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 				}
 			} while (!discard && token);
 
-		} else if (strcasecmp(type, "node") == 0) {
+		} else if (xstrcasecmp(type, "node") == 0) {
 			if (tres_nodecnt && tres_nodecnt[0] != '\0')
 				xstrcatchar(tres_nodecnt, ',');
 			xstrcat(tres_nodecnt, value_str);
@@ -615,7 +615,7 @@ scontrol_create_res(int argc, char *argv[])
 	 * only allocate all of the nodes the partition.
 	 */
 	if ((resv_msg.partition != NULL) && (resv_msg.node_list != NULL) &&
-	    (strcasecmp(resv_msg.node_list, "ALL") == 0)) {
+	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0)) {
 		if (resv_msg.flags == NO_VAL)
 			resv_msg.flags = RESERVE_FLAG_PART_NODES;
 		else
@@ -627,7 +627,7 @@ scontrol_create_res(int argc, char *argv[])
 	 * flag is set make sure a partition name is specified.
 	 */
 	if ((resv_msg.partition == NULL) && (resv_msg.node_list != NULL) &&
-	    (strcasecmp(resv_msg.node_list, "ALL") == 0) &&
+	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0) &&
 	    (resv_msg.flags != NO_VAL) &&
 	    (resv_msg.flags & RESERVE_FLAG_PART_NODES)) {
 		exit_code = 1;

@@ -1139,18 +1139,18 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_assoc_from_list(
 	while((assoc = list_next(itr))) {
 		if (((!user && assoc->user)
 		     || (user && (!assoc->user
-				  || strcasecmp(user, assoc->user))))
+				  || xstrcasecmp(user, assoc->user))))
 		    || (account && (!assoc->acct
-				    || strcasecmp(account, assoc->acct)))
+				    || xstrcasecmp(account, assoc->acct)))
 		    || ((!cluster && assoc->cluster)
 			|| (cluster && (!assoc->cluster
-					|| strcasecmp(cluster,
-						      assoc->cluster)))))
+					|| xstrcasecmp(cluster,
+						       assoc->cluster)))))
 			continue;
 		else if (partition) {
 			if (partition[0] != '*'
 			    && (!assoc->partition
-				|| strcasecmp(partition, assoc->partition)))
+				|| xstrcasecmp(partition, assoc->partition)))
 				continue;
 		} else if (assoc->partition)
 			continue;
@@ -1180,8 +1180,8 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc_from_list(
 	while((assoc = list_next(itr))) {
 		/* info("is it %s %s %s", assoc->user, assoc->acct, assoc->cluster); */
 		if (assoc->user
-		    || strcasecmp(temp, assoc->acct)
-		    || strcasecmp(cluster, assoc->cluster))
+		    || xstrcasecmp(temp, assoc->acct)
+		    || xstrcasecmp(cluster, assoc->cluster))
 			continue;
 		/* 	info("found it"); */
 		break;
@@ -1208,7 +1208,7 @@ extern slurmdb_qos_rec_t *sacctmgr_find_qos_from_list(
 
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if (!strcasecmp(working_name, qos->name))
+		if (!xstrcasecmp(working_name, qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1230,8 +1230,8 @@ extern slurmdb_res_rec_t *sacctmgr_find_res_from_list(
 	while ((res = list_next(itr))) {
 		if ((id == res->id)
 		    || (name && server
-			&& !strcasecmp(server, res->server)
-			&& !strcasecmp(name, res->name)))
+			&& !xstrcasecmp(server, res->server)
+			&& !xstrcasecmp(name, res->name)))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1250,7 +1250,7 @@ extern slurmdb_user_rec_t *sacctmgr_find_user_from_list(
 
 	itr = list_iterator_create(user_list);
 	while((user = list_next(itr))) {
-		if (!strcasecmp(name, user->name))
+		if (!xstrcasecmp(name, user->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1270,7 +1270,7 @@ extern slurmdb_account_rec_t *sacctmgr_find_account_from_list(
 
 	itr = list_iterator_create(acct_list);
 	while((account = list_next(itr))) {
-		if (!strcasecmp(name, account->name))
+		if (!xstrcasecmp(name, account->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1290,7 +1290,7 @@ extern slurmdb_cluster_rec_t *sacctmgr_find_cluster_from_list(
 
 	itr = list_iterator_create(cluster_list);
 	while((cluster = list_next(itr))) {
-		if (!strcasecmp(name, cluster->name))
+		if (!xstrcasecmp(name, cluster->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -1311,13 +1311,13 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	while((wckey = list_next(itr))) {
 		if (((!user && wckey->user)
 		     || (user && (!wckey->user
-				  || strcasecmp(user, wckey->user))))
+				  || xstrcasecmp(user, wckey->user))))
 		    || (name && (!wckey->name
-				 || strcasecmp(name, wckey->name)))
+				 || xstrcasecmp(name, wckey->name)))
 		    || ((!cluster && wckey->cluster)
 			|| (cluster && (!wckey->cluster
-					|| strcasecmp(cluster,
-						      wckey->cluster)))))
+					|| xstrcasecmp(cluster,
+						       wckey->cluster)))))
 			continue;
 		break;
 	}
@@ -1468,7 +1468,8 @@ extern int addto_action_char_list(List char_list, char *names)
 
 					name = xstrdup_printf("%u", id);
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 					list_iterator_reset(itr);
@@ -1506,7 +1507,7 @@ extern int addto_action_char_list(List char_list, char *names)
 
 			name = xstrdup_printf("%u", id);
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 
@@ -2002,7 +2003,7 @@ extern int sacctmgr_validate_cluster_list(List cluster_list)
 
 		list_iterator_reset(itr);
 		while ((cluster_rec = list_next(itr))) {
-			if (!strcasecmp(cluster_rec->name, cluster))
+			if (!xstrcasecmp(cluster_rec->name, cluster))
 				break;
 		}
 		if (!cluster_rec) {

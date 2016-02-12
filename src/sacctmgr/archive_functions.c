@@ -93,7 +93,8 @@ extern int _addto_uid_char_list(List char_list, char *names)
 					name = _string_to_uid( name );
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -121,7 +122,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 			name = _string_to_uid( name );
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 

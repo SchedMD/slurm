@@ -890,24 +890,24 @@ extern int update_state_block(GtkDialog *dialog,
 	gtk_dialog_add_button(dialog,
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	if (!strcasecmp("Error", type) ||
-	    !strcasecmp("Put block in error state", type)) {
+	if (!xstrcasecmp("Error", type) ||
+	    !xstrcasecmp("Put block in error state", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to put block %s "
 			 "in an error state?",
 			 blockid);
 		block_msg.state = BG_BLOCK_ERROR_FLAG;
-	} else if (!strcasecmp("Recreate block", type)) {
+	} else if (!xstrcasecmp("Recreate block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to recreate block %s?",
 			 blockid);
 		block_msg.state = BG_BLOCK_BOOTING;
-	} else if (!strcasecmp("Remove block", type)) {
+	} else if (!xstrcasecmp("Remove block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to remove block %s?",
 			 blockid);
 		block_msg.state = BG_BLOCK_NAV;
-	} else if (!strcasecmp("Resume block", type)) {
+	} else if (!xstrcasecmp("Resume block", type)) {
 		snprintf(tmp_char, sizeof(tmp_char),
 			 "Are you sure you want to resume block %s?",
 			 blockid);

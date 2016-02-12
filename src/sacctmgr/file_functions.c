@@ -1695,8 +1695,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		}
 		start++;
 
-		if (!strcasecmp("Machine", object)
-		    || !strcasecmp("Cluster", object)) {
+		if (!xstrcasecmp("Machine", object)
+		    || !xstrcasecmp("Cluster", object)) {
 			slurmdb_assoc_cond_t assoc_cond;
 
 			if (cluster_name && !cluster_name_set) {
@@ -1885,7 +1885,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			break;
 		}
 
-		if (!strcasecmp("Parent", object)) {
+		if (!xstrcasecmp("Parent", object)) {
 			file_opts = _parse_options(line+start);
 			xfree(parent);
 
@@ -1918,8 +1918,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			       "before any children in your file\n");
 		}
 
-		if (!strcasecmp("Project", object)
-		    || !strcasecmp("Account", object)) {
+		if (!xstrcasecmp("Project", object)
+		    || !xstrcasecmp("Account", object)) {
 			file_opts = _parse_options(line+start);
 
 			if (!file_opts) {
@@ -2011,7 +2011,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			}
 			_destroy_sacctmgr_file_opts(file_opts);
 			continue;
-		} else if (!strcasecmp("User", object)) {
+		} else if (!xstrcasecmp("User", object)) {
 			file_opts = _parse_options(line+start);
 
 			if (!file_opts) {

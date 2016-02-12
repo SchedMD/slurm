@@ -249,11 +249,11 @@ extern char *resolve_mp(char *desc, node_info_msg_t *node_info_ptr)
 			if (!rack_mid)
 				break;
 			if (desc[0] != 'R') {
-				if (!strcasecmp(name, node_geo))
+				if (!xstrcasecmp(name, node_geo))
 					ret_str = xstrdup_printf(
 						"%s resolves to %s\n",
 						node_geo, rack_mid);
-			} else if (!strcasecmp(name, rack_mid))
+			} else if (!xstrcasecmp(name, rack_mid))
 				ret_str = xstrdup_printf(
 					"%s resolves to %s\n",
 					rack_mid, node_geo);

@@ -192,7 +192,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 								break;
 						} else if (slurmdb_report_user->
 							  name
-							  && !strcasecmp(
+							  && !xstrcasecmp(
 								  slurmdb_report_user->
 								  name,
 								  user->name))

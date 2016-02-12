@@ -551,7 +551,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		 */
 		if (val[0] == '\0') {
 			*((bool *)e->arg) = true;
-		} else if (strcasecmp(val, "yes") == 0) {
+		} else if (xstrcasecmp(val, "yes") == 0) {
 			*((bool *)e->arg) = true;
 		} else if ((strtol(val, &end, 10) != 0)
 			   && end != val) {
@@ -626,9 +626,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
 			opt.shared = JOB_SHARED_NONE;
-		} else if (!strcasecmp(val, "user")) {
+		} else if (!xstrcasecmp(val, "user")) {
 			opt.shared = JOB_SHARED_USER;
-		} else if (!strcasecmp(val, "mcs")) {
+		} else if (!xstrcasecmp(val, "mcs")) {
 			opt.shared = JOB_SHARED_MCS;
 		} else {
 			error("\"%s=%s\" -- invalid value, ignoring...",
@@ -1317,7 +1317,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'e':
 			xfree(opt.efname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -1346,7 +1346,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'i':
 			xfree(opt.ifname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
@@ -1396,7 +1396,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'o':
 			xfree(opt.ofname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
@@ -1458,9 +1458,9 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXCLUSIVE:
 			if (optarg == NULL) {
 				opt.shared = JOB_SHARED_NONE;
-			} else if (!strcasecmp(optarg, "user")) {
+			} else if (!xstrcasecmp(optarg, "user")) {
 				opt.shared = JOB_SHARED_USER;
-			} else if (!strcasecmp(optarg, "mcs")) {
+			} else if (!xstrcasecmp(optarg, "mcs")) {
 				opt.shared = JOB_SHARED_MCS;
 			} else {
 				error("invalid exclusive option %s", optarg);
@@ -1783,8 +1783,8 @@ static void _set_options(int argc, char **argv)
 			opt.time_min_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES:
-			if (!strcasecmp(optarg, "help") ||
-			    !strcasecmp(optarg, "list")) {
+			if (!xstrcasecmp(optarg, "help") ||
+			    !xstrcasecmp(optarg, "list")) {
 				print_gres_help();
 				exit(0);
 			}
@@ -1797,7 +1797,7 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT:
 			xfree(opt.export_env);
 			opt.export_env = xstrdup(optarg);
-			if (!strcasecmp(opt.export_env, "ALL"))
+			if (!xstrcasecmp(opt.export_env, "ALL"))
 				; /* srun ignores "ALL", it is the default */
 			else
 				setenv("SLURM_EXPORT_ENV", opt.export_env, 0);
@@ -1839,9 +1839,9 @@ static void _set_options(int argc, char **argv)
 					CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_KILL_INV_DEP:
-			if (strcasecmp(optarg, "yes") == 0)
+			if (xstrcasecmp(optarg, "yes") == 0)
 				opt.kill_invalid_dep |= KILL_INV_DEP;
-			if (strcasecmp(optarg, "no") == 0)
+			if (xstrcasecmp(optarg, "no") == 0)
 				opt.kill_invalid_dep |= NO_KILL_INV_DEP;
 			break;
 		default:
@@ -1913,7 +1913,7 @@ static void _set_bsub_options(int argc, char **argv) {
 			break;
 		case 'e':
 			xfree(opt.efname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -2043,7 +2043,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'e':
 			xfree(opt.efname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -2068,7 +2068,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'm':
 			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if ((opt.mail_type == 0) && strcasecmp(optarg, "n")) {
+			if ((opt.mail_type == 0) && xstrcasecmp(optarg, "n")) {
 				error("-m=%s invalid", optarg);
 				exit(error_exit);
 			}
@@ -2083,7 +2083,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'o':
 			xfree(opt.ofname);
-			if (strcasecmp(optarg, "none") == 0)
+			if (xstrcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
@@ -3315,7 +3315,7 @@ static void _help(void)
 "      --ntasks-per-socket=n   number of tasks to invoke on each socket\n");
 	conf = slurm_conf_lock();
 	if (conf->task_plugin != NULL
-	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
+	    && xstrcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
 "                              (see \"--hint=help\" for options)\n"

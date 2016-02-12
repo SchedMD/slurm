@@ -57,52 +57,52 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 	st_str = xstrdup(select_type_parameters);
 	str_parameters = strtok(st_str,",");
 	while (str_parameters) {
-		if (!strcasecmp(str_parameters, "CR_Socket")) {
+		if (!xstrcasecmp(str_parameters, "CR_Socket")) {
 			*param |= CR_SOCKET;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Socket_Memory")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_Socket_Memory")) {
 			*param |= CR_SOCKET;
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Core")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_Core")) {
 			*param |= CR_CORE;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Core_Memory")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_Core_Memory")) {
 			*param |= CR_CORE;
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_Memory")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_Memory")) {
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_CPU")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_CPU")) {
 			*param |= CR_CPU;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "CR_CPU_Memory")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_CPU_Memory")) {
 			*param |= CR_CPU;
 			*param |= CR_MEMORY;
 			param_cnt++;
-		} else if (!strcasecmp(str_parameters, "other_cons_res")) {
+		} else if (!xstrcasecmp(str_parameters, "other_cons_res")) {
 			*param |= CR_OTHER_CONS_RES;
-		} else if (!strcasecmp(str_parameters,
+		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ALLOCATE_FULL_SOCKET")) {
 			verbose("CR_ALLOCATE_FULL_SOCKET is deprecated.  "
 				"It is now the default for CR_SOCKET*.  "
 				"It is safe to remove it "
 				"from your slurm.conf");
-		} else if (!strcasecmp(str_parameters,
+		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= CR_ONE_TASK_PER_CORE;
-		} else if (!strcasecmp(str_parameters,
+		} else if (!xstrcasecmp(str_parameters,
 				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
 			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
-		} else if (!strcasecmp(str_parameters, "CR_LLN")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
 			*param |= CR_LLN;
-		} else if (!strcasecmp(str_parameters, "NHC_No")) {
+		} else if (!xstrcasecmp(str_parameters, "NHC_No")) {
 			*param |= CR_NHC_STEP_NO;
 			*param |= CR_NHC_NO;
-		} else if (!strcasecmp(str_parameters, "NHC_No_Steps")) {
+		} else if (!xstrcasecmp(str_parameters, "NHC_No_Steps")) {
 			*param |= CR_NHC_STEP_NO;
-		} else if (!strcasecmp(str_parameters, "CR_PACK_NODES")) {
+		} else if (!xstrcasecmp(str_parameters, "CR_PACK_NODES")) {
 			*param |= CR_PACK_NODES;
 		} else {
 			error("Bad SelectTypeParameter: %s", str_parameters);

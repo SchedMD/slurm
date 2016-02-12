@@ -386,7 +386,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 			tmp_env = xstrdup(opt.export_env);
 			tok = strtok_r(tmp_env, ",", &save_ptr);
 			while (tok) {
-				if (!strcasecmp(tok, "NONE"))
+				if (!xstrcasecmp(tok, "NONE"))
 					break;
 				eq_ptr = strchr(tok, '=');
 				if (eq_ptr)

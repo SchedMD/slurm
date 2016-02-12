@@ -1317,11 +1317,11 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			*token = strtok_r(network_str, ",", &save_ptr);
 		while (token) {
 			/* network options */
-			if (!strcasecmp(token, "ip")   ||
-			    !strcasecmp(token, "ipv4")  ||
-			    !strcasecmp(token, "ipv6")) {
+			if (!xstrcasecmp(token, "ip")   ||
+			    !xstrcasecmp(token, "ipv4")  ||
+			    !xstrcasecmp(token, "ipv6")) {
 				mode = "IP";
-			} else if (!strcasecmp(token, "us")) {
+			} else if (!xstrcasecmp(token, "us")) {
 				mode = "US";
 			}
 			/* Currently ignoring all other options */

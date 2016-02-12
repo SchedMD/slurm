@@ -5191,7 +5191,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	/* do RPC call */
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;
-	if (!nodelist || !strcasecmp(nodelist, "ALL")) {
+	if (!nodelist || !xstrcasecmp(nodelist, "ALL")) {
 		bitmap = bit_alloc(node_record_count);
 		bit_nset(bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {

@@ -344,7 +344,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	rc = 0;
 #ifdef HAVE_BGL
 	if (bg_action_ptr->blrtsimage
-	   && strcasecmp(bg_action_ptr->blrtsimage, bg_record->blrtsimage)) {
+	   && xstrcasecmp(bg_action_ptr->blrtsimage, bg_record->blrtsimage)) {
 		debug3("changing BlrtsImage from %s to %s",
 		       bg_record->blrtsimage, bg_action_ptr->blrtsimage);
 		xfree(bg_record->blrtsimage);
@@ -376,7 +376,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 #ifdef HAVE_BG_L_P
 	if (bg_action_ptr->linuximage
-	   && strcasecmp(bg_action_ptr->linuximage, bg_record->linuximage)) {
+	   && xstrcasecmp(bg_action_ptr->linuximage, bg_record->linuximage)) {
 # ifdef HAVE_BGL
 		debug3("changing LinuxImage from %s to %s",
 		       bg_record->linuximage, bg_action_ptr->linuximage);
@@ -389,7 +389,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		rc = 1;
 	}
 	if (bg_action_ptr->ramdiskimage
-	   && strcasecmp(bg_action_ptr->ramdiskimage,
+	   && xstrcasecmp(bg_action_ptr->ramdiskimage,
 			 bg_record->ramdiskimage)) {
 # ifdef HAVE_BGL
 		debug3("changing RamDiskImage from %s to %s",
@@ -404,7 +404,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 	}
 #endif
 	if (bg_action_ptr->mloaderimage
-	   && strcasecmp(bg_action_ptr->mloaderimage,
+	   && xstrcasecmp(bg_action_ptr->mloaderimage,
 			 bg_record->mloaderimage)) {
 		debug3("changing MloaderImage from %s to %s",
 		       bg_record->mloaderimage, bg_action_ptr->mloaderimage);

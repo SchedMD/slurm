@@ -452,13 +452,13 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
 		if ((xstrcmp(b, me) == 0) ||
-		    (strcasecmp(b, "localhost") == 0))
+		    (xstrcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
 	if ((c = conf->control_machine)) {
 		actld = 1;
 		if ((xstrcmp(c, me) == 0) ||
-		    (strcasecmp(c, "localhost") == 0))
+		    (xstrcasecmp(c, "localhost") == 0))
 			ctld = 1;
 	}
 	slurm_conf_unlock();

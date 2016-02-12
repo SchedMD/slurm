@@ -1055,7 +1055,7 @@ static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
 	char* option_key;
 
 	for (layout_option = plugin->ops->spec->options;
-	     layout_option && strcasecmp("Entity", layout_option->key);
+	     layout_option && xstrcasecmp("Entity", layout_option->key);
 	     ++layout_option);
 	xassert(layout_option);
 
@@ -1805,7 +1805,7 @@ static uint8_t _pack_layout_tree(xtree_node_t* node, uint8_t which,
 
 	/* don't print entities if not type of "type char*" */
 	if (pargs->type != NULL
-	    && (e_type == NULL || strcasecmp(e_type, pargs->type)!=0)) {
+	    && (e_type == NULL || xstrcasecmp(e_type, pargs->type)!=0)) {
 		xfree(str);
 		return 1;
 	}

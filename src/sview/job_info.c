@@ -605,7 +605,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 		return sig_num;
 
 	for (i=0; i<SIZE(sig_name_num); i++) {
-		if (strcasecmp(sig_name_num[i].name, signal_name) == 0) {
+		if (xstrcasecmp(sig_name_num[i].name, signal_name) == 0) {
 			xfree(sig_names);
 			return sig_name_num[i].val;
 		}
@@ -712,17 +712,17 @@ static void _set_active_combo_job(GtkComboBox *combo,
 		goto end_it;
 	switch(type) {
 	case SORTID_ACTION:
-		if (!strcasecmp(temp_char, "None"))
+		if (!xstrcasecmp(temp_char, "None"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "Cancel"))
+		else if (!xstrcasecmp(temp_char, "Cancel"))
 			action = 1;
-		else if (!strcasecmp(temp_char, "Suspend"))
+		else if (!xstrcasecmp(temp_char, "Suspend"))
 			action = 2;
-		else if (!strcasecmp(temp_char, "Resume"))
+		else if (!xstrcasecmp(temp_char, "Resume"))
 			action = 3;
-		else if (!strcasecmp(temp_char, "Checkpoint"))
+		else if (!xstrcasecmp(temp_char, "Checkpoint"))
 			action = 4;
-		else if (!strcasecmp(temp_char, "Requeue"))
+		else if (!xstrcasecmp(temp_char, "Requeue"))
 			action = 5;
 		else
 			action = 0;
@@ -733,28 +733,28 @@ static void _set_active_combo_job(GtkComboBox *combo,
 	case SORTID_REQUEUE:
 	case SORTID_ROTATE:
 	case SORTID_SHARED:
-		if (!strcasecmp(temp_char, "yes"))
+		if (!xstrcasecmp(temp_char, "yes"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "no"))
+		else if (!xstrcasecmp(temp_char, "no"))
 			action = 1;
 		else
 			action = 0;
 
 		break;
 	case SORTID_CONNECTION:
-		if (!strcasecmp(temp_char, "Torus"))
+		if (!xstrcasecmp(temp_char, "Torus"))
 			action = 0;
-		else if (!strcasecmp(temp_char, "Mesh"))
+		else if (!xstrcasecmp(temp_char, "Mesh"))
 			action = 1;
-		else if (!strcasecmp(temp_char, "NAV"))
+		else if (!xstrcasecmp(temp_char, "NAV"))
 			action = 2;
-		else if (!strcasecmp(temp_char, "HTC_S"))
+		else if (!xstrcasecmp(temp_char, "HTC_S"))
 			action = 3;
-		else if (!strcasecmp(temp_char, "HTC_D"))
+		else if (!xstrcasecmp(temp_char, "HTC_D"))
 			action = 4;
-		else if (!strcasecmp(temp_char, "HTC_V"))
+		else if (!xstrcasecmp(temp_char, "HTC_V"))
 			action = 5;
-		else if (!strcasecmp(temp_char, "HTC_L"))
+		else if (!xstrcasecmp(temp_char, "HTC_L"))
 			action = 6;
 		else
 			action = 0;
@@ -793,13 +793,13 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	switch(column) {
 	case SORTID_ACTION:
 		xfree(got_edit_signal);
-		if (!strcasecmp(new_text, "None"))
+		if (!xstrcasecmp(new_text, "None"))
 			got_edit_signal = NULL;
 		else
 			got_edit_signal = xstrdup(new_text);
 		break;
 	case SORTID_TIMELIMIT:
-		if (!strcasecmp(new_text, "infinite"))
+		if (!xstrcasecmp(new_text, "infinite"))
 			temp_int = INFINITE;
 		else
 			temp_int = time_str2mins((char *)new_text);
@@ -810,7 +810,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->time_limit = (uint32_t)temp_int;
 		break;
 	case SORTID_PRIORITY:
-		if (!strcasecmp(new_text, "infinite"))
+		if (!xstrcasecmp(new_text, "infinite"))
 			temp_int = INFINITE;
 		else
 			temp_int = strtol(new_text, (char **)NULL, 10);
@@ -947,7 +947,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "wckey";
 		break;
 	case SORTID_SHARED:
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			job_msg->shared = 1;
 		else
 			job_msg->shared = 0;
@@ -955,7 +955,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "shared";
 		break;
 	case SORTID_CONTIGUOUS:
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			job_msg->contiguous = 1;
 		else
 			job_msg->contiguous = 0;
@@ -979,14 +979,14 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->core_spec = (uint16_t)temp_int | CORE_SPEC_THREAD;
 		break;
 	case SORTID_REBOOT:
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			job_msg->reboot = 1;
 		else
 			job_msg->reboot = 0;
 		type = "reboot";
 		break;
 	case SORTID_REQUEUE:
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			job_msg->requeue = 1;
 		else
 			job_msg->requeue = 0;
@@ -1095,7 +1095,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 	case SORTID_ROTATE:
 		type = "rotate";
-		if (!strcasecmp(new_text, "yes")) {
+		if (!xstrcasecmp(new_text, "yes")) {
 			rotate = 1;
 
 		} else {
@@ -1365,7 +1365,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 		return;
 
 	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
-	    !strcasecmp(job_ptr->nodes,"waiting...")) {
+	    !xstrcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(running_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
@@ -2246,7 +2246,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		 (((int64_t)job_ptr->nice) - NICE_OFFSET));
 
 	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
-	    !strcasecmp(job_ptr->nodes,"waiting...")) {
+	    !xstrcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run,"00:00:00");
 		tmp_nodes = "waiting...";
 	} else {
@@ -2645,7 +2645,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		state = step_ptr->state;
 
 	if (!step_ptr->nodes
-	    || !strcasecmp(step_ptr->nodes, "waiting...")) {
+	    || !xstrcasecmp(step_ptr->nodes, "waiting...")) {
 		sprintf(tmp_time,"00:00:00");
 		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
 		state = JOB_PENDING;
@@ -2744,7 +2744,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		state = step_ptr->state;
 
 	if (!step_ptr->nodes ||
-	    !strcasecmp(step_ptr->nodes,"waiting...")) {
+	    !xstrcasecmp(step_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run, "00:00:00");
 		snprintf(tmp_nodes, sizeof(tmp_nodes), "waiting...");
 		tmp_node_cnt[0] = '\0';
@@ -4873,7 +4873,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 
 	slurm_init_job_desc_msg(job_msg);
 
-	if (!strcasecmp("Signal", type)) {
+	if (!xstrcasecmp("Signal", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_OK, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -4883,7 +4883,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 		entry = create_entry();
 		label = gtk_label_new("Signal?");
 		edit_type = EDIT_SIGNAL;
-	} else if (!strcasecmp("Requeue", type)) {
+	} else if (!xstrcasecmp("Requeue", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -4893,7 +4893,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 			 "Are you sure you want to requeue these job(s)?");
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_REQUEUE;
-	} else if (!strcasecmp("Cancel", type)) {
+	} else if (!xstrcasecmp("Cancel", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
@@ -4910,7 +4910,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 				 "these job(s)?");
 		label = gtk_label_new(tmp_char);
 		edit_type = EDIT_CANCEL;
-	} else if (!strcasecmp("Suspend/Resume", type)) {
+	} else if (!xstrcasecmp("Suspend/Resume", type)) {
 		label = gtk_dialog_add_button(GTK_DIALOG(popup),
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);

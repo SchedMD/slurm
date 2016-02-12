@@ -800,7 +800,7 @@ static double _calc_billable_tres(struct job_record *job_ptr, time_t start_time)
 		    ((i == TRES_ARRAY_CPU) ||
 		     (i == TRES_ARRAY_MEM) ||
 		     (i == TRES_ARRAY_NODE) ||
-		     (!strcasecmp(tres_type, "gres"))))
+		     (!xstrcasecmp(tres_type, "gres"))))
 			to_bill_node = MAX(to_bill_node, tres_value);
 		else
 			to_bill_global += tres_value;
@@ -1631,8 +1631,8 @@ int init ( void )
 
 	/* Check to see if we are running a supported accounting plugin */
 	temp = slurm_get_accounting_storage_type();
-	if (strcasecmp(temp, "accounting_storage/slurmdbd")
-	    && strcasecmp(temp, "accounting_storage/mysql")) {
+	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
+	    && xstrcasecmp(temp, "accounting_storage/mysql")) {
 		error("You are not running a supported "
 		      "accounting_storage plugin\n(%s).\n"
 		      "Fairshare can only be calculated with either "

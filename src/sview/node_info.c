@@ -2107,11 +2107,11 @@ extern void select_admin_nodes(GtkTreeModel *model,
 		process_node.nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 
-		if (!strcasecmp("Update Features", display_data->name)) {
+		if (!xstrcasecmp("Update Features", display_data->name)) {
 			/* get old features */
 			gtk_tree_model_get(model, iter, SORTID_AVAIL_FEATURES,
 					   &old_value, -1);
-		} else if (!strcasecmp("Update Gres", display_data->name)) {
+		} else if (!xstrcasecmp("Update Gres", display_data->name)) {
 			/* get old gres */
 			gtk_tree_model_get(model, iter, SORTID_GRES,
 					   &old_value, -1);
@@ -2135,14 +2135,14 @@ extern void admin_node_name(char *name, char *old_value, char *type)
 		NULL);
 	gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
 
-	if (!strcasecmp("Update Available Features", type)
-	    || !strcasecmp("Update Node Features", type)
-	    || !strcasecmp("Update Midplane Features",
+	if (!xstrcasecmp("Update Available Features", type)
+	    || !xstrcasecmp("Update Node Features", type)
+	    || !xstrcasecmp("Update Midplane Features",
 			   type)) { /* update features */
 		update_avail_features_node(GTK_DIALOG(popup), name, old_value);
-	} else if (!strcasecmp("Update Active Features", type)) {
+	} else if (!xstrcasecmp("Update Active Features", type)) {
 		update_active_features_node(GTK_DIALOG(popup), name, old_value);
-	} else if (!strcasecmp("Update Gres", type)) { /* update gres */
+	} else if (!xstrcasecmp("Update Gres", type)) { /* update gres */
 		update_gres_node(GTK_DIALOG(popup), name, old_value);
 	} else /* something that has to deal with a node state change */
 		update_state_node(GTK_DIALOG(popup), name, type);

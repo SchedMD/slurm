@@ -64,8 +64,8 @@ int s_p_handle_long(long* data, const char* key, const char* value)
 	num = strtol(value, &endptr, 0);
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if (strcasecmp(value, "UNLIMITED") == 0
-			|| strcasecmp(value, "INFINITE") == 0) {
+		if (xstrcasecmp(value, "UNLIMITED") == 0
+			|| xstrcasecmp(value, "INFINITE") == 0) {
 			num = (long) INFINITE;
 		} else {
 			error("\"%s\" is not a valid number", value);
@@ -88,8 +88,8 @@ int s_p_handle_uint16(uint16_t* data, const char* key, const char *value)
 	num = strtoul(value, &endptr, 0);
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if (strcasecmp(value, "UNLIMITED") == 0
-			|| strcasecmp(value, "INFINITE") == 0) {
+		if (xstrcasecmp(value, "UNLIMITED") == 0
+			|| xstrcasecmp(value, "INFINITE") == 0) {
 			num = (uint16_t) INFINITE;
 		} else {
 			error("%s value \"%s\" is not a valid number",
@@ -125,8 +125,8 @@ int s_p_handle_uint32(uint32_t* data, const char* key, const char* value)
 	}
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if ((strcasecmp(value, "UNLIMITED") == 0) ||
-			(strcasecmp(value, "INFINITE")  == 0)) {
+		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
+			(xstrcasecmp(value, "INFINITE")  == 0)) {
 			num = (uint32_t) INFINITE;
 		} else {
 			error("%s value (%s) is not a valid number",
@@ -153,15 +153,15 @@ int s_p_handle_boolean(bool* data, const char* key, const char* value)
 {
 	bool flag;
 
-	if (!strcasecmp(value, "yes")
-		|| !strcasecmp(value, "up")
-		|| !strcasecmp(value, "true")
-		|| !strcasecmp(value, "1")) {
+	if (!xstrcasecmp(value, "yes")
+		|| !xstrcasecmp(value, "up")
+		|| !xstrcasecmp(value, "true")
+		|| !xstrcasecmp(value, "1")) {
 		flag = true;
-	} else if (!strcasecmp(value, "no")
-		   || !strcasecmp(value, "down")
-		   || !strcasecmp(value, "false")
-		   || !strcasecmp(value, "0")) {
+	} else if (!xstrcasecmp(value, "no")
+		   || !xstrcasecmp(value, "down")
+		   || !xstrcasecmp(value, "false")
+		   || !xstrcasecmp(value, "0")) {
 		flag = false;
 	} else {
 		error("\"%s\" is not a valid option for \"%s\"",
@@ -182,8 +182,8 @@ int s_p_handle_float(float* data, const char* key, const char* value)
 	num = strtof(value, &endptr);
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if ((strcasecmp(value, "UNLIMITED") == 0) ||
-			(strcasecmp(value, "INFINITE")  == 0)) {
+		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
+			(xstrcasecmp(value, "INFINITE")  == 0)) {
 			num = INFINITY;
 		} else {
 			error("%s value (%s) is not a valid number",
@@ -207,8 +207,8 @@ int s_p_handle_double(double* data, const char* key, const char* value)
 	num = strtod(value, &endptr);
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if ((strcasecmp(value, "UNLIMITED") == 0) ||
-			(strcasecmp(value, "INFINITE")  == 0)) {
+		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
+			(xstrcasecmp(value, "INFINITE")  == 0)) {
 			num = HUGE_VAL;
 		} else {
 			error("%s value (%s) is not a valid number",
@@ -233,8 +233,8 @@ int s_p_handle_long_double(long double* data, const char* key,
 	num = strtold(value, &endptr);
 	if ((num == 0 && errno == EINVAL)
 		|| (*endptr != '\0')) {
-		if ((strcasecmp(value, "UNLIMITED") == 0) ||
-			(strcasecmp(value, "INFINITE")  == 0)) {
+		if ((xstrcasecmp(value, "UNLIMITED") == 0) ||
+			(xstrcasecmp(value, "INFINITE")  == 0)) {
 			num = HUGE_VALL;
 		} else {
 			error("%s value (%s) is not a valid number",

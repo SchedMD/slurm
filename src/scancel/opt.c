@@ -220,7 +220,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 		return sig_num;
 
 	for (i=0; i<SIZE(sig_name_num); i++) {
-		if (strcasecmp(sig_name_num[i].name, signal_name) == 0) {
+		if (xstrcasecmp(sig_name_num[i].name, signal_name) == 0) {
 			xfree(sig_names);
 			return sig_name_num[i].val;
 		}
@@ -289,13 +289,13 @@ static void _opt_env(void)
 	}
 
 	if ( (val=getenv("SCANCEL_BATCH")) ) {
-		if (strcasecmp(val, "true") == 0)
+		if (xstrcasecmp(val, "true") == 0)
 			opt.batch       = true;
-		else if (strcasecmp(val, "T") == 0)
+		else if (xstrcasecmp(val, "T") == 0)
 			opt.batch       = true;
-		else if (strcasecmp(val, "false") == 0)
+		else if (xstrcasecmp(val, "false") == 0)
 			opt.batch       = false;
-		else if (strcasecmp(val, "F") == 0)
+		else if (xstrcasecmp(val, "F") == 0)
 			opt.batch       = false;
 		else
 			error ("Unrecognized SCANCEL_BATCH value: %s", val);
@@ -305,26 +305,26 @@ static void _opt_env(void)
 		opt.ctld = true;
 
 	if ( (val=getenv("SCANCEL_FULL")) ) {
-		if (strcasecmp(val, "true") == 0)
+		if (xstrcasecmp(val, "true") == 0)
 			opt.full       = true;
-		else if (strcasecmp(val, "T") == 0)
+		else if (xstrcasecmp(val, "T") == 0)
 			opt.full       = true;
-		else if (strcasecmp(val, "false") == 0)
+		else if (xstrcasecmp(val, "false") == 0)
 			opt.full       = false;
-		else if (strcasecmp(val, "F") == 0)
+		else if (xstrcasecmp(val, "F") == 0)
 			opt.full       = false;
 		else
 			error ("Unrecognized SCANCEL_FULL value: %s", val);
 	}
 
 	if ( (val=getenv("SCANCEL_INTERACTIVE")) ) {
-		if (strcasecmp(val, "true") == 0)
+		if (xstrcasecmp(val, "true") == 0)
 			opt.interactive = true;
-		else if (strcasecmp(val, "T") == 0)
+		else if (xstrcasecmp(val, "T") == 0)
 			opt.interactive = true;
-		else if (strcasecmp(val, "false") == 0)
+		else if (xstrcasecmp(val, "false") == 0)
 			opt.interactive = false;
-		else if (strcasecmp(val, "F") == 0)
+		else if (xstrcasecmp(val, "F") == 0)
 			opt.interactive = false;
 		else
 			error ("Unrecognized SCANCEL_INTERACTIVE value: %s",
@@ -352,13 +352,13 @@ static void _opt_env(void)
 	}
 
 	if ( (val=getenv("SCANCEL_VERBOSE")) ) {
-		if (strcasecmp(val, "true") == 0)
+		if (xstrcasecmp(val, "true") == 0)
 			opt.verbose = 1;
-		else if (strcasecmp(val, "T") == 0)
+		else if (xstrcasecmp(val, "T") == 0)
 			opt.verbose = 1;
-		else if (strcasecmp(val, "false") == 0)
+		else if (xstrcasecmp(val, "false") == 0)
 			opt.verbose = 0;
-		else if (strcasecmp(val, "F") == 0)
+		else if (xstrcasecmp(val, "F") == 0)
 			opt.verbose = 0;
 		else
 			error ("Unrecognized SCANCEL_VERBOSE value: %s",

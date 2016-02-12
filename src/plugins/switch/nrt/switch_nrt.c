@@ -515,7 +515,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				info("switch/nrt: invalid option: %s", token);
 				err = SLURM_ERROR;
 			}
-		} else if (!strcasecmp(token, "bulk_xfer")) {
+		} else if (!xstrcasecmp(token, "bulk_xfer")) {
 			bulk_xfer = true;
 
 		/* device name options */
@@ -526,9 +526,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				      "network string", token);
 				adapter_name = xstrdup(name_ptr);
 				sn_all = false;
-			} else if (!strcasecmp(name_ptr, "sn_all")) {
+			} else if (!xstrcasecmp(name_ptr, "sn_all")) {
 				sn_all = true;
-			} else if (!strcasecmp(name_ptr, "sn_single")) {
+			} else if (!xstrcasecmp(name_ptr, "sn_single")) {
 				sn_all = false;
 			} else {
 				info("switch/nrt: invalid devname: %s",
@@ -539,19 +539,19 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		/* device type options */
 		} else if (!strncasecmp(token, "devtype=", 8)) {
 			char *type_ptr = token + 8;
-			if (!strcasecmp(type_ptr, "ib")) {
+			if (!xstrcasecmp(type_ptr, "ib")) {
 				dev_type = NRT_IB;
-			} else if (!strcasecmp(type_ptr, "hfi")) {
+			} else if (!xstrcasecmp(type_ptr, "hfi")) {
 				dev_type = NRT_HFI;
-			} else if (!strcasecmp(type_ptr, "iponly")) {
+			} else if (!xstrcasecmp(type_ptr, "iponly")) {
 				dev_type = NRT_IPONLY;
-			} else if (!strcasecmp(type_ptr, "hpce")) {
+			} else if (!xstrcasecmp(type_ptr, "hpce")) {
 				dev_type = NRT_HPCE;
-			} else if (!strcasecmp(type_ptr, "kmux")) {
+			} else if (!xstrcasecmp(type_ptr, "kmux")) {
 				dev_type = NRT_KMUX;
-			} else if (!strcasecmp(type_ptr, "sn_all")) {
+			} else if (!xstrcasecmp(type_ptr, "sn_all")) {
 				sn_all = true;
-			} else if (!strcasecmp(type_ptr, "sn_single")) {
+			} else if (!xstrcasecmp(type_ptr, "sn_single")) {
 				sn_all = false;
 			} else {
 				info("switch/nrt: invalid option: %s", token);
@@ -573,13 +573,13 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			}
 
 		/* network options */
-		} else if (!strcasecmp(token, "ip")) {
+		} else if (!xstrcasecmp(token, "ip")) {
 			ip_v4 = true;
-		} else if (!strcasecmp(token, "ipv4")) {
+		} else if (!xstrcasecmp(token, "ipv4")) {
 			ip_v4 = true;
-		} else if (!strcasecmp(token, "ipv6")) {
+		} else if (!xstrcasecmp(token, "ipv6")) {
 			ip_v4 = false;
-		} else if (!strcasecmp(token, "us")) {
+		} else if (!xstrcasecmp(token, "us")) {
 			user_space = true;
 
 		/* protocol options */
@@ -593,9 +593,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			xstrcat(protocol, token);
 
 		/* adapter options */
-		} else if (!strcasecmp(token, "sn_all")) {
+		} else if (!xstrcasecmp(token, "sn_all")) {
 			sn_all = true;
-		} else if (!strcasecmp(token, "sn_single")) {
+		} else if (!xstrcasecmp(token, "sn_single")) {
 			sn_all = false;
 
 		/* Collective Acceleration Units (CAU) */

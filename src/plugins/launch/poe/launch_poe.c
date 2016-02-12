@@ -483,13 +483,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			/* device type options */
 			} else if (!strncasecmp(token, "devtype=", 8)) {
 				type_ptr = token + 8;
-				if (!strcasecmp(type_ptr, "ib")) {
+				if (!xstrcasecmp(type_ptr, "ib")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
 					if (opt.launch_cmd)
 						xstrfmtcat(poe_cmd_line,
 							   " -devtype %s",
 							   type_ptr);
-				} else if (!strcasecmp(type_ptr, "hfi")) {
+				} else if (!xstrcasecmp(type_ptr, "hfi")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
 					if (opt.launch_cmd)
 						xstrfmtcat(poe_cmd_line,
@@ -510,14 +510,14 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				}
 
 			/* network options */
-			} else if (!strcasecmp(token, "ip")   ||
-				  !strcasecmp(token, "ipv4")  ||
-				  !strcasecmp(token, "ipv6")) {
+			} else if (!xstrcasecmp(token, "ip")   ||
+				  !xstrcasecmp(token, "ipv4")  ||
+				  !xstrcasecmp(token, "ipv6")) {
 				setenv("MP_EUILIB", "ip", 1);
 				if (opt.launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euilib ip");
-			} else if (!strcasecmp(token, "us")) {
+			} else if (!xstrcasecmp(token, "us")) {
 				setenv("MP_EUILIB", "us", 1);
 				if (opt.launch_cmd)
 					xstrfmtcat(poe_cmd_line,
@@ -537,12 +537,12 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				xstrcat(protocol, token);
 				setenv("MP_MSG_API", protocol, 0);
 			/* adapter options */
-			} else if (!strcasecmp(token, "sn_all")) {
+			} else if (!xstrcasecmp(token, "sn_all")) {
 				setenv("MP_EUIDEVICE", "sn_all", 1);
 				if (opt.launch_cmd)
 					xstrfmtcat(poe_cmd_line,
 						   " -euidevice sn_all");
-			} else if (!strcasecmp(token, "sn_single")) {
+			} else if (!xstrcasecmp(token, "sn_single")) {
 				setenv("MP_EUIDEVICE", "sn_single", 1);
 				if (opt.launch_cmd)
 					xstrfmtcat(poe_cmd_line,
@@ -761,7 +761,7 @@ static void _build_user_env(void)
 	tmp_env = xstrdup(opt.export_env);
 	tok = strtok_r(tmp_env, ",", &save_ptr);
 	while (tok) {
-		if (!strcasecmp(tok, "NONE"))
+		if (!xstrcasecmp(tok, "NONE"))
 			break;
 		eq_ptr = strchr(tok, '=');
 		if (eq_ptr) {

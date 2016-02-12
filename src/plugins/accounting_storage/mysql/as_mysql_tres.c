@@ -69,9 +69,9 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 			error("We need a tres type.");
 			rc = SLURM_ERROR;
 			continue;
-		} else if ((!strcasecmp(object->type, "gres") ||
-			    !strcasecmp(object->type, "bb") ||
-			    !strcasecmp(object->type, "license"))) {
+		} else if ((!xstrcasecmp(object->type, "gres") ||
+			    !xstrcasecmp(object->type, "bb") ||
+			    !xstrcasecmp(object->type, "license"))) {
 			if (!object->name) {
 				error("%s type tres "
 				      "need to have a name, "

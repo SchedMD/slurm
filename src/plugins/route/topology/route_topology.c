@@ -108,7 +108,7 @@ extern int init(void)
 {
 	char *topotype;
 	topotype = slurm_get_topology_plugin();
-	if (strcasecmp(topotype,"topology/tree") != 0) {
+	if (xstrcasecmp(topotype,"topology/tree") != 0) {
 		fatal("ROUTE: route/topology requires topology/tree");
 	}
 	xfree(topotype);

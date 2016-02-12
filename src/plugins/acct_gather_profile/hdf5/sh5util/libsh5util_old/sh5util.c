@@ -749,12 +749,12 @@ static hid_t _get_series_parent(hid_t group)
 {
 	hid_t gid_level = -1;
 
-	if (strcasecmp(params.level, "Node:Totals") == 0) {
+	if (xstrcasecmp(params.level, "Node:Totals") == 0) {
 		gid_level = get_group(group, GRP_TOTALS);
 		if (gid_level < 0) {
 			info("Failed to open  group %s", GRP_TOTALS);
 		}
-	} else if (strcasecmp(params.level, "Node:TimeSeries") == 0) {
+	} else if (xstrcasecmp(params.level, "Node:TimeSeries") == 0) {
 		gid_level = get_group(group, GRP_SAMPLES);
 		if (gid_level < 0) {
 			info("Failed to open group %s", GRP_SAMPLES);
@@ -1047,8 +1047,8 @@ static int _extract_data(void)
 					                    series_names[isx]);
 					// Now handle all tasks.
 				}
-			} else if (strcasecmp(params.series, GRP_TASKS) == 0
-			           || strcasecmp(params.series, GRP_TASK) == 0) {
+			} else if (xstrcasecmp(params.series, GRP_TASKS) == 0 ||
+				   xstrcasecmp(params.series, GRP_TASK) == 0) {
 				for (isx = 0; isx < num_series; isx++) {
 					if (strstr(series_names[isx],
 					           GRP_TASK)) {

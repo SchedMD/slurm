@@ -188,11 +188,11 @@ static int _addto_job_list(List job_list, char *names)
 						*dot++ = 0;
 						/* can't use NO_VAL
 						 * since that means all */
-						if (!strcasecmp(dot, "batch"))
+						if (!xstrcasecmp(dot, "batch"))
 							selected_step->stepid =
 								SSTAT_EXTERN_STEP;
-						else if (!strcasecmp(dot,
-								     "extern"))
+						else if (!xstrcasecmp(dot,
+								      "extern"))
 							selected_step->stepid =
 								SSTAT_EXTERN_STEP;
 						else
@@ -260,10 +260,10 @@ static int _addto_job_list(List job_list, char *names)
 			} else {
 				*dot++ = 0;
 				/* can't use NO_VAL since that means all */
-				if (!strcasecmp(dot, "batch"))
+				if (!xstrcasecmp(dot, "batch"))
 					selected_step->stepid =
 						SSTAT_BATCH_STEP;
-				else if (!strcasecmp(dot, "extern"))
+				else if (!xstrcasecmp(dot, "extern"))
 					selected_step->stepid =
 						SSTAT_EXTERN_STEP;
 				else
@@ -314,25 +314,25 @@ static int _addto_job_list(List job_list, char *names)
 
 int decode_state_char(char *state)
 {
-	if (!strcasecmp(state, "p"))
+	if (!xstrcasecmp(state, "p"))
 		return JOB_PENDING; 	/* we should never see this */
-	else if (!strcasecmp(state, "r"))
+	else if (!xstrcasecmp(state, "r"))
 		return JOB_RUNNING;
-	else if (!strcasecmp(state, "su"))
+	else if (!xstrcasecmp(state, "su"))
 		return JOB_SUSPENDED;
-	else if (!strcasecmp(state, "cd"))
+	else if (!xstrcasecmp(state, "cd"))
 		return JOB_COMPLETE;
-	else if (!strcasecmp(state, "ca"))
+	else if (!xstrcasecmp(state, "ca"))
 		return JOB_CANCELLED;
-	else if (!strcasecmp(state, "f"))
+	else if (!xstrcasecmp(state, "f"))
 		return JOB_FAILED;
-	else if (!strcasecmp(state, "to"))
+	else if (!xstrcasecmp(state, "to"))
 		return JOB_TIMEOUT;
-	else if (!strcasecmp(state, "nf"))
+	else if (!xstrcasecmp(state, "nf"))
 		return JOB_NODE_FAIL;
-	else if (!strcasecmp(state, "pr"))
+	else if (!xstrcasecmp(state, "pr"))
 		return JOB_PREEMPTED;
-	else if (!strcasecmp(state, "dl"))
+	else if (!xstrcasecmp(state, "dl"))
 		return JOB_DEADLINE;
 	else
 		return -1; // unknown

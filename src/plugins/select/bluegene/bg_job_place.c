@@ -136,8 +136,8 @@ static int _test_image_perms(char *image_name, List image_list,
 
 	itr = list_iterator_create(image_list);
 	while ((image = list_next(itr))) {
-		if (!strcasecmp(image->name, image_name)
-		    || !strcasecmp(image->name, "*")) {
+		if (!xstrcasecmp(image->name, image_name)
+		    || !xstrcasecmp(image->name, "*")) {
 			if (image->def) {
 				allow = 1;
 				break;
@@ -553,30 +553,30 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (check_image) {
 #ifdef HAVE_BGL
 			if (request->blrtsimage &&
-			    strcasecmp(request->blrtsimage,
-				       bg_record->blrtsimage)) {
+			    xstrcasecmp(request->blrtsimage,
+					bg_record->blrtsimage)) {
 				*allow = 1;
 				continue;
 			}
 #endif
 #ifdef HAVE_BG_L_P
 			if (request->linuximage &&
-			    strcasecmp(request->linuximage,
-				       bg_record->linuximage)) {
+			    xstrcasecmp(request->linuximage,
+					bg_record->linuximage)) {
 				*allow = 1;
 				continue;
 			}
 
 			if (request->ramdiskimage &&
-			    strcasecmp(request->ramdiskimage,
-				       bg_record->ramdiskimage)) {
+			    xstrcasecmp(request->ramdiskimage,
+					bg_record->ramdiskimage)) {
 				*allow = 1;
 				continue;
 			}
 #endif
 			if (request->mloaderimage &&
-			    strcasecmp(request->mloaderimage,
-				       bg_record->mloaderimage)) {
+			    xstrcasecmp(request->mloaderimage,
+					bg_record->mloaderimage)) {
 				*allow = 1;
 				continue;
 			}

@@ -192,7 +192,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS,
 			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
-			if (strcasecmp (str_ptr2, "UNLIMITED") == 0)
+			if (xstrcasecmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1;
 			else if ((str_ptr2[0] >= '0') &&
 			         (str_ptr2[0] <= '9')) {
@@ -249,7 +249,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS,
 			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
-			if (strcasecmp (str_ptr2, "UNLIMITED") == 0)
+			if (xstrcasecmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1L;
 			else if ((str_ptr2[0] == '-') ||
 				 ((str_ptr2[0] >= '0') &&

@@ -558,7 +558,7 @@ extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 
 	itr = list_iterator_create(user->coord_accts);
 	while((coord = list_next(itr))) {
-		if (!strcasecmp(coord->name, account))
+		if (!xstrcasecmp(coord->name, account))
 			break;
 	}
 	list_iterator_destroy(itr);

@@ -846,7 +846,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_destroy(tbl);
 
 	for (i=0; i<gres_context_cnt; i++) {
-		if (strcasecmp(p->name, gres_context[i].gres_name) == 0)
+		if (xstrcasecmp(p->name, gres_context[i].gres_name) == 0)
 			break;
 	}
 	if (i >= gres_context_cnt) {
@@ -1432,7 +1432,7 @@ static void _add_gres_type(char *type, gres_node_state_t *gres_data,
 {
 	int i;
 
-	if (!strcasecmp(type, "no_consume")) {
+	if (!xstrcasecmp(type, "no_consume")) {
 		gres_data->no_consume = true;
 		return;
 	}

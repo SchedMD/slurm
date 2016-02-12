@@ -104,8 +104,8 @@ scontrol_update_node (int argc, char *argv[])
 			}
 			if ((num == 0 && errno == EINVAL)
         		            || (*endptr != '\0')) {
-				if ((strcasecmp(val, "UNLIMITED") == 0) ||
-				    (strcasecmp(val, "INFINITE")  == 0)) {
+				if ((xstrcasecmp(val, "UNLIMITED") == 0) ||
+				    (xstrcasecmp(val, "INFINITE")  == 0)) {
 					num = (uint32_t) INFINITE;
 				} else {
 					error("Weight value (%s) is not a "

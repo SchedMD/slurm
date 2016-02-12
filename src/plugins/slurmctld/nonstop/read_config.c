@@ -229,7 +229,7 @@ static uid_t *_xlate_users(char *user_str, int *user_cnt)
 	tok = strtok_r(tmp_str, ",", &save_ptr);
 	while (tok) {
 		int rc = 0;
-		if (!strcasecmp(tok, "ALL"))
+		if (!xstrcasecmp(tok, "ALL"))
 			uid = NO_VAL;
 		else
 			rc = uid_from_string(tok, &uid);
@@ -256,7 +256,7 @@ static void _validate_config(void)
 	if (user_drain_deny) {
 		if (!user_drain_allow_str)
 			user_drain_allow_str = xstrdup("ALL");
-		if (strcasecmp(user_drain_allow_str, "ALL"))
+		if (xstrcasecmp(user_drain_allow_str, "ALL"))
 			fatal("nonstop.conf: Bad UserDrainAllow/Deny values");
 	}
 	user_drain_allow = _xlate_users(user_drain_allow_str,

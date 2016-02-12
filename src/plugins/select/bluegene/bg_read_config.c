@@ -817,7 +817,7 @@ no_calc:
 			ba_deny_pass |= PASS_DENY_Y;
 		if (strstr(tmp_char, "Z"))
 			ba_deny_pass |= PASS_DENY_Z;
-		if (!strcasecmp(tmp_char, "ALL"))
+		if (!xstrcasecmp(tmp_char, "ALL"))
 			ba_deny_pass |= PASS_DENY_ALL;
 		bg_conf->deny_pass = ba_deny_pass;
 		xfree(tmp_char);
@@ -828,11 +828,11 @@ no_calc:
 		     "defaulting to STATIC partitioning");
 		bg_conf->layout_mode = LAYOUT_STATIC;
 	} else {
-		if (!strcasecmp(tmp_char,"STATIC"))
+		if (!xstrcasecmp(tmp_char,"STATIC"))
 			bg_conf->layout_mode = LAYOUT_STATIC;
-		else if (!strcasecmp(tmp_char,"OVERLAP"))
+		else if (!xstrcasecmp(tmp_char,"OVERLAP"))
 			bg_conf->layout_mode = LAYOUT_OVERLAP;
-		else if (!strcasecmp(tmp_char,"DYNAMIC"))
+		else if (!xstrcasecmp(tmp_char,"DYNAMIC"))
 			bg_conf->layout_mode = LAYOUT_DYNAMIC;
 		else {
 			fatal("I don't understand this LayoutMode = %s",
@@ -889,7 +889,7 @@ no_calc:
 		while (token) {
 			valid = false;
 			while((qos = list_next(itr))) {
-				if (!strcasecmp(token, qos->name)) {
+				if (!xstrcasecmp(token, qos->name)) {
 					bit_set(bg_conf->reboot_qos_bitmap,
 						qos->id);
 					valid = true;

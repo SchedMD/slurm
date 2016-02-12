@@ -264,19 +264,19 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		fprintf(fp, "PartitionName=%s", p[i].name);
 
 		if (p[i].allow_alloc_nodes &&
-		    (strcasecmp(p[i].allow_alloc_nodes, "ALL") != 0))
+		    (xstrcasecmp(p[i].allow_alloc_nodes, "ALL") != 0))
 			fprintf(fp, " AllocNodes=%s",
 				p[i].allow_alloc_nodes);
 
 		if (p[i].allow_accounts &&
-		    (strcasecmp(p[i].allow_accounts, "ALL") != 0))
+		    (xstrcasecmp(p[i].allow_accounts, "ALL") != 0))
 			fprintf(fp, " AllowAccounts=%s", p[i].allow_accounts);
 
 		if (p[i].allow_groups &&
-		    (strcasecmp(p[i].allow_groups, "ALL") != 0))
+		    (xstrcasecmp(p[i].allow_groups, "ALL") != 0))
 			fprintf(fp, " AllowGroups=%s", p[i].allow_groups);
 
-		if (p[i].allow_qos && (strcasecmp(p[i].allow_qos, "ALL") != 0))
+		if (p[i].allow_qos && (xstrcasecmp(p[i].allow_qos, "ALL") != 0))
 			fprintf(fp, " AllowQos=%s", p[i].allow_qos);
 
 		if (p[i].alternate != NULL)
@@ -1921,14 +1921,14 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		 * it does imply no value */
 		if ((key_pair->value == NULL) ||
 		    (strlen(key_pair->value) == 0) ||
-		    !strcasecmp(key_pair->value, "(null type)") ||
-		    !strcasecmp(key_pair->value, "(null)") ||
-		    !strcasecmp(key_pair->value, "N/A") ||
-		    (!strcasecmp(key_pair->name, "KeepAliveTime") &&
-		     !strcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
-		    !strcasecmp(key_pair->name, "DynAllocPort") ||
-		    (!strcasecmp(key_pair->name, "DefMemPerNode") &&
-		     !strcasecmp(key_pair->value, "UNLIMITED"))) {
+		    !xstrcasecmp(key_pair->value, "(null type)") ||
+		    !xstrcasecmp(key_pair->value, "(null)") ||
+		    !xstrcasecmp(key_pair->value, "N/A") ||
+		    (!xstrcasecmp(key_pair->name, "KeepAliveTime") &&
+		     !xstrcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
+		    !xstrcasecmp(key_pair->name, "DynAllocPort") ||
+		    (!xstrcasecmp(key_pair->name, "DefMemPerNode") &&
+		     !xstrcasecmp(key_pair->value, "UNLIMITED"))) {
 			temp = xstrdup_printf("#%s=", key_pair->name);
 			debug("Commenting out %s=%s",
 			      key_pair->name,
@@ -1941,124 +1941,124 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 					      key_pair->name, temp);
 		}
 
-		if (!strcasecmp(key_pair->name, "ControlMachine") ||
-		    !strcasecmp(key_pair->name, "ControlAddr") ||
-		    !strcasecmp(key_pair->name, "ClusterName") ||
-		    !strcasecmp(key_pair->name, "SlurmUser") ||
-		    !strcasecmp(key_pair->name, "SlurmdUser") ||
-		    !strcasecmp(key_pair->name, "SlurmctldPort") ||
-		    !strcasecmp(key_pair->name, "SlurmdPort") ||
-		    !strcasecmp(key_pair->name, "BackupAddr") ||
-		    !strcasecmp(key_pair->name, "BackupController")) {
+		if (!xstrcasecmp(key_pair->name, "ControlMachine") ||
+		    !xstrcasecmp(key_pair->name, "ControlAddr") ||
+		    !xstrcasecmp(key_pair->name, "ClusterName") ||
+		    !xstrcasecmp(key_pair->name, "SlurmUser") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdUser") ||
+		    !xstrcasecmp(key_pair->name, "SlurmctldPort") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdPort") ||
+		    !xstrcasecmp(key_pair->name, "BackupAddr") ||
+		    !xstrcasecmp(key_pair->name, "BackupController")) {
 			list_append(control_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "StateSaveLocation") ||
-		    !strcasecmp(key_pair->name, "SlurmdSpoolDir") ||
-		    !strcasecmp(key_pair->name, "SlurmctldLogFile") ||
-		    !strcasecmp(key_pair->name, "SlurmdLogFile") ||
-		    !strcasecmp(key_pair->name, "SlurmctldPidFile") ||
-		    !strcasecmp(key_pair->name, "SlurmdPidFile") ||
-		    !strcasecmp(key_pair->name, "SlurmSchedLogFile") ||
-		    !strcasecmp(key_pair->name, "SlurmEventHandlerLogfile")) {
+		if (!xstrcasecmp(key_pair->name, "StateSaveLocation") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdSpoolDir") ||
+		    !xstrcasecmp(key_pair->name, "SlurmctldLogFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdLogFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmctldPidFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdPidFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmSchedLogFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmEventHandlerLogfile")) {
 			list_append(logging_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "AccountingStorageBackupHost") ||
-		    !strcasecmp(key_pair->name, "AccountingStorageEnforce") ||
-		    !strcasecmp(key_pair->name, "AccountingStorageHost") ||
-		    !strcasecmp(key_pair->name, "AccountingStorageLoc") ||
-		    !strcasecmp(key_pair->name, "AccountingStoragePort") ||
-		    !strcasecmp(key_pair->name, "AccountingStorageType") ||
-		    !strcasecmp(key_pair->name, "AccountingStorageUser") ||
-		    !strcasecmp(key_pair->name, "AccountingStoreJobComment") ||
-		    !strcasecmp(key_pair->name, "AcctGatherEnergyType") ||
-		    !strcasecmp(key_pair->name, "AcctGatherFilesystemType") ||
-		    !strcasecmp(key_pair->name, "AcctGatherInfinibandType") ||
-		    !strcasecmp(key_pair->name, "AcctGatherNodeFreq") ||
-		    !strcasecmp(key_pair->name, "AcctGatherProfileType") ||
-		    !strcasecmp(key_pair->name, "JobAcctGatherFrequency") ||
-		    !strcasecmp(key_pair->name, "JobAcctGatherType") ||
-		    !strcasecmp(key_pair->name, "ExtSensorsType") ||
-		    !strcasecmp(key_pair->name, "ExtSensorsFreq")) {
+		if (!xstrcasecmp(key_pair->name, "AccountingStorageBackupHost") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStorageEnforce") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStorageHost") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStorageLoc") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStoragePort") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStorageType") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStorageUser") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStoreJobComment") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherEnergyType") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherFilesystemType") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherInfinibandType") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherNodeFreq") ||
+		    !xstrcasecmp(key_pair->name, "AcctGatherProfileType") ||
+		    !xstrcasecmp(key_pair->name, "JobAcctGatherFrequency") ||
+		    !xstrcasecmp(key_pair->name, "JobAcctGatherType") ||
+		    !xstrcasecmp(key_pair->name, "ExtSensorsType") ||
+		    !xstrcasecmp(key_pair->name, "ExtSensorsFreq")) {
 			list_append(accounting_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "SuspendExcNodes") ||
-		    !strcasecmp(key_pair->name, "SuspendExcParts") ||
-		    !strcasecmp(key_pair->name, "SuspendProgram") ||
-		    !strcasecmp(key_pair->name, "SuspendRate") ||
-		    !strcasecmp(key_pair->name, "SuspendTime") ||
-		    !strcasecmp(key_pair->name, "SuspendTimeout") ||
-		    !strcasecmp(key_pair->name, "ResumeProgram") ||
-		    !strcasecmp(key_pair->name, "ResumeRate") ||
-		    !strcasecmp(key_pair->name, "ResumeTimeout")) {
+		if (!xstrcasecmp(key_pair->name, "SuspendExcNodes") ||
+		    !xstrcasecmp(key_pair->name, "SuspendExcParts") ||
+		    !xstrcasecmp(key_pair->name, "SuspendProgram") ||
+		    !xstrcasecmp(key_pair->name, "SuspendRate") ||
+		    !xstrcasecmp(key_pair->name, "SuspendTime") ||
+		    !xstrcasecmp(key_pair->name, "SuspendTimeout") ||
+		    !xstrcasecmp(key_pair->name, "ResumeProgram") ||
+		    !xstrcasecmp(key_pair->name, "ResumeRate") ||
+		    !xstrcasecmp(key_pair->name, "ResumeTimeout")) {
 			list_append(power_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "SelectType") ||
-		    !strcasecmp(key_pair->name, "SelectTypeParameters") ||
-		    !strcasecmp(key_pair->name, "SchedulerParameters") ||
-		    !strcasecmp(key_pair->name, "SchedulerPort") ||
-		    !strcasecmp(key_pair->name, "SchedulerRootFilter") ||
-		    !strcasecmp(key_pair->name, "SchedulerTimeSlice") ||
-		    !strcasecmp(key_pair->name, "SchedulerType") ||
-		    !strcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
-		    !strcasecmp(key_pair->name, "PreemptMode") ||
-		    !strcasecmp(key_pair->name, "PreemptType") ||
-		    !strcasecmp(key_pair->name, "PriorityType") ||
-		    !strcasecmp(key_pair->name, "FastSchedule")) {
+		if (!xstrcasecmp(key_pair->name, "SelectType") ||
+		    !xstrcasecmp(key_pair->name, "SelectTypeParameters") ||
+		    !xstrcasecmp(key_pair->name, "SchedulerParameters") ||
+		    !xstrcasecmp(key_pair->name, "SchedulerPort") ||
+		    !xstrcasecmp(key_pair->name, "SchedulerRootFilter") ||
+		    !xstrcasecmp(key_pair->name, "SchedulerTimeSlice") ||
+		    !xstrcasecmp(key_pair->name, "SchedulerType") ||
+		    !xstrcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
+		    !xstrcasecmp(key_pair->name, "PreemptMode") ||
+		    !xstrcasecmp(key_pair->name, "PreemptType") ||
+		    !xstrcasecmp(key_pair->name, "PriorityType") ||
+		    !xstrcasecmp(key_pair->name, "FastSchedule")) {
 			list_append(sched_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "TopologyPlugin")) {
+		if (!xstrcasecmp(key_pair->name, "TopologyPlugin")) {
 			list_append(topology_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "SlurmctldTimeout") ||
-		    !strcasecmp(key_pair->name, "SlurmdTimeout") ||
-		    !strcasecmp(key_pair->name, "InactiveLimit") ||
-		    !strcasecmp(key_pair->name, "MinJobAge") ||
-		    !strcasecmp(key_pair->name, "KillWait") ||
-		    !strcasecmp(key_pair->name, "BatchStartTimeout") ||
-		    !strcasecmp(key_pair->name, "CompleteWait") ||
-		    !strcasecmp(key_pair->name, "EpilogMsgTime") ||
-		    !strcasecmp(key_pair->name, "GetEnvTimeout") ||
-		    !strcasecmp(key_pair->name, "Waittime")) {
+		if (!xstrcasecmp(key_pair->name, "SlurmctldTimeout") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdTimeout") ||
+		    !xstrcasecmp(key_pair->name, "InactiveLimit") ||
+		    !xstrcasecmp(key_pair->name, "MinJobAge") ||
+		    !xstrcasecmp(key_pair->name, "KillWait") ||
+		    !xstrcasecmp(key_pair->name, "BatchStartTimeout") ||
+		    !xstrcasecmp(key_pair->name, "CompleteWait") ||
+		    !xstrcasecmp(key_pair->name, "EpilogMsgTime") ||
+		    !xstrcasecmp(key_pair->name, "GetEnvTimeout") ||
+		    !xstrcasecmp(key_pair->name, "Waittime")) {
 			list_append(timers_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "SlurmctldDebug") ||
-		    !strcasecmp(key_pair->name, "SlurmdDebug") ||
-		    !strcasecmp(key_pair->name, "DebugFlags")) {
+		if (!xstrcasecmp(key_pair->name, "SlurmctldDebug") ||
+		    !xstrcasecmp(key_pair->name, "SlurmdDebug") ||
+		    !xstrcasecmp(key_pair->name, "DebugFlags")) {
 			list_append(debug_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "TaskPlugin") ||
-		    !strcasecmp(key_pair->name, "TaskPluginParam")) {
+		if (!xstrcasecmp(key_pair->name, "TaskPlugin") ||
+		    !xstrcasecmp(key_pair->name, "TaskPluginParam")) {
 			list_append(resconf_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "ProcTrackType")) {
+		if (!xstrcasecmp(key_pair->name, "ProcTrackType")) {
 			list_append(proctrac_list, temp);
 			continue;
 		}
 
-		if (!strcasecmp(key_pair->name, "Epilog") ||
-		    !strcasecmp(key_pair->name, "Prolog") ||
-		    !strcasecmp(key_pair->name, "SrunProlog") ||
-		    !strcasecmp(key_pair->name, "SrunEpilog") ||
-		    !strcasecmp(key_pair->name, "TaskEpilog") ||
-		    !strcasecmp(key_pair->name, "TaskProlog")) {
+		if (!xstrcasecmp(key_pair->name, "Epilog") ||
+		    !xstrcasecmp(key_pair->name, "Prolog") ||
+		    !xstrcasecmp(key_pair->name, "SrunProlog") ||
+		    !xstrcasecmp(key_pair->name, "SrunEpilog") ||
+		    !xstrcasecmp(key_pair->name, "TaskEpilog") ||
+		    !xstrcasecmp(key_pair->name, "TaskProlog")) {
 			list_append(proepilog_list, temp);
 			continue;
 		} else {

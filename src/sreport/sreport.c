@@ -113,8 +113,8 @@ main (int argc, char *argv[])
 
 	/* Check to see if we are running a supported accounting plugin */
 	temp = slurm_get_accounting_storage_type();
-	if (strcasecmp(temp, "accounting_storage/slurmdbd")
-	   && strcasecmp(temp, "accounting_storage/mysql")) {
+	if (xstrcasecmp(temp, "accounting_storage/slurmdbd")
+	   && xstrcasecmp(temp, "accounting_storage/mysql")) {
 		fprintf (stderr, "You are not running a supported "
 			 "accounting_storage plugin\n(%s).\n"
 			 "Only 'accounting_storage/slurmdbd' "
@@ -252,7 +252,7 @@ static List _build_tres_list(char *tres_str)
 				   tres->name ? tres->name : "");
 			tok = strtok_r(tres_tmp, ",", &save_ptr);
 			while (tok) {
-				if (!strcasecmp(tres_tmp2, tok))
+				if (!xstrcasecmp(tres_tmp2, tok))
 					break;
 				tok = strtok_r(NULL, ",", &save_ptr);
 			}

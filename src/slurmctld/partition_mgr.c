@@ -127,8 +127,8 @@ static void _calc_part_tres(struct part_record *part_ptr)
 	for(i = 0; i < slurmctld_tres_cnt; i++) {
 		slurmdb_tres_rec_t *tres_rec = assoc_mgr_tres_array[i];
 
-		if (!strcasecmp(tres_rec->type, "bb") ||
-		    !strcasecmp(tres_rec->type, "license"))
+		if (!xstrcasecmp(tres_rec->type, "bb") ||
+		    !xstrcasecmp(tres_rec->type, "license"))
 			tres_cnt[i] = tres_rec->count;
 	}
 
@@ -1502,7 +1502,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->allow_accounts != NULL) {
 		xfree(part_ptr->allow_accounts);
-		if ((strcasecmp(part_desc->allow_accounts, "ALL") == 0) ||
+		if ((xstrcasecmp(part_desc->allow_accounts, "ALL") == 0) ||
 		    (part_desc->allow_accounts[0] == '\0')) {
 			info ("update_part: setting AllowAccounts to ALL for "
 			      "partition %s",
@@ -1521,7 +1521,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->allow_groups != NULL) {
 		xfree(part_ptr->allow_groups);
 		xfree(part_ptr->allow_uids);
-		if ((strcasecmp(part_desc->allow_groups, "ALL") == 0) ||
+		if ((xstrcasecmp(part_desc->allow_groups, "ALL") == 0) ||
 		    (part_desc->allow_groups[0] == '\0')) {
 			info("update_part: setting allow_groups to ALL for "
 				"partition %s",
@@ -1540,7 +1540,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->allow_qos != NULL) {
 		xfree(part_ptr->allow_qos);
-		if ((strcasecmp(part_desc->allow_qos, "ALL") == 0) ||
+		if ((xstrcasecmp(part_desc->allow_qos, "ALL") == 0) ||
 		    (part_desc->allow_qos[0] == '\0')) {
 			info("update_partition: setting AllowQOS to ALL for "
 			     "partition %s",
@@ -1577,7 +1577,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->allow_alloc_nodes != NULL) {
 		xfree(part_ptr->allow_alloc_nodes);
 		if ((part_desc->allow_alloc_nodes[0] == '\0') ||
-		    (strcasecmp(part_desc->allow_alloc_nodes, "ALL") == 0)) {
+		    (xstrcasecmp(part_desc->allow_alloc_nodes, "ALL") == 0)) {
 			part_ptr->allow_alloc_nodes = NULL;
 			info("update_part: setting allow_alloc_nodes to ALL"
 			     " for partition %s",part_desc->name);
@@ -1593,7 +1593,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	}
 	if (part_desc->alternate != NULL) {
 		xfree(part_ptr->alternate);
-		if ((strcasecmp(part_desc->alternate, "NONE") == 0) ||
+		if ((xstrcasecmp(part_desc->alternate, "NONE") == 0) ||
 		    (part_desc->alternate[0] == '\0'))
 			part_ptr->alternate = NULL;
 		else

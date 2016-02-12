@@ -2271,7 +2271,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
 
-	if (step_specs->gres && !strcasecmp(step_specs->gres, "NONE"))
+	if (step_specs->gres && !xstrcasecmp(step_specs->gres, "NONE"))
 		xfree(step_specs->gres);
 	else if (step_specs->gres == NULL)
 		step_specs->gres = xstrdup(job_ptr->gres);
@@ -4020,7 +4020,7 @@ extern void step_checkpoint(void)
 	/* Exit if "checkpoint/none" is configured */
 	if (ckpt_run == -1) {
 		char *ckpt_type = slurm_get_checkpoint_type();
-		if (strcasecmp(ckpt_type, "checkpoint/none"))
+		if (xstrcasecmp(ckpt_type, "checkpoint/none"))
 			ckpt_run = 1;
 		else
 			ckpt_run = 0;

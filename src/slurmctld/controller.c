@@ -361,8 +361,8 @@ int main(int argc, char *argv[])
 	association_based_accounting =
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
-	if (!strcasecmp(slurmctld_conf.accounting_storage_type,
-		       "accounting_storage/slurmdbd")) {
+	if (!xstrcasecmp(slurmctld_conf.accounting_storage_type,
+			 "accounting_storage/slurmdbd")) {
 		with_slurmdbd = 1;
 		/* we need job_list not to be NULL */
 		init_job_conf();
@@ -1397,13 +1397,13 @@ static int _init_tres(void)
 
 		tres_rec->type = temp_char;
 
-		if (!strcasecmp(temp_char, "cpu"))
+		if (!xstrcasecmp(temp_char, "cpu"))
 			tres_rec->id = TRES_CPU;
-		else if (!strcasecmp(temp_char, "mem"))
+		else if (!xstrcasecmp(temp_char, "mem"))
 			tres_rec->id = TRES_MEM;
-		else if (!strcasecmp(temp_char, "energy"))
+		else if (!xstrcasecmp(temp_char, "energy"))
 			tres_rec->id = TRES_ENERGY;
-		else if (!strcasecmp(temp_char, "node"))
+		else if (!xstrcasecmp(temp_char, "node"))
 			tres_rec->id = TRES_NODE;
 		else if (!strncasecmp(temp_char, "bb/", 3)) {
 			tres_rec->type[2] = '\0';

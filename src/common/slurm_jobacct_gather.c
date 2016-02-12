@@ -237,7 +237,7 @@ extern int jobacct_gather_init(void)
 		goto done;
 	}
 
-	if (!strcasecmp(type, "jobacct_gather/none")) {
+	if (!xstrcasecmp(type, "jobacct_gather/none")) {
 		plugin_polling = false;
 		goto done;
 	}
@@ -250,7 +250,7 @@ extern int jobacct_gather_init(void)
 
 	plugin_type = type;
 	type = slurm_get_proctrack_type();
-	if (!strcasecmp(type, "proctrack/pgid")) {
+	if (!xstrcasecmp(type, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
 		     "or some other proctrack when using %s",
@@ -261,7 +261,7 @@ extern int jobacct_gather_init(void)
 	xfree(plugin_type);
 
 	type = slurm_get_accounting_storage_type();
-	if (!strcasecmp(type, ACCOUNTING_STORAGE_TYPE_NONE)) {
+	if (!xstrcasecmp(type, ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "

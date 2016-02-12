@@ -316,13 +316,13 @@ extern char *acct_gather_profile_type_to_string(uint32_t series)
 
 extern uint32_t acct_gather_profile_type_from_string(char *series_str)
 {
-	if (!strcasecmp(series_str, "energy"))
+	if (!xstrcasecmp(series_str, "energy"))
 		return ACCT_GATHER_PROFILE_ENERGY;
-	else if (!strcasecmp(series_str, "task"))
+	else if (!xstrcasecmp(series_str, "task"))
 		return ACCT_GATHER_PROFILE_TASK;
-	else if (!strcasecmp(series_str, "lustre"))
+	else if (!xstrcasecmp(series_str, "lustre"))
 		return ACCT_GATHER_PROFILE_LUSTRE;
-	else if (!strcasecmp(series_str, "network"))
+	else if (!xstrcasecmp(series_str, "network"))
 		return ACCT_GATHER_PROFILE_NETWORK;
 
 	return ACCT_GATHER_PROFILE_NOT_SET;

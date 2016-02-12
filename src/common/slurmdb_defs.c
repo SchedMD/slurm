@@ -1487,7 +1487,7 @@ extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
 
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if (!strcasecmp(working_level, qos->name))
+		if (!xstrcasecmp(working_level, qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2460,7 +2460,8 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 						name = xstrdup_printf("%u", id);
 					}
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 					list_iterator_reset(itr);
@@ -2535,7 +2536,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				name = xstrdup_printf("%u", id);
 			}
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 

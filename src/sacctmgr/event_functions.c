@@ -121,7 +121,8 @@ static int _addto_state_char_list(List char_list, char *names)
 					name = xstrdup_printf("%u", c);
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -153,7 +154,7 @@ static int _addto_state_char_list(List char_list, char *names)
 			name = xstrdup_printf("%u", c);
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 
@@ -227,7 +228,8 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 					name = _convert_to_id( name, gid );
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -255,7 +257,7 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 			name = _convert_to_id(name, gid);
 
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 

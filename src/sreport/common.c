@@ -207,7 +207,8 @@ extern void addto_char_list(List char_list, char *names)
 					memcpy(name, names+start, (i-start));
 
 					while((tmp_char = list_next(itr))) {
-						if (!strcasecmp(tmp_char, name))
+						if (!xstrcasecmp(tmp_char,
+								 name))
 							break;
 					}
 
@@ -226,7 +227,7 @@ extern void addto_char_list(List char_list, char *names)
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			while((tmp_char = list_next(itr))) {
-				if (!strcasecmp(tmp_char, name))
+				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
 

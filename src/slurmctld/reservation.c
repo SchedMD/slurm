@@ -2249,7 +2249,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 #endif
 
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
-		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
+		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_desc_ptr->partition) &&
 			    (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES)) {
 				part_ptr = find_part_record(
@@ -2738,7 +2738,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
 		resv_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
-		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
+		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_ptr->partition) &&
 			    (resv_ptr->flags & RESERVE_FLAG_PART_NODES)) {
 				struct part_record *part_ptr = NULL;
@@ -3280,7 +3280,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			}
 		}
 #endif
-		if (strcasecmp(resv_ptr->node_list, "ALL") == 0) {
+		if (xstrcasecmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_ptr->node_list,

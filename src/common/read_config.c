@@ -504,7 +504,7 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _frontend_options); */
 
-	if (strcasecmp(value, "DEFAULT") == 0) {
+	if (xstrcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
 		if (s_p_get_string(&tmp, "FrontendAddr", tbl)) {
 			error("FrontendAddr not allowed with "
@@ -608,7 +608,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _nodename_options); */
 
-	if (strcasecmp(value, "DEFAULT") == 0) {
+	if (xstrcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
 			error("NodeHostname not allowed with "
@@ -1087,7 +1087,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	s_p_parse_line(tbl, *leftover, leftover);
 	/* s_p_dump_values(tbl, _partition_options); */
 
-	if (strcasecmp(value, "DEFAULT") == 0) {
+	if (xstrcasecmp(value, "DEFAULT") == 0) {
 		if (default_partition_tbl != NULL) {
 			s_p_hashtbl_merge(tbl, default_partition_tbl);
 			s_p_hashtbl_destroy(default_partition_tbl);
@@ -1105,18 +1105,18 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			s_p_get_string(&p->allow_accounts,
 				       "AllowAccounts", dflt);
 		if (p->allow_accounts &&
-		    (strcasecmp(p->allow_accounts, "ALL") == 0))
+		    (xstrcasecmp(p->allow_accounts, "ALL") == 0))
 			xfree(p->allow_accounts);
 
 		if (!s_p_get_string(&p->allow_groups, "AllowGroups", tbl))
 			s_p_get_string(&p->allow_groups, "AllowGroups", dflt);
 		if (p->allow_groups &&
-		    (strcasecmp(p->allow_groups, "ALL") == 0))
+		    (xstrcasecmp(p->allow_groups, "ALL") == 0))
 			xfree(p->allow_groups);
 
 		if (!s_p_get_string(&p->allow_qos, "AllowQos", tbl))
 			s_p_get_string(&p->allow_qos, "AllowQos", dflt);
-		if (p->allow_qos && (strcasecmp(p->allow_qos, "ALL") == 0))
+		if (p->allow_qos && (xstrcasecmp(p->allow_qos, "ALL") == 0))
 			xfree(p->allow_qos);
 
 		if (!s_p_get_string(&p->deny_accounts, "DenyAccounts", tbl))
@@ -1139,7 +1139,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			s_p_get_string(&p->allow_alloc_nodes, "AllocNodes",
 				       dflt);
 			if (p->allow_alloc_nodes &&
-			    (strcasecmp(p->allow_alloc_nodes, "ALL") == 0))
+			    (xstrcasecmp(p->allow_alloc_nodes, "ALL") == 0))
 				xfree(p->allow_alloc_nodes);
 		}
 
@@ -1317,9 +1317,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (s_p_get_string(&tmp, "Shared", tbl) ||
 		    s_p_get_string(&tmp, "Shared", dflt)) {
-			if (strcasecmp(tmp, "NO") == 0)
+			if (xstrcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
-			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
+			else if (xstrcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
 			else if (strncasecmp(tmp, "YES:", 4) == 0) {
 				int i = strtol(&tmp[4], (char **) NULL, 10);
@@ -1329,7 +1329,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 					p->max_share = 1; /* Shared=NO */
 				} else
 					p->max_share = i;
-			} else if (strcasecmp(tmp, "YES") == 0)
+			} else if (xstrcasecmp(tmp, "YES") == 0)
 				p->max_share = 4;
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
 				int i = strtol(&tmp[6], (char **) NULL, 10);
@@ -1339,7 +1339,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 					p->max_share = 1; /* Shared=NO */
 				} else
 					p->max_share = i | SHARED_FORCE;
-			} else if (strcasecmp(tmp, "FORCE") == 0)
+			} else if (xstrcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
@@ -2863,18 +2863,18 @@ static uint16_t _health_node_state(char *state_str)
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
-		if (!strcasecmp(token, "ANY")) {
+		if (!xstrcasecmp(token, "ANY")) {
 			state_num |= HEALTH_CHECK_NODE_ANY;
 			state_set = true;
-		} else if (!strcasecmp(token, "ALLOC")) {
+		} else if (!xstrcasecmp(token, "ALLOC")) {
 			state_num |= HEALTH_CHECK_NODE_ALLOC;
 			state_set = true;
-		} else if (!strcasecmp(token, "CYCLE")) {
+		} else if (!xstrcasecmp(token, "CYCLE")) {
 			state_num |= HEALTH_CHECK_CYCLE;
-		} else if (!strcasecmp(token, "IDLE")) {
+		} else if (!xstrcasecmp(token, "IDLE")) {
 			state_num |= HEALTH_CHECK_NODE_IDLE;
 			state_set = true;
-		} else if (!strcasecmp(token, "MIXED")) {
+		} else if (!xstrcasecmp(token, "MIXED")) {
 			state_num |= HEALTH_CHECK_NODE_MIXED;
 			state_set = true;
 		} else {
@@ -2914,7 +2914,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
-	    && strcasecmp("localhost", conf->backup_controller) == 0) {
+	    && xstrcasecmp("localhost", conf->backup_controller) == 0) {
 		xfree(conf->backup_controller);
 		conf->backup_controller = xmalloc (MAX_SLURM_NAME);
 		if (gethostname_short(conf->backup_controller, MAX_SLURM_NAME)){
@@ -2955,7 +2955,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		error("ControlMachine not specified.");
 		return SLURM_ERROR;
 	}
-	else if (strcasecmp("localhost", conf->control_machine) == 0) {
+	else if (xstrcasecmp("localhost", conf->control_machine) == 0) {
 		xfree (conf->control_machine);
 		conf->control_machine = xmalloc(MAX_SLURM_NAME);
 		if (gethostname_short(conf->control_machine, MAX_SLURM_NAME)) {
@@ -3182,7 +3182,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if (default_storage_type) {
-			if (!strcasecmp("slurmdbd", default_storage_type)) {
+			if (!xstrcasecmp("slurmdbd", default_storage_type)) {
 				error("Can not use the default storage type "
 				      "specified for jobcomp since there is "
 				      "not slurmdbd type.  We are using %s "
@@ -3714,19 +3714,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 
 	if (s_p_get_string(&temp_str, "PriorityUsageResetPeriod", hashtbl)) {
-		if (strcasecmp(temp_str, "none") == 0)
+		if (xstrcasecmp(temp_str, "none") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_NONE;
-		else if (strcasecmp(temp_str, "now") == 0)
+		else if (xstrcasecmp(temp_str, "now") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_NOW;
-		else if (strcasecmp(temp_str, "daily") == 0)
+		else if (xstrcasecmp(temp_str, "daily") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_DAILY;
-		else if (strcasecmp(temp_str, "weekly") == 0)
+		else if (xstrcasecmp(temp_str, "weekly") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_WEEKLY;
-		else if (strcasecmp(temp_str, "monthly") == 0)
+		else if (xstrcasecmp(temp_str, "monthly") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_MONTHLY;
-		else if (strcasecmp(temp_str, "quarterly") == 0)
+		else if (xstrcasecmp(temp_str, "quarterly") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_QUARTERLY;
-		else if (strcasecmp(temp_str, "yearly") == 0)
+		else if (xstrcasecmp(temp_str, "yearly") == 0)
 			conf->priority_reset_period = PRIORITY_RESET_YEARLY;
 		else {
 			error("Bad value \"%s\" for PriorityUsageResetPeriod",
@@ -4134,7 +4134,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
-		if (!strcasecmp(temp_str, "NONE"))
+		if (!xstrcasecmp(temp_str, "NONE"))
 			long_suspend_time = -1;
 		else
 			long_suspend_time = atoi(temp_str);
@@ -4171,49 +4171,49 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		bool set_mode = false, set_unit = false, set_auto = false;
 		tok = strtok_r(temp_str, ",", &last);
 		while (tok) {
-			if (strcasecmp(tok, "none") == 0) {
+			if (xstrcasecmp(tok, "none") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_NONE;
-			} else if (strcasecmp(tok, "boards") == 0) {
+			} else if (xstrcasecmp(tok, "boards") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_BOARDS;
-			} else if (strcasecmp(tok, "sockets") == 0) {
+			} else if (xstrcasecmp(tok, "sockets") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_SOCKETS;
-			} else if (strcasecmp(tok, "cores") == 0) {
+			} else if (xstrcasecmp(tok, "cores") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_CORES;
-			} else if (strcasecmp(tok, "threads") == 0) {
+			} else if (xstrcasecmp(tok, "threads") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_THREADS;
-			} else if (strcasecmp(tok, "cpusets") == 0) {
+			} else if (xstrcasecmp(tok, "cpusets") == 0) {
 				if (set_mode) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
 				}
 				set_mode = true;
 				conf->task_plugin_param |= CPU_BIND_CPUSETS;
-			} else if (strcasecmp(tok, "sched") == 0) {
+			} else if (xstrcasecmp(tok, "sched") == 0) {
 				if (set_mode) {
 					error("Bad TaskPluginParam: %s", tok);
 					return SLURM_ERROR;
@@ -4221,7 +4221,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				set_mode = true;
 				/* No change to task_plugin_param,
 				 * this is the default */
-			} else if (strcasecmp(tok, "verbose") == 0) {
+			} else if (xstrcasecmp(tok, "verbose") == 0) {
 				conf->task_plugin_param |= CPU_BIND_VERBOSE;
 			} else if (strncasecmp(tok, "autobind=",
 						strlen("autobind=")) == 0) {
@@ -4233,17 +4233,20 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 					return SLURM_ERROR;
 				}
 
-				if (strcasecmp(val_ptr, "none") == 0) {
+				if (xstrcasecmp(val_ptr, "none") == 0) {
 					set_auto = true;
-				} else if (strcasecmp(val_ptr, "threads") == 0) {
+				} else if (xstrcasecmp(val_ptr,
+						       "threads") == 0) {
 					set_auto = true;
 					conf->task_plugin_param |=
 						CPU_AUTO_BIND_TO_THREADS;
-				} else if (strcasecmp(val_ptr, "cores") == 0) {
+				} else if (xstrcasecmp(val_ptr,
+						       "cores") == 0) {
 					set_auto = true;
 					conf->task_plugin_param |=
 						CPU_AUTO_BIND_TO_CORES;
-				} else if (strcasecmp(val_ptr, "sockets") == 0) {
+				} else if (xstrcasecmp(val_ptr,
+						       "sockets") == 0) {
 					set_auto = true;
 					conf->task_plugin_param |=
 						CPU_AUTO_BIND_TO_SOCKETS;
@@ -4419,11 +4422,11 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 	tmp_str = xstrdup(prolog_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (strcasecmp(tok, "Alloc") == 0)
+		if (xstrcasecmp(tok, "Alloc") == 0)
 			rc |= PROLOG_FLAG_ALLOC;
-		else if (strcasecmp(tok, "Contain") == 0)
+		else if (xstrcasecmp(tok, "Contain") == 0)
 			rc |= (PROLOG_FLAG_ALLOC | PROLOG_FLAG_CONTAIN);
-		else if (strcasecmp(tok, "NoHold") == 0)
+		else if (xstrcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
 		else {
 			error("Invalid PrologFlag: %s", tok);
@@ -4713,103 +4716,103 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 	tmp_str = xstrdup(debug_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (strcasecmp(tok, "Backfill") == 0)
+		if (xstrcasecmp(tok, "Backfill") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL;
-		else if (strcasecmp(tok, "BackfillMap") == 0)
+		else if (xstrcasecmp(tok, "BackfillMap") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL_MAP;
-		else if (strcasecmp(tok, "BGBlockAlgo") == 0)
+		else if (xstrcasecmp(tok, "BGBlockAlgo") == 0)
 			(*flags_out) |= DEBUG_FLAG_BG_ALGO;
-		else if (strcasecmp(tok, "BGBlockAlgoDeep") == 0)
+		else if (xstrcasecmp(tok, "BGBlockAlgoDeep") == 0)
 			(*flags_out) |= DEBUG_FLAG_BG_ALGO_DEEP;
-		else if (strcasecmp(tok, "BGBlockPick") == 0)
+		else if (xstrcasecmp(tok, "BGBlockPick") == 0)
 			(*flags_out) |= DEBUG_FLAG_BG_PICK;
-		else if (strcasecmp(tok, "BGBlockWires") == 0)
+		else if (xstrcasecmp(tok, "BGBlockWires") == 0)
 			(*flags_out) |= DEBUG_FLAG_BG_WIRES;
-		else if (strcasecmp(tok, "BurstBuffer") == 0)
+		else if (xstrcasecmp(tok, "BurstBuffer") == 0)
 			(*flags_out) |= DEBUG_FLAG_BURST_BUF;
-		else if (strcasecmp(tok, "CPU_Bind") == 0)
+		else if (xstrcasecmp(tok, "CPU_Bind") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_BIND;
-		else if (strcasecmp(tok, "DB_Archive") == 0)
+		else if (xstrcasecmp(tok, "DB_Archive") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_ARCHIVE;
-		else if (strcasecmp(tok, "DB_Assoc") == 0)
+		else if (xstrcasecmp(tok, "DB_Assoc") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_ASSOC;
-		else if (strcasecmp(tok, "DB_TRES") == 0)
+		else if (xstrcasecmp(tok, "DB_TRES") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_TRES;
-		else if (strcasecmp(tok, "DB_Event") == 0)
+		else if (xstrcasecmp(tok, "DB_Event") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_EVENT;
-		else if (strcasecmp(tok, "DB_Job") == 0)
+		else if (xstrcasecmp(tok, "DB_Job") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_JOB;
-		else if (strcasecmp(tok, "DB_QOS") == 0)
+		else if (xstrcasecmp(tok, "DB_QOS") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_QOS;
-		else if (strcasecmp(tok, "DB_Query") == 0)
+		else if (xstrcasecmp(tok, "DB_Query") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_QUERY;
-		else if (strcasecmp(tok, "DB_Reservation") == 0)
+		else if (xstrcasecmp(tok, "DB_Reservation") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_RESV;
-		else if (strcasecmp(tok, "DB_Resource") == 0)
+		else if (xstrcasecmp(tok, "DB_Resource") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_RES;
-		else if (strcasecmp(tok, "DB_Step") == 0)
+		else if (xstrcasecmp(tok, "DB_Step") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_STEP;
-		else if (strcasecmp(tok, "DB_Usage") == 0)
+		else if (xstrcasecmp(tok, "DB_Usage") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_USAGE;
-		else if (strcasecmp(tok, "DB_WCKey") == 0)
+		else if (xstrcasecmp(tok, "DB_WCKey") == 0)
 			(*flags_out) |= DEBUG_FLAG_DB_WCKEY;
-		else if (strcasecmp(tok, "Elasticsearch") == 0)
+		else if (xstrcasecmp(tok, "Elasticsearch") == 0)
 			(*flags_out) |= DEBUG_FLAG_ESEARCH;
-		else if (strcasecmp(tok, "Energy") == 0)
+		else if (xstrcasecmp(tok, "Energy") == 0)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
-		else if (strcasecmp(tok, "ExtSensors") == 0)
+		else if (xstrcasecmp(tok, "ExtSensors") == 0)
 			(*flags_out) |= DEBUG_FLAG_EXT_SENSORS;
-		else if (strcasecmp(tok, "FrontEnd") == 0)
+		else if (xstrcasecmp(tok, "FrontEnd") == 0)
 			(*flags_out) |= DEBUG_FLAG_FRONT_END;
-		else if (strcasecmp(tok, "Gang") == 0)
+		else if (xstrcasecmp(tok, "Gang") == 0)
 			(*flags_out) |= DEBUG_FLAG_GANG;
-		else if (strcasecmp(tok, "Gres") == 0)
+		else if (xstrcasecmp(tok, "Gres") == 0)
 			(*flags_out) |= DEBUG_FLAG_GRES;
-		else if (strcasecmp(tok, "Infiniband") == 0)
+		else if (xstrcasecmp(tok, "Infiniband") == 0)
 			(*flags_out) |= DEBUG_FLAG_INFINIBAND;
-		else if (strcasecmp(tok, "Filesystem") == 0)
+		else if (xstrcasecmp(tok, "Filesystem") == 0)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
-		else if (strcasecmp(tok, "JobContainer") == 0)
+		else if (xstrcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
-		else if (strcasecmp(tok, "License") == 0)
+		else if (xstrcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
-		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
+		else if (xstrcasecmp(tok, "NO_CONF_HASH") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_CONF_HASH;
-		else if (strcasecmp(tok, "NodeFeatures") == 0)
+		else if (xstrcasecmp(tok, "NodeFeatures") == 0)
 			(*flags_out) |= DEBUG_FLAG_NODE_FEATURES;
-		else if (strcasecmp(tok, "NoRealTime") == 0)
+		else if (xstrcasecmp(tok, "NoRealTime") == 0)
 			(*flags_out) |= DEBUG_FLAG_NO_REALTIME;
-		else if (strcasecmp(tok, "Priority") == 0)
+		else if (xstrcasecmp(tok, "Priority") == 0)
 			(*flags_out) |= DEBUG_FLAG_PRIO;
-		else if (strcasecmp(tok, "Profile") == 0)
+		else if (xstrcasecmp(tok, "Profile") == 0)
 			(*flags_out) |= DEBUG_FLAG_PROFILE;
-		else if (strcasecmp(tok, "Protocol") == 0)
+		else if (xstrcasecmp(tok, "Protocol") == 0)
 			(*flags_out) |= DEBUG_FLAG_PROTOCOL;
-		else if (strcasecmp(tok, "Reservation") == 0)
+		else if (xstrcasecmp(tok, "Reservation") == 0)
 			(*flags_out) |= DEBUG_FLAG_RESERVATION;
-		else if (strcasecmp(tok, "Route") == 0)
+		else if (xstrcasecmp(tok, "Route") == 0)
 			(*flags_out) |= DEBUG_FLAG_ROUTE;
-		else if (strcasecmp(tok, "SelectType") == 0)
+		else if (xstrcasecmp(tok, "SelectType") == 0)
 			(*flags_out) |= DEBUG_FLAG_SELECT_TYPE;
-		else if (strcasecmp(tok, "Steps") == 0)
+		else if (xstrcasecmp(tok, "Steps") == 0)
 			(*flags_out) |= DEBUG_FLAG_STEPS;
-		else if (strcasecmp(tok, "Switch") == 0)
+		else if (xstrcasecmp(tok, "Switch") == 0)
 			(*flags_out) |= DEBUG_FLAG_SWITCH;
-		else if (strcasecmp(tok, "Task") == 0)
+		else if (xstrcasecmp(tok, "Task") == 0)
 			(*flags_out) |= DEBUG_FLAG_TASK;
-		else if (strcasecmp(tok, "TraceJobs") == 0)
+		else if (xstrcasecmp(tok, "TraceJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
-		else if (strcasecmp(tok, "Trigger") == 0)
+		else if (xstrcasecmp(tok, "Trigger") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
-		else if (strcasecmp(tok, "Triggers") == 0)
+		else if (xstrcasecmp(tok, "Triggers") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
-		else if (strcasecmp(tok, "Wiki") == 0)
+		else if (xstrcasecmp(tok, "Wiki") == 0)
 			(*flags_out) |= DEBUG_FLAG_WIKI;
-		else if (strcasecmp(tok, "CpuFrequency") == 0)
+		else if (xstrcasecmp(tok, "CpuFrequency") == 0)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
-		else if (strcasecmp(tok, "Power") == 0)
+		else if (xstrcasecmp(tok, "Power") == 0)
 			(*flags_out) |= DEBUG_FLAG_POWER;
-		else if (strcasecmp(tok, "TimeCray") == 0)
+		else if (xstrcasecmp(tok, "TimeCray") == 0)
 			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
 		else {
 			error("Invalid DebugFlag: %s", tok);
@@ -4862,9 +4865,9 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 	tmp_str = xstrdup(reconfig_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (strcasecmp(tok, "KeepPartInfo") == 0)
+		if (xstrcasecmp(tok, "KeepPartInfo") == 0)
 			rc |= RECONFIG_KEEP_PART_INFO;
-		else if (strcasecmp(tok, "KeepPartState") == 0)
+		else if (xstrcasecmp(tok, "KeepPartState") == 0)
 			rc |= RECONFIG_KEEP_PART_STAT;
 		else {
 			error("Invalid ReconfigFlag: %s", tok);

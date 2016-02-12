@@ -479,7 +479,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		itr2 = list_iterator_create(user.coord_accts);
 		while ((acct = list_next(itr))) {
 			while ((coord = list_next(itr2))) {
-				if (!strcasecmp(coord->name, acct))
+				if (!xstrcasecmp(coord->name, acct))
 					break;
 			}
 			if (!coord)
@@ -1080,7 +1080,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while ((coord = list_next(itr))) {
-				if (!strcasecmp(coord->name, row[1]))
+				if (!xstrcasecmp(coord->name, row[1]))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -1097,7 +1097,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				return NULL;
 			}
 		}
-		if (!last_user || strcasecmp(last_user, row[0])) {
+		if (!last_user || xstrcasecmp(last_user, row[0])) {
 			list_append(user_list, xstrdup(row[0]));
 			last_user = row[0];
 		}

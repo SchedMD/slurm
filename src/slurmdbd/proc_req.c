@@ -681,7 +681,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 				account = object->parent_acct;
 			list_iterator_reset(itr2);
 			while ((coord = list_next(itr2))) {
-				if (!strcasecmp(coord->name, account))
+				if (!xstrcasecmp(coord->name, account))
 					break;
 			}
 			if (!coord)

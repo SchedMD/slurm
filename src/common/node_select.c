@@ -211,12 +211,12 @@ extern int slurm_select_init(bool only_default)
 		/* just ignore warnings here */
 	} else {
 #ifdef HAVE_BG
-		if (strcasecmp(type, "select/bluegene")) {
+		if (xstrcasecmp(type, "select/bluegene")) {
 			error("%s is incompatible with BlueGene", type);
 			fatal("Use SelectType=select/bluegene");
 		}
 #else
-		if (!strcasecmp(type, "select/bluegene")) {
+		if (!xstrcasecmp(type, "select/bluegene")) {
 			fatal("Requested SelectType=select/bluegene "
 			      "in slurm.conf, but not running on a BG[L|P|Q] "
 			      "system.  If looking to emulate a BG[L|P|Q] "
@@ -226,13 +226,13 @@ extern int slurm_select_init(bool only_default)
 #endif
 
 #ifdef HAVE_ALPS_CRAY
-		if (strcasecmp(type, "select/alps")) {
+		if (xstrcasecmp(type, "select/alps")) {
 			error("%s is incompatible with Cray system "
 			      "running alps", type);
 			fatal("Use SelectType=select/alps");
 		}
 #else
-		if (!strcasecmp(type, "select/alps")) {
+		if (!xstrcasecmp(type, "select/alps")) {
 			fatal("Requested SelectType=select/alps "
 			      "in slurm.conf, but not running on a ALPS Cray "
 			      "system.  If looking to emulate a Alps Cray "
@@ -241,13 +241,13 @@ extern int slurm_select_init(bool only_default)
 #endif
 
 #ifdef HAVE_NATIVE_CRAY
-		if (strcasecmp(type, "select/cray")) {
+		if (xstrcasecmp(type, "select/cray")) {
 			error("%s is incompatible with a native Cray system.",
 			      type);
 			fatal("Use SelectType=select/cray");
 		}
 #else
-		/* if (!strcasecmp(type, "select/cray")) { */
+		/* if (!xstrcasecmp(type, "select/cray")) { */
 		/* 	fatal("Requested SelectType=select/cray " */
 		/* 	      "in slurm.conf, but not running on a native Cray " */
 		/* 	      "system.  If looking to run on a Cray " */

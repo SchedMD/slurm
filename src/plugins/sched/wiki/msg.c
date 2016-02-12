@@ -339,9 +339,9 @@ extern int parse_wiki_config(void)
 	}
 
 	if (s_p_get_string(&priority_mode, "JobPriority", tbl)) {
-		if (strcasecmp(priority_mode, "hold") == 0)
+		if (xstrcasecmp(priority_mode, "hold") == 0)
 			init_prio_mode = PRIO_HOLD;
-		else if (strcasecmp(priority_mode, "run") == 0)
+		else if (xstrcasecmp(priority_mode, "run") == 0)
 			init_prio_mode = PRIO_DECREMENT;
 		else
 			error("Invalid value for JobPriority in wiki.conf");

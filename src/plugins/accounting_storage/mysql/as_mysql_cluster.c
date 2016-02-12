@@ -1099,7 +1099,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	row = mysql_fetch_row(result);
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
 	    my_reason && row[1] &&
-	    !strcasecmp(my_reason, row[1])) {
+	    !xstrcasecmp(my_reason, row[1])) {
 		debug("as_mysql_node_down: no change needed %u == %s "
 		      "and %s == %s",
 		     node_ptr->node_state, row[0], my_reason, row[1]);

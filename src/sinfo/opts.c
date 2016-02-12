@@ -391,7 +391,7 @@ _build_state_list (char *state_str)
 
 	if (state_str == NULL)
 		return NULL;
-	if (strcasecmp (state_str, "all") == 0 )
+	if (xstrcasecmp (state_str, "all") == 0 )
 		return _build_all_states_list ();
 
 	orig = str = xstrdup (state_str);
@@ -578,7 +578,7 @@ _parse_format( char* format )
 	if ((prefix = _get_prefix(format)))
 		format_add_prefix( params.format_list, 0, 0, prefix);
 
-	if (!strcasecmp(format, "%all")) {
+	if (!xstrcasecmp(format, "%all")) {
 		xstrfmtcat(tmp_format, "%c%c", '%', 'a');
 		for (i = 'b'; i <= 'z'; i++)
 			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
@@ -871,244 +871,244 @@ static int _parse_long_format (char* format_long)
 		_parse_long_token( token, sep, &field_size, &right_justify,
 				   &suffix);
 
-		if (!strcasecmp(token, "all")) {
+		if (!xstrcasecmp(token, "all")) {
 			_parse_format ("%all");
-		} else if (!strcasecmp(token, "allocmem")) {
+		} else if (!xstrcasecmp(token, "allocmem")) {
 			params.match_flags.alloc_mem_flag = true;
 			format_add_alloc_mem( params.format_list,
 						field_size,
 						right_justify,
 						suffix );
-		} else if (!strcasecmp(token, "allocnodes")) {
+		} else if (!xstrcasecmp(token, "allocnodes")) {
 			format_add_alloc_nodes( params.format_list,
 						field_size,
 						right_justify,
 						suffix );
-		} else if (!strcasecmp(token, "available")) {
+		} else if (!xstrcasecmp(token, "available")) {
 			params.match_flags.avail_flag = true;
 			format_add_avail( params.format_list,
 					  field_size,
 					  right_justify,
 					  suffix );
-		} else if (!strcasecmp(token, "cpus")) {
+		} else if (!xstrcasecmp(token, "cpus")) {
 			params.match_flags.cpus_flag = true;
 			format_add_cpus( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "cpusload")) {
+		} else if (!xstrcasecmp(token, "cpusload")) {
 			params.match_flags.cpu_load_flag = true;
 			format_add_cpu_load( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
-		} else if (!strcasecmp(token, "freemem")) {
+		} else if (!xstrcasecmp(token, "freemem")) {
 			params.match_flags.free_mem_flag = true;
 			format_add_free_mem( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
-		} else if (!strcasecmp(token, "cpusstate")) {
+		} else if (!xstrcasecmp(token, "cpusstate")) {
 			params.match_flags.cpus_flag = true;
 			format_add_cpus_aiot( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
-		} else if (!strcasecmp(token, "cores")) {
+		} else if (!xstrcasecmp(token, "cores")) {
 			params.match_flags.cores_flag = true;
 			format_add_cores( params.format_list,
 					  field_size,
 					  right_justify,
 					  suffix );
-		} else if (!strcasecmp(token, "defaulttime")) {
+		} else if (!xstrcasecmp(token, "defaulttime")) {
 			params.match_flags.default_time_flag = true;
 			format_add_default_time( params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
-		} else if (!strcasecmp(token, "disk")) {
+		} else if (!xstrcasecmp(token, "disk")) {
 			params.match_flags.disk_flag = true;
 			format_add_disk( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "features")) {
+		} else if (!xstrcasecmp(token, "features")) {
 			params.match_flags.features_flag = true;
 			format_add_features( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
-		} else if (!strcasecmp(token, "features_act")) {
+		} else if (!xstrcasecmp(token, "features_act")) {
 			params.match_flags.features_act_flag = true;
 			format_add_features_act( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
-		} else if (!strcasecmp(token, "groups")) {
+		} else if (!xstrcasecmp(token, "groups")) {
 			params.match_flags.groups_flag = true;
 			format_add_groups( params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix );
-		} else if (!strcasecmp(token, "gres")) {
+		} else if (!xstrcasecmp(token, "gres")) {
 			params.match_flags.gres_flag = true;
 			format_add_gres( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "maxcpuspernode")) {
+		} else if (!xstrcasecmp(token, "maxcpuspernode")) {
 			params.match_flags.max_cpus_per_node_flag = true;
 			format_add_max_cpus_per_node( params.format_list,
 						      field_size,
 						      right_justify,
 						      suffix );
-		} else if (!strcasecmp(token, "memory")) {
+		} else if (!xstrcasecmp(token, "memory")) {
 			params.match_flags.memory_flag = true;
 			format_add_memory( params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix );
-		} else if (!strcasecmp(token, "nodes")) {
+		} else if (!xstrcasecmp(token, "nodes")) {
 			format_add_nodes( params.format_list,
 					  field_size,
 					  right_justify,
 					  suffix );
-		} else if (!strcasecmp(token, "nodeaddr")) {
+		} else if (!xstrcasecmp(token, "nodeaddr")) {
 			params.match_flags.node_addr_flag = true;
 			format_add_node_address( params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
-		} else if (!strcasecmp(token, "nodeai")) {
+		} else if (!xstrcasecmp(token, "nodeai")) {
 			format_add_nodes_ai( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
-		} else if (!strcasecmp(token, "nodeaiot")) {
+		} else if (!xstrcasecmp(token, "nodeaiot")) {
 			format_add_nodes_aiot( params.format_list,
 					       field_size,
 					       right_justify,
 					       suffix );
-		} else if (!strcasecmp(token, "nodehost")) {
+		} else if (!xstrcasecmp(token, "nodehost")) {
 			params.match_flags.hostnames_flag = true;
 			format_add_node_hostnames( params.format_list,
 						   field_size,
 						   right_justify,
 						   suffix );
-		} else if (!strcasecmp(token, "nodelist")) {
+		} else if (!xstrcasecmp(token, "nodelist")) {
 			format_add_node_list( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
-		} else if (!strcasecmp(token, "partition")) {
+		} else if (!xstrcasecmp(token, "partition")) {
 			params.match_flags.partition_flag = true;
 			format_add_partition( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
-		} else if (!strcasecmp(token, "partitionname")) {
+		} else if (!xstrcasecmp(token, "partitionname")) {
 			params.match_flags.partition_flag = true;
 			format_add_partition_name( params.format_list,
 						   field_size,
 						   right_justify,
 						   suffix );
-		} else if (!strcasecmp(token, "preemptmode")) {
+		} else if (!xstrcasecmp(token, "preemptmode")) {
 			params.match_flags.preempt_mode_flag = true;
 			format_add_preempt_mode( params.format_list,
 						 field_size,
 						 right_justify,
 						 suffix );
-		} else if (!strcasecmp(token, "priority")) {
+		} else if (!xstrcasecmp(token, "priority")) {
 			params.match_flags.priority_flag = true;
 			format_add_priority( params.format_list,
 					     field_size,
 					     right_justify,
 					     suffix );
-		} else if (!strcasecmp(token, "reason")) {
+		} else if (!xstrcasecmp(token, "reason")) {
 			params.match_flags.reason_flag = true;
 			format_add_reason( params.format_list,
 					   field_size,
 					   right_justify,
 					   suffix );
-		} else if (!strcasecmp(token, "root")) {
+		} else if (!xstrcasecmp(token, "root")) {
 			params.match_flags.root_flag = true;
 			format_add_root( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "share")) {
+		} else if (!xstrcasecmp(token, "share")) {
 			params.match_flags.share_flag = true;
 			format_add_share( params.format_list,
 					  field_size,
 					  right_justify,
 					  suffix );
-		} else if (!strcasecmp(token, "size")) {
+		} else if (!xstrcasecmp(token, "size")) {
 			params.match_flags.job_size_flag = true;
 			format_add_size( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "statecompact")) {
+		} else if (!xstrcasecmp(token, "statecompact")) {
 			params.match_flags.state_flag = true;
 			format_add_state_compact( params.format_list,
 						  field_size,
 						  right_justify,
 						  suffix );
-		} else if (!strcasecmp(token, "statelong")) {
+		} else if (!xstrcasecmp(token, "statelong")) {
 			params.match_flags.state_flag = true;
 			format_add_state_long( params.format_list,
 					       field_size,
 					       right_justify,
 					       suffix );
-		} else if (!strcasecmp(token, "sockets")) {
+		} else if (!xstrcasecmp(token, "sockets")) {
 			params.match_flags.sockets_flag = true;
 			format_add_sockets( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix );
-		} else if (!strcasecmp(token, "socketcorethread")) {
+		} else if (!xstrcasecmp(token, "socketcorethread")) {
 			params.match_flags.sct_flag = true;
 			format_add_sct( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
-		} else if (!strcasecmp(token, "time")) {
+		} else if (!xstrcasecmp(token, "time")) {
 			params.match_flags.max_time_flag = true;
 			format_add_time( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "timestamp")) {
+		} else if (!xstrcasecmp(token, "timestamp")) {
 			params.match_flags.reason_timestamp_flag = true;
 			format_add_timestamp( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
-		} else if (!strcasecmp(token, "threads")) {
+		} else if (!xstrcasecmp(token, "threads")) {
 			params.match_flags.threads_flag = true;
 			format_add_threads( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix );
-		} else if (!strcasecmp(token, "user")) {
+		} else if (!xstrcasecmp(token, "user")) {
 			params.match_flags.reason_user_flag = true;
 			format_add_user( params.format_list,
 					 field_size,
 					 right_justify,
 					 suffix );
-		} else if (!strcasecmp(token, "userlong")) {
+		} else if (!xstrcasecmp(token, "userlong")) {
 			params.match_flags.reason_user_flag = true;
 			format_add_user_long( params.format_list,
 					      field_size,
 					      right_justify,
 					      suffix );
-		} else if (!strcasecmp(token, "version")) {
+		} else if (!xstrcasecmp(token, "version")) {
 			params.match_flags.version_flag = true;
 			format_add_version( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix);
-		} else if (!strcasecmp(token, "weight")) {
+		} else if (!xstrcasecmp(token, "weight")) {
 			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list,
 					   field_size,

@@ -173,7 +173,7 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 	switch(column) {
 	case SORTID_ADMIN:
 		type = "Admin Mode";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->admin_mode = 1;
 		else
 			sview_config->admin_mode = 0;
@@ -187,19 +187,19 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		sview_config->gap_size = MIN(temp_int/2, 2);
 		break;
 	case SORTID_DEFAULT_PAGE:
-		if (!strcasecmp(new_text, "job"))
+		if (!xstrcasecmp(new_text, "job"))
 			sview_config->default_page = JOB_PAGE;
-		else if (!strcasecmp(new_text, "part"))
+		else if (!xstrcasecmp(new_text, "part"))
 			sview_config->default_page = PART_PAGE;
-		else if (!strcasecmp(new_text, "res"))
+		else if (!xstrcasecmp(new_text, "res"))
 			sview_config->default_page = RESV_PAGE;
-		else if (!strcasecmp(new_text, "block"))
+		else if (!xstrcasecmp(new_text, "block"))
 			sview_config->default_page = BLOCK_PAGE;
-		else if (!strcasecmp(new_text, "node"))
+		else if (!xstrcasecmp(new_text, "node"))
 			sview_config->default_page = NODE_PAGE;
-		else if (!strcasecmp(new_text, "frontend"))
+		else if (!xstrcasecmp(new_text, "frontend"))
 			sview_config->default_page = FRONT_END_PAGE;
-		else if (!strcasecmp(new_text, "burstbuffer"))
+		else if (!xstrcasecmp(new_text, "burstbuffer"))
 			sview_config->default_page = BB_PAGE;
 		else
 			sview_config->default_page = JOB_PAGE;
@@ -233,48 +233,48 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		break;
 	case SORTID_RULED_TV:
 		type = "Ruled Tables";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->ruled_treeview = 1;
 		else
 			sview_config->ruled_treeview = 0;
 		break;
 	case SORTID_SHOW_GRID:
 		type = "Show Grid";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->show_grid = 1;
 		else
 			sview_config->show_grid = 0;
 		break;
 	case SORTID_GRID_TOPO_ORDER:
 		type = "Topology order";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->grid_topological = 1;
 		else
 			sview_config->grid_topological =  0;
 		break;
 	case SORTID_SHOW_HIDDEN:
 		type = "Show Hidden";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->show_hidden = 1;
 		else
 			sview_config->show_hidden = 0;
 		break;
 	case SORTID_SAVE_PAGE_OPTS:
 		type = "Save Page Settings";
-		if (!strcasecmp(new_text, "yes"))
+		if (!xstrcasecmp(new_text, "yes"))
 			sview_config->save_page_opts = 1;
 		else
 			sview_config->save_page_opts = 0;
 		break;
 	case SORTID_TAB_POS:
 		type = "Tab Position";
-		if (!strcasecmp(new_text, "top")) {
+		if (!xstrcasecmp(new_text, "top")) {
 			sview_config->tab_pos = GTK_POS_TOP;
-		} else if (!strcasecmp(new_text, "bottom")) {
+		} else if (!xstrcasecmp(new_text, "bottom")) {
 			sview_config->tab_pos = GTK_POS_BOTTOM;
-		} else if (!strcasecmp(new_text, "left")) {
+		} else if (!xstrcasecmp(new_text, "left")) {
 			sview_config->tab_pos = GTK_POS_LEFT;
-		} else if (!strcasecmp(new_text, "right"))
+		} else if (!xstrcasecmp(new_text, "right"))
 			sview_config->tab_pos = GTK_POS_RIGHT;
 		else
 			goto return_error;

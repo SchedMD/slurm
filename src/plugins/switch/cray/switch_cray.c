@@ -591,9 +591,9 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		SELECT_JOBDATA_NETWORK, &npc);
 	CRAY_DEBUG("network performance counters SELECT_JOBDATA_NETWORK %s",
 		npc);
-	if (strcasecmp(npc, "system") == 0) {
+	if (xstrcasecmp(npc, "system") == 0) {
 		access = ALPSC_NET_PERF_CTR_SYSTEM;
-	} else if (strcasecmp(npc, "blade") == 0) {
+	} else if (xstrcasecmp(npc, "blade") == 0) {
 		access = ALPSC_NET_PERF_CTR_BLADE;
 	}
 	if (access != ALPSC_NET_PERF_CTR_NONE) {

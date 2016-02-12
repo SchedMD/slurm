@@ -853,8 +853,8 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			*/
 			itr = list_iterator_create(user.coord_accts);
 			while ((coord = list_next(itr)))
-				if (!strcasecmp(coord->name,
-						slurmdb_assoc->acct))
+				if (!xstrcasecmp(coord->name,
+						 slurmdb_assoc->acct))
 					break;
 			list_iterator_destroy(itr);
 

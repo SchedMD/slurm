@@ -515,7 +515,7 @@ client_req_get_bool(client_req_t *req, const char *key, bool *pval)
 	if (val == NULL)
 		return false;
 
-	if (!strcasecmp(val, TRUE_VAL))
+	if (!xstrcasecmp(val, TRUE_VAL))
 		*pval = true;
 	else
 		*pval = false;

@@ -299,7 +299,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &node_cnt);
-		if (!strcasecmp(job_ptr->nodes,"waiting..."))
+		if (!xstrcasecmp(job_ptr->nodes,"waiting..."))
 			xfree(ionodes);
 	} else
 		node_cnt = job_ptr->num_nodes;
@@ -366,7 +366,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			  main_xcord, "%.2s",
 			  job_state_string_compact(job_ptr->job_state));
 		main_xcord += 2;
-		if (!strcasecmp(job_ptr->nodes,"waiting...")) {
+		if (!xstrcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"00:00:00");
 		} else {
 			time_diff = (time_t) _job_time_used(job_ptr);
@@ -437,7 +437,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%6.6s ", job_ptr->name);
 		printf("%2.2s ",
 		       job_state_string_compact(job_ptr->job_state));
-		if (!strcasecmp(job_ptr->nodes,"waiting...")) {
+		if (!xstrcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"00:00:00");
 		} else {
 			time_diff = (time_t) _job_time_used(job_ptr);

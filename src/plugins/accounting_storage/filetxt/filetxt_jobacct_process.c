@@ -1004,7 +1004,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		    && list_count(job_cond->jobname_list)) {
 			itr = list_iterator_create(job_cond->jobname_list);
 			while((object = list_next(itr))) {
-				if (!strcasecmp(f[F_JOBNAME], object)) {
+				if (!xstrcasecmp(f[F_JOBNAME], object)) {
 					list_iterator_destroy(itr);
 					goto foundjobname;
 				}
@@ -1043,7 +1043,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		    && list_count(job_cond->partition_list)) {
 			itr = list_iterator_create(job_cond->partition_list);
 			while((object = list_next(itr)))
-				if (!strcasecmp(f[F_PARTITION], object)) {
+				if (!xstrcasecmp(f[F_PARTITION], object)) {
 					list_iterator_destroy(itr);
 					goto foundp;
 				}
@@ -1253,7 +1253,8 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 				itr = list_iterator_create(
 					job_cond->partition_list);
 				while((object = list_next(itr)))
-					if (!strcasecmp(f[F_PARTITION], object))
+					if (!xstrcasecmp(f[F_PARTITION],
+							 object))
 						break;
 
 				list_iterator_destroy(itr);

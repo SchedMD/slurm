@@ -329,7 +329,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	tok = _find_quote_token(tmp, ",", &last);
 	while (tok) {
 
-		if (strcasecmp(tok, "ALL") == 0) {
+		if (xstrcasecmp(tok, "ALL") == 0) {
 			env_array_merge(&desc->environment,
 					(const char **)environ);
 			tok = _find_quote_token(NULL, ",", &last);
@@ -551,9 +551,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 	if (opt.export_env == NULL) {
 		env_array_merge(&desc->environment, (const char **)environ);
-	} else if (!strcasecmp(opt.export_env, "ALL")) {
+	} else if (!xstrcasecmp(opt.export_env, "ALL")) {
 		env_array_merge(&desc->environment, (const char **)environ);
-	} else if (!strcasecmp(opt.export_env, "NONE")) {
+	} else if (!xstrcasecmp(opt.export_env, "NONE")) {
 		desc->environment = env_array_create();
 		env_array_merge_slurm(&desc->environment,
 				      (const char **)environ);

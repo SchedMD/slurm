@@ -92,7 +92,7 @@ fname_create(srun_job_t *job, char *format)
 		return fname;
 	}
 
-	if (strcasecmp(format, "none") == 0) {
+	if (xstrcasecmp(format, "none") == 0) {
 		/*
 		 * Set type to IO_PER_TASK so that /dev/null is opened
 		 *  on every node, which should be more efficient
