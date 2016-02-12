@@ -25,7 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Add an ack reply from slurmd to slurmstepd when job setup is done and the
     job is ready to be executed.
  -- Removed support for authd. authd has not been developed and supported since
-    several years.
+    several years. 
  -- Introduce a new parameter requeue_setup_env_fail in SchedulerParameters.
     A job that fails to setup the environment will be requeued and the node
     drained.
@@ -33,9 +33,6 @@ documents those changes that are of interest to users and administrators.
  -- Increase default sbcast buffer size from 512KB to 8MB.
  -- Enable the hdf5 profiling of the batch step.
  -- Eliminate redundant environment and script files for job arrays.
- -- Implemented the checking configuration functionality using the new -C
-    options of slurmctld. To check for configuration errors in slurm.conf
-    run: 'slurmctld -C'.
  -- Stop searching sbatch scripts for #PBS directives after 100 lines of
     non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
     into a line. Required for decent perforamnce with huge scripts.

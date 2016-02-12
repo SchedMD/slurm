@@ -203,7 +203,6 @@ static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char *	slurm_conf_filename;
-static bool     check_config = false;
 
 /*
  * Static list of signals to block in this process
@@ -246,7 +245,6 @@ static void         _update_nice(void);
 inline static void  _usage(char *prog_name);
 static bool         _valid_controller(void);
 static bool         _wait_for_server_thread(void);
-static void         _check_configuration(void);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
@@ -277,11 +275,6 @@ int main(int argc, char *argv[])
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
 	_parse_commandline(argc, argv);
-
-	if (check_config) {
-		_check_configuration();
-		return 0;
-	}
 	init_locks();
 	slurm_conf_reinit(slurm_conf_filename);
 
@@ -2306,7 +2299,7 @@ static void _parse_commandline(int argc, char *argv[])
 	bool bg_recover_override = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "BcCdDf:hL:n:rRvV")) != -1)
+	while ((c = getopt(argc, argv, "BcdDf:hL:n:rRvV")) != -1)
 		switch (c) {
 		case 'B':
 			bg_recover = 0;
@@ -2315,10 +2308,6 @@ static void _parse_commandline(int argc, char *argv[])
 		case 'c':
 			recover = 0;
 			bg_recover = 0;
-			break;
-		case 'C':
-			check_config = true;
-			daemonize = 0;
 			break;
 		case 'd':
 			daemonize = 1;
@@ -2966,46 +2955,5 @@ static void  _set_work_dir(void)
 			error("chdir(/var/tmp): %m");
 		} else
 			info("chdir to /var/tmp");
-	}
-}
-
-/* _check_configuration()
- *
- * Invoked when running slurmctld -C to check the
- * validity of slurm.conf. The caller should exit
- * after the checking.
- *
- */
-static void
-_check_configuration(void)
-{
-	int error_code;
-
-	slurm_conf_init(NULL);
-	/*
-	 * Initialize plugins.
-	 */
-	if (gres_plugin_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize gres plugin" );
-	if (slurm_select_init(1) != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
-	if (slurm_preempt_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize preempt plugin" );
-	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
-		fatal( "failed to initialize checkpoint plugin" );
-	if (acct_gather_conf_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize acct_gather plugins" );
-	if (jobacct_gather_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize jobacct_gather plugin");
-	if (job_submit_plugin_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize job_submit plugin");
-	if (ext_sensors_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize ext_sensors plugin");
-	if (switch_g_slurmctld_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize switch plugin");
-	if ((error_code = read_slurm_conf(false, false))) {
-		fatal("read_slurm_conf reading %s: %s",
-		      slurmctld_conf.slurm_conf,
-		      slurm_strerror(error_code));
 	}
 }
