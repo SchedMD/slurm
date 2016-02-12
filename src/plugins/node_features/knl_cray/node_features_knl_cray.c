@@ -1599,7 +1599,7 @@ extern char *node_features_p_job_xlate(char *job_features)
 	if (!has_numa) {
 		tmp = _knl_numa_str(default_numa);
 		xstrfmtcat(node_features, "%s%s", sep, tmp);
-		sep = ",";
+		// sep = ",";		Removed to avoid CLANG error
 		xfree(tmp);
 	}
 
