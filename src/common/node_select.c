@@ -295,7 +295,7 @@ extern int slurm_select_init(bool only_default)
 			if (!(e = readdir( dirp )))
 				break;
 			/* Check only files with select_ in them. */
-			if (strncmp(e->d_name, "select_", 7))
+			if (xstrncmp(e->d_name, "select_", 7))
 				continue;
 
 			len = strlen(e->d_name);

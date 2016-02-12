@@ -134,7 +134,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(job_read_lock);
-	if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (xstrncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all jobs */
 		buf = _dump_all_jobs(&job_rec_cnt, update_time);
 	} else {
@@ -336,7 +336,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 
 	if (job_ptr->account) {
 		/* allow QOS spec in form "qos-name" */
-		if (!strncmp(job_ptr->account, "qos-", 4)) {
+		if (!xstrncmp(job_ptr->account, "qos-", 4)) {
 			snprintf(tmp, sizeof(tmp),
 				 "QOS=%s;", job_ptr->account + 4);
 		} else {
@@ -353,14 +353,14 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		copy = xstrdup(job_ptr->comment);
 		cred = strtok(copy, ",");
 		while (cred != NULL) {
-			if (!strncmp(cred, "qos:", 4)) {
+			if (!xstrncmp(cred, "qos:", 4)) {
 				value = &cred[4];
 				if (value[0] != '\0') {
 					snprintf(tmp, sizeof(tmp),
 						 "QOS=%s;", value);
 					xstrcat(buf, tmp);
 				}
-			} else if (!strncmp(cred, "class:", 6)) {
+			} else if (!xstrncmp(cred, "class:", 6)) {
 				value = &cred[6];
 				if (value[0] != '\0') {
 					snprintf(tmp, sizeof(tmp),

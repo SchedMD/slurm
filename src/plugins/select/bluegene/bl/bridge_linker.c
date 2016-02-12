@@ -1875,7 +1875,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			continue;
 		}
 
-		if (strncmp("RMP", bg_block_id, 3)) {
+		if (xstrncmp("RMP", bg_block_id, 3)) {
 			free(bg_block_id);
 			continue;
 		}

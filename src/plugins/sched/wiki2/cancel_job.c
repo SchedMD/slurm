@@ -114,11 +114,11 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	type_ptr += 5;
-	if      (strncmp(type_ptr, "TIMEOUT", 7) == 0)
+	if      (xstrncmp(type_ptr, "TIMEOUT", 7) == 0)
 		cancel_type = TYPE_TIMEOUT;
-	else if (strncmp(type_ptr, "WALLCLOCK", 9) == 0)
+	else if (xstrncmp(type_ptr, "WALLCLOCK", 9) == 0)
 		cancel_type = TYPE_TIMEOUT;
-	else if (strncmp(type_ptr, "ADMIN", 5) == 0)
+	else if (xstrncmp(type_ptr, "ADMIN", 5) == 0)
 		cancel_type = TYPE_ADMIN;
 	else {
 		*err_code = -300;

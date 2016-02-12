@@ -146,7 +146,7 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
 
         while (fgets(line,sizeof(line),fp)) {
 
-                if (strncmp(line, "Pss:", 4) != 0) {
+                if (xstrncmp(line, "Pss:", 4) != 0) {
                         continue;
                 }
 

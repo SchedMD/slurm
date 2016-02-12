@@ -103,7 +103,7 @@ extern int core_spec_g_init(void)
 			 (g_core_spec_context_num + 1));
 		xrealloc(g_core_spec_context, (sizeof(plugin_context_t *)
 					  * (g_core_spec_context_num + 1)));
-		if (strncmp(core_spec, "core_spec/", 10) == 0)
+		if (xstrncmp(core_spec, "core_spec/", 10) == 0)
 			core_spec += 10; /* backward compatibility */
 		core_spec = xstrdup_printf("core_spec/%s",
 					       core_spec);

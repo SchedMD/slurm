@@ -116,7 +116,7 @@ _parse_cmd(client_req_t *req)
 	int i = 0, len = 0;
 
 	len = strlen (MCMD_KEY"=");
-	if (! strncmp(req->buf, MCMD_KEY"=", len)) {
+	if (! xstrncmp(req->buf, MCMD_KEY"=", len)) {
 		req->cmd = MCMD_KEY; /* XXX: mcmd=spawn */
 		req->sep = '\n';
 		req->term = '\n';
@@ -124,7 +124,7 @@ _parse_cmd(client_req_t *req)
 	}
 
 	len = strlen (CMD_KEY"=");
-	if (strncmp(req->buf, CMD_KEY"=", len)) {
+	if (xstrncmp(req->buf, CMD_KEY"=", len)) {
 		error("mpi/pmi2: request not begin with '" CMD_KEY "='");
 		error("mpi/pmi2: full request is: %s", req->buf);
 		return SLURM_ERROR;
@@ -300,7 +300,7 @@ client_req_parse_spawn_req(client_req_t *req)
 	/* ppkey,ppval */
 	for (i = 0; i < spawn_req->preput_cnt; i ++) {
 		/* ppkey */
-		if (strncmp(MP_KEY(req, pi), PPKEY_KEY, strlen(PPKEY_KEY)) ||
+		if (xstrncmp(MP_KEY(req, pi), PPKEY_KEY, strlen(PPKEY_KEY)) ||
 		    atoi((MP_KEY(req, pi) + strlen(PPKEY_KEY))) != i) {
 			error("mpi/pmi2: '" PPKEY_KEY
 			      "%d' expected in spawn cmd", i);
@@ -309,7 +309,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		spawn_req->pp_keys[i] = xstrdup(MP_VAL(req, pi));
 		pi ++;
 		/* ppval */
-		if (strncmp(MP_KEY(req, pi), PPVAL_KEY, strlen(PPVAL_KEY)) ||
+		if (xstrncmp(MP_KEY(req, pi), PPVAL_KEY, strlen(PPVAL_KEY)) ||
 		    atoi((MP_KEY(req, pi) + strlen(PPVAL_KEY))) != i) {
 			error("mpi/pmi2: '" PPVAL_KEY
 			      "%d' expected in spawn cmd", i);
@@ -361,8 +361,8 @@ client_req_parse_spawn_req(client_req_t *req)
 		}
 		/* argv */
 		for (j = 0; j < subcmd->argc; j ++) {
-			if (strncmp(MP_KEY(req, pi), ARGV_KEY,
-				    strlen(ARGV_KEY)) ||
+			if (xstrncmp(MP_KEY(req, pi), ARGV_KEY,
+				     strlen(ARGV_KEY)) ||
 			    atoi((MP_KEY(req, pi) + strlen(ARGV_KEY))) != j) {
 				error("mpi/pmi2: '" ARGV_KEY
 				      "%d' expected in spawn cmd", j);
@@ -403,8 +403,8 @@ client_req_parse_spawn_req(client_req_t *req)
 		/* infokey,infoval */
 		for (j = 0; j < subcmd->info_cnt; j ++) {
 			/* infokey */
-			if (strncmp(MP_KEY(req, pi), INFOKEY_KEY,
-				    strlen(INFOKEY_KEY)) ||
+			if (xstrncmp(MP_KEY(req, pi), INFOKEY_KEY,
+				     strlen(INFOKEY_KEY)) ||
 			    atoi((MP_KEY(req, pi) +
 				  strlen(INFOKEY_KEY))) != j) {
 				error("mpi/pmi2: '" INFOKEY_KEY
@@ -414,8 +414,8 @@ client_req_parse_spawn_req(client_req_t *req)
 			subcmd->info_keys[j] = xstrdup(MP_VAL(req, pi));
 			pi ++;
 			/* infoval */
-			if (strncmp(MP_KEY(req, pi), INFOVAL_KEY,
-				    strlen(INFOVAL_KEY)) ||
+			if (xstrncmp(MP_KEY(req, pi), INFOVAL_KEY,
+				     strlen(INFOVAL_KEY)) ||
 			    atoi((MP_KEY(req, pi) +
 				  strlen(INFOVAL_KEY))) != j) {
 				error("mpi/pmi2: '" INFOVAL_KEY

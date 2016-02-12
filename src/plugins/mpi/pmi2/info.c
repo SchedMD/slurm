@@ -119,7 +119,7 @@ node_attr_put(char *key, char *val)
 	pprev = &nag_req_list;
 	req = *pprev;
 	while (req != NULL) {
-		if (strncmp(key, req->key, PMI2_MAX_KEYLEN)) {
+		if (xstrncmp(key, req->key, PMI2_MAX_KEYLEN)) {
 			pprev = &req->next;
 			req = *pprev;
 		} else {

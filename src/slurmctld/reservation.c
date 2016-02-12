@@ -4514,10 +4514,10 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 	tmp_spec = xstrdup(bb_spec);
 	tok = strtok_r(tmp_spec, ",", &end_ptr);
 	while (tok) {
-		if (!strncmp(tok, "cray:", 5)) {
+		if (!xstrncmp(tok, "cray:", 5)) {
 			plugin = "cray";
 			tok += 5;
-		} else if (!strncmp(tok, "generic:", 8)) {
+		} else if (!xstrncmp(tok, "generic:", 8)) {
 			plugin = "generic";
 			tok += 8;
 		} else

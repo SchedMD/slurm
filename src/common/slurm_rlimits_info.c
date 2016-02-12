@@ -156,7 +156,7 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 				/*
 				 * Accept either "RLIMIT_CORE" or "CORE"
 				 */
-				if (strncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
+				if (xstrncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
 					tp += LEN_RLIMIT_;
 				if (xstrcmp( tp, rli->name ))
 					continue;

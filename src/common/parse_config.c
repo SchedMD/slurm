@@ -1085,8 +1085,8 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 			_slurm_set_addr_char(&ip_addr, 0, hostname);
 			_slurm_print_slurm_addr(&ip_addr, ip_str,
 						sizeof(ip_str));
-			if (!strncmp(ip_str, "127.0.0.1", 9) ||
-			    !strncmp(ip_str, "127.0.1.1", 9)) {
+			if (!xstrncmp(ip_str, "127.0.0.1", 9) ||
+			    !xstrncmp(ip_str, "127.0.1.1", 9)) {
 				/* Got address for loopback */
 				error("%s: Could not get unique IP address for "
 				      "include path (hostname=%s)",

@@ -384,11 +384,11 @@ static void _set_active_combo_part(GtkComboBox *combo,
 
 		break;
 	case SORTID_SHARE:
-		if (!strncmp(temp_char, "force", 5))
+		if (!xstrncmp(temp_char, "force", 5))
 			action = 0;
 		else if (!xstrcmp(temp_char, "no"))
 			action = 1;
-		else if (!strncmp(temp_char, "yes", 3))
+		else if (!xstrncmp(temp_char, "yes", 3))
 			action = 2;
 		else if (!xstrcmp(temp_char, "exclusive"))
 			action = 3;

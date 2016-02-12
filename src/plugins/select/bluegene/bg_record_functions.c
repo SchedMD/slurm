@@ -1645,7 +1645,7 @@ extern int resume_block(bg_record_t *bg_record)
 		while ((ba_mp = list_next(itr))) {
 			node_ptr = &node_record_table_ptr[ba_mp->index];
 			if (node_ptr->reason
-			    && !strncmp(node_ptr->reason, "update_block", 12))
+			    && !xstrncmp(node_ptr->reason, "update_block", 12))
 				xfree(node_ptr->reason);
 		}
 		list_iterator_destroy(itr);
@@ -1946,7 +1946,7 @@ static int _check_all_blocks_error(int node_inx, time_t event_time,
 			reason = "update_block: setting partial node down.";
 
 		if (!node_ptr->reason
-		    || !strncmp(node_ptr->reason, "update_block", 12)) {
+		    || !xstrncmp(node_ptr->reason, "update_block", 12)) {
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(reason);
 			node_ptr->reason_time = event_time;

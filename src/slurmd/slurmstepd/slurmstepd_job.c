@@ -299,10 +299,10 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 	job->array_task_id = NO_VAL;
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
-		if (!strncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
+		if (!xstrncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
 			job->array_job_id = atoi(msg->env[i] + 19);
 		/*                         12345678901234567890 */
-		if (!strncmp(msg->env[i], "SLURM_ARRAY_TASK_ID=", 20))
+		if (!xstrncmp(msg->env[i], "SLURM_ARRAY_TASK_ID=", 20))
 			job->array_task_id = atoi(msg->env[i] + 20);
 	}
 

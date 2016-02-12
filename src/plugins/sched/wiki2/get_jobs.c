@@ -160,7 +160,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(job_read_lock);
-	if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (xstrncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all jobs */
 		buf = _dump_all_jobs(&job_rec_cnt, update_time);
 	} else {

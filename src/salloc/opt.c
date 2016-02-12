@@ -1701,7 +1701,7 @@ extern char *spank_get_job_env(const char *name)
 	len = strlen(tmp_str);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(tmp_str);
 		return (opt.spank_job_env[i] + len);
@@ -1728,7 +1728,7 @@ extern int   spank_set_job_env(const char *name, const char *value,
 	xstrcat(tmp_str, value);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		if (overwrite) {
 			xfree(opt.spank_job_env[i]);
@@ -1761,7 +1761,7 @@ extern int   spank_unset_job_env(const char *name)
 	len = strlen(tmp_str);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(opt.spank_job_env[i]);
 		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)

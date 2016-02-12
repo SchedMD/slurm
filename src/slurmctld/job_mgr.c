@@ -6811,9 +6811,9 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 			name_len = tmp_chr - job_ptr->details->env_sup[j] + 1;
 			/* search for duplicate */
 			for (i = 0; i < rec_cnt; i++) {
-				if (strncmp(array_ptr[i],
-					    job_ptr->details->env_sup[j],
-					    name_len)) {
+				if (xstrncmp(array_ptr[i],
+					     job_ptr->details->env_sup[j],
+					     name_len)) {
 					continue;
 				}
 				/* over-write duplicate */
@@ -12642,7 +12642,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 	}
 
 	while ((dir_ent = readdir(f_dir))) {
-		if (!strncmp("job.#", dir_ent->d_name, 4)) {
+		if (!xstrncmp("job.#", dir_ent->d_name, 4)) {
 			/* Read version 14.03 or earlier format state */
 			long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
 			if ((long_job_id == 0) || (endptr[0] != '\0'))
@@ -12652,7 +12652,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 			job_id_ptr = xmalloc(sizeof(uint32_t));
 			*job_id_ptr = long_job_id;
 			list_append(batch_dirs, job_id_ptr);
-		} else if (!strncmp("hash.#", dir_ent->d_name, 5)) {
+		} else if (!xstrncmp("hash.#", dir_ent->d_name, 5)) {
 			char *h_path = NULL;
 			xstrfmtcat(h_path, "%s/%s",
 				   slurmctld_conf.state_save_location,
@@ -12662,7 +12662,7 @@ static void _get_batch_job_dir_ids(List batch_dirs)
 			if (!h_dir)
 				continue;
 			while ((hash_ent = readdir(h_dir))) {
-				if (strncmp("job.#", hash_ent->d_name, 4))
+				if (xstrncmp("job.#", hash_ent->d_name, 4))
 					continue;
 				long_job_id = strtol(&hash_ent->d_name[4],
 						     &endptr, 10);

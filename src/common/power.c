@@ -101,7 +101,7 @@ extern int power_g_init(void)
 		xrealloc(ops, (sizeof(slurm_power_ops_t)*(g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "power/", 6) == 0)
+		if (xstrncmp(type, "power/", 6) == 0)
 			type += 6; /* backward compatibility */
 		type = xstrdup_printf("power/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(

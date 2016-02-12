@@ -1657,9 +1657,9 @@ int spank_clear_remote_options_env (char **env)
 
 	for (ep = env; *ep; ep++) {
 		char *p = *ep;
-		if (strncmp (*ep, "SPANK_", 6) == 0)
+		if (xstrncmp (*ep, "SPANK_", 6) == 0)
 			p = *ep+6;
-		if (strncmp (p, SPANK_OPTION_ENV_PREFIX, len) == 0) {
+		if (xstrncmp (p, SPANK_OPTION_ENV_PREFIX, len) == 0) {
 			char *end = strchr (p+len, '=');
 			if (end) {
 				char name[1024];

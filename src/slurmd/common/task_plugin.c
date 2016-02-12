@@ -126,7 +126,7 @@ extern int slurmd_task_init(void)
 			 sizeof(slurmd_task_ops_t) * (g_task_context_num + 1));
 		xrealloc(g_task_context, (sizeof(plugin_context_t *)
 					  * (g_task_context_num + 1)));
-		if (strncmp(type, "task/", 5) == 0)
+		if (xstrncmp(type, "task/", 5) == 0)
 			type += 5; /* backward compatibility */
 		type = xstrdup_printf("task/%s", type);
 		g_task_context[g_task_context_num] = plugin_context_create(

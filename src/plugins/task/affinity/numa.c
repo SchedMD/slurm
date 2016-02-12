@@ -224,7 +224,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 
 	if (job->mem_bind_type & MEM_BIND_MAP) {
 		unsigned int my_node = 0;
-		if (strncmp(mstr, "0x", 2) == 0) {
+		if (xstrncmp(mstr, "0x", 2) == 0) {
 			my_node = strtoul (&(mstr[2]), NULL, 16);
 		} else {
 			my_node = strtoul (mstr, NULL, 10);

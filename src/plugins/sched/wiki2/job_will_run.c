@@ -87,7 +87,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	arg_ptr += 4;
 
-	if (strncmp(arg_ptr, "JOBID=", 6)) {
+	if (xstrncmp(arg_ptr, "JOBID=", 6)) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
 		error("wiki: JOBWILLRUN has invalid ARG value");

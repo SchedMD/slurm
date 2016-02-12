@@ -460,7 +460,7 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		n = lp->hash_table[i];
 		while (n) {
 			xassert(n->magic == NRT_NODEINFO_MAGIC);
-			if (!strncmp(n->name, name, NRT_HOSTLEN))
+			if (!xstrncmp(n->name, name, NRT_HOSTLEN))
 				return n;
 			n = n->next;
 		}
@@ -473,8 +473,8 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		n = lp->hash_table[i];
 		while (n) {
 			xassert(n->magic == NRT_NODEINFO_MAGIC);
-			if (!strncmp(n->name, node_ptr->node_hostname,
-				     NRT_HOSTLEN))
+			if (!xstrncmp(n->name, node_ptr->node_hostname,
+				      NRT_HOSTLEN))
 				return n;
 			n = n->next;
 		}

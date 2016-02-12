@@ -249,7 +249,7 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 	cmd_ptr = msg_decrypted;
 
 	/* 123456789012345678901234567890 */
-	if (strncmp(cmd_ptr, version_string, 13) == 0) {
+	if (xstrncmp(cmd_ptr, version_string, 13) == 0) {
 		cmd_ptr = strchr(cmd_ptr + 13, ':');
 		if (cmd_ptr) {
 			cmd_ptr++;
@@ -262,30 +262,30 @@ static void _proc_msg(slurm_fd_t new_fd, char *msg, slurm_addr_t cli_addr)
 		resp = xstrdup("Error:\"Message version invalid\"");
 		goto send_resp;
 	}
-	if (strncmp(cmd_ptr, "CALLBACK:JOBID:", 15) == 0) {
+	if (xstrncmp(cmd_ptr, "CALLBACK:JOBID:", 15) == 0) {
 		resp = register_callback(cmd_ptr, cmd_uid, cli_addr,
 					 protocol_version);
-	} else if (strncmp(cmd_ptr, "DRAIN:NODES:", 12) == 0) {
+	} else if (xstrncmp(cmd_ptr, "DRAIN:NODES:", 12) == 0) {
 		lock_slurmctld(node_write_lock);
 		resp = drain_nodes_user(cmd_ptr, cmd_uid, protocol_version);
 		unlock_slurmctld(node_write_lock);
-	} else if (strncmp(cmd_ptr, "DROP_NODE:JOBID:", 15) == 0) {
+	} else if (xstrncmp(cmd_ptr, "DROP_NODE:JOBID:", 15) == 0) {
 		lock_slurmctld(job_write_lock2);
 		resp = drop_node(cmd_ptr, cmd_uid, protocol_version);
 		unlock_slurmctld(job_write_lock2);
-	} else if (strncmp(cmd_ptr, "GET_FAIL_NODES:JOBID:", 21) == 0) {
+	} else if (xstrncmp(cmd_ptr, "GET_FAIL_NODES:JOBID:", 21) == 0) {
 		lock_slurmctld(job_read_lock);
 		resp = fail_nodes(cmd_ptr, cmd_uid, protocol_version);
 		unlock_slurmctld(job_read_lock);
-	} else if (strncmp(cmd_ptr, "REPLACE_NODE:JOBID:", 19) == 0) {
+	} else if (xstrncmp(cmd_ptr, "REPLACE_NODE:JOBID:", 19) == 0) {
 		lock_slurmctld(job_write_lock2);
 		resp = replace_node(cmd_ptr, cmd_uid, protocol_version);
 		unlock_slurmctld(job_write_lock2);
-	} else if (strncmp(cmd_ptr, "SHOW_CONFIG", 11) == 0) {
+	} else if (xstrncmp(cmd_ptr, "SHOW_CONFIG", 11) == 0) {
 		resp = show_config(cmd_ptr, cmd_uid, protocol_version);
-	} else if (strncmp(cmd_ptr, "SHOW_JOB:JOBID:", 15) == 0) {
+	} else if (xstrncmp(cmd_ptr, "SHOW_JOB:JOBID:", 15) == 0) {
 		resp = show_job(cmd_ptr, cmd_uid, protocol_version);
-	} else if (strncmp(cmd_ptr, "TIME_INCR:JOBID:", 16) == 0) {
+	} else if (xstrncmp(cmd_ptr, "TIME_INCR:JOBID:", 16) == 0) {
 		lock_slurmctld(job_write_lock);
 		resp = time_incr(cmd_ptr, cmd_uid, protocol_version);
 		unlock_slurmctld(job_write_lock);

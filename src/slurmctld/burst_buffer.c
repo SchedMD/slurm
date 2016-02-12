@@ -158,7 +158,7 @@ extern int bb_g_init(void)
 		xrealloc(ops, (sizeof(slurm_bb_ops_t) * (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "burst_buffer/", 13) == 0)
+		if (xstrncmp(type, "burst_buffer/", 13) == 0)
 			type += 13; /* backward compatibility */
 		type = xstrdup_printf("burst_buffer/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(
@@ -321,7 +321,7 @@ extern uint64_t bb_g_get_system_size(char *name)
 
 	(void) bb_g_init();
 
-	if (strncmp(name, "burst_buffer/", 13))
+	if (xstrncmp(name, "burst_buffer/", 13))
 		offset = 13;
 
 	slurm_mutex_lock(&g_context_lock);

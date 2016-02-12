@@ -203,7 +203,7 @@ static uint32_t _rrd_get_last_one(char* filename, char* rra_name)
 
 	if (rra_name == NULL) {
 		while (data_p) {
-			if (!strncmp(line, data_p->key, 3)) {
+			if (!xstrncmp(line, data_p->key, 3)) {
 				rra = xstrdup(data_p->key + 3);
 				xstrsubstitute(rra, strchr(rra, ']'), "");
 				break;

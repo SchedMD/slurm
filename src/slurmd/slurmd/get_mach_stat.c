@@ -393,7 +393,7 @@ extern int get_free_mem(uint32_t *free_mem)
 static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 {
 	char *ptr;
-	if (strncmp(buffer, keyword, strlen(keyword)))
+	if (xstrncmp(buffer, keyword, strlen(keyword)))
 		return false;
 
 	ptr = strstr(buffer, ":");

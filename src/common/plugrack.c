@@ -424,7 +424,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		strcpy( tail, e->d_name );
 
 		/* Check only regular files. */
-		if ( (strncmp(e->d_name, ".", 1) == 0) ||
+		if ( (xstrncmp(e->d_name, ".", 1) == 0) ||
 		     (stat( fq_path, &st ) < 0) ||
 		     (! S_ISREG(st.st_mode)) )
 			continue;
@@ -462,7 +462,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		}
 
 		if (   rack->major_type &&
-		       ( strncmp( rack->major_type,
+		       ( xstrncmp(rack->major_type,
 				  plugin_type,
 				  strlen( rack->major_type ) ) != 0 ) ) {
 			continue;
@@ -504,12 +504,12 @@ _match_major ( const char *path_name, const char *major_type )
 	char *head = (char *)path_name;
 
 	/* Special case for BlueGene systems */
-	if (strncmp(head, "libsched_if", 11) == 0)
+	if (xstrncmp(head, "libsched_if", 11) == 0)
 		return FALSE;
 
-	if (strncmp(head, "lib", 3) == 0)
+	if (xstrncmp(head, "lib", 3) == 0)
 		head += 3;
-	if (strncmp(head, major_type, strlen(major_type)))
+	if (xstrncmp(head, major_type, strlen(major_type)))
 		return FALSE;
 	return TRUE;
 }

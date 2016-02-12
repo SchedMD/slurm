@@ -1554,7 +1554,7 @@ static int _series_data(void)
 			return -1;
 		}
 
-		if (strncmp(params.series,GRP_TASK,strlen(GRP_TASK)) == 0)
+		if (xstrncmp(params.series,GRP_TASK,strlen(GRP_TASK)) == 0)
 			_get_all_task_series(fp,hd,jgid_step, stepx);
 		else
 			_get_all_node_series(fp,hd,jgid_step, stepx);

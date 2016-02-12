@@ -678,7 +678,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr)
 {
 	char *ptr;
-	if (strncmp(buffer, keyword, strlen(keyword)))
+	if (xstrncmp(buffer, keyword, strlen(keyword)))
 		return false;
 
 	ptr = strstr(buffer, ":");

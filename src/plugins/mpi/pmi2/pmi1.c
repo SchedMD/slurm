@@ -554,7 +554,7 @@ _handle_pmi1_mcmd_buf(int fd, int lrank, int buf_size, int buf_len, char **pbuf)
 	buf = *pbuf;
 	n = buf_len;
 	endcmd_len = strlen(ENDCMD_KEY"\n");
-	not_end = strncmp(&buf[n - endcmd_len], ENDCMD_KEY"\n", endcmd_len);
+	not_end = xstrncmp(&buf[n - endcmd_len], ENDCMD_KEY"\n", endcmd_len);
 	while(not_end) {
 		if (n == buf_size) {
 			buf_size += MAX_READLINE;
@@ -571,8 +571,8 @@ _handle_pmi1_mcmd_buf(int fd, int lrank, int buf_size, int buf_len, char **pbuf)
 			usleep(100);
 		} else {
 			n += len;
-			not_end = strncmp(&buf[n - endcmd_len],
-					  ENDCMD_KEY"\n", endcmd_len);
+			not_end = xstrncmp(&buf[n - endcmd_len],
+					   ENDCMD_KEY"\n", endcmd_len);
 		}
 	}
 	buf[n] = '\0';
@@ -622,7 +622,7 @@ handle_pmi1_cmd(int fd, int lrank)
 	}
 
 	len = strlen(MCMD_KEY"=");
-	if (! strncmp(buf, MCMD_KEY"=", len)) {
+	if (! xstrncmp(buf, MCMD_KEY"=", len)) {
 		rc = _handle_pmi1_mcmd_buf(fd, lrank, size, n, &buf);
 		xfree(buf);
 	} else {

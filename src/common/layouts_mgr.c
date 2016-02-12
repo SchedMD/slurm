@@ -1673,7 +1673,8 @@ static void _pack_entity_layout_data(void* item, void* arg)
 	xassert(keydef);
 
 	/* only dump keys related to the targeted layout */
-	if (!strncmp(keydef->plugin->layout->type, pargs->layout->type, PATHLEN)) {
+	if (!xstrncmp(keydef->plugin->layout->type, pargs->layout->type,
+		      PATHLEN)) {
 		data_dump = _pack_data_key(keydef, data->value);
 		/* avoid printing any error in case of NULL pointer returned */
 		if (data_dump) {
@@ -1927,8 +1928,8 @@ static void _tree_update_node_entity_data(void* item, void* arg) {
 		return;
 
 	/* only work on keys related to the targeted layout */
-	if (strncmp(keydef->plugin->layout->type, pargs->enode->layout->type,
-		    PATHLEN)) {
+	if (xstrncmp(keydef->plugin->layout->type, pargs->enode->layout->type,
+		     PATHLEN)) {
 		return;
 	}
 

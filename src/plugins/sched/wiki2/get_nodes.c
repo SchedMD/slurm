@@ -125,7 +125,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(node_read_lock);
-	if (strncmp(tmp_char, "ALL", 3) == 0) {
+	if (xstrncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
 		buf = _dump_all_nodes(&node_rec_cnt, update_time);
 	} else {

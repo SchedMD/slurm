@@ -1605,7 +1605,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op,
 			 */
 			if (pos > 0) {
 				if (pos != strlen(prefix) ||
-				    strncmp(prefix, tok, pos) != 0)
+				    xstrncmp(prefix, tok, pos) != 0)
 					error = 1;
 			}
 

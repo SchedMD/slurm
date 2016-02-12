@@ -293,7 +293,7 @@ extern int task_p_slurmd_release_resources (uint32_t job_id)
 			continue;
 		if (rc || (result == NULL))
 			break;
-		if (strncmp(entry.d_name, "slurm", 5))
+		if (xstrncmp(entry.d_name, "slurm", 5))
 			continue;
 		if (snprintf(path, PATH_MAX, "%s/%s",
 					 base, entry.d_name) >= PATH_MAX) {

@@ -639,7 +639,7 @@ static int	_parse_msg(char *msg, char **req)
 
 	if (auth_key[0] != '\0') {
 		checksum(sum, auth_key, ts_ptr);
-		if (strncmp(sum, msg, 19) != 0) {
+		if (xstrncmp(sum, msg, 19) != 0) {
 			err_code = -422;
 			err_msg = "bad checksum";
 			error("wiki: message checksum error, "
@@ -684,36 +684,36 @@ static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 	}
 	cmd_ptr +=4;
 	err_code = 0;
-	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
+	if        (xstrncmp(cmd_ptr, "GETJOBS", 7) == 0) {
 		msg_type = "wiki:GETJOBS";
 		if (!get_jobs(cmd_ptr, &err_code, &err_msg))
 			goto free_resp_msg;
-	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
+	} else if (xstrncmp(cmd_ptr, "GETNODES", 8) == 0) {
 		msg_type = "wiki:GETNODES";
 		if (!get_nodes(cmd_ptr, &err_code, &err_msg))
 			goto free_resp_msg;
-	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
+	} else if (xstrncmp(cmd_ptr, "STARTJOB", 8) == 0) {
 		msg_type = "wiki:STARTJOB";
 		start_job(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
+	} else if (xstrncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
 		msg_type = "wiki:CANCELJOB";
 		cancel_job(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "REQUEUEJOB", 10) == 0) {
+	} else if (xstrncmp(cmd_ptr, "REQUEUEJOB", 10) == 0) {
 		msg_type = "wiki:REQUEUEJOB";
 		job_requeue_wiki(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
+	} else if (xstrncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
 		msg_type = "wiki:SUSPENDJOB";
 		suspend_job(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
+	} else if (xstrncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
 		msg_type = "wiki:RESUMEJOB";
 		resume_job(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBADDTASK", 10) == 0) {
+	} else if (xstrncmp(cmd_ptr, "JOBADDTASK", 10) == 0) {
 		msg_type = "wiki:JOBADDTASK";
 		job_add_task(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
+	} else if (xstrncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		msg_type = "wiki:JOBRELEASETASK";
 		job_release_task(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
+	} else if (xstrncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
 		msg_type = "wiki:JOBWILLRUN";
 		if (strstr(cmd_ptr, "NODES=")) {
 			/* Updated format input and output */
@@ -723,16 +723,16 @@ static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 			if (!job_will_run(cmd_ptr, &err_code, &err_msg))
 				goto free_resp_msg;
 		}
-	} else if (strncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
+	} else if (xstrncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
 		msg_type = "wiki:MODIFYJOB";
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "NOTIFYJOB", 9) == 0) {
+	} else if (xstrncmp(cmd_ptr, "NOTIFYJOB", 9) == 0) {
 		msg_type = "wiki:NOTIFYJOB";
 		job_notify_wiki(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "SIGNALJOB", 9) == 0) {
+	} else if (xstrncmp(cmd_ptr, "SIGNALJOB", 9) == 0) {
 		msg_type = "wiki:SIGNALJOB";
 		job_signal_wiki(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "INITIALIZE", 10) == 0) {
+	} else if (xstrncmp(cmd_ptr, "INITIALIZE", 10) == 0) {
 		msg_type = "wiki:INITIALIZE";
 		initialize_wiki(cmd_ptr, &err_code, &err_msg);
 	} else {

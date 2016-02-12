@@ -1426,7 +1426,7 @@ _stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
 	}
 
 	while ((ent = readdir(dp)) != NULL) {
-		if (!strncmp(ent->d_name, "job", 3) &&
+		if (!xstrncmp(ent->d_name, "job", 3) &&
 		    (ent->d_name[3] >= '0') && (ent->d_name[3] <= '9')) {
 			snprintf(dir_path, sizeof(dir_path),
 				 "%s/%s", directory, ent->d_name);

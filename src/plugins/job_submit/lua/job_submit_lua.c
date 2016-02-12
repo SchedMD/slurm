@@ -555,8 +555,8 @@ static int _set_job_env_field(lua_State *L)
 	} else {
 		value_str = luaL_checkstring(L, 3);
 		for (i = 0; job_desc->environment[i]; i++) {
-			if (!strncmp(job_desc->environment[i], name_eq,
-				     name_len)) {
+			if (!xstrncmp(job_desc->environment[i], name_eq,
+				      name_len)) {
 				job_desc->environment[i][name_len] = '\0';
 				xstrcat(job_desc->environment[i], value_str);
 				break;
@@ -595,8 +595,8 @@ static int _job_env_field(const struct job_descriptor *job_desc,
 		lua_pushnil (L);
 	} else {
 		for (i = 0; job_desc->environment[i]; i++) {
-			if (!strncmp(job_desc->environment[i], name_eq,
-				     name_len)) {
+			if (!xstrncmp(job_desc->environment[i], name_eq,
+				      name_len)) {
 				lua_pushstring (L, job_desc->environment[i] +
 						   name_len);
 				break;

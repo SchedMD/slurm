@@ -543,7 +543,7 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 
 	if (job->cpu_bind_type & CPU_BIND_MAP) {
 		unsigned int mycpu = 0;
-		if (strncmp(mstr, "0x", 2) == 0) {
+		if (xstrncmp(mstr, "0x", 2) == 0) {
 			mycpu = strtoul (&(mstr[2]), NULL, 16);
 		} else {
 			mycpu = strtoul (mstr, NULL, 10);
@@ -586,7 +586,7 @@ int _get_sched_cpuset(hwloc_topology_t topology,
 
 	if (job->cpu_bind_type & CPU_BIND_LDMAP) {
 		uint32_t myldom = 0;
-		if (strncmp(mstr, "0x", 2) == 0) {
+		if (xstrncmp(mstr, "0x", 2) == 0) {
 			myldom = strtoul (&(mstr[2]), NULL, 16);
 		} else {
 			myldom = strtoul (mstr, NULL, 10);

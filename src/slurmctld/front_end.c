@@ -936,7 +936,7 @@ extern void set_front_end_down (front_end_record_t *front_end_ptr,
 	trigger_front_end_down(front_end_ptr);
 	(void) kill_job_by_front_end_name(front_end_ptr->name);
 	if ((front_end_ptr->reason == NULL) ||
-	    (strncmp(front_end_ptr->reason, "Not responding", 14) == 0)) {
+	    (xstrncmp(front_end_ptr->reason, "Not responding", 14) == 0)) {
 		xfree(front_end_ptr->reason);
 		front_end_ptr->reason = xstrdup(reason);
 		front_end_ptr->reason_time = now;

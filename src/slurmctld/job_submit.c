@@ -128,7 +128,7 @@ extern int job_submit_plugin_init(void)
 			 (sizeof(slurm_submit_ops_t) * (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "job_submit/", 11) == 0)
+		if (xstrncmp(type, "job_submit/", 11) == 0)
 			type += 11; /* backward compatibility */
 		type = xstrdup_printf("job_submit/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(

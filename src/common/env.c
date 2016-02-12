@@ -1690,7 +1690,7 @@ void env_array_merge_slurm(char ***dest_array, const char **src_array)
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
 		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
-		    (strncmp(name, "SLURM", 5) == 0))
+		    (xstrncmp(name, "SLURM", 5) == 0))
 			env_array_overwrite(dest_array, name, value);
 	}
 	xfree(value);
@@ -1713,7 +1713,7 @@ void env_array_merge_spank(char ***dest_array, const char **src_array)
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
 		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE)) {
-			if (strncmp(name, "SPANK_" ,6))
+			if (xstrncmp(name, "SPANK_" ,6))
 				env_array_overwrite(dest_array, name, value);
 			else
 				env_array_overwrite(dest_array, name+6, value);
@@ -2088,7 +2088,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	found = 0;
 	line = strtok_r(buffer, "\n", &last);
 	while (!found && line) {
-		if (!strncmp(line, starttoken, len)) {
+		if (!xstrncmp(line, starttoken, len)) {
 			found = 1;
 			break;
 		}
@@ -2107,7 +2107,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	line = strtok_r(NULL, "\n", &last);
 	value = xmalloc(ENV_BUFSIZE);
 	while (!found && line) {
-		if (!strncmp(line, stoptoken, len)) {
+		if (!xstrncmp(line, stoptoken, len)) {
 			found = 1;
 			break;
 		}

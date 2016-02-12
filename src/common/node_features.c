@@ -131,7 +131,7 @@ extern int node_features_g_init(void)
 			 (sizeof(node_features_ops_t) * (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "node_features/", 4) == 0)
+		if (xstrncmp(type, "node_features/", 4) == 0)
 			type += 4; /* backward compatibility */
 		type = xstrdup_printf("node_features/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(

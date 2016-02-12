@@ -486,7 +486,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
-			if (!strncmp(tok, "create_persistent", 17)) {
+			if (!xstrncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
 				bb_access = NULL;
 				bb_name = NULL;
@@ -543,8 +543,8 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				bb_job->buf_ptr[inx].type = bb_type;
 				bb_job->persist_add += tmp_cnt;
-			} else if (!strncmp(tok, "destroy_persistent", 17) ||
-				   !strncmp(tok, "delete_persistent", 16)) {
+			} else if (!xstrncmp(tok, "destroy_persistent", 17) ||
+				   !xstrncmp(tok, "delete_persistent", 16)) {
 				have_bb = true;
 				bb_name = NULL;
 				if ((sub_tok = strstr(tok, "name="))) {
@@ -580,7 +580,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
-			if (!strncmp(tok, "jobdw", 5)) {
+			if (!xstrncmp(tok, "jobdw", 5)) {
 				have_bb = true;
 				if ((sub_tok = strstr(tok, "capacity="))) {
 					tmp_cnt = bb_get_size_num(sub_tok+9, 1);
@@ -600,7 +600,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				tmp_cnt = _set_granularity(tmp_cnt,
 							   bb_job->job_pool);
 				bb_job->total_size += tmp_cnt;
-			} else if (!strncmp(tok, "persistentdw", 12)) {
+			} else if (!xstrncmp(tok, "persistentdw", 12)) {
 				/* Persistent buffer use */
 				have_bb = true;
 				bb_name = NULL;
@@ -622,7 +622,7 @@ static bb_job_t *_get_bb_job(struct job_record *job_ptr)
 				//bb_job->buf_ptr[inx].size = 0;
 				bb_job->buf_ptr[inx].state = BB_STATE_PENDING;
 				//bb_job->buf_ptr[inx].type = NULL;
-			} else if (!strncmp(tok, "swap", 4)) {
+			} else if (!xstrncmp(tok, "swap", 4)) {
 				have_bb = true;
 				tok += 4;
 				while (isspace(tok[0]))
@@ -2295,14 +2295,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			tok += 3;
 			while (isspace(tok[0]))
 				tok++;
-			if (!strncmp(tok, "create_persistent", 17) &&
+			if (!xstrncmp(tok, "create_persistent", 17) &&
 			    !enable_persist) {
 				info("%s: User %d disabled from creating "
 				     "persistent burst buffer",
 				     __func__, submit_uid);
 				rc = ESLURM_BURST_BUFFER_PERMISSION;
 				break;
-			} else if (!strncmp(tok, "create_persistent", 17)) {
+			} else if (!xstrncmp(tok, "create_persistent", 17)) {
 				have_bb = true;
 				bb_name = NULL;
 				bb_pool = NULL;
@@ -2334,14 +2334,14 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 				xfree(bb_pool);
 				if (rc != SLURM_SUCCESS)
 					break;
-			} else if (!strncmp(tok, "destroy_persistent", 17) &&
+			} else if (!xstrncmp(tok, "destroy_persistent", 17) &&
 				   !enable_persist) {
 				info("%s: User %d disabled from destroying "
 				     "persistent burst buffer",
 				     __func__, submit_uid);
 				rc = ESLURM_BURST_BUFFER_PERMISSION;
 				break;
-			} else if (!strncmp(tok, "destroy_persistent", 17)) {
+			} else if (!xstrncmp(tok, "destroy_persistent", 17)) {
 				have_bb = true;
 				if (!(sub_tok = strstr(tok, "name="))) {
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -2354,7 +2354,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 			tok += 3;
 			while (isspace(tok[0]) && (tok[0] != '\0'))
 				tok++;
-			if (!strncmp(tok, "jobdw", 5) &&
+			if (!xstrncmp(tok, "jobdw", 5) &&
 			    (capacity = strstr(tok, "capacity="))) {
 				bb_pool = NULL;
 				have_bb = true;
@@ -2372,9 +2372,9 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 					rc =ESLURM_INVALID_BURST_BUFFER_REQUEST;
 				*bb_size += _set_granularity(tmp_cnt, bb_pool);
 				xfree(bb_pool);
-			} else if (!strncmp(tok, "persistentdw", 12)) {
+			} else if (!xstrncmp(tok, "persistentdw", 12)) {
 				have_bb = true;
-			} else if (!strncmp(tok, "swap", 4)) {
+			} else if (!xstrncmp(tok, "swap", 4)) {
 				bb_pool = NULL;
 				have_bb = true;
 				tok += 4;
@@ -3035,7 +3035,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 #if 1
 	//FIXME: Cray API returning valid response, but exit 1 in some cases
 	if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
-	    (resp_msg && !strncmp(resp_msg, "job_file_valid True", 19))) {
+	    (resp_msg && !xstrncmp(resp_msg, "job_file_valid True", 19))) {
 		error("%s: paths for job %u status:%u response:%s",
 		      __func__, job_ptr->job_id, status, resp_msg);
 		_update_job_env(job_ptr, path_file);
@@ -4732,7 +4732,7 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 	while (tok) {
 		sep = strchr(tok, ':');
 		if (sep) {
-			if (!strncmp(tok, "cray:", 5))
+			if (!xstrncmp(tok, "cray:", 5))
 				tok += 5;
 			else
 				tok = NULL;

@@ -343,7 +343,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 		} else {
 			len = strlen(tok);
 			for (i = 0; environ[i]; i++) {
-				if (strncmp(tok, environ[i], len) ||
+				if (xstrncmp(tok, environ[i], len) ||
 				    (environ[i][len] != '='))
 					continue;
 				save_env[0] = environ[i];
@@ -357,7 +357,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	xfree(tmp);
 
 	for (i = 0; environ[i]; i++) {
-		if (strncmp("SLURM_", environ[i], 6))
+		if (xstrncmp("SLURM_", environ[i], 6))
 			continue;
 		save_env[0] = environ[i];
 		env_array_merge(&desc->environment,

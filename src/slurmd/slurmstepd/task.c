@@ -121,13 +121,13 @@ static void _proc_stdout(char *buf, stepd_step_rec_t *job)
 			end_line = buf_ptr + strlen(buf_ptr);
 			end_buf = true;
 		}
-		if (!strncmp(buf_ptr, "print ", 6)) {
+		if (!xstrncmp(buf_ptr, "print ", 6)) {
 			buf_ptr += 6;
 			while (isspace(buf_ptr[0]))
 				buf_ptr++;
 			len = end_line - buf_ptr + 1;
 			safe_write(1, buf_ptr, len);
-		} else if (!strncmp(buf_ptr, "export ",7)) {
+		} else if (!xstrncmp(buf_ptr, "export ",7)) {
 			name_ptr = buf_ptr + 7;
 			while (isspace(name_ptr[0]))
 				name_ptr++;
@@ -159,7 +159,7 @@ static void _proc_stdout(char *buf, stepd_step_rec_t *job)
 				end_line[0] = '\0';
 			else
 				end_line[0] = '\n';
-		} else if (!strncmp(buf_ptr, "unset ", 6)) {
+		} else if (!xstrncmp(buf_ptr, "unset ", 6)) {
 			name_ptr = buf_ptr + 6;
 			while (isspace(name_ptr[0]))
 				name_ptr++;
@@ -315,7 +315,7 @@ _build_path(char* fname, char **prog_env)
 	for (i=0; ; i++) {
 		if (prog_env[i] == NULL)
 			return file_name;
-		if (strncmp(prog_env[i], "PATH=", 5))
+		if (xstrncmp(prog_env[i], "PATH=", 5))
 			continue;
 		path_env = xstrdup(&prog_env[i][5]);
 		break;
@@ -518,7 +518,7 @@ exec_task(stepd_step_rec_t *job, int i)
 		char buf[256], *eol;
 		int sz;
 		sz = read(fd, buf, sizeof(buf));
-		if ((sz >= 3) && (strncmp(buf, "#!", 2) == 0)) {
+		if ((sz >= 3) && (xstrncmp(buf, "#!", 2) == 0)) {
 			eol = strchr(buf, '\n');
 			if (eol)
 				eol[0] = '\0';

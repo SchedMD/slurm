@@ -3208,8 +3208,8 @@ static char **_build_env(struct job_record *job_ptr)
 		if (job_ptr->details && job_ptr->details->env_sup &&
 		    job_ptr->details->env_cnt) {
 			for (i = 0; i < job_ptr->details->env_cnt; i++) {
-				if (strncmp(job_ptr->details->env_sup[i],
-					    "SLURM_ARRAY_TASK", 16))
+				if (xstrncmp(job_ptr->details->env_sup[i],
+					     "SLURM_ARRAY_TASK", 16))
 					continue;
 				eq = strchr(job_ptr->details->env_sup[i], '=');
 				if (!eq)

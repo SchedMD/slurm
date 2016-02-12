@@ -3968,7 +3968,7 @@ extern bool valid_spank_job_env(char **spank_job_env,
 	char *entry;
 
 	for (i=0; i<spank_job_env_size; i++) {
-		if (!strncmp(spank_job_env[i], "SPANK_", 6))
+		if (!xstrncmp(spank_job_env[i], "SPANK_", 6))
 			continue;
 		entry = spank_job_env[i];
 		spank_job_env[i] = xstrdup_printf ("SPANK_%s", entry);

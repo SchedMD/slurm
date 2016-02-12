@@ -1105,23 +1105,23 @@ static int _process_old_sql_line(const char *data_in,
 	bool new_cluster = 0;
 
 	while (data_in[i]) {
-		if (!strncmp("insert into ", data_in+i, 12)) {
+		if (!xstrncmp("insert into ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
 			i+=12;
 			break;
-		} else if (!strncmp("delete from ", data_in+i, 12)) {
+		} else if (!xstrncmp("delete from ", data_in+i, 12)) {
 			beginning = xstrndup(data_in+i, 11);
 			i+=12;
 			delete = 1;
 			break;
-		} else if (!strncmp("drop table ", data_in+i, 11)) {
+		} else if (!xstrncmp("drop table ", data_in+i, 11)) {
 			start = i;
 			i+=11;
 			while (data_in[i] && data_in[i-1] != ';')
 				i++;
 			xstrncat(data_out, data_in+start, i-start);
 			goto end_it;
-		} else if (!strncmp("truncate table ", data_in+i, 15)) {
+		} else if (!xstrncmp("truncate table ", data_in+i, 15)) {
 			start = i;
 			i+=15;
 			while (data_in[i] && data_in[i-1] != ';')
@@ -1137,34 +1137,34 @@ static int _process_old_sql_line(const char *data_in,
 
 	//info("processing %s", data_in);
 	/* get table name */
-	if (!strncmp("cluster_event_table", data_in+i, 19)) {
+	if (!xstrncmp("cluster_event_table", data_in+i, 19)) {
 		i+=19;
 		table = event_table;
-	} else if (!strncmp("job_table", data_in+i, 9)) {
+	} else if (!xstrncmp("job_table", data_in+i, 9)) {
 		i+=9;
 		table = job_table;
-	} else if (!strncmp("step_table", data_in+i, 10)) {
+	} else if (!xstrncmp("step_table", data_in+i, 10)) {
 		i+=10;
 		table = step_table;
-	} else if (!strncmp("suspend_table", data_in+i, 13)) {
+	} else if (!xstrncmp("suspend_table", data_in+i, 13)) {
 		i+=13;
 		table = suspend_table;
-	} else if (!strncmp("cluster_day_usage_table", data_in+i, 23)) {
+	} else if (!xstrncmp("cluster_day_usage_table", data_in+i, 23)) {
 		i+=23;
 		table = cluster_day_table;
-	} else if (!strncmp("cluster_hour_usage_table", data_in+i, 24)) {
+	} else if (!xstrncmp("cluster_hour_usage_table", data_in+i, 24)) {
 		i+=24;
 		table = cluster_hour_table;
-	} else if (!strncmp("cluster_month_usage_table", data_in+i, 25)) {
+	} else if (!xstrncmp("cluster_month_usage_table", data_in+i, 25)) {
 		i+=25;
 		table = cluster_month_table;
-	} else if (!strncmp("assoc_day_usage_table", data_in+i, 21)) {
+	} else if (!xstrncmp("assoc_day_usage_table", data_in+i, 21)) {
 		i+=21;
 		table = assoc_day_table;
-	} else if (!strncmp("assoc_hour_usage_table", data_in+i, 22)) {
+	} else if (!xstrncmp("assoc_hour_usage_table", data_in+i, 22)) {
 		i+=22;
 		table = assoc_hour_table;
-	} else if (!strncmp("assoc_month_usage_table", data_in+i, 23)) {
+	} else if (!xstrncmp("assoc_month_usage_table", data_in+i, 23)) {
 		i+=23;
 		table = assoc_month_table;
 	} else {
@@ -1181,76 +1181,76 @@ static int _process_old_sql_line(const char *data_in,
 			i++;
 	//info("table is %s '%s'", table, data_in+i);
 	while (data_in[i] && data_in[i] != ')') {
-		if (delete && !strncmp("where ", data_in+i, 6)) {
+		if (delete && !xstrncmp("where ", data_in+i, 6)) {
 			i+=6;
 			continue;
-		} else if (!strncmp("period_start", data_in+i, 12)) {
+		} else if (!xstrncmp("period_start", data_in+i, 12)) {
 			xstrcat(fields, "time_start");
 			i+=12;
-		} else if (!strncmp("period_end", data_in+i, 10)) {
+		} else if (!xstrncmp("period_end", data_in+i, 10)) {
 			xstrcat(fields, "time_end");
 			i+=10;
-		} else if (!strncmp("cpu_count", data_in+i, 9)) {
+		} else if (!xstrncmp("cpu_count", data_in+i, 9)) {
 			xstrcat(fields, "count");
 			i+=9;
-		} else if (!strncmp("jobid", data_in+i, 5)) {
+		} else if (!xstrncmp("jobid", data_in+i, 5)) {
 			xstrcat(fields, "id_job");
 			i+=5;
-		} else if (!strncmp("stepid", data_in+i, 6)) {
+		} else if (!xstrncmp("stepid", data_in+i, 6)) {
 			xstrcat(fields, "id_step");
 			i+=6;
-		} else if (!strncmp("associd", data_in+i, 7)) {
+		} else if (!xstrncmp("associd", data_in+i, 7)) {
 			xstrcat(fields, "id_assoc");
 			i+=7;
-		} else if (!strncmp("blockid", data_in+i, 7)) {
+		} else if (!xstrncmp("blockid", data_in+i, 7)) {
 			xstrcat(fields, "id_block");
 			i+=7;
-		} else if (!strncmp("wckeyid", data_in+i, 7)) {
+		} else if (!xstrncmp("wckeyid", data_in+i, 7)) {
 			xstrcat(fields, "id_wckey");
 			i+=7;
-		} else if (!strncmp("qos", data_in+i, 3)) {
+		} else if (!xstrncmp("qos", data_in+i, 3)) {
 			xstrcat(fields, "id_qos");
 			i+=3;
-		} else if (!strncmp("uid", data_in+i, 3)) {
+		} else if (!xstrncmp("uid", data_in+i, 3)) {
 			xstrcat(fields, "id_user");
 			i+=3;
-		} else if (!strncmp("gid", data_in+i, 3)) {
+		} else if (!xstrncmp("gid", data_in+i, 3)) {
 			xstrcat(fields, "id_group");
 			i+=3;
-		} else if (!strncmp("submit", data_in+i, 6)) {
+		} else if (!xstrncmp("submit", data_in+i, 6)) {
 			xstrcat(fields, "time_submit");
 			i+=6;
-		} else if (!strncmp("eligible", data_in+i, 8)) {
+		} else if (!xstrncmp("eligible", data_in+i, 8)) {
 			xstrcat(fields, "time_eligible");
 			i+=8;
-		} else if (!strncmp("start", data_in+i, 5)) {
+		} else if (!xstrncmp("start", data_in+i, 5)) {
 			xstrcat(fields, "time_start");
 			i+=5;
-		} else if (!strncmp("suspended", data_in+i, 9)) {
+		} else if (!xstrncmp("suspended", data_in+i, 9)) {
 			xstrcat(fields, "time_suspended");
 			i+=9;
-		} else if (!strncmp("end", data_in+i, 3)) {
+		} else if (!xstrncmp("end", data_in+i, 3)) {
 			xstrcat(fields, "time_end");
 			i+=3;
-		} else if (!strncmp("comp_code", data_in+i, 9)) {
+		} else if (!xstrncmp("comp_code", data_in+i, 9)) {
 			xstrcat(fields, "exit_code");
 			i+=9;
-		} else if (!strncmp("alloc_cpus", data_in+i, 10)) {
+		} else if (!xstrncmp("alloc_cpus", data_in+i, 10)) {
 			xstrcat(fields, "cpus_alloc");
 			i+=10;
-		} else if (!strncmp("req_cpus", data_in+i, 8)) {
+		} else if (!xstrncmp("req_cpus", data_in+i, 8)) {
 			xstrcat(fields, "cpus_req");
 			i+=8;
-		} else if (!strncmp("alloc_nodes", data_in+i, 11)) {
+		} else if (!xstrncmp("alloc_nodes", data_in+i, 11)) {
 			xstrcat(fields, "nodes_alloc");
 			i+=11;
-		} else if (!strncmp("name", data_in+i, 4)) {
+		} else if (!xstrncmp("name", data_in+i, 4)) {
 			if (table == job_table)
 				xstrcat(fields, "job_name");
 			else if (table == step_table)
 				xstrcat(fields, "step_name");
 			i+=4;
-		} else if (!strncmp("id_tres", data_in+i, 7)) {
+		} else if (!xstrncmp("id_tres", data_in+i, 7)) {
 			start = i;
 			while (data_in[i]
 			       && data_in[i] != ',' && data_in[i] != ')') {
@@ -1262,7 +1262,7 @@ static int _process_old_sql_line(const char *data_in,
 				goto end_it;
 			}
 			xstrncat(fields, data_in+start, (i-start));
-		} else if (!strncmp("id", data_in+i, 2)) {
+		} else if (!xstrncmp("id", data_in+i, 2)) {
 			i+=2;
 			if ((table == assoc_day_table)
 			    || (table == assoc_hour_table)
@@ -1297,12 +1297,12 @@ static int _process_old_sql_line(const char *data_in,
 				xfree(id_assoc);
 			} else
 				xstrcat(fields, "job_db_inx");
-		} else if (!strncmp("cluster_nodes", data_in+i, 13)) {
+		} else if (!xstrncmp("cluster_nodes", data_in+i, 13)) {
 			/* this is here just to make it easier to
 			   handle the cluster field. */
 			xstrcat(fields, "cluster_nodes");
 			i+=13;
-		} else if (!strncmp("cluster", data_in+i, 7)) {
+		} else if (!xstrncmp("cluster", data_in+i, 7)) {
 			i+=7;
 			if (!delete) {
 				cluster_inx = cnt;
@@ -1366,92 +1366,92 @@ static int _process_old_sql_line(const char *data_in,
 		ending_end = i;
 		ending_start = 0;
 		while (data_in[ending_end] && data_in[ending_end-1] != ';') {
-			if (!strncmp(data_in+ending_end,
+			if (!xstrncmp(data_in+ending_end,
 				     "on duplicate key", 16)) {
 				ending_start = ending_end;
 			}
 			if (ending_start) {
-				if (!strncmp("period_start",
-					     data_in+ending_end, 12)) {
+				if (!xstrncmp("period_start",
+					      data_in+ending_end, 12)) {
 					xstrcat(ending, "time_start");
 					ending_end+=12;
-				} else if (!strncmp("period_end",
-						    data_in+ending_end, 10)) {
+				} else if (!xstrncmp("period_end",
+						     data_in+ending_end, 10)) {
 					xstrcat(ending, "time_end");
 					ending_end+=10;
-				} else if (!strncmp("jobid",
-						    data_in+ending_end, 5)) {
+				} else if (!xstrncmp("jobid",
+						     data_in+ending_end, 5)) {
 					xstrcat(ending, "id_job");
 					ending_end+=5;
-				} else if (!strncmp("stepid",
-						    data_in+ending_end, 6)) {
+				} else if (!xstrncmp("stepid",
+						     data_in+ending_end, 6)) {
 					xstrcat(ending, "id_step");
 					ending_end+=6;
-				} else if (!strncmp("associd",
-						    data_in+ending_end, 7)) {
+				} else if (!xstrncmp("associd",
+						     data_in+ending_end, 7)) {
 					xstrcat(ending, "id_assoc");
 					ending_end+=7;
-				} else if (!strncmp("blockid",
-						    data_in+ending_end, 7)) {
+				} else if (!xstrncmp("blockid",
+						     data_in+ending_end, 7)) {
 					xstrcat(ending, "id_block");
 					ending_end+=7;
-				} else if (!strncmp("wckeyid",
-						    data_in+ending_end, 7)) {
+				} else if (!xstrncmp("wckeyid",
+						     data_in+ending_end, 7)) {
 					xstrcat(ending, "id_wckey");
 					ending_end+=7;
-				} else if (!strncmp("uid",
-						    data_in+ending_end, 3)) {
+				} else if (!xstrncmp("uid",
+						     data_in+ending_end, 3)) {
 					xstrcat(ending, "id_user");
 					ending_end+=3;
-				} else if (!strncmp("gid",
-						    data_in+ending_end, 3)) {
+				} else if (!xstrncmp("gid",
+						     data_in+ending_end, 3)) {
 					xstrcat(ending, "id_group");
 					ending_end+=3;
-				} else if (!strncmp("submit",
-						    data_in+ending_end, 6)) {
+				} else if (!xstrncmp("submit",
+						     data_in+ending_end, 6)) {
 					xstrcat(ending, "time_submit");
 					ending_end+=6;
-				} else if (!strncmp("eligible",
-						    data_in+ending_end, 8)) {
+				} else if (!xstrncmp("eligible",
+						     data_in+ending_end, 8)) {
 					xstrcat(ending, "time_eligible");
 					ending_end+=8;
-				} else if (!strncmp("start",
-						    data_in+ending_end, 5)) {
+				} else if (!xstrncmp("start",
+						     data_in+ending_end, 5)) {
 					xstrcat(ending, "time_start");
 					ending_end+=5;
-				} else if (!strncmp("suspended",
-						    data_in+ending_end, 9)) {
+				} else if (!xstrncmp("suspended",
+						     data_in+ending_end, 9)) {
 					xstrcat(ending, "time_suspended");
 					ending_end+=9;
-				} else if (!strncmp("end",
-						    data_in+ending_end, 3)) {
+				} else if (!xstrncmp("end",
+						     data_in+ending_end, 3)) {
 					xstrcat(ending, "time_end");
 					ending_end+=3;
-				} else if (!strncmp("comp_code",
-						    data_in+ending_end, 9)) {
+				} else if (!xstrncmp("comp_code",
+						     data_in+ending_end, 9)) {
 					xstrcat(ending, "exit_code");
 					ending_end+=9;
-				} else if (!strncmp("alloc_cpus",
-						    data_in+ending_end, 10)) {
+				} else if (!xstrncmp("alloc_cpus",
+						     data_in+ending_end, 10)) {
 					xstrcat(ending, "cpus_alloc");
 					ending_end+=10;
-				} else if (!strncmp("req_cpus",
-						    data_in+ending_end, 8)) {
+				} else if (!xstrncmp("req_cpus",
+						     data_in+ending_end, 8)) {
 					xstrcat(ending, "cpus_req");
 					ending_end+=8;
-				} else if (!strncmp("alloc_nodes",
-						    data_in+ending_end, 11)) {
+				} else if (!xstrncmp("alloc_nodes",
+						     data_in+ending_end, 11)) {
 					xstrcat(ending, "nodes_alloc");
 					ending_end+=11;
-				} else if (!strncmp("name",
-						    data_in+ending_end, 4)) {
+				} else if (!xstrncmp("name",
+						     data_in+ending_end, 4)) {
 					if (table == job_table)
 						xstrcat(ending, "job_name");
 					else if (table == step_table)
 						xstrcat(ending, "step_name");
 					ending_end+=4;
-				} else if (!strncmp("id",
-						    data_in+ending_end, 2)) {
+				} else if (!xstrncmp("id",
+						     data_in+ending_end, 2)) {
 					if ((table == assoc_day_table)
 					    || (table == assoc_hour_table)
 					    || (table == assoc_month_table))
@@ -2652,10 +2652,10 @@ extern int as_mysql_jobacct_process_archive_load(
 	/* this is the old version of an archive file where the file
 	   was straight sql. */
 	if ((strlen(data) >= 12)
-	    && (!strncmp("insert into ", data, 12)
-		|| !strncmp("delete from ", data, 12)
-		|| !strncmp("drop table ", data, 11)
-		|| !strncmp("truncate table ", data, 15))) {
+	    && (!xstrncmp("insert into ", data, 12)
+		|| !xstrncmp("delete from ", data, 12)
+		|| !xstrncmp("drop table ", data, 11)
+		|| !xstrncmp("truncate table ", data, 15))) {
 		_process_old_sql(&data);
 		goto got_sql;
 	}

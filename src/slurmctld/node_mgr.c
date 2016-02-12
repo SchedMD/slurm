@@ -2043,7 +2043,7 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 		info ("drain_nodes: node %s state set to DRAIN",
 			this_node_name);
 		if ((node_ptr->reason == NULL) ||
-		    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+		    (xstrncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(reason);
 			node_ptr->reason_time = now;
@@ -2613,7 +2613,7 @@ static front_end_record_t * _front_end_reg(
 	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
 	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
 	if ((state_base == NODE_STATE_DOWN) && (front_end_ptr->reason) &&
-	    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
+	    (!xstrncmp(front_end_ptr->reason, "Not responding", 14))) {
 		error("front end node %s returned to service",
 		      reg_msg->node_name);
 		state_base = NODE_STATE_IDLE;
@@ -3250,7 +3250,7 @@ void set_node_down_ptr (struct node_record *node_ptr, char *reason)
 	time_t now = time(NULL);
 
 	if ((node_ptr->reason == NULL) ||
-	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
+	    (xstrncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
 		node_ptr->reason_time = now;

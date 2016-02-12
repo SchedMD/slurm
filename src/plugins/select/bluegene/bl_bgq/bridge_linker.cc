@@ -1199,7 +1199,7 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 		const char *bg_block_id = block_ptr->getName().c_str();
 		uint16_t state;
 
-		if (strncmp("RMP", bg_block_id, 3))
+		if (xstrncmp("RMP", bg_block_id, 3))
 			continue;
 
 		/* find BG Block record */

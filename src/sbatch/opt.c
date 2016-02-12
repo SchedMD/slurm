@@ -1099,9 +1099,9 @@ static void _opt_batch_script(const char * file, const void *body, int size)
 
 	while ((line = _next_line(body, size, &state)) != NULL) {
 		lineno++;
-		if (!strncmp(line, magic_word1, magic_word_len1))
+		if (!xstrncmp(line, magic_word1, magic_word_len1))
 			ptr = line + magic_word_len1;
-		else if (!strncmp(line, magic_word2, magic_word_len2)) {
+		else if (!xstrncmp(line, magic_word2, magic_word_len2)) {
 			ptr = line + magic_word_len2;
 			if (!warned) {
 				error("Change from #SLURM to #SBATCH in your "
@@ -1202,7 +1202,7 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 
 	while ((line = _next_line(body, size, &state)) != NULL) {
 		lineno++;
-		if (strncmp(line, magic_word, magic_word_len) != 0) {
+		if (xstrncmp(line, magic_word, magic_word_len) != 0) {
 			if (line[0] != '#')
 				non_comments++;
 			xfree(line);
@@ -2188,7 +2188,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	hostlist_t hl = hostlist_create(NULL);
 
 	while (node_opts[i]) {
-		if (!strncmp(node_opts+i, "ppn=", 4)) {
+		if (!xstrncmp(node_opts+i, "ppn=", 4)) {
 			i+=4;
 			ppn += strtol(node_opts+i, NULL, 10);
 			_get_next_pbs_node_part(node_opts, &i);
@@ -2268,10 +2268,10 @@ static void _parse_pbs_resource_list(char *rl)
 			if (!strncasecmp(rl+i, "true", 4) && (gpus < 1))
 				gpus = 1;
 			/* Also see "naccelerators=" below */
-		} else if (!strncmp(rl+i, "arch=", 5)) {
+		} else if (!xstrncmp(rl+i, "arch=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "cput=", 5)) {
+		} else if (!xstrncmp(rl+i, "cput=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (!temp) {
@@ -2281,7 +2281,7 @@ static void _parse_pbs_resource_list(char *rl)
 			xfree(opt.time_limit_str);
 			opt.time_limit_str = xstrdup(temp);
 			xfree(temp);
-		} else if (!strncmp(rl+i, "file=", 5)) {
+		} else if (!xstrncmp(rl+i, "file=", 5)) {
 			int end = 0;
 
 			i+=5;
@@ -2304,10 +2304,10 @@ static void _parse_pbs_resource_list(char *rl)
 				exit(error_exit);
 			}
 			xfree(temp);
-		} else if (!strncmp(rl+i, "host=", 5)) {
+		} else if (!xstrncmp(rl+i, "host=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "mem=", 4)) {
+		} else if (!xstrncmp(rl+i, "mem=", 4)) {
 			int end = 0;
 
 			i+=4;
@@ -2345,7 +2345,7 @@ static void _parse_pbs_resource_list(char *rl)
 		 * NB: no "mppmem" here since it specifies per-PE memory units,
 		 *     whereas SLURM uses per-node and per-CPU memory units.
 		 */
-		} else if (!strncmp(rl + i, "mppdepth=", 9)) {
+		} else if (!xstrncmp(rl + i, "mppdepth=", 9)) {
 			/* Cray: number of CPUs (threads) per processing element */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
@@ -2355,7 +2355,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.cpus_set	  = true;
 			}
 			xfree(temp);
-		} else if (!strncmp(rl + i, "mppnodes=", 9)) {
+		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
 			/* Cray `nodes' variant: hostlist without prefix */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
@@ -2365,7 +2365,7 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 			xfree(opt.nodelist);
 			opt.nodelist = temp;
-		} else if (!strncmp(rl + i, "mppnppn=", 8)) {
+		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
 			/* Cray: number of processing elements per node */
 			i += 8;
 			temp = _get_pbs_option_value(rl, &i, ',');
@@ -2373,7 +2373,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.ntasks_per_node = parse_int("mppnppn",
 								temp, true);
 			xfree(temp);
-		} else if (!strncmp(rl + i, "mppwidth=", 9)) {
+		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
 			/* Cray: task width (number of processing elements) */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
@@ -2398,7 +2398,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.mincpus = parse_int("ncpus", temp, true);
 				xfree(temp);
 			}
-		} else if (!strncmp(rl+i, "nice=", 5)) {
+		} else if (!xstrncmp(rl+i, "nice=", 5)) {
 			i += 5;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
@@ -2415,7 +2415,7 @@ static void _parse_pbs_resource_list(char *rl)
 				}
 			}
 			xfree(temp);
-		} else if (!strncmp(rl+i, "nodes=", 6)) {
+		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
 			i+=6;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (!temp) {
@@ -2424,13 +2424,13 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 			_parse_pbs_nodes_opts(temp);
 			xfree(temp);
-		} else if (!strncmp(rl+i, "opsys=", 6)) {
+		} else if (!xstrncmp(rl+i, "opsys=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "other=", 6)) {
+		} else if (!xstrncmp(rl+i, "other=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "pcput=", 6)) {
+		} else if (!xstrncmp(rl+i, "pcput=", 6)) {
 			i+=6;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (!temp) {
@@ -2440,10 +2440,10 @@ static void _parse_pbs_resource_list(char *rl)
 			xfree(opt.time_limit_str);
 			opt.time_limit_str = xstrdup(temp);
 			xfree(temp);
-		} else if (!strncmp(rl+i, "pmem=", 5)) {
+		} else if (!xstrncmp(rl+i, "pmem=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "proc=", 5)) {
+		} else if (!xstrncmp(rl+i, "proc=", 5)) {
 			i += 5;
 			if (opt.constraints)
 				xstrcat(opt.constraints, ",");
@@ -2451,7 +2451,7 @@ static void _parse_pbs_resource_list(char *rl)
 			xstrcat(opt.constraints, temp);
 			xfree(temp);
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "pvmem=", 6)) {
+		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
 		} else if (!strncasecmp(rl+i, "select=", 7)) {
@@ -2464,13 +2464,13 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.nodes_set = true;
 				xfree(temp);
 			}
-		} else if (!strncmp(rl+i, "software=", 9)) {
+		} else if (!xstrncmp(rl+i, "software=", 9)) {
 			i+=9;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "vmem=", 5)) {
+		} else if (!xstrncmp(rl+i, "vmem=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
-		} else if (!strncmp(rl+i, "walltime=", 9)) {
+		} else if (!xstrncmp(rl+i, "walltime=", 9)) {
 			i+=9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (!temp) {
@@ -2889,7 +2889,7 @@ extern char *spank_get_job_env(const char *name)
 	len = strlen(tmp_str);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(tmp_str);
 		return (opt.spank_job_env[i] + len);
@@ -2916,7 +2916,7 @@ extern int   spank_set_job_env(const char *name, const char *value,
 	xstrcat(tmp_str, value);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		if (overwrite) {
 			xfree(opt.spank_job_env[i]);
@@ -2949,7 +2949,7 @@ extern int   spank_unset_job_env(const char *name)
 	len = strlen(tmp_str);
 
 	for (i=0; i<opt.spank_job_env_size; i++) {
-		if (strncmp(opt.spank_job_env[i], tmp_str, len))
+		if (xstrncmp(opt.spank_job_env[i], tmp_str, len))
 			continue;
 		xfree(opt.spank_job_env[i]);
 		for (j=(i+1); j<opt.spank_job_env_size; i++, j++)

@@ -455,7 +455,7 @@ _get_command (int *argc, char **argv)
 		exit_flag = 2;
 		return 0;
 	}
-	else if (strncmp (in_line, "#", 1) == 0) {
+	else if (xstrncmp (in_line, "#", 1) == 0) {
 		free (in_line);
 		return 0;
 	} else if (xstrcmp (in_line, "!!") == 0) {

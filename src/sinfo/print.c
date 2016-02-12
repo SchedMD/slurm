@@ -968,7 +968,7 @@ int _print_reason(sinfo_data_t * sinfo_data, int width,
 {
 	if (sinfo_data) {
 		char * reason = sinfo_data->reason ? sinfo_data->reason:"none";
-		if (strncmp(reason, "(null)", 6) == 0)
+		if (xstrncmp(reason, "(null)", 6) == 0)
 			reason = "none";
 		_print_str(reason, width, right_justify, true);
 	} else

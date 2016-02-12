@@ -171,7 +171,7 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	}
 
 	i = strlen(preemptee_assoc->acct);
-	if (strncmp(((preemptee_assoc->acct) + i - 2), "_p", 2)) {
+	if (xstrncmp(((preemptee_assoc->acct) + i - 2), "_p", 2)) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: Preemptee is skipped, NON-PREEMPTABLE "
 			     "(not ending with _p) account %s",

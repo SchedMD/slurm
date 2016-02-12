@@ -241,11 +241,11 @@ static void _hardware(void)
 	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
 		fatal("RAPL: error on attempt to open /proc/cpuinfo");
 	while (fgets(buf, 1024, fd)) {
-		if (strncmp(buf, "processor", sizeof("processor") - 1) == 0) {
+		if (xstrncmp(buf, "processor", sizeof("processor") - 1) == 0) {
 			sscanf(buf, "processor\t: %d", &cpu);
 			continue;
 		}
-		if (!strncmp(buf, "physical id", sizeof("physical id") - 1)) {
+		if (!xstrncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 
 			if (pkg > MAX_PKGS)

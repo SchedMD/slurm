@@ -378,8 +378,8 @@ static int _set_options(const int argc, char **argv)
 				if (xstrcmp(optarg, GRP_ENERGY)
 				    && xstrcmp(optarg, GRP_LUSTRE)
 				    && xstrcmp(optarg, GRP_NETWORK)
-				    && strncmp(optarg,GRP_TASK,
-					       strlen(GRP_TASK))) {
+				    && xstrncmp(optarg,GRP_TASK,
+						strlen(GRP_TASK))) {
 					error("Bad value for --series=\"%s\"",
 					      optarg);
 					return -1;

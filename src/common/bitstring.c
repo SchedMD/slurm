@@ -1246,7 +1246,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 	bitoff_t bitsize = bit_size(bitmap);
 
 	bit_nclear(bitmap, 0, bitsize - 1);
-	if (strncmp(str, "0x", 2) == 0) {	/* Bypass 0x */
+	if (xstrncmp(str, "0x", 2) == 0) {	/* Bypass 0x */
 		str += 2;
 		len -= 2;
 	}

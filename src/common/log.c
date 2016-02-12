@@ -970,7 +970,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (SCHED_LOG_INITIALIZED &&
 	    (sched_log->opt.logfile_level > LOG_LEVEL_QUIET) &&
-	    (strncmp(fmt, "sched: ", 7) == 0)) {
+	    (xstrncmp(fmt, "sched: ", 7) == 0)) {
 		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,

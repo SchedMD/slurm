@@ -432,8 +432,8 @@ extern int slurm_ckpt_stepd_prefork(stepd_step_rec_t *job)
 				old_env = NULL;
 				if (!ptr)
 					break;
-				if (!strncmp(ptr, "libcr_run.so", 12) ||
-				    !strncmp(ptr, "libcr_omit.so", 13))
+				if (!xstrncmp(ptr, "libcr_run.so", 12) ||
+				    !xstrncmp(ptr, "libcr_omit.so", 13))
 					continue;
 				xstrcat(new_env, ptr);
 				xstrcat(new_env, ":");

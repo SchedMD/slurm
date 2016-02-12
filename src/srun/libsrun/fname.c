@@ -87,7 +87,7 @@ fname_create(srun_job_t *job, char *format)
 
 	if ((format == NULL)
 	    || (strncasecmp(format, "all", (size_t) 3) == 0)
-	    || (strncmp(format, "-", (size_t) 1) == 0)       ) {
+	    || (xstrncmp(format, "-", (size_t) 1) == 0)       ) {
 		/* "all" explicitly sets IO_ALL and is the default */
 		return fname;
 	}

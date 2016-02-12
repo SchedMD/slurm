@@ -283,18 +283,18 @@ static void _xlate_dependency(struct job_descriptor *job_desc,
 
 	tok = strtok_r(job_desc->dependency, ",", &last_ptr);
 	while (tok) {
-		if (!strncmp(tok, "after", 5)  ||
-		    !strncmp(tok, "expand", 6) ||
-		    !strncmp(tok, "singleton", 9)) {
+		if (!xstrncmp(tok, "after", 5)  ||
+		    !xstrncmp(tok, "expand", 6) ||
+		    !xstrncmp(tok, "singleton", 9)) {
 			if (result)
 				xstrcat(result, ",");
 			xstrcat(result, tok);
-		} else if (!strncmp(tok, "on:", 3)) {
+		} else if (!xstrncmp(tok, "on:", 3)) {
 			job_desc->priority = 0;	/* Job is held */
 			if (job_desc->comment)
 				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
-		} else if (!strncmp(tok, "before", 6)) {
+		} else if (!xstrncmp(tok, "before", 6)) {
 			_xlate_before(tok, submit_uid, my_job_id);
 		} else {
 			info("%s: discarding unknown job dependency option %s",
