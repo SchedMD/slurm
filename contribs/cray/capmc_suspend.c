@@ -85,8 +85,8 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
-	{"DmidecodePath", S_P_STRING},
 	{"LogFile", S_P_STRING},
+	{"SyscfgPath", S_P_STRING},
 	{NULL}
 };
 
@@ -127,9 +127,9 @@ static void _read_config(void)
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
-		s_p_get_string(&capmc_path, "CapmcPath", tbl);
-		s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
-		s_p_get_string(&log_file, "LogFile", tbl);
+		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		(void) s_p_get_string(&log_file, "LogFile", tbl);
 	}
 	xfree(knl_conf_file);
 	s_p_hashtbl_destroy(tbl);

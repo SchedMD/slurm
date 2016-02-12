@@ -78,6 +78,7 @@ static char *log_file = NULL;
 static bitstr_t *node_bitmap = NULL;
 static char *prog_name = NULL;
 static char *mcdram_mode = NULL, *numa_mode = NULL;
+static char *syscfg_path = NULL;
 
 static pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -88,8 +89,8 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
-	{"DmidecodePath", S_P_STRING},
 	{"LogFile", S_P_STRING},
+	{"SyscfgPath", S_P_STRING},
 	{NULL}
 };
 
@@ -130,9 +131,10 @@ static void _read_config(void)
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
-		s_p_get_string(&capmc_path, "CapmcPath", tbl);
-		s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
-		s_p_get_string(&log_file, "LogFile", tbl);
+		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
+		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
+		(void) s_p_get_string(&log_file, "LogFile", tbl);
+		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
 	}
 	xfree(knl_conf_file);
 	s_p_hashtbl_destroy(tbl);
@@ -559,8 +561,7 @@ int main(int argc, char *argv[])
 	/* Wait for all nodes to change state to "on" */
 	_wait_all_nodes_on();
 
-//FIXME: Change to use slurmd state info
-	if (argc == 3) {
+	if ((argc == 3) && !syscfg_path) {
 		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = argv[1];
 		node_msg.features_act = argv[2];

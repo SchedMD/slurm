@@ -63,13 +63,15 @@ extern int node_features_g_job_valid(char *job_features);
  * RET node boot options, must be xfreed */
 extern char *node_features_g_job_xlate(char *job_features);
 
-/* Get this node's current MCDRAM and NUMA settings from BIOS.
- * RET current node state, must be xfreed */
-extern char *node_features_g_node_state(void);
+/* Get this node's current and available MCDRAM and NUMA settings from BIOS.
+ * avail_modes IN/OUT - available modes, must be xfreed
+ * current_mode IN/OUT - current modes, must be xfreed */
+extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 
-/* Translate a node's new active feature specification as needed to preserve
- * any available features
- * RET node's new active features, must be xfreed */
-extern char *node_features_g_node_xlate(char *update_opt, char *orig_features);
+/* Translate a node's feature specification by replacing any features associated
+ * with this plugin in the original value with the new values, preserving any
+ * features that are not associated with this plugin
+ * RET node's new merged features, must be xfreed */
+extern char *node_features_g_node_xlate(char *new_features,char *orig_features);
 
 #endif /* !_NODE_FEATURES_H */

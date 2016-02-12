@@ -3558,7 +3558,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
-		packstr(msg->features_act, buffer);
+		packstr(msg->features_active, buffer);
+		packstr(msg->features_avail, buffer);
 		packstr(msg->node_name, buffer);
 		packstr(msg->arch, buffer);
 		packstr(msg->cpu_spec_list, buffer);
@@ -3701,7 +3702,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
 		/* load the data values */
 		safe_unpack32(&node_reg_ptr->status, buffer);
-		safe_unpackstr_xmalloc(&node_reg_ptr->features_act,
+		safe_unpackstr_xmalloc(&node_reg_ptr->features_active,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_reg_ptr->features_avail,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_reg_ptr->node_name,
 				       &uint32_tmp, buffer);

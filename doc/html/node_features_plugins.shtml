@@ -80,15 +80,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.</p>
 
-<p class="commandline"> char *node_features_p_node_state(void)
-<p style="margin-left:.2in"><b>Description</b>:<br>
-  Get this node's current features (e.g. MCDRAM and NUMA settings from BIOS
-  for a KNL processor, for example "cache,quad").
-  Executed from the slurmd daemon only.
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-  Current node features; a string with it's memory allocated by xmalloc
-  (i.e. the return value must be released using Slurm's xfree function).</p>
-
 <p class="commandline"> int node_features_p_job_valid(char *job_features)
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Determine of the user's job constraint string is valid.
@@ -121,28 +112,40 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   A string with it's memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
-<p class="commandline"> char *node_features_p_node_xlate(char *new_active_features, char *avail_features)
+<p class="commandline"> void node_features_p_node_state(char **avail_modes, char **current_mode)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Translate a node's new active feature specification as needed to preserve
-  any available features (i.e. features outside of the domain of this plugin).
-  For example, a node's new active features may be "cache,quad", while it's
-  available features may be "cache,flat,equal,quad,hemi,a2a,knl,rack1".
-  The available features with respect to this plugin are
-  "cache,flat,equal,quad,hemi,a2a", while available features outside of the
-  domain of this plugin are "knl,rack1".
+  Get this node's available and current features (e.g. MCDRAM and NUMA
+  settings from BIOS for a KNL processor, for example
+  avail_modes="cache,flat,equal,a2a,quad,hemi,snc2,snc4" and
+  current_mode="cache,quad").
+  Executed from the slurmd daemon only.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> avail_modes:</span> Nodes state features which are
+  available. Value is allocated or appended to as appropriate with xmalloc functions.<br>
+  <span class="commandline"> current_modes:</span> Nodes state features which
+  are currently in effect. Value is allocated or appended to as appropriate
+  with xmalloc functions.</p>
+
+<p class="commandline"> char *node_features_p_node_xlate(char *new_features, char *orig_features)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Translate a node's new feature specification as needed to preserve any
+  original features (i.e. features outside of the domain of this plugin).
+  For example, a node's new features may be "cache,quad", while it's original
+  features may have been "flat,hemi,knl,rack1".
+  The available features with respect to this plugin are "flat,hemi", while
+  features outside of the domain of this plugin are "knl,rack1".
   In this case, this function's return value will be "cache,quad,knl,rack1".
   Executed from the slurmctld daemon only.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-  <span class="commandline"> new_active_features:</span> Node's new active
-  features with respect to this plugin.<br>
-  <span class="commandline"> avail_featuress:</span> Node's available features.<br>
+  <span class="commandline"> new_features:</span> Node's reported features.<br>
+  <span class="commandline"> orig_features:</span> Node's previous feature state.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
-  Node's currently active features.
+  Node's currently features value
   A string with it's memory allocated by xmalloc (i.e. the return value
   must be released using Slurm's xfree function).</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 11 February 2016</p>
+<p style="text-align:center;">Last modified 12 February 2016</p>
 
 <!--#include virtual="footer.txt"-->

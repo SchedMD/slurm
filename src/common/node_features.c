@@ -79,8 +79,8 @@ typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
-	char *	(*node_state)	(void);
-	char *	(*node_xlate)	(char *update_opt, char *avail_features);
+	void	(*node_state)	(char **avail_modes, char **current_mode);
+	char *	(*node_xlate)	(char *new_features, char *orig_features);
 	int	(*reconfig)	(void);
 } node_features_ops_t;
 
@@ -279,59 +279,50 @@ extern char *node_features_g_job_xlate(char *job_features)
 	return node_features;
 }
 
-/* Get this node's current MCDRAM and NUMA settings from BIOS.
- * RET current node state, must be xfreed */
-extern char *node_features_g_node_state(void)
+/* Get this node's current and available MCDRAM and NUMA settings from BIOS.
+ * avail_modes IN/OUT - available modes, must be xfreed
+ * current_mode IN/OUT - current modes, must be xfreed */
+extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 {
 	DEF_TIMERS;
-	char *node_state = NULL, *tmp_str;
 	int i;
 
 	START_TIMER;
 	(void) node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		tmp_str = (*(ops[i].node_state))();
-		if (tmp_str) {
-			if (node_state) {
-				xstrfmtcat(node_state, ",%s", tmp_str);
-				xfree(tmp_str);
-			} else {
-				node_state = tmp_str;
-			}
-		}
+		(*(ops[i].node_state))(avail_modes, current_mode);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("node_features_g_node_state");
-
-	return node_state;
 }
 
-/* Translate a node's new active feature specification as needed to preserve
- * any available features
- * RET node's new active features, must be xfreed */
-extern char *node_features_g_node_xlate(char *update_opt, char *avail_features)
+/* Translate a node's feature specification by replacing any features associated
+ * with this plugin in the original value with the new values, preserving any
+ * features that are not associated with this plugin
+ * RET node's new merged features, must be xfreed */
+extern char *node_features_g_node_xlate(char *new_features, char *orig_features)
 {
 	DEF_TIMERS;
-	char *new_features = NULL, *tmp_str;
+	char *new_value = NULL, *tmp_str;
 	int i;
 
 	START_TIMER;
 	(void) node_features_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		if (new_features)
-			tmp_str = new_features;
-		else if (avail_features)
-			tmp_str = xstrdup(avail_features);
+		if (new_value)
+			tmp_str = new_value;
+		else if (orig_features)
+			tmp_str = xstrdup(orig_features);
 		else
 			tmp_str = NULL;
-		new_features = (*(ops[i].node_xlate))(update_opt, tmp_str);
+		new_value = (*(ops[i].node_xlate))(new_features, tmp_str);
 		xfree(tmp_str);
 
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("node_features_g_node_xlate");
 
-	return new_features;
+	return new_value;
 }

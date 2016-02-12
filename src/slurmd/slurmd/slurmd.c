@@ -689,23 +689,25 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		slurmd_start_time = time(NULL);
 	msg->slurmd_start_time = slurmd_start_time;
 
-	msg->features_act = node_features_g_node_state();
+	node_features_g_node_state(&msg->features_avail, &msg->features_active);
 
 	if (first_msg) {
 		first_msg = false;
 		info("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		     "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
-		     "FeaturesAct=%s",
+		     "FeaturesAvail=%s FeaturesActive=%s",
 		     msg->cpus, msg->boards, msg->sockets, msg->cores,
 		     msg->threads, msg->real_memory, msg->tmp_disk,
-		     msg->up_time, msg->cpu_spec_list, msg->features_act);
+		     msg->up_time, msg->cpu_spec_list, msg->features_avail,
+		     msg->features_active);
 	} else {
 		debug3("CPUs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		       "Memory=%u TmpDisk=%u Uptime=%u CPUSpecList=%s "
-		       "FeaturesAct=%s",
+		       "FeaturesAvail=%s FeaturesActive=%s",
 		       msg->cpus, msg->boards, msg->sockets, msg->cores,
 		       msg->threads, msg->real_memory, msg->tmp_disk,
-		       msg->up_time, msg->cpu_spec_list, msg->features_act);
+		       msg->up_time, msg->cpu_spec_list, msg->features_avail,
+		       msg->features_active);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))

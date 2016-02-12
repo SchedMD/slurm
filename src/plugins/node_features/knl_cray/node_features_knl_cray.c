@@ -133,7 +133,7 @@ static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
-static char *dmidecode_path = NULL;
+static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 
@@ -142,8 +142,8 @@ static s_p_options_t knl_conf_file_options[] = {
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
-	{"DmidecodePath", S_P_STRING},
 	{"LogFile", S_P_STRING},
+	{"SyscfgPath", S_P_STRING},
 	{NULL}
 };
 
@@ -1091,7 +1091,7 @@ extern int init(void)
 			}
 			xfree(tmp_str);
 		}
-		(void) s_p_get_string(&dmidecode_path, "DmidecodePath", tbl);
+		(void) s_p_get_string(&syscfg_path, "SyscfgPath", tbl);
 	} else {
 		error("something wrong with opening/reading knl.conf");
 	}
@@ -1100,8 +1100,8 @@ extern int init(void)
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
-	if (!dmidecode_path)
-		dmidecode_path = xstrdup("/usr/sbin/dmidecode");
+	if (!syscfg_path)
+		error("SyscfgPath is not configured");
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
@@ -1113,7 +1113,7 @@ extern int init(void)
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
-		info("DmidecodePath=%s", dmidecode_path);
+		info("SyscfgPath=%s", syscfg_path);
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
@@ -1127,7 +1127,7 @@ extern int fini(void)
 	xfree(capmc_path);
 	capmc_timeout = 0;
 	debug_flag = false;
-	xfree(dmidecode_path);
+	xfree(syscfg_path);
 	return SLURM_SUCCESS;
 }
 
@@ -1388,34 +1388,143 @@ fini:	_mcdram_cap_free(mcdram_cap, mcdram_cap_cnt);
 	return rc;
 }
 
-/* Get this node's current MCDRAM and NUMA settings from BIOS.
- * RET current node state, must be xfreed */
-extern char *node_features_p_node_state(void)
+/* Get this node's current and available MCDRAM and NUMA settings from BIOS.
+ * avail_modes IN/OUT - append available modes, must be xfreed
+ * current_mode IN/OUT - append current modes, must be xfreed
+ *
+ * NOTES about syscfg (from Intel):
+ * To display the BIOS Parameters:
+ * >> syscfg /d biossettings <"BIOS variable Name">
+ *
+ * To Set the BIOS Parameters:
+ * >> syscfg /bcs <AdminPw> <"BIOS variable Name"> <Value>
+ * Note: If AdminPw is not set use ""
+ */
+extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 {
-	char *resp_msg, *argv[10], *cur_state = NULL;
+	char *avail_states = NULL, *cur_state = NULL;
+	char *resp_msg, *argv[10], *avail_sep = "", *cur_sep = "", *tok;
 	int status = 0;
 
-	argv[0] = "dmidecode";
-	argv[1] = NULL;
-	resp_msg = _run_script(dmidecode_path, argv, &status);
+	if (!syscfg_path || !avail_modes || !current_mode)
+		return;
+
+	argv[0] = "syscfg";
+	argv[1] = "/d";
+	argv[2] = "BIOSSETTINGS";
+	argv[3] = "Cluster Mode";
+	argv[4] = NULL;
+	resp_msg = _run_script(syscfg_path, argv, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-		error("%s: dmidecode status:%u response:%s",
+		error("%s: syscfg status:%u response:%s",
 		      __func__, status, resp_msg);
 	}
 	if (resp_msg == NULL) {
-		info("%s: dmidecode returned no information", __func__);
-		return NULL;
+		info("%s: syscfg returned no information", __func__);
+	} else {
+		tok = strstr(resp_msg, "Current Value : ");
+		if (tok) {
+			tok += 16;
+			if (!strncasecmp(tok, "All2All", 3)) {
+				cur_state = xstrdup("a2a");
+				cur_sep = ",";
+			} else if (!strncasecmp(tok, "Hemisphere", 3)) {
+				cur_state = xstrdup("hemi");
+				cur_sep = ",";
+			} else if (!strncasecmp(tok, "Quadrant", 3)) {
+				cur_state = xstrdup("quad");
+				cur_sep = ",";
+			} else if (!strncasecmp(tok, "SNC-2", 5)) {
+				cur_state = xstrdup("snc2");
+				cur_sep = ",";
+			} else if (!strncasecmp(tok, "SNC-4", 5)) {
+				cur_state = xstrdup("snc4");
+				cur_sep = ",";
+			}
+		}
+		if (strcasestr(resp_msg, "All2All")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "a2a");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "Hemisphere")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "hemi");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "Quadrant")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "quad");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "SNC-2")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc2");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "SNC-4")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "snc4");
+			avail_sep = ",";
+		}
+		xfree(resp_msg);
 	}
-//FIXME: Parse output for MCDRAM and NUMA modes, copy to cur_state
-//FIXME: For now our dmidecode is just running "sinfo -h -O features_act -n $hn"
-cur_state = strchr(resp_msg, '\n');
-if (cur_state) cur_state[0] = '\0';
-cur_state = strchr(resp_msg, ' ');
-if (cur_state) cur_state[0] = '\0';
-cur_state = xstrdup(resp_msg);
-	xfree(resp_msg);
 
-	return cur_state;
+	argv[0] = "syscfg";
+	argv[1] = "/d";
+	argv[2] = "BIOSSETTINGS";
+	argv[3] = "Memory Mode";
+	argv[4] = NULL;
+	resp_msg = _run_script(syscfg_path, argv, &status);
+	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		error("%s: syscfg status:%u response:%s",
+		      __func__, status, resp_msg);
+	}
+	if (resp_msg == NULL) {
+		info("%s: syscfg returned no information", __func__);
+	} else {
+		tok = strstr(resp_msg, "Current Value : ");
+		if (tok) {
+			tok += 16;
+			if (!strncasecmp(tok, "Cache", 3)) {
+				xstrfmtcat(cur_state, "%s%s", cur_sep, "cache");
+			} else if (!strncasecmp(tok, "Flat", 3)) {
+				xstrfmtcat(cur_state, "%s%s", cur_sep, "flat");
+			} else if (!strncasecmp(tok, "Hybrid", 3)) {
+				xstrfmtcat(cur_state, "%s%s", cur_sep, "equal");
+			}
+		}
+		if (strcasestr(resp_msg, "Cache")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "cache");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "Flat")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "flat");
+			avail_sep = ",";
+		}
+		if (strcasestr(resp_msg, "Hybrid")) {
+			xstrfmtcat(avail_states, "%s%s", avail_sep, "equal");
+			avail_sep = ",";
+		}
+		xfree(resp_msg);
+	}
+
+	if (*avail_modes) {	/* Append for multiple node_features plugins */
+		if (*avail_modes[0])
+			avail_sep = ",";
+		else
+			avail_sep = "";
+		xstrfmtcat(*avail_modes, "%s%s", avail_sep, avail_states);
+		xfree(avail_states);
+	} else {
+		*avail_modes = avail_states;
+	}
+
+	if (*current_mode) {	/* Append for multiple node_features plugins */
+		if (*current_mode[0])
+			cur_sep = ",";
+		else
+			cur_sep = "";
+		xstrfmtcat(*current_mode, "%s%s", cur_sep, cur_state);
+		xfree(cur_state);
+	} else {
+		*current_mode = cur_state;
+	}
 }
 
 /* Test if a job's feature specification is valid */
@@ -1497,34 +1606,39 @@ extern char *node_features_p_job_xlate(char *job_features)
 	return node_features;
 }
 
-/* Translate a node's new active feature specification as needed to preserve
- * any available features
- * RET node's new active features, must be xfreed */
-extern char *node_features_p_node_xlate(char *update_opt, char *avail_features)
+/* Translate a node's feature specification by replacing any features associated
+ * with this plugin in the original value with the new values, preserving any
+ * features that are not associated with this plugin
+ * RET node's new merged features, must be xfreed */
+extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *sep = "", *tok;
 
-	if ((avail_features == NULL) || (avail_features[0] ==  '\0'))
-		return node_features;
+	if (new_features) {
+		tmp = xstrdup(new_features);
+		tok = strtok_r(tmp, ",", &save_ptr);
+		while (tok) {
+			if ((_knl_mcdram_token(tok) != 0) ||
+			    (_knl_numa_token(tok)   != 0)) {
+				xstrfmtcat(node_features, "%s%s", sep, tok);
+				sep = ",";
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
+	}
 
-	tmp = xstrdup(avail_features);
+	if (!node_features) {	/* No new info from compute node */
+		node_features = xstrdup(orig_features);
+		return node_features;
+	}
+
+	tmp = xstrdup(orig_features);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		if ((_knl_mcdram_token(tok) == 0) &&
 		    (_knl_numa_token(tok)   == 0)) {
-			xstrfmtcat(node_features, "%s%s", sep, tok);
-			sep = ",";
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	tmp = xstrdup(update_opt);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		if ((_knl_mcdram_token(tok) != 0) ||
-		    (_knl_numa_token(tok)   != 0)) {
 			xstrfmtcat(node_features, "%s%s", sep, tok);
 			sep = ",";
 		}
