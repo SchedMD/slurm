@@ -373,7 +373,7 @@ _slurm_cgroup_has_pid(pid_t pid)
 	if ( fstatus != XCGROUP_SUCCESS)
 		return false;
 
-	if (strcmp(cg.path, step_freezer_cg.path)) {
+	if (xstrcmp(cg.path, step_freezer_cg.path)) {
 		fstatus = false;
 	}
 	else {

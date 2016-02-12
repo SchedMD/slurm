@@ -475,13 +475,13 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "nid") == 0) {
+			if (xstrcmp(iter.key, "nid") == 0) {
 				ent->nid = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "mcdram_cfg") == 0) {
+			if (xstrcmp(iter.key, "mcdram_cfg") == 0) {
 				tmp_str = xstrdup(p);
 				tok = strtok_r(tmp_str, ",", &save_ptr);
 				while (tok) {
@@ -512,13 +512,13 @@ static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "nid") == 0) {
+			if (xstrcmp(iter.key, "nid") == 0) {
 				ent->nid = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "mcdram_cfg") == 0) {
+			if (xstrcmp(iter.key, "mcdram_cfg") == 0) {
 				ent->mcdram_cfg = xstrdup(p);
 			}
 			break;
@@ -540,13 +540,13 @@ static void _json_parse_numa_cap_object(json_object *jobj, numa_cap_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "nid") == 0) {
+			if (xstrcmp(iter.key, "nid") == 0) {
 				ent->nid = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "numa_cfg") == 0) {
+			if (xstrcmp(iter.key, "numa_cfg") == 0) {
 				ent->numa_cfg = xstrdup(p);
 			}
 			break;
@@ -568,13 +568,13 @@ static void _json_parse_numa_cfg_object(json_object *jobj, numa_cfg_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "nid") == 0) {
+			if (xstrcmp(iter.key, "nid") == 0) {
 				ent->nid = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "numa_cfg") == 0) {
+			if (xstrcmp(iter.key, "numa_cfg") == 0) {
 				ent->numa_cfg = xstrdup(p);
 			}
 			break;
@@ -908,7 +908,7 @@ static void _merge_strings(char **node_features, char *node_cfg)
 		tmp_str2 = xstrdup(*node_features);
 		tok2 = strtok_r(tmp_str2, ",", &save_ptr2);
 		while (tok2) {
-			if (!strcmp(tok1, tok2)) {
+			if (!xstrcmp(tok1, tok2)) {
 				match = true;
 				break;
 			}
@@ -1201,7 +1201,7 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	xfree(resp_msg);
 	json_object_object_foreachC(j, iter) {
-		if (strcmp(iter.key, "nids"))
+		if (xstrcmp(iter.key, "nids"))
 			continue;
 		mcdram_cap = _json_parse_mcdram_cap_array(j, iter.key,
 							  &mcdram_cap_cnt);
@@ -1241,7 +1241,7 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	xfree(resp_msg);
 	json_object_object_foreachC(j, iter) {
-		if (strcmp(iter.key, "nids"))
+		if (xstrcmp(iter.key, "nids"))
 			continue;
 		mcdram_cfg = _json_parse_mcdram_cfg_array(j, iter.key,
 							  &mcdram_cfg_cnt);
@@ -1284,7 +1284,7 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	xfree(resp_msg);
 	json_object_object_foreachC(j, iter) {
-		if (strcmp(iter.key, "nids"))
+		if (xstrcmp(iter.key, "nids"))
 			continue;
 		numa_cap = _json_parse_numa_cap_array(j, iter.key,
 						      &numa_cap_cnt);
@@ -1324,7 +1324,7 @@ extern int node_features_p_get_node(char *node_list)
 	}
 	xfree(resp_msg);
 	json_object_object_foreachC(j, iter) {
-		if (strcmp(iter.key, "nids"))
+		if (xstrcmp(iter.key, "nids"))
 			continue;
 		numa_cfg = _json_parse_numa_cfg_array(j, iter.key,
 						      &numa_cfg_cnt);

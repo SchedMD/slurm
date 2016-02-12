@@ -94,7 +94,7 @@ slurm_parser (char *spec, ...)
 	va_start(ap, spec);
 	while (error_code == 0) {
 		keyword = va_arg(ap, char *);
-		if (strcmp (keyword, "END") == 0)
+		if (xstrcmp (keyword, "END") == 0)
 			break;
 		type = va_arg(ap, int);
 		switch (type) {

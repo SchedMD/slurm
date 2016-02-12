@@ -290,7 +290,7 @@ static void _opt_default()
 	uid_t uid = getuid();
 
 	opt.user = uid_to_string(uid);
-	if (strcmp(opt.user, "nobody") == 0)
+	if (xstrcmp(opt.user, "nobody") == 0)
 		fatal("Invalid user id: %u", uid);
 
 	opt.uid = uid;

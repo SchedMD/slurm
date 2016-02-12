@@ -1726,7 +1726,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		       type_name);
 		return NULL;
 	}
-	if (strcmp(subtype, SUBDATA_SUMMARY))
+	if (xstrcmp(subtype, SUBDATA_SUMMARY))
 		dtyp_memory = (*(ops->create_memory_datatype))();
 	else
 		dtyp_memory = (*(ops->create_s_memory_datatype))();
@@ -1790,7 +1790,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		return;
 	}
 	// Create the datatypes.
-	if (strcmp(subtype, SUBDATA_SUMMARY)) {
+	if (xstrcmp(subtype, SUBDATA_SUMMARY)) {
 		dtyp_memory = (*(ops->create_memory_datatype))();
 		dtyp_file = (*(ops->create_file_datatype))();
 	} else {

@@ -831,7 +831,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			user.uid = uid;
 			is_coord = is_user_any_coord(mysql_conn, &user);
 
-			if (username && !strcmp(username, user.name))
+			if (username && !xstrcmp(username, user.name))
 				goto is_user;
 
 			if (type != DBD_GET_ASSOC_USAGE)

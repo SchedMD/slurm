@@ -702,7 +702,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (row[JOB_REQ_NODELIST])
 			job->nodes = xstrdup(row[JOB_REQ_NODELIST]);
 
-		if (!job->nodes || !strcmp(job->nodes, "(null)")) {
+		if (!job->nodes || !xstrcmp(job->nodes, "(null)")) {
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
 		}

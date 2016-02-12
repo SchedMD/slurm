@@ -826,7 +826,7 @@ _read_config(void)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
 
 #ifndef HAVE_FRONT_END
-	if (!strcmp(cf->select_type, "select/cons_res"))
+	if (!xstrcmp(cf->select_type, "select/cons_res"))
 		cr_flag = true;
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
@@ -853,7 +853,7 @@ _read_config(void)
 	/* set node_addr if relevant */
 	if ((conf->node_addr == NULL) &&
 	    (conf->node_addr = slurm_conf_get_nodeaddr(conf->hostname)) &&
-	    (strcmp(conf->node_addr, conf->hostname) == 0)) {
+	    (xstrcmp(conf->node_addr, conf->hostname) == 0)) {
 		xfree(conf->node_addr);	/* Sets to NULL */
 	}
 
@@ -1540,7 +1540,7 @@ _slurmd_init(void)
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
-	if (!strcmp(conf->select_type, "select/serial")) {
+	if (!xstrcmp(conf->select_type, "select/serial")) {
 		/* Only cache credential for 5 seconds with select/serial
 		 * for shorter cache searches and higher throughput */
 		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);

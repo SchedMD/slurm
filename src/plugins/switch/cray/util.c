@@ -276,7 +276,7 @@ void recursive_rmdir(const char *dirnm)
 		name_len = strlen(dir->d_name);
 		if (name_len == 1 && dir->d_name[0] == '.')
 			continue;
-		if (name_len == 2 && strcmp(dir->d_name, "..") == 0)
+		if (name_len == 2 && xstrcmp(dir->d_name, "..") == 0)
 			continue;
 		fnm_len = dirnm_len + name_len + 2;
 		free(fnm);

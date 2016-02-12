@@ -174,14 +174,14 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			continue;
 
 		if (node_info_ptr->node_array[i].node_hostname != NULL &&
-		   strcmp(node_info_ptr->node_array[i].node_hostname,
-			  node_info_ptr->node_array[i].name))
+		   xstrcmp(node_info_ptr->node_array[i].node_hostname,
+			   node_info_ptr->node_array[i].name))
 			xstrfmtcat(tmp_str, " NodeHostName=%s",
 				   node_info_ptr->node_array[i].node_hostname);
 
 		if (node_info_ptr->node_array[i].node_addr != NULL &&
-		   strcmp(node_info_ptr->node_array[i].node_addr,
-			  node_info_ptr->node_array[i].name))
+		   xstrcmp(node_info_ptr->node_array[i].node_addr,
+			   node_info_ptr->node_array[i].name))
 		                xstrfmtcat(tmp_str, " NodeAddr=%s",
 				   node_info_ptr->node_array[i].node_addr);
 
@@ -219,7 +219,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		/* check for duplicate records */
 		for (crp = rp; crp != NULL; crp = crp->next) {
-			if (!strcmp(crp->rec, tmp_str)) {
+			if (!xstrcmp(crp->rec, tmp_str)) {
 				xfree(tmp_str);
 				break;
 			}
@@ -751,7 +751,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic")) {
+	if (xstrcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic")) {
 		snprintf(tmp_str, sizeof(tmp_str), "%u",
 			 slurm_ctl_conf_ptr->fs_dampening_factor);
 		key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1146,7 +1146,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->priority_params);
 	list_append(ret_list, key_pair);
 
-	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
+	if (xstrcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("PriorityType");
 		key_pair->value = xstrdup(slurm_ctl_conf_ptr->priority_type);
@@ -1907,11 +1907,11 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 	while ((key_pair = list_next(iter))) {
 		/* Ignore ENV variables in config_list; they'll
 		 * cause problems in an active slurm.conf */
-		if (!strcmp(key_pair->name, "BOOT_TIME") ||
-		    !strcmp(key_pair->name, "HASH_VAL") ||
-		    !strcmp(key_pair->name, "NEXT_JOB_ID") ||
-		    !strcmp(key_pair->name, "SLURM_CONF") ||
-		    !strcmp(key_pair->name, "SLURM_VERSION")) {
+		if (!xstrcmp(key_pair->name, "BOOT_TIME") ||
+		    !xstrcmp(key_pair->name, "HASH_VAL") ||
+		    !xstrcmp(key_pair->name, "NEXT_JOB_ID") ||
+		    !xstrcmp(key_pair->name, "SLURM_CONF") ||
+		    !xstrcmp(key_pair->name, "SLURM_VERSION")) {
 			debug("Ignoring %s (not written)", key_pair->name);
 			continue;
 		}

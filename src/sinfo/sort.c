@@ -361,7 +361,7 @@ static int _sort_by_features(void *void1, void *void2)
 		val1 = sinfo1->features;
 	if (sinfo2->features)
 		val2 = sinfo2->features;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -381,7 +381,7 @@ static int _sort_by_features_act(void *void1, void *void2)
 		val1 = sinfo1->features_act;
 	if (sinfo2->features_act)
 		val2 = sinfo2->features_act;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -401,7 +401,7 @@ static int _sort_by_groups(void *void1, void *void2)
 		val1 = sinfo1->part_info->allow_groups;
 	if (sinfo2->part_info && sinfo2->part_info->allow_groups)
 		val2 = sinfo2->part_info->allow_groups;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -435,7 +435,7 @@ static int _sort_by_node_addr(void *void1, void *void2)
 		val2 = "";
 
 #if	PURE_ALPHA_SORT
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
 		if (val1[inx] == val2[inx]) {
@@ -450,7 +450,7 @@ static int _sort_by_node_addr(void *void1, void *void2)
 			num2 = atoi(val2+inx);
 			diff = num1 - num2;
 		} else
-			diff = strcmp(val1, val2);
+			diff = xstrcmp(val1, val2);
 		break;
 	}
 #endif
@@ -492,7 +492,7 @@ static int _sort_by_hostnames(void *void1, void *void2)
 		val2 = "";
 
 #if	PURE_ALPHA_SORT
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
 		if (val1[inx] == val2[inx]) {
@@ -507,7 +507,7 @@ static int _sort_by_hostnames(void *void1, void *void2)
 			num2 = atoi(val2+inx);
 			diff = num1 - num2;
 		} else
-			diff = strcmp(val1, val2);
+			diff = xstrcmp(val1, val2);
 		break;
 	}
 #endif
@@ -610,7 +610,7 @@ static int _sort_by_node_list(void *void1, void *void2)
 		val2 = "";
 
 #if	PURE_ALPHA_SORT
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
 		if (val1[inx] == val2[inx]) {
@@ -625,7 +625,7 @@ static int _sort_by_node_list(void *void1, void *void2)
 			num2 = atoi(val2+inx);
 			diff = num1 - num2;
 		} else
-			diff = strcmp(val1, val2);
+			diff = xstrcmp(val1, val2);
 		break;
 	}
 #endif
@@ -686,7 +686,7 @@ static int _sort_by_partition(void *void1, void *void2)
 			val1 = sinfo1->part_info->name;
 		if (sinfo2->part_info && sinfo2->part_info->name)
 			val2 = sinfo2->part_info->name;
-		diff = strcmp(val1, val2);
+		diff = xstrcmp(val1, val2);
 	}
 
 	if (reverse_order)
@@ -707,7 +707,7 @@ static int _sort_by_reason(void *void1, void *void2)
 		val1 = sinfo1->reason;
 	if (sinfo2->reason)
 		val2 = sinfo2->reason;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;

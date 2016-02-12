@@ -68,7 +68,7 @@ static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 		else
 			xstrcat(query, ", ");
 
-		if (!strcmp("id", new_char))
+		if (!xstrcmp("id", new_char))
 			xstrfmtcat(query, "change %s %s int unsigned not null",
 				   row[0], new_char);
 		else

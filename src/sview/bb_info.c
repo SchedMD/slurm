@@ -402,7 +402,7 @@ static void _update_info_bb(List info_list, GtkTreeView *tree_view)
 		if (sview_bb_info->iter_set) {
 			gtk_tree_model_get(model, &sview_bb_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, sview_bb_info->bb_name)) {
+			if (xstrcmp(name, sview_bb_info->bb_name)) {
 				/* Bad pointer */
 				sview_bb_info->iter_set = false;
 				//g_print("bad resv iter pointer\n");
@@ -559,7 +559,7 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 				 bb_ptr->job_id);
 		}
 
-		if (!strcmp(bb_name_id, name)) {
+		if (!xstrcmp(bb_name_id, name)) {
 			_layout_bb_record(treeview, sview_bb_info, update);
 			break;
 		}
@@ -947,7 +947,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}

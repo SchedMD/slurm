@@ -75,7 +75,7 @@ static bool _compare_ranges(const pmix_proc_t *r1, const pmix_proc_t *r2,
 {
 	int i;
 	for (i = 0; i < nprocs; i++) {
-		if (0 != strcmp(r1[i].nspace, r2[i].nspace)) {
+		if (0 != xstrcmp(r1[i].nspace, r2[i].nspace)) {
 			return false;
 		}
 		if (r1[i].rank != r2[i].rank) {

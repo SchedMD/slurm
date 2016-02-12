@@ -549,8 +549,8 @@ static void _delete_job_desc_files(uint32_t job_id)
 	f_dir = opendir(dir_name);
 	if (f_dir) {
 		while ((dir_ent = readdir(f_dir))) {
-			if (!strcmp(dir_ent->d_name, ".") ||
-			    !strcmp(dir_ent->d_name, ".."))
+			if (!xstrcmp(dir_ent->d_name, ".") ||
+			    !xstrcmp(dir_ent->d_name, ".."))
 				continue;
 			xstrfmtcat(file_name, "%s/%s", dir_name,
 				   dir_ent->d_name);
@@ -864,7 +864,7 @@ static time_t _get_last_state_write_time(void)
 
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	if (ver_str && !strcmp(ver_str, JOB_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 	safe_unpack_time(&buf_time, buffer);
 
@@ -933,7 +933,7 @@ extern int load_all_job_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, JOB_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 	xfree(ver_str);
 
@@ -1029,7 +1029,7 @@ extern int load_last_job_id( void )
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, JOB_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, JOB_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 	xfree(ver_str);
 
@@ -3055,7 +3055,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 		    !IS_JOB_COMPLETING(job_ptr))
 			continue;
 		if ((job_ptr->batch_host == NULL) ||
-		    strcmp(job_ptr->batch_host, node_name))
+		    xstrcmp(job_ptr->batch_host, node_name))
 			continue;	/* no match on node name */
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3252,7 +3252,7 @@ extern bool allocated_session_in_use(job_desc_msg_t *new_alloc)
 		if (job_ptr->batch_flag || IS_JOB_FINISHED(job_ptr))
 			continue;
 		if (job_ptr->alloc_node &&
-		    (strcmp(job_ptr->alloc_node, new_alloc->alloc_node) == 0) &&
+		    (xstrcmp(job_ptr->alloc_node, new_alloc->alloc_node) == 0) &&
 		    (job_ptr->alloc_sid == new_alloc->alloc_sid))
 			break;
 	}
@@ -4474,9 +4474,9 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 	 * Moab command for accurate job records */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if (xstrcmp(sched_type, "sched/wiki") == 0)
 			wiki_sched  = true;
-		if (strcmp(sched_type, "sched/wiki2") == 0) {
+		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
 			wiki_sched  = true;
 			wiki2_sched = true;
 		}
@@ -4536,9 +4536,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 	 * Moab command for accurate job records */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if (xstrcmp(sched_type, "sched/wiki") == 0)
 			wiki_sched  = true;
-		if (strcmp(sched_type, "sched/wiki2") == 0) {
+		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
 			wiki_sched  = true;
 			wiki2_sched = true;
 		}
@@ -5726,7 +5726,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 #endif
 
 	if (select_serial == -1) {
-		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
 			select_serial = 0;
 		else
 			select_serial = 1;
@@ -6048,7 +6048,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (launch_type_poe == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/poe"))
+		if (!xstrcmp(launch_type, "launch/poe"))
 			launch_type_poe = 1;
 		else
 			launch_type_poe = 0;
@@ -7031,9 +7031,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if (xstrcmp(sched_type, "sched/wiki") == 0)
 			wiki_sched  = true;
-		if (strcmp(sched_type, "sched/wiki2") == 0) {
+		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
 			wiki_sched  = true;
 			wiki2_sched = true;
 		}
@@ -9723,7 +9723,7 @@ extern void sync_job_priorities(void)
 
 	if ((highest_prio != 0) && (highest_prio < TOP_PRIORITY))
 		prio_boost = TOP_PRIORITY - highest_prio;
-	if (strcmp(slurmctld_conf.priority_type, "priority/basic") ||
+	if (xstrcmp(slurmctld_conf.priority_type, "priority/basic") ||
 	    (prio_boost < 1000000))
 		return;
 
@@ -9805,8 +9805,8 @@ static bool _top_priority(struct job_record *job_ptr)
 			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
 				continue;	/* different reservation */
 			if (job_ptr2->resv_name && job_ptr->resv_name &&
-			    (!strcmp(job_ptr2->resv_name,
-				     job_ptr->resv_name))) {
+			    (!xstrcmp(job_ptr2->resv_name,
+				      job_ptr->resv_name))) {
 				/* same reservation */
 				if (job_ptr2->priority <= job_ptr->priority)
 					continue;
@@ -10070,9 +10070,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if (xstrcmp(sched_type, "sched/wiki") == 0)
 			wiki_sched  = true;
-		if (strcmp(sched_type, "sched/wiki2") == 0) {
+		if (xstrcmp(sched_type, "sched/wiki2") == 0) {
 			wiki_sched  = true;
 			wiki2_sched = true;
 		}
@@ -11760,7 +11760,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->network) {
 		xfree(job_ptr->network);
 		if (!strlen(job_specs->network)
-		    || !strcmp(job_specs->network, "none")) {
+		    || !xstrcmp(job_specs->network, "none")) {
 			info("sched: update_job: clearing Network option "
 			     "for jobid %u", job_ptr->job_id);
 		} else {
@@ -11791,7 +11791,7 @@ fini:
 	 * many factors of an update may affect priority considerations.
 	 * If job has a hold then do nothing */
 	if ((error_code == SLURM_SUCCESS) && (job_ptr->priority != 0) &&
-	    strcmp(slurmctld_conf.priority_type, "priority/basic"))
+	    xstrcmp(slurmctld_conf.priority_type, "priority/basic"))
 		set_job_prio(job_ptr);
 
 	return error_code;
@@ -12043,7 +12043,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 #endif
 
 	if (select_serial == -1) {
-		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
 			select_serial = 0;
 		else
 			select_serial = 1;
@@ -12589,7 +12589,7 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 	if (job_ptr->details)
 		prolog = job_ptr->details->prolog_running;
 
-	if (job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&
+	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    (prolog == 0) && job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		job_ptr->job_state &= (~JOB_CONFIGURING);
@@ -13314,7 +13314,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		rc |= READY_JOB_STATE;
 	if ((rc == (READY_NODE_STATE | READY_JOB_STATE)) &&
-	    job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&
+	    job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    job_ptr->node_bitmap &&
 	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		job_ptr->job_state &= (~JOB_CONFIGURING);
@@ -13339,7 +13339,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	if (notify_srun_static == -1) {
 		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
-		if (strcmp(launch_type, "launch/slurm"))
+		if (xstrcmp(launch_type, "launch/slurm"))
 			notify_srun_static = 1;
 		else
 			notify_srun_static = 0;
@@ -13718,9 +13718,9 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 			difftime(now, job_ptr->suspend_time);
 		if (!wiki_sched_test) {
 			char *sched_type = slurm_get_sched_type();
-			if (strcmp(sched_type, "sched/wiki") == 0)
+			if (xstrcmp(sched_type, "sched/wiki") == 0)
 				wiki_sched  = true;
-			if (strcmp(sched_type, "sched/wiki2") == 0) {
+			if (xstrcmp(sched_type, "sched/wiki2") == 0) {
 				wiki_sched  = true;
 				wiki2_sched = true;
 			}
@@ -15273,7 +15273,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 	/* unpack version string */
 	safe_unpackstr_xmalloc(&ver_str, &tmp_uint32, buffer);
 	debug3("Version string in job_ckpt header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, JOB_CKPT_VERSION))
+	if (ver_str && !xstrcmp(ver_str, JOB_CKPT_VERSION))
 		safe_unpack16(&ckpt_version, buffer);
 
 	if (ckpt_version == (uint16_t)NO_VAL) {

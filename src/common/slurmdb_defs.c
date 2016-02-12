@@ -163,7 +163,7 @@ static int _sort_children_list(void *v1, void *v2)
 		return 1;
 
 	/* Sort by alpha */
-	diff = strcmp(assoc_a->sort_name, assoc_b->sort_name);
+	diff = xstrcmp(assoc_a->sort_name, assoc_b->sort_name);
 
 	if (diff < 0)
 		return -1;
@@ -385,9 +385,9 @@ static int _sort_local_cluster(void *v1, void *v2)
 	else if (rec_a->preempt_cnt > rec_b->preempt_cnt)
 		return 1;
 
-	if (!strcmp(local_cluster_name, rec_a->cluster_rec->name))
+	if (!xstrcmp(local_cluster_name, rec_a->cluster_rec->name))
 		return -1;
-	else if (!strcmp(local_cluster_name, rec_b->cluster_rec->name))
+	else if (!xstrcmp(local_cluster_name, rec_b->cluster_rec->name))
 		return 1;
 
 	return 0;
@@ -1216,7 +1216,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 	ListIterator itr, itr2;
 	bool all_clusters = 0;
 
-	if (cluster_names && !strcmp(cluster_names, "all"))
+	if (cluster_names && !xstrcmp(cluster_names, "all"))
 		all_clusters = 1;
 
 	cluster_name = slurm_get_cluster_name();
@@ -1245,7 +1245,7 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 		itr2 = list_iterator_create(cluster_cond.cluster_list);
 		while ((cluster_name = list_next(itr2))) {
 			while ((cluster_rec = list_next(itr))) {
-				if (!strcmp(cluster_name, cluster_rec->name))
+				if (!xstrcmp(cluster_name, cluster_rec->name))
 					break;
 			}
 			if (!cluster_rec) {
@@ -1751,19 +1751,19 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 			arch_rec->sort_name = assoc->acct;
 
 		if (last_parent && assoc->parent_id == last_parent->assoc->id
-		    && !strcmp(assoc->cluster, last_parent->assoc->cluster)) {
+		    && !xstrcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
 		} else if (last_acct_parent
 			   && (assoc->parent_id == last_acct_parent->assoc->id)
-			   && !strcmp(assoc->cluster,
-				      last_acct_parent->assoc->cluster)) {
+			   && !xstrcmp(assoc->cluster,
+				       last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
 			list_iterator_reset(itr2);
 			while((par_arch_rec = list_next(itr2))) {
 				if (assoc->parent_id == par_arch_rec->assoc->id
-				    && !strcmp(assoc->cluster,
-					       par_arch_rec->assoc->cluster)) {
+				    && !xstrcmp(assoc->cluster,
+						par_arch_rec->assoc->cluster)) {
 					if (assoc->user)
 						last_parent = par_arch_rec;
 					else
@@ -1810,9 +1810,9 @@ extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list)
 		if (slurmdb_print_tree->user)
 			continue;
 
-		if (!strcmp(name, slurmdb_print_tree->name))
+		if (!xstrcmp(name, slurmdb_print_tree->name))
 			break;
-		else if (parent && !strcmp(parent, slurmdb_print_tree->name))
+		else if (parent && !xstrcmp(parent, slurmdb_print_tree->name))
 			par_slurmdb_print_tree = slurmdb_print_tree;
 
 	}

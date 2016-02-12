@@ -591,7 +591,7 @@ plugrack_use_by_type( plugrack_t rack,
 	while ((e = list_next(it))) {
 		plugin_err_t err;
 
-		if (strcmp(full_type, e->full_type) != 0)
+		if (xstrcmp(full_type, e->full_type) != 0)
 			continue;
 
 		/* See if plugin is loaded. */

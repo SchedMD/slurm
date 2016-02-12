@@ -276,7 +276,7 @@ static uint32_t _part_get_prio(char *part_name)
 
 	for (i = 0, part_ptr = part_info_msg->partition_array;
 	     i < part_info_msg->record_count; i++, part_ptr++) {
-		if (!strcmp(part_ptr->name, part_name)) {
+		if (!xstrcmp(part_ptr->name, part_name)) {
 			part_prio = part_ptr->priority;
 			break;
 		}
@@ -2510,7 +2510,7 @@ static int _filter_job(job_info_t * job)
 
 	if (params.reservation) {
 		if ((job->resv_name == NULL) ||
-		    (strcmp(job->resv_name, params.reservation))) {
+		    (xstrcmp(job->resv_name, params.reservation))) {
 			return 7;
 		}
 	}
@@ -2550,7 +2550,7 @@ static int _filter_job_part(char *part_name)
 	while (token && (rc != 0)) {
 		iterator = list_iterator_create(params.part_list);
 		while ((part = list_next(iterator))) {
-			if (strcmp(part, token) == 0) {
+			if (xstrcmp(part, token) == 0) {
 				rc = 0;
 				break;
 			}
@@ -2598,7 +2598,7 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.part_list);
 		while ((part = list_next(iterator))) {
-			if (strcmp(part, step->partition) == 0) {
+			if (xstrcmp(part, step->partition) == 0) {
 				filter = 0;
 				break;
 			}

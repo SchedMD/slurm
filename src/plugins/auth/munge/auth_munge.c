@@ -428,7 +428,7 @@ slurm_auth_unpack( Buf buf )
 	safe_unpackmem_ptr( &type, &size, buf );
 
 	if (( type == NULL ) ||
-	    ( strcmp( type, plugin_type ) != 0 )) {
+	    ( xstrcmp( type, plugin_type ) != 0 )) {
 		debug("slurm_auth_unpack error: packed by %s unpack by %s",
 		      type, plugin_type);
 		plugin_errno = SLURM_AUTH_MISMATCH;

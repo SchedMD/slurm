@@ -753,7 +753,7 @@ empty:
 		assoc_itr = list_iterator_create(assoc_list);
 		while ((acct = list_next(itr))) {
 			while ((assoc = list_next(assoc_itr))) {
-				if (strcmp(assoc->acct, acct->name))
+				if (xstrcmp(assoc->acct, acct->name))
 					continue;
 
 				if (!acct->assoc_list)

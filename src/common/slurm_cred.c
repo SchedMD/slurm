@@ -2412,7 +2412,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			free_buf(buffer);
 			if (rc)
 				err_str = (char *)(*(ops.crypto_str_error))(rc);
-			if (err_str && strcmp(err_str, "Credential replayed")) {
+			if (err_str && xstrcmp(err_str, "Credential replayed")){
 				error("sbcast_cred verify: %s", err_str);
 				return -1;
 			}

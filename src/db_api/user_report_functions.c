@@ -172,8 +172,8 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 			while((slurmdb_report_cluster =
 			       list_next(cluster_itr))) {
-				if (!strcmp(slurmdb_report_cluster->name,
-					   assoc->cluster)) {
+				if (!xstrcmp(slurmdb_report_cluster->name,
+					     assoc->cluster)) {
 					ListIterator user_itr = NULL;
 					if (!group_accounts) {
 						slurmdb_report_user = NULL;
@@ -243,7 +243,7 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 			itr3 = list_iterator_create(
 				slurmdb_report_user->acct_list);
 			while((object = list_next(itr3))) {
-				if (!strcmp(object, assoc->acct))
+				if (!xstrcmp(object, assoc->acct))
 					break;
 			}
 			list_iterator_destroy(itr3);

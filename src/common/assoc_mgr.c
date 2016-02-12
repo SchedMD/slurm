@@ -501,7 +501,7 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 		while ((assoc = list_next(itr))) {
 			if (!assoc->user)
 				continue;
-			if (!strcmp(user->old_name, assoc->user)) {
+			if (!xstrcmp(user->old_name, assoc->user)) {
 				/* Since the uid changed the
 				   hash as well will change.  Remove
 				   the assoc from the hash before the
@@ -522,7 +522,7 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 	if (assoc_mgr_wckey_list) {
 		itr = list_iterator_create(assoc_mgr_wckey_list);
 		while ((wckey = list_next(itr))) {
-			if (!strcmp(user->old_name, wckey->user)) {
+			if (!xstrcmp(user->old_name, wckey->user)) {
 				xfree(wckey->user);
 				wckey->user = xstrdup(user->name);
 				wckey->uid = user->uid;
@@ -590,7 +590,7 @@ static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 	while ((new_qos = list_next(new_qos_itr))) {
 		if (new_qos[0] == '-') {
 			while ((curr_qos = list_next(curr_qos_itr))) {
-				if (!strcmp(curr_qos, new_qos+1)) {
+				if (!xstrcmp(curr_qos, new_qos+1)) {
 					list_delete_item(curr_qos_itr);
 					break;
 				}
@@ -599,7 +599,7 @@ static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 			list_iterator_reset(curr_qos_itr);
 		} else if (new_qos[0] == '+') {
 			while ((curr_qos = list_next(curr_qos_itr)))
-				if (!strcmp(curr_qos, new_qos+1))
+				if (!xstrcmp(curr_qos, new_qos+1))
 					break;
 
 			if (!curr_qos) {
@@ -641,7 +641,7 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 			if (user->uid != assoc->uid)
 				continue;
 			if (!user->default_acct
-			    || strcmp(user->default_acct, assoc->acct)) {
+			    || xstrcmp(user->default_acct, assoc->acct)) {
 				xfree(user->default_acct);
 				user->default_acct = xstrdup(assoc->acct);
 				debug2("user %s default acct is %s",
@@ -669,7 +669,7 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 			if (user->uid != wckey->uid)
 				continue;
 			if (!user->default_wckey
-			    || strcmp(user->default_wckey, wckey->name)) {
+			    || xstrcmp(user->default_wckey, wckey->name)) {
 				xfree(user->default_wckey);
 				user->default_wckey = xstrdup(wckey->name);
 				debug2("user %s default wckey is %s",
@@ -1817,7 +1817,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 
 	if (!checked_prio) {
 		char *prio = slurm_get_priority_type();
-		if (prio && strcmp(prio, "priority/basic"))
+		if (prio && xstrcmp(prio, "priority/basic"))
 			setup_children = 1;
 
 		xfree(prio);
@@ -2826,7 +2826,7 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	}
 	itr = list_iterator_create(found_user->coord_accts);
 	while ((acct = list_next(itr))) {
-		if (!strcmp(acct_name, acct->name))
+		if (!xstrcmp(acct_name, acct->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -2935,7 +2935,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 				slurmdb_coord_rec_t *coord = NULL;
 
 				if (assoc->user &&
-				    !strcmp(assoc->user, user.name))
+				    !xstrcmp(assoc->user, user.name))
 					goto is_user;
 
 				if (!user.coord_accts) {
@@ -3139,7 +3139,7 @@ extern void assoc_mgr_info_get_pack_msg(
 				slurmdb_coord_rec_t *coord = NULL;
 
 				if (assoc_rec->user &&
-				    !strcmp(assoc_rec->user, user.name))
+				    !xstrcmp(assoc_rec->user, user.name))
 					goto is_user;
 
 				if (!user.coord_accts) {
@@ -4543,8 +4543,8 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 				error("Resource doesn't have a cluster name?");
 				slurmdb_destroy_res_rec(object);
 				continue;
-			} else if (strcmp(object->clus_res_rec->cluster,
-					  assoc_mgr_cluster_name)) {
+			} else if (xstrcmp(object->clus_res_rec->cluster,
+					   assoc_mgr_cluster_name)) {
 				debug("Not for our cluster for '%s'",
 				      object->clus_res_rec->cluster);
 				slurmdb_destroy_res_rec(object);

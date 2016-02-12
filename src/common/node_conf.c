@@ -364,7 +364,7 @@ static struct node_record *_find_alias_node_record(char *name, bool log_missing)
 	/* revert to sequential search */
 	else {
 		for (i = 0; i < node_record_count; i++) {
-			if (!strcmp (alias, node_record_table_ptr[i].name)) {
+			if (!xstrcmp (alias, node_record_table_ptr[i].name)) {
 				xfree(alias);
 				return (&node_record_table_ptr[i]);
 			}
@@ -770,7 +770,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		}
 
 		if ((node_record_count == 1) &&
-		    (strcmp(node_record_table_ptr[0].name, "localhost") == 0))
+		    (xstrcmp(node_record_table_ptr[0].name, "localhost") == 0))
 			return (&node_record_table_ptr[0]);
 
 		if (log_missing)
@@ -779,7 +779,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 	/* revert to sequential search */
 	else {
 		for (i = 0; i < node_record_count; i++) {
-			if (!strcmp (name, node_record_table_ptr[i].name)) {
+			if (!xstrcmp (name, node_record_table_ptr[i].name)) {
 				return (&node_record_table_ptr[i]);
 			}
 		}

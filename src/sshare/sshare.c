@@ -157,7 +157,7 @@ int main (int argc, char *argv[])
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'u':
-			if (!strcmp(optarg, "-1")) {
+			if (!xstrcmp(optarg, "-1")) {
 				all_users = 1;
 				break;
 			}

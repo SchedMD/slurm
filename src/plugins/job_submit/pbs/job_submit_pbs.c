@@ -188,13 +188,13 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 
 
 	tok = strtok_r(depend, ":", &last_ptr);
-	if (!strcmp(tok, "before"))
+	if (!xstrcmp(tok, "before"))
 		type = "after";
-	else if (!strcmp(tok, "beforeany"))
+	else if (!xstrcmp(tok, "beforeany"))
 		type = "afterany";
-	else if (!strcmp(tok, "beforenotok"))
+	else if (!xstrcmp(tok, "beforenotok"))
 		type = "afternotok";
-	else if (!strcmp(tok, "beforeok"))
+	else if (!xstrcmp(tok, "beforeok"))
 		type = "afterok";
 	else {
 		info("%s: discarding invalid job dependency option %s",

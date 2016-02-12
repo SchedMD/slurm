@@ -62,10 +62,10 @@ static int _get_mps_request(stepd_step_rec_t *job)
 		return 2;
 	}
 
-	if (!strcasecmp(envval, "on") || !strcmp(envval, "1")) {
+	if (!strcasecmp(envval, "on") || !xstrcmp(envval, "1")) {
 		debug2("GPU mps requested on");
 		return 1;
-	} else if (!strcasecmp(envval, "off") || !strcmp(envval, "0")) {
+	} else if (!strcasecmp(envval, "off") || !xstrcmp(envval, "0")) {
 		debug2("GPU mps requested off");
 		return 0;
 	}

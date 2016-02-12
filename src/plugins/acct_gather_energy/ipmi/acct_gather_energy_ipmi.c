@@ -1276,13 +1276,13 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMITimeout", tbl);
 
 		if (s_p_get_string(&tmp_char, "EnergyIPMIVariable", tbl)) {
-			if (!strcmp(tmp_char, "Temp"))
+			if (!xstrcmp(tmp_char, "Temp"))
 				slurm_ipmi_conf.variable =
 					IPMI_MONITORING_SENSOR_UNITS_CELSIUS;
-			else if (!strcmp(tmp_char, "Voltage"))
+			else if (!xstrcmp(tmp_char, "Voltage"))
 				slurm_ipmi_conf.variable =
 					IPMI_MONITORING_SENSOR_UNITS_VOLTS;
-			else if (!strcmp(tmp_char, "Fan"))
+			else if (!xstrcmp(tmp_char, "Fan"))
 				slurm_ipmi_conf.variable =
 					IPMI_MONITORING_SENSOR_UNITS_RPM;
 			xfree(tmp_char);

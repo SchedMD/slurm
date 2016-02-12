@@ -1252,7 +1252,7 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	if (config_name == NULL ||
-	    strcmp(config_name, "slurmdbd.conf") == 0)
+	    xstrcmp(config_name, "slurmdbd.conf") == 0)
 		list_msg.my_list = dump_config();
 	else if ((list_msg.my_list = acct_storage_g_get_config(
 			slurmdbd_conn->db_conn, config_name)) == NULL) {

@@ -38,6 +38,7 @@
 #include "src/common/arg_desc.h"
 #include "src/common/macros.h"
 #include "src/common/xassert.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -70,7 +71,7 @@ arg_idx_by_name( const arg_desc_t *desc, const char *name )
 	if ( name == NULL ) return -1;
 
 	for ( i = 0; desc[ i ].name != NULL; ++i ) {
-		if ( strcmp( desc[ i ].name, name ) == 0 ) {
+		if ( xstrcmp( desc[ i ].name, name ) == 0 ) {
 			return i;
 		}
 	}

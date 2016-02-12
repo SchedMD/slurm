@@ -470,8 +470,8 @@ extern int read_slurmdbd_conf(void)
 
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
-	if (!strcmp(slurmdbd_conf->storage_type,
-		    "accounting_storage/slurmdbd")) {
+	if (!xstrcmp(slurmdbd_conf->storage_type,
+		     "accounting_storage/slurmdbd")) {
 		fatal("StorageType=%s is invalid in slurmdbd.conf",
 		      slurmdbd_conf->storage_type);
 	}
@@ -482,8 +482,8 @@ extern int read_slurmdbd_conf(void)
 	if (!slurmdbd_conf->storage_user)
 		slurmdbd_conf->storage_user = xstrdup(getlogin());
 
-	if (!strcmp(slurmdbd_conf->storage_type,
-		    "accounting_storage/mysql")) {
+	if (!xstrcmp(slurmdbd_conf->storage_type,
+		     "accounting_storage/mysql")) {
 		if (!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_MYSQL_PORT;
 		if (!slurmdbd_conf->storage_loc)

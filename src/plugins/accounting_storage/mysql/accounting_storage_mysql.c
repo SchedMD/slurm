@@ -199,7 +199,7 @@ static List _get_cluster_names(mysql_conn_t *mysql_conn, bool with_deleted)
 	ret_list = list_create(slurm_destroy_char);
 	while ((row = mysql_fetch_row(result))) {
 		if (row[0] && row[0][0]) {
-			if (cluster_name && !strcmp(cluster_name, row[0]))
+			if (cluster_name && !xstrcmp(cluster_name, row[0]))
 				found = 1;
 			list_append(ret_list, xstrdup(row[0]));
 		}
@@ -2527,8 +2527,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				while ((rem_cluster = list_next(itr3))) {
 					while ((cluster_name =
 						list_next(itr2))) {
-						if (!strcmp(cluster_name,
-							    rem_cluster)) {
+						if (!xstrcmp(cluster_name,
+							     rem_cluster)) {
 							list_delete_item(itr2);
 							break;
 						}

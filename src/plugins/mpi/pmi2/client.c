@@ -274,7 +274,7 @@ client_req_parse_spawn_req(client_req_t *req)
 	spawn_req = spawn_req_new();
 
 	/* ncmds */
-	if (strcmp(MP_KEY(req, pi), NCMDS_KEY)) {
+	if (xstrcmp(MP_KEY(req, pi), NCMDS_KEY)) {
 		error("mpi/pmi2: '" NCMDS_KEY "' expected in spawn cmd");
 		goto req_err;
 	}
@@ -283,7 +283,7 @@ client_req_parse_spawn_req(client_req_t *req)
 				     sizeof(spawn_subcmd_t *));
 	pi ++;
 	/* preputcount */
-	if (strcmp(MP_KEY(req, pi), PREPUTCOUNT_KEY)) {
+	if (xstrcmp(MP_KEY(req, pi), PREPUTCOUNT_KEY)) {
 		error("mpi/pmi2: '" PREPUTCOUNT_KEY "' expected in spawn cmd");
 		goto req_err;
 	}
@@ -323,7 +323,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		spawn_req->subcmds[i] = spawn_subcmd_new();
 		subcmd = spawn_req->subcmds[i];
 		/* subcmd */
-		if (strcmp(MP_KEY(req, pi), SUBCMD_KEY)) {
+		if (xstrcmp(MP_KEY(req, pi), SUBCMD_KEY)) {
 			error("mpi/pmi2: '" SUBCMD_KEY
 			      "' expected in spawn cmd");
 			goto req_err;
@@ -331,7 +331,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		subcmd->cmd = xstrdup(MP_VAL(req, pi));
 		pi ++;
 		/* maxprocs */
-		if (strcmp(MP_KEY(req, pi), MAXPROCS_KEY)) {
+		if (xstrcmp(MP_KEY(req, pi), MAXPROCS_KEY)) {
 			error("mpi/pmi2: '" MAXPROCS_KEY
 			      "' expected in spawn cmd");
 			goto req_err;
@@ -340,7 +340,7 @@ client_req_parse_spawn_req(client_req_t *req)
 		subcmd->max_procs = atoi(MP_VAL(req, pi));
 		pi ++;
 		/* argc */
-		if (strcmp(MP_KEY(req, pi), ARGC_KEY)) {
+		if (xstrcmp(MP_KEY(req, pi), ARGC_KEY)) {
 			error("mpi/pmi2: '" ARGC_KEY
 			      "' expected in spawn cmd");
 			goto req_err;
@@ -380,7 +380,7 @@ client_req_parse_spawn_req(client_req_t *req)
 				goto req_err;
 			}
 			break;
-		} else if (strcmp(MP_KEY(req, pi), INFOKEYCOUNT_KEY)) {
+		} else if (xstrcmp(MP_KEY(req, pi), INFOKEYCOUNT_KEY)) {
 			subcmd->info_cnt = 0;
 			continue;
 		}
@@ -473,7 +473,7 @@ _client_req_get_val(client_req_t *req, const char *key)
 	int i;
 
 	for (i = 0; i < req->pairs_cnt; i ++) {
-		if (! strcmp(key, req->pairs[KEY_INDEX(i)]))
+		if (! xstrcmp(key, req->pairs[KEY_INDEX(i)]))
 			return req->pairs[VAL_INDEX(i)];
 	}
 	return NULL;

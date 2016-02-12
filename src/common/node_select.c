@@ -305,7 +305,7 @@ extern int slurm_select_init(bool only_default)
 			len -= 3;
 #endif
 			/* Check only shared object files */
-			if (strcmp(e->d_name+len,
+			if (xstrcmp(e->d_name+len,
 #if defined(__CYGWIN__)
 				   ".dll"
 #else
@@ -318,8 +318,8 @@ extern int slurm_select_init(bool only_default)
 			xassert(len<sizeof(full_name));
 			snprintf(full_name, len, "select/%s", e->d_name+7);
 			for (j=0; j<select_context_cnt; j++) {
-				if (!strcmp(full_name,
-					    select_context[j]->type))
+				if (!xstrcmp(full_name,
+					     select_context[j]->type))
 					break;
 			}
 			if (j >= select_context_cnt) {
@@ -339,7 +339,7 @@ extern int slurm_select_init(bool only_default)
 						sizeof(node_select_syms));
 				if (select_context[select_context_cnt]) {
 					/* set the default */
-					if (!strcmp(full_name, type))
+					if (!xstrcmp(full_name, type))
 						select_context_default =
 							select_context_cnt;
 					select_context_cnt++;

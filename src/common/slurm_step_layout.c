@@ -551,7 +551,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	while((host = hostlist_next(itr))) {
 		step_layout->tasks[i] = 0;
 		while((host_task = hostlist_next(itr_task))) {
-			if (!strcmp(host, host_task)) {
+			if (!xstrcmp(host, host_task)) {
 				step_layout->tasks[i]++;
 				task_cnt++;
 			}
@@ -568,7 +568,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 		j = 0;
 		hostlist_iterator_reset(itr_task);
 		while((host_task = hostlist_next(itr_task))) {
-			if (!strcmp(host, host_task)) {
+			if (!xstrcmp(host, host_task)) {
 				step_layout->tids[i][j] = taskid;
 				j++;
 			}

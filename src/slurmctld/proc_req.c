@@ -1123,7 +1123,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			slurmdb_qos_rec_t *qos;
 
 			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			if (strcmp(qos->description, "Normal QOS default") == 0)
+			if (xstrcmp(qos->description,
+				    "Normal QOS default") == 0)
 				alloc_msg.qos = xstrdup("normal");
 			else
 				alloc_msg.qos = xstrdup(qos->description);
@@ -1991,7 +1992,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg, bool locked)
 	job_ptr = find_job_record(comp_msg->job_id);
 
 	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
-	    strcmp(job_ptr->batch_host, comp_msg->node_name)) {
+	    xstrcmp(job_ptr->batch_host, comp_msg->node_name)) {
 		/* This can be the result of the slurmd on the batch_host
 		 * failing, but the slurmstepd continuing to run. Then the
 		 * batch job is requeued and started on a different node.
@@ -2716,7 +2717,8 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		if (job_ptr->qos_ptr) {
 			slurmdb_qos_rec_t *qos;
 			qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-			if (strcmp(qos->description, "Normal QOS default") == 0)
+			if (xstrcmp(qos->description,
+				    "Normal QOS default") == 0)
 				job_info_resp_msg.qos = xstrdup("normal");
 			else
 				job_info_resp_msg.qos=xstrdup(qos->description);

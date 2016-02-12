@@ -219,7 +219,7 @@ _find_node(char *node_name)
 		n = libstate->hash_table[i];
 		while (n) {
 			xassert(n->magic == SW_GEN_NODE_INFO_MAGIC);
-			if (!strcmp(n->node_name, node_name))
+			if (!xstrcmp(n->node_name, node_name))
 				return n;
 			n = n->next;
 		}
@@ -232,7 +232,7 @@ _find_node(char *node_name)
 		n = libstate->hash_table[i];
 		while (n) {
 			xassert(n->magic == SW_GEN_NODE_INFO_MAGIC);
-			if (!strcmp(n->node_name, node_name))
+			if (!xstrcmp(n->node_name, node_name))
 				return n;
 			n = n->next;
 		}

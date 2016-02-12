@@ -143,14 +143,14 @@ int main(int argc, char **argv)
 
 	/* check options */
 	for (i=1; i < argc; i++) {
-		if (0 == strcmp(argv[i], "--n") || 0 == strcmp(argv[i], "-n")) {
+		if (0 == xstrcmp(argv[i], "--n") || 0 == xstrcmp(argv[i], "-n")) {
 			i++;
 			nprocs = strtol(argv[i], NULL, 10);
-		} else if (0 == strcmp(argv[i], "collect")) {
+		} else if (0 == xstrcmp(argv[i], "collect")) {
 			collect = true;
-		} else if (0 == strcmp(argv[i], "nb")) {
+		} else if (0 == xstrcmp(argv[i], "nb")) {
 			nonblocking = true;
-		} else if ((0 == strcmp(argv[i], "-v")) || (0 == strcmp(argv[i], "--verbose"))) {
+		} else if ((0 == xstrcmp(argv[i], "-v")) || (0 == xstrcmp(argv[i], "--verbose"))) {
 			TEST_VERBOSE_ON();
 		}else {
 			fprintf(stderr, "unrecognized option: %s\n", argv[i]);
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 	TEST_OUTPUT(("rank %d: Universe size check: PASSED", rank));
 
 	/* Guess the namespace from SLURM environment
-    if (0 != strcmp(nspace, TEST_NAMESPACE)) {
+    if (0 != xstrcmp(nspace, TEST_NAMESPACE)) {
 	TEST_ERROR(("rank %d: Bad nspace!", rank));
 	exit(0);
     }
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 				TEST_ERROR(("rank %d: PMIx_Get failed (%d)", rank, rc));
 				exit(0);
 			}
-			if (val->type != PMIX_STRING || strcmp(val->data.string, sval)) {
+			if (val->type != PMIX_STRING || xstrcmp(val->data.string, sval)) {
 				TEST_ERROR(("rank %d:  Key %s value or type mismatch, wait %s(%d) get %s(%d)",
 					    rank, key, sval, PMIX_STRING, val->data.string, val->type));
 				exit(0);

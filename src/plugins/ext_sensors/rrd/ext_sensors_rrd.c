@@ -167,7 +167,7 @@ static char* _get_node_rrd_path(char* component_name,
 	p = xstrdup(rrd_file);
 	xstrsubstitute(p, "%n", component_name);
 
-	if (!strcmp(p, rrd_file)) {
+	if (!xstrcmp(p, rrd_file)) {
 		xfree(p);
 		return NULL;
 	}
@@ -217,7 +217,7 @@ static uint32_t _rrd_get_last_one(char* filename, char* rra_name)
 		xstrsubstitute(p, "%s", rra_name);
 		if (rra_name == NULL)
 			xfree(rra);
-		if (strcmp(p,line) == 0) {
+		if (xstrcmp(p,line) == 0) {
 			xfree(p);
 			rrd_info_free(data);
 			return temperature;
@@ -229,7 +229,7 @@ static uint32_t _rrd_get_last_one(char* filename, char* rra_name)
 	}
 
 	while (data_p) {
-		if (!strcmp(p, data_p->key)) {
+		if (!xstrcmp(p, data_p->key)) {
 			if (!sscanf(data_p->value.u_str, "%d", &temperature))
 				temperature = 1;
 			break;
@@ -288,7 +288,7 @@ static uint64_t _rrd_consolidate_one(time_t t0, time_t t1,
 			rra_nb = 0;
 		else {
 			for (ii = 0; ii < ds_count; ii++){
-				if (!strcmp(ds_names[ii],rra_name)) {
+				if (!xstrcmp(ds_names[ii],rra_name)) {
 					rra_nb = ii;
 					break;
 				}

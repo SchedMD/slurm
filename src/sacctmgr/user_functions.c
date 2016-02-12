@@ -556,7 +556,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 
 		while((name = list_next(itr))) {
 			while((acct_rec = list_next(itr2))) {
-				if (!strcmp(name, acct_rec->name))
+				if (!xstrcmp(name, acct_rec->name))
 					break;
 			}
 			list_iterator_reset(itr2);
@@ -590,7 +590,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 
 		while((name = list_next(itr))) {
 			while((user_rec = list_next(itr2))) {
-				if (!strcmp(name, user_rec->name))
+				if (!xstrcmp(name, user_rec->name))
 					break;
 			}
 			list_iterator_reset(itr2);
@@ -620,7 +620,7 @@ static bool _check_user_has_default_assoc(char *user_name, List assoc_list)
 	char *last_cluster = NULL;
 
 	while ((assoc = list_next(itr))) {
-		if (last_cluster && strcmp(last_cluster, assoc->cluster)) {
+		if (last_cluster && xstrcmp(last_cluster, assoc->cluster)) {
 			if (!def_found) {
 				exit_code = 1;
 				fprintf(stderr,
@@ -1051,7 +1051,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
 					if (local_def_acct &&
-					    !strcmp(local_def_acct, account))
+					    !xstrcmp(local_def_acct, account))
 						assoc->is_def = 1;
 
 					assoc->def_qos_id =
@@ -1097,7 +1097,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				slurmdb_init_assoc_rec(assoc, 0);
 				assoc->user = xstrdup(name);
 				if (local_def_acct
-				   && !strcmp(local_def_acct, account))
+				   && !xstrcmp(local_def_acct, account))
 					assoc->is_def = 1;
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
@@ -1162,7 +1162,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				wckey->name = xstrdup(account);
 				wckey->cluster = xstrdup(cluster);
 				if (local_def_wckey
-				   && !strcmp(local_def_wckey, account))
+				   && !xstrcmp(local_def_wckey, account))
 					wckey->is_def = 1;
 				if (user)
 					list_append(user->wckey_list, wckey);
@@ -1466,15 +1466,15 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 				/* get the defaults */
 				if (!curr_cluster
-				    || strcmp(curr_cluster, assoc->cluster)) {
+				    || xstrcmp(curr_cluster, assoc->cluster)) {
 					slurmdb_assoc_rec_t *assoc2;
 					/* We shouldn't have to reset this
 					 * unless no default is on the
 					 * cluster. */
 					while ((assoc2 = list_next(itr4))) {
 						if (!assoc2->is_def ||
-						    strcmp(assoc->cluster,
-							   assoc2->cluster))
+						    xstrcmp(assoc->cluster,
+							    assoc2->cluster))
 							continue;
 						curr_cluster = assoc2->cluster;
 						xfree(user->default_acct);
@@ -1497,9 +1497,9 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						while ((wckey =
 							list_next(wckey_itr))) {
 							if (!wckey->is_def ||
-							    strcmp(curr_cluster,
-								   wckey->
-								   cluster))
+							    xstrcmp(curr_cluster,
+								    wckey->
+								    cluster))
 								continue;
 
 							xfree(user->

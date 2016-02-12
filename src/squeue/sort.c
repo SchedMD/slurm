@@ -294,7 +294,7 @@ static int _sort_job_by_batch_host(void *void1, void *void2)
 		val1 = job1->batch_host;
 	if (job2->batch_host)
 		val2 = job2->batch_host;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -314,7 +314,7 @@ static int _sort_job_by_gres(void *void1, void *void2)
 		val1 = job1->gres;
 	if (job2->gres)
 		val2 = job2->gres;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -350,7 +350,7 @@ static int _sort_job_by_group_name(void *void1, void *void2)
 		name1 = group_info->gr_name;
 	if ((group_info = getgrgid((gid_t) job2->group_id)))
 		name2 = group_info->gr_name;
-	diff = strcmp(name1, name2);
+	diff = xstrcmp(name1, name2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -399,7 +399,7 @@ static int _sort_job_by_name(void *void1, void *void2)
 		val1 = job1->name;
 	if (job2->name)
 		val2 = job2->name;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -434,7 +434,7 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 	hostlist_destroy(hostlist2);
 
 #if	PURE_ALPHA_SORT
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
 		if (val1[inx] == val2[inx]) {
@@ -449,7 +449,7 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 			num2 = atoi(val2+inx);
 			diff = num1 - num2;
 		} else
-			diff = strcmp(val1, val2);
+			diff = xstrcmp(val1, val2);
 		break;
 	}
 #endif
@@ -603,8 +603,8 @@ static int _sort_job_by_state(void *void1, void *void2)
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	diff = strcmp(job_state_string(job1->job_state),
-			 job_state_string(job2->job_state));
+	diff = xstrcmp(job_state_string(job1->job_state),
+		       job_state_string(job2->job_state));
 
 	if (reverse_order)
 		diff = -diff;
@@ -619,8 +619,8 @@ static int _sort_job_by_state_compact(void *void1, void *void2)
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	diff = strcmp(job_state_string_compact(job1->job_state),
-	              job_state_string_compact(job2->job_state));
+	diff = xstrcmp(job_state_string_compact(job1->job_state),
+		       job_state_string_compact(job2->job_state));
 
 	if (reverse_order)
 		diff = -diff;
@@ -786,7 +786,7 @@ static int _sort_job_by_user_name(void *void1, void *void2)
 
 	name1 = uid_to_string_cached((uid_t) job1->user_id);
 	name2 = uid_to_string_cached((uid_t) job2->user_id);
-	diff = strcmp(name1, name2);
+	diff = xstrcmp(name1, name2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -806,7 +806,7 @@ static int _sort_job_by_reservation(void *void1, void *void2)
 		val1 = job1->resv_name;
 	if (job2->resv_name)
 		val2 = job2->resv_name;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -829,7 +829,7 @@ static int _sort_step_by_gres(void *void1, void *void2)
 		val1 = step1->gres;
 	if (step2->gres)
 		val2 = step2->gres;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -882,7 +882,7 @@ static int _sort_step_by_node_list(void *void1, void *void2)
 	hostlist_destroy(hostlist2);
 
 #if	PURE_ALPHA_SORT
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 #else
 	for (inx=0; ; inx++) {
 		if (val1[inx] == val2[inx]) {
@@ -897,7 +897,7 @@ static int _sort_step_by_node_list(void *void1, void *void2)
 			num2 = atoi(val2+inx);
 			diff = num1 - num2;
 		} else
-			diff = strcmp(val1, val2);
+			diff = xstrcmp(val1, val2);
 		break;
 	}
 #endif
@@ -924,7 +924,7 @@ static int _sort_step_by_partition(void *void1, void *void2)
 		val1 = step1->partition;
 	if (step2->partition)
 		val2 = step2->partition;
-	diff = strcmp(val1, val2);
+	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -1005,7 +1005,7 @@ static int _sort_step_by_user_name(void *void1, void *void2)
 
 	name1 = uid_to_string_cached((uid_t) step1->user_id);
 	name2 = uid_to_string_cached((uid_t) step2->user_id);
-	diff = strcmp(name1, name2);
+	diff = xstrcmp(name1, name2);
 
 	if (reverse_order)
 		diff = -diff;

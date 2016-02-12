@@ -2349,7 +2349,7 @@ static void _load_dbd_state(void)
 			char curr_ver_str[10];
 			snprintf(curr_ver_str, sizeof(curr_ver_str),
 				 "VER%d", SLURM_PROTOCOL_VERSION);
-			if (!strcmp(ver_str, curr_ver_str))
+			if (!xstrcmp(ver_str, curr_ver_str))
 				rpc_version = SLURM_PROTOCOL_VERSION;
 		}
 

@@ -589,7 +589,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		else
 			setenv("MP_MSG_API", protocol, 0);
 	} else {
-		if (strcmp(protocol, "multi")) {
+		if (xstrcmp(protocol, "multi")) {
 			setenv("MP_MSG_API", protocol, 0);
 			if (opt.launch_cmd)
 				xstrfmtcat(poe_cmd_line,

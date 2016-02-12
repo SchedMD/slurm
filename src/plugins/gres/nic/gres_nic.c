@@ -141,7 +141,7 @@ extern int node_config_load(List gres_conf_list)
 	xassert(gres_conf_list);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if (strcmp(gres_slurmd_conf->name, gres_name))
+		if (xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
 		if (gres_slurmd_conf->file)
 			nb_nic++;
@@ -159,7 +159,7 @@ extern int node_config_load(List gres_conf_list)
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if ((strcmp(gres_slurmd_conf->name, gres_name) == 0) &&
+		if ((xstrcmp(gres_slurmd_conf->name, gres_name) == 0) &&
 		    gres_slurmd_conf->file) {
 			/* Populate nic_devices array with number
 			 * at end of the file name */

@@ -274,7 +274,7 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	if (opt.launch_cmd) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/slurm")) {
+		if (!xstrcmp(launch_type, "launch/slurm")) {
 			error("--launch-cmd option is invalid with %s",
 			      launch_type);
 			xfree(launch_type);
@@ -387,7 +387,7 @@ static void _opt_default(void)
 	uid_t uid = getuid();
 
 	opt.user = uid_to_string(uid);
-	if (strcmp(opt.user, "nobody") == 0)
+	if (xstrcmp(opt.user, "nobody") == 0)
 		fatal("Invalid user id: %u", uid);
 
 	opt.uid = uid;
@@ -704,7 +704,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_DISTRIB:
-		if (strcmp(val, "unknown") == 0)
+		if (xstrcmp(val, "unknown") == 0)
 			break;	/* ignore it, passed from salloc */
 		dt = verify_dist_type(val, &opt.plane_size);
 		if (dt == SLURM_DIST_UNKNOWN) {
@@ -1777,7 +1777,7 @@ static void _opt_args(int argc, char **argv)
 
 	if (opt.pty) {
 		char *launch_type = slurm_get_launch_type();
-		if (strcmp(launch_type, "launch/slurm")) {
+		if (xstrcmp(launch_type, "launch/slurm")) {
 			error("--pty not currently supported with %s "
 			      "configuration, ignoring option", launch_type);
 			opt.pty = false;

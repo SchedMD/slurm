@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 
 	if (opt.get_user_env_time >= 0) {
 		char *user = uid_to_string(opt.uid);
-		if (strcmp(user, "nobody") == 0) {
+		if (xstrcmp(user, "nobody") == 0) {
 			error("Invalid user id %u: %m", (uint32_t)opt.uid);
 			exit(error_exit);
 		}
@@ -1123,7 +1123,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	pending_job_id = alloc->job_id;
 
-	if (alloc->alias_list && !strcmp(alloc->alias_list, "TBD"))
+	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		opt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (opt.wait_all_nodes == (uint16_t) NO_VAL)
 		opt.wait_all_nodes = DEFAULT_WAIT_ALL_NODES;
@@ -1158,7 +1158,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		char *tmp_str;
 		if (i > 0)
      			info("Nodes %s are ready for job", alloc->node_list);
-		if (alloc->alias_list && !strcmp(alloc->alias_list, "TBD") &&
+		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
 		    (slurm_allocation_lookup_lite(pending_job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;

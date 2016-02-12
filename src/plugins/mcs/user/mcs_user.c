@@ -103,7 +103,7 @@ extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
 	xfree(job_ptr->mcs_label);
 	if (label != NULL) {
 		/* test label param */
-		if (strcmp(label, user) == 0) {
+		if (xstrcmp(label, user) == 0) {
 			job_ptr->mcs_label = xstrdup(user);
 		} else {
 			rc = SLURM_ERROR;
@@ -129,7 +129,7 @@ extern int mcs_p_check_mcs_label (uint32_t user_id, char *mcs_label)
 	int rc = SLURM_SUCCESS;
 	user = uid_to_string((uid_t) user_id);
 	if (mcs_label != NULL) {
-		if (strcmp(mcs_label, user) == 0) {
+		if (xstrcmp(mcs_label, user) == 0) {
 			rc = SLURM_SUCCESS;
 		} else {
 			rc = SLURM_ERROR;

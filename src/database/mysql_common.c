@@ -226,7 +226,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		else
 			list_iterator_reset(itr);
 		while ((db_key = list_next(itr))) {
-			if (!strcmp(db_key->name, row[2]))
+			if (!xstrcmp(db_key->name, row[2]))
 				break;
 		}
 
@@ -272,7 +272,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 		list_iterator_reset(itr);
 		while ((col = list_next(itr))) {
-			if (!strcmp(col, fields[i].name)) {
+			if (!xstrcmp(col, fields[i].name)) {
 				xstrfmtcat(query, " modify `%s` %s,",
 					   fields[i].name,
 					   fields[i].options);
@@ -407,7 +407,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			new_key_name = xstrndup(temp+6, name_end-6);
 			new_key = xstrndup(temp+2, end-2); // skip ', '
 			while ((db_key = list_next(itr))) {
-				if (!strcmp(db_key->name, new_key_name)) {
+				if (!xstrcmp(db_key->name, new_key_name)) {
 					list_remove(itr);
 					break;
 				}

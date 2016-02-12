@@ -2301,11 +2301,11 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 		break;
 	case SELECT_JOBDATA_NETWORK:
 		if (!in_char || !strlen(in_char)
-		    || !strcmp(in_char, "none"))
+		    || !xstrcmp(in_char, "none"))
 			jobinfo->npc = NPC_NONE;
-		else if (!strcmp(in_char, "system"))
+		else if (!xstrcmp(in_char, "system"))
 			jobinfo->npc = NPC_SYS;
-		else if (!strcmp(in_char, "blade"))
+		else if (!xstrcmp(in_char, "blade"))
 			jobinfo->npc = NPC_BLADE;
 		break;
 	default:

@@ -1255,7 +1255,7 @@ static void _sinfo_list_delete(void *data)
 /* Find the given partition name in the list */
 static int _find_part_list(void *x, void *key)
 {
-	if (!strcmp((char *)x, (char *)key))
+	if (!xstrcmp((char *)x, (char *)key))
 		return 1;
 	return 0;
 }

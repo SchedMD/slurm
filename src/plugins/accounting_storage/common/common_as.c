@@ -501,7 +501,7 @@ extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
 	while((new_qos = list_next(new_itr))) {
 		if (new_qos[0] == '-') {
 			while((curr_qos = list_next(curr_itr))) {
-				if (!strcmp(curr_qos, new_qos+1)) {
+				if (!xstrcmp(curr_qos, new_qos+1)) {
 					list_delete_item(curr_itr);
 					break;
 				}
@@ -509,7 +509,7 @@ extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
 			list_iterator_reset(curr_itr);
 		} else if (new_qos[0] == '+') {
 			while((curr_qos = list_next(curr_itr))) {
-				if (!strcmp(curr_qos, new_qos+1)) {
+				if (!xstrcmp(curr_qos, new_qos+1)) {
 					break;
 				}
 			}

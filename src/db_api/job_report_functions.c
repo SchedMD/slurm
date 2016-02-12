@@ -77,7 +77,7 @@ static void _check_create_grouping(
 
 	itr = list_iterator_create(cluster_list);
 	while((cluster_group = list_next(itr))) {
-		if (!strcmp(cluster, cluster_group->cluster))
+		if (!xstrcmp(cluster, cluster_group->cluster))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -93,7 +93,7 @@ static void _check_create_grouping(
 
 	itr = list_iterator_create(cluster_group->acct_list);
 	while ((acct_group = list_next(itr))) {
-		if (!strcmp(name, acct_group->acct))
+		if (!xstrcmp(name, acct_group->acct))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -223,7 +223,7 @@ static List _process_grouped_report(
 			tmp = xstrdup_printf("%"PRIu64, count);
 
 			while ((group = list_next(group_itr))) {
-				if (!strcmp(group, tmp)) {
+				if (!xstrcmp(group, tmp)) {
 					break;
 				}
 			}
@@ -310,13 +310,13 @@ static List _process_grouped_report(
 				(slurmdb_assoc_rec_t *)object2;
 			char name[200];
 			if (!wckey_type) {
-				if (strcmp(assoc->cluster, wckey2->cluster))
+				if (xstrcmp(assoc->cluster, wckey2->cluster))
 					continue;
 				cluster = assoc->cluster;
 				snprintf(name, sizeof(name), "%s:%s",
 					 assoc->acct, wckey2->name);
 			} else {
-				if (strcmp(wckey->cluster, assoc2->cluster))
+				if (xstrcmp(wckey->cluster, assoc2->cluster))
 					continue;
 				cluster = wckey->cluster;
 				snprintf(name, sizeof(name), "%s:%s",
@@ -371,7 +371,7 @@ no_objects:
 
 		list_iterator_reset(cluster_itr);
 		while((cluster_group = list_next(cluster_itr))) {
-			if (!strcmp(local_cluster, cluster_group->cluster))
+			if (!xstrcmp(local_cluster, cluster_group->cluster))
 				break;
 		}
 		if (!cluster_group) {
@@ -391,7 +391,7 @@ no_objects:
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
 			if (wckey_type) {
-				if (!strcmp(tmp_acct, acct_group->acct))
+				if (!xstrcmp(tmp_acct, acct_group->acct))
 					break;
 				continue;
 			}
@@ -400,7 +400,7 @@ no_objects:
 			   && (acct_group->lft != (uint32_t)NO_VAL)
 			   && (job->lft != (uint32_t)NO_VAL)) {
 				/* keep separate since we don't want
-				 * to so a strcmp if we don't have to
+				 * to so a xstrcmp if we don't have to
 				 */
 				if (job->lft > acct_group->lft
 				    && job->lft < acct_group->rgt) {
@@ -413,10 +413,10 @@ no_objects:
 						break;
 					else if (!mywckey || !job->wckey)
 						continue;
-					else if (!strcmp(mywckey, job->wckey))
+					else if (!xstrcmp(mywckey, job->wckey))
 						break;
 				}
-			} else if (!strcmp(acct_group->acct, tmp_acct))
+			} else if (!xstrcmp(acct_group->acct, tmp_acct))
 				break;
 		}
 		list_iterator_destroy(acct_itr);

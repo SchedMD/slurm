@@ -2674,7 +2674,7 @@ extern uint64_t gres_get_system_cnt(char *name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i < gres_context_cnt; i++) {
-		if (!strcmp(gres_context[i].gres_name, name)) {
+		if (!xstrcmp(gres_context[i].gres_name, name)) {
 			count = gres_context[i].total_cnt;
 			break;
 		}
@@ -2703,7 +2703,7 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i < gres_context_cnt; i++) {
-		if (strcmp(gres_context[i].gres_name, name))
+		if (xstrcmp(gres_context[i].gres_name, name))
 			continue;
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(gres_list);
@@ -5523,7 +5523,7 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (strcmp(gres_context[i].gres_name, gres_name))
+		if (xstrcmp(gres_context[i].gres_name, gres_name))
 			continue;
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
@@ -5625,15 +5625,15 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 		if (gres_context[i].ops.step_set_env == NULL)
 			continue;	/* No plugin to call */
 		if (bind_gpu || bind_mic || bind_nic) {
-			if (!strcmp(gres_context[i].gres_name, "gpu")) {
+			if (!xstrcmp(gres_context[i].gres_name, "gpu")) {
 				if (!bind_gpu)
 					continue;
 				usable_gres = _get_usable_gres(i);
-			} else if (!strcmp(gres_context[i].gres_name, "mic")) {
+			} else if (!xstrcmp(gres_context[i].gres_name, "mic")) {
 				if (!bind_mic)
 					continue;
 				usable_gres = _get_usable_gres(i);
-			} else if (!strcmp(gres_context[i].gres_name, "nic")) {
+			} else if (!xstrcmp(gres_context[i].gres_name, "nic")) {
 				if (!bind_nic)
 					continue;
 				usable_gres = _get_usable_gres(i);

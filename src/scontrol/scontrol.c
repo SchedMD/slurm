@@ -295,7 +295,7 @@ _get_command (int *argc, char **argv)
 	if (in_line == NULL) {
 		exit_flag = true;
 		return 0;
-	} else if (strcmp (in_line, "!!") == 0) {
+	} else if (xstrcmp (in_line, "!!") == 0) {
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;
@@ -556,7 +556,7 @@ _print_daemons (void)
 
 	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
-		if ((strcmp(b, me) == 0) ||
+		if ((xstrcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
@@ -565,7 +565,7 @@ _print_daemons (void)
 		c = xstrdup(conf->control_machine);
 		token = strtok_r(c, ",", &save_ptr);
 		while (token) {
-			if ((strcmp(token, me) == 0) ||
+			if ((xstrcmp(token, me) == 0) ||
 			    (strcasecmp(token, "localhost") == 0)) {
 				ctld = 1;
 				break;
@@ -1221,7 +1221,7 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr,
 				"too few arguments for keyword:%s\n",
 				tag);
-		} else if (strcmp(argv[1], "config")) {
+		} else if (xstrcmp(argv[1], "config")) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "invalid write argument:%s\n",
@@ -1255,8 +1255,8 @@ _process_command (int argc, char *argv[])
 		/* require full command name */
 		uint16_t options = 0;
 		if (argc == 2) {
-			if (strcmp(argv[1], "slurmctld") &&
-			    strcmp(argv[1], "controller")) {
+			if (xstrcmp(argv[1], "slurmctld") &&
+			    xstrcmp(argv[1], "controller")) {
 				error_code = 1;
 				exit_code = 1;
 				fprintf (stderr,

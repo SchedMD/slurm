@@ -1116,7 +1116,8 @@ static void _load_state(bool init_config)
 
 	for (i = 0; i < num_pools; i++) {
 		/* ID: "bytes" */
-		if (strcmp(pools[i].id, bb_state.bb_config.default_pool) == 0) {
+		if (xstrcmp(pools[i].id,
+			    bb_state.bb_config.default_pool) == 0) {
 			bb_state.bb_config.granularity = pools[i].granularity;
 			bb_state.total_space = pools[i].quantity *
 					       pools[i].granularity;
@@ -3840,7 +3841,7 @@ static void _reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
 	/* Update the buffer's state in job record */
 	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
 	     i++, buf_ptr++) {
-		if (strcmp(name, buf_ptr->name))
+		if (xstrcmp(name, buf_ptr->name))
 			continue;
 		old_state = buf_ptr->state;
 		buf_ptr->state = new_state;
@@ -4547,7 +4548,7 @@ _parse_config_links(json_object *instance, bb_configs_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (!strcmp(iter.key, "instance"))
+			if (!xstrcmp(iter.key, "instance"))
 				ent->instance = x;
 			break;
 		default:
@@ -4569,12 +4570,12 @@ _json_parse_configs_object(json_object *jobj, bb_configs_t *ent)
 		type = json_object_get_type(iter.val);
 		switch (type) {
 		case json_type_object:
-			if (strcmp(iter.key, "links") == 0)
+			if (xstrcmp(iter.key, "links") == 0)
 				_parse_config_links(iter.val, ent);
 			break;
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "id") == 0) {
+			if (xstrcmp(iter.key, "id") == 0) {
 				ent->id = x;
 			}
 			break;
@@ -4597,7 +4598,7 @@ _parse_instance_capacity(json_object *instance, bb_instances_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (!strcmp(iter.key, "bytes"))
+			if (!xstrcmp(iter.key, "bytes"))
 				ent->bytes = x;
 			break;
 		default:
@@ -4620,18 +4621,18 @@ _json_parse_instances_object(json_object *jobj, bb_instances_t *ent)
 		type = json_object_get_type(iter.val);
 		switch (type) {
 		case json_type_object:
-			if (strcmp(iter.key, "capacity") == 0)
+			if (xstrcmp(iter.key, "capacity") == 0)
 				_parse_instance_capacity(iter.val, ent);
 			break;
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "id") == 0) {
+			if (xstrcmp(iter.key, "id") == 0) {
 				ent->id = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "label") == 0) {
+			if (xstrcmp(iter.key, "label") == 0) {
 				ent->label = xstrdup(p);
 			}
 			break;
@@ -4656,19 +4657,19 @@ _json_parse_pools_object(json_object *jobj, bb_pools_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "granularity") == 0) {
+			if (xstrcmp(iter.key, "granularity") == 0) {
 				ent->granularity = x;
-			} else if (strcmp(iter.key, "quantity") == 0) {
+			} else if (xstrcmp(iter.key, "quantity") == 0) {
 				ent->quantity = x;
-			} else if (strcmp(iter.key, "free") == 0) {
+			} else if (xstrcmp(iter.key, "free") == 0) {
 				ent->free = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "id") == 0) {
+			if (xstrcmp(iter.key, "id") == 0) {
 				ent->id = xstrdup(p);
-			} else if (strcmp(iter.key, "units") == 0) {
+			} else if (xstrcmp(iter.key, "units") == 0) {
 				ent->units = xstrdup(p);
 			}
 			break;
@@ -4693,17 +4694,17 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 		switch (type) {
 		case json_type_int:
 			x = json_object_get_int64(iter.val);
-			if (strcmp(iter.key, "created") == 0) {
+			if (xstrcmp(iter.key, "created") == 0) {
 				ent->created = x;
-			} else if (strcmp(iter.key, "id") == 0) {
+			} else if (xstrcmp(iter.key, "id") == 0) {
 				ent->id = x;
-			} else if (strcmp(iter.key, "owner") == 0) {
+			} else if (xstrcmp(iter.key, "owner") == 0) {
 				ent->user_id = x;
 			}
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (strcmp(iter.key, "token") == 0) {
+			if (xstrcmp(iter.key, "token") == 0) {
 				ent->token = xstrdup(p);
 			}
 		default:

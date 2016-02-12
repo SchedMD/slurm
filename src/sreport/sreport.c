@@ -458,7 +458,7 @@ _get_command (int *argc, char **argv)
 	else if (strncmp (in_line, "#", 1) == 0) {
 		free (in_line);
 		return 0;
-	} else if (strcmp (in_line, "!!") == 0) {
+	} else if (xstrcmp (in_line, "!!") == 0) {
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;

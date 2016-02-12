@@ -173,7 +173,7 @@ static uint32_t _get_mem_total(void)
 		if (lsz > 0) {
 			sscanf(lin, "%s %d", meminfo_str,
 			       &meminfo_value);
-			if (!strcmp(meminfo_str, "MemTotal:")) {
+			if (!xstrcmp(meminfo_str, "MemTotal:")) {
 				total_mem = meminfo_value;
 				break;
 			}

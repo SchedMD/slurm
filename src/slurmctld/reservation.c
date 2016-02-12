@@ -475,7 +475,7 @@ static int _find_resv_name(void *x, void *key)
 
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
-	if (strcmp(resv_ptr->name, (char *) key))
+	if (xstrcmp(resv_ptr->name, (char *) key))
 		return 0;
 	else
 		return 1;	/* match */
@@ -851,8 +851,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.time_end = resv_ptr->end_time;
 
 	if (old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
-		if (strcmp(old_resv_ptr->assoc_list,
-			   resv_ptr->assoc_list))
+		if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
 			resv.assocs = resv_ptr->assoc_list;
 	} else if (resv_ptr->assoc_list)
 		resv.assocs = resv_ptr->assoc_list;
@@ -866,8 +865,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		resv.flags = NO_VAL;
 
 	if (old_resv_ptr->node_list && resv_ptr->node_list) {
-		if (strcmp(old_resv_ptr->node_list,
-			   resv_ptr->node_list))
+		if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
 			resv.nodes = resv_ptr->node_list;
 	} else if (resv_ptr->node_list)
 		resv.nodes = resv_ptr->node_list;
@@ -1060,7 +1058,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				char *test_name = resv_ptr->account_list[j];
 				if (test_name[0] == '-')
 					test_name++;
-				if (strcmp(test_name, ac_list[i]))
+				if (xstrcmp(test_name, ac_list[i]))
 					continue;
 				found_it = true;
 				xfree(resv_ptr->account_list[j]);
@@ -1093,7 +1091,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				char *test_name = resv_ptr->account_list[j];
 				if (test_name[0] == '-')
 					test_name++;
-				if (strcmp(test_name, ac_list[i]))
+				if (xstrcmp(test_name, ac_list[i]))
 					continue;
 				found_it = true;
 				break;
@@ -2039,7 +2037,7 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 		    (resv_ptr->start_time >= resv_desc_ptr->end_time))
 			continue;	/* No overlap */
 		if (resv_desc_ptr->name &&
-		    !strcmp(resv_desc_ptr->name, resv_ptr->name))
+		    !xstrcmp(resv_desc_ptr->name, resv_ptr->name))
 			continue;	/* Modifying this reservation */
 		xstrcat(merged_licenses, ",");
 		xstrcat(merged_licenses, resv_ptr->licenses);
@@ -2927,7 +2925,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (strcmp(resv_ptr->name, resv_desc_ptr->name))
+		if (xstrcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
 		if (_is_resv_used(resv_ptr)) {
 			rc = ESLURM_RESERVATION_BUSY;
@@ -3596,7 +3594,7 @@ extern int load_all_resv_state(int recover)
 
 	safe_unpackstr_xmalloc( &ver_str, &uint32_tmp, buffer);
 	debug3("Version string in resv_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, RESV_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, RESV_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
@@ -3857,7 +3855,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			feature_iter = list_iterator_create(avail_feature_list);
 			while ((feature_ptr = (node_feature_t *)
 					list_next(feature_iter))) {
-				if (strcmp(token, feature_ptr->name))
+				if (xstrcmp(token, feature_ptr->name))
 					continue;
 				if (last_op_code == FEATURE_OP_OR) {
 					bit_or(feature_bitmap,
@@ -4292,7 +4290,7 @@ no_assocs:	if ((resv_ptr->user_cnt == 0) || resv_ptr->user_not)
 			account_good = true;
 		for (i=0; (i<resv_ptr->account_cnt) && job_ptr->account; i++) {
 			if (resv_ptr->account_list[i] &&
-			    (strcmp(job_ptr->account,
+			    (xstrcmp(job_ptr->account,
 				    resv_ptr->account_list[i]) == 0)) {
 				if (resv_ptr->account_not)
 					account_good = false;
@@ -4424,7 +4422,7 @@ static int _license_cnt(List license_list, char *lic_name)
 
 	iter = list_iterator_create(license_list);
 	while ((license_ptr = list_next(iter))) {
-		if (strcmp(license_ptr->name, lic_name) == 0)
+		if (xstrcmp(license_ptr->name, lic_name) == 0)
 			lic_cnt += license_ptr->total;
 	}
 	list_iterator_destroy(iter);
@@ -4490,7 +4488,7 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 	}
 
 	for (i = 0, pool_ptr = bb_array->pool_ptr; i < bb_array->pool_cnt; i++){
-		if ((pool_ptr->name == NULL) || !strcmp(type, pool_ptr->name))
+		if ((pool_ptr->name == NULL) || !xstrcmp(type, pool_ptr->name))
 			break;
 	}
 	if (i >= bb_array->pool_cnt) {
@@ -4627,7 +4625,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 			continue;	/* reservation at different time */
 
 		if (job_ptr->resv_name &&
-		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+		    (xstrcmp(job_ptr->resv_name, resv_ptr->name) == 0))
 			continue;	/* job can use this reservation */
 
 		resv_cnt += _license_cnt(resv_ptr->license_list, lic_name);
@@ -4839,7 +4837,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when)
 			continue;	/* reservation at different time */
 
 		if (job_ptr->resv_name &&
-		    (strcmp(job_ptr->resv_name, resv_ptr->name) == 0))
+		    (xstrcmp(job_ptr->resv_name, resv_ptr->name) == 0))
 			continue;	/* job can use this reservation */
 
 		_update_constraint_planning(&wsched, resv_ptr->resv_watts,
@@ -5533,7 +5531,7 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
 		    (resv_ptr->partition != NULL) &&
-		    (strcmp(resv_ptr->partition, part_ptr->name) == 0)) {
+		    (xstrcmp(resv_ptr->partition, part_ptr->name) == 0)) {
 			slurmctld_resv_t old_resv_ptr;
 			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 

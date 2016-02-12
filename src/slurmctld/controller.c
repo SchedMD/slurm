@@ -320,15 +320,15 @@ int main(int argc, char *argv[])
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
 
-	if (!strcmp(slurmctld_conf.accounting_storage_type,
-		    "accounting_storage/none")) {
-		if (strcmp(slurmctld_conf.job_acct_gather_type,
-			   "jobacct_gather/none"))
+	if (!xstrcmp(slurmctld_conf.accounting_storage_type,
+		     "accounting_storage/none")) {
+		if (xstrcmp(slurmctld_conf.job_acct_gather_type,
+			    "jobacct_gather/none"))
 			error("Job accounting information gathered, "
 			      "but not stored");
 	} else {
-		if (!strcmp(slurmctld_conf.job_acct_gather_type,
-			    "jobacct_gather/none"))
+		if (!xstrcmp(slurmctld_conf.job_acct_gather_type,
+			     "jobacct_gather/none"))
 			info("Job accounting information stored, "
 			     "but details not gathered");
 	}
@@ -407,8 +407,8 @@ int main(int argc, char *argv[])
 
 	/* Must set before plugins are loaded. */
 	if (slurmctld_conf.backup_controller &&
-	    ((strcmp(node_name_short, slurmctld_conf.backup_controller) == 0) ||
-	     (strcmp(node_name_long, slurmctld_conf.backup_controller) == 0))) {
+	    ((xstrcmp(node_name_short,slurmctld_conf.backup_controller) == 0) ||
+	     (xstrcmp(node_name_long, slurmctld_conf.backup_controller) == 0))) {
 #ifndef HAVE_ALPS_CRAY
 		char *sched_params = NULL;
 #endif
@@ -950,14 +950,14 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	/* set node_addr to bind to (NULL means any) */
 	if (slurmctld_conf.backup_controller && slurmctld_conf.backup_addr &&
-	    ((strcmp(node_name_short, slurmctld_conf.backup_controller) == 0) ||
-	     (strcmp(node_name_long, slurmctld_conf.backup_controller) == 0)) &&
-	    (strcmp(slurmctld_conf.backup_controller,
-		    slurmctld_conf.backup_addr) != 0)) {
+	    ((xstrcmp(node_name_short,slurmctld_conf.backup_controller) == 0) ||
+	     (xstrcmp(node_name_long, slurmctld_conf.backup_controller) == 0))&&
+	    (xstrcmp(slurmctld_conf.backup_controller,
+		     slurmctld_conf.backup_addr) != 0)) {
 		node_addr = slurmctld_conf.backup_addr ;
 	}
 	else if (_valid_controller() &&
-		 strcmp(slurmctld_conf.control_machine,
+		 xstrcmp(slurmctld_conf.control_machine,
 			 slurmctld_conf.control_addr)) {
 		node_addr = slurmctld_conf.control_addr ;
 	}
@@ -1944,8 +1944,8 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_assert_primary_time) >=
 		     slurmctld_conf.slurmctld_timeout) &&
 		    slurmctld_conf.backup_controller &&
-		    strcmp(node_name_short, slurmctld_conf.backup_controller) &&
-		    strcmp(node_name_long, slurmctld_conf.backup_controller)) {
+		    xstrcmp(node_name_short,slurmctld_conf.backup_controller) &&
+		    xstrcmp(node_name_long, slurmctld_conf.backup_controller)) {
 			now = time(NULL);
 			last_assert_primary_time = now;
 			(void) _shutdown_backup_controller(0);
@@ -2142,13 +2142,13 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		} else if (tres_rec->id == TRES_MEM) {
 			mem_tres = tres_rec;
 			continue;
-		} else if (!strcmp(tres_rec->type, "bb")) {
+		} else if (!xstrcmp(tres_rec->type, "bb")) {
 			tres_rec->count = bb_g_get_system_size(tres_rec->name);
 			continue;
-		} else if (!strcmp(tres_rec->type, "gres")) {
+		} else if (!xstrcmp(tres_rec->type, "gres")) {
 			tres_rec->count = gres_get_system_cnt(tres_rec->name);
 			continue;
-		} else if (!strcmp(tres_rec->type, "license")) {
+		} else if (!xstrcmp(tres_rec->type, "license")) {
 			tres_rec->count = get_total_license_cnt(
 				tres_rec->name);
 			continue;
@@ -2615,7 +2615,7 @@ static void _kill_old_slurmctld(void)
 /* NOTE: No need to lock the config data since we are still single-threaded */
 static void _init_pidfile(void)
 {
-	if (strcmp(slurmctld_conf.slurmctld_pidfile,
+	if (xstrcmp(slurmctld_conf.slurmctld_pidfile,
 		   slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
@@ -2841,8 +2841,8 @@ static bool  _valid_controller(void)
 	if (slurmctld_conf.control_machine == NULL)
 		return match;
 
-	if ((strcmp(node_name_short, slurmctld_conf.control_machine) == 0) ||
-	    (strcmp(node_name_long, slurmctld_conf.control_machine) == 0))
+	if ((xstrcmp(node_name_short,slurmctld_conf.control_machine) == 0) ||
+	    (xstrcmp(node_name_long, slurmctld_conf.control_machine) == 0))
 		match = true;
 	else if (strchr(slurmctld_conf.control_machine, ',')) {
 		char *token, *last = NULL;
@@ -2850,8 +2850,8 @@ static bool  _valid_controller(void)
 
 		token = strtok_r(tmp_name, ",", &last);
 		while (token) {
-			if ((strcmp(node_name_short, token) == 0) ||
-			    (strcmp(node_name_long, token) == 0)) {
+			if ((xstrcmp(node_name_short, token) == 0) ||
+			    (xstrcmp(node_name_long, token) == 0)) {
 				match = true;
 				break;
 			}

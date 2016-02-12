@@ -855,7 +855,7 @@ extern int sacctmgr_list_assoc(int argc, char *argv[])
 
 	while((assoc = list_next(itr))) {
 		int curr_inx = 1;
-		if (!last_cluster || strcmp(last_cluster, assoc->cluster)) {
+		if (!last_cluster || xstrcmp(last_cluster, assoc->cluster)) {
 			if (tree_list) {
 				list_flush(tree_list);
 			} else {

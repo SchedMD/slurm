@@ -235,7 +235,7 @@ static void _set_collectors(char *this_node_name)
 		/* set our parent, backup, and continue search */
 		parent = hostlist_shift(nodes);
 		backup = hostlist_nth(nodes, 0);
-		if (strcmp(backup, this_node_name) == 0) {
+		if (xstrcmp(backup, this_node_name) == 0) {
 			free(backup);
 			backup = NULL;
 			if (hostlist_count(nodes) > 1)

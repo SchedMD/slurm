@@ -334,8 +334,8 @@ static void *_background_rpc_mgr(void *no_data)
 	lock_slurmctld(config_read_lock);
 
 	/* set node_addr to bind to (NULL means any) */
-	if ((strcmp(slurmctld_conf.backup_controller,
-		    slurmctld_conf.backup_addr) != 0)) {
+	if ((xstrcmp(slurmctld_conf.backup_controller,
+		     slurmctld_conf.backup_addr) != 0)) {
 		node_addr = slurmctld_conf.backup_addr ;
 	}
 

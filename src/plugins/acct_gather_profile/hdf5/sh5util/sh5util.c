@@ -375,9 +375,9 @@ static int _set_options(const int argc, char **argv)
 				params.dir = xstrdup(optarg);
 				break;
 			case 's':
-				if (strcmp(optarg, GRP_ENERGY)
-				    && strcmp(optarg, GRP_LUSTRE)
-				    && strcmp(optarg, GRP_NETWORK)
+				if (xstrcmp(optarg, GRP_ENERGY)
+				    && xstrcmp(optarg, GRP_LUSTRE)
+				    && xstrcmp(optarg, GRP_NETWORK)
 				    && strncmp(optarg,GRP_TASK,
 					       strlen(GRP_TASK))) {
 					error("Bad value for --series=\"%s\"",
@@ -590,7 +590,7 @@ static int _merge_step_files(void)
 			}
 			*pos_char = 0;
 
-			if (strcmp(stepno, "batch") == 0) {
+			if (xstrcmp(stepno, "batch") == 0) {
 				continue;
 			}
 
@@ -781,8 +781,8 @@ static herr_t _collect_tables_node(hid_t g_id, const char *name,
 
 	/* node filter */
 	if (params.node
-	    && strcmp(params.node, "*") != 0
-	    && strcmp(params.node, name) != 0)
+	    && xstrcmp(params.node, "*") != 0
+	    && xstrcmp(params.node, name) != 0)
 		return 0;
 
 	snprintf(object_path, MAX_PROFILE_PATH+1, "%s/%s", name, params.series);
@@ -1773,7 +1773,7 @@ _has_batch_step(char *batch_step, char *batch_node)
 		}
 		*pos_char = 0;
 
-		if (strcmp(stepno, "batch") == 0) {
+		if (xstrcmp(stepno, "batch") == 0) {
 			strcpy(batch_step, de->d_name);
 			strcpy(batch_node, pos_char + 1);
 			closedir(dir);

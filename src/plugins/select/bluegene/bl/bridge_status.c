@@ -109,7 +109,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 			continue;
 		}
 
-		if (strcmp(bp_id, bpid) != 0) {	/* different midplane */
+		if (xstrcmp(bp_id, bpid) != 0) { /* different midplane */
 			free(bpid);
 			continue;
 		}

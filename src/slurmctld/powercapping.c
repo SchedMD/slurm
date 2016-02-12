@@ -91,9 +91,9 @@ int which_power_layout(void)
 
 	if (layout == NULL)
 		return 0;
-	else if (strcmp(layout->name,"default") == 0)
+	else if (xstrcmp(layout->name,"default") == 0)
 		return 1;
-	else if (strcmp(layout->name,"cpufreq") == 0)
+	else if (xstrcmp(layout->name,"cpufreq") == 0)
 		return 2;
 	
 	return 0;

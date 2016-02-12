@@ -197,7 +197,7 @@ static int _assoc_sort_cluster(void *r1, void *r2)
 	slurmdb_assoc_rec_t *rec_b = *(slurmdb_assoc_rec_t **)r2;
 	int diff;
 
-	diff = strcmp(rec_a->cluster, rec_b->cluster);
+	diff = xstrcmp(rec_a->cluster, rec_b->cluster);
 	if (diff < 0)
 		return -1;
 	else if (diff > 0)
@@ -961,8 +961,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 						if ((qos_char[0]
 						     != delta_char[0])
-						    && (!strcmp(qos_char+1,
-								delta_char+1)))
+						    && (!xstrcmp(qos_char+1,
+								 delta_char+1)))
 							break;
 					}
 					list_iterator_reset(delta_itr);
@@ -1392,7 +1392,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
 		/* Only do this when not dealing with the root association. */
-		if (strcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
+		if (xstrcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
 			MYSQL_ROW row2;
 			/* If there is a variable cleared here we need to make
 			   sure we get the parent's information, if any. */
@@ -2012,8 +2012,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 
 		if (!without_parent_info && parent_acct &&
 		    (!last_acct || !last_cluster
-		     || strcmp(parent_acct, last_acct)
-		     || strcmp(cluster_name, last_cluster))) {
+		     || xstrcmp(parent_acct, last_acct)
+		     || xstrcmp(cluster_name, last_cluster))) {
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', "
 				"'%s', '%s', %u); %s",
@@ -2203,8 +2203,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				if (new_qos[0] == '-') {
 					while ((curr_qos =
 						list_next(curr_qos_itr))) {
-						if (!strcmp(curr_qos,
-							    new_qos+1)) {
+						if (!xstrcmp(curr_qos,
+							     new_qos+1)) {
 							list_delete_item(
 								curr_qos_itr);
 							break;
@@ -2214,8 +2214,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				} else if (new_qos[0] == '+') {
 					while ((curr_qos =
 						list_next(curr_qos_itr))) {
-						if (!strcmp(curr_qos,
-							    new_qos+1)) {
+						if (!xstrcmp(curr_qos,
+							     new_qos+1)) {
 							break;
 						}
 					}
@@ -2681,8 +2681,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * happened */
 		if (!moved_parent &&
 		    (!last_parent || !last_cluster
-		     || strcmp(parent, last_parent)
-		     || strcmp(object->cluster, last_cluster))) {
+		     || xstrcmp(parent, last_parent)
+		     || xstrcmp(object->cluster, last_cluster))) {
 			uint32_t tmp32 = 0;
 			if ((tmp32 = _get_parent_id(mysql_conn,
 						    parent,
@@ -2783,8 +2783,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				uint32_t smallest_lft = 0xFFFFFFFF;
 				while ((object = list_next(itr2))) {
 					if (object->lft < smallest_lft
-					    && !strcmp(object->cluster,
-						       cluster_name))
+					    && !xstrcmp(object->cluster,
+							cluster_name))
 						smallest_lft = object->lft;
 				}
 				list_iterator_reset(itr2);

@@ -1114,7 +1114,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	   going back to the same cluster we were just at.
 	*/
 	/* if (working_cluster_rec) { */
-	/*	if (!strcmp(cluster_rec->name, working_cluster_rec->name)) */
+	/*	if (!xstrcmp(cluster_rec->name, working_cluster_rec->name)) */
 	/*		return; */
 	/* } */
 
@@ -1153,7 +1153,7 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 
 	if (!orig_cluster_name)
 		orig_cluster_name = slurm_get_cluster_name();
-	if (!strcmp(cluster_rec->name, orig_cluster_name))
+	if (!xstrcmp(cluster_rec->name, orig_cluster_name))
 		working_cluster_rec = NULL;
 	else
 		working_cluster_rec = cluster_rec;
@@ -1344,7 +1344,7 @@ static GtkWidget *_create_cluster_combo(void)
 					   1, cluster_rec,
 					   -1);
 		}
-		if (!strcmp(cluster_rec->name, orig_cluster_name)) {
+		if (!xstrcmp(cluster_rec->name, orig_cluster_name)) {
 			/* clear it since we found the current cluster */
 			working_cluster_rec = NULL;
 			spot = count;

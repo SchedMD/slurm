@@ -399,7 +399,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		char *tmp_str;
 		if (i > 0)
      			verbose("Nodes %s are ready for job", alloc->node_list);
-		if (alloc->alias_list && !strcmp(alloc->alias_list, "TBD") &&
+		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
 		    (slurm_allocation_lookup_lite(pending_job_id, &resp)
 		     == SLURM_SUCCESS)) {
 			tmp_str = alloc->alias_list;

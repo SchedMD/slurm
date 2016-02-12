@@ -139,7 +139,7 @@ static void _proc_stdout(char *buf, stepd_step_rec_t *job)
 				equal_ptr--;
 			equal_ptr[0] = '\0';
 			end_line[0] = '\0';
-			if (!strcmp(name_ptr, "SLURM_PROLOG_CPU_MASK")) {
+			if (!xstrcmp(name_ptr, "SLURM_PROLOG_CPU_MASK")) {
 				job->cpu_bind_type = CPU_BIND_MASK;
 				xfree(job->cpu_bind);
 				job->cpu_bind = xstrdup(val_ptr);

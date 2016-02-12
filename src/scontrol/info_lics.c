@@ -133,7 +133,7 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 	sorted_lic = _license_sort(msg);
 
 	for (cc = 0; cc < msg->num_lic; cc++) {
-		if (name && strcmp((sorted_lic[cc])->name, name))
+		if (name && xstrcmp((sorted_lic[cc])->name, name))
 			continue;
 		printf("LicenseName=%s%sTotal=%d Used=%u Free=%u Remote=%s\n",
 		       (sorted_lic[cc])->name,

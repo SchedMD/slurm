@@ -83,8 +83,8 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 				cluster = NULL;
 				if (clus_itr) {
 					while ((cluster = list_next(clus_itr)))
-						if (!strcmp(cluster,
-							    clus_res->cluster))
+						if (!xstrcmp(cluster,
+							     clus_res->cluster))
 						    break;
 					list_iterator_reset(clus_itr);
 				} else /* This means we didn't specify
@@ -634,8 +634,8 @@ extern int sacctmgr_add_res(int argc, char *argv[])
 				if (found_itr) {
 					while ((clus_res =
 						list_next(found_itr))) {
-						if (!strcmp(clus_res->cluster,
-							    cluster))
+						if (!xstrcmp(clus_res->cluster,
+							     cluster))
 							break;
 					}
 					list_iterator_reset(found_itr);

@@ -221,7 +221,7 @@ extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 		for (i = 0, front_end_ptr = front_end_nodes;
 		     i < front_end_node_cnt; i++, front_end_ptr++) {
 			if (job_ptr->batch_host) { /* Find specific front-end */
-				if (strcmp(job_ptr->batch_host,
+				if (xstrcmp(job_ptr->batch_host,
 					   front_end_ptr->name))
 					continue;
 				if (!_front_end_access(front_end_ptr, job_ptr))
@@ -307,7 +307,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr)
 		for (i = 0, front_end_ptr = front_end_nodes;
 		     i < front_end_node_cnt; i++, front_end_ptr++) {
 			xassert(front_end_ptr->magic == FRONT_END_MAGIC);
-			if (strcmp(this_node_name, front_end_ptr->name))
+			if (xstrcmp(this_node_name, front_end_ptr->name))
 				continue;
 			if (msg_ptr->node_state == (uint32_t)NO_VAL) {
 				;	/* No change in node state */
@@ -367,7 +367,7 @@ extern front_end_record_t *find_front_end_record(char *name)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
-		if (strcmp(front_end_ptr->name, name) == 0)
+		if (xstrcmp(front_end_ptr->name, name) == 0)
 			return front_end_ptr;
 	}
 #endif
@@ -516,8 +516,8 @@ extern void restore_front_end_state(int recover)
 			return;	/* Prevent CLANG false positive */
 		}
 		for (i = 0; i < front_end_node_cnt; i++) {
-			if (strcmp(front_end_nodes[i].name,
-				   slurm_conf_fe_ptr->frontends) == 0)
+			if (xstrcmp(front_end_nodes[i].name,
+				    slurm_conf_fe_ptr->frontends) == 0)
 				break;
 		}
 		if (i >= front_end_node_cnt) {
@@ -817,7 +817,7 @@ extern int load_all_front_end_state(bool state_only)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in front_end_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, FRONT_END_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, FRONT_END_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {

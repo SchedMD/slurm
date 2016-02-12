@@ -321,7 +321,7 @@ static void _validate_switches(void)
 		/* See if switch name has already been defined. */
 		prior_ptr = switch_data_table;
 		for (j = 0; j < i; j++, prior_ptr++) {
-			if (strcmp(switch_ptr->name, prior_ptr->name) == 0) {
+			if (xstrcmp(switch_ptr->name, prior_ptr->name) == 0) {
 				fatal("Switch (%s) has already been defined",
 				      prior_ptr->name);
 			}
@@ -623,7 +623,7 @@ static int _parse_connected_switches(switch_data *sw_record)
 
 		// look up node struct and add pointer to it in switch's struct
 		for (i = 0; i < switch_data_cnt; i++, ptr++) {
-			if (strcmp(ptr->name, sw_name) == 0) {
+			if (xstrcmp(ptr->name, sw_name) == 0) {
 				sw_record->sw_conns[conn_count] = ptr;
 				break;
 			}
@@ -940,7 +940,7 @@ static int _get_switch_index(switch_data ** switch_table,
 		const switch_data * ptr = switch_table[i];
 
 		if (ptr != NULL) {
-			if (strcmp(ptr->name, switch_ptr->name) == 0) {
+			if (xstrcmp(ptr->name, switch_ptr->name) == 0) {
 				return i;
 			}
 		}

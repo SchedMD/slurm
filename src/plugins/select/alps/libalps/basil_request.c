@@ -77,7 +77,7 @@ static void _init_log_config(void)
 	else
 		log_sel = 0;
 	xml_log_loc = getenv("XML_LOG_LOC");
-	if (xml_log_loc && strcmp(xml_log_loc, "SLURM") &&
+	if (xml_log_loc && xstrcmp(xml_log_loc, "SLURM") &&
 	    (strlen(xml_log_loc) < sizeof(xml_log_file_name))) {
 		strcpy(xml_log_file_name, xml_log_loc);
 	} else {

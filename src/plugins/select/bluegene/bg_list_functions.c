@@ -179,8 +179,8 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 		if (bit_equal(bg_record->mp_bitmap, found_record->mp_bitmap)
 		    && bit_equal(bg_record->ionode_bitmap,
 				 found_record->ionode_bitmap)) {
-			if (!strcmp(bg_record->bg_block_id,
-				    found_record->bg_block_id)) {
+			if (!xstrcmp(bg_record->bg_block_id,
+				     found_record->bg_block_id)) {
 				list_remove(itr);
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_SELECT_TYPE)
@@ -208,8 +208,8 @@ extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
 		    && bit_equal(bg_record->ionode_bitmap,
 				 found_record->ionode_bitmap)) {
 
-			if (!strcmp(bg_record->bg_block_id,
-				    found_record->bg_block_id)) {
+			if (!xstrcmp(bg_record->bg_block_id,
+				     found_record->bg_block_id)) {
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_SELECT_TYPE)
 					info("got the block");

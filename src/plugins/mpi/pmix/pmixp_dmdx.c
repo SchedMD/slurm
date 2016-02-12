@@ -305,7 +305,7 @@ static void _dmdx_req(Buf buf, char *sender_host, uint32_t seq_num)
 		goto exit;
 	}
 
-	if (0 != strcmp(ns, pmixp_info_namespace())) {
+	if (0 != xstrcmp(ns, pmixp_info_namespace())) {
 		/* request for namespase that is not controlled by this daemon
 		 * considered as error. This may change in future.  */
 		PMIXP_ERROR("Bad request from %s: asked for" " nspace = %s, mine is %s",

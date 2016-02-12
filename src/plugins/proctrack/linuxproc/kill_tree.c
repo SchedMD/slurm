@@ -200,7 +200,7 @@ static xppid_t **_build_hashtbl(void)
 
 		/* Record cmd for debugging purpose */
 		_push_to_hashtbl((pid_t)ppid, (pid_t)pid,
-				 strcmp(myname, cmd), cmd, hashtbl);
+				 xstrcmp(myname, cmd), cmd, hashtbl);
 	}
 	closedir(dir);
 	return hashtbl;

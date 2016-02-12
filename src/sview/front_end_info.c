@@ -294,8 +294,8 @@ static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 			gtk_tree_model_get(model,
 					   &sview_front_end_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name,
-				   sview_front_end_info->front_end_name)) {
+			if (xstrcmp(name,
+				    sview_front_end_info->front_end_name)) {
 				/* Bad pointer */
 				sview_front_end_info->iter_set = false;
 				//g_print("bad front_end iter pointer\n");
@@ -352,9 +352,9 @@ static List _create_front_end_info_list(
 		if (last_list_itr) {
 			while ((sview_front_end_info_ptr =
 				list_next(last_list_itr))) {
-				if (!strcmp(sview_front_end_info_ptr->
-					    front_end_name,
-					    front_end_ptr->name)) {
+				if (!xstrcmp(sview_front_end_info_ptr->
+					     front_end_name,
+					     front_end_ptr->name)) {
 					list_remove(last_list_itr);
 					_front_end_info_free(
 						sview_front_end_info_ptr);
@@ -454,7 +454,7 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_fe_info = (sview_front_end_info_t*) list_next(itr))) {
 		front_end_ptr = sview_fe_info->front_end_ptr;
-		if (strcmp(front_end_ptr->name, name) == 0) {
+		if (xstrcmp(front_end_ptr->name, name) == 0) {
 			j = 0;
 			while (sview_fe_info->node_inx[j] >= 0) {
 				change_grid_color(popup_win->grid_button_list,
@@ -596,7 +596,7 @@ extern void admin_edit_front_end(GtkCellRendererText *cell,
 	char *node_list = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
-	if (!new_text || !strcmp(new_text, ""))
+	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -846,8 +846,8 @@ display_it:
 		case NODE_PAGE:
 			break;
 		case JOB_PAGE:
-			if (strcmp(front_end_ptr->name,
-				   search_info->gchar_data))
+			if (xstrcmp(front_end_ptr->name,
+				    search_info->gchar_data))
 				continue;
 			break;
 		case RESV_PAGE:
@@ -856,8 +856,8 @@ display_it:
 				if (!search_info->gchar_data)
 					continue;
 
-				if (strcmp(front_end_ptr->name,
-					   search_info->gchar_data))
+				if (xstrcmp(front_end_ptr->name,
+					    search_info->gchar_data))
 					continue;
 				break;
 			default:
@@ -947,7 +947,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}

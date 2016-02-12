@@ -213,7 +213,7 @@ int pmixp_coll_belong_chk(pmixp_coll_type_t type,
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
 	/* Find my namespace in the range */
 	for (i = 0; i < nprocs; i++) {
-		if (0 != strcmp(procs[i].nspace, nsptr->name)) {
+		if (0 != xstrcmp(procs[i].nspace, nsptr->name)) {
 			continue;
 		}
 		if ((procs[i].rank == PMIX_RANK_WILDCARD))

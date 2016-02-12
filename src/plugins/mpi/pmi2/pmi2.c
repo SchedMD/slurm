@@ -598,7 +598,7 @@ handle_pmi2_cmd(int fd, int lrank)
 
 	i = 0;
 	while (pmi2_cmd_handlers[i].cmd != NULL) {
-		if (!strcmp(req->cmd, pmi2_cmd_handlers[i].cmd))
+		if (!xstrcmp(req->cmd, pmi2_cmd_handlers[i].cmd))
 			break;
 		i ++;
 	}

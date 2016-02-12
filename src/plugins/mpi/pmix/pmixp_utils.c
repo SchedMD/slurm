@@ -380,8 +380,8 @@ int pmixp_rmdir_recursively(char *path)
 	}
 
 	while ((ent = readdir(dp)) != NULL) {
-		if (0 == strcmp(ent->d_name, ".")
-				|| 0 == strcmp(ent->d_name, "..")) {
+		if (0 == xstrcmp(ent->d_name, ".")
+				|| 0 == xstrcmp(ent->d_name, "..")) {
 			/* skip special dir's */
 			continue;
 		}
@@ -435,8 +435,8 @@ int pmixp_fixrights(char *path, uid_t uid, mode_t mode)
 	}
 
 	while ((ent = readdir(dp)) != NULL) {
-		if (0 == strcmp(ent->d_name, ".")
-				|| 0 == strcmp(ent->d_name, "..")) {
+		if (0 == xstrcmp(ent->d_name, ".")
+				|| 0 == xstrcmp(ent->d_name, "..")) {
 			/* skip special dir's */
 			continue;
 		}

@@ -159,7 +159,7 @@ extern int slurm_auth_init( char *auth_type )
 
 	type = slurm_get_auth_type();
 
-	if (strcmp(type, "auth/dummy") == 0) {
+	if (xstrcmp(type, "auth/dummy") == 0) {
 		info( "warning: %s plugin selected", type);
 		auth_dummy = true;
 		goto done;

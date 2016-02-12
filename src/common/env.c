@@ -222,9 +222,9 @@ _extend_env(char ***envp)
  *	srun's --get-user-env option */
 static bool _discard_env(char *name, char *value)
 {
-	if ((strcmp(name, "DISPLAY")     == 0) ||
-	    (strcmp(name, "ENVIRONMENT") == 0) ||
-	    (strcmp(name, "HOSTNAME")    == 0))
+	if ((xstrcmp(name, "DISPLAY")     == 0) ||
+	    (xstrcmp(name, "ENVIRONMENT") == 0) ||
+	    (xstrcmp(name, "HOSTNAME")    == 0))
 		return true;
 
 	return false;
@@ -1835,7 +1835,7 @@ char **env_array_from_file(const char *fname)
 			 * that this new value does not get overwritten
 			 * in the subsequent call to env_array_merge().
 			 */
-			if (strcmp(name, "SLURM_SUBMIT_DIR") == 0)
+			if (xstrcmp(name, "SLURM_SUBMIT_DIR") == 0)
 				unsetenv(name);
 			env_array_overwrite(&env, name, value);
 		}

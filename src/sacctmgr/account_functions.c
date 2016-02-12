@@ -526,7 +526,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			if (start_acct->organization)
 				acct->organization =
 					xstrdup(start_acct->organization);
-			else if (strcmp(start_assoc->parent_acct, "root"))
+			else if (xstrcmp(start_assoc->parent_acct, "root"))
 				acct->organization =
 					xstrdup(start_assoc->parent_acct);
 			else

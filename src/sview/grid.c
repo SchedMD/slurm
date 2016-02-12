@@ -140,7 +140,7 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
@@ -364,7 +364,7 @@ static bool _change_button_color(grid_button_t *grid_button,
 		   (node_base_state == NODE_STATE_ERROR)) {
 		_put_button_as_down(grid_button, NODE_STATE_DRAIN);
 	} else if (grid_button->node_name &&
-		   !strcmp(grid_button->node_name, "EMPTY")) {
+		   !xstrcmp(grid_button->node_name, "EMPTY")) {
 		grid_button->color_inx = MAKE_BLACK;
 //		_put_button_as_up(grid_button);
 	} else if (grid_button->color_inx != color_inx) {

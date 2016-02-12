@@ -65,7 +65,7 @@ static int _find_node_inx (char *name)
 	for (i = 0; i < g_node_info_ptr->record_count; i++) {
 		if (g_node_info_ptr->node_array[i].name == NULL)
 			continue;	/* Future node or other anomaly */
-		if (!strcmp(name, g_node_info_ptr->node_array[i].name))
+		if (!xstrcmp(name, g_node_info_ptr->node_array[i].name))
 			return i;
 	}
 
@@ -1800,7 +1800,7 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info) {
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				//g_print("removing %s\n", title);
 				list_remove(itr);
 				destroy_popup_info(popup_win);
@@ -2156,7 +2156,7 @@ extern void add_display_treestore_line(int update,
 			gtk_tree_model_get(GTK_TREE_MODEL(treestore), iter,
 					   DISPLAY_NAME,
 					   &display_name, -1);
-			if (!strcmp(display_name, name)) {
+			if (!xstrcmp(display_name, name)) {
 				/* update with new info */
 				g_free(display_name);
 				goto found;
@@ -2204,7 +2204,7 @@ extern void add_display_treestore_line_with_font(
 			gtk_tree_model_get(GTK_TREE_MODEL(treestore), iter,
 					   DISPLAY_NAME,
 					   &display_name, -1);
-			if (!strcmp(display_name, name)) {
+			if (!xstrcmp(display_name, name)) {
 				/* update with new info */
 				g_free(display_name);
 				goto found;

@@ -1184,7 +1184,7 @@ static void _add_config_feature(List feature_list, char *feature,
 	/* If feature already in avail_feature_list, just update the bitmap */
 	feature_iter = list_iterator_create(feature_list);
 	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
-		if (strcmp(feature, feature_ptr->name))
+		if (xstrcmp(feature, feature_ptr->name))
 			continue;
 		bit_or(feature_ptr->node_bitmap, node_bitmap);
 		match = true;
@@ -1216,7 +1216,7 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 	/* If feature already in avail_feature_list, just update the bitmap */
 	feature_iter = list_iterator_create(feature_list);
 	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
-		if (strcmp(feature, feature_ptr->name))
+		if (xstrcmp(feature, feature_ptr->name))
 			continue;
 		bit_set(feature_ptr->node_bitmap, node_inx);
 		match = true;

@@ -67,8 +67,8 @@ static void _process_ua(List user_list, slurmdb_assoc_rec_t *assoc)
 	*/
 	itr = list_iterator_create(user_list);
 	while((slurmdb_report_user = list_next(itr))) {
-		if (!strcmp(slurmdb_report_user->name, assoc->user)
-		   && !strcmp(slurmdb_report_user->acct, assoc->acct))
+		if (!xstrcmp(slurmdb_report_user->name, assoc->user)
+		   && !xstrcmp(slurmdb_report_user->acct, assoc->acct))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -155,7 +155,7 @@ static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
 	itr = list_iterator_create(assoc_list);
 	while((parent_assoc = list_next(itr))) {
 		if (!parent_assoc->user
-		   && !strcmp(parent_assoc->acct, wckey->name))
+		   && !xstrcmp(parent_assoc->acct, wckey->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -199,7 +199,7 @@ static void _process_assoc_type(
 			continue;
 		}
 
-		if (strcmp(cluster_name, assoc->cluster))
+		if (xstrcmp(cluster_name, assoc->cluster))
 			continue;
 
 		if (type == CLUSTER_REPORT_UA)
@@ -230,7 +230,7 @@ static void _process_wckey_type(
 			continue;
 		}
 
-		if (strcmp(cluster_name, wckey->cluster))
+		if (xstrcmp(cluster_name, wckey->cluster))
 			continue;
 
 		if (type == CLUSTER_REPORT_UW)

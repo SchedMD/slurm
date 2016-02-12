@@ -375,9 +375,9 @@ static void _set_active_combo_part(GtkComboBox *combo,
 	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 	case SORTID_ROOT:
-		if (!strcmp(temp_char, "yes"))
+		if (!xstrcmp(temp_char, "yes"))
 			action = 0;
-		else if (!strcmp(temp_char, "no"))
+		else if (!xstrcmp(temp_char, "no"))
 			action = 1;
 		else
 			action = 0;
@@ -386,23 +386,23 @@ static void _set_active_combo_part(GtkComboBox *combo,
 	case SORTID_SHARE:
 		if (!strncmp(temp_char, "force", 5))
 			action = 0;
-		else if (!strcmp(temp_char, "no"))
+		else if (!xstrcmp(temp_char, "no"))
 			action = 1;
 		else if (!strncmp(temp_char, "yes", 3))
 			action = 2;
-		else if (!strcmp(temp_char, "exclusive"))
+		else if (!xstrcmp(temp_char, "exclusive"))
 			action = 3;
 		else
 			action = 0;
 		break;
 	case SORTID_PART_STATE:
-		if (!strcmp(temp_char, "up"))
+		if (!xstrcmp(temp_char, "up"))
 			action = 0;
-		else if (!strcmp(temp_char, "down"))
+		else if (!xstrcmp(temp_char, "down"))
 			action = 1;
-		else if (!strcmp(temp_char, "inactive"))
+		else if (!xstrcmp(temp_char, "inactive"))
 			action = 2;
-		else if (!strcmp(temp_char, "drain"))
+		else if (!xstrcmp(temp_char, "drain"))
 			action = 3;
 		else
 			action = 0;
@@ -415,7 +415,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 		else
 			for(i = 0; i < NODE_STATE_END; i++) {
 				upper = node_state_string(i);
-				if (!strcmp(upper, "UNKNOWN")) {
+				if (!xstrcmp(upper, "UNKNOWN")) {
 					unknown_found++;
 					continue;
 				}
@@ -700,7 +700,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	}
 
-	if (strcmp(type, "unknown"))
+	if (xstrcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
 	return type;
@@ -1556,7 +1556,7 @@ static void _update_info_part(List info_list,
 		if (sview_part_info->iter_set) {
 			gtk_tree_model_get(model, &sview_part_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, sview_part_info->part_name))
+			if (xstrcmp(name, sview_part_info->part_name))
 				/* Bad pointer */
 				sview_part_info->iter_set = false;
 			g_free(name);
@@ -1757,7 +1757,8 @@ static int _sview_part_sort_aval_dec(void *a, void *b)
 		return 1;
 
 	if (rec_a->part_ptr->nodes && rec_b->part_ptr->nodes) {
-		size_a = strcmp(rec_a->part_ptr->nodes, rec_b->part_ptr->nodes);
+		size_a = xstrcmp(rec_a->part_ptr->nodes,
+				 rec_b->part_ptr->nodes);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -1829,8 +1830,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (last_list_itr) {
 			while ((sview_part_info =
 				list_next(last_list_itr))) {
-				if (!strcmp(sview_part_info->part_name,
-					    part_ptr->name)) {
+				if (!xstrcmp(sview_part_info->part_name,
+					     part_ptr->name)) {
 					list_remove(last_list_itr);
 					_part_info_free(sview_part_info);
 					break;
@@ -1972,7 +1973,7 @@ need_refresh:
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
-		if (!strcmp(part_ptr->name, name)) {
+		if (!xstrcmp(part_ptr->name, name)) {
 			j = 0;
 			while (part_ptr->node_inx[j] >= 0) {
 				change_grid_color(
@@ -2147,7 +2148,7 @@ extern bool visible_part(char* part_name)
 		get_new_info_part(&part_info_ptr, force_refresh);
 	for (i=0; i<g_part_info_ptr->record_count; i++) {
 		m_part_ptr = &(g_part_info_ptr->partition_array[i]);
-		if (!strcmp(m_part_ptr->name, part_name)) {
+		if (!xstrcmp(m_part_ptr->name, part_name)) {
 			if (m_part_ptr->flags & PART_FLAG_HIDDEN)
 				rc =  FALSE;
 			else
@@ -2396,7 +2397,7 @@ extern GtkListStore *create_model_part(int type)
 				   0, "resume", 1, SORTID_NODE_STATE, -1);
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
-			if (!strcmp(upper, "UNKNOWN"))
+			if (!xstrcmp(upper, "UNKNOWN"))
 				continue;
 
 			gtk_list_store_append(model, &iter);
@@ -2428,7 +2429,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
 
-	if (!new_text || !strcmp(new_text, ""))
+	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -2460,7 +2461,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	}
 
 	if (column != SORTID_NODE_STATE && column != SORTID_FEATURES ) {
-		if (old_text && !strcmp(old_text, new_text)) {
+		if (old_text && !xstrcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 		} else if (slurm_update_partition(part_msg)
 			   == SLURM_SUCCESS) {
@@ -2794,8 +2795,8 @@ display_it:
 				if (!spec_info->search_info->gchar_data)
 					continue;
 
-				if (strcmp(part_ptr->name,
-					   spec_info->search_info->gchar_data))
+				if (xstrcmp(part_ptr->name,
+					    spec_info->search_info->gchar_data))
 					continue;
 				break;
 			case SEARCH_PARTITION_STATE:
@@ -2815,8 +2816,8 @@ display_it:
 			if (!spec_info->search_info->gchar_data)
 				continue;
 
-			if (strcmp(part_ptr->name,
-				   spec_info->search_info->gchar_data))
+			if (xstrcmp(part_ptr->name,
+				    spec_info->search_info->gchar_data))
 				continue;
 			break;
 		default:
@@ -2951,7 +2952,7 @@ extern void popup_all_part(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
@@ -3251,17 +3252,17 @@ extern void cluster_change_part(void)
 			}
 
 			if (!display_data->name) {
-			} else if (!strcmp(display_data->name, "Drain Nodes"))
+			} else if (!xstrcmp(display_data->name, "Drain Nodes"))
 				display_data->name = "Drain Midplanes";
-			else if (!strcmp(display_data->name, "Resume Nodes"))
+			else if (!xstrcmp(display_data->name, "Resume Nodes"))
 				display_data->name = "Resume Midplanes";
-			else if (!strcmp(display_data->name, "Put Nodes Down"))
+			else if (!xstrcmp(display_data->name, "Put Nodes Down"))
 				display_data->name = "Put Midplanes Down";
-			else if (!strcmp(display_data->name, "Make Nodes Idle"))
+			else if (!xstrcmp(display_data->name,"Make Nodes Idle"))
 				display_data->name =
 					"Make Midplanes Idle";
-			else if (!strcmp(display_data->name,
-					 "Update Node Features"))
+			else if (!xstrcmp(display_data->name,
+					  "Update Node Features"))
 				display_data->name =
 					"Update Midplanes Features";
 		} else {
@@ -3275,19 +3276,19 @@ extern void cluster_change_part(void)
 			}
 
 			if (!display_data->name) {
-			} else if (!strcmp(display_data->name,
+			} else if (!xstrcmp(display_data->name,
 					   "Drain Midplanes"))
 				display_data->name = "Drain Nodes";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Resume Midplanes"))
 				display_data->name = "Resume Nodes";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Put Midplanes Down"))
 				display_data->name = "Put Nodes Down";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Make Midplanes Idle"))
 				display_data->name = "Make Nodes Idle";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Update Node Features"))
 				display_data->name =
 					"Update Midplanes Features";

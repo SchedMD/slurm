@@ -111,7 +111,7 @@ int _mpi_init (char *mpi_type)
 		goto done;
 	}
 
-	if (!strcmp(mpi_type, "list")) {
+	if (!xstrcmp(mpi_type, "list")) {
 		char *plugin_dir;
 		plugrack_t mpi_rack;
 

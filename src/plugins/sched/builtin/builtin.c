@@ -137,7 +137,7 @@ static void _load_config(void)
 	xfree(sched_params);
 
 	select_type = slurm_get_select_type();
-	if (!strcmp(select_type, "select/serial")) {
+	if (!xstrcmp(select_type, "select/serial")) {
 		/* Do not spend time computing expected start time for
 		 * pending jobs */
 		max_sched_job_cnt = 0;

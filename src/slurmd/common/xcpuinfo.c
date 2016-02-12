@@ -436,7 +436,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 #if defined (__sun)
 	ksp = kstat_lookup(kc, "cpu_info", -1, NULL);
 	for (; ksp != NULL; ksp = ksp->ks_next) {
-		if (strcmp(ksp->ks_module, "cpu_info"))
+		if (xstrcmp(ksp->ks_module, "cpu_info"))
 			continue;
 
 		numcpu++;

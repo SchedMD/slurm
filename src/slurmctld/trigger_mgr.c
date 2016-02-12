@@ -959,7 +959,7 @@ extern void trigger_state_restore(void)
 
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	if (ver_str && !strcmp(ver_str, TRIGGER_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, TRIGGER_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
@@ -999,7 +999,7 @@ static bool _front_end_job_test(bitstr_t *front_end_bitmap,
 
 	for (i = 0; i < front_end_node_cnt; i++) {
 		if (bit_test(front_end_bitmap, i) &&
-		    !strcmp(front_end_nodes[i].name, job_ptr->batch_host)) {
+		    !xstrcmp(front_end_nodes[i].name, job_ptr->batch_host)) {
 			return true;
 		}
 	}

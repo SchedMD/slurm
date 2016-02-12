@@ -471,7 +471,7 @@ extern int bg_record_cmpf_inc(void *r1, void *r2)
 	}
 
 	if (rec_a->mp_str && rec_b->mp_str) {
-		size_a = strcmp(rec_a->mp_str, rec_b->mp_str);
+		size_a = xstrcmp(rec_a->mp_str, rec_b->mp_str);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)

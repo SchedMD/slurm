@@ -124,12 +124,12 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 
 	xassert( rlimits_str );
 
-	if (strcmp(rlimits_str, "NONE") == 0) {
+	if (xstrcmp(rlimits_str, "NONE") == 0) {
 		propagate_none = true;
 		propagate_flag = !propagate_flag;
 	}
 
-	if (propagate_none || strcmp( rlimits_str, "ALL" ) == 0) {
+	if (propagate_none || xstrcmp( rlimits_str, "ALL" ) == 0) {
 		/*
 		 * Propagate flag value applies to all rlimits
 		 */
@@ -158,7 +158,7 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 				 */
 				if (strncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
 					tp += LEN_RLIMIT_;
-				if (strcmp( tp, rli->name ))
+				if (xstrcmp( tp, rli->name ))
 					continue;
 				rli->propagate_flag = propagate_flag;
 				found = TRUE;

@@ -110,11 +110,11 @@ void eh_resv_3_1(struct ud *ud, const XML_Char **attrs)
 
 		for (cur->rsvn_mode = BRM_EXCLUSIVE;
 		     cur->rsvn_mode < BRM_MAX; cur->rsvn_mode++)
-			if (strcmp(attribs[0], nam_rsvn_mode[cur->rsvn_mode]) == 0)
+			if (xstrcmp(attribs[0], nam_rsvn_mode[cur->rsvn_mode]) == 0)
 				break;
 		for (cur->gpc_mode = BGM_NONE;
 		     cur->gpc_mode < BGM_MAX; cur->gpc_mode++)
-			if (strcmp(attribs[1], nam_gpc_mode[cur->gpc_mode]) == 0)
+			if (xstrcmp(attribs[1], nam_gpc_mode[cur->gpc_mode]) == 0)
 				break;
 	}
 }

@@ -1389,7 +1389,7 @@ void get_command(void)
 
 	if (working_cluster_rec) {
 		char *cluster_name = slurm_get_cluster_name();
-		if (strcmp(working_cluster_rec->name, cluster_name)) {
+		if (xstrcmp(working_cluster_rec->name, cluster_name)) {
 			xfree(cluster_name);
 			endwin();
 			printf("To use the configure option you must be on the "
@@ -1423,7 +1423,7 @@ void get_command(void)
 		echo();
 	}
 
-	while (strcmp(com, "quit")) {
+	while (xstrcmp(com, "quit")) {
 		clear_window(grid_win);
 		print_grid();
 		clear_window(text_win);
@@ -1479,7 +1479,7 @@ void get_command(void)
 		wmove(command_win, 1, 1);
 		wgetstr(command_win, com);
 
-		if (!strcmp(com, "exit")) {
+		if (!xstrcmp(com, "exit")) {
 			endwin();
 			FREE_NULL_LIST(allocated_blocks);
 			bg_configure_ba_fini();
@@ -1487,7 +1487,7 @@ void get_command(void)
 		}
 	run_command:
 
-		if (!strcmp(com, "quit") || !strcmp(com, "\\q")) {
+		if (!xstrcmp(com, "quit") || !xstrcmp(com, "\\q")) {
 			break;
 		} else if (!strncasecmp(com, "layout", 6)) {
 			_set_layout(com);

@@ -307,7 +307,7 @@ hash_remove(struct hash_tab *t, const char *key)
 	     e!= (void *)t->lists[cc];
 	     e = e->forw) {
 
-		if (strcmp(e->key, key) == 0) {
+		if (xstrcmp(e->key, key) == 0) {
 			list_rm_(t->lists[cc], (struct list_ *)e);
 			t->num_ents--;
 			v = e->data;
@@ -508,7 +508,7 @@ _hash_lookup(struct hash_tab *t, const char *key)
 	for (e = (struct hash_entry *)t->lists[cc]->forw;
 	     e!= (void *)t->lists[cc];
 	     e = e->forw) {
-		if (strcmp(e->key, key) == 0)
+		if (xstrcmp(e->key, key) == 0)
 			return e;
 	}
 

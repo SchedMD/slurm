@@ -2015,7 +2015,7 @@ _find_a_host(char *host, node_info_msg_t *node)
 		 */
 		if (node->node_array[cc].name == NULL)
 			continue;
-		if (strcmp(host, node->node_array[cc].name) == 0)
+		if (xstrcmp(host, node->node_array[cc].name) == 0)
 			return true;
 	}
 

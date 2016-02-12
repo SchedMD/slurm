@@ -216,8 +216,8 @@ static int _delete_old_blocks(List curr_block_list, List found_block_list)
 		while ((init_record = list_next(itr_curr))) {
 			itr_found = list_iterator_create(found_block_list);
 			while ((found_record = list_next(itr_found))) {
-				if (!strcmp(init_record->bg_block_id,
-					    found_record->bg_block_id)) {
+				if (!xstrcmp(init_record->bg_block_id,
+					     found_record->bg_block_id)) {
 					/* don't delete this one */
 					break;
 				}
@@ -336,7 +336,7 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	if (block_info->ionode_str) {
 		ba_set_ionode_str(bg_record);
 		if (!bg_record->ionode_str
-		    || strcmp(block_info->ionode_str, bg_record->ionode_str)) {
+		    || xstrcmp(block_info->ionode_str, bg_record->ionode_str)) {
 			error("block %s didn't compute with the correct "
 			      "ionode_str.  Stored as '%s' and "
 			      "came back as '%s'",
@@ -648,7 +648,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in block_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, BLOCK_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, BLOCK_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -774,7 +774,7 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 				 name);
 
 			xfree(name);
-			if (strcmp(temp, bg_record->mp_str)) {
+			if (xstrcmp(temp, bg_record->mp_str)) {
 				fatal("bad wiring in preserved state "
 				      "(found %s, but allocated %s) "
 				      "YOU MUST COLDSTART",
@@ -3295,14 +3295,15 @@ extern int select_p_reconfigure(void)
 #ifdef HAVE_BG
 	slurm_conf_lock();
 	if (!slurmctld_conf.slurm_user_name
-	    || strcmp(bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name))
+	    || xstrcmp(bg_conf->slurm_user_name,
+		       slurmctld_conf.slurm_user_name))
 		error("The slurm user has changed from '%s' to '%s'.  "
 		      "If this is really what you "
 		      "want you will need to restart slurm for this "
 		      "change to be enforced in the bluegene plugin.",
 		      bg_conf->slurm_user_name, slurmctld_conf.slurm_user_name);
 	if (!slurmctld_conf.node_prefix
-	    || strcmp(bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix))
+	    || xstrcmp(bg_conf->slurm_node_prefix, slurmctld_conf.node_prefix))
 		error("Node Prefix has changed from '%s' to '%s'.  "
 		      "If this is really what you "
 		      "want you will need to restart slurm for this "

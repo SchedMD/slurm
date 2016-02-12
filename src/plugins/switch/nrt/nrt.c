@@ -2541,7 +2541,7 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n,
 
 		for (j = 0; j < n->adapter_count; j++) {
 			tmp_a = n->adapter_list + j;
-			if (strcmp(tmp_a->adapter_name, name_ptr))
+			if (xstrcmp(tmp_a->adapter_name, name_ptr))
 				continue;
 			if (tmp_a->cau_indexes_avail != cau_indexes_avail) {
 				info("switch/nrt: resetting cau_indexes_avail "
@@ -2950,8 +2950,8 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 	token = strtok_r(protocol_str, ",", &save_ptr);
 	while (token) {
 		for (i = 0; i < protocol_table->protocol_table_cnt; i++) {
-			if (!strcmp(token, protocol_table->protocol_table[i].
-					   protocol_name))
+			if (!xstrcmp(token, protocol_table->protocol_table[i].
+					    protocol_name))
 				break;
 		}
 		if ((i >= protocol_table->protocol_table_cnt) &&
@@ -3057,8 +3057,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			nrt_adapter_t ad_type;
 			/* Match specific adapter name */
 			if (adapter_name &&
-			    strcmp(adapter_name,
-				   node->adapter_list[i].adapter_name)) {
+			    xstrcmp(adapter_name,
+				    node->adapter_list[i].adapter_name)) {
 				continue;
 			}
 			/* Match specific adapter type (IB, HFI, etc) */
@@ -4041,7 +4041,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	/* Validate state version */
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, NRT_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, NRT_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t) NO_VAL) {
@@ -4457,7 +4457,7 @@ extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 		free(host);
 	if (node && node->adapter_list) {
 		for (i = 0; i < node->adapter_count; i++) {
-			if (strcmp(token,node->adapter_list[i].adapter_name))
+			if (xstrcmp(token,node->adapter_list[i].adapter_name))
 				continue;
 			name_found = true;
 			break;

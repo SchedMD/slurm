@@ -907,7 +907,7 @@ extern int list_find_frontend (void *front_end_entry, void *key)
 		return 1;
 
 	front_end_ptr = (slurm_conf_frontend_t *) front_end_entry;
-	if (strcmp(front_end_ptr->frontends, (char *) key) == 0)
+	if (xstrcmp(front_end_ptr->frontends, (char *) key) == 0)
 		return 1;
 	return 0;
 }
@@ -1537,7 +1537,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	/* Ensure only one slurmd configured on each host */
 	p = host_to_node_hashtbl[hostname_idx];
 	while (p) {
-		if (strcmp(p->hostname, hostname) == 0) {
+		if (xstrcmp(p->hostname, hostname) == 0) {
 			error("Duplicated NodeHostName %s in the config file",
 			      hostname);
 			return;
@@ -1548,7 +1548,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	/* Ensure only one instance of each NodeName */
 	p = node_to_host_hashtbl[alias_idx];
 	while (p) {
-		if (strcmp(p->alias, alias)==0) {
+		if (xstrcmp(p->alias, alias)==0) {
 			if (front_end)
 				fatal("Frontend not configured correctly "
 				      "in slurm.conf.  See man slurm.conf "
@@ -1845,7 +1845,7 @@ static char *_internal_get_hostname(const char *node_name)
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 			return xstrdup(p->hostname);
 		}
 		p = p->next_alias;
@@ -1902,7 +1902,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	idx = _get_hash_idx(node_hostname);
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->hostname, node_hostname) == 0) {
+		if (xstrcmp(p->hostname, node_hostname) == 0) {
 			alias = xstrdup(p->alias);
 			break;
 		}
@@ -1934,7 +1934,7 @@ extern char *slurm_conf_get_aliases(const char *node_hostname)
 
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->hostname, node_hostname) == 0) {
+		if (xstrcmp(p->hostname, node_hostname) == 0) {
 			if ( aliases == NULL )
 				aliases = xstrdup(p->alias);
 			else {
@@ -1967,7 +1967,7 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->hostname, node_hostname) == 0) {
+		if (xstrcmp(p->hostname, node_hostname) == 0) {
 			char *nodeaddr;
 			if (p->address != NULL)
 				nodeaddr = xstrdup(p->address);
@@ -2001,7 +2001,7 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
 		return NULL;
 	}
 
-	if (!strcmp(hostname, "localhost")) {
+	if (!xstrcmp(hostname, "localhost")) {
 		start_name = xshort_hostname();
 	} else {
 		start_name = xstrdup(hostname);
@@ -2082,7 +2082,7 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 			uint16_t port;
 			if (!p->port)
 				p->port = (uint16_t) conf_ptr->slurmd_port;
@@ -2112,7 +2112,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 			if (node_addr) {
 				xfree(p->address);
 				p->address = xstrdup(node_addr);
@@ -2146,7 +2146,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 			if (!p->port)
 				p->port = (uint16_t) conf_ptr->slurmd_port;
 			if (!p->addr_initialized) {
@@ -2189,7 +2189,7 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 		    	if (cpus)
 				*cpus    = p->cpus;
 			if (boards)
@@ -2229,7 +2229,7 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 	idx = _get_hash_idx(node_name);
 	p = node_to_host_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->alias, node_name) == 0) {
+		if (xstrcmp(p->alias, node_name) == 0) {
 			if (core_spec_cnt)
 				*cpu_spec_list = xstrdup(p->cpu_spec_list);
 			if (core_spec_cnt)
@@ -2975,7 +2975,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if ((conf->backup_controller != NULL) &&
-	    (strcmp(conf->backup_controller, conf->control_machine) == 0)) {
+	    (xstrcmp(conf->backup_controller, conf->control_machine) == 0)) {
 		error("ControlMachine and BackupController identical");
 		xfree(conf->backup_addr);
 		xfree(conf->backup_controller);
@@ -3077,7 +3077,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
-	if ((strcmp(conf->crypto_type, "crypto/openssl") == 0) &&
+	if ((xstrcmp(conf->crypto_type, "crypto/openssl") == 0) &&
 	    ((conf->job_credential_private_key == NULL) ||
 	     (conf->job_credential_public_certificate == NULL))) {
 		error("CryptoType=crypto/openssl requires that both "
@@ -3201,7 +3201,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
 		if (default_storage_loc)
 			conf->job_comp_loc = xstrdup(default_storage_loc);
-		else if (!strcmp(conf->job_comp_type, "jobcomp/mysql"))
+		else if (!xstrcmp(conf->job_comp_type, "jobcomp/mysql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
@@ -3230,7 +3230,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    hashtbl)) {
 		if (default_storage_port)
 			conf->job_comp_port = default_storage_port;
-		else if (!strcmp(conf->job_comp_type, "job_comp/mysql"))
+		else if (!xstrcmp(conf->job_comp_type, "job_comp/mysql"))
 			conf->job_comp_port = DEFAULT_MYSQL_PORT;
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
@@ -3374,14 +3374,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 	}
 	if (conf->mcs_plugin_params &&
-	    !strcmp(conf->mcs_plugin, "mcs/none")) {
+	    !xstrcmp(conf->mcs_plugin, "mcs/none")) {
 		/* plugin mcs none and a mcs plugin param */
 		info("WARNING: MCSParameters=%s can't be used with"
 			"MCSPlugin=mcs/none",
 			conf->mcs_plugin_params);
 	}
 	if (!conf->mcs_plugin_params &&
-	    !strcmp(conf->mcs_plugin, "mcs/group")) {
+	    !xstrcmp(conf->mcs_plugin, "mcs/group")) {
 		/* plugin mcs/group and no mcs plugin param */
 		 error("MCSPlugin is mcs/group and no MCSParameters");
 		 return SLURM_ERROR;
@@ -3535,7 +3535,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
-		else if (!strcmp(conf->accounting_storage_type,
+		else if (!xstrcmp(conf->accounting_storage_type,
 				 "accounting_storage/mysql"))
 			conf->accounting_storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
@@ -3568,10 +3568,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AccountingStoragePort", hashtbl)) {
 		if (default_storage_port)
 			conf->accounting_storage_port = default_storage_port;
-		else if (!strcmp(conf->accounting_storage_type,
+		else if (!xstrcmp(conf->accounting_storage_type,
 				"accounting_storage/slurmdbd"))
 			conf->accounting_storage_port = SLURMDBD_PORT;
-		else if (!strcmp(conf->accounting_storage_type,
+		else if (!xstrcmp(conf->accounting_storage_type,
 			  "accounting_storage/mysql"))
 			conf->accounting_storage_port = DEFAULT_MYSQL_PORT;
 		else
@@ -3579,7 +3579,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	/* remove the user and loc if using slurmdbd */
-	if (!strcmp(conf->accounting_storage_type,
+	if (!xstrcmp(conf->accounting_storage_type,
 		   "accounting_storage/slurmdbd")) {
 		xfree(conf->accounting_storage_loc);
 		conf->accounting_storage_loc = xstrdup("N/A");
@@ -3619,21 +3619,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
-	if (strcmp(conf->preempt_type, "preempt/qos") == 0) {
+	if (xstrcmp(conf->preempt_type, "preempt/qos") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (preempt_mode == PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");
 			return SLURM_ERROR;
 		}
-	} else if (strcmp(conf->preempt_type, "preempt/partition_prio") == 0) {
+	} else if (xstrcmp(conf->preempt_type, "preempt/partition_prio") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (preempt_mode == PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");
 			return SLURM_ERROR;
 		}
-	} else if (strcmp(conf->preempt_type, "preempt/none") == 0) {
+	} else if (xstrcmp(conf->preempt_type, "preempt/none") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		if (preempt_mode != PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
@@ -3789,14 +3789,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
 #ifdef HAVE_NATIVE_CRAY
-	if (strcmp(conf->proctrack_type, "proctrack/cray")) {
+	if (xstrcmp(conf->proctrack_type, "proctrack/cray")) {
 		error("On a native Cray ProctrackType=proctrack/cray "
 		      "is required");
 		return SLURM_ERROR;
 	}
 #else
 #ifdef HAVE_REAL_CRAY
-	if (strcmp(conf->proctrack_type, "proctrack/sgi_job")) {
+	if (xstrcmp(conf->proctrack_type, "proctrack/sgi_job")) {
 		error("On Cray ProctrackType=proctrack/sgi_job is required");
 		return SLURM_ERROR;
 	}
@@ -3940,10 +3940,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
 
-	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
+	if (xstrcmp(conf->priority_type, "priority/multifactor") == 0) {
 		if (tot_prio_weight &&
-		    (!strcmp(conf->schedtype, "sched/wiki") ||
-		     !strcmp(conf->schedtype, "sched/wiki2"))) {
+		    (!xstrcmp(conf->schedtype, "sched/wiki") ||
+		     !xstrcmp(conf->schedtype, "sched/wiki2"))) {
 			error("PriorityType=priority/multifactor is "
 			      "incompatible with SchedulerType=%s",
 			      conf->schedtype);
@@ -3952,8 +3952,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if (conf->preempt_mode) {
-		if ((strcmp(conf->schedtype, "sched/wiki")  == 0) ||
-		    (strcmp(conf->schedtype, "sched/wiki2") == 0)) {
+		if ((xstrcmp(conf->schedtype, "sched/wiki")  == 0) ||
+		    (xstrcmp(conf->schedtype, "sched/wiki2") == 0)) {
 			error("Job preemption is incompatible with "
 			      "SchedulerType=%s",
 			      conf->schedtype);
@@ -4143,7 +4143,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			error("SuspendTime value (%ld) is less than -1",
 			      long_suspend_time);
 		} else if ((long_suspend_time > -1) &&
-			   (!strcmp(conf->select_type, "select/bluegene"))) {
+			   (!xstrcmp(conf->select_type, "select/bluegene"))) {
 			error("SuspendTime (power save mode) incompatible with "
 			      "select/bluegene");
 			return SLURM_ERROR;
@@ -4160,7 +4160,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
 #ifdef HAVE_FRONT_END
-	if (strcmp(conf->task_plugin, "task/none")) {
+	if (xstrcmp(conf->task_plugin, "task/none")) {
 		error("On FrontEnd systems TaskPlugin=task/none is required");
 		return SLURM_ERROR;
 	}
@@ -4275,7 +4275,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);
 #ifdef HAVE_BG
-	if (strcmp(conf->topology_plugin, "topology/none")) {
+	if (xstrcmp(conf->topology_plugin, "topology/none")) {
 		error("On IBM BlueGene systems TopologyPlugin=topology/none "
 		      "is required");
 		return SLURM_ERROR;
@@ -4919,7 +4919,7 @@ extern int sort_key_pairs(void *v1, void *v2)
 	config_key_pair_t *key_a = *(config_key_pair_t **)v1;
 	config_key_pair_t *key_b = *(config_key_pair_t **)v2;
 
-	int size_a = strcmp(key_a->name, key_b->name);
+	int size_a = xstrcmp(key_a->name, key_b->name);
 
 	if (size_a < 0)
 		return -1;
@@ -4957,7 +4957,7 @@ extern bool run_in_daemon(char *daemons)
 
 	xassert(slurm_prog_name);
 
-	if (!strcmp(daemons, slurm_prog_name))
+	if (!xstrcmp(daemons, slurm_prog_name))
 		return true;
 
 	full = xstrdup(daemons);
@@ -4965,7 +4965,7 @@ extern bool run_in_daemon(char *daemons)
 
 	while (start_char && (end_char = strstr(start_char, ","))) {
 		*end_char = 0;
-		if (!strcmp(start_char, slurm_prog_name)) {
+		if (!xstrcmp(start_char, slurm_prog_name)) {
 			xfree(full);
 			return true;
 		}
@@ -4973,7 +4973,7 @@ extern bool run_in_daemon(char *daemons)
 		start_char = end_char + 1;
 	}
 
-	if (start_char && !strcmp(start_char, slurm_prog_name)) {
+	if (start_char && !xstrcmp(start_char, slurm_prog_name)) {
 		xfree(full);
 		return true;
 	}

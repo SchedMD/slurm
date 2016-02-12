@@ -140,7 +140,7 @@ int sattach(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 	launch_type = slurm_get_launch_type();
-	if (launch_type && strcmp(launch_type, "launch/slurm")) {
+	if (launch_type && xstrcmp(launch_type, "launch/slurm")) {
 		error("sattach does not support LaunchType=%s", launch_type);
 		exit(error_exit);
 	}

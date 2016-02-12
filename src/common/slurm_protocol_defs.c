@@ -370,7 +370,7 @@ static int _addto_step_list_internal(List step_list, char *names,
 	} else {
 		*dot++ = 0;
 		/* can't use NO_VAL since that means all */
-		if (!strcmp(dot, "batch"))
+		if (!xstrcmp(dot, "batch"))
 			selected_step->stepid = INFINITE;
 		else if (isdigit(*dot))
 			selected_step->stepid = atoi(dot);
@@ -449,7 +449,7 @@ extern int slurm_sort_char_list_asc(void *v1, void *v2)
 {
 	char *name_a = *(char **)v1;
 	char *name_b = *(char **)v2;
-	int diff = strcmp(name_a, name_b);
+	int diff = xstrcmp(name_a, name_b);
 
 	if (diff < 0)
 		return -1;
@@ -463,7 +463,7 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 {
 	char *name_a = *(char **)v1;
 	char *name_b = *(char **)v2;
-	int diff = strcmp(name_a, name_b);
+	int diff = xstrcmp(name_a, name_b);
 
 	if (diff > 0)
 		return -1;

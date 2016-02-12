@@ -1091,7 +1091,7 @@ cpu_freq_set(stepd_step_rec_t *job)
 				continue;
 		}
 		if (cpufreq[i].new_frequency != NO_VAL) {
-			if (strcmp(cpufreq[i].org_governor,"userspace")) {
+			if (xstrcmp(cpufreq[i].org_governor,"userspace")) {
 				rc = _cpu_freq_set_gov(job, i, "userspace");
 				if (rc == SLURM_FAILURE)
 					continue;

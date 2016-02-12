@@ -450,7 +450,7 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 		}
 		if (job->ofname->name != NULL
 		    && job->efname->name != NULL
-		    && !strcmp(job->ofname->name, job->efname->name)) {
+		    && !xstrcmp(job->ofname->name, job->efname->name)) {
 			err_shares_out = true;
 		}
 	}

@@ -248,7 +248,7 @@ void *agent(void *args)
 	slurm_mutex_lock(&agent_cnt_mutex);
 	if (!wiki2_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki2") == 0)
+		if (xstrcmp(sched_type, "sched/wiki2") == 0)
 			wiki2_sched = true;
 		xfree(sched_type);
 		wiki2_sched_test = true;
@@ -1834,7 +1834,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		if (tmp == (READY_JOB_STATE | READY_NODE_STATE)) {
 			nodes_ready = 1;
 			if (launch_msg_ptr->alias_list &&
-			    !strcmp(launch_msg_ptr->alias_list, "TBD")) {
+			    !xstrcmp(launch_msg_ptr->alias_list, "TBD")) {
 				/* Update launch RPC with correct node
 				 * aliases */
 				struct job_record *job_ptr;

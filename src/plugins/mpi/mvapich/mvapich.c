@@ -1750,7 +1750,7 @@ static int mvapich_authenticate_munge(mvapich_state_t *st, struct mvapich_info *
 		}
 
 		/* check that the payload is valid */
-		if (!failed && strcmp (payload, payload_remote) != 0) {
+		if (!failed && xstrcmp (payload, payload_remote) != 0) {
 			pmgr_munge_failure (st, fd, "Got credential with bad payload");
 			error ("Got credential with bad payload");
 			failed = 1;

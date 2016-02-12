@@ -1200,7 +1200,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 	}
 
-	if (strcmp(type, "unknown"))
+	if (xstrcmp(type, "unknown"))
 		global_send_update_msg = 1;
 
 	xfree(original_ptr);
@@ -2057,7 +2057,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
 
 	/* These need to be set up first, or they could be NULL when
-	   they need to be set.  Since we do a strcmp on these later
+	   they need to be set.  Since we do a xstrcmp on these later
 	   we need to make sure they are exactly the same (length wise).
 	*/
 	if (!sview_job_info_ptr->task_hl_str && sview_job_info_ptr->task_hl) {
@@ -2888,7 +2888,7 @@ static void _handle_task_check(sview_job_info_t *task_ptr,
 		else
 			use_id = task_ptr->job_id_str;
 
-		if (tmp_taskid && use_id && !strcmp(tmp_taskid, use_id)) {
+		if (tmp_taskid && use_id && !xstrcmp(tmp_taskid, use_id)) {
 			/* update with new info */
 			_update_job_record(task_ptr,
 					   GTK_TREE_STORE(model),
@@ -3146,7 +3146,7 @@ static int _sview_job_sort_aval_dec(void *s1, void *s2)
 		return 1;
 
 	if (rec_a->nodes && rec_b->nodes) {
-		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		size_a = xstrcmp(rec_a->nodes, rec_b->nodes);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -3811,7 +3811,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
 
-	if (!new_text || !strcmp(new_text, ""))
+	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -3854,7 +3854,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		goto no_input;
 	}
 
-	if (old_text && !strcmp(old_text, new_text)) {
+	if (old_text && !xstrcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
 	} else if (slurm_update_job(job_msg)
 		   == SLURM_SUCCESS) {
@@ -4226,8 +4226,8 @@ display_it:
 				if (!search_info->gchar_data)
 					continue;
 				uname = uid_to_string_cached(job_ptr->user_id);
-				name_diff = strcmp(uname,
-						   search_info->gchar_data);
+				name_diff = xstrcmp(uname,
+						    search_info->gchar_data);
 				if (name_diff)
 					continue;
 				break;
@@ -4243,14 +4243,14 @@ display_it:
 			}
 			break;
 		case PART_PAGE:
-			if (strcmp(search_info->gchar_data,
-				   job_ptr->partition))
+			if (xstrcmp(search_info->gchar_data,
+				    job_ptr->partition))
 				continue;
 			break;
 		case RESV_PAGE:
 			if (!job_ptr->resv_name
-			    || strcmp(search_info->gchar_data,
-				      job_ptr->resv_name))
+			    || xstrcmp(search_info->gchar_data,
+				       job_ptr->resv_name))
 				continue;
 			break;
 		case BLOCK_PAGE:
@@ -4259,7 +4259,7 @@ display_it:
 				name,
 				sizeof(name),
 				SELECT_PRINT_BG_ID);
-			if (strcmp(search_info->gchar_data, name))
+			if (xstrcmp(search_info->gchar_data, name))
 				continue;
 			break;
 		case NODE_PAGE:
@@ -4446,7 +4446,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
@@ -4839,7 +4839,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 	GtkWidget *popup;
 	char *tmp_jobid, *offset;
 
-	if (strcmp(type, "Edit Job") == 0)
+	if (xstrcmp(type, "Edit Job") == 0)
 		return _edit_jobs(model, iter, type, treeview);
 
 	job_msg = xmalloc(sizeof(job_desc_msg_t));

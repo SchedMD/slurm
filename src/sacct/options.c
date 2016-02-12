@@ -744,7 +744,7 @@ void parse_command_line(int argc, char **argv)
 			params.opt_help = 3;
 			break;
 		case 'u':
-			if (!strcmp(optarg, "-1")) {
+			if (!xstrcmp(optarg, "-1")) {
 				all_users = 1;
 				break;
 			}
@@ -848,7 +848,7 @@ void parse_command_line(int argc, char **argv)
 		g_slurm_jobcomp_init(params.opt_filein);
 
 		acct_type = slurm_get_jobcomp_type();
-		if ((strcmp(acct_type, "jobcomp/none") == 0)
+		if ((xstrcmp(acct_type, "jobcomp/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr, "SLURM job completion is disabled\n");
 			exit(1);
@@ -858,7 +858,7 @@ void parse_command_line(int argc, char **argv)
 		slurm_acct_storage_init(params.opt_filein);
 
 		acct_type = slurm_get_accounting_storage_type();
-		if ((strcmp(acct_type, "accounting_storage/none") == 0)
+		if ((xstrcmp(acct_type, "accounting_storage/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr,
 				"SLURM accounting storage is disabled\n");

@@ -45,6 +45,7 @@
 
 #include "src/common/optz.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 static const struct option opt_table_end = { NULL, 0, NULL, 0 };
 
@@ -68,7 +69,7 @@ int optz_add(struct option **optz, const struct option *opt)
 	struct option *t = *optz;
 
 	for (; op->name != NULL; op++) {
-		if (strcmp(op->name, opt->name) == 0)
+		if (xstrcmp(op->name, opt->name) == 0)
 			slurm_seterrno_ret(EEXIST);
 		len++;
 	}

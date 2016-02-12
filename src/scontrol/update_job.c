@@ -458,7 +458,7 @@ scontrol_hold(char *op, char *job_str)
 	     i++, job_ptr++) {
 		if (job_name &&
 		    ((job_ptr->name == NULL) ||
-		     strcmp(job_name, job_ptr->name)))
+		     xstrcmp(job_name, job_ptr->name)))
 			continue;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
@@ -883,7 +883,7 @@ scontrol_update_job (int argc, char *argv[])
 		else if ((strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
 		         (strncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
 			int min_nodes, max_nodes, rc;
-			if (strcmp(val, "0") == 0) {
+			if (xstrcmp(val, "0") == 0) {
 				job_msg.min_nodes = 0;
 			} else if (strcasecmp(val, "ALL") == 0) {
 				job_msg.min_nodes = INFINITE;
@@ -1039,7 +1039,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
-			if (!strcmp(val, "-1") || !strcmp(val, "*"))
+			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
 				job_msg.core_spec = (uint16_t) INFINITE;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid CoreSpec value: %s", val);
@@ -1049,7 +1049,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
-			if (!strcmp(val, "-1") || !strcmp(val, "*"))
+			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
 				job_msg.core_spec = (uint16_t) INFINITE;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
 				error ("Invalid ThreadSpec value: %s", val);
@@ -1572,7 +1572,7 @@ static char *_job_name2id(char *job_name, uint32_t job_uid)
 			if ((job_uid != NO_VAL) &&
 			    (job_uid != job_ptr->user_id))
 				continue;
-			if (!job_ptr->name || strcmp(job_name, job_ptr->name))
+			if (!job_ptr->name || xstrcmp(job_name, job_ptr->name))
 				continue;
 			if (job_ptr->array_task_id != NO_VAL) {
 				xstrfmtcat(job_id_str, "%s%u_%u", sep,

@@ -75,7 +75,7 @@ extern hid_t get_attribute_handle(hid_t parent, char *name)
 		// Get the name of the attribute.
 		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
 		if (len < MAX_ATTR_NAME) {
-			if (strcmp(buf, name) == 0) {
+			if (xstrcmp(buf, name) == 0) {
 				return aid;
 			}
 		}
@@ -106,7 +106,7 @@ extern hid_t get_group(hid_t parent, const char *name)
 					 H5_ITER_INC, i, buf, MAX_GROUP_NAME,
 					 H5P_DEFAULT);
 		if ((len > 0) && (len < MAX_GROUP_NAME)) {
-			if (strcmp(buf, name) == 0) {
+			if (xstrcmp(buf, name) == 0) {
 				gid = H5Gopen(parent, name, H5P_DEFAULT);
 				if (gid < 0)
 					error("PROFILE: Failed to open %s",

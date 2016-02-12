@@ -1404,7 +1404,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	acct_gather_suspend_poll();
 	if (launch_poe == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/poe"))
+		if (!xstrcmp(launch_type, "launch/poe"))
 			launch_poe = 1;
 		else
 			launch_poe = 0;

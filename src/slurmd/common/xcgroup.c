@@ -340,7 +340,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 				continue;
 			*entry='\0';
 			/* check subsystem versus ns one */
-			if (strcmp(cgns->subsystems, subsys) != 0) {
+			if (xstrcmp(cgns->subsystems, subsys) != 0) {
 				debug("skipping cgroup subsys %s(%s)",
 				      subsys, cgns->subsystems);
 				continue;

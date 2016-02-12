@@ -108,7 +108,7 @@ scontrol_print_part (char *partition_name)
 	part_ptr = part_info_ptr->partition_array;
 	for (i = 0; i < part_info_ptr->record_count; i++) {
 		if (partition_name &&
-		    strcmp (partition_name, part_ptr[i].name) != 0)
+		    xstrcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
 		print_cnt++;
 		slurm_print_partition_info (stdout, & part_ptr[i],

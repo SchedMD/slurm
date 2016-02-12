@@ -93,7 +93,7 @@ scontrol_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 		if (node_name) {
 			i = (j + last_inx) % node_buffer_ptr->record_count;
 			if ((node_buffer_ptr->node_array[i].name == NULL) ||
-			    strcmp (node_name,
+			    xstrcmp (node_name,
 				    node_buffer_ptr->node_array[i].name))
 				continue;
 		} else if (node_buffer_ptr->node_array[j].name == NULL)
@@ -212,7 +212,7 @@ extern void	scontrol_print_topo (char *node_list)
 
 	/* Search for matching switch name */
 	for (i=0; i<topo_info_msg->record_count; i++) {
-		if (strcmp(topo_info_msg->topo_array[i].name, node_list))
+		if (xstrcmp(topo_info_msg->topo_array[i].name, node_list))
 			continue;
 		slurm_print_topo_record(stdout, &topo_info_msg->topo_array[i],
 					one_liner);
@@ -321,8 +321,8 @@ scontrol_print_front_end(char *node_name,
 		if (node_name) {
 			i = (j + last_inx) % front_end_buffer_ptr->record_count;
 			if (!front_end_buffer_ptr->front_end_array[i].name ||
-			    strcmp(node_name, front_end_buffer_ptr->
-					      front_end_array[i].name))
+			    xstrcmp(node_name, front_end_buffer_ptr->
+				    front_end_array[i].name))
 				continue;
 		} else if (front_end_buffer_ptr->front_end_array[j].name == NULL)
 			continue;

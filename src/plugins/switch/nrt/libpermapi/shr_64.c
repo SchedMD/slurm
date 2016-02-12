@@ -118,7 +118,7 @@ static char *_name_from_addr(char *addr)
 	xassert(host_usage);
 	host_ptr = host_usage;
 	while (host_ptr && host_ptr->host_address) {
-		if (!strcmp(addr, host_ptr->host_address))
+		if (!xstrcmp(addr, host_ptr->host_address))
 			return host_ptr->host_name;
 		host_ptr++;
 	}
@@ -1590,37 +1590,37 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			while (tok) {
 				if ((tok_inx == 1) && !myargv[1]) {
 					myargv[1] = xstrdup(tok);
-				} else if (!strcmp(tok, "-adapter_use")) {
+				} else if (!xstrcmp(tok, "-adapter_use")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					adapter_use = xstrdup(tok);
-				} else if (!strcmp(tok, "-collective_groups")){
+				} else if (!xstrcmp(tok, "-collective_groups")){
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					collectives = xstrdup(tok);
-				} else if (!strcmp(tok, "-euidevice")) {
+				} else if (!xstrcmp(tok, "-euidevice")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					euidevice = xstrdup(tok);
-				} else if (!strcmp(tok, "-euilib")) {
+				} else if (!xstrcmp(tok, "-euilib")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					euilib = xstrdup(tok);
-				} else if (!strcmp(tok, "-imm_send_buffers")) {
+				} else if (!xstrcmp(tok, "-imm_send_buffers")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					immediate = xstrdup(tok);
-				} else if (!strcmp(tok, "-instances")) {
+				} else if (!xstrcmp(tok, "-instances")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
 					instances = xstrdup(tok);
-				} else if (!strcmp(tok, "-use_bulk_xfer")) {
+				} else if (!xstrcmp(tok, "-use_bulk_xfer")) {
 					tok = strtok_r(NULL, " ", &save_ptr);
 					if (!tok)
 						break;
@@ -1670,7 +1670,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			}
 			xfree(opt.network);
 			if (adapter_use) {
-				if (!strcmp(adapter_use, "dedicated"))
+				if (!xstrcmp(adapter_use, "dedicated"))
 					opt.exclusive = true;
 				xfree(adapter_use);
 			}
@@ -1703,7 +1703,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 				xstrcat(opt.network, "instances=");
 				xstrcat(opt.network, instances);
 			}
-			if (bulk_xfer && !strcmp(bulk_xfer, "yes")) {
+			if (bulk_xfer && !xstrcmp(bulk_xfer, "yes")) {
 				if (opt.network)
 					xstrcat(opt.network, ",");
 				xstrcat(opt.network, "bulk_xfer");

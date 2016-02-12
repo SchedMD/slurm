@@ -251,7 +251,7 @@ static void _opt_default(void)
 {
 	char *launch_type = slurm_get_launch_type();
 	/* do this for all but slurm (poe, aprun, etc...) */
-	if (strcmp(launch_type, "launch/slurm"))
+	if (xstrcmp(launch_type, "launch/slurm"))
 		opt.ctld	= true;
 	else
 		opt.ctld	= false;

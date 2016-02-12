@@ -481,7 +481,7 @@ static void _update_info_block(List block_list,
 		if (block_ptr->iter_set) {
 			gtk_tree_model_get(model, &block_ptr->iter_ptr,
 					   SORTID_BLOCK, &name, -1);
-			if (strcmp(name, block_ptr->bg_block_name)) {
+			if (xstrcmp(name, block_ptr->bg_block_name)) {
 				/* Bad pointer */
 				block_ptr->iter_set = false;
 			}
@@ -531,7 +531,7 @@ static int _sview_block_sort_aval_dec(void *s1, void *s2)
 		return 1;
 
 	if (rec_a->mp_str && rec_b->mp_str) {
-		size_a = strcmp(rec_a->mp_str, rec_b->mp_str);
+		size_a = xstrcmp(rec_a->mp_str, rec_b->mp_str);
 		if (size_a < 0)
 			return -1;
 		else if (size_a > 0)
@@ -609,9 +609,9 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 
 		if (last_list_itr) {
 			while ((block_ptr = list_next(last_list_itr))) {
-				if (!strcmp(block_ptr->bg_block_name,
-					    block_info_ptr->
-					    block_array[i].bg_block_id)) {
+				if (!xstrcmp(block_ptr->bg_block_name,
+					     block_info_ptr->
+					     block_array[i].bg_block_id)) {
 					list_remove(last_list_itr);
 					_block_info_free(block_ptr);
 					break;
@@ -738,8 +738,8 @@ need_refresh:
 
 	itr = list_iterator_create(block_list);
 	while ((block_ptr = (sview_block_info_t*) list_next(itr))) {
-		if (!strcmp(block_ptr->bg_block_name, name)
-		    || !strcmp(block_ptr->mp_str, name)) {
+		if (!xstrcmp(block_ptr->bg_block_name, name)
+		    || !xstrcmp(block_ptr->mp_str, name)) {
 			/* we want to over ride any subgrp in error
 			   state */
 			enum node_states state = NODE_STATE_UNKNOWN;
@@ -986,7 +986,7 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 
 	char *blockid = NULL;
 	char *old_text = NULL;
-	if (!new_text || !strcmp(new_text, ""))
+	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -1308,8 +1308,8 @@ display_it:
 		i++;
 		switch(spec_info->type) {
 		case PART_PAGE:
-			if (strcmp(block_ptr->slurm_part_name,
-				   search_info->gchar_data))
+			if (xstrcmp(block_ptr->slurm_part_name,
+				    search_info->gchar_data))
 				continue;
 			break;
 		case RESV_PAGE:
@@ -1344,8 +1344,8 @@ display_it:
 				if (!search_info->gchar_data)
 					continue;
 
-				if (strcmp(block_ptr->bg_block_name,
-					   search_info->gchar_data))
+				if (xstrcmp(block_ptr->bg_block_name,
+					    search_info->gchar_data))
 					continue;
 				break;
 			case SEARCH_BLOCK_SIZE:
@@ -1368,8 +1368,8 @@ display_it:
 			}
 			break;
 		case JOB_PAGE:
-			if (strcmp(block_ptr->bg_block_name,
-				   search_info->gchar_data))
+			if (xstrcmp(block_ptr->bg_block_name,
+				    search_info->gchar_data))
 				continue;
 			break;
 		default:
@@ -1486,7 +1486,7 @@ extern void popup_all_block(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}

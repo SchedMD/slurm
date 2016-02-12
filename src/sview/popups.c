@@ -163,7 +163,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
@@ -451,13 +451,13 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 
 	gethostname_short(me, MAX_SLURM_NAME);
 	if ((b = conf->backup_controller)) {
-		if ((strcmp(b, me) == 0) ||
+		if ((xstrcmp(b, me) == 0) ||
 		    (strcasecmp(b, "localhost") == 0))
 			ctld = 1;
 	}
 	if ((c = conf->control_machine)) {
 		actld = 1;
-		if ((strcmp(c, me) == 0) ||
+		if ((xstrcmp(c, me) == 0) ||
 		    (strcasecmp(c, "localhost") == 0))
 			ctld = 1;
 	}
@@ -517,7 +517,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 600);
 
-	if (!strcmp(name, "batch_job")) {
+	if (!xstrcmp(name, "batch_job")) {
 		sview_search_info.search_type = CREATE_BATCH_JOB;
 		label = gtk_label_new(
 			"Batch job submission specifications\n\n"
@@ -532,7 +532,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		if (!getcwd(job_msg->work_dir, 1024))
 			goto end_it;
 		entry = create_job_entry(job_msg, model, &iter);
-	} else if (!strcmp(name, "partition")) {
+	} else if (!xstrcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
 		label = gtk_label_new(
 			"Partition creation specifications\n\n"
@@ -540,7 +540,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		part_msg = xmalloc(sizeof(update_part_msg_t));
 		slurm_init_part_desc_msg(part_msg);
 		entry = create_part_entry(part_msg, model, &iter);
-	} else if (!strcmp(name, "reservation")) {
+	} else if (!xstrcmp(name, "reservation")) {
 		sview_search_info.search_type = CREATE_RESERVATION;
 		label = gtk_label_new(
 			"Reservation creation specifications\n\n"
@@ -669,15 +669,15 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 	gtk_dialog_add_button(GTK_DIALOG(popup),
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 
-	if (!strcmp(name, "jobid")) {
+	if (!xstrcmp(name, "jobid")) {
 		sview_search_info.search_type = SEARCH_JOB_ID;
 		entry = create_entry();
 		label = gtk_label_new("Which job id?");
-	} else if (!strcmp(name, "user_jobs")) {
+	} else if (!xstrcmp(name, "user_jobs")) {
 		sview_search_info.search_type = SEARCH_JOB_USER;
 		entry = create_entry();
 		label = gtk_label_new("Which user?");
-	} else if (!strcmp(name, "state_jobs")) {
+	} else if (!xstrcmp(name, "state_jobs")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, JOB_PENDING, "Pending", TRUE, -1},
 			{G_TYPE_NONE, JOB_CONFIGURING, "Configuring", TRUE, -1},
@@ -697,11 +697,11 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		sview_search_info.search_type = SEARCH_JOB_STATE;
 		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
-	} else if (!strcmp(name, "partition_name")) {
+	} else if (!xstrcmp(name, "partition_name")) {
 		sview_search_info.search_type = SEARCH_PARTITION_NAME;
 		entry = create_entry();
 		label = gtk_label_new("Which partition");
-	} else if (!strcmp(name, "partition_state")) {
+	} else if (!xstrcmp(name, "partition_state")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, PARTITION_UP, "Up", TRUE, -1},
 			{G_TYPE_NONE, PARTITION_DOWN, "Down", TRUE, -1},
@@ -713,7 +713,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		sview_search_info.search_type = SEARCH_PARTITION_STATE;
 		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
-	} else if (!strcmp(name, "node_name")) {
+	} else if (!xstrcmp(name, "node_name")) {
 		sview_search_info.search_type = SEARCH_NODE_NAME;
 		entry = create_entry();
 		if (cluster_flags & CLUSTER_FLAG_BG)
@@ -722,7 +722,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		else
 			label = gtk_label_new("Which node(s)?\n"
 					      "(ranged or comma separated)");
-	} else if (!strcmp(name, "node_state")) {
+	} else if (!xstrcmp(name, "node_state")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, NODE_STATE_ALLOCATED, "Allocated",
 			 TRUE, -1},
@@ -759,16 +759,16 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
 	} else if ((cluster_flags & CLUSTER_FLAG_BG)
-		   && !strcmp(name, "bg_block_name")) {
+		   && !xstrcmp(name, "bg_block_name")) {
 		sview_search_info.search_type = SEARCH_BLOCK_NAME;
 		entry = create_entry();
 		label = gtk_label_new("Which block?");
 	} else if ((cluster_flags & CLUSTER_FLAG_BG)
-		   && !strcmp(name, "bg_block_size")) {
+		   && !xstrcmp(name, "bg_block_size")) {
 		sview_search_info.search_type = SEARCH_BLOCK_SIZE;
 		entry = create_entry();
 		label = gtk_label_new("Which block size?");
-	} else if (!strcmp(name, "bg_block_state")) {
+	} else if (!xstrcmp(name, "bg_block_state")) {
 		display_data_t pulldown_display_data[] = {
 			{G_TYPE_NONE, BG_BLOCK_NAV, "Nav", TRUE, -1},
 			{G_TYPE_NONE, BG_BLOCK_FREE, "Free", TRUE, -1},
@@ -808,7 +808,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 		sview_search_info.search_type = SEARCH_BLOCK_STATE;
 		entry = create_pulldown_combo(pulldown_display_data);
 		label = gtk_label_new("Which state?");
-	} else if (!strcmp(name, "reservation_name")) {
+	} else if (!xstrcmp(name, "reservation_name")) {
 		sview_search_info.search_type = SEARCH_RESERVATION_NAME;
 		entry = create_entry();
 		label = gtk_label_new("Which reservation");

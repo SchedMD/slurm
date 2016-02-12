@@ -305,7 +305,7 @@ static void _opt_default()
 	uid_t uid = getuid();
 
 	opt.user = uid_to_string(uid);
-	if (strcmp(opt.user, "nobody") == 0)
+	if (xstrcmp(opt.user, "nobody") == 0)
 		fatal("Invalid user id: %u", uid);
 
 	opt.script_argc = 0;
@@ -1175,7 +1175,7 @@ static bool _opt_wrpr_batch_script(const char *file, const void *body,
 	if (getenv("SBATCH_IGNORE_PBS"))
 		return false;
 	for (i = 0; i < cmd_argc; i++) {
-		if (!strcmp(cmd_argv[i], "--ignore-pbs"))
+		if (!xstrcmp(cmd_argv[i], "--ignore-pbs"))
 			return false;
 	}
 
@@ -2788,7 +2788,7 @@ static bool _opt_verify(void)
 
 	if (opt.immediate) {
 		char *sched_name = slurm_get_sched_type();
-		if (strcmp(sched_name, "sched/wiki") == 0) {
+		if (xstrcmp(sched_name, "sched/wiki") == 0) {
 			info("WARNING: Ignoring the -I/--immediate option "
 				"(not supported by Maui)");
 			opt.immediate = false;

@@ -700,7 +700,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 		if (sview_node_info->iter_set) {
 			gtk_tree_model_get(model, &sview_node_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, sview_node_info->node_name)) {
+			if (xstrcmp(name, sview_node_info->node_name)) {
 				/* Bad pointer */
 				sview_node_info->iter_set = false;
 				//g_print("bad node iter pointer\n");
@@ -774,7 +774,7 @@ need_refresh:
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
 		node_ptr = sview_node_info->node_ptr;
 		i++;
-		if (!strcmp(node_ptr->name, name)) {
+		if (!xstrcmp(node_ptr->name, name)) {
 			change_grid_color(popup_win->grid_button_list,
 					  i, i, i, true, 0);
 			_layout_node_record(treeview, sview_node_info, update);
@@ -904,8 +904,8 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		if (last_list_itr) {
 			while ((sview_node_info_ptr =
 				list_next(last_list_itr))) {
-				if (!strcmp(sview_node_info_ptr->node_name,
-					    node_ptr->name)) {
+				if (!xstrcmp(sview_node_info_ptr->node_name,
+					     node_ptr->name)) {
 					list_remove(last_list_itr);
 					_node_info_free(sview_node_info_ptr);
 					break;
@@ -1456,7 +1456,7 @@ extern int update_state_node(GtkDialog *dialog,
 		for(i = 0; i < NODE_STATE_END; i++) {
 			upper = node_state_string(i);
 			lower = str_tolower(upper);
-			if (!strcmp(lower, type)) {
+			if (!xstrcmp(lower, type)) {
 				snprintf(tmp_char, sizeof(tmp_char),
 					 "Are you sure you want to set "
 					 "node(s) %s to %s?",
@@ -1575,7 +1575,7 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	char *nodelist = NULL;
 	int column = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(cell),
 						       "column"));
-	if (!new_text || !strcmp(new_text, ""))
+	if (!new_text || !xstrcmp(new_text, ""))
 		goto no_input;
 
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(treestore), &iter, path);
@@ -1899,7 +1899,7 @@ display_it:
 			if (!search_info->gchar_data)
 				continue;
 			while ((host = hostlist_next(host_itr))) {
-				if (!strcmp(host, node_ptr->name)) {
+				if (!xstrcmp(host, node_ptr->name)) {
 					free(host);
 					found = 1;
 					break;
@@ -2033,7 +2033,7 @@ extern void popup_all_node_name(char *name, int id)
 	itr = list_iterator_create(popup_list);
 	while ((popup_win = list_next(itr))) {
 		if (popup_win->spec_info)
-			if (!strcmp(popup_win->spec_info->title, title)) {
+			if (!xstrcmp(popup_win->spec_info->title, title)) {
 				break;
 			}
 	}
@@ -2185,15 +2185,15 @@ extern void cluster_change_node(void)
 			}
 
 			if (!display_data->name) {
-			} else if (!strcmp(display_data->name, "Drain Node"))
+			} else if (!xstrcmp(display_data->name, "Drain Node"))
 				display_data->name = "Drain Midplane";
-			else if (!strcmp(display_data->name, "Undrain Node"))
+			else if (!xstrcmp(display_data->name, "Undrain Node"))
 				display_data->name = "Undrain Midplane";
-			else if (!strcmp(display_data->name, "Resume Node"))
+			else if (!xstrcmp(display_data->name, "Resume Node"))
 				display_data->name = "Resume Midplane";
-			else if (!strcmp(display_data->name, "Put Node Down"))
+			else if (!xstrcmp(display_data->name, "Put Node Down"))
 				display_data->name = "Put Midplane Down";
-			else if (!strcmp(display_data->name, "Make Node Idle"))
+			else if (!xstrcmp(display_data->name, "Make Node Idle"))
 				display_data->name =
 					"Make Midplane Idle";
 		} else {
@@ -2204,19 +2204,19 @@ extern void cluster_change_node(void)
 			}
 
 			if (!display_data->name) {
-			} else if (!strcmp(display_data->name,
+			} else if (!xstrcmp(display_data->name,
 					   "Drain Midplanes"))
 				display_data->name = "Drain Nodes";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					   "Undrain Midplanes"))
 				display_data->name = "Undrain Nodes";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Resume Midplanes"))
 				display_data->name = "Resume Nodes";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Put Midplanes Down"))
 				display_data->name = "Put Nodes Down";
-			else if (!strcmp(display_data->name,
+			else if (!xstrcmp(display_data->name,
 					 "Make Midplanes Idle"))
 				display_data->name = "Make Nodes Idle";
 		}

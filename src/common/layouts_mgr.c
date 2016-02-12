@@ -290,7 +290,7 @@ static int _string_in_array(const char* str, const char** strings)
 	xassert(strings); /* if etypes no specified in plugin, no new entity
 			     should be created */
 	for (; *strings; ++strings) {
-		if (!strcmp(str, *strings))
+		if (!xstrcmp(str, *strings))
 			return 1;
 	}
 	return 0;
@@ -1289,7 +1289,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 				rc = SLURM_ERROR;
 				continue;
 			}
-			if (!e->type || strcmp(e_type, e->type)) {
+			if (!e->type || xstrcmp(e_type, e->type)) {
 				info("layouts: entity '%s' type (%s) differs "
 				     "from already registered entity type (%s)"
 				     " skipping", e_name, e_type, e->type);
@@ -2555,7 +2555,7 @@ int layouts_pack_layout(char *l_type, char *char_entities, char *type,
 	pargs.all = 0;
 	pargs.list_entities = NULL;
 	if (char_entities != NULL) {
-		if (strcmp(char_entities, "*") == 0)
+		if (xstrcmp(char_entities, "*") == 0)
 			pargs.all = 1;
 		else
 			pargs.list_entities = hostlist_create(char_entities);
@@ -2600,7 +2600,7 @@ int layouts_update_layout(char *l_type, Buf buffer)
 	int i, rc;
 	slurm_mutex_lock(&mgr->lock);
 	for (i = 0; i < mgr->plugins_count; i++) {
-		if (!strcmp(mgr->plugins[i].name, l_type)) {
+		if (!xstrcmp(mgr->plugins[i].name, l_type)) {
 			rc = _layouts_update_state((layout_plugin_t*)
 						   &mgr->plugins[i],
 						   buffer);

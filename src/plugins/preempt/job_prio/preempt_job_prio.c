@@ -139,7 +139,7 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 		    preemptee_job_ptr->name);
 	}
 
-	if (!strcmp(preemptor_assoc->acct, preemptee_assoc->acct)) {
+	if (!xstrcmp(preemptor_assoc->acct, preemptee_assoc->acct)) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			info("%s: Preemptor and preemptee share account = %s",
 			     plugin_type, preemptee_assoc->acct);
@@ -519,9 +519,9 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 			(long)(preemptor_new_usage * EPSILON);
 		preemptee_current_usage =
 			(long)(preemptee_acct_usage_ptr->current_usage*EPSILON);
-		if (((strcmp(preemptor_assoc->acct,
-			     ((slurmdb_assoc_rec_t *)
-			      preemptee_job_ptr->assoc_ptr)->acct) != 0) &&
+		if (((xstrcmp(preemptor_assoc->acct,
+			      ((slurmdb_assoc_rec_t *)
+			       preemptee_job_ptr->assoc_ptr)->acct) != 0) &&
 		    (preemptor_new_usage >= preemptee_acct_usage_ptr->current_usage ||
 		     preemptee_acct_usage_ptr->current_cpu_count <= 0)) &&
 		    (preemptee_acct_usage_ptr->current_usage > 0)) {
@@ -631,7 +631,7 @@ static int _overalloc_test(struct job_record *preemptor,
 	if (((new_fairshare_preemptee > 1.0 && new_fairshare_preemptor < 1.0) ||
 	     (new_fairshare_preemptee < 1.0 && new_fairshare_preemptor > 1.0))&&
 	    (new_fairshare_diff != 0.0) &&
-	    (strcmp(assoc_preemptor->acct, assoc_preemptee->acct) != 0)) {
+	    (xstrcmp(assoc_preemptor->acct, assoc_preemptee->acct) != 0)) {
 		if (new_fairshare_diff > 0.0) {
 			relation = "lower (better)";
 			rc = 1;	/* Preemptor can preempt */

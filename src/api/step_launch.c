@@ -1768,7 +1768,7 @@ _exec_prog(slurm_msg_t *msg)
 			exec_msg->job_id, exec_msg->step_id);
 	}
 
-	if (strcmp(exec_msg->argv[0], "ompi-checkpoint") == 0) {
+	if (xstrcmp(exec_msg->argv[0], "ompi-checkpoint") == 0) {
 		if (srun_ppid)
 			checkpoint = true;
 		else {

@@ -1351,7 +1351,7 @@ _get_user_env(batch_job_launch_msg_t *req)
 	int i;
 
 	for (i=0; i<req->envc; i++) {
-		if (strcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
+		if (xstrcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
 			break;
 	}
 	if (i >= req->envc)
@@ -4602,7 +4602,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 
 	if (running_serial == -1) {
 		char *select_type = slurm_get_select_type();
-		if (!strcmp(select_type, "select/serial"))
+		if (!xstrcmp(select_type, "select/serial"))
 			running_serial = 1;
 		else
 			running_serial = 0;
@@ -4929,7 +4929,7 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 		host = hostset_shift(hosts);
 		if (host == NULL)
 			break;
-		if (strcmp(host, conf->node_name) == 0) {
+		if (xstrcmp(host, conf->node_name) == 0) {
 			free(host);
 			break;
 		}
@@ -5566,7 +5566,7 @@ _gids_cache_lookup(char *user, gid_t gid)
 	idx = _gids_hashtbl_idx(user);
 	p = gids_hashtbl[idx];
 	while (p) {
-		if (strcmp(p->user, user) == 0 && p->gid == gid) {
+		if (xstrcmp(p->user, user) == 0 && p->gid == gid) {
 			slurm_ctl_conf_t *cf = slurm_conf_lock();
 			int group_ttl = cf->group_info & GROUP_TIME_MASK;
 			slurm_conf_unlock();

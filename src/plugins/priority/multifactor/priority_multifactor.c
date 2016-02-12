@@ -342,7 +342,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	char *old_file, *new_file, *state_file;
 	Buf buffer;
 
-	if (!strcmp(slurmctld_conf.state_save_location, "/dev/null")) {
+	if (!xstrcmp(slurmctld_conf.state_save_location, "/dev/null")) {
 		error("Can not save priority state information, "
 		      "StateSaveLocation is /dev/null");
 		return error_code;

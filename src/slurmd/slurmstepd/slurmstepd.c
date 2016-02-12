@@ -59,6 +59,7 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -306,11 +307,11 @@ static int _handle_spank_mode (int argc, char *argv[])
 
 	debug("Running spank/%s for jobid [%u] uid [%u]", mode, jobid, uid);
 
-	if (strcmp (mode, "prolog") == 0) {
+	if (xstrcmp (mode, "prolog") == 0) {
 		if (spank_job_prolog (jobid, uid) < 0)
 			return (-1);
 	}
-	else if (strcmp (mode, "epilog") == 0) {
+	else if (xstrcmp (mode, "epilog") == 0) {
 		if (spank_job_epilog (jobid, uid) < 0)
 			return (-1);
 	}
@@ -326,12 +327,12 @@ static int _handle_spank_mode (int argc, char *argv[])
  */
 static int _process_cmdline (int argc, char *argv[])
 {
-	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
+	if ((argc == 2) && (xstrcmp(argv[1], "getenv") == 0)) {
 		print_rlimits();
 		_dump_user_env();
 		exit(0);
 	}
-	if ((argc == 3) && (strcmp(argv[1], "spank") == 0)) {
+	if ((argc == 3) && (xstrcmp(argv[1], "spank") == 0)) {
 		if (_handle_spank_mode(argc, argv) < 0)
 			exit (1);
 		exit (0);

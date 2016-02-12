@@ -244,7 +244,7 @@ static void _find_child_switches (int sw)
 		/* Find switch whose name is the name of this child.
 		 * and add its index to child index array */
 		for (i=0; i<switch_record_cnt; i++) {
-			if (strcmp(swname, switch_record_table[i].name) == 0) {
+			if (xstrcmp(swname, switch_record_table[i].name) == 0) {
 				switch_record_table[sw].switch_index[cldx] = i;
 				switch_record_table[i].parent = sw;
 				cldx++;
@@ -288,7 +288,7 @@ static void _validate_switches(void)
 		/* See if switch name has already been defined. */
 		prior_ptr = switch_record_table;
 		for (j=0; j<i; j++, prior_ptr++) {
-			if (strcmp(switch_ptr->name, prior_ptr->name) == 0) {
+			if (xstrcmp(switch_ptr->name, prior_ptr->name) == 0) {
 				fatal("Switch (%s) has already been defined",
 				      prior_ptr->name);
 			}
@@ -460,7 +460,7 @@ static int _get_switch_inx(const char *name)
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		if (strcmp(switch_ptr->name, name) == 0)
+		if (xstrcmp(switch_ptr->name, name) == 0)
 			return i;
 	}
 

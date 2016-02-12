@@ -93,15 +93,15 @@ extern void parse_command_line(int argc, char *argv[])
 			params.command = xstrdup(optarg);
 			break;
 		case 'D':
-			if (!strcmp(optarg, "j"))
+			if (!xstrcmp(optarg, "j"))
 				tmp = JOBS;
-			else if (!strcmp(optarg, "s"))
+			else if (!xstrcmp(optarg, "s"))
 				tmp = SLURMPART;
-			else if (!strcmp(optarg, "b"))
+			else if (!xstrcmp(optarg, "b"))
 				tmp = BGPART;
-			else if (!strcmp(optarg, "c"))
+			else if (!xstrcmp(optarg, "c"))
 				tmp = COMMANDS;
-			else if (!strcmp(optarg, "r"))
+			else if (!xstrcmp(optarg, "r"))
 				tmp = RESERVATIONS;
 
 			params.display = tmp;

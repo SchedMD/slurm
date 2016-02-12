@@ -318,7 +318,7 @@ slurm_find_group_user(struct passwd *pwd, gid_t gid)
 		if (grpp->gr_gid != gid)
 			continue;
 		for (cc = 0; grpp->gr_mem[cc] ; cc++) {
-			if (strcmp(pwd->pw_name, grpp->gr_mem[cc]) == 0) {
+			if (xstrcmp(pwd->pw_name, grpp->gr_mem[cc]) == 0) {
 				endgrent();
 				return 1;
 			}
@@ -386,7 +386,7 @@ extern int slurm_valid_uid_gid(uid_t uid, gid_t *gid, char **user_name,
 	}
 
 	for (i = 0; grp->gr_mem[i]; i++) {
-		if (!strcmp(result->pw_name, grp->gr_mem[i])) {
+		if (!xstrcmp(result->pw_name, grp->gr_mem[i])) {
 			result->pw_gid = *gid;
 			return 1;
 		}

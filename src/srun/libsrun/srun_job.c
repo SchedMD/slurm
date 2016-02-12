@@ -840,13 +840,13 @@ _job_create_structure(allocation_info_t *ainfo)
 		/* Replace the runjob line with correct information. */
 		int i, matches = 0;
 		for (i = 0; i < opt.argc; i++) {
-			if (!strcmp(opt.argv[i], "-p")) {
+			if (!xstrcmp(opt.argv[i], "-p")) {
 				i++;
 				xfree(opt.argv[i]);
 				opt.argv[i]  = xstrdup_printf(
 					"%d", opt.ntasks_per_node);
 				matches++;
-			} else if (!strcmp(opt.argv[i], "--np")) {
+			} else if (!xstrcmp(opt.argv[i], "--np")) {
 				i++;
 				xfree(opt.argv[i]);
 				opt.argv[i]  = xstrdup_printf(
@@ -946,7 +946,7 @@ static int _become_user (void)
 	char *user = uid_to_string(opt.uid);
 	gid_t gid = gid_from_uid(opt.uid);
 
-	if (strcmp(user, "nobody") == 0) {
+	if (xstrcmp(user, "nobody") == 0) {
 		xfree(user);
 		return (error ("Invalid user id %u: %m", opt.uid));
 	}

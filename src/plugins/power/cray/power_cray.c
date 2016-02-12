@@ -434,7 +434,7 @@ static void _get_capabilities(void)
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e" and message "err_msg" fields
 		 * are currently ignored. */
-		if (!strcmp(iter.key, "groups")) {
+		if (!xstrcmp(iter.key, "groups")) {
 			ents = _json_parse_array_capabilities(j_obj, iter.key,
 							      &num_ent);
 			break;
@@ -534,15 +534,15 @@ static void _parse_capable_control(json_object *j_control,
 				break;
 			case json_type_string:
 //				info("%s: Key string %s", __func__, iter.key);
-				if (!strcmp(iter.key, "name"))
+				if (!xstrcmp(iter.key, "name"))
 					p = json_object_get_string(iter.val);
 				break;
 			case json_type_int:
 //				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
-				if (!strcmp(iter.key, "max"))
+				if (!xstrcmp(iter.key, "max"))
 					max_watts = x;
-				else if (!strcmp(iter.key, "min"))
+				else if (!xstrcmp(iter.key, "min"))
 					min_watts = x;
 				break;
 			default:
@@ -551,10 +551,10 @@ static void _parse_capable_control(json_object *j_control,
 	}
 
 	if (p) {
-		if (!strcmp(p, "accel")) {
+		if (!xstrcmp(p, "accel")) {
 			ent->accel_max_watts = max_watts;
 			ent->accel_min_watts = min_watts;
-		} else if (!strcmp(p, "node")) {
+		} else if (!xstrcmp(p, "node")) {
 			ent->node_max_watts = max_watts;
 			ent->node_min_watts = min_watts;
 		}
@@ -646,9 +646,9 @@ static void _json_parse_capabilities(json_object *jobj,
 				break;
 			case json_type_array:
 //				info("%s: Key array %s", __func__, iter.key);
-				if (!strcmp(iter.key, "controls")) {
+				if (!xstrcmp(iter.key, "controls")) {
 					_parse_capable_controls(jobj, ent);
-				} else if (!strcmp(iter.key, "nids")) {
+				} else if (!xstrcmp(iter.key, "nids")) {
 					_parse_nids(jobj, ent, "nids");
 				}
 				break;
@@ -749,7 +749,7 @@ static void _get_caps(void)
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e" and message "err_msg" fields
 		 * are currently ignored. */
-		if (!strcmp(iter.key, "nids")) {
+		if (!xstrcmp(iter.key, "nids")) {
 			ents = _json_parse_array_caps(j_obj, iter.key,
 						      &num_ent);
 			break;
@@ -830,13 +830,13 @@ static void _parse_caps_control(json_object *j_control,
 				break;
 			case json_type_string:
 //				info("%s: Key string %s", __func__, iter.key);
-				if (!strcmp(iter.key, "name"))
+				if (!xstrcmp(iter.key, "name"))
 					p = json_object_get_string(iter.val);
 				break;
 			case json_type_int:
 //				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
-				if (!strcmp(iter.key, "val"))
+				if (!xstrcmp(iter.key, "val"))
 					cap_watts = x;
 				break;
 			default:
@@ -845,7 +845,7 @@ static void _parse_caps_control(json_object *j_control,
 	}
 
 	if (p) {
-		if (!strcmp(p, "node")) {
+		if (!xstrcmp(p, "node")) {
 			ent->cap_watts = cap_watts;
 		}
 	}
@@ -905,14 +905,14 @@ static void _json_parse_nid(json_object *jobj, power_config_nodes_t *ent)
 				break;
 			case json_type_array:
 //				info("%s: Key array %s", __func__, iter.key);
-				if (!strcmp(iter.key, "controls")) {
+				if (!xstrcmp(iter.key, "controls")) {
 					_parse_caps_controls(jobj, ent);
 				}
 				break;
 			case json_type_int:
 //				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
-				if (!strcmp(iter.key, "nid")) {
+				if (!xstrcmp(iter.key, "nid")) {
 					ent->node_name = xmalloc(sizeof(char *));
 					xstrfmtcat(ent->node_name[0],
 						   "nid%5.5d", x);
@@ -971,7 +971,7 @@ static void _get_nodes_ready(void)
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e", message "err_msg", "off", and
 		 * "on" fields are currently ignored. */
-		if (!strcmp(iter.key, "ready")) {
+		if (!xstrcmp(iter.key, "ready")) {
 			ents = _json_parse_ready(j_obj, iter.key, &num_ent);
 			break;
 		}
@@ -1031,7 +1031,7 @@ _json_parse_ready(json_object *jobj, char *key, int *num)
 				break;
 			case json_type_array:
 //				info("%s: Key array %s", __func__, iter.key);
-				if (!strcmp(iter.key, "ready")) {
+				if (!xstrcmp(iter.key, "ready")) {
 					ents->state = 1;	/* 1=ready */
 					_parse_nids(jobj, ents, "ready");
 				}
@@ -1106,7 +1106,7 @@ static void _get_node_energy_counter(void)
 	json_object_object_foreachC(j_obj, iter) {
 		/* NOTE: The error number "e", message "err_msg", and
 		 * "nid_count" fields are currently ignored. */
-		if (!strcmp(iter.key, "nodes")) {
+		if (!xstrcmp(iter.key, "nodes")) {
 			ents = _json_parse_array_energy(j_obj, iter.key,
 							&num_ent);
 			break;
@@ -1223,9 +1223,9 @@ static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
 			case json_type_int:
 //				info("%s: Key int %s", __func__, iter.key);
 				x = json_object_get_int64(iter.val);
-				if (!strcmp(iter.key, "energy_ctr")) {
+				if (!xstrcmp(iter.key, "energy_ctr")) {
 					ent->joule_counter = x;
-				} else if (!strcmp(iter.key, "nid")) {
+				} else if (!xstrcmp(iter.key, "nid")) {
 					ent->node_cnt = 1;
 					ent->node_name = xmalloc(sizeof(char*));
 					ent->node_name[0] = xmalloc(10);
@@ -1236,7 +1236,7 @@ static void _json_parse_energy(json_object *jobj, power_config_nodes_t *ent)
 			case json_type_string:
 //				info("%s: Key string %s", __func__, iter.key);
 				p = json_object_get_string(iter.val);
-				if (!strcmp(iter.key, "time")) {
+				if (!xstrcmp(iter.key, "time")) {
 					ent->time_usec =
 						_time_str2num((char *) p);
 				}

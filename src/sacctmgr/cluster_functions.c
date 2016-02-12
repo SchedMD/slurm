@@ -1045,7 +1045,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	slurmdb_hierarchical_rec = list_peek(slurmdb_hierarchical_rec_list);
 	assoc = slurmdb_hierarchical_rec->assoc;
-	if (strcmp(assoc->acct, "root")) {
+	if (xstrcmp(assoc->acct, "root")) {
 		fprintf(stderr, "Root association not on the top it was %s\n",
 			assoc->acct);
 	} else

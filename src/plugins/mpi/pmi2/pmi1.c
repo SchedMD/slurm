@@ -527,7 +527,7 @@ _handle_pmi1_cmd_buf(int fd, int lrank, int buf_len, char *buf)
 
 	i = 0;
 	while (pmi1_cmd_handlers[i].cmd != NULL) {
-		if (!strcmp(req->cmd, pmi1_cmd_handlers[i].cmd))
+		if (!xstrcmp(req->cmd, pmi1_cmd_handlers[i].cmd))
 			break;
 		i ++;
 	}

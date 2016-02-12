@@ -103,7 +103,7 @@ scontrol_print_block (char *block_name)
 	block_ptr = block_info_ptr->block_array;
 	for (i = 0; i < block_info_ptr->record_count; i++) {
 		if (block_name
-		    && strcmp(block_name, block_ptr[i].bg_block_id))
+		    && xstrcmp(block_name, block_ptr[i].bg_block_id))
 			continue;
 		print_cnt++;
 		slurm_print_block_info(

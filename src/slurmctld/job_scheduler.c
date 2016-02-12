@@ -162,7 +162,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 		if (job_ptr->user_id != user_id)
 			continue;
 		if (job_name && job_ptr->name &&
-		    strcmp(job_name, job_ptr->name))
+		    xstrcmp(job_name, job_ptr->name))
 			continue;
 		list_append(job_queue, job_ptr);
 	}
@@ -586,7 +586,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job, bool locked)
 	int error_code;
 
 	if (select_serial == -1) {
-		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
 			select_serial = 0;
 		else
 			select_serial = 1;
@@ -1096,18 +1096,18 @@ static int _schedule(uint32_t job_limit)
 		char *prio_type = slurm_get_priority_type();
 #ifdef HAVE_BG
 		/* On BlueGene, do FIFO only with sched/backfill */
-		if (strcmp(sched_type, "sched/backfill") == 0)
+		if (xstrcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 #endif
-		if ((strcmp(sched_type, "sched/builtin") == 0) &&
-		    (strcmp(prio_type, "priority/basic") == 0) &&
+		if ((xstrcmp(sched_type, "sched/builtin") == 0) &&
+		    (xstrcmp(prio_type, "priority/basic") == 0) &&
 		    _all_partition_priorities_same())
 			fifo_sched = true;
 		else
 			fifo_sched = false;
 		/* Disable avoiding of fragmentation with sched/wiki */
-		if ((strcmp(sched_type, "sched/wiki") == 0) ||
-		    (strcmp(sched_type, "sched/wiki2") == 0))
+		if ((xstrcmp(sched_type, "sched/wiki") == 0) ||
+		    (xstrcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
 		xfree(prio_type);
@@ -2081,7 +2081,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 		slurmdb_qos_rec_t *qos;
 
 		qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-		if (strcmp(qos->description, "Normal QOS default") == 0)
+		if (xstrcmp(qos->description, "Normal QOS default") == 0)
 			launch_msg_ptr->qos = xstrdup("normal");
 		else
 			launch_msg_ptr->qos = xstrdup(qos->description);
@@ -2367,8 +2367,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	    (cache_job_ptr->details) &&
 	    (cache_job_ptr->details->orig_dependency) &&
 	    (job_ptr->details->orig_dependency) &&
-	    (!strcmp(cache_job_ptr->details->orig_dependency,
-		     job_ptr->details->orig_dependency))) {
+	    (!xstrcmp(cache_job_ptr->details->orig_dependency,
+		      job_ptr->details->orig_dependency))) {
 		return cache_results;
 	}
 
@@ -3891,7 +3891,7 @@ static int _valid_node_feature(char *feature)
 
 	feature_iter = list_iterator_create(avail_feature_list);
 	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
-		if (strcmp(feature_ptr->name, feature))
+		if (xstrcmp(feature_ptr->name, feature))
 			continue;
 		rc = SLURM_SUCCESS;
 		break;

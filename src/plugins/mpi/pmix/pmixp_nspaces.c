@@ -129,7 +129,7 @@ pmixp_namespace_t *pmixp_nspaces_find(const char *name)
 	pmixp_namespace_t *nsptr = NULL;
 	while (NULL != (nsptr = list_next(it))) {
 		xassert(nsptr->magic == PMIXP_NSPACE_MAGIC);
-		if (0 == strcmp(nsptr->name, name)) {
+		if (0 == xstrcmp(nsptr->name, name)) {
 			goto exit;
 		}
 	}
@@ -164,7 +164,7 @@ char *pmixp_nspace_resolve(const char *name, int rank)
 	ListIterator it = list_iterator_create(_pmixp_nspaces.nspaces);
 	while (NULL != (nsptr = list_next(it))) {
 		xassert(nsptr->magic == PMIXP_NSPACE_MAGIC);
-		if (0 == strcmp(nsptr->name, name)) {
+		if (0 == xstrcmp(nsptr->name, name)) {
 			break;
 		}
 	}

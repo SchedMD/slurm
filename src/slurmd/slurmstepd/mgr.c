@@ -2303,7 +2303,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 		msg_to_ctld = 0;
 	else {
 		select_type = slurm_get_select_type();
-		msg_to_ctld = strcmp(select_type, "select/serial");
+		msg_to_ctld = xstrcmp(select_type, "select/serial");
 		xfree(select_type);
 	}
 

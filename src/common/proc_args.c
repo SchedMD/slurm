@@ -281,21 +281,21 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 			buf[j][i] = '\0';
 			cur_ptr++;
 		}
-		if (strcmp(buf[0], "*") == 0)
+		if (xstrcmp(buf[0], "*") == 0)
 			/* default node distribution is block */
 			strcpy(buf[0], "block");
 		strcat(outstr, buf[0]);
-		if (strcmp(buf[1], "\0") != 0) {
+		if (xstrcmp(buf[1], "\0") != 0) {
 			strcat(outstr, ":");
-			if (!strcmp(buf[1], "*") || !strcmp(buf[1], "\0")) {
+			if (!xstrcmp(buf[1], "*") || !xstrcmp(buf[1], "\0")) {
 				/* default socket distribution is cyclic */
 				strcpy(buf[1], "cyclic");
 			}
 			strcat(outstr, buf[1]);
 		}
-		if (strcmp(buf[2], "\0") != 0) {
+		if (xstrcmp(buf[2], "\0") != 0) {
 			strcat(outstr, ":");
-			if (!strcmp(buf[2], "*") || !strcmp(buf[2], "\0")) {
+			if (!xstrcmp(buf[2], "*") || !xstrcmp(buf[2], "\0")) {
 				/* default core dist is inherited socket dist */
 				strcpy(buf[2], buf[1]);
 			}

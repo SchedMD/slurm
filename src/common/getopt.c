@@ -580,7 +580,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	 then exchange with previous non-options as if it were an option,
 	 then skip everything else like a non-option.  */
 
-      if (optind != argc && !strcmp (argv[optind], "--"))
+      if (optind != argc && !xstrcmp (argv[optind], "--"))
 	{
 	  optind++;
 

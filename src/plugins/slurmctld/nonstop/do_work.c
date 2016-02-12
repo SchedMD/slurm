@@ -889,7 +889,7 @@ static char *_job_node_features(struct job_record *job_ptr,
 			    !node_feat_ptr->name ||
 			    !node_feat_ptr->node_bitmap ||
 			    !bit_test(node_feat_ptr->node_bitmap, node_inx) ||
-			    strcmp(job_feat_ptr->name, node_feat_ptr->name))
+			    xstrcmp(job_feat_ptr->name, node_feat_ptr->name))
 				continue;
 			if (req_feat)
 				xstrcat(req_feat, "&");
@@ -969,7 +969,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 	}
 
 	for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
-		if (!strcmp(node_name, job_fail_ptr->fail_node_names[i])) {
+		if (!xstrcmp(node_name, job_fail_ptr->fail_node_names[i])) {
 			cpu_cnt = job_fail_ptr->fail_node_cpus[i];
 			failed_inx = i;
 			break;
@@ -1021,7 +1021,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 		}
 	}
 	if (job_fail_ptr->pending_node_name &&
-	    !strcmp(job_fail_ptr->pending_node_name, node_name)) {
+	    !xstrcmp(job_fail_ptr->pending_node_name, node_name)) {
 		/* Abort pending replacement request and get back time
 		 * extension (if any) */
 		_kill_job(job_fail_ptr->pending_job_id, cmd_uid);
@@ -1166,7 +1166,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	}
 
 	for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
-		if (!strcmp(node_name, job_fail_ptr->fail_node_names[i])) {
+		if (!xstrcmp(node_name, job_fail_ptr->fail_node_names[i])) {
 			cpu_cnt = job_fail_ptr->fail_node_cpus[i];
 			failed_inx = i;
 			break;
@@ -1214,7 +1214,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 		}
 	}
 	if (job_fail_ptr->pending_node_name) {
-		if (strcmp(job_fail_ptr->pending_node_name, node_name)) {
+		if (xstrcmp(job_fail_ptr->pending_node_name, node_name)) {
 			xstrfmtcat(resp, "%s EREPLACEPENDING %s",
 				   SLURM_VERSION_STRING,
 				   job_fail_ptr->pending_node_name);

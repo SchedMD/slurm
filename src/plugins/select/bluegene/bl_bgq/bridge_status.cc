@@ -911,8 +911,8 @@ static void _do_block_action_poll(void)
 			if ((bg_record->magic != BLOCK_MAGIC)
 			    || !bg_record->bg_block_id
 			    || (bg_record->state != BG_BLOCK_INITED)
-			    || strcmp(bg_record->bg_block_id,
-				      block_ptr->getName().c_str()))
+			    || xstrcmp(bg_record->bg_block_id,
+				       block_ptr->getName().c_str()))
 				continue;
 
 			bg_record->action = bridge_translate_action(

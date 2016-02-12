@@ -283,7 +283,7 @@ static const char *_set_sview_config(sview_config_t *sview_config,
 		type = "unknown";
 		break;
 	}
-	if (strcmp(type, "unknown")) {
+	if (xstrcmp(type, "unknown")) {
 		global_send_update_msg = 1;
 
 	}

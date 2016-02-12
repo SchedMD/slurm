@@ -262,10 +262,10 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	gres_count[f] = 1;
 	for (k = 0; k < gres_conf_lines; k++) {
 		if ((k+1 < gres_conf_lines) &&
-		    (strcmp(gres_name[k],gres_name[k+1]) == 0))
+		    (xstrcmp(gres_name[k],gres_name[k+1]) == 0))
 			gres_count[f]++;
 		if ((k+1 < gres_conf_lines) &&
-		    (strcmp(gres_name[k],gres_name[k+1]) != 0)) {
+		    (xstrcmp(gres_name[k],gres_name[k+1]) != 0)) {
 			f++;
 			gres_count[f] = 1;
 		}

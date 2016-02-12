@@ -282,7 +282,7 @@ extern int sort_user_dec(void *v1, void *v2)
 	if (!user_a->name || !user_b->name)
 		return 0;
 
-	diff = strcmp(user_a->name, user_b->name);
+	diff = xstrcmp(user_a->name, user_b->name);
 
 	if (diff > 0)
 		return 1;
@@ -313,7 +313,7 @@ extern int sort_cluster_dec(void *v1, void *v2)
 	if (!cluster_a->name || !cluster_b->name)
 		return 0;
 
-	diff = strcmp(cluster_a->name, cluster_b->name);
+	diff = xstrcmp(cluster_a->name, cluster_b->name);
 
 	if (diff > 0)
 		return 1;
@@ -345,7 +345,7 @@ extern int sort_assoc_dec(void *v1, void *v2)
 	if (!assoc_a->acct || !assoc_b->acct)
 		return 0;
 
-	diff = strcmp(assoc_a->acct, assoc_b->acct);
+	diff = xstrcmp(assoc_a->acct, assoc_b->acct);
 
 	if (diff > 0)
 		return 1;
@@ -357,7 +357,7 @@ extern int sort_assoc_dec(void *v1, void *v2)
 	else if (!assoc_b->user)
 		return -1;
 
-	diff = strcmp(assoc_a->user, assoc_b->user);
+	diff = xstrcmp(assoc_a->user, assoc_b->user);
 
 	if (diff > 0)
 		return 1;
@@ -386,7 +386,7 @@ extern int sort_reservations_dec(void *v1, void *v2)
 	if (!resv_a->cluster || !resv_b->cluster)
 		return 0;
 
-	diff = strcmp(resv_a->cluster, resv_b->cluster);
+	diff = xstrcmp(resv_a->cluster, resv_b->cluster);
 
 	if (diff > 0)
 		return 1;
@@ -396,7 +396,7 @@ extern int sort_reservations_dec(void *v1, void *v2)
 	if (!resv_a->name || !resv_b->name)
 		return 0;
 
-	diff = strcmp(resv_a->name, resv_b->name);
+	diff = xstrcmp(resv_a->name, resv_b->name);
 
 	if (diff > 0)
 		return 1;

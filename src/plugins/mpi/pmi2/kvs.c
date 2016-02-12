@@ -270,7 +270,7 @@ kvs_get(char *key)
 	bucket = &kvs_hash[HASH(key)];
 	if (bucket->count > 0) {
 		for(i = 0; i < bucket->count; i ++) {
-			if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) {
+			if (! xstrcmp(key, bucket->pairs[KEY_INDEX(i)])) {
 				val = bucket->pairs[VAL_INDEX(i)];
 				break;
 			}
@@ -294,7 +294,7 @@ kvs_put(char *key, char *val)
 
 	if (! no_dup_keys) {
 		for (i = 0; i < bucket->count; i ++) {
-			if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) {
+			if (! xstrcmp(key, bucket->pairs[KEY_INDEX(i)])) {
 				/* replace the k-v pair */
 				xfree(bucket->pairs[VAL_INDEX(i)]);
 				bucket->pairs[VAL_INDEX(i)] = xstrdup(val);

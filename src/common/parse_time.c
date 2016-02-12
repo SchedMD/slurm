@@ -56,6 +56,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
 #include "src/common/strlcpy.h"
+#include "src/common/xstring.h"
 
 #define _RUN_STAND_ALONE 0
 
@@ -728,9 +729,9 @@ slurm_make_time_str (time_t *time, char *string, int size)
 			/* Format MM/DD-HH:MM:SS */
 			display_fmt = "%m/%d-%T";
 #endif
-			if ((!fmt) || (!*fmt) || (!strcmp(fmt, "standard"))) {
+			if ((!fmt) || (!*fmt) || (!xstrcmp(fmt, "standard"))) {
 				;
-			} else if (strcmp(fmt, "relative") == 0) {
+			} else if (xstrcmp(fmt, "relative") == 0) {
 				use_relative_format = true;
 			} else if ((strchr(fmt, '%')  == NULL) ||
 				   (strlen(fmt) >= sizeof(fmt_buf))) {

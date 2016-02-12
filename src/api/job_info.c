@@ -89,7 +89,7 @@ static uint32_t _threads_per_core(char *host)
 	slurm_mutex_lock(&job_node_info_lock);
 	for (i = 0; i < job_node_ptr->record_count; i++) {
 		if (job_node_ptr->node_array[i].name &&
-		    !strcmp(host, job_node_ptr->node_array[i].name)) {
+		    !xstrcmp(host, job_node_ptr->node_array[i].name)) {
 			threads = job_node_ptr->node_array[i].threads;
 			break;
 		}
@@ -735,7 +735,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 * same as the last host, print the report of the last
 			 * group of hosts that had identical allocation values.
 			 */
-			if (strcmp(tmp1, tmp2) ||
+			if (xstrcmp(tmp1, tmp2) ||
 			    (last_mem_alloc_ptr != job_resrcs->memory_allocated) ||
 			    (job_resrcs->memory_allocated &&
 			     (last_mem_alloc !=

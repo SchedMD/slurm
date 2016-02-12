@@ -59,6 +59,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
 #include "src/common/macros.h"
+#include "src/common/xstring.h"
 
 
 #ifndef INET_ADDRSTRLEN
@@ -306,14 +307,14 @@ static int validate_hostent_copy(
 		return(-1);
 	if (src->h_name == dst->h_name)
 		return(-1);
-	if (strcmp(src->h_name, dst->h_name))
+	if (xstrcmp(src->h_name, dst->h_name))
 		return(-1);
 	if (src->h_addrtype != dst->h_addrtype)
 		return(-1);
 	if (src->h_length != dst->h_length)
 		return(-1);
 	for (p=src->h_aliases, q=dst->h_aliases; *p; p++, q++)
-		if ((!q) || (p == q) || (strcmp(*p, *q)))
+		if ((!q) || (p == q) || (xstrcmp(*p, *q)))
 			return(-1);
 	for (p=src->h_addr_list, q=dst->h_addr_list; *p; p++, q++)
 		if ((!q) || (p == q) || (memcmp(*p, *q, src->h_length)))

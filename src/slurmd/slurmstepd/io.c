@@ -1051,10 +1051,10 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			task->from_stdout = -1;  /* not used */
 		}
 	} else if (task->ofname != NULL &&
-		   (!job->labelio || strcmp(task->ofname, "/dev/null")==0)) {
+		   (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0)) {
 #else
 	if (task->ofname != NULL &&
-	    (!job->labelio || strcmp(task->ofname, "/dev/null")==0) ) {
+	    (!job->labelio || xstrcmp(task->ofname, "/dev/null")==0) ) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */
@@ -1137,10 +1137,10 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			task->from_stderr = -1;  /* not used */
 		}
 	} else if (task->efname != NULL &&
-		   (!job->labelio || strcmp(task->efname, "/dev/null")==0)) {
+		   (!job->labelio || xstrcmp(task->efname, "/dev/null")==0)) {
 #else
 	if (task->efname != NULL &&
-	    (!job->labelio || strcmp(task->efname, "/dev/null")==0) ) {
+	    (!job->labelio || xstrcmp(task->efname, "/dev/null")==0) ) {
 #endif
 		int count = 0;
 		/* open file on task's stdout */
@@ -1999,14 +1999,14 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 		if (job->task[ii]->ofname == NULL) {
 			of_num_null++;
 			of_lastnull = ii;
-		} else if (strcmp(job->task[ii]->ofname, "/dev/null")==0) {
+		} else if (xstrcmp(job->task[ii]->ofname, "/dev/null")==0) {
 			of_num_devnull++;
 		}
 
 		if (job->task[ii]->efname == NULL) {
 			ef_num_null++;
 			ef_lastnull = ii;
-		} else if (strcmp(job->task[ii]->efname, "/dev/null")==0) {
+		} else if (xstrcmp(job->task[ii]->efname, "/dev/null")==0) {
 			ef_num_devnull++;
 		}
 	}
@@ -2034,11 +2034,11 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 
 	for (ii = 1; ii < job->node_tasks; ii++) {
 		if (!job->task[ii]->ofname || !job->task[0]->ofname ||
-		    strcmp(job->task[ii]->ofname, job->task[0]->ofname) != 0)
+		    xstrcmp(job->task[ii]->ofname, job->task[0]->ofname) != 0)
 			of_all_same = false;
 
 		if (!job->task[ii]->efname || !job->task[0]->efname ||
-		    strcmp(job->task[ii]->efname, job->task[0]->efname) != 0)
+		    xstrcmp(job->task[ii]->efname, job->task[0]->efname) != 0)
 			ef_all_same = false;
 	}
 
@@ -2049,7 +2049,7 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 		*errpattern = SLURMD_ALL_SAME;
 
 	if (job->task[0]->ofname && job->task[0]->efname &&
-	    strcmp(job->task[0]->ofname, job->task[0]->efname)==0)
+	    xstrcmp(job->task[0]->ofname, job->task[0]->efname)==0)
 		*same_out_err_files = true;
 
 	if (*outpattern != SLURMD_UNKNOWN && *errpattern != SLURMD_UNKNOWN)
@@ -2059,13 +2059,13 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 		for (jj = ii+1; jj < job->node_tasks; jj++) {
 
 			if (!job->task[ii]->ofname || !job->task[jj]->ofname ||
-			    strcmp(job->task[ii]->ofname,
-				   job->task[jj]->ofname) == 0)
+			    xstrcmp(job->task[ii]->ofname,
+				    job->task[jj]->ofname) == 0)
 				of_all_unique = false;
 
 			if (!job->task[ii]->efname || !job->task[jj]->efname ||
-			    strcmp(job->task[ii]->efname,
-				   job->task[jj]->efname) == 0)
+			    xstrcmp(job->task[ii]->efname,
+				    job->task[jj]->efname) == 0)
 				ef_all_unique = false;
 		}
 	}
@@ -2081,8 +2081,8 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 		for (ii = 0; ii < job->node_tasks; ii++) {
 			if (job->task[ii]->ofname &&
 			    job->task[ii]->efname &&
-			    strcmp(job->task[ii]->ofname,
-				   job->task[ii]->efname) != 0) {
+			    xstrcmp(job->task[ii]->ofname,
+				    job->task[ii]->efname) != 0) {
 				*same_out_err_files = false;
 				break;
 			}

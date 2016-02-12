@@ -205,9 +205,9 @@ int main(int argc, char *argv[])
 
 	while (1) {
 		if (slurmdbd_conf->dbd_backup &&
-		    (!strcmp(node_name_short, slurmdbd_conf->dbd_backup) ||
-		     !strcmp(node_name_long, slurmdbd_conf->dbd_backup) ||
-		     !strcmp(slurmdbd_conf->dbd_backup, "localhost"))) {
+		    (!xstrcmp(node_name_short, slurmdbd_conf->dbd_backup) ||
+		     !xstrcmp(node_name_long, slurmdbd_conf->dbd_backup) ||
+		     !xstrcmp(slurmdbd_conf->dbd_backup, "localhost"))) {
 			info("slurmdbd running in background mode");
 			have_control = false;
 			backup = true;
@@ -217,9 +217,9 @@ int main(int argc, char *argv[])
 			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn, 0);
 		} else if (slurmdbd_conf->dbd_host &&
-			   (!strcmp(slurmdbd_conf->dbd_host, node_name_short) ||
-			    !strcmp(slurmdbd_conf->dbd_host, node_name_long) ||
-			    !strcmp(slurmdbd_conf->dbd_host, "localhost"))) {
+			   (!xstrcmp(slurmdbd_conf->dbd_host, node_name_short)||
+			    !xstrcmp(slurmdbd_conf->dbd_host, node_name_long) ||
+			    !xstrcmp(slurmdbd_conf->dbd_host, "localhost"))) {
 			backup = false;
 			have_control = true;
 		} else {

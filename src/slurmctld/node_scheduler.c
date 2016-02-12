@@ -371,7 +371,7 @@ static int _build_gres_alloc_string(struct job_record *job_ptr)
 		char *select_type = slurm_get_select_type();
 		/* Find out which select type plugin we have so we can decide
 		 * what value to look for. */
-		if (!strcmp(select_type, "select/cray"))
+		if (!xstrcmp(select_type, "select/cray"))
 			val_type = GRES_VAL_TYPE_CONFIG;
 		else
 			val_type = GRES_VAL_TYPE_ALLOC;
@@ -482,7 +482,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	trace_job(job_ptr, __func__, "");
 
 	if (select_serial == -1) {
-		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
 			select_serial = 0;
 		else
 			select_serial = 1;
@@ -936,7 +936,7 @@ extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 		     i < node_record_count; i++, node_ptr++) {
 			/* if there is a mcs_label -> OK if it's the same */
 			if ((node_ptr->mcs_label != NULL) &&
-			     strcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
+			     xstrcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
 				bit_clear(usable_node_mask, i);
 			}
 			/* if no mcs_label -> OK if no jobs running */
@@ -2689,7 +2689,7 @@ extern int list_find_feature(void *feature_entry, void *key)
 		return 1;
 
 	feature_ptr = (node_feature_t *) feature_entry;
-	if (strcmp(feature_ptr->name, (char *) key) == 0)
+	if (xstrcmp(feature_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
 }

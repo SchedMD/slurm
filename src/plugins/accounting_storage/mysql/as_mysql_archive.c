@@ -1495,8 +1495,8 @@ static int _process_old_sql_line(const char *data_in,
 					xstrncat(new_cluster_name,
 						 data_in+start+1, (i-start-2));
 					if (*cluster_name) {
-						if (strcmp(*cluster_name,
-							   new_cluster_name))
+						if (xstrcmp(*cluster_name,
+							    new_cluster_name))
 							new_cluster = 1;
 						else
 							xfree(new_cluster_name);

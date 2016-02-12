@@ -85,7 +85,7 @@ static int _sort_cluster_grouping_dec(void *v1, void *v2)
 	if (!cluster_a->cluster || !cluster_b->cluster)
 		return 0;
 
-	diff = strcmp(cluster_a->cluster, cluster_b->cluster);
+	diff = xstrcmp(cluster_a->cluster, cluster_b->cluster);
 
 	if (diff > 0)
 		return 1;
@@ -126,7 +126,7 @@ static int _sort_acct_grouping_dec(void *v1, void *v2)
 	if ((wckey_b = strstr(tmp_acct_b, ":")))
 		*wckey_b++ = 0;
 
-	diff = strcmp(tmp_acct_a, tmp_acct_b);
+	diff = xstrcmp(tmp_acct_a, tmp_acct_b);
 
 	if (diff > 0)
 		return 1;
@@ -136,7 +136,7 @@ static int _sort_acct_grouping_dec(void *v1, void *v2)
 	if (!wckey_a || !wckey_b)
 		return 0;
 
-	diff = strcmp(wckey_a, wckey_b);
+	diff = xstrcmp(wckey_a, wckey_b);
 
 	if (diff > 0)
 		return 1;

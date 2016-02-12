@@ -835,7 +835,7 @@ static void _extract_series(FILE* fp, int stepx, bool header, hid_t gid_level,
 	data = get_hdf5_data(
 		gid_series, type, data_set_name, &size_data);
 	if (data) {
-		if (strcmp(subtype,SUBDATA_SUMMARY) != 0)
+		if (xstrcmp(subtype,SUBDATA_SUMMARY) != 0)
 			(*(ops->extract_series)) (fp, header, params.job_id,
 				 stepx, node_name, data_set_name,
 				 data, size_data);
@@ -875,8 +875,8 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 			continue;
 		}
 		if (params.node
-		    && strcmp(params.node, "*")
-		    && strcmp(params.node, jgrp_node_name))
+		    && xstrcmp(params.node, "*")
+		    && xstrcmp(params.node, jgrp_node_name))
 			continue;
 		gid_level = _get_series_parent(jgid_node);
 		if (gid_level == -1) {
@@ -1036,7 +1036,7 @@ static int _extract_data(void)
 			H5Gclose(jgid_level);
 			H5Gclose(jgid_node);
 
-			if (!params.series || !strcmp(params.series, "*")) {
+			if (!params.series || !xstrcmp(params.series, "*")) {
 				for (isx = 0; isx < num_series; isx++) {
 					if (strncasecmp(series_names[isx],
 							GRP_TASK,
@@ -1066,7 +1066,7 @@ static int _extract_data(void)
 			_delete_string_list(series_names, num_series);
 			series_names = NULL;
 			num_series = 0;
-			if (!params.series || !strcmp(params.series, "*"))
+			if (!params.series || !xstrcmp(params.series, "*"))
 				_extract_all_tasks(fp, jgid_step, jgid_nodes,
 						nnodes, stepx);
 
@@ -1443,7 +1443,7 @@ static void _get_all_task_series(FILE *fp, bool hd, hid_t jgid_step, int stepx)
 		if (jgid_node < 0)
 			fatal("Failed to open group %s", jgrp_node_name);
 		for (itx = 0; itx<ntasks; itx++) {
-			if (strcmp(jgrp_node_name, task_node_name[itx]) != 0)
+			if (xstrcmp(jgrp_node_name, task_node_name[itx]) != 0)
 				continue;
 			tid = task_id[itx];
 			series_name[itx] = xstrdup_printf("%s_%d %s",

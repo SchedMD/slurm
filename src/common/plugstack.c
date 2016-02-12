@@ -280,11 +280,11 @@ typedef enum {
 
 static cf_line_t _plugin_stack_line_type (const char *str)
 {
-	if (strcmp(str, REQUIRED) == 0)
+	if (xstrcmp(str, REQUIRED) == 0)
 		return (CF_REQUIRED);
-	else if (strcmp(str, OPTIONAL) == 0)
+	else if (xstrcmp(str, OPTIONAL) == 0)
 		return (CF_OPTIONAL);
-	else if (strcmp(str, INCLUDE) == 0)
+	else if (xstrcmp(str, INCLUDE) == 0)
 		return (CF_INCLUDE);
 	else {
 		error("spank: Invalid option \"%s\". Must be %s, %s or %s",
@@ -1003,7 +1003,7 @@ static int _opt_by_val(struct spank_plugin_opt *opt, int *optvalp)
 
 static int _opt_by_name(struct spank_plugin_opt *opt, char *optname)
 {
-	return (strcmp(opt->opt->name, optname) == 0);
+	return (xstrcmp(opt->opt->name, optname) == 0);
 }
 
 static int
@@ -1446,9 +1446,9 @@ struct opt_find_args {
 static int _opt_find(struct spank_plugin_opt *p,
 		     struct opt_find_args *args)
 {
-	if (strcmp(p->plugin->name, args->plugin_name) != 0)
+	if (xstrcmp(p->plugin->name, args->plugin_name) != 0)
 		return (0);
-	if (strcmp(p->opt->name, args->optname) != 0)
+	if (xstrcmp(p->opt->name, args->optname) != 0)
 		return (0);
 	return (1);
 }
@@ -1824,7 +1824,7 @@ int spank_symbol_supported (const char *name)
 		return (-1);
 
 	for (i = 0; i < n_spank_syms; i++) {
-		if (strcmp (spank_syms [i], name) == 0)
+		if (xstrcmp (spank_syms [i], name) == 0)
 			return (1);
 	}
 

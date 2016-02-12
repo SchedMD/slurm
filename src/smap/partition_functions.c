@@ -309,7 +309,7 @@ extern void get_bg_part(void)
 
 		itr = list_iterator_create(block_list);
 		while ((found_block = (db2_block_info_t*)list_next(itr))) {
-			if (!strcmp(block_ptr->mp_str, found_block->mp_str)) {
+			if (!xstrcmp(block_ptr->mp_str, found_block->mp_str)) {
 				block_ptr->letter_num =
 					found_block->letter_num;
 				break;

@@ -213,7 +213,7 @@ static uint16_t _get_gr_type(void)
 	if (slurmctld_conf.select_type_param & CR_CORE)
 		return GS_CORE;
 	if (slurmctld_conf.select_type_param & CR_CPU) {
-		if (!strcmp(slurmctld_conf.task_plugin, "task/none"))
+		if (!xstrcmp(slurmctld_conf.task_plugin, "task/none"))
 			return GS_CPU;
 		return GS_CPU2;
 	}
@@ -231,7 +231,7 @@ static uint16_t _get_part_gr_type(struct part_record *part_ptr)
 		if (part_ptr->cr_type & CR_CORE)
 			return GS_CORE;
 		if (part_ptr->cr_type & CR_CPU) {
-			if (!strcmp(slurmctld_conf.task_plugin, "task/none"))
+			if (!xstrcmp(slurmctld_conf.task_plugin, "task/none"))
 				return GS_CPU;
 			return GS_CPU2;
 		}
@@ -365,7 +365,7 @@ static int _find_gs_part(void *x, void *key)
 {
 	struct gs_part *gs_part_ptr = (struct gs_part *) x;
 	char *name = (char *) key;
-	if (!strcmp(name, gs_part_ptr->part_name))
+	if (!xstrcmp(name, gs_part_ptr->part_name))
 		return 1;
 	return 0;
 }

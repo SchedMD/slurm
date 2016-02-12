@@ -95,10 +95,10 @@ static int _check_status()
 			while ((block_name = list_next(itr))) {
 				for (i=0; i<block_ptr->record_count;
 				     i++) {
-					if (!strcmp(block_name,
-						    block_ptr->
-						    block_array[i].
-						    bg_block_id)) {
+					if (!xstrcmp(block_name,
+						     block_ptr->
+						     block_array[i].
+						     bg_block_id)) {
 						if (block_ptr->
 						    block_array[i].
 						    state == BG_BLOCK_FREE)

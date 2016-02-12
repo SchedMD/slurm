@@ -91,7 +91,7 @@ static bool _have_task_affinity(void)
 	bool rc = true;
 	char *plugin_name = slurm_get_task_plugin();
 
-	if (plugin_name && !strcmp(plugin_name, "task/none"))
+	if (plugin_name && !xstrcmp(plugin_name, "task/none"))
 		rc = false;
 	xfree(plugin_name);
 	return rc;

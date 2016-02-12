@@ -71,7 +71,7 @@ static int _sort_pids_by_name(void *x, void *y)
 	if (!rec_a->node_name || !rec_b->node_name)
 		return 0;
 
-	diff = strcmp(rec_a->node_name, rec_b->node_name);
+	diff = xstrcmp(rec_a->node_name, rec_b->node_name);
 	if (diff > 0)
 		return 1;
 	else if (diff < 0)

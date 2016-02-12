@@ -298,7 +298,7 @@ void *_forward_thread(void *arg)
 						ret_data_info->node_name =
 							xstrdup(name);
 					}
-					if (!strcmp(tmp,
+					if (!xstrcmp(tmp,
 						   ret_data_info->node_name)) {
 						node_found = 1;
 						break;
@@ -415,8 +415,8 @@ void *_fwd_tree_thread(void *arg)
 						list_iterator_create(ret_list);
 					while ((ret_data_info =
 						list_next(itr))) {
-						if (strcmp(ret_data_info->
-							   node_name, name))
+						if (xstrcmp(ret_data_info->
+							    node_name, name))
 							hostlist_delete_host(
 								fwd_tree->
 								tree_hl,

@@ -382,7 +382,7 @@ extern int basil_inventory(void)
 		 * ids (e.g. the interactive region) (Chris North)
 		 */
 
-		if ((job_ptr == NULL) && (strcmp(rsvn->batch_id, "UNKNOWN"))) {
+		if ((job_ptr == NULL) && (xstrcmp(rsvn->batch_id, "UNKNOWN"))) {
 			error("orphaned ALPS reservation %u, trying to remove",
 			      rsvn->rsvn_id);
 			rel_rc = basil_safe_release(rsvn->rsvn_id, inv);
@@ -536,7 +536,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			info("proc_type:%s xyz:%u:%u:%u",
 			     proc_type, x_coord, y_coord, z_coord
 #endif
-			if (strcmp(proc_type, "compute") != 0) {
+			if (xstrcmp(proc_type, "compute") != 0) {
 				/*
 				 * Switching a compute node to be a service node
 				 * can not happen at runtime: requires a reboot.

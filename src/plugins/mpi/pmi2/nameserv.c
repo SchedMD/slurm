@@ -59,7 +59,7 @@ name_lookup_local (char *name)
 	name_port_t *np;
 
 	np = local_name_list;
-	while (np && strcmp(np->name, name))
+	while (np && xstrcmp(np->name, name))
 		np = np->next;
 
 	return np ? xstrdup(np->port) : NULL;
@@ -71,7 +71,7 @@ name_publish_local (char *name, char *port)
 	name_port_t *np;
 
 	np = local_name_list;
-	while (np && strcmp(np->name, name))
+	while (np && xstrcmp(np->name, name))
 		np = np->next;
 	if (np) {
 		xfree(np->port);
@@ -94,7 +94,7 @@ name_unpublish_local (char *name)
 	pprev = &local_name_list;
 	np = *pprev;
 	while (np) {
-		if (strcmp(np->name, name)) {
+		if (xstrcmp(np->name, name)) {
 			pprev = &np->next;
 			np = np->next;
 		} else {

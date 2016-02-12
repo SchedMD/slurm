@@ -188,7 +188,7 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 		return 0;
 	}
 
-	if (!strcmp(part_ptr->nodes, "ALL")) {
+	if (!xstrcmp(part_ptr->nodes, "ALL")) {
 		bit_nset(part_ptr->node_bitmap, 0, node_record_count - 1);
 		xfree(part_ptr->nodes);
 		part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
@@ -628,7 +628,7 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc(&ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if (ver_str && !strcmp(ver_str, PART_STATE_VERSION))
+	if (ver_str && !xstrcmp(ver_str, PART_STATE_VERSION))
 		safe_unpack16(&protocol_version, buffer);
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -1053,10 +1053,11 @@ int list_find_part(void *part_entry, void *key)
 	if (key == NULL)
 		return 0;
 
-	if (strcmp(key, "universal_key") == 0)
+	if (xstrcmp(key, "universal_key") == 0)
 		return 1;
 
-	if (strcmp(((struct part_record *)part_entry)->name, (char *) key) == 0)
+	if (xstrcmp(((struct part_record *)part_entry)->name,
+		    (char *) key) == 0)
 		return 1;
 
 	return 0;
@@ -1409,7 +1410,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		if (default_part_name == NULL) {
 			info("update_part: setting default partition to %s",
 			     part_desc->name);
-		} else if (strcmp(default_part_name, part_desc->name) != 0) {
+		} else if (xstrcmp(default_part_name, part_desc->name) != 0) {
 			info("update_part: changing default "
 			     "partition from %s to %s",
 			     default_part_name, part_desc->name);
@@ -1816,7 +1817,7 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 	groups = xstrdup(part_ptr->allow_groups);
 	one_group_name = strtok_r(groups, ",", &saveptr);
 	while (one_group_name) {
-		if (strcmp (one_group_name, grp.gr_name) == 0) {
+		if (xstrcmp (one_group_name, grp.gr_name) == 0) {
 			ret = 1;
 			break;
 		}
@@ -2109,7 +2110,7 @@ extern int part_policy_valid_acct(
 		}
 
 		for (i = 0; part_ptr->allow_account_array[i]; i++) {
-			if (strcmp(part_ptr->allow_account_array[i], acct))
+			if (xstrcmp(part_ptr->allow_account_array[i], acct))
 				continue;
 			match = 1;
 			break;
@@ -2131,7 +2132,7 @@ extern int part_policy_valid_acct(
 			return SLURM_SUCCESS;
 		}
 		for (i = 0; part_ptr->deny_account_array[i]; i++) {
-			if (strcmp(part_ptr->deny_account_array[i], acct))
+			if (xstrcmp(part_ptr->deny_account_array[i], acct))
 				continue;
 			match = 1;
 			break;

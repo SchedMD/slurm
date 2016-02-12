@@ -244,7 +244,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		while ((row = mysql_fetch_row(result))) {
 			list_iterator_reset(itr);
 			while ((coord = list_next(itr))) {
-				if (!strcmp(coord->name, row[0]))
+				if (!xstrcmp(coord->name, row[0]))
 					break;
 			}
 
@@ -380,7 +380,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   since there could be multiple
 				   clusters here.
 				*/
-				if (!strcmp(assoc->acct, object->default_acct))
+				if (!xstrcmp(assoc->acct, object->default_acct))
 					assoc->is_def = 1;
 			}
 			list_iterator_destroy(assoc_itr);
@@ -398,8 +398,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 					   since there could be multiple
 					   clusters here.
 					*/
-					if (!strcmp(wckey->name,
-						    object->default_wckey))
+					if (!xstrcmp(wckey->name,
+						     object->default_wckey))
 						wckey->is_def = 1;
 				}
 				list_iterator_destroy(wckey_itr);
@@ -1371,7 +1371,7 @@ get_wckeys:
 		wckey_itr = list_iterator_create(wckey_list);
 		while ((user = list_next(itr))) {
 			while ((wckey = list_next(wckey_itr))) {
-				if (strcmp(wckey->user, user->name))
+				if (xstrcmp(wckey->user, user->name))
 					continue;
 
 				/* Set up the default.  This is needed

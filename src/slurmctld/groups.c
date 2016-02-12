@@ -203,7 +203,7 @@ extern uid_t *get_group_members(char *group_name)
 		}
 #endif
 	        if (grp_result->gr_gid == my_gid) {
-			if (strcmp(grp_result->gr_name, group_name)) {
+			if (xstrcmp(grp_result->gr_name, group_name)) {
 				debug("including members of group '%s' as it "
 				      "corresponds to the same gid as group"
 				      " '%s'",grp_result->gr_name,group_name);
@@ -291,7 +291,7 @@ static uid_t *_get_group_cache(char *group_name)
 
 	iter = list_iterator_create(group_cache_list);
 	while ((cache_rec = (struct group_cache_rec *) list_next(iter))) {
-		if (strcmp(group_name, cache_rec->group_name))
+		if (xstrcmp(group_name, cache_rec->group_name))
 			continue;
 		sz = sizeof(uid_t) * (cache_rec->uid_cnt + 1);
 		group_uids = (uid_t *) xmalloc(sz);

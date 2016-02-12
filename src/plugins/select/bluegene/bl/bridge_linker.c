@@ -464,7 +464,7 @@ static void _remove_jobs_on_block_and_reset(rm_job_list_t *job_list,
 		debug2("looking at block %s looking for %s",
 		       job_block, block_id);
 
-		if (strcmp(job_block, block_id)) {
+		if (xstrcmp(job_block, block_id)) {
 			free(job_block);
 			continue;
 		}
@@ -1757,12 +1757,12 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 		   believe it is.  If a problem does arise on P please
 		   report and just uncomment this check.
 		*/
-		/* if (!strcmp(user, bg_conf->slurm_user_name)) { */
+		/* if (!xstrcmp(user, bg_conf->slurm_user_name)) { */
 		/* 	free(user); */
 		/* 	continue; */
 		/* } */
 
-		if (user_name && !strcmp(user, user_name)) {
+		if (user_name && !xstrcmp(user, user_name)) {
 			found=1;
 			free(user);
 			continue;
@@ -2439,7 +2439,7 @@ extern int bridge_find_nodecard_num(rm_partition_t *block_ptr,
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
-		if (strcmp(my_card_name, card_name)) {
+		if (xstrcmp(my_card_name, card_name)) {
 			free(card_name);
 			continue;
 		}
