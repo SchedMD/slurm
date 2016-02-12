@@ -406,9 +406,8 @@ extern void scontrol_print_assoc_mgr_info(int argc, char *argv[])
 		/* We free every list before creating it. This way we ensure
 		 * we are just appending the last value if user repeats entity.
 		 */
-		if (!val) {
-			fprintf(stderr, "No value given for option %s\n",
-				tag);
+		if (!val || !val[0]) {
+			fprintf(stderr, "No value given for option %s\n", tag);
 			goto endit;
 		} else if (!strncasecmp(tag, "accounts", MAX(tag_len, 1))) {
 			if (!req.acct_list)
