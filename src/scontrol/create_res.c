@@ -240,16 +240,12 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 				xstrcatchar(tres_license, ',');
 			xstrfmtcat(tres_license, "%s:%s", name, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
-			if (tmp)
-				xfree(tmp);
 
 		} else if (xstrcasecmp(type, "bb") == 0) {
 			if (tres_bb && tres_bb[0] != '\0')
 				xstrcatchar(tres_bb, ',');
 			xstrfmtcat(tres_bb, "%s:%s", name, value_str);
 			token = strtok_r(NULL, ",", &saveptr1);
-			if (tmp)
-				xfree(tmp);
 
 		} else if (xstrcasecmp(type, "cpu") == 0) {
 			first = true;
@@ -319,9 +315,11 @@ static int _parse_resv_tres(char *val, resv_desc_msg_t  *resv_msg_ptr,
 		*free_tres_bb = 1;
 	}
 
+	xfree(tmp);
 	return SLURM_SUCCESS;
 
 error:
+	xfree(tmp);
 	xfree(tres_nodecnt);
 	xfree(tres_corecnt);
 	exit_code = 1;
