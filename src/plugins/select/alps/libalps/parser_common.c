@@ -50,7 +50,7 @@ void extract_attributes(const XML_Char **attr_list, char **reqv, int reqc)
 
 	while (--reqc >= 0) {
 		for (attr = attr_list, val = NULL; *attr; attr += 2) {
-			if (xstrcmp(reqv[reqc], *attr) == 0) {
+			if (strcmp(reqv[reqc], *attr) == 0) {
 				if (val != NULL)
 					fatal("multiple '%s' occurrences",
 					      *attr);
@@ -90,7 +90,7 @@ void eh_response(struct ud *ud, const XML_Char **attrs)
 	 * When the method call failed (ResponseData with status="FAILURE"),
 	 * it can happen that ALPS sets the 'protocol' to the empty string ("").
 	 */
-	if (*attribs[0] && xstrcmp(attribs[0], bv_names[ud->bp->version]) != 0)
+	if (*attribs[0] && strcmp(attribs[0], bv_names[ud->bp->version]) != 0)
 		fatal("Version mismatch: expected %s, but got %s",
 		      bv_names[ud->bp->version], attribs[0]);
 }
@@ -102,13 +102,13 @@ void eh_resp_data(struct ud *ud, const XML_Char **attrs)
 
 	extract_attributes(attrs, attr_std, ARRAY_SIZE(attr_std));
 
-	if (xstrcmp(attr_std[1], "SUCCESS") == 0) {
+	if (strcmp(attr_std[1], "SUCCESS") == 0) {
 		ud->error = BE_NONE;
 		/*
 		 * When the method call failed, ALPS in some cases sets the
 		 * 'method' to "UNDEFINED", hence verify this on success only.
 		 */
-		if (xstrcmp(attr_std[0], bm_names[ud->bp->method]) != 0)
+		if (strcmp(attr_std[0], bm_names[ud->bp->method]) != 0)
 			fatal("method mismatch in=%s, out=%s",
 			      bm_names[ud->bp->method], attr_std[0]);
 	} else {
@@ -118,13 +118,13 @@ void eh_resp_data(struct ud *ud, const XML_Char **attrs)
 
 		for (ud->error = BE_INTERNAL;
 		     ud->error < BE_UNKNOWN; ud->error++) {
-			if (xstrcmp(attr_err[0], be_names[ud->error]) == 0)
+			if (strcmp(attr_err[0], be_names[ud->error]) == 0)
 				break;
 		}
 		snprintf(ud->bp->msg, sizeof(ud->bp->msg), "%s ALPS %s error: ",
 			 attr_err[1], be_names[ud->error]);
 
-		if (xstrcmp(attr_err[1], "TRANSIENT") == 0)
+		if (strcmp(attr_err[1], "TRANSIENT") == 0)
 			ud->error |= BE_TRANSIENT;
 	}
 }
@@ -155,7 +155,7 @@ void eh_engine(struct ud *ud, const XML_Char **attrs)
 	 */
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
-	if (xstrcmp(attribs[0], "ALPS") != 0)
+	if (strcmp(attribs[0], "ALPS") != 0)
 		fatal("unknown engine name '%s'", attribs[0]);
 	strncpy(ud->bp->msg, attribs[1], sizeof(ud->bp->msg));
 }
@@ -177,15 +177,15 @@ void eh_node(struct ud *ud, const XML_Char **attrs)
 	strncpy(node.name, attribs[1], sizeof(node.name));
 
 	for (node.arch = BNA_X2; node.arch < BNA_MAX; node.arch++) {
-		if (xstrcmp(attribs[2], nam_arch[node.arch]) == 0)
+		if (strcmp(attribs[2], nam_arch[node.arch]) == 0)
 			break;
 	}
 	for (node.role = BNR_INTER; node.role < BNR_MAX; node.role++) {
-		if (xstrcmp(attribs[3], nam_noderole[node.role]) == 0)
+		if (strcmp(attribs[3], nam_noderole[node.role]) == 0)
 			break;
 	}
 	for (node.state = BNS_UP; node.state < BNS_MAX; node.state++) {
-		if (xstrcmp(attribs[4], nam_nodestate[node.state]) == 0)
+		if (strcmp(attribs[4], nam_nodestate[node.state]) == 0)
 			break;
 	}
 	ud->current_node.available = node.arch == BNA_XT &&
@@ -262,7 +262,7 @@ void eh_proc(struct ud *ud, const XML_Char **attrs)
 
 	if ( ud->bp->version < BV_5_1 ) {
 		for (proc.arch = BPT_X86_64; proc.arch < BPT_MAX; proc.arch++)
-			if (xstrcmp(attribs[1], nam_proc[proc.arch]) == 0)
+			if (strcmp(attribs[1], nam_proc[proc.arch]) == 0)
 				break;
 
 		if (atou32(attribs[2], &proc.clock_mhz) < 0)
@@ -319,7 +319,7 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 	extract_attributes(attrs, attribs, ARRAY_SIZE(attribs));
 
 	for (memory.type = BMT_OS; memory.type < BMT_MAX; memory.type++) {
-		if (xstrcmp(attribs[0], nam_memtype[memory.type]) == 0)
+		if (strcmp(attribs[0], nam_memtype[memory.type]) == 0)
 			break;
 	}
 	if (atou32(attribs[1], &memory.page_size_kb) < 0 ||
@@ -391,11 +391,11 @@ void eh_label(struct ud *ud, const XML_Char **attrs)
 	strncpy(label.name, attribs[0], sizeof(label.name));
 
 	for (label.type = BLT_HARD; label.type < BLT_MAX; label.type++) {
-		if (xstrcmp(attribs[1], nam_labeltype[label.type]) == 0)
+		if (strcmp(attribs[1], nam_labeltype[label.type]) == 0)
 			break;
 	}
 	for (label.disp = BLD_ATTRACT; label.disp < BLD_MAX; label.disp++) {
-		if (xstrcmp(attribs[2], nam_ldisp[label.disp]) == 0)
+		if (strcmp(attribs[2], nam_ldisp[label.disp]) == 0)
 			break;
 	}
 
@@ -492,7 +492,7 @@ void eh_command(struct ud *ud, const XML_Char **attrs)
 		else if (atou32(attribs[3], &new->memory) < 0)
 			fatal("invalid memory '%s'", attribs[3]);
 		for (new->arch = BNA_X2; new->arch < BNA_MAX; new->arch += 1)
-			if (xstrcmp(attribs[4], nam_arch[new->arch]) == 0)
+			if (strcmp(attribs[4], nam_arch[new->arch]) == 0)
 				break;
 		strncpy(new->cmd, attribs[5], sizeof(new->cmd));
 
@@ -564,22 +564,22 @@ static void _start_handler(void *user_data,
 
 	for (tag = BT_MESSAGE; tag < BT_MAX; tag++) {
 		if (table[tag].tag) {
-			if (xstrcmp(table[tag].tag, el) == 0) {
+			if (strcmp(table[tag].tag, el) == 0) {
 				/* since BM_inventory is returned for Arrays
 				   if the method is switch we need to "switch"
 				   it up here.
 				*/
 				if (ud->bp->method == BM_switch) {
-					if (!xstrcmp(table[tag].tag,
+					if (!strcmp(table[tag].tag,
 						     "ReservationArray"))
 						tag = BT_SWITCHRESARRAY;
-					else if (!xstrcmp(table[tag].tag,
+					else if (!strcmp(table[tag].tag,
 							  "Reservation"))
 						tag = BT_SWITCHRES;
-					else if (!xstrcmp(table[tag].tag,
+					else if (!strcmp(table[tag].tag,
 							  "ApplicationArray"))
 						tag = BT_SWITCHAPPARRAY;
-					else if (!xstrcmp(table[tag].tag,
+					else if (!strcmp(table[tag].tag,
 							  "Application"))
 						tag = BT_SWITCHAPP;
 				}
@@ -630,22 +630,22 @@ static void _end_handler(void *user_data, const XML_Char *el)
 
 	for (end_tag = BT_MESSAGE; end_tag < BT_MAX; end_tag++) {
 		if (table[end_tag].tag) {
-			if (xstrcmp(table[end_tag].tag, el) == 0) {
+			if (strcmp(table[end_tag].tag, el) == 0) {
 				/* since BM_inventory is returned for Arrays
 				   if the method is switch we need to "switch"
 				   it up here.
 				*/
 				if (ud->bp->method == BM_switch) {
-					if (!xstrcmp(table[end_tag].tag,
+					if (!strcmp(table[end_tag].tag,
 						     "ReservationArray"))
 						end_tag = BT_SWITCHRESARRAY;
-					else if (!xstrcmp(table[end_tag].tag,
+					else if (!strcmp(table[end_tag].tag,
 							  "Reservation"))
 						end_tag = BT_SWITCHRES;
-					else if (!xstrcmp(table[end_tag].tag,
+					else if (!strcmp(table[end_tag].tag,
 							  "ApplicationArray"))
 						end_tag = BT_SWITCHAPPARRAY;
-					else if (!xstrcmp(table[end_tag].tag,
+					else if (!strcmp(table[end_tag].tag,
 							  "Application"))
 						end_tag = BT_SWITCHAPP;
 				}

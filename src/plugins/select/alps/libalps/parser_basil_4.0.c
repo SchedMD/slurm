@@ -72,13 +72,13 @@ void eh_accel(struct ud *ud, const XML_Char **attrs)
 		fatal("Basil 4.0 Accelerator.ordinal > 0 (%u)", accel.ordinal);
 
 	for (accel.type = BA_GPU; accel.type < BA_MAX; accel.type++)
-		if (xstrcmp(attribs[1], nam_acceltype[accel.type]) == 0)
+		if (strcmp(attribs[1], nam_acceltype[accel.type]) == 0)
 			break;
 	if (accel.type != BA_GPU)	/* Basil 4.0: GPU only supported type */
 		fatal("Basil 4.0 Accelerator.type not 'GPU' (%s)", attribs[1]);
 
 	for (accel.state = BAS_UP; accel.state < BAS_MAX; accel.state++)
-		if (xstrcmp(attribs[2], nam_accelstate[accel.state]) == 0)
+		if (strcmp(attribs[2], nam_accelstate[accel.state]) == 0)
 			break;
 
 	strncpy(accel.family, attribs[3], sizeof(accel.family));
