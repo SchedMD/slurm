@@ -1085,8 +1085,12 @@ static void _generate_hilbert_integers(void)
 	switch_data * switch_ptr = switch_data_table;
 	int counter, switch_rank;
 	int i, j;
-	unsigned int hilbert[hypercube_dimensions];
-	
+	unsigned int *hilbert;
+
+	if (hypercube_dimensions <= 0)
+		return;
+
+	hilbert = xmalloc(sizeof(unsigned int) * hypercube_dimensions);
 	for (i = 0; i < switch_data_cnt; i++, switch_ptr++) {
 		for (j = 0; j < hypercube_dimensions; j++) {
 			hilbert[j] = switch_ptr->coordinates[j];
@@ -1104,6 +1108,7 @@ static void _generate_hilbert_integers(void)
 		}
 		switch_ptr->rank = switch_rank;
 	}
+	xfree(hilbert);
 }
 
 

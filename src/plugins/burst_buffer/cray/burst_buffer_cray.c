@@ -786,7 +786,7 @@ static void _recover_bb_state(void)
 	uint16_t protocol_version = (uint16_t)NO_VAL;
 	uint32_t data_size = 0, rec_count = 0, name_len = 0;
 	uint32_t id = 0, user_id = 0;
-	uint64_t size;
+	uint64_t size = 0;
 	int i, state_fd;
 	char *account = NULL, *name = NULL, *partition = NULL, *qos = NULL;
 	char *end_ptr = NULL;
