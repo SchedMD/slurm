@@ -322,10 +322,10 @@ static void *_node_update(void *args)
 		* Example: "capmc set_mcdram_cfg –n 43 –m cache" */
 		argv[0] = "capmc";
 		argv[1] = "set_mcdram_cfg";
-		argv[2] = "-n";
-		argv[3] = nid_str;
-		argv[4] = "-m";
-		argv[5] = mcdram_mode;
+		argv[2] = "-m";
+		argv[3] = mcdram_mode;
+		argv[4] = "-n";
+		argv[5] = nid_str;
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
@@ -338,13 +338,13 @@ static void *_node_update(void *args)
 
 	if (numa_mode) {
 		/* Update NUMA mode.
-		 * Example: "capmc set_numa_cfg –n 43 –m a2a" */
+		 * Example: "capmc set_numa_cfg –m a2a –n 43" */
 		argv[0] = "capmc";
 		argv[1] = "set_numa_cfg";
-		argv[2] = "-n";
-		argv[3] = nid_str;
-		argv[4] = "-m";
-		argv[5] = numa_mode;
+		argv[2] = "-m";
+		argv[3] = numa_mode;
+		argv[4] = "-n";
+		argv[5] = nid_str;
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
@@ -502,13 +502,13 @@ int main(int argc, char *argv[])
 			    !strcasecmp(tok, "quad") ||
 			    !strcasecmp(tok, "snc2") ||
 			    !strcasecmp(tok, "snc4")) {
-				xfree(mcdram_mode);
-				mcdram_mode = xstrdup(tok);
+				xfree(numa_mode);
+				numa_mode = xstrdup(tok);
 			} else if (!strcasecmp(tok, "cache")  ||
 				   !strcasecmp(tok, "equal") ||
 				   !strcasecmp(tok, "flat")) {
-				xfree(numa_mode);
-				numa_mode = xstrdup(tok);
+				xfree(mcdram_mode);
+				mcdram_mode = xstrdup(tok);
 			}
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
