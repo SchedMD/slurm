@@ -153,76 +153,77 @@
 
 #ifdef WITH_PTHREADS
 
-#  define slurm_mutex_init(mutex)                                             \
-     do {                                                                     \
-         int err = pthread_mutex_init(mutex, NULL);                           \
-         if (err) {                                                           \
-             errno = err;                                                     \
-             fatal("%s:%d %s: pthread_mutex_init(): %m",                      \
-                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
-             abort();							      \
-         }                                                                    \
-     } while (0)
+#  define slurm_mutex_init(mutex)					\
+	do {								\
+		int err = pthread_mutex_init(mutex, NULL);		\
+		if (err) {						\
+			errno = err;					\
+			fatal("%s:%d %s: pthread_mutex_init(): %m",	\
+				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+			abort();					\
+		}							\
+	} while (0)
 
-#  define slurm_mutex_destroy(mutex)                                          \
-     do {                                                                     \
-         int err = pthread_mutex_destroy(mutex);                              \
-         if (err) {                                                           \
-             errno = err;                                                     \
-             fatal("%s:%d %s: pthread_mutex_destroy(): %m",                   \
-                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
-             abort();							      \
-         }                                                                    \
-     } while (0)
+#  define slurm_mutex_destroy(mutex)					\
+	do {								\
+		int err = pthread_mutex_destroy(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal("%s:%d %s: pthread_mutex_destroy(): %m",	\
+				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+			abort();					\
+		}							\
+	} while (0)
 
-#  define slurm_mutex_lock(mutex)                                             \
-     do {                                                                     \
-         int err = pthread_mutex_lock(mutex);                                 \
-         if (err) {                                                           \
-             errno = err;                                                     \
-             fatal("%s:%d %s: pthread_mutex_lock(): %m",                      \
-                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
-             abort();							      \
-         }                                                                    \
-     } while (0)
+#  define slurm_mutex_lock(mutex)					\
+	do {								\
+		int err = pthread_mutex_lock(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal("%s:%d %s: pthread_mutex_lock(): %m",	\
+				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+			abort();					\
+		}							\
+	} while (0)
 
-#  define slurm_mutex_unlock(mutex)                                           \
-     do {                                                                     \
-         int err = pthread_mutex_unlock(mutex);                               \
-         if (err) {                                                           \
-             errno = err;                                                     \
-             fatal("%s:%d %s: pthread_mutex_unlock(): %m",                    \
-                   __FILE__, __LINE__, __CURRENT_FUNC__);                     \
-             abort();							      \
-         }                                                                    \
-     } while (0)
+#  define slurm_mutex_unlock(mutex)					\
+	do {								\
+		int err = pthread_mutex_unlock(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal("%s:%d %s: pthread_mutex_unlock(): %m",	\
+				__FILE__, __LINE__, __CURRENT_FUNC__);	\
+			abort();					\
+		}							\
+	} while (0)
 
 #  ifdef PTHREAD_SCOPE_SYSTEM
-#  define slurm_attr_init(attr)                                               \
-     do {                                                                     \
-	if (pthread_attr_init(attr))                                          \
-		fatal("pthread_attr_init: %m");                               \
-	/* we want 1:1 threads if there is a choice */                        \
-	if (pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM))                \
-		error("pthread_attr_setscope: %m");                           \
-	if (pthread_attr_setstacksize(attr, 1024*1024))                       \
-		error("pthread_attr_setstacksize: %m");                       \
-     } while (0)
+#  define slurm_attr_init(attr)						\
+	do {								\
+		if (pthread_attr_init(attr))				\
+			fatal("pthread_attr_init: %m");			\
+		/* we want 1:1 threads if there is a choice */		\
+		if (pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM))	\
+			error("pthread_attr_setscope: %m");		\
+		if (pthread_attr_setstacksize(attr, 1024*1024))		\
+			error("pthread_attr_setstacksize: %m");		\
+	 } while (0)
 #  else
-#  define slurm_attr_init(attr)                                               \
-     do {                                                                     \
-        if (pthread_attr_init(attr))                                          \
-                fatal("pthread_attr_init: %m");                               \
-        if (pthread_attr_setstacksize(attr, 1024*1024))                       \
-                error("pthread_attr_setstacksize: %m");                       \
-     } while (0)
+#  define slurm_attr_init(attr)						\
+	do {								\
+		if (pthread_attr_init(attr))				\
+			fatal("pthread_attr_init: %m");			\
+		if (pthread_attr_setstacksize(attr, 1024*1024))		\
+			error("pthread_attr_setstacksize: %m");		\
+	} while (0)
 #  endif
 
-#  define slurm_attr_destroy(attr)					      \
-     do {                                                                     \
-        if (pthread_attr_destroy(attr))                                       \
-             error("pthread_attr_destroy failed, possible memory leak!: %m"); \
-     } while (0)
+#  define slurm_attr_destroy(attr)					\
+	do {								\
+		if (pthread_attr_destroy(attr))				\
+			error("pthread_attr_destroy failed, "		\
+				"possible memory leak!: %m");		\
+	} while (0)
 
 #else /* !WITH_PTHREADS */
 
