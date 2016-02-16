@@ -381,9 +381,9 @@ static void *_node_update(void *args)
 	}
 
 	/* Request node power up.
-	 * Example: "capmc node_up –n 43" */
+	 * Example: "capmc node_on –n 43" */
 	argv[0] = "capmc";
-	argv[1] = "node_up";
+	argv[1] = "node_on";
 	argv[2] = "-n";
 	argv[3] = nid_str;
 	argv[4] = NULL;
