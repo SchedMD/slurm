@@ -2154,7 +2154,6 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		if (node_ptr->name == '\0')
 			continue;
 
-#ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule) {
 			cpu_count += node_ptr->config_ptr->cpus;
 			mem_count += node_ptr->config_ptr->real_memory;
@@ -2162,11 +2161,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			cpu_count += node_ptr->cpus;
 			mem_count += node_ptr->real_memory;
 		}
-#else
-		cpu_count += node_ptr->config_ptr->cpus;
-		mem_count += node_ptr->config_ptr->real_memory;
 
-#endif
 		cluster_cpus += cpu_count;
 		if (mem_tres)
 			mem_tres->count += mem_count;

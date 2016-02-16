@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- MYSQL - Fix issue when rerolling monthly data to work off correct time
     period.  This would only hit you if you rerolled a 15.08 prior to this
     commit.
+ -- If FastSchedule=0 is used make sure TRES are set up correctly in accounting.
 
 * Changes in Slurm 15.08.7
 ==========================
