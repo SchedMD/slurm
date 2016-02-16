@@ -71,9 +71,12 @@
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
+#define DEFAULT_CAPMC_TIMEOUT 10000	/* 10 seconds */
+#define MIN_CAPMC_TIMEOUT 1000		/* 1 second */
+
 /* Static variables */
 static char *capmc_path = NULL;
-static uint32_t capmc_timeout = 1000;	/* 1 second */
+static uint32_t capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 static char *log_file = NULL;
 static bitstr_t *node_bitmap = NULL;
 static char *prog_name = NULL;
@@ -129,6 +132,7 @@ static void _read_config(void)
 	char *knl_conf_file;
 	s_p_hashtbl_t *tbl;
 
+	capmc_timeout = DEFAULT_CAPMC_TIMEOUT;
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
@@ -140,7 +144,7 @@ static void _read_config(void)
 	s_p_hashtbl_destroy(tbl);
 	if (!capmc_path)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
-	capmc_timeout = MAX(capmc_timeout, 500);
+	capmc_timeout = MAX(capmc_timeout, MIN_CAPMC_TIMEOUT);
 	if (!log_file)
 		log_file = slurm_get_job_slurmctld_logfile();
 }

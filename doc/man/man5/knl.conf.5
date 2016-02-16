@@ -32,7 +32,7 @@ This parameter is used only by the "knl_cray.conf" plugin.
 .TP
 \fBCapmcTimeout\fR
 Time limit for the \fBcapmc\fR program to return status information milliseconds.
-The default value is 1000 milliseconds.
+The default value is 10000 milliseconds and the minumum value is 1000 milliseconds.
 This parameter is used only by the "knl_cray.conf" plugin.
 
 .TP
@@ -103,7 +103,7 @@ If not defined, the current BIOS setting will not be available.
 .br
 CapmcPath=/opt/cray/capmc/default/bin/capmc
 .br
-CapmcTimeout=600
+CapmcTimeout=6000
 .br
 DefaultMCDRAM=flat
 .br
