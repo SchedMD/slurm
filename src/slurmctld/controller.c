@@ -2555,8 +2555,9 @@ static void _verify_clustername(void)
 	FILE *fp;
 	char *filename = NULL;
 	char name[512];
+
 	xstrfmtcat(filename, "%s/clustername",
-				slurmctld_conf.state_save_location);
+		   slurmctld_conf.state_save_location);
 
 	if ((fp = fopen(filename, "r"))) {
 		/* read value and compare */
@@ -2570,11 +2571,11 @@ static void _verify_clustername(void)
 				"StateSaveLocation WILL CAUSE CORRUPTION.\n"
 				"Remove %s to override this safety check if "
 				"this is intentional (e.g., the ClusterName "
-				"has changed).", name,
-				slurmctld_conf.cluster_name, filename);
+				"has changed).",
+				slurmctld_conf.cluster_name, name, filename);
 			exit(1);
 		}
-	} else {
+	} else if (slurmctld_conf.cluster_name) {
 		debug("creating clustername file: %s", filename);
 		if (!(fp = fopen(filename, "w"))) {
 			fatal("%s: failed to create file %s",
