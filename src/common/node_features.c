@@ -109,7 +109,7 @@ extern int node_features_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names;
-	char *plugin_type = "knl";
+	char *plugin_type = "node_features";
 	char *type;
 
 	if (init_run && (g_context_cnt >= 0))
@@ -131,8 +131,8 @@ extern int node_features_g_init(void)
 			 (sizeof(node_features_ops_t) * (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (xstrncmp(type, "node_features/", 4) == 0)
-			type += 4; /* backward compatibility */
+		if (xstrncmp(type, "node_features/", 14) == 0)
+			type += 14; /* backward compatibility */
 		type = xstrdup_printf("node_features/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_cnt],
