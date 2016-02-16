@@ -369,6 +369,7 @@ tar -xf json-c-0.12.tar</li>
 <ul>
 <li>If you have current build tools<br>
 cd json-c-0.12<br>
+export CFLAGS=-Wno-error=unused-but-set-variable<br>
 ./configure --prefix=DESIRED_PATH<br>
 make<br>
 make install</li>
@@ -378,6 +379,7 @@ cd json-c-0.12<br>
 mv aclocal.m4 aclocal.m4.orig<br>
 mv ltmain.sh ltmain.sh.orig<br>
 ./autogen.sh<br>
+export CFLAGS=-Wno-error=unused-but-set-variable<br>
 ./configure --prefix=DESIRED_JSON_PATH<br>
 make<br>
 make install</li>
@@ -397,6 +399,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 19 October 2015</p>
+<p style="text-align:center;">Last modified 16 February 2016</p>
 
 <!--#include virtual="footer.txt"-->
