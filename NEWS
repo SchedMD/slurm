@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
  -- contribs/cray: Add framework for powering nodes up and down.
  -- For job constraint, convert comma separator to "&".
  -- Add Max*PerAccount options for QOS.
+ -- Protect slurm_mutex_* calls with abort() on failure.
 
 * Changes in Slurm 15.08.8
 ==========================

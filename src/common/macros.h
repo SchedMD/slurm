@@ -60,6 +60,7 @@
 #endif
 
 #include <errno.h>              /* for errno   */
+#include <stdlib.h>		/* for abort() */
 #include "src/common/log.h"	/* for error() */
 
 #ifndef FALSE
@@ -157,8 +158,9 @@
          int err = pthread_mutex_init(mutex, NULL);                           \
          if (err) {                                                           \
              errno = err;                                                     \
-             error("%s:%d %s: pthread_mutex_init(): %m",                      \
+             fatal("%s:%d %s: pthread_mutex_init(): %m",                      \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+             abort();							      \
          }                                                                    \
      } while (0)
 
@@ -167,8 +169,9 @@
          int err = pthread_mutex_destroy(mutex);                              \
          if (err) {                                                           \
              errno = err;                                                     \
-             error("%s:%d %s: pthread_mutex_destroy(): %m",                   \
+             fatal("%s:%d %s: pthread_mutex_destroy(): %m",                   \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+             abort();							      \
          }                                                                    \
      } while (0)
 
@@ -177,8 +180,9 @@
          int err = pthread_mutex_lock(mutex);                                 \
          if (err) {                                                           \
              errno = err;                                                     \
-             error("%s:%d %s: pthread_mutex_lock(): %m",                      \
+             fatal("%s:%d %s: pthread_mutex_lock(): %m",                      \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+             abort();							      \
          }                                                                    \
      } while (0)
 
@@ -187,8 +191,9 @@
          int err = pthread_mutex_unlock(mutex);                               \
          if (err) {                                                           \
              errno = err;                                                     \
-             error("%s:%d %s: pthread_mutex_unlock(): %m",                    \
+             fatal("%s:%d %s: pthread_mutex_unlock(): %m",                    \
                    __FILE__, __LINE__, __CURRENT_FUNC__);                     \
+             abort();							      \
          }                                                                    \
      } while (0)
 
