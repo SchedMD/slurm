@@ -77,7 +77,7 @@
 
 #define _DEBUG			0
 #define PID_CNT			10
-#define MAX_SHUTDOWN_DELAY	60	/* seconds to wait for child procs
+#define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
 
@@ -491,6 +491,7 @@ static void _shutdown_power(void)
 	int i, proc_cnt, max_timeout;
 
 	max_timeout = MAX(suspend_timeout, resume_timeout);
+	max_timeout = MIN(max_timeout, MAX_SHUTDOWN_DELAY);
 	/* Try to avoid orphan processes */
 	for (i=0; ; i++) {
 		proc_cnt = PID_CNT - _reap_procs();
