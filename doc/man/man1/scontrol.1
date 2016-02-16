@@ -357,10 +357,10 @@ contents of the slurm.conf configuration file.
 .TP
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
-\fIENTITY\fP may be \fIaliases\fP, \fIcache\fP, \fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP,
-\fIjob\fP, \fInode\fP, \fIpartition\fP, \fIpowercap\fP, \fIreservation\fP, \fIslurmd\fP,
-\fIstep\fP, \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or
-\fIhostnames\fP
+\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIconfig\fP, \fIdaemons\fP,
+\fIfrontend\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP, \fIpowercap\fP,
+\fIreservation\fP, \fIslurmd\fP, \fIstep\fP, \fItopology\fP, \fIhostlist\fP,
+\fIhostlistsorted\fP or \fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: job ID, node name, partition name, reservation name, or job step ID for
@@ -374,8 +374,11 @@ named nodes will be shown.
 \fINodeHostname\fP (useful to get the list of virtual nodes associated with a
 real node in a configuration where multiple slurmd daemons execute on a single
 compute node).
-\fIcache\fP displays the current contents of the slurmctld's internal cache
-for users and associations.
+\fIassoc_mgr\fP displays the current contents of the slurmctld's internal cache
+for users, associations and/or qos. The \fIID\fP may be users=<user1>,[...,<userN>],
+accounts=<acct1>,[...,<acctN>], qos=<qos1>,[...,<qosN>] and/or
+flags=<users,assoc,qos>, used to filter the desired section to be displayed. If
+no flags are specified, all sections are displayed.
 \fIconfig\fP displays parameter names from the configuration files in mixed
 case (e.g. SlurmdPort=7003) while derived parameters names are in upper case
 only (e.g. SLURM_VERSION).
