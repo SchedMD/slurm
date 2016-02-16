@@ -128,12 +128,6 @@
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
 
-#if (0)
-/* If defined and FastSchedule=0 in slurm.conf, then report the CPU count that a
- * node registers with rather than the CPU count defined for the node in slurm.conf */
-#define SLURM_NODE_ACCT_REGISTER 1
-#endif
-
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
  * "configure --enable-memory-leak-debug" then execute
