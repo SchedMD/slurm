@@ -1808,7 +1808,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
-	int delay_time, nodes_ready = 0, tmp;
+	int nodes_ready = 0, tmp;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
@@ -1870,17 +1870,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 #endif
 	}
 
-	delay_time = difftime(now, job_ptr->start_time);
 	if (nodes_ready) {
-		/* ready to launch, adjust time limit for boot time */
-		if (delay_time && (job_ptr->time_limit != INFINITE) &&
-		    (!wiki2_sched)) {
-			verbose("Job %u launch delayed by %d secs, "
-				"updating end_time",
-				launch_msg_ptr->job_id, delay_time);
-			job_ptr->end_time += delay_time;
-			job_ptr->end_time_exp = job_ptr->end_time;
-		}
+		job_config_fini(job_ptr);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}
@@ -1892,14 +1883,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 				 slurm_get_resume_timeout()) {
 		error("agent waited too long for nodes to respond, "
 		      "sending batch request anyway...");
-		if (delay_time && (job_ptr->time_limit != INFINITE) &&
-		    (!wiki2_sched)) {
-			verbose("Job %u launch delayed by %d secs, "
-				"updating end_time",
-				launch_msg_ptr->job_id, delay_time);
-			job_ptr->end_time += delay_time;
-			job_ptr->end_time_exp = job_ptr->end_time;
-		}
+		job_config_fini(job_ptr);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}

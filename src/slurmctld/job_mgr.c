@@ -7306,6 +7306,21 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 	return false;
 }
 
+/* Clear job's CONFIGURING flag and advance end time as needed */
+extern void job_config_fini(struct job_record *job_ptr)
+{
+	time_t now = time(NULL);
+
+	job_ptr->job_state &= (~JOB_CONFIGURING);
+	job_ptr->tot_sus_time = difftime(now, job_ptr->start_time);
+	if ((job_ptr->time_limit != INFINITE) && (job_ptr->tot_sus_time != 0)) {
+		verbose("Extending job %u time limit by %u secs for configuration",
+			job_ptr->job_id, (uint32_t) job_ptr->tot_sus_time);
+		job_ptr->end_time_exp = job_ptr->end_time =
+			now + (job_ptr->time_limit * 60);
+	}
+}
+
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
