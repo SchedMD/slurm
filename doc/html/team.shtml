@@ -7,7 +7,10 @@ Over 170 individuals have contributed to the project.
 Lead Slurm developers are:
 <ul>
 <li>Danny Auble (SchedMD)</li>
+<li>Brian Christiansen (SchedMD)</li>
 <li>Morris Jette (SchedMD)</li>
+<li>Alejandro (Alex) Sanchez (SchedMD)</li>
+<li>Tim Wickberg (SchedMD)</li>
 </ul>
 
 <p>Slurm contributors include:</p>
@@ -70,7 +73,6 @@ Lead Slurm developers are:
 <li>Sourav Chakraborty (The Ohio State University)</li>
 <li>Fran&ccedil;ois Chevallier (CEA)</li>
 <li>Daniel Christians (HP)</li>
-<li>Brian Christiansen (SchedMD)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
 <li>J.T. Conklin</li>
@@ -205,7 +207,6 @@ Lead Slurm developers are:
 <li>Aleksej Saushev</li>
 <li>Uwe Sauter (High Performance Computing Center Stuttgart, Germany)</li>
 <li>Chris Scheller (University of Michigan)</li>
-<li>Alejandro (Alex) Sanchez (SchedMD)</li>
 <li>Rod Schultz (Bull)</li>
 <li>Samuel Senoner (Vienna University of Technology, Austria)</li>
 <li>David Singleton</li>
@@ -233,7 +234,6 @@ Lead Slurm developers are:
 <li>Daniel M. Weeks (Rensselaer Polytechnic Institute)</li>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
-<li>Tim Wickberg (SchedMD)</li>
 <li>Chandler Wilkerson (Rice University)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
