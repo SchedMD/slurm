@@ -279,6 +279,8 @@ extern int power_job_reboot(struct job_record *job_ptr)
 
 	nodes = bitmap2node_name(boot_node_bitmap);
 	if (nodes) {
+		job_ptr->job_state |= JOB_CONFIGURING;
+		job_ptr->wait_all_nodes = 1;
 		if (job_ptr->details && job_ptr->details->features) {
 			features = node_features_g_job_xlate(
 					job_ptr->details->features);

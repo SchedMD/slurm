@@ -1808,7 +1808,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	batch_job_launch_msg_t *launch_msg_ptr;
 	time_t now = time(NULL);
 	struct job_record  *job_ptr;
-	int nodes_ready = 0, tmp;
+	int nodes_ready = 0, tmp = 0;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)

@@ -7321,6 +7321,18 @@ extern void job_config_fini(struct job_record *job_ptr)
 	}
 }
 
+static bool _test_nodes_ready(struct job_record *job_ptr)
+{
+	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
+		return false;
+
+	if (job_ptr->wait_all_nodes && 
+	    ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0))
+		return false;
+
+	return true;
+}
+
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
@@ -7360,17 +7372,11 @@ void job_time_limit(void)
 		prolog = 0;
 		if (job_ptr->details)
 			prolog = job_ptr->details->prolog_running;
-
-		if (prolog == 0
-		    && IS_JOB_CONFIGURING(job_ptr)) {
-			if (!IS_JOB_RUNNING(job_ptr) ||
-			    (bit_overlap(job_ptr->node_bitmap,
-					 power_node_bitmap) == 0)) {
-				debug("%s: Configuration for job %u is "
-				      "complete",
-				      __func__, job_ptr->job_id);
-				job_ptr->job_state &= (~JOB_CONFIGURING);
-			}
+		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
+		    _test_nodes_ready(job_ptr)) {
+			info("%s: Configuration for job %u is complete",
+			      __func__, job_ptr->job_id);
+			job_config_fini(job_ptr);
 		}
 #endif
 		/* This needs to be near the top of the loop, checks every

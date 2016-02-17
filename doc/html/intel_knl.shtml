@@ -50,6 +50,23 @@ value for that configuration will be used.</p>
 <tr><td>NUMA</td><td>quad</td><td>Quadrant</td></tr>
 </table>
 
+<h3>Accounting</h3>
+
+<p>If a node requires rebooting for a job's required configuration, the job
+will be charged for the resource allocation from the time of allocation through
+the lifetime of the job, including the time consumed for booting the nodes.
+The job's time limit will be calculated from the time that all nodes are ready
+for use.
+For example, a job with a 10 minute time limit may be allocated resources at
+10:00:00.
+If the nodes require rebooting, they might not be available for use until
+10:20:00, 20 minutes after allocation, and the job will begin execution at
+that time.
+The job must complete no later than 10:30:00 in order to satisfy it's time limit
+(10 minutes after execution actually begins).
+However, the job will be charge for 30 minutes of resource use, which includes
+the boot time.</p>
+
 <h3>Sample Use Cases</h3>
 
 <pre>
@@ -62,7 +79,6 @@ NODELIST       ACTIVE_FEATURES  AVAIL_FEATURES
 nid000[10-11]
 nid000[12-35]  flat,a2a         flat,a2a,snc2,snc4,hemi,quad
 nid000[36-43]  cache,a2a        flat,equal,cache,a2a,snc2,snc4,hemi,quad
-
 </pre>
 
 <h2>System Administration</h2>
@@ -121,9 +137,6 @@ on the order of 20 minutes.</li>
 The file will include the path to the capmc program (CapmcPath), which is used
 to get a node's available MCDRAM and NUMA modes, change the modes, power the
 node down, reboot it, etc.
-The file will also include the path to the dmidecode program (DmidecodePath),
-which is used by the slurmd daemon to get current MCDRAM and NUMA modes from
-the BIOS settings on each compute node.
 Note the "CapmcTimeout" parameter is the time required for the capmc program
 to respond to a request and NOT the time for a boot operation to complete.</p>
 
@@ -141,7 +154,6 @@ down a node which has been idle for about one year).</p>
 <pre>
 # Sample knl_cray.conf
 CapmcPath=/opt/cray/capmc/default/bin/capmc
-DmidecodePath=/usrs/sbin/dmidecode
 CapmcTimeout=2000	# msec
 DefaultNUMA=a2a         # NUMA=all2all
 DefaultMCDRAM=cache     # MCDRAM=cache
@@ -164,6 +176,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 February 2016</p>
+<p style="text-align:center;">Last modified 17 February 2016</p>
 
 <!--#include virtual="footer.txt"-->
