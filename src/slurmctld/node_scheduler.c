@@ -669,8 +669,13 @@ static int _match_feature2(char *seek, struct node_set *node_set_ptr,
 
 	feat_ptr = list_find_first(active_feature_list, list_find_feature,
 				   (void *) seek);
-	if ((feat_ptr == NULL) || (feat_ptr->node_bitmap == NULL))
-		return 0;	/* no such feature */
+	if ((feat_ptr == NULL) || (feat_ptr->node_bitmap == NULL)) {
+		if (bit_set_count(node_set_ptr->my_bitmap) > 0) {
+			*inactive_bitmap = bit_copy(node_set_ptr->my_bitmap);
+			return 1;
+		}
+		return 0;
+	}
 
 	*inactive_bitmap = bit_copy(feat_ptr->node_bitmap);
 	bit_not(*inactive_bitmap);
@@ -709,9 +714,11 @@ static int _match_feature3(struct job_record *job_ptr,
 						list_find_feature,
 						(void *)job_feat_ptr->name);
 		if ((node_feat_ptr == NULL) ||
-		    (node_feat_ptr->node_bitmap == NULL))
-			continue;
-		if (!tmp_bitmap) {
+		    (node_feat_ptr->node_bitmap == NULL)) {
+			if (!tmp_bitmap)
+				tmp_bitmap = bit_alloc(node_record_count);
+			bit_nset(tmp_bitmap, 0, node_record_count - 1);
+		} else if (!tmp_bitmap) {
 			tmp_bitmap = bit_copy(node_feat_ptr->node_bitmap);
 			bit_not(tmp_bitmap);
 		} else {
