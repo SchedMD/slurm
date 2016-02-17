@@ -466,3 +466,113 @@ extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
 		       tres_rec_in->id);
 	}
 }
+
+extern void sreport_set_usage_col_width(print_field_t *field, uint64_t number)
+{
+	uint64_t order, max_order;
+
+	//info("got %p %"PRIu64, field, number);
+	if (!field)
+		return;
+
+	order = 100000000;
+	max_order = order * 100000000000000000;
+
+	/* smallest usage we want if this changes change order and
+	 * max_order appropriately */
+	field->len = 8;
+
+	while (order < max_order) {
+		if (number < order)
+			break;
+
+		field->len++;
+		order *= 10;
+	}
+
+	if (time_format == SLURMDB_REPORT_TIME_SECS_PER
+	    || time_format == SLURMDB_REPORT_TIME_MINS_PER
+	    || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
+		field->len += 8;
+}
+
+extern void sreport_set_usage_column_width(print_field_t *usage_field,
+					   print_field_t *energy_field,
+					   List slurmdb_report_cluster_list)
+{
+	uint64_t max_usage = 0, max_energy = 0;
+	ListIterator tres_itr, cluster_itr;
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
+
+	xassert(slurmdb_report_cluster_list);
+
+	tres_itr = list_iterator_create(tres_list);
+	cluster_itr = list_iterator_create(slurmdb_report_cluster_list);
+	while ((slurmdb_report_cluster = list_next(cluster_itr))) {
+		slurmdb_tres_rec_t *tres, *tres_rec;
+		List use_list = slurmdb_report_cluster->tres_list;
+
+		/* The first association will always be the largest
+		 * count of any TRES, so just peek at it.  If the
+		 * cluster doesn't have assoications for some reason
+		 * use the cluster main one which has the total time.
+		 */
+
+		if (slurmdb_report_cluster->assoc_list) {
+			slurmdb_report_assoc_rec_t *slurmdb_report =
+				list_peek(slurmdb_report_cluster->assoc_list);
+			if (slurmdb_report)
+				use_list = slurmdb_report->tres_list;
+		} else if (slurmdb_report_cluster->user_list) {
+			slurmdb_report_user_rec_t *slurmdb_report;
+			list_sort(slurmdb_report_cluster->user_list,
+				  (ListCmpF)sort_user_dec);
+			slurmdb_report =
+				list_peek(slurmdb_report_cluster->user_list);
+			if (slurmdb_report)
+				use_list = slurmdb_report->tres_list;
+		} else {
+			error("%s: unknown type of slurmdb_report_cluster "
+			      "given for cluster %s",
+			      __func__, slurmdb_report_cluster->name);
+			continue;
+		}
+
+		if (energy_field) {
+			uint32_t tres_id = TRES_CPU;
+			if ((tres_rec = list_find_first(
+				     use_list,
+				     slurmdb_find_tres_in_list,
+				     &tres_id))) {
+				max_usage = MAX(max_usage,
+						tres_rec->alloc_secs);
+			}
+			tres_id = TRES_ENERGY;
+			if ((tres_rec = list_find_first(
+				     use_list,
+				     slurmdb_find_tres_in_list,
+				     &tres_id))) {
+				max_energy = MAX(max_energy,
+						 tres_rec->alloc_secs);
+			}
+		} else {
+			list_iterator_reset(tres_itr);
+			while ((tres = list_next(tres_itr))) {
+				if (tres->id == NO_VAL)
+					continue;
+				if (!(tres_rec = list_find_first(
+					      use_list,
+					      slurmdb_find_tres_in_list,
+					      &tres->id)))
+					continue;
+				max_usage = MAX(max_usage,
+						tres_rec->alloc_secs);
+			}
+		}
+	}
+	list_iterator_destroy(tres_itr);
+	list_iterator_destroy(cluster_itr);
+
+	sreport_set_usage_col_width(usage_field, max_usage);
+	sreport_set_usage_col_width(energy_field, max_energy);
+}
