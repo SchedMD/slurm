@@ -568,6 +568,29 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_time = reason_time;
 				node_ptr->reason_uid = reason_uid;
 			}
+
+			if (!slurmctld_conf.fast_schedule) {
+				/* Accounting will need to know the
+				 * last state here otherwise we will
+				 * report incorrect information
+				 * waiting for the node to register. */
+				node_ptr->cpus          = cpus;
+				node_ptr->boards        = boards;
+				node_ptr->sockets       = sockets;
+				node_ptr->cores         = cores;
+				node_ptr->core_spec_cnt =
+					core_spec_cnt;
+				xfree(node_ptr->cpu_spec_list);
+				node_ptr->cpu_spec_list =
+					cpu_spec_list;
+				cpu_spec_list = NULL; /* Nothing to free */
+				node_ptr->threads       = threads;
+				node_ptr->real_memory   = real_memory;
+				node_ptr->mem_spec_limit =
+					mem_spec_limit;
+				node_ptr->tmp_disk      = tmp_disk;
+			}
+
 			xfree(node_ptr->features_act);
 			node_ptr->features_act	= features_act;
 			features_act		= NULL;	/* Nothing to free */

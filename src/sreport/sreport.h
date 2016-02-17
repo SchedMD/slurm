@@ -90,6 +90,16 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	GROUP_BY_ACCOUNT,
+	GROUP_BY_ACCOUNT_JOB_SIZE,
+	GROUP_BY_ACCOUNT_JOB_SIZE_DURATION,
+	GROUP_BY_USER,
+	GROUP_BY_USER_JOB_SIZE,
+	GROUP_BY_USER_JOB_SIZE_DURATION,
+	GROUP_BY_NONE
+} report_grouping_t;
+
 extern slurmdb_report_time_format_t time_format;
 extern char *time_format_string;
 extern char *command_name;
@@ -125,5 +135,14 @@ extern void sreport_set_tres_recs(slurmdb_tres_rec_t **cluster_tres_rec,
 				  slurmdb_tres_rec_t **tres_rec,
 				  List cluster_tres_list, List tres_list,
 				  slurmdb_tres_rec_t *tres_rec_in);
+
+/* Since usage columns can get big, instead of always giving a 20
+ * column spacing, figure it out here.
+ */
+extern void sreport_set_usage_col_width(print_field_t *field, uint64_t number);
+
+extern void sreport_set_usage_column_width(print_field_t *usage_field,
+					   print_field_t *energy_field,
+					   List slurmdb_report_cluster_list);
 
 #endif /* HAVE_SREPORT_H */
