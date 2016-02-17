@@ -382,7 +382,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 	/*  Construct msg to send to app.
 	 */
 	n = snprintf(str, sizeof(str),
-		     "%sAccess denied: user %s (uid=%d) has no active jobs.%s",
+		     "%sAccess denied: User %s (uid=%d) has no active jobs on this node.%s",
 		     opts->msg_prefix, user, uid, opts->msg_suffix);
 	if ((n < 0) || (n >= sizeof(str)))
 		_log_msg(LOG_ERR, "exceeded buffer for pam_conv message");
