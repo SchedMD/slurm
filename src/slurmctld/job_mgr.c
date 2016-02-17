@@ -7377,6 +7377,9 @@ void job_time_limit(void)
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
 
+		if (IS_JOB_CONFIGURING(job_ptr))
+			continue;
+
 		if (job_ptr->preempt_time &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 			if ((job_ptr->warn_time) &&
