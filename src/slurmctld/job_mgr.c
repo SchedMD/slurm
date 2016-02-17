@@ -7321,6 +7321,7 @@ extern void job_config_fini(struct job_record *job_ptr)
 	}
 }
 
+#ifndef HAVE_BG
 static bool _test_nodes_ready(struct job_record *job_ptr)
 {
 	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
@@ -7332,6 +7333,7 @@ static bool _test_nodes_ready(struct job_record *job_ptr)
 
 	return true;
 }
+#endif
 
 /*
  * job_time_limit - terminate jobs which have exceeded their time limit
