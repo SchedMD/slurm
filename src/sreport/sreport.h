@@ -90,6 +90,16 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	GROUP_BY_ACCOUNT,
+	GROUP_BY_ACCOUNT_JOB_SIZE,
+	GROUP_BY_ACCOUNT_JOB_SIZE_DURATION,
+	GROUP_BY_USER,
+	GROUP_BY_USER_JOB_SIZE,
+	GROUP_BY_USER_JOB_SIZE_DURATION,
+	GROUP_BY_NONE
+} report_grouping_t;
+
 extern slurmdb_report_time_format_t time_format;
 extern char *time_format_string;
 extern char *command_name;

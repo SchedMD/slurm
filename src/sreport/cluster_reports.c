@@ -60,16 +60,6 @@ enum {
 	PRINT_CLUSTER_TRES_NAME,
 };
 
-typedef enum {
-	GROUP_BY_ACCOUNT,
-	GROUP_BY_ACCOUNT_JOB_SIZE,
-	GROUP_BY_ACCOUNT_JOB_SIZE_DURATION,
-	GROUP_BY_USER,
-	GROUP_BY_USER_JOB_SIZE,
-	GROUP_BY_USER_JOB_SIZE_DURATION,
-	GROUP_BY_NONE
-} report_grouping_t;
-
 static List print_fields_list = NULL; /* types are of print_field_t */
 
 
