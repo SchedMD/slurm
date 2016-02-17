@@ -361,6 +361,32 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 	printf("\n");
 }
 
+static void _set_usage_column_width(List print_fields_list,
+				    List slurmdb_report_cluster_list)
+{
+	print_field_t *field, *usage_field = NULL, *energy_field = NULL;
+	ListIterator itr;
+
+	xassert(print_fields_list);
+	xassert(slurmdb_report_cluster_list);
+
+	itr = list_iterator_create(print_fields_list);
+	while ((field = list_next(itr))) {
+		switch (field->type) {
+		case PRINT_USER_USED:
+			usage_field = field;
+			break;
+		case PRINT_USER_ENERGY:
+			energy_field = field;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	sreport_set_usage_column_width(usage_field, energy_field,
+				       slurmdb_report_cluster_list);
+}
+
 extern int user_top(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -421,6 +447,8 @@ extern int user_top(int argc, char *argv[])
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
+
+	_set_usage_column_width(print_fields_list, slurmdb_report_cluster_list);
 
 	print_fields_header(print_fields_list);
 

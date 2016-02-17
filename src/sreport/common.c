@@ -493,7 +493,7 @@ extern void sreport_set_usage_col_width(print_field_t *field, uint64_t number)
 	if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 	    || time_format == SLURMDB_REPORT_TIME_MINS_PER
 	    || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
-		field->len += 8;
+		field->len += 9;
 }
 
 extern void sreport_set_usage_column_width(print_field_t *usage_field,

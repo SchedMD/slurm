@@ -219,9 +219,9 @@ static int _setup_print_fields_list(List format_list)
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
-				field->len = 20;
+				field->len = 29;
 			else
-				field->len = 9;
+				field->len = 20;
 			field->print_routine = slurmdb_report_print_time;
 		} else if (!strncasecmp("Associations",
 				       object, MAX(command_len, 2))) {
@@ -252,9 +252,9 @@ static int _setup_print_fields_list(List format_list)
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
-				field->len = 20;
+				field->len = 29;
 			else
-				field->len = 9;
+				field->len = 20;
 			field->print_routine = slurmdb_report_print_time;
 		} else if (!strncasecmp("Name", object,
 				       MAX(command_len, 2))) {
