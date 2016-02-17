@@ -608,8 +608,10 @@ static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
 		else
 			(*time_limit) = MIN(limit_max_time, part_max_time);
 
-		(*limit_set_time) = 1;
-	} else if ((*limit_set_time) && ((*time_limit) > limit_max_time))
+		if (limit_set_time)
+			(*limit_set_time) = 1;
+	} else if (limit_set_time && (*limit_set_time) &&
+		   ((*time_limit) > limit_max_time))
 		(*time_limit) = limit_max_time;
 }
 
@@ -2524,6 +2526,7 @@ extern bool acct_policy_job_runnable_post_select(
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	uint64_t job_tres_time_limit[slurmctld_tres_cnt];
+	uint32_t time_limit;
 	bool rc = true;
 	bool safe_limits = false;
 	int i, tres_pos;
@@ -2534,6 +2537,7 @@ extern bool acct_policy_job_runnable_post_select(
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
 	xassert(job_ptr);
+	xassert(job_ptr->part_ptr);
 	xassert(tres_req_cnt);
 
 	/* check to see if we are enforcing associations */
@@ -2566,10 +2570,16 @@ extern bool acct_policy_job_runnable_post_select(
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	memset(job_tres_time_limit, 0, sizeof(job_tres_time_limit));
-	for (i=0; i<slurmctld_tres_cnt; i++) {
-		job_tres_time_limit[i] = (uint64_t)job_ptr->time_limit *
-			tres_req_cnt[i];
-	}
+
+	/* time_limit may be NO_VAL if the partition does not have
+	 * a DefaultTime, in which case the partition max_time should
+	 * be used instead */
+	time_limit = job_ptr->time_limit;
+	_set_time_limit(&time_limit, job_ptr->part_ptr->max_time,
+			job_ptr->part_ptr->default_time, NULL);
+
+	for (i=0; i<slurmctld_tres_cnt; i++)
+		job_tres_time_limit[i] = (uint64_t)time_limit * tres_req_cnt[i];
 
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
