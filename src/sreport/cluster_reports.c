@@ -122,7 +122,8 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			wckey_cond->usage_end = parse_time(argv[i]+end, 1);
-			wckey_cond->usage_end = sanity_check_endtime(wckey_cond->usage_end);
+			wckey_cond->usage_end = sanity_check_endtime(
+				wckey_cond->usage_end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
