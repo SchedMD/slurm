@@ -974,20 +974,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				FREE_NULL_BITMAP(nodes_avail);
 				FREE_NULL_BITMAP(select_nodes_avail);
 				*return_code = ESLURM_NODES_BUSY;
-				/* Update job's end-time to allow for node
-				 * boot time. */
-				if ((job_ptr->time_limit != INFINITE) &&
-				    (!job_ptr->preempt_time)) {
-					job_ptr->end_time = time(NULL) +
-						(job_ptr->time_limit * 60);
-				}
 				return NULL;
 			}
 		}
 		if (job_ptr->details
 		    && job_ptr->details->prolog_running == 0) {
-			job_ptr->job_state &= (~JOB_CONFIGURING);
-			debug("Configuration for job %u complete", job_ptr->job_id);
+			info("%s: Configuration for job %u is complete",
+			      __func__, job_ptr->job_id);
+			job_config_fini(job_ptr);
 		}
 	}
 
