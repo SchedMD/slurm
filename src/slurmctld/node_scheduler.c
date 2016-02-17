@@ -757,8 +757,12 @@ extern void build_active_feature_bitmap(struct job_record *job_ptr,
 						list_find_feature,
 						(void *)job_feat_ptr->name);
 		if ((node_feat_ptr == NULL) ||
-		    (node_feat_ptr->node_bitmap == NULL))
+		    (node_feat_ptr->node_bitmap == NULL)) {
+			if (!tmp_bitmap)
+				tmp_bitmap = bit_alloc(node_record_count);
+			bit_nset(tmp_bitmap, 0, node_record_count-1);
 			continue;
+		}
 		if (!tmp_bitmap) {
 			tmp_bitmap = bit_copy(node_feat_ptr->node_bitmap);
 			bit_not(tmp_bitmap);
