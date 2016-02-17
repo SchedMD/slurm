@@ -112,13 +112,13 @@ static s_p_hashtbl_t *_config_make_tbl(char *filename)
 	xassert(filename);
 
 	if (!(tbl = s_p_hashtbl_create(knl_conf_file_options))) {
-		error("%s: s_p_hashtbl_create error: %s", log_file,
+		error("%s: s_p_hashtbl_create error: %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 		return tbl;
 	}
 
 	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
-		error("%s: s_p_parse_file error: %s", log_file,
+		error("%s: s_p_parse_file error: %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 		s_p_hashtbl_destroy(tbl);
 		tbl = NULL;
@@ -172,13 +172,13 @@ static char *_run_script(char **script_argv, int *status)
 	int pfd[2] = { -1, -1 };
 
 	if (access(capmc_path, R_OK | X_OK) < 0) {
-		error("%s: Can not execute: %s", log_file, capmc_path);
+		error("%s: Can not execute: %s", prog_name, capmc_path);
 		*status = 127;
 		resp = xstrdup("Slurm node_features/knl_cray configuration error");
 		return resp;
 	}
 	if (pipe(pfd) != 0) {
-		error("%s: pipe(): %s", log_file,
+		error("%s: pipe(): %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 		*status = 127;
 		resp = xstrdup("System error");
@@ -199,13 +199,13 @@ static char *_run_script(char **script_argv, int *status)
 		setpgrp();
 #endif
 		execv(capmc_path, script_argv);
-		error("%s: execv(): %s", log_file,
+		error("%s: execv(): %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 		exit(127);
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);
-		error("%s: fork(): %s", log_file,
+		error("%s: fork(): %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 	} else {
 		struct pollfd fds;
@@ -220,7 +220,7 @@ static char *_run_script(char **script_argv, int *status)
 			fds.revents = 0;
 			new_wait = capmc_timeout - _tot_wait(&tstart);
 			if (new_wait <= 0) {
-				error("%s: poll() timeout @ %d msec", log_file,
+				error("%s: poll() timeout @ %d msec", prog_name,
 				      capmc_timeout);
 				break;
 			}
@@ -229,7 +229,7 @@ static char *_run_script(char **script_argv, int *status)
 			if (i == 0) {
 				continue;
 			} else if (i < 0) {
-				error("%s: poll(): %s", log_file,
+				error("%s: poll(): %s", prog_name,
 				      slurm_strerror(slurm_get_errno()));
 				break;
 			}
@@ -242,7 +242,7 @@ static char *_run_script(char **script_argv, int *status)
 			} else if (i < 0) {
 				if (errno == EAGAIN)
 					continue;
-				error("%s: read(): %s", log_file,
+				error("%s: read(): %s", prog_name,
 				      slurm_strerror(slurm_get_errno()));
 				break;
 			} else {
@@ -277,12 +277,12 @@ static bool _check_node_state(int nid, char *nid_str, char *state)
 	argv[4] = NULL;
 	resp_msg = _run_script(argv, &status);
 	if (status != 0) {
-		error("%s: capmc(%s,%s,%s): %d %s", log_file,
+		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			argv[1], argv[2], argv[3], status, resp_msg);
 	}
 	j = json_tokener_parse(resp_msg);
 	if (j == NULL) {
-		error("%s: json parser failed on %s", log_file, resp_msg);
+		error("%s: json parser failed on %s", prog_name, resp_msg);
 		xfree(resp_msg);
 		return node_state_ok;
 	}
@@ -316,7 +316,7 @@ static void *_node_update(void *args)
 		}
 	}
 	if (nid < 0) {
-		error("%s: No valid NID: %s", log_file, node_name);
+		error("%s: No valid NID: %s", prog_name, node_name);
 		goto fini;
 	}
 	snprintf(nid_str, sizeof(nid_str), "%d", nid);
@@ -333,7 +333,7 @@ static void *_node_update(void *args)
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", log_file,
+			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], argv[4], argv[5],
 			      status, resp_msg);
 		}
@@ -352,7 +352,7 @@ static void *_node_update(void *args)
 		argv[6] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", log_file,
+			error("%s: capmc(%s,%s,%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], argv[4], argv[5],
 			      status, resp_msg);
 		}
@@ -372,7 +372,7 @@ static void *_node_update(void *args)
 		argv[4] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			error("%s: capmc(%s,%s,%s): %d %s", log_file,
+			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			      argv[1], argv[2], argv[3], status, resp_msg);
 		}
 		xfree(resp_msg);
@@ -393,7 +393,7 @@ static void *_node_update(void *args)
 	argv[4] = NULL;
 	resp_msg = _run_script(argv, &status);
 	if (status != 0) {
-		error("%s: capmc(%s,%s,%s): %d %s", log_file,
+		error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 			argv[1], argv[2], argv[3], status, resp_msg);
 	}
 	xfree(resp_msg);
@@ -416,7 +416,8 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 	*num = 0;
         json_object_object_get_ex(jobj, key, &j_array);
 	if (!j_array) {
-		error("%s: Unable to parse nid specification", log_file);
+		debug("%s: key of %s not found in nid specification",
+		      prog_name, key);
 		return NULL;
 	}
 
@@ -427,7 +428,7 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 		j_type = json_object_get_type(j_value);
 		if (j_type != json_type_int) {
 			error("%s: Unable to parse nid specification",
-			      log_file);
+			      prog_name);
 			break;
 		} else {
 			ents[i] = (uint32_t) json_object_get_int64(j_value);
@@ -454,14 +455,14 @@ static void _wait_all_nodes_on(void)
 		argv[2] = NULL;
 		resp_msg = _run_script(argv, &status);
 		if (status != 0) {
-			error("%s: capmc(%s,%s,%s): %d %s", log_file,
+			error("%s: capmc(%s,%s,%s): %d %s", prog_name,
 				argv[1], argv[2], argv[3], status, resp_msg);
 			break;
 		}
 		j = json_tokener_parse(resp_msg);
 		if (j == NULL) {
 			error("%s: json parser failed on %s",
-			      log_file, resp_msg);
+			      prog_name, resp_msg);
 			xfree(resp_msg);
 			break;
 		}
@@ -487,7 +488,7 @@ int main(int argc, char *argv[])
 	pthread_attr_t attr_work;
 	pthread_t thread_work = 0;
 
-	prog_name = argv[0];
+	xstrfmtcat(prog_name, "%s[%u]", argv[0], (uint32_t) getpid());
 	_read_config();
 	log_opts.stderr_level = LOG_LEVEL_QUIET;
 	log_opts.syslog_level = LOG_LEVEL_QUIET;

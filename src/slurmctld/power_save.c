@@ -251,6 +251,7 @@ extern int power_job_reboot(struct job_record *job_ptr)
 	bitstr_t *boot_node_bitmap = NULL;
 	time_t now = time(NULL);
 	char *nodes, *features = NULL;
+	pid_t pid;
 
 	boot_node_bitmap = node_features_reboot(job_ptr);
 	if (boot_node_bitmap == NULL)
@@ -282,14 +283,14 @@ extern int power_job_reboot(struct job_record *job_ptr)
 			features = node_features_g_job_xlate(
 					job_ptr->details->features);
 		}
+		pid = _run_prog(resume_prog, nodes, features);
 #if _DEBUG
-		info("power_save: reboot nodes %s features %s",
-		     nodes, features);
+		info("power_save: pid %d reboot nodes %s features %s",
+		     (int) pid, nodes, features);
 #else
-		verbose("power_save: reboot nodes %s features %s",
-			nodes, features);
+		verbose("power_save: pid %d reboot nodes %s features %s",
+			(int) pid, nodes, features);
 #endif
-		_run_prog(resume_prog, nodes, features);
 		xfree(features);
 	} else {
 		error("power_save: bitmap2nodename");
@@ -331,8 +332,9 @@ static void _re_wake(void)
 		char *nodes;
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
-			info("power_save: rewaking nodes %s", nodes);
-			_run_prog(resume_prog, nodes, NULL);
+			pid_t pid = _run_prog(resume_prog, nodes, NULL);
+			info("power_save: pid %d rewaking nodes %s",
+			     (int) pid, nodes);
 		} else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
@@ -342,22 +344,22 @@ static void _re_wake(void)
 
 static void _do_resume(char *host)
 {
+	pid_t pid = _run_prog(resume_prog, host, NULL);
 #if _DEBUG
-	info("power_save: waking nodes %s", host);
+	info("power_save: pid %d waking nodes %s", (int) pid, host);
 #else
-	verbose("power_save: waking nodes %s", host);
+	verbose("power_save: pid %d waking nodes %s", (int) pid, host);
 #endif
-	_run_prog(resume_prog, host, NULL);
 }
 
 static void _do_suspend(char *host)
 {
+	pid_t pid = _run_prog(suspend_prog, host, NULL);
 #if _DEBUG
-	info("power_save: suspending nodes %s", host);
+	info("power_save: pid %d suspending nodes %s", (int) pid, host);
 #else
-	verbose("power_save: suspending nodes %s", host);
+	verbose("power_save: pid %d suspending nodes %s", (int) pid, host);
 #endif
-	_run_prog(suspend_prog, host, NULL);
 }
 
 /* run a suspend or resume program
