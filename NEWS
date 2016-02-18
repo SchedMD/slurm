@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- When determine if a job can fit into a TRES time limit after resources
     have been selected set the time limit appropriately if the job didn't
     request one.
+ -- Fix inadequate locks when updating a partition's TRES.
 
 * Changes in Slurm 15.08.7
 ==========================
