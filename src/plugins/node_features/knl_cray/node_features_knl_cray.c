@@ -1499,7 +1499,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 		}
 		if (strcasestr(resp_msg, "Hybrid")) {
 			xstrfmtcat(avail_states, "%s%s", avail_sep, "equal");
-			avail_sep = ",";
+			/* avail_sep = ",";	CLANG error: Dead assignment */
 		}
 		xfree(resp_msg);
 	}

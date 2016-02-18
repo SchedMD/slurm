@@ -1758,7 +1758,11 @@ _exec_prog(slurm_msg_t *msg)
 	bool checkpoint = false;
 	srun_exec_msg_t *exec_msg = msg->data;
 
-	if (exec_msg->argc > 2) {
+	if ((exec_msg->argc < 1) || (exec_msg->argv == NULL) ||
+	    (exec_msg->argv[0] == NULL)) {
+		error("%s: called with no command to execute", __func__);
+		return;
+	} else if (exec_msg->argc > 2) {
 		verbose("Exec '%s %s' for %u.%u",
 			exec_msg->argv[0], exec_msg->argv[1],
 			exec_msg->job_id, exec_msg->step_id);
