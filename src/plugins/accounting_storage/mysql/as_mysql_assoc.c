@@ -2314,6 +2314,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	List local_cluster_list = NULL;
 	List added_user_list = NULL;
 	bool is_coord = false;
+	slurmdb_update_object_t *update_object = NULL;
+	List assoc_list_tmp = NULL;
 
 	if (!assoc_list) {
 		error("No association list given");
@@ -2757,25 +2759,28 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	}
 
-	if (!moved_parent) {
-		slurmdb_update_object_t *update_object = NULL;
+	/* Since we are already removed all the items from assoc_list
+	 * we need to work off the update_list from here on out.
+	 */
+	itr = list_iterator_create(mysql_conn->update_list);;
+	while ((update_object = list_next(itr))) {
+		if (!update_object->objects ||
+		    !list_count(update_object->objects))
+			continue;
+		if (update_object->type == SLURMDB_ADD_ASSOC)
+			break;
+	}
+	list_iterator_destroy(itr);
 
-		itr = list_iterator_create(
-			mysql_conn->update_list);;
-		while ((update_object = list_next(itr))) {
-			if (!update_object->objects
-			    || !list_count(update_object->objects))
-				continue;
-			if (update_object->type == SLURMDB_ADD_ASSOC)
-				break;
-		}
-		list_iterator_destroy(itr);
+	if (update_object && update_object->objects
+	    && list_count(update_object->objects))
+		assoc_list_tmp = update_object->objects;
 
-		if (update_object && update_object->objects
-		    && list_count(update_object->objects)) {
+	if (assoc_list_tmp) {
+		ListIterator itr2 = list_iterator_create(assoc_list_tmp);
+
+		if (!moved_parent) {
 			char *cluster_name;
-			ListIterator itr2 =
-				list_iterator_create(update_object->objects);
 
 			slurm_mutex_lock(&as_mysql_cluster_list_lock);
 			itr = list_iterator_create(as_mysql_cluster_list);
@@ -2797,78 +2802,28 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-			list_iterator_destroy(itr2);
-		}
-	}
-
-	/* now reset all the other defaults accordingly. (if needed) */
-	itr = list_iterator_create(assoc_list);
-	while ((object = list_next(itr))) {
-		if ((object->is_def != 1) || !object->cluster
-		    || !object->acct || !object->user)
-			continue;
-
-		if ((rc = _reset_default_assoc(
-			     mysql_conn, object, &query, moved_parent ? 0 : 1))
-		    != SLURM_SUCCESS) {
-			xfree(query);
-			goto end_it;
 		}
 
-		/* xstrfmtcat(query, "update \"%s_%s\" set is_def=0, " */
-		/* 	   "mod_time=%ld " */
-		/* 	   "where (user='%s' && acct!='%s' && is_def=1);", */
-		/* 	   object->cluster, assoc_table, (long)now, */
-		/* 	   object->user, object->acct); */
+		/* make sure we don't have any other default accounts */
+		list_iterator_reset(itr2);
+		while ((object = list_next(itr2))) {
+			if ((object->is_def != 1) || !object->cluster
+			    || !object->acct || !object->user)
+				continue;
 
-		/* if (!moved_parent) { */
-		/* 	MYSQL_RES *result = NULL; */
-		/* 	MYSQL_ROW row; */
-		/* 	/\* If moved parent all the associations will be sent */
-		/* 	   so no need to do this extra step.  Else, this has */
-		/* 	   to be done one at a time so we can send */
-		/* 	   the updated assocs back to the slurmctlds */
-		/* 	*\/ */
-		/* 	xstrfmtcat(query, "select id_assoc from \"%s_%s\" " */
-		/* 		   "where (user='%s' && acct!='%s' " */
-		/* 		   "&& is_def=1);", */
-		/* 		   object->cluster, assoc_table, */
-		/* 		   object->user, object->acct); */
-		/* 	debug("%d(%s:%d) query\n%s", */
-		/* 	       mysql_conn->conn, THIS_FILE, */
-		/* 	       __LINE__, query); */
-		/* 	if (!(result = mysql_db_query_ret( */
-		/* 		     mysql_conn, query, 1))) { */
-		/* 		xfree(query); */
-		/* 		rc = SLURM_ERROR; */
-		/* 		goto end_it; */
-		/* 	} */
-		/* 	xfree(query); */
-
-		/* 	while ((row = mysql_fetch_row(result))) { */
-		/* 	      slurmdb_assoc_rec_t *mod_assoc = xmalloc( */
-		/* 			sizeof(slurmdb_assoc_rec_t)); */
-		/* 		slurmdb_init_assoc_rec(mod_assoc, 0); */
-
-		/* 		mod_assoc->id = slurm_atoul(row[0]); */
-		/* 		mod_assoc->is_def = 0; */
-
-		/* 		if (addto_update_list(mysql_conn->update_list,*/
-		/* 				      SLURMDB_MODIFY_ASSOC, */
-		/* 				      mod_assoc) */
-		/* 		    != SLURM_SUCCESS) { */
-		/* 			slurmdb_destroy_assoc_rec( */
-		/* 				mod_assoc); */
-		/* 			error("couldn't add to " */
-		/* 			      "the update list"); */
-		/* 			rc = SLURM_ERROR; */
-		/* 			break; */
-		/* 		} */
-		/* 	} */
-		/* 	mysql_free_result(result); */
-		/* } */
+			if ((rc = _reset_default_assoc(
+				     mysql_conn, object,
+				     &query, moved_parent ? 0 : 1))
+			    != SLURM_SUCCESS) {
+				xfree(query);
+				goto end_it;
+			}
+		}
+		list_iterator_destroy(itr2);
+		/* This temp list is no longer needed */
+		assoc_list_tmp = NULL;
 	}
-	list_iterator_destroy(itr);
+
 	if (query) {
 		if (debug_flags & DEBUG_FLAG_DB_ASSOC)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
@@ -2897,7 +2852,6 @@ end_it:
 			}
 		}
 		if (moved_parent) {
-			List assoc_list = NULL;
 			ListIterator itr = NULL;
 			slurmdb_assoc_rec_t *assoc = NULL;
 			slurmdb_assoc_cond_t assoc_cond;
@@ -2914,7 +2868,7 @@ end_it:
 			memset(&assoc_cond, 0,
 			       sizeof(slurmdb_assoc_cond_t));
 			assoc_cond.cluster_list = local_cluster_list;
-			if (!(assoc_list =
+			if (!(assoc_list_tmp =
 			      as_mysql_get_assocs(mysql_conn, uid, NULL))) {
 				FREE_NULL_LIST(local_cluster_list);
 				return rc;
@@ -2927,7 +2881,7 @@ end_it:
 			   So we are just going to delete each item as it
 			   comes out since we are moving it to the update_list.
 			*/
-			itr = list_iterator_create(assoc_list);
+			itr = list_iterator_create(assoc_list_tmp);
 			while ((assoc = list_next(itr))) {
 				if (addto_update_list(mysql_conn->update_list,
 						      SLURMDB_MODIFY_ASSOC,
@@ -2935,7 +2889,7 @@ end_it:
 					list_remove(itr);
 			}
 			list_iterator_destroy(itr);
-			FREE_NULL_LIST(assoc_list);
+			FREE_NULL_LIST(assoc_list_tmp);
 		}
 	} else {
 		FREE_NULL_LIST(added_user_list);
