@@ -1325,6 +1325,8 @@ static void _clear_node_caps(void)
 	     i++, node_ptr++) {
 		if (!node_ptr->power)
 			continue;
+		if (node_ptr->power->state != 1)  /* Not ready, no change */
+			continue;
 		node_ptr->power->new_cap_watts = 0;
 	}
 }

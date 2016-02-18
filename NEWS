@@ -164,6 +164,10 @@ documents those changes that are of interest to users and administrators.
  -- If FastSchedule=0 is used make sure TRES are set up correctly in accounting.
  -- Fix sreport's truncation of columns with large TRES and not using
     a parsing option.
+ -- Make sure count of boards are restored when slurmctld has option -R.
+ -- When determine if a job can fit into a TRES time limit after resources
+    have been selected set the time limit appropriately if the job didn't
+    request one.
 
 * Changes in Slurm 15.08.7
 ==========================

@@ -643,6 +643,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpus          = cpus;
+			node_ptr->boards        = boards;
 			node_ptr->sockets       = sockets;
 			node_ptr->cores         = cores;
 			node_ptr->core_spec_cnt = core_spec_cnt;
