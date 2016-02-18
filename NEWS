@@ -101,6 +101,9 @@ documents those changes that are of interest to users and administrators.
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
 
+* Changes in Slurm 15.08.9
+==========================
+
 * Changes in Slurm 15.08.8
 ==========================
  -- Backfill scheduling properly synchronized with Cray Node Health Check.
