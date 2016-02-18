@@ -2596,7 +2596,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		memcpy(node_ptr->energy, reg_msg->energy,
 		       sizeof(acct_gather_energy_t));
 
-	node_ptr->last_response = now;
+	node_ptr->last_response = MAX(now, node_ptr->last_response);
 
 	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
 
@@ -2631,7 +2631,7 @@ static front_end_record_t * _front_end_reg(
 		reg_msg->job_count = 0;
 	}
 
-	front_end_ptr->last_response = now;
+	front_end_ptr->last_response = MAX(now, front_end_ptr->last_response);
 	front_end_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
 	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
@@ -2832,7 +2832,7 @@ extern int validate_nodes_via_front_end(
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		config_ptr = node_ptr->config_ptr;
-		node_ptr->last_response = now;
+		node_ptr->last_response = MAX(now, node_ptr->last_response);
 
 		rc = gres_plugin_node_config_validate(node_ptr->name,
 						      config_ptr->gres,
@@ -3015,7 +3015,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
-	fe_ptr->last_response = now;
+	fe_ptr->last_response = MAX(now, fe_ptr->last_response);
 
 	if (IS_NODE_NO_RESPOND(fe_ptr)) {
 		info("Node %s now responding", fe_ptr->name);
@@ -3067,8 +3067,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 			return;
 		}
 	}
-	if (node_ptr->last_response < now)
-		node_ptr->last_response = now;
+	node_ptr->last_response = MAX(now, node_ptr->last_response);
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -3180,9 +3179,9 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	 * couldn't contact the slurmd.
 	 * last_response could be in the future if boot in progress.
 	 */
-	if ((resp_type != RESPONSE_FORWARD_FAILED) &&
-	    (node_ptr->last_response < (msg_time - 1))) {
-		node_ptr->last_response = msg_time - 1;
+	if (resp_type != RESPONSE_FORWARD_FAILED) {
+		node_ptr->last_response = MAX(msg_time - 1,
+					      node_ptr->last_response);
 	}
 
 	if (!IS_NODE_DOWN(node_ptr)) {
