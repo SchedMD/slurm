@@ -137,7 +137,9 @@ static void _calc_part_tres(struct part_record *part_ptr)
 }
 
 /*
- * Calcuate and populate the number of tres' for all partitions.
+ * Calcuate and populate the number of tres' for all
+ * partitions. Partition write and Node read lock should be set before
+ * calling this.
  */
 extern void set_partition_tres()
 {

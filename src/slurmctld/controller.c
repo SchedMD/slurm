@@ -1184,12 +1184,12 @@ static int _accounting_cluster_ready(void)
 	time_t event_time = time(NULL);
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL, *cluster_tres_str;
-	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	lock_slurmctld(node_read_lock);
+	lock_slurmctld(node_write_lock);
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
 	*/
@@ -1206,7 +1206,7 @@ static int _accounting_cluster_ready(void)
 		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
 	assoc_mgr_unlock(&locks);
 
-	unlock_slurmctld(node_read_lock);
+	unlock_slurmctld(node_write_lock);
 
 	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
 						cluster_nodes,
@@ -1912,7 +1912,9 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_node_acct) >= PERIODIC_NODE_ACCT) {
 			/* Report current node state to account for added
-			 * or reconfigured nodes */
+			 * or reconfigured nodes.  Locks are done
+			 * inside _accounting_cluster_ready, don't
+			 * lock here. */
 			now = time(NULL);
 			last_node_acct = now;
 			_accounting_cluster_ready();

@@ -168,6 +168,11 @@ documents those changes that are of interest to users and administrators.
  -- When determine if a job can fit into a TRES time limit after resources
     have been selected set the time limit appropriately if the job didn't
     request one.
+ -- Fix inadequate locks when updating a partition's TRES.
+ -- Add new assoc_limit_continue flag to SchedulerParameters.
+ -- Avoid race in acct_gather_energy_cray if energy requested before available.
+ -- MYSQL - Avoid having multiple default accounts when a user is added to
+    a new account and making it a default all at once.
 
 * Changes in Slurm 15.08.7
 ==========================
