@@ -2378,6 +2378,12 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
+\fBassoc_limit_continue\fR
+If set, continue to schedule lower priority jobs in each partition if the
+higher priority jobs cannot start due to association limits. Setting this
+can improve throughput and utlization, but may potentially starve larger
+jobs and prevent them from launching indefinitely.
+.TP
 \fBbatch_sched_delay=#\fR
 How long, in seconds, the scheduling of batch jobs can be delayed.
 This can be useful in a high\-throughput environment in which batch jobs are
