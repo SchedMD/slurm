@@ -83,6 +83,8 @@ enum {
 	GET_POWER
 };
 
+extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl);
+
 static uint32_t _get_latest_stats(int type)
 {
 	uint32_t data = 0;
