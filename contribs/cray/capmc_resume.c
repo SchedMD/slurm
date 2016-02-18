@@ -416,7 +416,7 @@ static uint32_t *_json_parse_nids(json_object *jobj, char *key, int *num)
 	*num = 0;
         json_object_object_get_ex(jobj, key, &j_array);
 	if (!j_array) {
-		debug("%s: key of %s not found in nid specification",
+		debug("%s: key=%s not found in nid specification",
 		      prog_name, key);
 		return NULL;
 	}
