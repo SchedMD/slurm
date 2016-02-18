@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     request one.
  -- Fix inadequate locks when updating a partition's TRES.
  -- Add new assoc_limit_continue flag to SchedulerParameters.
+ -- Avoid race in acct_gather_energy_cray if energy requested before available.
 
 * Changes in Slurm 15.08.7
 ==========================
