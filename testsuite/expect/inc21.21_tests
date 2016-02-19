@@ -286,6 +286,9 @@ proc inc21_21_submit_test { limit } {
 			    [array get acct_mod_assoc_test_vals] \
 			    [array get acct_mod_acct_vals]]
 	if { $exit_code } {
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
 		return $exit_code
 	}
 
@@ -336,11 +339,16 @@ proc inc21_21_submit_test { limit } {
 			    set exit_code 1
 			    break
 		    }
-
+		    # We need to sleep because of the way the scheduler works
+		    # if we don't sleep then we could
+		    sleep 1
 	    }
 
 
 	if { $exit_code } {
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
 		return $exit_code
 	}
 
@@ -377,11 +385,11 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	if { $exit_code } {
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
 		return $exit_code
 	}
-
-	# sleep the Schedule cycle default is 4
-	sleep 4
 
 	set matches 0
 	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]
@@ -414,6 +422,17 @@ proc inc21_21_submit_test { limit } {
 		eof {
 			wait
 		}
+	}
+
+	if { $matches != 4 } {
+		send_user "\nFAILURE: jobs are not in the expected state "
+		send_user "expected ($matches != 4)"
+		print_err $limit "inc21_21_submit_test"
+		set exit_code 1
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
+		return $exit_code
 	}
 
 	# Test to make sure that the grpsubmit and maxsubmit
@@ -460,10 +479,16 @@ proc inc21_21_submit_test { limit } {
 			    break
 		    }
 
+		    # We need to sleep because of the way the scheduler works
+		    # if we don't sleep then we could
+		    sleep 1
 	    }
 
 
 	if { $exit_code } {
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
 		return $exit_code
 	}
 
@@ -500,7 +525,36 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	if { $exit_code } {
+		# Clear the limits
+		set acct_mod_assoc_test_vals($limit_job) "-1"
+		set acct_mod_assoc_test_vals($limit_sub) "-1"
 		return $exit_code
+	}
+
+	set matches 0
+	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]
+	expect {
+		-re "($job_id(2)|$job_id(3))_\\\[0\\\].PD.AssocMaxJobsLimit" {
+			incr matches
+			exp_continue
+		}
+		-re "($job_id(2)|$job_id(3))_\\\[0\\\].PD.AssocGrpJobsLimit" {
+			incr matches
+			exp_continue
+		}
+		-re "($job_id(0)|$job_id(1))_0.R.None" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding "
+			print_err $limit "inc21_21_submit_test"
+			slow_kill $mypid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
 
 	spawn $scancel --quiet --account=$ta

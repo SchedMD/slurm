@@ -2553,6 +2553,7 @@ static void _verify_clustername(void)
 	if ((fp = fopen(filename, "r"))) {
 		/* read value and compare */
 		fgets(name, sizeof(name), fp);
+		fclose(fp);
 		if (xstrcmp(name, slurmctld_conf.cluster_name)) {
 			fatal("CLUSTER NAME MISMATCH.\n"
 				"slurmctld has been started with \""
@@ -2579,10 +2580,10 @@ static void _verify_clustername(void)
 				__FUNCTION__, filename);
 			exit(1);
 		}
+		fclose(fp);
 	}
 
 	xfree(filename);
-	fclose(fp);
 }
 
 /* Kill the currently running slurmctld
