@@ -4276,6 +4276,9 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -7160,6 +7163,9 @@ void job_time_limit(void)
 		/* This needs to be near the top of the loop, checks every
 		 * running, suspended and pending job */
 		resv_status = job_resv_check(job_ptr);
+
+		if (job_ptr->details && job_ptr->details->prolog_running)
+			continue;
 
 		if (job_ptr->preempt_time &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
@@ -12037,6 +12043,9 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool job_active = IS_JOB_RUNNING(job_ptr) ||
 				  IS_JOB_SUSPENDED(job_ptr);
+
+		if (job_ptr->details && job_ptr->details->prolog_running)
+			continue;
 
 		if ((!job_active) ||
 		    (!bit_test(job_ptr->node_bitmap, node_inx)))
