@@ -449,7 +449,6 @@ extern int pmi_kvs_put(kvs_comm_set_t *kvs_set_ptr)
 			kvs_set_ptr-> kvs_comm_ptr[i] = NULL;
 		}
 	}
-	slurm_free_kvs_comm_set(kvs_set_ptr);
 	_print_kvs();
 	kvs_updated = 1;
 	slurm_mutex_unlock(&kvs_mutex);
