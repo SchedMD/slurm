@@ -787,3 +787,4 @@ test35.2   Cray job-specific burst buffer use
 test36.#   Testing of openlava/LSF wrappers and Perl APIs.
 ==========================================================
 test36.1   lsid wrapper test
+test36.2   bjobs wrapper test
