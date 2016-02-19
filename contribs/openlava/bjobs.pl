@@ -65,7 +65,7 @@ sub _hr_time
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
 		localtime $epoch_time;
 
-	return sprintf("%s %d %d:%d", $abbr[$mon], $mday, $hour, $min);
+	return sprintf("%s %d %02d:%02d", $abbr[$mon], $mday, $hour, $min);
 }
 
 sub _shrink_char
