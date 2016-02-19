@@ -103,6 +103,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.9
 ==========================
+ -- BurstBuffer/cray - Defer job cancellation or time limit while "pre-run"
+    operation in progress to avoid inconsistent state due to multiple calls
+    to job termination functions.
 
 * Changes in Slurm 15.08.8
 ==========================

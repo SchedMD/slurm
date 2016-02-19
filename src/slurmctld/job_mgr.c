@@ -4363,6 +4363,9 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
+	if (IS_JOB_CONFIGURING(job_ptr))
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+
 	/* let node select plugin do any state-dependent signalling actions */
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
@@ -12402,10 +12405,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bool job_active = IS_JOB_RUNNING(job_ptr) ||
-				  IS_JOB_SUSPENDED(job_ptr);
-
-		if ((!job_active) ||
+		if ((IS_JOB_CONFIGURING(job_ptr) ||
+		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) ||
 		    (!bit_test(job_ptr->node_bitmap, node_inx)))
 			continue;
 		if ((job_ptr->batch_flag != 0)			&&
