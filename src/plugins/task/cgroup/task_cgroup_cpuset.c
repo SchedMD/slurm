@@ -1085,7 +1085,7 @@ again:
 			goto again;
 		}
 
-		/* initialize the cpusets as it was inexistent */
+		/* initialize the cpusets as it was non-existent */
 		if (_xcgroup_cpuset_init(&slurm_cg) !=
 		    XCGROUP_SUCCESS) {
 			xfree(slurm_cgpath);
@@ -1200,7 +1200,7 @@ again:
 	 */
 	rc = xcgroup_get_param(&user_cpuset_cg, cpuset_meta, &cpus,&cpus_size);
 	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
-		/* initialize the cpusets as it was inexistent */
+		/* initialize the cpusets as it was non-existent */
 		if (_xcgroup_cpuset_init(&user_cpuset_cg) !=
 		    XCGROUP_SUCCESS) {
 			xcgroup_delete(&user_cpuset_cg);
