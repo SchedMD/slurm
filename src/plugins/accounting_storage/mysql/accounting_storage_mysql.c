@@ -259,7 +259,7 @@ static void _process_running_jobs_result(char *cluster_name,
 		if (!row[JASSOC_USER][0]) {
 			/* This should never happen */
 			error("How did we get a job running on an association "
-			      "that isn't a user assocation job %s cluster "
+			      "that isn't a user association job %s cluster "
 			      "'%s' acct '%s'?", row[JASSOC_JOB],
 			      cluster_name, row[JASSOC_ACCT]);
 			continue;

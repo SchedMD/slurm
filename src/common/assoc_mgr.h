@@ -125,7 +125,7 @@ extern slurmdb_assoc_rec_t *assoc_mgr_root_assoc;
 
 extern uint32_t g_qos_max_priority; /* max priority in all qos's */
 extern uint32_t g_qos_count; /* count used for generating qos bitstr's */
-extern uint32_t g_user_assoc_count; /* Number of assocations which are users */
+extern uint32_t g_user_assoc_count; /* Number of associations which are users */
 extern uint32_t g_tres_count; /* Number of TRES from the database
 			       * which also is the number of elements
 			       * in the assoc_mgr_tres_array */
@@ -374,7 +374,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 				       int enforce);
 
 /*
- * clear the used_* fields from every assocation,
+ * clear the used_* fields from every association,
  *	used on reconfiguration
  */
 extern void assoc_mgr_clear_used_info(void);

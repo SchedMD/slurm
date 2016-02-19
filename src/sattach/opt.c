@@ -459,7 +459,7 @@ static bool _opt_verify(void)
 	 */
 	if ((opt.input_filter_set || opt.output_filter_set ||
 	     opt.error_filter_set) && opt.pty) {
-		error("don't specifiy both --pty and I/O filtering");
+		error("don't specify both --pty and I/O filtering");
 		verified = false;
 	}
 	if (opt.input_filter_set)

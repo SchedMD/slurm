@@ -1169,7 +1169,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (percent_used > 100) {
 				if (debug_flags & DEBUG_FLAG_DB_RES)
 					DB_DEBUG(mysql_conn->conn,
-						 "Modifing resource %s@%s "
+						 "Modifying resource %s@%s "
 						 "with %u%% allowed to each "
 						 "cluster would put the usage "
 						 "at %u%%, (which is "

@@ -5492,7 +5492,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 					shares_norm);
 		}
 		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres){
-			debug2("Job %u exceeds usage threashold",
+			debug2("Job %u exceeds usage threshold",
 			       job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}

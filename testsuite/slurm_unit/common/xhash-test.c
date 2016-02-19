@@ -172,7 +172,7 @@ START_TEST(test_delete)
 	/* invalid cases */
 	xhash_delete(NULL, "1");
 	fail_unless(xhash_get(ht, "1") != NULL, "invalid case null");
-	/* Deleting inexistant item should do nothing. */
+	/* Deleting inexistent item should do nothing. */
 	xhash_delete(ht, NULL);
 	fail_unless(xhash_count(ht) == g_hashableslen,
 			"invalid delete has been done");

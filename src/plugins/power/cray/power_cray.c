@@ -380,7 +380,7 @@ static void _load_config(void)
 			level_str = "job_level,";
 		info("PowerParameters=balance_interval=%d,capmc_path=%s,"
 		     "cap_watts=%u,decrease_rate=%u,get_timeout=%d,"
-		     "increase_rate=%u,%slower_threashold=%u,recent_job=%u,"
+		     "increase_rate=%u,%slower_threshold=%u,recent_job=%u,"
 		     "set_timeout=%d,set_watts=%u,upper_threshold=%u",
 		     balance_interval, capmc_path, cap_watts, decrease_rate,
 		     get_timeout, increase_rate, level_str, lower_threshold,

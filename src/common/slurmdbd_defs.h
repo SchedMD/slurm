@@ -72,7 +72,7 @@ typedef enum {
 	DBD_FLUSH_JOBS, 	/* End jobs that are still running
 				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
-	DBD_GET_ASSOCS,         /* Get assocation information   	*/
+	DBD_GET_ASSOCS,         /* Get association information   	*/
 	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
 	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/

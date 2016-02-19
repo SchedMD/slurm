@@ -82,7 +82,7 @@ hv_to_topo_info_response_msg(HV *hv, topo_info_response_msg_t *topo_info_msg)
 
 	svp = hv_fetch(hv, "topo_array", 10, FALSE);
 	if (! (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV)) {
-		Perl_warn (aTHX_ "topo_array is not an array refrence in HV for topo_info_response_msg_t");
+		Perl_warn (aTHX_ "topo_array is not an array reference in HV for topo_info_response_msg_t");
 		return -1;
 	}
 

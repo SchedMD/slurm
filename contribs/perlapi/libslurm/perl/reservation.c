@@ -136,7 +136,7 @@ hv_to_reserve_info_msg(HV *hv, reserve_info_msg_t *resv_info_msg)
 
 	svp = hv_fetch(hv, "reservation_array", 17, FALSE);
 	if (! (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV)) {
-		Perl_warn (aTHX_ "reservation_array is not an array refrence in HV for reservation_info_msg_t");
+		Perl_warn (aTHX_ "reservation_array is not an array reference in HV for reservation_info_msg_t");
 		return -1;
 	}
 

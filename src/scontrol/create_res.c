@@ -127,7 +127,7 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 		param = slurm_get_select_type_param();
 		if (! (param & CR_OTHER_CONS_RES)) {
 			error("CoreCnt or CPUCnt is only "
-			      "suported when "
+			      "supported when "
 			      "SelectTypeParameters "
 			      "includes OTHER_CONS_RES");
 			xfree(type);
@@ -135,7 +135,7 @@ static int _parse_resv_core_cnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 		}
 	} else if (strcasestr(type, "cons_res") == NULL) {
 		error("CoreCnt or CPUCnt is only "
-		      "suported when "
+		      "supported when "
 		      "SelectType includes "
 		      "select/cons_res");
 		xfree(type);

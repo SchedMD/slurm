@@ -343,7 +343,7 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 	return cpu_cnt;
 }
 
-/* Determine fair share assocation to use for some job */
+/* Determine fair share association to use for some job */
 static slurmdb_assoc_rec_t *
 _get_job_fs_ass(char *job_type, struct job_record *job_ptr)
 {

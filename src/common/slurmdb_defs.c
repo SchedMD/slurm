@@ -150,7 +150,7 @@ static int _sort_children_list(void *v1, void *v2)
 	assoc_a = *(slurmdb_hierarchical_rec_t **)v1;
 	assoc_b = *(slurmdb_hierarchical_rec_t    **)v2;
 
-	/* Since all these assocations are on the same level we don't
+	/* Since all these associations are on the same level we don't
 	 * have to check the lfts
 	 */
 
