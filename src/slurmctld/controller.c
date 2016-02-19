@@ -2555,7 +2555,7 @@ static void _verify_clustername(void)
 				slurmctld_conf.cluster_name, filename);
 			exit(1);
 		}
-	} else {
+	} else if (slurmctld_conf.cluster_name) {
 		debug("creating clustername file: %s", filename);
 		if (!(fp = fopen(filename, "w"))) {
 			fatal("%s: failed to create file %s",
