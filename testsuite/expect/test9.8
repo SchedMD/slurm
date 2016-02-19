@@ -56,7 +56,7 @@ if {![test_select_type_params "Memory"]} {
 } elseif {[test_launch_poe]} {
 	set mem_per_step 200
 } else {
-	set mem_per_step 4
+	set mem_per_step 8
 }
 
 #
@@ -118,13 +118,8 @@ if {$start_cnt < $job_cnt} {
 	send_user "\nAll $start_cnt jobs submitted\n"
 }
 
-#
-# Give the jobs a few seconds to get initiated, check for steps,
-# then kill them all
-#
 set user_name ""
 
-exec $bin_sleep $delay
 spawn $bin_id -un
 expect {
 	-re "($alpha_numeric_under)" {
@@ -135,19 +130,24 @@ expect {
 	}
 
 }
+
 #
 # There could be hundreds of job steps, we don't want to see
 # the details, but want to make sure that we did start many
 #
 set desired_tasks [expr $task_cnt * 2 / 3]
 
+#
+# Give the jobs a few seconds to get initiated, check for steps,
+# then kill them all
+#
+exec $bin_sleep $delay
+
 set job_count  0
 set step_count 0
 set timeout    60
 log_user 0
 while { 1 } {
-	exec $bin_sleep 3
-
 	set job_count 0
 	spawn $squeue --state R --name $job_name --user $user_name
 	expect {
@@ -192,7 +192,7 @@ while { 1 } {
 		send_user "\nOnly started $job_count jobs, reducing step count target to $scaled_task_cnt\n"
 		set desired_tasks $scaled_task_cnt
 	}
-	
+	exec $bin_sleep 3
 }
 if {[test_aix]} {
 	sleep 5
