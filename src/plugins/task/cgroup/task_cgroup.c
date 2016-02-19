@@ -335,7 +335,7 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 		return pre;
 	}
 	slurm_cg.notify = 0;
-	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
 		error("unable to build slurm cgroup for ns %s: %m",
 		      ns->subsystems);
 		xcgroup_destroy(&slurm_cg);

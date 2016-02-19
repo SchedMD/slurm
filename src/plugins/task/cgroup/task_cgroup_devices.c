@@ -279,7 +279,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			    getuid(),getgid()) != XCGROUP_SUCCESS ) {
 		goto error;
 	}
-	if ( xcgroup_instanciate(&user_devices_cg) != XCGROUP_SUCCESS ) {
+	if ( xcgroup_instantiate(&user_devices_cg) != XCGROUP_SUCCESS ) {
 		xcgroup_destroy(&user_devices_cg);
 		goto error;
 	}
@@ -300,7 +300,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		xcgroup_destroy(&user_devices_cg);
 		goto error;
 	}
-	if ( xcgroup_instanciate(&job_devices_cg) != XCGROUP_SUCCESS ) {
+	if ( xcgroup_instantiate(&job_devices_cg) != XCGROUP_SUCCESS ) {
 		xcgroup_destroy(&user_devices_cg);
 		xcgroup_destroy(&job_devices_cg);
 		goto error;
@@ -351,7 +351,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		xcgroup_destroy(&job_devices_cg);
 		goto error;
 	}
-	if ( xcgroup_instanciate(&step_devices_cg) != XCGROUP_SUCCESS ) {
+	if ( xcgroup_instantiate(&step_devices_cg) != XCGROUP_SUCCESS ) {
 		xcgroup_destroy(&user_devices_cg);
 		xcgroup_destroy(&job_devices_cg);
 		xcgroup_destroy(&step_devices_cg);

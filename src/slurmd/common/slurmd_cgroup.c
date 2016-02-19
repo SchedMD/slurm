@@ -167,7 +167,7 @@ again:
 			   getuid(),getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instanciate(&system_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&system_cpuset_cg) != XCGROUP_SUCCESS) {
 		goto error;
 	}
 	if (_xcgroup_cpuset_init(&system_cpuset_cg) != XCGROUP_SUCCESS) {
@@ -273,7 +273,7 @@ extern int init_system_memory_cgroup(void)
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instanciate(&system_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&system_memory_cg) != XCGROUP_SUCCESS) {
 		goto error;
 	}
 
@@ -329,7 +329,7 @@ static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 		return pre;
 	}
 	slurm_cg.notify = 0;
-	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
 		error("system cgroup: unable to build slurm cgroup for "
 		      "ns %s: %m",
 		      ns->subsystems);

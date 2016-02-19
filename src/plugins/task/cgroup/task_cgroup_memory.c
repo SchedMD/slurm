@@ -273,7 +273,7 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 
 	cg->notify = notify;
 
-	if (xcgroup_instanciate (cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate (cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy (cg);
 		return -1;
 	}
@@ -408,7 +408,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 			    getuid(),getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instanciate(&user_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&user_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		goto error;
 	}

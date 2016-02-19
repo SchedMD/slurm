@@ -293,7 +293,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instanciate user %u "
 		      "cpuacct cgroup", uid);
@@ -314,7 +314,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instanciate job %u "
@@ -339,7 +339,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&step_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&step_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		xcgroup_destroy(&step_cpuacct_cg);
@@ -365,7 +365,7 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&task_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&task_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		xcgroup_destroy(&step_cpuacct_cg);

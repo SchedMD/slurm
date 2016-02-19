@@ -225,7 +225,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instanciate(&user_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&user_blkio_cg) != XCGROUP_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to instanciate user %u " */
 /* 		      "blkio cgroup", uid); */
@@ -246,7 +246,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instanciate(&job_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&job_blkio_cg) != XCGROUP_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to instanciate job %u " */
@@ -271,7 +271,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instanciate(&step_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&step_blkio_cg) != XCGROUP_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		xcgroup_destroy(&step_blkio_cg); */
@@ -297,7 +297,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instanciate(&task_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&task_blkio_cg) != XCGROUP_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		xcgroup_destroy(&step_blkio_cg); */

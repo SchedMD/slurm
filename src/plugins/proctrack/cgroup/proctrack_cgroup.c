@@ -165,7 +165,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	xcgroup_lock(&freezer_cg);
 
 	/* create slurm cgroup in the freezer ns (it could already exist) */
-	if (xcgroup_instanciate(&slurm_freezer_cg) != XCGROUP_SUCCESS)
+	if (xcgroup_instantiate(&slurm_freezer_cg) != XCGROUP_SUCCESS)
 		goto bail;
 
 	/* build user cgroup relative path if not set (should not be) */
@@ -239,9 +239,9 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 		goto bail;
 	}
 
-	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
-	    (xcgroup_instanciate(&job_freezer_cg)  != XCGROUP_SUCCESS) ||
-	    (xcgroup_instanciate(&step_freezer_cg) != XCGROUP_SUCCESS)) {
+	if ((xcgroup_instantiate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
+	    (xcgroup_instantiate(&job_freezer_cg)  != XCGROUP_SUCCESS) ||
+	    (xcgroup_instantiate(&step_freezer_cg) != XCGROUP_SUCCESS)) {
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 		xcgroup_destroy(&step_freezer_cg);

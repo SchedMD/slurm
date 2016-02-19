@@ -307,7 +307,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&user_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&user_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		error("jobacct_gather/cgroup: unable to instanciate user %u "
 		      "memory cgroup", uid);
@@ -328,7 +328,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&job_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&job_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		error("jobacct_gather/cgroup: unable to instanciate job %u "
@@ -353,7 +353,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&step_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&step_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		xcgroup_destroy(&step_memory_cg);
@@ -379,7 +379,7 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 		goto error;
 	}
 
-	if (xcgroup_instanciate(&task_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&task_memory_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		xcgroup_destroy(&step_memory_cg);

@@ -1190,7 +1190,7 @@ again:
 			   getuid(),getgid()) != XCGROUP_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instanciate(&user_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&user_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		goto error;
 	}
@@ -1226,7 +1226,7 @@ again:
 		xcgroup_destroy(&user_cpuset_cg);
 		goto error;
 	}
-	if (xcgroup_instanciate(&job_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&job_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		goto error;
@@ -1252,7 +1252,7 @@ again:
 		xcgroup_destroy(&job_cpuset_cg);
 		goto error;
 	}
-	if (xcgroup_instanciate(&step_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&step_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		xcgroup_destroy(&step_cpuset_cg);

@@ -448,7 +448,7 @@ int xcgroup_unlock(xcgroup_t* cg)
 	return fstatus;
 }
 
-int xcgroup_instanciate(xcgroup_t* cg)
+int xcgroup_instantiate(xcgroup_t* cg)
 {
 	int fstatus = XCGROUP_ERROR;
 	mode_t cmask;

@@ -194,7 +194,7 @@ int xcgroup_unlock(xcgroup_t* cg);
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_instanciate(xcgroup_t* cg);
+int xcgroup_instantiate(xcgroup_t* cg);
 
 /*
  * load a cgroup from a cgroup namespace into a structure
