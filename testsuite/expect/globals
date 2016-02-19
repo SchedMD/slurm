@@ -114,6 +114,7 @@ cset qrerun      "${slurm_dir}/bin/qrerun"
 
 cset lsid      	 "${slurm_dir}/bin/lsid"
 cset bjobs     	 "${slurm_dir}/bin/bjobs"
+cset bkill     	 "${slurm_dir}/bin/bkill"
 
 # If length of string partition is zero, use output of function
 #	default_partition, otherwise use the partition explicitly

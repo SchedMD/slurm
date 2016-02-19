@@ -1,0 +1,158 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          bkill wrapper test
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2016 SchedMD LLC
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "36.3"
+set file_in     "test$test_id.input"
+set job_id      0
+set exit_code   0
+
+print_header $test_id
+
+if {[file executable $sbatch] == 0} {
+	send_user "\nWARNING: $sbatch does not exist\n"
+	exit 0
+}
+
+if {[file executable $bkill] == 0} {
+	send_user "\nWARNING: $bkill does not exist\n"
+	exit 0
+}
+
+if {[file executable $scontrol] == 0} {
+	send_user "\nWARNING: $scontrol does not exist\n"
+	exit 0
+}
+
+#
+# Submit a slurm job
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "
+  $bin_sleep 20
+"
+
+set job_submitted 0
+spawn $sbatch -N1 $file_in
+expect {
+        -re "Submitted batch job ($number)" {
+                set job_id $expect_out(1,string)
+		set job_submitted 1
+                exp_continue
+        }
+        timeout {
+                send_user "\nFAILURE: sbatch not responding\n"
+                set exit_code 1
+                exp_continue
+        }
+        eof {
+                wait
+        }
+}
+if { $job_id == 0 } {
+        send_user "\nFAILURE: failed to submit job\n"
+        exit 1
+}
+
+if {$job_submitted == 1} {
+	#
+	# Test bkill $job_id
+	#
+	set job_sent_kill 0
+	spawn $bkill $job_id
+	expect {
+		-re "Job <$job_id> is being terminated" {
+			set job_sent_kill 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: bkill not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+} else {
+	send_user "\nFAILURE: unable to submit a test job through sbatch\n"
+	exit 1
+}
+
+if {$job_sent_kill == 1} {
+	#
+	# Test job state is now CANCELLED
+	#
+	set state_match 0
+	set cycle_count 8
+	for {set inx 0} {$inx < $cycle_count} {incr inx} {
+        	spawn $scontrol show job $job_id
+        	expect {
+        	        -re "JobState=CANCELLED" {
+        	                incr state_match
+				set exit_code 0
+				break
+        	        }
+			-re "JobState=" {
+				sleep 2
+				set exit_code 1
+				exp_continue
+			}
+        	        timeout {
+        	                send_user "\nFAILURE scontrol not responding\n"
+        	                set exit_code 1
+        	        }
+        	        eof {
+        	                wait
+        	        }
+        	}
+	}
+	if {$exit_code == 1} {
+		if {$cycle_count == 8} {
+			send_user "\nFAILURE: job not switched to CANCELLED\n"
+			exit 1
+		}
+	}
+} else {
+	send_user "\nFAILURE: unable bkill $job_id\n"
+	cancel_job $job_id
+	exit 1
+}
+
+if {$state_match != 1} {
+	send_user "\nFAILURE job should be CANCELLED, but is not\n"
+        set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code
