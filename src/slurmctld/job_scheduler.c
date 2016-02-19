@@ -205,6 +205,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
 	if (cleaning ||
+	    (job_ptr->details && job_ptr->details->prolog_running) ||
 	    (job_ptr->step_list && list_count(job_ptr->step_list))) {
 		/* Job's been requeued and the
 		 * previous run hasn't finished yet */
