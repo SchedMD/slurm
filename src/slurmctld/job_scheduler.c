@@ -3341,10 +3341,13 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 {
 	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
 
-	if (job_ptr->reboot || (node_features_g_count() == 0)) {
+	if (job_ptr->reboot) {
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 		return boot_node_bitmap;
 	}
+
+	if (node_features_g_count() == 0)
+		return NULL;
 
 	build_active_feature_bitmap(job_ptr, job_ptr->node_bitmap,
 				    &active_bitmap);
