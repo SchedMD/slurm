@@ -51,17 +51,10 @@ spawn $lsid
 expect {
 	-re "My cluster name is ($alpha_numeric_under)" {
 		set lsid_cluster_name $expect_out(1,string)
-		if {[string compare $cluster_name $lsid_cluster_name] == 0} {
-			set cluster_name_ok 1
-		}
 		exp_continue
 	}
 	-re "My master name is ($controlmachine_regex)" {
 		set lsid_control_machine $expect_out(1,string)
-		if {[string compare $control_machine $lsid_control_machine]
-			== 0} {
-			set control_machine_ok 1
-		}
 		exp_continue
 	}
 	timeout {
@@ -73,17 +66,20 @@ expect {
 	}
 }
 
-if {($cluster_name_ok == 0) && ($control_machine_ok == 0)} {
-	send_user "\nFAILURE: lsid's cluster name and master name do not match the configured parameters\n"
-	set exit_code 1
-} elseif {($cluster_name_ok == 0) && ($control_machine_ok == 1)} {
+if {[string compare $cluster_name $lsid_cluster_name]} {
 	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter\n"
 	set exit_code 1
-} elseif {($cluster_name_ok == 1) && ($control_machine_ok == 0)} {
+}
+
+if {[string compare $control_machine $lsid_control_machine]} {
 	send_user "\nFAILURE: lsid's master name does not match the configured parameter\n"
 	set exit_code 1
-} else {
+}
+
+if {!$exit_code} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
 
 exit $exit_code
