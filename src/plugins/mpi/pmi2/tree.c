@@ -724,6 +724,10 @@ tree_msg_to_stepds(hostlist_t hl, uint32_t len, char *data)
 		rc = SLURM_ERROR;
 	}
 
+	/* slurm_free_msg will try to free data which is on our stack,
+	 * so we need to NULL it out before it gets sent out.
+	 */
+	msg->data = NULL;
 	slurm_free_msg(msg);
 	xfree(nodelist);
 	return rc;
