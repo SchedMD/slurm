@@ -2719,7 +2719,7 @@ proc get_control_machine { } {
 	set control_machine ""
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "ClusterName *= ($controlmachine_regex)" {
+		-re "ControlMachine *= ($controlmachine_regex)" {
 			set control_machine $expect_out(1,string)
 			exp_continue
 		}
