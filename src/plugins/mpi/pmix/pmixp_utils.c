@@ -305,6 +305,10 @@ static int _send_to_stepds(hostlist_t hl, const char *addr, uint32_t len,
 		rc = SLURM_ERROR;
 	}
 
+	/* slurm_free_msg will try to free data which is on our stack,
+	 * so we need to NULL it out before it gets sent out.
+	 */
+	msg->data = NULL;
 	slurm_free_msg(msg);
 	xfree(nodelist);
 	xfree(req.address);
