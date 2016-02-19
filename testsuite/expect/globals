@@ -112,6 +112,8 @@ cset qsub        "${slurm_dir}/bin/qsub"
 cset qalter      "${slurm_dir}/bin/qalter"
 cset qrerun      "${slurm_dir}/bin/qrerun"
 
+cset lsid      	 "${slurm_dir}/bin/lsid"
+
 # If length of string partition is zero, use output of function
 #	default_partition, otherwise use the partition explicitly
 #	named in your globals.local file (or below) for poe commands
@@ -232,6 +234,7 @@ set number_with_suffix   "\[0-9\]+\[KM\]*"
 set slash                "/"
 set whitespace		 "\[ \t\n\r\f\v\]+"
 set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\\]?"
+set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
 #
 # Cache SlurmUser to check for SuperUser requests
 #
@@ -2693,6 +2696,42 @@ proc get_cluster_name { } {
 
 	log_user 1
 	return $cluster_name
+}
+
+################################################################
+#
+# Proc: get_control_machine
+#
+# Purpose: get ControlMachine parameter
+#
+# Returns: ControlMachine value
+#
+################################################################
+proc get_control_machine { } {
+	global scontrol controlmachine_regex exit_code
+	#
+	# Use scontrol to find the ControlMachine
+	#
+	log_user 0
+	set control_machine ""
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "ClusterName *= ($controlmachine_regex)" {
+			set control_machine $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $control_machine
 }
 
 ################################################################

@@ -1,0 +1,89 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          lsid wrapper test
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2016 SchedMD LLC
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "36.1"
+set exit_code   0
+
+print_header $test_id
+
+if {[file executable $lsid] == 0} {
+	send_user "\nWARNING: $lsid does not exist\n"
+	exit 0
+}
+
+set cluster_name [get_cluster_name]
+set control_machine [get_control_machine]
+set lsid_cluster_name ""
+set lsid_control_machine ""
+set cluster_name_ok 0
+set control_machine_ok 0
+
+spawn $lsid
+expect {
+	-re "My cluster name is ($alpha_numeric_under)" {
+		set lsid_cluster_name $expect_out(1,string)
+		if {[string compare $cluster_name $lsid_cluster_name] == 0} {
+			set cluster_name_ok 1
+		}
+		exp_continue
+	}
+	-re "My master name is ($controlmachine_regex)" {
+		set lsid_control_machine $expect_out(1,string)
+		if {[string compare $control_machine $lsid_control_machine]
+			== 0} {
+			set control_machine_ok 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: lsid not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {($cluster_name_ok == 0) && ($control_machine_ok == 0)} {
+	send_user "\nFAILURE: lsid's cluster name and master name do not match the configured parameters\n"
+	set exit_code 1
+} elseif {($cluster_name_ok == 0) && ($control_machine_ok == 1)} {
+	send_user "\nFAILURE: lsid's cluster name does not match the configured parameter\n"
+	set exit_code 1
+} elseif {($cluster_name_ok == 1) && ($control_machine_ok == 0)} {
+	send_user "\nFAILURE: lsid's master name does not match the configured parameter\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code
