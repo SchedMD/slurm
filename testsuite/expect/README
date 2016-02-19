@@ -789,3 +789,4 @@ test36.#   Testing of openlava/LSF wrappers and Perl APIs.
 test36.1   lsid wrapper test
 test36.2   bjobs wrapper test
 test36.3   bkill wrapper test
+test36.4   bsub wrapper test
