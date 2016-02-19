@@ -562,7 +562,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 			list_iterator_reset(itr2);
 			if (!acct_rec) {
 				fprintf(stderr,
-					" You specified a non-existant "
+					" You specified a non-existent "
 					"account '%s'.\n", name);
 				exit_code=1;
 				rc = SLURM_ERROR;
@@ -596,7 +596,7 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 			list_iterator_reset(itr2);
 			if (!user_rec) {
 				fprintf(stderr,
-					" You specified a non-existant "
+					" You specified a non-existent "
 					"user '%s'.\n", name);
 				exit_code=1;
 				rc = SLURM_ERROR;

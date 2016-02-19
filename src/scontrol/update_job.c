@@ -787,7 +787,7 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			if (incr || decr) {
 				if (!job_msg.job_id_str) {
-					error("JobId must preceed TimeLimit "
+					error("JobId must precede TimeLimit "
 					      "increment or decrement");
 					exit_code = 1;
 					return 0;

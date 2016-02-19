@@ -191,7 +191,7 @@ Find position of the $n-th set bit(0 based, i.e., the first set bit is the 0-th)
 
 =head3 $n = $bitmap->get_pos_num($pos);
 
-Find the number of bits set minus one in $bitmap between bit postion [0 .. $pos]. Returns -1 if no bits are set between [0 .. $pos].
+Find the number of bits set minus one in $bitmap between bit position [0 .. $pos]. Returns -1 if no bits are set between [0 .. $pos].
 
 
 =head1 SEE ALSO

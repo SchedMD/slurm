@@ -442,7 +442,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	}
 	xfree(query);
 	if (!(row = mysql_fetch_row(result))) {
-		debug4("Can't move a none existant association");
+		debug4("Can't move a none existent association");
 		mysql_free_result(result);
 		return ESLURM_INVALID_PARENT_ACCOUNT;
 	}
@@ -1914,7 +1914,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			xstrcat(extra, ")");
 		else {
 			xfree(extra);
-			debug("User %s has no assocations, and is not admin, "
+			debug("User %s has no associations, and is not admin, "
 			      "so not returning any.", user->name);
 			/* This user has no valid associations, so
 			 * end. */
@@ -3252,7 +3252,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 				mysql_conn, &user, 1, NULL);
 		}
 		if (!is_admin && !user.name) {
-			debug("User %u has no assocations, and is not admin, "
+			debug("User %u has no associations, and is not admin, "
 			      "so not returning any.", user.uid);
 			return NULL;
 		}

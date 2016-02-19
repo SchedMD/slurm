@@ -82,7 +82,7 @@ extern int set_node_maint_mode(bool reset_all);
 /* checks if node within node_record_table_ptr is in maint reservation */
 extern bool is_node_in_maint_reservation(int nodenum);
 
-/* After an assocation has been added or removed update the lists. */
+/* After an association has been added or removed update the lists. */
 extern void update_assocs_in_resvs(void);
 
 /*

@@ -1457,7 +1457,7 @@ _slurmd_init(void)
 	/*
 	 * Build nodes table like in slurmctld
 	 * This is required by the topology stack
-	 * Node tables setup must preceed _read_config() so that the
+	 * Node tables setup must precede _read_config() so that the
 	 * proper hostname is set.
 	 */
 	slurm_conf_init(conf->conffile);
