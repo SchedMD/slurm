@@ -537,10 +537,14 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				cpu_min = elig_core_cnt[elig_idx];
 			}
 		}
-		debug3("cons_res: best_fit: node[%u]: required cpus: %u, "
-				"min req boards: %u,", n, cpus, b_min);
-		debug3("cons_res: best_fit: node[%u]: min req sockets: %u, "
-				"min avail cores: %u", n, s_min, cpu_min);
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			info("cons_res: best_fit: node[%u]: "
+			     "required cpus: %u, min req boards: %u,",
+			     n, cpus, b_min);
+			info("cons_res: best_fit: node[%u]: "
+			     "min req sockets: %u, min avail cores: %u",
+			     n, s_min, cpu_min);
+		}
 		/* Re-sort socket list for best-fit board combination in
 		 * ascending order of socket number */
 		qsort(&socket_list[comb_min * sock_per_comb], sock_per_comb,
@@ -580,10 +584,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			j = best_fit_location;
 			if (sock_per_brd)
 				j /= sock_per_brd;
-			debug3("cons_res: best_fit: using node[%u]: "
-			       "board[%u]: socket[%u]: %u cores available",
-			       n, j, best_fit_location,
-			       sockets_core_cnt[best_fit_location]);
+			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+				info("cons_res: best_fit: using node[%u]: "
+				     "board[%u]: socket[%u]: %u cores "
+				     "available", n, j, best_fit_location,
+				     sockets_core_cnt[best_fit_location]);
+			}
 
 			sockets_used[best_fit_location] = true;
 			for ( j = (c + (best_fit_location * ncores_nb));
