@@ -66,7 +66,7 @@ uint32_t comb_counts[MAX_BOARDS][MAX_BOARDS] =
    {7,21,35,35,21,7,1,0},
    {8,28,56,70,56,28,8,1}};
 
-static int *sockets_cpu_cnt = NULL;
+static int *sockets_core_cnt = NULL;
 
 /* Generate all combinations of k integers from the
  * set of integers 0 to n-1.
@@ -300,10 +300,10 @@ static int _cmp_int_descend(const void *a, const void *b)
 
 
 /* qsort compare function for board combination socket list
- * NOTE: sockets_cpu_cnt is a global symbol in this module */
+ * NOTE: sockets_core_cnt is a global symbol in this module */
 static int _cmp_sock(const void *a, const void *b)
 {
-	return (sockets_cpu_cnt[*(int*)b] -  sockets_cpu_cnt[*(int*)a]);
+	return (sockets_core_cnt[*(int*)b] -  sockets_core_cnt[*(int*)a]);
 }
 
 /* sync up core bitmap with new CPU count using a best-fit approach
@@ -332,12 +332,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	int count, cpu_min, b_min, elig, s_min, comb_idx, sock_idx;
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
-	int* boards_cpu_cnt;
-	int* sort_brds_cpu_cnt;
+	int* boards_core_cnt;
+	int* sort_brds_core_cnt;
 	int* board_combs;
 	int* socket_list;
 	int* elig_brd_combs;
-	int* elig_cpu_cnt;
+	int* elig_core_cnt;
 	bool* sockets_used;
 	uint16_t boards_nb;
 	uint16_t nboards_nb;
@@ -346,7 +346,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t nsockets_nb;
 	uint16_t sock_per_brd;
 	uint16_t sock_per_comb;
-	uint16_t req_cpus,best_fit_cpus = 0;
+	uint16_t req_cores,best_fit_cores = 0;
 	uint32_t best_fit_location = 0;
 	uint64_t ncomb_brd;
 	bool sufficient, best_fit_sufficient;
@@ -376,11 +376,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	csize = bit_size(job_res->core_bitmap);
 
 	sockets_nb  = select_node_record[0].sockets;
-	sockets_cpu_cnt = xmalloc(sockets_nb * sizeof(int));
+	sockets_core_cnt = xmalloc(sockets_nb * sizeof(int));
 	sockets_used = xmalloc(sockets_nb * sizeof(bool));
 	boards_nb = select_node_record[0].boards;
-	boards_cpu_cnt = xmalloc(boards_nb * sizeof(int));
-	sort_brds_cpu_cnt = xmalloc(boards_nb * sizeof(int));
+	boards_core_cnt = xmalloc(boards_nb * sizeof(int));
+	sort_brds_core_cnt = xmalloc(boards_nb * sizeof(int));
 
 	for (c = 0, i = 0, n = 0; n < size; n++) {
 
@@ -400,9 +400,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		vpus = MIN(select_node_record[n].vpus, ncpus_per_core);
 
 		/* compute still required cores on the node */
-		req_cpus = cpus / vpus;
+		req_cores = cpus / vpus;
 		if ( cpus % vpus )
-			req_cpus++;
+			req_cores++;
 
 		if (nboards_nb > MAX_BOARDS) {
 			debug3("cons_res: node[%u]: exceeds max boards; "
@@ -412,46 +412,46 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		if ( nsockets_nb > sockets_nb) {
 			sockets_nb = nsockets_nb;
-			xrealloc(sockets_cpu_cnt, sockets_nb * sizeof(int));
+			xrealloc(sockets_core_cnt, sockets_nb * sizeof(int));
 			xrealloc(sockets_used,sockets_nb * sizeof(bool));
 		}
 
 		if ( nboards_nb > boards_nb) {
 			boards_nb = nboards_nb;
-			xrealloc(boards_cpu_cnt, boards_nb * sizeof(int));
-			xrealloc(sort_brds_cpu_cnt, boards_nb * sizeof(int));
+			xrealloc(boards_core_cnt, boards_nb * sizeof(int));
+			xrealloc(sort_brds_core_cnt, boards_nb * sizeof(int));
 		}
 
 		/* Count available cores on each socket and board */
 		sock_per_brd = nsockets_nb / nboards_nb;
 		for (b = 0; b < nboards_nb; b++) {
-			boards_cpu_cnt[b] = 0;
-			sort_brds_cpu_cnt[b] = 0;
+			boards_core_cnt[b] = 0;
+			sort_brds_core_cnt[b] = 0;
 		}
 		for (s = 0; s < nsockets_nb; s++) {
-			sockets_cpu_cnt[s]=0;
+			sockets_core_cnt[s]=0;
 			sockets_used[s]=false;
 			b = s/sock_per_brd;
 			for ( j = c + (s * ncores_nb) ;
 			      j < c + ((s+1) * ncores_nb) ;
 			      j++ ) {
 				if ( bit_test(job_res->core_bitmap,j) ) {
-					sockets_cpu_cnt[s]++;
-					boards_cpu_cnt[b]++;
-					sort_brds_cpu_cnt[b]++;
+					sockets_core_cnt[s]++;
+					boards_core_cnt[b]++;
+					sort_brds_core_cnt[b]++;
 				}
 			}
 		}
 
 		/* Sort boards in descending order of available core count */
-		qsort(sort_brds_cpu_cnt, nboards_nb, sizeof (int),
+		qsort(sort_brds_core_cnt, nboards_nb, sizeof (int),
 				_cmp_int_descend);
 		/* Determine minimum number of boards required for the
 		 * allocation (b_min) */
 		count = 0;
 		for (b = 0; b < nboards_nb; b++) {
-			count+=sort_brds_cpu_cnt[b];
-			if (count >= req_cpus)
+			count+=sort_brds_core_cnt[b];
+			if (count >= req_cores)
 				break;
 		}
 		b_min = b+1;
@@ -467,7 +467,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		 * for the allocation (eligible board combinations)
 		 */
 		elig_brd_combs = xmalloc(ncomb_brd * sizeof(int));
-		elig_cpu_cnt = xmalloc(ncomb_brd * sizeof(int));
+		elig_core_cnt = xmalloc(ncomb_brd * sizeof(int));
 		elig = 0;
 		for (comb_idx = 0; comb_idx < ncomb_brd; comb_idx++) {
 			count = 0;
@@ -475,11 +475,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				comb_brd_idx++) {
 				board_num = board_combs[(comb_idx * b_min)
 							+ comb_brd_idx];
-				count += boards_cpu_cnt[board_num];
+				count += boards_core_cnt[board_num];
 			}
-			if (count >= req_cpus) {
+			if (count >= req_cores) {
 				elig_brd_combs[elig] = comb_idx;
-				elig_cpu_cnt[elig] = count;
+				elig_core_cnt[elig] = count;
 				elig++;
 			}
 		}
@@ -521,8 +521,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			for (b = 0; b < sock_per_comb; b++) {
 				sock_idx =
 				socket_list[(int)((elig_idx*sock_per_comb)+b)];
-				count+=sockets_cpu_cnt[sock_idx];
-				if (count >= req_cpus)
+				count+=sockets_core_cnt[sock_idx];
+				if (count >= req_cores)
 					break;
 			}
 			b++;
@@ -530,11 +530,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			 * of required sockets and minimum number of CPUs
 			 */
 			if ((b < s_min) ||
-				(b == s_min && elig_cpu_cnt[elig_idx]
+				(b == s_min && elig_core_cnt[elig_idx]
 							    <= cpu_min)) {
 				s_min = b;
 				comb_min = elig_idx;
-				cpu_min = elig_cpu_cnt[elig_idx];
+				cpu_min = elig_core_cnt[elig_idx];
 			}
 		}
 		debug3("cons_res: best_fit: node[%u]: required cpus: %u, "
@@ -548,33 +548,33 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		xfree(board_combs);
 		xfree(elig_brd_combs);
-		xfree(elig_cpu_cnt);
+		xfree(elig_core_cnt);
 
 		/* select cores from the sockets of the best-fit board
 		 * combination using a best-fit approach */
 		while ( cpus > 0 ) {
 
-			best_fit_cpus = 0;
+			best_fit_cores = 0;
 			best_fit_sufficient = false;
 
 			/* search for the socket with best fit */
 			for ( z = 0; z < sock_per_comb; z++ ) {
 				s = socket_list[(comb_min*sock_per_comb)+z];
-				sufficient = sockets_cpu_cnt[s] >= req_cpus ;
-				if ( (best_fit_cpus == 0) ||
+				sufficient = sockets_core_cnt[s] >= req_cores;
+				if ( (best_fit_cores == 0) ||
 				     (sufficient && !best_fit_sufficient ) ||
-				     (sufficient && (sockets_cpu_cnt[s] <
-						     best_fit_cpus)) ||
-				     (!sufficient && (sockets_cpu_cnt[s] >
-						      best_fit_cpus)) ) {
-					best_fit_cpus = sockets_cpu_cnt[s];
+				     (sufficient && (sockets_core_cnt[s] <
+						     best_fit_cores)) ||
+				     (!sufficient && (sockets_core_cnt[s] >
+						      best_fit_cores)) ) {
+					best_fit_cores = sockets_core_cnt[s];
 					best_fit_location = s;
 					best_fit_sufficient = sufficient;
 				}
 			}
 
 			/* check that we have found a usable socket */
-			if ( best_fit_cpus == 0 )
+			if ( best_fit_cores == 0 )
 				break;
 
 			j = best_fit_location;
@@ -583,7 +583,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			debug3("cons_res: best_fit: using node[%u]: "
 			       "board[%u]: socket[%u]: %u cores available",
 			       n, j, best_fit_location,
-			       sockets_cpu_cnt[best_fit_location]);
+			       sockets_core_cnt[best_fit_location]);
 
 			sockets_used[best_fit_location] = true;
 			for ( j = (c + (best_fit_location * ncores_nb));
@@ -609,7 +609,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				 * cpus count using hyperthreading requirement
 				 */
 				if ( bit_test(job_res->core_bitmap, j) ) {
-					sockets_cpu_cnt[best_fit_location]--;
+					sockets_core_cnt[best_fit_location]--;
 					core_cnt++;
 					if (cpus < vpus)
 						cpus = 0;
@@ -658,9 +658,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	}
 
-	xfree(boards_cpu_cnt);
-	xfree(sort_brds_cpu_cnt);
-	xfree(sockets_cpu_cnt);
+	xfree(boards_core_cnt);
+	xfree(sort_brds_core_cnt);
+	xfree(sockets_core_cnt);
 	xfree(sockets_used);
 }
 
