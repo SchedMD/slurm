@@ -1,8 +1,12 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.0pre2
+==============================
+
+
 * Changes in Slurm 16.05.0pre1
-===============================
+==============================
  -- Add sbatch "--wait" option that waits for job completion before exiting.
     Exit code will match that of spawned job.
  -- Modify advanced reservation save/restore logic for core reservations to
