@@ -1042,7 +1042,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 
 	if ((uint64_t)start_period >= job_time_limit_ends)
 		tres_time_delta = 0;
-	else if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr)) {
+	else if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr) ||
+		 IS_JOB_RESIZING(job_ptr)) {
 		/* If a job is being requeued sometimes the state will
 		   be pending + completing so handle that the same as
 		   finished so we don't leave time in the mix.
