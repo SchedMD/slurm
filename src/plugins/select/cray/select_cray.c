@@ -336,8 +336,9 @@ static int _run_nhc(nhc_info_t *nhc_info)
 		      "status %u:%u took: %s",
 		      nhc_info->jobid, nhc_info->apid, WEXITSTATUS(status),
 		      WTERMSIG(status), TIME_STR);
-	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
+	} else if ((debug_flags & DEBUG_FLAG_SELECT_TYPE) ||
+		   (DELTA_TIMER > 60000000)) {	/* log if over one minute */
+		info("_run_nhc jobid %u and apid %"PRIu64" completion took: %s",
 		     nhc_info->jobid, nhc_info->apid, TIME_STR);
 	}
 fini:
