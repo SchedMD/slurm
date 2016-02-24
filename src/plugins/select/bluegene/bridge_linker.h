@@ -81,6 +81,8 @@ extern int blocks_are_created;
 extern int num_unused_cpus;
 extern int num_possible_unused_cpus;
 extern slurmctld_lock_t job_read_lock;
+extern slurmctld_lock_t node_write_lock;
+extern slurmctld_lock_t part_write_lock;
 
 extern int bridge_init(char *properties_file);
 extern int bridge_fini();

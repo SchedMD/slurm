@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for configuration of "AuthType=munge" and "AuthInfo=socket=..." with
     alternate munge socket path.
  -- BGQ - Remove redeclaration of job_read_lock.
+ -- BGQ - Tighter locks around structures when nodes/cables change state.
 
 * Changes in Slurm 14.11.11
 ===========================
