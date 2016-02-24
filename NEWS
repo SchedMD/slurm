@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- BGQ - Remove redeclaration of job_read_lock.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
  -- Make it possible to change CPUsPerTask with scontrol.
+ -- Make it so scontrol update part qos= will take away a partition QOS from
+    a partition.
 
 * Changes in Slurm 15.08.8
 ==========================
