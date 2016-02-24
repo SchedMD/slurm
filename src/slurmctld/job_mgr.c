@@ -9628,7 +9628,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	bool update_accounting = false;
 	acct_policy_limit_set_t acct_policy_limit_set;
 	uint16_t tres[slurmctld_tres_cnt];
-	bool acct_limit_already_set;
+	bool acct_limit_already_set, set_pn_min_cpus = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	List gres_list = NULL;
@@ -10288,6 +10288,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		update_accounting = true;
+		set_pn_min_cpus = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
 		info("update_job: setting max_cpus from "
@@ -10298,6 +10299,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		update_accounting = true;
+		set_pn_min_cpus = true;
 	}
 
 	if ((job_specs->pn_min_cpus != (uint16_t) NO_VAL) &&
@@ -10377,6 +10379,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				job_ptr->tres_req_cnt,
 				0, false);
 		update_accounting = true;
+		set_pn_min_cpus = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
 		info("update_job: setting max_nodes from "
@@ -10387,11 +10390,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
+		set_pn_min_cpus = true;
 	}
 
 	/* This also needs to be updated to make sure we are kosher
 	   after messing with the cpus and nodes. */
-	if (detail_ptr && detail_ptr->pn_min_cpus) {
+	if (detail_ptr && detail_ptr->pn_min_cpus && set_pn_min_cpus) {
 		uint16_t pn_min_cpus =
 			(uint16_t)(job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
 				   job_ptr->tres_req_cnt[TRES_ARRAY_NODE]);
@@ -10414,10 +10418,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (num_tasks)
 			cpus_per_task = job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
 				num_tasks;
-		else if (detail_ptr->cpus_per_task > detail_ptr->pn_min_cpus)
+		else /* This could potentially cause the job to be in
+		      * bad constraints, if that happens the task
+		      * count should be changed.  I couldn't come up
+		      * with a solution that fixed every case here
+		      * since the user didn't request any tasks but
+		      * requested cpus_per_task or numcpus to be something.
+		      */
 			cpus_per_task = detail_ptr->pn_min_cpus;
-		else
-			cpus_per_task = detail_ptr->cpus_per_task;
 
 		if (cpus_per_task != detail_ptr->cpus_per_task) {
 			info("update_job: setting cpus_per_task from "
