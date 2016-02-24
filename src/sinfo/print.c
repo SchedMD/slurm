@@ -945,18 +945,38 @@ int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
-int _print_priority(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
+int _print_priority_job_factor(sinfo_data_t * sinfo_data, int width,
+			       bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
 	if (sinfo_data) {
 		_build_min_max_16_string(id, FORMAT_STRING_SIZE,
-				      sinfo_data->part_info->priority,
-				      sinfo_data->part_info->priority, true);
+				sinfo_data->part_info->priority_job_factor,
+				sinfo_data->part_info->priority_job_factor,
+				true);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("PRIORITY", width, right_justify, true);
+		_print_str("PRIO_JOB_FACTOR", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_priority_tier(sinfo_data_t * sinfo_data, int width,
+			 bool right_justify, char *suffix)
+{
+	char id[FORMAT_STRING_SIZE];
+
+	if (sinfo_data) {
+		_build_min_max_16_string(id, FORMAT_STRING_SIZE,
+				sinfo_data->part_info->priority_tier,
+				sinfo_data->part_info->priority_tier,
+				true);
+		_print_str(id, width, right_justify, true);
+	} else
+		_print_str("PRIO_TIER", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

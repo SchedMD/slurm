@@ -905,8 +905,13 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	    (part_ptr->preempt_mode != sinfo_ptr->part_info->preempt_mode))
 		return false;
 
-	if (params.match_flags.priority_flag &&
-	    (part_ptr->priority != sinfo_ptr->part_info->priority))
+	if (params.match_flags.priority_tier_flag &&
+	    (part_ptr->priority_tier != sinfo_ptr->part_info->priority_tier))
+		return false;
+
+	if (params.match_flags.priority_job_factor_flag &&
+	    (part_ptr->priority_job_factor !=
+	     sinfo_ptr->part_info->priority_job_factor))
 		return false;
 
 	if (params.match_flags.max_cpus_per_node_flag &&

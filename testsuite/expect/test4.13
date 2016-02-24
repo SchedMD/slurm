@@ -67,12 +67,14 @@ array set part_info {
 	Nodes              nodelist
 	TotalNodes         nodes
 	PreemptMode        preemptmode
-	Priority           priority
+	PriorityJobFactor  priorityjobfactor
+	PriorityTier       prioritytier
 	Shared             share
 	RootOnly           root
 }
 
 print_header $test_id
+set def_part [default_partition]
 
 proc cleanup { } {
 

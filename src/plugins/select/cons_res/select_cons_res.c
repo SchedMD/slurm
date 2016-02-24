@@ -271,8 +271,10 @@ static void _dump_nodes(void)
 static void _dump_part(struct part_res_record *p_ptr)
 {
 	uint16_t i;
-	info("part:%s rows:%u pri:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
-	     p_ptr->part_ptr->priority);
+
+	info("part:%s rows:%u prio:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
+	     p_ptr->part_ptr->priority_tier);
+
 	if (!p_ptr->row)
 		return;
 

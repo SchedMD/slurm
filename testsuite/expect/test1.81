@@ -244,7 +244,7 @@ set host_3      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv $use_envvar]
 expect {
-	-re "Node count specification invalid" {
+	-re "srun: error" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}

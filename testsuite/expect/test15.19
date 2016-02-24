@@ -279,7 +279,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "More processors requested than permitted|Node count specification invalid|configuration not available" {
+	-re "salloc: error" {
 		send_user "\nWARNING: can't test salloc task distribution\n"
 		if {$job_id != 0} {
 			cancel_job $job_id

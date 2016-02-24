@@ -279,9 +279,27 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Priority", MAX(taglen, 3)) == 0) {
-			if (parse_uint16(val, &part_msg_ptr->priority)) {
-				error ("Invalid Priority value: %s", val);
+		else if (!strncasecmp(tag, "Priority", MAX(taglen, 3))) {
+			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
+				error("Invalid Priority value: %s", val);
+				return -1;
+			}
+			part_msg_ptr->priority_job_factor =
+				part_msg_ptr->priority_tier;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag,"PriorityJobFactor",MAX(taglen, 3))) {
+			if (parse_uint16(val,
+					 &part_msg_ptr->priority_job_factor)) {
+				error("Invalid PriorityJobFactor value: %s",
+				      val);
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "PriorityTier", MAX(taglen, 3))) {
+			if (parse_uint16(val, &part_msg_ptr->priority_tier)) {
+				error("Invalid PriorityTier value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;

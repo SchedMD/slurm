@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -84,7 +84,7 @@ List part_list = NULL;			/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
 time_t last_part_update;	/* time of last update to partition records */
-uint16_t part_max_priority = 0;         /* max priority in all partitions */
+uint16_t part_max_priority = 0;         /* max priority_job_factor in all parts */
 
 static int    _delete_part_record(char *name);
 static void   _dump_part_state(struct part_record *part_ptr,
@@ -308,11 +308,14 @@ struct part_record *create_part_record(void)
 	part_ptr->state_up          = default_part.state_up;
 	part_ptr->max_share         = default_part.max_share;
 	part_ptr->preempt_mode      = default_part.preempt_mode;
-	part_ptr->priority          = default_part.priority;
+	part_ptr->priority_job_factor = default_part.priority_job_factor;
+	part_ptr->priority_tier     = default_part.priority_tier;
 	part_ptr->grace_time 	    = default_part.grace_time;
-	if (part_max_priority)
-		part_ptr->norm_priority = (double)default_part.priority
-			/ (double)part_max_priority;
+	if (part_max_priority) {
+		part_ptr->norm_priority =
+			(double)default_part.priority_job_factor /
+			(double)part_max_priority;
+	}
 	part_ptr->node_bitmap       = NULL;
 
 	if (default_part.allow_accounts) {
@@ -520,7 +523,8 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack16(part_ptr->flags,          buffer);
 	pack16(part_ptr->max_share,      buffer);
 	pack16(part_ptr->preempt_mode,   buffer);
-	pack16(part_ptr->priority,       buffer);
+	pack16(part_ptr->priority_job_factor, buffer);
+	pack16(part_ptr->priority_tier,  buffer);
 
 	pack16(part_ptr->state_up,       buffer);
 	pack16(part_ptr->cr_type,        buffer);
@@ -582,8 +586,8 @@ int load_all_part_state(void)
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
 	time_t time;
-	uint16_t flags;
-	uint16_t max_share, preempt_mode, priority, state_up, cr_type;
+	uint16_t flags, priority_job_factor, priority_tier;
+	uint16_t max_share, preempt_mode, state_up, cr_type;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -657,10 +661,59 @@ int load_all_part_state(void)
 			safe_unpack16(&flags,        buffer);
 			safe_unpack16(&max_share,    buffer);
 			safe_unpack16(&preempt_mode, buffer);
-			safe_unpack16(&priority,     buffer);
 
-			if (priority > part_max_priority)
-				part_max_priority = priority;
+			safe_unpack16(&priority_job_factor, buffer);
+			safe_unpack16(&priority_tier, buffer);
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
+
+			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos_char,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
+			    (flags & PART_FLAG_LLN_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&preempt_mode, buffer);
+
+			safe_unpack16(&priority_tier, buffer);
+			priority_job_factor = priority_tier;
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
 
 			safe_unpack16(&state_up, buffer);
 			safe_unpack16(&cr_type, buffer);
@@ -704,10 +757,11 @@ int load_all_part_state(void)
 			safe_unpack16(&flags,        buffer);
 			safe_unpack16(&max_share,    buffer);
 			safe_unpack16(&preempt_mode, buffer);
-			safe_unpack16(&priority,     buffer);
 
-			if (priority > part_max_priority)
-				part_max_priority = priority;
+			safe_unpack16(&priority_tier, buffer);
+			priority_job_factor = priority_tier;
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
 
 			safe_unpack16(&state_up, buffer);
 			safe_unpack16(&cr_type, buffer);
@@ -794,7 +848,8 @@ int load_all_part_state(void)
 		part_ptr->grace_time     = grace_time;
 		if (preempt_mode != (uint16_t) NO_VAL)
 			part_ptr->preempt_mode   = preempt_mode;
-		part_ptr->priority       = priority;
+		part_ptr->priority_job_factor = priority_job_factor;
+		part_ptr->priority_tier  = priority_tier;
 		part_ptr->state_up       = state_up;
 		part_ptr->cr_type	 = cr_type;
 		xfree(part_ptr->allow_accounts);
@@ -957,7 +1012,8 @@ int init_part_conf(void)
 	default_part.state_up       = PARTITION_UP;
 	default_part.max_share      = 1;
 	default_part.preempt_mode   = (uint16_t) NO_VAL;
-	default_part.priority       = 1;
+	default_part.priority_tier  = 1;
+	default_part.priority_job_factor = 1;
 	default_part.norm_priority  = 0;
 	default_part.total_nodes    = 0;
 	default_part.total_cpus     = 0;
@@ -1186,7 +1242,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_16_05_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1209,7 +1265,47 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
 		pack16(part_ptr->preempt_mode, buffer);
-		pack16(part_ptr->priority,   buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+	} else if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
+		pack32(altered,              buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack32(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_tier, buffer);
 		pack16(part_ptr->state_up, buffer);
 		pack16(part_ptr->cr_type, buffer);
 
@@ -1248,7 +1344,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack16(part_ptr->flags,      buffer);
 		pack16(part_ptr->max_share,  buffer);
 		pack16(part_ptr->preempt_mode, buffer);
-		pack16(part_ptr->priority,   buffer);
+		pack16(part_ptr->priority_tier, buffer);
 		pack16(part_ptr->state_up, buffer);
 		pack16(part_ptr->cr_type, buffer);
 
@@ -1476,29 +1572,37 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		}
 	}
 
-	if (part_desc->priority != (uint16_t) NO_VAL) {
-		info("update_part: setting priority to %u for partition %s",
-		     part_desc->priority, part_desc->name);
-		part_ptr->priority = part_desc->priority;
+	if (part_desc->priority_tier != (uint16_t) NO_VAL) {
+		info("update_part: setting PriorityTier to %u for partition %s",
+		     part_desc->priority_tier, part_desc->name);
+		part_ptr->priority_tier = part_desc->priority_tier;
+	}
+
+	if (part_desc->priority_job_factor != (uint16_t) NO_VAL) {
+		info("update_part: setting PriorityJobFactor to %u for partition %s",
+		     part_desc->priority_job_factor, part_desc->name);
+		part_ptr->priority_job_factor = part_desc->priority_job_factor;
 
 		/* If the max_priority changes we need to change all
 		 * the normalized priorities of all the other
 		 * partitions. If not then just set this partition.
 		 */
-		if (part_ptr->priority > part_max_priority) {
+		if (part_ptr->priority_job_factor > part_max_priority) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;
 
-			part_max_priority = part_ptr->priority;
+			part_max_priority = part_ptr->priority_job_factor;
 
-			while((part2 = list_next(itr))) {
-				part2->norm_priority = (double)part2->priority
-					/ (double)part_max_priority;
+			while ((part2 = list_next(itr))) {
+				part2->norm_priority =
+					(double)part2->priority_job_factor /
+					(double)part_max_priority;
 			}
 			list_iterator_destroy(itr);
 		} else {
-			part_ptr->norm_priority = (double)part_ptr->priority
-				/ (double)part_max_priority;
+			part_ptr->norm_priority =
+				(double)part_ptr->priority_job_factor /
+				(double)part_max_priority;
 		}
 	}
 

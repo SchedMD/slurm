@@ -170,9 +170,9 @@ static bool _valid_memory(struct part_record *part_ptr,
 	return true;
 }
 
-/* This example code will set a job's default partition to the highest
- * priority partition that is available to this user. This is only an
- * example and tremendous flexibility is available. */
+/* This example code will set a job's default partition to the partition with
+ * highest priority_tier is available to this user. This is only an example
+ * and tremendous flexibility is available. */
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
@@ -191,7 +191,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 			continue;	/* AllowGroups prevents use */
 
 		if (!top_prio_part ||
-		    (top_prio_part->priority < part_ptr->priority)) {
+		    (top_prio_part->priority_tier < part_ptr->priority_tier)) {
 			/* Test job specification elements here */
 			if (!_valid_memory(part_ptr, job_desc))
 				continue;

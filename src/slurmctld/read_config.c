@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -685,7 +685,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->min_nodes      = part->min_nodes;
 	part_ptr->min_nodes_orig = part->min_nodes;
 	part_ptr->preempt_mode   = part->preempt_mode;
-	part_ptr->priority       = part->priority;
+	part_ptr->priority_job_factor = part->priority_job_factor;
+	part_ptr->priority_tier  = part->priority_tier;
 	part_ptr->qos_char       = xstrdup(part->qos_char);
 	part_ptr->state_up       = part->state_up;
 	part_ptr->grace_time     = part->grace_time;
@@ -834,16 +835,17 @@ static void _sync_part_prio(void)
 	part_max_priority = 0;
 	itr = list_iterator_create(part_list);
 	while ((part_ptr = list_next(itr))) {
-		if (part_ptr->priority > part_max_priority)
-			part_max_priority = part_ptr->priority;
+		if (part_ptr->priority_job_factor > part_max_priority)
+			part_max_priority = part_ptr->priority_job_factor;
 	}
 	list_iterator_destroy(itr);
 
 	if (part_max_priority) {
 		itr = list_iterator_create(part_list);
 		while ((part_ptr = list_next(itr))) {
-			part_ptr->norm_priority = (double)part_ptr->priority /
-						  (double)part_max_priority;
+			part_ptr->norm_priority =
+				(double)part_ptr->priority_job_factor /
+				(double)part_max_priority;
 		}
 		list_iterator_destroy(itr);
 	}
@@ -1795,10 +1797,19 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				part_ptr->preempt_mode = old_part_ptr->
 							 preempt_mode;
 			}
-			if (part_ptr->priority != old_part_ptr->priority) {
-				error("Partition %s Priority differs from "
+			if (part_ptr->priority_job_factor !=
+			    old_part_ptr->priority_job_factor) {
+				error("Partition %s PriorityJobFactor differs "
+				      "from slurm.conf", part_ptr->name);
+				part_ptr->priority_job_factor =
+					old_part_ptr->priority_job_factor;
+			}
+			if (part_ptr->priority_tier !=
+			    old_part_ptr->priority_tier) {
+				error("Partition %s PriorityTier differs from "
 				      "slurm.conf", part_ptr->name);
-				part_ptr->priority = old_part_ptr->priority;
+				part_ptr->priority_tier =
+					old_part_ptr->priority_tier;
 			}
 			if (part_ptr->state_up != old_part_ptr->state_up) {
 				error("Partition %s State differs from "
@@ -1851,7 +1862,9 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->min_nodes_orig = old_part_ptr->
 						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
-			part_ptr->priority = old_part_ptr->priority;
+			part_ptr->priority_job_factor =
+				old_part_ptr->priority_job_factor;
+			part_ptr->priority_tier = old_part_ptr->priority_tier;
 			part_ptr->state_up = old_part_ptr->state_up;
 		}
 	}

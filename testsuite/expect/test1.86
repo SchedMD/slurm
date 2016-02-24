@@ -80,7 +80,7 @@ set env(PATH) "${slurm_dir}/bin:$env(PATH)"
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 -t1 ./$file_in]
 expect {
-	-re "Node count specification invalid|More processors requested" {
+	-re "salloc: error" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
 		exit $exit_code

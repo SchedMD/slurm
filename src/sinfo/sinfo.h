@@ -148,7 +148,8 @@ struct sinfo_match_flags {
 	bool node_addr_flag;
 	bool partition_flag;
 	bool preempt_mode_flag;
-	bool priority_flag;
+	bool priority_job_factor_flag;
+	bool priority_tier_flag;
 	bool reason_flag;
 	bool root_flag;
 	bool share_flag;

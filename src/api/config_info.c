@@ -376,8 +376,13 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " PreemptMode=%s",
 				preempt_mode_string(p[i].preempt_mode));
 
-		if (p[i].priority != 1)
-			fprintf(fp, " Priority=%"PRIu16"", p[i].priority);
+		if (p[i].priority_job_factor != 1)
+			fprintf(fp, " PriorityJobFactor=%"PRIu16,
+				p[i].priority_job_factor);
+
+		if (p[i].priority_tier != 1)
+			fprintf(fp, " PriorityTier=%"PRIu16,
+				p[i].priority_tier);
 
 		if (p[i].qos_char != NULL)
 			fprintf(fp, " QOS=%s", p[i].qos_char);

@@ -3,7 +3,10 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.0pre2
 ==============================
-
+ -- Split partition's "Priority" field into "PriorityTier" (used to order
+    partitions for scheduling and preemption) plus "PriorityJobFactor" (used by
+    priority/multifactor plugin in calculating job priority, which is used to
+    order jobs within a partition for scheduling).
 
 * Changes in Slurm 16.05.0pre1
 ==============================

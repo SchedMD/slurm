@@ -272,7 +272,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	/****** Line 7 ******/
 
-	xstrfmtcat(out, "Priority=%u", part_ptr->priority);
+	xstrfmtcat(out, "PriorityJobFactor=%u", part_ptr->priority_job_factor);
+	xstrfmtcat(out, " PriorityTier=%u", part_ptr->priority_tier);
 
 	if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
 		xstrcat(out, " RootOnly=YES");

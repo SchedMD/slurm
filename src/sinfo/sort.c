@@ -74,7 +74,8 @@ static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
 static int _sort_by_preempt_mode(void *void1, void *void2);
-static int _sort_by_priority(void *void1, void *void2);
+static int _sort_by_priority_job_factor(void *void1, void *void2);
+static int _sort_by_priority_tier(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_reason_time(void *void1, void *void2);
 static int _sort_by_reason_user(void *void1, void *void2);
@@ -150,7 +151,7 @@ void sort_sinfo_list(List sinfo_list)
 		else if (params.sort[i] == 'e')
 			list_sort(sinfo_list, _sort_by_free_mem);
 		else if (params.sort[i] == 'p')
-			list_sort(sinfo_list, _sort_by_priority);
+			list_sort(sinfo_list, _sort_by_priority_tier);
 		else if (params.sort[i] == 'P')
 			list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 'r')
@@ -159,6 +160,8 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 's')
 			list_sort(sinfo_list, _sort_by_job_size);
+		else if (params.sort[i] == 'S')
+			list_sort(sinfo_list, _sort_by_priority_job_factor);
 		else if (params.sort[i] == 't')
 			list_sort(sinfo_list, _sort_by_state);
 		else if (params.sort[i] == 'T')
@@ -814,7 +817,7 @@ static int _sort_by_preempt_mode(void *void1, void *void2)
 	return diff;
 }
 
-static int _sort_by_priority(void *void1, void *void2)
+static int _sort_by_priority_job_factor(void *void1, void *void2)
 {
 	int diff;
 	sinfo_data_t *sinfo1;
@@ -824,9 +827,29 @@ static int _sort_by_priority(void *void1, void *void2)
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
 	if (sinfo1->part_info)
-		val1 = sinfo1->part_info->priority;
+		val1 = sinfo1->part_info->priority_job_factor;
 	if (sinfo2->part_info)
-		val2 = sinfo2->part_info->priority;
+		val2 = sinfo2->part_info->priority_job_factor;
+	diff = _diff_uint32(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_priority_tier(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1;
+	sinfo_data_t *sinfo2;
+	uint32_t val1 = 0, val2 = 0;
+
+	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
+
+	if (sinfo1->part_info)
+		val1 = sinfo1->part_info->priority_tier;
+	if (sinfo2->part_info)
+		val2 = sinfo2->part_info->priority_tier;
 	diff = _diff_uint32(val1, val2);
 
 	if (reverse_order)

@@ -64,7 +64,7 @@ static int	_filter_job(job_info_t * job);
 static int	_filter_job_part(char *part_name);
 static int	_filter_step(job_step_info_t * step);
 static void	_job_list_del(void *x);
-static uint32_t	_part_get_prio(char *part_name);
+static uint32_t	_part_get_prio_tier(char *part_name);
 static void	_part_state_free(void);
 static void	_part_state_load(void);
 static int	_print_str(char *str, int width, bool right, bool cut_output);
@@ -117,7 +117,7 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 					job_rec_ptr->job_ptr = jobs + i;
 					job_rec_ptr->part_name = xstrdup(tok);
 					job_rec_ptr->part_prio =
-						_part_get_prio(tok);
+						_part_get_prio_tier(tok);
 					list_append(l, (void *) job_rec_ptr);
 				}
 				tok = strtok_r(NULL, ",", &save_ptr);
@@ -268,7 +268,7 @@ static void _job_list_del(void *x)
 	xfree(job_rec_ptr);
 }
 
-static uint32_t _part_get_prio(char *part_name)
+static uint32_t _part_get_prio_tier(char *part_name)
 {
 	partition_info_t *part_ptr;
 	uint32_t part_prio = 1;	/* Default partition priority */
@@ -277,7 +277,7 @@ static uint32_t _part_get_prio(char *part_name)
 	for (i = 0, part_ptr = part_info_msg->partition_array;
 	     i < part_info_msg->record_count; i++, part_ptr++) {
 		if (!xstrcmp(part_ptr->name, part_name)) {
-			part_prio = part_ptr->priority;
+			part_prio = part_ptr->priority_tier;
 			break;
 		}
 	}

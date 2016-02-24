@@ -428,7 +428,11 @@ get_addr_info(const char *hostname)
 	hints.ai_flags = AI_CANONNAME;
 
 	err = getaddrinfo(hostname, NULL, &hints, &result);
-	if (err != 0) {
+	if (err == EAI_SYSTEM) {
+		error("%s: getaddrinfo() failed: %s: %m", __func__,
+		      gai_strerror(err));
+		return NULL;
+	} else if (err != 0) {
 		error("%s: getaddrinfo() failed: %s", __func__,
 		      gai_strerror(err));
 		return NULL;

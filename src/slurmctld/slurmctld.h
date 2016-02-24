@@ -367,7 +367,8 @@ struct part_record {
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
-	uint16_t priority;	/* scheduling priority for jobs */
+	uint16_t priority_job_factor;	/* job priority weight factor */
+	uint16_t priority_tier;	/* tier for scheduling and preemption */
 	char *qos_char;         /* requested QOS from slurm.conf */
 	void *qos_ptr;          /* pointer to the quality of
 				 * service record attached to this
@@ -389,7 +390,7 @@ extern time_t last_part_update;		/* time of last part_list update */
 extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
-extern uint16_t part_max_priority;      /* max priority in all partitions */
+extern uint16_t part_max_priority;      /* max priority_job_factor in all parts */
 
 /*****************************************************************************\
  *  RESERVATION parameters and data structures

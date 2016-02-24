@@ -109,7 +109,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
 			continue;
 		if ((job_p->part_ptr == NULL) ||
-		    (job_p->part_ptr->priority >= job_ptr->part_ptr->priority)||
+		    (job_p->part_ptr->priority_tier >=
+		     job_ptr->part_ptr->priority_tier) ||
 		    (job_p->part_ptr->preempt_mode == PREEMPT_MODE_OFF))
 			continue;
 		if ((job_p->node_bitmap == NULL) ||
@@ -133,7 +134,7 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	return preemptee_job_list;
 }
 
-/* Generate the job's priority. It is partly based upon the partition priority
+/* Generate a job priority. It is partly based upon the partition priority_tier
  * and partly based upon the job size. We want to put smaller jobs at the top
  * of the preemption queue and use a sort algorithm to minimize the number of
  * job's preempted. */
@@ -142,7 +143,7 @@ static uint32_t _gen_job_prio(struct job_record *job_ptr)
 	uint32_t job_prio;
 
 	if (job_ptr->part_ptr)
-		job_prio = job_ptr->part_ptr->priority << 16;
+		job_prio = job_ptr->part_ptr->priority_tier << 16;
 	else
 		job_prio = 0;
 
@@ -205,8 +206,8 @@ extern bool job_preempt_check(job_queue_rec_t *preemptor,
 			      job_queue_rec_t *preemptee)
 {
 	if (preemptor->part_ptr && preemptee->part_ptr) {
-		if (preemptor->part_ptr->priority >
-		    preemptee->part_ptr->priority)
+		if (preemptor->part_ptr->priority_tier >
+		    preemptee->part_ptr->priority_tier)
 			return true;
 	}
 

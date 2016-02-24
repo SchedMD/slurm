@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Mette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -271,7 +271,8 @@ typedef struct slurm_conf_partition {
 	char	*name;		/* name of the partition */
 	char 	*nodes;		/* comma delimited list names of nodes */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
-	uint16_t priority;	/* scheduling priority for jobs */
+	uint16_t priority_job_factor;	/* job priority weight factor */
+	uint16_t priority_tier;	/* tier for scheduling and preemption */
 	char    *qos_char;      /* Name of QOS associated with partition */
 	bool     req_resv_flag; /* 1 if partition can only be used in a
 				 * reservation */

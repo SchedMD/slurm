@@ -597,7 +597,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
 			list_next(part_iterator))) {
-			priority_part = part_ptr->priority /
+			priority_part = part_ptr->priority_job_factor /
 				(double)part_max_priority *
 				(double)weight_part;
 			priority_part +=
@@ -2042,7 +2042,8 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 			job_ptr->prio_factors->priority_js = 1.0;
 	}
 
-	if (job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
+	if (job_ptr->part_ptr && job_ptr->part_ptr->priority_job_factor &&
+	    weight_part) {
 		job_ptr->prio_factors->priority_part =
 			job_ptr->part_ptr->norm_priority;
 	}

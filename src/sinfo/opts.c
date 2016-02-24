@@ -640,6 +640,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'e') {
+			params.match_flags.free_mem_flag = true;
+			format_add_free_mem( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'E') {
 			params.match_flags.reason_flag = true;
 			format_add_reason( params.format_list,
@@ -681,6 +687,12 @@ _parse_format( char* format )
 					      field_size,
 					      right_justify,
 					      suffix );
+		} else if (field[0] == 'I') {
+			params.match_flags.priority_job_factor_flag = true;
+			format_add_priority_job_factor(params.format_list,
+					field_size,
+					right_justify,
+					suffix);
 		} else if (field[0] == 'l') {
 			params.match_flags.max_time_flag = true;
 			format_add_time( params.format_list,
@@ -728,18 +740,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
-		} else if (field[0] == 'e') {
-			params.match_flags.free_mem_flag = true;
-			format_add_free_mem( params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 		} else if (field[0] == 'p') {
-			params.match_flags.priority_flag = true;
-			format_add_priority( params.format_list,
+			params.match_flags.priority_tier_flag = true;
+			format_add_priority_tier(params.format_list,
 					field_size,
 					right_justify,
-					suffix );
+					suffix);
 		} else if (field[0] == 'P') {
 			params.match_flags.partition_flag = true;
 			format_add_partition( params.format_list,
@@ -1018,12 +1024,18 @@ static int _parse_long_format (char* format_long)
 						 field_size,
 						 right_justify,
 						 suffix );
-		} else if (!xstrcasecmp(token, "priority")) {
-			params.match_flags.priority_flag = true;
-			format_add_priority( params.format_list,
-					     field_size,
-					     right_justify,
-					     suffix );
+		} else if (!xstrcasecmp(token, "priorityjobfactor")) {
+			params.match_flags.priority_job_factor_flag = true;
+			format_add_priority_job_factor(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
+		} else if (!xstrcasecmp(token, "prioritytier")) {
+			params.match_flags.priority_tier_flag = true;
+			format_add_priority_tier(params.format_list,
+						 field_size,
+						 right_justify,
+						 suffix );
 		} else if (!xstrcasecmp(token, "reason")) {
 			params.match_flags.reason_flag = true;
 			format_add_reason( params.format_list,
@@ -1262,12 +1274,17 @@ void _print_options( void )
 			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
 			"true" : "false");
-	printf("priority_flag   = %s\n", params.match_flags.priority_flag ?
+	printf("priority_job_factor_flag   = %s\n",
+			params.match_flags.priority_job_factor_flag ?
+			"true" : "false");
+	printf("priority_tier_flag   = %s\n",
+			params.match_flags.priority_tier_flag ?
 			"true" : "false");
 	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
 			"true" : "false");
 	printf("reason_timestamp_flag = %s\n",
-			params.match_flags.reason_timestamp_flag ?  "true" : "false");
+			params.match_flags.reason_timestamp_flag ?
+			"true" : "false");
 	printf("reason_user_flag = %s\n",
 			params.match_flags.reason_user_flag ?  "true" : "false");
 	printf("reservation_flag = %s\n", params.reservation_flag ?

@@ -69,11 +69,7 @@ set tested_layout [list -1 -1 -1 -1]
 set timeout $max_job_delay
 set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv $use_envvar]
 expect {
-	-re "More processors requested than permitted" {
-		send_user "\nWARNING: can't test srun task distribution\n"
-		exit 0
-	}
-	-re "Node count specification invalid" {
+	-re "srun: error" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}

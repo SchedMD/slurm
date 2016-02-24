@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2016" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2016" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1733,7 +1733,7 @@ Job preemption is disabled.
 This is the default.
 .TP
 \fBpreempt/partition_prio\fR
-Job preemption is based upon partition priority.
+Job preemption is based upon partition priority tier.
 Jobs in higher priority partitions (queues) may preempt jobs from lower
 priority partitions.
 This is not compatible with \fBPreemptMode=OFF\fR.
@@ -1869,7 +1869,7 @@ Jobs that can preempt
 .IP \n+[step].
 Jobs with an advanced reservation
 .IP \n+[step].
-Partition Priority
+Partition Priority Tier
 .IP \n+[step].
 Job Priority
 .IP \n+[step].
@@ -1900,8 +1900,7 @@ The default value is 0.
 
 .TP
 \fBPriorityWeightPartition\fR
-An integer value that sets the degree to which the node partition
-component contributes to the job's priority.
+Partition factor used by priority/multifactor plugin in calculating job priority.
 Applicable only if PriorityType=priority/multifactor.
 The default value is 0.
 
@@ -4378,13 +4377,20 @@ See the description of the cluster\-level \fBPreemptMode\fR configuration
 parameter above for further information.
 
 .TP
-\fBPriority\fR
-Jobs submitted to a higher priority partition will be dispatched
-before pending jobs in lower priority partitions and if possible
-they will preempt running jobs from lower priority partitions.
-Note that a partition's priority takes precedence over a job's
-priority.
+\fBPriorityJobFactor\fR
+Partition factor used by priority/multifactor plugin in calculating job priority.
 The value may not exceed 65533.
+Also see PriorityTier.
+
+.TP
+\fBPriorityTier\fR
+Jobs submitted to a partition with a higher priority tier value will be
+dispatched before pending jobs in partition with lower priority tier value and,
+if possible, they will preempt running jobs from partitions with lower priority
+tier values.
+Note that a partition's priority tier takes precedence over a job's priority.
+The value may not exceed 65533.
+Also see PriorityJobFactor.
 
 .TP
 \fBQOS\fR
@@ -5082,7 +5088,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2015 SchedMD LLC.
+Copyright (C) 2010-2016 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

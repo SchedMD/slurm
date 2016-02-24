@@ -1079,8 +1079,10 @@ static int _part_rec_field(const struct part_record *part_ptr,
 		lua_pushstring (L, part_ptr->name);
 	} else if (!xstrcmp(name, "nodes")) {
 		lua_pushstring (L, part_ptr->nodes);
-	} else if (!xstrcmp(name, "priority")) {
-		lua_pushnumber (L, part_ptr->priority);
+	} else if (!xstrcmp(name, "priority_job_factor")) {
+		lua_pushnumber (L, part_ptr->priority_job_factor);
+	} else if (!xstrcmp(name, "priority_tier")) {
+		lua_pushnumber (L, part_ptr->priority_tier);
 	} else if (!xstrcmp(name, "qos")) {
 		lua_pushstring (L, part_ptr->qos_char);
 	} else if (!xstrcmp(name, "state_up")) {

@@ -116,7 +116,8 @@ enum {
 	SORTID_ONLY_LINE,
 	SORTID_PART_STATE,
 	SORTID_PREEMPT_MODE,
-	SORTID_PRIORITY,
+	SORTID_PRIORITY_JOB_FACTOR,
+	SORTID_PRIORITY_TIER,
 	SORTID_QOS_CHAR,
 	SORTID_REASON,
 	SORTID_ROOT,
@@ -163,7 +164,9 @@ static display_data_t display_data_part[] = {
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -239,7 +242,9 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
+	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_PRIORITY_TIER, "PriorityTier", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
@@ -575,10 +580,15 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			part_msg->preempt_mode = PREEMPT_MODE_SUSPEND;
 		type = "preempt_mode";
 		break;
-	case SORTID_PRIORITY:
+	case SORTID_PRIORITY_JOB_FACTOR:
 		temp_int = strtol(new_text, (char **)NULL, 10);
-		type = "priority";
-		part_msg->priority = (uint16_t)temp_int;
+		type = "priority_job_factor";
+		part_msg->priority_job_factor = (uint16_t)temp_int;
+		break;
+	case SORTID_PRIORITY_TIER:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "priority_tier";
+		part_msg->priority_tier = (uint16_t)temp_int;
 		break;
 	case SORTID_NAME:
 		type = "name";
@@ -1088,8 +1098,14 @@ static void _layout_part_record(GtkTreeView *treeview,
 				temp_uint16 =  slurm_get_preempt_mode();
 			temp_char = preempt_mode_string(temp_uint16);
 			break;
-		case SORTID_PRIORITY:
-			convert_num_unit((float)part_ptr->priority,
+		case SORTID_PRIORITY_JOB_FACTOR:
+			convert_num_unit((float)part_ptr->priority_job_factor,
+					 time_buf, sizeof(time_buf), UNIT_NONE,
+					 working_sview_config.convert_flags);
+			temp_char = time_buf;
+			break;
+		case SORTID_PRIORITY_TIER:
+			convert_num_unit((float)part_ptr->priority_tier,
 					 time_buf, sizeof(time_buf), UNIT_NONE,
 					 working_sview_config.convert_flags);
 			temp_char = time_buf;
@@ -1188,7 +1204,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeStore *treestore)
 {
-	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
+	char tmp_prio_job_factor[40], tmp_prio_tier[40];
+	char tmp_size[40], tmp_share_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
@@ -1312,8 +1329,12 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	if (tmp_preempt == (uint16_t) NO_VAL)
 		tmp_preempt = slurm_get_preempt_mode();	/* use cluster param */
 
-	convert_num_unit((float)part_ptr->priority,
-			 tmp_prio, sizeof(tmp_prio), UNIT_NONE,
+	convert_num_unit((float)part_ptr->priority_job_factor,
+			 tmp_prio_job_factor, sizeof(tmp_prio_job_factor),
+			 UNIT_NONE, working_sview_config.convert_flags);
+
+	convert_num_unit((float)part_ptr->priority_tier,
+			 tmp_prio_tier, sizeof(tmp_prio_tier), UNIT_NONE,
 			 working_sview_config.convert_flags);
 
 	if (part_ptr->max_share & SHARED_FORCE) {
@@ -1377,7 +1398,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_PART_STATE, tmp_state,
 			   SORTID_PREEMPT_MODE,
 				preempt_mode_string(tmp_preempt),
-			   SORTID_PRIORITY,   tmp_prio,
+			   SORTID_PRIORITY_JOB_FACTOR, tmp_prio_job_factor,
+			   SORTID_PRIORITY_TIER, tmp_prio_tier,
 			   SORTID_REASON,     "",
 			   SORTID_ROOT,       tmp_root,
 			   SORTID_SHARE,      tmp_share,
@@ -2339,7 +2361,8 @@ extern GtkListStore *create_model_part(int type)
 				   0, "suspend", 1, SORTID_PREEMPT_MODE, -1);
 		break;
 	case SORTID_GRACE_TIME:
-	case SORTID_PRIORITY:
+	case SORTID_PRIORITY_JOB_FACTOR:
+	case SORTID_PRIORITY_TIER:
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:

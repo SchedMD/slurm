@@ -838,9 +838,9 @@ static bool _all_partition_priorities_same(void)
 	iter = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(iter))) {
 		if (!part_priority_set) {
-			part_priority = part_ptr->priority;
+			part_priority = part_ptr->priority_tier;
 			part_priority_set = true;
-		} else if (part_priority != part_ptr->priority) {
+		} else if (part_priority != part_ptr->priority_tier) {
 			result = false;
 			break;
 		}
@@ -1921,8 +1921,8 @@ extern int sort_job_queue2(void *x, void *y)
 		return 1;
 
 	if (job_rec1->part_ptr && job_rec2->part_ptr) {
-		p1 = job_rec1->part_ptr->priority;
-		p2 = job_rec2->part_ptr->priority;
+		p1 = job_rec1->part_ptr->priority_tier;
+		p2 = job_rec2->part_ptr->priority_tier;
 		if (p1 < p2)
 			return 1;
 		if (p1 > p2)

@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "January 2016" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "February 2016" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- view information about Slurm nodes and partitions.
@@ -157,6 +157,9 @@ Size of temporary disk space per node in megabytes
 \fB%D\fR
 Number of nodes
 .TP
+\fB%e\fR
+Free memory of a node
+.TP
 \fB%E\fR
 The reason a node is unavailable (down, drained, or draining states).
 .TP
@@ -180,6 +183,9 @@ Jobs may share nodes, "yes", "no", or "force"
 .TP
 \fB%H\fR
 Print the timestamp of the reason a node is unavailable.
+.TP
+\fB%I\fR
+Partition job priority weighting factor.
 .TP
 \fB%l\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds"
@@ -205,11 +211,8 @@ List of node communication addresses
 \fB%O\fR
 CPU load of a node
 .TP
-\fB%e\fR
-Free memory of a node
-.TP
 \fB%p\fR
-Partition scheduling priority
+Partition scheduling tier priority.
 .TP
 \fB%P\fR
 Partition name followed by "*" for the default partition, also see \fB%R\fR
@@ -374,8 +377,11 @@ Partition name, also see \fB%P\fR.
 \fBpreemptmode\fR
 PreemptionMode.
 .TP
-\fBpriority\fR
-Partition scheduling priority.
+\fBpriorityjobfactor\fR
+Partition factor used by priority/multifactor plugin in calculating job priority.
+.TP
+\fBprioritytier\fR or \fBpriority\fR
+Partition scheduling tier priority.
 .TP
 \fBreason\fR
 The reason a node is unavailable (down, drained, or draining states).

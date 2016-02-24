@@ -3092,8 +3092,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 
 		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-			if ((p_ptr->part_ptr->priority <
-			     jp_ptr->part_ptr->priority) &&
+			if ((p_ptr->part_ptr->priority_tier <
+			     jp_ptr->part_ptr->priority_tier) &&
 			    (p_ptr->part_ptr->preempt_mode !=
 			     PREEMPT_MODE_OFF)) {
 				if (select_debug_flags &
@@ -3146,7 +3146,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	/* remove existing allocations (jobs) from same-priority partitions
 	 * from avail_cores */
 	for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->part_ptr->priority != jp_ptr->part_ptr->priority)
+		if (p_ptr->part_ptr->priority_tier !=
+		    jp_ptr->part_ptr->priority_tier)
 			continue;
 		if (!p_ptr->row)
 			continue;

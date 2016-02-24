@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
- *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2016 SchedMD <http://www.schedmd.com>.
  *  Portions (boards) copyright (C) 2012 Bull, <rod.schultz@bull.com>
  *  Portions (route) copyright (C) 2014 Bull, <rod.schultz@bull.com>
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
@@ -1046,6 +1046,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_partition_t *p;
 	char *tmp = NULL;
+	uint16_t tmp_16 = 0;
 	static s_p_options_t _partition_options[] = {
 		{"AllocNodes", S_P_STRING},
 		{"AllowAccounts",S_P_STRING},
@@ -1073,6 +1074,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Nodes", S_P_STRING},
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
+		{"PriorityJobFactor", S_P_UINT16},
+		{"PriorityTier", S_P_UINT16},
 		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
@@ -1286,9 +1289,21 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		} else
 			p->preempt_mode = (uint16_t) NO_VAL;
 
-		if (!s_p_get_uint16(&p->priority, "Priority", tbl) &&
-		    !s_p_get_uint16(&p->priority, "Priority", dflt))
-			p->priority = 1;
+		if (!s_p_get_uint16(&p->priority_job_factor,
+				    "PriorityJobFactor", tbl) &&
+		    !s_p_get_uint16(&p->priority_job_factor,
+				    "PriorityJobFactor", dflt)) {
+			p->priority_job_factor = 1;
+		}
+		if (!s_p_get_uint16(&p->priority_tier, "PriorityTier", tbl) &&
+		    !s_p_get_uint16(&p->priority_tier, "PriorityTier", dflt)) {
+			p->priority_tier = 1;
+		}
+		if (s_p_get_uint16(&tmp_16, "Priority", tbl) ||
+		    s_p_get_uint16(&tmp_16, "Priority", dflt)) {
+			p->priority_job_factor = tmp_16;
+			p->priority_tier = tmp_16;
+		}
 
 		if (!s_p_get_string(&p->qos_char, "QOS", tbl)
 		    && !s_p_get_string(&p->qos_char, "QOS", dflt))

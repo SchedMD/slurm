@@ -92,7 +92,7 @@ struct gs_job {
 
 struct gs_part {
 	char *part_name;
-	uint16_t priority;
+	uint16_t priority;	/* Job priority tier */
 	uint32_t num_jobs;
 	struct gs_job **job_list;
 	uint32_t job_list_size;
@@ -353,7 +353,7 @@ static void _build_parts(void)
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		gs_part_ptr = xmalloc(sizeof(struct gs_part));
 		gs_part_ptr->part_name = xstrdup(p_ptr->name);
-		gs_part_ptr->priority = p_ptr->priority;
+		gs_part_ptr->priority = p_ptr->priority_tier;
 		/* everything else is already set to zero/NULL */
 		list_append(gs_part_list, gs_part_ptr);
 	}

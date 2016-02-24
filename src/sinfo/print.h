@@ -116,8 +116,10 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_prefix)
 #define format_add_preempt_mode(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_preempt_mode)
-#define format_add_priority(list,wid,right,suffix) \
-	format_add_function(list,wid,right,suffix,_print_priority)
+#define format_add_priority_job_factor(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_priority_job_factor)
+#define format_add_priority_tier(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_priority_tier)
 #define format_add_reason(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_reason)
 #define format_add_root(list,wid,right,prefix) \
@@ -207,7 +209,9 @@ int _print_prefix(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_preempt_mode(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
-int _print_priority(sinfo_data_t * sinfo_data, int width,
+int _print_priority_job_factor(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_priority_tier(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_reason(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);

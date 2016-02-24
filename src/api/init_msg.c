@@ -134,7 +134,8 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->min_nodes 	= NO_VAL;
 	update_part_msg->max_time 	= (uint32_t) NO_VAL;
 	update_part_msg->preempt_mode 	= (uint16_t) NO_VAL;
-	update_part_msg->priority 	= (uint16_t) NO_VAL;
+	update_part_msg->priority_job_factor = (uint16_t) NO_VAL;
+	update_part_msg->priority_tier	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
 }
 
