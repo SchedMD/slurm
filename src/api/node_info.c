@@ -476,7 +476,6 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 static void _set_node_mixed(node_info_msg_t *resp)
 {
 	node_info_t *node_ptr = NULL;
-	uint16_t used_cpus = 0;
 	int i;
 
 	if (!resp)
@@ -484,6 +483,7 @@ static void _set_node_mixed(node_info_msg_t *resp)
 
 	for (i = 0, node_ptr = resp->node_array;
 	     i < resp->record_count; i++, node_ptr++) {
+		uint16_t used_cpus = 0;
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ALLOCATED, &used_cpus);
