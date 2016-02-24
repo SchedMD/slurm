@@ -9,8 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with resizing jobs and limits not be kept track of correctly.
  -- BGQ - Remove redeclaration of job_read_lock.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
- -- Fix issue where when updating a job the pn_min_cpus was updated
-    erroneously.
+ -- Make it possible to change CPUsPerTask with scontrol.
 
 * Changes in Slurm 15.08.8
 ==========================
