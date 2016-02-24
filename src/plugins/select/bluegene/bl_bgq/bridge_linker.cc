@@ -378,8 +378,6 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	char *mp_str = NULL;
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	if (!block_id) {
 		error("_remove_jobs_on_block_and_reset: no block name given");
