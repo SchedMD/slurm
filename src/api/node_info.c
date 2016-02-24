@@ -131,7 +131,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
 	int cpus_per_node = 1;
-	int total_used = node_ptr->cpus;
+	int idle_cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t alloc_memory;
 	char *line_end = (one_liner) ? " " : "\n   ";
@@ -171,7 +171,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		else
 			alloc_cpus *= cpus_per_node;
 	}
-	total_used -= alloc_cpus;
+	idle_cpus = node_ptr->cpus - alloc_cpus;
 
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_SUBCNT,
@@ -179,10 +179,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				  &err_cpus);
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		err_cpus *= cpus_per_node;
-	total_used -= err_cpus;
+	idle_cpus -= err_cpus;
 
 	if ((alloc_cpus && err_cpus) ||
-	    (total_used  && (total_used != node_ptr->cpus))) {
+	    (idle_cpus  && (idle_cpus != node_ptr->cpus))) {
 		my_state &= NODE_STATE_FLAGS;
 		my_state |= NODE_STATE_MIXED;
 	}
@@ -416,7 +416,6 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 static void _set_node_mixed(node_info_msg_t *resp)
 {
 	node_info_t *node_ptr = NULL;
-	uint16_t used_cpus = 0;
 	int i;
 
 	if (!resp)
@@ -424,6 +423,7 @@ static void _set_node_mixed(node_info_msg_t *resp)
 
 	for (i = 0, node_ptr = resp->node_array;
 	     i < resp->record_count; i++, node_ptr++) {
+		uint16_t used_cpus = 0;
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ALLOCATED, &used_cpus);

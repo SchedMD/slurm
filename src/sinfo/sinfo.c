@@ -344,6 +344,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 					alloc_cpus *= single_node_cpus;
 			}
 			idle_cpus = node_ptr->cpus - alloc_cpus;
+
 			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						     SELECT_NODEDATA_SUBCNT,
 						     NODE_STATE_ERROR,

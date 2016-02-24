@@ -110,6 +110,9 @@ documents those changes that are of interest to users and administrators.
  -- BurstBuffer/cray - Defer job cancellation or time limit while "pre-run"
     operation in progress to avoid inconsistent state due to multiple calls
     to job termination functions.
+ -- Fix issue with resizing jobs and limits not be kept track of correctly.
+ -- BGQ - Remove redeclaration of job_read_lock.
+ -- BGQ - Tighter locks around structures when nodes/cables change state.
 
 * Changes in Slurm 15.08.8
 ==========================
@@ -960,6 +963,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct dependency formatting to print array task ids if set.
  -- Fix for configuration of "AuthType=munge" and "AuthInfo=socket=..." with
     alternate munge socket path.
+ -- BGQ - Remove redeclaration of job_read_lock.
+ -- BGQ - Tighter locks around structures when nodes/cables change state.
 
 * Changes in Slurm 14.11.11
 ===========================

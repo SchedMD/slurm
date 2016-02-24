@@ -12190,6 +12190,13 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 
 	job_ptr->details->submit_time = org_submit;
 	job_ptr->job_state &= (~JOB_RESIZING);
+
+	/* Reset the end_time_exp that was probably set to NO_VAL when
+	 * ending the job on the resize.  If using the
+	 * priority/multifactor plugin if the end_time_exp is NO_VAL
+	 * it will not run again for the job.
+	 */
+	job_ptr->end_time_exp = job_ptr->end_time;
 }
 
 static char *_build_step_id(char *buf, int buf_len,
