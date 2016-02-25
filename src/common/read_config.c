@@ -758,20 +758,18 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			 * Except SocketsPerBoard=# can be used,
 			 * But it can't be used with Sockets=# */
 			n->boards = 1;
-			if (!no_sockets && !no_sockets_per_board) {
-				error("NodeNames=%s Sockets=# and "
-				      "SocketsPerBoard=# is invalid"
-				      ", using SocketsPerBoard",
-				      n->nodenames);
-				n->sockets = sockets_per_board;
-			}
 			if (!no_sockets_per_board) {
+				if (!no_sockets)
+					error("NodeNames=%s Sockets=# and "
+					      "SocketsPerBoard=# is invalid"
+					      ", using SocketsPerBoard",
+					      n->nodenames);
 				n->sockets = sockets_per_board;
-			}
-			if (!no_cpus    &&	/* infer missing Sockets= */
-			    no_sockets) {
+			} else if (!no_cpus && no_sockets) {
+				/* infer missing Sockets= */
 				n->sockets = n->cpus / (n->cores * n->threads);
 			}
+
 			if (n->sockets == 0) { /* make sure sockets != 0 */
 				error("NodeNames=%s Sockets=0 is invalid, "
 				      "reset to 1", n->nodenames);
@@ -816,12 +814,14 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 				      n->nodenames);
 				n->boards = 1;
 			}
-			if (!no_sockets && !no_sockets_per_board) {
-				error("NodeNames=%s Sockets=# and "
-				      "SocketsPerBoard=# is invalid, "
-				      "using SocketsPerBoard", n->nodenames);
-				n->sockets = n->boards * sockets_per_board;
-			} else if (!no_sockets_per_board) {
+
+			if (!no_sockets_per_board) {
+				if (!no_sockets)
+					error("NodeNames=%s Sockets=# and "
+					      "SocketsPerBoard=# is invalid, "
+					      "using SocketsPerBoard",
+					      n->nodenames);
+
 				n->sockets = n->boards * sockets_per_board;
 			} else if (!no_sockets) {
 				error("NodeNames=%s Sockets=# with Boards=# is"

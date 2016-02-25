@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it possible to change CPUsPerTask with scontrol.
  -- Make it so scontrol update part qos= will take away a partition QOS from
     a partition.
+ -- Fix issue where SocketsPerBoard didn't translate to Sockets when CPUS=
+    was also given.
 
 * Changes in Slurm 15.08.8
 ==========================
