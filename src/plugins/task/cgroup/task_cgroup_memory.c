@@ -94,7 +94,10 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	/* initialize memory cgroup namespace */
 	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
 	    != XCGROUP_SUCCESS) {
-		error("task/cgroup: unable to create memory namespace");
+		error("task/cgroup: unable to create memory namespace. "
+			"You may need to set the Linux kernel option "
+			"cgroup_enable=memory (and reboot), or disable "
+			"ConstrainRAMSpace in cgroup.conf.");
 		return SLURM_ERROR;
 	}
 
