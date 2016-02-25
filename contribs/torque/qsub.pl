@@ -296,6 +296,7 @@ $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
+$command .= " $srun --pty \$SHELL" if $interactive;
 $command .= " $script" if $script;
 
 # print "$command\n";
