@@ -1936,7 +1936,7 @@ static int IsPmiKey(char * key) {
 	char strh[5];
 
 	if (pmi_debug)
-		fprintf(stderr, "In: IsPmiKey \n");
+		fprintf(stderr, "In: IsPmiKey\n");
 
 	strncpy(strh, key, 4);
 	strh[4]='\0';
@@ -1954,11 +1954,11 @@ inline static void _kvs_dump(void)
 	int i, j;
 
 	for (i=0; i<kvs_rec_cnt; i++) {
-		info("name=%s state=%u cnt=%u inx=%u",
+		fprintf(stderr, "name=%s state=%u cnt=%u inx=%u\n",
 			kvs_recs[i].kvs_name, kvs_recs[i].kvs_state,
 			kvs_recs[i].kvs_cnt, kvs_recs[i].kvs_inx);
 		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
-			info("  state=%u key=%s value=%s",
+			fprintf(stderr, "  state=%u key=%s value=%s\n",
 				kvs_recs[i].kvs_key_states[j],
 				kvs_recs[i].kvs_keys[j],
 				kvs_recs[i].kvs_values[j]);
