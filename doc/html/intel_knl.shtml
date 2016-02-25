@@ -81,6 +81,37 @@ nid000[12-35]  flat,a2a         flat,a2a,snc2,snc4,hemi,quad
 nid000[36-43]  cache,a2a        flat,equal,cache,a2a,snc2,snc4,hemi,quad
 </pre>
 
+<h3>Network Topology</h3>
+
+<p>Slurm will optimize performance using those resources available without
+rebooting. If node rebooting is required, then it will optimize layout with
+respect to network bandwidth using both nodes currently in the desired
+configuration and those which can be made available after rebooting.
+This can result in more nodes being rebooted than strictly needed, but will
+improve application performance.</p>
+
+<p>Users can specify they want all resources allocated on a specific count of
+leaf switches (Dragonfly group) using Slurm's <b>--switches</b> option.
+They can also specify how much additional time they are willing to wait for
+such a configuration. If the desired configuration can not be made available
+within the specified time interval, the job will be allocated nodes optimized
+with respect to network bandwidth to the extent possible. On a Dragonfly
+network, this means allocating resources over either single group or
+distributed evenly over as many groups as possible. For example:</p>
+<pre>
+srun --switches=1@10:00 N16 a.out
+</pre>
+<p>Note that system administrators can disable use of the <b>--switches</b>
+option or limit the amount of time the job can be deferred using the
+<b>SchedulerParameters</b> <b>max-switch-wait</b> option.</p>
+
+<h3>Booting Problems</h3>
+
+<p>If node boots fail, those nodes are drained and the job is requeued so that
+it can be allocated a different set of nodes. The nodes originally allocated
+to the job will remain available to the job, so likely a small number of
+additional nodes will be required.</p>
+
 <h2>System Administration</h2>
 
 <p>Three important components are required to use Slurm on an Intel KNL system.</p>
@@ -176,6 +207,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 February 2016</p>
+<p style="text-align:center;">Last modified 25 February 2016</p>
 
 <!--#include virtual="footer.txt"-->
