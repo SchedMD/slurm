@@ -416,7 +416,7 @@ extern char *make_full_path(char *rpath)
 struct addrinfo *
 get_addr_info(const char *hostname)
 {
-	struct addrinfo* result;
+	struct addrinfo* result = NULL;
 	struct addrinfo hints;
 	int err;
 

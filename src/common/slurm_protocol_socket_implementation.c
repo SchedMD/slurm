@@ -712,46 +712,60 @@ static int _slurm_vfcntl(int fd, int cmd, va_list va )
 
 extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 {
-	struct addrinfo *addrs;
-	struct addrinfo *addr_ptr;
-	int found;
+#if 1
+	struct hostent * he    = NULL;
+	int	   h_err = 0;
+	char *	   h_buf[4096];
+
 	/*
-	 * If NULL hostname passed in, we only update the port
-	 *   of addr
+	 * If NULL hostname passed in, we only update the port of addr
 	 */
 	addr->sin_family = AF_SLURM;
 	addr->sin_port   = htons(port);
 	if (host == NULL)
 		return;
 
-	found = 0;
-	addrs = get_addr_info(host);
-	if (addrs == NULL) {
-		error("Unable to resolve \"%s\"", host);
+	he = get_host_by_name(host, (void *)&h_buf, sizeof(h_buf), &h_err);
+
+	if (he != NULL)
+		memcpy (&addr->sin_addr.s_addr, he->h_addr, he->h_length);
+	else {
+		error("Unable to resolve \"%s\": %s", host, hstrerror(h_err));
 		addr->sin_family = 0;
 		addr->sin_port = 0;
-		return;
 	}
-	for (addr_ptr = addrs; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
-		if (addr_ptr->ai_family == AF_INET) {
-			++found;
-			break;
-		}
-	}
+	return;
+#else
+	struct addrinfo *addrs;
+	struct addrinfo *addr_ptr;
 
-	if (found) {
+	/*
+	 * If NULL hostname passed in, we only update the port of addr
+	 */
+	addr->sin_family = AF_SLURM;
+	addr->sin_port   = htons(port);
+	if (host == NULL)
+		return;
+
+	addrs = get_addr_info(host);
+	for (addr_ptr = addrs; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
+		if (addr_ptr->ai_family == AF_INET)
+			break;
+	}
+	if (addr_ptr) {
 		struct sockaddr_in *addr2;
 		addr2 = (struct sockaddr_in *)addr_ptr->ai_addr;
 		memcpy(&addr->sin_addr.s_addr,
 		       &addr2->sin_addr.s_addr, sizeof(addr2->sin_addr.s_addr));
 	} else {
-		error("Unable to resolve \"%s\"", host);
+		error("%s: Unable to resolve \"%s\"", __func__, host);
 		addr->sin_family = 0;
 		addr->sin_port = 0;
 	}
 
 	if (addrs)
 		free_addr_info(addrs);
+#endif
 }
 
 extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,

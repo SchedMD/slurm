@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     partitions for scheduling and preemption) plus "PriorityJobFactor" (used by
     priority/multifactor plugin in calculating job priority, which is used to
     order jobs within a partition for scheduling).
+ -- Revert call to getaddrinfo, restoring gethostbyaddr (introduced in Slurm
+    16.05.0pre1) which was failing on some systems.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
