@@ -129,19 +129,13 @@ clean:
 
 /*
  * destroy a cgroup namespace
- *
- * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_destroy(xcgroup_ns_t* cgns)
+void xcgroup_ns_destroy(xcgroup_ns_t* cgns)
 {
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
 	xfree(cgns->subsystems);
 	xfree(cgns->notify_prog);
-
-	return XCGROUP_SUCCESS;
 }
 
 /*
@@ -399,14 +393,13 @@ int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 	return XCGROUP_SUCCESS;
 }
 
-int xcgroup_destroy(xcgroup_t* cg)
+void xcgroup_destroy(xcgroup_t* cg)
 {
 	cg->ns = NULL;
 	xfree(cg->name);
 	xfree(cg->path);
 	cg->uid = -1;
 	cg->gid = -1;
-	return XCGROUP_SUCCESS;
 }
 
 int xcgroup_lock(xcgroup_t* cg)

@@ -93,12 +93,8 @@ int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
 
 /*
  * destroy a cgroup namespace
- *
- * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_destroy(xcgroup_ns_t* cgns);
+void xcgroup_ns_destroy(xcgroup_ns_t* cgns);
 
 /*
  * mount a cgroup namespace
@@ -161,12 +157,8 @@ int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 
 /*
  * destroy a cgroup internal structure
- *
- * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
  */
-int xcgroup_destroy(xcgroup_t* cg);
+void xcgroup_destroy(xcgroup_t* cg);
 
 /*
  * lock a cgroup (must have been instanciated)
