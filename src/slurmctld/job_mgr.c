@@ -10619,6 +10619,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     job_ptr->job_id);
 		}
 	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->cpus_per_task != (uint16_t)NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (detail_ptr->cpus_per_task !=
+			   job_specs->cpus_per_task) {
+			info("%s: setting cpus_per_task from %u to %u for "
+			     "job_id %u", __func__, detail_ptr->cpus_per_task,
+			     job_specs->pn_min_cpus,
+			     job_ptr->job_id);
+			detail_ptr->cpus_per_task = job_specs->cpus_per_task;
+		}
+	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
@@ -10694,45 +10711,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
-	}
-
-	/* This also needs to be updated to make sure we are kosher
-	   after messing with the cpus and nodes. */
-	if (detail_ptr && detail_ptr->pn_min_cpus) {
-		uint16_t pn_min_cpus =
-			(uint16_t)(job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
-				   job_ptr->tres_req_cnt[TRES_ARRAY_NODE]);
-		if (detail_ptr->pn_min_cpus != pn_min_cpus) {
-			info("update_job: setting pn_min_cpus from "
-			     "%u to %u for job_id %u",
-			     detail_ptr->pn_min_cpus, pn_min_cpus,
-			     job_ptr->job_id);
-			detail_ptr->pn_min_cpus = pn_min_cpus;
-		}
-	}
-
-	/* This has to be figured out before num_tasks is */
-	if (detail_ptr && detail_ptr->cpus_per_task) {
-		uint16_t cpus_per_task;
-		/* Use the new value if given else use the current tasks */
-		uint32_t num_tasks = (job_specs->num_tasks != NO_VAL) ?
-			job_specs->num_tasks : detail_ptr->num_tasks;
-
-		if (num_tasks)
-			cpus_per_task = job_ptr->tres_req_cnt[TRES_ARRAY_CPU] /
-				num_tasks;
-		else if (detail_ptr->cpus_per_task > detail_ptr->pn_min_cpus)
-			cpus_per_task = detail_ptr->pn_min_cpus;
-		else
-			cpus_per_task = detail_ptr->cpus_per_task;
-
-		if (cpus_per_task != detail_ptr->cpus_per_task) {
-			info("update_job: setting cpus_per_task from "
-			     "%u to %u for job_id %u",
-			     detail_ptr->cpus_per_task, cpus_per_task,
-			     job_ptr->job_id);
-			detail_ptr->cpus_per_task = cpus_per_task;
-		}
 	}
 
 	if (job_specs->num_tasks != NO_VAL) {

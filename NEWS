@@ -116,6 +116,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with resizing jobs and limits not be kept track of correctly.
  -- BGQ - Remove redeclaration of job_read_lock.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
+ -- Make it possible to change CPUsPerTask with scontrol.
+ -- Make it so scontrol update part qos= will take away a partition QOS from
+    a partition.
+ -- Fix issue where SocketsPerBoard didn't translate to Sockets when CPUS=
+    was also given.
 
 * Changes in Slurm 15.08.8
 ==========================

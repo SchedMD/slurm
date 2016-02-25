@@ -846,6 +846,14 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "CPUsPerTask", MAX(taglen, 6)) == 0) {
+			if (parse_uint16(val, &job_msg.cpus_per_task)) {
+				error("Invalid CPUsPerTask value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
 			int min_cpus, max_cpus=0;
 			if (!get_resource_arg_range(val, "NumCPUs", &min_cpus,
