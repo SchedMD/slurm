@@ -2372,6 +2372,11 @@ For example, on Cray systems add "\-\-gres=craynetwork:0" as shown below:
     SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=craynetwork:0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
+For systems with TaskPlugin set, adding an option of "\-\-cpu_bind=no" is
+recommended if the default shell should have access to all of the CPUs
+allocated to the job on that node, otherwise the shell may be limited to a
+single cpu or core.
+
 .TP
 \fBSchedulerParameters\fR
 The interpretation of this parameter varies by \fBSchedulerType\fR.
