@@ -1652,13 +1652,13 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				error("(%s: %d: %s) Could not get system "
 				      "topology info: %s",
 				      THIS_FILE, __LINE__,
-				      __FUNCTION__, err_msg);
+				      __func__, err_msg);
 				free(err_msg);
 			} else {
 				error("(%s: %d: %s) Could not get system "
 				      "topology info: No error "
 				      "message present.",
-				      THIS_FILE, __LINE__, __FUNCTION__);
+				      THIS_FILE, __LINE__, __func__);
 			}
 			return SLURM_ERROR;
 		}
@@ -1687,7 +1687,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 						 "0123456789"))) {
 				error("(%s: %d: %s) Error: Node was not "
 				      "recognizable: %s",
-				      THIS_FILE, __LINE__, __FUNCTION__,
+				      THIS_FILE, __LINE__, __func__,
 				      node_rec->name);
 				slurm_mutex_unlock(&blade_mutex);
 				return SLURM_ERROR;

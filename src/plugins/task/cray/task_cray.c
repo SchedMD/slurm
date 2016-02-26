@@ -150,10 +150,10 @@ static int track_status = 1;
 // File containing the number of currently running Slurm steps
 #define NUM_STEPS_FILE	TASK_CRAY_RUN_DIR"/slurm_num_steps"
 
-#define _ALPSC_DEBUG(f) _alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
+#define _ALPSC_DEBUG(f) _alpsc_debug(THIS_FILE, __LINE__, __func__, \
 				     rc, 1, f, err_msg);
 #define CRAY_ERR(fmt, ...) error("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
-				    __FUNCTION__, ##__VA_ARGS__);
+				    __func__, ##__VA_ARGS__);
 #endif
 
 /*
@@ -754,7 +754,7 @@ static int _get_numa_nodes(char *path, int *cnt, int32_t **numa_array) {
 		if (*(bm->maskp) & ((long unsigned) 1 << i)) {
 			if (debug_flags & DEBUG_FLAG_TASK) {
 				info("(%s: %d: %s) NUMA Node %d is present",
-				     THIS_FILE,	__LINE__, __FUNCTION__, i);
+				     THIS_FILE,	__LINE__, __func__, i);
 			}
 			(*numa_array)[index++] = i;
 		}

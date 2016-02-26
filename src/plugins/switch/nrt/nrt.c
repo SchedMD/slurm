@@ -617,7 +617,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_ERROR;
 	}
 
@@ -1799,7 +1799,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 
 	if ((j == NULL) || (j->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return;
 	}
 
@@ -2841,7 +2841,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 	xassert(!hostlist_is_empty(hl));
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3015,7 +3015,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3488,7 +3488,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
 
 	if (j->magic == NRT_NULL_MAGIC) {
 		debug2("(%s: %d: %s) Nothing to unpack.",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_SUCCESS;
 	}
 
@@ -3575,7 +3575,7 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_SUCCESS;
 	}
 
@@ -3770,7 +3770,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_ERROR;
 	}
 
@@ -3945,7 +3945,7 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 {
 	if ((jp == NULL) || (jp->magic == NRT_NULL_MAGIC)) {
 		debug2("(%s: %d: %s) job->switch_job was NULL",
-		       THIS_FILE, __LINE__, __FUNCTION__);
+		       THIS_FILE, __LINE__, __func__);
 		return SLURM_ERROR;
 	}
 

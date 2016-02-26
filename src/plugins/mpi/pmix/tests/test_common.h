@@ -28,13 +28,13 @@ extern int pmix_test_verbose;
 #define STRIPPED_FILE_NAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define TEST_OUTPUT(x) { \
-    fprintf(stderr,"%s:%s: %s\n",STRIPPED_FILE_NAME, __FUNCTION__, \
+    fprintf(stderr,"%s:%s: %s\n",STRIPPED_FILE_NAME, __func__, \
             pmix_test_output_prepare x); \
     fflush(stderr); \
 }
 
 #define TEST_ERROR(x) { \
-    fprintf(stderr,"ERROR [%s:%d:%s]: %s\n", STRIPPED_FILE_NAME, __LINE__, __FUNCTION__, \
+    fprintf(stderr,"ERROR [%s:%d:%s]: %s\n", STRIPPED_FILE_NAME, __LINE__, __func__, \
             pmix_test_output_prepare x); \
     fflush(stderr); \
 }

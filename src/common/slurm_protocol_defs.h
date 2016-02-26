@@ -151,7 +151,7 @@
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
 #define INFO_LINE(fmt, ...) \
-	info("%s (%s:%d) "fmt, __FUNCTION__, THIS_FILE, __LINE__, ##__VA_ARGS__);
+	info("%s (%s:%d) "fmt, __func__, THIS_FILE, __LINE__, ##__VA_ARGS__);
 
 #define YEAR_MINUTES 365 * 24 * 60
 

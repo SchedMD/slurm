@@ -2571,13 +2571,13 @@ static void _verify_clustername(void)
 		debug("creating clustername file: %s", filename);
 		if (!(fp = fopen(filename, "w"))) {
 			fatal("%s: failed to create file %s",
-				__FUNCTION__, filename);
+				__func__, filename);
 			exit(1);
 		}
 
 		if (fputs(slurmctld_conf.cluster_name, fp) < 0) {
 			fatal("%s: failed to write to file %s",
-				__FUNCTION__, filename);
+				__func__, filename);
 			exit(1);
 		}
 		fclose(fp);

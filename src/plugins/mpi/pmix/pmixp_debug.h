@@ -50,8 +50,7 @@
 	}							\
 	debug("%s [%d] %s:%d [%s] mpi/pmix: " format "",	\
 		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __FUNCTION__,		\
-		## args);					\
+		file_base, __LINE__, __func__, ## args);	\
 }
 
 #define PMIXP_ERROR_STD(format, args...) {			\
@@ -62,7 +61,7 @@
 	}							\
 	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)",	\
 		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __FUNCTION__,		\
+		file_base, __LINE__, __func__,			\
 		## args, strerror(errno), errno);		\
 }
 
@@ -74,14 +73,14 @@
 	}							\
 	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format,	\
 		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __FUNCTION__, ## args);	\
+		file_base, __LINE__, __func__, ## args);	\
 }
 
 #define PMIXP_ABORT(format, args...) {				\
 	PMIXP_ERROR(format, ##args);                            \
 	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format,	\
 		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __FUNCTION__, ## args);	\
+		file_base, __LINE__, __func__, ## args);	\
 		slurm_kill_job_step(pmixp_info_jobid(),         \
 		pmixp_info_stepid(), SIGKILL);			\
 }
@@ -94,7 +93,7 @@
 	}							\
 	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)", \
 		pmixp_info_hostname(), pmixp_info_nodeid(),	\
-		file_base, __LINE__, __FUNCTION__,		\
+		file_base, __LINE__, __func__,			\
 		## args, strerror(err), err);			\
 }
 

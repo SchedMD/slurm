@@ -175,15 +175,15 @@ extern int release_cookies(slurm_cray_jobinfo_t *job);
 /**********************************************************
  * Macros
  **********************************************************/
-#define ALPSC_CN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
+#define ALPSC_CN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __func__, \
 					rc, 1, f, &err_msg);
-#define ALPSC_SN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __FUNCTION__, \
+#define ALPSC_SN_DEBUG(f) alpsc_debug(THIS_FILE, __LINE__, __func__, \
 					rc, 0, f, &err_msg);
 #define CRAY_ERR(fmt, ...) error("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
-				 __FUNCTION__, ##__VA_ARGS__);
+				 __func__, ##__VA_ARGS__);
 #define CRAY_DEBUG(fmt, ...) debug2("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
-				    __FUNCTION__, ##__VA_ARGS__);
+				    __func__, ##__VA_ARGS__);
 #define CRAY_INFO(fmt, ...) info("(%s: %d: %s) "fmt, THIS_FILE, __LINE__, \
-				 __FUNCTION__, ##__VA_ARGS__);
+				 __func__, ##__VA_ARGS__);
 
 #endif /* SWITCH_CRAY_H */

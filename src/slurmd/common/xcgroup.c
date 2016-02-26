@@ -411,13 +411,13 @@ int xcgroup_lock(xcgroup_t* cg)
 
 	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
 		debug2("%s: error from open of cgroup '%s' : %m",
-		       __FUNCTION__, cg->path);
+		       __func__, cg->path);
 		return fstatus;
 	}
 
 	if (flock(cg->fd,  LOCK_EX) < 0) {
 		debug2("%s: error locking cgroup '%s' : %m",
-		       __FUNCTION__, cg->path);
+		       __func__, cg->path);
 		close(cg->fd);
 	} else
 		fstatus = XCGROUP_SUCCESS;
@@ -431,7 +431,7 @@ int xcgroup_unlock(xcgroup_t* cg)
 
 	if (flock(cg->fd,  LOCK_UN) < 0) {
 		debug2("%s: error unlocking cgroup '%s' : %m",
-		       __FUNCTION__, cg->path);
+		       __func__, cg->path);
 	} else
 		fstatus = XCGROUP_SUCCESS;
 
@@ -478,7 +478,7 @@ int xcgroup_instantiate(xcgroup_t* cg)
 	/* change cgroup ownership as requested */
 	if (chown(file_path, uid, gid)) {
 		debug2("%s: unable to chown %d:%d cgroup '%s' : %m",
-		       __FUNCTION__, uid, gid, file_path);
+		       __func__, uid, gid, file_path);
 		return fstatus;
 	}
 
@@ -511,7 +511,7 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 
 	if (stat((const char*)file_path, &buf)) {
 		debug2("%s: unable to get cgroup '%s' entry '%s' properties"
-		       ": %m", __FUNCTION__, cgns->mnt_point, file_path);
+		       ": %m", __func__, cgns->mnt_point, file_path);
 		return fstatus;
 	}
 
@@ -535,7 +535,7 @@ int xcgroup_delete(xcgroup_t* cg)
 	 *   exist, do not propagate error back to caller.
 	 */
 	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
-		debug2("%s: rmdir(%s): %m", __FUNCTION__, cg->path);
+		debug2("%s: rmdir(%s): %m", __func__, cg->path);
 		return XCGROUP_ERROR;
 	}
 	return XCGROUP_SUCCESS;
@@ -573,8 +573,7 @@ int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 
 	fstatus = _file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
-		debug2("%s: unable to add pids to '%s'",
-			__FUNCTION__, cg->path);
+		debug2("%s: unable to add pids to '%s'", __func__, cg->path);
 
 	xfree(path);
 	return fstatus;
@@ -594,8 +593,7 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 
 	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
-		debug2("%s: unable to get pids of '%s'",
-			__FUNCTION__, cg->path);
+		debug2("%s: unable to get pids of '%s'", __func__, cg->path);
 
 	xfree(path);
 	return fstatus;
@@ -636,14 +634,14 @@ int xcgroup_set_params(xcgroup_t* cg, char* parameters)
 						      strlen(value));
 			if (fstatus != XCGROUP_SUCCESS)
 				debug2("%s: unable to set parameter '%s' to "
-					"'%s' for '%s'", __FUNCTION__, p, value,
+					"'%s' for '%s'", __func__, p, value,
 					cpath);
 			else
 				debug3("%s: parameter '%s' set to '%s' for '%s'",
-					__FUNCTION__, p, value, cpath);
+					__func__, p, value, cpath);
 		} else
 			debug2("%s: bad parameters format for entry '%s'",
-				__FUNCTION__, p);
+				__func__, p);
 	next_loop:
 		p = next;
 	}
@@ -667,10 +665,10 @@ int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 	fstatus = _file_write_content(file_path, content, strlen(content));
 	if (fstatus != XCGROUP_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%s' for '%s'",
-			__FUNCTION__, param, content, cpath);
+			__func__, param, content, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%s' for '%s'",
-			__FUNCTION__, param, content, cpath);
+			__func__, param, content, cpath);
 
 	return fstatus;
 }
@@ -688,7 +686,7 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
 		fstatus = _file_read_content(file_path, content, csize);
 		if (fstatus != XCGROUP_SUCCESS)
 			debug2("%s: unable to get parameter '%s' for '%s'",
-				__FUNCTION__, param, cpath);
+				__func__, param, cpath);
 	}
 	return fstatus;
 }
@@ -708,10 +706,10 @@ int xcgroup_set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
 	fstatus = _file_write_uint32s(file_path, &value, 1);
 	if (fstatus != XCGROUP_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%u' for '%s'",
-			__FUNCTION__, param, value, cpath);
+			__func__, param, value, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%u' for '%s'",
-			__FUNCTION__, param, value, cpath);
+			__func__, param, value, cpath);
 
 	return fstatus;
 }
@@ -731,10 +729,10 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 		fstatus = _file_read_uint32s(file_path, &values, &vnb);
 		if (fstatus != XCGROUP_SUCCESS) {
 			debug2("%s: unable to get parameter '%s' for '%s'",
-				__FUNCTION__, param, cpath);
+				__func__, param, cpath);
 		} else if (vnb < 1) {
 			debug2("%s: empty parameter '%s' for '%s'",
-				__FUNCTION__, param, cpath);
+				__func__, param, cpath);
 		} else {
 			*value = values[0];
 			xfree(values);
@@ -759,10 +757,10 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 	fstatus = _file_write_uint64s(file_path, &value, 1);
 	if (fstatus != XCGROUP_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%"PRIu64"' for "
-			"'%s'", __FUNCTION__, param, value, cpath);
+			"'%s'", __func__, param, value, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%"PRIu64"' for '%s'",
-			__FUNCTION__, param, value, cpath);
+			__func__, param, value, cpath);
 
 	return fstatus;
 }
@@ -783,10 +781,10 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 		fstatus = _file_read_uint64s(file_path, &values, &vnb);
 		if (fstatus != XCGROUP_SUCCESS) {
 			debug2("%s: unable to get parameter '%s' for '%s'",
-				__FUNCTION__, param, cpath);
+				__func__, param, cpath);
 		} else if (vnb < 1) {
 			debug2("%s: empty parameter '%s' for '%s'",
-				__FUNCTION__, param, cpath);
+				__func__, param, cpath);
 		} else {
 			*value = values[0];
 			xfree(values);
@@ -809,13 +807,13 @@ static int cgroup_move_process_by_task (xcgroup_t *cg, pid_t pid)
 
 	dir = opendir(path);
 	if (!dir) {
-		error("%s: opendir(%s): %m", __FUNCTION__, path);
+		error("%s: opendir(%s): %m", __func__, path);
 		return XCGROUP_ERROR;
 	}
 
 	while ((entry = readdir(dir))) {
 		if (entry->d_name[0] != '.')
-			xcgroup_set_param (cg, "tasks", entry->d_name);
+			xcgroup_set_param(cg, "tasks", entry->d_name);
 	}
 	closedir(dir);
 	return XCGROUP_SUCCESS;
@@ -885,7 +883,7 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for writing : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
@@ -909,7 +907,7 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 		while (rc < 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("%s: unable to add value '%s' to file '%s' : %m",
-				__FUNCTION__, tstr, file_path);
+				__func__, tstr, file_path);
 			if (errno != ESRCH)
 				fstatus = XCGROUP_ERROR;
 		}
@@ -942,7 +940,7 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
@@ -1007,7 +1005,7 @@ int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for writing : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
@@ -1031,7 +1029,7 @@ int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
 		while (rc < 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("%s: unable to add value '%s' to file '%s' : %m",
-				__FUNCTION__, tstr, file_path);
+				__func__, tstr, file_path);
 			if (errno != ESRCH)
 				fstatus = XCGROUP_ERROR;
 		}
@@ -1064,7 +1062,7 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
@@ -1125,7 +1123,7 @@ int _file_write_content(char* file_path, char* content, size_t csize)
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for writing : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return XCGROUP_ERROR;
 	}
 
@@ -1137,7 +1135,7 @@ int _file_write_content(char* file_path, char* content, size_t csize)
 	/* check read size */
 	if (rc < csize) {
 		debug2("%s: unable to write %lu bytes to file '%s' : %m",
-			__FUNCTION__, (long unsigned int) csize, file_path);
+			__func__, (long unsigned int) csize, file_path);
 		fstatus = XCGROUP_ERROR;
 	} else
 		fstatus = XCGROUP_SUCCESS;
@@ -1167,7 +1165,7 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__FUNCTION__, file_path);
+			__func__, file_path);
 		return fstatus;
 	}
 
