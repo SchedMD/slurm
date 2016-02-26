@@ -1108,10 +1108,6 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
 
-	/* for validation we don't need to look at
-	 * qos_ptr->grp_tres_mins.
-	 */
-
 	if (!_validate_tres_limits_for_qos(&tres_pos,
 					   job_desc->tres_req_cnt, 0,
 					   NULL,
@@ -1237,6 +1233,60 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			       ((uint64_t)job_desc->time_limit *
 				job_desc->tres_req_cnt[tres_pos]),
 			       qos_ptr->max_tres_mins_pj_ctld[tres_pos],
+			       qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
+
+		if (!_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    qos_ptr->grp_tres_mins_ctld,
+			    qos_out_ptr->grp_tres_mins_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos, WAIT_QOS_GRP_UNK_MIN);
+			debug2("job submit for user %s(%u): "
+			       "tres(%s) time limit request %"PRIu64" "
+			       "exceeds group max limit %"PRIu64" "
+			       "for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       qos_ptr->grp_tres_mins_ctld[tres_pos],
+			       qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
+
+		if (!_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    qos_ptr->grp_tres_run_mins_ctld,
+			    qos_out_ptr->grp_tres_run_mins_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos, WAIT_QOS_GRP_UNK_RUN_MIN);
+			debug2("job submit for user %s(%u): "
+			       "tres(%s) time limit request %"PRIu64" "
+			       "exceeds group max running limit %"PRIu64" "
+			       "for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       qos_ptr->grp_tres_run_mins_ctld[tres_pos],
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
@@ -2404,10 +2454,6 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	while (assoc_ptr) {
 		int tres_pos = 0;
 
-		/* for validation we don't need to look at
-		 * assoc_ptr->grp_cpu_mins.
-		 */
-
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, job_desc->tres_req_cnt, 0,
 			    assoc_ptr->grp_tres_ctld,
@@ -2452,10 +2498,87 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			break;
 		}
 
+		tres_pos = 0;
+		if (!update_call && !_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    assoc_ptr->grp_tres_mins_ctld,
+			    qos_rec.grp_tres_mins_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos,
+					WAIT_ASSOC_GRP_UNK_MIN);
+			debug2("job submit for user %s(%u): "
+			       "tres(%s) time limit request %"PRIu64" "
+			       "exceeds group max limit %"PRIu64" "
+			       "for account '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       assoc_ptr->
+			       grp_tres_mins_ctld[tres_pos],
+			       assoc_ptr->acct);
+			rc = false;
+			goto end_it;
+		}
 
-		/* for validation we don't need to look at
-		 * assoc_ptr->grp_wall. It is checked while the job is running.
-		 */
+		tres_pos = 0;
+		if (!update_call && !_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    assoc_ptr->grp_tres_run_mins_ctld,
+			    qos_rec.grp_tres_run_mins_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos,
+					WAIT_ASSOC_GRP_UNK_RUN_MIN);
+			debug2("job submit for user %s(%u): "
+			       "tres(%s) time limit request %"PRIu64" "
+			       "exceeds group max running "
+			       "limit %"PRIu64" for account '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       assoc_ptr->
+			       grp_tres_run_mins_ctld[tres_pos],
+			       assoc_ptr->acct);
+			rc = false;
+			goto end_it;
+		}
+
+		if (!update_call && !_validate_time_limit(
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    1,
+			    assoc_ptr->grp_wall,
+			    (uint64_t *)&qos_rec.grp_wall,
+			    &acct_policy_limit_set->time,
+			    strict_checking, false)) {
+			if (reason)
+				*reason = WAIT_ASSOC_GRP_WALL;
+			debug2("job submit for user %s(%u): "
+			       "time limit %u exceeds max group %u for "
+			       "account '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       job_desc->time_limit,
+			       assoc_ptr->grp_wall,
+			       assoc_ptr->acct);
+			rc = false;
+			break;
+		}
 
 		/* We don't need to look at the regular limits for
 		 * parents since we have pre-propogated them, so just
@@ -2542,6 +2665,33 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			break;
 		}
 
+		if (!update_call && !_validate_tres_time_limits(
+			    &tres_pos,
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    job_desc->tres_req_cnt,
+			    assoc_ptr->max_tres_mins_ctld,
+			    qos_rec.max_tres_mins_pj_ctld,
+			    &acct_policy_limit_set->time,
+			    strict_checking)) {
+			if (reason)
+				*reason = _get_tres_state_reason(
+					tres_pos,
+					WAIT_ASSOC_MAX_UNK_MINS_PER_JOB);
+			debug2("job submit for user %s(%u): "
+			       "tres(%s) time limit request %"PRIu64" "
+			       "exceeds max per-job limit %"PRIu64" "
+			       "for account '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       assoc_mgr_tres_name_array[tres_pos],
+			       ((uint64_t)job_desc->time_limit *
+				job_desc->tres_req_cnt[tres_pos]),
+			       assoc_ptr->max_tres_mins_ctld[tres_pos],
+			       assoc_ptr->acct);
+			rc = false;
+			break;
+		}
 
 		if (!update_call && !_validate_time_limit(
 			    &job_desc->time_limit,
