@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     was also given.
  -- Add note to slurm.conf man page about setting "--cpu_bind=no" as part
     of SallocDefaultCommand if a TaskPlugin is in use.
+ -- Set correct reason when a QOS' MaxTresMins is violated.
 
 * Changes in Slurm 15.08.8
 ==========================

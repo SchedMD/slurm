@@ -1071,7 +1071,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 			    strict_checking)) {
 			if (reason)
 				*reason = _get_tres_state_reason(
-					tres_pos, WAIT_QOS_MAX_UNK_PER_JOB);
+					tres_pos,
+					WAIT_QOS_MAX_UNK_MINS_PER_JOB);
 			debug2("job submit for user %s(%u): "
 			       "tres(%s) time limit request %"PRIu64" "
 			       "exceeds max per-job limit %"PRIu64" "
