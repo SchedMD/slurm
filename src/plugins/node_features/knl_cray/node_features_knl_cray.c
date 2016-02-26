@@ -1762,3 +1762,20 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features)
 
 	return node_features;
 }
+
+/* Determine if the specified user can modify the currently available node
+ * features */
+extern bool node_features_p_user_update(uid_t uid)
+{
+	int i;
+
+	if (allowed_uid_cnt == 0)   /* Default is ALL users allowed to update */
+		return true;
+
+	for (i = 0; i < allowed_uid_cnt; i++) {
+		if (allowed_uid[i] == uid)
+			return true;
+	}
+
+	return false;
+}

@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     16.05.0pre1) which was failing on some systems.
  -- knl_cray.conf - Added AllowMCDRAM, AllowNUMA and ALlowUserBoot
     configuration options.
+ -- Add node_features_p_user_update() function to node_features plugin.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

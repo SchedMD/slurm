@@ -74,4 +74,8 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode);
  * RET node's new merged features, must be xfreed */
 extern char *node_features_g_node_xlate(char *new_features,char *orig_features);
 
+/* Determine if the specified user can modify the currently available node
+ * features */
+extern bool node_features_g_user_update(uid_t uid);
+
 #endif /* !_NODE_FEATURES_H */

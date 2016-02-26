@@ -82,6 +82,7 @@ typedef struct node_features_ops {
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	char *	(*node_xlate)	(char *new_features, char *orig_features);
 	int	(*reconfig)	(void);
+	bool	(*user_update)	(uid_t uid);
 } node_features_ops_t;
 
 /*
@@ -94,7 +95,8 @@ static const char *syms[] = {
 	"node_features_p_job_xlate",
 	"node_features_p_node_state",
 	"node_features_p_node_xlate",
-	"node_features_p_reconfig"
+	"node_features_p_reconfig",
+	"node_features_p_user_update"
 };
 
 static int g_context_cnt = -1;
@@ -325,4 +327,24 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features)
 	END_TIMER2("node_features_g_node_xlate");
 
 	return new_value;
+}
+
+/* Determine if the specified user can modify the currently available node
+ * features */
+extern bool node_features_g_user_update(uid_t uid)
+{
+	DEF_TIMERS;
+	bool result = true;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; ((i < g_context_cnt) && (result == true)); i++) {
+		result = (*(ops[i].user_update))(uid);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_user_update");
+
+	return result;
 }
