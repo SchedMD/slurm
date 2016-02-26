@@ -1922,7 +1922,7 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 				debug("No child processes");
 				if (completed == 0)
 					completed = -1;
-				goto done;
+				break;
 			} else if (errno == EINTR) {
 				debug("wait3 was interrupted");
 				continue;
@@ -1931,7 +1931,7 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 				continue;
 			}
 		} else if (pid == 0) { /* WNOHANG and no pids available */
-			goto done;
+			break;
 		}
 
 		/************* acct stuff ********************/
@@ -2003,7 +2003,6 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 
 	} while ((pid > 0) && !waitflag);
 
-done:
 	return completed;
 }
 
