@@ -281,7 +281,8 @@ extern int power_job_reboot(struct job_record *job_ptr)
 	if (nodes) {
 		job_ptr->job_state |= JOB_CONFIGURING;
 		job_ptr->wait_all_nodes = 1;
-		if (job_ptr->details && job_ptr->details->features) {
+		if (job_ptr->details && job_ptr->details->features &&
+		    node_features_g_user_update(job_ptr->user_id)) {
 			features = node_features_g_job_xlate(
 					job_ptr->details->features);
 		}

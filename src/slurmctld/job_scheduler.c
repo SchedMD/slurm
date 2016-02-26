@@ -59,6 +59,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
+#include "src/common/layouts_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -72,7 +73,6 @@
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/layouts_mgr.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -121,8 +121,9 @@ static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static void *	_sched_agent(void *args);
 static int	_schedule(uint32_t job_limit);
-static int	_valid_feature_list(uint32_t job_id, List feature_list);
-static int	_valid_node_feature(char *feature);
+static int	_valid_feature_list(struct job_record *job_ptr,
+				    List feature_list);
+static int	_valid_node_feature(char *feature, bool can_reboot);
 #ifndef HAVE_FRONT_END
 static void *	_wait_boot(void *arg);
 #endif
@@ -3347,7 +3348,8 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 		return boot_node_bitmap;
 	}
 
-	if (node_features_g_count() == 0)
+	if ((node_features_g_count() == 0) ||
+	    !node_features_g_user_update(job_ptr->user_id))
 		return NULL;
 
 	build_active_feature_bitmap(job_ptr, job_ptr->node_bitmap,
@@ -3408,8 +3410,11 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	reboot_agent_args->hostlist = hostlist_create(NULL);
 	reboot_msg = xmalloc(sizeof(reboot_msg_t));
-	reboot_msg->features = node_features_g_job_xlate(
-				job_ptr->details->features);
+	if (job_ptr->details->features &&
+	    node_features_g_user_update(job_ptr->user_id)) {
+		reboot_msg->features = node_features_g_job_xlate(
+					job_ptr->details->features);
+	}
 	reboot_agent_args->msg_args = reboot_msg;
 	i_first = bit_ffs(boot_node_bitmap);
 	if (i_first >= 0)
@@ -3834,7 +3839,7 @@ extern int build_feature_list(struct job_record *job_ptr)
 		return ESLURM_INVALID_FEATURE;
 	}
 
-	return _valid_feature_list(job_ptr->job_id, detail_ptr->feature_list);
+	return _valid_feature_list(job_ptr, detail_ptr->feature_list);
 }
 
 static void _feature_list_delete(void *x)
@@ -3844,18 +3849,21 @@ static void _feature_list_delete(void *x)
 	xfree(feature);
 }
 
-static int _valid_feature_list(uint32_t job_id, List feature_list)
+static int _valid_feature_list(struct job_record *job_ptr, List feature_list)
 {
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
 	char *buf = NULL, tmp[16];
 	int bracket = 0;
 	int rc = SLURM_SUCCESS;
+	bool can_reboot;
 
 	if (feature_list == NULL) {
-		debug2("Job %u feature list is empty", job_id);
+		debug2("Job %u feature list is empty", job_ptr->job_id);
 		return rc;
 	}
+
+	can_reboot = node_features_g_user_update(job_ptr->user_id);
 
 	feat_iter = list_iterator_create(feature_list);
 	while ((feat_ptr = (job_feature_t *)list_next(feat_iter))) {
@@ -3867,7 +3875,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 		}
 		xstrcat(buf, feat_ptr->name);
 		if (rc == SLURM_SUCCESS)
-			rc = _valid_node_feature(feat_ptr->name);
+			rc = _valid_node_feature(feat_ptr->name, can_reboot);
 		if (feat_ptr->count) {
 			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
 			xstrcat(buf, tmp);
@@ -3886,22 +3894,29 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 			xstrcat(buf, "|");
 	}
 	list_iterator_destroy(feat_iter);
-	if (rc == SLURM_SUCCESS)
-		debug("Job %u feature list: %s", job_id, buf);
-	else
-		info("Job %u has invalid feature list: %s", job_id, buf);
+
+	if (rc == SLURM_SUCCESS) {
+		debug("Job %u feature list: %s", job_ptr->job_id, buf);
+	} else {
+		info("Job %u has invalid feature list: %s",
+		     job_ptr->job_id, buf);
+	}
 	xfree(buf);
+
 	return rc;
 }
 
 /* Validate that job's feature is available on some node(s) */
-static int _valid_node_feature(char *feature)
+static int _valid_node_feature(char *feature, bool can_reboot)
 {
 	int rc = ESLURM_INVALID_FEATURE;
 	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
 
-	feature_iter = list_iterator_create(avail_feature_list);
+	if (can_reboot)
+		feature_iter = list_iterator_create(avail_feature_list);
+	else
+		feature_iter = list_iterator_create(active_feature_list);
 	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
 		if (xstrcmp(feature_ptr->name, feature))
 			continue;

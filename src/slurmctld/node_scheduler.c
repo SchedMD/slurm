@@ -110,7 +110,7 @@ struct node_set {		/* set of nodes with same configuration */
 static int  _build_node_list(struct job_record *job_ptr,
 			     struct node_set **node_set_pptr,
 			     int *node_set_size, char **err_msg,
-			     bool test_only);
+			     bool test_only, bool can_reboot);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
@@ -120,7 +120,8 @@ static bool _first_array_task(struct job_record *job_ptr);
 static void _launch_prolog(struct job_record *job_ptr);
 static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
 			  int node_set_size);
-static int  _match_feature(char *seek, struct node_set *node_set_ptr);
+static int  _match_feature(char *seek, struct node_set *node_set_ptr,
+			   bool can_reboot);
 static int  _match_feature2(char *seek, struct node_set *node_set_ptr,
 			    bitstr_t **inactive_bitmap);
 static int  _match_feature3(struct job_record *job_ptr,
@@ -140,10 +141,11 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    bitstr_t *exc_node_bitmap, bool resv_overlap);
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 			 bool job_mc_ok, char **err_msg);
-static bool _valid_feature_counts(struct job_details *detail_ptr,
+static bool _valid_feature_counts(struct job_record *job_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_record *job_ptr,
-				 struct config_record *config_ptr);
+				 struct config_record *config_ptr,
+				 bool can_reboot);
 
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
@@ -632,17 +634,24 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
  * _match_feature - determine if the desired feature is one of those available
  * IN seek - desired feature
  * IN node_set_ptr - Pointer to node_set being searched
+ * IN can_reboot - if true node can use any available feature,
+ *	else job can use only active features
  * RET 1 if found, 0 otherwise
  */
-static int _match_feature(char *seek, struct node_set *node_set_ptr)
+static int _match_feature(char *seek, struct node_set *node_set_ptr,
+			  bool can_reboot)
 {
 	node_feature_t *feat_ptr;
 
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
-
-	feat_ptr = list_find_first(avail_feature_list, list_find_feature,
-				   (void *) seek);
+	if (can_reboot) {
+		feat_ptr = list_find_first(avail_feature_list,
+					   list_find_feature, (void *) seek);
+	} else {
+		feat_ptr = list_find_first(active_feature_list,
+					   list_find_feature, (void *) seek);
+	}
 	if ((feat_ptr == NULL) || (feat_ptr->node_bitmap == NULL))
 		return 0;	/* no such feature */
 
@@ -979,7 +988,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  bitstr_t **select_bitmap, struct job_record *job_ptr,
 		  struct part_record *part_ptr,
 		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		  bool test_only, List *preemptee_job_list)
+		  bool test_only, List *preemptee_job_list, bool can_reboot)
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
@@ -1083,7 +1092,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			 * purge it */
 			for (i = 0; i < node_set_size; i++) {
 				if (!_match_feature(feat_ptr->name,
-						    node_set_ptr+i))
+						    node_set_ptr+i,
+						    can_reboot))
 					continue;
 				tmp_node_set_ptr[tmp_node_set_size].
 					cpus_per_node =
@@ -1103,7 +1113,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				tmp_node_set_ptr[tmp_node_set_size].my_bitmap =
 					bit_copy(node_set_ptr[i].my_bitmap);
 				tmp_node_set_size++;
-				if (test_only)
+
+				if (test_only || !can_reboot)
 					continue;
 
 				if (!_match_feature2(feat_ptr->name,
@@ -2053,6 +2064,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	uint32_t selected_node_cnt = NO_VAL;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+	bool can_reboot;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2106,8 +2118,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	/* build sets of usable nodes based upon their configuration */
+	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size,
-				      err_msg, test_only);
+				      err_msg, test_only, can_reboot);
 	if (error_code)
 		return error_code;
 	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
@@ -2182,7 +2195,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,
 					       req_nodes, test_only,
-					       &preemptee_job_list);
+					       &preemptee_job_list, can_reboot);
 	}
 
 
@@ -2708,13 +2721,15 @@ extern int list_find_feature(void *feature_entry, void *key)
 /*
  * _valid_feature_counts - validate a job's features can be satisfied
  *	by the selected nodes (NOTE: does not process XOR or XAND operators)
- * IN detail_ptr - job details
+ * IN job_ptr - job to operate on
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
  * RET true if valid, false otherwise
  */
-static bool _valid_feature_counts(struct job_details *detail_ptr,
+static bool _valid_feature_counts(struct job_record *job_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor)
 {
+	struct job_details *detail_ptr = job_ptr->details;
+	List feature_list;
 	ListIterator job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	node_feature_t *node_feat_ptr;
@@ -2730,10 +2745,15 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 	if (detail_ptr->feature_list == NULL)	/* no constraints */
 		return rc;
 
+	if (node_features_g_user_update(job_ptr->user_id))
+		feature_list = avail_feature_list;
+	else
+		feature_list = active_feature_list;
+
 	feature_bitmap = bit_copy(node_bitmap);
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(job_feat_iter))) {
-		node_feat_ptr = list_find_first(avail_feature_list,
+		node_feat_ptr = list_find_first(feature_list,
 					list_find_feature,
 					(void *) job_feat_ptr->name);
 		if (node_feat_ptr) {
@@ -2767,7 +2787,7 @@ static bool _valid_feature_counts(struct job_details *detail_ptr,
 				list_next(job_feat_iter))) {
 			if (job_feat_ptr->count == 0)
 				continue;
-			node_feat_ptr = list_find_first(avail_feature_list,
+			node_feat_ptr = list_find_first(feature_list,
 						list_find_feature,
 						(void *)job_feat_ptr->name);
 			if (!node_feat_ptr) {
@@ -2873,7 +2893,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		}
 	}
 
-	if (!_valid_feature_counts(detail_ptr, avail_bitmap, &has_xor))
+	if (!_valid_feature_counts(job_ptr, avail_bitmap, &has_xor))
 		return EINVAL;
 
 	return SLURM_SUCCESS;
@@ -2908,11 +2928,14 @@ static int _no_reg_nodes(void)
  * OUT node_set_size - number of node_set entries
  * OUT err_msg - error message for job, caller must xfree
  * IN  test_only - true if only testing if job can be started at some point
+ * IN can_reboot - if true node can use any available feature,
+ *     else job can use only active features
  * RET error code
  */
 static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
-			    int *node_set_size, char **err_msg, bool test_only)
+			    int *node_set_size, char **err_msg, bool test_only,
+			    bool can_reboot)
 {
 	int adj_cpus, i, node_set_inx, node_set_len, power_cnt, rc;
 	struct node_set *node_set_ptr;
@@ -2989,7 +3012,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		bit_nset(usable_node_mask, 0, (node_record_count - 1));
 	}
 
-	if (!_valid_feature_counts(detail_ptr, usable_node_mask, &has_xor)) {
+	if (!_valid_feature_counts(job_ptr, usable_node_mask, &has_xor)) {
 		info("No job %u feature requirements can not be met",
 		     job_ptr->job_id);
 		FREE_NULL_BITMAP(usable_node_mask);
@@ -3064,7 +3087,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 
 		if (has_xor) {
-			tmp_feature = _valid_features(job_ptr, config_ptr);
+			tmp_feature = _valid_features(job_ptr, config_ptr,
+						      can_reboot);
 			if (tmp_feature == NULL) {
 				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
 						 my_bitmap);
@@ -3092,7 +3116,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			error("%s: node_set buffer filled", __func__);
 			break;
 		}
-		if (test_only)
+		if (test_only || !can_reboot)
 			continue;
 		if (!_match_feature3(job_ptr, node_set_ptr + node_set_inx - 1,
 				     &inactive_bitmap))
@@ -3430,6 +3454,8 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
  *	the available nodes. This is only used for XOR operators.
  * IN job_ptr - job being scheduled
  * IN config_ptr - node's configuration record
+ * IN can_reboot - if true node can use any available feature,
+ *	else job can use only active features
  * RET NULL if request is not satisfied, otherwise a bitmap indicating
  *	which mutually exclusive features are satisfied. For example
  *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns a bitmap with
@@ -3440,7 +3466,8 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
  *	mutually exclusive feature list.
  */
 static bitstr_t *_valid_features(struct job_record *job_ptr,
-				 struct config_record *config_ptr)
+				 struct config_record *config_ptr,
+				 bool can_reboot)
 {
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *result_bits = (bitstr_t *) NULL;
@@ -3448,6 +3475,7 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 	job_feature_t *job_feat_ptr;
 	node_feature_t *node_feat_ptr;
 	int last_op = FEATURE_OP_AND, position = 0;
+	List feature_list;
 
 	result_bits = bit_alloc(MAX_FEATURES);
 	if (details_ptr->feature_list == NULL) {	/* no constraints */
@@ -3455,13 +3483,18 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 		return result_bits;
 	}
 
+	if (can_reboot)
+		feature_list = avail_feature_list;
+	else
+		feature_list = active_feature_list;
+
 	feat_iter = list_iterator_create(details_ptr->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
 		    (last_op == FEATURE_OP_XAND) ||
 		    (last_op == FEATURE_OP_XOR)) {
-			node_feat_ptr = list_find_first(avail_feature_list,
+			node_feat_ptr = list_find_first(feature_list,
 						   list_find_feature,
 						   (void *)job_feat_ptr->name);
 			if (node_feat_ptr &&
