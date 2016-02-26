@@ -36,7 +36,7 @@ minor differences can cause unintended consequences.
 
 PATCH SUBMISSION
 ----------------
-An entry in `NEWS` should descripe the change or new functionality.
+An entry in `NEWS` should describe the change or new functionality.
 
 Please break patches up into logically separate chunks, while ensuring that
 each patch can still be compiled. (Anticipate that a developer using `git
