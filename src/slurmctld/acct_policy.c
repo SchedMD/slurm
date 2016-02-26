@@ -915,7 +915,7 @@ static bool _validate_tres_limits_for_qos(
 }
 
 /*
- * _validate_tres_time_limits_for_qos - validate the tres requested
+ * _validate_tres_time_limits - validate the tres requested
  * against limits of an association as well as qos skipping any limit
  * an admin set
  *
@@ -931,7 +931,7 @@ static bool _validate_tres_limits_for_qos(
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
  */
-static bool _validate_tres_time_limits_for_qos(
+static bool _validate_tres_time_limits(
 	int *tres_pos,
 	uint32_t *time_limit_in,
 	uint32_t part_max_time,
@@ -1161,7 +1161,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	 * isn't set so we get the correct time_limit from the job.
 	 */
 	if (acct_policy_limit_set->time != ADMIN_SET_LIMIT) {
-		if (!_validate_tres_time_limits_for_qos(
+		if (!_validate_tres_time_limits(
 			    &tres_pos,
 			    &job_desc->time_limit,
 			    part_ptr->max_time,
