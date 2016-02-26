@@ -133,6 +133,8 @@ static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
 static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
 static uint16_t allow_numa = KNL_NUMA_FLAG;
+static uid_t *allowed_uid = NULL;
+static int allowed_uid_cnt = 0;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *syscfg_path = NULL;
@@ -142,6 +144,7 @@ static bool reconfig = false;
 static s_p_options_t knl_conf_file_options[] = {
 	{"AllowMCDRAM", S_P_STRING},
 	{"AllowNUMA", S_P_STRING},
+	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcTimeout", S_P_UINT32},
 	{"DefaultMCDRAM", S_P_STRING},
@@ -1085,10 +1088,57 @@ static void _update_node_features(struct node_record *node_ptr,
 	}
 }
 
+static void _make_uid_array(char *uid_str)
+{
+	char *save_ptr = NULL, *tmp_str, *tok;
+	int i, uid_cnt = 0;
+
+	if (!tmp_str)
+		return;
+
+	/* Count the number of users */
+	for (i = 0; uid_str[i]; i++) {
+		if (uid_str[i] == ',')
+			uid_cnt++;
+	}
+	uid_cnt++;
+
+	allowed_uid = xmalloc(sizeof(uid_t) * uid_cnt);
+	allowed_uid_cnt = 0;
+	tmp_str = xstrdup(uid_str);
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		if (uid_from_string(tok, &allowed_uid[allowed_uid_cnt++]) < 0)
+			fatal("knl_cray.conf: Invalid AllowUserBoot: %s", tok);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+}
+
+static char *_make_uid_str(uid_t *uid_array, int uid_cnt)
+{
+	char *sep = "", *tmp_str = NULL, *uid_str = NULL;
+	int i;
+
+	if (allowed_uid_cnt == 0) {
+		uid_str = xstrdup("ALL");
+		return uid_str;
+	}
+
+	for (i = 0; i < uid_cnt; i++) {
+		tmp_str = uid_to_string(uid_array[i]);
+		xstrfmtcat(uid_str, "%s%s(%d)", sep, tmp_str, uid_array[i]);
+		xfree(tmp_str);
+		sep = ",";
+	}
+
+	return uid_str;
+}
+
 /* Load configuration */
 extern int init(void)
 {
-	char *allow_mcdram_str, *allow_numa_str;
+	char *allow_mcdram_str, *allow_numa_str, *allow_user_str;
 	char *default_mcdram_str, *default_numa_str;
 	char *knl_conf_file, *tmp_str = NULL;
 	s_p_hashtbl_t *tbl;
@@ -1096,6 +1146,8 @@ extern int init(void)
 	/* Set default values */
 	allow_mcdram = KNL_MCDRAM_FLAG;
 	allow_numa = KNL_NUMA_FLAG;
+	xfree(allowed_uid);
+	allowed_uid_cnt = 0;
 	xfree(capmc_path);
 	capmc_timeout = 1000;
 	debug_flag = false;
@@ -1118,6 +1170,10 @@ extern int init(void)
 				fatal("knl_cray.conf: Invalid AllowNUMA=%s",
 				      tmp_str);
 			}
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "AllowUserBoot", tbl)) {
+			_make_uid_array(tmp_str);
 			xfree(tmp_str);
 		}
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
@@ -1156,15 +1212,20 @@ extern int init(void)
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
 		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
 		allow_numa_str = _knl_numa_str(allow_numa);
+		allow_user_str = _make_uid_str(allowed_uid, allowed_uid_cnt);
 		default_mcdram_str = _knl_mcdram_str(default_mcdram);
 		default_numa_str = _knl_numa_str(default_numa);
 		info("AllowMCDRAM=%s AllowNUMA=%s",
 		     allow_mcdram_str, allow_numa_str);
+		info("AllowUserBoot=%s", allow_user_str);
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",
 		     default_mcdram_str, default_numa_str);
 		info("SyscfgPath=%s", syscfg_path);
+		xfree(allow_mcdram_str);
+		xfree(allow_numa_str);
+		xfree(allow_user_str);
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
@@ -1175,6 +1236,8 @@ extern int init(void)
 /* Release allocated memory */
 extern int fini(void)
 {
+	xfree(allowed_uid);
+	allowed_uid_cnt = 0;
 	xfree(capmc_path);
 	capmc_timeout = 0;
 	debug_flag = false;

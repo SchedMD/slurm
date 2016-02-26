@@ -68,6 +68,11 @@ Quadrant
 .RE
 
 .TP
+\fBAllowUserBoot\fR
+A comma delimited list of users allowed to modify a node's MCDRAM or NUMA state.
+If not specified then any user can change a node's state and reboot it.
+
+.TP
 \fBCapmcPath\fR
 Fully qualified path to the \fBcapmc\fR program.
 The default value is "/opt/cray/capmc/default/bin/capmc".
