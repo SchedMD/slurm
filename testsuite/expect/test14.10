@@ -57,7 +57,7 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
-spawn $bin_bash -c "exec $sinfo -tidle -h -o%n | head -n2 |tr \'\n\' ' ' "
+spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle -h -o%N) | head -n2 |tr \'\n\' ' ' "
 expect {
 	-re "($alpha_numeric_under) ($alpha_numeric_under)" {
 		set node1 $expect_out(1,string)
