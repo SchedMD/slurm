@@ -848,8 +848,6 @@ static int _task_cgroup_cpuset_dist_block(
 	core_fcyclic = (job->task_dist & SLURM_DIST_COREMASK) ==
 		SLURM_DIST_CORECFULL ? true : false;
 
-	thread_idx = xmalloc(ncores * sizeof(uint32_t));
-
 	if (bind_verbose) {
 		info("task/cgroup: task[%u] using block distribution, "
 		     "task_dist 0x%x", taskid, job->task_dist);
