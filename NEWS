@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     order jobs within a partition for scheduling).
  -- Revert call to getaddrinfo, restoring gethostbyaddr (introduced in Slurm
     16.05.0pre1) which was failing on some systems.
+ -- knl_cray.conf - Added AllowMCDRAM and AllowNUMA configuration options.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

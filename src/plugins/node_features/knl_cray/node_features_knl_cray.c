@@ -131,6 +131,8 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static char *capmc_path = NULL;
 static uint32_t capmc_timeout = 0;	/* capmc command timeout in msec */
 static bool  debug_flag = false;
+static uint16_t allow_mcdram = KNL_MCDRAM_FLAG;
+static uint16_t allow_numa = KNL_NUMA_FLAG;
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *syscfg_path = NULL;
@@ -138,10 +140,12 @@ static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 
 static s_p_options_t knl_conf_file_options[] = {
+	{"AllowMCDRAM", S_P_STRING},
+	{"AllowNUMA", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcTimeout", S_P_UINT32},
-	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
+	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
 	{NULL}
@@ -194,7 +198,8 @@ static void _mcdram_cap_free(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cap_log(mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt);
 static void _mcdram_cfg_free(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
 static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt);
-static void _merge_strings(char **node_features, char *node_cfg);
+static void _merge_strings(char **node_features, char *node_cfg,
+			   uint16_t allow_types);
 static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
@@ -888,10 +893,12 @@ static char *_run_script(char *cmd_path, char **script_argv, int *status)
 	return resp;
 }
 
-static void _merge_strings(char **node_features, char *node_cfg)
+static void _merge_strings(char **node_features, char *node_cfg,
+			   uint16_t allow_types)
 {
 	char *tmp_str1, *tok1, *save_ptr1 = NULL;
 	char *tmp_str2, *tok2, *save_ptr2 = NULL;
+	bool mcdram_filter = false, numa_filter = false;
 
 	if ((node_cfg == NULL) || (node_cfg[0] == '\0'))
 		return;
@@ -900,11 +907,24 @@ static void _merge_strings(char **node_features, char *node_cfg)
 		return;
 	}
 
+	if ((allow_types &  KNL_MCDRAM_FLAG) &&
+	    (allow_types != KNL_MCDRAM_FLAG))
+		mcdram_filter = true;
+	if ((allow_types &  KNL_NUMA_FLAG) &&
+	    (allow_types != KNL_NUMA_FLAG))
+		numa_filter = true;
+
 	/* Merge strings and avoid duplicates */
 	tmp_str1 = xstrdup(node_cfg);
 	tok1 = strtok_r(tmp_str1, ",", &save_ptr1);
 	while (tok1) {
 		bool match = false;
+		if (mcdram_filter &&
+		    ((_knl_mcdram_token(tok1) & allow_types) == 0))
+			goto next_tok;
+		if (numa_filter &&
+		    ((_knl_numa_token(tok1) & allow_types) == 0))
+			goto next_tok;
 		tmp_str2 = xstrdup(*node_features);
 		tok2 = strtok_r(tmp_str2, ",", &save_ptr2);
 		while (tok2) {
@@ -917,7 +937,7 @@ static void _merge_strings(char **node_features, char *node_cfg)
 		xfree(tmp_str2);
 		if (!match)
 			xstrfmtcat(*node_features, ",%s", tok1);
-		tok1 = strtok_r(NULL, ",", &save_ptr1);
+next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	}
 	xfree(tmp_str1);
 }
@@ -956,7 +976,8 @@ static void _update_all_node_features(
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
 				_merge_strings(&node_ptr->features,
-					       mcdram_cap[i].mcdram_cfg);
+					       mcdram_cap[i].mcdram_cfg,
+					       allow_mcdram);
 			}
 		}
 	}
@@ -967,7 +988,8 @@ static void _update_all_node_features(
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
 				_merge_strings(&node_ptr->features_act,
-					       mcdram_cfg[i].mcdram_cfg);
+					       mcdram_cfg[i].mcdram_cfg,
+					       allow_mcdram);
 			}
 		}
 	}
@@ -978,7 +1000,8 @@ static void _update_all_node_features(
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
 				_merge_strings(&node_ptr->features,
-					       numa_cap[i].numa_cfg);
+					       numa_cap[i].numa_cfg,
+					       allow_numa);
 			}
 		}
 	}
@@ -989,7 +1012,8 @@ static void _update_all_node_features(
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
 				_merge_strings(&node_ptr->features_act,
-					       numa_cfg[i].numa_cfg);
+					       numa_cfg[i].numa_cfg,
+					       allow_numa);
 			}
 		}
 	}
@@ -1023,7 +1047,8 @@ static void _update_node_features(struct node_record *node_ptr,
 		for (i = 0; i < mcdram_cap_cnt; i++) {
 			if (nid == mcdram_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
-					       mcdram_cap[i].mcdram_cfg);
+					       mcdram_cap[i].mcdram_cfg,
+					       allow_mcdram);
 				break;
 			}
 		}
@@ -1032,7 +1057,8 @@ static void _update_node_features(struct node_record *node_ptr,
 		for (i = 0; i < mcdram_cfg_cnt; i++) {
 			if (nid == mcdram_cfg[i].nid) {
 				_merge_strings(&node_ptr->features_act,
-					       mcdram_cfg[i].mcdram_cfg);
+					       mcdram_cfg[i].mcdram_cfg,
+					       allow_mcdram);
 				break;
 			}
 		}
@@ -1041,7 +1067,8 @@ static void _update_node_features(struct node_record *node_ptr,
 		for (i = 0; i < numa_cap_cnt; i++) {
 			if (nid == numa_cap[i].nid) {
 				_merge_strings(&node_ptr->features,
-					       numa_cap[i].numa_cfg);
+					       numa_cap[i].numa_cfg,
+					       allow_numa);
 				break;
 			}
 		}
@@ -1050,7 +1077,8 @@ static void _update_node_features(struct node_record *node_ptr,
 		for (i = 0; i < numa_cfg_cnt; i++) {
 			if (nid == numa_cfg[i].nid) {
 				_merge_strings(&node_ptr->features_act,
-					       numa_cfg[i].numa_cfg);
+					       numa_cfg[i].numa_cfg,
+					       allow_numa);
 				break;
 			}
 		}
@@ -1060,11 +1088,14 @@ static void _update_node_features(struct node_record *node_ptr,
 /* Load configuration */
 extern int init(void)
 {
+	char *allow_mcdram_str, *allow_numa_str;
 	char *default_mcdram_str, *default_numa_str;
 	char *knl_conf_file, *tmp_str = NULL;
 	s_p_hashtbl_t *tbl;
 
 	/* Set default values */
+	allow_mcdram = KNL_MCDRAM_FLAG;
+	allow_numa = KNL_NUMA_FLAG;
 	xfree(capmc_path);
 	capmc_timeout = 1000;
 	debug_flag = false;
@@ -1073,6 +1104,22 @@ extern int init(void)
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
+		if (s_p_get_string(&tmp_str, "AllowMCDRAM", tbl)) {
+			allow_mcdram = _knl_mcdram_parse(tmp_str, ",");
+			if (_knl_mcdram_bits_cnt(allow_mcdram) < 1) {
+				fatal("knl_cray.conf: Invalid AllowMCDRAM=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
+		if (s_p_get_string(&tmp_str, "AllowNUMA", tbl)) {
+			allow_numa = _knl_numa_parse(tmp_str, ",");
+			if (_knl_numa_bits_cnt(allow_numa) < 1) {
+				fatal("knl_cray.conf: Invalid AllowNUMA=%s",
+				      tmp_str);
+			}
+			xfree(tmp_str);
+		}
 		(void) s_p_get_string(&capmc_path, "CapmcPath", tbl);
 		(void) s_p_get_uint32(&capmc_timeout, "CapmcTimeout", tbl);
 		if (s_p_get_string(&tmp_str, "DefaultMCDRAM", tbl)) {
@@ -1101,14 +1148,18 @@ extern int init(void)
 		capmc_path = xstrdup("/opt/cray/capmc/default/bin/capmc");
 	capmc_timeout = MAX(capmc_timeout, 500);
 	if (!syscfg_path)
-		error("SyscfgPath is not configured");
+		verbose("SyscfgPath is not configured");
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES)
 		debug_flag = true;
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_NODE_FEATURES) {
+		allow_mcdram_str = _knl_mcdram_str(allow_mcdram);
+		allow_numa_str = _knl_numa_str(allow_numa);
 		default_mcdram_str = _knl_mcdram_str(default_mcdram);
 		default_numa_str = _knl_numa_str(default_numa);
+		info("AllowMCDRAM=%s AllowNUMA=%s",
+		     allow_mcdram_str, allow_numa_str);
 		info("CapmcPath=%s", capmc_path);
 		info("CapmcTimeout=%u msec", capmc_timeout);
 		info("DefaultMCDRAM=%s DefaultNUMA=%s",

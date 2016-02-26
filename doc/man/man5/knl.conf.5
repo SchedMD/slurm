@@ -24,23 +24,12 @@ of the command "scontrol reconfigure" unless otherwise noted.
 The overall configuration parameters available include:
 
 .TP
-\fBCapmcPath\fR
-Fully qualified path to the \fBcapmc\fR program.
-The default value is "/opt/cray/capmc/default/bin/capmc".
-This parameter is used only by the "knl_cray.conf" plugin.
-
-.TP
-\fBCapmcTimeout\fR
-Time limit for the \fBcapmc\fR program to return status information milliseconds.
-The default value is 10000 milliseconds and the minumum value is 1000 milliseconds.
-This parameter is used only by the "knl_cray.conf" plugin.
-
-.TP
-\fBDefaultMCDRAM\fR
-Specify the default MCDRAM modes for job's which do not specify a value.
-This is only used when a node is booted and the job which has been allocated
-the node does not specify a desired MCDRAM mode.
-The default value is "cache".
+\fBAllowMCDRAM\fR
+Specify the MCDRAM modes which jobs are allowed to use.
+This may be a subset of MCDRAM modes supported by the node.
+If not specified, all MCDRAM modes supported by the node are available for use.
+The comma separated list of allowed MCDRAM modes may include any of the modes
+listed below.
 .RS
 .TP 17
 \fBcache\fR
@@ -54,11 +43,12 @@ MCDRAM to be combined with primary memory into a "flat" memory space.
 .RE
 
 .TP
-\fBDefaultNUMA\fR
-Specify the default NUMA modes for job's which do not specify a value.
-This is only used when a node is booted and the job which has been allocated
-the node does not specify a desired NUMA mode.
-The default value is "a2a".
+\fBAllowNUMA\fR
+Specify the NUMA modes which jobs are allowed to use.
+This may be a subset of NUMA modes supported by the node.
+If not specified, all NUMA modes supported by the node are available for use.
+The comma separated list of allowed NUMA modes may include any of the modes
+listed below.
 .RS
 .TP 17
 \fBa2a\fR
@@ -76,6 +66,36 @@ Hemisphere
 \fBquad\fR
 Quadrant
 .RE
+
+.TP
+\fBCapmcPath\fR
+Fully qualified path to the \fBcapmc\fR program.
+The default value is "/opt/cray/capmc/default/bin/capmc".
+This parameter is used only by the "knl_cray.conf" plugin.
+
+.TP
+\fBCapmcTimeout\fR
+Time limit for the \fBcapmc\fR program to return status information milliseconds.
+The default value is 10000 milliseconds and the minumum value is 1000 milliseconds.
+This parameter is used only by the "knl_cray.conf" plugin.
+
+.TP
+\fBDefaultMCDRAM\fR
+Specify the default MCDRAM modes for job's which do not specify a value.
+This is only used when a node is booted and the job which has been allocated
+the node does not specify a desired MCDRAM mode.
+The value can include one of the possible values identified with the
+\fBAllowMCDRAM\fR configuration parameter above.
+The default value is "cache".
+
+.TP
+\fBDefaultNUMA\fR
+Specify the default NUMA modes for job's which do not specify a value.
+This is only used when a node is booted and the job which has been allocated
+the node does not specify a desired NUMA mode.
+The value can include one of the possible values identified with the
+\fBAllowNUMA\fR configuration parameter above.
+The default value is "a2a".
 
 .TP
 \fBLogFile\fR
