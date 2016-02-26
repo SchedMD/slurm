@@ -914,6 +914,53 @@ static bool _validate_tres_limits_for_qos(
 	return true;
 }
 
+/* Only check the time_limits if the admin didn't set
+ * the timelimit.
+ * It is important we look at these even if strict_checking
+ * isn't set so we get the correct time_limit from the job.
+ */
+static bool _validate_time_limit(uint32_t *time_limit_in,
+				 uint32_t part_max_time,
+				 uint64_t tres_req_cnt,
+				 uint64_t max_limit,
+				 uint64_t *out_max_limit,
+				 uint16_t *limit_set_time,
+				 bool strict_checking,
+				 bool is64)
+{
+	uint32_t max_time_limit;
+
+	if (!tres_req_cnt ||
+	    !strict_checking || (*limit_set_time) == ADMIN_SET_LIMIT)
+		return true;
+
+	if (is64) {
+		if (((*out_max_limit) != INFINITE64) ||
+		    (max_limit == INFINITE64) ||
+		    (tres_req_cnt == NO_VAL64))
+			return true;
+	} else {
+		if (((uint32_t)(*out_max_limit) != INFINITE) ||
+		    ((uint32_t)max_limit == INFINITE) ||
+		    ((uint32_t)tres_req_cnt == NO_VAL))
+			return true;
+	}
+
+	max_time_limit = (uint32_t)(max_limit / tres_req_cnt);
+
+	_set_time_limit(time_limit_in, part_max_time, max_time_limit,
+			limit_set_time);
+
+	(*out_max_limit) = max_limit;
+
+	if ((*time_limit_in) > max_time_limit)
+		return false;
+
+	return true;
+}
+
+
+
 /*
  * _validate_tres_time_limits - validate the tres requested
  * against limits of an association as well as qos skipping any limit
@@ -942,7 +989,7 @@ static bool _validate_tres_time_limits(
 	bool strict_checking)
 {
 	int i;
-	uint32_t max_time_limit;
+//	uint32_t max_time_limit;
 
 	if (!strict_checking || (*limit_set_time) == ADMIN_SET_LIMIT)
 		return true;
@@ -950,23 +997,30 @@ static bool _validate_tres_time_limits(
 	for (i = 0; i < g_tres_count; i++) {
 		(*tres_pos) = i;
 
-		if ((out_max_tres_array[i] != INFINITE64) ||
-		    (max_tres_array[i] == INFINITE64) ||
-		    (job_tres_array[i] == NO_VAL64) ||
-		    (job_tres_array[i] == 0))
-			continue;
-
-		max_time_limit = (uint32_t)(max_tres_array[i] /
-					    job_tres_array[i]);
-
-		_set_time_limit(time_limit_in,
-				part_max_time, max_time_limit,
-				limit_set_time);
-
-		out_max_tres_array[i] = max_tres_array[i];
-
-		if ((*time_limit_in) > max_time_limit)
+		if (!_validate_time_limit(time_limit_in, part_max_time,
+					  job_tres_array[i],
+					  max_tres_array[i],
+					  &out_max_tres_array[i],
+					  limit_set_time,
+					  strict_checking, true))
 			return false;
+		/* if ((out_max_tres_array[i] != INFINITE64) || */
+		/*     (max_tres_array[i] == INFINITE64) || */
+		/*     (job_tres_array[i] == NO_VAL64) || */
+		/*     (job_tres_array[i] == 0)) */
+		/* 	continue; */
+
+		/* max_time_limit = (uint32_t)(max_tres_array[i] / */
+		/* 			    job_tres_array[i]); */
+
+		/* _set_time_limit(time_limit_in, */
+		/* 		part_max_time, max_time_limit, */
+		/* 		limit_set_time); */
+
+		/* out_max_tres_array[i] = max_tres_array[i]; */
+
+		/* if ((*time_limit_in) > max_time_limit) */
+		/* 	return false; */
 	}
 
 	return true;
