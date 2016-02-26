@@ -2542,36 +2542,27 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			break;
 		}
 
-		if ((acct_policy_limit_set->time == ADMIN_SET_LIMIT)
-		    || (qos_rec.max_wall_pj != INFINITE)
-		    || (assoc_ptr->max_wall_pj == INFINITE)
-		    || (update_call && (job_desc->time_limit == NO_VAL))) {
-			/* no need to check/set */
-		} else {
-			uint32_t time_limit = assoc_ptr->max_wall_pj;
-			if (job_desc->time_limit == NO_VAL) {
-				if (part_ptr->max_time == INFINITE)
-					job_desc->time_limit = time_limit;
-				else
-					job_desc->time_limit =
-						MIN(time_limit,
-						    part_ptr->max_time);
-				acct_policy_limit_set->time = 1;
-			} else if (acct_policy_limit_set->time &&
-				   job_desc->time_limit > time_limit) {
-				job_desc->time_limit = time_limit;
-			} else if (strict_checking &&
-				   (job_desc->time_limit > time_limit)) {
-				if (reason)
-					*reason = WAIT_ASSOC_MAX_WALL_PER_JOB;
-				debug2("job submit for user %s(%u): "
-				       "time limit %u exceeds account max %u",
-				       user_name,
-				       job_desc->user_id,
-				       job_desc->time_limit, time_limit);
-				rc = false;
-				break;
-			}
+
+		if (!update_call && !_validate_time_limit(
+			    &job_desc->time_limit,
+			    part_ptr->max_time,
+			    1,
+			    assoc_ptr->max_wall_pj,
+			    (uint64_t *)&qos_rec.max_wall_pj,
+			    &acct_policy_limit_set->time,
+			    strict_checking, false)) {
+			if (reason)
+				*reason = WAIT_ASSOC_MAX_WALL_PER_JOB;
+			debug2("job submit for user %s(%u): "
+			       "time limit %u exceeds max %u for "
+			       "account '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       job_desc->time_limit,
+			       assoc_ptr->max_wall_pj,
+			       assoc_ptr->acct);
+			rc = false;
+			break;
 		}
 
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
