@@ -1093,7 +1093,7 @@ static void _make_uid_array(char *uid_str)
 	char *save_ptr = NULL, *tmp_str, *tok;
 	int i, uid_cnt = 0;
 
-	if (!tmp_str)
+	if (!uid_str)
 		return;
 
 	/* Count the number of users */
