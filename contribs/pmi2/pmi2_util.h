@@ -17,22 +17,12 @@
 #define TRUE  1
 #define FALSE 0
 
-#ifdef HAVE__FUNCTION__
-#define PMI2U_FUNC __FUNCTION__
-#elif defined(HAVE_CAP__FUNC__)
-#define PMI2U_FUNC __FUNC__
-#elif defined(HAVE__FUNC__)
-#define PMI2U_FUNC __func__
-#else
-#define PMI2U_FUNC __FILE__
-#endif
-
 #ifdef DEBUG
     #define PMI2U_printf(x...) do {				\
 	char logstr[1024];					\
 	snprintf(logstr, 1024, x);      			\
 	fprintf(stderr, "[%s (%d): %s] %s\n",			\
-		__FILE__, __LINE__, __FUNCTION__, logstr);	\
+		__FILE__, __LINE__, __func__, logstr);		\
     } while (0)
 #else
     #define PMI2U_printf(x...)

@@ -11,9 +11,9 @@
 /* these declaration are not in slurm.h */
 #ifndef xfree
 #define xfree(__p) \
-	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __FUNCTION__)
+	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
 #define xmalloc(__sz) \
-	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __FUNCTION__)
+	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __func__)
 #endif
 
 extern void slurm_xfree(void **, const char *, int, const char *);
