@@ -88,14 +88,6 @@ of the Slurm contribs distribution follows:
      User applications can link with this library to use Slurm's mpi/pmi2
      plugin.
 
-  ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
-     0. This has been fixed on most recent Linux kernels. Older versions of
-     Linux may need this patch support TotalView.
-     1. gdb and other tools cannot attach to a stopped process. The wait that
-     follows the PTRACE_ATTACH will block indefinitely.
-     2. It is not possible to use PTRACE_DETACH to leave a process stopped,
-     because ptrace ignores SIGSTOPs sent by the tracing process.
-
   sgather            [ shell script ]
      Gather remote files from a job into a central location. Reverse of of
      sbcast command.
