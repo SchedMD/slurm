@@ -76,12 +76,6 @@ static char **node_attr = NULL;
 
 static char *ifconfig(void);
 
-static void inline
-_free_nag_req(nag_req_t *req)
-{
-	xfree (req);
-}
-
 extern int
 enqueue_nag_req(int fd, int rank, char *key)
 {
@@ -144,7 +138,7 @@ node_attr_put(char *key, char *val)
 			}
 			/* remove the request */
 			*pprev = req->next;
-			_free_nag_req(req);
+			xfree(req);
 			req = *pprev;
 		}
 	}
