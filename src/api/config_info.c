@@ -209,7 +209,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		        xstrfmtcat(tmp_str, " TmpDisk=%u",
 				   node_info_ptr->node_array[i].tmp_disk);
 
-		if (node_info_ptr->node_array[i].weight != -1)
+		if (node_info_ptr->node_array[i].weight != 1)
 		        xstrfmtcat(tmp_str, " Weight=%u",
 				   node_info_ptr->node_array[i].weight);
 
