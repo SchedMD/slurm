@@ -126,6 +126,11 @@ policy option is not specified the default will be: the option
 for the cluster/account pair, and if both are not specified
 then the option for the cluster, and if that also is not
 specified then no limit will apply.</p>
+<p><b>NOTE:</b> Unless noted, if a job request breaches a given limit
+the job will pend unless the job's QOS has the DenyOnLimit
+flag set, which will cause the job to be denied at submission.  When
+Grp limits are considerd with respects to this flag the Grp limit
+is treated as a Max limit.</p>
 
 <ul>
 <li><b>GrpTRESMins=</b> The total number of TRES minutes that can
@@ -176,15 +181,11 @@ specified then no limit will apply.</p>
 </li>
 
 <li><b>MaxTRESPerJob=</b> The maximum size in TRES any given job can
-  have from the association/QOS.  If this limit is reached the job will
-  be denied at submission if the QOS running the job has the
-  DenyOnLimit flag set, otherwise the job will pend.
+  have from the association/QOS.
 </li>
 
 <li><b>MaxTRESPerNode=</b> The maximum size in TRES each node in a job
-  allocation can use.  If this limit is reached the job will
-  be denied at submission if the QOS running the job has the
-  DenyOnLimit flag set, otherwise the job will pend.
+  allocation can use.
 </li>
 
 <li><b>MaxJobs=</b> The total number of jobs able to run at any given
@@ -205,7 +206,7 @@ specified then no limit will apply.</p>
 </li>
 
 <!-- For future use
-<li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by jobs
+<li><b>MaxTRESRunMinsPerJob=</b> A limit of TRES minutes to be used by jobs
   running from the given association/QOS.  If this limit is
   reached the job will be killed will be allowed to run.
 </li>
@@ -239,15 +240,11 @@ specified then no limit will apply.</p>
 
 <ul>
 <li><b>MaxTRESPerUser=</b> The maximum number of limited TRES a user can
-  request (combo of all jobs running or pending).  If this limit is breached
-  the job will pend unless the QOS running the job has the
-  DenyOnLimit flag set, which will cause the job to be denied at submission.
+  request (combo of all jobs running or pending).
 </li>
 
 <li><b>MinTRESPerJob=</b> The minimum size in TRES any given job can
-  have from when using the requested QOS.  If this limit is breached
-  the job will pend unless the QOS running the job has the
-  DenyOnLimit flag set, which will cause the job to be denied at submission.
+  have from when using the requested QOS.
 </li>
 
 </ul>

@@ -96,8 +96,11 @@ characteristics. Valid options are:
 
 <ul>
 <li><b>DenyOnLimit</b> If set, jobs using this QOS will be rejected at
-submission time if they do not conform to the QOS 'Max' limits.  By default
-jobs that go over these limits will pend until they conform.
+submission time if they do not conform to the QOS 'Max' limits.  Group
+limits will also be treated like 'Max' limits as well and will be
+denied if they go over. By default jobs that go over these limits
+will pend until they conform.  This currently only applies to QOS and
+Association limits.
 
 <li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold

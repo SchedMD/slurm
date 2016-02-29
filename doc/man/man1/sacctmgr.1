@@ -933,9 +933,12 @@ Valid options are
 .RS
 .TP
 \fIDenyOnLimit\fP
-If set jobs using this QOS will be rejected at
-submission time if they do not conform to the QOS 'Max' or 'Group'
-limits.  By default jobs that go over these limits will pend until they conform.
+If set, jobs using this QOS will be rejected at
+submission time if they do not conform to the QOS 'Max' limits.  Group
+limits will also be treated like 'Max' limits as well and will be
+denied if they go over. By default jobs that go over these limits
+will pend until they conform.  This currently only applies to QOS and
+Association limits.
 .TP
 \fIEnforceUsageThreshold\fP
 If set, and the QOS also has a UsageThreshold,
