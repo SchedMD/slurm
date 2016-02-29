@@ -488,11 +488,12 @@ _check_params(void)
 
 /* Copy the group "/{NodeName}" of the hdf5 file file_name into the location
  * jgid_nodes */
-static int _merge_node_step_data(char* file_name, char* node_name,
+static int _merge_node_step_data(char* file_name, uint32_t node_inx,
 				 hid_t jgid_nodes, hid_t jgid_tasks)
 {
 	hid_t fid_nodestep;
 	char group_name[MAX_GROUP_NAME+1];
+	char *node_inx_name = NULL;
 
 	fid_nodestep = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if (fid_nodestep < 0) {
@@ -500,17 +501,19 @@ static int _merge_node_step_data(char* file_name, char* node_name,
 		return SLURM_ERROR;
 	}
 
-	sprintf(group_name, "/%s", node_name);
+	node_inx_name = xstrdup_printf("%u", node_inx);
+	sprintf(group_name, "/%s", node_inx_name);
 	hid_t ocpypl_id = H5Pcreate(H5P_OBJECT_COPY); /* default copy */
 	hid_t lcpl_id   = H5Pcreate(H5P_LINK_CREATE); /* parameters */
-	if (H5Ocopy(fid_nodestep, group_name, jgid_nodes, node_name,
+	if (H5Ocopy(fid_nodestep, group_name, jgid_nodes, node_inx_name,
 	            ocpypl_id, lcpl_id) < 0) {
 		debug("Failed to copy node step data of %s into the job file, "
 		      "trying with old method",
-		      node_name);
+		      node_inx_name);
+		xfree(node_inx_name);
 		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
-
+	xfree(node_inx_name);
 	H5Fclose(fid_nodestep);
 
 	if (!params.keepfiles)
@@ -534,7 +537,6 @@ static int _merge_step_files(void)
 	char step_path[MAX_PROFILE_PATH+1];
 	char jgrp_step_name[MAX_GROUP_NAME+1];
 	char jgrp_nodes_name[MAX_GROUP_NAME+1];
-	char *step_node;
 	char *pos_char;
 	char *stepno;
 	int	stepx = 0;
@@ -600,8 +602,6 @@ static int _merge_step_files(void)
 			if (stepid != stepx)
 				continue;
 
-			step_node = pos_char + 1;
-
 			if (!found_files) {
 
 				fid_job = H5Fcreate(params.output,
@@ -640,7 +640,7 @@ static int _merge_step_files(void)
 
 					sprintf(step_path, "%s/%s", step_dir, batch_step);
 					rc = _merge_node_step_data(step_path,
-								   batch_node,
+								   nodex,
 								   jgid_nodes,
 								   jgid_tasks);
 					H5Gclose(jgid_tasks);
@@ -685,8 +685,7 @@ static int _merge_step_files(void)
 			}
 
 			sprintf(step_path, "%s/%s", step_dir, de->d_name);
-			debug("Adding %s to the job file", step_path);
-			rc = _merge_node_step_data(step_path, step_node,
+			rc = _merge_node_step_data(step_path, nodex,
 						   jgid_nodes, jgid_tasks);
 			nodex++;
 		}
