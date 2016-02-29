@@ -457,7 +457,14 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->batch   = true;
 	job->node_name  = xstrdup(conf->node_name);
 	job->user_name  = xstrdup(msg->user_name);
+	job->uid        = (uid_t) msg->uid;
+	job->gid        = (gid_t) msg->gid;
+
 	job->profile    = msg->profile;
+
+	/* give them all to the 1 task */
+	job->cpus_per_task = job->cpus;
+
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.
 	*/
@@ -470,8 +477,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;
 
-	job->uid     = (uid_t) msg->uid;
-	job->gid     = (gid_t) msg->gid;
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->ckpt_dir = xstrdup(msg->ckpt_dir);
