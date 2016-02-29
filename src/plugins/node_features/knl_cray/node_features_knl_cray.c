@@ -141,6 +141,8 @@ static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
 
+/* NOTE: New knl_cray.conf parameters added below must also be added to the
+ * contribs/cray/capmc_suspend.c and contribs/cray/capmc_resume.c files */
 static s_p_options_t knl_conf_file_options[] = {
 	{"AllowMCDRAM", S_P_STRING},
 	{"AllowNUMA", S_P_STRING},

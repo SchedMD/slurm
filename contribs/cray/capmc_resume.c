@@ -87,11 +87,16 @@ static pthread_mutex_t thread_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_cnt_cond  = PTHREAD_COND_INITIALIZER;
 static int thread_cnt = 0;
 
+/* NOTE: Keep this table synchronized with the table in
+ * src/plugins/node_features/knl_cray/node_features_knl_cray.c */
 static s_p_options_t knl_conf_file_options[] = {
+	{"AllowMCDRAM", S_P_STRING},
+	{"AllowNUMA", S_P_STRING},
+	{"AllowUserBoot", S_P_STRING},
 	{"CapmcPath", S_P_STRING},
 	{"CapmcTimeout", S_P_UINT32},
-	{"DefaultNUMA", S_P_STRING},
 	{"DefaultMCDRAM", S_P_STRING},
+	{"DefaultNUMA", S_P_STRING},
 	{"LogFile", S_P_STRING},
 	{"SyscfgPath", S_P_STRING},
 	{NULL}
