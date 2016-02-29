@@ -3658,7 +3658,9 @@ static void *_run_prolog(void *arg)
 			error("prolog_slurmctld job %u now defunct", job_id);
 	}
 	prolog_running_decr(job_ptr);
-	if (job_ptr && job_ptr->node_bitmap) {
+	if (power_save_test()) {
+		/* Wait for node to register after booting */
+	} else if (job_ptr && job_ptr->node_bitmap) {
 		for (i=0; i<node_record_count; i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
 				continue;
