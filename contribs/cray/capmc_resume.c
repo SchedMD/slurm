@@ -324,6 +324,7 @@ static void *_node_update(void *args)
 		error("%s: No valid NID: %s", prog_name, node_name);
 		goto fini;
 	}
+	bit_set(node_bitmap, nid);
 	snprintf(nid_str, sizeof(nid_str), "%d", nid);
 
 	if (mcdram_mode) {
