@@ -99,29 +99,6 @@ BEGIN_C_DECLS
 #include <time.h>		/* for time_t definitions */
 #include <unistd.h>
 
-#ifdef CRAPPY_COMPILER
-/*
- * 'bool' can be implemented in a variety of ways.
- * C++ may define it one way.
- * <stdbool.h> may declare 'bool' to be a different type, such as
- * an enum which is not necessarily compatible with C++.
- *
- * If your compiler can't resolve 'bool', just define
- * CRAPPY_COMPILER at build time in order for SLURM to
- * define it's own version of bool.
- */
-
-#undef  TRUE
-#define TRUE   1
-
-#undef  FALSE
-#define FALSE  0
-
-typedef unsigned char SLURM_BOOL;
-#undef  bool
-#define bool SLURM_BOOL
-#endif
-
 /* Define slurm_addr_t below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
 #  ifndef __slurm_addr_t_defined
