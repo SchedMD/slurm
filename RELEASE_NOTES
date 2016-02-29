@@ -105,6 +105,7 @@ OTHER CHANGES
 
 API CHANGES
 ===========
+Removed PARAMS macro from slurm.h.
 
 Changed members of the following structs
 ========================================

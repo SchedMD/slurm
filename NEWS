@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     configuration options.
  -- Add node_features_p_user_update() function to node_features plugin.
  -- Don't print Weight=1 lines in 'scontrol write config' (its the default).
+ -- Remove PARAMS macro from slurm.h.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

@@ -56,18 +56,6 @@
 # define END_C_DECLS	/* empty */
 #endif
 
-/* PARAMS is a macro used to wrap function prototypes, so that compilers
-   that don't understand ANSI C prototypes still work, and ANSI C
-   compilers can issue warnings about type mismatches.  */
-#undef PARAMS
-#if defined (__STDC__) || defined (_AIX)			\
-	|| (defined (__mips) && defined (_SYSTYPE_SVR4))	\
-	|| defined(WIN32) || defined(__cplusplus)
-# define PARAMS(protos)	protos
-#else
-# define PARAMS(protos)	()
-#endif
-
 /* Define to 1 if you have Blue Gene system support. */
 #undef HAVE_BG
 
@@ -1075,20 +1063,20 @@ typedef struct hostlist * hostlist_t;
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-extern hostlist_t slurm_hostlist_create PARAMS((const char *hostlist));
+extern hostlist_t slurm_hostlist_create(const char *hostlist);
 
 /* slurm_hostlist_count():
  *
  * Return the number of hosts in hostlist hl.
  */
-extern int slurm_hostlist_count PARAMS((hostlist_t hl));
+extern int slurm_hostlist_count(hostlist_t hl);
 
 /*
  * slurm_hostlist_destroy():
  *
  * Destroy a hostlist object. Frees all memory allocated to the hostlist.
  */
-extern void slurm_hostlist_destroy PARAMS((hostlist_t hl));
+extern void slurm_hostlist_destroy(hostlist_t hl);
 
 /* slurm_hostlist_find():
  *
@@ -1096,9 +1084,8 @@ extern void slurm_hostlist_destroy PARAMS((hostlist_t hl));
  * and returns position in list if found.
  *
  * Returns -1 if host is not found.
- *
  */
-extern int slurm_hostlist_find PARAMS((hostlist_t hl, const char *hostname));
+extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
 
 /* slurm_hostlist_push():
  *
@@ -1109,7 +1096,7 @@ extern int slurm_hostlist_find PARAMS((hostlist_t hl, const char *hostname));
  * Returns the number of hostnames inserted into the list,
  * or 0 on failure.
  */
-extern int slurm_hostlist_push PARAMS((hostlist_t hl, const char *hosts));
+extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
 
 /* slurm_hostlist_push_host():
  *
@@ -1119,7 +1106,7 @@ extern int slurm_hostlist_push PARAMS((hostlist_t hl, const char *hosts));
  *
  * return value is 1 for success, 0 for failure.
  */
-extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
+extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
 
 /* slurm_hostlist_ranged_string():
  *
@@ -1132,8 +1119,7 @@ extern int slurm_hostlist_push_host PARAMS((hostlist_t hl, const char *host));
  * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
-						    size_t n, char *buf));
+extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
 
 /* slurm_hostlist_ranged_string_malloc():
  *
@@ -1141,7 +1127,7 @@ extern ssize_t slurm_hostlist_ranged_string PARAMS((hostlist_t hl,
  *
  * The result must be released using free();
  */
-extern char *slurm_hostlist_ranged_string_malloc PARAMS((hostlist_t hl));
+extern char *slurm_hostlist_ranged_string_malloc(hostlist_t hl);
 
 /* hostlist_ranged_string_xmalloc():
  *
@@ -1151,7 +1137,7 @@ extern char *slurm_hostlist_ranged_string_malloc PARAMS((hostlist_t hl));
  *
  * Caller should free the result string using xfree().
  */
-extern char *slurm_hostlist_ranged_string_xmalloc PARAMS((hostlist_t hl));
+extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t hl);
 
 /*
  * slurm_hostlist_shift():
@@ -1162,14 +1148,14 @@ extern char *slurm_hostlist_ranged_string_xmalloc PARAMS((hostlist_t hl));
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-extern char * slurm_hostlist_shift PARAMS((hostlist_t hl));
+extern char *slurm_hostlist_shift(hostlist_t hl);
 
 /* slurm_hostlist_uniq():
  *
  * Sort the hostlist hl and remove duplicate entries.
  *
  */
-extern void slurm_hostlist_uniq PARAMS((hostlist_t hl));
+extern void slurm_hostlist_uniq(hostlist_t hl);
 
 /*****************************************************************************\
  *      SLURM LIST FUNCTIONS
@@ -1219,13 +1205,13 @@ typedef int (*ListForF) (void *x, void *arg);
  *  Inserts data [x] at the end of list [l].
  *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
  */
-extern void * slurm_list_append PARAMS((List l, void *x));
+extern void *slurm_list_append(List l, void *x);
 
 /* slurm_list_count():
  *
  *  Returns the number of items in list [l].
  */
-extern int slurm_list_count PARAMS((List l));
+extern int slurm_list_count(List l);
 
 /* slurm_list_create():
  *
@@ -1236,7 +1222,7 @@ extern int slurm_list_count PARAMS((List l));
  *  Note: Abandoning a list without calling slurm_list_destroy() will result
  *    in a memory leak.
  */
-extern List slurm_list_create PARAMS((ListDelF f));
+extern List slurm_list_create(ListDelF f);
 
 /* slurm_list_destroy():
  *
@@ -1244,7 +1230,7 @@ extern List slurm_list_create PARAMS((ListDelF f));
  *    list itself; if a deletion function was specified when the list
  *    was created, it will be called for each item in the list.
  */
-extern void slurm_list_destroy PARAMS((List l));
+extern void slurm_list_destroy(List l);
 
 /* slurm_list_find():
  *
@@ -1255,33 +1241,33 @@ extern void slurm_list_destroy PARAMS((List l));
  *  Example: i=slurm_list_iterator_reset(i);
  *	     while ((x=slurm_list_find(i,f,k))) {...}
  */
-extern void * slurm_list_find PARAMS((ListIterator i, ListFindF f, void *key));
+extern void *slurm_list_find(ListIterator i, ListFindF f, void *key);
 
 /* slurm_list_is_empty():
  *
  *  Returns non-zero if list [l] is empty; o/w returns zero.
  */
-extern int slurm_list_is_empty PARAMS((List l));
+extern int slurm_list_is_empty(List l);
 
 /*
  *  Creates and returns a list iterator for non-destructively traversing
  *    list [l], or lsd_nomem_error() on failure.
  */
-extern ListIterator slurm_list_iterator_create PARAMS((List l));
+extern ListIterator slurm_list_iterator_create(List l);
 
 /* slurm_list_iterator_reset():
  *
  *  Resets the list iterator [i] to start traversal at the beginning
  *    of the list.
  */
-extern void slurm_list_iterator_reset PARAMS((ListIterator i));
+extern void slurm_list_iterator_reset(ListIterator i);
 
 /*
  *  Destroys the list iterator [i]; list iterators not explicitly destroyed
  *    in this manner will be destroyed when the list is deallocated via
  *    list_destroy().
  */
-extern void slurm_list_iterator_destroy PARAMS((ListIterator i));
+extern void slurm_list_iterator_destroy(ListIterator i);
 
 /* slurm_list_next():
  *
@@ -1290,7 +1276,7 @@ extern void slurm_list_iterator_destroy PARAMS((ListIterator i));
  *  Example: i=slurm_list_iterator_create(i);
  *	     while ((x=slurm_list_next(i))) {...}
  */
-extern void * slurm_list_next PARAMS((ListIterator i));
+extern void *slurm_list_next(ListIterator i);
 
 /* slurm_list_sort():
  *
@@ -1298,14 +1284,14 @@ extern void * slurm_list_next PARAMS((ListIterator i));
  *  Note: Sorting a list resets all iterators associated with the list.
  *  Note: The sort algorithm is stable.
  */
-extern void slurm_list_sort PARAMS((List l, ListCmpF f));
+extern void slurm_list_sort(List l, ListCmpF f);
 
 /* slurm_list_pop():
  *
  *  Pops the data item at the top of the stack [l].
  *  Returns the data's ptr, or NULL if the stack is empty.
  */
-extern void * slurm_list_pop PARAMS((List l));
+extern void *slurm_list_pop(List l);
 
 /*****************************************************************************\
  *      SLURM BITSTR FUNCTIONS
@@ -2303,8 +2289,9 @@ typedef block_info_t update_block_msg_t;
  * IN info_ptr - block information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_block_info_msg PARAMS(
-	(FILE *out, block_info_msg_t *info_ptr, int one_liner));
+extern void slurm_print_block_info_msg(FILE *out,
+				       block_info_msg_t *info_ptr,
+				       int one_liner);
 
 /*
  * slurm_print_block_info - output information about a specific Bluegene
@@ -2313,8 +2300,9 @@ extern void slurm_print_block_info_msg PARAMS(
  * IN bg_info_ptr - an individual block information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_block_info PARAMS(
-	(FILE *out, block_info_t *bg_info_ptr, int one_liner));
+extern void slurm_print_block_info(FILE *out,
+				   block_info_t *bg_info_ptr,
+				   int one_liner);
 
 /*
  * slurm_sprint_block_info - output information about a specific Bluegene
@@ -2324,8 +2312,7 @@ extern void slurm_print_block_info PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_block_info PARAMS(
-	(block_info_t * bg_info_ptr, int one_liner));
+extern char *slurm_sprint_block_info(block_info_t *bg_info_ptr, int one_liner);
 
 /*
  * slurm_load_block_info - issue RPC to get slurm all node select plugin
@@ -2337,9 +2324,9 @@ extern char *slurm_sprint_block_info PARAMS(
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_block_info_msg
  */
-extern int slurm_load_block_info PARAMS(
-	(time_t update_time, block_info_msg_t **block_info_msg_pptr,
-	 uint16_t show_flags));
+extern int slurm_load_block_info(time_t update_time,
+				 block_info_msg_t **block_info_msg_pptr,
+				 uint16_t show_flags);
 
 /*
  * slurm_free_block_info_msg - free buffer returned by
@@ -2347,13 +2334,12 @@ extern int slurm_load_block_info PARAMS(
  * IN block_info_msg_ptr - pointer to block_info_msg_t
  * RET 0 or a slurm error code
  */
-extern void slurm_free_block_info_msg PARAMS(
-	(block_info_msg_t *block_info_msg));
+extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 
 /* update state or remove block */
-extern int slurm_update_block PARAMS((update_block_msg_t *block_msg));
+extern int slurm_update_block(update_block_msg_t *block_msg);
 
-void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
+void slurm_init_update_block_msg(update_block_msg_t *update_block_msg);
 
 /*********************************/
 
@@ -3027,7 +3013,7 @@ typedef struct network_callerid_msg {
  *	default values
  * OUT job_desc_msg - user defined job descriptor
  */
-extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
+extern void slurm_init_job_desc_msg(job_desc_msg_t *job_desc_msg);
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
@@ -3040,9 +3026,8 @@ extern void slurm_init_job_desc_msg PARAMS((job_desc_msg_t * job_desc_msg));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern int slurm_allocate_resources PARAMS(
-	(job_desc_msg_t * job_desc_msg ,
-	 resource_allocation_response_msg_t ** job_alloc_resp_msg));
+extern int slurm_allocate_resources(job_desc_msg_t *job_desc_msg,
+				    resource_allocation_response_msg_t **job_alloc_resp_msg);
 
 /*
  * slurm_allocate_resources_blocking
@@ -3062,10 +3047,10 @@ extern int slurm_allocate_resources PARAMS(
  *      with no allocation granted)
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern resource_allocation_response_msg_t *
-slurm_allocate_resources_blocking PARAMS(
-	(const job_desc_msg_t *user_req, time_t timeout,
-	 void (*pending_callback)(uint32_t job_id)));
+extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
+	const job_desc_msg_t *user_req,
+	time_t timeout,
+	void (*pending_callback)(uint32_t job_id));
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
@@ -3073,8 +3058,7 @@ slurm_allocate_resources_blocking PARAMS(
  * IN msg - pointer to allocation response message
  * NOTE: buffer is loaded by slurm_allocate_resources
  */
-extern void slurm_free_resource_allocation_response_msg PARAMS(
-	(resource_allocation_response_msg_t * msg));
+extern void slurm_free_resource_allocation_response_msg(resource_allocation_response_msg_t *msg);
 
 /*
  * slurm_free_job_alloc_info_response_msg - free slurm resource
@@ -3082,8 +3066,7 @@ extern void slurm_free_resource_allocation_response_msg PARAMS(
  * IN msg - pointer to job allocation info response message
  * NOTE: buffer is loaded by slurm_allocation_lookup
  */
-extern void slurm_free_job_alloc_info_response_msg PARAMS(
-	(job_alloc_info_response_msg_t * msg));
+extern void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg);
 
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
@@ -3092,8 +3075,8 @@ extern void slurm_free_job_alloc_info_response_msg PARAMS(
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free "info" using slurm_free_job_alloc_info_response_msg
  */
-extern int slurm_allocation_lookup PARAMS(
-	(uint32_t job_id, job_alloc_info_response_msg_t **info));
+extern int slurm_allocation_lookup(uint32_t job_id,
+				   job_alloc_info_response_msg_t **info);
 
 /*
  * slurm_allocation_lookup_lite - retrieve minor info for an existing
@@ -3103,8 +3086,8 @@ extern int slurm_allocation_lookup PARAMS(
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern int slurm_allocation_lookup_lite PARAMS(
-	(uint32_t job_id, resource_allocation_response_msg_t **info));
+extern int slurm_allocation_lookup_lite(uint32_t job_id,
+					resource_allocation_response_msg_t **info);
 
 /*
  * slurm_read_hostfile - Read a SLURM hostfile specified by "filename".
@@ -3121,7 +3104,7 @@ extern int slurm_allocation_lookup_lite PARAMS(
  *
  * NOTE: Returned string must be freed with free().
  */
-extern char *slurm_read_hostfile PARAMS((char *filename, int n));
+extern char *slurm_read_hostfile(char *filename, int n);
 
 /*
  * slurm_allocation_msg_thr_create - startup a message handler talking
@@ -3131,8 +3114,8 @@ extern char *slurm_read_hostfile PARAMS((char *filename, int n));
  * IN callbacks - callbacks for different types of messages
  * RET allocation_msg_thread_t * or NULL on failure
  */
-extern allocation_msg_thread_t *slurm_allocation_msg_thr_create PARAMS(
-	(uint16_t *port, const slurm_allocation_callbacks_t *callbacks));
+extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(uint16_t *port,
+								const slurm_allocation_callbacks_t *callbacks);
 
 /*
  * slurm_allocation_msg_thr_destroy - shutdown the message handler talking
@@ -3141,8 +3124,8 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create PARAMS(
  * IN msg_thr - allocation_msg_thread_t pointer allocated with
  *              slurm_allocation_msg_thr_create
  */
-extern void slurm_allocation_msg_thr_destroy PARAMS(
-	(allocation_msg_thread_t * msg_thr));
+extern void slurm_allocation_msg_thr_destroy(allocation_msg_thread_t *msg_thr);
+
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
@@ -3150,9 +3133,8 @@ extern void slurm_allocation_msg_thr_destroy PARAMS(
  * OUT slurm_alloc_msg - response to request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_submit_batch_job PARAMS(
-	(job_desc_msg_t * job_desc_msg,
-	 submit_response_msg_t ** slurm_alloc_msg));
+extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
+				  submit_response_msg_t **slurm_alloc_msg);
 
 /*
  * slurm_free_submit_response_response_msg - free slurm
@@ -3160,8 +3142,7 @@ extern int slurm_submit_batch_job PARAMS(
  * IN msg - pointer to job submit response message
  * NOTE: buffer is loaded by slurm_submit_batch_job
  */
-extern void slurm_free_submit_response_response_msg PARAMS(
-	(submit_response_msg_t *msg));
+extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
 
 /*
  * slurm_job_will_run - determine if a job would execute immediately if
@@ -3169,7 +3150,7 @@ extern void slurm_free_submit_response_response_msg PARAMS(
  * IN job_desc_msg - description of resource allocation request
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
+extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
 
 /*
  * slurm_job_will_run2 - determine if a job would execute immediately if
@@ -3179,8 +3160,8 @@ extern int slurm_job_will_run PARAMS((job_desc_msg_t * job_desc_msg));
  *      free using slurm_free_will_run_response_msg()
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_job_will_run2 PARAMS((job_desc_msg_t *req,
-				will_run_response_msg_t **will_run_resp));
+extern int slurm_job_will_run2(job_desc_msg_t *req,
+			       will_run_response_msg_t **will_run_resp);
 
 /*
  * slurm_sbcast_lookup - retrieve info for an existing resource allocation
@@ -3191,10 +3172,11 @@ extern int slurm_job_will_run2 PARAMS((job_desc_msg_t *req,
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
-extern int slurm_sbcast_lookup PARAMS((uint32_t job_id, uint32_t step_id,
-				       job_sbcast_cred_msg_t **info));
+extern int slurm_sbcast_lookup(uint32_t job_id,
+			       uint32_t step_id,
+			       job_sbcast_cred_msg_t **info);
 
-extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
+extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
 
 /* slurm_load_licenses()
  *
@@ -3203,9 +3185,8 @@ extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
  * OUT
  *
  */
-extern int slurm_load_licenses PARAMS((time_t, license_info_msg_t **,
-				       uint16_t));
-extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
+extern int slurm_load_licenses(time_t, license_info_msg_t **, uint16_t);
+extern void slurm_free_license_info_msg(license_info_msg_t *);
 
 /* get the running assoc_mgr info
  * IN assoc_mgr_info_request_msg_t: request filtering data returned
@@ -3213,13 +3194,11 @@ extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
  * assoc_mgr lists, must be freed by slurm_free_assoc_mgr_info_msg
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_load_assoc_mgr_info PARAMS((assoc_mgr_info_request_msg_t *,
-					     assoc_mgr_info_msg_t **));
-extern void slurm_free_assoc_mgr_info_msg PARAMS ((assoc_mgr_info_msg_t *));
-extern void slurm_free_assoc_mgr_info_request_members PARAMS (
-	(assoc_mgr_info_request_msg_t *));
-extern void slurm_free_assoc_mgr_info_request_msg PARAMS (
-	(assoc_mgr_info_request_msg_t *));
+extern int slurm_load_assoc_mgr_info(assoc_mgr_info_request_msg_t *,
+				     assoc_mgr_info_msg_t **);
+extern void slurm_free_assoc_mgr_info_msg(assoc_mgr_info_msg_t *);
+extern void slurm_free_assoc_mgr_info_request_members(assoc_mgr_info_request_msg_t *);
+extern void slurm_free_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *);
 
 
 /*****************************************************************************\
@@ -3242,8 +3221,7 @@ extern void slurm_free_assoc_mgr_info_request_msg PARAMS (
  * IN flags      - see KILL_JOB_* flags above
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
-				  uint16_t flags));
+extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
@@ -3252,13 +3230,13 @@ extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
  * IN signal  - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id,
-				       uint16_t signal));
+extern int slurm_kill_job_step(uint32_t job_id,
+			       uint32_t step_id,
+			       uint16_t signal);
 /*
  * slurm_kill_job2()
  */
-extern int slurm_kill_job2 PARAMS((const char *job_id, uint16_t signal,
-				   uint16_t flags));
+extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags);
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
@@ -3266,7 +3244,7 @@ extern int slurm_kill_job2 PARAMS((const char *job_id, uint16_t signal,
  * IN signal     - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
+extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
@@ -3276,8 +3254,9 @@ extern int slurm_signal_job PARAMS((uint32_t job_id, uint16_t signal));
  * IN signal  - signal number
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
-					 uint32_t signal));
+extern int slurm_signal_job_step(uint32_t job_id,
+				 uint32_t step_id,
+				 uint32_t signal);
 
 
 /*****************************************************************************\
@@ -3290,8 +3269,7 @@ extern int slurm_signal_job_step PARAMS((uint32_t job_id, uint32_t step_id,
  * IN job_return_code - the highest exit code of any task of the job
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_complete_job PARAMS((uint32_t job_id,
-				      uint32_t job_return_code));
+extern int slurm_complete_job(uint32_t job_id, uint32_t job_return_code);
 
 /*
  * slurm_terminate_job_step - terminates a job step by sending a
@@ -3304,7 +3282,7 @@ extern int slurm_complete_job PARAMS((uint32_t job_id,
  *              to terminate a job's batch script
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
+extern int slurm_terminate_job_step(uint32_t job_id, uint32_t step_id);
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS
@@ -3317,7 +3295,7 @@ extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
  * IN ptr - pointer to a structure allocated by the user.  The structure will
  *      be initialized.
  */
-extern void slurm_step_ctx_params_t_init PARAMS((slurm_step_ctx_params_t *ptr));
+extern void slurm_step_ctx_params_t_init(slurm_step_ctx_params_t *ptr);
 
 /*
  * slurm_step_ctx_create - Create a job step and its context.
@@ -3325,8 +3303,7 @@ extern void slurm_step_ctx_params_t_init PARAMS((slurm_step_ctx_params_t *ptr));
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *slurm_step_ctx_create PARAMS(
-	(const slurm_step_ctx_params_t *step_params));
+extern slurm_step_ctx_t *slurm_step_ctx_create(const slurm_step_ctx_params_t *step_params);
 
 /*
  * slurm_step_ctx_create_timeout - Create a job step and its context.
@@ -3335,9 +3312,8 @@ extern slurm_step_ctx_t *slurm_step_ctx_create PARAMS(
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *
-slurm_step_ctx_create_timeout PARAMS(
-	(const slurm_step_ctx_params_t *step_params, int timeout));
+extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(const slurm_step_ctx_params_t *step_params,
+						       int timeout);
 
 /*
  * slurm_step_ctx_create_no_alloc - Create a job step and its context without
@@ -3347,17 +3323,15 @@ slurm_step_ctx_create_timeout PARAMS(
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *
-slurm_step_ctx_create_no_alloc PARAMS(
-	(const slurm_step_ctx_params_t *step_params, uint32_t step_id));
+extern slurm_step_ctx_t *slurm_step_ctx_create_no_alloc(const slurm_step_ctx_params_t *step_params,
+							uint32_t step_id);
 
 /*
  * slurm_step_ctx_get - get parameters from a job step context.
  * IN ctx - job step context generated by slurm_step_ctx_create
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_step_ctx_get PARAMS((slurm_step_ctx_t *ctx,
-				      int ctx_key, ...));
+extern int slurm_step_ctx_get(slurm_step_ctx_t *ctx, int ctx_key, ...);
 
 /*
  * slurm_jobinfo_ctx_get - get parameters from jobinfo context.
@@ -3366,8 +3340,9 @@ extern int slurm_step_ctx_get PARAMS((slurm_step_ctx_t *ctx,
  * OUT data - the requested data type
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t *jobinfo,
-					 int data_type, void *data));
+extern int slurm_jobinfo_ctx_get(switch_jobinfo_t *jobinfo,
+				 int data_type,
+				 void *data);
 
 /*
  * slurm_step_ctx_daemon_per_node_hack - Hack the step context
@@ -3384,16 +3359,17 @@ extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t *jobinfo,
  * IN/OUT curr_task_num - task_id of newest task, initialze to zero
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_step_ctx_daemon_per_node_hack PARAMS(
-	(slurm_step_ctx_t *ctx, char *node_list, uint32_t node_cnt,
-	 uint32_t *curr_task_num));
+extern int slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx,
+					       char *node_list,
+					       uint32_t node_cnt,
+					       uint32_t *curr_task_num);
 
 /*
  * slurm_step_ctx_destroy - free allocated memory for a job step context.
  * IN ctx - job step context generated by slurm_step_ctx_create
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_step_ctx_destroy PARAMS((slurm_step_ctx_t *ctx));
+extern int slurm_step_ctx_destroy(slurm_step_ctx_t *ctx);
 
 /*
  * slurm_step_launch_params_t_init - initialize a user-allocated
@@ -3402,8 +3378,7 @@ extern int slurm_step_ctx_destroy PARAMS((slurm_step_ctx_t *ctx));
  * IN ptr - pointer to a structure allocated by the use.  The structure will
  *      be initialized.
  */
-extern void slurm_step_launch_params_t_init
-PARAMS((slurm_step_launch_params_t *ptr));
+extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr);
 
 /*
  * slurm_step_launch - launch a parallel job step
@@ -3412,10 +3387,9 @@ PARAMS((slurm_step_launch_params_t *ptr));
  * IN callbacks - Identify functions to be called when various events occur
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
-extern int slurm_step_launch PARAMS(
-	(slurm_step_ctx_t *ctx,
-	 const slurm_step_launch_params_t *params,
-	 const slurm_step_launch_callbacks_t *callbacks));
+extern int slurm_step_launch(slurm_step_ctx_t *ctx,
+			     const slurm_step_launch_params_t *params,
+			     const slurm_step_launch_callbacks_t *callbacks);
 
 /*
  * slurm_step_launch_add - Add tasks to a step that was already started
@@ -3426,38 +3400,37 @@ extern int slurm_step_launch PARAMS(
  *                   node in node_list.
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
-extern int slurm_step_launch_add PARAMS(
-	(slurm_step_ctx_t *ctx,
-	 const slurm_step_launch_params_t *params,
-	 char *node_list, int start_nodeid));
+extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
+				 const slurm_step_launch_params_t *params,
+				 char *node_list,
+				 int start_nodeid);
 
 /*
  * Block until all tasks have started.
  */
-extern int slurm_step_launch_wait_start PARAMS((slurm_step_ctx_t *ctx));
+extern int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx);
 
 /*
  * Block until all tasks have finished (or failed to start altogether).
  */
-extern void slurm_step_launch_wait_finish PARAMS((slurm_step_ctx_t *ctx));
+extern void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx);
 
 /*
  * Abort an in-progress launch, or terminate the fully launched job step.
  *
  * Can be called from a signal handler.
  */
-extern void slurm_step_launch_abort PARAMS((slurm_step_ctx_t *ctx));
+extern void slurm_step_launch_abort(slurm_step_ctx_t *ctx);
 
 /*
  * Forward a signal to all those nodes with running tasks
  */
-extern void slurm_step_launch_fwd_signal PARAMS((slurm_step_ctx_t *ctx,
-						 int signo));
+extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo);
 
 /*
  * Wake tasks stopped for debugging on nodes with running tasks
  */
-extern void slurm_step_launch_fwd_wake PARAMS((slurm_step_ctx_t *ctx));
+extern void slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx);
 
 /*
  * Specify the plugin name to be used. This may be needed to specify the
@@ -3465,7 +3438,7 @@ extern void slurm_step_launch_fwd_wake PARAMS((slurm_step_ctx_t *ctx));
  * IN plugin name - "none", "pmi2", etc.
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
-extern int slurm_mpi_plugin_init PARAMS((char *plugin_name));
+extern int slurm_mpi_plugin_init(char *plugin_name);
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -3477,7 +3450,7 @@ extern int slurm_mpi_plugin_init PARAMS((char *plugin_name));
  *	SLURM_VERSION_MINOR, and SLURM_VERSION_MICRO to work with this value
  * RET API's version number
  */
-extern long slurm_api_version PARAMS((void));
+extern long slurm_api_version(void);
 
 /*
  * slurm_load_ctl_conf - issue RPC to get slurm control configuration
@@ -3488,16 +3461,15 @@ extern long slurm_api_version PARAMS((void));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_ctl_conf
  */
-extern int slurm_load_ctl_conf PARAMS(
-	(time_t update_time,
-	 slurm_ctl_conf_t  **slurm_ctl_conf_ptr));
+extern int slurm_load_ctl_conf(time_t update_time,
+			       slurm_ctl_conf_t **slurm_ctl_conf_ptr);
 
 /*
  * slurm_free_ctl_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_ctl_conf
  */
-extern void slurm_free_ctl_conf PARAMS((slurm_ctl_conf_t* slurm_ctl_conf_ptr));
+extern void slurm_free_ctl_conf(slurm_ctl_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
@@ -3505,8 +3477,8 @@ extern void slurm_free_ctl_conf PARAMS((slurm_ctl_conf_t* slurm_ctl_conf_ptr));
  * IN out - file to write to
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
-extern void slurm_print_ctl_conf PARAMS(
-	(FILE * out, slurm_ctl_conf_t* slurm_ctl_conf_ptr));
+extern void slurm_print_ctl_conf(FILE *out,
+				 slurm_ctl_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_write_ctl_conf - write the contents of slurm control configuration
@@ -3516,10 +3488,9 @@ extern void slurm_print_ctl_conf PARAMS(
  * IN node_info_ptr - pointer to node table of information
  * IN part_info_ptr - pointer to partition information
  */
-extern void slurm_write_ctl_conf PARAMS(
-	(slurm_ctl_conf_t* slurm_ctl_conf_ptr,
-	 node_info_msg_t* node_info_ptr,
-	 partition_info_msg_t* part_info_ptr));
+extern void slurm_write_ctl_conf(slurm_ctl_conf_t *slurm_ctl_conf_ptr,
+				 node_info_msg_t *node_info_ptr,
+				 partition_info_msg_t *part_info_ptr);
 
 /*
  * slurm_ctl_conf_2_key_pairs - put the slurm_ctl_conf_t variables into
@@ -3527,8 +3498,7 @@ extern void slurm_write_ctl_conf PARAMS(
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  * RET List of opaque data type config_key_pair_t
  */
-extern void *slurm_ctl_conf_2_key_pairs PARAMS(
-	(slurm_ctl_conf_t* slurm_ctl_conf_ptr));
+extern void *slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_print_key_pairs - output the contents of key_pairs
@@ -3537,8 +3507,7 @@ extern void *slurm_ctl_conf_2_key_pairs PARAMS(
  * IN key_pairs - List containing key pairs to be printed
  * IN title - title of key pair list
  */
-extern void slurm_print_key_pairs PARAMS((FILE* out, void *key_pairs,
-					  char *title));
+extern void slurm_print_key_pairs(FILE *out, void *key_pairs, char *title);
 
 /*
  * slurm_load_slurmd_status - issue RPC to get the status of slurmd
@@ -3547,16 +3516,14 @@ extern void slurm_print_key_pairs PARAMS((FILE* out, void *key_pairs,
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_slurmd_status()
  */
-extern int slurm_load_slurmd_status PARAMS(
-	(slurmd_status_t **slurmd_status_ptr));
+extern int slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr);
 
 /*
  * slurm_free_slurmd_status - free slurmd state information
  * IN msg - pointer to slurmd state information
  * NOTE: buffer is loaded by slurm_load_slurmd_status
  */
-extern void slurm_free_slurmd_status PARAMS(
-	(slurmd_status_t* slurmd_status_ptr));
+extern void slurm_free_slurmd_status(slurmd_status_t* slurmd_status_ptr);
 
 /*
  * slurm_print_slurmd_status - output the contents of slurmd status
@@ -3564,23 +3531,21 @@ extern void slurm_free_slurmd_status PARAMS(
  * IN out - file to write to
  * IN slurmd_status_ptr - slurmd status pointer
  */
-void slurm_print_slurmd_status PARAMS(
-	(FILE* out, slurmd_status_t * slurmd_status_ptr));
+void slurm_print_slurmd_status(FILE *out, slurmd_status_t *slurmd_status_ptr);
 
 /*
  * slurm_init_update_step_msg - initialize step update message with default
  *	values before calling slurm_update_step()
  * OUT step_msg - step update messasge descriptor
  */
-extern void slurm_init_update_step_msg PARAMS(
-	(step_update_request_msg_t * step_msg));
+extern void slurm_init_update_step_msg(step_update_request_msg_t *step_msg);
 
 /* Get scheduling statistics */
-extern int  slurm_get_statistics PARAMS((stats_info_response_msg_t **buf,
-					 stats_info_request_msg_t *req));
+extern int slurm_get_statistics(stats_info_response_msg_t **buf,
+				stats_info_request_msg_t *req);
 
 /* Reset scheduling statistics */
-extern int  slurm_reset_statistics PARAMS((stats_info_request_msg_t *req));
+extern int slurm_reset_statistics(stats_info_request_msg_t *req);
 
 /*****************************************************************************\
  *	SLURM JOB RESOURCES READ/PRINT FUNCTIONS
@@ -3594,8 +3559,8 @@ extern int  slurm_reset_statistics PARAMS((stats_info_request_msg_t *req));
  * IN node_id		- zero-origin node id in allocation
  * RET number of CPUs allocated to job on this node or -1 on error
  */
-extern int slurm_job_cpus_allocated_on_node_id PARAMS(
-	(job_resources_t *job_resrcs_ptr, int node_id));
+extern int slurm_job_cpus_allocated_on_node_id(job_resources_t *job_resrcs_ptr,
+					       int node_id);
 
 /*
  * slurm_job_cpus_allocated_on_node -
@@ -3605,8 +3570,8 @@ extern int slurm_job_cpus_allocated_on_node_id PARAMS(
  * IN node_name		- name of node
  * RET number of CPUs allocated to job on this node or -1 on error
  */
-extern int slurm_job_cpus_allocated_on_node PARAMS(
-	(job_resources_t *job_resrcs_ptr, const char *node_name));
+extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
+					    const char *node_name);
 
 /*
  * slurm_job_cpus_allocated_str_on_node_id -
@@ -3618,9 +3583,10 @@ extern int slurm_job_cpus_allocated_on_node PARAMS(
  * IN node_id		- zero-origin node id in allocation
  * RET 0 on success or -1 on error
  */
-extern int slurm_job_cpus_allocated_str_on_node_id PARAMS(
-	(char *cpus, size_t cpus_len,
-	 job_resources_t *job_resrcs_ptr, int node_id));
+extern int slurm_job_cpus_allocated_str_on_node_id(char *cpus,
+						   size_t cpus_len,
+						   job_resources_t *job_resrcs_ptr,
+						   int node_id);
 
 /*
  * slurm_job_cpus_allocated_str_on_node -
@@ -3632,9 +3598,10 @@ extern int slurm_job_cpus_allocated_str_on_node_id PARAMS(
  * IN node_name		- name of node
  * RET 0 on success or -1 on error
  */
-extern int slurm_job_cpus_allocated_str_on_node PARAMS(
-	(char *cpus, size_t cpus_len,
-	 job_resources_t *job_resrcs_ptr, const char *node_name));
+extern int slurm_job_cpus_allocated_str_on_node(char *cpus,
+						size_t cpus_len,
+						job_resources_t *job_resrcs_ptr,
+						const char *node_name);
 
 /*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -3645,7 +3612,7 @@ extern int slurm_job_cpus_allocated_str_on_node PARAMS(
  * IN msg - pointer to job information response message
  * NOTE: buffer is loaded by slurm_load_jobs.
  */
-extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
+extern void slurm_free_job_info_msg(job_info_msg_t *job_buffer_ptr);
 
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
@@ -3653,23 +3620,23 @@ extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
  * end_time_ptr - location in which to store scheduled end time for job
  * RET 0 or -1 on error
  */
-extern int slurm_get_end_time PARAMS((uint32_t jobid, time_t *end_time_ptr));
+extern int slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr);
 
 /* Given a job record pointer, return its stderr path */
-extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr);
+extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t *job_ptr);
 
 /* Given a job record pointer, return its stdin path */
-extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t * job_ptr);
+extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t *job_ptr);
 
 /* Given a job record pointer, return its stdout path */
-extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr);
+extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t *job_ptr);
 
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job
  * IN jobid     - slurm job id
  * RET remaining time in seconds or -1 on error
  */
-extern long slurm_get_rem_time PARAMS((uint32_t jobid));
+extern long slurm_get_rem_time(uint32_t jobid);
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
@@ -3686,8 +3653,9 @@ extern int slurm_job_node_ready(uint32_t job_id);
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job PARAMS((job_info_msg_t **resp, uint32_t job_id,
-				  uint16_t show_flags));
+extern int slurm_load_job(job_info_msg_t **resp,
+			  uint32_t job_id,
+			  uint16_t show_flags);
 
 /*
  * slurm_load_job_user - issue RPC to get slurm information about all jobs
@@ -3698,9 +3666,9 @@ extern int slurm_load_job PARAMS((job_info_msg_t **resp, uint32_t job_id,
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job_user PARAMS((job_info_msg_t **job_info_msg_pptr,
-				       uint32_t user_id,
-				       uint16_t show_flags));
+extern int slurm_load_job_user(job_info_msg_t **job_info_msg_pptr,
+			       uint32_t user_id,
+			       uint16_t show_flags);
 
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration
@@ -3711,9 +3679,9 @@ extern int slurm_load_job_user PARAMS((job_info_msg_t **job_info_msg_pptr,
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_jobs PARAMS(
-	(time_t update_time, job_info_msg_t **job_info_msg_pptr,
-	 uint16_t show_flags));
+extern int slurm_load_jobs(time_t update_time,
+			   job_info_msg_t **job_info_msg_pptr,
+			   uint16_t show_flags);
 
 /*
  * slurm_notify_job - send message to the job's stdout,
@@ -3722,7 +3690,7 @@ extern int slurm_load_jobs PARAMS(
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job PARAMS((uint32_t job_id, char *message));
+extern int slurm_notify_job(uint32_t job_id, char *message);
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
@@ -3731,7 +3699,7 @@ extern int slurm_notify_job PARAMS((uint32_t job_id, char *message));
  * OUT job_id_ptr - place to store a slurm job_id
  * RET 0 or -1 on error
  */
-extern int slurm_pid2jobid PARAMS((pid_t job_pid, uint32_t * job_id_ptr));
+extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
 
 /*
  * slurm_print_job_info - output information about a specific Slurm
@@ -3740,8 +3708,9 @@ extern int slurm_pid2jobid PARAMS((pid_t job_pid, uint32_t * job_id_ptr));
  * IN job_ptr - an individual job information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_info PARAMS((FILE*, slurm_job_info_t * job_ptr,
-					 int one_liner));
+extern void slurm_print_job_info(FILE *out,
+				 slurm_job_info_t *job_ptr,
+				 int one_liner);
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm
@@ -3750,8 +3719,9 @@ extern void slurm_print_job_info PARAMS((FILE*, slurm_job_info_t * job_ptr,
  * IN job_info_msg_ptr - job information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_info_msg PARAMS(
-	(FILE * out, job_info_msg_t * job_info_msg_ptr, int one_liner));
+extern void slurm_print_job_info_msg(FILE *out,
+				     job_info_msg_t *job_info_msg_ptr,
+				     int one_liner);
 
 /*
  * slurm_sprint_job_info - output information about a specific Slurm
@@ -3761,8 +3731,8 @@ extern void slurm_print_job_info_msg PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_job_info PARAMS((slurm_job_info_t * job_ptr,
-					   int one_liner));
+extern char *slurm_sprint_job_info(slurm_job_info_t *job_ptr,
+				   int one_liner);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,
@@ -3770,7 +3740,7 @@ extern char *slurm_sprint_job_info PARAMS((slurm_job_info_t * job_ptr,
  * IN job_msg - description of job updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_job PARAMS((job_desc_msg_t * job_msg));
+extern int slurm_update_job(job_desc_msg_t *job_msg);
 
 /*
  * slurm_update_job2 - issue RPC to a job's configuration per request,
@@ -3780,8 +3750,8 @@ extern int slurm_update_job PARAMS((job_desc_msg_t * job_msg));
  *	      free using slurm_free_job_array_resp()
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_job2 PARAMS((job_desc_msg_t * job_msg,
-				     job_array_resp_msg_t **resp));
+extern int slurm_update_job2(job_desc_msg_t *job_msg,
+			     job_array_resp_msg_t **resp);
 
 /*
  * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
@@ -3791,7 +3761,9 @@ extern int slurm_update_job2 PARAMS((job_desc_msg_t * job_msg,
  * IN job_id_str - String containing a single job ID number
  * RET - equivalent job ID number or 0 on error
  */
-extern uint32_t slurm_xlate_job_id PARAMS((char *job_id_str));
+extern uint32_t slurm_xlate_job_id(char *job_id_str);
+
+
 /*****************************************************************************\
  *	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
@@ -3810,10 +3782,11 @@ extern uint32_t slurm_xlate_job_id PARAMS((char *job_id_str));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
-extern int slurm_get_job_steps PARAMS(
-	(time_t update_time, uint32_t job_id, uint32_t step_id,
-	 job_step_info_response_msg_t **step_response_pptr,
-	 uint16_t show_flags));
+extern int slurm_get_job_steps(time_t update_time,
+			       uint32_t job_id,
+			       uint32_t step_id,
+			       job_step_info_response_msg_t **step_response_pptr,
+			       uint16_t show_flags);
 
 /*
  * slurm_free_job_step_info_response_msg - free the job step
@@ -3821,8 +3794,7 @@ extern int slurm_get_job_steps PARAMS(
  * IN msg - pointer to job step information response message
  * NOTE: buffer is loaded by slurm_get_job_steps.
  */
-extern void slurm_free_job_step_info_response_msg PARAMS(
-	(job_step_info_response_msg_t * msg));
+extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *msg);
 
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm
@@ -3831,9 +3803,9 @@ extern void slurm_free_job_step_info_response_msg PARAMS(
  * IN job_step_info_msg_ptr - job step information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_step_info_msg PARAMS(
-	(FILE * out, job_step_info_response_msg_t * job_step_info_msg_ptr,
-	 int one_liner));
+extern void slurm_print_job_step_info_msg(FILE *out,
+					  job_step_info_response_msg_t *job_step_info_msg_ptr,
+					  int one_liner);
 
 /*
  * slurm_print_job_step_info - output information about a specific Slurm
@@ -3842,8 +3814,9 @@ extern void slurm_print_job_step_info_msg PARAMS(
  * IN job_ptr - an individual job step information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_step_info PARAMS(
-	(FILE * out, job_step_info_t * step_ptr, int one_liner));
+extern void slurm_print_job_step_info(FILE *out,
+				      job_step_info_t *step_ptr,
+				      int one_liner);
 
 /*
  * slurm_job_step_layout_get - get the slurm_step_layout_t structure for
@@ -3854,8 +3827,8 @@ extern void slurm_print_job_step_info PARAMS(
  * RET pointer to a slurm_step_layout_t (free with
  *   slurm_free_step_layout) on success, and NULL on error.
  */
-extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS(
-	(uint32_t job_id, uint32_t step_id));
+extern slurm_step_layout_t *slurm_job_step_layout_get(uint32_t job_id,
+						      uint32_t step_id);
 
 /*
  * slurm_sprint_job_step_info - output information about a specific Slurm
@@ -3865,8 +3838,8 @@ extern slurm_step_layout_t *slurm_job_step_layout_get PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_job_step_info PARAMS((job_step_info_t * step_ptr,
-						int one_liner));
+extern char *slurm_sprint_job_step_info(job_step_info_t *step_ptr,
+					int one_liner);
 
 /*
  * slurm_job_step_stat - status a current step
@@ -3877,9 +3850,10 @@ extern char *slurm_sprint_job_step_info PARAMS((job_step_info_t * step_ptr,
  * OUT resp
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurm_job_step_stat PARAMS((uint32_t job_id, uint32_t step_id,
-				       char *node_list,
-				       job_step_stat_response_msg_t **resp));
+extern int slurm_job_step_stat(uint32_t job_id,
+			       uint32_t step_id,
+			       char *node_list,
+			       job_step_stat_response_msg_t **resp);
 
 /*
  * slurm_job_step_get_pids - get the complete list of pids for a given
@@ -3890,21 +3864,21 @@ extern int slurm_job_step_stat PARAMS((uint32_t job_id, uint32_t step_id,
  * OUT resp
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int slurm_job_step_get_pids PARAMS(
-	(uint32_t job_id, uint32_t step_id,
-	 char *node_list,
-	 job_step_pids_response_msg_t **resp));
+extern int slurm_job_step_get_pids(uint32_t job_id,
+				   uint32_t step_id,
+				   char *node_list,
+				   job_step_pids_response_msg_t **resp);
 
-extern void slurm_job_step_layout_free PARAMS((slurm_step_layout_t *layout));
-extern void slurm_job_step_pids_free PARAMS((job_step_pids_t *object));
-extern void slurm_job_step_pids_response_msg_free PARAMS((void *object));
+extern void slurm_job_step_layout_free(slurm_step_layout_t *layout);
+extern void slurm_job_step_pids_free(job_step_pids_t *object);
+extern void slurm_job_step_pids_response_msg_free(void *object);
 extern void slurm_job_step_stat_free(job_step_stat_t *object);
 extern void slurm_job_step_stat_response_msg_free(void *object);
 
 /* Update the time limit of a job step,
  * IN step_msg - step update messasge descriptor
  * RET 0 or -1 on error */
-extern int slurm_update_step PARAMS((step_update_request_msg_t * step_msg));
+extern int slurm_update_step(step_update_request_msg_t *step_msg);
 
 /*****************************************************************************\
  *	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -3919,8 +3893,9 @@ extern int slurm_update_step PARAMS((step_update_request_msg_t * step_msg));
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-extern int slurm_load_node PARAMS((time_t update_time, node_info_msg_t **resp,
-				  uint16_t show_flags));
+extern int slurm_load_node(time_t update_time,
+			   node_info_msg_t **resp,
+			   uint16_t show_flags);
 
 /*
  * slurm_load_node_single - issue RPC to get slurm configuration information
@@ -3931,8 +3906,9 @@ extern int slurm_load_node PARAMS((time_t update_time, node_info_msg_t **resp,
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-extern int slurm_load_node_single PARAMS((node_info_msg_t **resp,
-					 char *node_name, uint16_t show_flags));
+extern int slurm_load_node_single(node_info_msg_t **resp,
+				  char *node_name,
+				  uint16_t show_flags);
 
 /*
  * slurm_get_node_energy_n - issue RPC to get the energy data of all
@@ -3945,18 +3921,17 @@ extern int slurm_load_node_single PARAMS((node_info_msg_t **resp,
  * RET 0 on success or a slurm error code
  * NOTE: free the response using xfree
  */
-extern int slurm_get_node_energy PARAMS(
-	(char *host, uint16_t delta,
-	 uint16_t *sensors_cnt,
-	 acct_gather_energy_t **energy));
+extern int slurm_get_node_energy(char *host,
+				 uint16_t delta,
+				 uint16_t *sensors_cnt,
+				 acct_gather_energy_t **energy);
 
 /*
  * slurm_free_node_info_msg - free the node information response message
  * IN msg - pointer to node information response message
  * NOTE: buffer is loaded by slurm_load_node.
  */
-extern void slurm_free_node_info_msg PARAMS(
-	(node_info_msg_t * node_buffer_ptr));
+extern void slurm_free_node_info_msg(node_info_msg_t *node_buffer_ptr);
 
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
@@ -3965,8 +3940,9 @@ extern void slurm_free_node_info_msg PARAMS(
  * IN node_info_msg_ptr - node information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_node_info_msg PARAMS(
-	(FILE * out, node_info_msg_t * node_info_msg_ptr, int one_liner));
+extern void slurm_print_node_info_msg(FILE *out,
+				      node_info_msg_t *node_info_msg_ptr,
+				      int one_liner);
 
 /*
  * slurm_print_node_table - output information about a specific Slurm nodes
@@ -3976,9 +3952,10 @@ extern void slurm_print_node_info_msg PARAMS(
  * IN node_scaling - number of nodes each node represents
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_node_table PARAMS(
-	(FILE * out, node_info_t * node_ptr,
-	 int node_scaling, int one_liner));
+extern void slurm_print_node_table(FILE *out,
+				   node_info_t *node_ptr,
+				   int node_scaling,
+				   int one_liner);
 
 /*
  * slurm_sprint_node_table - output information about a specific Slurm nodes
@@ -3989,15 +3966,15 @@ extern void slurm_print_node_table PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_node_table PARAMS((node_info_t * node_ptr,
-					     int node_scaling,
-					     int one_liner));
+extern char *slurm_sprint_node_table(node_info_t *node_ptr,
+				     int node_scaling,
+				     int one_liner);
 
 /*
  * slurm_init_update_node_msg - initialize node update message
  * OUT update_node_msg - user defined node descriptor
  */
-void slurm_init_update_node_msg PARAMS((update_node_msg_t * update_node_msg));
+void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
 
 /*
  * slurm_update_node - issue RPC to a node's configuration per request,
@@ -4005,7 +3982,7 @@ void slurm_init_update_node_msg PARAMS((update_node_msg_t * update_node_msg));
  * IN node_msg - description of node updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_node PARAMS((update_node_msg_t * node_msg));
+extern int slurm_update_node(update_node_msg_t *node_msg);
 
 
 /*****************************************************************************\
@@ -4020,8 +3997,8 @@ extern int slurm_update_node PARAMS((update_node_msg_t * node_msg));
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_front_end_info_msg
  */
-extern int slurm_load_front_end PARAMS(
-	(time_t update_time, front_end_info_msg_t **resp));
+extern int slurm_load_front_end(time_t update_time,
+				front_end_info_msg_t **resp);
 
 /*
  * slurm_free_front_end_info_msg - free the front_end information response
@@ -4029,8 +4006,7 @@ extern int slurm_load_front_end PARAMS(
  * IN msg - pointer to front_end information response message
  * NOTE: buffer is loaded by slurm_load_front_end.
  */
-extern void slurm_free_front_end_info_msg PARAMS(
-	(front_end_info_msg_t * front_end_buffer_ptr));
+extern void slurm_free_front_end_info_msg(front_end_info_msg_t *front_end_buffer_ptr);
 
 /*
  * slurm_print_front_end_info_msg - output information about all Slurm
@@ -4039,9 +4015,9 @@ extern void slurm_free_front_end_info_msg PARAMS(
  * IN front_end_info_msg_ptr - front_end information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_front_end_info_msg PARAMS(
-	(FILE * out, front_end_info_msg_t * front_end_info_msg_ptr,
-	 int one_liner));
+extern void slurm_print_front_end_info_msg(FILE *out,
+					   front_end_info_msg_t *front_end_info_msg_ptr,
+					   int one_liner);
 /*
  * slurm_print_front_end_table - output information about a specific Slurm
  *	front_ends based upon message as loaded using slurm_load_front_end
@@ -4049,8 +4025,9 @@ extern void slurm_print_front_end_info_msg PARAMS(
  * IN front_end_ptr - an individual front_end information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_front_end_table PARAMS(
-	(FILE * out, front_end_info_t * front_end_ptr, int one_liner));
+extern void slurm_print_front_end_table(FILE *out,
+					front_end_info_t *front_end_ptr,
+					int one_liner);
 
 /*
  * slurm_sprint_front_end_table - output information about a specific Slurm
@@ -4060,15 +4037,14 @@ extern void slurm_print_front_end_table PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_front_end_table PARAMS(
-	(front_end_info_t * front_end_ptr, int one_liner));
+extern char *slurm_sprint_front_end_table(front_end_info_t *front_end_ptr,
+					  int one_liner);
 
 /*
  * slurm_init_update_front_end_msg - initialize front_end node update message
  * OUT update_front_end_msg - user defined node descriptor
  */
-void slurm_init_update_front_end_msg PARAMS(
-	(update_front_end_msg_t * update_front_end_msg));
+void slurm_init_update_front_end_msg(update_front_end_msg_t *update_front_end_msg);
 
 /*
  * slurm_update_front_end - issue RPC to a front_end node's configuration per
@@ -4076,8 +4052,8 @@ void slurm_init_update_front_end_msg PARAMS(
  * IN front_end_msg - description of front_end node updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_front_end PARAMS(
-	(update_front_end_msg_t * front_end_msg));
+extern int slurm_update_front_end(update_front_end_msg_t *front_end_msg);
+
 
 /*****************************************************************************\
  *	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS
@@ -4090,8 +4066,7 @@ extern int slurm_update_front_end PARAMS(
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_topo_info_msg
  */
-extern int slurm_load_topo PARAMS(
-	(topo_info_response_msg_t **topo_info_msg_pptr));
+extern int slurm_load_topo(topo_info_response_msg_t **topo_info_msg_pptr);
 
 /*
  * slurm_free_topo_info_msg - free the switch topology configuration
@@ -4099,7 +4074,7 @@ extern int slurm_load_topo PARAMS(
  * IN msg - pointer to switch topology configuration response message
  * NOTE: buffer is loaded by slurm_load_topo.
  */
-extern void slurm_free_topo_info_msg PARAMS((topo_info_response_msg_t *msg));
+extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg);
 
 /*
  * slurm_print_topo_info_msg - output information about all switch topology
@@ -4109,9 +4084,9 @@ extern void slurm_free_topo_info_msg PARAMS((topo_info_response_msg_t *msg));
  * IN topo_info_msg_ptr - switch topology information message pointer
  * IN one_liner - print as a single line if not zero
  */
-extern void slurm_print_topo_info_msg PARAMS(
-	(FILE * out, topo_info_response_msg_t *topo_info_msg_ptr,
-	 int one_liner));
+extern void slurm_print_topo_info_msg(FILE *out,
+				      topo_info_response_msg_t *topo_info_msg_ptr,
+				      int one_liner);
 
 /*
  * slurm_print_topo_record - output information about a specific Slurm topology
@@ -4122,8 +4097,9 @@ extern void slurm_print_topo_info_msg PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *	   NULL is returned on failure.
  */
-extern void slurm_print_topo_record PARAMS((FILE * out, topo_info_t *topo_ptr,
-					    int one_liner));
+extern void slurm_print_topo_record(FILE *out,
+				    topo_info_t *topo_ptr,
+				    int one_liner);
 
 /*****************************************************************************\
  *	SLURM POWERCAPPING READ/PRINT/UPDATE FUNCTIONS
@@ -4135,8 +4111,7 @@ extern void slurm_print_topo_record PARAMS((FILE * out, topo_info_t *topo_ptr,
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_powercap_info_msg
  */
-extern int slurm_load_powercap PARAMS(
-	(powercap_info_msg_t **powercap_info_msg_pptr));
+extern int slurm_load_powercap(powercap_info_msg_t **powercap_info_msg_pptr);
 
 /*
  * slurm_free_powercap_info_msg - free the powercapping information
@@ -4144,7 +4119,7 @@ extern int slurm_load_powercap PARAMS(
  * IN msg - pointer to powercapping information response message
  * NOTE: buffer is loaded by slurm_load_powercap.
  */
-extern void slurm_free_powercap_info_msg PARAMS((powercap_info_msg_t *msg));
+extern void slurm_free_powercap_info_msg(powercap_info_msg_t *msg);
 
 /*
  * slurm_print_powercap_info_msg - output information about powercapping
@@ -4153,16 +4128,16 @@ extern void slurm_free_powercap_info_msg PARAMS((powercap_info_msg_t *msg));
  * IN powercap_info_msg_ptr - powercapping information message pointer
  * IN one_liner - print as a single line if not zero
  */
-extern void slurm_print_powercap_info_msg PARAMS(
-	(FILE * out, powercap_info_msg_t *powercap_info_msg_ptr,
-	 int one_liner));
+extern void slurm_print_powercap_info_msg(FILE *out,
+					  powercap_info_msg_t *powercap_info_msg_ptr,
+					  int one_liner);
 
 /*
  * slurm_update_powercap - issue RPC to update powercapping cap 
  * IN powercap_msg - description of powercapping updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_powercap PARAMS((update_powercap_msg_t * powercap_msg));
+extern int slurm_update_powercap(update_powercap_msg_t *powercap_msg);
 
 /*****************************************************************************\
  *	SLURM SELECT READ/PRINT/UPDATE FUNCTIONS
@@ -4175,9 +4150,9 @@ extern int slurm_update_powercap PARAMS((update_powercap_msg_t * powercap_msg));
  * IN/OUT data - the data to enter into job credential
  * RET 0 or -1 on error
  */
-extern int slurm_get_select_jobinfo PARAMS(
-	(dynamic_plugin_data_t *jobinfo, enum select_jobdata_type data_type,
-	 void *data));
+extern int slurm_get_select_jobinfo(dynamic_plugin_data_t *jobinfo,
+				    enum select_jobdata_type data_type,
+				    void *data);
 
 /*
  * slurm_get_select_nodeinfo - get data from a select node credential
@@ -4187,9 +4162,10 @@ extern int slurm_get_select_jobinfo PARAMS(
  * IN/OUT data  - the data to enter into node credential
  * RET 0 or -1 on error
  */
-extern int slurm_get_select_nodeinfo PARAMS(
-	(dynamic_plugin_data_t *nodeinfo, enum select_nodedata_type data_type,
-	 enum node_states state, void *data));
+extern int slurm_get_select_nodeinfo(dynamic_plugin_data_t *nodeinfo,
+				     enum select_nodedata_type data_type,
+				     enum node_states state,
+				     void *data);
 
 /*****************************************************************************\
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -4200,8 +4176,7 @@ extern int slurm_get_select_nodeinfo PARAMS(
  *	default values
  * IN/OUT update_part_msg - user defined partition descriptor
  */
-extern void slurm_init_part_desc_msg PARAMS(
-	(update_part_msg_t * update_part_msg));
+extern void slurm_init_part_desc_msg(update_part_msg_t *update_part_msg);
 
 /*
  * slurm_load_partitions - issue RPC to get slurm all partition configuration
@@ -4213,9 +4188,9 @@ extern void slurm_init_part_desc_msg PARAMS(
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
-extern int slurm_load_partitions PARAMS(
-	(time_t update_time, partition_info_msg_t **part_buffer_ptr,
-	 uint16_t show_flags));
+extern int slurm_load_partitions(time_t update_time,
+				 partition_info_msg_t **part_buffer_ptr,
+				 uint16_t show_flags);
 
 /*
  * slurm_free_partition_info_msg - free the partition information
@@ -4223,8 +4198,7 @@ extern int slurm_load_partitions PARAMS(
  * IN msg - pointer to partition information response message
  * NOTE: buffer is loaded by slurm_load_partitions
  */
-extern void slurm_free_partition_info_msg PARAMS(
-	(partition_info_msg_t * part_info_ptr));
+extern void slurm_free_partition_info_msg(partition_info_msg_t *part_info_ptr);
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm
@@ -4233,8 +4207,7 @@ extern void slurm_free_partition_info_msg PARAMS(
  * IN part_info_ptr - partitions information message pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_partition_info_msg PARAMS(
-	(FILE * out, partition_info_msg_t * part_info_ptr, int one_liner));
+extern void slurm_print_partition_info_msg(FILE *out, partition_info_msg_t *part_info_ptr, int one_liner);
 
 /*
  * slurm_print_partition_info - output information about a specific Slurm
@@ -4243,8 +4216,9 @@ extern void slurm_print_partition_info_msg PARAMS(
  * IN part_ptr - an individual partition information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_partition_info PARAMS(
-	(FILE *out , partition_info_t * part_ptr, int one_liner));
+extern void slurm_print_partition_info(FILE *out,
+				       partition_info_t *part_ptr,
+				       int one_liner);
 
 /*
  * slurm_sprint_partition_info - output information about a specific Slurm
@@ -4254,15 +4228,15 @@ extern void slurm_print_partition_info PARAMS(
  * RET out - char * with formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_partition_info PARAMS(
-	(partition_info_t * part_ptr, int one_liner));
+extern char *slurm_sprint_partition_info(partition_info_t *part_ptr,
+					 int one_liner);
 
 /*
  * slurm_create_partition - create a new partition, only usable by user root
  * IN part_msg - description of partition configuration
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_create_partition PARAMS((update_part_msg_t * part_msg));
+extern int slurm_create_partition(update_part_msg_t *part_msg);
 
 /*
  * slurm_update_partition - issue RPC to update a partition's configuration
@@ -4270,7 +4244,7 @@ extern int slurm_create_partition PARAMS((update_part_msg_t * part_msg));
  * IN part_msg - description of partition updates
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_partition PARAMS((update_part_msg_t * part_msg));
+extern int slurm_update_partition(update_part_msg_t *part_msg);
 
 /*
  * slurm_delete_partition - issue RPC to delete a partition, only usable
@@ -4278,22 +4252,24 @@ extern int slurm_update_partition PARAMS((update_part_msg_t * part_msg));
  * IN part_msg - description of partition to delete
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_delete_partition PARAMS((delete_part_msg_t * part_msg));
+extern int slurm_delete_partition(delete_part_msg_t *part_msg);
 
 /*****************************************************************************\
  *      SLURM LAYOUT PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
-extern void slurm_print_layout_info PARAMS(
-	(FILE* out, layout_info_msg_t *layout_info_ptr, int one_liner ));
+extern void slurm_print_layout_info(FILE* out,
+				    layout_info_msg_t *layout_info_ptr,
+				    int one_liner );
 
-extern int slurm_load_layout PARAMS(
-	(char *layout_type, char *entities, char *type,
-	 uint32_t no_relation, layout_info_msg_t **resp));
+extern int slurm_load_layout(char *layout_type,
+			     char *entities,
+			     char *type,
+			     uint32_t no_relation,
+			     layout_info_msg_t **resp);
 
-extern int slurm_update_layout PARAMS((update_layout_msg_t * layout_info_msg));
+extern int slurm_update_layout(update_layout_msg_t *layout_info_msg);
 
-extern void slurm_free_layout_info_msg PARAMS(
-	(layout_info_msg_t * layout_info_msg));
+extern void slurm_free_layout_info_msg(layout_info_msg_t *layout_info_msg);
 
 /*****************************************************************************\
  *	SLURM RESERVATION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -4304,16 +4280,14 @@ extern void slurm_free_layout_info_msg PARAMS(
  *	default values
  * OUT job_desc_msg - user defined partition descriptor
  */
-extern void slurm_init_resv_desc_msg PARAMS(
-	(resv_desc_msg_t * update_resv_msg));
+extern void slurm_init_resv_desc_msg(resv_desc_msg_t *update_resv_msg);
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
  * RET name of reservation on success (caller must free the memory),
  *	otherwise return NULL and set errno to indicate the error
  */
-extern char * slurm_create_reservation PARAMS(
-	(resv_desc_msg_t * resv_msg));
+extern char *slurm_create_reservation(resv_desc_msg_t *resv_msg);
 
 /*
  * slurm_update_reservation - modify an existing reservation, only usable by
@@ -4321,7 +4295,7 @@ extern char * slurm_create_reservation PARAMS(
  * IN resv_msg - description of reservation
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_reservation PARAMS((resv_desc_msg_t * resv_msg));
+extern int slurm_update_reservation(resv_desc_msg_t *resv_msg);
 
 /*
  * slurm_delete_reservation - issue RPC to delete a reservation, only usable
@@ -4329,8 +4303,7 @@ extern int slurm_update_reservation PARAMS((resv_desc_msg_t * resv_msg));
  * IN resv_msg - description of reservation to delete
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_delete_reservation PARAMS(
-	(reservation_name_msg_t * resv_msg));
+extern int slurm_delete_reservation(reservation_name_msg_t *resv_msg);
 
 /*
  * slurm_load_reservations - issue RPC to get all slurm reservation
@@ -4341,8 +4314,8 @@ extern int slurm_delete_reservation PARAMS(
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_reservation_info_msg
  */
-extern int slurm_load_reservations PARAMS((time_t update_time,
-					   reserve_info_msg_t **resp));
+extern int slurm_load_reservations(time_t update_time,
+				   reserve_info_msg_t **resp);
 
 /*
  * slurm_print_reservation_info_msg - output information about all Slurm
@@ -4351,9 +4324,9 @@ extern int slurm_load_reservations PARAMS((time_t update_time,
  * IN resv_info_ptr - reservation information message pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_reservation_info_msg PARAMS((FILE* out,
-					      reserve_info_msg_t *resv_info_ptr,
-					      int one_liner));
+void slurm_print_reservation_info_msg(FILE* out,
+				      reserve_info_msg_t *resv_info_ptr,
+				      int one_liner);
 
 /*
  * slurm_print_reservation_info - output information about a specific Slurm
@@ -4362,9 +4335,9 @@ void slurm_print_reservation_info_msg PARAMS((FILE* out,
  * IN resv_ptr - an individual reservation information record pointer
  * IN one_liner - print as a single line if true
  */
-void slurm_print_reservation_info PARAMS((FILE* out,
-					  reserve_info_t * resv_ptr,
-					  int one_liner));
+void slurm_print_reservation_info(FILE* out,
+				  reserve_info_t *resv_ptr,
+				  int one_liner);
 
 /*
  * slurm_sprint_reservation_info - output information about a specific Slurm
@@ -4374,8 +4347,7 @@ void slurm_print_reservation_info PARAMS((FILE* out,
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-char *slurm_sprint_reservation_info PARAMS((reserve_info_t * resv_ptr,
-					    int one_liner));
+char *slurm_sprint_reservation_info(reserve_info_t *resv_ptr, int one_liner);
 
 /*
  * slurm_free_reservation_info_msg - free the reservation information
@@ -4383,8 +4355,7 @@ char *slurm_sprint_reservation_info PARAMS((reserve_info_t * resv_ptr,
  * IN msg - pointer to reservation information response message
  * NOTE: buffer is loaded by slurm_load_reservation
  */
-extern void slurm_free_reservation_info_msg PARAMS(
-	(reserve_info_msg_t * resv_info_ptr));
+extern void slurm_free_reservation_info_msg(reserve_info_msg_t *resv_info_ptr);
 
 /*****************************************************************************\
  *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS
@@ -4395,14 +4366,14 @@ extern void slurm_free_reservation_info_msg PARAMS(
  * IN controller - 1==primary controller, 2==secondary controller
  * RET 0 or a slurm error code
  */
-extern int slurm_ping PARAMS((int primary));
+extern int slurm_ping(int primary);
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
  *	reload its configuration file
  * RET 0 or a slurm error code
  */
-extern int slurm_reconfigure PARAMS((void));
+extern int slurm_reconfigure(void);
 
 /*
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
@@ -4413,7 +4384,7 @@ extern int slurm_reconfigure PARAMS((void));
  *              2: only the slurmctld is shutdown (no core file)
  * RET 0 or a slurm error code
  */
-extern int slurm_shutdown PARAMS((uint16_t options));
+extern int slurm_shutdown(uint16_t options);
 
 /*
  * slurm_takeover - issue RPC to have Slurm backup controller (slurmctld)
@@ -4421,7 +4392,7 @@ extern int slurm_shutdown PARAMS((uint16_t options));
  *
  * RET 0 or a slurm error code
  */
-extern int slurm_takeover PARAMS((void));
+extern int slurm_takeover(void);
 
 /*
  * slurm_set_debugflags - issue RPC to set slurm controller debug flags
@@ -4429,22 +4400,22 @@ extern int slurm_takeover PARAMS((void));
  * IN debug_flags_minus - debug flags to be removed
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_set_debugflags PARAMS((uint64_t debug_flags_plus,
-					uint64_t debug_flags_minus));
+extern int slurm_set_debugflags(uint64_t debug_flags_plus,
+				uint64_t debug_flags_minus);
 
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_set_debug_level PARAMS((uint32_t debug_level));
+extern int slurm_set_debug_level(uint32_t debug_level);
 
 /*
  * slurm_set_schedlog_level - issue RPC to set slurm scheduler log level
  * IN schedlog_level - requested scheduler log level
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_set_schedlog_level PARAMS((uint32_t schedlog_level));
+extern int slurm_set_schedlog_level(uint32_t schedlog_level);
 
 /*****************************************************************************\
  *      SLURM JOB SUSPEND FUNCTIONS
@@ -4455,7 +4426,7 @@ extern int slurm_set_schedlog_level PARAMS((uint32_t schedlog_level));
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend PARAMS((uint32_t job_id));
+extern int slurm_suspend(uint32_t job_id);
 
 /*
  * slurm_suspend2 - suspend execution of a job.
@@ -4465,14 +4436,14 @@ extern int slurm_suspend PARAMS((uint32_t job_id));
  *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend2 PARAMS((char *job_id, job_array_resp_msg_t **resp));
+extern int slurm_suspend2(char *job_id, job_array_resp_msg_t **resp);
 
 /*
  * slurm_resume - resume execution of a previously suspended job.
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_resume PARAMS((uint32_t job_id));
+extern int slurm_resume(uint32_t job_id);
 
 /*
  * slurm_resume2 - resume execution of a previously suspended job.
@@ -4482,10 +4453,10 @@ extern int slurm_resume PARAMS((uint32_t job_id));
  *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code
  */
-extern int slurm_resume2 PARAMS((char *job_id, job_array_resp_msg_t **resp));
+extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp);
 
 /* Free job array oriented response with individual return codes by task ID */
-extern void slurm_free_job_array_resp PARAMS((job_array_resp_msg_t *resp));
+extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
 
 /*
  * slurm_requeue - re-queue a batch job, if already running
@@ -4500,7 +4471,7 @@ extern void slurm_free_job_array_resp PARAMS((job_array_resp_msg_t *resp));
  *            JOB_PENDING and held state.
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue PARAMS((uint32_t job_id, uint32_t state));
+extern int slurm_requeue(uint32_t job_id, uint32_t state);
 
 /*
  * slurm_requeue2 - re-queue a batch job, if already running
@@ -4518,8 +4489,9 @@ extern int slurm_requeue PARAMS((uint32_t job_id, uint32_t state));
  *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue2 PARAMS((char *job_id, uint32_t state,
-				  job_array_resp_msg_t **resp));
+extern int slurm_requeue2(char *job_id,
+			  uint32_t state,
+			  job_array_resp_msg_t **resp);
 
 /*****************************************************************************\
  *      SLURM JOB CHECKPOINT FUNCTIONS
@@ -4533,8 +4505,9 @@ extern int slurm_requeue2 PARAMS((char *job_id, uint32_t state,
  * OUT start_time - time at which checkpoint request was issued
  * RET 0 (can be checkpoined) or a slurm error code
  */
-extern int slurm_checkpoint_able PARAMS((uint32_t job_id, uint32_t step_id,
-					 time_t *start_time));
+extern int slurm_checkpoint_able(uint32_t job_id,
+				 uint32_t step_id,
+				 time_t *start_time);
 
 /*
  * slurm_checkpoint_disable - disable checkpoint requests for some job step
@@ -4542,8 +4515,7 @@ extern int slurm_checkpoint_able PARAMS((uint32_t job_id, uint32_t step_id,
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_disable PARAMS((uint32_t job_id,
-					    uint32_t step_id));
+extern int slurm_checkpoint_disable(uint32_t job_id, uint32_t step_id);
 
 
 /*
@@ -4552,8 +4524,7 @@ extern int slurm_checkpoint_disable PARAMS((uint32_t job_id,
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_enable PARAMS((uint32_t job_id,
-					   uint32_t step_id));
+extern int slurm_checkpoint_enable(uint32_t job_id, uint32_t step_id);
 
 /*
  * slurm_checkpoint_create - initiate a checkpoint requests for some job step.
@@ -4564,10 +4535,10 @@ extern int slurm_checkpoint_enable PARAMS((uint32_t job_id,
  * IN image_dir - directory to store image files
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_create PARAMS((uint32_t job_id,
-					   uint32_t step_id,
-					   uint16_t max_wait,
-					   char *image_dir));
+extern int slurm_checkpoint_create(uint32_t job_id,
+				   uint32_t step_id,
+				   uint16_t max_wait,
+				   char *image_dir);
 
 /*
  * slurm_checkpoint_requeue - initiate a checkpoint requests for some job.
@@ -4577,8 +4548,9 @@ extern int slurm_checkpoint_create PARAMS((uint32_t job_id,
  * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_requeue PARAMS((uint32_t job_id, uint16_t max_wait,
-					    char *image_dir));
+extern int slurm_checkpoint_requeue(uint32_t job_id,
+				    uint16_t max_wait,
+				    char *image_dir);
 
 /*
  * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
@@ -4589,10 +4561,10 @@ extern int slurm_checkpoint_requeue PARAMS((uint32_t job_id, uint16_t max_wait,
  * IN image_dir - directory to store image files
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_vacate PARAMS((uint32_t job_id,
-					   uint32_t step_id,
-					   uint16_t max_wait,
-					   char *image_dir));
+extern int slurm_checkpoint_vacate(uint32_t job_id,
+				   uint32_t step_id,
+				   uint16_t max_wait,
+				   char *image_dir);
 
 /*
  * slurm_checkpoint_restart - restart execution of a checkpointed job step.
@@ -4602,10 +4574,10 @@ extern int slurm_checkpoint_vacate PARAMS((uint32_t job_id,
  * IN image_dir - directory to find checkpoint image files
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_restart PARAMS((uint32_t job_id,
-					    uint32_t step_id,
-					    uint16_t stick,
-					    char *image_dir));
+extern int slurm_checkpoint_restart(uint32_t job_id,
+				    uint32_t step_id,
+				    uint16_t stick,
+				    char *image_dir);
 
 /*
  * slurm_checkpoint_complete - note the completion of a job step's checkpoint
@@ -4617,11 +4589,11 @@ extern int slurm_checkpoint_restart PARAMS((uint32_t job_id,
  * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_complete PARAMS((uint32_t job_id,
-					     uint32_t step_id,
-					     time_t begin_time,
-					     uint32_t error_code,
-					     char *error_msg));
+extern int slurm_checkpoint_complete(uint32_t job_id,
+				     uint32_t step_id,
+				     time_t begin_time,
+				     uint32_t error_code,
+				     char *error_msg);
 
 /*
  * slurm_checkpoint_task_complete - note the completion of a task's checkpoint
@@ -4634,12 +4606,12 @@ extern int slurm_checkpoint_complete PARAMS((uint32_t job_id,
  * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_task_complete PARAMS((uint32_t job_id,
-						  uint32_t step_id,
-						  uint32_t task_id,
-						  time_t begin_time,
-						  uint32_t error_code,
-						  char *error_msg));
+extern int slurm_checkpoint_task_complete(uint32_t job_id,
+					  uint32_t step_id,
+					  uint32_t task_id,
+					  time_t begin_time,
+					  uint32_t error_code,
+					  char *error_msg);
 
 /*
  * slurm_checkpoint_error - gather error information for the last checkpoint
@@ -4654,9 +4626,10 @@ extern int slurm_checkpoint_task_complete PARAMS((uint32_t job_id,
  *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_error PARAMS((uint32_t job_id, uint32_t step_id,
-					  uint32_t *error_code,
-					  char **error_msg));
+extern int slurm_checkpoint_error(uint32_t job_id,
+				  uint32_t step_id,
+				  uint32_t *error_code,
+				  char **error_msg);
 
 /*
  * slurm_checkpoint_tasks - send checkpoint request to tasks of
@@ -4668,9 +4641,12 @@ extern int slurm_checkpoint_error PARAMS((uint32_t job_id, uint32_t step_id,
  * IN nodelist: nodes to send the request
  * RET: 0 on success, non-zero on failure with errno set
  */
-extern int slurm_checkpoint_tasks PARAMS((uint32_t job_id, uint16_t step_id,
-					  time_t begin_time, char *image_dir,
-					  uint16_t max_wait, char *nodelist));
+extern int slurm_checkpoint_tasks(uint32_t job_id,
+				  uint16_t step_id,
+				  time_t begin_time,
+				  char *image_dir,
+				  uint16_t max_wait,
+				  char *nodelist);
 
 /*****************************************************************************\
  *      SLURM TRIGGER FUNCTIONS
@@ -4680,38 +4656,38 @@ extern int slurm_checkpoint_tasks PARAMS((uint32_t job_id, uint16_t step_id,
  * slurm_set_trigger - Set an event trigger
  * RET 0 or a slurm error code
  */
-extern int slurm_set_trigger PARAMS((trigger_info_t * trigger_set));
+extern int slurm_set_trigger(trigger_info_t *trigger_set);
 
 /*
  * slurm_clear_trigger - Clear (remove) an existing event trigger
  * RET 0 or a slurm error code
  */
-extern int slurm_clear_trigger PARAMS((trigger_info_t * trigger_clear));
+extern int slurm_clear_trigger(trigger_info_t *trigger_clear);
 
 /*
  * slurm_get_triggers - Get all event trigger information
  * Use slurm_free_trigger_msg() to free the memory allocated by this function
  * RET 0 or a slurm error code
  */
-extern int slurm_get_triggers PARAMS((trigger_info_msg_t ** trigger_get));
+extern int slurm_get_triggers(trigger_info_msg_t **trigger_get);
 
 /*
  * slurm_pull_trigger - Pull an event trigger
  * RET 0 or a slurm error code
  */
-extern int slurm_pull_trigger PARAMS((trigger_info_t * trigger_pull));
+extern int slurm_pull_trigger(trigger_info_t *trigger_pull);
 
 /*
  * slurm_free_trigger_msg - Free data structure returned by
  * slurm_get_triggers()
  */
-extern void slurm_free_trigger_msg PARAMS((trigger_info_msg_t * trigger_free));
+extern void slurm_free_trigger_msg(trigger_info_msg_t *trigger_free);
 
 /*
  * slurm_init_trigger_msg - initialize trigger clear/update message
  * OUT trigger_info_msg - user defined trigger descriptor
  */
-void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
+void slurm_init_trigger_msg(trigger_info_t *trigger_info_msg);
 
 /*****************************************************************************\
  *      SLURM BURST BUFFER FUNCTIONS
@@ -4820,8 +4796,7 @@ extern char *slurm_burst_buffer_state_string(uint16_t state);
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_burst_buffer_info_msg
  */
-extern int slurm_load_burst_buffer_info PARAMS(
-		(burst_buffer_info_msg_t **burst_buffer_info_msg_pptr));
+extern int slurm_load_burst_buffer_info(burst_buffer_info_msg_t **burst_buffer_info_msg_pptr);
 
 /*
  * slurm_free_burst_buffer_info_msg - free buffer returned by
@@ -4829,8 +4804,7 @@ extern int slurm_load_burst_buffer_info PARAMS(
  * IN burst_buffer_info_msg_ptr - pointer to burst_buffer_info_msg_t
  * RET 0 or a slurm error code
  */
-extern void slurm_free_burst_buffer_info_msg PARAMS(
-		(burst_buffer_info_msg_t *burst_buffer_info_msg));
+extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *burst_buffer_info_msg);
 
 /*
  * slurm_print_burst_buffer_info_msg - output information about burst buffers
@@ -4840,9 +4814,10 @@ extern void slurm_free_burst_buffer_info_msg PARAMS(
  * IN one_liner - print as a single line if true
  * IN verbose - higher values to log additional details
  */
-extern void slurm_print_burst_buffer_info_msg PARAMS(
-		(FILE *out, burst_buffer_info_msg_t *info_ptr, int one_liner,
-		 int verbosity));
+extern void slurm_print_burst_buffer_info_msg(FILE *out,
+					      burst_buffer_info_msg_t *info_ptr,
+					      int one_liner,
+					      int verbosity);
 
 /*
  * slurm_print_burst_buffer_record - output information about a specific Slurm
@@ -4855,9 +4830,10 @@ extern void slurm_print_burst_buffer_info_msg PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *	   NULL is returned on failure.
  */
-extern void slurm_print_burst_buffer_record PARAMS(
-			(FILE *out, burst_buffer_info_t *burst_buffer_ptr,
-			 int one_liner, int verbose));
+extern void slurm_print_burst_buffer_record(FILE *out,
+					    burst_buffer_info_t *burst_buffer_ptr,
+			 		    int one_liner,
+					    int verbose);
 
 /*
  * slurm_network_callerid - issue RPC to get the job id of a job from a remote
@@ -4869,16 +4845,17 @@ extern void slurm_print_burst_buffer_record PARAMS(
  * IN node_name_size - size of the node_name buffer
  * RET SLURM_PROTOCOL_SUCCESS or SLURM_FAILURE on error
  */
-extern int slurm_network_callerid PARAMS(
-		(network_callerid_msg_t req, uint32_t *job_id,
-		char *node_name, int node_name_size));
+extern int slurm_network_callerid(network_callerid_msg_t req,
+				  uint32_t *job_id,
+				  char *node_name,
+				  int node_name_size);
 
 /*
  * Move the specified job ID to the top of the queue for a given user ID,
  *	partition, account, and QOS.
  * IN job_id_str - a job id
  * RET 0 or -1 on error */
-extern int slurm_top_job PARAMS((char *job_id_str));
+extern int slurm_top_job(char *job_id_str);
 
 END_C_DECLS
 

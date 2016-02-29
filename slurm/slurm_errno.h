@@ -53,18 +53,6 @@
 # define END_C_DECLS	/* empty */
 #endif
 
-/* PARAMS is a macro used to wrap function prototypes, so that compilers
-   that don't understand ANSI C prototypes still work, and ANSI C
-   compilers can issue warnings about type mismatches.  */
-#undef PARAMS
-#if defined (__STDC__) || defined (_AIX) \
-	|| (defined (__mips) && defined (_SYSTYPE_SVR4)) \
-	|| defined(WIN32) || defined(__cplusplus)
-# define PARAMS(protos)	protos
-#else
-# define PARAMS(protos)	()
-#endif
-
 BEGIN_C_DECLS
 
 #include <errno.h>
@@ -286,16 +274,16 @@ enum {
 };
 
 /* look up an errno value */
-char * slurm_strerror PARAMS((int errnum));
+char * slurm_strerror(int errnum);
 
 /* set an errno value */
-void slurm_seterrno PARAMS((int errnum));
+void slurm_seterrno(int errnum);
 
 /* get an errno value */
-int slurm_get_errno PARAMS((void));
+int slurm_get_errno(void);
 
 /* print message: error string for current errno value */
-void slurm_perror PARAMS((char *msg));
+void slurm_perror(char *msg);
 
 END_C_DECLS
 
