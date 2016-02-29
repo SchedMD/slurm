@@ -2027,6 +2027,7 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr,
 	launch_msg_ptr->cpus_per_task = job_ptr->details->cpus_per_task;
 	launch_msg_ptr->pn_min_memory = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->restart_cnt   = job_ptr->restart_cnt;
+	launch_msg_ptr->profile       = job_ptr->profile;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr, protocol_version)) {
 		/* FIXME: This is a kludge, but this event indicates a serious

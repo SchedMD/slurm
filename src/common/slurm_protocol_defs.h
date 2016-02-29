@@ -973,6 +973,7 @@ typedef struct batch_job_launch_msg {
 	uint16_t job_core_spec;	/* Count of specialized cores */
 	char *alias_list;	/* node name/address/hostnamne aliases */
 	char *nodes;		/* list of nodes allocated to job_step */
+	uint32_t profile;       /* what to profile for the batch step */
 	char *script;		/* the actual job script, default NONE */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */

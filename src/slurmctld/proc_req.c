@@ -4675,6 +4675,7 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->partition = xstrdup(job_ptr->partition);
+
 	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
 	if (job_ptr->details) {
 		launch_msg_ptr->pn_min_memory = job_ptr->details->
@@ -4734,6 +4735,11 @@ static int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
 		job_ptr->select_jobinfo);
+
+	if (job_desc_msg->profile != ACCT_GATHER_PROFILE_NOT_SET)
+		launch_msg_ptr->profile = job_desc_msg->profile;
+	else
+		launch_msg_ptr->profile = job_ptr->profile;
 
 	/* FIXME: for some reason these CPU arrays total all the CPUs
 	 * actually allocated, rather than totaling up to the requested
