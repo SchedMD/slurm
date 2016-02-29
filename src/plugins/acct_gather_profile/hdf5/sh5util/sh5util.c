@@ -6,7 +6,7 @@
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
- *  Copyright (C) 2013 SchedMD LLC
+ *  Copyright (C) 2013-2016 SchedMD LLC
  *
  *  Initially written by Rod Schultz <rod.schultz@bull.com> @ Bull
  *  and Danny Auble <da@schedmd.com> @ SchedMD.
@@ -142,42 +142,40 @@ static bool _has_batch_step(char *, char *);
 
 static void _help_msg(void)
 {
-	printf("\
-Usage sh5util [<OPTION>] -j <job[.stepid]>\n"
-"\n"
-"Valid <OPTION> values are:\n"
-" -L, --list           Print the items of a series contained in a job file.\n"
-"     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
-"     -s, --series     Name of series:\n"
-"                      Energy | Lustre | Network | Tasks\n"
-" -E, --extract        Extract data series from job file.\n"
-"     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
-"     -N, --node       Node name to extract (default is all)\n"
-"     -l, --level      Level to which series is attached\n"
-"                      [Node:Totals|Node:TimeSeries] (default Node:Totals)\n"
-"     -s, --series     Name of series:\n"
-"                      Energy | Lustre | Network | Tasks | Task_#\n"
-"                      'Tasks' is all tasks, Task_# is task_id (default is all)\n"
-" -I, --item-extract   Extract data item from one series from \n"
-"                      all samples on all nodes from thejob file.\n"
-"     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
-"     -s, --series     Name of series:\n"
-"                      Energy | Lustre | Network | Task\n"
-"     -d, --data       Name of data item in series (see man page) \n"
-" -j, --jobs           Format is <job(.step)>. Merge this job/step.\n"
-"                      or comma-separated list of job steps. This option is\n"
-"                      required.  Not specifying a step will result in all\n"
-"                      steps found to be processed.\n"
-" -h, --help           Print this description of use.\n"
-" -o, --output         Path to a file into which to write.\n"
-"                      Default for merge is ./job_$jobid.h5\n"
-"                      Default for extract is ./extract_$jobid.csv\n"
-" -p, --profiledir     Profile directory location where node-step files exist\n"
-"		               default is what is set in acct_gather.conf\n"
-" -S, --savefiles      Don't remove node-step files after merging them \n"
-" --user               User who profiled job. (Handy for root user, defaults to \n"
-"		               user running this command.)\n"
-" --usage              Display brief usage message\n");
+	printf("Usage sh5util [<OPTION>] -j <job[.stepid]>\n\n"
+	       "Valid <OPTION> values are:\n"
+	       " -L, --list           Print the items of a series contained in a job file.\n"
+	       "     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
+	       "     -s, --series     Name of series:\n"
+	       "                      Energy | Lustre | Network | Tasks\n"
+	       " -E, --extract        Extract data series from job file.\n"
+	       "     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
+	       "     -N, --node       Node name to extract (default is all)\n"
+	       "     -l, --level      Level to which series is attached\n"
+	       "                      [Node:Totals|Node:TimeSeries] (default Node:Totals)\n"
+	       "     -s, --series     Name of series:\n"
+	       "                      Energy | Lustre | Network | Tasks | Task_#\n"
+	       "                      'Tasks' is all tasks, Task_# is task_id (default is all)\n"
+	       " -I, --item-extract   Extract data item from one series from \n"
+	       "                      all samples on all nodes from thejob file.\n"
+	       "     -i, --input      merged file to extract from (default ./job_$jobid.h5)\n"
+	       "     -s, --series     Name of series:\n"
+	       "                      Energy | Lustre | Network | Task\n"
+	       "     -d, --data       Name of data item in series (see man page) \n"
+	       " -j, --jobs           Format is <job(.step)>. Merge this job/step.\n"
+	       "                      or comma-separated list of job steps. This option is\n"
+	       "                      required.  Not specifying a step will result in all\n"
+	       "                      steps found to be processed.\n"
+	       " -h, --help           Print this description of use.\n"
+	       " -o, --output         Path to a file into which to write.\n"
+	       "                      Default for merge is ./job_$jobid.h5\n"
+	       "                      Default for extract is ./extract_$jobid.csv\n"
+	       " -p, --profiledir     Profile directory location where node-step files exist\n"
+	       "		               default is what is set in acct_gather.conf\n"
+	       " -S, --savefiles      Don't remove node-step files after merging them \n"
+	       " --user               User who profiled job. (Handy for root user, defaults to \n"
+	       "		               user running this command.)\n"
+	       " --usage              Display brief usage message\n");
 }
 
 
@@ -196,29 +194,29 @@ main(int argc, char **argv)
 		goto ouch;
 
 	switch (params.mode) {
-		case SH5UTIL_MODE_MERGE:
-			info("Merging node-step files into %s",
-			     params.output);
-			cc = _merge_step_files();
-			break;
-		case SH5UTIL_MODE_EXTRACT:
-			info("Extracting job data from %s into %s",
-			     params.input, params.output);
-			cc = _extract_series();
-			break;
-		case SH5UTIL_MODE_ITEM_EXTRACT:
-			info("Extracting '%s' from '%s' data from %s into %s",
-			     params.data_item, params.series,
-			     params.input, params.output);
-			cc = _extract_item();
-			break;
-		case SH5UTIL_MODE_ITEM_LIST:
-			info("Listing items from %s", params.input);
-			cc = _list_items();
-			break;
-		default:
-			error("Unknown type %d", params.mode);
-			break;
+	case SH5UTIL_MODE_MERGE:
+		info("Merging node-step files into %s",
+		     params.output);
+		cc = _merge_step_files();
+		break;
+	case SH5UTIL_MODE_EXTRACT:
+		info("Extracting job data from %s into %s",
+		     params.input, params.output);
+		cc = _extract_series();
+		break;
+	case SH5UTIL_MODE_ITEM_EXTRACT:
+		info("Extracting '%s' from '%s' data from %s into %s",
+		     params.data_item, params.series,
+		     params.input, params.output);
+		cc = _extract_item();
+		break;
+	case SH5UTIL_MODE_ITEM_LIST:
+		info("Listing items from %s", params.input);
+		cc = _list_items();
+		break;
+	default:
+		error("Unknown type %d", params.mode);
+		break;
 	}
 
 	if (cc == SLURM_PROTOCOL_VERSION_ERROR)
@@ -335,82 +333,82 @@ static int _set_options(const int argc, char **argv)
 	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:LN:o:p:s:Su:UvV",
 	                         long_options, &option_index)) != EOF) {
 		switch (cc) {
-			case 'd':
-				params.data_item = xstrdup(optarg);
-				/* params.data_item =
-				   xstrtolower(params.data_item); */
-				break;
-			case 'E':
-				params.mode = SH5UTIL_MODE_EXTRACT;
-				break;
-			case 'I':
-				params.mode = SH5UTIL_MODE_ITEM_EXTRACT;
-				break;
-			case 'L':
-				params.mode = SH5UTIL_MODE_ITEM_LIST;
-				break;
-			case 'h':
-				_help_msg();
+		case 'd':
+			params.data_item = xstrdup(optarg);
+			/* params.data_item =
+			   xstrtolower(params.data_item); */
+			break;
+		case 'E':
+			params.mode = SH5UTIL_MODE_EXTRACT;
+			break;
+		case 'I':
+			params.mode = SH5UTIL_MODE_ITEM_EXTRACT;
+			break;
+		case 'L':
+			params.mode = SH5UTIL_MODE_ITEM_LIST;
+			break;
+		case 'h':
+			_help_msg();
+			return -1;
+			break;
+		case 'i':
+			params.input = xstrdup(optarg);
+			break;
+		case 'j':
+			params.job_id = strtol(optarg, &next_str, 10);
+			if (next_str[0] == '.')
+				params.step_id =
+					strtol(next_str + 1, NULL, 10);
+			break;
+		case 'l':
+			params.level = xstrdup(optarg);
+			break;
+		case 'N':
+			params.node = xstrdup(optarg);
+			break;
+		case 'o':
+			params.output = xstrdup(optarg);
+			break;
+		case 'p':
+			params.dir = xstrdup(optarg);
+			break;
+		case 's':
+			if (xstrcmp(optarg, GRP_ENERGY)
+			    && xstrcmp(optarg, GRP_LUSTRE)
+			    && xstrcmp(optarg, GRP_NETWORK)
+			    && xstrncmp(optarg,GRP_TASK,
+					strlen(GRP_TASK))) {
+				error("Bad value for --series=\"%s\"",
+				      optarg);
 				return -1;
-				break;
-			case 'i':
-				params.input = xstrdup(optarg);
-				break;
-			case 'j':
-				params.job_id = strtol(optarg, &next_str, 10);
-				if (next_str[0] == '.')
-					params.step_id =
-						strtol(next_str + 1, NULL, 10);
-				break;
-			case 'l':
-				params.level = xstrdup(optarg);
-				break;
-			case 'N':
-				params.node = xstrdup(optarg);
-				break;
-			case 'o':
-				params.output = xstrdup(optarg);
-				break;
-			case 'p':
-				params.dir = xstrdup(optarg);
-				break;
-			case 's':
-				if (xstrcmp(optarg, GRP_ENERGY)
-				    && xstrcmp(optarg, GRP_LUSTRE)
-				    && xstrcmp(optarg, GRP_NETWORK)
-				    && xstrncmp(optarg,GRP_TASK,
-						strlen(GRP_TASK))) {
-					error("Bad value for --series=\"%s\"",
-					      optarg);
-					return -1;
-				}
-				params.series = xstrdup(optarg);
-				break;
-			case 'S':
-				params.keepfiles = 1;
-				break;
-			case 'u':
-				if (uid_from_string(optarg, &u) < 0) {
-					error("No such user --uid=\"%s\"",
-					      optarg);
-					return -1;
-				}
-				params.user = uid_to_string(u);
-				break;
-			case 'U':
-				_help_msg();
+			}
+			params.series = xstrdup(optarg);
+			break;
+		case 'S':
+			params.keepfiles = 1;
+			break;
+		case 'u':
+			if (uid_from_string(optarg, &u) < 0) {
+				error("No such user --uid=\"%s\"",
+				      optarg);
 				return -1;
-				break;
-			case 'v':
-				params.verbose++;
-				break;
-			case 'V':
-				print_slurm_version();
-				return -1;
-				break;
-			case ':':
-			case '?': /* getopt() has explained it */
-				return -1;
+			}
+			params.user = uid_to_string(u);
+			break;
+		case 'U':
+			_help_msg();
+			return -1;
+			break;
+		case 'v':
+			params.verbose++;
+			break;
+		case 'V':
+			print_slurm_version();
+			return -1;
+			break;
+		case ':':
+		case '?': /* getopt() has explained it */
+			return -1;
 		}
 	}
 
@@ -464,7 +462,8 @@ _check_params(void)
 			fatal("Must specify series option --series");
 
 		if (!params.input)
-			params.input = xstrdup_printf("./job_%d.h5", params.job_id);
+			params.input = xstrdup_printf("./job_%d.h5",
+						      params.job_id);
 
 		if (!params.output)
 			params.output = xstrdup_printf("./%s_%s_%d.csv",
@@ -560,7 +559,8 @@ static int _merge_step_files(void)
 	while (max_step == -1 || stepx <= max_step) {
 
 		if (!(dir = opendir(step_dir))) {
-			error("Cannot open %s job profile directory: %m", step_dir);
+			error("Cannot open %s job profile directory: %m",
+			      step_dir);
 			return -1;
 		}
 
@@ -609,36 +609,43 @@ static int _merge_step_files(void)
 				                    H5P_DEFAULT,
 				                    H5P_DEFAULT);
 				if (fid_job < 0) {
-					error("Failed create HDF5 file %s", params.output);
+					error("Failed create HDF5 file %s",
+					      params.output);
 					return -1;
 				}
 				found_files = true;
 
 				jgid_steps = make_group(fid_job, GRP_STEPS);
 				if (jgid_steps < 0) {
-					error("Failed to create group %s", GRP_STEPS);
+					error("Failed to create group %s",
+					      GRP_STEPS);
 					continue;
 				}
 				if (has_batch) {
 
-					sprintf(jgrp_step_name, "/%s/batch", GRP_STEPS);
-					jgid_step = make_group(fid_job, jgrp_step_name);
+					sprintf(jgrp_step_name, "/%s/batch",
+						GRP_STEPS);
+					jgid_step = make_group(
+						fid_job, jgrp_step_name);
 					if (jgid_step < 0) {
-						error("Failed to create %s", jgrp_step_name);
+						error("Failed to create %s",
+						      jgrp_step_name);
 						continue;
 					}
 
 					sprintf(jgrp_nodes_name,"%s/%s",
 						jgrp_step_name,
 						GRP_NODES);
-					jgid_nodes = make_group(jgid_step,
-								jgrp_nodes_name);
+					jgid_nodes = make_group(
+						jgid_step, jgrp_nodes_name);
 					if (jgid_nodes < 0) {
-						error("Failed to create %s", jgrp_nodes_name);
+						error("Failed to create %s",
+						      jgrp_nodes_name);
 						continue;
 					}
 
-					sprintf(step_path, "%s/%s", step_dir, batch_step);
+					sprintf(step_path, "%s/%s",
+						step_dir, batch_step);
 					rc = _merge_node_step_data(step_path,
 								   nodex,
 								   jgid_nodes,
@@ -658,7 +665,8 @@ static int _merge_step_files(void)
 
 				jgid_step = make_group(fid_job, jgrp_step_name);
 				if (jgid_step < 0) {
-					error("Failed to create %s", jgrp_step_name);
+					error("Failed to create %s",
+					      jgrp_step_name);
 					continue;
 				}
 
@@ -668,19 +676,20 @@ static int _merge_step_files(void)
 				jgid_nodes = make_group(jgid_step,
 				                        jgrp_nodes_name);
 				if (jgid_nodes < 0) {
-					error("Failed to create %s", jgrp_nodes_name);
+					error("Failed to create %s",
+					      jgrp_nodes_name);
 					continue;
 				}
 				/*
-				sprintf(jgrp_tasks_name,"%s/%s",
-				        jgrp_step_name,
-				        GRP_TASKS);
-				jgid_tasks = make_group(jgid_step,
-				                        jgrp_tasks_name);
-				if (jgid_tasks < 0) {
-					error("Failed to create %s", jgrp_tasks_name);
-					continue;
-				}
+				  sprintf(jgrp_tasks_name,"%s/%s",
+				  jgrp_step_name,
+				  GRP_TASKS);
+				  jgid_tasks = make_group(jgid_step,
+				  jgrp_tasks_name);
+				  if (jgid_tasks < 0) {
+				  error("Failed to create %s", jgrp_tasks_name);
+				  continue;
+				  }
 				*/
 			}
 
@@ -703,7 +712,7 @@ static int _merge_step_files(void)
 		 * bail out.
 		 */
 		if (stepx == 0
-			&& !found_files)
+		    && !found_files)
 			break;
 
 		stepx++;
@@ -804,7 +813,8 @@ static herr_t _collect_tables_node(hid_t g_id, const char *name,
 		err = H5Literate(object_id, H5_INDEX_NAME, H5_ITER_INC, NULL,
 		                 _collect_tables_group, op_data);
 		if (err < 0) {
-			debug("2 Failed to iterate through group %s", object_path);
+			debug("2 Failed to iterate through group %s",
+			      object_path);
 			return SLURM_PROTOCOL_VERSION_ERROR;
 		}
 	} else {
@@ -970,7 +980,7 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
  * the content of the table and then handles both timeseries and totals levels.
  */
 static int _extract_series_table(hid_t fid_job, table_t *table, List fields,
-				    FILE *output, bool level_total)
+				 FILE *output, bool level_total)
 {
 	char path[MAX_PROFILE_PATH];
 
@@ -1206,8 +1216,10 @@ error:
  * @param step_name  Name of the current step
  */
 static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
-	hsize_t *nb_records, size_t buf_size, size_t *offsets,
-	const char *names[], const char *nodes[], const char *step_name)
+				hsize_t *nb_records, size_t buf_size,
+				size_t *offsets,
+				const char *names[], const char *nodes[],
+				const char *step_name)
 {
 	size_t   i;
 	uint64_t min_val;
@@ -1305,8 +1317,10 @@ static void _item_analysis_uint(hsize_t nb_tables, hid_t *tables,
  * See _item_analysis_uint for parameters description.
  */
 static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
-	hsize_t *nb_records, size_t buf_size, size_t *offsets,
-	const char *names[], const char *nodes[], const char *step_name)
+				  hsize_t *nb_records, size_t buf_size,
+				  size_t *offsets,
+				  const char *names[], const char *nodes[],
+				  const char *step_name)
 {
 	size_t   i;
 	double   min_val;
@@ -1527,7 +1541,8 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 			if (group_mode)
 				fprintf(output_file, ",%s", t->node);
 			else
-				fprintf(output_file, ",%s %s", t->name, t->node);
+				fprintf(output_file, ",%s %s",
+					t->name, t->node);
 		}
 		fputc('\n', output_file);
 	}
@@ -1538,7 +1553,8 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 		_item_analysis_uint(nb_tables, tables_id, nb_records, buf_size,
 		                    offsets, names, nodes, step_name);
 	} else if (H5Tequal(item_type, H5T_NATIVE_DOUBLE)) {
-		_item_analysis_double(nb_tables, tables_id, nb_records, buf_size,
+		_item_analysis_double(nb_tables, tables_id,
+				      nb_records, buf_size,
 		                      offsets, names, nodes, step_name);
 	} else {
 		error("Unknown type");
@@ -1740,8 +1756,8 @@ _has_batch_step(char *batch_step, char *batch_node)
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
 
 	if (!(dir = opendir(step_dir))) {
-		error("\
-%s: Cannot open %s job profile directory: %m", __func__, step_dir);
+		error("%s: Cannot open %s job profile directory: %m",
+		      __func__, step_dir);
 		return -1;
 	}
 
