@@ -38,20 +38,9 @@
 #ifndef _SLURMDB_H
 #define _SLURMDB_H
 
-/* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use END_C_DECLS at
-   the end of C declarations. */
-#undef BEGIN_C_DECLS
-#undef END_C_DECLS
 #ifdef __cplusplus
-# define BEGIN_C_DECLS	extern "C" {
-# define END_C_DECLS	}
-#else
-# define BEGIN_C_DECLS	/* empty */
-# define END_C_DECLS	/* empty */
+extern "C" {
 #endif
-
-BEGIN_C_DECLS
 
 #include <slurm/slurm.h>
 
@@ -1749,6 +1738,8 @@ extern List slurmdb_wckeys_modify(void *db_conn,
 extern List slurmdb_wckeys_remove(void *db_conn,
 				  slurmdb_wckey_cond_t *wckey_cond);
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_SLURMDB_H */

@@ -43,19 +43,6 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-/* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use END_C_DECLS at
-   the end of C declarations. */
-#undef BEGIN_C_DECLS
-#undef END_C_DECLS
-#ifdef __cplusplus
-# define BEGIN_C_DECLS	extern "C" {
-# define END_C_DECLS	}
-#else
-# define BEGIN_C_DECLS	/* empty */
-# define END_C_DECLS	/* empty */
-#endif
-
 /* Define to 1 if you have Blue Gene system support. */
 #undef HAVE_BG
 
@@ -83,7 +70,9 @@
 #define DEFAULT_WAIT_ALL_NODES 0	/* don't wait */
 #endif
 
-BEGIN_C_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <slurm/slurm_errno.h>
 
@@ -4834,6 +4823,8 @@ extern int slurm_network_callerid(network_callerid_msg_t req,
  * RET 0 or -1 on error */
 extern int slurm_top_job(char *job_id_str);
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif

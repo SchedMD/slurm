@@ -38,16 +38,6 @@
 #ifndef SPANK_H
 #define SPANK_H
 
-#undef BEGIN_C_DECLS
-#undef END_C_DECLS
-#ifdef __cplusplus
-#  define BEGIN_C_DECLS         extern "C" {
-#  define END_C_DECLS           }
-#else  /* !__cplusplus */
-#  define BEGIN_C_DECLS         /* empty */
-#  define END_C_DECLS           /* empty */
-#endif /* !__cplusplus */
-
 /*  SPANK handle. Plug-in's context for running SLURM job
  */
 typedef struct spank_handle * spank_t;
@@ -254,7 +244,9 @@ extern struct spank_option spank_options [];
 
 /*  SPANK interface prototypes
  */
-BEGIN_C_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  *  Return the string representation of a spank_err_t error code.
@@ -425,7 +417,9 @@ extern void slurm_debug2 (const char *format, ...)
 extern void slurm_debug3 (const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 
-END_C_DECLS
+#ifdef __cpluscplus
+}
+#endif
 
 /*
  *  All spank plugins must issue the following for the SLURM plugin
@@ -435,6 +429,5 @@ END_C_DECLS
     const char plugin_name [] = #__name; \
     const char plugin_type [] = "spank"; \
     const unsigned int plugin_version = __ver;
-
 
 #endif /* !SPANK_H */

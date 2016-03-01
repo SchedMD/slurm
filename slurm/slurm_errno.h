@@ -40,20 +40,9 @@
 #ifndef _SLURM_ERRNO_H
 #define _SLURM_ERRNO_H
 
-/* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
-   the end of C declarations. */
-#undef BEGIN_C_DECLS
-#undef END_C_DECLS
 #ifdef __cplusplus
-# define BEGIN_C_DECLS	extern "C" {
-# define END_C_DECLS	}
-#else
-# define BEGIN_C_DECLS	/* empty */
-# define END_C_DECLS	/* empty */
+extern "C" {
 #endif
-
-BEGIN_C_DECLS
 
 #include <errno.h>
 
@@ -285,6 +274,8 @@ int slurm_get_errno(void);
 /* print message: error string for current errno value */
 void slurm_perror(char *msg);
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !_SLURM_ERRNO_H */

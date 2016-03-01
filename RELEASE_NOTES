@@ -106,6 +106,8 @@ OTHER CHANGES
 API CHANGES
 ===========
 Removed PARAMS macro from slurm.h.
+Removed BEGIN_C_DECLS and END_C_DECLS macros from slurm/*.h.
+
 
 Changed members of the following structs
 ========================================
