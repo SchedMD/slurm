@@ -122,6 +122,13 @@ typedef struct table {
 	const char *name;
 } table_t;
 
+typedef struct {
+	char *file_name;
+	int job_id;
+	char *node_name;
+	int step_id;
+} sh5util_file_t;
+
 static FILE* output_file;
 static bool group_mode = false;
 static const char *current_step;
@@ -137,8 +144,6 @@ static void _free_options(void);
 static void _remove_empty_output(void);
 static int _list_items(void);
 static int _fields_intersection(hid_t fid_job, List tables, List fields);
-static bool _has_batch_step(char *, char *);
-
 
 static void _help_msg(void)
 {
@@ -225,6 +230,33 @@ ouch:
 	_cleanup();
 
 	return cc;
+}
+
+static void _destroy_sh5util_file(void *arg)
+{
+	sh5util_file_t *object;
+
+	if (!arg)
+		return;
+
+	object = (sh5util_file_t *)arg;
+
+	xfree(object->file_name);
+	xfree(object->node_name);
+	xfree(object);
+}
+
+static int _sh5util_sort_files_dec(void *s1, void *s2)
+{
+	sh5util_file_t* rec_a = *(sh5util_file_t **)s1;
+	sh5util_file_t* rec_b = *(sh5util_file_t **)s2;
+
+	if (rec_a->step_id < rec_b->step_id)
+		return -1;
+	else if (rec_a->step_id > rec_b->step_id)
+		return 1;
+
+	return 0;
 }
 
 static void _cleanup(void)
@@ -487,12 +519,12 @@ _check_params(void)
 
 /* Copy the group "/{NodeName}" of the hdf5 file file_name into the location
  * jgid_nodes */
-static int _merge_node_step_data(char* file_name, uint32_t node_inx,
-				 hid_t jgid_nodes, hid_t jgid_tasks)
+static int _merge_node_step_data(char* file_name, hid_t jgid_nodes,
+				 sh5util_file_t *sh5util_file)
 {
 	hid_t fid_nodestep;
-	char group_name[MAX_GROUP_NAME+1];
-	char *node_inx_name = NULL;
+	char *group_name = NULL;
+	int rc = SLURM_SUCCESS;
 
 	fid_nodestep = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if (fid_nodestep < 0) {
@@ -500,25 +532,26 @@ static int _merge_node_step_data(char* file_name, uint32_t node_inx,
 		return SLURM_ERROR;
 	}
 
-	node_inx_name = xstrdup_printf("%u", node_inx);
-	sprintf(group_name, "/%s", node_inx_name);
+	group_name = xstrdup_printf("/%s", sh5util_file->node_name);
 	hid_t ocpypl_id = H5Pcreate(H5P_OBJECT_COPY); /* default copy */
 	hid_t lcpl_id   = H5Pcreate(H5P_LINK_CREATE); /* parameters */
-	if (H5Ocopy(fid_nodestep, group_name, jgid_nodes, node_inx_name,
+	if (H5Ocopy(fid_nodestep, group_name, jgid_nodes,
+		    sh5util_file->node_name,
 	            ocpypl_id, lcpl_id) < 0) {
 		debug("Failed to copy node step data of %s into the job file, "
 		      "trying with old method",
-		      node_inx_name);
-		xfree(node_inx_name);
-		return SLURM_PROTOCOL_VERSION_ERROR;
+		      sh5util_file->node_name);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
+		goto endit;
 	}
-	xfree(node_inx_name);
-	H5Fclose(fid_nodestep);
 
 	if (!params.keepfiles)
 		remove(file_name);
+endit:
+	xfree(group_name);
+	H5Fclose(fid_nodestep);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Look for step and node files and merge them together into one job file */
@@ -528,200 +561,172 @@ static int _merge_step_files(void)
 	hid_t jgid_steps = -1;
 	hid_t jgid_step = -1;
 	hid_t jgid_nodes = -1;
-	hid_t jgid_tasks = -1;
 	DIR *dir;
 	struct  dirent *de;
-	char file_name[MAX_PROFILE_PATH+1];
-	char step_dir[MAX_PROFILE_PATH+1];
-	char step_path[MAX_PROFILE_PATH+1];
-	char jgrp_step_name[MAX_GROUP_NAME+1];
-	char jgrp_nodes_name[MAX_GROUP_NAME+1];
-	char *pos_char;
-	char *stepno;
-	int	stepx = 0;
-	int num_steps = 0;
-	int nodex = -1;
-	int max_step = -1;
-	int	jobid, stepid;
-	bool found_files = false;
+
+	char *file_name = NULL;
+	char *jgrp_nodes_name = NULL;
+	char *jgrp_step_name = NULL;
+	char *pos_char = NULL;
+	char *step_dir = NULL;
+	char *step_path = NULL;
+	char *stepno = NULL;
+	int node_cnt;
+	int job_id;
 	int rc = SLURM_SUCCESS;
-	char batch_step[PATH_MAX];
-	char batch_node[MAXHOSTNAMELEN];
-	int has_batch;
+	ListIterator itr;
+	List file_list = NULL;
+	sh5util_file_t *sh5util_file = NULL;
 
-	sprintf(step_dir, "%s/%s", params.dir, params.user);
-	batch_step[0] = 0;
-	has_batch = 0;
+	step_dir = xstrdup_printf("%s/%s", params.dir, params.user);
 
-	if (_has_batch_step(batch_step, batch_node))
-		has_batch = 1;
-
-	while (max_step == -1 || stepx <= max_step) {
-
-		if (!(dir = opendir(step_dir))) {
-			error("Cannot open %s job profile directory: %m",
-			      step_dir);
-			return -1;
-		}
-
-		nodex = 0;
-		while ((de = readdir(dir))) {
-
-			strcpy(file_name, de->d_name);
-			if (file_name[0] == '.')
-				continue;
-
-			pos_char = strstr(file_name,".h5");
-			if (!pos_char)
-				continue;
-			*pos_char = 0;
-
-			pos_char = strchr(file_name,'_');
-			if (!pos_char)
-				continue;
-			*pos_char = 0;
-
-			jobid = strtol(file_name, NULL, 10);
-			if (jobid != params.job_id)
-				continue;
-
-			stepno = pos_char + 1;
-			pos_char = strchr(stepno,'_');
-			if (!pos_char) {
-				continue;
-			}
-			*pos_char = 0;
-
-			if (xstrcmp(stepno, "batch") == 0) {
-				continue;
-			}
-
-			stepid = strtol(stepno, NULL, 10);
-			if (stepid > max_step)
-				max_step = stepid;
-			if (stepid != stepx)
-				continue;
-
-			if (!found_files) {
-
-				fid_job = H5Fcreate(params.output,
-				                    H5F_ACC_TRUNC,
-				                    H5P_DEFAULT,
-				                    H5P_DEFAULT);
-				if (fid_job < 0) {
-					error("Failed create HDF5 file %s",
-					      params.output);
-					return -1;
-				}
-				found_files = true;
-
-				jgid_steps = make_group(fid_job, GRP_STEPS);
-				if (jgid_steps < 0) {
-					error("Failed to create group %s",
-					      GRP_STEPS);
-					continue;
-				}
-				if (has_batch) {
-
-					sprintf(jgrp_step_name, "/%s/batch",
-						GRP_STEPS);
-					jgid_step = make_group(
-						fid_job, jgrp_step_name);
-					if (jgid_step < 0) {
-						error("Failed to create %s",
-						      jgrp_step_name);
-						continue;
-					}
-
-					sprintf(jgrp_nodes_name,"%s/%s",
-						jgrp_step_name,
-						GRP_NODES);
-					jgid_nodes = make_group(
-						jgid_step, jgrp_nodes_name);
-					if (jgid_nodes < 0) {
-						error("Failed to create %s",
-						      jgrp_nodes_name);
-						continue;
-					}
-
-					sprintf(step_path, "%s/%s",
-						step_dir, batch_step);
-					rc = _merge_node_step_data(step_path,
-								   nodex,
-								   jgid_nodes,
-								   jgid_tasks);
-					H5Gclose(jgid_tasks);
-					H5Gclose(jgid_nodes);
-					H5Gclose(jgid_step);
-					has_batch = 0;
-				}
-			}
-
-			if (nodex == 0) {
-
-				num_steps++;
-				sprintf(jgrp_step_name, "/%s/%d", GRP_STEPS,
-				        stepx);
-
-				jgid_step = make_group(fid_job, jgrp_step_name);
-				if (jgid_step < 0) {
-					error("Failed to create %s",
-					      jgrp_step_name);
-					continue;
-				}
-
-				sprintf(jgrp_nodes_name,"%s/%s",
-				        jgrp_step_name,
-				        GRP_NODES);
-				jgid_nodes = make_group(jgid_step,
-				                        jgrp_nodes_name);
-				if (jgid_nodes < 0) {
-					error("Failed to create %s",
-					      jgrp_nodes_name);
-					continue;
-				}
-				/*
-				  sprintf(jgrp_tasks_name,"%s/%s",
-				  jgrp_step_name,
-				  GRP_TASKS);
-				  jgid_tasks = make_group(jgid_step,
-				  jgrp_tasks_name);
-				  if (jgid_tasks < 0) {
-				  error("Failed to create %s", jgrp_tasks_name);
-				  continue;
-				  }
-				*/
-			}
-
-			sprintf(step_path, "%s/%s", step_dir, de->d_name);
-			rc = _merge_node_step_data(step_path, nodex,
-						   jgid_nodes, jgid_tasks);
-			nodex++;
-		}
-
-		closedir(dir);
-
-		if (nodex > 0) {
-			put_int_attribute(jgid_step, ATTR_NNODES, nodex);
-			H5Gclose(jgid_tasks);
-			H5Gclose(jgid_nodes);
-			H5Gclose(jgid_step);
-		}
-
-		/* If we did not find the step 0
-		 * bail out.
-		 */
-		if (stepx == 0
-		    && !found_files)
-			break;
-
-		stepx++;
+	if (!(dir = opendir(step_dir))) {
+		error("Cannot open %s job profile directory: %m",
+		      step_dir);
+		rc = -1;
+		goto endit;
 	}
 
-	if (!found_files)
+	while ((de = readdir(dir))) {
+		xfree(file_name);
+		file_name = xstrdup(de->d_name);
+
+		if (file_name[0] == '.')
+			continue;
+
+		pos_char = strstr(file_name, ".h5");
+		if (!pos_char)
+			continue;
+		*pos_char = 0;
+
+		pos_char = strchr(file_name, '_');
+		if (!pos_char)
+			continue;
+		*pos_char = 0;
+
+		job_id = strtol(file_name, NULL, 10);
+		if (job_id != params.job_id)
+			continue;
+
+		stepno = pos_char + 1;
+		pos_char = strchr(stepno, '_');
+		if (!pos_char) {
+			continue;
+		}
+		*pos_char = 0;
+
+		if (!file_list)
+			file_list = list_create(_destroy_sh5util_file);
+
+		sh5util_file = xmalloc(sizeof(sh5util_file_t));
+		list_append(file_list, sh5util_file);
+
+		sh5util_file->file_name = xstrdup(de->d_name);
+		sh5util_file->job_id = job_id;
+
+		if (!xstrcmp(stepno, "batch"))
+			sh5util_file->step_id = -2;
+		else
+			sh5util_file->step_id = strtol(stepno, NULL, 10);
+
+		stepno = pos_char + 1;
+		sh5util_file->node_name = xstrdup(stepno);
+	}
+	closedir(dir);
+
+	if (!file_list || !list_count(file_list)) {
 		info("No node-step files found for jobid %d", params.job_id);
-	else
-		put_int_attribute(fid_job, ATTR_NSTEPS, num_steps);
+		goto endit;
+	}
+
+	fid_job = H5Fcreate(
+		params.output, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	if (fid_job < 0) {
+		error("Failed create HDF5 file %s", params.output);
+		rc = -1;
+		goto endit;
+	}
+
+	put_int_attribute(fid_job, ATTR_NSTEPS, list_count(file_list));
+
+	jgid_steps = make_group(fid_job, GRP_STEPS);
+	if (jgid_steps < 0) {
+		error("Failed to create group %s",
+		      GRP_STEPS);
+		rc = -1;
+		goto endit;
+	}
+
+	/* sort the files so they are in step order */
+	list_sort(file_list, (ListCmpF) _sh5util_sort_files_dec);
+
+	node_cnt = 0;
+	itr = list_iterator_create(file_list);
+	while ((sh5util_file = list_next(itr))) {
+		//info("got file of %s", sh5util_file->file_name);
+
+		/* make a group for each step */
+		if ((sh5util_file->step_id == -2) ||
+		    (sh5util_file->step_id > max_step)) {
+			/* on to the next step, close down the last one */
+			if (jgid_step) {
+				put_int_attribute(
+					jgid_step, ATTR_NNODES, node_cnt);
+				H5Gclose(jgid_nodes);
+				H5Gclose(jgid_step);
+				node_cnt = 0;
+			}
+
+			if (sh5util_file->step_id == NO_VAL) {
+				jgrp_step_name = xstrdup_printf(
+					"/%s/batch", GRP_STEPS);
+			} else {
+				jgrp_step_name = xstrdup_printf(
+					"/%s/%d", GRP_STEPS,
+					sh5util_file->step_id);
+			}
+
+//			info("making group for step %d", sh5util_file->step_id);
+			jgid_step = make_group(fid_job, jgrp_step_name);
+			if (jgid_step < 0) {
+				error("Failed to create %s",
+				      jgrp_step_name);
+				xfree(jgrp_step_name);
+				continue;
+			}
+
+			jgrp_nodes_name = xstrdup_printf(
+				"%s/%s", jgrp_step_name, GRP_NODES);
+			xfree(jgrp_step_name);
+
+			jgid_nodes = make_group(
+				jgid_step, jgrp_nodes_name);
+			if (jgid_nodes < 0) {
+				error("Failed to create %s",
+				      jgrp_nodes_name);
+				xfree(jgrp_nodes_name);
+				continue;
+			}
+			xfree(jgrp_nodes_name);
+		}
+
+		node_cnt++;
+
+		/* append onto the step */
+		step_path = xstrdup_printf(
+			"%s/%s", step_dir, sh5util_file->file_name);
+		rc = _merge_node_step_data(
+			step_path, jgid_nodes, sh5util_file);
+		xfree(step_path);
+
+	}
+	list_iterator_destroy(itr);
+
+
+endit:
+	FREE_NULL_LIST(file_list);
+	xfree(file_name);
+	xfree(step_dir);
 
 	if (jgid_steps != -1)
 		H5Gclose(jgid_steps);
@@ -1740,61 +1745,4 @@ static int _list_items(void)
 	H5Fclose(fid_job);
 
 	return SLURM_SUCCESS;
-}
-
-static bool
-_has_batch_step(char *batch_step, char *batch_node)
-{
-	DIR *dir;
-	struct  dirent *de;
-	char file_name[MAX_PROFILE_PATH+1];
-	char step_dir[MAX_PROFILE_PATH+1];
-	char *pos_char;
-	char *stepno;
-	int jobid;
-
-	sprintf(step_dir, "%s/%s", params.dir, params.user);
-
-	if (!(dir = opendir(step_dir))) {
-		error("%s: Cannot open %s job profile directory: %m",
-		      __func__, step_dir);
-		return -1;
-	}
-
-	while ((de = readdir(dir))) {
-
-		strcpy(file_name, de->d_name);
-		if (file_name[0] == '.')
-			continue;
-
-		pos_char = strstr(file_name,".h5");
-		if (!pos_char)
-			continue;
-		*pos_char = 0;
-
-		pos_char = strchr(file_name,'_');
-		if (!pos_char)
-			continue;
-		*pos_char = 0;
-
-		jobid = strtol(file_name, NULL, 10);
-		if (jobid != params.job_id)
-			continue;
-
-		stepno = pos_char + 1;
-		pos_char = strchr(stepno,'_');
-		if (!pos_char) {
-			continue;
-		}
-		*pos_char = 0;
-
-		if (xstrcmp(stepno, "batch") == 0) {
-			strcpy(batch_step, de->d_name);
-			strcpy(batch_node, pos_char + 1);
-			closedir(dir);
-			return true;
-		}
-	}
-	closedir(dir);
-	return false;
 }
