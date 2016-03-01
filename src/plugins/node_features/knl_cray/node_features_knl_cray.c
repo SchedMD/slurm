@@ -57,6 +57,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -162,8 +163,11 @@ typedef struct mcdram_cap {
 } mcdram_cap_t;
 
 typedef struct mcdram_cfg {
+	uint64_t dram_size;
 	uint32_t nid;
 	char *mcdram_cfg;
+	uint64_t mcdram_size;
+	uint16_t mcdram_pct;
 } mcdram_cfg_t;
 
 typedef struct numa_cap {
@@ -209,6 +213,7 @@ static void _numa_cap_free(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cap_log(numa_cap_t *numa_cap, int numa_cap_cnt);
 static void _numa_cfg_free(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
 static void _numa_cfg_log(numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static uint64_t _parse_size(char *size_str);
 static char *_run_script(char *cmd_path, char **script_argv, int *status);
 static void _strip_knl_opts(char **features);
 static int  _tot_wait (struct timeval *start_time);
@@ -510,6 +515,24 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 	}
 }
 
+static uint64_t _parse_size(char *size_str)
+{
+	uint64_t size_num = 0;
+	char *end_ptr = NULL;
+
+	size_num = (uint64_t) strtol(size_str, &end_ptr, 10);
+	if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+		size_num *= 1024;
+	else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
+		size_num *= (1024 * 1024);
+	else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G'))
+		size_num *= (1024 * 1024 * 1024);
+	else if (end_ptr[0] != '\0')
+		info("Invalid MCDRAM size: %s", size_str);
+
+	return size_num;
+}
+
 static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
 {
 	enum json_type type;
@@ -528,8 +551,14 @@ static void _json_parse_mcdram_cfg_object(json_object *jobj, mcdram_cfg_t *ent)
 			break;
 		case json_type_string:
 			p = json_object_get_string(iter.val);
-			if (xstrcmp(iter.key, "mcdram_cfg") == 0) {
+			if (xstrcmp(iter.key, "dram_size") == 0) {
+				ent->dram_size = _parse_size((char *) p);
+			} else if (xstrcmp(iter.key, "mcdram_cfg") == 0) {
 				ent->mcdram_cfg = xstrdup(p);
+			} else if (xstrcmp(iter.key, "mcdram_pct") == 0) {
+				ent->mcdram_pct = _parse_size((char *) p);
+			} else if (xstrcmp(iter.key, "mcdram_size") == 0) {
+				ent->mcdram_size = _parse_size((char *) p);
 			}
 			break;
 		default:
@@ -745,8 +774,10 @@ static void _mcdram_cfg_log(mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt)
 	if (!mcdram_cfg)
 		return;
 	for (i = 0; i < mcdram_cfg_cnt; i++) {
-		info("MCDRAM_CFG[%d]: nid:%u mcdram_cfg:%s",
-		     i, mcdram_cfg[i].nid, mcdram_cfg[i].mcdram_cfg);
+		info("MCDRAM_CFG[%d]: nid:%u dram_size:%"PRIu64" mcdram_cfg:%s mcdram_pct:%u mcdram_size:%"PRIu64,
+		     i, mcdram_cfg[i].nid, mcdram_cfg[i].dram_size,
+		     mcdram_cfg[i].mcdram_cfg, mcdram_cfg[i].mcdram_pct,
+		     mcdram_cfg[i].mcdram_size);
 	}
 }
 
@@ -947,6 +978,28 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
+#if 0
+static void _merge_mcdram_gres(char **node_gres, uint64_t mcdram_size)
+{
+	char *new_gres = NULL, *tok, *save_ptr = NULL, *sep = "";
+
+	tok = strtok_r(*node_gres, ",", &save_ptr);
+	while (tok) {
+		if (!strncmp(tok, "mcdram", 6) &&
+		    ((tok[6] == ':') || (tok[6] == '\0'))) {
+			/* Skip this record */
+		} else {
+			xstrfmtcat(new_gres, "%s%s", sep, tok);
+			sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xstrfmtcat(new_gres, "%s%s:%"PRIu64, sep, "mcdram", mcdram_size);
+	xfree(*node_gres);
+	*node_gres = new_gres;
+}
+#endif
+
 /* Update features and features_act fields for ALL nodes based upon
  * its current configuration provided by capmc */
 static void _update_all_node_features(
@@ -990,12 +1043,26 @@ static void _update_all_node_features(
 		for (i = 0; i < mcdram_cfg_cnt; i++) {
 			snprintf(node_name, sizeof(node_name),
 				 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
-			node_ptr = find_node_record(node_name);
-			if (node_ptr) {
-				_merge_strings(&node_ptr->features_act,
-					       mcdram_cfg[i].mcdram_cfg,
-					       allow_mcdram);
+			if (!(node_ptr = find_node_record(node_name)))
+				continue;
+			_merge_strings(&node_ptr->features_act,
+				       mcdram_cfg[i].mcdram_cfg,
+				       allow_mcdram);
+#if 0
+//FIXME: see _update_node_gres() in node_mgr.c, also splits config table
+			if (node_ptr->gres == NULL) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
 			}
+			_merge_mcdram_gres(&node_ptr->gres,
+					mcdram_cfg[i].mcdram_size);
+			(void) gres_plugin_node_reconfig(node_ptr->name,
+					node_ptr->config_ptr->gres,
+					&node_ptr->gres, &node_ptr->gres_list,
+					slurmctld_conf.fast_schedule);
+			gres_plugin_node_state_log(node_ptr->gres_list,
+					node_ptr->name);
+#endif
 		}
 	}
 	if (numa_cap) {
@@ -1060,12 +1127,27 @@ static void _update_node_features(struct node_record *node_ptr,
 	}
 	if (mcdram_cfg) {
 		for (i = 0; i < mcdram_cfg_cnt; i++) {
-			if (nid == mcdram_cfg[i].nid) {
-				_merge_strings(&node_ptr->features_act,
-					       mcdram_cfg[i].mcdram_cfg,
-					       allow_mcdram);
-				break;
+			if (nid != mcdram_cfg[i].nid)
+				continue;
+			_merge_strings(&node_ptr->features_act,
+				       mcdram_cfg[i].mcdram_cfg,
+				       allow_mcdram);
+#if 0
+//FIXME: see _update_node_gres() in node_mgr.c, also splits config table
+			if (node_ptr->gres == NULL) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
 			}
+			_merge_mcdram_gres(&node_ptr->gres,
+					mcdram_cfg[i].mcdram_size);
+			(void) gres_plugin_node_reconfig(node_ptr->name,
+					node_ptr->config_ptr->gres,
+					&node_ptr->gres, &node_ptr->gres_list,
+					slurmctld_conf.fast_schedule);
+			gres_plugin_node_state_log(node_ptr->gres_list,
+					node_ptr->name);
+#endif
+			break;
 		}
 	}
 	if (numa_cap) {
