@@ -359,7 +359,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		return SLURM_FAILURE;
 	}
 	/* fd_set_close_on_exec(file_id); Not supported for HDF5 */
-	sprintf(group_node, "/%u", g_job->nodeid);
+	sprintf(group_node, "/%s", g_job->node_name);
 	gid_node = make_group(file_id, group_node);
 	if (gid_node < 0) {
 		H5Fclose(file_id);
