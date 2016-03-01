@@ -1012,6 +1012,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		exit(0);
 	} else if (pid < 0) {
 		error("fork: %m");
+		_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 		return SLURM_ERROR;
 	}
 
