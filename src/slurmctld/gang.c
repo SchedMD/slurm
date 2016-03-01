@@ -579,11 +579,12 @@ static int _suspend_job(uint32_t job_id)
 	/* job_suspend() returns ESLURM_DISABLED if job is already suspended */
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
-			info("gang: suspending %u", job_id);
+			info("gang: suspending JobID=%u", job_id);
 		else
-			debug("gang: suspending %u", job_id);
+			debug("gang: suspending JobID=%u", job_id);
 	} else if (rc != ESLURM_DISABLED) {
-		info("gang: suspending job %u: %s", job_id, slurm_strerror(rc));
+		info("gang: suspending JobID=%u: %s",
+		     job_id, slurm_strerror(rc));
 	}
 	return rc;
 }
@@ -599,11 +600,12 @@ static void _resume_job(uint32_t job_id)
 	rc = job_suspend(&msg, 0, -1, false, (uint16_t)NO_VAL);
 	if (rc == SLURM_SUCCESS) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
-			info("gang: resuming %u", job_id);
+			info("gang: resuming JobID=%u", job_id);
 		else
-			debug("gang: resuming %u", job_id);
+			debug("gang: resuming JobID=%u", job_id);
 	} else if (rc != ESLURM_ALREADY_DONE) {
-		error("gang: resuming job %u: %s", job_id, slurm_strerror(rc));
+		error("gang: resuming JobID=%u: %s",
+		      job_id, slurm_strerror(rc));
 	}
 }
 

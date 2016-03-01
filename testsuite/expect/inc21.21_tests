@@ -154,6 +154,12 @@ proc inc21_21_grp_test { test_type limit } {
 	send_user "\n===== Test $test_type "
 	send_user "(Within: inc21.21_tests function: inc21_21_grp_test) =====\n"
 
+	if  { ![string compare $test_type "grpcpumins"] &&
+	      ![test_enforce_safe_set] } {
+		send_user "\nWARNING: This test can't be run without AccountingStorageEnforce having \"safe\" in it\n"
+		return $exit_code
+	}
+
 	# Check and see if it is a cpu test
 	if { [string compare $test_type "grpcpus"] == 0 ||
 	     [string compare $test_type "grpcpumins"] == 0 ||
