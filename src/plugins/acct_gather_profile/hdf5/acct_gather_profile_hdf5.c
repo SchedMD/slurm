@@ -367,6 +367,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		info("PROFILE: Failed to create Node group");
 		return SLURM_FAILURE;
 	}
+	put_int_attribute(gid_node, ATTR_NODEINX, g_job->nodeid);
 	put_string_attribute(gid_node, ATTR_NODENAME, g_job->node_name);
 	put_int_attribute(gid_node, ATTR_NTASKS, g_job->node_tasks);
 	put_int_attribute(gid_node, ATTR_CPUPERTASK, g_job->cpus_per_task);

@@ -65,6 +65,7 @@
 #define MAX_ATTR_NAME 64
 #define MAX_GROUP_NAME 64
 
+#define ATTR_NODEINX "Node Index"
 #define ATTR_NODENAME "Node Name"
 #define ATTR_NSTEPS "Number of Steps"
 #define ATTR_NNODES "Number of Nodes"
