@@ -923,24 +923,26 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
 				 uint32_t part_max_time,
 				 uint64_t tres_req_cnt,
 				 uint64_t max_limit,
-				 uint64_t *out_max_limit,
+				 void *out_max_limit,
 				 uint16_t *limit_set_time,
 				 bool strict_checking,
 				 bool is64)
 {
 	uint32_t max_time_limit;
+	uint64_t out_max_64 = *(uint64_t *)out_max_limit;
+	uint32_t out_max_32 = *(uint32_t *)out_max_limit;
 
 	if (!tres_req_cnt ||
 	    !strict_checking || (*limit_set_time) == ADMIN_SET_LIMIT)
 		return true;
 
 	if (is64) {
-		if (((*out_max_limit) != INFINITE64) ||
+		if ((out_max_64 != INFINITE64) ||
 		    (max_limit == INFINITE64) ||
 		    (tres_req_cnt == NO_VAL64))
 			return true;
 	} else {
-		if (((uint32_t)(*out_max_limit) != INFINITE) ||
+		if ((out_max_32 != INFINITE) ||
 		    ((uint32_t)max_limit == INFINITE) ||
 		    ((uint32_t)tres_req_cnt == NO_VAL))
 			return true;
@@ -951,7 +953,10 @@ static bool _validate_time_limit(uint32_t *time_limit_in,
 	_set_time_limit(time_limit_in, part_max_time, max_time_limit,
 			limit_set_time);
 
-	(*out_max_limit) = max_limit;
+	if (is64)
+		(*(uint64_t *)out_max_limit) = max_limit;
+	else
+		(*(uint32_t *)out_max_limit) = (uint32_t)max_limit;
 
 	if ((*time_limit_in) > max_time_limit)
 		return false;
@@ -2564,7 +2569,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    part_ptr->max_time,
 			    1,
 			    assoc_ptr->grp_wall,
-			    (uint64_t *)&qos_rec.grp_wall,
+			    &qos_rec.grp_wall,
 			    &acct_policy_limit_set->time,
 			    strict_checking, false)) {
 			if (reason)
@@ -2699,7 +2704,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			    part_ptr->max_time,
 			    1,
 			    assoc_ptr->max_wall_pj,
-			    (uint64_t *)&qos_rec.max_wall_pj,
+			    &qos_rec.max_wall_pj,
 			    &acct_policy_limit_set->time,
 			    strict_checking, false)) {
 			if (reason)
