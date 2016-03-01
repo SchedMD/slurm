@@ -1372,6 +1372,19 @@ rwfail:
 	return SLURM_FAILURE;
 }
 
+/* Wait for the job to completely start before trying to suspend it. */
+static void _wait_for_job_init(stepd_step_rec_t *job)
+{
+	slurm_mutex_lock(&job->state_mutex);
+	while (1) {
+		if (job->state != SLURMSTEPD_STEP_STARTING) {
+			slurm_mutex_unlock(&job->state_mutex);
+			break;
+		}
+		pthread_cond_wait(&job->state_cond, &job->state_mutex);
+	}
+}
+
 static int
 _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 {
@@ -1392,6 +1405,8 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
+
+	_wait_for_job_init(job);
 
 	if (job->cont_id == 0) {
 		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",

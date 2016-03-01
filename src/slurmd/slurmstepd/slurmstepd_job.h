@@ -127,7 +127,9 @@ typedef struct {		/* MPMD specifications, needed for Cray */
 } mpmd_set_t;
 
 typedef struct {
-	slurmstepd_state_t state;
+	slurmstepd_state_t state;	/* Job state			*/
+	pthread_cond_t state_cond;	/* Job state conditional	*/
+	pthread_mutex_t state_mutex;	/* Job state mutex		*/
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
 	uint32_t       array_job_id;  /* job array master job ID            */

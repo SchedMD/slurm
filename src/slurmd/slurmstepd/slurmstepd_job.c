@@ -269,7 +269,9 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg, uint16_t protocol_version
 		return NULL;
 	}
 
-	job->state	= SLURMSTEPD_STEP_STARTING;
+	job->state = SLURMSTEPD_STEP_STARTING;
+	pthread_cond_init(&job->state_cond, NULL);
+	pthread_mutex_init(&job->state_mutex, NULL);
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
 	i = sizeof(uint16_t) * msg->nnodes;
 	job->task_cnts  = xmalloc(i);
@@ -444,7 +446,9 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	job = xmalloc(sizeof(stepd_step_rec_t));
 
-	job->state   = SLURMSTEPD_STEP_STARTING;
+	job->state = SLURMSTEPD_STEP_STARTING;
+	pthread_cond_init(&job->state_cond, NULL);
+	pthread_mutex_init(&job->state_mutex, NULL);
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
 	job->node_tasks  = 1;
