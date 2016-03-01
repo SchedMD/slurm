@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     of SallocDefaultCommand if a TaskPlugin is in use.
  -- Set correct reason when a QOS' MaxTresMins is violated.
  -- Insure that a job is completely launched before trying to suspend it.
+ -- Remove historical presentations and design notes. Only distribute
+    maintained doc/html and doc/man directories.
 
 * Changes in Slurm 15.08.8
 ==========================
