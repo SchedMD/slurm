@@ -1639,14 +1639,18 @@ A value of -17 typically will disable killing.</p>
 <p><a name="ubuntu"><b>37. I see my host of my calling node as 127.0.1.1
     instead of the correct IB address.  Why is that?</b></a></br>
 Some systems by default will put your host in the /etc/hosts file as
-    something like
+something like</p>
 <pre>
 127.0.1.1	snowflake.llnl.gov	snowflake
 </pre>
-This will cause srun and other things to grab 127.0.1.1 as it's
-address instead of the correct address and make it so the
-communication doesn't work.  Solution is to either remove this line or
-set a different nodeaddr that is known by your other nodes.</p>
+<p>This will cause srun and Slurm commands to use the 127.0.1.1 address
+instead of the correct address and prevent communications between nodes.
+The solution is to either remove this line or configure a different NodeAddr
+that is known by your other nodes.</p>
+
+<p>The TopologyParam=NoInAddrAny configuration parameter is subject to this
+same problem, which can also be addressed by removing the "127.0.1.1"
+address from the /etc/hosts file.</p>
 
 <p><a name="stop_sched"><b>38. How can I stop Slurm from scheduling jobs?</b></a></br>
 You can stop Slurm from scheduling jobs on a per partition basis by setting
