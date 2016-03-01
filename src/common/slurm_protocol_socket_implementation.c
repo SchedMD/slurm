@@ -713,6 +713,8 @@ static int _slurm_vfcntl(int fd, int cmd, va_list va )
 extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 {
 #if 1
+/* NOTE: gethostbyname() is obsolete, but the alternative function (below)
+ * does not work reliably. See bug 2186. */
 	struct hostent * he    = NULL;
 	int	   h_err = 0;
 	char *	   h_buf[4096];
@@ -736,6 +738,9 @@ extern void slurm_set_addr_char (slurm_addr_t * addr, uint16_t port, char *host)
 	}
 	return;
 #else
+/* NOTE: getaddrinfo() currently does not support aliases and is failing with
+ * EAGAIN repeatedly in some cases. Comment out this logic until the function
+ * works as designed. See bug 2186. */
 	struct addrinfo *addrs;
 	struct addrinfo *addr_ptr;
 
