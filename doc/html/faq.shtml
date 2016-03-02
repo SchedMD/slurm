@@ -1679,8 +1679,10 @@ The solution is to either remove this line or configure a different NodeAddr
 that is known by your other nodes.</p>
 
 <p>The TopologyParam=NoInAddrAny configuration parameter is subject to this
-same problem, which can also be addressed by removing the "127.0.1.1"
-address from the /etc/hosts file.</p>
+same problem, which can also be addressed by removing actual node
+name from the "127.0.1.1" as well as the "127.0.0.1"
+addresses in the /etc/hosts file.  It is ok if they point to
+localhost, but not the actual name of the node.</p>
 
 <p><a name="stop_sched"><b>38. How can I stop Slurm from scheduling jobs?</b></a></br>
 You can stop Slurm from scheduling jobs on a per partition basis by setting
