@@ -24,7 +24,7 @@ get_mount_dir()
     elif X=$(grep -si -m1 "^CgroupMountpoint=" @sysconfdir@/cgroup.conf); then
         echo $X | sed "s/.*=\(.*\)/\1\/${subsystem}/"
     else
-        echo "/cgroup/$subsystem"
+        echo "/sys/fs/cgroup/$subsystem"
     fi
 }
 
