@@ -1803,6 +1803,8 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_ptr->gres_data == NULL)
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
+	if (gres_data->node_feature)
+		return rc;
 
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
 	if (gres_data->gres_cnt_found != gres_cnt) {
@@ -2027,9 +2029,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
@@ -2051,6 +2052,100 @@ extern int gres_plugin_node_config_validate(char *node_name,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
+}
+
+/* Convert number to new value with suffix (e.g. 2096 -> 2K) */
+static void _gres_scale_value(uint64_t gres_size, uint64_t *gres_scaled,
+			      char **suffix)
+{
+	uint64_t tmp_gres_size = gres_size;
+	int i;
+
+	tmp_gres_size = gres_size;
+	for (i = 0; i < 4; i++) {
+		if ((tmp_gres_size % 1024) == 0)
+			tmp_gres_size /= 1024;
+		else
+			break;
+	}
+
+	*gres_scaled = tmp_gres_size;
+	if (i == 0)
+		*suffix = "";
+	else if (i == 1)
+		*suffix = "K";
+	else if (i == 2)
+		*suffix = "M";
+	else if (i == 3)
+		*suffix = "G";
+	else
+		*suffix = "T";
+}
+
+/*
+ * Add a GRES from node_feature plugin
+ * IN node_name - name of the node for which the gres information applies
+ * IN gres_name - name of the GRES being added or updated from the plugin
+ * IN gres_size - count of this GRES on this node
+ * IN/OUT new_config - Updated GRES info from slurm.conf
+ * IN/OUT gres_list - List of GRES records for this node to track usage
+ */
+extern void gres_plugin_node_feature(char *node_name,
+				     char *gres_name, uint64_t gres_size,
+				     char **new_config, List *gres_list)
+{
+	char *new_gres = NULL, *tok, *save_ptr = NULL, *sep = "", *suffix = "";
+	gres_state_t *gres_ptr;
+	gres_node_state_t *gres_node_ptr;
+	ListIterator gres_iter;
+	uint32_t plugin_id;
+	uint64_t gres_scaled = 0;
+	int gres_name_len;
+
+	xassert(gres_name);
+	gres_name_len = strlen(gres_name);
+	plugin_id = _build_id(gres_name);
+	if (*new_config) {
+		tok = strtok_r(*new_config, ",", &save_ptr);
+		while (tok) {
+			if (!strncmp(tok, gres_name, gres_name_len) &&
+			    ((tok[gres_name_len] == ':') ||
+			     (tok[gres_name_len] == '\0'))) {
+				/* Skip this record */
+			} else {
+				xstrfmtcat(new_gres, "%s%s", sep, tok);
+				sep = ",";
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+	}
+	_gres_scale_value(gres_size, &gres_scaled, &suffix);
+	xstrfmtcat(new_gres, "%s%s:%"PRIu64"%s",
+		   sep, gres_name, gres_scaled, suffix);
+	xfree(*new_config);
+	*new_config = new_gres;
+
+	slurm_mutex_lock(&gres_context_lock);
+	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+		*gres_list = list_create(_gres_node_list_delete);
+	}
+	gres_iter = list_iterator_create(*gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		if (gres_ptr->plugin_id == plugin_id)
+			break;
+	}
+	list_iterator_destroy(gres_iter);
+	if (gres_ptr == NULL) {
+		gres_ptr = xmalloc(sizeof(gres_state_t));
+		gres_ptr->plugin_id = plugin_id;
+		gres_ptr->gres_data = _build_gres_node_state();
+		list_append(*gres_list, gres_ptr);
+	}
+	gres_node_ptr = gres_ptr->gres_data;
+	gres_node_ptr->gres_cnt_config = gres_size;
+	gres_node_ptr->gres_cnt_found = gres_size;
+	gres_node_ptr->node_feature = true;
+	slurm_mutex_unlock(&gres_context_lock);
 }
 
 static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
@@ -2113,6 +2208,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 
 	return rc;
 }
+
 /*
  * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
@@ -2136,9 +2232,8 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);

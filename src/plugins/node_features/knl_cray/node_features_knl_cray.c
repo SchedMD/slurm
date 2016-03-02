@@ -978,28 +978,6 @@ next_tok:	tok1 = strtok_r(NULL, ",", &save_ptr1);
 	xfree(tmp_str1);
 }
 
-#if 0
-static void _merge_mcdram_gres(char **node_gres, uint64_t mcdram_size)
-{
-	char *new_gres = NULL, *tok, *save_ptr = NULL, *sep = "";
-
-	tok = strtok_r(*node_gres, ",", &save_ptr);
-	while (tok) {
-		if (!strncmp(tok, "mcdram", 6) &&
-		    ((tok[6] == ':') || (tok[6] == '\0'))) {
-			/* Skip this record */
-		} else {
-			xstrfmtcat(new_gres, "%s%s", sep, tok);
-			sep = ",";
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xstrfmtcat(new_gres, "%s%s:%"PRIu64, sep, "mcdram", mcdram_size);
-	xfree(*node_gres);
-	*node_gres = new_gres;
-}
-#endif
-
 /* Update features and features_act fields for ALL nodes based upon
  * its current configuration provided by capmc */
 static void _update_all_node_features(
@@ -1011,6 +989,7 @@ static void _update_all_node_features(
 	struct node_record *node_ptr;
 	char node_name[32], *prefix;
 	int i, width = 5;
+	uint64_t mcdram_size;
 
 	if ((node_record_table_ptr == NULL) ||
 	    (node_record_table_ptr->name == NULL)) {
@@ -1048,21 +1027,11 @@ static void _update_all_node_features(
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
-#if 0
-//FIXME: see _update_node_gres() in node_mgr.c, also splits config table
-			if (node_ptr->gres == NULL) {
-				node_ptr->gres =
-					xstrdup(node_ptr->config_ptr->gres);
-			}
-			_merge_mcdram_gres(&node_ptr->gres,
-					mcdram_cfg[i].mcdram_size);
-			(void) gres_plugin_node_reconfig(node_ptr->name,
-					node_ptr->config_ptr->gres,
-					&node_ptr->gres, &node_ptr->gres_list,
-					slurmctld_conf.fast_schedule);
-			gres_plugin_node_state_log(node_ptr->gres_list,
-					node_ptr->name);
-#endif
+			mcdram_size = mcdram_cfg[i].mcdram_size *
+				      mcdram_cfg[i].mcdram_pct / 100;
+			gres_plugin_node_feature(node_ptr->name, "mcdram",
+						 mcdram_size, &node_ptr->gres,
+						 &node_ptr->gres_list);
 		}
 	}
 	if (numa_cap) {
@@ -1102,6 +1071,7 @@ static void _update_node_features(struct node_record *node_ptr,
 {
 	int i, nid;
 	char *end_ptr = "";
+	uint64_t mcdram_size;
 
 	xassert(node_ptr);
 	nid = strtol(node_ptr->name + 3, &end_ptr, 10);
@@ -1132,21 +1102,11 @@ static void _update_node_features(struct node_record *node_ptr,
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
-#if 0
-//FIXME: see _update_node_gres() in node_mgr.c, also splits config table
-			if (node_ptr->gres == NULL) {
-				node_ptr->gres =
-					xstrdup(node_ptr->config_ptr->gres);
-			}
-			_merge_mcdram_gres(&node_ptr->gres,
-					mcdram_cfg[i].mcdram_size);
-			(void) gres_plugin_node_reconfig(node_ptr->name,
-					node_ptr->config_ptr->gres,
-					&node_ptr->gres, &node_ptr->gres_list,
-					slurmctld_conf.fast_schedule);
-			gres_plugin_node_state_log(node_ptr->gres_list,
-					node_ptr->name);
-#endif
+			mcdram_size = mcdram_cfg[i].mcdram_size *
+				      mcdram_cfg[i].mcdram_pct / 100;
+			gres_plugin_node_feature(node_ptr->name, "mcdram",
+						 mcdram_size, &node_ptr->gres,
+						 &node_ptr->gres_list);
 			break;
 		}
 	}
