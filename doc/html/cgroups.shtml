@@ -136,8 +136,9 @@ special node configuration parameters in
 <a href="slurm.conf.html">slurm.conf</a>.</p>
 <h2>Organization of Slurm Cgroups</h2>
 <p>Slurm cgroups are organized as follows.  A base directory (mount point) is
-created at /cgroup, or as configured by the <i>CgroupMountpoint</I> option in
-<a href="cgroup.conf.html">cgroup.conf</a>. All cgroup
+created at /sys/fs/cgroup, or as configured by the <i>CgroupMountpoint</I> option in
+<a href="cgroup.conf.html">cgroup.conf</a>. (Note: Prior to 16.05 the default
+path was /cgroup rather than /sys/fs/cgroup/.) All cgroup
 hierarchies are created below this base directory. A separate hierarchy is
 created for each cgroup subsystem in use. The name of the root cgroup in each
 hierarchy is the subsystem name. A cgroup named <i>slurm</i> is created below
@@ -146,13 +147,13 @@ Slurm users, jobs, steps and tasks are created dynamically as needed. The names
 of these cgroups consist of a prefix identifying the Slurm entity (user, job,
 step or task), followed by the relevant numeric id. The following example shows
 the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
-jobid#123 for userid#100, using the default base directory (/cgroup):
+jobid#123 for userid#100, using the default base directory (/sys/fs/cgroup):
 <p><pre>/cgroup/cpuset/slurm/uid_100/job_123/step_0/task_2</pre></p>
 <p>If resource specialization is configured, a special <i>system</i> cgroup 
 is created below the <i>slurm</i> cgroup in the cpuset and memory 
 hierarchies:</p>
-<pre>/cgroup/cpuset/slurm/system
-/cgroup/memory/slurm/system</pre>
+<pre>/sys/fs/cgroup/cpuset/slurm/system
+/sys/fs/cgroup/memory/slurm/system</pre>
 <p>Note that all these structures apply to a specific compute node. Jobs that 
 use more than one node will have a cgroup structure on each node.</p>
 

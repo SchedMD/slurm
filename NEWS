@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove BEGIN_C_DECLS and END_C_DECLS macros.
  -- Check that PowerSave mode configured for node_features/knl_cray plugin.
     It is required to reconfigure and reboot nodes.
+ -- Update documentation to reflect new cgroup default location change from
+    /cgroup to /sys/fs/cgroup .
 
 * Changes in Slurm 16.05.0pre1
 ==============================

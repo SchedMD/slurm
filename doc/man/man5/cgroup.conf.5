@@ -30,7 +30,7 @@ of Slurm cgroup plugins.
 .TP
 \fBCgroupAutomount\fR=<yes|no>
 Slurm cgroup plugins require valid and functional cgroup subsystem to be mounted
-under /cgroup/<subsystem_name>.
+under /sys/fs/cgroup/<subsystem_name>.
 When launched, plugins check their subsystem availability. If not available,
 the plugin launch fails unless CgroupAutomount is set to yes. In that case, the
 plugin will first try to mount the required subsystems.
