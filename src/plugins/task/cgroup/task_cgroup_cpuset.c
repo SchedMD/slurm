@@ -832,7 +832,6 @@ static int _task_cgroup_cpuset_dist_block(
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 
-	uint32_t *thread_idx;
 	uint32_t core_idx;
 	bool core_fcyclic, core_block;
 
@@ -854,7 +853,7 @@ static int _task_cgroup_cpuset_dist_block(
 	}
 
 	if ((hwloc_compare_types(hwtype, HWLOC_OBJ_PU) == 0) && !core_block) {
-		thread_idx = xmalloc(ncores * sizeof(uint32_t));
+		uint32_t *thread_idx = xmalloc(ncores * sizeof(uint32_t));
 		ntskip = taskid;
 		npdist = job->cpus_per_task;
 
