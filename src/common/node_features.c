@@ -79,6 +79,8 @@ typedef struct node_features_ops {
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
 	char *	(*job_xlate)	(char *job_features);
+	bool	(*node_power)	(void);
+	bool	(*node_reboot)	(void);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	char *	(*node_xlate)	(char *new_features, char *orig_features);
 	int	(*reconfig)	(void);
@@ -93,6 +95,8 @@ static const char *syms[] = {
 	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
+	"node_features_p_node_power",
+	"node_features_p_node_reboot",
 	"node_features_p_node_state",
 	"node_features_p_node_xlate",
 	"node_features_p_reconfig",
@@ -279,6 +283,48 @@ extern char *node_features_g_job_xlate(char *job_features)
 	END_TIMER2("node_features_g_job_xlate");
 
 	return node_features;
+}
+
+/* Return true if the plugin requires PowerSave mode for booting nodes */
+extern bool node_features_g_node_power(void)
+{
+	DEF_TIMERS;
+	bool node_power = false;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		node_power = (*(ops[i].node_power))();
+		if (node_power)
+			break;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_node_power");
+
+	return node_power;
+}
+
+/* Return true if the plugin requires RebootProgram for booting nodes */
+extern bool node_features_g_node_reboot(void)
+{
+	DEF_TIMERS;
+	bool node_reboot = false;
+	int i;
+
+	START_TIMER;
+	(void) node_features_g_init();
+	slurm_mutex_lock(&g_context_lock);
+	for (i = 0; i < g_context_cnt; i++) {
+		node_reboot = (*(ops[i].node_reboot))();
+		if (node_reboot)
+			break;
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2("node_features_g_node_reboot");
+
+	return node_reboot;
 }
 
 /* Get this node's current and available MCDRAM and NUMA settings from BIOS.

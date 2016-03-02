@@ -583,6 +583,11 @@ int main(int argc, char *argv[])
 		 * create attached thread for node power management
   		 */
 		start_power_mgr(&slurmctld_config.thread_id_power);
+		if (node_features_g_node_power() && !power_save_test()) {
+			fatal("PowerSave required with NodeFeatures plugin, "
+			      "but not fully configured (SuspendProgram, "
+			      "ResumeProgram and SuspendTime all required");
+		}
 
 		/*
 		 * process slurm background activities, could run as pthread

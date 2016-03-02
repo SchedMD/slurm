@@ -63,6 +63,12 @@ extern int node_features_g_job_valid(char *job_features);
  * RET node boot options, must be xfreed */
 extern char *node_features_g_job_xlate(char *job_features);
 
+/* Return true if the plugin requires RebootProgram for booting nodes */
+extern bool node_features_g_node_reboot(void);
+
+/* Return true if the plugin requires PowerSave mode for booting nodes */
+extern bool node_features_g_node_power(void);
+
 /* Get this node's current and available MCDRAM and NUMA settings from BIOS.
  * avail_modes IN/OUT - available modes, must be xfreed
  * current_mode IN/OUT - current modes, must be xfreed */

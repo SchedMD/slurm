@@ -85,8 +85,10 @@
 pid_t  child_pid[PID_CNT];	/* pid of process		*/
 time_t child_time[PID_CNT];	/* start time of process	*/
 
+pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_enabled = false;
+bool power_save_init = false;
 
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL;
@@ -682,6 +684,12 @@ extern void start_power_mgr(pthread_t *thread_id)
 /* Report if node power saving is enabled */
 extern bool power_save_test(void)
 {
+	slurm_mutex_lock(&power_mutex);
+	while (!power_save_init) {
+		pthread_cond_wait(&power_cond, &power_mutex);
+	}
+	slurm_mutex_unlock(&power_mutex);
+
 	return power_save_enabled;
 }
 
@@ -699,8 +707,14 @@ static void *_init_power_save(void *arg)
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
+	int rc;
 
-	if (_init_power_config())
+	rc = _init_power_config();
+	slurm_mutex_lock(&power_mutex);
+	power_save_init = true;
+	pthread_cond_signal(&power_cond);
+	slurm_mutex_unlock(&power_mutex);
+	if (rc)
 		goto fini;
 
 	suspend_node_bitmap = bit_alloc(node_record_count);
@@ -752,6 +766,7 @@ fini:	_clear_power_config();
 	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
 	power_save_enabled = false;
+	pthread_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 	pthread_exit(NULL);
 	return NULL;

@@ -1804,6 +1804,18 @@ extern char *node_features_p_job_xlate(char *job_features)
 	return node_features;
 }
 
+/* Return true if the plugin requires PowerSave mode for booting nodes */
+extern bool node_features_p_node_power(void)
+{
+	return true;
+}
+
+/* Return true if the plugin requires RebootProgram for booting nodes */
+extern bool node_features_p_node_reboot(void)
+{
+	return false;
+}
+
 /* Translate a node's feature specification by replacing any features associated
  * with this plugin in the original value with the new values, preserving any
  * features that are not associated with this plugin
