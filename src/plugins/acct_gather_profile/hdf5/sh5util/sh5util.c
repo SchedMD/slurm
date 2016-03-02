@@ -571,7 +571,8 @@ static int _merge_step_files(void)
 	char *step_dir = NULL;
 	char *step_path = NULL;
 	char *stepno = NULL;
-	int node_cnt;
+	int node_cnt = -1;
+	int last_step = -1, step_cnt = 0;
 	int job_id;
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
@@ -647,8 +648,6 @@ static int _merge_step_files(void)
 		goto endit;
 	}
 
-	put_int_attribute(fid_job, ATTR_NSTEPS, list_count(file_list));
-
 	jgid_steps = make_group(fid_job, GRP_STEPS);
 	if (jgid_steps < 0) {
 		error("Failed to create group %s",
@@ -666,8 +665,9 @@ static int _merge_step_files(void)
 		//info("got file of %s", sh5util_file->file_name);
 
 		/* make a group for each step */
-		if ((sh5util_file->step_id == -2) ||
-		    (sh5util_file->step_id > max_step)) {
+		if (sh5util_file->step_id != last_step) {
+			last_step = sh5util_file->step_id;
+			step_cnt++;
 			/* on to the next step, close down the last one */
 			if (jgid_step) {
 				put_int_attribute(
@@ -677,14 +677,13 @@ static int _merge_step_files(void)
 				node_cnt = 0;
 			}
 
-			if (sh5util_file->step_id == NO_VAL) {
+			if (sh5util_file->step_id == -2)
 				jgrp_step_name = xstrdup_printf(
 					"/%s/batch", GRP_STEPS);
-			} else {
+			else
 				jgrp_step_name = xstrdup_printf(
 					"/%s/%d", GRP_STEPS,
 					sh5util_file->step_id);
-			}
 
 //			info("making group for step %d", sh5util_file->step_id);
 			jgid_step = make_group(fid_job, jgrp_step_name);
@@ -721,6 +720,8 @@ static int _merge_step_files(void)
 
 	}
 	list_iterator_destroy(itr);
+
+	put_int_attribute(fid_job, ATTR_NSTEPS, step_cnt);
 
 
 endit:
