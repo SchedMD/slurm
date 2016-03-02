@@ -140,6 +140,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove historical presentations and design notes. Only distribute
     maintained doc/html and doc/man directories.
  -- Remove duplicate xmalloc() in task/cgroup plugin.
+ -- Backfill scheduler to validate correct job partition for job submitted to
+    multiple partitions.
 
 * Changes in Slurm 15.08.8
 ==========================

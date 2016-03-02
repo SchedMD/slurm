@@ -962,7 +962,10 @@ static int _attempt_backfill(void)
 		}
 
 		job_ptr  = job_queue_rec->job_ptr;
+		part_ptr = job_queue_rec->part_ptr;
+		job_ptr->part_ptr = part_ptr;
 		mcs_select = slurm_mcs_get_select(job_ptr);
+
 		/* With bf_continue configured, the original job could have
 		 * been cancelled and purged. Validate pointer here. */
 		if ((job_ptr->magic  != JOB_MAGIC) ||
@@ -1033,7 +1036,6 @@ static int _attempt_backfill(void)
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
-		part_ptr = job_queue_rec->part_ptr;
 		xfree(job_queue_rec);
 
 next_task:
