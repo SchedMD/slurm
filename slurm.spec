@@ -617,10 +617,10 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/sbin/capmc_suspend			&&
-  echo /usr/sbin/capmc_suspend				>> $LIST
-test -f $RPM_BUILD_ROOT/usr/sbin/capmc_resume			&&
-  echo /usr/sbin/capmc_resume				>> $LIST
+test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_suspend		&&
+  echo %{_sbindir}/capmc_suspend			>> $LIST
+test -f $RPM_BUILD_ROOT/%{_sbindir}/capmc_resume		&&
+  echo %{_sbindir}/capmc_resume				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
   echo /usr/sbin/rcslurm				>> $LIST
 test -f $RPM_BUILD_ROOT/usr/lib/systemd/system/slurmctld.service	&&
