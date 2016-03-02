@@ -177,7 +177,12 @@ $command .= " -t $time" if $time;
 $command .= " -p $partition" if $partition;
 $command .= " --exclusive" if $exclusive;
 
-if ($interactive || !_check_script($ARGV[0])) {
+# Here we are checking to see if the file is a known bsub script.
+# If it isn't wrap it.  We have seen with certain scripts they need $0
+# to point to the original script's name.  Since Slurm will rename the
+# batch script when it gets ran on a compute node it breaks the $0
+# functionality.  If we wrap it the problem is solved.
+if ($interactive || !_check_bsub_script($ARGV[0])) {
 	$command .=" --wrap=\"$script\"";
 } else {
 	$command .= " $script";
@@ -252,17 +257,36 @@ sub _parse_procs {
 	}
 }
 
-sub _check_script {
+sub _check_bsub_script {
 	my ($script) = @_;
 
-	if (open (my $file, "<$script")) {
-		my $first_line = <$file>;
-		close $file;
+	my $rc = 0;
 
-		return ($first_line =~ /\#!/);
+	if (open (my $file, "<$script")) {
+		my $line = <$file>;
+
+		# check to make sure this is a script to begin with
+		if ($line =~ /\#!/) {
+			# Now check the first lines and make sure the first line
+			# that isn't a comment is a #BSUB line.  If it isn't
+			# we will presume this file needs to be wrapped.
+			while ($line = <$file>) {
+				next if ($line =~ /^$/);
+
+				if ($line =~ /^\#BSUB/) {
+					$rc = 1;
+				} elsif ($line =~ /^\#/) {
+					next;
+				}
+
+				last;
+			}
+		}
+
+		close $file;
 	}
 
-	return "";
+	return $rc;
 }
 
 sub _parse_node_list {
