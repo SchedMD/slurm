@@ -50,7 +50,6 @@ static bool	_hidden_node(struct node_record *node_ptr);
 static char *	_get_node_state(struct node_record *node_ptr);
 static int	_same_info(struct node_record *node1_ptr,
 			   struct node_record *node2_ptr, time_t update_time);
-static int	_str_cmp(char *s1, char *s2);
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
@@ -253,7 +252,7 @@ static int _same_info(struct node_record *node1_ptr,
 
 	if (node1_ptr->node_state != node2_ptr->node_state)
 		return 1;
-	if (_str_cmp(node1_ptr->reason, node2_ptr->reason))
+	if (xstrcmp(node1_ptr->reason, node2_ptr->reason))
 		return 2;
 	if (update_time > last_node_update)
 		return 0;
@@ -273,9 +272,9 @@ static int _same_info(struct node_record *node1_ptr,
 		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
 			return 6;
 	}
-	if (_str_cmp(node1_ptr->arch, node2_ptr->arch))
+	if (xstrcmp(node1_ptr->arch, node2_ptr->arch))
 		return 7;
-	if (_str_cmp(node1_ptr->os, node2_ptr->os))
+	if (xstrcmp(node1_ptr->os, node2_ptr->os))
 		return 8;
 	if (update_time > 0)
 		return 0;
@@ -295,11 +294,11 @@ static int _same_info(struct node_record *node1_ptr,
 		    (node1_ptr->cpus        != node2_ptr->cpus))
 			return 10;
 	}
-	if (_str_cmp(node1_ptr->config_ptr->feature,
+	if (xstrcmp(node1_ptr->config_ptr->feature,
 		     node2_ptr->config_ptr->feature))
 		return 11;
 
-	if (_str_cmp(node1_ptr->config_ptr->gres,
+	if (xstrcmp(node1_ptr->config_ptr->gres,
 		     node2_ptr->config_ptr->gres))
 		return 12;
 
@@ -456,19 +455,6 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		return "Idle";
 
 	return "Unknown";
-}
-
-/* Like strcmp(), but can handle NULL pointers */
-static int	_str_cmp(char *s1, char *s2)
-{
-	if (s1 && s2)
-		return strcmp(s1, s2);
-
-	if ((s1 == NULL) && (s2 == NULL))
-		return 0;
-
-	/* One pointer is valid and the other is NULL */
-	return 1;
 }
 
 /* Return true if the node exists in a hidden partition and not in any
