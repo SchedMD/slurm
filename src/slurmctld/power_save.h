@@ -43,6 +43,11 @@
 #ifndef _HAVE_POWER_SAVE_H
 #define _HAVE_POWER_SAVE_H
 
+/*
+ * config_power_mgr - Read power management configuration
+ */
+extern void config_power_mgr(void);
+
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
  * IN thread_id - pointer to thread ID of the started pthread.

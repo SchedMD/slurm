@@ -87,8 +87,9 @@ time_t child_time[PID_CNT];	/* start time of process	*/
 
 pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
+bool power_save_config = false;
 bool power_save_enabled = false;
-bool power_save_init = false;
+bool power_save_started = false;
 
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL;
@@ -656,6 +657,21 @@ static bool _valid_prog(char *file_name)
 	return true;
 }
 
+/*
+ * config_power_mgr - Read power management configuration
+ */
+extern void config_power_mgr(void)
+{
+	slurm_mutex_lock(&power_mutex);
+	if (!power_save_config) {
+		if (_init_power_config() == 0)
+			power_save_enabled = true;
+		power_save_config = true;
+	}
+	pthread_cond_signal(&power_cond);
+	slurm_mutex_unlock(&power_mutex);
+}
+
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
  * IN thread_id - pointer to thread ID of the started pthread.
@@ -665,11 +681,11 @@ extern void start_power_mgr(pthread_t *thread_id)
 	pthread_attr_t thread_attr;
 
 	slurm_mutex_lock(&power_mutex);
-	if (power_save_enabled) {     /* Already running */
+	if (power_save_started) {     /* Already running */
 		slurm_mutex_unlock(&power_mutex);
 		return;
 	}
-	power_save_enabled = true;
+	power_save_started = true;
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_attr_init(&thread_attr);
@@ -684,13 +700,16 @@ extern void start_power_mgr(pthread_t *thread_id)
 /* Report if node power saving is enabled */
 extern bool power_save_test(void)
 {
+	bool rc;
+
 	slurm_mutex_lock(&power_mutex);
-	while (!power_save_init) {
+	while (!power_save_config) {
 		pthread_cond_wait(&power_cond, &power_mutex);
 	}
+	rc = power_save_enabled;
 	slurm_mutex_unlock(&power_mutex);
 
-	return power_save_enabled;
+	return rc;
 }
 
 /*
@@ -707,15 +726,11 @@ static void *_init_power_save(void *arg)
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
-	int rc;
 
-	rc = _init_power_config();
-	slurm_mutex_lock(&power_mutex);
-	power_save_init = true;
-	pthread_cond_signal(&power_cond);
-	slurm_mutex_unlock(&power_mutex);
-	if (rc)
-		goto fini;
+	if (power_save_config && !power_save_enabled) {
+		debug("power_save mode not enabled");
+		return NULL;
+	}
 
 	suspend_node_bitmap = bit_alloc(node_record_count);
 	resume_node_bitmap  = bit_alloc(node_record_count);
