@@ -18,7 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- Check that PowerSave mode configured for node_features/knl_cray plugin.
     It is required to reconfigure and reboot nodes.
  -- Update documentation to reflect new cgroup default location change from
-    /cgroup to /sys/fs/cgroup .
+    /cgroup to /sys/fs/cgroup.
+ -- If NodeHealthCheckProgram configured HealthCheckInterval is non-zero, then
+    modify slurmd to run it before registering with slurmctld.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

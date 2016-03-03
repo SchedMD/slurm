@@ -105,6 +105,7 @@
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
@@ -117,6 +118,8 @@
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
 #endif
+
+#define HEALTH_RETRY_DELAY 10
 
 #define MAX_THREADS		256
 
@@ -204,7 +207,7 @@ static void      _update_nice(void);
 static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
-
+static void      _wait_health_check(void);
 
 int
 main (int argc, char *argv[])
@@ -365,6 +368,9 @@ main (int argc, char *argv[])
 	 */
 	if (slurmd_plugstack_init())
 		fatal("failed to initialize slurmd_plugstack");
+
+	/* Wait for a successfull health check if HealthCheckInterval != 0 */
+	_wait_health_check();
 
 	_spawn_registration_engine();
 	msg_aggr_sender_init(conf->hostname, conf->port,
@@ -1011,6 +1017,7 @@ _read_config(void)
 	conf->task_plugin_param = cf->task_plugin_param;
 
 	conf->mem_limit_enforce = cf->mem_limit_enforce;
+	conf->health_check_interval = cf->health_check_interval;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
@@ -2282,4 +2289,40 @@ static void _resource_spec_fini(void)
 	xfree(res_mac_cpus);
 	FREE_NULL_BITMAP(res_core_bitmap);
 	FREE_NULL_BITMAP(res_cpu_bitmap);
+}
+
+/*
+ * Wait for health check to execute successfully
+ *
+ * Return imediately if a shutdown has been requested or
+ * if the HealthCheckInterval is 0.
+ */
+static void _wait_health_check(void)
+{
+	while (!_shutdown &&
+	       (conf->health_check_interval != 0) &&
+	       (run_script_health_check() != SLURM_SUCCESS)) {
+		info("Node Health Check failed, retrying in %d secs",
+		     HEALTH_RETRY_DELAY);
+		sleep(HEALTH_RETRY_DELAY);
+	}
+}
+
+/*
+ * Run the configured health check program
+ *
+ * Returns the run result. If the health check program
+ * is not defined, returns success immediately.
+ */
+extern int run_script_health_check(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (conf->health_check_program) {
+		char *env[1] = { NULL };
+		rc = run_script("health_check", conf->health_check_program,
+				0, 60, env, 0);
+	}
+
+	return rc;
 }

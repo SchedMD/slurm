@@ -2543,11 +2543,8 @@ _rpc_health_check(slurm_msg_t *msg)
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
-	if ((rc == SLURM_SUCCESS) && (conf->health_check_program)) {
-		char *env[1] = { NULL };
-		rc = run_script("health_check", conf->health_check_program,
-				0, 60, env, 0);
-	}
+	if (rc == SLURM_SUCCESS)
+		rc = run_script_health_check();
 
 	/* Take this opportunity to enforce any job memory limits */
 	_enforce_job_mem_limit();

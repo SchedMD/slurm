@@ -124,7 +124,8 @@ typedef struct slurmd_config {
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
 	char         *pidfile;		/* PidFile location		   */
-	char         *health_check_program;	/* run on RPC request      */
+	char         *health_check_program; /* run on RPC request or at start */
+	uint64_t     health_check_interval; /* Interval between runs       */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */
@@ -194,5 +195,7 @@ int send_registration_msg(uint32_t status, bool startup);
  */
 int save_cred_state(slurm_cred_ctx_t vctx);
 
+/* Run the health check program if configured */
+int run_script_health_check(void);
 
 #endif /* !_SLURMD_H */
