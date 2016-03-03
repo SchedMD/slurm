@@ -814,6 +814,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		char *const argv[3] = {"memcheck",
 				       (char *)conf->stepd_loc, NULL};
 #endif
+		int i;
 		int failed = 0;
 		/* inform slurmstepd about our config */
 		setenv("SLURM_CONF", conf->conffile, 1);
@@ -831,6 +832,18 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			failed = 2;
 		} else if (pid > 0) { /* child */
 			exit(0);
+		}
+
+		/*
+		 * Just incase we (or someone we are linking to)
+		 * opened a file and didn't do a close on exec.  This
+		 * is needed mostly to protect us against libs we link
+		 * to that don't set the flag as we should already be
+		 * setting it for those that we open.  The number 256
+		 * is an arbitrary number based off test7.9.
+		 */
+		for (i=3; i<256; i++) {
+			fcntl(i, F_SETFD, FD_CLOEXEC);
 		}
 
 		/*

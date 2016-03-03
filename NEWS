@@ -142,6 +142,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove duplicate xmalloc() in task/cgroup plugin.
  -- Backfill scheduler to validate correct job partition for job submitted to
     multiple partitions.
+ -- Force close on exec on first 256 file descriptors when launching a
+    slurmstepd to close potential open ones.
 
 * Changes in Slurm 15.08.8
 ==========================
