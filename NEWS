@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     slurmstepd to close potential open ones.
  -- Step GRES value changed from type "int" to "int64_t" to support larger
     values.
+ -- Fix getting reservations to database when database is down.
 
 * Changes in Slurm 15.08.8
 ==========================
