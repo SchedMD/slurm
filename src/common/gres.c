@@ -4885,7 +4885,7 @@ static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 {
 	gres_step_state_t *gres_ptr;
 	char *type = NULL, *num = NULL, *last_num = NULL;
-	int cnt;
+	int64_t cnt;
 
 	if (!xstrcmp(config, context_ptr->gres_name)) {
 		cnt = 1;
@@ -4912,7 +4912,7 @@ static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 		/* Did not find this GRES name, check for zero value */
 		num = strrchr(config, ':');
 		if (num) {
-			 cnt = strtol(num + 1, &last_num, 10);
+			cnt = strtol(num + 1, &last_num, 10);
 			if ((last_num[0] != '\0') || (cnt != 0))
 				return SLURM_ERROR;
 		} else

@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     multiple partitions.
  -- Force close on exec on first 256 file descriptors when launching a
     slurmstepd to close potential open ones.
+ -- Step GRES value changed from type "int" to "int64_t" to support larger
+    values.
 
 * Changes in Slurm 15.08.8
 ==========================
