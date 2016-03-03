@@ -121,6 +121,8 @@ documents those changes that are of interest to users and administrators.
  -- For job constraint, convert comma separator to "&".
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
+ -- Fix for tasks being packed onto cores when the requested --cpus-per-task is
+    greater than the number of threads on a core and --ntasks-per-core is 1.
 
 * Changes in Slurm 15.08.9
 ==========================
