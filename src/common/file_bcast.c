@@ -366,6 +366,10 @@ static int _bcast_file(struct bcast_parameters *params)
 		bcast_msg.mtime     = 0;
 	}
 
+	if (!params->fanout)
+		params->fanout = MAX_THREADS;
+	slurm_set_tree_width(MIN(MAX_THREADS, params->fanout));
+
 	while (1) {
 		block_len = _get_block(params, buffer, buf_size);
 		if (block_len < 0)
