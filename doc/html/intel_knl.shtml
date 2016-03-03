@@ -50,6 +50,11 @@ value for that configuration will be used.</p>
 <tr><td>NUMA</td><td>quad</td><td>Quadrant</td></tr>
 </table>
 
+<p>Jobs requiring some or all of the KNL high bandwidth memory (HBM) should
+explicitly request that memory using Slurm's Generic RESource (GRES) options.
+The HBM will always be known by Slurm GRES name of "hbm".
+Examples below demonstrate use of HBM.</p>
+
 <h3>Accounting</h3>
 
 <p>If a node requires rebooting for a job's required configuration, the job
@@ -70,15 +75,15 @@ the boot time.</p>
 <h3>Sample Use Cases</h3>
 
 <pre>
-$ sbatch -C flat,a2a -N2 --exclusive my.script
+$ sbatch -C flat,a2a -N2 -gres=hbm:8g --exclusive my.script
 $ srun --constraint=hemi,cache -n36 a.out
-$ srun --constraint=flat -n36 a.out
+$ srun --constraint=flat --gres=hbm:2g -n36 a.out
 
 $ sinfo -o "%30N %20b %f"
 NODELIST       ACTIVE_FEATURES  AVAIL_FEATURES
 nid000[10-11]
 nid000[12-35]  flat,a2a         flat,a2a,snc2,snc4,hemi,quad
-nid000[36-43]  cache,a2a        flat,equal,cache,a2a,snc2,snc4,hemi,quad
+nid000[36-43]  cache,a2a        flat,equal,cache,a2a,hemi,quad
 </pre>
 
 <h3>Network Topology</h3>
@@ -180,6 +185,13 @@ in "slurm.conf" to the path of the "capmc_resume" file and configure
 "SuspendTime" to a huge value (e.g. "SuspendTime=30000000" will only power
 down a node which has been idle for about one year).</p>
 
+<p>The GresTypes configuration parameter should include "hbm" to identify
+High Bandwidth Memory (HBM) as being a consumable resources on compute nodes.
+Additional GresTypes can be specified as needed in a comma separated list.
+The amount of HBM on each node should not be configured in a Slurm configuration
+file, but that information will be loaded by the knl_cray plugin using
+information provided by the capmc program.</p>
+
 <h3>Sample knl_cray.conf File</h3>
 
 <pre>
@@ -196,6 +208,7 @@ DefaultMCDRAM=cache     # MCDRAM=cache
 # Sample slurm.conf
 NodeFeaturesPlugins=knl_cray
 DebugFlags=NodeFeatures
+GresTypes=hbm
 #
 ResumeProgram=/opt/slurm/default/sbin/capmc_resume
 SuspendTime=30000000
@@ -207,6 +220,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 February 2016</p>
+<p style="text-align:center;">Last modified 3 March 2016</p>
 
 <!--#include virtual="footer.txt"-->

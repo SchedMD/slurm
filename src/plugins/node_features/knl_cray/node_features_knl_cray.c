@@ -1028,8 +1028,12 @@ static void _update_all_node_features(
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
 			mcdram_size = mcdram_cfg[i].mcdram_size *
-				      mcdram_cfg[i].mcdram_pct / 100;
-			gres_plugin_node_feature(node_ptr->name, "mcdram",
+				      (100 - mcdram_cfg[i].mcdram_pct) / 100;
+			if (!node_ptr->gres) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
+			}
+			gres_plugin_node_feature(node_ptr->name, "hbm",
 						 mcdram_size, &node_ptr->gres,
 						 &node_ptr->gres_list);
 		}
@@ -1103,8 +1107,12 @@ static void _update_node_features(struct node_record *node_ptr,
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
 			mcdram_size = mcdram_cfg[i].mcdram_size *
-				      mcdram_cfg[i].mcdram_pct / 100;
-			gres_plugin_node_feature(node_ptr->name, "mcdram",
+				      (100 - mcdram_cfg[i].mcdram_pct) / 100;
+			if (!node_ptr->gres) {
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
+			}
+			gres_plugin_node_feature(node_ptr->name, "hbm",
 						 mcdram_size, &node_ptr->gres,
 						 &node_ptr->gres_list);
 			break;

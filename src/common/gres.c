@@ -2063,7 +2063,7 @@ static void _gres_scale_value(uint64_t gres_size, uint64_t *gres_scaled,
 
 	tmp_gres_size = gres_size;
 	for (i = 0; i < 4; i++) {
-		if ((tmp_gres_size % 1024) == 0)
+		if ((tmp_gres_size != 0) && ((tmp_gres_size % 1024) == 0))
 			tmp_gres_size /= 1024;
 		else
 			break;
@@ -2142,6 +2142,15 @@ extern void gres_plugin_node_feature(char *node_name,
 		list_append(*gres_list, gres_ptr);
 	}
 	gres_node_ptr = gres_ptr->gres_data;
+	if (gres_size >= gres_node_ptr->gres_cnt_alloc) {
+		gres_node_ptr->gres_cnt_avail = gres_size -
+						gres_node_ptr->gres_cnt_alloc;
+	} else {
+		error("%s: Changed size count of GRES %s from %"PRIu64" to %"
+		      PRIu64", resource over allocated", __func__, gres_name,
+		      gres_node_ptr->gres_cnt_avail, gres_size);
+		gres_node_ptr->gres_cnt_avail = 0;
+	}
 	gres_node_ptr->gres_cnt_config = gres_size;
 	gres_node_ptr->gres_cnt_found = gres_size;
 	gres_node_ptr->node_feature = true;
