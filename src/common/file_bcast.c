@@ -76,16 +76,10 @@ typedef struct thd {
 	char *nodelist;
 } thd_t;
 
-static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
-static int agent_cnt = 0;
-static int msg_timeout = 0;
-
 static int fd;				/* source file descriptor */
 static struct stat f_stat;		/* source file stats */
 job_sbcast_cred_msg_t *sbcast_cred;	/* job alloc info and sbcast cred */
 
-static void *_agent_thread(void *args);
 static int   _bcast_file(struct bcast_parameters *params);
 static int   _file_bcast(struct bcast_parameters *params,
 			 file_bcast_msg_t *bcast_msg,
@@ -157,18 +151,23 @@ static int _get_job_info(struct bcast_parameters *params)
 	return rc;
 }
 
-
-static void *_agent_thread(void *args)
+/* Issue the RPC to transfer the file's data */
+static int _file_bcast(struct bcast_parameters *params,
+		       file_bcast_msg_t *bcast_msg,
+		       job_sbcast_cred_msg_t *sbcast_cred)
 {
 	List ret_list = NULL;
-	thd_t *thread_ptr = (thd_t *) args;
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = 0, msg_rc;
+	slurm_msg_t msg;
 
-	ret_list = slurm_send_recv_msgs(thread_ptr->nodelist,
-					&thread_ptr->msg,
-					msg_timeout, false);
+	slurm_msg_t_init(&msg);
+	msg.data = bcast_msg;
+	msg.msg_type = REQUEST_FILE_BCAST;
+
+	ret_list = slurm_send_recv_msgs(
+		sbcast_cred->node_list, &msg, params->timeout, true);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs: %m");
 		exit(1);
@@ -186,110 +185,8 @@ static void *_agent_thread(void *args)
 		      slurm_strerror(msg_rc));
 		rc = MAX(rc, msg_rc);
 	}
-
-	thread_ptr->rc = rc;
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(ret_list);
-	slurm_mutex_lock(&agent_cnt_mutex);
-	agent_cnt--;
-	pthread_cond_broadcast(&agent_cnt_cond);
-	slurm_mutex_unlock(&agent_cnt_mutex);
-	return NULL;
-}
-
-/* Issue the RPC to transfer the file's data */
-static int _file_bcast(struct bcast_parameters *params,
-		       file_bcast_msg_t *bcast_msg,
-		       job_sbcast_cred_msg_t *sbcast_cred)
-{
-	/* Preserve some data structures across calls for better performance */
-	static int threads_used = 0;
-	static thd_t thread_info[MAX_THREADS];
-
-	int i, fanout, rc = SLURM_SUCCESS;
-	int retries = 0;
-	pthread_attr_t attr;
-
-	if (threads_used == 0) {
-		hostlist_t hl;
-		hostlist_t new_hl;
-		int *span = NULL;
-		char *name = NULL;
-
-		if (params->fanout)
-			fanout = MIN(MAX_THREADS, params->fanout);
-		else
-			fanout = MAX_THREADS;
-		msg_timeout = params->timeout;
-
-		span = set_span(sbcast_cred->node_cnt, fanout);
-
-		hl = hostlist_create(sbcast_cred->node_list);
-
-		i = 0;
-		while (i < sbcast_cred->node_cnt) {
-			int j = 0;
-			name = hostlist_shift(hl);
-			if (!name) {
-				debug3("no more nodes to send to");
-				break;
-			}
-			new_hl = hostlist_create(name);
-			free(name);
-			i++;
-			for (j = 0; j < span[threads_used]; j++) {
-				name = hostlist_shift(hl);
-				if (!name)
-					break;
-				hostlist_push_host(new_hl, name);
-				free(name);
-				i++;
-			}
-			thread_info[threads_used].nodelist =
-				hostlist_ranged_string_xmalloc(new_hl);
-			hostlist_destroy(new_hl);
-			slurm_msg_t_init(&thread_info[threads_used].msg);
-			thread_info[threads_used].msg.msg_type =
-				REQUEST_FILE_BCAST;
-			threads_used++;
-		}
-		xfree(span);
-		hostlist_destroy(hl);
-		debug("using %d threads", threads_used);
-	}
-
-	slurm_attr_init(&attr);
-	if (pthread_attr_setstacksize(&attr, 3 * 1024 * 1024))
-		error("pthread_attr_setstacksize: %m");
-	if (pthread_attr_setdetachstate (&attr,
-			PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-
-	for (i = 0; i < threads_used; i++) {
-		thread_info[i].msg.data = bcast_msg;
-		slurm_mutex_lock(&agent_cnt_mutex);
-		agent_cnt++;
-		slurm_mutex_unlock(&agent_cnt_mutex);
-
-		while (pthread_create(&thread_info[i].thread,
-				      &attr, _agent_thread,
-				      (void *) &thread_info[i])) {
-			error("pthread_create error %m");
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);	/* sleep and retry */
-		}
-	}
-
-	/* wait until pthreads complete */
-	slurm_mutex_lock(&agent_cnt_mutex);
-	while (agent_cnt)
-		pthread_cond_wait(&agent_cnt_cond, &agent_cnt_mutex);
-	slurm_mutex_unlock(&agent_cnt_mutex);
-	pthread_attr_destroy(&attr);
-
-	for (i = 0; i < threads_used; i++)
-		 rc = MAX(rc, thread_info[i].rc);
 
 	return rc;
 }
