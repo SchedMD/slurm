@@ -330,6 +330,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
+	uint16_t ntasks_per_core = 0xffff;
+	int tmp_cpt = 0;
 	int count, cpu_min, b_min, elig, s_min, comb_idx, sock_idx;
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
 	int* boards_core_cnt;
@@ -363,8 +365,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
 		    (mc_ptr->ntasks_per_core)) {
-			ncpus_per_core = mc_ptr->ntasks_per_core;
-			ncpus_per_core *= cpus_per_task;
+			ntasks_per_core = mc_ptr->ntasks_per_core;
+			ncpus_per_core  = ntasks_per_core * cpus_per_task;
 		}
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
@@ -403,6 +405,16 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		req_cores = cpus / vpus;
 		if ( cpus % vpus )
 			req_cores++;
+
+		/* figure out core cnt if task requires more than one core and
+		 * tasks_per_core is 1 */
+		if ((ntasks_per_core == 1) &&
+		    (cpus_per_task > vpus)) {
+			/* how many cores a task will consume */
+			int cores_per_task = (cpus_per_task + vpus - 1) / vpus;
+			int tasks = cpus / cpus_per_task;
+			req_cores = tasks * cores_per_task;
+		}
 
 		if (nboards_nb > MAX_BOARDS) {
 			debug3("cons_res: node[%u]: exceeds max boards; "
@@ -556,6 +568,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		/* select cores from the sockets of the best-fit board
 		 * combination using a best-fit approach */
+		tmp_cpt = cpus_per_task;
 		while ( cpus > 0 ) {
 
 			best_fit_cores = 0;
@@ -619,8 +632,18 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 					core_cnt++;
 					if (cpus < vpus)
 						cpus = 0;
-					else
+					else if ((ntasks_per_core == 1) &&
+						 (cpus_per_task > vpus)) {
+						int used = MIN(tmp_cpt, vpus);
+						cpus -= used;
+
+						if (tmp_cpt <= used)
+							tmp_cpt = cpus_per_task;
+						else
+							tmp_cpt -= used;
+					} else {
 						cpus -= vpus;
+					}
 				} else if (alloc_sockets) {
 					/* If the core is not used, add it
 					 * anyway if allocating whole sockets */
@@ -687,7 +710,9 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
 	uint16_t ntasks_per_socket = 0xffff;
+	uint16_t ntasks_per_core = 0xffff;
 	int error_code = SLURM_SUCCESS;
+	int tmp_cpt = 0; /* cpus_per_task */
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL) ||
 	    (job_ptr->details == NULL))
@@ -703,8 +728,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
 		    (mc_ptr->ntasks_per_core)) {
-			ncpus_per_core = mc_ptr->ntasks_per_core;
-			ncpus_per_core *= cpus_per_task;
+			ntasks_per_core = mc_ptr->ntasks_per_core;
+			ncpus_per_core  = ntasks_per_core * cpus_per_task;
 		}
 
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
@@ -802,20 +827,34 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				}
 				cpus_cnt[s] -= (cpus_cnt[s] % cpus_per_task);
 			}
+			tmp_cpt = cpus_per_task;
 			for (s = 0; ((s < sockets) && (cpus > 0)); s++) {
 				while ((sock_start[s] < sock_end[s]) &&
 				       (cpus_cnt[s] > 0) && (cpus > 0)) {
 					if (bit_test(core_map, sock_start[s])) {
+						int used;
 						sock_used[s] = true;
 						core_cnt++;
+
+						if ((ntasks_per_core == 1) &&
+						    (cpus_per_task > vpus)) {
+							used = MIN(tmp_cpt,
+								   vpus);
+							if (tmp_cpt <= used)
+								tmp_cpt = cpus_per_task;
+							else
+								tmp_cpt -= used;
+						} else
+							used = vpus;
+
 						if (cpus_cnt[s] < vpus)
 							cpus_cnt[s] = 0;
 						else
-							cpus_cnt[s] -= vpus;
+							cpus_cnt[s] -= used;
 						if (cpus < vpus)
 							cpus = 0;
 						else
-							cpus -= vpus;
+							cpus -= used;
 					}
 					sock_start[s]++;
 				}

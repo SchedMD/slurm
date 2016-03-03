@@ -215,7 +215,9 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
 	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
+	uint16_t ntasks_per_core = 0xffff;
 	uint32_t free_cpu_count = 0, used_cpu_count = 0, *used_cpu_array = NULL;
+	int tmp_cpt = 0; /* cpus_per_task */
 
 	if (entire_sockets_only && job_ptr->details->whole_node &&
 	    (job_ptr->details->core_spec != (uint16_t) NO_VAL)) {
@@ -233,9 +235,9 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		}
 		if ((mc_ptr->ntasks_per_core != (uint16_t) INFINITE) &&
 		    (mc_ptr->ntasks_per_core)) {
+			ntasks_per_core = mc_ptr->ntasks_per_core;
 			ncpus_per_core = MIN(threads_per_core,
-					     (mc_ptr->ntasks_per_core *
-					      cpus_per_task));
+					     (ntasks_per_core * cpus_per_task));
 		}
 		if ((mc_ptr->threads_per_core != (uint16_t) NO_VAL) &&
 		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
@@ -413,6 +415,18 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 
 	if (cpus_per_task < 2) {
 		avail_cpus = num_tasks;
+	} else if ((ntasks_per_core == 1) &&
+		   (cpus_per_task > threads_per_core)) {
+		/* find out how many cores a task will use */
+		int task_cores = (cpus_per_task + threads_per_core - 1) /
+				 threads_per_core;
+		int task_cpus  = task_cores * threads_per_core;
+		/* find out how many tasks can fit on a node */
+		int tasks = avail_cpus / task_cpus;
+		/* how many cpus the the job would use on the node */
+		avail_cpus = tasks * task_cpus;
+		/* subtract out the extra cpus. */
+		avail_cpus -= (tasks * (task_cpus - cpus_per_task));
 	} else {
 		j = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, j);
@@ -439,6 +453,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			cps = ntasks_per_socket * cpus_per_task;
 	}
 	si = 9999;
+	tmp_cpt = cpus_per_task;
 	for (c = core_begin; c < core_end && avail_cpus > 0; c++) {
 		if (bit_test(core_map, c) == 0)
 			continue;
@@ -467,8 +482,19 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			 * processing of stage 3
 			 */
 			if (avail_cpus >= threads_per_core) {
-				avail_cpus -= threads_per_core;
-				cpu_count += threads_per_core;
+				int used;
+				if ((ntasks_per_core == 1) &&
+				    (cpus_per_task > threads_per_core)) {
+					used = MIN(tmp_cpt, threads_per_core);
+				} else
+					used = threads_per_core;
+				avail_cpus -= used;
+				cpu_count  += used;
+
+				if (tmp_cpt <= used)
+					tmp_cpt = cpus_per_task;
+				else
+					tmp_cpt -= used;
 			}
 			else {
 				cpu_count += avail_cpus;
