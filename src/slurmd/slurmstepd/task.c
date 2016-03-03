@@ -274,10 +274,9 @@ _run_script_and_set_env(const char *name, const char *path,
 	/* NOTREACHED */
 }
 
-/* Given a program name, translate it to a fully qualified pathname
- * as needed based upon the PATH environment variable */
-static char *
-_build_path(char* fname, char **prog_env)
+/* Given a program name, translate it to a fully qualified pathname as needed
+ * based upon the PATH environment variable and current working directory */
+extern char *build_path(char* fname, char **prog_env, char *cwd)
 {
 	int i;
 	char *path_env = NULL, *dir;
@@ -288,7 +287,7 @@ _build_path(char* fname, char **prog_env)
 	file_name = (char *)xmalloc(len);
 	/* make copy of file name (end at white space) */
 	snprintf(file_name, len, "%s", fname);
-	for (i=0; i < len; i++) {
+	for (i = 0; i < len; i++) {
 		if (file_name[i] == '\0')
 			break;
 		if (!isspace(file_name[i]))
@@ -302,17 +301,21 @@ _build_path(char* fname, char **prog_env)
 		return file_name;
 	if (file_name[0] == '.') {
 		file_path = (char *)xmalloc(len);
-		dir = (char *)xmalloc(len);
-		if (!getcwd(dir, len))
-			error("getcwd failed: %m");
-		snprintf(file_path, len, "%s/%s", dir, file_name);
+		if (cwd) {
+			snprintf(file_path, len, "%s/%s", cwd, file_name);
+		} else {
+			dir = (char *)xmalloc(len);
+			if (!getcwd(dir, len))
+				error("getcwd failed: %m");
+			snprintf(file_path, len, "%s/%s", dir, file_name);
+			xfree(dir);
+		}
 		xfree(file_name);
-		xfree(dir);
 		return file_path;
 	}
 
 	/* search for the file using PATH environment variable */
-	for (i=0; ; i++) {
+	for (i = 0; ; i++) {
 		if (prog_env[i] == NULL)
 			return file_name;
 		if (xstrncmp(prog_env[i], "PATH=", 5))
@@ -420,7 +423,7 @@ exec_task(stepd_step_rec_t *job, int i)
 		 * is left up to the server to search the PATH for the
 		 * executable.
 		 */
-		task->argv[0] = _build_path(task->argv[0], job->env);
+		task->argv[0] = build_path(task->argv[0], job->env, NULL);
 	}
 
 	if (!job->batch) {
