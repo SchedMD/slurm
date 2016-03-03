@@ -1642,6 +1642,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	/*
 	 * Fork all of the task processes.
 	 */
+	verbose("starting %u tasks", job->node_tasks);
 	for (i = 0; i < job->node_tasks; i++) {
 		char time_stamp[256];
 		pid_t pid;
@@ -1720,9 +1721,9 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		list_append (exec_wait_list, ei);
 
 		log_timestamp(time_stamp, sizeof(time_stamp));
-		verbose ("task %lu (%lu) started %s",
-			 (unsigned long) job->task[i]->gtid,
-			 (unsigned long) pid, time_stamp);
+		verbose("task %lu (%lu) started %s",
+			(unsigned long) job->task[i]->gtid,
+			(unsigned long) pid, time_stamp);
 
 		job->task[i]->pid = pid;
 		if (i == 0)
