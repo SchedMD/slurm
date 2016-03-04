@@ -1124,12 +1124,14 @@ static int _schedule(uint32_t job_limit)
 			assoc_limit_continue = false;
 
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "batch_sched_delay=")))
-		/*                                 012345678901234567 */
+		    (tmp_ptr=strstr(sched_params, "batch_sched_delay="))) {
 			batch_sched_delay = atoi(tmp_ptr + 18);
-		if (batch_sched_delay < 0) {
-			error("Invalid batch_sched_delay: %d",
-			      batch_sched_delay);
+			if (batch_sched_delay < 0) {
+				error("Invalid batch_sched_delay: %d",
+				      batch_sched_delay);
+				batch_sched_delay = 3;
+			}
+		} else {
 			batch_sched_delay = 3;
 		}
 
@@ -1143,44 +1145,51 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "build_queue_timeout=")))
-		/*                                 01234567890123456789 */
+		    (tmp_ptr = strstr(sched_params, "build_queue_timeout="))) {
 			build_queue_timeout = atoi(tmp_ptr + 20);
-		if (build_queue_timeout < 100) {
-			error("Invalid build_queue_time: %d",
-			      build_queue_timeout);
+			if (build_queue_timeout < 100) {
+				error("Invalid build_queue_time: %d",
+				      build_queue_timeout);
+				build_queue_timeout = BUILD_TIMEOUT;
+			}
+		} else {
 			build_queue_timeout = BUILD_TIMEOUT;
 		}
 
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "default_queue_depth="))) {
-		/*                                   01234567890123456789 */
-			i = atoi(tmp_ptr + 20);
-			if (i < 0) {
+			def_job_limit = atoi(tmp_ptr + 20);
+			if (def_job_limit < 0) {
 				error("ignoring SchedulerParameters: "
-				      "default_queue_depth value of %d", i);
-			} else {
-				def_job_limit = i;
+				      "default_queue_depth value of %d",
+				      def_job_limit);
+				def_job_limit = 100;
 			}
+		} else {
+			def_job_limit = 100;
 		}
 
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "partition_job_depth="))) {
-		/*                                 01234567890123456789 */
-			i = atoi(tmp_ptr + 20);
-			if (i < 0) {
+		    (tmp_ptr = strstr(sched_params, "partition_job_depth="))) {
+			max_jobs_per_part = atoi(tmp_ptr + 20);
+			if (max_jobs_per_part < 0) {
 				error("ignoring SchedulerParameters: "
-				      "partition_job_depth value of %d", i);
-			} else {
-				max_jobs_per_part = i;
+				      "partition_job_depth value of %d",
+				      max_jobs_per_part);
+				max_jobs_per_part = 0;
 			}
+		} else {
+			max_jobs_per_part = 0;
 		}
+
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
+		    (tmp_ptr = strstr(sched_params, "max_rpc_cnt=")))
 			defer_rpc_cnt = atoi(tmp_ptr + 12);
 		else if (sched_params &&
-			 (tmp_ptr=strstr(sched_params, "max_rpc_count=")))
+			 (tmp_ptr = strstr(sched_params, "max_rpc_count=")))
 			defer_rpc_cnt = atoi(tmp_ptr + 14);
+		else
+			defer_rpc_cnt = 0;
 		if (defer_rpc_cnt < 0) {
 			error("Invalid max_rpc_cnt: %d", defer_rpc_cnt);
 			defer_rpc_cnt = 0;
@@ -1188,7 +1197,7 @@ static int _schedule(uint32_t job_limit)
 
 		time_limit = slurm_get_msg_timeout() / 2;
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "max_sched_time="))) {
+		    (tmp_ptr = strstr(sched_params, "max_sched_time="))) {
 			sched_timeout = atoi(tmp_ptr + 15);
 			if ((sched_timeout <= 0) ||
 			    (sched_timeout > time_limit)) {
@@ -1196,6 +1205,8 @@ static int _schedule(uint32_t job_limit)
 				      sched_timeout);
 				sched_timeout = 0;
 			}
+		} else {
+			sched_timeout = 0;
 		}
 		if (sched_timeout == 0) {
 			sched_timeout = MAX(time_limit, 1);
@@ -1203,10 +1214,14 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "sched_interval=")))
+		    (tmp_ptr = strstr(sched_params, "sched_interval="))) {
 			sched_interval = atoi(tmp_ptr + 15);
-		if (sched_interval < 0) {
-			error("Invalid sched_interval: %d", sched_interval);
+			if (sched_interval < 0) {
+				error("Invalid sched_interval: %d",
+				      sched_interval);
+				sched_interval = 60;
+			}
+		} else {
 			sched_interval = 60;
 		}
 
@@ -1220,11 +1235,14 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		if (sched_params &&
-		    (tmp_ptr=strstr(sched_params, "sched_max_job_start=")))
+		    (tmp_ptr = strstr(sched_params, "sched_max_job_start="))) {
 			sched_max_job_start = atoi(tmp_ptr + 20);
-		if (sched_max_job_start < 0) {
-			error("Invalid sched_max_job_start: %d",
-			      sched_max_job_start);
+			if (sched_max_job_start < 0) {
+				error("Invalid sched_max_job_start: %d",
+				      sched_max_job_start);
+				sched_max_job_start = 0;
+			}
+		} else {
 			sched_max_job_start = 0;
 		}
 

@@ -501,113 +501,151 @@ static void _load_config(void)
 	sched_params = slurm_get_sched_params();
 	debug_flags  = slurm_get_debug_flags();
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_interval=")))
+	if (sched_params && (tmp_ptr = strstr(sched_params, "bf_interval="))) {
 		backfill_interval = atoi(tmp_ptr + 12);
-	if (backfill_interval < 1) {
-		error("Invalid SchedulerParameters bf_interval: %d",
-		      backfill_interval);
+		if (backfill_interval < 1) {
+			error("Invalid SchedulerParameters bf_interval: %d",
+			      backfill_interval);
+			backfill_interval = BACKFILL_INTERVAL;
+		}
+	} else {
 		backfill_interval = BACKFILL_INTERVAL;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_window=")))
+	if (sched_params && (tmp_ptr = strstr(sched_params, "bf_window="))) {
 		backfill_window = atoi(tmp_ptr + 10) * 60;  /* mins to secs */
-	if (backfill_window < 1) {
-		error("Invalid SchedulerParameters bf_window: %d",
-		      backfill_window);
+		if (backfill_window < 1) {
+			error("Invalid SchedulerParameters bf_window: %d",
+			      backfill_window);
+			backfill_window = BACKFILL_WINDOW;
+		}
+	} else {
 		backfill_window = BACKFILL_WINDOW;
 	}
 
 	/* "max_job_bf" replaced by "bf_max_job_test" in version 14.03 and
 	 * can be removed later. Only "bf_max_job_test" is documented. */
-	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
-		max_backfill_job_cnt = atoi(tmp_ptr + 11);
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_test=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 16);
+	else if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
+		max_backfill_job_cnt = atoi(tmp_ptr + 11);
+	else
+		max_backfill_job_cnt = 100;
 	if (max_backfill_job_cnt < 1) {
 		error("Invalid SchedulerParameters bf_max_job_test: %d",
 		      max_backfill_job_cnt);
-		max_backfill_job_cnt = 50;
+		max_backfill_job_cnt = 100;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution="))) {
 		backfill_resolution = atoi(tmp_ptr + 14);
-	if (backfill_resolution < 1) {
-		error("Invalid SchedulerParameters bf_resolution: %d",
-		      backfill_resolution);
+		if (backfill_resolution < 1) {
+			error("Invalid SchedulerParameters bf_resolution: %d",
+			      backfill_resolution);
+			backfill_resolution = BACKFILL_RESOLUTION;
+		}
+	} else {
 		backfill_resolution = BACKFILL_RESOLUTION;
 	}
 
 	if (sched_params &&
-	    (tmp_ptr=strstr(sched_params, "bf_max_job_array_resv=")))
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_array_resv="))) {
 		bf_max_job_array_resv = atoi(tmp_ptr + 22);
-	if (bf_max_job_array_resv < 0) {
-		error("Invalid SchedulerParameters bf_max_job_array_resv: %d",
-		      bf_max_job_array_resv);
+		if (bf_max_job_array_resv < 0) {
+			error("Invalid SchedulerParameters bf_max_job_array_resv: %d",
+			      bf_max_job_array_resv);
+			bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
+		}
+	} else {
 		bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_part=")))
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_part="))) {
 		max_backfill_job_per_part = atoi(tmp_ptr + 16);
-	if (max_backfill_job_per_part < 0) {
-		error("Invalid SchedulerParameters bf_max_job_part: %d",
-		      max_backfill_job_per_part);
+		if (max_backfill_job_per_part < 0) {
+			error("Invalid SchedulerParameters bf_max_job_part: %d",
+			      max_backfill_job_per_part);
+			max_backfill_job_per_part = 0;
+		}
+	} else {
 		max_backfill_job_per_part = 0;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_start=")))
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_start="))) {
 		max_backfill_jobs_start = atoi(tmp_ptr + 17);
-	if (max_backfill_jobs_start < 0) {
-		error("Invalid SchedulerParameters bf_max_job_start: %d",
-		      max_backfill_jobs_start);
+		if (max_backfill_jobs_start < 0) {
+			error("Invalid SchedulerParameters bf_max_job_start: %d",
+			      max_backfill_jobs_start);
+			max_backfill_jobs_start = 0;
+		}
+	} else {
 		max_backfill_jobs_start = 0;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_max_job_user="))) {
 		max_backfill_job_per_user = atoi(tmp_ptr + 16);
-	if (max_backfill_job_per_user < 0) {
-		error("Invalid SchedulerParameters bf_max_job_user: %d",
-		      max_backfill_job_per_user);
+		if (max_backfill_job_per_user < 0) {
+			error("Invalid SchedulerParameters bf_max_job_user: %d",
+			      max_backfill_job_per_user);
+			max_backfill_job_per_user = 0;
+		}
+	} else {
 		max_backfill_job_per_user = 0;
 	}
 
 	if (sched_params &&
-	    (tmp_ptr=strstr(sched_params, "bf_min_age_reserve=")))
+	    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
 		bf_min_age_reserve = atoi(tmp_ptr + 19);
-	else
-		bf_min_age_reserve = 0;
-	if (bf_min_age_reserve < 0) {
-		error("Invalid SchedulerParameters bf_min_age_reserve: %d",
-		      bf_min_age_reserve);
+		if (bf_min_age_reserve < 0) {
+			error("Invalid SchedulerParameters bf_min_age_reserve: %d",
+			      bf_min_age_reserve);
+			bf_min_age_reserve = 0;
+		}
+	} else {
 		bf_min_age_reserve = 0;
 	}
 
-	/* bf_continue makes backfill continue where it was if interrupted
-	 */
+	/* bf_continue makes backfill continue where it was if interrupted */
 	if (sched_params && (strstr(sched_params, "bf_continue"))) {
 		backfill_continue = true;
+	} else {
+		backfill_continue = false;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_yield_interval=")))
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_yield_interval="))) {
 		sched_timeout = atoi(tmp_ptr + 18);
-	if (sched_timeout <= 0) {
-		error("Invalid backfill scheduler bf_sched_timeout: %d",
-		      sched_timeout);
+		if (sched_timeout <= 0) {
+			error("Invalid backfill scheduler bf_yield_interval: %d",
+			      sched_timeout);
+			sched_timeout = SCHED_TIMEOUT;
+		}
+	} else {
 		sched_timeout = SCHED_TIMEOUT;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_yield_sleep=")))
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_yield_sleep="))) {
 		yield_sleep = atoi(tmp_ptr + 15);
-	if (yield_sleep <= 0) {
-		error("Invalid backfill scheduler bf_yield_sleep: %d",
-		      yield_sleep);
+		if (yield_sleep <= 0) {
+			error("Invalid backfill scheduler bf_yield_sleep: %d",
+			      yield_sleep);
+			yield_sleep = YIELD_SLEEP;
+		}
+	} else {
 		yield_sleep = YIELD_SLEEP;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "max_rpc_cnt=")))
+	if (sched_params && (tmp_ptr = strstr(sched_params, "max_rpc_cnt=")))
 		defer_rpc_cnt = atoi(tmp_ptr + 12);
 	else if (sched_params &&
-		 (tmp_ptr=strstr(sched_params, "max_rpc_count=")))
+		 (tmp_ptr = strstr(sched_params, "max_rpc_count=")))
 		defer_rpc_cnt = atoi(tmp_ptr + 14);
+	else
+		defer_rpc_cnt = 0;
 	if (defer_rpc_cnt < 0) {
 		error("Invalid SchedulerParameters max_rpc_cnt: %d",
 		      defer_rpc_cnt);
