@@ -1984,8 +1984,11 @@ static int _update_node_gres(char *node_names, char *gres)
 	list_iterator_destroy(config_iterator);
 
 	i_first = bit_ffs(node_bitmap);
-	i_last  = bit_fls(node_bitmap);
-	for (i=i_first; i<=i_last; i++) {
+	if (i_first >= 0)
+		i_last = bit_fls(node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first; i <= i_last; i++) {
 		node_ptr = node_record_table_ptr + i;
 		(void) gres_plugin_node_reconfig(node_ptr->name,
 						 node_ptr->config_ptr->gres,
