@@ -6716,7 +6716,7 @@ extern void gres_set_job_tres_cnt(List gres_list,
 		}
 
 		if ((tres_pos = assoc_mgr_find_tres_pos(
-			     &tres_rec, false)) != -1)
+			     &tres_rec, true)) != -1)
 			tres_cnt[tres_pos] = count;
 	}
 	list_iterator_destroy(itr);
