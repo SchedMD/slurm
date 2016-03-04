@@ -153,6 +153,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix getting reservations to database when database is down.
  -- Fix issue with sbcast not doing a correct fanout.
  -- Fix issue where steps weren't always getting the gres/tres involved.
+ -- Fixed double read lock on getting job's gres/tres.
 
 * Changes in Slurm 15.08.8
 ==========================
