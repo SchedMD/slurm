@@ -2861,58 +2861,87 @@ static void _gres_job_list_delete(void *list_element)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static int _job_state_validate(char *config, gres_job_state_t **gres_data,
-			       slurm_gres_context_t *context_ptr)
+static int _get_gres_req_cnt(
+	char *config, slurm_gres_context_t *context_ptr,
+	uint64_t *cnt_out, char **type_out)
 {
-	gres_job_state_t *gres_ptr;
 	char *type = NULL, *num = NULL, *last_num = NULL;
-	uint64_t cnt;
 
 	if (!xstrcmp(config, context_ptr->gres_name)) {
-		cnt = 1;
+		*cnt_out = 1;
 	} else if (!xstrncmp(config, context_ptr->gres_name_colon,
 			     context_ptr->gres_name_colon_len)) {
+		int64_t cnt;
 		type = strchr(config, ':');
 		num = strrchr(config, ':');
-		if (!num)
-			return SLURM_ERROR;
-		errno = 0;
-		cnt = strtoll(num + 1, &last_num, 10);
-		if (errno != 0)
-			return SLURM_ERROR;
 
-		if (last_num[0] == '\0')
-			;
-		else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
-			cnt *= 1024;
-		else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
-			cnt *= (1024 * 1024);
-		else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
-			cnt *= (1024 * 1024 * 1024);
-		else
-			return SLURM_ERROR;
+		/* If type and num are the same the user did not give
+		 * a count, just set it to 1.
+		 */
+		if (num) {
+			errno = 0;
+			cnt = strtoll(num + 1, &last_num, 10);
+			if (errno != 0)
+				return SLURM_ERROR;
+		}
 
+		if (!num || last_num[0] != '\0')
+			*cnt_out = 1;
+		else {
+			*cnt_out = cnt;
+			if (last_num[0] == '\0')
+				;
+			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
+				*cnt_out *= 1024;
+			else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
+				*cnt_out *= (1024 * 1024);
+			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
+				*cnt_out *= (1024 * 1024 * 1024);
+			else
+				return SLURM_ERROR;
+		}
+
+		if (type && ((last_num[0] != '\0') || (type != num))) {
+			type[0] = '\0';
+			if (num && type != num)
+				num[0] = '\0';
+			type++;
+			*type_out = xstrdup(type);
+		}
 	} else {
 		/* Did not find this GRES name, check for zero value */
 		num = strrchr(config, ':');
 		if (num) {
-			cnt = strtoll(num + 1, &last_num, 10);
-			if ((last_num[0] != '\0') || (cnt != 0))
+			*cnt_out = strtoll(num + 1, &last_num, 10);
+			if ((last_num[0] != '\0') || (*cnt_out != 0))
 				return SLURM_ERROR;
 		} else
 			return SLURM_ERROR;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+static int _job_state_validate(char *config, gres_job_state_t **gres_data,
+			       slurm_gres_context_t *context_ptr)
+{
+	gres_job_state_t *gres_ptr;
+	char *type = NULL;
+	uint64_t cnt = 0;
+	int rc = SLURM_SUCCESS;
+
+	if ((rc = _get_gres_req_cnt(config, context_ptr, &cnt, &type))
+	    != SLURM_SUCCESS)
+		return rc;
+
 	if (cnt == 0) {
 		*gres_data = NULL;
+		xfree(type);
 	} else {
 		gres_ptr = xmalloc(sizeof(gres_job_state_t));
 		gres_ptr->gres_cnt_alloc = cnt;
-		if (type && num && (type != num)) {
-			type++;
-			num[0] = '\0';
-			gres_ptr->type_model = xstrdup(type);
-		}
+		gres_ptr->type_model = type;
+		type = NULL;
 
 		*gres_data = gres_ptr;
 	}
@@ -2957,6 +2986,7 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 		return rc;
 
 	slurm_mutex_lock(&gres_context_lock);
+
 	tmp_str = xstrdup(req_config);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok && (rc == SLURM_SUCCESS)) {
@@ -4950,51 +4980,23 @@ static int _step_state_validate(char *config, gres_step_state_t **gres_data,
 				slurm_gres_context_t *context_ptr)
 {
 	gres_step_state_t *gres_ptr;
-	char *type = NULL, *num = NULL, *last_num = NULL;
-	int64_t cnt;
+	char *type = NULL;
+	uint64_t cnt = 0;
+	int rc = SLURM_SUCCESS;
 
-	if (!xstrcmp(config, context_ptr->gres_name)) {
-		cnt = 1;
-	} else if (!xstrncmp(config, context_ptr->gres_name_colon,
-			     context_ptr->gres_name_colon_len)) {
-		type = strchr(config, ':');
-		num = strrchr(config, ':');
-		if (!num)
-			return SLURM_ERROR;
-		cnt = strtoll(num + 1, &last_num, 10);
-		if (last_num[0] == '\0')
-			;
-		else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
-			cnt *= 1024;
-		else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
-			cnt *= (1024 * 1024);
-		else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
-			cnt *= (1024 * 1024 * 1024);
-		else
-			return SLURM_ERROR;
-		if (cnt < 0)
-			return SLURM_ERROR;
-	} else {
-		/* Did not find this GRES name, check for zero value */
-		num = strrchr(config, ':');
-		if (num) {
-			cnt = strtoll(num + 1, &last_num, 10);
-			if ((last_num[0] != '\0') || (cnt != 0))
-				return SLURM_ERROR;
-		} else
-			return SLURM_ERROR;
-	}
+	if ((rc = _get_gres_req_cnt(config, context_ptr, &cnt, &type))
+	    != SLURM_SUCCESS)
+		return rc;
 
 	if (cnt == 0) {
 		*gres_data = NULL;
+		xfree(type);
 	} else {
 		gres_ptr = xmalloc(sizeof(gres_step_state_t));
 		gres_ptr->gres_cnt_alloc = (uint32_t) cnt;
-		if (type && num && (type != num)) {
-			type++;
-			num[0] = '\0';
-			gres_ptr->type_model = xstrdup(type);
-		}
+		gres_ptr->type_model = type;
+		type = NULL;
+
 		*gres_data = gres_ptr;
 	}
 	return SLURM_SUCCESS;
