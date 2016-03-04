@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     values.
  -- Fix getting reservations to database when database is down.
  -- Fix issue with sbcast not doing a correct fanout.
+ -- Fix issue where steps weren't always getting the gres/tres involved.
 
 * Changes in Slurm 15.08.8
 ==========================
