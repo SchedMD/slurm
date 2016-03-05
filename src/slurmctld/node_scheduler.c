@@ -2431,9 +2431,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (nonstop_ops.job_begin)
 		(nonstop_ops.job_begin)(job_ptr);
 
-	if (configuring
-	    || bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
-		job_ptr->job_state |= JOB_CONFIGURING;
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
@@ -2469,6 +2466,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	reboot_job_nodes(job_ptr);
 	slurm_sched_g_newalloc(job_ptr);
 	power_g_job_start(job_ptr);
+
+	if (configuring ||
+	    bit_overlap(job_ptr->node_bitmap, power_node_bitmap) ||
+	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+		job_ptr->job_state |= JOB_CONFIGURING;
+}
 
 	/* Request asynchronous launch of a prolog for a
 	 * non batch job. */

@@ -1881,11 +1881,10 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->last_attempt  = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 				 slurm_get_resume_timeout()) {
-		error("agent waited too long for nodes to respond, "
-		      "sending batch request anyway...");
-		job_config_fini(job_ptr);
-		queued_req_ptr->last_attempt = (time_t) 0;
-		return 0;
+		/* Nodes will get marked DOWN and job requeued, if possible */
+		error("agent waited too long for nodes to respond, abort launch of job %u",
+		      job_ptr->job_id);
+		return -1;
 	}
 
 	queued_req_ptr->last_attempt  = now;

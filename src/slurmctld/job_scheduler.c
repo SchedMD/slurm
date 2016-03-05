@@ -3384,6 +3384,8 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
 	FREE_NULL_BITMAP(active_bitmap);
 	if (bit_set_count(boot_node_bitmap) == 0)
 		FREE_NULL_BITMAP(boot_node_bitmap);
+	else
+		job_ptr->wait_all_nodes = 1;
 
 	return boot_node_bitmap;
 }
@@ -3408,7 +3410,6 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	reboot_msg_t *reboot_msg;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
-	uint16_t resume_timeout = slurm_get_resume_timeout();
 	bitstr_t *boot_node_bitmap = NULL;
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
@@ -3454,7 +3455,8 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWER_UP;
 		bit_clear(avail_node_bitmap, i);
-		node_ptr->last_response = now + resume_timeout;
+		node_ptr->last_response = now + slurmctld_conf.resume_timeout -
+					  slurmctld_conf.slurmd_timeout;
 	}
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	agent_queue_request(reboot_agent_args);
