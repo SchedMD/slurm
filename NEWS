@@ -23,6 +23,10 @@ documents those changes that are of interest to users and administrators.
     modify slurmd to run it before registering with slurmctld.
  -- Fix for tasks being packed onto cores when the requested --cpus-per-task is
     greater than the number of threads on a core and --ntasks-per-core is 1.
+ -- Make it so jobs/steps track ':' named gres/tres, before hand gres/gpu:tesla
+    would only track gres/gpu, now it will track both gres/gpu and
+    gres/gpu:tesla as separate gres if configured like
+    AccountingStorageTRES=gres/gpu,gres/gpu:tesla
 
 * Changes in Slurm 16.05.0pre1
 ==============================

@@ -6661,6 +6661,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	gres_state_t *gres_state_ptr;
 	int i;
 	uint64_t count;
+	char *col_name = NULL;
 	char *tres_str = NULL;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
@@ -6687,11 +6688,13 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		if (is_job) {
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
+			col_name = gres_data_ptr->type_model;
 			count = gres_data_ptr->gres_cnt_alloc
 				* (uint64_t)gres_data_ptr->node_cnt;
 		} else {
 			gres_step_state_t *gres_data_ptr = (gres_step_state_t *)
 				gres_state_ptr->gres_data;
+			col_name = gres_data_ptr->type_model;
 			count = gres_data_ptr->gres_cnt_alloc
 				* (uint64_t)gres_data_ptr->node_cnt;
 		}
@@ -6699,8 +6702,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		for (i=0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
 			    gres_state_ptr->plugin_id) {
-					tres_req.name =
-						gres_context[i].gres_name;
+				tres_req.name =	gres_context[i].gres_name;
 				break;
 			}
 		}
@@ -6710,17 +6712,36 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			continue;
 		}
 
-		if (!(tres_rec = assoc_mgr_find_tres_rec(&tres_req)))
-			continue; /* not tracked */
+		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
 
-		if (slurmdb_find_tres_count_in_string(
-			    tres_str, tres_rec->id) != INFINITE64)
-			continue; /* already handled */
+		if (tres_rec &&
+		    slurmdb_find_tres_count_in_string(
+			    tres_str, tres_rec->id) == INFINITE64)
+			/* New gres */
+			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+				   tres_str ? "," : "",
+				   tres_rec->id, count);
 
-		/* New gres */
-		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-			   tres_str ? "," : "",
-			   tres_rec->id, count);
+		/* Now lets put of the : name tres if we are tracking
+		 * it as well.  This would be handy for gres like
+		 * gpu:tesla, where you might want to track both as
+		 * TRES.
+		 */
+		if (col_name && (i < gres_context_cnt)) {
+			tres_req.name = xstrdup_printf(
+				"%s%s",
+				gres_context[i].gres_name_colon,
+				col_name);
+			tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+			xfree(tres_req.name);
+			if (tres_rec &&
+			    slurmdb_find_tres_count_in_string(
+				    tres_str, tres_rec->id) == INFINITE64)
+				/* New gres */
+				xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+					   tres_str ? "," : "",
+					   tres_rec->id, count);
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -6740,6 +6761,7 @@ extern void gres_set_job_tres_cnt(List gres_list,
 	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
+	char *col_name = NULL;
 	uint64_t count;
 	int i, tres_pos;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
@@ -6764,6 +6786,7 @@ extern void gres_set_job_tres_cnt(List gres_list,
 	while ((gres_state_ptr = list_next(itr))) {
 		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 			gres_state_ptr->gres_data;
+		col_name = gres_data_ptr->type_model;
 		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
 
 		for (i=0; i < gres_context_cnt; i++) {
@@ -6775,13 +6798,30 @@ extern void gres_set_job_tres_cnt(List gres_list,
 		}
 
 		if (!tres_rec.name) {
-			debug("gres_add_tres: couldn't find name");
+			debug("%s: couldn't find name", __func__);
 			continue;
 		}
 
 		if ((tres_pos = assoc_mgr_find_tres_pos(
 			     &tres_rec, true)) != -1)
 			tres_cnt[tres_pos] = count;
+
+		/* Now lets put of the : name tres if we are tracking
+		 * it as well.  This would be handy for gres like
+		 * gpu:tesla, where you might want to track both as
+		 * TRES.
+		 */
+		if (col_name && (i < gres_context_cnt)) {
+			tres_rec.name = xstrdup_printf(
+				"%s%s",
+				gres_context[i].gres_name_colon,
+				col_name);
+
+			if ((tres_pos = assoc_mgr_find_tres_pos(
+				     &tres_rec, true)) != -1)
+				tres_cnt[tres_pos] = count;
+			xfree(tres_rec.name);
+		}
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
