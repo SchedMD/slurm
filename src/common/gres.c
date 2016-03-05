@@ -6764,23 +6764,19 @@ extern void gres_set_job_tres_cnt(List gres_list,
 	while ((gres_state_ptr = list_next(itr))) {
 		gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 			gres_state_ptr->gres_data;
-		tres_rec.name = gres_data_ptr->type_model;
 		count = gres_data_ptr->gres_cnt_alloc * (uint64_t)node_cnt;
 
-		if (!tres_rec.name) {
-			for (i=0; i < gres_context_cnt; i++) {
-				if (gres_context[i].plugin_id ==
-				    gres_state_ptr->plugin_id) {
-					tres_rec.name =
-						gres_context[i].gres_name;
-					break;
-				}
+		for (i=0; i < gres_context_cnt; i++) {
+			if (gres_context[i].plugin_id ==
+			    gres_state_ptr->plugin_id) {
+				tres_rec.name =	gres_context[i].gres_name;
+				break;
 			}
+		}
 
-			if (!tres_rec.name) {
-				debug("gres_add_tres: couldn't find name");
-				continue;
-			}
+		if (!tres_rec.name) {
+			debug("gres_add_tres: couldn't find name");
+			continue;
 		}
 
 		if ((tres_pos = assoc_mgr_find_tres_pos(
