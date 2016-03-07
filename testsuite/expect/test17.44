@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validate that afternotok dependency is enforced.
+#          Validate that aftercorr dependency is enforced.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -30,18 +30,27 @@
 ############################################################################
 source ./globals
 
-set test_id       17.37
+set test_id       17.44
+set exit_code     0
 set job_id1       0
 set job_id2       0
-set script        "test$test_id\_sc"
-set exit_code     0
+set output        "test$test_id\_out_%a"
+set output_base   "test$test_id\_out_"
+set script1       "test$test_id\_sc1"
+set script2       "test$test_id\_sc2"
+set tasks         10
 
 print_header $test_id
 
-make_bash_script $script "sleep 10"
+for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
+	set file_out_glob "${output_base}${task_id}"
+	exec $bin_rm -f $file_out_glob
+}
+
+make_bash_script $script1 "sleep 5"
 
 # Submit a job to depend on
-spawn $sbatch -t1 -o/dev/null $script
+spawn $sbatch -t1 --nice=100 --array=1-$tasks%2 -o/dev/null $script1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -60,10 +69,10 @@ if { $job_id1 == 0 } {
 	exit 1
 }
 
-wait_for_job $job_id1 RUNNING
+make_bash_script $script2 "$scontrol show job ${job_id1}_\$SLURM_ARRAY_TASK_ID"
 
 # Submit a job that depends on job above
-spawn $sbatch -t1 -dafternotok:$job_id1 -o/dev/null $script
+spawn $sbatch -t1 -daftercorr:$job_id1 --array=1-$tasks -o$output $script2
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -79,63 +88,44 @@ expect {
 }
 if { $job_id2 == 0 } {
 	send_user "\nFAILURE: sbatch did not submit job\n"
+	cancel_job $job_id1
 	exit 1
 }
 
-wait_for_job $job_id1 DONE
-
-# Check exit code of the first job
-set match 0
-spawn $scontrol show job $job_id1
-expect {
-	-re "ExitCode=0:0" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
+send_user "\nWaiting for output files...\n"
+for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
+	set file_out_glob "${output_base}${task_id}"
+	if {[wait_for_file $file_out_glob] != 0} {
+		send_user "\nFAILURE: output file for task $task_id missing\n"
 		set exit_code 1
+		break
+	} else {
+		set match 0
+		spawn cat $file_out_glob
+		expect {
+			-re "COMPLETED" {
+				set match 1
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		if {$match == 0} {
+			send_user "\nFAILURE: bad job state for task $task_id\n"
+			set exit_code 1
+		}
 	}
-	eof {
-		wait
+	if {$exit_code == 0} {
+		exec $bin_rm -f $file_out_glob
 	}
-}
-if { $match != 1 } {
-	send_user "\nFAILURE: job $job_id1 did not exit with exit code 0\n"
-	set exit_code 1
-}
-
-# Wait for job 2 reason to populate
-sleep 10
-
-# Check that the job with dependency is in the correct state and has correct
-# reason
-set match 0
-spawn $squeue --job=$job_id2 -o"%t|%r" --noheader
-expect {
-	-re "PD|DependencyNeverSatisfied" {
-		incr match 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: squeue is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if { $match != 2 } {
-	send_user "\nFAILURE: job $job_id2 should be in pending state and "
-	send_user "should have DependencyNeverSatisfied for a reason\n"
-	set exit_code 1
-}
-if {[cancel_job $job_id2] != 0} {
-	set exit_code 1
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $script
+	exec $bin_rm -f $script1 $script2
 	send_user "\nSUCCESS\n"
+} else {
+	cancel_job $job_id1
+	cancel_job $job_id2
 }
 exit $exit_code
