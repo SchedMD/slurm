@@ -597,6 +597,11 @@ execution.
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
 .TP
+\fBaftercorr:job_id[:jobid...]\fR
+A task of this job array can begin execution after the corresponding task ID
+in the specified job has completed successfully (ran to completion with an
+exit code of zero).
+.TP
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
 in some failed state (non-zero exit code, node failure, timed out, etc).

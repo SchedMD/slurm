@@ -96,6 +96,9 @@
 #ifndef BB_STAGE_ARRAY_TASK_CNT
 #  define BB_STAGE_ARRAY_TASK_CNT 4
 #endif
+#ifndef CORRESPOND_ARRAY_TASK_CNT
+#  define CORRESPOND_ARRAY_TASK_CNT 10
+#endif
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 #define MAX_RETRIES 10
@@ -315,10 +318,11 @@ extern List build_job_queue(bool clear_start, bool backfill)
 {
 	static time_t last_log_time = 0;
 	List job_queue;
-	ListIterator job_iterator, part_iterator;
+	ListIterator depend_iter, job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL, *new_job_ptr;
 	struct part_record *part_ptr;
-	int i, pend_cnt, reason;
+	struct depend_spec *dep_ptr;
+	int i, pend_cnt, reason, dep_corr;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
 	char jobid_buf[32];
@@ -358,6 +362,58 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			/* Do NOT clear db_index here, it is handled when
 			 * task_id_str is created elsewhere */
 			(void) bb_g_job_validate2(job_ptr, NULL);
+		} else {
+			error("%s: Unable to copy record for %s", __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Create individual job records for job arrays with
+	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_ptr) ||
+		    !job_ptr->array_recs ||
+		    !job_ptr->array_recs->task_id_bitmap ||
+		    (job_ptr->array_task_id != NO_VAL))
+			continue;
+		if ((i = bit_ffs(job_ptr->array_recs->task_id_bitmap)) < 0)
+			continue;
+		if ((job_ptr->details == NULL) ||
+		    (job_ptr->details->depend_list == NULL) ||
+		    (list_count(job_ptr->details->depend_list) == 0))
+			continue;
+	        depend_iter = list_iterator_create(job_ptr->details->depend_list);
+		dep_corr = 0;
+	        while ((dep_ptr = list_next(depend_iter))) {
+	                if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND) {
+				dep_corr = 1;
+				break;
+			}
+	        }
+		if (!dep_corr)
+			continue;
+		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
+		if (pend_cnt >= CORRESPOND_ARRAY_TASK_CNT)
+			continue;
+		if (job_ptr->array_recs->task_cnt < 1)
+			continue;
+		if (job_ptr->array_recs->task_cnt == 1) {
+			job_ptr->array_task_id = i;
+			job_array_post_sched(job_ptr);
+			continue;
+		}
+		job_ptr->array_task_id = i;
+		new_job_ptr = job_array_split(job_ptr);
+		if (new_job_ptr) {
+			info("%s: Split out %s for SLURM_DEPEND_AFTER_CORRESPOND use",
+			      __func__,
+			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+			new_job_ptr->job_state = JOB_PENDING;
+			new_job_ptr->start_time = (time_t) 0;
+			/* Do NOT clear db_index here, it is handled when
+			 * task_id_str is created elsewhere */
 		} else {
 			error("%s: Unable to copy record for %s", __func__,
 			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
@@ -2283,6 +2339,8 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			dep_str = "afternotok";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
 			dep_str = "afterok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND)
+			dep_str = "aftercorr";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
 			dep_str = "expand";
 		else
@@ -2333,6 +2391,8 @@ static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
 			dep_str = "afternotok";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
 			dep_str = "afterok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_CORRESPOND)
+			dep_str = "aftercorr";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
 			dep_str = "expand";
 		else
@@ -2374,32 +2434,12 @@ extern int test_job_dependency(struct job_record *job_ptr)
  	List job_queue = NULL;
  	bool run_now;
 	int results = 0;
-	struct job_record *qjob_ptr, *djob_ptr;
-	time_t now = time(NULL);
-	/* For performance reasons with job arrays, we cache dependency
-	 * results and re-use them whenever possible */
-	static uint32_t cache_job_id = 0;
-	static struct job_record *cache_job_ptr = NULL;
-	static int cache_results;
-	static time_t cache_time = 0;
+	struct job_record *qjob_ptr, *djob_ptr, *dcjob_ptr;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
 	    (list_count(job_ptr->details->depend_list) == 0))
 		return 0;
-
-	if ((job_ptr->array_task_id != NO_VAL) &&
-	    (cache_time == now) &&
-	    (cache_job_ptr->magic == JOB_MAGIC) &&
-	    (cache_job_ptr->job_id == cache_job_id) &&
-	    (cache_job_ptr->array_job_id == job_ptr->array_job_id) &&
-	    (cache_job_ptr->details) &&
-	    (cache_job_ptr->details->orig_dependency) &&
-	    (job_ptr->details->orig_dependency) &&
-	    (!xstrcmp(cache_job_ptr->details->orig_dependency,
-		      job_ptr->details->orig_dependency))) {
-		return cache_results;
-	}
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -2479,7 +2519,37 @@ extern int test_job_dependency(struct job_record *job_ptr)
 					failure = true;
 					break;
 				}
+			} else if (dep_ptr->depend_type ==
+				   SLURM_DEPEND_AFTER_CORRESPOND) {
+				if ((job_ptr->array_task_id == NO_VAL) ||
+				    (job_ptr->array_task_id == INFINITE)) {
+					dcjob_ptr = NULL;
+				} else {
+					dcjob_ptr = find_job_array_rec(
+							dep_ptr->job_id,
+							job_ptr->array_task_id);
+				}
+				if (dcjob_ptr) {
+					if (!IS_JOB_COMPLETED(dcjob_ptr))
+						depends = true;
+					else if (IS_JOB_COMPLETE(dcjob_ptr))
+						clear_dep = true;
+					else {
+						failure = true;
+						break;
+					}
+				} else {
+					if (!array_completed)
+						depends = true;
+					else if (array_complete)
+						clear_dep = true;
+					else {
+						failure = true;
+						break;
+					}
+				}
 			}
+
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
 			if (!IS_JOB_PENDING(djob_ptr))
 				clear_dep = true;
@@ -2502,6 +2572,16 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				break;
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
+			if (!IS_JOB_COMPLETED(djob_ptr))
+				depends = true;
+			else if (IS_JOB_COMPLETE(djob_ptr))
+				clear_dep = true;
+			else {
+				failure = true;
+				break;
+			}
+		} else if (dep_ptr->depend_type ==
+			   SLURM_DEPEND_AFTER_CORRESPOND) {
 			if (!IS_JOB_COMPLETED(djob_ptr))
 				depends = true;
 			else if (IS_JOB_COMPLETE(djob_ptr))
@@ -2549,14 +2629,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		results = 2;
 	else if (depends)
 		results = 1;
-
-	if ((job_ptr->array_task_id != NO_VAL) &&
-	    (job_ptr->array_recs == NULL)) {
-		cache_job_id  = job_ptr->job_id;
-		cache_job_ptr = job_ptr;
-		cache_results = results;
-		cache_time = now;
-	}
 
 	return results;
 }
@@ -2681,6 +2753,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		/* New format, <test>:job_ID */
 		if      (strncasecmp(tok, "afternotok", 10) == 0)
 			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
+		else if (strncasecmp(tok, "aftercorr", 9) == 0)
+			depend_type = SLURM_DEPEND_AFTER_CORRESPOND;
 		else if (strncasecmp(tok, "afterany", 8) == 0)
 			depend_type = SLURM_DEPEND_AFTER_ANY;
 		else if (strncasecmp(tok, "afterok", 7) == 0)

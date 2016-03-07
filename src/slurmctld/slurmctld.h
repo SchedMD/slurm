@@ -793,6 +793,8 @@ struct job_record {
 #define SLURM_DEPEND_SINGLETON		5	/* Only one job for this
 						 * user/name at a time */
 #define SLURM_DEPEND_EXPAND		6	/* Expand running job */
+#define SLURM_DEPEND_AFTER_CORRESPOND	7	/* After corresponding job array
+						 * elements completes */
 
 #define SLURM_FLAGS_OR			1	/* OR job dependencies */
 
