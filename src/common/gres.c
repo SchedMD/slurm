@@ -73,6 +73,7 @@
 typedef cpuset_t cpu_set_t;
 #endif
 
+#include <ctype.h>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2871,21 +2872,27 @@ static int _get_gres_req_cnt(
 		*cnt_out = 1;
 	} else if (!xstrncmp(config, context_ptr->gres_name_colon,
 			     context_ptr->gres_name_colon_len)) {
-		int64_t cnt;
+		int64_t cnt = -1;
 		type = strchr(config, ':');
 		num = strrchr(config, ':');
 
 		/* If type and num are the same the user did not give
-		 * a count, just set it to 1.
-		 */
-		if (num) {
+		 * a count, just set it to 1.  */
+		if (num && isdigit(num[1])) {
 			errno = 0;
 			cnt = strtoll(num + 1, &last_num, 10);
 			if (errno != 0)
 				return SLURM_ERROR;
 		}
 
-		if (!num || last_num[0] != '\0')
+		/* handle cases:
+		 * gpu:0k
+		 * gpu:1k
+		 * gpu:1
+		 * gpu:tesla
+		 * gpu:tesla:1
+		 * gpu:tesla:1k */
+		if (!num || cnt == -1)
 			*cnt_out = 1;
 		else {
 			*cnt_out = cnt;
@@ -2901,7 +2908,7 @@ static int _get_gres_req_cnt(
 				return SLURM_ERROR;
 		}
 
-		if (type && ((last_num[0] != '\0') || (type != num))) {
+		if (type && ((cnt == -1) || (type != num))) {
 			type[0] = '\0';
 			if (num && type != num)
 				num[0] = '\0';
