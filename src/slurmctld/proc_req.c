@@ -831,6 +831,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->resv_over_run       = conf->resv_over_run;
 	conf_ptr->resv_prolog         = xstrdup(conf->resv_prolog);
 	conf_ptr->ret2service         = conf->ret2service;
+	conf_ptr->route_plugin        = xstrdup(conf->route_plugin);
 
 	conf_ptr->salloc_default_command = xstrdup(conf->
 						   salloc_default_command);
