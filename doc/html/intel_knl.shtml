@@ -179,7 +179,7 @@ to respond to a request and NOT the time for a boot operation to complete.</p>
 <p>Power saving mode is integrated with rebooting nodes in the desired mode.
 Programs named "capmc_resume" and "capmc_suspend" are provided to boot nodes in
 the desired mode. The programs are included in the main Slurm RPM and
-installed in the "sbin" directory.
+installed in the "sbin" directory and must be installed on the Cray "sdb" node.
 If powering down of idle nodes is not desired, then configure "ResumeProgram"
 in "slurm.conf" to the path of the "capmc_resume" file and configure
 "SuspendTime" to a huge value (e.g. "SuspendTime=30000000" will only power
@@ -220,6 +220,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 March 2016</p>
+<p style="text-align:center;">Last modified 8 March 2016</p>
 
 <!--#include virtual="footer.txt"-->
