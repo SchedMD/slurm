@@ -78,6 +78,8 @@
 #define MAX_POLL_WAIT 500
 
 /* Intel Knights Landing Configuration Modes */
+#define KNL_NUMA_CNT	5
+#define KNL_MCDRAM_CNT	3
 #define KNL_NUMA_FLAG	0x00ff
 #define KNL_ALL2ALL	0x0001
 #define KNL_SNC2	0x0002
@@ -86,8 +88,8 @@
 #define KNL_QUAD	0x0010
 #define KNL_MCDRAM_FLAG	0xff00
 #define KNL_CACHE	0x0100
-#define KNL_FLAT	0x0200
-#define KNL_EQUAL	0x0400
+#define KNL_EQUAL	0x0200
+#define KNL_FLAT	0x0400
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -141,6 +143,9 @@ static uint16_t default_numa = KNL_ALL2ALL;
 static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool reconfig = false;
+
+/* Percentage of MCDRAM used for cache by type, updated from capmc */
+static int mcdram_pct[KNL_MCDRAM_CNT];
 
 /* NOTE: New knl_cray.conf parameters added below must also be added to the
  * contribs/cray/capmc_suspend.c and contribs/cray/capmc_resume.c files */
@@ -222,12 +227,12 @@ static void _update_all_node_features(
 				mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				numa_cap_t *numa_cap, int numa_cap_cnt,
 				numa_cfg_t *numa_cfg, int numa_cfg_cnt);
+static void _update_mcdram_pct(char *tok, int mcdram_num);
 static void _update_node_features(struct node_record *node_ptr,
 				  mcdram_cap_t *mcdram_cap, int mcdram_cap_cnt,
 				  mcdram_cfg_t *mcdram_cfg, int mcdram_cfg_cnt,
 				  numa_cap_t *numa_cap, int numa_cap_cnt,
 				  numa_cfg_t *numa_cfg, int numa_cfg_cnt);
-
 
 static s_p_hashtbl_t *_config_make_tbl(char *filename)
 {
@@ -477,6 +482,28 @@ static void _free_script_argv(char **script_argv)
 	xfree(script_argv);
 }
 
+/* Update our mcdram_pct array with new data.
+ * tok IN - percentage of MCDRAM to be used as cache (string form)
+ * mcdram_num - MCDRAM value (bit from KNL_FLAT, etc.)
+ */
+static void _update_mcdram_pct(char *tok, int mcdram_num)
+{
+	static int mcdram_set = 0;
+	int inx;
+
+	if (mcdram_set == KNL_MCDRAM_CNT)
+		return;
+
+	for (inx = 0; inx < KNL_MCDRAM_CNT; inx++) {
+		if ((KNL_CACHE << inx) == mcdram_num)
+			break;
+	}
+	if ((inx >= KNL_MCDRAM_CNT) || (mcdram_pct[inx] != -1))
+		return;
+	mcdram_pct[inx] = strtol(tok, NULL, 10);
+	mcdram_set++;
+}
+
 static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 {
 	enum json_type type;
@@ -484,6 +511,7 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 	int64_t x;
 	const char *p;
 	char *tmp_str, *tok, *save_ptr = NULL, *sep = "";
+	int last_mcdram_num = -1;
 
 	json_object_object_foreachC(jobj, iter) {
 		type = json_object_get_type(iter.val);
@@ -500,10 +528,17 @@ static void _json_parse_mcdram_cap_object(json_object *jobj, mcdram_cap_t *ent)
 				tmp_str = xstrdup(p);
 				tok = strtok_r(tmp_str, ",", &save_ptr);
 				while (tok) {
-					if ((tok[0] < '0') || (tok[0] > '9'))
-					xstrfmtcat(ent->mcdram_cfg, "%s%s",
-						   sep, tok);
-					sep = ",";
+					if ((tok[0] >= '0') && (tok[0] <= '9')){
+						_update_mcdram_pct(tok,
+							last_mcdram_num);
+						last_mcdram_num = -1;
+					} else {
+						last_mcdram_num =
+							_knl_mcdram_token(tok);
+						xstrfmtcat(ent->mcdram_cfg,
+							   "%s%s", sep, tok);
+						sep = ",";
+					}
 					tok = strtok_r(NULL, ",", &save_ptr);
 				}
 				xfree(tmp_str);
@@ -1194,6 +1229,7 @@ extern int init(void)
 	char *default_mcdram_str, *default_numa_str;
 	char *knl_conf_file, *tmp_str = NULL;
 	s_p_hashtbl_t *tbl;
+	int i;
 
 	/* Set default values */
 	allow_mcdram = KNL_MCDRAM_FLAG;
@@ -1205,6 +1241,8 @@ extern int init(void)
 	debug_flag = false;
 	default_mcdram = KNL_CACHE;
 	default_numa = KNL_ALL2ALL;
+	for (i = 0; i < KNL_MCDRAM_CNT; i++)
+		mcdram_pct[i] = -1;
 
 	knl_conf_file = get_extra_conf_path("knl_cray.conf");
 	if ((tbl = _config_make_tbl(knl_conf_file))) {
