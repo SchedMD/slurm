@@ -60,6 +60,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_route.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
 	return 1;
 #endif
 	slurm_conf_init(NULL);
+	route_init(NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;
