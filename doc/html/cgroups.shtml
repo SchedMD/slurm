@@ -4,7 +4,7 @@
 
 <h2>Cgroups Overview</h2>
 <p>For a comprehensive description of Linux Control Groups (cgroups) see the
-<a href="http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt">
+<a href="https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt"> 
 cgroups documentation</A> at kernel.org. Detailed knowledge of cgroups is not
 required to use cgroups in Slurm, but a basic understanding of the
 following features of cgroups is helpful:</p>
@@ -205,6 +205,6 @@ the following example.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 Jan 2014</p>
+<p style="text-align:center;">Last modified 8 March 2016</p>
 
 <!--#include virtual="footer.txt"-->
