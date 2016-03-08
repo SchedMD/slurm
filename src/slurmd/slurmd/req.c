@@ -866,7 +866,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		 * is an arbitrary number based off test7.9.
 		 */
 		for (i=3; i<256; i++) {
-			fcntl(i, F_SETFD, FD_CLOEXEC);
+			(void) fcntl(i, F_SETFD, FD_CLOEXEC);
 		}
 
 		/*
