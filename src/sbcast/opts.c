@@ -109,6 +109,8 @@ extern void parse_command_line(int argc, char *argv[])
 		params.preserve = true;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
 		params.block_size = _map_size(env_val);
+	else
+		params.block_size = 8 * 1024 * 1024;
 	if ( ( env_val = getenv("SBCAST_TIMEOUT") ) )
 		params.timeout = (atoi(env_val) * 1000);
 
