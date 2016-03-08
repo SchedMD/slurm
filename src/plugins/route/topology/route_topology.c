@@ -96,6 +96,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Global data */
 static uint64_t debug_flags = 0;
+static pthread_mutex_t route_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -152,6 +153,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
 
 	msg_count = hostlist_count(hl);
+	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
 		/* configs have not already been processed */
 		slurm_conf_init(NULL);
@@ -167,6 +169,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 			fatal("ROUTE: Failed to build topology config");
 		}
 	}
+	slurm_mutex_unlock(&route_lock);
 	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
 	/* create bitmap of nodes to send message too */
 	if (hostlist2bitmap (hl, false, &nodes_bitmap) != SLURM_SUCCESS) {

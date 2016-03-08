@@ -302,7 +302,8 @@ extern int route_init(char *node_name)
 	debug_flags = slurm_get_debug_flags();
 
 	init_run = true;
-	_set_collectors(node_name);
+	if (node_name)
+		_set_collectors(node_name);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
