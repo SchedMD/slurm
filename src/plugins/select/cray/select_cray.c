@@ -1861,12 +1861,16 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	xassert(job_ptr->select_jobinfo->data);
 
 	jobinfo = job_ptr->select_jobinfo->data;
+	jobinfo->cleaning = CLEANING_INIT;	/* Reset needed if requeued */
 
 	slurm_mutex_lock(&blade_mutex);
 
-	if (!jobinfo->blade_map)
+	if (!jobinfo->blade_map) {
 		jobinfo->blade_map = bit_alloc(blade_cnt);
-
+	} else {	/* Clear vestigial bitmap in case job requeued */
+		bit_nclear(jobinfo->blade_map, 0,
+			   bit_size(jobinfo->blade_map) - 1);
+	}
 	_set_job_running(job_ptr);
 
 	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
