@@ -92,7 +92,7 @@ def get_node(nodexml):
     memory = int(nodexml.find('memory/sizeGB').text) * 1024
 
     node = {'cname': nodexml.find('cname').text,
-            'nid': int(nodexml.find('nic').text),
+            'nid': int(nodexml.find('nid').text),
             'CoresPerSocket': cores / sockets,
             'RealMemory': memory,
             'Sockets': sockets,

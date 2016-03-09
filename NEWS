@@ -162,6 +162,7 @@ documents those changes that are of interest to users and administrators.
  -- Fixed double read lock on getting job's gres/tres.
  -- Fix display for RoutePlugin parameter to display the correct value.
  -- Fix route/topology plugin to prevent segfault in sbcast when in use.
+ -- Fix Cray slurmconfgen_smw.py script to use nid as nid, not nic.
 
 * Changes in Slurm 15.08.8
 ==========================
