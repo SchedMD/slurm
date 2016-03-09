@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix display for RoutePlugin parameter to display the correct value.
  -- Fix route/topology plugin to prevent segfault in sbcast when in use.
  -- Fix Cray slurmconfgen_smw.py script to use nid as nid, not nic.
+ -- Fix Cray NHC spawning on job requeue. Previous logic would leave nodes
+    allocated to a requeued job as non-usable on job termination.
 
 * Changes in Slurm 15.08.8
 ==========================
