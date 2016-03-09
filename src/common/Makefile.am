@@ -18,7 +18,7 @@ build_unsetenv_src = unsetenv.c unsetenv.h
 extra_unsetenv_src =
 endif
 
-AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS     = -I$(top_srcdir) $(BG_INCLUDES) $(ZLIB_CPPFLAGS)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
@@ -156,9 +156,9 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(DL_LIBS)
+libcommon_la_LIBADD   = $(DL_LIBS) $(ZLIB_LIBS)
 
-libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(ZLIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms

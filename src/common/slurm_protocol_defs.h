@@ -1066,6 +1066,7 @@ typedef struct file_bcast_msg {
 	uint16_t block_no;	/* block number of this data */
 	uint16_t last_block;	/* last block of bcast if set */
 	uint16_t force;		/* replace existing file if set */
+	uint16_t compress;	/* compress file if set */
 	uint16_t modes;		/* access rights for destination file */
 	uint32_t uid;		/* owner for destination file */
 	char *user_name;
