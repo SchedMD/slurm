@@ -3180,6 +3180,8 @@ extern int bb_p_job_try_stage_in(List job_queue)
 			continue;
 		if (bb_job->state == BB_STATE_COMPLETE)
 			bb_job->state = BB_STATE_PENDING;     /* job requeued */
+		else if (bb_job->state >= BB_STATE_POST_RUN)
+			continue;	/* Requeued job still staging out */
 		job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
 		job_rec->job_ptr = job_ptr;
 		job_rec->bb_job = bb_job;
@@ -3257,12 +3259,10 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
 		}
 	} else if (bb_job->state == BB_STATE_STAGING_IN) {
 		rc = 0;
-	} else if (bb_job->state >= BB_STATE_STAGED_IN) {
+	} else if (bb_job->state == BB_STATE_STAGED_IN) {
 		rc = 1;
 	} else {
-		error("%s: Unexpected burst buffer state (%d) for job %u",
-		      __func__, bb_job->state, job_ptr->job_id);
-		rc = -1;
+		rc = -1;	/* Requeued job still staging out */
 	}
 
 	slurm_mutex_unlock(&bb_state.bb_mutex);
