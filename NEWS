@@ -36,6 +36,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix Cray slurmconfgen_smw.py script to use nid as nid, not nic.
  -- Fix Cray NHC spawning on job requeue. Previous logic would leave nodes
     allocated to a requeued job as non-usable on job termination.
+ -- burst_buffer/cray plugin: Prevent a requeued job from being restarted while
+    file stage-out is still in progress. Previous logic could restart the job
+    and not perform a new stage-in.
 
 * Changes in Slurm 15.08.8
 ==========================
