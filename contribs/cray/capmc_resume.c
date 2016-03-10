@@ -516,6 +516,7 @@ int main(int argc, char *argv[])
 				xfree(numa_mode);
 				numa_mode = xstrdup(tok);
 			} else if (!strcasecmp(tok, "cache")  ||
+				   !strcasecmp(tok, "split") ||
 				   !strcasecmp(tok, "equal") ||
 				   !strcasecmp(tok, "flat")) {
 				xfree(mcdram_mode);
