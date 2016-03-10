@@ -79,7 +79,7 @@
 
 /* Intel Knights Landing Configuration Modes */
 #define KNL_NUMA_CNT	5
-#define KNL_MCDRAM_CNT	3
+#define KNL_MCDRAM_CNT	4
 #define KNL_NUMA_FLAG	0x00ff
 #define KNL_ALL2ALL	0x0001
 #define KNL_SNC2	0x0002
@@ -88,8 +88,9 @@
 #define KNL_QUAD	0x0010
 #define KNL_MCDRAM_FLAG	0xff00
 #define KNL_CACHE	0x0100
-#define KNL_EQUAL	0x0200
-#define KNL_FLAT	0x0400
+#define KNL_SPLIT	0x0200
+#define KNL_EQUAL	0x0400
+#define KNL_FLAT	0x0800
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -307,6 +308,10 @@ static char *_knl_mcdram_str(uint16_t mcdram_num)
 		xstrfmtcat(mcdram_str, "%scache", sep);
 		sep = ",";
 	}
+	if (mcdram_num & KNL_SPLIT) {
+		xstrfmtcat(mcdram_str, "%ssplit", sep);
+		sep = ",";
+	}
 	if (mcdram_num & KNL_FLAT) {
 		xstrfmtcat(mcdram_str, "%sflat", sep);
 		sep = ",";
@@ -330,6 +335,8 @@ static uint16_t _knl_mcdram_token(char *token)
 
 	if (!xstrcasecmp(token, "cache"))
 		mcdram_num = KNL_CACHE;
+	else if (!xstrcasecmp(token, "split"))
+		mcdram_num = KNL_SPLIT;
 	else if (!xstrcasecmp(token, "flat"))
 		mcdram_num = KNL_FLAT;
 	else if (!xstrcasecmp(token, "equal"))
