@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     alternate munge socket path.
  -- BGQ - Remove redeclaration of job_read_lock.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
+ -- Fix job array formatting to allow return [0-100:2] display for arrays with
+    step functions rather than [0,2,4,6,8,...] .
 
 * Changes in Slurm 14.11.11
 ===========================
