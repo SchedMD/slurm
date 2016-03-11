@@ -175,7 +175,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define	INFINITE64 (0xffffffffffffffff)
 #define NO_VAL	   (0xfffffffe)
 #define NO_VAL64   (0xfffffffffffffffe)
-#define MAX_TASKS_PER_NODE 128
+#define MAX_TASKS_PER_NODE 512
 
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)

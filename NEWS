@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     AccountingStorageTRES=gres/gpu,gres/gpu:tesla
  -- Added new job dependency type of "aftercorr" which will start a task of a
     job array after the corresponding task of another job array completes.
+ -- Increase default MaxTasksPerNode configuration parameter from 128 to 512.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
