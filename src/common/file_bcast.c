@@ -75,6 +75,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_time.h"
+#include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -311,6 +312,9 @@ static int _bcast_file(struct bcast_parameters *params)
 	file_bcast_msg_t bcast_msg;
 	char *buffer;
 	int32_t block_len;
+	uint32_t size_uncompressed = 0, size_compressed = 0;
+	uint32_t time_compression = 0;
+	DEF_TIMERS;
 
 	if (params->block_size)
 		buf_size = MIN(params->block_size, f_stat.st_size);
@@ -343,7 +347,12 @@ static int _bcast_file(struct bcast_parameters *params)
 			rc = SLURM_ERROR;
 		if (block_len <= 0)
 			break;
+		START_TIMER;
 		bcast_msg.block_len = _compress_data(params, &buffer,block_len);
+		END_TIMER;
+		time_compression += DELTA_TIMER;
+		size_uncompressed += block_len;
+		size_compressed += bcast_msg.block_len;
 		debug("block %d, size %u", bcast_msg.block_no,
 		      bcast_msg.block_len);
 		if (params->compress)
@@ -362,6 +371,14 @@ static int _bcast_file(struct bcast_parameters *params)
 	}
 	xfree(bcast_msg.user_name);
 	xfree(buffer);
+
+	if (params->compress != 0) {
+		int32_t pct = (int32_t)size_uncompressed - size_compressed;
+		pct = pct * 100 / size_uncompressed;
+		verbose("File compressed from %u to %u (%d percent) in %u usec",
+			size_uncompressed, size_compressed, pct,
+			time_compression);
+	}
 
 	return rc;
 }
