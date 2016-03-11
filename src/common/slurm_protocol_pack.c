@@ -6223,6 +6223,7 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		if (is_step) {
 			xstrfmtcat(out_buf, "%d-%d:%d",
 				   i_first, i_last, i_step);
+			goto out;
 		}
 	}
 
@@ -6259,6 +6260,7 @@ static void _xlate_task_str(job_info_t *job_ptr)
 		}
 	}
 
+out:
 	if (job_ptr->array_max_tasks)
 		xstrfmtcat(out_buf, "%c%u", '%', job_ptr->array_max_tasks);
 

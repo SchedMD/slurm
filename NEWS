@@ -169,6 +169,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray plugin: Prevent a requeued job from being restarted while
     file stage-out is still in progress. Previous logic could restart the job
     and not perform a new stage-in.
+ -- Fix job array formatting to allow return [0-100:2] display for arrays with
+    step functions rather than [0,2,4,6,8,...] .
 
 * Changes in Slurm 15.08.8
 ==========================
@@ -1021,6 +1023,8 @@ documents those changes that are of interest to users and administrators.
     alternate munge socket path.
  -- BGQ - Remove redeclaration of job_read_lock.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
+ -- Fix job array formatting to allow return [0-100:2] display for arrays with
+    step functions rather than [0,2,4,6,8,...] .
 
 * Changes in Slurm 14.11.11
 ===========================
