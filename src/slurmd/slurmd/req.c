@@ -3473,7 +3473,7 @@ static int _decompress_data(file_bcast_msg_t *req)
 {
 #if HAVE_LIBZ
 	int ret;
-	unsigned have;
+	int flush = Z_NO_FLUSH, have;
 	z_stream strm;
 	unsigned char zlib_out[CHUNK];
 	int buf_in_offset = 0;
@@ -3493,15 +3493,16 @@ static int _decompress_data(file_bcast_msg_t *req)
 	if (ret != Z_OK)
 		return -1;
 
-info("IN SIZE:%d", req->block_len);
 	while (req->block_len > buf_in_offset) {
 		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
 		strm.avail_in = MIN(CHUNK, req->block_len - buf_in_offset);
 		buf_in_offset += strm.avail_in;
+		if (buf_in_offset >= req->block_len)
+			flush = Z_FINISH;
 		do {
 			strm.avail_out = CHUNK;
 			strm.next_out = zlib_out;
-			ret = inflate(&strm, Z_NO_FLUSH);
+			ret = inflate(&strm, flush);
 			switch (ret) {
 			case Z_NEED_DICT:
 				ret = Z_DATA_ERROR;     /* and fall through */
@@ -3512,7 +3513,7 @@ info("IN SIZE:%d", req->block_len);
 			}
 			have = CHUNK - strm.avail_out;
 			buf_out_size += have;
-			out_buf = xrealloc(out_buf, buf_out_size + have);
+			out_buf = xrealloc(out_buf, buf_out_size);
 			memcpy(out_buf + buf_out_offset, zlib_out, have);
 			buf_out_offset += have;
 		} while (strm.avail_out == 0);
@@ -3521,7 +3522,6 @@ info("IN SIZE:%d", req->block_len);
 	xfree(req->block);
 	req->block = out_buf;
 	req->block_len = buf_out_offset;
-info("OUT SIZE:%d", req->block_len);
 	return 0;
 #else
 	if (req->compress)
