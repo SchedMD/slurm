@@ -303,7 +303,8 @@ static int _file_bcast(void)
 	}
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
-	params->compress = 0;
+	if (opt.compress)
+		params->compress = 1;
 	if (opt.bcast_file) {
 		params->dst_fname = xstrdup(opt.bcast_file);
 	} else {

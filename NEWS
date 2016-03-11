@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
     job array after the corresponding task of another job array completes.
  -- Increase default MaxTasksPerNode configuration parameter from 128 to 512.
  -- Enable sbcast data compression logic (compress option previously ignored).
+ -- Add --compress option to srun command for use with --bcast option.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

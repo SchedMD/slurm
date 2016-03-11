@@ -112,6 +112,7 @@ typedef struct srun_options {
 	char *ckpt_interval_str;/* --checkpoint (string)	*/
 	char *ckpt_dir;  	/* --checkpoint-dir (string)   */
 	bool exclusive;		/* --exclusive			*/
+	bool  compress;		/* --compress (for --bcast option) */
 	char *bcast_file;	/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;	/* --bcast, copy executable to compute nodes */
 	int  resv_port_cnt;	/* --resv_ports			*/

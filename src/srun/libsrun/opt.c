@@ -106,6 +106,7 @@
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
+#define OPT_COMPRESS	0x07
 #define OPT_CONN_TYPE	0x08
 #define OPT_RESV_PORTS	0x09
 #define OPT_NO_ROTATE	0x0a
@@ -147,6 +148,7 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_RESV_PORTS  0x10d
+#define LONG_OPT_COMPRESS    0x10e
 #define LONG_OPT_POWER       0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
@@ -581,6 +583,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
 {"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
+{"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
@@ -701,6 +704,10 @@ _process_env_var(env_vars_t *e, const char *val)
 				      e->var, val);
 			}
 		}
+		break;
+
+	case OPT_COMPRESS:
+		opt.compress = true;
 		break;
 
 	case OPT_DISTRIB:
@@ -930,6 +937,7 @@ static void _set_options(const int argc, char **argv)
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 		{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"compress",         no_argument,       0, LONG_OPT_COMPRESS},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
@@ -1733,6 +1741,9 @@ static void _set_options(const int argc, char **argv)
 				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
 			if (strchr(optarg, 'n'))
 				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
+			break;
+		case LONG_OPT_COMPRESS:
+			opt.compress = true;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
