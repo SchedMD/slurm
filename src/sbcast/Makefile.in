@@ -143,7 +143,7 @@ am_sbcast_OBJECTS = sbcast.$(OBJEXT) opts.$(OBJEXT)
 sbcast_OBJECTS = $(am_sbcast_OBJECTS)
 am__DEPENDENCIES_1 =
 sbcast_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -400,9 +400,6 @@ STRIP = @STRIP@
 SUCMD = @SUCMD@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
-ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
-ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
-ZLIB_LIBS = @ZLIB_LIBS@
 _libcurl_config = @_libcurl_config@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@

@@ -753,9 +753,6 @@ PMIX_LIBS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
-ZLIB_LDFLAGS
-ZLIB_CPPFLAGS
-ZLIB_LIBS
 BUILD_HDF5_FALSE
 BUILD_HDF5_TRUE
 HDF5_FLIBS
@@ -20810,9 +20807,6 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-  # Restore variables
-  LDFLAGS="$ZLIB_OLD_LDFLAGS"
-  CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
 
   if test "$zlib_cv_libz" = "yes" && test "$zlib_cv_zlib_h" = "yes"
   then
@@ -20820,18 +20814,17 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
     # If both library and header were found, action-if-found
     #
 
-                ZLIB_CPPFLAGS="-I${ZLIB_HOME}/include"
-                ZLIB_LDFLAGS="-L${ZLIB_HOME}/lib"
-                ZLIB_LIBS="-lz"
+                LIBS="$LIBS -lz"
 
 $as_echo "#define HAVE_LIBZ 1" >>confdefs.h
 
 
+  else
+    # Restore variables
+    LDFLAGS="$ZLIB_OLD_LDFLAGS"
+    CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
   fi
 fi
-
-
-
 
 
   _x_ac_hwloc_dirs="/usr /usr/local"

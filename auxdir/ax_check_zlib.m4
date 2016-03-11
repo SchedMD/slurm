@@ -113,9 +113,6 @@ then
   AC_CHECK_LIB([z], [inflateEnd], [zlib_cv_libz=yes], [zlib_cv_libz=no])
   AC_CHECK_HEADER([zlib.h], [zlib_cv_zlib_h=yes], [zlib_cv_zlib_h=no])
   AC_LANG_RESTORE
-  # Restore variables
-  LDFLAGS="$ZLIB_OLD_LDFLAGS"
-  CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
 
   if test "$zlib_cv_libz" = "yes" && test "$zlib_cv_zlib_h" = "yes"
   then
@@ -123,15 +120,14 @@ then
     # If both library and header were found, action-if-found
     #
     m4_ifblank([$1],[
-                ZLIB_CPPFLAGS="-I${ZLIB_HOME}/include"
-                ZLIB_LDFLAGS="-L${ZLIB_HOME}/lib"
-                ZLIB_LIBS="-lz"
+                LIBS="$LIBS -lz"
                 AC_DEFINE([HAVE_LIBZ], [1],
                           [Define to 1 if you have `z' library (-lz)])
                ],[])
+  else
+    # Restore variables
+    LDFLAGS="$ZLIB_OLD_LDFLAGS"
+    CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
   fi
 fi
-  AC_SUBST(ZLIB_LIBS)
-  AC_SUBST(ZLIB_CPPFLAGS)
-  AC_SUBST(ZLIB_LDFLAGS)
 ])

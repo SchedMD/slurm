@@ -263,7 +263,7 @@ static bool _compress_test(struct bcast_parameters *params)
 	return false;
 #endif
 }
-static int32_t _compress_data(struct bcast_parameters *params, char *buffer,
+static int32_t _compress_data(struct bcast_parameters *params, char **buffer,
 			      int32_t block_len)
 {
 #if HAVE_LIBZ
@@ -271,14 +271,14 @@ static int32_t _compress_data(struct bcast_parameters *params, char *buffer,
 	int buf_out_offset = 0, buf_out_size = 0;
 	int have;
 	unsigned char *zlib_in, zlib_out[CHUNK];
-	char *buf_out = NULL;
+	char *buf_in = *buffer, *buf_out = NULL;
 
 	if (params->compress == 0)
 		return block_len;
 info("IN SIZE:%d", block_len);
-	buf_out_size = block_len + 1024;	// TEST SMALLER
+	buf_out_size = block_len + 1024;	// TEST AT SMALLER
 	buf_out = xmalloc(buf_out_size);
-	zlib_in = (unsigned char *) buffer + buf_in_offset;
+	zlib_in = (unsigned char *) buf_in + buf_in_offset;
 	strm.next_in = zlib_in;
 	strm.avail_in = MIN(CHUNK, block_len);
 	do {
@@ -294,13 +294,25 @@ info("IN SIZE:%d", block_len);
 		memcpy(buf_out + buf_out_offset, zlib_out, have);
 		buf_out_offset += have;
 	} while (strm.avail_out == 0);
-	if (strm.avail_in != 0)
-		error("Failed to fully compress input buffer");
+	if (strm.avail_in != 0) {
+		fatal("Failed to compress input buffer");
+		xfree(buf_out);
+		return block_len;
+	} else {
+		xfree(*buffer);
+		*buffer = buf_out;
+		return buf_out_offset;
+	}
 info("OUT SIZE:%d", buf_out_offset);
-xfree(buf_out);
-return block_len;
 #else
 	return block_len;
+#endif
+}
+static void _compress_fini(struct bcast_parameters *params)
+{
+#if HAVE_LIBZ
+	if (params->compress)
+		(void)deflateEnd(&strm);
 #endif
 }
 
@@ -329,7 +341,6 @@ static int _bcast_file(struct bcast_parameters *params)
 	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
 	bcast_msg.gid		= f_stat.st_gid;
 	buffer			= xmalloc(buf_size);
-	bcast_msg.block		= buffer;
 	bcast_msg.cred          = sbcast_cred->sbcast_cred;
 
 	if (params->preserve) {
@@ -347,10 +358,11 @@ static int _bcast_file(struct bcast_parameters *params)
 			rc = SLURM_ERROR;
 		if (block_len <= 0)
 			break;
-		bcast_msg.block_len = _compress_data(params, buffer, block_len);
+		bcast_msg.block_len = _compress_data(params, &buffer,block_len);
 		info("block %d, size %u", bcast_msg.block_no,
 		      bcast_msg.block_len);
-		size_read += bcast_msg.block_len;
+		bcast_msg.block = buffer;
+		size_read += block_len;
 		if (size_read >= f_stat.st_size)
 			bcast_msg.last_block = 1;
 
@@ -363,6 +375,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	}
 	xfree(bcast_msg.user_name);
 	xfree(buffer);
+	_compress_fini(params);
 
 	return rc;
 }

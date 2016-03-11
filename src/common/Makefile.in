@@ -147,8 +147,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	cpu_frequency.c cpu_frequency.h file_bcast.c file_bcast.h \
 	node_features.c node_features.h xmalloc.c xmalloc.h xassert.c \
@@ -510,9 +509,6 @@ STRIP = @STRIP@
 SUCMD = @SUCMD@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
-ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
-ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
-ZLIB_LIBS = @ZLIB_LIBS@
 _libcurl_config = @_libcurl_config@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -580,7 +576,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_UNSETENV_TRUE@build_unsetenv_src = 
 @HAVE_UNSETENV_FALSE@extra_unsetenv_src = 
 @HAVE_UNSETENV_TRUE@extra_unsetenv_src = unsetenv.c unsetenv.h
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES) $(ZLIB_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -713,8 +709,8 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD = $(DL_LIBS) $(ZLIB_LIBS)
-libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(ZLIB_LDFLAGS) -module --export-dynamic
+libcommon_la_LIBADD = $(DL_LIBS)
+libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
