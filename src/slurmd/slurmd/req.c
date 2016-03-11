@@ -59,6 +59,19 @@
 #include <unistd.h>
 #include <utime.h>
 
+#if HAVE_LIBZ
+#  include <zlib.h>
+#  if defined(__CYGWIN__)
+#    include <fcntl.h>
+#    include <io.h>
+#    define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#  else
+#    define SET_BINARY_MODE(file)
+#  endif
+#  define CHUNK (256 * 1024)
+   z_stream strm;
+#endif
+
 #include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
@@ -3456,6 +3469,67 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	return rc;
 }
 
+static int _decompress_data(file_bcast_msg_t *req)
+{
+#if HAVE_LIBZ
+	int ret;
+	int flush = Z_NO_FLUSH, have;
+	z_stream strm;
+	unsigned char zlib_out[CHUNK];
+	int buf_in_offset = 0;
+	int buf_out_offset = 0, buf_out_size = 0;
+	char *out_buf = NULL;
+
+	if (req->compress == 0)
+		return 0;
+
+	/* Perform decompression */
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	ret = inflateInit(&strm);
+	if (ret != Z_OK)
+		return -1;
+
+	while (req->block_len > buf_in_offset) {
+		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
+		strm.avail_in = MIN(CHUNK, req->block_len - buf_in_offset);
+		buf_in_offset += strm.avail_in;
+		if (buf_in_offset >= req->block_len)
+			flush = Z_FINISH;
+		do {
+			strm.avail_out = CHUNK;
+			strm.next_out = zlib_out;
+			ret = inflate(&strm, flush);
+			switch (ret) {
+			case Z_NEED_DICT:
+				ret = Z_DATA_ERROR;     /* and fall through */
+			case Z_DATA_ERROR:
+			case Z_MEM_ERROR:
+				(void)inflateEnd(&strm);
+				return -1;
+			}
+			have = CHUNK - strm.avail_out;
+			buf_out_size += have;
+			out_buf = xrealloc(out_buf, buf_out_size);
+			memcpy(out_buf + buf_out_offset, zlib_out, have);
+			buf_out_offset += have;
+		} while (strm.avail_out == 0);
+	}
+	(void)inflateEnd(&strm);
+	xfree(req->block);
+	req->block = out_buf;
+	req->block_len = buf_out_offset;
+	return 0;
+#else
+	if (req->compress)
+		return -1;
+	return 0;
+#endif
+}
+
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
@@ -3553,6 +3627,10 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	if (setuid(req_uid) < 0) {
 		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
 		exit(errno);
+	}
+	if (_decompress_data(req) < 0) {
+		error("sbcast: data decompression error for UID %u", req_uid);
+		exit(1);
 	}
 
 	flags = O_WRONLY;

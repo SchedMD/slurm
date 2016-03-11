@@ -51,6 +51,19 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if HAVE_LIBZ
+#  include <zlib.h>
+#  if defined(__CYGWIN__)
+#    include <fcntl.h>
+#    include <io.h>
+#    define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#  else
+#    define SET_BINARY_MODE(file)
+#  endif
+#  define CHUNK (256 * 1024)
+   z_stream strm;
+#endif
+
 #include "slurm/slurm_errno.h"
 #include "src/common/file_bcast.h"
 #include "src/common/forward.h"
@@ -228,6 +241,68 @@ static ssize_t _get_block(struct bcast_parameters *params,
 	return buf_used;
 }
 
+static int32_t _compress_data(struct bcast_parameters *params, char **buffer,
+			      int32_t block_len)
+{
+#if HAVE_LIBZ
+	int buf_in_offset = 0;
+	int buf_out_offset = 0, buf_out_size = 0;
+	int flush = Z_NO_FLUSH, have;
+	unsigned char zlib_out[CHUNK];
+	char *buf_in = *buffer, *buf_out = NULL;
+
+	if (params->compress == 0)
+		return block_len;
+
+	/* allocate deflate state, compress each block independently */
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	if (deflateInit(&strm, Z_DEFAULT_COMPRESSION) != Z_OK) {
+		error("File compression configuration error, sending uncompressed file");
+		params->compress = 0;
+		return block_len;
+	}
+
+	buf_out_size = block_len + 1024;
+	buf_out = xmalloc(buf_out_size);
+	while (block_len > buf_in_offset) {
+		strm.next_in = (unsigned char *) buf_in + buf_in_offset;
+		strm.avail_in = MIN(CHUNK, block_len - buf_in_offset);
+		buf_in_offset += strm.avail_in;
+		if (buf_in_offset >= block_len)
+			flush = Z_FINISH;
+		do {
+			strm.avail_out = CHUNK;
+			strm.next_out = zlib_out;
+			if (deflate(&strm, flush) == Z_STREAM_ERROR)
+				fatal("Error compressing file");
+			have = CHUNK - strm.avail_out;
+			if (buf_out_offset + have >= buf_out_size) {
+				buf_out_size += have;
+				buf_out = xrealloc(buf_out, buf_out_size);
+			}
+			memcpy(buf_out + buf_out_offset, zlib_out, have);
+			buf_out_offset += have;
+		} while (strm.avail_out == 0);
+		if (strm.avail_in != 0)
+			fatal("Failed to compress input buffer");
+	}
+	(void)deflateEnd(&strm);
+	xfree(*buffer);
+	*buffer = buf_out;
+	return buf_out_offset;
+#else
+	if (params->compress != 0) {
+		info("File compression not supported, sending uncompressed file");
+		params->compress = 0;
+	}
+	return block_len;
+#endif
+}
+
 /* read and broadcast the file */
 static int _bcast_file(struct bcast_parameters *params)
 {
@@ -242,25 +317,20 @@ static int _bcast_file(struct bcast_parameters *params)
 	else
 		buf_size = MIN((512 * 1024), f_stat.st_size);
 
+	bzero(&bcast_msg, sizeof(file_bcast_msg_t));
 	bcast_msg.fname		= params->dst_fname;
 	bcast_msg.block_no	= 1;
-	bcast_msg.last_block	= 0;
 	bcast_msg.force		= params->force;
 	bcast_msg.modes		= f_stat.st_mode;
 	bcast_msg.uid		= f_stat.st_uid;
 	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
 	bcast_msg.gid		= f_stat.st_gid;
 	buffer			= xmalloc(buf_size);
-	bcast_msg.block		= buffer;
-	bcast_msg.block_len	= 0;
 	bcast_msg.cred          = sbcast_cred->sbcast_cred;
 
 	if (params->preserve) {
 		bcast_msg.atime     = f_stat.st_atime;
 		bcast_msg.mtime     = f_stat.st_mtime;
-	} else {
-		bcast_msg.atime     = 0;
-		bcast_msg.mtime     = 0;
 	}
 
 	if (!params->fanout)
@@ -273,10 +343,13 @@ static int _bcast_file(struct bcast_parameters *params)
 			rc = SLURM_ERROR;
 		if (block_len <= 0)
 			break;
-		bcast_msg.block_len = block_len;
+		bcast_msg.block_len = _compress_data(params, &buffer,block_len);
 		debug("block %d, size %u", bcast_msg.block_no,
 		      bcast_msg.block_len);
-		size_read += bcast_msg.block_len;
+		if (params->compress)
+			bcast_msg.compress = 1;
+		bcast_msg.block = buffer;
+		size_read += block_len;
 		if (size_read >= f_stat.st_size)
 			bcast_msg.last_block = 1;
 
