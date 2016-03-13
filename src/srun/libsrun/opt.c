@@ -710,7 +710,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_COMPRESS:
-		opt.compress = true;
+		opt.compress = parse_compress_type(val);
 		break;
 
 	case OPT_DISTRIB:
@@ -950,7 +950,7 @@ static void _set_options(const int argc, char **argv)
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 		{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
-		{"compress",         no_argument,       0, LONG_OPT_COMPRESS},
+		{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
@@ -1766,7 +1766,7 @@ static void _set_options(const int argc, char **argv)
 				opt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 			break;
 		case LONG_OPT_COMPRESS:
-			opt.compress = true;
+			opt.compress = parse_compress_type(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
