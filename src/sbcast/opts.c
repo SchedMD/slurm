@@ -96,7 +96,7 @@ extern void parse_command_line(int argc, char *argv[])
 	};
 
 	if (getenv("SBCAST_COMPRESS"))
-		params.compress = true;
+		params.compress = parse_compress_type(env_val);
 	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
 		params.fanout = atoi(env_val);
 	if (getenv("SBCAST_FORCE"))
@@ -220,7 +220,7 @@ static void _print_options( void )
 {
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
-	info("compress   = %s", params.compress ? "true" : "false");
+	info("compress   = %u", params.compress);
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
 	if (params.step_id == NO_VAL)

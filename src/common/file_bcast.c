@@ -390,8 +390,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		size_compressed += bcast_msg.block_len;
 		debug("block %d, size %u", bcast_msg.block_no,
 		      bcast_msg.block_len);
-		if (params->compress)
-			bcast_msg.compress = 1;
+		bcast_msg.compress = params->compress;
 		bcast_msg.block = buffer;
 		size_read += block_len;
 		if (size_read >= f_stat.st_size)
