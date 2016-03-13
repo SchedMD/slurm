@@ -46,7 +46,7 @@
 
 struct bcast_parameters {
 	uint32_t block_size;
-	bool compress;
+	uint16_t compress;
 	int  fanout;
 	bool force;
 	uint32_t job_id;

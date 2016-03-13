@@ -3469,7 +3469,7 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	return rc;
 }
 
-static int _decompress_data(file_bcast_msg_t *req)
+static int _decompress_data_zlib(file_bcast_msg_t *req)
 {
 #if HAVE_LIBZ
 	int ret;
@@ -3479,9 +3479,6 @@ static int _decompress_data(file_bcast_msg_t *req)
 	int buf_in_offset = 0;
 	int buf_out_offset = 0, buf_out_size = 0;
 	char *out_buf = NULL;
-
-	if (req->compress == 0)
-		return 0;
 
 	/* Perform decompression */
 	strm.zalloc = Z_NULL;
@@ -3524,10 +3521,34 @@ static int _decompress_data(file_bcast_msg_t *req)
 	req->block_len = buf_out_offset;
 	return 0;
 #else
-	if (req->compress)
-		return -1;
-	return 0;
+	return -1;
 #endif
+}
+
+static int _decompress_data_lz4(file_bcast_msg_t *req)
+{
+#if HAVE_LZ4
+	error("LZ4 support not yet complete");
+	return -1;
+#else
+	return -1;
+#endif
+}
+
+static int _decompress_data(file_bcast_msg_t *req)
+{
+	switch(req->compress) {
+	case COMPRESS_OFF:
+		return 0;
+	case COMPRESS_ZLIB:
+		return _decompress_data_zlib(req);
+	case COMPRESS_LZ4:
+		return _decompress_data_lz4(req);
+	}
+
+	/* compression type not recognized */
+	error("%s: compression type %u not supported.", __func__, req->compress);
+	return -1;
 }
 
 static int

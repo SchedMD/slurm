@@ -242,8 +242,9 @@ static ssize_t _get_block(struct bcast_parameters *params,
 	return buf_used;
 }
 
-static int32_t _compress_data(struct bcast_parameters *params, char **buffer,
-			      int32_t block_len)
+static int32_t _compress_data_zlib(struct bcast_parameters *params,
+				   char **buffer,
+				   int32_t block_len)
 {
 #if HAVE_LIBZ
 	int buf_in_offset = 0;
@@ -296,12 +297,46 @@ static int32_t _compress_data(struct bcast_parameters *params, char **buffer,
 	*buffer = buf_out;
 	return buf_out_offset;
 #else
-	if (params->compress != 0) {
-		info("File compression not supported, sending uncompressed file");
-		params->compress = 0;
-	}
+	info("zlib compression not supported, sending uncompressed file.");
+	params->compress = 0;
 	return block_len;
 #endif
+}
+
+static int32_t _compress_data_lz4(struct bcast_parameters *params,
+				  char **buffer,
+				  int32_t block_len)
+{
+#if HAVE_LZ4
+	error("lz4 compression not completed yet, working on it.");
+	params->compress = 0;
+	return block_len;
+#else
+	info("lz4 compression not supported, sending uncompressed file.");
+	params->compress = 0;
+	return block_len;
+#endif
+
+}
+
+static int32_t _compress_data(struct bcast_parameters *params,
+			      char **buffer,
+			      int32_t block_len)
+{
+	switch(params->compress) {
+	case COMPRESS_OFF:
+		return block_len;
+	case COMPRESS_ZLIB:
+		return _compress_data_zlib(params, buffer, block_len);
+	case COMPRESS_LZ4:
+		return _compress_data_lz4(params, buffer, block_len);
+	}
+
+	/* compression type not recognized */
+	error("File compression type %u not supported, sending uncompressed file",
+	      params->compress);
+	params->compress = 0;
+	return block_len;
 }
 
 /* read and broadcast the file */
