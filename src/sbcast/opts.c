@@ -81,7 +81,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
-		{"compress",  no_argument,       0, 'C'},
+		{"compress",  optional_argument, 0, 'C'},
 		{"fanout",    required_argument, 0, 'F'},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
@@ -124,7 +124,7 @@ extern void parse_command_line(int argc, char *argv[])
 			exit(1);
 			break;
 		case (int)'C':
-			params.compress = true;
+			params.compress = parse_compress_type(optarg);
 			break;
 		case (int)'f':
 			params.force = true;

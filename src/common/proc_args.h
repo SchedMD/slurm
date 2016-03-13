@@ -196,4 +196,6 @@ extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
 
 extern uint32_t parse_resv_flags(const char *flagstr, const char *msg);
 
+extern uint16_t parse_compress_type(const char *arg);
+
 #endif /* !_PROC_ARGS_H */
