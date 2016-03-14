@@ -205,17 +205,7 @@ static int _file_bcast(struct bcast_parameters *params,
 static ssize_t _get_block(struct bcast_parameters *params,
 			  char *buffer, size_t buf_size)
 {
-	static int fd = 0;
 	ssize_t buf_used = 0, rc;
-
-	if (!fd) {
-		fd = open(params->src_fname, O_RDONLY);
-		if (!fd) {
-			error("Can't open `%s`: %s",
-			      params->src_fname, strerror(errno));
-			return SLURM_ERROR;
-		}
-	}
 
 	while (buf_size) {
 		rc = read(fd, buffer, buf_size);
