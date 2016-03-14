@@ -44,6 +44,7 @@
 #include <sys/stat.h>
 #include "src/common/log.h"
 
+#if !defined(__FreeBSD__)
 extern int set_oom_adj(int adj)
 {
 	int fd;
@@ -86,3 +87,14 @@ extern int set_oom_adj(int adj)
 
 	return 0;
 }
+
+#else /* __FreeBSD__ */
+
+extern int set_oom_adj(int adj)
+{
+	/* FreeBSD does not handle OOM the same way Linux does */
+	(void) adj; /* unused argument */
+	return 0;
+}
+
+#endif
