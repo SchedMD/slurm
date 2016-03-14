@@ -64,6 +64,10 @@
    z_stream strm;
 #endif
 
+#if HAVE_LZ4
+#  include <lz4.h>
+#endif
+
 #include "slurm/slurm_errno.h"
 #include "src/common/file_bcast.h"
 #include "src/common/forward.h"
@@ -308,9 +312,17 @@ static int32_t _compress_data_lz4(struct bcast_parameters *params,
 				  int32_t block_len)
 {
 #if HAVE_LZ4
-	error("lz4 compression not completed yet, working on it.");
-	params->compress = 0;
-	return block_len;
+	char *buf_in = *buffer, *buf_out;
+	int size_out, max_out = LZ4_compressBound(block_len);
+
+	buf_out = xmalloc(max_out);
+	if (!(size_out = LZ4_compress_default(buf_in, buf_out, block_len, max_out))) {
+		/* compression failure */
+		fatal("LZ4 compression error");
+	}
+	xfree(*buffer);
+	*buffer = buf_out;
+	return size_out;
 #else
 	info("lz4 compression not supported, sending uncompressed file.");
 	params->compress = 0;
@@ -382,6 +394,7 @@ static int _bcast_file(struct bcast_parameters *params)
 			rc = SLURM_ERROR;
 		if (block_len <= 0)
 			break;
+		bcast_msg.orig_len = block_len;
 		START_TIMER;
 		bcast_msg.block_len = _compress_data(params, &buffer,block_len);
 		END_TIMER;

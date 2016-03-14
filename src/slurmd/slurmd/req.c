@@ -72,6 +72,10 @@
    z_stream strm;
 #endif
 
+#if HAVE_LZ4
+#  include <lz4.h>
+#endif
+
 #include "src/common/callerid.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
@@ -3477,8 +3481,8 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 	z_stream strm;
 	unsigned char zlib_out[CHUNK];
 	int buf_in_offset = 0;
-	int buf_out_offset = 0, buf_out_size = 0;
-	char *out_buf = NULL;
+	int buf_out_offset = 0;
+	char *out_buf = xmalloc(req->orig_len);
 
 	/* Perform decompression */
 	strm.zalloc = Z_NULL;
@@ -3509,8 +3513,6 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 				return -1;
 			}
 			have = CHUNK - strm.avail_out;
-			buf_out_size += have;
-			out_buf = xrealloc(out_buf, buf_out_size);
 			memcpy(out_buf + buf_out_offset, zlib_out, have);
 			buf_out_offset += have;
 		} while (strm.avail_out == 0);
@@ -3528,8 +3530,18 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 static int _decompress_data_lz4(file_bcast_msg_t *req)
 {
 #if HAVE_LZ4
-	error("LZ4 support not yet complete");
-	return -1;
+	char *out_buf = xmalloc(req->orig_len);
+	int out_len;
+
+	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len, req->orig_len);
+	xfree(req->block);
+	req->block = out_buf;
+	if (req->orig_len != out_len) {
+		error("lz4 decompression error, original block length != decompressed length");
+		return -1;
+	}
+	req->block_len = out_len;
+	return 0;
 #else
 	return -1;
 #endif
