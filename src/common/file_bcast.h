@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  file_bcast.h - definitions used for file broadcast functions
  *****************************************************************************
- *  Copyright (C) 2015 SchedMD LLC.
+ *  Copyright (C) 2015-2016 SchedMD LLC.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://slurm.schedmd.com/>.
