@@ -3505,7 +3505,7 @@ static int _decompress_data(file_bcast_msg_t *req)
 			ret = inflate(&strm, flush);
 			switch (ret) {
 			case Z_NEED_DICT:
-				ret = Z_DATA_ERROR;     /* and fall through */
+				/* ret = Z_DATA_ERROR;      and fall through */
 			case Z_DATA_ERROR:
 			case Z_MEM_ERROR:
 				(void)inflateEnd(&strm);
