@@ -60,20 +60,11 @@
 #include <utime.h>
 
 #if HAVE_LIBZ
-#  include <zlib.h>
-#  if defined(__CYGWIN__)
-#    include <fcntl.h>
-#    include <io.h>
-#    define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
-#  else
-#    define SET_BINARY_MODE(file)
-#  endif
-#  define CHUNK (256 * 1024)
-   z_stream strm;
+# include <zlib.h>
 #endif
 
 #if HAVE_LZ4
-#  include <lz4.h>
+# include <lz4.h>
 #endif
 
 #include "src/common/callerid.h"
@@ -3476,10 +3467,11 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 static int _decompress_data_zlib(file_bcast_msg_t *req)
 {
 #if HAVE_LIBZ
+	static z_stream strm;
+	int chunk = (256 * 1024); /* must match common/file_bcast.c */
 	int ret;
 	int flush = Z_NO_FLUSH, have;
-	z_stream strm;
-	unsigned char zlib_out[CHUNK];
+	unsigned char zlib_out[chunk];
 	int buf_in_offset = 0;
 	int buf_out_offset = 0;
 	char *out_buf = xmalloc(req->orig_len);
@@ -3496,12 +3488,12 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 
 	while (req->block_len > buf_in_offset) {
 		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
-		strm.avail_in = MIN(CHUNK, req->block_len - buf_in_offset);
+		strm.avail_in = MIN(chunk, req->block_len - buf_in_offset);
 		buf_in_offset += strm.avail_in;
 		if (buf_in_offset >= req->block_len)
 			flush = Z_FINISH;
 		do {
-			strm.avail_out = CHUNK;
+			strm.avail_out = chunk;
 			strm.next_out = zlib_out;
 			ret = inflate(&strm, flush);
 			switch (ret) {
@@ -3512,7 +3504,7 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 				(void)inflateEnd(&strm);
 				return -1;
 			}
-			have = CHUNK - strm.avail_out;
+			have = chunk - strm.avail_out;
 			memcpy(out_buf + buf_out_offset, zlib_out, have);
 			buf_out_offset += have;
 		} while (strm.avail_out == 0);

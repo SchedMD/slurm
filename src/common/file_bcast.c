@@ -52,20 +52,11 @@
 #include <unistd.h>
 
 #if HAVE_LIBZ
-#  include <zlib.h>
-#  if defined(__CYGWIN__)
-#    include <fcntl.h>
-#    include <io.h>
-#    define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
-#  else
-#    define SET_BINARY_MODE(file)
-#  endif
-#  define CHUNK (256 * 1024)
-   z_stream strm;
+# include <zlib.h>
 #endif
 
 #if HAVE_LZ4
-#  include <lz4.h>
+# include <lz4.h>
 #endif
 
 #include "slurm/slurm_errno.h"
@@ -251,10 +242,12 @@ static int32_t _compress_data_zlib(struct bcast_parameters *params,
 				   int32_t block_len)
 {
 #if HAVE_LIBZ
+	static z_stream strm;
+	int chunk = (256 * 1024);
 	int buf_in_offset = 0;
 	int buf_out_offset = 0, buf_out_size = 0;
 	int flush = Z_NO_FLUSH, have;
-	unsigned char zlib_out[CHUNK];
+	unsigned char zlib_out[chunk];
 	char *buf_in = *buffer, *buf_out = NULL;
 
 	if (params->compress == 0)
@@ -276,16 +269,16 @@ static int32_t _compress_data_zlib(struct bcast_parameters *params,
 	buf_out = xmalloc(buf_out_size);
 	while (block_len > buf_in_offset) {
 		strm.next_in = (unsigned char *) buf_in + buf_in_offset;
-		strm.avail_in = MIN(CHUNK, block_len - buf_in_offset);
+		strm.avail_in = MIN(chunk, block_len - buf_in_offset);
 		buf_in_offset += strm.avail_in;
 		if (buf_in_offset >= block_len)
 			flush = Z_FINISH;
 		do {
-			strm.avail_out = CHUNK;
+			strm.avail_out = chunk;
 			strm.next_out = zlib_out;
 			if (deflate(&strm, flush) == Z_STREAM_ERROR)
 				fatal("Error compressing file");
-			have = CHUNK - strm.avail_out;
+			have = chunk - strm.avail_out;
 			if (buf_out_offset + have >= buf_out_size) {
 				buf_out_size += have;
 				buf_out = xrealloc(buf_out, buf_out_size);
