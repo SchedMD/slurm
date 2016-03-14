@@ -6,10 +6,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-<<<<<<< HEAD
-LIBS+= $(NCURSES)
-=======
->>>>>>> bcast_compress
 AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 if BUILD_SMAP
