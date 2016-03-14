@@ -173,6 +173,7 @@ documents those changes that are of interest to users and administrators.
     and not perform a new stage-in.
  -- Fix job array formatting to allow return [0-100:2] display for arrays with
     step functions rather than [0,2,4,6,8,...] .
+ -- FreeBSD - replace Linux-specific set_oom_adj to avoid errors in slurmd log.
 
 * Changes in Slurm 15.08.8
 ==========================
