@@ -4591,8 +4591,15 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		 * a Cray system with RSIP.
 		 */
 		char *topology_params = slurm_get_topology_param();
+		char *var;
+
+		if (run_in_daemon("slurmctld"))
+			var = "NoInAddrAnyCtld";
+		else
+			var = "NoInAddrAny";
+
 		if (topology_params &&
-		    slurm_strcasestr(topology_params, "NoInAddrAny")) {
+		    slurm_strcasestr(topology_params, var)) {
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {

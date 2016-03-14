@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix job array formatting to allow return [0-100:2] display for arrays with
     step functions rather than [0,2,4,6,8,...] .
  -- FreeBSD - replace Linux-specific set_oom_adj to avoid errors in slurmd log.
+ -- Add option for TopologyParam=NoInAddrAnyCtld to make the slurmctld listen
+    on only one port like TopologyParam=NoInAddrAny does for everything else.
 
 * Changes in Slurm 15.08.8
 ==========================
