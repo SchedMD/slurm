@@ -372,7 +372,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	xfree(bcast_msg.user_name);
 	xfree(buffer);
 
-	if (params->compress != 0) {
+	if (size_uncompressed && params->compress != 0) {
 		int32_t pct = (int32_t)(size_uncompressed - size_compressed);
 		/* Dividing a negative by a positive in C99 results in
 		 * "truncation towards zero" which gives unexpected values for
