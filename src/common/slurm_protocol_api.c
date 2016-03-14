@@ -4594,7 +4594,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		char *var;
 
 		if (run_in_daemon("slurmctld"))
-			var = "NoInAddrAnyCtld";
+			var = "NoCtldInAddrAny";
 		else
 			var = "NoInAddrAny";
 
