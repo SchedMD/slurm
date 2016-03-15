@@ -313,7 +313,6 @@ static int32_t _get_block_lz4(struct bcast_parameters *params,
 #if HAVE_LZ4
 	int size_out;
 	static int remaining = -1;
-	static int max_out = -1;
 	static void *position;
 	int size;
 
@@ -321,14 +320,15 @@ static int32_t _get_block_lz4(struct bcast_parameters *params,
 		position = src;
 		//XXX other LZ4 init goes here
 		remaining = f_stat.st_size;
-		max_out = LZ4_compressBound(block_len);
-		*buffer = xmalloc(max_out);
+		*buffer = xmalloc(block_len);
 	}
 
-	size = MIN(block_len, remaining);
+	/* intentionally limit decompressed size to 10x compressed
+	 * to avoid problems on receive size when decompressed */
+	size = MIN(block_len * 10, remaining);
 	if (size) {
-		if (!(size_out = LZ4_compress_default(position, *buffer, size,
-						      max_out))) {
+		if (!(size_out = LZ4_compress_destSize(position, *buffer,
+						       &size, block_len))) {
 			/* compression failure */
 			fatal("LZ4 compression error");
 		}
