@@ -271,7 +271,7 @@ static int32_t _get_block_zlib(struct bcast_parameters *params,
 	}
 
 	if (remaining) {
-		chunk_remaining = MIN(chunk, remaining);
+		chunk_remaining = MIN(block_len, remaining);
 		out_remaining = max_out;
 		strm.next_out = (void *) *buffer;
 		do {
