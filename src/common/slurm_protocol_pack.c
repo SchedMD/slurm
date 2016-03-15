@@ -13561,6 +13561,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 		safe_unpackstr_xmalloc ( & msg->fname, &uint32_tmp, buffer );
 		safe_unpack32 ( & msg->block_len, buffer );
 		safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
+		msg->block_offset = msg->block_len * msg->block_no;
 		if ( uint32_tmp != msg->block_len )
 			goto unpack_error;
 
