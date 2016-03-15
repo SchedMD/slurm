@@ -2636,7 +2636,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
-	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
+	if (bb_state.tres_pos >= 0)
+		job_desc->tres_req_cnt[bb_state.tres_pos] =
+						bb_size / (1024 * 1024);
 
 fini:	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -2910,6 +2912,11 @@ extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
 	if (!tres_cnt) {
 		error("%s: No tres_cnt given when looking at job %u",
 		      __func__, job_ptr->job_id);
+	}
+
+	if (bb_state.tres_pos < 0) {
+		/* BB not defined in AccountingStorageTRES */
+		return;
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);

@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- FreeBSD - replace Linux-specific set_oom_adj to avoid errors in slurmd log.
  -- Add option for TopologyParam=NoInAddrAnyCtld to make the slurmctld listen
     on only one port like TopologyParam=NoInAddrAny does for everything else.
+ -- Fix burst buffer plugin to prevent corruption of the CPU TRES data when bb
+    is not set as an AccountingStorageTRES type.
 
 * Changes in Slurm 15.08.8
 ==========================
