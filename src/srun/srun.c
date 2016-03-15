@@ -72,7 +72,7 @@
 #include <grp.h>
 
 #include "src/common/fd.h"
-#include "src/common/file_bcast.h"
+
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -87,6 +87,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
+#include "src/bcast/file_bcast.h"
 
 #include "launch.h"
 #include "allocate.h"

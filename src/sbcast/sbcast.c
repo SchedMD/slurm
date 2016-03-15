@@ -51,7 +51,7 @@
 #include <sys/stat.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/file_bcast.h"
+
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"

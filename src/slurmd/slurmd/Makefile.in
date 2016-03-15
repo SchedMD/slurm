@@ -93,6 +93,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 sbin_PROGRAMS = slurmd$(EXEEXT)
+# We need to set maxdata back to 0 because this effects the "max memory size"
+# ulimit, and the ulimit is inherited by child processes.
+@HAVE_AIX_TRUE@am__append_1 = -Wl,-bmaxdata:0x0
 subdir = src/slurmd/slurmd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -153,9 +156,11 @@ am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
+	$(top_builddir)/src/bcast/libfile_bcast.la \
 	../common/libslurmd_common.o $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1) ../common/libslurmd_reverse_tree_math.la
+	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
+	../common/libslurmd_reverse_tree_math.la $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -476,14 +481,18 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
-	-I$(top_srcdir) $(HWLOC_CPPFLAGS)
+	-I$(top_srcdir) $(HWLOC_CPPFLAGS) $(ZLIB_CPPFLAGS) $(LZ4_CPPFLAGS)
 
 slurmd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
-	../common/libslurmd_common.o $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
-	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)	   \
-	../common/libslurmd_reverse_tree_math.la
+	$(top_builddir)/src/bcast/libfile_bcast.la \
+	../common/libslurmd_common.o $(HWLOC_LIBS) \
+	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)  \
+	../common/libslurmd_reverse_tree_math.la \
+	 $(ZLIB_LIBS) $(LZ4_LIBS)
 
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) \
+	$(ZLIB_LDFLAGS) $(LZ4_LDFLAGS) $(am__append_1)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
@@ -492,11 +501,6 @@ SLURMD_SOURCES = \
 	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
-@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-
-# We need to set maxdata back to 0 because this effects the "max memory size"
-# ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 all: all-am
 
 .SUFFIXES:

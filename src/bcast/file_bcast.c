@@ -60,7 +60,6 @@
 #endif
 
 #include "slurm/slurm_errno.h"
-#include "src/common/file_bcast.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -74,6 +73,8 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "file_bcast.h"
 
 #define MAX_RETRIES     10
 #define MAX_THREADS      8	/* These can be huge messages, so
@@ -403,7 +404,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	xfree(buffer);
 
 	if (size_uncompressed && params->compress != 0) {
-		int64_t pct = (int64_t) size_uncompressed - size_compressed;
+		int32_t pct = (int32_t)(size_uncompressed - size_compressed);
 		/* Dividing a negative by a positive in C99 results in
 		 * "truncation towards zero" which gives unexpected values for
 		 * pct. This construct avoids that problem.
@@ -411,7 +412,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		pct = (pct>=0) ? pct * 100 / size_uncompressed
 			       : - (-pct * 100 / size_uncompressed);
 		verbose("File compressed from %u to %u (%d percent) in %u usec",
-			size_uncompressed, size_compressed, (int) pct,
+			size_uncompressed, size_compressed, pct,
 			time_compression);
 	}
 

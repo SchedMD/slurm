@@ -158,9 +158,9 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
-	cpu_frequency.c cpu_frequency.h file_bcast.c file_bcast.h \
-	node_features.c node_features.h xmalloc.c xmalloc.h xassert.c \
-	xassert.h xstring.c xstring.h xsignal.c xsignal.h strnatcmp.c \
+	cpu_frequency.c cpu_frequency.h node_features.c \
+	node_features.h xmalloc.c xmalloc.h xassert.c xassert.h \
+	xstring.c xstring.h xsignal.c xsignal.h strnatcmp.c \
 	strnatcmp.h forward.c forward.h msg_aggr.c msg_aggr.h \
 	strlcpy.c strlcpy.h list.c list.h xtree.c xtree.h xhash.c \
 	xhash.h net.c net.h log.c log.h cbuf.c cbuf.h safeopen.c \
@@ -207,7 +207,7 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h \
 	xcgroup_read_config.c xcgroup_read_config.h xlua.c xlua.h \
 	callerid.c callerid.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
-am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo file_bcast.lo \
+am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	strnatcmp.lo forward.lo msg_aggr.lo strlcpy.lo list.lo \
 	xtree.lo xhash.lo net.lo log.lo cbuf.lo safeopen.lo \
@@ -596,7 +596,6 @@ noinst_LTLIBRARIES = \
 libcommon_la_SOURCES = \
 	assoc_mgr.c assoc_mgr.h 	\
 	cpu_frequency.c cpu_frequency.h \
-	file_bcast.c file_bcast.h	\
 	node_features.c node_features.h	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
@@ -817,7 +816,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/entity.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_bcast.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@

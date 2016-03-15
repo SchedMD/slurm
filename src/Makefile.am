@@ -1,5 +1,6 @@
 SUBDIRS =		\
 	api		\
+	bcast		\
 	common		\
 	database	\
 	db_api		\

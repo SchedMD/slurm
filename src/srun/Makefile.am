@@ -5,20 +5,23 @@ SUBDIRS = libsrun
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun \
+	$(ZLIB_CPPFLAGS) $(LZ4_CPPFLAGS)
 
 bin_PROGRAMS = srun
 
 convenience_libs = $(top_builddir)/src/srun/libsrun/libsrun.la \
+	$(top_builddir)/src/bcast/libfile_bcast.la \
 	$(top_builddir)/src/api/libslurm.o
+
 
 srun_SOURCES = \
 	srun.c \
 	srun_pty.c srun_pty.h \
 	srun.wrapper.c
-srun_LDADD = $(convenience_libs) $(DL_LIBS)
+srun_LDADD = $(convenience_libs) $(DL_LIBS) $(ZLIB_LIBS) $(LZ4_LIBS)
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(ZLIB_LDFLAGS) $(LZ4_LDFLAGS)
 
 if BGQ_LOADED
 # because totalview needs the libraries on load we link in srun
