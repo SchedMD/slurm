@@ -349,6 +349,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskProlog", S_P_STRING},
 	{"TaskPlugin", S_P_STRING},
 	{"TaskPluginParam", S_P_STRING},
+	{"TCPTimeout", S_P_UINT16},
 	{"TmpFS", S_P_STRING},
 	{"TopologyParam", S_P_STRING},
 	{"TopologyPlugin", S_P_STRING},
@@ -2578,6 +2579,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->task_plugin);
 	ctl_conf_ptr->task_plugin_param		= 0;
 	xfree (ctl_conf_ptr->task_prolog);
+	ctl_conf_ptr->tcp_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->topology_param);
 	xfree (ctl_conf_ptr->topology_plugin);
@@ -4281,6 +4283,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->task_epilog, "TaskEpilog", hashtbl);
 	s_p_get_string(&conf->task_prolog, "TaskProlog", hashtbl);
+
+	if (!s_p_get_uint16(&conf->tcp_timeout, "TCPTimeout", hashtbl))
+		conf->tcp_timeout = DEFAULT_TCP_TIMEOUT;
 
 	if (!s_p_get_string(&conf->tmp_fs, "TmpFS", hashtbl))
 		conf->tmp_fs = xstrdup(DEFAULT_TMP_FS);

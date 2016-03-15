@@ -510,6 +510,24 @@ char *slurm_get_msg_aggr_params(void)
 	return msg_aggr_params;
 }
 
+/* slurm_get_tcp_timeout
+ * get default tcp timeout value from slurmctld_conf object
+ */
+uint16_t slurm_get_tcp_timeout(void)
+{
+	uint16_t tcp_timeout = 0;
+	slurm_ctl_conf_t *conf;
+
+ 	if (slurmdbd_conf) {
+		tcp_timeout = slurmdbd_conf->tcp_timeout;
+	} else {
+		conf = slurm_conf_lock();
+		tcp_timeout = conf->tcp_timeout;
+		slurm_conf_unlock();
+	}
+	return tcp_timeout;
+}
+
 /* slurm_get_msg_timeout
  * get default message timeout value from slurmctld_conf object
  */

@@ -2624,6 +2624,7 @@ typedef struct slurm_ctl_conf {
 	char *mpi_params;	/* MPI parameters */
 	char *msg_aggr_params;  /* Message aggregation parameters */
 	uint16_t msg_timeout;	/* message timeout */
+	uint16_t tcp_timeout;	/* tcp timeout */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	char *node_features_plugins; /* List of node_features plugins to use */
 	char *node_prefix;      /* prefix of nodes in partition, only set in

@@ -220,6 +220,11 @@ char *slurm_get_msg_aggr_params(void);
  */
 extern uint16_t slurm_get_msg_timeout(void);
 
+/* slurm_get_tcp_timeout
+ * get default tcp timeout value from slurmctld_conf object
+ */
+extern uint16_t slurm_get_tcp_timeout(void);
+
 /* slurm_api_set_default_config
  *	called by the send_controller_msg function to insure that at least
  *	the compiled in default slurm_protocol_config object is initialized

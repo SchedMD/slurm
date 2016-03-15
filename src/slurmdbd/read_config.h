@@ -111,6 +111,7 @@ typedef struct slurm_dbd_conf {
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
 	uint16_t        track_ctld;     /* Whether or not track when a
 					 * slurmctld goes down or not   */
+	uint16_t        tcp_timeout;    /* tcp timeout			*/
 } slurm_dbd_conf_t;
 
 extern pthread_mutex_t conf_mutex;

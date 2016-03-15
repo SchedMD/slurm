@@ -599,7 +599,7 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	ufds.revents = 0;
 
 	if (timeout == 0)
-		timeout = slurm_get_msg_timeout() * 1000 / 2;
+		timeout = slurm_get_tcp_timeout() * 1000;
 
 again:	rc = poll(&ufds, 1, timeout);
 	if (rc == -1) {
