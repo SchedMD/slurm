@@ -415,7 +415,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		debug("block %d, size %u", bcast_msg.block_no,
 		      bcast_msg.block_len);
 		bcast_msg.compress = params->compress;
-		bcast_msg.orig_len = orig_len;
+		bcast_msg.uncomp_len = orig_len;
 		bcast_msg.block = buffer;
 		if (!more)
 			bcast_msg.last_block = 1;

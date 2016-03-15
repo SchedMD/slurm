@@ -1081,7 +1081,8 @@ typedef struct file_bcast_msg {
 	time_t mtime;		/* last modification time for dest file */
 	sbcast_cred_t *cred;	/* credential for the RPC */
 	uint32_t block_len;	/* length of this data block */
-	uint32_t orig_len;	/* uncompressed length of this data block */
+	uint32_t block_offset;	/* offset for this data block */
+	uint32_t uncomp_len;	/* uncompressed length of this data block */
 	char *block;		/* data for this block */
 } file_bcast_msg_t;
 

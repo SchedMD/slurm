@@ -3474,7 +3474,7 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 	unsigned char zlib_out[chunk];
 	int buf_in_offset = 0;
 	int buf_out_offset = 0;
-	char *out_buf = xmalloc(req->orig_len);
+	char *out_buf = xmalloc(req->uncomp_len);
 
 	/* Perform decompression */
 	strm.zalloc = Z_NULL;
@@ -3522,13 +3522,13 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 static int _decompress_data_lz4(file_bcast_msg_t *req)
 {
 #if HAVE_LZ4
-	char *out_buf = xmalloc(req->orig_len);
+	char *out_buf = xmalloc(req->uncomp_len);
 	int out_len;
 
-	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len, req->orig_len);
+	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len, req->uncomp_len);
 	xfree(req->block);
 	req->block = out_buf;
-	if (req->orig_len != out_len) {
+	if (req->uncomp_len != out_len) {
 		error("lz4 decompression error, original block length != decompressed length");
 		return -1;
 	}
