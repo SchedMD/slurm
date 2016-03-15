@@ -3677,7 +3677,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 
 	offset = 0;
 	while (req->block_len - offset) {
-		inx = write(fd, &req->block[offset],
+		inx = write(fd, &req->block_offset + offset,
 			    (req->block_len - offset));
 		if (inx == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
