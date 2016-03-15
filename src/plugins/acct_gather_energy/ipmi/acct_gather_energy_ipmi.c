@@ -84,6 +84,7 @@ slurmd_conf_t *conf = NULL;
 #define _DEBUG_ENERGY 1
 #define IPMI_VERSION 2		/* Data structure version number */
 #define NBFIRSTREAD 3
+#define MAX_LOG_ERRORS 5	/* Max sensor reading errors log messages */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -328,6 +329,7 @@ static int _check_power_sensor(void)
 	int sensor_units;
 	uint16_t i;
 	unsigned int ids[sensors_len];
+	static uint8_t check_err_cnt = 0;
 
 	for (i = 0; i < sensors_len; ++i)
 		ids[i] = sensors[i].id;
@@ -340,10 +342,21 @@ static int _check_power_sensor(void)
 							  NULL,
 							  NULL);
 	if (rc != sensors_len) {
-		error("ipmi_monitoring_sensor_readings_by_record_id: %s",
-		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+		if (check_err_cnt < MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s", ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+			check_err_cnt++;
+		} else if (check_err_cnt == MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s. Stop logging these errors after %d attempts",
+			      ipmi_monitoring_ctx_errormsg(ipmi_ctx),
+			      MAX_LOG_ERRORS);
+			check_err_cnt++;
+		}
 		return SLURM_FAILURE;
 	}
+
+	check_err_cnt = 0;
 
 	i = 0;
 	do {
@@ -390,6 +403,7 @@ static int _find_power_sensor(void)
 	int rc = SLURM_FAILURE;
 	void* sensor_reading;
 	int sensor_units, record_id;
+	static uint8_t find_err_cnt = 0;
 
 	sensor_count = ipmi_monitoring_sensor_readings_by_record_id(
 		ipmi_ctx,
@@ -402,10 +416,21 @@ static int _find_power_sensor(void)
 		NULL);
 
 	if (sensor_count < 0) {
-		error("ipmi_monitoring_sensor_readings_by_record_id: %s",
-		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+		if (find_err_cnt < MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s", ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+			find_err_cnt++;
+		} else if (find_err_cnt == MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s. Stop logging these errors after %d attempts",
+			      ipmi_monitoring_ctx_errormsg(ipmi_ctx),
+			      MAX_LOG_ERRORS);
+			find_err_cnt++;
+		}
 		return SLURM_FAILURE;
 	}
+
+	find_err_cnt = 0;
 
 	for (i = 0; i < sensor_count; i++,
 		     ipmi_monitoring_sensor_iterator_next(ipmi_ctx)) {
@@ -474,22 +499,35 @@ static int _read_ipmi_values(void)
 	int rc;
 	uint16_t i;
 	unsigned int ids[sensors_len];
+	static uint8_t read_err_cnt = 0;
 
 	for (i = 0; i < sensors_len; ++i)
 		ids[i] = sensors[i].id;
 	rc = ipmi_monitoring_sensor_readings_by_record_id(ipmi_ctx,
-	                                                  hostname,
-	                                                  &ipmi_config,
-	                                                  sensor_reading_flags,
-	                                                  ids,
-	                                                  sensors_len,
-	                                                  NULL,
-	                                                  NULL);
+							  hostname,
+							  &ipmi_config,
+							  sensor_reading_flags,
+							  ids,
+							  sensors_len,
+							  NULL,
+							  NULL);
+
 	if (rc != sensors_len) {
-		error("ipmi_monitoring_sensor_readings_by_record_id: %s",
-		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+		if (read_err_cnt < MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s", ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+			read_err_cnt++;
+		} else if (read_err_cnt == MAX_LOG_ERRORS) {
+			error("ipmi_monitoring_sensor_readings_by_record_id: "
+			      "%s. Stop logging these errors after %d attempts",
+			      ipmi_monitoring_ctx_errormsg(ipmi_ctx),
+			      MAX_LOG_ERRORS);
+			read_err_cnt++;
+		}
 		return SLURM_FAILURE;
 	}
+
+	read_err_cnt = 0;
 
 	i = 0;
 	do {
@@ -553,7 +591,7 @@ static int _thread_update_node_energy(void)
 			if (sensors[i].energy.current_watts == NO_VAL)
 				return rc;
 			_update_energy(&sensors[i].energy,
-			               sensors[i].last_update_watt);
+				       sensors[i].last_update_watt);
 		}
 
 		if (previous_update_time == 0)

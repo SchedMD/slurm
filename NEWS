@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
     on only one port like TopologyParam=NoInAddrAny does for everything else.
  -- Fix burst buffer plugin to prevent corruption of the CPU TRES data when bb
     is not set as an AccountingStorageTRES type.
+ -- Surpress error messages in acct_gather_energy/ipmi plugin after repeated
+    failures.
 
 * Changes in Slurm 15.08.8
 ==========================
