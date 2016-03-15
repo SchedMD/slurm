@@ -116,6 +116,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
+	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
@@ -296,6 +297,9 @@ LIB_LDFLAGS = @LIB_LDFLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
+LZ4_CPPFLAGS = @LZ4_CPPFLAGS@
+LZ4_LDFLAGS = @LZ4_LDFLAGS@
+LZ4_LIBS = @LZ4_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -380,6 +384,9 @@ STRIP = @STRIP@
 SUCMD = @SUCMD@
 UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
+ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
+ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
+ZLIB_LIBS = @ZLIB_LIBS@
 _libcurl_config = @_libcurl_config@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
