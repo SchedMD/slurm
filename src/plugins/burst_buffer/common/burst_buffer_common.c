@@ -366,12 +366,12 @@ extern void bb_set_tres_pos(bb_state_t *state_ptr)
 	tres_rec.type = "bb";
 	tres_rec.name = state_ptr->name;
 	inx = assoc_mgr_find_tres_pos(&tres_rec, false);
+	state_ptr->tres_pos = inx;
 	if (inx == -1) {
 		debug("%s: Tres %s not found by assoc_mgr",
 		       __func__, state_ptr->name);
 	} else {
 		state_ptr->tres_id  = assoc_mgr_tres_array[inx]->id;
-		state_ptr->tres_pos = inx;
 	}
 }
 
