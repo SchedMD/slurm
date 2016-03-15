@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "March 2016" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -945,11 +945,11 @@ will be held until their Fairshare Usage goes above the Threshold.
 .TP
 \fINoReserve\fP
 If this flag is set and backfill scheduling is used, jobs using this QOS will
-not reserve resources in the backfill schedule's  map of resources allocated
+not reserve resources in the backfill schedule's map of resources allocated
 through time. This flag is intended for use with a QOS that may be preempted
-by jobs associated with all other QOS (e.g use with a "standby" QOS). If the
-allocated is used with a QOS which can not be preempted by all other QOS, it
-could result in starvation of larger jobs.
+by jobs associated with all other QOS (e.g use with a "standby" QOS). If this
+flag is used with a QOS which can not be preempted by all other QOS, it could
+result in starvation of larger jobs.
 .TP
 \fIPartitionMaxNodes\fP
 If set jobs using this QOS will be able to
