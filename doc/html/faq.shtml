@@ -1697,19 +1697,39 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p><a name="core_dump"><b>41. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
-<p>For <i>slurmctld</i> the core file will be in the same directory as its
+<p>For <i>slurmctld</i>, the core file will be in the same directory as its
 log files (<i>SlurmctldLogFile</i>) if configured using an fully qualified
 pathname (starting with "/").
 Otherwise it will be found in directory used for saving state
 (<i>StateSaveLocation</i>).</p>
-<p>For <i>slurmd</i> the core file will be in the same directory as its
+<p>For <i>slurmd</i>, the core file will be in the same directory as its
 log files (<i>SlurmdLogFile</i>) if configured using an fully qualified
 pathname (starting with "/").
 Otherwise it will be found in directory used for saving state
 (<i>SlurmdSpoolDir</i>).</p>
-<p>For <i>slurmstepd</i> the core file will depend upon when the failure
+<p>For <i>slurmstepd</i>, the core file will depend upon when the failure
 occurs. It will either be in spawned job's working directory on the same
 location as that described above for the <i>slurmd</i> daemon.</p>
+<p><b>NOTE:</b> On some systems, the slurmstepd's will not generate core files
+without some system configuration changes due to its use of the setuid
+(set user ID) function.<br>
+Set /proc/sys/fs/suid_dumpable to 2.<br>
+This could be set in permently in sysctl.conf with:<br>
+fs.suid_dumpable = 2<br>
+or temporarily with:<br>
+sysctl fs.suid_dumpable=2<br>
+On Centos 6, also set "ProcessUnpackaged = yes" in the file
+/etc/abrt/abrt-action-save-package-data.conf.</p>
+<p>Once these configuration changes have been made and the slurmstepd aborts,
+you should see message of this type in the file /var/log/messages:</p>
+<pre>Oct 15 11:31:20 knc abrt[21489]: Saved core dump of pid 21477 (/localhome/adam/slurm/16.05/knc/sbin/slurmstepd) to /var/spool/abrt/ccpp-2015-10-15-11:31:20-21477 (6639616 bytes)
+Oct 15 11:31:20 knc abrtd: Directory 'ccpp-2015-10-15-11:31:20-21477' creation detected</pre>
+
+<p>There should be a core file inside the specified directory.</p>
+
+<p>On a 3.6 kernel (Ubuntu), fs.suid_dumpable requires a fully qualified path
+in the core_pattern. For example:<br>
+sysctl kernel.core_pattern=/tmp/core.%e.%p</p>
 
 <p><a name="totalview"><b>42. How can TotalView be configured to operate with
   Slurm?</b></a></br>
