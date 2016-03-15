@@ -211,7 +211,7 @@ static int _file_bcast(struct bcast_parameters *params,
 
 /* load a buffer with data from the file to broadcast,
  * return number of bytes read, zero on end of file */
-static int32_t _get_block_none(char **buffer, bool *more)
+static int _get_block_none(char **buffer, int *orig_len, bool *more)
 {
 	static int remaining = -1;
 	static void *position;
@@ -230,14 +230,15 @@ static int32_t _get_block_none(char **buffer, bool *more)
 		position += size;
 	}
 
+	*orig_len = size;
 	*more = (remaining) ? true : false;
 	return size;
 }
 
-static int32_t _get_block_zlib(struct bcast_parameters *params,
-			       char **buffer,
-			       int32_t *orig_len,
-			       bool *more)
+static int _get_block_zlib(struct bcast_parameters *params,
+			   char **buffer,
+			   int *orig_len,
+			   bool *more)
 {
 #if HAVE_LIBZ
 	static z_stream strm;
@@ -259,13 +260,13 @@ static int32_t _get_block_zlib(struct bcast_parameters *params,
 		error("File compression configuration error,"
 		      "sending uncompressed file.");
 		params->compress = 0;
-		return _get_block_none(buffer, more);
+		return _get_block_none(buffer, orig_len, more);
 	}
 
 	/* first pass through, initialize */
 	if (remaining < 0) {
 		remaining = f_stat.st_size;
-		max_out = block_len + 1024;
+		max_out = deflateBound(&strm, block_len);
 		*buffer = xmalloc(max_out);
 		position = src;
 	}
@@ -301,14 +302,14 @@ static int32_t _get_block_zlib(struct bcast_parameters *params,
 #else
 	info("zlib compression not supported, sending uncompressed file.");
 	params->compress = 0;
-	return _get_block_none(buffer, more);
+	return _get_block_none(buffer, orig_len, more);
 #endif
 }
 
-static int32_t _get_block_lz4(struct bcast_parameters *params,
-			      char **buffer,
-			      int32_t *orig_len,
-			      bool *more)
+static int _get_block_lz4(struct bcast_parameters *params,
+			  char **buffer,
+			  int32_t *orig_len,
+			  bool *more)
 {
 #if HAVE_LZ4
 	int size_out;
@@ -342,7 +343,7 @@ static int32_t _get_block_lz4(struct bcast_parameters *params,
 #else
 	info("lz4 compression not supported, sending uncompressed file.");
 	params->compress = 0;
-	return _get_block_none(buffer, more);
+	return _get_block_none(buffer, orig_len, more);
 #endif
 
 }
@@ -354,7 +355,7 @@ static int _next_block(struct bcast_parameters *params,
 {
 	switch(params->compress) {
 	case COMPRESS_OFF:
-		return _get_block_none(buffer, more);
+		return _get_block_none(buffer, orig_len, more);
 	case COMPRESS_ZLIB:
 		return _get_block_zlib(params, buffer, orig_len, more);
 	case COMPRESS_LZ4:
@@ -365,7 +366,7 @@ static int _next_block(struct bcast_parameters *params,
 	error("File compression type %u not supported,"
 	      " sending uncompressed file.", params->compress);
 	params->compress = 0;
-	return _get_block_none(buffer, more);
+	return _get_block_none(buffer, orig_len, more);
 }
 
 /* read and broadcast the file */
@@ -426,6 +427,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		if (bcast_msg.last_block)
 			break;	/* end of file */
 		bcast_msg.block_no++;
+		bcast_msg.block_offset += orig_len;
 	}
 	xfree(bcast_msg.user_name);
 	xfree(buffer);
