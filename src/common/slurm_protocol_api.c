@@ -2921,12 +2921,13 @@ slurm_fd_t slurm_open_msg_conn(slurm_addr_t * slurm_address)
  * IN/OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
-slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
+slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup)
 {
 	slurm_fd_t fd = -1;
 	slurm_ctl_conf_t *conf;
 	slurm_protocol_config_t *myproto = NULL;
-	int retry, max_retry_period, have_backup = 0;
+	int retry, max_retry_period;
+	static int have_backup = 0;
 
 	if (!working_cluster_rec) {
 		/* This means the addr wasn't set up already.
@@ -2965,25 +2966,33 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 				goto end_it;
 			debug("Failed to contact controller: %m");
 		} else {
-			fd = slurm_open_msg_conn(&myproto->primary_controller);
-			if (fd >= 0)
-				goto end_it;
-			debug("Failed to contact primary controller: %m");
+			if (!*use_backup) {
+				fd = slurm_open_msg_conn(
+						&myproto->primary_controller);
+				if (fd >= 0) {
+					*use_backup = false;
+					goto end_it;
+				}
+				debug("Failed to contact primary controller: "
+				      "%m");
 
-			if (retry == 0) {
-				conf = slurm_conf_lock();
-				if (conf->backup_controller)
-					have_backup = 1;
-				slurm_conf_unlock();
+				if (retry == 0) {
+					conf = slurm_conf_lock();
+					if (conf->backup_controller)
+						have_backup = 1;
+					slurm_conf_unlock();
+				}
 			}
 
-			if (have_backup) {
+			if (have_backup || *use_backup) {
 				fd = slurm_open_msg_conn(&myproto->
 							 secondary_controller);
 				if (fd >= 0) {
 					debug("Contacted secondary controller");
+					*use_backup = true;
 					goto end_it;
 				}
+				*use_backup = false;
 				debug("Failed to contact secondary "
 				      "controller: %m");
 			}
@@ -4100,9 +4109,10 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	time_t start_time = time(NULL);
 	int retry = 1;
 	slurm_ctl_conf_t *conf;
-	bool backup_controller_flag;
+	bool have_backup;
 	uint16_t slurmctld_timeout;
 	slurm_addr_t ctrl_addr;
+	static bool use_backup = false;
 
 	/* Just in case the caller didn't initialize his slurm_msg_t, and
 	 * since we KNOW that we are only sending to one node (the controller),
@@ -4115,13 +4125,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	if (working_cluster_rec)
 		req->flags |= SLURM_GLOBAL_AUTH_KEY;
 
-	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
+	if ((fd = slurm_open_controller_conn(&ctrl_addr, &use_backup)) < 0) {
 		rc = -1;
 		goto cleanup;
 	}
 
 	conf = slurm_conf_lock();
-	backup_controller_flag = conf->backup_controller ? true : false;
+	have_backup = conf->backup_controller ? true : false;
 	slurmctld_timeout = conf->slurmctld_timeout;
 	slurm_conf_unlock();
 
@@ -4139,15 +4149,17 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 		    && (resp->msg_type == RESPONSE_SLURM_RC)
 		    && ((((return_code_msg_t *) resp->data)->return_code)
 			== ESLURM_IN_STANDBY_MODE)
-		    && (backup_controller_flag)
+		    && (have_backup)
 		    && (difftime(time(NULL), start_time)
 			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
 
-			debug("Neither primary nor backup controller "
-			      "responding, sleep and retry");
+			debug("Primary not responding, backup not in control. "
+			      "sleep and retry");
 			slurm_free_return_code_msg(resp->data);
-			sleep(30);
-			if ((fd = slurm_open_controller_conn(&ctrl_addr))
+			sleep(slurmctld_timeout / 2);
+			use_backup = false;
+			if ((fd = slurm_open_controller_conn(&ctrl_addr,
+							     &use_backup))
 			    < 0) {
 				rc = -1;
 			} else {
@@ -4199,11 +4211,12 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
 	int      retry = 0;
 	slurm_fd_t fd = -1;
 	slurm_addr_t ctrl_addr;
+	bool     use_backup = false;
 
 	/*
 	 *  Open connection to SLURM controller:
 	 */
-	if ((fd = slurm_open_controller_conn(&ctrl_addr)) < 0) {
+	if ((fd = slurm_open_controller_conn(&ctrl_addr, &use_backup)) < 0) {
 		rc = SLURM_SOCKET_ERROR;
 		goto cleanup;
 	}

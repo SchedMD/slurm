@@ -1035,10 +1035,13 @@ int slurm_send_node_msg(slurm_fd_t open_fd, slurm_msg_t *msg);
 
 /* calls connect to make a connection-less datagram connection to the
  *	primary or secondary slurmctld message engine
- * IN/OUT addr     - address of controller contacted
+ * IN/OUT addr       - address of controller contacted
+ * IN/OUT use_backup - IN: whether to try the backup first or not
+ *                     OUT: set to true if connection established with backup
  * RET slurm_fd	- file descriptor of the connection created
  */
-extern slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr);
+extern slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr,
+					     bool *use_backup);
 extern slurm_fd_t slurm_open_controller_conn_spec(enum controller_id dest);
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket

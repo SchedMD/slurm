@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Add --compress option to srun command for use with --bcast option.
  -- Add TCPTimeout option to slurm[dbd].conf. Decouples MessageTimeout from TCP
     connections.
+ -- Don't call primary controller for every RPC when backup is in control.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
