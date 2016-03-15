@@ -928,7 +928,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		     job_desc->user_id, bb_size, bb_state.total_space);
 	}
 
-	job_desc->tres_req_cnt[bb_state.tres_pos] = bb_size / (1024 * 1024);
+	if (bb_state.tres_pos > 0)
+		job_desc->tres_req_cnt[bb_state.tres_pos]
+			= bb_size / (1024 * 1024);
 
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 
@@ -964,7 +966,9 @@ extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
 	}
 
 	pthread_mutex_lock(&bb_state.bb_mutex);
-	tres_cnt[bb_state.tres_pos] = _get_bb_size(job_ptr) / (1024 * 1024);
+	if (bb_state.tres_pos > 0)
+		tres_cnt[bb_state.tres_pos]
+			= _get_bb_size(job_ptr) / (1024 * 1024);
 	pthread_mutex_unlock(&bb_state.bb_mutex);
 }
 

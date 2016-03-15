@@ -2636,9 +2636,9 @@ extern int bb_p_job_validate(struct job_descriptor *job_desc,
 		}
 	}
 
-	if (bb_state.tres_pos >= 0)
-		job_desc->tres_req_cnt[bb_state.tres_pos] =
-						bb_size / (1024 * 1024);
+	if (bb_state.tres_pos > 0)
+		job_desc->tres_req_cnt[bb_state.tres_pos]
+			= bb_size / (1024 * 1024);
 
 fini:	pthread_mutex_unlock(&bb_state.bb_mutex);
 
