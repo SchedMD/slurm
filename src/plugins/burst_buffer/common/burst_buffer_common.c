@@ -1456,7 +1456,7 @@ extern int bb_post_persist_create(struct job_record *job_ptr,
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
 
-	if (state_ptr->tres_pos) {
+	if (state_ptr->tres_pos > 0) {
 		slurmdb_assoc_rec_t *assoc_ptr = bb_alloc->assoc_ptr;
 
 		while (assoc_ptr) {
@@ -1526,7 +1526,7 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 	xfree(resv.tres_str);
 
-	if (state_ptr->tres_pos) {
+	if (state_ptr->tres_pos > 0) {
 		slurmdb_assoc_rec_t *assoc_ptr = bb_alloc->assoc_ptr;
 
 		while (assoc_ptr) {
