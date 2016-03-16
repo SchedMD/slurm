@@ -1623,7 +1623,7 @@ static char *_mail_type_str(uint16_t mail_type)
 	if (mail_type == MAIL_JOB_REQUEUE)
 		return "Requeued";
 	if (mail_type == MAIL_JOB_STAGE_OUT)
-		return "Staged Out";
+		return "StageOut/Teardown";
 	if (mail_type == MAIL_JOB_TIME100)
 		return "Reached time limit";
 	if (mail_type == MAIL_JOB_TIME90)
@@ -1678,8 +1678,8 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 
 	if ((mail_type == MAIL_JOB_STAGE_OUT) && job_ptr->end_time) {
 		interval = time(NULL) - job_ptr->end_time;
-		snprintf(buf, buf_len, ", StageOut time ");
-		secs2time_str(interval, buf+16, buf_len-16);
+		snprintf(buf, buf_len, " time ");
+		secs2time_str(interval, buf + 6, buf_len - 6);
 		return;
 	}
 }

@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
     is not set as an AccountingStorageTRES type.
  -- Surpress error messages in acct_gather_energy/ipmi plugin after repeated
     failures.
+ -- Change burst buffer use completion message from
+    "SLURM Job_id=1360353 Name=tmp Staged Out, StageOut time 00:01:47" to
+    "SLURM Job_id=1360353 Name=tmp StageOut/Teardown time 00:01:47"
 
 * Changes in Slurm 15.08.8
 ==========================
