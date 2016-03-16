@@ -3262,6 +3262,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_pre_resize_acctg(job_ptr);
 				kill_step_on_node(job_ptr, node_ptr, true);
 				excise_node_from_job(job_ptr, node_ptr);
+				(void) gs_job_start(job_ptr);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -9882,6 +9883,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			/* Since job_post_resize_acctg will restart
 			 * things, don't do it again. */
@@ -11023,6 +11025,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				_merge_job_licenses(job_ptr, expand_job_ptr);
 				rebuild_step_bitmaps(expand_job_ptr,
 						     orig_job_node_bitmap);
+				(void) gs_job_fini(job_ptr);
+				(void) gs_job_start(expand_job_ptr);
 			}
 			bit_free(orig_job_node_bitmap);
 			job_post_resize_acctg(job_ptr);
@@ -11060,6 +11064,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
