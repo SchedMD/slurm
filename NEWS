@@ -181,6 +181,13 @@ documents those changes that are of interest to users and administrators.
     on only one port like TopologyParam=NoInAddrAny does for everything else.
  -- Fix burst buffer plugin to prevent corruption of the CPU TRES data when bb
     is not set as an AccountingStorageTRES type.
+ -- Surpress error messages in acct_gather_energy/ipmi plugin after repeated
+    failures.
+ -- Change burst buffer use completion email message from
+    "SLURM Job_id=1360353 Name=tmp Staged Out, StageOut time 00:01:47" to
+    "SLURM Job_id=1360353 Name=tmp StageOut/Teardown time 00:01:47"
+ -- Generate burst buffer use completion email immediately afer teardown
+    completes rather than at job purge time (likely minutes later).
 
 * Changes in Slurm 15.08.8
 ==========================

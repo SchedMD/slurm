@@ -110,7 +110,7 @@ will be held until their Fairshare Usage goes above the Threshold.
 jobs using this QOS will not reserve resources in the backfill
 schedule's  map of resources allocated through time. This flag is
 intended for use with a QOS that may be preempted by jobs associated
-with all other QOS (e.g use with a "standby" QOS). If the allocated is
+with all other QOS (e.g use with a "standby" QOS). If this flag is
 used with a QOS which can not be preempted by all other QOS, it could
 result in starvation of larger jobs.
 
@@ -264,6 +264,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 26 November 2009</p>
+<p style="text-align: center;">Last modified 15 March 2016</p>
 
 </ul></body></html>
