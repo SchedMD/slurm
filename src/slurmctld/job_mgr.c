@@ -85,6 +85,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
+#include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -13342,8 +13343,10 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 			return rc;
 		_suspend_job(job_ptr, op, indf_susp);
 		job_ptr->job_state = JOB_SUSPENDED;
-		if (indf_susp)
+		if (indf_susp) {    /* Job being manually suspended, not gang */
 			job_ptr->priority = 0;
+			(void) gs_job_fini(job_ptr);
+		}
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
 				difftime(now, job_ptr->suspend_time);
@@ -13360,8 +13363,11 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 		_suspend_job(job_ptr, op, indf_susp);
-		if (job_ptr->priority == 0)
+		if (job_ptr->priority == 0) {
+			/* Job was manually suspended, not gang */
 			set_job_prio(job_ptr);
+			(void) gs_job_start(job_ptr);
+		}
 		job_ptr->job_state = JOB_RUNNING;
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);

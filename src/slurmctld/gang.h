@@ -53,14 +53,16 @@ extern int 	gs_init(void);
 /* Terminate the gang scheduling thread and free its data structures */
 extern int 	gs_fini(void);
 
-/* Notify the gang scheduler that a job has been started */
+/* Notify the gang scheduler that a job has been resumed or started.
+ * In either case, add the job to gang scheduling. */
 extern int	gs_job_start(struct job_record *job_ptr);
 
 /* scan the master SLURM job list for any new jobs to add, or for any old jobs
  *	to remove */
 extern int	gs_job_scan(void);
 
-/* Notify the gang scheduler that a job has completed */
+/* Notify the gang scheduler that a job has been suspended or completed.
+ * In either case, remove the job from gang scheduling. */
 extern int	gs_job_fini(struct job_record *job_ptr);
 
 /* Gang scheduling has been disabled by change in configuration,
