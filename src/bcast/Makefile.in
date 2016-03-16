@@ -146,7 +146,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libfile_bcast_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libfile_bcast_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_libfile_bcast_la_OBJECTS = libfile_bcast_la-file_bcast.lo
 libfile_bcast_la_OBJECTS = $(am_libfile_bcast_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -478,9 +479,9 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 BCAST_LIB = libfile_bcast.la
 libfile_bcast_la_SOURCES = file_bcast.c file_bcast.h
-libfile_bcast_la_LIBADD = $(ZLIB_LIBS)
-libfile_bcast_la_LDFLAGS = $(LIB_LDFLAGS) $(ZLIB_LDFLAGS)
-libfile_bcast_la_CFLAGS = $(ZLIB_CPPFLAGS) $(AM_CFLAGS)
+libfile_bcast_la_LIBADD = $(ZLIB_LIBS) $(LZ4_LIBS)
+libfile_bcast_la_LDFLAGS = $(LIB_LDFLAGS) $(ZLIB_LDFLAGS) $(LZ4_LDFLAGS)
+libfile_bcast_la_CFLAGS = $(ZLIB_CPPFLAGS) $(LZ4_CPPFLAGS) $(AM_CFLAGS)
 noinst_LTLIBRARIES = $(BCAST_LIB)
 all: all-am
 
