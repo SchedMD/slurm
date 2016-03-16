@@ -52,6 +52,7 @@
 #include <time.h>
 #include <sys/param.h>
 #include <poll.h>
+#include <sys/fsuid.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -3469,6 +3470,10 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
+#ifndef __linux__
+	error("sbcast relies on Linux-specific security extensions");
+	return SLURM_ERROR;
+#endif
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
 	int ngroups = 16;
@@ -3477,7 +3482,6 @@ _rpc_file_bcast(slurm_msg_t *msg)
 					     slurm_get_auth_info());
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
 					     slurm_get_auth_info());
-	pid_t child;
 	uint32_t job_id;
 
 #if 0
@@ -3516,57 +3520,38 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		return rc;
 	}
 
-	child = fork();
-	if (child == -1) {
-		error("sbcast: fork failure");
-		return errno;
-	} else if (child > 0) {
-		waitpid(child, &rc, 0);
-		xfree(groups);
-		return WEXITSTATUS(rc);
+	/* add this thread id to the container so files can be cleaned up */
+	if ((req->block_no == 1) &&
+		(rc = container_g_add_pid(job_id, pthread_self(), req_uid))) {
+		error("container_g_add_pid(%u): %m", job_id);
+		return rc;
 	}
 
-	/* container_g_add_pid needs to be called in the
-	   forked process part of the fork to avoid a race
-	   condition where if this process makes a file or
-	   detacts itself from a child before we add the pid
-	   to the container in the parent of the fork.
-	*/
-	if (container_g_add_pid(job_id, getpid(), req_uid) != SLURM_SUCCESS)
-		error("container_g_add_pid(%u): %m", job_id);
-
-	/* The child actually performs the I/O and exits with
-	 * a return code, do not return! */
-
-	/*********************************************************************\
-	 * NOTE: It would be best to do an exec() immediately after the fork()
-	 * in order to help prevent a possible deadlock in the child process
-	 * due to locks being set at the time of the fork and being freed by
-	 * the parent process, but not freed by the child process. Performing
-	 * the work inline is done for simplicity. Note that the logging
-	 * performed by error() should be safe due to the use of
-	 * atfork_install_handlers() as defined in src/common/log.c.
-	 * Change the code below with caution.
-	\*********************************************************************/
-
+#if 0
+	/* this is process-wide, and could cause open() calls in other
+	 * threads to fail. without it supplemental groups will be ignored */
 	if (setgroups(ngroups, groups) < 0) {
 		error("sbcast: uid: %u setgroups: %s", req_uid,
 		      strerror(errno));
-		exit(errno);
+		return errno;
+	}
+#endif
+	xfree(groups);
+
+	/* On Linux this is per-thread only, which is intentional.
+	 * Otherwise other threads would be prevented from opening
+	 * the slurmd spooldir while this is in effect.
+	 * FreeBSD et all will need to replicate this behavior,
+	 * or revert to a fork-based approach. */
+	if (setfsuid(req_uid) < 0 || setfsgid(req_gid) < 0) {
+		error("sbcast: could not set uid:%u gid(%u): %s",
+		      req_uid, req_gid, strerror(errno));
+		return errno;
 	}
 
-	if (setgid(req_gid) < 0) {
-		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid,
-		      strerror(errno));
-		exit(errno);
-	}
-	if (setuid(req_uid) < 0) {
-		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
-		exit(errno);
-	}
 	if (bcast_decompress_data(req) < 0) {
 		error("sbcast: data decompression error for UID %u", req_uid);
-		exit(1);
+		return SLURM_ERROR;
 	}
 
 	flags = O_WRONLY;
@@ -3583,7 +3568,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	if (fd == -1) {
 		error("sbcast: uid:%u can't open `%s`: %s",
 		      req_uid, req->fname, strerror(errno));
-		exit(errno);
+		return errno;
 	}
 
 	offset = 0;
@@ -3596,7 +3581,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 			error("sbcast: uid:%u can't write `%s`: %s",
 			      req_uid, req->fname, strerror(errno));
 			close(fd);
-			exit(errno);
+			return errno;
 		}
 		offset += inx;
 	}
@@ -3618,7 +3603,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 			      req_uid, req->fname, strerror(errno));
 		}
 	}
-	exit(SLURM_SUCCESS);
+	return SLURM_SUCCESS;
 }
 
 static void
