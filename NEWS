@@ -188,6 +188,8 @@ documents those changes that are of interest to users and administrators.
     "SLURM Job_id=1360353 Name=tmp StageOut/Teardown time 00:01:47"
  -- Generate burst buffer use completion email immediately afer teardown
     completes rather than at job purge time (likely minutes later).
+ -- Fix issue when adding a new TRES to AccountingStorageTRES for the first
+    time.
 
 * Changes in Slurm 15.08.8
 ==========================
