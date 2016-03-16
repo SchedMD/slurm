@@ -110,7 +110,7 @@
 #define OPT_EXCLUSIVE   0x0d
 #define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
-
+#define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
 #define OPT_POWER       0x13
@@ -176,6 +176,7 @@
 #define LONG_OPT_REQ_SWITCH      0x143
 #define LONG_OPT_PROFILE         0x144
 #define LONG_OPT_CPU_FREQ        0x145
+#define LONG_OPT_GRES_FLAGS      0x146
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_POWER           0x162
 #define LONG_OPT_THREAD_SPEC     0x163
@@ -366,6 +367,7 @@ static void _opt_default()
 	}
 	opt.reboot          = false;
 	opt.no_rotate	    = false;
+	opt.job_flags       = 0;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -418,6 +420,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
+  {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
@@ -537,7 +540,15 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-
+	case OPT_GRES_FLAGS:
+		if (!xstrcasecmp(val, "enforce-binding")) {
+			opt.job_flags |= GRES_ENFORCE_BIND;
+		} else {
+			error("Invalid SALLOC_GRES_FLAGS specification: %s",
+			      val);
+			exit(error_exit);
+		}
+		break;
 	case OPT_IMMEDIATE:
 		if (val)
 			opt.immediate = strtol(val, NULL, 10);
@@ -689,6 +700,7 @@ void set_options(const int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"gres",          required_argument, 0, LONG_OPT_GRES},
+		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"ioload-image",  required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
@@ -1234,6 +1246,15 @@ void set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_GRES_FLAGS:
+			if (!xstrcasecmp(optarg, "enforce-binding")) {
+				opt.job_flags |= GRES_ENFORCE_BIND;
+			} else {
+				error("Invalid gres-flags specification: %s",
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
@@ -2004,8 +2025,8 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
-"              [--time-min=minutes] [--gres=list] [--profile=...]\n"
-"              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
+"              [--time-min=minutes] [--gres=list] [--gres-flags=opts]\n"
+"              [--cpu-freq=min[-max[:gov]] [--power=flags] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -2035,6 +2056,7 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"
+"      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              specify jobid to use\n"

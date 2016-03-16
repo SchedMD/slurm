@@ -974,14 +974,13 @@ enum ctx_keys {
 						 * pending jobs. */
 #define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
 						 * account hierarchy. */
-/* These bits are set in the bit_flags field of job_desc_msg_t and are used
- * by the slurmctld. The first two bits indicate if job should be canceled
- * if it has invalid dependency or should stay pending indefinitely.
- */
-#define KILL_INV_DEP       0x00000001
-#define NO_KILL_INV_DEP    0x00000002
-#define HAS_STATE_DIR      0x00000004
+
+/* These bits are set in the flags field of job_desc_msg_t */
+#define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
+#define NO_KILL_INV_DEP    0x00000002	/* Don't kill job on invalid dependency */
+#define HAS_STATE_DIR      0x00000004	/* Used by slurmctld to track state dir */
 #define BACKFILL_TEST      0x00000008	/* Backfill test in progress */
+#define GRES_ENFORCE_BIND  0x00000010	/* Enforce CPU/GRES binding */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

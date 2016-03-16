@@ -125,7 +125,7 @@ enum wrappers {
 #define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
-/* #define OPT_CLUSTERS      0x18 */
+#define OPT_GRES_FLAGS    0x18
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
 #define OPT_CPU_FREQ      0x1b
@@ -196,6 +196,7 @@ enum wrappers {
 #define LONG_OPT_PARSABLE        0x157
 #define LONG_OPT_CPU_FREQ        0x158
 #define LONG_OPT_THREAD_SPEC     0x159
+#define LONG_OPT_GRES_FLAGS      0x15a
 #define LONG_OPT_PRIORITY        0x160
 #define LONG_OPT_KILL_INV_DEP    0x161
 #define LONG_OPT_MCS_LABEL       0x165
@@ -423,7 +424,7 @@ static void _opt_default()
 	opt.priority = 0;
 
 	opt.test_only   = false;
-	opt.kill_invalid_dep = 0;
+	opt.job_flags = 0;
 
 	opt.mcs_label		= NULL;
 }
@@ -467,6 +468,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_EXPORT",        OPT_STRING,     &opt.export_env,    NULL          },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
+  {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL          },
@@ -623,6 +625,16 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_GRES_FLAGS:
+		if (!xstrcasecmp(val, "enforce-binding")) {
+			opt.job_flags |= GRES_ENFORCE_BIND;
+		} else {
+			error("Invalid SBATCH_GRES_FLAGS specification: %s",
+			      val);
+			exit(error_exit);
+		}
+		break;
+
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
 			opt.shared = JOB_SHARED_NONE;
@@ -760,6 +772,7 @@ static struct option long_options[] = {
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gres",          required_argument, 0, LONG_OPT_GRES},
+	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -1791,6 +1804,15 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
 			break;
+		case LONG_OPT_GRES_FLAGS:
+			if (!xstrcasecmp(optarg, "enforce-binding")) {
+				opt.job_flags |= GRES_ENFORCE_BIND;
+			} else {
+				error("Invalid gres-flags specification: %s",
+				      optarg);
+				exit(error_exit);
+			}
+			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			opt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
@@ -1840,9 +1862,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_KILL_INV_DEP:
 			if (xstrcasecmp(optarg, "yes") == 0)
-				opt.kill_invalid_dep |= KILL_INV_DEP;
+				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
-				opt.kill_invalid_dep |= NO_KILL_INV_DEP;
+				opt.job_flags |= NO_KILL_INV_DEP;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -3194,7 +3216,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem_bind=...] [--reservation=name] [--mcs-label=mcs]\n"
-"              [--cpu-freq=min[-max[:gov]] [--power=flags]\n"
+"              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--bb=burst_buffer_spec]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
@@ -3231,6 +3253,7 @@ static void _help(void)
 "      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"
+"      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "      --ignore-pbs            Ignore #PBS options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"

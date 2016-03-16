@@ -839,6 +839,8 @@ job_desc_msg_create_from_opts (void)
 		j->warn_signal = opt.warn_signal;
 	if (opt.warn_time)
 		j->warn_time = opt.warn_time;
+	if (opt.job_flags)
+		j->bitflags = opt.job_flags;
 
 	if (opt.cpu_freq_min != NO_VAL)
 		j->cpu_freq_min = opt.cpu_freq_min;

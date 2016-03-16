@@ -170,6 +170,7 @@ typedef struct salloc_options {
 	uint8_t power_flags;	/* Power management options	*/
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	time_t deadline;	/* --deadline                   */
+	uint32_t job_flags;	/* --kill_invalid_dep, --gres-flags */
 } opt_t;
 
 extern opt_t opt;

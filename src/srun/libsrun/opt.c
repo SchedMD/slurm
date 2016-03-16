@@ -126,6 +126,7 @@
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
 #define OPT_CORE_SPEC   0x1a
+#define OPT_GRES_FLAGS	0x1b
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
@@ -201,7 +202,7 @@
 #define LONG_OPT_DEBUG_SLURMD    0x14f
 #define LONG_OPT_TIME_MIN        0x150
 #define LONG_OPT_GRES            0x151
-
+#define LONG_OPT_GRES_FLAGS      0x152
 #define LONG_OPT_REQ_SWITCH      0x153
 #define LONG_OPT_LAUNCHER_OPTS   0x154
 #define LONG_OPT_CPU_FREQ        0x155
@@ -513,6 +514,7 @@ static void _opt_default(void)
 	opt.linuximage = NULL;
 	opt.mloaderimage = NULL;
 	opt.ramdiskimage = NULL;
+	opt.job_flags = 0;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -597,6 +599,7 @@ env_vars_t env_vars[] = {
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &opt.export_env,    NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
+{"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
 {"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
@@ -823,6 +826,16 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_GRES_FLAGS:
+		if (!xstrcasecmp(val, "enforce-binding")) {
+			opt.job_flags |= GRES_ENFORCE_BIND;
+		} else {
+			error("Invalid SLURM_GRES_FLAGS specification: %s",
+			      val);
+			exit(error_exit);
+		}
+		break;
+
 	case OPT_IMMEDIATE:
 		if (val)
 			opt.immediate = strtol(val, NULL, 10);
@@ -952,6 +965,7 @@ static void _set_options(const int argc, char **argv)
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
 		{"gres",             required_argument, 0, LONG_OPT_GRES},
+		{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
@@ -1709,6 +1723,15 @@ static void _set_options(const int argc, char **argv)
 			}
 			xfree(opt.gres);
 			opt.gres = xstrdup(optarg);
+			break;
+		case LONG_OPT_GRES_FLAGS:
+			if (!xstrcasecmp(optarg, "enforce-binding")) {
+				opt.job_flags |= GRES_ENFORCE_BIND;
+			} else {
+				error("Invalid gres-flags specification: %s",
+				      optarg);
+				exit(error_exit);
+			}
 			break;
 		case LONG_OPT_CPU_FREQ:
 		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
@@ -2666,7 +2689,7 @@ static void _usage(void)
 "            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
-"            [-T threads] [-W sec] [--checkpoint=time]\n"
+"            [-T threads] [-W sec] [--checkpoint=time] [--gres-flags=opts]\n"
 "            [--checkpoint-dir=dir]  [--licenses=names]\n"
 "            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -2740,6 +2763,7 @@ static void _help(void)
 "                              command-line flags\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gres=list             required generic resources\n"
+"      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "  -i, --input=in              location of stdin redirection\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"

@@ -35,6 +35,10 @@ documents those changes that are of interest to users and administrators.
  -- Add TCPTimeout option to slurm[dbd].conf. Decouples MessageTimeout from TCP
     connections.
  -- Don't call primary controller for every RPC when backup is in control.
+ -- Add --gres-flags=enforce-binding option to salloc, sbatch and srun commands.
+    If set, the only CPUs available to the job will be those bound to the
+    selected GRES (i.e. the CPUs identifed in the gres.conf file will be
+    strictly enforced rather than advisory).
 
 * Changes in Slurm 16.05.0pre1
 ==============================

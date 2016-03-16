@@ -728,6 +728,19 @@ zero counts for each generic resource OR set "\-\-gres=none" OR set the
 SLURM_STEP_GRES environment variable to "none".
 
 .TP
+\fB\-\-gres\-flags\fR=enforce\-binding
+If set, the only CPUs available to the job will be those bound to the selected
+GRES (i.e. the CPUs identifed in the gres.conf file will be strictly enforced
+rather than advisory). This option may result in delayed initiation of a job.
+For example a job requiring two GPUs and one CPU will be delayed until both
+GPUs on a single socket are available rather than using GPUs bound to separate
+sockets, however the application performance may be improved due to improved
+communication speed.
+Requires the node to be configured with more than one socket and resource
+filtering will be performed on a per\-socket basis.
+Applies to job allocation only.
+
+.TP
 \fB\-H, \-\-hold\fR
 Specify the job is to be submitted in a held state (priority of zero).
 A held job can now be released using scontrol to reset its priority
@@ -2260,6 +2273,9 @@ Also see \fBSLURM_EXIT_ERROR\fR.
 .TP
 \fBSLURM_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR
+.TP
+\fBSLURM_GRES_FLAGS\fR
+Same as \-\-gres\-flags\fR
 .TP
 \fBSLURM_HINT\fR
 Same as \fB\-\-hint\fR
