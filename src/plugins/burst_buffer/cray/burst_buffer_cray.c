@@ -60,10 +60,12 @@
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -1786,6 +1788,14 @@ static void *_start_teardown(void *x)
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
 				bb_job->state = BB_STATE_COMPLETE;
+			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
+			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
+				/* NOTE: If a job uses multiple burst buffer
+				 * plugins, the message will be sent after the
+				 * teardown completes in the first plugin */
+				mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
+				job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
+			}
 		} else {
 			/* This will happen when slurmctld restarts and needs
 			 * to clear vestigial buffers */
