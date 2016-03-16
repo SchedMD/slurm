@@ -1236,7 +1236,8 @@ extern int gs_fini(void)
 	return SLURM_SUCCESS;
 }
 
-/* Notify the gang scheduler that a job has been started */
+/* Notify the gang scheduler that a job has been resumed or started.
+ * In either case, add the job to gang scheduling. */
 extern int gs_job_start(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
@@ -1312,7 +1313,8 @@ extern void gs_wake_jobs(void)
 	list_iterator_destroy(job_iterator);
 }
 
-/* Notify the gang scheduler that a job has completed */
+/* Notify the gang scheduler that a job has been suspended or completed.
+ * In either case, remove the job from gang scheduling. */
 extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;

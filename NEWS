@@ -190,6 +190,9 @@ documents those changes that are of interest to users and administrators.
     completes rather than at job purge time (likely minutes later).
  -- Fix issue when adding a new TRES to AccountingStorageTRES for the first
     time.
+ -- Update gang scheduling tables when job manually suspended or resumed. Prior
+    logic could mess up job suspend/resume sequencing.
+ -- Update gang scheduling data structures when job changes in size.
 
 * Changes in Slurm 15.08.8
 ==========================

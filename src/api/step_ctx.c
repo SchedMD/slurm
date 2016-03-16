@@ -80,7 +80,7 @@ static void _signal_while_allocating(int signo)
 	if (signo == SIGCONT)
 		return;
 
-	destroy_step = 1;
+	destroy_step = signo;
 }
 
 static void
@@ -272,7 +272,8 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 		}
 		xsignal_block(step_signals);
 		if (destroy_step) {
-			info("Cancelled pending job step");
+			info("Cancelled pending job step with signal %d",
+			     destroy_step);
 			errno = ESLURM_ALREADY_DONE;
 		} else
 			rc = slurm_job_step_create(step_req, &step_resp);

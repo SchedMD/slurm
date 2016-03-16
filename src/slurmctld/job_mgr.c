@@ -87,6 +87,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
+#include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -3337,6 +3338,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_pre_resize_acctg(job_ptr);
 				kill_step_on_node(job_ptr, node_ptr, true);
 				excise_node_from_job(job_ptr, node_ptr);
+				(void) gs_job_start(job_ptr);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -10188,6 +10190,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			/* Since job_post_resize_acctg will restart
 			 * things, don't do it again. */
@@ -11352,6 +11355,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				_merge_job_licenses(job_ptr, expand_job_ptr);
 				rebuild_step_bitmaps(expand_job_ptr,
 						     orig_job_node_bitmap);
+				(void) gs_job_fini(job_ptr);
+				(void) gs_job_start(expand_job_ptr);
 			}
 			bit_free(orig_job_node_bitmap);
 			job_post_resize_acctg(job_ptr);
@@ -11389,6 +11394,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			info("sched: update_job: set nodes to %s for "
 			     "job_id %u",
@@ -13705,8 +13711,10 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 			return rc;
 		_suspend_job(job_ptr, op, indf_susp);
 		job_ptr->job_state = JOB_SUSPENDED;
-		if (indf_susp)
+		if (indf_susp) {    /* Job being manually suspended, not gang */
 			job_ptr->priority = 0;
+			(void) gs_job_fini(job_ptr);
+		}
 		if (job_ptr->suspend_time) {
 			job_ptr->pre_sus_time +=
 				difftime(now, job_ptr->suspend_time);
@@ -13723,8 +13731,11 @@ static int _job_suspend(struct job_record *job_ptr, uint16_t op, bool indf_susp)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 		_suspend_job(job_ptr, op, indf_susp);
-		if (job_ptr->priority == 0)
+		if (job_ptr->priority == 0) {
+			/* Job was manually suspended, not gang */
 			set_job_prio(job_ptr);
+			(void) gs_job_start(job_ptr);
+		}
 		job_ptr->job_state = JOB_RUNNING;
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);
