@@ -60,4 +60,6 @@ struct bcast_parameters {
 
 extern int bcast_file(struct bcast_parameters *params);
 
+extern int bcast_decompress_data(file_bcast_msg_t *req);
+
 #endif

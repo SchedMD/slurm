@@ -95,6 +95,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/bcast/file_bcast.h"
+
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -3464,97 +3466,6 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	return rc;
 }
 
-static int _decompress_data_zlib(file_bcast_msg_t *req)
-{
-#if HAVE_LIBZ
-	static z_stream strm;
-	int chunk = (256 * 1024); /* must match common/file_bcast.c */
-	int ret;
-	int flush = Z_NO_FLUSH, have;
-	unsigned char zlib_out[chunk];
-	int buf_in_offset = 0;
-	int buf_out_offset = 0;
-	char *out_buf = xmalloc(req->uncomp_len);
-
-	/* Perform decompression */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	ret = inflateInit(&strm);
-	if (ret != Z_OK)
-		return -1;
-
-	while (req->block_len > buf_in_offset) {
-		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
-		strm.avail_in = MIN(chunk, req->block_len - buf_in_offset);
-		buf_in_offset += strm.avail_in;
-		if (buf_in_offset >= req->block_len)
-			flush = Z_FINISH;
-		do {
-			strm.avail_out = chunk;
-			strm.next_out = zlib_out;
-			ret = inflate(&strm, flush);
-			switch (ret) {
-			case Z_NEED_DICT:
-				/* ret = Z_DATA_ERROR;      and fall through */
-			case Z_DATA_ERROR:
-			case Z_MEM_ERROR:
-				(void)inflateEnd(&strm);
-				return -1;
-			}
-			have = chunk - strm.avail_out;
-			memcpy(out_buf + buf_out_offset, zlib_out, have);
-			buf_out_offset += have;
-		} while (strm.avail_out == 0);
-	}
-	(void)inflateEnd(&strm);
-	xfree(req->block);
-	req->block = out_buf;
-	req->block_len = buf_out_offset;
-	return 0;
-#else
-	return -1;
-#endif
-}
-
-static int _decompress_data_lz4(file_bcast_msg_t *req)
-{
-#if HAVE_LZ4
-	char *out_buf = xmalloc(req->uncomp_len);
-	int out_len;
-
-	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len, req->uncomp_len);
-	xfree(req->block);
-	req->block = out_buf;
-	if (req->uncomp_len != out_len) {
-		error("lz4 decompression error, original block length != decompressed length");
-		return -1;
-	}
-	req->block_len = out_len;
-	return 0;
-#else
-	return -1;
-#endif
-}
-
-static int _decompress_data(file_bcast_msg_t *req)
-{
-	switch(req->compress) {
-	case COMPRESS_OFF:
-		return 0;
-	case COMPRESS_ZLIB:
-		return _decompress_data_zlib(req);
-	case COMPRESS_LZ4:
-		return _decompress_data_lz4(req);
-	}
-
-	/* compression type not recognized */
-	error("%s: compression type %u not supported.", __func__, req->compress);
-	return -1;
-}
-
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
@@ -3653,7 +3564,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
 		exit(errno);
 	}
-	if (_decompress_data(req) < 0) {
+	if (bcast_decompress_data(req) < 0) {
 		error("sbcast: data decompression error for UID %u", req_uid);
 		exit(1);
 	}
