@@ -434,10 +434,7 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 
 			_print_tres_line("MinTRESPJ",
 					 qos_rec->min_tres_pj_ctld,
-					 NULL, 0,
-					 (qos_rec->usage->acct_limit_list ||
-					  qos_rec->usage->user_limit_list) ?
-					 0 : 1);
+					 NULL, 0, 0);
 
 			if (qos_rec->usage->acct_limit_list) {
 				printf("Account Limits%s",
@@ -454,6 +451,18 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 					      (ListForF)_print_used_user_limit,
 					      qos_rec);
 			}
+
+			if (qos_rec->preempt_mode &&
+				(qos_rec->preempt_mode != (uint16_t)NO_VAL)) {
+				printf("PreemptMode=%s ", preempt_mode_string(
+							qos_rec->preempt_mode));
+			}
+
+			if (qos_rec->priority == INFINITE)
+				printf("Priority=NONE\n");
+			else if (qos_rec->priority != NO_VAL)
+				printf("Priority=%d\n", qos_rec->priority);
+
 		}
 	}
 }
