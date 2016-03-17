@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     If set, the only CPUs available to the job will be those bound to the
     selected GRES (i.e. the CPUs identifed in the gres.conf file will be
     strictly enforced rather than advisory).
+ -- Change how a node's allocated CPU count is calculated to avoid double
+    counting CPUs allocated to multiple jobs at the same time.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

@@ -2408,9 +2408,9 @@ extern int select_p_select_nodeinfo_set_all(void)
 	struct part_res_record *p_ptr;
 	struct node_record *node_ptr = NULL;
 	int i, n, start, end;
-	uint16_t tmp, tmp_part;
 	static time_t last_set_all = 0;
 	uint32_t alloc_cpus, node_cores, node_cpus, node_threads;
+	bitstr_t *alloc_core_bitmap = NULL;
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
@@ -2421,6 +2421,25 @@ extern int select_p_select_nodeinfo_set_all(void)
 		return SLURM_NO_CHANGE_IN_DATA;
 	}
 	last_set_all = last_node_update;
+
+	/* Build bitmap representing all cores allocated to all active jobs
+	 * (running or preempted jobs) */
+	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
+		if (!p_ptr->row)
+			continue;
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (!p_ptr->row[i].row_bitmap)
+				continue;
+			if (!alloc_core_bitmap) {
+				alloc_core_bitmap =
+					bit_copy(p_ptr->row[i].row_bitmap);
+			} else if (bit_size(alloc_core_bitmap) ==
+				   bit_size(p_ptr->row[i].row_bitmap)) {
+				bit_or(alloc_core_bitmap,
+				       p_ptr->row[i].row_bitmap);
+			}
+		}
+	}
 
 	for (n = 0, node_ptr = node_record_table_ptr;
 	     n < select_node_cnt; n++, node_ptr++) {
@@ -2445,25 +2464,15 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 
 		start = cr_get_coremap_offset(n);
-		end = cr_get_coremap_offset(n+1);
-		alloc_cpus = 0;
-		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			if (!p_ptr->row)
-				continue;
-			tmp_part = 0;
-			for (i = 0; i < p_ptr->num_rows; i++) {
-				if (!p_ptr->row[i].row_bitmap)
-					continue;
-				tmp = bit_set_count_range(
-					p_ptr->row[i].row_bitmap,
-					start, end);
-				/* Report row with largest CPU count */
-				tmp_part = MAX(tmp, tmp_part);
-			}
-			alloc_cpus += tmp_part;	/* Add CPU counts all parts */
+		end = cr_get_coremap_offset(n + 1);
+		if (alloc_core_bitmap) {
+			alloc_cpus = bit_set_count_range(alloc_core_bitmap,
+							 start, end);
+		} else {
+			alloc_cpus = 0;
 		}
-
 		node_cores = end - start;
+
 		/* Administrator could resume suspended jobs and oversubscribe
 		 * cores, avoid reporting more cores in use than configured */
 		if (alloc_cpus > node_cores)
@@ -2482,6 +2491,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			nodeinfo->alloc_memory = 0;
 		}
 	}
+	FREE_NULL_BITMAP(alloc_core_bitmap);
 
 	return SLURM_SUCCESS;
 }
