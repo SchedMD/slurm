@@ -2482,8 +2482,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 * count up to the proper CPU count as needed */
 		if (node_cores < node_cpus)
 			alloc_cpus *= node_threads;
-
 		nodeinfo->alloc_cpus = alloc_cpus;
+
 		if (select_node_record) {
 			nodeinfo->alloc_memory =
 				select_node_usage[n].alloc_memory;

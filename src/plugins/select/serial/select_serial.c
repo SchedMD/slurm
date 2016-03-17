@@ -1829,11 +1829,11 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	struct part_res_record *p_ptr;
 	struct node_record *node_ptr = NULL;
-	int i=0, n=0, c, start, end;
-	uint16_t tmp, tmp_16 = 0;
+	int i, n, start, end;
 	static time_t last_set_all = 0;
-	uint32_t node_threads, node_cpus;
 	select_nodeinfo_t *nodeinfo = NULL;
+	uint32_t alloc_cpus, node_cores, node_cpus, node_threads;
+	bitstr_t *alloc_core_bitmap = NULL;
 
 	/* only set this once when the last_node_update is newer than
 	   the last time we set things up. */
@@ -1845,7 +1845,26 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (n=0; n < select_node_cnt; n++) {
+	/* Build bitmap representing all cores allocated to all active jobs
+	 * (running or preempted jobs) */
+	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
+		if (!p_ptr->row)
+			continue;
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (!p_ptr->row[i].row_bitmap)
+				continue;
+			if (!alloc_core_bitmap) {
+				alloc_core_bitmap =
+					bit_copy(p_ptr->row[i].row_bitmap);
+			} else if (bit_size(alloc_core_bitmap) ==
+				   bit_size(p_ptr->row[i].row_bitmap)) {
+				bit_or(alloc_core_bitmap,
+				       p_ptr->row[i].row_bitmap);
+			}
+		}
+	}
+
+	for (n = 0; n < select_node_cnt; n++) {
 		node_ptr = &(node_record_table_ptr[n]);
 
 		/* We have to use the '_g_' here to make sure we get
@@ -1870,34 +1889,27 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 
 		start = cr_get_coremap_offset(n);
-		end = cr_get_coremap_offset(n+1);
-		tmp_16 = 0;
-		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			if (!p_ptr->row)
-				continue;
-			for (i = 0; i < p_ptr->num_rows; i++) {
-				if (!p_ptr->row[i].row_bitmap)
-					continue;
-				tmp = 0;
-				for (c = start; c < end; c++) {
-					if (bit_test(p_ptr->row[i].row_bitmap,
-						     c))
-						tmp++;
-				}
-				/* get the row with the largest cpu
-				 * count on it. */
-				if (tmp > tmp_16)
-					tmp_16 = tmp;
-			}
+		end = cr_get_coremap_offset(n + 1);
+		if (alloc_core_bitmap) {
+			alloc_cpus = bit_set_count_range(alloc_core_bitmap,
+							 start, end);
+		} else {
+			alloc_cpus = 0;
 		}
+		node_cores = end - start;
 
-		/* The minimum allocatable unit may a core, so scale
-		 * threads up to the proper CPU count */
-		if ((end - start) < node_cpus)
-			tmp_16 *= node_threads;
+		/* Administrator could resume suspended jobs and oversubscribe
+		 * cores, avoid reporting more cores in use than configured */
+		if (alloc_cpus > node_cores)
+			alloc_cpus = node_cores;
 
-		nodeinfo->alloc_cpus = tmp_16;
+		/* The minimum allocatable unit may a core, so scale by thread
+		 * count up to the proper CPU count as needed */
+		if (node_cores < node_cpus)
+			alloc_cpus *= node_threads;
+		nodeinfo->alloc_cpus = alloc_cpus;
 	}
+	FREE_NULL_BITMAP(alloc_core_bitmap);
 
 	return SLURM_SUCCESS;
 }
