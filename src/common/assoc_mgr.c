@@ -3841,6 +3841,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			*/
 			if (object->uid == INFINITE)
 				addit = true;
+			/* _set_assoc_parent_and_user() may change the uid if
+			 * unset which changes the hash value. */
+			if (object->user &&
+			    (object->uid == NO_VAL || object->uid == 0)) {
+				_delete_assoc_hash(object);
+				addit = true;
+			}
 
 			_set_assoc_parent_and_user(object, reset);
 
