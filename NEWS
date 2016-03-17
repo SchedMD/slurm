@@ -197,6 +197,8 @@ documents those changes that are of interest to users and administrators.
  -- Update gang scheduling tables when job manually suspended or resumed. Prior
     logic could mess up job suspend/resume sequencing.
  -- Update gang scheduling data structures when job changes in size.
+ -- Associations - prevent hash table corruption if uid initially unset for
+    a user, which can cause slurmctld to crash if that user is deleted.
 
 * Changes in Slurm 15.08.8
 ==========================
@@ -1051,6 +1053,8 @@ documents those changes that are of interest to users and administrators.
  -- BGQ - Tighter locks around structures when nodes/cables change state.
  -- Fix job array formatting to allow return [0-100:2] display for arrays with
     step functions rather than [0,2,4,6,8,...] .
+ -- Associations - prevent hash table corruption if uid initially unset for
+    a user, which can cause slurmctld to crash if that user is deleted.
 
 * Changes in Slurm 14.11.11
 ===========================
