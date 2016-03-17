@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "March 2016" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -22,8 +22,11 @@ by file size, degree of parallelism, and network type.
 
 .SH "OPTIONS"
 .TP
-\fB\-C\fR, \fB\-\-compress\fR
+\fB\-C\fR [\fIlibrary\fR], \fB\-\-compress\fR[=\fIlibrary\fR]
 Compress the file being transmitted.
+The optional argument specifies the data compression library to be used.
+Supported values are "zlib" (default) and "lz4".
+Some compression libraries may be unavailable on some systems.
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.

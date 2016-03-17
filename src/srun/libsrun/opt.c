@@ -2723,7 +2723,8 @@ static void _usage(void)
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"            [--acctg-freq=<datatype>=<interval>} [--bcast=<dest_path>]\n"
+"            [--bcast=<dest_path>] [--compress[=library]]\n"
+"            [--acctg-freq=<datatype>=<interval>]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 
 }
@@ -2750,6 +2751,7 @@ static void _help(void)
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
 "                              files\n"
 "      --comment=name          arbitrary comment\n"
+"      --compress[=library]    data compression library used with --bcast\n
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"

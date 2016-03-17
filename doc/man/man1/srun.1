@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "January 2016" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "March 2016" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -213,8 +213,11 @@ and "<job_id>.<step_id>.ckpt" for job steps.
 An arbitrary comment.
 
 .TP
-\fB\-\-compress\fR
+\fB\-\-compress\fR[=\fItype\fR]
 Compress file before sending it to compute hosts.
+The optional argument specifies the data compression library to be used.
+Supported values are "zlib" (default) and "lz4".
+Some compression libraries may be unavailable on some systems.
 For use with the \fB\-\-bcast\fR option.
 
 .TP

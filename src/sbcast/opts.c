@@ -244,17 +244,17 @@ static void _help( void )
 {
 	printf ("\
 Usage: sbcast [OPTIONS] SOURCE DEST\n\
-  -C, --compress      compress the file being transmitted\n\
-  -f, --force         replace destination file as required\n\
-  -F, --fanout=num    specify message fanout\n\
-  -j, --jobid=#[.#]   specify job ID and optional step ID, unneeded if run\n\
-                      inside allocation\n\
-  -p, --preserve      preserve modes and times of source file\n\
-  -s, --size=num      block size in bytes (rounded off)\n\
-  -t, --timeout=secs  specify message timeout (seconds)\n\
-  -v, --verbose       provide detailed event logging\n\
-  -V, --version       print version information and exit\n\
+  -C, --compress[=lib] compress the file being transmitted\n\
+  -f, --force          replace destination file as required\n\
+  -F, --fanout=num     specify message fanout\n\
+  -j, --jobid=#[.#]    specify job ID and optional step ID, unneeded if run\n\
+                       inside allocation\n\
+  -p, --preserve       preserve modes and times of source file\n\
+  -s, --size=num       block size in bytes (rounded off)\n\
+  -t, --timeout=secs   specify message timeout (seconds)\n\
+  -v, --verbose        provide detailed event logging\n\
+  -V, --version        print version information and exit\n\
 \nHelp options:\n\
-  --help              show this help message\n\
-  --usage             display brief usage message\n");
+  --help               show this help message\n\
+  --usage              display brief usage message\n");
 }
