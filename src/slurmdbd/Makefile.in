@@ -148,9 +148,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmdbd_OBJECTS = backup.$(OBJEXT) \
-	proc_req.$(OBJEXT) read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) \
-	slurmdbd.$(OBJEXT)
+am_slurmdbd_OBJECTS = backup.$(OBJEXT) proc_req.$(OBJEXT) \
+	read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
