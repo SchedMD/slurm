@@ -77,7 +77,8 @@ static int destroy_step = 0;
 static void _signal_while_allocating(int signo)
 {
 	debug("Got signal %d", signo);
-	if (signo == SIGCONT)
+	/* NOTE: Near simultaneous SIGSTOP+SIGCONT can result in signo == 0 */
+	if ((signo == SIGCONT) || (signo == 0))
 		return;
 
 	destroy_step = signo;

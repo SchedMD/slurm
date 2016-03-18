@@ -118,7 +118,8 @@ static void *_safe_signal_while_allocating(void *in_data)
 	int signo = *(int *)in_data;
 
 	debug("Got signal %d", signo);
-	if (signo == SIGCONT)
+	/* NOTE: Near simultaneous SIGSTOP+SIGCONT can result in signo == 0 */
+	if ((signo == SIGCONT) || (signo == 0))
 		return NULL;
 
 	destroy_job = 1;
