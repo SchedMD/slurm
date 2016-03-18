@@ -4166,13 +4166,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			defer_sched = 1;
 		else
 			defer_sched = 0;
+		bf_min_age_reserve = 0;
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
-			bf_min_age_reserve = atoi(tmp_ptr + 19);
-			if (bf_min_age_reserve < 0)
-				bf_min_age_reserve = 0;
-		} else {
-			bf_min_age_reserve = 0;
+			int min_age = atoi(tmp_ptr + 19);
+			if (min_age > 0)
+				bf_min_age_reserve = min_age;
 		}
 		xfree(sched_params);
 	}

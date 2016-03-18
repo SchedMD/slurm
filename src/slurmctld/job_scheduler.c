@@ -1119,6 +1119,7 @@ static int _schedule(uint32_t job_limit)
 	static int sched_timeout = 0;
 	static int sched_max_job_start = 0;
 	static int bf_min_age_reserve = 0;
+	static uint32_t bf_min_prio_reserve = 0;
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
@@ -1191,13 +1192,20 @@ static int _schedule(uint32_t job_limit)
 			batch_sched_delay = 3;
 		}
 
+		bf_min_age_reserve = 0;
 		if (sched_params &&
 		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
-			bf_min_age_reserve = atoi(tmp_ptr + 19);
-			if (bf_min_age_reserve < 0)
-				bf_min_age_reserve = 0;
-		} else {
-			bf_min_age_reserve = 0;
+			int min_age = atoi(tmp_ptr + 19);
+			if (min_age > 0)
+				bf_min_age_reserve = min_age;
+		}
+
+		bf_min_prio_reserve = 0;
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_min_prio_reserve="))) {
+			int64_t min_prio = (int64_t) atoll(tmp_ptr + 20);
+			if (min_prio > 0)
+				bf_min_prio_reserve = (uint32_t) min_prio;
 		}
 
 		if (sched_params &&
@@ -1451,6 +1459,7 @@ next_part:			part_ptr = (struct part_record *)
 			array_task_id = job_queue_rec->array_task_id;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
+			job_ptr->priority = job_queue_rec->priority;
 			xfree(job_queue_rec);
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
@@ -1896,6 +1905,9 @@ next_task:
 					fail_by_part = false;
 			}
 		}
+		if (fail_by_part && bf_min_prio_reserve &&
+		    (job_ptr->priority < bf_min_prio_reserve))
+			fail_by_part = false;
 		if (fail_by_part) {
 		 	/* do not schedule more jobs in this partition or on
 			 * nodes in this partition */

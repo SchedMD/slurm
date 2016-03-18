@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     strictly enforced rather than advisory).
  -- Change how a node's allocated CPU count is calculated to avoid double
     counting CPUs allocated to multiple jobs at the same time.
+ -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
+    the specified threshold will not have resources reserved for them.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

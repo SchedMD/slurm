@@ -128,6 +128,7 @@ static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
+static uint32_t bf_min_prio_reserve = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
@@ -596,16 +597,28 @@ static void _load_config(void)
 		max_backfill_job_per_user = 0;
 	}
 
+	bf_min_age_reserve = 0;
 	if (sched_params &&
 	    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
-		bf_min_age_reserve = atoi(tmp_ptr + 19);
-		if (bf_min_age_reserve < 0) {
+		int min_age = atoi(tmp_ptr + 19);
+		if (min_age < 0) {
 			error("Invalid SchedulerParameters bf_min_age_reserve: %d",
-			      bf_min_age_reserve);
-			bf_min_age_reserve = 0;
+			      min_age);
+		} else {
+			bf_min_age_reserve = min_age;
 		}
-	} else {
-		bf_min_age_reserve = 0;
+	}
+
+	bf_min_prio_reserve = 0;
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_min_prio_reserve="))) {
+		int64_t min_prio = (int64_t) atoll(tmp_ptr + 20);
+		if (min_prio < 0) {
+			error("Invalid SchedulerParameters bf_min_prio_reserve: %"PRIi64,
+			      min_prio);
+		} else {
+			bf_min_prio_reserve = (uint32_t) min_prio;
+		}
 	}
 
 	/* bf_continue makes backfill continue where it was if interrupted */
@@ -861,7 +874,7 @@ static int _attempt_backfill(void)
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
-	uint32_t acct_max_nodes, wait_reason = 0;
+	uint32_t acct_max_nodes, wait_reason = 0, job_no_reserve;
 	bool resv_overlap = false;
 	uint8_t save_share_res, save_whole_node;
 	int test_fini;
@@ -1002,6 +1015,7 @@ static int _attempt_backfill(void)
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 		job_ptr->part_ptr = part_ptr;
+		job_ptr->priority = job_queue_rec->priority;
 		mcs_select = slurm_mcs_get_select(job_ptr);
 
 		/* With bf_continue configured, the original job could have
@@ -1071,6 +1085,17 @@ static int _attempt_backfill(void)
 		if (!acct_policy_job_runnable_state(job_ptr) &&
 		    !acct_policy_job_runnable_pre_select(job_ptr))
 			continue;
+
+		job_no_reserve = 0;
+		if (bf_min_prio_reserve &&
+		    (job_ptr->priority < bf_min_prio_reserve)) {
+			job_no_reserve = TEST_NOW_ONLY;
+		} else if (bf_min_age_reserve && job_ptr->details->begin_time) {
+			pend_time = difftime(time(NULL),
+					     job_ptr->details->begin_time);
+			if (pend_time < bf_min_age_reserve)
+				job_no_reserve = TEST_NOW_ONLY;
+		}
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
@@ -1410,6 +1435,7 @@ next_task:
 		build_active_feature_bitmap(job_ptr, avail_bitmap,
 					    &active_bitmap);
 		job_ptr->bit_flags |= BACKFILL_TEST;
+		job_ptr->bit_flags |= job_no_reserve;	/* 0 or TEST_NOW_ONLY */
 		if (active_bitmap) {
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
 				       max_nodes, req_nodes, exc_core_bitmap);
@@ -1436,6 +1462,7 @@ next_task:
 			}
 		}
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
+		job_ptr->bit_flags &= ~TEST_NOW_ONLY;
 
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
@@ -1588,13 +1615,8 @@ next_task:
 			_set_job_time_limit(job_ptr, orig_time_limit);
 		}
 
-		if ((job_ptr->start_time > now) &&
-		    (bf_min_age_reserve && job_ptr->details->begin_time)) {
-			pend_time = difftime(time(NULL),
-					     job_ptr->details->begin_time);
-			if (pend_time < bf_min_age_reserve)
-				continue;
-		}
+		if ((job_ptr->start_time > now) && (job_no_reserve != 0))
+			continue;
 
 		if (later_start && (job_ptr->start_time > later_start)) {
 			/* Try later when some nodes currently reserved for

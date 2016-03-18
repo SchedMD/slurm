@@ -981,6 +981,7 @@ enum ctx_keys {
 #define HAS_STATE_DIR      0x00000004	/* Used by slurmctld to track state dir */
 #define BACKFILL_TEST      0x00000008	/* Backfill test in progress */
 #define GRES_ENFORCE_BIND  0x00000010	/* Enforce CPU/GRES binding */
+#define TEST_NOW_ONLY      0x00000020	/* Test for immediately start only */
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

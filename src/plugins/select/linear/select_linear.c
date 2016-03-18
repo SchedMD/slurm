@@ -3392,7 +3392,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
 	 * scheduling the pending job after each one */
-	if (rc != SLURM_SUCCESS) {
+	if ((rc != SLURM_SUCCESS) &&
+	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = (struct job_record *)
