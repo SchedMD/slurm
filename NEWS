@@ -201,6 +201,8 @@ documents those changes that are of interest to users and administrators.
  -- Update gang scheduling data structures when job changes in size.
  -- Associations - prevent hash table corruption if uid initially unset for
     a user, which can cause slurmctld to crash if that user is deleted.
+ -- Avoid possibly aborting srun that gets simultaneous SIGSTOP+SIGCONT while
+    creating the job step.
 
 * Changes in Slurm 15.08.8
 ==========================
