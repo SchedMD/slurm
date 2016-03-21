@@ -1178,6 +1178,9 @@ static void _spawn_timeslicer_thread(void)
 /* Initialize data structures and start the gang scheduling thread */
 extern int gs_init(void)
 {
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
+
 	if (timeslicer_thread_id)
 		return SLURM_SUCCESS;
 
@@ -1244,6 +1247,9 @@ extern int gs_job_start(struct job_record *job_ptr)
 	uint16_t job_sig_state;
 	char *part_name;
 
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
+
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_start for job %u", job_ptr->job_id);
 	/* add job to partition */
@@ -1280,6 +1286,9 @@ extern int gs_job_start(struct job_record *job_ptr)
  *	to remove */
 extern int gs_job_scan(void)
 {
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
+
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_scan");
 	slurm_mutex_lock(&data_mutex);
@@ -1300,6 +1309,9 @@ extern void gs_wake_jobs(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return;
+
 	if (!job_list)	/* no jobs */
 		return;
 
@@ -1319,6 +1331,9 @@ extern int gs_job_fini(struct job_record *job_ptr)
 {
 	struct gs_part *p_ptr;
 	char *part_name;
+
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_job_fini for job %u", job_ptr->job_id);
@@ -1376,6 +1391,9 @@ extern int gs_reconfig(void)
 	List old_part_list;
 	struct job_record *job_ptr;
 	struct gs_job *j_ptr;
+
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
 
 	if (!timeslicer_thread_id) {
 		/* gs_init() will be called later from read_slurm_conf()
