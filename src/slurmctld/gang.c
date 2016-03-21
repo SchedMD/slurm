@@ -1211,6 +1211,9 @@ extern int gs_init(void)
 /* Terminate the gang scheduling thread and free its data structures */
 extern int gs_fini(void)
 {
+	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return SLURM_SUCCESS;
+
 	/* terminate the timeslicer thread */
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_fini");

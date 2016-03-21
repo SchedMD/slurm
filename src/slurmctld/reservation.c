@@ -4448,7 +4448,7 @@ static uint32_t _get_job_duration(struct job_record *job_ptr)
 	if (job_ptr->part_ptr)
 		time_slices = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
 	if ((duration != ONE_YEAR) && (time_slices > 1) &&
-	    (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+	    (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
 		/* FIXME: Ideally we figure out how many jobs are actually
 		 * time-slicing on each node rather than using the maximum
 		 * value. */

@@ -9472,7 +9472,7 @@ void reset_job_bitmaps(void)
 		}
 
 	}
-	if (slurm_get_preempt_mode() == PREEMPT_MODE_GANG)
+	if (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
 
 	job_iterator = list_iterator_create(job_list);

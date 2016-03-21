@@ -146,8 +146,7 @@ slurm_sched_fini( void )
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_fini() != SLURM_SUCCESS))
+	if (gs_fini() != SLURM_SUCCESS)
 		error( "cannot stop gang scheduler" );
 
 	return rc;
@@ -163,8 +162,7 @@ slurm_sched_g_reconfig( void )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_reconfig() != SLURM_SUCCESS))
+	if (gs_reconfig() != SLURM_SUCCESS)
 		error( "cannot reconfigure gang scheduler" );
 
 	return (*(ops.reconfig))();
@@ -181,8 +179,7 @@ slurm_sched_g_schedule( void )
 
 #if 0
 	/* Must have job write lock and node read lock set here */
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_job_scan() != SLURM_SUCCESS))
+	if (gs_job_scan() != SLURM_SUCCESS)
 		error( "gang scheduler could not rescan jobs" );
 #endif
 
@@ -198,8 +195,7 @@ slurm_sched_g_newalloc( struct job_record *job_ptr )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_job_start( job_ptr ) != SLURM_SUCCESS)) {
+	if (gs_job_start( job_ptr ) != SLURM_SUCCESS) {
 		error( "gang scheduler problem starting job %u",
 		       job_ptr->job_id);
 	}
@@ -216,8 +212,7 @@ slurm_sched_g_freealloc( struct job_record *job_ptr )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_job_fini( job_ptr ) != SLURM_SUCCESS)) {
+	if (gs_job_fini( job_ptr ) != SLURM_SUCCESS) {
 		error( "gang scheduler problem finishing job %u",
 		       job_ptr->job_id);
 	}
@@ -260,8 +255,7 @@ slurm_sched_g_partition_change( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_reconfig() != SLURM_SUCCESS))
+	if (gs_reconfig() != SLURM_SUCCESS)
 		error( "cannot reconfigure gang scheduler" );
 
 	(*(ops.partition_change))();

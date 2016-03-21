@@ -1970,7 +1970,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				     job_ptr->job_id);
 			}
 		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
-			   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
+			   (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
 			debug("preempted job %u suspended by gang scheduler",
 			      job_ptr->job_id);
 		} else if (mode == PREEMPT_MODE_OFF) {
