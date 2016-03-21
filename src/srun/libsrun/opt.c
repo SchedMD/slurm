@@ -2751,7 +2751,7 @@ static void _help(void)
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
 "                              files\n"
 "      --comment=name          arbitrary comment\n"
-"      --compress[=library]    data compression library used with --bcast\n
+"      --compress[=library]    data compression library used with --bcast\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
