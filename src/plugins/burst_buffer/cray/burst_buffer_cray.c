@@ -896,12 +896,14 @@ unpack_error:
 
 /* We just found an unexpected session, set default account, QOS, & partition.
  * Copy the information from any currently existing session for the same user.
- * If none found, use his default account and QOS. */
+ * If none found, use his default account and QOS.
+ * NOTE: assoc_mgr_locks need to be locked with
+ * assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
+ *				    NO_LOCK, NO_LOCK, NO_LOCK };
+ * before calling this.
+ */
 static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 {
-	/* read locks on assoc & qos */
-	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-					 NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t   qos_rec;
 	bb_alloc_t *bb_ptr = NULL;
@@ -931,7 +933,7 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 	assoc_rec.partition = default_part_name;
 	assoc_rec.uid = bb_alloc->user_id;
-	assoc_mgr_lock(&assoc_locks);
+
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    &bb_alloc->assoc_ptr,
@@ -954,7 +956,6 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 					xstrdup(bb_alloc->qos_ptr->name);
 		}
 	}
-	assoc_mgr_unlock(&assoc_locks);
 }
 
 /* For a given user/partition/account, set it's assoc_ptr */

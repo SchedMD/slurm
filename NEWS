@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     a user, which can cause slurmctld to crash if that user is deleted.
  -- Avoid possibly aborting srun that gets simultaneous SIGSTOP+SIGCONT while
     creating the job step.
+ -- Fix deadlock issue with burst_buffer/cray when a newly created burst
+    buffer is found.
 
 * Changes in Slurm 15.08.8
 ==========================
