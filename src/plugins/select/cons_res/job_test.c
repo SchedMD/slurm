@@ -1067,6 +1067,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	for (i = 0; i < sock_cnt; i++)
 		bit_free(sock_core_bitmap[i]);
 	xfree(sock_core_bitmap);
+	xfree(avail_cores);
 
 	return result_cores;
 }
