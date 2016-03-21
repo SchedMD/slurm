@@ -64,6 +64,9 @@ documents those changes that are of interest to users and administrators.
     creating the job step.
  -- Fix deadlock issue with burst_buffer/cray when a newly created burst
     buffer is found.
+ -- burst_buffer/cray: Set environment variables just before starting job rather
+    than at job submission time to reflect persistent buffers created or
+    modified while the job is pending.
 
 * Changes in Slurm 15.08.8
 ==========================
