@@ -196,6 +196,7 @@ static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
+static int  _file_bcast_register_file(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
@@ -273,6 +274,7 @@ static uint32_t active_job_id[JOB_STATE_CNT];
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static List file_bcast_list = NULL;
 
 void
 slurmd_req(slurm_msg_t *msg)
@@ -3466,19 +3468,58 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 	return rc;
 }
 
+static file_bcast_info_t *_bcast_lookup_file(uid_t uid, char *fname)
+{
+	file_bcast_info_t *file_info;
+	ListIterator itr = list_iterator_create(file_bcast_list);
+
+	while ((file_info = list_next(itr))) {
+		if ((uid == file_info->uid)
+		    && (!xstrcmp(fname, file_info->fname))) {
+			/* found */
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return file_info;
+}
+
+static void _file_bcast_close_file(uid_t uid, char *fname)
+{
+	file_bcast_info_t *file_info;
+	ListIterator itr = list_iterator_create(file_bcast_list);
+
+	while ((file_info = list_next(itr))) {
+		if ((uid == file_info->uid)
+		    && (!xstrcmp(fname, file_info->fname))) {
+			list_delete_item(itr);
+			break;
+		}
+	}
+
+	list_iterator_destroy(itr);
+}
+
+static void _free_file_bcast_info_t(file_bcast_info_t *f)
+{
+	xfree(f->fname);
+	if (f->fd)
+		close(f->fd);
+}
+
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
+	int rc, offset,inx;
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, offset, inx, rc;
-	int ngroups = 16;
-	gid_t *groups;
+	uint32_t job_id;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
 					     slurm_get_auth_info());
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
 					     slurm_get_auth_info());
-	pid_t child;
-	uint32_t job_id;
+
+	file_bcast_info_t *file_info;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -3493,10 +3534,6 @@ _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
-	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
-		return rc;
-
 	if (req->block_no == 1) {
 		info("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
 		     req_uid, job_id, req->fname, req->block_no);
@@ -3505,15 +3542,152 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		      req_uid, job_id, req->fname, req->block_no);
 	}
 
+	/* first block must register the file and open fd/mmap */
+	if ((req->block_no == 1)) {
+		if ((rc = _file_bcast_register_file(msg)))
+			return rc;
+	} else {
+		rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
+		if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+			return rc;
+	}
+
+	if (!(file_info = _bcast_lookup_file(req_uid, req->fname))) {
+		error("No registered file transfer for uid %u file `%s`.",
+		      req_uid, req->fname);
+		return SLURM_ERROR;
+	}
+
+	/* now decompress file */
+	if (bcast_decompress_data(req) < 0) {
+		error("sbcast: data decompression error for UID %u, file %s",
+		      req_uid, req->fname);
+		exit(1);
+	}
+
+	offset = 0;
+	while (req->block_len - offset) {
+		inx = write(file_info->fd, &req->block[offset],
+			    (req->block_len - offset));
+		if (inx == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("sbcast: uid:%u can't write `%s`: %s",
+			      req_uid, req->fname, strerror(errno));
+			return SLURM_FAILURE;
+		}
+		offset += inx;
+	}
+
+	file_info->last_update = time(NULL);
+
+	if (req->last_block && fchmod(file_info->fd, (req->modes & 0777))) {
+		error("sbcast: uid:%u can't chmod `%s`: %s",
+		      req_uid, req->fname, strerror(errno));
+	}
+	if (req->last_block && fchown(file_info->fd, req_uid, req_gid)) {
+		error("sbcast: uid:%u gid:%u can't chown `%s`: %s",
+		      req_uid, req_gid, req->fname, strerror(errno));
+	}
+	if (req->last_block && req->atime) {
+		struct utimbuf time_buf;
+		time_buf.actime  = req->atime;
+		time_buf.modtime = req->mtime;
+		if (utime(req->fname, &time_buf)) {
+			error("sbcast: uid:%u can't utime `%s`: %s",
+			      req_uid, req->fname, strerror(errno));
+		}
+	}
+
+	if (req->last_block) {
+		_file_bcast_close_file(req_uid, req->fname);
+	}
+	return SLURM_SUCCESS;
+}
+
+static void _send_back_fd(int socket, int fd)
+{
+	struct msghdr msg = { 0 };
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(fd))];
+	memset(buf, '\0', sizeof(buf));
+
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(socket, &msg, 0) < 0)
+		error("%s: failed to send fd: %m", __func__);
+}
+
+static int _receive_fd(int socket)
+{
+	struct msghdr msg = {0};
+	struct cmsghdr *cmsg;
+	int fd;
+	msg.msg_iov = NULL;
+	msg.msg_iovlen = 0;
+	char c_buffer[256];
+	msg.msg_control = c_buffer;
+	msg.msg_controllen = sizeof(c_buffer);
+
+	if (recvmsg(socket, &msg, 0) < 0) {
+		error("%s: failed to receive fd: %m", __func__);
+		return -1;
+	}
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
+	return fd;
+}
+
+
+static int _file_bcast_register_file(slurm_msg_t *msg)
+{
+	file_bcast_msg_t *req = msg->data;
+	int fd, flags, rc;
+	int pipe[2];
+	int ngroups = 16;
+	gid_t *groups;
+	pid_t child;
+	uint32_t job_id;
+	file_bcast_info_t *file_info;
+
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
+					     slurm_get_auth_info());
+	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
+					     slurm_get_auth_info());
+
+	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
+	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+		return rc;
+
 	if ((rc = _get_grouplist(&req->user_name, req_uid,
 				 req_gid, &ngroups, &groups)) < 0) {
 		error("sbcast: getgrouplist(%u): %m", req_uid);
 		return rc;
 	}
 
-	if ((req->block_no == 1) && (rc = container_g_create(job_id))) {
+	if ((rc = container_g_create(job_id))) {
 		error("sbcast: container_g_create(%u): %m", job_id);
 		return rc;
+	}
+
+	/* child process will setuid to the user, register the process
+	 * with the container, and open the file for us. */
+
+	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
+		error("%s: Failed to open pipe: %m", __func__);
+		return SLURM_ERROR;
 	}
 
 	child = fork();
@@ -3521,10 +3695,33 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: fork failure");
 		return errno;
 	} else if (child > 0) {
+		/* get fd back from pipe */
+		close(pipe[0]);
 		waitpid(child, &rc, 0);
 		xfree(groups);
-		return WEXITSTATUS(rc);
+		if (rc)
+			return WEXITSTATUS(rc);
+
+		fd = _receive_fd(pipe[1]);
+		if (!file_bcast_list) {
+			file_bcast_list =
+				list_create((ListDelF) _free_file_bcast_info_t);
+		}
+
+		file_info = xmalloc(sizeof(file_bcast_info_t));
+		file_info->fd = fd;
+		file_info->fname = xstrdup(req->fname);
+		file_info->uid = req_uid;
+		file_info->start_time = time(NULL);
+
+		//TODO: mmap the file here
+
+		list_append(file_bcast_list, file_info);
+
+		return SLURM_SUCCESS;
 	}
+
+	close(pipe[1]);
 
 	/* container_g_add_pid needs to be called in the
 	   forked process part of the fork to avoid a race
@@ -3564,20 +3761,12 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: getuid(%u): %s", req_uid, strerror(errno));
 		exit(errno);
 	}
-	if (bcast_decompress_data(req) < 0) {
-		error("sbcast: data decompression error for UID %u", req_uid);
-		exit(1);
-	}
 
-	flags = O_WRONLY;
-	if (req->block_no == 1) {
-		flags |= O_CREAT;
-		if (req->force)
-			flags |= O_TRUNC;
-		else
-			flags |= O_EXCL;
-	} else
-		flags |= O_APPEND;
+	flags = O_WRONLY | O_CREAT;
+	if (req->force)
+		flags |= O_TRUNC;
+	else
+		flags |= O_EXCL;
 
 	fd = open(req->fname, flags, 0700);
 	if (fd == -1) {
@@ -3585,39 +3774,8 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		      req_uid, req->fname, strerror(errno));
 		exit(errno);
 	}
-
-	offset = 0;
-	while (req->block_len - offset) {
-		inx = write(fd, &req->block[offset],
-			    (req->block_len - offset));
-		if (inx == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("sbcast: uid:%u can't write `%s`: %s",
-			      req_uid, req->fname, strerror(errno));
-			close(fd);
-			exit(errno);
-		}
-		offset += inx;
-	}
-	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
-		error("sbcast: uid:%u can't chmod `%s`: %s",
-		      req_uid, req->fname, strerror(errno));
-	}
-	if (req->last_block && fchown(fd, req_uid, req_gid)) {
-		error("sbcast: uid:%u gid:%u can't chown `%s`: %s",
-		      req_uid, req_gid, req->fname, strerror(errno));
-	}
+	_send_back_fd(pipe[0], fd);
 	close(fd);
-	if (req->last_block && req->atime) {
-		struct utimbuf time_buf;
-		time_buf.actime  = req->atime;
-		time_buf.modtime = req->mtime;
-		if (utime(req->fname, &time_buf)) {
-			error("sbcast: uid:%u can't utime `%s`: %s",
-			      req_uid, req->fname, strerror(errno));
-		}
-	}
 	exit(SLURM_SUCCESS);
 }
 

@@ -58,6 +58,16 @@ struct bcast_parameters {
 	char *dst_fname;
 };
 
+typedef struct file_bcast_info {
+	uid_t uid;		/* uid of owner */
+	char *fname;		/* filename */
+	int fd;			/* file descriptor */
+	time_t start_time;	/* transfer start time */
+	time_t last_update;	/* transfer last block received */
+	int received_blocks;	/* number of blocks received */
+	int max_blocks;		/* highest block number (when known) */
+} file_bcast_info_t;
+
 extern int bcast_file(struct bcast_parameters *params);
 
 extern int bcast_decompress_data(file_bcast_msg_t *req);
