@@ -89,15 +89,16 @@ static int _print_used_acct_limit(slurmdb_used_limits_t *used_limit,
 {
 	char *new_line_char = one_liner ? " " : "\n        ";
 
-	printf("%s", one_liner ? " " : "      ");
-	printf("Account %s%s", used_limit->acct, new_line_char);
+	printf("%sAccount %s%s",
+	       one_liner ? " " : "      ",
+	       used_limit->acct, new_line_char);
 
 	printf("MaxJobsPA=");
 	if (qos_rec->max_jobs_pa != INFINITE)
 		printf("%u", qos_rec->max_jobs_pa);
 	else
 		printf("N");
-	printf("(%u)%s", used_limit->jobs, new_line_char);
+	printf("(%u) ", used_limit->jobs);
 
 	printf("MaxSubmitJobsPA=");
 	if (qos_rec->max_submit_jobs_pa != INFINITE)
@@ -127,8 +128,9 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 {
 	char *new_line_char = one_liner ? " " : "\n        ";
 
-	printf("%s", one_liner ? " " : "      ");
-	printf("User %d%s", used_limit->uid, new_line_char);
+	printf("%sUser %d%s",
+	       one_liner ? " " : "      ",
+	       used_limit->uid, new_line_char);
 
 	printf("MaxJobsPU=");
 	if (qos_rec->max_jobs_pu != INFINITE)
@@ -434,35 +436,46 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 
 			_print_tres_line("MinTRESPJ",
 					 qos_rec->min_tres_pj_ctld,
-					 NULL, 0, 0);
+					 NULL, 0, 1);
 
+			printf("%sPreemptMode=%s%s",
+			       one_liner ? "" : "    ",
+			       preempt_mode_string(
+				       qos_rec->preempt_mode),
+			       one_liner ? "" : "\n");
+
+			if (qos_rec->priority == INFINITE ||
+			    qos_rec->priority == NO_VAL)
+				printf("%sPriority=NONE\n",
+				       one_liner ? "" : "    ");
+			else
+				printf("%sPriority=%u\n",
+				       one_liner ? "" : "    ",
+				       qos_rec->priority);
+
+			printf("%sAccount Limits%s",
+			       one_liner ? "" : "    ",
+			       one_liner ? "" : "\n");
 			if (qos_rec->usage->acct_limit_list) {
-				printf("Account Limits%s",
-				       one_liner ? "" : "\n");
 				list_for_each(qos_rec->usage->acct_limit_list,
 					      (ListForF)_print_used_acct_limit,
 					      qos_rec);
-			}
-			if (qos_rec->usage->user_limit_list) {
-				printf("%sUser Limits%s",
-				       one_liner ? "" : "    ",
+			} else
+				printf("%sNo Accounts%s",
+				       one_liner ? "" : "        ",
 				       one_liner ? "" : "\n");
+
+			printf("%sUser Limits%s",
+			       one_liner ? "" : "    ",
+			       one_liner ? "" : "\n");
+			if (qos_rec->usage->user_limit_list) {
 				list_for_each(qos_rec->usage->user_limit_list,
 					      (ListForF)_print_used_user_limit,
 					      qos_rec);
-			}
-
-			if (qos_rec->preempt_mode &&
-				(qos_rec->preempt_mode != (uint16_t)NO_VAL)) {
-				printf("PreemptMode=%s ", preempt_mode_string(
-							qos_rec->preempt_mode));
-			}
-
-			if (qos_rec->priority == INFINITE)
-				printf("Priority=NONE\n");
-			else if (qos_rec->priority != NO_VAL)
-				printf("Priority=%d\n", qos_rec->priority);
-
+			} else
+				printf("%sNo Users%s",
+				       one_liner ? "" : "        ",
+				       one_liner ? "" : "\n");
 		}
 	}
 }
