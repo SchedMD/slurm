@@ -147,6 +147,7 @@ static bool reconfig = false;
 
 /* Percentage of MCDRAM used for cache by type, updated from capmc */
 static int mcdram_pct[KNL_MCDRAM_CNT];
+static uint64_t *mcdram_per_node = NULL;
 
 /* NOTE: New knl_cray.conf parameters added below must also be added to the
  * contribs/cray/capmc_suspend.c and contribs/cray/capmc_resume.c files */
@@ -1066,6 +1067,8 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
 			if (!(node_ptr = find_node_record(node_name)))
 				continue;
+			mcdram_per_node[node_ptr - node_record_table_ptr] =
+				mcdram_cfg[i].mcdram_size;
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
@@ -1148,6 +1151,8 @@ static void _update_node_features(struct node_record *node_ptr,
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
 				       allow_mcdram);
+			mcdram_per_node[node_ptr - node_record_table_ptr] =
+				mcdram_cfg[i].mcdram_size;
 			mcdram_size = mcdram_cfg[i].mcdram_size *
 				      (100 - mcdram_cfg[i].mcdram_pct) / 100;
 			if (!node_ptr->gres) {
@@ -1338,6 +1343,7 @@ extern int fini(void)
 	xfree(capmc_path);
 	capmc_timeout = 0;
 	debug_flag = false;
+	xfree(mcdram_per_node);
 	xfree(syscfg_path);
 	return SLURM_SUCCESS;
 }
@@ -1376,6 +1382,8 @@ extern int node_features_p_get_node(char *node_list)
 		reconfig = true;
 	}
 	slurm_mutex_unlock(&config_mutex);
+	if (!mcdram_per_node)
+		mcdram_per_node = xmalloc(sizeof(uint64_t) * node_record_count);
 
 	/*
 	 * Load available MCDRAM capabilities
@@ -1827,6 +1835,61 @@ extern bool node_features_p_node_power(void)
 extern bool node_features_p_node_reboot(void)
 {
 	return false;
+}
+
+/* Note the active features associated with a set of nodes have been updated.
+ * Specifically update the node's "hbm" GRES value as needed.
+ * IN active_features - New active features
+ * IN node_bitmap - bitmap of nodes changed
+ * RET error code */
+extern int node_features_p_node_update(char *active_features,
+				       bitstr_t *node_bitmap)
+{
+	int i, i_first, i_last;
+	int rc = SLURM_SUCCESS;
+	uint16_t mcdram_inx;
+	uint64_t mcdram_size;
+	struct node_record *node_ptr;
+
+	if (mcdram_per_node == NULL) {
+		error("%s: mcdram_per_node == NULL", __func__);
+		return SLURM_ERROR;
+	}
+	mcdram_inx = _knl_mcdram_parse(active_features, ",");
+	if (mcdram_inx == 0)
+		return rc;
+	for (i = 0; i < KNL_MCDRAM_CNT; i++) {
+		if ((KNL_CACHE << i) == mcdram_inx)
+			break;
+	}
+	if ((i >= KNL_MCDRAM_CNT) || (mcdram_pct[i] == -1))
+		return rc;
+	mcdram_inx = i;
+
+	xassert(node_bitmap);
+	i_first = bit_ffs(node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(node_bitmap, i))
+			continue;
+		if (i >= node_record_count) {
+			error("%s: Invalid node index (%d >= %d)",
+			      __func__, i, node_record_count);
+			rc = SLURM_ERROR;
+			break;
+		}
+		mcdram_size = mcdram_per_node[i] *
+			      (100 - mcdram_pct[mcdram_inx]) / 100;
+		node_ptr = node_record_table_ptr + i;
+		gres_plugin_node_feature(node_ptr->name, "hbm",
+					 mcdram_size, &node_ptr->gres,
+					 &node_ptr->gres_list);
+	}
+
+	return rc;
 }
 
 /* Translate a node's feature specification by replacing any features associated

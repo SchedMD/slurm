@@ -39,6 +39,7 @@
 #define _NODE_FEATURES_H
 
 #include "slurm/slurm.h"
+#include "src/common/bitstring.h"
 
 /* Perform plugin initialization: read configuration files, etc. */
 extern int node_features_g_init(void);
@@ -73,6 +74,14 @@ extern bool node_features_g_node_power(void);
  * avail_modes IN/OUT - available modes, must be xfreed
  * current_mode IN/OUT - current modes, must be xfreed */
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
+
+/* Note the active features associated with a set of nodes have been updated.
+ * Specifically update the node's "hbm" GRES value as needed.
+ * IN active_features - New active features
+ * IN node_bitmap - bitmap of nodes changed
+ * RET error code */
+extern int node_features_g_node_update(char *active_features,
+				       bitstr_t *node_bitmap);
 
 /* Translate a node's feature specification by replacing any features associated
  * with this plugin in the original value with the new values, preserving any

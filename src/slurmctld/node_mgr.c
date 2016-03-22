@@ -55,6 +55,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
@@ -1836,6 +1837,7 @@ static int _update_node_active_features(char *node_names, char *active_features)
 		return rc;
 	}
 	update_feature_list(active_feature_list, active_features, node_bitmap);
+	(void) node_features_g_node_update(active_features, node_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	info("%s: nodes %s active features set to: %s",
