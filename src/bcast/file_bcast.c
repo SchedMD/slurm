@@ -108,12 +108,6 @@ static int _file_state(struct bcast_parameters *params)
 		return SLURM_ERROR;
 	}
 
-	src = mmap(NULL, f_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
-	if (src < 0) {
-		error("Can't mmap file `%s`, %m.", params->src_fname);
-		return SLURM_ERROR;
-	}
-
 	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
 	verbose("uid      = %d", (int) f_stat.st_uid);
 	verbose("gid      = %d", (int) f_stat.st_gid);
@@ -121,6 +115,16 @@ static int _file_state(struct bcast_parameters *params)
 	verbose("mtime    = %s", slurm_ctime2(&f_stat.st_mtime));
 	verbose("ctime    = %s", slurm_ctime2(&f_stat.st_ctime));
 	verbose("size     = %ld", (long) f_stat.st_size);
+
+	if (!f_stat.st_size) {
+		error("Warning: file `%s` is empty.", params->src_fname);
+		return SLURM_SUCCESS;
+	}
+	src = mmap(NULL, f_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
+	if (src == (void *) -1) {
+		error("Can't mmap file `%s`, %m.", params->src_fname);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -217,11 +221,9 @@ static int _get_block_none(char **buffer, int *orig_len, bool *more)
 	}
 
 	size = MIN(block_len, remaining);
-	if (size) {
-		memcpy(*buffer, position, size);
-		remaining -= size;
-		position += size;
-	}
+	memcpy(*buffer, position, size);
+	remaining -= size;
+	position += size;
 
 	*orig_len = size;
 	*more = (remaining) ? true : false;
@@ -264,29 +266,28 @@ static int _get_block_zlib(struct bcast_parameters *params,
 		position = src;
 	}
 
-	if (remaining) {
-		chunk_remaining = MIN(block_len, remaining);
-		out_remaining = max_out;
-		strm.next_out = (void *) *buffer;
-		do {
-			strm.next_in = position;
-			chunk_bite = MIN(chunk, chunk_remaining);
-			strm.avail_in = chunk_bite;
-			strm.avail_out = out_remaining;
+	chunk_remaining = MIN(block_len, remaining);
+	out_remaining = max_out;
+	strm.next_out = (void *) *buffer;
+	while (chunk_remaining) {
+		strm.next_in = position;
+		chunk_bite = MIN(chunk, chunk_remaining);
+		strm.avail_in = chunk_bite;
+		strm.avail_out = out_remaining;
 
-			if (chunk_remaining <= chunk)
-				flush = Z_FINISH;
+		if (chunk_remaining <= chunk)
+			flush = Z_FINISH;
 
-			if (deflate(&strm, flush) == Z_STREAM_ERROR)
-				fatal("Error compressing file");
+		if (deflate(&strm, flush) == Z_STREAM_ERROR)
+			fatal("Error compressing file");
 
-			position += chunk_bite;
-			size += chunk_bite;
-			chunk_remaining -= chunk_bite;
-			out_remaining = strm.avail_out;
-		} while (chunk_remaining);
-		remaining -= size;
+		position += chunk_bite;
+		size += chunk_bite;
+		chunk_remaining -= chunk_bite;
+		out_remaining = strm.avail_out;
 	}
+	remaining -= size;
+
 	(void) deflateEnd(&strm);
 
 	*orig_len = size;
@@ -310,9 +311,13 @@ static int _get_block_lz4(struct bcast_parameters *params,
 	static void *position;
 	int size;
 
+	if (!f_stat.st_size) {
+		*more = false;
+		return 0;
+	}
+
 	if (remaining < 0) {
 		position = src;
-		//XXX other LZ4 init goes here
 		remaining = f_stat.st_size;
 		*buffer = xmalloc(block_len);
 	}
@@ -320,15 +325,13 @@ static int _get_block_lz4(struct bcast_parameters *params,
 	/* intentionally limit decompressed size to 10x compressed
 	 * to avoid problems on receive size when decompressed */
 	size = MIN(block_len * 10, remaining);
-	if (size) {
-		if (!(size_out = LZ4_compress_destSize(position, *buffer,
-						       &size, block_len))) {
-			/* compression failure */
-			fatal("LZ4 compression error");
-		}
-		position += size;
-		remaining -= size;
+	if (!(size_out = LZ4_compress_destSize(position, *buffer,
+					       &size, block_len))) {
+		/* compression failure */
+		fatal("LZ4 compression error");
 	}
+	position += size;
+	remaining -= size;
 
 	*orig_len = size;
 	*more = (remaining) ? true : false;
@@ -453,7 +456,7 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 	unsigned char zlib_out[chunk];
 	int buf_in_offset = 0;
 	int buf_out_offset = 0;
-	char *out_buf = xmalloc(req->uncomp_len);
+	char *out_buf;
 
 	/* Perform decompression */
 	strm.zalloc = Z_NULL;
@@ -464,6 +467,8 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 	ret = inflateInit(&strm);
 	if (ret != Z_OK)
 		return -1;
+
+	out_buf = xmalloc(req->uncomp_len);
 
 	while (req->block_len > buf_in_offset) {
 		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
@@ -481,6 +486,7 @@ static int _decompress_data_zlib(file_bcast_msg_t *req)
 			case Z_DATA_ERROR:
 			case Z_MEM_ERROR:
 				(void)inflateEnd(&strm);
+				xfree(out_buf);
 				return -1;
 			}
 			have = chunk - strm.avail_out;
@@ -503,6 +509,9 @@ static int _decompress_data_lz4(file_bcast_msg_t *req)
 #if HAVE_LZ4
 	char *out_buf = xmalloc(req->uncomp_len);
 	int out_len;
+
+	if (!req->block_len)
+		return 0;
 
 	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len, req->uncomp_len);
 	xfree(req->block);

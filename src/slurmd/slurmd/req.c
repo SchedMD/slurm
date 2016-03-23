@@ -196,7 +196,10 @@ static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
-static int  _file_bcast_register_file(slurm_msg_t *msg);
+static int _file_bcast_register_file(slurm_msg_t *msg,
+				     uid_t req_uid,
+				     gid_t req_gid,
+				     uint32_t job_id);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
@@ -3512,6 +3515,7 @@ static void _free_file_bcast_info_t(file_bcast_info_t *f)
 static int _rpc_file_bcast(slurm_msg_t *msg)
 {
 	int rc, offset,inx;
+	file_bcast_info_t *file_info;
 	file_bcast_msg_t *req = msg->data;
 	uint32_t job_id;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
@@ -3519,7 +3523,9 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
 					     slurm_get_auth_info());
 
-	file_bcast_info_t *file_info;
+	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
+	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+		return rc;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -3543,12 +3549,9 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	}
 
 	/* first block must register the file and open fd/mmap */
-	if ((req->block_no == 1)) {
-		if ((rc = _file_bcast_register_file(msg)))
-			return rc;
-	} else {
-		rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
-		if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+	if (req->block_no == 1) {
+		if ((rc = _file_bcast_register_file(msg, req_uid, req_gid,
+						    job_id)))
 			return rc;
 	}
 
@@ -3562,7 +3565,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	if (bcast_decompress_data(req) < 0) {
 		error("sbcast: data decompression error for UID %u, file %s",
 		      req_uid, req->fname);
-		exit(1);
+		return SLURM_FAILURE;
 	}
 
 	offset = 0;
@@ -3651,7 +3654,10 @@ static int _receive_fd(int socket)
 }
 
 
-static int _file_bcast_register_file(slurm_msg_t *msg)
+static int _file_bcast_register_file(slurm_msg_t *msg,
+				     uid_t req_uid,
+				     gid_t req_gid,
+				     uint32_t job_id)
 {
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, rc;
@@ -3659,17 +3665,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg)
 	int ngroups = 16;
 	gid_t *groups;
 	pid_t child;
-	uint32_t job_id;
 	file_bcast_info_t *file_info;
-
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred,
-					     slurm_get_auth_info());
-	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred,
-					     slurm_get_auth_info());
-
-	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
-	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
-		return rc;
 
 	if ((rc = _get_grouplist(&req->user_name, req_uid,
 				 req_gid, &ngroups, &groups)) < 0) {
