@@ -3256,7 +3256,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 
 		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
-			if ((p_ptr->part_ptr->priority_tier <
+			if ((p_ptr->part_ptr->priority_tier <=
 			     jp_ptr->part_ptr->priority_tier) &&
 			    (p_ptr->part_ptr->preempt_mode !=
 			     PREEMPT_MODE_OFF)) {
