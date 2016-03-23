@@ -77,15 +77,8 @@
 
 #include "file_bcast.h"
 
-#define MAX_RETRIES     10
 #define MAX_THREADS      8	/* These can be huge messages, so
 				 * only run MAX_THREADS at one time */
-typedef struct thd {
-	pthread_t thread;	/* thread ID */
-	slurm_msg_t msg;	/* message to send */
-	int rc;			/* highest return codes from RPC */
-	char *nodelist;
-} thd_t;
 
 int block_len;				/* block size */
 int fd;					/* source file descriptor */
@@ -394,6 +387,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	bcast_msg.uid		= f_stat.st_uid;
 	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
 	bcast_msg.gid		= f_stat.st_gid;
+	bcast_msg.file_size	= f_stat.st_size;
 	bcast_msg.cred          = sbcast_cred->sbcast_cred;
 
 	if (params->preserve) {

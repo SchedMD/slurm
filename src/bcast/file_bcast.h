@@ -66,6 +66,7 @@ typedef struct file_bcast_info {
 	time_t last_update;	/* transfer last block received */
 	int received_blocks;	/* number of blocks received */
 	int max_blocks;		/* highest block number (when known) */
+	void *data;		/* mmap of file data */
 } file_bcast_info_t;
 
 extern int bcast_file(struct bcast_parameters *params);

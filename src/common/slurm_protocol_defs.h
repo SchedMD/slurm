@@ -1084,6 +1084,7 @@ typedef struct file_bcast_msg {
 	uint32_t block_offset;	/* offset for this data block */
 	uint32_t uncomp_len;	/* uncompressed length of this data block */
 	char *block;		/* data for this block */
+	uint64_t file_size;	/* file size */
 } file_bcast_msg_t;
 
 typedef struct multi_core_data {

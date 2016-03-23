@@ -13487,6 +13487,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 		pack32 ( msg->block_len, buffer );
 		pack32(msg->uncomp_len, buffer);
 		pack32(msg->block_offset, buffer);
+		pack64(msg->file_size, buffer);
 		packmem ( msg->block, msg->block_len, buffer );
 		pack_sbcast_cred( msg->cred, buffer );
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -13538,6 +13539,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 		safe_unpack32 ( & msg->block_len, buffer );
 		safe_unpack32(&msg->uncomp_len, buffer);
 		safe_unpack32(&msg->block_offset, buffer);
+		safe_unpack64(&msg->file_size, buffer);
 		safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
 		if ( uint32_tmp != msg->block_len )
 			goto unpack_error;

@@ -3506,10 +3506,10 @@ static void _free_file_bcast_info_t(file_bcast_info_t *f)
 	xfree(f->fname);
 	if (f->fd)
 		close(f->fd);
+	xfree(f);
 }
 
-static int
-_rpc_file_bcast(slurm_msg_t *msg)
+static int _rpc_file_bcast(slurm_msg_t *msg)
 {
 	int rc, offset,inx;
 	file_bcast_msg_t *req = msg->data;
