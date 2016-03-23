@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     than at job submission time to reflect persistent buffers created or
     modified while the job is pending.
  -- Fix check of per-user qos limits on the initial run by a user.
+ -- task/cgroup: Fix for task layout logic when there are disabled resources.
 
 * Changes in Slurm 15.08.8
 ==========================
