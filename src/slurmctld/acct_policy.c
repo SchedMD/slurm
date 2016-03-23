@@ -475,38 +475,11 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	if (!qos_ptr || !assoc_ptr)
 		return;
 
-	if (!qos_ptr->usage->acct_limit_list)
-		qos_ptr->usage->acct_limit_list =
-			list_create(slurmdb_destroy_used_limits);
+	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
+					      assoc_ptr->acct);
 
-	if (!(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
-					    _find_used_limits_for_acct,
-					    assoc_ptr->acct))) {
-		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits_a->acct = xstrdup(assoc_ptr->acct);
-
-		i = sizeof(uint64_t) * slurmctld_tres_cnt;
-		used_limits_a->tres = xmalloc(i);
-		used_limits_a->tres_run_mins = xmalloc(i);
-
-		list_append(qos_ptr->usage->acct_limit_list, used_limits_a);
-	}
-
-	if (!qos_ptr->usage->user_limit_list)
-		qos_ptr->usage->user_limit_list =
-			list_create(slurmdb_destroy_used_limits);
-	if (!(used_limits = list_find_first(qos_ptr->usage->user_limit_list,
-					    _find_used_limits_for_user,
-					    &job_ptr->user_id))) {
-		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits->uid = job_ptr->user_id;
-
-		i = sizeof(uint64_t) * slurmctld_tres_cnt;
-		used_limits->tres = xmalloc(i);
-		used_limits->tres_run_mins = xmalloc(i);
-
-		list_append(qos_ptr->usage->user_limit_list, used_limits);
-	}
+	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
+					    job_ptr->user_id);
 
 	switch(type) {
 	case ACCT_POLICY_ADD_SUBMIT:
@@ -1549,7 +1522,6 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	uint32_t time_limit = NO_VAL;
 	int rc = true;
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
-	bool free_used_limits = false, free_used_limits_a = false;
 	bool safe_limits = false;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
@@ -1564,32 +1536,12 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
-	/*
-	 * Try to get the used limits for the account or initialise a local
-	 * nullified one if not available.
-	 */
-	if (!qos_ptr->usage->acct_limit_list ||
-	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
-					      _find_used_limits_for_acct,
-					      assoc_ptr->acct))) {
-		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits_a->acct = assoc_ptr->acct; /* Just point to
-							  it, don't copy. */
-		free_used_limits_a = true;
-	}
+	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
+					      assoc_ptr->acct);
 
-	/*
-	 * Try to get the used limits for the user or initialise a local
-	 * nullified one if not available.
-	 */
-	if (!qos_ptr->usage->user_limit_list ||
-	    !(used_limits = list_find_first(qos_ptr->usage->user_limit_list,
-					    _find_used_limits_for_user,
-					    &job_ptr->user_id))) {
-		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits->uid = job_ptr->user_id;
-		free_used_limits = true;
-	}
+	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
+					    job_ptr->user_id);
+
 
 	/* we don't need to check grp_tres_mins here */
 
@@ -1754,12 +1706,6 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	}
 end_it:
 
-	if (free_used_limits)
-		xfree(used_limits);
-
-	if (free_used_limits_a)
-		xfree(used_limits_a);
-
 	return rc;
 }
 
@@ -1772,7 +1718,6 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
-	bool free_used_limits = false, free_used_limits_a = false;
 	bool safe_limits = false;
 	int rc = true;
 	int i, tres_pos = 0;
@@ -1797,33 +1742,11 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	}
 
-	/*
-	 * Try to get the used limits for the account or initialise a local
-	 * nullified one if not available.
-	 */
-	if (!qos_ptr->usage->acct_limit_list ||
-	    !(used_limits_a = list_find_first(qos_ptr->usage->acct_limit_list,
-					      _find_used_limits_for_acct,
-					      assoc_ptr->acct))) {
-		used_limits_a = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits_a->acct = assoc_ptr->acct; /* Just point to
-							  it, don't copy. */
-		free_used_limits_a = true;
-	}
+	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
+					      assoc_ptr->acct);
 
-
-	/*
-	 * Try to get the used limits for the user or initialize a local
-	 * nullified one if not available.
-	 */
-	if (!qos_ptr->usage->user_limit_list ||
-	    !(used_limits = list_find_first(qos_ptr->usage->user_limit_list,
-					    _find_used_limits_for_user,
-					    &job_ptr->user_id))) {
-		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits->uid = job_ptr->user_id;
-		free_used_limits = true;
-	}
+	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
+					    job_ptr->user_id);
 
 	i = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
@@ -2213,18 +2136,13 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 
 	/* We do not need to check max_jobs_pu here */
 
-end_it:
 	/* we don't need to check submit_jobs_pa here */
 
 	/* we don't need to check submit_jobs_pu here */
 
 	/* we don't need to check max_wall_pj here */
 
-	if (free_used_limits)
-		xfree(used_limits);
-
-	if (free_used_limits_a)
-		xfree(used_limits_a);
+end_it:
 
 	return rc;
 }
