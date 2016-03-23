@@ -358,6 +358,38 @@ static int _find_used_limits_for_acct(void *x, void *key)
 	return 0;
 }
 
+/* Checks for record in *user_limit_list of user_id if
+ * *user_limit_list doesn't exist it will create it, if the user_id
+ * record doesn't exist it will add it to the list.
+ * In all cases the user record is returned.
+ */
+static slurmdb_used_limits_t *_get_acct_used_limits(
+	List *acct_limit_list, char *acct)
+{
+	slurmdb_used_limits_t *used_limits;
+
+	xassert(acct_limit_list);
+
+	if (!*acct_limit_list)
+		*acct_limit_list = list_create(slurmdb_destroy_used_limits);
+
+	if (!(used_limits = list_find_first(*acct_limit_list,
+					    _find_used_limits_for_acct,
+					    acct))) {
+		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
+
+		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits->acct = xstrdup(acct);
+
+		used_limits->tres = xmalloc(i);
+		used_limits->tres_run_mins = xmalloc(i);
+
+		list_append(*acct_limit_list, used_limits);
+	}
+
+	return used_limits;
+}
+
 static int _find_used_limits_for_user(void *x, void *key)
 {
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
@@ -1437,21 +1469,15 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 
 	if ((qos_out_ptr->max_submit_jobs_pa == INFINITE) &&
 	    (qos_ptr->max_submit_jobs_pa != INFINITE)) {
-		slurmdb_used_limits_t *used_limits = NULL;
-
-		if (qos_ptr->usage->user_limit_list)
-			used_limits = list_find_first(
-				qos_ptr->usage->acct_limit_list,
-				_find_used_limits_for_acct,
+		slurmdb_used_limits_t *used_limits =
+			_get_acct_used_limits(
+				&qos_ptr->usage->acct_limit_list,
 				assoc_ptr->acct);
 
 		qos_out_ptr->max_submit_jobs_pa = qos_ptr->max_submit_jobs_pa;
 
-		if ((!used_limits &&
-		     qos_ptr->max_submit_jobs_pa == 0) ||
-		    (used_limits &&
-		     ((used_limits->submit_jobs + job_cnt) >
-		      qos_ptr->max_submit_jobs_pa))) {
+		if ((used_limits->submit_jobs + job_cnt) >
+		    qos_ptr->max_submit_jobs_pa) {
 			if (reason)
 				*reason = WAIT_QOS_MAX_SUB_JOB_PER_ACCT;
 			debug2("job submit for account %s: "
