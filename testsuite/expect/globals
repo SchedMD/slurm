@@ -3596,3 +3596,12 @@ proc test_accting_steps { } {
 
 	return $enforce_limits
 }
+
+# Print the current line number in the script.  Calling like this
+#  [printLine [info frame]]
+# will return the current line number
+proc get_curr_line_num {frame_info} {
+	# Getting value of the key 'line' from the dictionary
+	# returned by 'info frame'
+	set result [dict get [info frame $frame_info] line]
+}
