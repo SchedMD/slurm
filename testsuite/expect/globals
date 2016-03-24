@@ -3598,7 +3598,7 @@ proc test_accting_steps { } {
 }
 
 # Print the current line number in the script.  Calling like this
-#  [printLine [info frame]]
+#  [get_curr_line_num [info frame]]
 # will return the current line number
 proc get_curr_line_num {frame_info} {
 	# Getting value of the key 'line' from the dictionary
