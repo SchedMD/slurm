@@ -2690,7 +2690,8 @@ extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	int rc = SLURM_SUCCESS;
+	int cleaning_job_cnt = 0, rc = SLURM_SUCCESS, run_time;
+	time_t now = time(NULL);
 
 	info("cons_res: select_p_reconfigure");
 	select_debug_flags = slurm_get_debug_flags();
@@ -2708,10 +2709,26 @@ extern int select_p_reconfigure(void)
 		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
 			_add_job_to_res(job_ptr, 1);
+		} else if (_job_cleaning(job_ptr)) {
+			cleaning_job_cnt++;
+			run_time = (int) difftime(now, job_ptr->end_time);
+			info("Job %u is cleaning (Node Health Check running for %d secs)",
+			     job_ptr->job_id, run_time);
+			/* Ideally we want to avoid using this job's resources
+			 * until Node Health Check completes, but current logic
+			 * (line below commented out) will let release resources
+			 * from hung NHC for use by other jobs with
+			 * "scontrol reconfig" command. */
+			//_add_job_to_res(job_ptr, 0);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 	select_state_initializing = false;
+
+	if (cleaning_job_cnt) {
+		info("%d jobs are in cleaning state (running Node Health Check)",
+		     cleaning_job_cnt);
+	}
 
 	return SLURM_SUCCESS;
 }
