@@ -2414,13 +2414,19 @@ proc make_bash_script { script_name script_contents } {
 #
 # Purpose: Given a hostname, return it's numeric suffix
 #
-# Returns: numerical suffix for input 'hostname'
+# Returns: numerical suffix for input 'hostname' or -1 if not a number
 #
 # Input: hostname -- hostname for which to return suffix
 #
 ################################################################
 proc get_suffix { hostname } {
 	set host_len [string length $hostname]
+	set host_inx [expr $host_len-1]
+	set host_char [string index $hostname $host_inx]
+	if {[string compare $host_char "0"] < 0 || [string compare $host_char "9"] > 0} {
+		return -1
+	}
+
 	for {set host_inx [expr $host_len-1]} {$host_inx >= 0} {incr host_inx -1} {
 		set host_char [string index $hostname $host_inx]
 		if {[string compare $host_char "0"] < 0} { break }
