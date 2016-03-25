@@ -98,7 +98,7 @@ proc check_node_cnt { exp_nodes } {
 	}
 
 	if {!$match} {
-		send_user "\nFAILURE: job did not make proper node estimationexpected = $exp_nodes\n"
+		send_user "\nFAILURE: job did not make proper node estimation, expected = $exp_nodes\n"
 		set exit_code 1
 	}
 }

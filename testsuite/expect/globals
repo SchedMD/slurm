@@ -3646,6 +3646,7 @@ proc available_nodes_hostnames { partition } {
 
 	log_user 0
 	set idle_nodelist ""
+	set sep ""
 	if {[string compare $partition ""] == 0} {
 		spawn $sinfo -tidle -h -o%N
 	} else {
@@ -3653,7 +3654,9 @@ proc available_nodes_hostnames { partition } {
 	}
 	expect {
 		-re "($alpha_numeric_nodelist)" {
-			set idle_nodelist $expect_out(1,string)
+			append idle_nodelist $sep
+			append idle_nodelist $expect_out(1,string)
+			set sep ","
 			exp_continue
 		}
 		timeout {
