@@ -249,9 +249,11 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			else
 				printf("ParentAccount= ");
 
-			printf("Lft-Rgt=%u-%u DefAssoc=%s%s",
+			/* rgt isn't always valid coming from the
+			 * association manager (so don't print it).
+			 */
+			printf("Lft=%u DefAssoc=%s%s",
 			       assoc_rec->lft,
-			       assoc_rec->rgt,
 			       assoc_rec->is_def ? "Yes" : "No",
 			       new_line_char);
 

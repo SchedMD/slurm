@@ -3465,7 +3465,8 @@ static void *_start_pre_run(void *x)
 		error("%s: dws_pre_run for %s status:%u response:%s", __func__,
 		      jobid_buf, status, resp_msg);
 		if (job_ptr) {
-			run_kill_job = true;
+			if (IS_JOB_RUNNING(job_ptr))
+				run_kill_job = true;
 			bb_job = _get_bb_job(job_ptr);
 			if (bb_job)
 				bb_job->state = BB_STATE_TEARDOWN;
