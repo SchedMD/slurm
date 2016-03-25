@@ -212,8 +212,6 @@ documents those changes that are of interest to users and administrators.
     than at job submission time to reflect persistent buffers created or
     modified while the job is pending.
  -- Fix check of per-user qos limits on the initial run by a user.
- -- task/cgroup: Fix for task layout logic when there are disabled resources.
- -- task/cgroup: Fix for task binding anomaly.
  -- Fix gang scheduling resource selection bug which could prevent multiple jobs
     from being allocated the same resources. Bug was introduced in 15.08.6.
  -- Don't print the Rgt value of an association from the cache as it isn't

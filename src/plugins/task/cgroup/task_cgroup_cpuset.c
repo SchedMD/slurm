@@ -636,24 +636,6 @@ static void _add_hwloc_cpuset(
 	}
 }
 
-static int _hwloc_bit_count(hwloc_bitmap_t cpuset)
-{
-	int i_first, i_last, i, cnt = 0;
-
-	if (!cpuset)
-		return cnt;
-	i_first = hwloc_bitmap_first(cpuset);
-	if (i_first < 0)
-		return cnt;
-	cnt = 1;	/* For bit set at i_first */
-	i_last = hwloc_bitmap_last(cpuset);
-	for (i = i_first + 1; i <= i_last; i++) {
-		if (hwloc_bitmap_isset(cpuset, i))
-			cnt++;
-	}
-	return cnt;
-}
-
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
@@ -666,7 +648,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	uint32_t *t_ix;		/* thread index by core by socket */
 	uint32_t npus, ncores, nsockets;
 	uint32_t taskid = job->envtp->localid;
-	int spec_thread_cnt = 0, pu_cnt;
+	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 
 	uint32_t obj_idxs[3], nthreads, cps,
@@ -754,7 +736,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 				topology, HWLOC_OBJ_SOCKET, s_ix,
 				hwtype, c_ixc[s_ix]);
 			if (obj != NULL) {
-				pu_cnt = _hwloc_bit_count(obj->allowed_cpuset);
 				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
 									>= 0) {
 					/* granularity is thread */
@@ -787,15 +768,10 @@ static int _task_cgroup_cpuset_dist_cyclic(
 						if (c_ixc[s_ix] == cps)
 							s_ix++;
 					}
-				} else if (pu_cnt < 1) {
-					/* No CPUs available on this core */
-					c_ixc[s_ix]++;
-					if (c_ixc[s_ix] == cps)
-						s_ix++;
 				} else {
 					/* granularity is core or larger */
 					c_ixc[s_ix]++;
-					j += pu_cnt;
+					j++;
 					if (i == ntskip)
 						_add_hwloc_cpuset(hwtype,
 							req_hwtype, obj, taskid,
@@ -809,7 +785,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		/* if it succeeds, switch to the next task, starting
 		 * with the next available socket, otherwise, loop back
 		 * from the first socket trying to find available slots. */
-		if (j >= npdist) {
+		if (j == npdist) {
 			i++;
 			j = 0;
 			s_ix++; // no validity check, handled by the while
@@ -853,7 +829,7 @@ static int _task_cgroup_cpuset_dist_block(
 	uint32_t taskid = job->envtp->localid;
 	int hwdepth;
 	uint32_t npus, ncores, nsockets;
-	int spec_thread_cnt = 0, pu_cnt;
+	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 
 	uint32_t core_idx;
@@ -891,10 +867,6 @@ static int _task_cgroup_cpuset_dist_block(
 					hwtype, thread_idx[core_idx]);
 				if (obj != NULL) {
 					thread_idx[core_idx]++;
-					pu_cnt = _hwloc_bit_count(
-							obj->allowed_cpuset);
-					if (pu_cnt < 1)     /* No avail CPUs */
-						continue;
 					j++;
 					if (i == ntskip)
 						_add_hwloc_cpuset(hwtype,
@@ -1360,7 +1332,6 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	hwloc_obj_type_t hwtype;
 	hwloc_obj_type_t req_hwtype;
 	int bind_verbose = 0;
-	int spec_threads = 0;
 	int rc = SLURM_SUCCESS, match;
 	pid_t    pid = job->envtp->task_pid;
 	size_t tssize;
@@ -1375,13 +1346,10 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
-	/* parse all system */
-	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
-	/* ignores cache, misc */
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
 	hwloc_topology_load(topology);
 	cpuset = hwloc_bitmap_alloc();
+
+	int spec_threads = 0;
 
 	if (job->batch) {
 		jnpus = job->cpus;
