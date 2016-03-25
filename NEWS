@@ -74,6 +74,9 @@ documents those changes that are of interest to users and administrators.
     from being allocated the same resources. Bug was introduced in 15.08.6.
  -- Don't print the Rgt value of an association from the cache as it isn't
     kept up to date.
+ -- burst_buffer/cray - If the pre-run operation fails then don't issue
+    duplicate job cancel/requeue unless the job is still in run state. Prevents
+    jobs hung in COMPLETING state.
 
 * Changes in Slurm 15.08.8
 ==========================
