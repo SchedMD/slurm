@@ -651,6 +651,8 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);
+	} else if (strncasecmp(argv[0], "LostJobs", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_list_lost_jobs((argc - 1), &argv[1]);
 	} else if (strncasecmp(argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (!strncasecmp(argv[0], "Resource", MAX(command_len, 4))) {

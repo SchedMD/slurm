@@ -87,6 +87,7 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 #define BUFFER_SIZE 4096
+#define FORMAT_STRING_SIZE 34
 
 typedef enum {
 	/* COMMON */
@@ -205,6 +206,12 @@ typedef enum {
 
 	/* RESERVATION */
 	PRINT_ASSOC_NAME = 10000,
+
+	/* JOBS */
+	PRINT_JOBID = 10100,
+	PRINT_JOBNAME,
+	PRINT_START,
+	PRINT_END,
 
 } sacctmgr_print_t;
 
@@ -356,5 +363,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[]);
 
 /* txn_functions.c */
 extern int sacctmgr_list_txn(int argc, char *argv[]);
+
+/* lost_jobs_functions.c */
+extern int sacctmgr_list_lost_jobs(int argc, char *argv[]);
 
 #endif

@@ -45,8 +45,6 @@
 #include <unistd.h>
 #include <termios.h>
 
-#define FORMAT_STRING_SIZE 32
-
 static pthread_t lock_warning_thread;
 
 static void *_print_lock_warn(void *no_data)
@@ -285,6 +283,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Duration");
 		field->len = 13;
 		field->print_routine = print_fields_time_from_secs;
+	} else if (!strncasecmp("End", object, MAX(command_len, 3))) {
+		field->type = PRINT_END;
+		field->name = xstrdup("END");
+		field->len  = 19;
+		field->print_routine = print_fields_date;
 	} else if (!strncasecmp("EventRaw", object, MAX(command_len, 6))) {
 		field->type = PRINT_EVENTRAW;
 		field->name = xstrdup("EventRaw");
@@ -370,6 +373,16 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");
 		field->len = 20;
+		field->print_routine = print_fields_str;
+	} else if (!strncasecmp("JobID", object, MAX(command_len, 4))) {
+		field->type = PRINT_JOBID;
+		field->name = xstrdup("JobID");
+		field->len  = -12;
+		field->print_routine = print_fields_int;
+	} else if (!strncasecmp("JobName", object, MAX(command_len, 4))) {
+		field->type = PRINT_JOBNAME;
+		field->name = xstrdup("JobName");
+		field->len  = 10;
 		field->print_routine = print_fields_str;
 	} else if (!strncasecmp("LFT", object, MAX(command_len, 1))) {
 		field->type = PRINT_LFT;
@@ -635,6 +648,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Share");
 		field->len = 9;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("Start", object, MAX(command_len, 5))) {
+		field->type = PRINT_START;
+		field->name = xstrdup("Start");
+		field->len  = 19;
+		field->print_routine = print_fields_date;
 	} else if (!strncasecmp("StateRaw", object,
 				MAX(command_len, 6))) {
 		field->type = PRINT_STATERAW;

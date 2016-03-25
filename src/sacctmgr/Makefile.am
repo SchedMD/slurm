@@ -19,6 +19,7 @@ sacctmgr_SOURCES =	\
 	common.c                \
 	event_functions.c	\
 	file_functions.c	\
+	lost_jobs_functions.c	\
 	job_functions.c		\
 	reservation_functions.c	\
 	resource_functions.c	\

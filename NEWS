@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     counting CPUs allocated to multiple jobs at the same time.
  -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
     the specified threshold will not have resources reserved for them.
+ -- Added "sacctmgr show lostjobs" to report any orphaned jobs in the database.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

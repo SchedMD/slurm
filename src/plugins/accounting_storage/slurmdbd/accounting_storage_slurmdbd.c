@@ -2183,6 +2183,28 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 	return rc;
 }
 
+extern int acct_storage_p_fix_lost_jobs(void *db_conn, uint32_t uid,
+					List jobs)
+{
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code = SLURM_SUCCESS;
+
+	memset(&get_msg, 0, sizeof(dbd_list_msg_t));
+	get_msg.my_list = jobs;
+
+	req.msg_type = DBD_FIX_LOST_JOB;
+	req.data = &get_msg;
+
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION,
+					     &req, &resp_code);
+
+	if (resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
+}
+
 extern int clusteracct_storage_p_node_down(void *db_conn,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,

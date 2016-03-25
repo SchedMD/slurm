@@ -170,6 +170,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*roll_usage)          (void *db_conn,
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data);
+	int (*fix_lost_jobs)       (void *db_conn, uint32_t uid, List jobs);
 	int  (*node_down)          (void *db_conn,
 				    struct node_record *node_ptr,
 				    time_t event_time,
@@ -254,6 +255,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_txn",
 	"acct_storage_p_get_usage",
 	"acct_storage_p_roll_usage",
+	"acct_storage_p_fix_lost_jobs",
 	"clusteracct_storage_p_node_down",
 	"clusteracct_storage_p_node_up",
 	"clusteracct_storage_p_cluster_tres",
@@ -726,6 +728,14 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.roll_usage))(db_conn, sent_start, sent_end, archive_data);
+}
+
+extern int acct_storage_g_fix_lost_jobs(void *db_conn, uint32_t uid, List jobs)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.fix_lost_jobs))(db_conn, uid, jobs);
+
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,

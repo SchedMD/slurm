@@ -371,6 +371,12 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 	return rc;
 }
 
+extern int acct_storage_p_fix_lost_jobs(void *db_conn, uint32_t uid,
+					List jobs)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_node_down(void *db_conn,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason,

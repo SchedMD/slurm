@@ -521,6 +521,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:
 	case DBD_GOT_MULT_MSG:
+	case DBD_FIX_LOST_JOB:
 		slurmdbd_pack_list_msg(
 			(dbd_list_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
@@ -3662,6 +3663,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		my_function = pack_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
+	case DBD_FIX_LOST_JOB:
 		my_function = slurmdb_pack_job_rec;
 		break;
 	case DBD_GOT_LIST:
@@ -3763,6 +3765,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		my_destroy = destroy_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
+	case DBD_FIX_LOST_JOB:
 		my_function = slurmdb_unpack_job_rec;
 		my_destroy = slurmdb_destroy_job_rec;
 		break;
