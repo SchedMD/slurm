@@ -1888,6 +1888,36 @@ proc test_launch_type { } {
 
 ################################################################
 #
+# Proc: test_node_features_plugin
+#
+# Purpose: Determine NodeFeaturesPlugin type.
+#
+# Returns the NodeFeaturesPlugin type
+#
+################################################################
+
+proc test_node_features_plugin { } {
+	global scontrol bin_bash bin_grep alpha_numeric_under
+
+	log_user 0
+	set type ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep NodeFeaturesPlugins"
+	expect {
+		-re "node_features/($alpha_numeric_under)" {
+			set type $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $type
+}
+
+################################################################
+#
 # Proc: test_emulated
 #
 # Purpose: Determine if the system is emulated (not running on
