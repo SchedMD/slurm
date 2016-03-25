@@ -52,7 +52,7 @@ if {[file executable $bkill] == 0} {
 set job_id 0
 exec rm -f $file_out $file_err
 make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
-spawn $bsub -W 01:00 -e $file_err -o $file_out $file_in
+spawn $bsub -W 01:00 -e $file_err -o $file_out ./$file_in
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)
