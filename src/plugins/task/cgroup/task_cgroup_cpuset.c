@@ -1360,7 +1360,6 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	hwloc_obj_type_t hwtype;
 	hwloc_obj_type_t req_hwtype;
 	int bind_verbose = 0;
-	int spec_threads = 0;
 	int rc = SLURM_SUCCESS, match;
 	pid_t    pid = job->envtp->task_pid;
 	size_t tssize;
@@ -1375,13 +1374,10 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
-	/* parse all system */
-	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
-	/* ignores cache, misc */
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
 	hwloc_topology_load(topology);
 	cpuset = hwloc_bitmap_alloc();
+
+	int spec_threads = 0;
 
 	if (job->batch) {
 		jnpus = job->cpus;
