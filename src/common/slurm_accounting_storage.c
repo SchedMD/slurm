@@ -204,6 +204,8 @@ typedef struct slurm_acct_storage_ops {
 	int (*flush_jobs)          (void *db_conn,
 				    time_t event_time);
 	int (*reconfig)            (void *db_conn, bool dbd);
+	int (*reset_lft_rgt)       (void *db_conn, uid_t uid,
+				    List cluster_list);
 } slurm_acct_storage_ops_t;
 /*
  * Must be synchronized with slurm_acct_storage_ops_t above.
@@ -273,6 +275,7 @@ static const char *syms[] = {
 	"acct_storage_p_update_shares_used",
 	"acct_storage_p_flush_jobs_on_cluster",
 	"acct_storage_p_reconfig",
+	"acct_storage_p_reset_lft_rgt",
 };
 
 static slurm_acct_storage_ops_t ops;
@@ -1008,5 +1011,18 @@ extern int acct_storage_g_reconfig(void *db_conn, bool dbd)
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.reconfig))(db_conn, dbd);
+
+}
+
+/*
+ * Reset the lft and rights of an association table.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_reset_lft_rgt(void *db_conn, uid_t uid,
+					List cluster_list)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(ops.reset_lft_rgt))(db_conn, uid, cluster_list);
 
 }

@@ -119,6 +119,8 @@ extern int check_connection(mysql_conn_t *mysql_conn);
 extern char *fix_double_quotes(char *str);
 extern int last_affected_rows(mysql_conn_t *mysql_conn);
 extern void reset_mysql_conn(mysql_conn_t *mysql_conn);
+extern int create_cluster_assoc_table(
+	mysql_conn_t *mysql_conn, char *cluster_name);
 extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name);
 extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name);
 extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,

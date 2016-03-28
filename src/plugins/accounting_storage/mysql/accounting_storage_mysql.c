@@ -1077,7 +1077,8 @@ extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
 	list_flush(mysql_conn->update_list);
 }
 
-extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
+extern int create_cluster_assoc_table(
+	mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	storage_field_t assoc_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
@@ -1111,6 +1112,24 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
+	char table_name[200];
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, assoc_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  assoc_table_fields,
+				  ", primary key (id_assoc), "
+				  "unique index (user(20), acct(20), "
+				  "`partition`(20)), "
+				  "key lft (lft), key account (acct(20)))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
+{
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
@@ -1292,14 +1311,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	char table_name[200];
 
-	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
-		 cluster_name, assoc_table);
-	if (mysql_db_create_table(mysql_conn, table_name,
-				  assoc_table_fields,
-				  ", primary key (id_assoc), "
-				  "unique index (user(20), acct(20), "
-				  "`partition`(20)), "
-				  "key lft (lft), key account (acct(20)))")
+	if (create_cluster_assoc_table(mysql_conn, cluster_name)
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -3088,4 +3100,13 @@ extern int acct_storage_p_reconfig(mysql_conn_t *mysql_conn, bool dbd)
 {
 	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
+					List cluster_list)
+{
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	return as_mysql_reset_lft_rgt(mysql_conn, uid, cluster_list);
 }

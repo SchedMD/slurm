@@ -507,3 +507,9 @@ extern int acct_storage_p_reconfig(void *db_conn)
 {
 	return SLURM_SUCCESS;
 }
+
+extern int acct_storage_p_reset_lft_rgt(void *db_conn, uid_t uid,
+					List cluster_list)
+{
+	return SLURM_SUCCESS;
+}

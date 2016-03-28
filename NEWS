@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- When a stepd is about to shutdown and send it's response to srun
     make the wait to return data only hit after 500 nodes and configurable
     based on the TcpTimeout value.
+ -- Add functionality to reset the lft and rgt values of the association table
+    with the slurmdbd.
 
 * Changes in Slurm 16.05.0pre1
 ==============================

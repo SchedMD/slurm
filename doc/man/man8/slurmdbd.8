@@ -21,6 +21,11 @@ Help; print a brief summary of command options.
 \fB\-n <value>\fR
 Set the daemon's nice value to the specified value, typically a negative number.
 .TP
+\fB\-R[comma separated cluster name list]\fR
+Reset the lft and rgt values of the associations in the given cluster list.
+Lft and rgt values are used to distinguish hierarchical groups in the slurm
+accounting database.  This option should be very rarely used.
+.TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
 .TP

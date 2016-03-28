@@ -1530,7 +1530,8 @@ extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(
+	List assoc_list, bool use_lft);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
 
