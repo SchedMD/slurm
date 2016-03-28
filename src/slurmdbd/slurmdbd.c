@@ -392,6 +392,8 @@ static void _parse_commandline(int argc, char *argv[])
 			exit(0);
 			break;
 		case 'n':
+			if (!optarg) /* CLANG fix */
+				break;
 			new_nice = strtol(optarg, &tmp_char, 10);
 			if (tmp_char[0] != '\0') {
 				error("Invalid option for -n option (nice "
