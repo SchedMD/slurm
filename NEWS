@@ -204,8 +204,8 @@ documents those changes that are of interest to users and administrators.
  -- Update gang scheduling data structures when job changes in size.
  -- Associations - prevent hash table corruption if uid initially unset for
     a user, which can cause slurmctld to crash if that user is deleted.
- -- Avoid possibly aborting srun that gets simultaneous SIGSTOP+SIGCONT while
-    creating the job step.
+ -- Avoid possibly aborting srun on SIGSTOP while creating the job step due to
+    threading bug.
  -- Fix deadlock issue with burst_buffer/cray when a newly created burst
     buffer is found.
  -- burst_buffer/cray: Set environment variables just before starting job rather
@@ -219,6 +219,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - If the pre-run operation fails then don't issue
     duplicate job cancel/requeue unless the job is still in run state. Prevents
     jobs hung in COMPLETING state.
+ -- task/cgroup - Fix bug in task binding to CPUs.
 
 * Changes in Slurm 15.08.8
 ==========================

@@ -118,8 +118,8 @@ static void *_safe_signal_while_allocating(void *in_data)
 	int signo = *(int *)in_data;
 
 	debug("Got signal %d", signo);
-	/* NOTE: Near simultaneous SIGSTOP+SIGCONT can result in signo == 0 */
-	if ((signo == SIGCONT) || (signo == 0))
+	xfree(in_data);
+	if (signo == SIGCONT)
 		return NULL;
 
 	destroy_job = 1;
@@ -135,6 +135,7 @@ static void _signal_while_allocating(int signo)
 {
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
+	int *local_signal;
 
 	/* There are places where _signal_while_allocating can't be
 	 * put into a thread, but if this isn't on a separate thread
@@ -145,11 +146,11 @@ static void _signal_while_allocating(int signo)
 	 *
 	 * SO, DON'T PRINT ANYTHING IN THIS FUNCTION.
 	 */
-
+	local_signal = xmalloc(sizeof(int));
+	*local_signal = signo;
 	slurm_attr_init(&thread_attr);
 	pthread_create(&thread_id, &thread_attr,
-		       _safe_signal_while_allocating,
-		       (void *)&signo);
+		       _safe_signal_while_allocating, local_signal);
 	slurm_attr_destroy(&thread_attr);
 }
 
