@@ -636,6 +636,40 @@ static void _add_hwloc_cpuset(
 	}
 }
 
+static int _get_cpuinfo(uint32_t *nsockets, uint32_t *ncores,
+			uint32_t *nthreads, uint32_t *npus)
+{
+	hwloc_topology_t topology;
+
+	if (hwloc_topology_init(&topology)) {
+		/* error in initialize hwloc library */
+		error("%s: hwloc_topology_init() failed", __func__);
+		return -1;
+	}
+	/* parse full system info */
+	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+	/* ignores cache, misc */
+	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
+	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
+	/* load topology */
+	if (hwloc_topology_load(topology)) {
+		error("%s: hwloc_topology_load() failed", __func__);
+		hwloc_topology_destroy(topology);
+		return -1;
+	}
+
+	*nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							HWLOC_OBJ_SOCKET);
+	*ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						      HWLOC_OBJ_CORE);
+	*nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							HWLOC_OBJ_PU);
+	*npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+						    HWLOC_OBJ_PU);
+	hwloc_topology_destroy(topology);
+	return 0;
+}
+
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
@@ -646,23 +680,30 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	uint32_t *c_ixc;	/* core index by socket (current taskid) */
 	uint32_t *c_ixn;	/* core index by socket (next taskid) */
 	uint32_t *t_ix;		/* thread index by core by socket */
-	uint32_t npus, ncores, nsockets;
+	uint32_t npus = 0, nthreads = 0, ncores = 0, nsockets = 0;
 	uint32_t taskid = job->envtp->localid;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
-
-	uint32_t obj_idxs[3], nthreads, cps,
-		 tpc, i, j, sock_loop, ntskip, npdist;;
+	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;;
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
 
-	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_SOCKET);
-	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_CORE);
-	nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_PU);
-	cps = ncores/nsockets;
-	tpc = nthreads/ncores;
+	if (_get_cpuinfo(&nsockets, &ncores, &nthreads, &npus)) {
+		/* Fall back to use allocated resources, but this may result
+		 * in incorrect layout due to a uneven task distribution
+		 * (e.g. 4 cores on socket 0 and 3 cores on socket 1) */
+		nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							HWLOC_OBJ_SOCKET);
+		ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							HWLOC_OBJ_CORE);
+		nthreads = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							HWLOC_OBJ_PU);
+		npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
+							   HWLOC_OBJ_PU);
+	}
+	if ((nsockets == 0) || (ncores == 0))
+		return XCGROUP_ERROR;
+	cps = (ncores + nsockets - 1) / nsockets;
+	tpc = (nthreads + ncores - 1) / ncores;
 
 	sock_fcyclic = (job->task_dist & SLURM_DIST_SOCKMASK) ==
 		SLURM_DIST_SOCKCFULL ? true : false;
@@ -677,8 +718,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		     format_task_dist_states(job->task_dist), job->task_dist);
 	}
 
-	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						   HWLOC_OBJ_PU);
+
 
 	t_ix = xmalloc(ncores * sizeof(uint32_t));
 	c_ixc = xmalloc(nsockets * sizeof(uint32_t));
@@ -695,11 +735,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	}
 	if ((job->job_core_spec != (uint16_t) NO_VAL) &&
 	    (job->job_core_spec &  CORE_SPEC_THREAD)  &&
-	    (job->job_core_spec != CORE_SPEC_THREAD)){
+	    (job->job_core_spec != CORE_SPEC_THREAD)) {
 		/* Skip specialized threads as needed */
 		int i, t, c, s;
-		int cores = ncores / nsockets;
-		int threads = npus / cores;
+		int cores = (ncores + nsockets - 1) / nsockets;
+		int threads = (npus + cores - 1) / cores;
 		spec_thread_cnt = job->job_core_spec & (~CORE_SPEC_THREAD);
 		spec_threads = bit_alloc(npus);
 		for (t = threads - 1;
@@ -735,7 +775,8 @@ static int _task_cgroup_cpuset_dist_cyclic(
 			obj = hwloc_get_obj_below_by_type(
 				topology, HWLOC_OBJ_SOCKET, s_ix,
 				hwtype, c_ixc[s_ix]);
-			if (obj != NULL) {
+			if ((obj != NULL) &&
+			    (hwloc_bitmap_first(obj->allowed_cpuset) != -1)) {
 				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
 									>= 0) {
 					/* granularity is thread */
@@ -744,7 +785,9 @@ static int _task_cgroup_cpuset_dist_cyclic(
 					obj_idxs[2]=t_ix[(s_ix*cps)+c_ixc[s_ix]];
 					obj = hwloc_get_obj_below_array_by_type(
 						topology, 3, obj_types, obj_idxs);
-					if (obj != NULL) {
+					if ((obj != NULL) &&
+					    (hwloc_bitmap_first(
+					     obj->allowed_cpuset) != -1)) {
 						t_ix[(s_ix*cps)+c_ixc[s_ix]]++;
 						j++;
 						if (i == ntskip)
@@ -810,9 +853,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 
 	/* should never happen in normal scenario */
 	if (sock_loop > npdist) {
+		char buf[128] = "";
+		hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 		error("task/cgroup: task[%u] infinite loop broken while trying "
-		      "to provision compute elements using %s", taskid,
-		      format_task_dist_states(job->task_dist));
+		      "to provision compute elements using %s (bitmap:%s)",
+		      taskid, format_task_dist_states(job->task_dist), buf);
 		return XCGROUP_ERROR;
 	} else
 		return XCGROUP_SUCCESS;
@@ -891,9 +936,12 @@ static int _task_cgroup_cpuset_dist_block(
 
 		/* should never happen in normal scenario */
 		if (core_loop > npdist) {
+			char buf[128] = "";
+			hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 			error("task/cgroup: task[%u] infinite loop broken while "
-			      "trying to provision compute elements using %s",
-			      taskid, format_task_dist_states(job->task_dist));
+			      "trying to provision compute elements using %s (bitmap:%s)",
+			      taskid, format_task_dist_states(job->task_dist),
+			      buf);
 			return XCGROUP_ERROR;
 		} else
 			return XCGROUP_SUCCESS;

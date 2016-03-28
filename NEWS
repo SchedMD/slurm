@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - If the pre-run operation fails then don't issue
     duplicate job cancel/requeue unless the job is still in run state. Prevents
     jobs hung in COMPLETING state.
+ -- task/cgroup - Fix bug in task binding to CPUs.
 
 * Changes in Slurm 15.08.8
 ==========================
