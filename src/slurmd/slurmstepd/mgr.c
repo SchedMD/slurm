@@ -659,7 +659,7 @@ _random_sleep(stepd_step_rec_t *job)
 {
 #if !defined HAVE_FRONT_END
 	long int delay = 0;
-	long int max   = (3 * job->nnodes);
+	long int max   = (slurm_get_tcp_timeout() * job->nnodes);
 
 	srand48((long int) (job->jobid + job->nodeid));
 
@@ -696,7 +696,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	 *  Hack for TCP timeouts on exit of large, synchronized job
 	 *  termination. Delay a random amount if job->nnodes > 100
 	 */
-	if (job->nnodes > 100)
+	if (job->nnodes > 500)
 		_random_sleep(job);
 
 	/*

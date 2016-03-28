@@ -44,6 +44,9 @@ documents those changes that are of interest to users and administrators.
  -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
     the specified threshold will not have resources reserved for them.
  -- Added "sacctmgr show lostjobs" to report any orphaned jobs in the database.
+ -- When a stepd is about to shutdown and send it's response to srun
+    make the wait to return data only hit after 500 nodes and configurable
+    based on the TcpTimeout value.
 
 * Changes in Slurm 16.05.0pre1
 ==============================
