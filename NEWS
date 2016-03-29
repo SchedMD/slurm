@@ -153,6 +153,9 @@ documents those changes that are of interest to users and administrators.
  -- Add Max*PerAccount options for QOS.
  -- Protect slurm_mutex_* calls with abort() on failure.
 
+* Changes in Slurm 15.08.10
+===========================
+
 * Changes in Slurm 15.08.9
 ==========================
  -- BurstBuffer/cray - Defer job cancellation or time limit while "pre-run"
