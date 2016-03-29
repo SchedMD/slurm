@@ -376,18 +376,23 @@ if {[string compare $def_node_name ""] == 0} {
 set core_spec 0
 set cores_per_socket 0
 set sockets_per_node 0
+set heterogeneous 0
 log_user 0
 spawn $scontrol show node -o
 expect {
 	-re "CoresPerSocket=($number)" {
 		if {$cores_per_socket == 0} {
 			set cores_per_socket $expect_out(1,string)
+		} elseif {$cores_per_socket != $expect_out(1,string)} {
+			set heterogeneous 1
 		}
 		exp_continue
 	}
 	-re "Sockets=($number)" {
 		if {$sockets_per_node == 0} {
 			set sockets_per_node $expect_out(1,string)
+		} elseif {$sockets_per_node != $expect_out(1,string)} {
+			set heterogeneous 1
 		}
 		exp_continue
 	}
@@ -406,6 +411,9 @@ expect {
 	}
 }
 log_user 1
+if {$heterogeneous != 0} {
+	send_user "\nWARNING: Cluster is heterogeneous and some tests may fail\n"
+}
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
 set node_count [available_nodes $def_partition ""]
 set cluster_cpus [expr $cores_per_node * $node_count]
