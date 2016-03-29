@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 15.08.10
 ===========================
+ -- Fix issue where if a slurmdbd rollup lasted longer than 1 hour the
+    rollup would effectively never run again.
 
 * Changes in Slurm 15.08.9
 ==========================
