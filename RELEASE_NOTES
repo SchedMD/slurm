@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 16.05
-5 January 2016
+29 March 2016 (after 16.05.0-pre2)
 
 IMPORTANT NOTES:
 ANY JOBS WITH A JOB ID ABOVE 2,147,463,647 WILL BE PURGED WHEN SLURM IS
@@ -7,7 +7,7 @@ UPGRADED FROM AN OLDER VERSION! Reduce your configured MaxJobID value as needed
 prior to upgrading in order to eliminate these jobs.
 
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
-The 15.08 slurmdbd will work with Slurm daemons of version 14.03 and above.
+The 16.05 slurmdbd will work with Slurm daemons of version 14.11 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -44,6 +44,12 @@ HIGHLIGHTS
  -- Add an "scontrol top <jobid>" command to re-order the priorities of a user's
     pending jobs. May be disabled with the "disable_user_top" option in the
     SchedulerParameters configuration parameter.
+ -- Added new job dependency type of "aftercorr" which will start a task of a
+    job array after the corresponding task of another job array completes.
+ -- Add --gres-flags=enforce-binding option to salloc, sbatch and srun commands.
+    If set, the only CPUs available to the job will be those bound to the
+    selected GRES (i.e. the CPUs identifed in the gres.conf file will be
+    strictly enforced rather than advisory).
 
 RPMBUILD CHANGES
 ================
@@ -52,6 +58,7 @@ RPMBUILD CHANGES
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- New configuration parameter NodeFeaturesPlugins added.
  -- Change default CgroupMountpoint (in cgroup.conf) from "/cgroup" to
     "/sys/fs/cgroup" to match current standard.
  -- Introduce a new parameter "requeue_setup_env_fail" in SchedulerParameters.
@@ -66,6 +73,22 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     that partition will NOT be supported (i.e. memory can be over-allocated).
     Likewise the global SelectTypeParameters might not include memory management
     while the partition-specific value does.
+ -- Split partition's "Priority" field into "PriorityTier" (used to order
+    partitions for scheduling and preemption) plus "PriorityJobFactor" (used by
+    priority/multifactor plugin in calculating job priority, which is used to
+    order jobs within a partition for scheduling). If only "Priority" is
+    specified, that value will be used for both the "PriorityTier" and
+    "PriorityJobFactor" value.
+ -- New configuration file "knl.conf" added specifically for Intel Knights
+    Landing processor support.
+ -- Make it so jobs/steps track ':' named gres/tres, before hand gres/gpu:tesla
+    would only track gres/gpu, now it will track both gres/gpu and
+    gres/gpu:tesla as separate gres if configured like
+    AccountingStorageTRES=gres/gpu,gres/gpu:tesla
+ -- Add TCPTimeout option to slurm[dbd].conf. Decouples MessageTimeout from TCP
+    connections.
+ -- Added SchedulingParameters option of "bf_min_prio_reserve". Jobs below
+    the specified threshold will not have resources reserved for them.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -87,6 +110,11 @@ COMMAND CHANGES (see man pages for details)
     information. Output of scontrol, sinfo, and sview changed accordingly.
     The field previously displayed as "Features" is now "AvailableFeatures"
     while the new field is displayed as "ActiveFeatures".
+ -- Enable sbcast data compression logic (compress option previously ignored).
+ -- Add --compress option to srun command for use with --bcast option.
+ -- Added "sacctmgr show lostjobs" to report any orphaned jobs in the database.
+ -- Add reservation flag of "purge_comp" which will purge an advanced
+    reservation once it has no more active (pending, suspended or running) jobs.
 
 OTHER CHANGES
 =============
@@ -102,6 +130,10 @@ OTHER CHANGES
  -- Stop searching sbatch scripts for #PBS directives after 100 lines of
     non-comments. Stop parsing #PBS or #SLURM directives after 1024 characters
     into a line. Required for decent perforamnce with huge scripts.
+ -- New node features plugin infrastructure added. Currently used for support
+    of Intel Knights Landing processor.
+ -- If NodeHealthCheckProgram configured HealthCheckInterval is non-zero, then
+    modify slurmd to run it before registering with slurmctld.
 
 API CHANGES
 ===========
