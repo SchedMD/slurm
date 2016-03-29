@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 16.05.0pre3
+==============================
+
 * Changes in Slurm 16.05.0pre2
 ==============================
  -- Split partition's "Priority" field into "PriorityTier" (used to order
