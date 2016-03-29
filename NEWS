@@ -3,6 +3,12 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 16.05.0pre3
 ==============================
+ -- Remove the SchedulerParameters option of "assoc_limit_continue", making it
+    the default value. Add option of "assoc_limit_stop". If "assoc_limit_stop"
+    is set and a job cannot start due to association limits, then do not attempt
+    to initiate any lower priority jobs in that partition. Setting this can
+    decrease system throughput and utlization, but avoid potentially starving
+    larger jobs by preventing them from launching indefinitely.
 
 * Changes in Slurm 16.05.0pre2
 ==============================

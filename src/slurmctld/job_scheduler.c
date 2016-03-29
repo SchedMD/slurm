@@ -1115,7 +1115,7 @@ static int _schedule(uint32_t job_limit)
 	static time_t sched_update = 0;
 	static bool wiki_sched = false;
 	static bool fifo_sched = false;
-	static bool assoc_limit_continue = false;
+	static bool assoc_limit_stop = false;
 	static int sched_timeout = 0;
 	static int sched_max_job_start = 0;
 	static int bf_min_age_reserve = 0;
@@ -1175,10 +1175,10 @@ static int _schedule(uint32_t job_limit)
 		sched_params = slurm_get_sched_params();
 
 		if (sched_params &&
-		    (strstr(sched_params, "assoc_limit_continue")))
-			assoc_limit_continue = true;
+		    (strstr(sched_params, "assoc_limit_stop")))
+			assoc_limit_stop = true;
 		else
-			assoc_limit_continue = false;
+			assoc_limit_stop = false;
 
 		if (sched_params &&
 		    (tmp_ptr=strstr(sched_params, "batch_sched_delay="))) {
@@ -1843,8 +1843,8 @@ next_task:
 		} else if (error_code == ESLURM_ACCOUNTING_POLICY) {
 			debug3("sched: JobId=%u delayed for accounting policy",
 			       job_ptr->job_id);
-			/* potentially stall the queue */
-			if (!assoc_limit_continue)
+			/* potentially starve this job */
+			if (assoc_limit_stop)
 				fail_by_part = true;
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
