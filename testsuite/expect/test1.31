@@ -90,7 +90,7 @@ make_bash_script $file_in "env | $bin_grep MP_; env | $bin_grep SLURM_"
 #
 # Spawn a job via srun using these environment variables
 #
-set srun_pid [spawn $srun -t1 $file_in]
+set srun_pid [spawn $srun -t1 ./$file_in]
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -121,6 +121,7 @@ if {[wait_for_file $env_valu_stdout] != 0} {
 	exit 1
 }
 
+set stale_cnt     0
 set task_cnt      0
 set max_node_val -1
 spawn $bin_sort $env_valu_stdout
@@ -150,6 +151,10 @@ expect {
 		incr task_cnt
 		exp_continue
 	}
+	-re "Stale file handle" {
+		incr stale_cnt
+		exp_continue
+	}
 
 	timeout {
 		send_user "\nFAILURE: $bin_sort not responding\n"
@@ -161,6 +166,10 @@ expect {
 	}
 }
 
+if {$stale_cnt != 0} {
+	send_user "\nWARNING: Stale file handles $task_cnt for $stale_cnt tasks\n"
+	incr task_cnt $stale_cnt
+}
 if {$task_cnt != $env_valu_nprocs} {
 	send_user "\nFAILURE: did not process"
 	send_user " $env_name_nprocs environment variable"
